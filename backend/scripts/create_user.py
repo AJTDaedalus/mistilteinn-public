@@ -18,6 +18,7 @@ password from `sys.argv` — where it lands in shell history and in `ps` output.
 from __future__ import annotations
 
 import asyncio
+import datetime
 import getpass
 import sys
 
@@ -42,6 +43,10 @@ async def create_user(email: str, password: str) -> None:
         if existing is not None:
             existing.password_hash = hash_password(password)
             existing.status = UserStatus.APPROVED
+            # Stamped for the same reason scripts.approve_user stamps it: two code paths
+            # reach APPROVED, and an account approved by this one would otherwise be the
+            # only kind with a null approval timestamp.
+            existing.approved_at = datetime.datetime.now(datetime.UTC)
             await session.commit()
             print(f"Updated and approved existing user {email}")
         else:
@@ -50,6 +55,7 @@ async def create_user(email: str, password: str) -> None:
                     email=email,
                     password_hash=hash_password(password),
                     status=UserStatus.APPROVED,
+                    approved_at=datetime.datetime.now(datetime.UTC),
                 ),
             )
             await session.commit()

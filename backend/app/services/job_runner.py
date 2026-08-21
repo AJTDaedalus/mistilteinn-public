@@ -39,6 +39,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Throttle for progress writes from a worker thread. Unreferenced since B.2 removed the
+# two concrete job types; kept rather than deleted because it is a tuned value, and Chunk G
+# restores the code that reads it (see the module TODO).
 PROGRESS_WRITE_INTERVAL_S = 0.5
 
 
@@ -119,7 +122,10 @@ class JobRunner:
     # Public API
 
     def submit(self, job_id: str, runner_fn: Callable, *args: Any, **kwargs: Any) -> None:
-        """Submit a generic callable to the threadpool (used by unit tests).
+        """Submit a generic callable to the threadpool.
+
+        Was "used by unit tests" while `submit_optimizer_job` and `submit_rank_job` existed;
+        since B.2 removed those, this is the only public submit path until Chunk G.
 
         ``runner_fn`` is called with ``cancel_event`` as the first positional
         arg, followed by ``*args`` and ``**kwargs``.

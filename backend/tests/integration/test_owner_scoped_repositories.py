@@ -107,7 +107,8 @@ async def test_team_delete_cross_owner_returns_false(db_session: AsyncSession) -
     repo = TeamRepository(db_session, owner_id=str(other.id))
 
     assert (await repo.delete(str(team.id))) is False
-    assert (await TeamRepository(db_session, owner_id=str(owner.id)).get_by_id(str(team.id)))
+    survivor = await TeamRepository(db_session, owner_id=str(owner.id)).get_by_id(str(team.id))
+    assert survivor is not None
 
 
 async def test_team_get_all_scoped_to_owner(db_session: AsyncSession) -> None:

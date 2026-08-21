@@ -30,7 +30,6 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 config="${here}/zap.yaml"
 
 target="$(grep -oE 'https?://[A-Za-z0-9.-]+' "${config}" | head -n 1)"
-host="${target#*://}"
 
 if [[ "${ZAP_SCAN_ENABLED:-0}" != "1" ]]; then
   echo "SKIPPED: ZAP baseline scan did not run (ZAP_SCAN_ENABLED is not 1)."
