@@ -223,7 +223,7 @@ Each task below is **one commit**. Commit message form:
 - **Accept:** fixture files committed; a short note in the DESIGN or LOG lists the observed value
   sets, including `WEAPON_CROSSBOW` and the literal `"None"` element.
 
-### C.2 — `app/models/enums.py` rewrite
+### [x] C.2 — `app/models/enums.py` rewrite
 - **Do:** write `Element` (7 visions, Physical **excluded**), `DamageType`, `WeaponType` (6,
   including crossbow), `Rarity` (with the character `QUALITY_*` ↔ weapon integer-`rank` split
   normalized), `ArtifactSlot` (5-member `StrEnum`), `TalentType`, `StatType` from the observed
