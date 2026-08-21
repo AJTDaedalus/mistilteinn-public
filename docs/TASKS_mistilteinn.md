@@ -141,7 +141,7 @@ Each task below is **one commit**. Commit message form:
   `rotation_cost.py`, `scorer_support.py`.
 - **Accept:** `app/services/` contains only the keepers; no `app/` file imports a deleted module.
 
-### B.3 — Delete `app/formula/zzz/`
+### [x] B.3 — Delete `app/formula/zzz/`
 - **Do:** delete the directory (1,455 lines). Keep `formula/{__init__,builder,nodes,tags}.py`.
 - **Accept:** `python -c "import app.formula"` succeeds; `app/pando/` still imports cleanly.
 

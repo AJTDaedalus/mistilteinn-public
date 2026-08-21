@@ -5,7 +5,7 @@ Genshin ports can be written *against* them instead of from memory. Nothing in `
 from this directory, and nothing should.
 
 Staged in Task B.1 (`docs/TASKS_mistilteinn.md`), per DESIGN §3 Chunk B and the §2.2
-disposition table.
+disposition table. `translator.py` joined them in B.3 — see the note below the table.
 
 | File | Lines | Consumed by | Becomes |
 |---|---:|---|---|
@@ -15,6 +15,19 @@ disposition table.
 | `rank_pipeline.py` | 743 | Chunk G (G.4) | ported — slot-count and stat-vocabulary edits |
 | `build_damage_service.py` | 707 | Chunk F/G | ported |
 | `modifiers.py` + `buff_resolver.py` | 1168 | Chunk H | the modifier DSL — `attack_scope` vocabulary retargeted, not replaced |
+| `translator.py` (was `app/pando/translator.py`) | 152 | Chunk F (F.1/F.4) | modifier → DAG translation, rewritten against `formula/genshin/tags.py` |
+
+### Why `translator.py` is here
+
+DESIGN §2.3 lists `app/pando/translator.py` as *"confirmed game-agnostic (zero ZZZ-term hits),
+keep untouched"*, and §2.4 calls the `formula` + `pando` pair the least risky part of the port.
+The vocabulary audit was right and the conclusion was too broad: translator.py contains no ZZZ
+*words*, but it imports `app.formula.zzz.tags`, `app.services.modifiers`, and
+`app.services.buff_resolver`. Converting the ZZZ modifier DSL into DAG entries **is** its whole
+job, so it belongs to the modifier layer, not to neutral ground.
+
+`app/pando/calculator.py` genuinely is free-standing, and `app/pando/__init__.py` never imported
+translator — so moving it out leaves `import app.pando` clean, which is what B.3 has to accept on.
 
 ## Rules
 
