@@ -1,7 +1,7 @@
 [project]
-name = "fairy"
+name = "mistilteinn"
 version = "0.1.0"
-description = "Zenless Zone Zero optimizer backend"
+description = "Genshin Impact build optimizer and rotation simulator backend"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.116.2",

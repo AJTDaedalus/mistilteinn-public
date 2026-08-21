@@ -19,14 +19,14 @@
 
 ## Chunk A — Identity, topology, and CI
 
-### A.0 — Branch setup **(gate: nothing else starts until this is done)**
+### [x] A.0 — Branch setup **(gate: nothing else starts until this is done)**
 - **Do:** create `dev` from `main`; create `feat/genshin-domain` from `dev`; push neither.
 - **Files:** none.
 - **Accept:** `git branch` shows `main`, `dev`, `docs/port-plan`, `feat/genshin-domain`;
   `git branch --show-current` is `feat/genshin-domain`.
 - **Tests:** none.
 
-### A.1 — Rename project identifiers (backend)
+### [x] A.1 — Rename project identifiers (backend)
 - **Do:** `fairy` → `mistilteinn` in `backend/pyproject.toml` (name, scripts, tool sections) and
   `backend/alembic.ini`. Update `backend/CLAUDE.md` prose that names fairy as *this* project
   (keep references that name fairy as the *upstream* — those are provenance, not stale).
