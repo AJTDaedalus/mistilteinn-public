@@ -85,11 +85,17 @@ Ruff with a comprehensive rule set, pinned to an exact version in `pyproject.tom
 local gate is the CI gate (#135). Run **exactly what CI runs**:
 
 ```bash
-ruff check app/ tests/ scripts/validate_kits.py scripts/refresh_kit_refs.py
+ruff check app/ tests/
 ```
 
 `scripts/` as a whole is not linted — it carries ~65 pre-existing violations in unrelated
-one-off scripts. The two the kit harness depends on are named explicitly so they cannot rot.
+one-off scripts. fairy additionally named `scripts/validate_kits.py` and
+`scripts/refresh_kit_refs.py` so the two the harness depended on could not rot unlinted; both
+are deleted in B.9 and their Genshin replacements are re-added to this command in Chunk H
+(see the `TODO(chunk-H)` on the Ruff step in `.github/workflows/test.yml`).
+
+`app/services/_ported/` is excluded in `pyproject.toml`: it is read-only ZZZ porting source
+that imports deleted modules, so linting it would be permanent noise.
 
 **Do not run `ruff format`.** The backend is not formatter-clean (75 of 372 files would
 change), and formatting it piecemeal spreads that churn through unrelated diffs instead of

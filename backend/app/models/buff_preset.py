@@ -1,4 +1,9 @@
-"""A saved, reusable set of custom (stage) buffs — issue #64, DESIGN_buff_context.md §2.4."""
+"""A saved, reusable set of custom (stage) buffs.
+
+The schema that validated the stored objects (``schemas.damage.CustomBuff``) is deleted
+in B.5; its Genshin replacement is Chunk F/G work. The column is plain JSONB, so the
+table survives the gap without a migration.
+"""
 
 from __future__ import annotations
 
@@ -12,16 +17,16 @@ from app.models.base import Base, TimestampMixin, uuid_pk
 class BuffPreset(TimestampMixin, Base):
     """A named list of ``CustomBuff`` objects, saved independently of any build.
 
-    Deadly Assault and Shiyu stage buffs rotate with the patch cycle and get re-applied
-    across many builds and many runs, so they have to be storable somewhere that is
-    neither a build nor a request. A preset is that place.
+    Rotating event/stage buffs get re-applied across many builds and many runs, so they
+    have to be storable somewhere that is neither a build nor a request. A preset is
+    that place.
 
     It is a **client-side convenience only** (DESIGN §2.4): applying a preset copies its
     buffs into the request's ``custom_buffs``. No calculation path ever resolves a preset
     id, which is what makes a stored result immutable — editing a preset after a
     calculation cannot retroactively change that calculation's numbers.
 
-    ``owner_id`` cascades rather than nulling out, unlike ``builds``/``teams``/``combos``:
+    ``owner_id`` cascades rather than nulling out, unlike ``builds``/``teams``:
     an ownerless build is still a build a UI can show, but an ownerless preset is a row
     nobody can ever list, apply or delete, because every read path is owner-scoped.
     """
@@ -34,7 +39,7 @@ class BuffPreset(TimestampMixin, Base):
     )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
 
-    #: ``list[CustomBuff]`` as validated by ``schemas.damage.CustomBuff`` — stored as
+    #: A list of custom-buff objects — stored as
     #: plain JSON rather than a child table because the whole list is always read,
     #: written and applied as one unit, and nothing queries an individual buff.
     buffs: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)

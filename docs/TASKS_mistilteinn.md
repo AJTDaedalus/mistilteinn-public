@@ -145,7 +145,7 @@ Each task below is **one commit**. Commit message form:
 - **Do:** delete the directory (1,455 lines). Keep `formula/{__init__,builder,nodes,tags}.py`.
 - **Accept:** `python -c "import app.formula"` succeeds; `app/pando/` still imports cleanly.
 
-### B.4 — Delete ZZZ models
+### [x] B.4 — Delete ZZZ models
 - **Do:** delete `app/models/{agent,disc,w_engine}.py`; strip ZZZ members from
   `app/models/enums.py` (Element, Specialty, AttackType, Rarity, DiscSlot, StatType, the
   `*_ID_MAP`s, Potential*, HitMode) leaving only `UserStatus`; strip ZZZ columns/relationships
