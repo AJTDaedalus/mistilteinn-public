@@ -48,7 +48,7 @@
   fairy's production host, meaningless here).
 - **Accept:** file gone; `rg -il fairy` no longer lists it.
 
-### A.4 — Repoint at the shared Postgres server
+### [x] A.4 — Repoint at the shared Postgres server
 - **Do:** per DESIGN §A3 — remove the `db` service and its bind mounts/healthcheck from
   `docker-compose.yml`; point `backend` at the fairy stack's Postgres (external network or host
   gateway, whichever the fairy compose file makes available — **inspect it, do not assume**);

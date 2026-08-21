@@ -53,7 +53,6 @@ docker compose down                                 # stop (keep DB)
 ```
 backend/    FastAPI app, SQLAlchemy models, Alembic migrations, tests
 frontend/   Angular SPA, design tokens, typed API client
-docker/     Compose-time SQL bootstrap (init-test-db.sql)
 docs/       BRIEF / DESIGN / TASKS / LOG planning documents
 ```
 

@@ -1,21 +1,29 @@
+# ---------------------------------------------------------------------------
+# mistilteinn does NOT run its own Postgres (DESIGN §A3, owner ruling 2026-08-21).
+#
+# One postgres:16 container — the one owned by the fairy compose stack at
+# /root/fairy — serves four databases:
+#
+#     fairy / fairy_test          ← ZZZ, fairy's own alembic_version
+#     mistilteinn / mistilteinn_test  ← Genshin, this repo's alembic_version
+#
+# The two migration histories never interact, which is the reason separate
+# databases beat a shared database with a `genshin` schema.
+#
+# Consequences, all deliberate:
+#   - There is no `db` service here and no `depends_on: db`. Startup ordering
+#     is no longer ours to enforce, so the backend retries its first connect
+#     with a bounded backoff and then fails loudly (app/database.py, A.7).
+#   - `backend` joins the fairy stack's default network so the hostname `db`
+#     resolves to that container. Override the network name with
+#     SHARED_DB_NETWORK if fairy's compose project is named something else.
+#   - The databases and the `mistilteinn` role must PRE-EXIST. Nothing here
+#     creates them; see the A.6 entry in docs/LOG_mistilteinn.md for the exact
+#     CREATE statements.
+#   - Host ports are 8001/4201, not fairy's 8000/4200, so both stacks can run
+#     at once on this box.
+# ---------------------------------------------------------------------------
 services:
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./docker/postgres_data:/var/lib/postgresql/data
-      - ./docker/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   backend:
     build:
       context: ./backend
@@ -28,9 +36,9 @@ services:
       TESTING: "false"
       LOG_LEVEL: info
       PYTHONPATH: /app
-    depends_on:
-      db:
-        condition: service_healthy
+    networks:
+      - default
+      - shared-db
     volumes:
       - ./backend:/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-include '*.py' --reload-exclude '*.json' --reload-exclude '*.yaml'
@@ -95,5 +103,11 @@ services:
     profiles:
       - tunnel
 
-# postgres_data is now a host bind mount (./docker/postgres_data/) so it
-# survives `docker compose down -v`. No named volume needed.
+networks:
+  # The fairy compose stack's default network, joined from the outside so that
+  # `db` resolves to its postgres container. `external: true` means compose
+  # refuses to start when the fairy stack has never been up — a loud failure,
+  # which is the one we want for a dependency we do not own.
+  shared-db:
+    external: true
+    name: ${SHARED_DB_NETWORK:-fairy_default}

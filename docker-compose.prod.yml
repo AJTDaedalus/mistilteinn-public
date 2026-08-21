@@ -5,15 +5,14 @@
 # Key differences from dev:
 #   - No source bind mounts (images must be pre-built)
 #   - Backend runs without --reload
-#   - Postgres port not published to host
 #   - Cloudflare named tunnel is always active (no profile required)
 #   - Every service restarts on reboot (see restart: unless-stopped below)
 
+# NOTE: there is no `db` service to override — mistilteinn uses the shared
+# Postgres described at the top of docker-compose.yml (DESIGN §A3). Whether
+# that arrangement survives contact with a real deploy is Chunk K's question
+# (OQ-M3): co-hosting both stacks on one VM is assumed but not confirmed.
 services:
-  db:
-    ports: !reset []  # Do not publish 5432 to host in production
-    restart: unless-stopped  # Must survive host reboot — see note at end of file
-
   backend:
     ports: !reset []  # Not published to host; nginx proxies /api/ internally
     volumes: !reset []  # No source bind mounts; image contains the code
