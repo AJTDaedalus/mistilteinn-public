@@ -31,9 +31,9 @@ async def _create_job(factory, status: str) -> str:
             {
                 "status": status,
                 "request": {},
-                "agent_name": "A",
+                "character_name": "A",
                 "enemy_name": "E",
-                "combo_name": "C",
+                "rotation_name": "C",
             }
         )
         await session.commit()

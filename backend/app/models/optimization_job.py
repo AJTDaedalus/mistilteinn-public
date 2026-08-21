@@ -1,4 +1,4 @@
-"""Background disc-optimization job: request payload, progress counters, and result snapshot."""
+"""Background artifact-optimization job: request payload, progress counters, and result."""
 
 from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
@@ -9,7 +9,7 @@ from app.models.user import User  # noqa: F401 — ensures FK target is register
 
 
 class OptimizationJob(TimestampMixin, Base):
-    """Tracks one async disc-optimizer run: search progress, ETA, and the winning build result."""
+    """Tracks one async optimizer run: search progress, ETA, and the winning build result."""
 
     __tablename__ = "optimization_jobs"
 
@@ -19,9 +19,12 @@ class OptimizationJob(TimestampMixin, Base):
     )
     status: Mapped[str] = mapped_column(String(16), nullable=False)
     request: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    agent_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    #: Display labels, denormalised so a job list needs no joins. Renamed from
+    #: `agent_name` / `combo_name` in C.9 — they were the last ZZZ vocabulary left in
+    #: `app/models`, and B.5 deferred the rename here rather than doing it mid-demolition.
+    character_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
     enemy_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
-    combo_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    rotation_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
     assignments_done: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     assignments_total: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     evaluated: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

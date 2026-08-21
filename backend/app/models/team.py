@@ -1,4 +1,4 @@
-"""A saved Team: up to 3 `Build`s grouped for combo simulation and comparison."""
+"""A saved Team: up to 3 `Build`s grouped for rotation simulation and comparison."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class Team(TimestampMixin, Base):
-    """A team of 3 agent builds."""
+    """A team of up to 3 character builds."""
 
     __tablename__ = "teams"
 

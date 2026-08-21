@@ -14,9 +14,10 @@ and nothing in this repo overrides them.
 
 ## Repo state — read before trusting anything here
 
-This tree is a fork of fairy `dev` @ 76909c4. **Chunks A and B of
-`docs/TASKS_mistilteinn.md` are done: the ZZZ domain layer has been deleted and the
-infrastructure core is green.** Chunk C (Genshin domain models) is next.
+This tree is a fork of fairy `dev` @ 76909c4. **Chunks A, B and C of
+`docs/TASKS_mistilteinn.md` are done:** the ZZZ domain layer is deleted, the infrastructure
+core is green, and the Genshin domain models exist. Chunk D (nanoka importer) and Chunk E
+(YuanShen snapshots) are next and are parallel-safe with each other.
 
 - **The backend suite passes.** 25 test files, 225 tests, 1 skipped (`tests/perf`, awaiting
   G.7). `ruff check app/ tests/` is clean and `uvicorn app.main:app` serves `/api/v1/health`,
@@ -29,9 +30,15 @@ infrastructure core is green.** Chunk C (Genshin domain models) is next.
   backend served 7. The contract is now regenerated and guarded by
   `backend/tests/unit/test_openapi_contract_is_current.py`. CI runs `npm run lint` only;
   `npm test` is a disabled step with a `TODO(chunk-J)`. **Chunk J is what makes it compile.**
-- **There is no game layer at all.** `app/` has no characters, weapons, artifacts, damage
-  chain, or optimizer. It has auth, sessions, users, teams, optimization-job plumbing, the
-  `formula` IR, and the `pando` calculator. Seven tables, seven API paths, one migration.
+- **There are models but no behaviour yet.** 17 tables across three migrations — characters,
+  talents, talent scalings, constellations, ascension passives, weapons, refinements,
+  artifact sets, set affixes, artifacts, builds, enemy profiles, plus the infrastructure
+  core. There is still **no damage chain, no optimizer, no importer, and no seeded data**,
+  and the API still serves seven paths.
+- **`app/models/artifact.py:MAIN_STAT_POOL` is empty on purpose.** The slot→main-stat pools
+  are not in any nanoka payload; they need the Chunk E YuanShenResources snapshot.
+  `main_stats_for()` raises rather than returning an empty tuple. Do not fill it in from
+  memory — that is the citation rule, and the reason it is empty rather than plausible.
 - **`app/services/_ported/` is read-only porting source, not runtime code.** Eight ZZZ
   modules staged in B.1/B.3 for Chunks F, G and H to port *against*, excluded from ruff and
   pytest, with no `__init__.py` so they are not importable. Each is deleted when its port
@@ -200,7 +207,13 @@ you are looking at. Always `cd backend && python -m scripts.<name>`, matching CI
 
 ## Domain: Genshin Impact
 
-Not yet modeled. The domain layer is Planner's first body of work — see
+Modelled in Chunk C (`app/models/{character,weapon,artifact,build}.py`, enums in
+`app/models/enums.py`). **Every enum value and column was read off the committed fixtures in
+`backend/tests/fixtures/nanoka_gi/`** (nanoka 7.0.51), never from memory, and
+`tests/unit/test_genshin_enums.py` asserts them against those files. Extend the same way:
+commit the payload, then derive.
+
+See
 `docs/BRIEF_mistilteinn.md` ("Constraints handed to Planner") for the phase order:
 domain models/importers → damage chain + crossval → optimizer/GOOD → gauge sim → kit corpus.
 

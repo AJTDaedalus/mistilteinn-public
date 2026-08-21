@@ -14,7 +14,7 @@ def assert_slots_distinct(
 ) -> None:
     """Raise ValueError when the same build id fills more than one team slot.
 
-    A team is three *different* agents. The same build in two slots has no
+    A team is three *different* characters. The same build in two slots has no
     defined meaning, and the eval path is internally inconsistent about it
     inside a single request:
 
