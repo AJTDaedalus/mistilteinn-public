@@ -306,7 +306,7 @@ Each task below is **one commit**. Commit message form:
 - **Accept:** green against the seeded DB; **fails** when an anchor is deliberately corrupted
   (prove the gate can fail — a gate never observed failing is not a gate).
 
-### D.9 — Chunk D close-out
+### [x] D.9 — Chunk D close-out
 - **Accept:** roster present and queryable; `docs/LOG_mistilteinn.md` records the pinned version.
 
 ---
