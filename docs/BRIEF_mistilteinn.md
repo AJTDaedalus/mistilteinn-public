@@ -106,3 +106,10 @@ the kit corpus — is the niche neither incumbent occupies.
 **Resolved at Brain tier. Hand to Planner (Opus): produce `DESIGN_mistilteinn.md` +
 `TASKS_mistilteinn.md` in the new repo, starting from Task 0 (repo bootstrap) — after OQ-M1/M2
 are answered by the owner.**
+
+---
+
+**Amended 2026-08-21** by `docs/DESIGN_mistilteinn.md` §1 (nanoka is primary source;
+YuanShenResources replaces Dimbreath; one Postgres / two databases; Mitya rebrand; scorched-earth
+demolition). See `docs/DECISIONS.md` for the rulings. The BRIEF is otherwise unchanged and still
+governs.
