@@ -273,7 +273,7 @@ Each task below is **one commit**. Commit message form:
 
 *Sub-branch `feat/nanoka-gi-importer`. Parallel-safe with Chunk E.*
 
-### D.1 — Port the importer transport layer
+### [x] D.1 — Port the importer transport layer
 - **Do:** new `app/data/importers/nanoka_gi_importer.py`. Copy the manifest-pin → index-fetch →
   detail-fetch → upsert → stale-prune skeleton from `/root/fairy`'s `nanoka_importer.py`;
   swap `zzz` for `gi` in the URL grammar. **Transport only — no field mapping yet.**
