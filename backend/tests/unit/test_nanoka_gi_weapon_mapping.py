@@ -149,3 +149,18 @@ def test_a_one_level_refinement_ladder_is_data_not_a_truncation():
     payload = {"refinement": {"1": {"name": "Even-Handed", "desc": "x", "param_list": [1]}}}
 
     assert [row["level"] for row in refinement_rows(payload)] == [1]
+
+
+def test_an_unmappable_weapon_type_raises():
+    """A new weapon class must not be imported as whatever the parser fell back to."""
+    payload = {"name": "Trident", "weapon_type": "WEAPON_TRIDENT", "rarity": 5}
+
+    with pytest.raises(NanokaMappingError, match="unmappable weapon type"):
+        weapon_fields("99999", payload)
+
+
+def test_an_unmappable_rarity_raises():
+    payload = {"name": "Impossible", "weapon_type": "WEAPON_BOW", "rarity": 9}
+
+    with pytest.raises(NanokaMappingError, match="unmappable rarity"):
+        weapon_fields("99999", payload)

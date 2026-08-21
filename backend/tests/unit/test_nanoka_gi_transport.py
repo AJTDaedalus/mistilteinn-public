@@ -275,3 +275,31 @@ async def test_the_lazily_built_client_identifies_the_project_in_its_user_agent(
 
     assert client.headers["user-agent"] == USER_AGENT
     await transport.close()
+
+
+def test_a_non_numeric_index_key_sorts_last_instead_of_crashing():
+    """Keys are the source's, not ours. An unexpected one must not break the whole pass."""
+    index = {"10000002": {}, "beta-preview": {}, "10000005-2": {}}
+
+    assert _index_keys(index) == ["10000002", "10000005-2", "beta-preview"]
+
+
+async def test_a_dropped_connection_is_retried_like_a_500(monkeypatch):
+    """A seed is ~1,100 requests; one reset connection must not end the run."""
+    monkeypatch.setattr("app.data.importers.nanoka_gi_importer.asyncio.sleep", AsyncMock())
+    attempts = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise httpx.ConnectError("connection reset", request=request)
+        return httpx.Response(200, json={"served": attempts})
+
+    transport = HttpNanokaTransport(
+        version="7.0.51",
+        client=httpx.AsyncClient(transport=httpx.MockTransport(handler)),
+    )
+
+    assert await transport.fetch_detail("character", "10000002") == {"served": 2}
+    assert attempts == 2

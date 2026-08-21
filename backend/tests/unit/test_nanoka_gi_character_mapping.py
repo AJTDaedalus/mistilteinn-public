@@ -195,3 +195,38 @@ def test_a_list_unlock_becomes_a_condition_and_leaves_the_gate_null(traveler):
     assert condition["unlock_ascension"] is None
     assert condition["unlock_condition_ids"] == [603101]
     assert [row["unlock_ascension"] for row in rows] == [1, 4, None]
+
+
+def test_an_unmappable_character_rarity_raises(ayaka):
+    """`Rarity.parse` warns and returns None; the mapping refuses to store the None."""
+    payload = dict(ayaka)
+    payload["rarity"] = "QUALITY_RAINBOW"
+
+    with pytest.raises(NanokaMappingError, match="unmappable rarity"):
+        character_fields("10000002", payload)
+
+
+def test_an_energy_cost_row_with_no_param_reference_is_skipped():
+    """A malformed label must not crash the whole character over one description row."""
+    payload = {
+        "skills": [
+            {
+                "id": 1,
+                "promote": {
+                    "0": {
+                        "level": 1,
+                        "icon": "Skill_E_Test",
+                        "desc": ["Energy Cost", "Energy Cost|{param1:I}"],
+                        "param": [40],
+                    },
+                },
+            },
+        ],
+    }
+
+    assert burst_energy_cost(payload) == 40
+
+
+def test_a_skill_with_no_promote_entries_classifies_as_nothing():
+    """`skills: []` exists (two Traveler bodies); an empty `promote` should not crash."""
+    assert classify_talent({"id": 1, "promote": {}}) is None
