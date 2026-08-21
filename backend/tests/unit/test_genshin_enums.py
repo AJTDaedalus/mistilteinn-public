@@ -168,6 +168,35 @@ def test_known_absent_values_do_not_warn(caplog, known):
     assert caplog.text == ""
 
 
+def test_stat_keys_are_matched_case_insensitively():
+    """`stats_modifier.ascension` lower-cases the same props the rest of the payload upper-cases.
+
+    Ayaka's ascension rows are keyed `fight_prop_base_hp` / `fight_prop_critical_hurt`, while
+    `weapon_prop` and artifact `add_props` use `FIGHT_PROP_BASE_ATTACK` etc. Case-sensitive
+    matching would make every character's ascension stat unmappable.
+    """
+    ascension = _load("detail/character_10000002.json")["stats_modifier"]["ascension"]
+    keys = set(ascension[0])
+    assert any(k.islower() for k in keys), "fixture no longer lower-cases ascension keys"
+    for key in keys:
+        assert stat_type_for(key) is not None, key
+    assert stat_type_for("fight_prop_critical_hurt") is StatType.CRIT_DMG
+    assert stat_type_for("fight_prop_none") is None
+
+
+def test_the_ascension_stat_is_the_key_that_is_not_a_base_stat():
+    """How D.3 finds `ascension_stat_type`: whatever is left after the three base stats."""
+    ascension = _load("detail/character_10000002.json")["stats_modifier"]["ascension"]
+    base = {StatType.BASE_HP, StatType.BASE_ATK, StatType.BASE_DEF}
+    extras = {
+        stat_type_for(k)
+        for k in ascension[0]
+        if stat_type_for(k) is not None and stat_type_for(k) not in base
+    }
+    # Ayaka ascends on Crit DMG.
+    assert extras == {StatType.CRIT_DMG}
+
+
 # ── TalentType ────────────────────────────────────────────────────────────────
 
 

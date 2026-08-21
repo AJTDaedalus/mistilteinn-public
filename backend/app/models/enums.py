@@ -257,7 +257,12 @@ class StatType(enum.StrEnum):
     ATK_PCT = "FIGHT_PROP_ATTACK_PERCENT"
     DEF_FLAT = "FIGHT_PROP_DEFENSE"
     DEF_PCT = "FIGHT_PROP_DEFENSE_PERCENT"
+    # The three "base" props a character's ascension rows are keyed by, plus the weapon's
+    # base ATK. Added after `test_stat_keys_are_matched_case_insensitively` warned on
+    # `fight_prop_base_defense` — the unmapped-key path finding a real gap on its first use.
+    BASE_HP = "FIGHT_PROP_BASE_HP"
     BASE_ATK = "FIGHT_PROP_BASE_ATTACK"
+    BASE_DEF = "FIGHT_PROP_BASE_DEFENSE"
 
     ELEMENTAL_MASTERY = "FIGHT_PROP_ELEMENT_MASTERY"
     ENERGY_RECHARGE = "FIGHT_PROP_CHARGE_EFFICIENCY"
@@ -308,13 +313,20 @@ _ABSENT_STAT_KEYS = frozenset({None, "", "FIGHT_PROP_NONE"})
 def stat_type_for(raw: str | None) -> StatType | None:
     """Map a `FIGHT_PROP_*` key, returning None for the two "absent" encodings.
 
+    **Case-insensitive, because the source is not consistent.** `weapon_prop[].prop_type`
+    and `affix[].add_props[].prop_type` are UPPER_CASE, but
+    `stats_modifier.ascension[]` keys the very same properties in lower_case
+    (`fight_prop_critical_hurt`). Matching case-sensitively would make every character's
+    ascension stat silently unmappable — and it would warn 150 times while doing it, which
+    is the sort of noise that gets a warning path switched off.
+
     An unrecognised key warns and returns None — it is never silently dropped, which is
     DESIGN §3's requirement for Chunk C: a new patch's new prop shows up as a log line.
     """
-    if raw in _ABSENT_STAT_KEYS:
+    if raw in _ABSENT_STAT_KEYS or (isinstance(raw, str) and raw.upper() in _ABSENT_STAT_KEYS):
         return None
     try:
-        return StatType(raw)
+        return StatType(raw.upper() if isinstance(raw, str) else raw)
     except ValueError:
         logger.warning(
             "Unmapped stat key %r — nanoka payload carries a FIGHT_PROP this build does "
