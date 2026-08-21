@@ -173,7 +173,7 @@ Each task below is **one commit**. Commit message form:
   `AnomalyStats` from it); delete `app/data/loaders/` entirely.
 - **Accept:** `app/data/` holds `__init__.py`, `importers/{__init__,base_importer}.py`.
 
-### B.9 — Delete `scripts/dimbreath/` and the ZZZ scripts
+### [x] B.9 — Delete `scripts/dimbreath/` and the ZZZ scripts
 - **Do:** delete `backend/scripts/dimbreath/` (Chunk E re-ports it from `/root/fairy`) and the
   ZZZ audit/backfill/icon/crossval scripts: `audit_*`, `backfill_*`, `bench_stateful.py`,
   `diag_ysg3.py`, `download_*_icons.py` (**note: these write into `/root/fairy/frontend/public/icons`
