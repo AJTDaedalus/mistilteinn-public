@@ -168,7 +168,7 @@ Each task below is **one commit**. Commit message form:
   `team.py`. Keep `base.py`, `optimization_job.py`, `session.py`, `user.py`.
 - **Accept:** import clean; surviving repository tests pass.
 
-### B.8 — Delete the ZZZ data layer
+### [x] B.8 — Delete the ZZZ data layer
 - **Do:** delete every `app/data/importers/*.py` except `base_importer.py` (and strip
   `AnomalyStats` from it); delete `app/data/loaders/` entirely.
 - **Accept:** `app/data/` holds `__init__.py`, `importers/{__init__,base_importer}.py`.
