@@ -131,7 +131,7 @@ Each task below is **one commit**. Commit message form:
   and that each file is **deleted when its port lands**.
 - **Accept:** `rg -n "services\._ported" app/` returns only the README; ruff excludes it.
 
-### B.2 — Delete ZZZ services
+### [x] B.2 — Delete ZZZ services
 - **Do:** delete all remaining `app/services/*.py` except `password.py`, `job_runner.py`,
   `__init__.py`, and `_ported/`. That includes `anomaly_simulator.py` (4,471 lines),
   `snapshot_builder.py`, `damage_calculator.py`, `combo_step_resolver.py`, `combo_types.py`,
