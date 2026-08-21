@@ -711,7 +711,23 @@ async def test_deleting_an_artifact_set_does_not_delete_owned_pieces(db_session:
 # ── the main-stat pool is not guessed ─────────────────────────────────────────
 
 
-def test_main_stats_for_raises_until_chunk_e_populates_the_table():
-    """An empty pool must fail loudly, not read as "this slot allows nothing"."""
-    with pytest.raises(ArtifactMainStatPoolUnavailableError, match="Chunk E"):
-        main_stats_for(ArtifactSlot.SANDS)
+def test_an_absent_main_stat_pool_still_fails_loudly():
+    """E.5 populated the table; the raise is what protects the *next* empty pool.
+
+    C.5's version of this test asserted that every slot raised, which is what "not yet
+    derived" looked like. Now that the snapshot exists, what needs protecting is the
+    other half of the contract: an unpopulated slot must never read as "this slot allows
+    nothing", because an optimizer handed an empty candidate set looks like a hard search
+    problem rather than missing data.
+    """
+    from app.models import artifact as artifact_module
+
+    original = artifact_module.MAIN_STAT_POOL
+    artifact_module.MAIN_STAT_POOL = {}
+    try:
+        with pytest.raises(ArtifactMainStatPoolUnavailableError, match="build_snapshot"):
+            main_stats_for(ArtifactSlot.SANDS)
+    finally:
+        artifact_module.MAIN_STAT_POOL = original
+
+    assert main_stats_for(ArtifactSlot.SANDS)

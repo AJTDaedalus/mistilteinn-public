@@ -10,6 +10,9 @@ Field provenance: `tests/fixtures/nanoka_gi/artifact.json` (index),
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from sqlalchemy import (
     Case,
     Float,
@@ -26,22 +29,54 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, enum_column, uuid_pk
-from app.models.enums import ArtifactSlot, Rarity, StatType
+from app.models.enums import ArtifactSlot, Rarity, StatType, stat_type_for
+
 
 #: Slot → the main stats that slot can roll, **as data rather than `if` branches** (C.5).
 #:
-#: **Deliberately empty, and deliberately not guessed.** The pools are not in any nanoka
-#: payload: they live in `ReliquaryMainPropExcelConfigData` (weights per prop-depot) joined
-#: to `ReliquaryExcelConfigData` (depot per slot), which is YuanShenResources data and
-#: therefore Chunk E. Writing "flower is always HP, plume is always flat ATK, sands rolls
-#: HP%/ATK%/DEF%/EM/ER…" from memory would produce a table that looks authoritative, is
-#: probably right, and has no citation — which is the exact failure mode CLAUDE.md tells
-#: this repo not to import from fairy.
+#: Loaded from `app/data/yuanshen/snapshot/artifact_main_stat_pools.json`, which E.5
+#: derived from the pinned YuanShenResources commit. C.5 left this empty on purpose rather
+#: than writing "flower is always HP, plume is always flat ATK, sands rolls HP%/ATK%/DEF%/
+#: EM/ER…" from memory — a table that would have looked authoritative, been right, and had
+#: no citation. The snapshot's `note` and
+#: `scripts/yuanshen/build_snapshot.py:derive_main_stat_pools` carry the derivation, which
+#: cross-checks six config tables against each other and refuses to resolve anything it
+#: cannot pin.
 #:
-#: TODO(chunk-E): populate from the committed YuanShenResources snapshot, citing the table
-#: and row ids at the point of definition. `main_stats_for` raises until then, so nothing
-#: can silently proceed on an empty pool.
-MAIN_STAT_POOL: dict[ArtifactSlot, tuple[StatType, ...]] = {}
+#: Still empty if the snapshot file is missing — a broken checkout, not a supported state.
+#: `main_stats_for` raises in that case, and `tests/unit/test_artifact_main_stat_pools.py`
+#: fails, so it cannot pass unnoticed.
+def _load_main_stat_pool() -> dict[ArtifactSlot, tuple[StatType, ...]]:
+    """Read the committed snapshot into `{slot: (stat, …)}`.
+
+    A prop the snapshot names and `StatType` does not is a **hard** error: it means the two
+    halves of this repo disagree about the stat vocabulary, and the optimizer would silently
+    search a smaller space than the game allows.
+    """
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "data" / "yuanshen" / "snapshot" / "artifact_main_stat_pools.json"
+    )
+    if not path.exists():
+        return {}
+    pools = json.loads(path.read_text(encoding="utf-8"))["pools"]
+    loaded: dict[ArtifactSlot, tuple[StatType, ...]] = {}
+    for raw_slot, props in pools.items():
+        stats = []
+        for prop in props:
+            stat = stat_type_for(prop)
+            if stat is None:
+                msg = (
+                    f"{path.name} lists {prop!r} for {raw_slot}, which is not in "
+                    f"app/models/enums.py:StatType"
+                )
+                raise ValueError(msg)
+            stats.append(stat)
+        loaded[ArtifactSlot(raw_slot)] = tuple(stats)
+    return loaded
+
+
+MAIN_STAT_POOL: dict[ArtifactSlot, tuple[StatType, ...]] = _load_main_stat_pool()
 
 
 class ArtifactMainStatPoolUnavailableError(RuntimeError):
@@ -59,8 +94,9 @@ def main_stats_for(slot: ArtifactSlot) -> tuple[StatType, ...]:
     pool = MAIN_STAT_POOL.get(slot)
     if not pool:
         raise ArtifactMainStatPoolUnavailableError(
-            f"No main-stat pool for {slot!r}. MAIN_STAT_POOL is populated in Chunk E from "
-            f"the YuanShenResources snapshot; see app/models/artifact.py.",
+            f"No main-stat pool for {slot!r}. MAIN_STAT_POOL is loaded from "
+            f"app/data/yuanshen/snapshot/artifact_main_stat_pools.json; rebuild it with "
+            f"`cd backend && python -m scripts.yuanshen.build_snapshot`.",
         )
     return pool
 

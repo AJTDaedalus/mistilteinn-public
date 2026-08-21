@@ -98,13 +98,14 @@ Ruff with a comprehensive rule set, pinned to an exact version in `pyproject.tom
 local gate is the CI gate (#135). Run **exactly what CI runs**:
 
 ```bash
-ruff check app/ tests/ scripts/seed_db.py scripts/verify_seed.py scripts/capture_nanoka_fixtures.py
+ruff check app/ tests/ scripts/seed_db.py scripts/verify_seed.py \
+    scripts/capture_nanoka_fixtures.py scripts/yuanshen/
 ```
 
 `scripts/` as a whole is not linted — it carries ~65 pre-existing violations in unrelated
 one-off scripts. Scripts something *depends on* are named individually instead, which is the
 convention fairy used for its harness: an unlinted script that a gate runs is a gate nobody
-trusts. Chunk D adds the three above (D.2/D.7/D.8). fairy also named
+trusts. Chunk D adds the first three (D.2/D.7/D.8) and Chunk E `scripts/yuanshen/`. fairy also named
 `scripts/validate_kits.py` and `scripts/refresh_kit_refs.py`; both are deleted in B.9 and
 their Genshin replacements are re-added to this command in Chunk H (see the `TODO(chunk-H)`
 on the Ruff step in `.github/workflows/test.yml`).
