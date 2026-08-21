@@ -1,0 +1,99 @@
+{
+  "provenance": "SYNTHETIC \u2014 prod job 019f162b unavailable in local DB. Agent + enemy stats queried from local DB (2026-06-30). Wengine: Cloudcleave Radiance S-rank at L60. Combo: simplified Twst1 Ye Shunguang rotation at skill level 12.",
+  "source_job": "019f162b-74a8-75d0-a5d6-a75287889d96",
+  "agent": "Ye Shunguang",
+  "combo_name": "Twst1",
+  "wengine": "Cloudcleave Radiance",
+  "disc_frame": {
+    "32700": 2,
+    "33500": 4
+  },
+  "disc_set_ids": [
+    32700,
+    33500
+  ],
+  "base_build": {
+    "agent_base_atk": 863,
+    "wengine_base_atk": 743,
+    "agent_element": "physical",
+    "agent_specialty": "attack",
+    "agent_name": "Ye Shunguang",
+    "agent_level": 60,
+    "agent_crit_rate": 500,
+    "agent_crit_dmg": 5000,
+    "agent_anomaly_proficiency": 94,
+    "agent_anomaly_mastery": 93,
+    "agent_base_energy_regen": 120,
+    "agent_pen_ratio": 0,
+    "agent_pen_flat": 0
+  },
+  "enemy": {
+    "level": 60,
+    "base_def": 60,
+    "element_res": -2000,
+    "stun_dmg_mult": 20000,
+    "res_map": {
+      "physical": -2000,
+      "fire": 0,
+      "ice": 0,
+      "electric": 0,
+      "ether": 0
+    }
+  },
+  "combo_steps": [
+    {
+      "step_type": "ComboStep",
+      "label": "Swiftedge-H0",
+      "attack_id": "019f104b-e794-78f3-aad0-f50f98c0c618",
+      "attack_name": "Basic Attack: Swiftedge",
+      "scope": "basic",
+      "multiplier": 15970,
+      "element": "physical"
+    },
+    {
+      "step_type": "ComboStep",
+      "label": "Swiftedge-H1",
+      "attack_id": "019f104b-e794-78f3-aad0-f5159c32b1c2",
+      "attack_name": "Basic Attack: Swiftedge",
+      "scope": "basic",
+      "multiplier": 48830,
+      "element": "physical"
+    },
+    {
+      "step_type": "ComboStep",
+      "label": "Swiftedge-H2",
+      "attack_id": "019f104b-e794-78f3-aad0-f5231ddf09c6",
+      "attack_name": "Basic Attack: Swiftedge",
+      "scope": "basic",
+      "multiplier": 25000,
+      "element": "physical"
+    },
+    {
+      "step_type": "ComboStep",
+      "label": "Swiftedge-H3",
+      "attack_id": "019f104b-e794-78f3-aad0-f53ec26e9cd1",
+      "attack_name": "Basic Attack: Swiftedge",
+      "scope": "basic",
+      "multiplier": 73650,
+      "element": "physical"
+    },
+    {
+      "step_type": "ComboStep",
+      "label": "EX",
+      "attack_id": "019f104b-e794-78f3-aad0-f65caea897ae",
+      "attack_name": "EX Special Attack: Enlightened Mind - Return to Dust",
+      "scope": "ex_special",
+      "multiplier": 232270,
+      "element": "physical"
+    },
+    {
+      "step_type": "ComboStep",
+      "label": "Chain",
+      "attack_id": "019f104b-e794-78f3-aad0-f680baf6335d",
+      "attack_name": "Chain Attack: Enlightened Mind - Lure Thunder",
+      "scope": "chain",
+      "multiplier": 181720,
+      "element": "physical"
+    }
+  ]
+}

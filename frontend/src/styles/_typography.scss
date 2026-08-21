@@ -1,0 +1,59 @@
+// Typography rules.
+//
+// Display headings use Bebas Neue (uppercase, tight tracking, slight glow).
+// Numeric / stat readouts default to IBM Plex Mono — disc values, damage
+// totals, anything tabular benefits from the monospace alignment.
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin: 0 0 var(--space-4);
+  line-height: 1;
+}
+
+h1 {
+  font-size: var(--text-3xl);
+  letter-spacing: 0.06em;
+  text-shadow: var(--text-glow);
+}
+
+h2 {
+  font-size: var(--text-2xl);
+  letter-spacing: 0.05em;
+}
+
+h3 {
+  font-size: var(--text-xl);
+}
+
+h4, h5, h6 {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--text-md);
+  letter-spacing: 0.01em;
+  margin: 0 0 var(--space-2);
+  color: var(--ink);
+}
+
+.eyebrow {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--ink);
+}

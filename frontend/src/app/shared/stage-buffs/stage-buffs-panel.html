@@ -1,0 +1,206 @@
+<div class="stage-buffs" data-test="stage-buffs">
+  <header class="stage-buffs__head">
+    <span class="eyebrow">Stage Buffs</span>
+    <span class="stage-buffs__summary mono" data-test="stage-buffs-summary">{{ summary() }}</span>
+  </header>
+
+  <p class="hint">
+    Endgame-mode buffs — Deadly Assault, Shiyu Defense — applied to this run only.
+    They belong to the encounter, not to a build, so they are not saved on any build:
+    save a set as a preset to reuse it.
+  </p>
+
+  @if (error(); as err) {
+    <div class="error mono" data-test="stage-buffs-error">! {{ err }}</div>
+  }
+  @if (notice(); as msg) {
+    <div class="notice mono" data-test="stage-buffs-notice">{{ msg }}</div>
+  }
+
+  <ul class="stage-buffs__list">
+    @for (row of rows(); track row.index) {
+      <li class="stage-buff" [class.stage-buff--invalid]="row.problem">
+        <div class="stage-buff__row">
+          <label class="stage-buff__toggle" [title]="row.enabled ? 'Applied' : 'Switched off'">
+            <input
+              type="checkbox"
+              [checked]="row.enabled"
+              (change)="toggleEnabled(row, $any($event.target).checked)"
+              [attr.data-test]="'stage-buff-enabled-' + row.index"
+            />
+          </label>
+
+          <input
+            type="text"
+            class="stage-buff__label"
+            placeholder="e.g. DA Stage 3: Ice DMG"
+            [value]="row.buff.label"
+            (change)="setLabel(row, $any($event.target).value)"
+            [attr.data-test]="'stage-buff-label-' + row.index"
+          />
+
+          <!-- `selected` per option, not `[value]` on the select: the options are
+               rendered by @for AFTER the select's own bindings are applied, so a
+               `[value]` binding resolves against an empty option list and silently falls
+               back to the first entry (same pitfall as build-editor-form.html:117). Here
+               that would have shown every row as the alphabetically-first stat until the
+               served option list arrived. -->
+          <select
+            class="stage-buff__stat"
+            (change)="setStat(row, $any($event.target).value)"
+            [attr.data-test]="'stage-buff-stat-' + row.index"
+          >
+            @for (opt of statOptions(); track opt.stat) {
+              <option [value]="opt.stat" [selected]="opt.stat === row.buff.stat">
+                {{ opt.label }}
+              </option>
+            }
+          </select>
+
+          <span class="stage-buff__value">
+            <input
+              type="number"
+              class="stage-buff__value-input mono"
+              [value]="row.inputValue"
+              (change)="setValue(row, +$any($event.target).value)"
+              [attr.data-test]="'stage-buff-value-' + row.index"
+            />
+            @if (row.isPercent) {
+              <span class="stage-buff__unit">%</span>
+            }
+          </span>
+
+          <select
+            class="stage-buff__target"
+            [value]="row.buff.target"
+            (change)="setTarget(row, $any($event.target).value)"
+            [attr.data-test]="'stage-buff-target-' + row.index"
+          >
+            <option value="team">Whole squad</option>
+            <option value="self">DPS only</option>
+          </select>
+
+          <select
+            class="stage-buff__condition"
+            (change)="setCondition(row, $any($event.target).value)"
+            [attr.data-test]="'stage-buff-condition-' + row.index"
+          >
+            @for (c of CONDITION_OPTIONS; track c.value) {
+              <option [value]="c.value" [selected]="c.value === row.condition">
+                {{ c.label }}
+              </option>
+            }
+          </select>
+
+          <button
+            type="button"
+            class="stage-buff__remove"
+            (click)="removeBuff(row.index)"
+            [attr.data-test]="'stage-buff-remove-' + row.index"
+            aria-label="Remove stage buff"
+          >
+            ×
+          </button>
+        </div>
+
+        <div class="stage-buff__foot">
+          <span class="stage-buff__resolved stat-value" [attr.data-test]="'stage-buff-resolved-' + row.index">
+            {{ row.statLabel }} {{ row.contribution }}
+          </span>
+          <span class="stage-buff__id mono">{{ row.id }}</span>
+          @if (row.problem) {
+            <span class="stage-buff__problem" [attr.data-test]="'stage-buff-problem-' + row.index">
+              {{ row.problem }}
+            </span>
+          }
+        </div>
+      </li>
+    } @empty {
+      <li class="hint stage-buffs__empty">No stage buffs. Add one, or apply a preset.</li>
+    }
+  </ul>
+
+  <div class="stage-buffs__actions">
+    <button type="button" (click)="addBuff()" data-test="stage-buff-add">+ Add stage buff</button>
+    @if (rows().length > 0) {
+      <button type="button" class="ghost" (click)="clearAll()" data-test="stage-buff-clear">
+        Clear all
+      </button>
+    }
+  </div>
+
+  @if (hasProblems()) {
+    <p class="error mono" data-test="stage-buffs-blocked">
+      Fix the highlighted buffs — the server rejects a stage buff it cannot address.
+    </p>
+  }
+
+  <section class="presets">
+    <header class="presets__head">
+      <span class="eyebrow">Presets</span>
+      <p class="hint">
+        Applying a preset <strong>copies</strong> its buffs into this run. There is no
+        live link afterwards — editing the preset later does not change any result you
+        already calculated.
+      </p>
+    </header>
+
+    <div class="presets__row">
+      <select
+        class="presets__select"
+        (change)="selectedPresetId.set($any($event.target).value)"
+        data-test="preset-select"
+      >
+        <option value="" [selected]="selectedPresetId() === ''">Select a preset…</option>
+        @for (p of presetList(); track p.id) {
+          <option [value]="p.id" [selected]="p.id === selectedPresetId()">{{ p.name }}</option>
+        }
+      </select>
+      <button
+        type="button"
+        [disabled]="!selectedPresetId() || busy()"
+        (click)="applyPreset()"
+        data-test="preset-apply"
+      >
+        Apply (copy)
+      </button>
+      <button
+        type="button"
+        class="ghost"
+        [disabled]="!selectedPresetId() || busy()"
+        (click)="updateSelectedPreset()"
+        data-test="preset-update"
+      >
+        Overwrite with this run
+      </button>
+      <button
+        type="button"
+        class="ghost"
+        [disabled]="!selectedPresetId() || busy()"
+        (click)="deleteSelectedPreset()"
+        data-test="preset-delete"
+      >
+        Delete
+      </button>
+    </div>
+
+    <div class="presets__row">
+      <input
+        type="text"
+        class="presets__name"
+        placeholder="New preset name, e.g. DA 2.1 Stage 3"
+        [value]="newPresetName()"
+        (change)="newPresetName.set($any($event.target).value)"
+        data-test="preset-name"
+      />
+      <button
+        type="button"
+        [disabled]="busy() || hasProblems()"
+        (click)="saveAsPreset()"
+        data-test="preset-save"
+      >
+        Save as preset
+      </button>
+    </div>
+  </section>
+</div>

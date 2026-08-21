@@ -1,0 +1,66 @@
+<div class="slot-picker">
+  <div class="slot-picker__header">
+    <span class="eyebrow slot-picker__slot-label">Slot {{ slotLabel() }}</span>
+    @if (currentDisc()) {
+      <button
+        type="button"
+        class="slot-picker__unequip"
+        (click)="onUnequip()"
+        title="Unequip this disc"
+      >Unequip</button>
+    }
+  </div>
+
+  <button
+    type="button"
+    class="slot-picker__trigger"
+    (click)="openPicker()"
+    [attr.aria-label]="'Select disc for slot ' + slotLabel()"
+  >
+    @if (currentDisc(); as disc) {
+      <fairy-disc-card
+        [disc]="disc"
+        [setNames]="setNames()"
+        [setIcons]="setIcons()"
+        [setTooltips]="setTooltips()"
+        [buildNames]="buildNames()"
+      />
+    } @else {
+      <div class="slot-picker__empty">
+        <span class="eyebrow">Slot {{ slotLabel() }}</span>
+        <span class="slot-picker__empty-hint">Click to equip</span>
+      </div>
+    }
+  </button>
+
+  @if (open()) {
+    <!-- Backdrop click-to-close is a mouse-only convenience; keyboard users
+         already close the native <dialog> via Escape. -->
+    <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+    <div class="disc-modal-backdrop" (click)="closePicker()"></div>
+    <dialog class="disc-modal" open>
+      <header class="disc-modal__header">
+        <h3 class="disc-modal__title">Select disc — Slot {{ slotLabel() }}</h3>
+        <button
+          type="button"
+          class="disc-modal__close"
+          (click)="closePicker()"
+          aria-label="Close"
+        >✕</button>
+      </header>
+      <div class="disc-modal__body">
+        <fairy-disc-list
+          [discs]="discs()"
+          [discSets]="discSets()"
+          [buildNames]="buildNames()"
+          [selectedDiscId]="currentDisc()?.id"
+          [slotConstraint]="slot()"
+          [filters]="pickerFilters()"
+          (filtersChange)="pickerFilters.set($event)"
+          mode="pick"
+          (discSelected)="onSelect($event)"
+        />
+      </div>
+    </dialog>
+  }
+</div>

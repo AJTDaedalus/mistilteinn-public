@@ -1,0 +1,28 @@
+{
+  "anomaly_total": 0,
+  "applied_team_buffs": [],
+  "auto_conditions": [
+    "defense_in_team",
+    "same_attribute_or_faction_in_team",
+    "same_attribute_or_faction_or_stun_in_team",
+    "same_attribute_or_stun_in_team",
+    "same_element_in_team",
+    "stun_in_team"
+  ],
+  "by_category": [
+    {
+      "category": "special",
+      "pct": 100.0,
+      "total": 40015
+    }
+  ],
+  "by_element": [
+    {
+      "element": "physical",
+      "pct": 100.0,
+      "total": 40015
+    }
+  ],
+  "standard_total": 40015,
+  "total_damage": 40015
+}

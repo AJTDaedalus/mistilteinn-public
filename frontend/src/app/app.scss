@@ -1,0 +1,127 @@
+.shell {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
+  padding: 0 var(--space-6);
+}
+
+.shell__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: var(--space-6) 0;
+  border-bottom: 1px solid var(--surface-rule);
+}
+
+.brand {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  column-gap: var(--space-4);
+  align-items: center;
+  text-decoration: none;
+  color: var(--ink);
+
+  &:hover {
+    text-decoration: none;
+    .brand__wordmark {
+      text-shadow: var(--text-glow);
+    }
+  }
+}
+
+.brand__emblem {
+  grid-row: 1 / 3;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 12px rgba(79, 182, 255, 0.5));
+}
+
+.brand__wordmark {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  letter-spacing: 0.06em;
+  line-height: 0.9;
+  text-transform: uppercase;
+  transition: text-shadow var(--t-fast) var(--ease);
+}
+
+.brand__sub {
+  align-self: start;
+  margin-top: 2px;
+}
+
+.shell__nav {
+  display: flex;
+  gap: var(--space-6);
+
+  a {
+    font-family: var(--font-display);
+    font-size: var(--text-md);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    padding-bottom: 4px;
+    border-bottom: 1px solid transparent;
+
+    &:hover {
+      color: var(--cyan);
+      text-decoration: none;
+    }
+
+    &.active {
+      color: var(--ink);
+      border-bottom-color: var(--cyan);
+      text-shadow: var(--text-glow);
+    }
+  }
+}
+
+.identity-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-left: auto;
+  padding-left: var(--space-6);
+  border-left: 1px solid var(--surface-rule);
+}
+
+.identity-chip__name {
+  font-size: var(--text-sm);
+  color: var(--ink-dim);
+  max-width: 16ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identity-chip__signout {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--t-fast) var(--ease);
+
+  &:hover {
+    color: var(--cyan);
+  }
+}
+
+.shell__main {
+  padding: var(--space-8) 0;
+}
+
+.shell__footer {
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--surface-rule);
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+  text-align: right;
+}

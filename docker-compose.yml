@@ -1,0 +1,99 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./docker/postgres_data:/var/lib/postgresql/data
+      - ./docker/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      TEST_DATABASE_URL: ${TEST_DATABASE_URL}
+      TESTING: "false"
+      LOG_LEVEL: info
+      PYTHONPATH: /app
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-include '*.py' --reload-exclude '*.json' --reload-exclude '*.yaml'
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./frontend:/app
+      # Anonymous volumes keep the in-container artifacts from being
+      # masked by the host bind mount.
+      - /app/node_modules
+      - /app/.angular
+    depends_on:
+      - backend
+
+  # ---------------------------------------------------------------------------
+  # cloudflared — Cloudflare Tunnel
+  #
+  # Two profiles:
+  #
+  #   tunnel-quick  (default testing, no domain needed):
+  #     docker compose --profile tunnel-quick up -d cloudflared-quick
+  #     The assigned *.trycloudflare.com URL is printed in the container log.
+  #     URL changes on restart.
+  #
+  #   tunnel  (named tunnel, stable hostname, requires a Cloudflare domain):
+  #     Set CLOUDFLARE_TUNNEL_TOKEN in .env, then:
+  #     docker compose --profile tunnel up -d cloudflared
+  #     See cloudflare/README.md for full setup steps.
+  #
+  # In both cases the tunnel reaches the backend over the internal Docker
+  # network; no inbound ports need to be opened on the host.
+  # ---------------------------------------------------------------------------
+  cloudflared-quick:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    depends_on:
+      - backend
+    command:
+      - tunnel
+      - --no-autoupdate
+      - --url
+      - http://backend:8000
+    profiles:
+      - tunnel-quick
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+    profiles:
+      - tunnel
+
+# postgres_data is now a host bind mount (./docker/postgres_data/) so it
+# survives `docker compose down -v`. No named volume needed.

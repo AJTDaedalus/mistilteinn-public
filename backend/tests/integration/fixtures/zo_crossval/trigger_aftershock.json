@@ -1,0 +1,27 @@
+{
+  "_comment": "Trigger (1361) off-field aftershock proc gate validation. Bare Trigger (M0, L60, no W-engine, no discs) reacts to on-field Burnice EX Specials. 4 EX hits → 2 procs due to 3s cooldown + 2-per-20s window. MV=6780bp (Harmonizing Shot - Tartarus: 2260+4520 bp, DB agent 019e4c7e-65b3-7a91-9600-eb0968172b03, skill_key=Basic hit_index 0+1). Proc count is verifiable independently of Trigger's seeded ATK. Formula-derived; no ZO/Leifa source for Trigger aftershock totals — exact total verified by simulation at time of authoring.",
+  "archetype": "trigger_aftershock",
+  "build_ref": "bare_build:agent=Trigger,M0,L60,no_discs + bare_build:agent=Burnice,M0,L60,no_discs",
+  "source": "formula_derived",
+  "aftershock_gate": {
+    "cooldown_s": 3.0,
+    "max_per_window": 2,
+    "window_s": 20.0,
+    "react_scopes": ["ex_special", "chain", "ultimate", "assist_followup"]
+  },
+  "step_list": [
+    "EX Special Attack: Intense Heat Stirring Method",
+    "EX Special Attack: Intense Heat Stirring Method",
+    "EX Special Attack: Intense Heat Stirring Method",
+    "EX Special Attack: Intense Heat Stirring Method"
+  ],
+  "timing_derivation": "Step duration 2.0s each: t=0 proc1 (CD→3s), t=2 blocked (CD not ready), t=4 proc2 (CD ready, window=[0,4] size=2=cap), t=6 blocked (window full). Net: 2 procs.",
+  "aftershock_proc_counts": {
+    "trigger_harmonizing_shot": {
+      "expected_procs": 2,
+      "min_total": 1,
+      "source": "formula_derived",
+      "formula_notes": "2 × Trigger_ATK × 67.80% × DEF_area. Exact total depends on seeded Trigger base_atk; min_total=1 is a liveness gate only."
+    }
+  }
+}

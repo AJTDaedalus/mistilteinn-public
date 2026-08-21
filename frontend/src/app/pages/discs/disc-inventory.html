@@ -1,0 +1,25 @@
+<section class="page">
+  <header class="page__header">
+    <span class="eyebrow">Inventory · 03</span>
+    <h1>Discs</h1>
+    <p class="page__lede">
+      Browse your disc collection. Filter by slot, main stat, substat, set, or rarity.
+    </p>
+  </header>
+
+  @if (error(); as err) {
+    <div class="error mono">! {{ err }}</div>
+  }
+
+  @if (loading()) {
+    <p class="hint">Loading discs…</p>
+  } @else {
+    <fairy-disc-list
+      [discs]="discs()"
+      [discSets]="discSets()"
+      [filters]="filters()"
+      mode="browse"
+      (filtersChange)="onFiltersChange($event)"
+    />
+  }
+</section>

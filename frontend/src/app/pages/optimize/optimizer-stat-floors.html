@@ -1,0 +1,24 @@
+<div class="stat-floors">
+  <button type="button" class="stat-floors__toggle" (click)="toggle()">
+    Stat floors {{ expanded() ? '▲' : '▾' }}
+  </button>
+
+  @if (expanded()) {
+    <div class="stat-floors__grid">
+      @for (stat of statFloors; track stat.key) {
+        <label class="stat-floors__row">
+          <span class="stat-floors__label">{{ stat.label }}</span>
+          <input
+            type="number"
+            class="stat-floors__input mono"
+            min="0"
+            [max]="stat.max"
+            [value]="getValue(stat.key)"
+            #statInput
+            (change)="setValue(stat.key, statInput.value)"
+          />
+        </label>
+      }
+    </div>
+  }
+</div>

@@ -1,0 +1,49 @@
+# Version control
+.git
+.gitignore
+
+# Environment & secrets
+.env
+.env.*
+*.env
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# Tests & coverage
+tests/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Linting / dev tools
+.ruff_cache/
+.mypy_cache/
+.tox/
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Docs & references
+docs/
+references/
+*.md
+
+# Dev scripts not needed at runtime
+generate_additional_overrides.py
+inspect_multi_hits.py
+all_multi_moves.txt

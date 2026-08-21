@@ -1,0 +1,46 @@
+// Reusable retro effects.
+//
+// Scanlines and CRT glow used sparingly — overuse turns the chrome from
+// 'distinct' to 'noisy'. Apply scanlines to hero panels and surfaces with
+// long dwell time; skip on dense data tables.
+
+@mixin scanlines($opacity: 0.06, $size: 3px) {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, $opacity) 0,
+      rgba(255, 255, 255, $opacity) 1px,
+      transparent 1px,
+      transparent $size
+    );
+    mix-blend-mode: overlay;
+  }
+}
+
+@mixin halo-border {
+  border: 1px solid var(--surface-rule);
+  box-shadow: var(--shadow-card);
+
+  &:focus-within,
+  &:hover {
+    border-color: var(--halo);
+    box-shadow: var(--glow-cyan), var(--shadow-card);
+  }
+}
+
+// Vertical light beam, like the Fairy emblem's CRT background.
+@mixin vhs-beam {
+  background:
+    radial-gradient(
+      ellipse 40% 100% at 50% 50%,
+      rgba(79, 182, 255, 0.08),
+      transparent 70%
+    ),
+    var(--bg-deep);
+}

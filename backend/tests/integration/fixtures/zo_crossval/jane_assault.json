@@ -1,0 +1,68 @@
+{
+  "_comment": "Golden fixture for Jane bare build (M0, L60, no W-engine, no discs) — Physical/Assault. All values formula-derived and independently verified. ZO repo 464e7a2 has only a README; no ZO UI capture was performed.",
+  "archetype": "jane_assault",
+  "build_ref": "bare_build:agent=Jane,M0,L60,no_discs",
+  "zo_commit": "464e7a2",
+  "stat_line": {
+    "atk": 880,
+    "crit_rate_pct": 5.0,
+    "crit_dmg_pct": 50.0,
+    "anomaly_proficiency": 114,
+    "anomaly_mastery": 112,
+    "pen_flat": 0,
+    "pen_ratio_pct": 0.0,
+    "physical_dmg_pct": 0.0
+  },
+  "enemy": {
+    "level": 70,
+    "defense": 953,
+    "physical_res": 0
+  },
+  "events": [
+    {
+      "kind": "hit",
+      "element": "physical",
+      "ordinal": 0,
+      "move_name": "Basic Attack: Dancing Blades",
+      "hit_index": 0,
+      "expected": 32,
+      "source": "formula_derived",
+      "formula": "base=floor(880*7240/10000)=637; *10000(no_dmg_bonus)=637; *10250(crit_1.025)=652; *498(def_area)/10000=32",
+      "formula_notes": "MV@L12=3610+330*11=7240; DEF_area=794*10000//(953*794//50+794)=498; crit_area=10000+500*5000//10000=10250. ATK=880 = L60 base 805 (base_atk 127 + growth 76728bp*59//10000 + promotion_stats[5].atk 226) + 75 flat ATK from core_stats[5] at core level 5 — ZO Characters/Jane.json coreStats agrees. The prior 806 omitted the core flat ATK.",
+      "tolerance_pct": 1.0
+    },
+    {
+      "kind": "hit",
+      "element": "physical",
+      "ordinal": 5,
+      "move_name": "Basic Attack: Dancing Blades",
+      "hit_index": 5,
+      "expected": 261,
+      "source": "formula_derived",
+      "formula": "base=floor(880*58280/10000)=5128; *10250(crit)=5256; *498(def_area)/10000=261",
+      "formula_notes": "MV@L12=29130+2650*11=58280",
+      "tolerance_pct": 1.0
+    },
+    {
+      "kind": "anomaly_tick",
+      "element": "physical",
+      "ordinal": 0,
+      "move_name": "Assault",
+      "expected": 710,
+      "source": "formula_derived",
+      "formula": "base=floor(880*71300/10000)=6274; *10000(no_boost)=6274; *498(def)/10000=312; *11400(AP_area)/10000=355; *20000(level_area)/10000=710; *10000(no_anomaly_boost)/10000=710",
+      "formula_notes": "Assault MV=713%; AP_area=114*100=11400 (Jane's DB base_anomaly_proficiency is 114 — the prior fixture had proficiency/mastery transposed); level_area=10000+10000*(60-1)//59=20000; no anomaly_dmg_bonus for bare Jane; 1 proc (instant)",
+      "leifa_ref": "references/DMG Formula for Anomaly, Disorder and Vortex Leifa.html — Assault 713% base mult",
+      "tolerance_pct": 1.0
+    }
+  ],
+  "proc_counts": {
+    "assault": {
+      "expected_procs": 2,
+      "expected_total": 1420,
+      "source": "formula_derived",
+      "leifa_ref": "references/DMG Formula for Anomaly, Disorder and Vortex Leifa.html — Assault is instant (1 proc PER INSTANCE)",
+      "_comment": "CORRECTED 2026-07-31. This field counts anomaly_tick events across the WHOLE rotation, not procs per Assault instance, and the two are different claims. The Leifa citation supports 'one Assault instance deals 1 proc' — it says nothing about how many instances a 3x Dancing Blades rotation produces. The previous value of 1 was frozen while the simulator silently swallowed same-element re-triggers (fixed in #145), so the two claims coincided by accident and the fixture recorded the bug as truth. This rotation legitimately crosses the physical threshold twice: instances land at t=0.30 and t=3.30, exactly the 3.0s per-attribute anomaly cooldown apart, i.e. the second fires at the first legal instant. Per-instance damage is unchanged at 710 — the same formula-derived value this fixture already documents — so only the count moved."
+    }
+  }
+}

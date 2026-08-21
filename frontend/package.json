@@ -1,0 +1,53 @@
+{
+  "name": "fairy",
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "prestart": "npm run codegen",
+    "start": "ng serve",
+    "prebuild": "npm run codegen",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "pretest": "npm run codegen",
+    "test": "ng test",
+    "openapi:fetch": "curl -sf http://localhost:8000/openapi.json -o openapi.json",
+    "codegen": "openapi-typescript ./openapi.json --output ./src/app/api/api.types.ts",
+    "lint": "ng lint"
+  },
+  "private": true,
+  "packageManager": "npm@11.9.0",
+  "dependencies": {
+    "@angular/cdk": "^21.2.12",
+    "@angular/common": "^21.2.19",
+    "@angular/compiler": "^21.2.19",
+    "@angular/core": "^21.2.19",
+    "@angular/forms": "^21.2.19",
+    "@angular/platform-browser": "^21.2.19",
+    "@angular/router": "^21.2.19",
+    "openapi-fetch": "^0.17.0",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^21.2.8",
+    "@angular/cli": "^21.2.8",
+    "@angular/compiler-cli": "^21.2.19",
+    "@eslint/js": "^10.0.1",
+    "angular-eslint": "21.4.0",
+    "eslint": "^10.3.0",
+    "jsdom": "^28.0.0",
+    "openapi-typescript": "^7.13.0",
+    "prettier": "^3.8.1",
+    "typescript": "~5.9.2",
+    "typescript-eslint": "8.59.2",
+    "vitest": "^4.0.8"
+  },
+  "overrides": {
+    "@angular/build": {
+      "undici": "^7.29.0"
+    },
+    "@redocly/openapi-core": {
+      "js-yaml": "^4.3.1"
+    }
+  }
+}

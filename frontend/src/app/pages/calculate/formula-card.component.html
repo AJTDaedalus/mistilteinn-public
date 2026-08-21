@@ -1,0 +1,34 @@
+@if (showCard()) {
+  <div class="formula-card">
+    @if (formulaRow(); as f) {
+      <div class="formula-card__block">
+        <div class="formula-card__row formula-card__row--eq">
+          <span class="formula-card__label">{{ f.label }}</span>
+          <span class="formula-card__eq">= {{ f.eq }}</span>
+        </div>
+        <div class="formula-card__row formula-card__row--result">
+          <span class="formula-card__label"></span>
+          <span class="formula-card__eq">
+            = {{ f.substituted }} = <span class="mono formula-card__total">{{ f.result }}</span>
+            @if (f.capNote) {
+              <span class="formula-card__cap">({{ f.capNote }})</span>
+            }
+          </span>
+        </div>
+      </div>
+    }
+
+    @if (anomalyCritLines(); as c) {
+      <div class="formula-card__block">
+        <div class="formula-card__row formula-card__row--eq">
+          <span class="formula-card__label">Crit</span>
+          <span class="formula-card__eq">= 1 + Rate × DMG</span>
+        </div>
+        <div class="formula-card__row formula-card__row--result">
+          <span class="formula-card__label"></span>
+          <span class="formula-card__eq">= 1 + <span class="mono">{{ c.ratePct }}</span> × <span class="mono">{{ c.dmgPct }}</span> = <span class="mono formula-card__total">{{ c.totalMult }}</span></span>
+        </div>
+      </div>
+    }
+  </div>
+}

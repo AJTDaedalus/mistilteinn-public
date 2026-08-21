@@ -1,0 +1,91 @@
+.jobs-list {
+  margin-top: 1rem;
+
+  &__empty {
+    color: var(--color-text-muted, #666);
+    font-style: italic;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+
+    th, td {
+      padding: 0.4rem 0.6rem;
+      text-align: left;
+      border-bottom: 1px solid var(--color-border, rgba(255,255,255,0.1));
+    }
+
+    th {
+      color: var(--color-text-muted, #aaa);
+      font-weight: normal;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  }
+
+  &__row--terminal {
+    opacity: 0.8;
+  }
+
+  &__badge {
+    display: inline-block;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+
+    &--queued    { background: rgba(100,100,200,0.3); color: #aaf; }
+    &--running   { background: rgba(100,200,100,0.3); color: #afa; }
+    &--succeeded { background: rgba(0,180,100,0.3);   color: #5fa; }
+    &--failed    { background: rgba(200,50,50,0.3);   color: #faa; }
+    &--cancelled { background: rgba(150,150,50,0.3);  color: #ffa; }
+  }
+
+  &__progress {
+    position: relative;
+    height: 1rem;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    min-width: 80px;
+    overflow: hidden;
+  }
+
+  &__progress-bar {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: var(--color-accent, #0af);
+    transition: width 0.3s ease;
+  }
+
+  &__progress-label {
+    position: relative;
+    font-size: 0.7rem;
+    line-height: 1rem;
+    padding: 0 0.3rem;
+    color: #fff;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 0.4rem;
+  }
+}
+
+.btn-small {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  border: 1px solid var(--color-border, rgba(255,255,255,0.2));
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 3px;
+
+  &:hover { background: rgba(255,255,255,0.1); }
+
+  &--danger { border-color: rgba(200,50,50,0.4); color: #faa; }
+  &--danger:hover { background: rgba(200,50,50,0.2); }
+}

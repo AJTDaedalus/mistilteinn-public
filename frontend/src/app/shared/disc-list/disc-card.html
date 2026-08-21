@@ -1,0 +1,50 @@
+<article
+  class="disc-card"
+  [class.disc-card--selected]="selected()"
+  [class.disc-card--equipped]="!!equippedBuildName()"
+>
+  <header class="disc-card__head">
+    @if (iconUrl(); as url) {
+      <img
+        [src]="url"
+        class="disc-card__icon"
+        alt=""
+        (error)="$any($event.target).style.display='none'"
+      />
+    }
+    <span class="disc-card__slot eyebrow">{{ slotLabel() }}</span>
+    <span class="disc-card__set" [title]="setTooltip()">{{ setName() }}</span>
+    <span class="disc-card__rarity" [ngClass]="'rarity-' + disc().rarity">
+      {{ disc().rarity }}
+    </span>
+    <span class="disc-card__level mono">Lv {{ disc().level }}</span>
+  </header>
+
+  <div class="disc-card__main">
+    <span class="disc-card__main-label">{{ mainLabel() }}</span>
+    <span class="disc-card__main-value stat-value">{{ mainValue() }}</span>
+  </div>
+
+  @if (substats().length > 0) {
+    <ul class="disc-card__subs">
+      @for (s of substats(); track s.stat) {
+        <li class="disc-card__sub">
+          <span class="disc-card__sub-label">{{ subLabel(s) }}</span>
+          <span class="disc-card__sub-dots" aria-hidden="true">
+            @for (d of rollDots(s); track $index) {
+              <span class="disc-card__dot"></span>
+            }
+          </span>
+          <span class="disc-card__sub-value stat-value">{{ subValue(s) }}</span>
+        </li>
+      }
+    </ul>
+  }
+
+  @if (equippedBuildName(); as buildName) {
+    <footer class="disc-card__equipped">
+      <span class="eyebrow">Equipped</span>
+      <span class="disc-card__build-name">{{ buildName }}</span>
+    </footer>
+  }
+</article>

@@ -1,0 +1,156 @@
+@use '../../../styles/effects' as fx;
+
+.login-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: var(--space-12);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--surface);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-2);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  @include fx.scanlines(0.04);
+}
+
+.login-card__title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.login-card__lede {
+  color: var(--ink-dim);
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.login-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.login-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--surface-rule);
+}
+
+.login-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  cursor: pointer;
+  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+
+  &.active {
+    color: var(--ink);
+    border-bottom-color: var(--cyan);
+    text-shadow: var(--text-glow);
+    box-shadow: 0 0 8px var(--halo);
+  }
+
+  &:hover:not(.active) {
+    color: var(--cyan);
+  }
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.field__label {
+  font-size: var(--text-xs);
+  color: var(--ink-dim);
+
+  .ink-faint {
+    color: var(--ink-faint);
+  }
+}
+
+.field__input {
+  background: var(--bg);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  padding: var(--space-3);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-family: var(--font-body);
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: var(--halo);
+    box-shadow: var(--glow-cyan);
+  }
+
+  &.mono {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+}
+
+.login-error {
+  color: #ff6b6b;
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+.field__input--error {
+  border-color: #ff6b6b;
+}
+
+.field__hint {
+  font-size: var(--text-xs);
+  color: var(--ink-dim);
+
+  &--error {
+    color: #ff6b6b;
+  }
+}
+
+.token-block {
+  background: var(--bg-deep);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  padding: var(--space-4);
+  font-size: var(--text-xs);
+  word-break: break-all;
+  color: var(--cyan-bright);
+  line-height: 1.6;
+}
+
+.token-warn {
+  color: #ffb347;
+  font-size: var(--text-sm);
+  margin: 0;
+}

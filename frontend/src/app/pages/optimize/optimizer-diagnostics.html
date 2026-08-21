@@ -1,0 +1,19 @@
+<div class="diagnostics">
+  @if (isRunning()) {
+    <p class="diagnostics__status eyebrow">Evaluating…</p>
+  }
+
+  @if (errorMessage(); as err) {
+    <div class="diagnostics__error mono">! {{ err }}</div>
+  }
+
+  @if (diagnostics(); as d) {
+    <div class="diagnostics__stats mono">
+      <span>{{ d.evaluated }} evaluated</span>
+      <span class="diagnostics__sep">·</span>
+      <span>{{ d.pruned_sets }} pruned (sets)</span>
+      <span class="diagnostics__sep">·</span>
+      <span>{{ d.pruned_stats }} pruned (stats)</span>
+    </div>
+  }
+</div>

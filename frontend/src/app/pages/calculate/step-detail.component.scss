@@ -1,0 +1,98 @@
+.equation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+}
+
+.equation__sep {
+  color: var(--ink-faint);
+  font-size: var(--text-sm);
+  user-select: none;
+}
+
+// Shared chip shell — used by both the static Base div and clickable buttons.
+.equation__chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-1) var(--space-3);
+  background: var(--surface-hi);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-2);
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: default;
+
+  // Clickable chips (buttons reset browser defaults then opt-in to
+  // hover/focus affordances).
+  &:is(button) {
+    cursor: pointer;
+    transition:
+      background var(--t-fast) var(--ease),
+      border-color var(--t-fast) var(--ease);
+
+    &:hover {
+      background: rgba(79, 182, 255, 0.08);
+      border-color: var(--cyan);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--cyan-bright);
+      outline-offset: 2px;
+    }
+
+    &[aria-expanded='true'],
+    &.equation__chip--active {
+      background: rgba(79, 182, 255, 0.12);
+      border-color: var(--cyan);
+
+      .equation__chip-value {
+        color: var(--cyan-bright);
+      }
+    }
+  }
+}
+
+.equation__chip--base {
+  background: var(--surface);
+  border-color: var(--surface-rule);
+  opacity: 0.7;
+}
+
+.equation__chip-label {
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  line-height: 1;
+}
+
+.equation__chip-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--ink);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+// ── Buff drawer ──────────────────────────────────────────────────────────────
+
+.drawer-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--t-mid) var(--ease);
+
+  &.drawer-wrap--open {
+    grid-template-rows: 1fr;
+  }
+}
+
+.drawer-inner {
+  overflow: hidden;
+  min-height: 0;
+}

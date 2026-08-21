@@ -1,0 +1,272 @@
+<div class="opt">
+
+  @if (selectedJobId(); as jobId) {
+    <optimizer-job-detail
+      [jobId]="jobId"
+      (back)="onBack()"
+      (equip)="onEquipFromJob($event)"
+    />
+  } @else {
+
+  <!-- ── Control bar ─────────────────────────────────────────────────────── -->
+  <div class="opt__bar">
+
+    <div class="opt__field">
+      <label class="opt__label eyebrow" for="opt-team">Team</label>
+      @if (teams().length === 0) {
+        <span class="opt__hint"><a routerLink="/teams/new">Create a team →</a></span>
+      } @else {
+        <select
+          id="opt-team"
+          class="opt__select"
+          [ngModel]="selectedTeamId() ?? ''"
+          (ngModelChange)="onTeamChange($event)"
+          data-test="team-select"
+        >
+          <option value="">— choose —</option>
+          @for (t of teams(); track t.id) {
+            <option [value]="t.id">{{ t.name }}</option>
+          }
+        </select>
+      }
+    </div>
+
+    @if (selectedTeamId()) {
+      @if (teamMemberIndices().length > 1) {
+        <div class="opt__field">
+          <label class="opt__label eyebrow" for="opt-member">Member</label>
+          <select
+            id="opt-member"
+            class="opt__select"
+            [ngModel]="selectedActiveIndex()"
+            (ngModelChange)="selectedActiveIndex.set(+$event)"
+            data-test="member-select"
+          >
+            @for (m of teamMemberIndices(); track m.index) {
+              <option [value]="m.index">{{ m.label }}</option>
+            }
+          </select>
+        </div>
+      }
+
+      <div class="opt__field">
+        <label class="opt__label eyebrow" for="opt-combo">Combo</label>
+        @if (combos().length === 0) {
+          <span class="opt__hint">No combos — <a [routerLink]="['/teams', selectedTeamId()]">add one</a></span>
+        } @else {
+          <select
+            id="opt-combo"
+            class="opt__select"
+            [ngModel]="selectedComboId() ?? ''"
+            (ngModelChange)="selectedComboId.set($event || null)"
+          >
+            <option value="">— choose —</option>
+            @for (c of combos(); track c.id) {
+              <option [value]="c.id">{{ c.name }}</option>
+            }
+          </select>
+        }
+      </div>
+
+      <div class="opt__field">
+        <label class="opt__label eyebrow" for="opt-enemy">Enemy</label>
+        <div class="opt__enemy-tabs" role="tablist" aria-label="Enemy list filter">
+          @for (t of enemyTabs; track t.key) {
+            <button
+              type="button"
+              role="tab"
+              class="opt__enemy-tab"
+              [class.opt__enemy-tab--active]="enemyTab() === t.key"
+              [attr.aria-selected]="enemyTab() === t.key"
+              (click)="onEnemyTabChange(t.key)"
+            >{{ t.label }}</button>
+          }
+        </div>
+        <select
+          id="opt-enemy"
+          class="opt__select"
+          [ngModel]="selectedEnemyId() ?? ''"
+          (ngModelChange)="selectedEnemyId.set($event || null)"
+        >
+          <option value="">— choose —</option>
+          @for (e of filteredEnemies(); track e.id) {
+            <option [value]="e.id">{{ e.name }} Lv{{ e.level }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="opt__run-wrap">
+        <button
+          type="button"
+          class="btn btn-primary opt__run"
+          [disabled]="isRunning()"
+          (click)="run()"
+        >{{ isRunning() ? 'Running…' : '▶ Run' }}</button>
+        @if (runDisabledReason(); as reason) {
+          <span class="opt__run-hint" data-test="run-hint">{{ reason }}</span>
+        }
+      </div>
+    }
+
+  </div>
+
+  @if (errorMessage(); as err) {
+    <div class="opt__error mono">! {{ err }}</div>
+  }
+
+  @for (w of slotWarnings(); track w) {
+    <div class="opt__warn">⚠ {{ w }}</div>
+  }
+
+  <!-- ── Job history (always visible) ────────────────────────────────────── -->
+  <optimizer-jobs-list
+    [jobs]="jobs()"
+    (view)="onViewJob($event)"
+    (delete)="onDeleteJob($event)"
+  />
+
+  @if (selectedTeamId()) {
+
+    <!-- ── Main content ───────────────────────────────────────────────────── -->
+    <div class="opt__body">
+
+      <!-- Left panel: set filter + advanced filters -->
+      <aside class="opt__sidebar">
+
+        <section class="opt__panel">
+          <h3 class="opt__panel-title">Disc Sets</h3>
+          <optimizer-set-filter
+            [allSets]="discSets()"
+            [state]="setFilterState()"
+            (stateChange)="setFilterState.set($event)"
+          />
+        </section>
+
+        <section class="opt__panel opt__panel--collapsible">
+          <h3 class="opt__panel-title">Inventory filters</h3>
+          <optimizer-inventory-filter
+            [state]="inventoryFilterState()"
+            (stateChange)="inventoryFilterState.set($event)"
+          />
+        </section>
+
+        <section class="opt__panel opt__panel--collapsible">
+          <h3 class="opt__panel-title">Stat minimums</h3>
+          <optimizer-stat-floors
+            [minStats]="minStats()"
+            (minStatsChange)="minStats.set($event)"
+          />
+        </section>
+
+        <!-- Stage buffs (#64): you optimize *for* a stage, so the encounter's
+             buffs have to be editable where the run is configured. -->
+        <section class="opt__panel opt__panel--collapsible">
+          <h3 class="opt__panel-title">Stage buffs</h3>
+          <app-stage-buffs-panel />
+        </section>
+
+        <section class="opt__panel opt__panel--collapsible">
+          <h3 class="opt__panel-title">Locked slots</h3>
+          <optimizer-locked-slots
+            [lockedSlots]="lockedSlots()"
+            (lockedSlotsChange)="lockedSlots.set($event)"
+          />
+        </section>
+
+        <section class="opt__panel">
+          <h3 class="opt__panel-title">Disc pool</h3>
+          <div class="opt__scope">
+            <label class="opt__scope-option">
+              <input
+                type="radio"
+                name="inventoryScope"
+                value="this_build"
+                [ngModel]="inventoryScope()"
+                (ngModelChange)="inventoryScope.set($event)"
+              />
+              This build only
+            </label>
+            <label class="opt__scope-option">
+              <input
+                type="radio"
+                name="inventoryScope"
+                value="priority"
+                [ngModel]="inventoryScope()"
+                (ngModelChange)="inventoryScope.set($event)"
+              />
+              Respect priority list
+            </label>
+          </div>
+          @if (inventoryScope() === 'priority') {
+            @if (higherPriorityBuilds().length > 0) {
+              <p class="opt__scope-hint">
+                Discs from higher-priority builds are off-limits:
+                @for (b of higherPriorityBuilds(); track b.id; let last = $last) {
+                  <span class="opt__scope-build">{{ b.id }}</span>@if (!last) {, }
+                }
+              </p>
+            } @else if (selectedBuild()?.optimizer_priority == null) {
+              <p class="opt__scope-hint">This build is unranked — all ranked builds' discs are off-limits.</p>
+            } @else {
+              <p class="opt__scope-hint">No builds outrank this one.</p>
+            }
+          }
+        </section>
+
+        <div class="opt__topn">
+          <label class="opt__label eyebrow" for="opt-topn">Show top</label>
+          <input
+            id="opt-topn"
+            type="number"
+            class="opt__topn-input"
+            [ngModel]="topN()"
+            (ngModelChange)="topN.set(+$event)"
+            min="1" max="200"
+          />
+          <span class="opt__hint">results</span>
+        </div>
+
+
+      </aside>
+
+      <!-- Right panel: results -->
+      <main class="opt__results">
+
+        @if (results().length === 0) {
+          <div class="opt__idle">
+            @if (setFilterState().frames.length === 0) {
+              <p class="opt__hint">Select a 4-piece and a 2-piece set on the left, then hit Run.</p>
+            } @else if (!selectedComboId()) {
+              <p class="opt__hint">Choose a combo above.</p>
+            } @else {
+              <p class="opt__hint">Configure filters, then hit Run.</p>
+            }
+          </div>
+        }
+
+        <optimizer-diagnostics
+          [diagnostics]="diagnostics()"
+          [errorMessage]="errorMessage()"
+          [isRunning]="isRunning()"
+        />
+        <optimizer-results-grid
+          [results]="results()"
+          [currentBuildDamage]="currentBuildDamage()"
+          (equip)="onEquip($event)"
+        />
+
+      </main>
+
+    </div>
+
+  } @else {
+    <div class="opt__empty">
+      <p class="opt__hint">Pick a team above to configure and run the optimizer.</p>
+    </div>
+  }
+
+  } <!-- end @else selectedJobId -->
+
+</div>
+
+<app-toast />

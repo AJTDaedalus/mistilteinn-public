@@ -1,0 +1,968 @@
+==================================================
+Agent: Alice
+==================================================
+Move: Basic Attack: Celestial Overture (6 hits, Key: Basic)
+  - hit_index=0: damage_base=5510, stun_base=3970, energy_gain=14410, anomaly_buildup=2976
+  - hit_index=1: damage_base=8800, stun_base=6980, energy_gain=25380, anomaly_buildup=5213
+  - hit_index=2: damage_base=6610, stun_base=5990, energy_gain=21790, anomaly_buildup=4445
+  - hit_index=3: damage_base=11190, stun_base=10510, energy_gain=38200, anomaly_buildup=7781
+  - hit_index=4: damage_base=13030, stun_base=13170, energy_gain=47870, anomaly_buildup=9720
+  - hit_index=5: damage_base=21830, stun_base=21090, energy_gain=76670, anomaly_buildup=15600
+Move: Basic Attack: Starshine Waltz (3 hits, Key: Basic)
+  - hit_index=0: damage_base=18890, stun_base=5530, energy_gain=0, anomaly_buildup=7816
+  - hit_index=1: damage_base=30440, stun_base=7760, energy_gain=0, anomaly_buildup=10966
+  - hit_index=2: damage_base=96570, stun_base=19720, energy_gain=0, anomaly_buildup=46783
+
+
+==================================================
+Agent: Anby
+==================================================
+Move: Basic Attack: Turbo Volt (4 hits, Key: Basic)
+  - hit_index=0: damage_base=3120, stun_base=1560, energy_gain=5620, anomaly_buildup=0
+  - hit_index=1: damage_base=3370, stun_base=2870, energy_gain=10320, anomaly_buildup=0
+  - hit_index=2: damage_base=11360, stun_base=8960, energy_gain=32260, anomaly_buildup=0
+  - hit_index=3: damage_base=23910, stun_base=18740, energy_gain=67450, anomaly_buildup=17247
+
+
+==================================================
+Agent: Anton
+==================================================
+Move: Basic Attack: Enthusiastic Drills (4 hits, Key: Basic)
+  - hit_index=0: damage_base=6780, stun_base=3390, energy_gain=12200, anomaly_buildup=0
+  - hit_index=1: damage_base=9230, stun_base=7530, energy_gain=27090, anomaly_buildup=0
+  - hit_index=2: damage_base=10980, stun_base=9330, energy_gain=33570, anomaly_buildup=0
+  - hit_index=3: damage_base=22910, stun_base=18140, energy_gain=65300, anomaly_buildup=0
+Move: Basic Attack: Enthusiastic Drills (Burst Mode) (3 hits, Key: Basic)
+  - hit_index=0: damage_base=24090, stun_base=16600, energy_gain=0, anomaly_buildup=17749
+  - hit_index=1: damage_base=46920, stun_base=32330, energy_gain=0, anomaly_buildup=34573
+  - hit_index=2: damage_base=45690, stun_base=31480, energy_gain=0, anomaly_buildup=33668
+
+
+==================================================
+Agent: Aria
+==================================================
+Move: Basic Attack: Perfect Pitch (5 hits, Key: Basic)
+  - hit_index=0: damage_base=18150, stun_base=15430, energy_gain=47520, anomaly_buildup=13200
+  - hit_index=1: damage_base=20720, stun_base=17610, energy_gain=54240, anomaly_buildup=15066
+  - hit_index=2: damage_base=27500, stun_base=11000, energy_gain=36000, anomaly_buildup=13000
+  - hit_index=3: damage_base=4130, stun_base=1650, energy_gain=0, anomaly_buildup=1950
+  - hit_index=4: damage_base=32090, stun_base=11000, energy_gain=36000, anomaly_buildup=17166
+Move: Basic Attack: Sweet Melody (4 hits, Key: Basic)
+  - hit_index=0: damage_base=3320, stun_base=3440, energy_gain=10570, anomaly_buildup=2280
+  - hit_index=1: damage_base=7160, stun_base=6800, energy_gain=21060, anomaly_buildup=4657
+  - hit_index=2: damage_base=9380, stun_base=8230, energy_gain=25610, anomaly_buildup=5804
+  - hit_index=3: damage_base=19420, stun_base=16560, energy_gain=57350, anomaly_buildup=13400
+
+
+==================================================
+Agent: Astra Yao
+==================================================
+Move: Basic Attack: "Capriccio" (4 hits, Key: Basic)
+  - hit_index=0: damage_base=4380, stun_base=4130, energy_gain=6750, anomaly_buildup=3745
+  - hit_index=1: damage_base=5910, stun_base=5640, energy_gain=9230, anomaly_buildup=5125
+  - hit_index=2: damage_base=12090, stun_base=11480, energy_gain=18780, anomaly_buildup=10431
+  - hit_index=3: damage_base=27070, stun_base=21940, energy_gain=35900, anomaly_buildup=19939
+Move: Chord (2 hits, Key: Special)
+  - hit_index=0: damage_base=4600, stun_base=0, energy_gain=0, anomaly_buildup=2977
+  - hit_index=1: damage_base=2400, stun_base=0, energy_gain=0, anomaly_buildup=1032
+
+
+==================================================
+Agent: Avatar_Female_Size01_Norma
+==================================================
+Move: Basic Attack: Engineering Insurance (4 hits, Key: Basic)
+  - hit_index=0: damage_base=3230, stun_base=2080, energy_gain=15370, anomaly_buildup=2839
+  - hit_index=1: damage_base=4360, stun_base=2520, energy_gain=16260, anomaly_buildup=3175
+  - hit_index=2: damage_base=8980, stun_base=4980, energy_gain=30500, anomaly_buildup=6102
+  - hit_index=3: damage_base=15750, stun_base=10230, energy_gain=54920, anomaly_buildup=11681
+Move: EX Special Attack: Firepower Test (2 hits, Key: Special)
+  - hit_index=0: damage_base=5870, stun_base=3850, energy_gain=0, anomaly_buildup=750
+  - hit_index=1: damage_base=6460, stun_base=3080, energy_gain=0, anomaly_buildup=750
+Move: EX Special Attack: Mmhm Barrage (6 hits, Key: Special)
+  - hit_index=0: damage_base=24770, stun_base=16580, energy_gain=0, anomaly_buildup=16506
+  - hit_index=1: damage_base=37160, stun_base=24870, energy_gain=0, anomaly_buildup=24759
+  - hit_index=2: damage_base=40870, stun_base=19900, energy_gain=0, anomaly_buildup=24759
+  - hit_index=3: damage_base=12390, stun_base=8290, energy_gain=0, anomaly_buildup=8253
+  - hit_index=4: damage_base=18580, stun_base=12440, energy_gain=0, anomaly_buildup=12380
+  - hit_index=5: damage_base=20440, stun_base=9950, energy_gain=0, anomaly_buildup=12380
+
+
+==================================================
+Agent: Avatar_Female_Size03_Velina
+==================================================
+Move: Basic Attack: Fan Dance (5 hits, Key: Basic)
+  - hit_index=0: damage_base=4980, stun_base=2280, energy_gain=13440, anomaly_buildup=2065
+  - hit_index=1: damage_base=4870, stun_base=2340, energy_gain=12570, anomaly_buildup=2122
+  - hit_index=2: damage_base=16890, stun_base=8040, energy_gain=42590, anomaly_buildup=7302
+  - hit_index=3: damage_base=12540, stun_base=6280, energy_gain=30620, anomaly_buildup=5704
+  - hit_index=4: damage_base=22460, stun_base=11030, energy_gain=53240, anomaly_buildup=10023
+Move: Basic Attack: Fan Dance - Eye of the Storm (4 hits, Key: Basic)
+  - hit_index=0: damage_base=22540, stun_base=19080, energy_gain=62420, anomaly_buildup=17336
+  - hit_index=1: damage_base=3900, stun_base=8250, energy_gain=0, anomaly_buildup=3750
+  - hit_index=2: damage_base=9750, stun_base=0, energy_gain=0, anomaly_buildup=7500
+  - hit_index=3: damage_base=3250, stun_base=13750, energy_gain=0, anomaly_buildup=3750
+
+
+==================================================
+Agent: Banyue
+==================================================
+Move: Basic Attack: Majestic Summit (4 hits, Key: Basic)
+  - hit_index=0: damage_base=5280, stun_base=4950, energy_gain=0, anomaly_buildup=4500
+  - hit_index=1: damage_base=7040, stun_base=6430, energy_gain=0, anomaly_buildup=5844
+  - hit_index=2: damage_base=13550, stun_base=13190, energy_gain=0, anomaly_buildup=11986
+  - hit_index=3: damage_base=9240, stun_base=9180, energy_gain=0, anomaly_buildup=8345
+Move: Basic Attack: Towering Peaks (4 hits, Key: Basic)
+  - hit_index=0: damage_base=3960, stun_base=3710, energy_gain=0, anomaly_buildup=3372
+  - hit_index=1: damage_base=4980, stun_base=4550, energy_gain=0, anomaly_buildup=4130
+  - hit_index=2: damage_base=10130, stun_base=9860, energy_gain=0, anomaly_buildup=8957
+  - hit_index=3: damage_base=11630, stun_base=11400, energy_gain=0, anomaly_buildup=10362
+
+
+==================================================
+Agent: Ben
+==================================================
+Move: Basic Attack: Debt Reconciliation (3 hits, Key: Basic)
+  - hit_index=0: damage_base=6590, stun_base=4710, energy_gain=16940, anomaly_buildup=0
+  - hit_index=1: damage_base=18900, stun_base=15690, energy_gain=56460, anomaly_buildup=0
+  - hit_index=2: damage_base=34830, stun_base=26010, energy_gain=93630, anomaly_buildup=0
+Move: EX Special Attack: Cashflow Counter (4 hits, Key: Special)
+  - hit_index=0: damage_base=43850, stun_base=24710, energy_gain=0, anomaly_buildup=27099
+  - hit_index=1: damage_base=43850, stun_base=24710, energy_gain=0, anomaly_buildup=27099
+  - hit_index=2: damage_base=50050, stun_base=36760, energy_gain=0, anomaly_buildup=33071
+  - hit_index=3: damage_base=55120, stun_base=36760, energy_gain=0, anomaly_buildup=33071
+Move: Special Attack: Fiscal Fist (2 hits, Key: Special)
+  - hit_index=0: damage_base=4170, stun_base=4170, energy_gain=0, anomaly_buildup=0
+  - hit_index=1: damage_base=23340, stun_base=22340, energy_gain=0, anomaly_buildup=0
+
+
+==================================================
+Agent: Billy
+==================================================
+Move: Basic Attack: Full Firepower (5 hits, Key: Basic)
+  - hit_index=0: damage_base=6800, stun_base=5440, energy_gain=16320, anomaly_buildup=5439
+  - hit_index=1: damage_base=760, stun_base=610, energy_gain=5440, anomaly_buildup=604
+  - hit_index=2: damage_base=6180, stun_base=5470, energy_gain=19690, anomaly_buildup=2903
+  - hit_index=3: damage_base=1270, stun_base=890, energy_gain=3210, anomaly_buildup=889
+  - hit_index=4: damage_base=4950, stun_base=5520, energy_gain=39710, anomaly_buildup=8079
+Move: Dash Attack: Starlight Sanction (2 hits, Key: Dodge)
+  - hit_index=0: damage_base=6300, stun_base=6300, energy_gain=25190, anomaly_buildup=3498
+  - hit_index=1: damage_base=3900, stun_base=1950, energy_gain=7800, anomaly_buildup=4329
+Move: Special Attack: Stand Still (3 hits, Key: Special)
+  - hit_index=0: damage_base=2420, stun_base=2420, energy_gain=0, anomaly_buildup=2414
+  - hit_index=1: damage_base=5170, stun_base=5170, energy_gain=0, anomaly_buildup=2584
+  - hit_index=2: damage_base=5010, stun_base=5010, energy_gain=0, anomaly_buildup=2500
+
+
+==================================================
+Agent: Burnice
+==================================================
+Move: Basic Attack: Direct Flame Blend (5 hits, Key: Basic)
+  - hit_index=0: damage_base=4480, stun_base=1870, energy_gain=6100, anomaly_buildup=1694
+  - hit_index=1: damage_base=4350, stun_base=3080, energy_gain=10070, anomaly_buildup=0
+  - hit_index=2: damage_base=7170, stun_base=4780, energy_gain=15620, anomaly_buildup=4337
+  - hit_index=3: damage_base=6660, stun_base=3040, energy_gain=9920, anomaly_buildup=2754
+  - hit_index=4: damage_base=9630, stun_base=5200, energy_gain=16990, anomaly_buildup=4719
+Move: Basic Attack: Mixed Flame Blend (2 hits, Key: Basic)
+  - hit_index=0: damage_base=12540, stun_base=9650, energy_gain=15780, anomaly_buildup=9598
+  - hit_index=1: damage_base=23280, stun_base=17910, energy_gain=29310, anomaly_buildup=17111
+Move: EX Special Attack: Intense Heat Stirring Method (2 hits, Key: Special)
+  - hit_index=0: damage_base=54380, stun_base=37860, energy_gain=0, anomaly_buildup=41110
+  - hit_index=1: damage_base=9670, stun_base=6570, energy_gain=0, anomaly_buildup=7155
+Move: EX Special Attack: Intense Heat Stirring Method - Double Shot (2 hits, Key: Special)
+  - hit_index=0: damage_base=95810, stun_base=58570, energy_gain=0, anomaly_buildup=53024
+  - hit_index=1: damage_base=28710, stun_base=20780, energy_gain=0, anomaly_buildup=18365
+Move: Special Attack: Intense Heat Aging Method (2 hits, Key: Special)
+  - hit_index=0: damage_base=5780, stun_base=5780, energy_gain=0, anomaly_buildup=5251
+  - hit_index=1: damage_base=6240, stun_base=6240, energy_gain=0, anomaly_buildup=5668
+
+
+==================================================
+Agent: Caesar
+==================================================
+Move: Basic Attack: Rampaging Slash (7 hits, Key: Basic)
+  - hit_index=0: damage_base=4720, stun_base=2130, energy_gain=7720, anomaly_buildup=2142
+  - hit_index=1: damage_base=4090, stun_base=3380, energy_gain=12280, anomaly_buildup=3409
+  - hit_index=2: damage_base=14830, stun_base=11000, energy_gain=39980, anomaly_buildup=11104
+  - hit_index=3: damage_base=11840, stun_base=7360, energy_gain=26760, anomaly_buildup=7432
+  - hit_index=4: damage_base=7880, stun_base=6750, energy_gain=24530, anomaly_buildup=6812
+  - hit_index=5: damage_base=19860, stun_base=13750, energy_gain=49970, anomaly_buildup=13879
+  - hit_index=6: damage_base=39990, stun_base=26260, energy_gain=95490, anomaly_buildup=26524
+Move: EX Special Attack: Parry Counter (2 hits, Key: Special)
+  - hit_index=0: damage_base=38720, stun_base=25260, energy_gain=0, anomaly_buildup=24911
+  - hit_index=1: damage_base=38720, stun_base=25260, energy_gain=0, anomaly_buildup=24911
+
+
+==================================================
+Agent: Cissia
+==================================================
+Move: Basic Attack: Tongue Flick (4 hits, Key: Basic)
+  - hit_index=0: damage_base=7770, stun_base=6030, energy_gain=23520, anomaly_buildup=6530
+  - hit_index=1: damage_base=13870, stun_base=9840, energy_gain=37680, anomaly_buildup=10466
+  - hit_index=2: damage_base=13510, stun_base=8740, energy_gain=32750, anomaly_buildup=9096
+  - hit_index=3: damage_base=25020, stun_base=15910, energy_gain=67440, anomaly_buildup=18732
+Move: EX Special Attack: Venomous Bite (2 hits, Key: Special)
+  - hit_index=0: damage_base=6680, stun_base=3610, energy_gain=0, anomaly_buildup=5459
+  - hit_index=1: damage_base=20040, stun_base=10830, energy_gain=0, anomaly_buildup=16375
+
+
+==================================================
+Agent: Corin
+==================================================
+Move: Basic Attack: Wipeout (5 hits, Key: Basic)
+  - hit_index=0: damage_base=8200, stun_base=4100, energy_gain=14760, anomaly_buildup=4099
+  - hit_index=1: damage_base=7660, stun_base=7020, energy_gain=25260, anomaly_buildup=7016
+  - hit_index=2: damage_base=17920, stun_base=12380, energy_gain=44560, anomaly_buildup=12376
+  - hit_index=3: damage_base=23340, stun_base=18640, energy_gain=67090, anomaly_buildup=18633
+  - hit_index=4: damage_base=42120, stun_base=34200, energy_gain=123100, anomaly_buildup=34194
+Move: EX Special Attack: Skirt Alert (3 hits, Key: Special)
+  - hit_index=0: damage_base=34510, stun_base=20640, energy_gain=0, anomaly_buildup=20333
+  - hit_index=1: damage_base=103520, stun_base=61900, energy_gain=0, anomaly_buildup=61001
+  - hit_index=2: damage_base=34510, stun_base=20640, energy_gain=0, anomaly_buildup=20333
+Move: Quick Assist: Emergency Measures (2 hits, Key: Assist)
+  - hit_index=0: damage_base=8330, stun_base=8330, energy_gain=29990, anomaly_buildup=8329
+  - hit_index=1: damage_base=13170, stun_base=13170, energy_gain=47390, anomaly_buildup=13163
+Move: Special Attack: Clean Sweep (3 hits, Key: Special)
+  - hit_index=0: damage_base=6670, stun_base=6670, energy_gain=0, anomaly_buildup=6668
+  - hit_index=1: damage_base=3750, stun_base=3750, energy_gain=0, anomaly_buildup=3750
+  - hit_index=2: damage_base=2500, stun_base=2500, energy_gain=0, anomaly_buildup=2499
+
+
+==================================================
+Agent: Dialyn
+==================================================
+Move: Basic Attack: Happy to Be of Service (4 hits, Key: Basic)
+  - hit_index=0: damage_base=2560, stun_base=1940, energy_gain=4080, anomaly_buildup=2263
+  - hit_index=1: damage_base=5130, stun_base=4350, energy_gain=8930, anomaly_buildup=4958
+  - hit_index=2: damage_base=6480, stun_base=6160, energy_gain=12370, anomaly_buildup=6871
+  - hit_index=3: damage_base=9950, stun_base=9950, energy_gain=22630, anomaly_buildup=12569
+Move: Basic Attack: Rock, Paper, Scissors (4 hits, Key: Basic)
+  - hit_index=0: damage_base=8950, stun_base=7140, energy_gain=19800, anomaly_buildup=5500
+  - hit_index=1: damage_base=11390, stun_base=9080, energy_gain=25200, anomaly_buildup=7000
+  - hit_index=2: damage_base=10310, stun_base=8220, energy_gain=22800, anomaly_buildup=6333
+  - hit_index=3: damage_base=10030, stun_base=8000, energy_gain=22200, anomaly_buildup=6166
+
+
+==================================================
+Agent: Ellen
+==================================================
+Move: Basic Attack: Flash Freeze Trimming (3 hits, Key: Basic)
+  - hit_index=0: damage_base=9960, stun_base=4880, energy_gain=13580, anomaly_buildup=4435
+  - hit_index=1: damage_base=18400, stun_base=9020, energy_gain=25090, anomaly_buildup=8199
+  - hit_index=2: damage_base=49620, stun_base=24550, energy_gain=64280, anomaly_buildup=22317
+Move: Basic Attack: Glacial Blade Wave (2 hits, Key: Basic)
+  - hit_index=0: damage_base=23020, stun_base=6700, energy_gain=18620, anomaly_buildup=12166
+  - hit_index=1: damage_base=14680, stun_base=8420, energy_gain=23410, anomaly_buildup=4996
+Move: Basic Attack: Icy Blade (2 hits, Key: Basic)
+  - hit_index=0: damage_base=6040, stun_base=2580, energy_gain=8420, anomaly_buildup=2338
+  - hit_index=1: damage_base=1300, stun_base=560, energy_gain=1810, anomaly_buildup=501
+Move: Basic Attack: Saw Teeth Trimming (3 hits, Key: Basic)
+  - hit_index=0: damage_base=4880, stun_base=2440, energy_gain=6790, anomaly_buildup=0
+  - hit_index=1: damage_base=11110, stun_base=8680, energy_gain=24150, anomaly_buildup=0
+  - hit_index=2: damage_base=29730, stun_base=24040, energy_gain=66880, anomaly_buildup=0
+Move: Dash Attack: Arctic Ambush (3 hits, Key: Dodge)
+  - hit_index=0: damage_base=6230, stun_base=6230, energy_gain=20380, anomaly_buildup=5659
+  - hit_index=1: damage_base=12760, stun_base=9820, energy_gain=32110, anomaly_buildup=8919
+  - hit_index=2: damage_base=15820, stun_base=12170, energy_gain=39810, anomaly_buildup=11056
+
+
+==================================================
+Agent: Evelyn
+==================================================
+Move: Basic Attack: Razor Wire (5 hits, Key: Basic)
+  - hit_index=0: damage_base=5120, stun_base=2560, energy_gain=8380, anomaly_buildup=0
+  - hit_index=1: damage_base=6210, stun_base=5380, energy_gain=17610, anomaly_buildup=0
+  - hit_index=2: damage_base=7820, stun_base=6210, energy_gain=20310, anomaly_buildup=0
+  - hit_index=3: damage_base=18670, stun_base=15300, energy_gain=50060, anomaly_buildup=13903
+  - hit_index=4: damage_base=22340, stun_base=16830, energy_gain=55050, anomaly_buildup=15291
+Move: EX Special Attack: Binding Sunder - Final Form (2 hits, Key: Special)
+  - hit_index=0: damage_base=54120, stun_base=43710, energy_gain=0, anomaly_buildup=44462
+  - hit_index=1: damage_base=5960, stun_base=5960, energy_gain=0, anomaly_buildup=5620
+Move: Special Attack: Binding Sunder - First Form (2 hits, Key: Special)
+  - hit_index=0: damage_base=4040, stun_base=4040, energy_gain=0, anomaly_buildup=3664
+  - hit_index=1: damage_base=3400, stun_base=3400, energy_gain=0, anomaly_buildup=3084
+
+
+==================================================
+Agent: Grace
+==================================================
+Move: Basic Attack: High-Pressure Spike (5 hits, Key: Basic)
+  - hit_index=0: damage_base=5510, stun_base=1800, energy_gain=6150, anomaly_buildup=0
+  - hit_index=1: damage_base=5970, stun_base=3470, energy_gain=11890, anomaly_buildup=0
+  - hit_index=2: damage_base=12480, stun_base=7160, energy_gain=24540, anomaly_buildup=6460
+  - hit_index=3: damage_base=18630, stun_base=10720, energy_gain=40810, anomaly_buildup=0
+  - hit_index=4: damage_base=4030, stun_base=4030, energy_gain=13800, anomaly_buildup=0
+
+
+==================================================
+Agent: Harumasa
+==================================================
+Move: Basic Attack: Cloud Piercer (5 hits, Key: Basic)
+  - hit_index=0: damage_base=4240, stun_base=2650, energy_gain=8670, anomaly_buildup=0
+  - hit_index=1: damage_base=3980, stun_base=4430, energy_gain=14500, anomaly_buildup=0
+  - hit_index=2: damage_base=7090, stun_base=6610, energy_gain=21640, anomaly_buildup=0
+  - hit_index=3: damage_base=9010, stun_base=8960, energy_gain=29300, anomaly_buildup=4917
+  - hit_index=4: damage_base=13290, stun_base=11540, energy_gain=37770, anomaly_buildup=6584
+Move: Dash Attack: Hiten no Tsuru - Slash (3 hits, Key: Dodge)
+  - hit_index=0: damage_base=16230, stun_base=6600, energy_gain=10800, anomaly_buildup=4197
+  - hit_index=1: damage_base=16660, stun_base=4590, energy_gain=7510, anomaly_buildup=2916
+  - hit_index=2: damage_base=18960, stun_base=4950, energy_gain=8100, anomaly_buildup=3147
+
+
+==================================================
+Agent: Hugo
+==================================================
+Move: Basic Attack: Dark Abyss Concerto (3 hits, Key: Basic)
+  - hit_index=0: damage_base=14340, stun_base=11030, energy_gain=36090, anomaly_buildup=10023
+  - hit_index=1: damage_base=8670, stun_base=6670, energy_gain=21810, anomaly_buildup=6056
+  - hit_index=2: damage_base=17060, stun_base=13120, energy_gain=42930, anomaly_buildup=11924
+Move: Basic Attack: Dark Abyss Quartet (6 hits, Key: Basic)
+  - hit_index=0: damage_base=4310, stun_base=2160, energy_gain=7050, anomaly_buildup=0
+  - hit_index=1: damage_base=7410, stun_base=5490, energy_gain=17960, anomaly_buildup=0
+  - hit_index=2: damage_base=16960, stun_base=12810, energy_gain=41910, anomaly_buildup=0
+  - hit_index=3: damage_base=14910, stun_base=12580, energy_gain=41150, anomaly_buildup=9581
+  - hit_index=4: damage_base=5860, stun_base=5010, energy_gain=16370, anomaly_buildup=3617
+  - hit_index=5: damage_base=11800, stun_base=9570, energy_gain=31320, anomaly_buildup=7770
+Move: Dodge Counter: Phantasm - Slash (3 hits, Key: Dodge)
+  - hit_index=0: damage_base=24590, stun_base=21450, energy_gain=34200, anomaly_buildup=9500
+  - hit_index=1: damage_base=16210, stun_base=12470, energy_gain=40800, anomaly_buildup=11333
+  - hit_index=2: damage_base=21210, stun_base=16320, energy_gain=53390, anomaly_buildup=14830
+Move: EX Special Attack: Soul Hunter - Punishment (2 hits, Key: Special)
+  - hit_index=0: damage_base=1870, stun_base=43240, energy_gain=0, anomaly_buildup=2254
+  - hit_index=1: damage_base=35450, stun_base=2280, energy_gain=0, anomaly_buildup=42843
+Move: Quick Assist: Elegy (3 hits, Key: Assist)
+  - hit_index=0: damage_base=10450, stun_base=5230, energy_gain=17100, anomaly_buildup=4750
+  - hit_index=1: damage_base=12470, stun_base=6240, energy_gain=20400, anomaly_buildup=5666
+  - hit_index=2: damage_base=16320, stun_base=8160, energy_gain=26700, anomaly_buildup=7415
+
+
+==================================================
+Agent: Jane
+==================================================
+Move: Basic Attack: Dancing Blades (6 hits, Key: Basic)
+  - hit_index=0: damage_base=3610, stun_base=1530, energy_gain=5010, anomaly_buildup=2134
+  - hit_index=1: damage_base=6230, stun_base=4430, energy_gain=14480, anomaly_buildup=5206
+  - hit_index=2: damage_base=8350, stun_base=5950, energy_gain=19460, anomaly_buildup=6878
+  - hit_index=3: damage_base=16340, stun_base=10970, energy_gain=35890, anomaly_buildup=12745
+  - hit_index=4: damage_base=9880, stun_base=6870, energy_gain=22460, anomaly_buildup=7671
+  - hit_index=5: damage_base=29130, stun_base=20000, energy_gain=65430, anomaly_buildup=22662
+Move: Basic Attack: Salchow Jump (2 hits, Key: Basic)
+  - hit_index=0: damage_base=30080, stun_base=22920, energy_gain=74990, anomaly_buildup=27340
+  - hit_index=1: damage_base=16130, stun_base=12290, energy_gain=40200, anomaly_buildup=14656
+Move: Dash Attack: Edge Jump (2 hits, Key: Dodge)
+  - hit_index=0: damage_base=7150, stun_base=3580, energy_gain=11700, anomaly_buildup=3250
+  - hit_index=1: damage_base=7150, stun_base=3580, energy_gain=11700, anomaly_buildup=3250
+Move: Dodge Counter: Swift Shadow (2 hits, Key: Dodge)
+  - hit_index=0: damage_base=34120, stun_base=22920, energy_gain=39000, anomaly_buildup=17767
+  - hit_index=1: damage_base=34120, stun_base=22920, energy_gain=39000, anomaly_buildup=17767
+
+
+==================================================
+Agent: Ju Fufu
+==================================================
+Move: Basic Attack: Tiger Seven Forms - Flaming Claw (4 hits, Key: Basic)
+  - hit_index=0: damage_base=4250, stun_base=4850, energy_gain=15870, anomaly_buildup=0
+  - hit_index=1: damage_base=4520, stun_base=3910, energy_gain=12790, anomaly_buildup=0
+  - hit_index=2: damage_base=3150, stun_base=4850, energy_gain=15860, anomaly_buildup=4404
+  - hit_index=3: damage_base=21840, stun_base=13390, energy_gain=43820, anomaly_buildup=12171
+
+
+==================================================
+Agent: Koleda
+==================================================
+Move: Basic Attack: Smash 'n' Bash (6 hits, Key: Basic)
+  - hit_index=0: damage_base=6360, stun_base=3180, energy_gain=10900, anomaly_buildup=0
+  - hit_index=1: damage_base=7920, stun_base=6550, energy_gain=22460, anomaly_buildup=0
+  - hit_index=2: damage_base=12610, stun_base=10430, energy_gain=35740, anomaly_buildup=0
+  - hit_index=3: damage_base=31740, stun_base=24930, energy_gain=85470, anomaly_buildup=0
+  - hit_index=4: damage_base=16080, stun_base=6140, energy_gain=21050, anomaly_buildup=4435
+  - hit_index=5: damage_base=40490, stun_base=15660, energy_gain=59720, anomaly_buildup=14908
+Move: EX Special Attack: Boiling Furnace (3 hits, Key: Special)
+  - hit_index=0: damage_base=15230, stun_base=15230, energy_gain=0, anomaly_buildup=7248
+  - hit_index=1: damage_base=60600, stun_base=49400, energy_gain=0, anomaly_buildup=47612
+  - hit_index=2: damage_base=66660, stun_base=49400, energy_gain=0, anomaly_buildup=47612
+Move: Special Attack: Hammer Time (3 hits, Key: Special)
+  - hit_index=0: damage_base=5190, stun_base=5190, energy_gain=0, anomaly_buildup=6418
+  - hit_index=1: damage_base=7780, stun_base=7780, energy_gain=0, anomaly_buildup=5918
+  - hit_index=2: damage_base=8550, stun_base=7780, energy_gain=0, anomaly_buildup=5918
+Move: Ultimate: Hammerquake (2 hits, Key: Chain)
+  - hit_index=0: damage_base=154880, stun_base=100490, energy_gain=0, anomaly_buildup=18003
+  - hit_index=1: damage_base=169400, stun_base=109650, energy_gain=0, anomaly_buildup=19066
+
+
+==================================================
+Agent: Lighter
+==================================================
+Move: Basic Attack: L-Form Thundering Fist (16 hits, Key: Basic)
+  - hit_index=0: damage_base=3920, stun_base=1960, energy_gain=6410, anomaly_buildup=0
+  - hit_index=1: damage_base=4800, stun_base=3290, energy_gain=10750, anomaly_buildup=0
+  - hit_index=2: damage_base=5530, stun_base=4670, energy_gain=15260, anomaly_buildup=0
+  - hit_index=3: damage_base=8690, stun_base=6050, energy_gain=19780, anomaly_buildup=0
+  - hit_index=4: damage_base=4770, stun_base=3320, energy_gain=10850, anomaly_buildup=0
+  - hit_index=5: damage_base=5810, stun_base=4040, energy_gain=13210, anomaly_buildup=0
+  - hit_index=6: damage_base=3280, stun_base=2280, energy_gain=7450, anomaly_buildup=0
+  - hit_index=7: damage_base=8900, stun_base=6190, energy_gain=20250, anomaly_buildup=0
+  - hit_index=8: damage_base=7890, stun_base=7610, energy_gain=24910, anomaly_buildup=5505
+  - hit_index=9: damage_base=16360, stun_base=12950, energy_gain=47620, anomaly_buildup=12387
+  - hit_index=10: damage_base=12290, stun_base=8130, energy_gain=27980, anomaly_buildup=7770
+  - hit_index=11: damage_base=10460, stun_base=7950, energy_gain=27380, anomaly_buildup=7605
+  - hit_index=12: damage_base=17720, stun_base=13630, energy_gain=44600, anomaly_buildup=12387
+  - hit_index=13: damage_base=36430, stun_base=8550, energy_gain=27980, anomaly_buildup=7770
+  - hit_index=14: damage_base=11970, stun_base=9210, energy_gain=30120, anomaly_buildup=8366
+  - hit_index=15: damage_base=43540, stun_base=13240, energy_gain=36090, anomaly_buildup=10023
+Move: EX Special Attack: V-Form Sunrise Uppercut - Full Distance (2 hits, Key: Special)
+  - hit_index=0: damage_base=48630, stun_base=40350, energy_gain=0, anomaly_buildup=36764
+  - hit_index=1: damage_base=29270, stun_base=24770, energy_gain=0, anomaly_buildup=22326
+
+
+==================================================
+Agent: Lucia
+==================================================
+Move: Basic Attack: Orbital Combo (7 hits, Key: Basic)
+  - hit_index=0: damage_base=4090, stun_base=6610, energy_gain=21610, anomaly_buildup=3144
+  - hit_index=1: damage_base=2780, stun_base=3670, energy_gain=12020, anomaly_buildup=2025
+  - hit_index=2: damage_base=8350, stun_base=10770, energy_gain=35250, anomaly_buildup=5921
+  - hit_index=3: damage_base=8010, stun_base=11190, energy_gain=31070, anomaly_buildup=5650
+  - hit_index=4: damage_base=17290, stun_base=20760, energy_gain=73500, anomaly_buildup=14224
+  - hit_index=5: damage_base=41250, stun_base=20760, energy_gain=73500, anomaly_buildup=14224
+  - hit_index=6: damage_base=55000, stun_base=0, energy_gain=0, anomaly_buildup=20000
+Move: Dodge Counter: Stardust Echo (2 hits, Key: Dodge)
+  - hit_index=0: damage_base=24830, stun_base=21640, energy_gain=34820, anomaly_buildup=9670
+  - hit_index=1: damage_base=38580, stun_base=21640, energy_gain=34820, anomaly_buildup=9670
+Move: Quick Assist: Crushing Mist (3 hits, Key: Assist)
+  - hit_index=0: damage_base=10640, stun_base=5320, energy_gain=17410, anomaly_buildup=4835
+  - hit_index=1: damage_base=24390, stun_base=5320, energy_gain=17410, anomaly_buildup=4835
+  - hit_index=2: damage_base=55000, stun_base=0, energy_gain=0, anomaly_buildup=20000
+Move: Special Attack: Symphony of the Reaper - Storm (3 hits, Key: Special)
+  - hit_index=0: damage_base=4590, stun_base=4590, energy_gain=0, anomaly_buildup=4165
+  - hit_index=1: damage_base=18340, stun_base=4590, energy_gain=0, anomaly_buildup=4165
+  - hit_index=2: damage_base=55000, stun_base=0, energy_gain=0, anomaly_buildup=20000
+Move: Ultimate: Charge, Great Armor! (2 hits, Key: Chain)
+  - hit_index=0: damage_base=9300, stun_base=7150, energy_gain=0, anomaly_buildup=4875
+  - hit_index=1: damage_base=190270, stun_base=19440, energy_gain=0, anomaly_buildup=17670
+
+
+==================================================
+Agent: Lucy
+==================================================
+Move: Basic Attack: Lady's Bat (5 hits, Key: Basic)
+  - hit_index=0: damage_base=5660, stun_base=2830, energy_gain=10190, anomaly_buildup=0
+  - hit_index=1: damage_base=7780, stun_base=6500, energy_gain=23400, anomaly_buildup=0
+  - hit_index=2: damage_base=18890, stun_base=15740, energy_gain=56660, anomaly_buildup=13401
+  - hit_index=3: damage_base=21150, stun_base=16230, energy_gain=58420, anomaly_buildup=0
+  - hit_index=4: damage_base=27260, stun_base=20800, energy_gain=74880, anomaly_buildup=18625
+Move: EX Special Attack: Home Run! (2 hits, Key: Special)
+  - hit_index=0: damage_base=50840, stun_base=36460, energy_gain=0, anomaly_buildup=33541
+  - hit_index=1: damage_base=53640, stun_base=38960, energy_gain=0, anomaly_buildup=34241
+Move: Guard Boars: To Arms! (3 hits, Key: Basic)
+  - hit_index=0: damage_base=9250, stun_base=1550, energy_gain=0, anomaly_buildup=0
+  - hit_index=1: damage_base=12750, stun_base=2130, energy_gain=0, anomaly_buildup=0
+  - hit_index=2: damage_base=17500, stun_base=2920, energy_gain=0, anomaly_buildup=0
+Move: Special Attack: Solid Hit! (2 hits, Key: Special)
+  - hit_index=0: damage_base=6170, stun_base=6170, energy_gain=0, anomaly_buildup=6165
+  - hit_index=1: damage_base=6920, stun_base=6920, energy_gain=0, anomaly_buildup=6915
+
+
+==================================================
+Agent: Lycaon
+==================================================
+Move: Basic Attack: Moon Hunter (11 hits, Key: Basic)
+  - hit_index=0: damage_base=2920, stun_base=1460, energy_gain=5010, anomaly_buildup=0
+  - hit_index=1: damage_base=3710, stun_base=1210, energy_gain=4140, anomaly_buildup=1148
+  - hit_index=2: damage_base=3490, stun_base=3030, energy_gain=10390, anomaly_buildup=0
+  - hit_index=3: damage_base=5640, stun_base=3290, energy_gain=11270, anomaly_buildup=3128
+  - hit_index=4: damage_base=5840, stun_base=4560, energy_gain=15630, anomaly_buildup=0
+  - hit_index=5: damage_base=9950, stun_base=5370, energy_gain=18410, anomaly_buildup=5113
+  - hit_index=6: damage_base=15200, stun_base=11200, energy_gain=38380, anomaly_buildup=0
+  - hit_index=7: damage_base=21090, stun_base=10710, energy_gain=36720, anomaly_buildup=10198
+  - hit_index=8: damage_base=18070, stun_base=14770, energy_gain=50620, anomaly_buildup=0
+  - hit_index=9: damage_base=27760, stun_base=16310, energy_gain=55890, anomaly_buildup=15524
+  - hit_index=10: damage_base=35570, stun_base=20560, energy_gain=70480, anomaly_buildup=19575
+Move: EX Special Attack: Thrill of the Hunt (3 hits, Key: Special)
+  - hit_index=0: damage_base=25240, stun_base=21150, energy_gain=0, anomaly_buildup=20076
+  - hit_index=1: damage_base=28190, stun_base=23890, energy_gain=0, anomaly_buildup=22542
+  - hit_index=2: damage_base=53710, stun_base=45290, energy_gain=0, anomaly_buildup=42848
+Move: Special Attack: Time to Hunt (3 hits, Key: Special)
+  - hit_index=0: damage_base=2280, stun_base=2280, energy_gain=0, anomaly_buildup=2166
+  - hit_index=1: damage_base=5430, stun_base=5430, energy_gain=0, anomaly_buildup=2583
+  - hit_index=2: damage_base=11030, stun_base=11030, energy_gain=0, anomaly_buildup=5250
+
+
+==================================================
+Agent: Manato
+==================================================
+Move: Assist Follow-Up: Lone Shadow - Breaking Fang (2 hits, Key: Assist)
+  - hit_index=0: damage_base=16670, stun_base=27090, energy_gain=0, anomaly_buildup=20833
+  - hit_index=1: damage_base=40340, stun_base=21000, energy_gain=0, anomaly_buildup=21000
+Move: Basic Attack: Blazing Wind - Misty Slash (4 hits, Key: Basic)
+  - hit_index=0: damage_base=5310, stun_base=3880, energy_gain=0, anomaly_buildup=3875
+  - hit_index=1: damage_base=11120, stun_base=8740, energy_gain=0, anomaly_buildup=8736
+  - hit_index=2: damage_base=15450, stun_base=14160, energy_gain=0, anomaly_buildup=14153
+  - hit_index=3: damage_base=23780, stun_base=21750, energy_gain=0, anomaly_buildup=21742
+Move: Basic Attack: Blazing Wind Slash (8 hits, Key: Basic)
+  - hit_index=0: damage_base=2870, stun_base=2690, energy_gain=0, anomaly_buildup=0
+  - hit_index=1: damage_base=3820, stun_base=3620, energy_gain=0, anomaly_buildup=0
+  - hit_index=2: damage_base=4450, stun_base=4310, energy_gain=0, anomaly_buildup=0
+  - hit_index=3: damage_base=6000, stun_base=5900, energy_gain=0, anomaly_buildup=0
+  - hit_index=4: damage_base=7460, stun_base=7430, energy_gain=0, anomaly_buildup=0
+  - hit_index=5: damage_base=3440, stun_base=3050, energy_gain=0, anomaly_buildup=3581
+  - hit_index=6: damage_base=5730, stun_base=5510, energy_gain=0, anomaly_buildup=5501
+  - hit_index=7: damage_base=8330, stun_base=8260, energy_gain=0, anomaly_buildup=7165
+Move: Special Attack: Return to Ashes (2 hits, Key: Special)
+  - hit_index=0: damage_base=5070, stun_base=4760, energy_gain=0, anomaly_buildup=4752
+  - hit_index=1: damage_base=13070, stun_base=12260, energy_gain=0, anomaly_buildup=12252
+
+
+==================================================
+Agent: Miyabi
+==================================================
+Move: Basic Attack: Kazahana (5 hits, Key: Basic)
+  - hit_index=0: damage_base=2690, stun_base=1350, energy_gain=4400, anomaly_buildup=0
+  - hit_index=1: damage_base=2960, stun_base=2690, energy_gain=8790, anomaly_buildup=0
+  - hit_index=2: damage_base=6280, stun_base=4640, energy_gain=15170, anomaly_buildup=6290
+  - hit_index=3: damage_base=9650, stun_base=8210, energy_gain=26860, anomaly_buildup=9121
+  - hit_index=4: damage_base=12900, stun_base=13100, energy_gain=42850, anomaly_buildup=12927
+Move: Basic Attack: Shimotsuki (3 hits, Key: Basic)
+  - hit_index=0: damage_base=214110, stun_base=37780, energy_gain=61810, anomaly_buildup=34336
+  - hit_index=0: damage_base=85810, stun_base=6240, energy_gain=20410, anomaly_buildup=5668
+  - hit_index=0: damage_base=45470, stun_base=4400, energy_gain=14400, anomaly_buildup=3998
+Move: Chain Attack: Spring's Call (2 hits, Key: Chain)
+  - hit_index=0: damage_base=18840, stun_base=5670, energy_gain=0, anomaly_buildup=11136
+  - hit_index=1: damage_base=25120, stun_base=7560, energy_gain=0, anomaly_buildup=14848
+Move: EX Special Attack: Hisetsu (4 hits, Key: Special)
+  - hit_index=0: damage_base=15740, stun_base=12870, energy_gain=0, anomaly_buildup=15775
+  - hit_index=0: damage_base=19330, stun_base=16200, energy_gain=0, anomaly_buildup=18925
+  - hit_index=1: damage_base=23600, stun_base=19300, energy_gain=0, anomaly_buildup=25052
+  - hit_index=1: damage_base=28990, stun_base=24300, energy_gain=0, anomaly_buildup=29777
+
+
+==================================================
+Agent: Nangong Yu
+==================================================
+Move: Basic Attack: Adorable Explosive Impact (4 hits, Key: Basic)
+  - hit_index=0: damage_base=10400, stun_base=4400, energy_gain=10080, anomaly_buildup=4000
+  - hit_index=1: damage_base=30440, stun_base=21080, energy_gain=16800, anomaly_buildup=19163
+  - hit_index=2: damage_base=51080, stun_base=41080, energy_gain=26710, anomaly_buildup=37336
+  - hit_index=3: damage_base=7670, stun_base=2060, energy_gain=0, anomaly_buildup=0
+Move: Basic Attack: Shooting Star Step (3 hits, Key: Basic)
+  - hit_index=0: damage_base=11490, stun_base=8270, energy_gain=27050, anomaly_buildup=5933
+  - hit_index=1: damage_base=13690, stun_base=8410, energy_gain=27530, anomaly_buildup=6215
+  - hit_index=2: damage_base=26380, stun_base=16890, energy_gain=55260, anomaly_buildup=12907
+
+
+==================================================
+Agent: Nekomata
+==================================================
+Move: Basic Attack: Kitty Slash (5 hits, Key: Basic)
+  - hit_index=0: damage_base=5520, stun_base=1800, energy_gain=6160, anomaly_buildup=1708
+  - hit_index=1: damage_base=6260, stun_base=3710, energy_gain=12690, anomaly_buildup=3524
+  - hit_index=2: damage_base=7270, stun_base=4670, energy_gain=15990, anomaly_buildup=4440
+  - hit_index=3: damage_base=17020, stun_base=10370, energy_gain=35550, anomaly_buildup=9873
+  - hit_index=4: damage_base=12360, stun_base=5890, energy_gain=20170, anomaly_buildup=5602
+
+
+==================================================
+Agent: Nicole
+==================================================
+Move: Basic Attack: Cunning Combo (6 hits, Key: Basic)
+  - hit_index=0: damage_base=2710, stun_base=2090, energy_gain=7000, anomaly_buildup=0
+  - hit_index=1: damage_base=3890, stun_base=1950, energy_gain=7000, anomaly_buildup=0
+  - hit_index=2: damage_base=3530, stun_base=2900, energy_gain=10410, anomaly_buildup=0
+  - hit_index=3: damage_base=3610, stun_base=2780, energy_gain=10410, anomaly_buildup=0
+  - hit_index=4: damage_base=12430, stun_base=10430, energy_gain=37540, anomaly_buildup=0
+  - hit_index=5: damage_base=18040, stun_base=13880, energy_gain=37540, anomaly_buildup=0
+Move: Basic Attack: Do As I Please (6 hits, Key: Basic)
+  - hit_index=0: damage_base=3890, stun_base=1950, energy_gain=7000, anomaly_buildup=0
+  - hit_index=1: damage_base=4940, stun_base=2090, energy_gain=7000, anomaly_buildup=0
+  - hit_index=2: damage_base=3530, stun_base=2900, energy_gain=10410, anomaly_buildup=0
+  - hit_index=3: damage_base=6580, stun_base=2780, energy_gain=10410, anomaly_buildup=0
+  - hit_index=4: damage_base=12430, stun_base=10430, energy_gain=37540, anomaly_buildup=0
+  - hit_index=5: damage_base=32900, stun_base=13880, energy_gain=37540, anomaly_buildup=0
+Move: Chain Attack: Ether Shellacking (2 hits, Key: Chain)
+  - hit_index=0: damage_base=10480, stun_base=2500, energy_gain=0, anomaly_buildup=6489
+  - hit_index=1: damage_base=28300, stun_base=6750, energy_gain=0, anomaly_buildup=19469
+Move: Dash Attack: Do As I Please (2 hits, Key: Dodge)
+  - hit_index=0: damage_base=4120, stun_base=2900, energy_gain=10200, anomaly_buildup=0
+  - hit_index=1: damage_base=11730, stun_base=4510, energy_gain=10200, anomaly_buildup=12129
+Move: Dash Attack: Jack in the Box (3 hits, Key: Dodge)
+  - hit_index=0: damage_base=4120, stun_base=2900, energy_gain=10200, anomaly_buildup=0
+  - hit_index=1: damage_base=11730, stun_base=4510, energy_gain=10200, anomaly_buildup=0
+  - hit_index=2: damage_base=6000, stun_base=6000, energy_gain=21590, anomaly_buildup=0
+Move: EX Special Attack: Stuffed Sugarcoated Bullet (3 hits, Key: Special)
+  - hit_index=0: damage_base=21500, stun_base=17980, energy_gain=0, anomaly_buildup=19735
+  - hit_index=1: damage_base=10750, stun_base=8990, energy_gain=0, anomaly_buildup=9867
+  - hit_index=2: damage_base=38700, stun_base=32360, energy_gain=0, anomaly_buildup=39471
+Move: Ultimate: Ether Grenade (2 hits, Key: Chain)
+  - hit_index=0: damage_base=64680, stun_base=3600, energy_gain=0, anomaly_buildup=3599
+  - hit_index=1: damage_base=87320, stun_base=4860, energy_gain=0, anomaly_buildup=5399
+
+
+==================================================
+Agent: Orphie & Magus
+==================================================
+Move: Basic Attack: High-Pressure Flamethrower (6 hits, Key: Basic)
+  - hit_index=0: damage_base=1450, stun_base=1170, energy_gain=3830, anomaly_buildup=0
+  - hit_index=1: damage_base=4440, stun_base=3240, energy_gain=10580, anomaly_buildup=2867
+  - hit_index=2: damage_base=4150, stun_base=2540, energy_gain=8290, anomaly_buildup=2673
+  - hit_index=3: damage_base=8670, stun_base=5360, energy_gain=17540, anomaly_buildup=5120
+  - hit_index=4: damage_base=18160, stun_base=11820, energy_gain=38670, anomaly_buildup=10120
+  - hit_index=5: damage_base=15840, stun_base=10360, energy_gain=33900, anomaly_buildup=9416
+Move: Ultimate: Dance With Fire (2 hits, Key: Chain)
+  - hit_index=0: damage_base=69870, stun_base=2970, energy_gain=0, anomaly_buildup=2700
+  - hit_index=1: damage_base=46580, stun_base=1980, energy_gain=0, anomaly_buildup=1800
+
+
+==================================================
+Agent: Pan Yinhu
+==================================================
+Move: Basic Attack: Unyielding Strikes (4 hits, Key: Basic)
+  - hit_index=0: damage_base=4970, stun_base=2490, energy_gain=8940, anomaly_buildup=2480
+  - hit_index=1: damage_base=4980, stun_base=4750, energy_gain=17080, anomaly_buildup=4744
+  - hit_index=2: damage_base=10940, stun_base=8430, energy_gain=30350, anomaly_buildup=8429
+  - hit_index=3: damage_base=21130, stun_base=16650, energy_gain=59940, anomaly_buildup=16648
+Move: Special Attack: Touch of Death (3 hits, Key: Special)
+  - hit_index=0: damage_base=9730, stun_base=4170, energy_gain=0, anomaly_buildup=4861
+  - hit_index=1: damage_base=9730, stun_base=4170, energy_gain=0, anomaly_buildup=4861
+  - hit_index=2: damage_base=9730, stun_base=4170, energy_gain=0, anomaly_buildup=4861
+
+
+==================================================
+Agent: Piper
+==================================================
+Move: Basic Attack: Load Up and Roll Out (4 hits, Key: Basic)
+  - hit_index=0: damage_base=5900, stun_base=2950, energy_gain=10620, anomaly_buildup=2948
+  - hit_index=1: damage_base=7880, stun_base=6450, energy_gain=23190, anomaly_buildup=6440
+  - hit_index=2: damage_base=15010, stun_base=12190, energy_gain=43890, anomaly_buildup=12189
+  - hit_index=3: damage_base=32060, stun_base=25220, energy_gain=90770, anomaly_buildup=25211
+Move: Special Attack: One Trillion Tons (3 hits, Key: Special)
+  - hit_index=0: damage_base=9340, stun_base=9340, energy_gain=0, anomaly_buildup=9333
+  - hit_index=1: damage_base=10340, stun_base=10340, energy_gain=0, anomaly_buildup=10336
+  - hit_index=2: damage_base=23500, stun_base=23500, energy_gain=0, anomaly_buildup=23500
+
+
+==================================================
+Agent: Promeia
+==================================================
+Move: Basic Attack: Sweeping Edge (6 hits, Key: Basic)
+  - hit_index=0: damage_base=4980, stun_base=3380, energy_gain=11040, anomaly_buildup=4348
+  - hit_index=1: damage_base=10320, stun_base=6910, energy_gain=22610, anomaly_buildup=8600
+  - hit_index=2: damage_base=19090, stun_base=12490, energy_gain=40870, anomaly_buildup=15115
+  - hit_index=3: damage_base=20470, stun_base=13630, energy_gain=44600, anomaly_buildup=15916
+  - hit_index=4: damage_base=24150, stun_base=16040, energy_gain=52490, anomaly_buildup=18236
+  - hit_index=5: damage_base=1950, stun_base=0, energy_gain=0, anomaly_buildup=0
+Move: Special Attack: Execution - Layered Frost (2 hits, Key: Special)
+  - hit_index=0: damage_base=60820, stun_base=45060, energy_gain=0, anomaly_buildup=37292
+  - hit_index=1: damage_base=1210, stun_base=0, energy_gain=0, anomaly_buildup=0
+
+
+==================================================
+Agent: Pulchra
+==================================================
+Move: Basic Attack: Swift Strike (3 hits, Key: Basic)
+  - hit_index=0: damage_base=3570, stun_base=2850, energy_gain=10260, anomaly_buildup=2848
+  - hit_index=1: damage_base=9410, stun_base=7530, energy_gain=27090, anomaly_buildup=7522
+  - hit_index=2: damage_base=16760, stun_base=13410, energy_gain=48260, anomaly_buildup=13405
+Move: Special Attack: Rending Claw - Nightmare Shadow (2 hits, Key: Special)
+  - hit_index=0: damage_base=4630, stun_base=2900, energy_gain=0, anomaly_buildup=1736
+  - hit_index=1: damage_base=5350, stun_base=3480, energy_gain=0, anomaly_buildup=1736
+
+
+==================================================
+Agent: Qingyi
+==================================================
+Move: Basic Attack: Enchanted Moonlit Blossoms (2 hits, Key: Basic)
+  - hit_index=0: damage_base=44870, stun_base=27190, energy_gain=68450, anomaly_buildup=19013
+  - hit_index=1: damage_base=39440, stun_base=21760, energy_gain=54780, anomaly_buildup=15214
+Move: Basic Attack: Penultimate (6 hits, Key: Basic)
+  - hit_index=0: damage_base=4720, stun_base=2360, energy_gain=7710, anomaly_buildup=0
+  - hit_index=1: damage_base=11030, stun_base=5520, energy_gain=18050, anomaly_buildup=0
+  - hit_index=2: damage_base=12210, stun_base=8220, energy_gain=26890, anomaly_buildup=0
+  - hit_index=3: damage_base=1760, stun_base=1910, energy_gain=4800, anomaly_buildup=1333
+  - hit_index=4: damage_base=10640, stun_base=10630, energy_gain=34770, anomaly_buildup=6454
+  - hit_index=5: damage_base=23440, stun_base=20470, energy_gain=66980, anomaly_buildup=15399
+Move: EX Special Attack: Moonlit Begonia (3 hits, Key: Special)
+  - hit_index=0: damage_base=15070, stun_base=11110, energy_gain=0, anomaly_buildup=12465
+  - hit_index=1: damage_base=21100, stun_base=15550, energy_gain=0, anomaly_buildup=17451
+  - hit_index=2: damage_base=24110, stun_base=17770, energy_gain=0, anomaly_buildup=19944
+
+
+==================================================
+Agent: Rina
+==================================================
+Move: Basic Attack: Whack the Dimwit (4 hits, Key: Basic)
+  - hit_index=0: damage_base=4400, stun_base=2450, energy_gain=8380, anomaly_buildup=0
+  - hit_index=1: damage_base=11140, stun_base=8840, energy_gain=30290, anomaly_buildup=0
+  - hit_index=2: damage_base=11710, stun_base=9660, energy_gain=33100, anomaly_buildup=8363
+  - hit_index=3: damage_base=18390, stun_base=14680, energy_gain=55900, anomaly_buildup=10474
+
+
+==================================================
+Agent: Seed
+==================================================
+Move: Basic Attack: Chrysanthemum Wheel Dance (4 hits, Key: Basic)
+  - hit_index=0: damage_base=4650, stun_base=2940, energy_gain=0, anomaly_buildup=0
+  - hit_index=1: damage_base=12410, stun_base=8290, energy_gain=0, anomaly_buildup=0
+  - hit_index=2: damage_base=7180, stun_base=4460, energy_gain=10140, anomaly_buildup=4053
+  - hit_index=3: damage_base=35860, stun_base=22650, energy_gain=51460, anomaly_buildup=20583
+
+
+==================================================
+Agent: Seth
+==================================================
+Move: Basic Attack: Lightning Strike (4 hits, Key: Basic)
+  - hit_index=0: damage_base=3620, stun_base=1810, energy_gain=6520, anomaly_buildup=0
+  - hit_index=1: damage_base=5650, stun_base=4510, energy_gain=16240, anomaly_buildup=0
+  - hit_index=2: damage_base=19330, stun_base=15130, energy_gain=54450, anomaly_buildup=0
+  - hit_index=3: damage_base=9740, stun_base=8050, energy_gain=28950, anomaly_buildup=8041
+Move: Basic Attack: Lightning Strike - Electrified (2 hits, Key: Basic)
+  - hit_index=0: damage_base=38280, stun_base=16170, energy_gain=58210, anomaly_buildup=16168
+  - hit_index=1: damage_base=42420, stun_base=14550, energy_gain=47600, anomaly_buildup=13220
+Move: EX Special Attack: Thunder Shield Rush - High Voltage (2 hits, Key: Special)
+  - hit_index=0: damage_base=64600, stun_base=54040, energy_gain=0, anomaly_buildup=59316
+  - hit_index=1: damage_base=99980, stun_base=84900, energy_gain=0, anomaly_buildup=92438
+
+
+==================================================
+Agent: Soldier 0 - Anby
+==================================================
+Move: Basic Attack: Penetrating Shock (7 hits, Key: Basic)
+  - hit_index=0: damage_base=3270, stun_base=2790, energy_gain=9120, anomaly_buildup=2532
+  - hit_index=1: damage_base=6220, stun_base=5450, energy_gain=17840, anomaly_buildup=4954
+  - hit_index=2: damage_base=8010, stun_base=7190, energy_gain=23500, anomaly_buildup=6527
+  - hit_index=3: damage_base=10010, stun_base=7700, energy_gain=25200, anomaly_buildup=6999
+  - hit_index=4: damage_base=3990, stun_base=6210, energy_gain=20310, anomaly_buildup=5640
+  - hit_index=5: damage_base=15450, stun_base=13770, energy_gain=45060, anomaly_buildup=12516
+  - hit_index=6: damage_base=14850, stun_base=13090, energy_gain=42830, anomaly_buildup=11895
+Move: Special Attack: Azure Flash (2 hits, Key: Special)
+  - hit_index=0: damage_base=16720, stun_base=0, energy_gain=0, anomaly_buildup=0
+  - hit_index=1: damage_base=4300, stun_base=3310, energy_gain=0, anomaly_buildup=3003
+
+
+==================================================
+Agent: Soldier 11
+==================================================
+Move: Basic Attack: Fire Suppression (7 hits, Key: Basic)
+  - hit_index=0: damage_base=5510, stun_base=1800, energy_gain=6150, anomaly_buildup=1705
+  - hit_index=1: damage_base=5720, stun_base=3360, energy_gain=11490, anomaly_buildup=3191
+  - hit_index=2: damage_base=13200, stun_base=7520, energy_gain=25770, anomaly_buildup=7157
+  - hit_index=3: damage_base=34070, stun_base=19200, energy_gain=65810, anomaly_buildup=18280
+  - hit_index=4: damage_base=44170, stun_base=14530, energy_gain=49800, anomaly_buildup=13833
+  - hit_index=5: damage_base=44170, stun_base=14530, energy_gain=49800, anomaly_buildup=13833
+  - hit_index=6: damage_base=8280, stun_base=0, energy_gain=0, anomaly_buildup=0
+Move: Basic Attack: Warmup Sparks (4 hits, Key: Basic)
+  - hit_index=0: damage_base=3440, stun_base=1720, energy_gain=5890, anomaly_buildup=0
+  - hit_index=1: damage_base=4120, stun_base=3440, energy_gain=11770, anomaly_buildup=0
+  - hit_index=2: damage_base=10280, stun_base=8230, energy_gain=28200, anomaly_buildup=0
+  - hit_index=3: damage_base=21340, stun_base=16760, energy_gain=57440, anomaly_buildup=0
+
+
+==================================================
+Agent: Soukaku
+==================================================
+Move: Assist Follow-Up: Sweeping Strike (2 hits, Key: Assist)
+  - hit_index=0: damage_base=11320, stun_base=9910, energy_gain=0, anomaly_buildup=10610
+  - hit_index=1: damage_base=26400, stun_base=23130, energy_gain=0, anomaly_buildup=24757
+Move: Basic Attack: Making Rice Cakes (3 hits, Key: Basic)
+  - hit_index=0: damage_base=6620, stun_base=3310, energy_gain=11920, anomaly_buildup=0
+  - hit_index=1: damage_base=21630, stun_base=18800, energy_gain=67670, anomaly_buildup=0
+  - hit_index=2: damage_base=29310, stun_base=22170, energy_gain=79800, anomaly_buildup=0
+Move: Basic Attack: Making Rice Cakes (Frosted Banner) (3 hits, Key: Basic)
+  - hit_index=0: damage_base=7660, stun_base=4660, energy_gain=16770, anomaly_buildup=4657
+  - hit_index=1: damage_base=22850, stun_base=12750, energy_gain=45880, anomaly_buildup=12743
+  - hit_index=2: damage_base=51140, stun_base=26330, energy_gain=94760, anomaly_buildup=26321
+Move: EX Special Attack: Fanning Mosquitoes (2 hits, Key: Special)
+  - hit_index=0: damage_base=26240, stun_base=22580, energy_gain=0, anomaly_buildup=24407
+  - hit_index=1: damage_base=10210, stun_base=8790, energy_gain=0, anomaly_buildup=9491
+Move: Special Attack: Cooling Bento (2 hits, Key: Special)
+  - hit_index=0: damage_base=2840, stun_base=2840, energy_gain=0, anomaly_buildup=2834
+  - hit_index=1: damage_base=10010, stun_base=10010, energy_gain=0, anomaly_buildup=5001
+Move: Special Attack: Rally! (3 hits, Key: Special)
+  - hit_index=0: damage_base=25010, stun_base=27510, energy_gain=0, anomaly_buildup=12500
+  - hit_index=1: damage_base=14010, stun_base=14010, energy_gain=0, anomaly_buildup=7001
+  - hit_index=2: damage_base=24500, stun_base=24500, energy_gain=0, anomaly_buildup=12250
+
+
+==================================================
+Agent: Starlight - Billy
+==================================================
+Move: Basic Attack: Knight's Technique (4 hits, Key: Basic)
+  - hit_index=0: damage_base=5030, stun_base=3990, energy_gain=0, anomaly_buildup=3622
+  - hit_index=1: damage_base=6800, stun_base=5680, energy_gain=0, anomaly_buildup=5157
+  - hit_index=2: damage_base=5450, stun_base=4800, energy_gain=0, anomaly_buildup=4357
+  - hit_index=3: damage_base=20600, stun_base=16350, energy_gain=0, anomaly_buildup=14861
+
+
+==================================================
+Agent: Sunna
+==================================================
+Move: Basic Attack: Mischief Meteor Hammer (4 hits, Key: Basic)
+  - hit_index=0: damage_base=4340, stun_base=2480, energy_gain=4510, anomaly_buildup=1250
+  - hit_index=1: damage_base=17590, stun_base=10910, energy_gain=18960, anomaly_buildup=5265
+  - hit_index=2: damage_base=18120, stun_base=12360, energy_gain=20430, anomaly_buildup=5674
+  - hit_index=3: damage_base=40530, stun_base=25170, energy_gain=41920, anomaly_buildup=11643
+Move: EX Special Attack: Bubblegum Barrage (2 hits, Key: Special)
+  - hit_index=0: damage_base=11920, stun_base=11920, energy_gain=0, anomaly_buildup=4581
+  - hit_index=1: damage_base=79410, stun_base=49460, energy_gain=0, anomaly_buildup=17102
+Move: EX Special Attack: Special Photography Technique (2 hits, Key: Special)
+  - hit_index=0: damage_base=82810, stun_base=60230, energy_gain=0, anomaly_buildup=21716
+  - hit_index=1: damage_base=12430, stun_base=9040, energy_gain=0, anomaly_buildup=0
+
+
+==================================================
+Agent: Trigger
+==================================================
+Move: Basic Attack: Cold-Bore Shot (4 hits, Key: Basic)
+  - hit_index=0: damage_base=3450, stun_base=1730, energy_gain=9870, anomaly_buildup=0
+  - hit_index=1: damage_base=5690, stun_base=2850, energy_gain=20020, anomaly_buildup=0
+  - hit_index=2: damage_base=11090, stun_base=6080, energy_gain=32810, anomaly_buildup=0
+  - hit_index=3: damage_base=24300, stun_base=17690, energy_gain=69760, anomaly_buildup=17441
+Move: Basic Attack: Harmonizing Shot - Tartarus (2 hits, Key: Basic)
+  - hit_index=0: damage_base=2260, stun_base=1700, energy_gain=0, anomaly_buildup=2049
+  - hit_index=1: damage_base=4520, stun_base=3400, energy_gain=0, anomaly_buildup=4098
+Move: Basic Attack: Silenced Shot (3 hits, Key: Basic)
+  - hit_index=0: damage_base=4760, stun_base=2380, energy_gain=13620, anomaly_buildup=2700
+  - hit_index=1: damage_base=23390, stun_base=14880, energy_gain=69570, anomaly_buildup=19322
+  - hit_index=2: damage_base=13120, stun_base=6560, energy_gain=44890, anomaly_buildup=11926
+
+
+==================================================
+Agent: Vivian
+==================================================
+Move: Basic Attack: Feathered Strike (4 hits, Key: Basic)
+  - hit_index=0: damage_base=3410, stun_base=4240, energy_gain=13870, anomaly_buildup=0
+  - hit_index=1: damage_base=2420, stun_base=2810, energy_gain=9200, anomaly_buildup=0
+  - hit_index=2: damage_base=7690, stun_base=8180, energy_gain=26750, anomaly_buildup=0
+  - hit_index=3: damage_base=12840, stun_base=12720, energy_gain=41600, anomaly_buildup=8661
+
+
+==================================================
+Agent: Yanagi
+==================================================
+Move: EX Special Attack: Gekka Ruten (2 hits, Key: Special)
+  - hit_index=0: damage_base=16380, stun_base=12710, energy_gain=0, anomaly_buildup=14350
+  - hit_index=1: damage_base=37780, stun_base=10960, energy_gain=0, anomaly_buildup=26854
+Move: Stance: Jougen (5 hits, Key: Basic)
+  - hit_index=0: damage_base=5660, stun_base=2780, energy_gain=10090, anomaly_buildup=0
+  - hit_index=1: damage_base=9970, stun_base=6810, energy_gain=24740, anomaly_buildup=0
+  - hit_index=2: damage_base=11310, stun_base=6940, energy_gain=25220, anomaly_buildup=7991
+  - hit_index=3: damage_base=12660, stun_base=7760, energy_gain=28220, anomaly_buildup=8942
+  - hit_index=4: damage_base=23690, stun_base=14520, energy_gain=52800, anomaly_buildup=16735
+Move: Stance: Kagen (5 hits, Key: Basic)
+  - hit_index=0: damage_base=11310, stun_base=5550, energy_gain=20170, anomaly_buildup=0
+  - hit_index=1: damage_base=12920, stun_base=9310, energy_gain=33850, anomaly_buildup=0
+  - hit_index=2: damage_base=7280, stun_base=4460, energy_gain=16220, anomaly_buildup=5138
+  - hit_index=3: damage_base=10770, stun_base=6610, energy_gain=24010, anomaly_buildup=7607
+  - hit_index=4: damage_base=27180, stun_base=16670, energy_gain=60590, anomaly_buildup=19204
+
+
+==================================================
+Agent: Ye Shunguang
+==================================================
+Move: Basic Attack: Enlightened Mind - Splitting Currents (3 hits, Key: Basic)
+  - hit_index=0: damage_base=11260, stun_base=3580, energy_gain=0, anomaly_buildup=6500
+  - hit_index=1: damage_base=15590, stun_base=4950, energy_gain=0, anomaly_buildup=9000
+  - hit_index=2: damage_base=21660, stun_base=6880, energy_gain=0, anomaly_buildup=12500
+Move: Basic Attack: Enlightened Mind - Sunderlight (2 hits, Key: Basic)
+  - hit_index=0: damage_base=12070, stun_base=3400, energy_gain=0, anomaly_buildup=6166
+  - hit_index=1: damage_base=15650, stun_base=4400, energy_gain=0, anomaly_buildup=8000
+Move: Basic Attack: Enlightened Mind - Sunderlight Annihilation (2 hits, Key: Basic)
+  - hit_index=0: damage_base=89120, stun_base=5780, energy_gain=0, anomaly_buildup=10503
+  - hit_index=0: damage_base=15990, stun_base=4500, energy_gain=0, anomaly_buildup=8169
+Move: Basic Attack: Swiftedge (4 hits, Key: Basic)
+  - hit_index=0: damage_base=7940, stun_base=2650, energy_gain=17340, anomaly_buildup=0
+  - hit_index=1: damage_base=24410, stun_base=7750, energy_gain=50700, anomaly_buildup=0
+  - hit_index=2: damage_base=12460, stun_base=3540, energy_gain=23150, anomaly_buildup=0
+  - hit_index=3: damage_base=36800, stun_base=10730, energy_gain=70190, anomaly_buildup=0
+Move: EX Special Attack: Enlightened Mind - Soaring Light (2 hits, Key: Special)
+  - hit_index=0: damage_base=105800, stun_base=10820, energy_gain=0, anomaly_buildup=19666
+  - hit_index=0: damage_base=17633, stun_base=1803, energy_gain=0, anomaly_buildup=3277
+Move: Special Attack: Guiding Tides (2 hits, Key: Special)
+  - hit_index=0: damage_base=9890, stun_base=2430, energy_gain=0, anomaly_buildup=0
+  - hit_index=1: damage_base=31590, stun_base=13210, energy_gain=0, anomaly_buildup=0
+
+
+==================================================
+Agent: Yidhari
+==================================================
+Move: Basic Attack: Crushing Strike (4 hits, Key: Basic)
+  - hit_index=0: damage_base=6070, stun_base=5940, energy_gain=0, anomaly_buildup=5396
+  - hit_index=1: damage_base=6240, stun_base=6110, energy_gain=0, anomaly_buildup=5546
+  - hit_index=2: damage_base=8600, stun_base=8730, energy_gain=0, anomaly_buildup=7933
+  - hit_index=3: damage_base=20780, stun_base=17050, energy_gain=0, anomaly_buildup=15500
+Move: Basic Attack: Frostbite Embrace (4 hits, Key: Basic)
+  - hit_index=0: damage_base=16140, stun_base=14820, energy_gain=0, anomaly_buildup=13469
+  - hit_index=1: damage_base=25410, stun_base=26240, energy_gain=0, anomaly_buildup=23852
+  - hit_index=2: damage_base=34590, stun_base=28420, energy_gain=0, anomaly_buildup=25833
+  - hit_index=3: damage_base=23580, stun_base=17780, energy_gain=0, anomaly_buildup=16163
+Move: Chain Attack: Frostbound Oath (2 hits, Key: Chain)
+  - hit_index=0: damage_base=57270, stun_base=27690, energy_gain=0, anomaly_buildup=45120
+  - hit_index=1: damage_base=62990, stun_base=27690, energy_gain=0, anomaly_buildup=45120
+Move: EX Special Attack: Glacial Crush (2 hits, Key: Special)
+  - hit_index=0: damage_base=100760, stun_base=70180, energy_gain=0, anomaly_buildup=70095
+  - hit_index=1: damage_base=7920, stun_base=0, energy_gain=0, anomaly_buildup=0
+
+
+==================================================
+Agent: Yixuan
+==================================================
+Move: Basic Attack: Cirrus Strike (5 hits, Key: Basic)
+  - hit_index=0: damage_base=4580, stun_base=2860, energy_gain=0, anomaly_buildup=2596
+  - hit_index=1: damage_base=6550, stun_base=6890, energy_gain=0, anomaly_buildup=6260
+  - hit_index=2: damage_base=8710, stun_base=8580, energy_gain=0, anomaly_buildup=7791
+  - hit_index=3: damage_base=10480, stun_base=11180, energy_gain=0, anomaly_buildup=10159
+  - hit_index=4: damage_base=11370, stun_base=10570, energy_gain=0, anomaly_buildup=9606
+Move: EX Special Attack: Ink Manifestation (4 hits, Key: Special)
+  - hit_index=0: damage_base=30030, stun_base=17290, energy_gain=0, anomaly_buildup=19787
+  - hit_index=1: damage_base=14960, stun_base=7580, energy_gain=0, anomaly_buildup=5583
+  - hit_index=2: damage_base=37060, stun_base=29440, energy_gain=0, anomaly_buildup=29904
+  - hit_index=3: damage_base=42640, stun_base=28530, energy_gain=0, anomaly_buildup=30545
+
+
+==================================================
+Agent: Yuzuha
+==================================================
+Move: Basic Attack: Tanuki Claws (5 hits, Key: Basic)
+  - hit_index=0: damage_base=3770, stun_base=4400, energy_gain=14400, anomaly_buildup=1618
+  - hit_index=1: damage_base=5770, stun_base=6310, energy_gain=20640, anomaly_buildup=2682
+  - hit_index=2: damage_base=6600, stun_base=6600, energy_gain=21570, anomaly_buildup=3164
+  - hit_index=3: damage_base=9810, stun_base=11270, energy_gain=36860, anomaly_buildup=6296
+  - hit_index=4: damage_base=16410, stun_base=16360, energy_gain=53520, anomaly_buildup=8839
+Move: Basic Attack: Tanuki Helper (2 hits, Key: Basic)
+  - hit_index=0: damage_base=11000, stun_base=0, energy_gain=0, anomaly_buildup=0
+  - hit_index=1: damage_base=11000, stun_base=0, energy_gain=0, anomaly_buildup=0
+
+
+==================================================
+Agent: Zhao
+==================================================
+Move: Basic Attack: Glacial Judgment (6 hits, Key: Basic)
+  - hit_index=0: damage_base=7340, stun_base=5510, energy_gain=18010, anomaly_buildup=0
+  - hit_index=1: damage_base=6600, stun_base=4920, energy_gain=16080, anomaly_buildup=4463
+  - hit_index=2: damage_base=11580, stun_base=8440, energy_gain=27620, anomaly_buildup=7672
+  - hit_index=3: damage_base=18560, stun_base=15460, energy_gain=44680, anomaly_buildup=12410
+  - hit_index=4: damage_base=7730, stun_base=5860, energy_gain=20360, anomaly_buildup=5660
+  - hit_index=5: damage_base=30910, stun_base=23450, energy_gain=81450, anomaly_buildup=22623
+Move: Ultimate: Bunny Barrage (2 hits, Key: Chain)
+  - hit_index=0: damage_base=43750, stun_base=4030, energy_gain=0, anomaly_buildup=3670
+  - hit_index=1: damage_base=174980, stun_base=16140, energy_gain=0, anomaly_buildup=14666
+
+
+==================================================
+Agent: Zhu Yuan
+==================================================
+Move: Basic Attack: Don't Move! (5 hits, Key: Basic)
+  - hit_index=0: damage_base=4310, stun_base=2160, energy_gain=7050, anomaly_buildup=0
+  - hit_index=1: damage_base=12640, stun_base=9730, energy_gain=31820, anomaly_buildup=10477
+  - hit_index=2: damage_base=13730, stun_base=9470, energy_gain=30970, anomaly_buildup=0
+  - hit_index=3: damage_base=15100, stun_base=12430, energy_gain=40660, anomaly_buildup=5912
+  - hit_index=4: damage_base=16220, stun_base=13920, energy_gain=45540, anomaly_buildup=6005
+Move: Basic Attack: Please Do Not Resist (6 hits, Key: Basic)
+  - hit_index=0: damage_base=5370, stun_base=5960, energy_gain=9910, anomaly_buildup=0
+  - hit_index=1: damage_base=5370, stun_base=5960, energy_gain=18350, anomaly_buildup=0
+  - hit_index=2: damage_base=16090, stun_base=17870, energy_gain=49060, anomaly_buildup=0
+  - hit_index=3: damage_base=13590, stun_base=5960, energy_gain=9910, anomaly_buildup=5415
+  - hit_index=4: damage_base=13590, stun_base=5960, energy_gain=18350, anomaly_buildup=5415
+  - hit_index=5: damage_base=40770, stun_base=17870, energy_gain=49060, anomaly_buildup=16245
+Move: Dash Attack: Overwhelming Firepower (2 hits, Key: Dodge)
+  - hit_index=0: damage_base=5370, stun_base=5960, energy_gain=11710, anomaly_buildup=0
+  - hit_index=1: damage_base=13590, stun_base=5960, energy_gain=23410, anomaly_buildup=5415
+

@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+.venv/
+venv/
+*.whl
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+*.env
+
+# Docker — postgres data dir is a host bind mount, not tracked
+docker/postgres_data/
+docker/*.sql
+
+# Claude Code local settings (session state, permissions, handoffs) —
+# but land shared workflow files (agents/, skills/) so they ship with the repo
+.claude/*
+!.claude/agents/
+!.claude/skills/
+
+# Root node_modules (if any local tooling installs here)
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+
+# Ruff
+.ruff_cache/
+
+# Angular
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# Data imports (large files)
+data_imports/
+*.sqlite3
+
+
+# Local docker port overrides (per-developer, not shared)
+docker-compose.override.yml
+
+# Scratch research files (agent-curation working notes)
+scratch_*.txt

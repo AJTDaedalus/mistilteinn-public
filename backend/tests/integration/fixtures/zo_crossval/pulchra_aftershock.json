@@ -1,0 +1,19 @@
+{
+ "_comment": "Pulchra (1351) off-field repeat-chain gate. Bare Pulchra (M0, L60, no discs) executes Chain Attack: Hey, Didn't Expect That, Right? (grants Hunter's Gait 6 s at t_start=0 → expires t=6.0). Switch to bare Burnice (M0, L60) costs +1 s. Burnice EX Special Attack: Intense Heat Stirring Method has 6 hits in 2.5 s; t_hit = 3.417,3.833,4.250,4.667,5.083,5.500 — all < 6.0 (state active). Pulchra react_scopes=['special','ex_special'] matches ex_special ✓; requires_off_field ✓ (Burnice is acting agent). cap = 1 + repeat_max = 6. All 6 hits qualify → 6 procs: positions 0–4 use aftershock_mv_bp=4630 bp (Rending Claw - Nightmare Shadow hit_index 0), position 5 uses finisher_mv_bp=5350 bp (Rending Claw - Nightmare Shadow hit_index 1). MVs from DB attacks table (agent_id 019e4c7e-64b3-7362-9cc2-e94ec96d26ec).",
+ "archetype": "pulchra_aftershock",
+ "build_ref": "bare_build:agent=Pulchra,M0,L60,no_discs + bare_build:agent=Burnice,M0,L60,no_discs",
+ "source": "formula_derived",
+ "step_list": [
+  "Chain Attack: Hey, Didn't Expect That, Right?",
+  "EX Special Attack: Intense Heat Stirring Method"
+ ],
+ "timing_derivation": "Pulchra chain t=0→2 s (duration_s=2.0, 1 hit); grants_state at t_start=0 → hunters_gait until t=0+6=6.0. Step end t=2.0. Switch cost +1 s → Burnice EX t_start=3.0. The DB attacks table has 2 rows for 'EX Special Attack: Intense Heat Stirring Method' (hit_index 0 = 54380 bp, hit_index 1 = 9670 bp), so the sim runs 2 hits over the 2.5 s: t_hit[i] = 3.0 + (i+1)*(2.5/2) = 4.25, 5.50. Both < 6.0 ✓. Off-field ✓ (Burnice acting). react_scopes=['special','ex_special'] matches scope='ex_special' ✓. No CD on repeat-chain path. cap = 1+repeat_max = 6 is not binding here — only 2 qualifying hits exist → 2 procs, none blocked.",
+ "aftershock_proc_counts": {
+  "pulchra_nightmare_shadow": {
+   "expected_procs": 2,
+   "min_total": 1,
+   "source": "formula_derived",
+   "formula_notes": "2 procs, one per qualifying Burnice EX hit, both at aftershock_mv_bp=4630 (the finisher MV applies only at position cap-1=5, which this rotation never reaches). DEF/RES/Crit areas depend on seeded Pulchra base_atk; min_total=1 is a liveness gate only. The prior 6 assumed Burnice's EX Special had 6 DB attack rows; it has 2, so the 1+repeat_max=6 cap is never the binding constraint in this fixture. This gate proves the off-field repeat chain fires at all — it regressed to 0 procs while pulchra.json keyed its move specs by scope instead of attack name, which meant grants_state never ran and requires_state blocked every proc."
+  }
+ }
+}

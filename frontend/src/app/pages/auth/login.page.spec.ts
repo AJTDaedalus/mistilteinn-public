@@ -1,0 +1,138 @@
+import { TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { API_BASE_URL } from '../../api/api.client';
+import { AuthService, PendingUserError } from '../../api/auth.service';
+import { LoginPage } from './login';
+
+function setup() {
+  TestBed.configureTestingModule({
+    imports: [LoginPage],
+    providers: [{ provide: API_BASE_URL, useValue: 'http://test' }],
+  });
+  const fixture = TestBed.createComponent(LoginPage);
+  fixture.detectChanges();
+  const comp = fixture.componentInstance;
+  const auth = TestBed.inject(AuthService);
+  const router = TestBed.inject(Router);
+  return { fixture, comp, auth, router };
+}
+
+beforeEach(() => {
+  localStorage.clear();
+});
+
+afterEach(() => {
+  TestBed.resetTestingModule();
+  vi.restoreAllMocks();
+});
+
+describe('LoginPage', () => {
+  describe('signIn()', () => {
+    it('calls auth.login with email and password and navigates to / on success', async () => {
+      const { comp, auth, router } = setup();
+      const loginSpy = vi.spyOn(auth, 'login').mockResolvedValue('approved');
+      const navSpy = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+
+      comp.email.set('user@example.com');
+      comp.password.set('test-password-123');
+      await comp.signIn();
+
+      expect(loginSpy).toHaveBeenCalledWith('user@example.com', 'test-password-123');
+      expect(navSpy).toHaveBeenCalledWith('/');
+    });
+
+    it('navigates to /pending when login throws PendingUserError', async () => {
+      const { comp, auth, router } = setup();
+      vi.spyOn(auth, 'login').mockRejectedValue(new PendingUserError());
+      const navSpy = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+
+      comp.email.set('pending@example.com');
+      comp.password.set('test-password-123');
+      await comp.signIn();
+
+      expect(navSpy).toHaveBeenCalledWith('/pending');
+    });
+
+    it('sets error message on generic login failure', async () => {
+      const { comp, auth } = setup();
+      vi.spyOn(auth, 'login').mockRejectedValue(new Error('unauthorized'));
+      vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+
+      comp.email.set('user@example.com');
+      comp.password.set('wrong-pass-123');
+      await comp.signIn();
+
+      expect(comp.error()).toBe('Invalid email or password.');
+    });
+  });
+
+  describe('requestAccess()', () => {
+    it('calls auth.register with email, label, password and navigates to /pending', async () => {
+      const { comp, auth, router } = setup();
+      const regSpy = vi.spyOn(auth, 'register').mockResolvedValue('pending');
+      const navSpy = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+
+      comp.email.set('new@example.com');
+      comp.label.set('tester');
+      comp.password.set('strong-pass-456');
+      comp.confirmPassword.set('strong-pass-456');
+      await comp.requestAccess();
+
+      expect(regSpy).toHaveBeenCalledWith({
+        email: 'new@example.com',
+        label: 'tester',
+        password: 'strong-pass-456',
+      });
+      expect(navSpy).toHaveBeenCalledWith('/pending');
+    });
+
+    it('does not submit when passwords do not match', async () => {
+      const { comp, auth } = setup();
+      const regSpy = vi.spyOn(auth, 'register').mockResolvedValue('pending');
+
+      comp.email.set('new@example.com');
+      comp.password.set('strong-pass-456');
+      comp.confirmPassword.set('different-pass-789');
+      await comp.requestAccess();
+
+      expect(regSpy).not.toHaveBeenCalled();
+    });
+
+    it('shows server error message on registration failure', async () => {
+      const { comp, auth } = setup();
+      vi.spyOn(auth, 'register').mockRejectedValue({ detail: 'Email already registered' });
+      vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+
+      comp.email.set('taken@example.com');
+      comp.password.set('strong-pass-456');
+      comp.confirmPassword.set('strong-pass-456');
+      await comp.requestAccess();
+
+      expect(comp.error()).toBe('Email already registered');
+    });
+  });
+
+  describe('password2Mismatch', () => {
+    it('is false when confirmPassword is empty', () => {
+      const { comp } = setup();
+      comp.password.set('somepass');
+      comp.confirmPassword.set('');
+      expect(comp.password2Mismatch).toBe(false);
+    });
+
+    it('is true when confirmPassword is non-empty and does not match', () => {
+      const { comp } = setup();
+      comp.password.set('somepass');
+      comp.confirmPassword.set('other');
+      expect(comp.password2Mismatch).toBe(true);
+    });
+
+    it('is false when passwords match', () => {
+      const { comp } = setup();
+      comp.password.set('match-me-now');
+      comp.confirmPassword.set('match-me-now');
+      expect(comp.password2Mismatch).toBe(false);
+    });
+  });
+});

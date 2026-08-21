@@ -1,0 +1,79 @@
+<button type="button" class="slot-btn" [class.slot-btn--active]="selected().length > 0" (click)="openDialog()">
+  <span class="slot-btn__label eyebrow">{{ label() }}</span>
+  @if (selected().length === 0) {
+    <span class="slot-btn__empty">— select one or more —</span>
+  } @else {
+    <div class="slot-btn__chips">
+      @for (s of selectedSets(); track s.id) {
+        <span class="slot-chip">
+          @if (iconUrl(s.icon_path); as url) {
+            <img [src]="url" class="slot-chip__img" [alt]="" loading="lazy" />
+          }
+          {{ s.name }}
+        </span>
+      }
+      <!-- Dashed, unfilled-looking slot chip: signals room for another pick
+           without the user having to open the dialog and read a hint first
+           (issue #60 — multi-select wasn't discoverable once one set was
+           already chosen). -->
+      <span class="slot-chip slot-chip--add" aria-hidden="true">+ add another</span>
+    </div>
+  }
+</button>
+
+<!-- Backdrop click-to-close is a mouse-only convenience; keyboard users
+     already close the native <dialog> via Escape. -->
+<!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+<dialog #pickerDialog class="set-picker" (click)="$event.target === $event.currentTarget && closeDialog()">
+  <div class="set-picker__inner">
+
+    <div class="set-picker__header">
+      <h2 class="set-picker__title">{{ label() }}</h2>
+      <div class="set-picker__actions">
+        @if (selected().length > 0) {
+          <button type="button" class="link-btn" (click)="clear()">Clear</button>
+        }
+        <button type="button" class="icon-btn" (click)="closeDialog()" aria-label="Close">✕</button>
+      </div>
+    </div>
+
+    @if (hint()) {
+      <p class="set-picker__hint">{{ hint() }}</p>
+    }
+
+    <div class="set-picker__search">
+      <input
+        type="search"
+        class="set-picker__search-input"
+        placeholder="Search sets…"
+        [value]="search()"
+        (input)="search.set($any($event.target).value)"
+      />
+    </div>
+
+    <div class="set-picker__grid">
+      @for (s of sortedSets(); track s.id) {
+        <button
+          type="button"
+          class="set-card"
+          [class.set-card--on]="isSelected(s.id)"
+          (click)="toggle(s.id)"
+          [attr.aria-pressed]="isSelected(s.id)"
+          [title]="setTooltip(s)"
+        >
+          @if (iconUrl(s.icon_path); as url) {
+            <img [src]="url" class="set-card__img" [alt]="s.name" loading="lazy" />
+          } @else {
+            <div class="set-card__placeholder">◈</div>
+          }
+          <span class="set-card__name">{{ s.name }}</span>
+        </button>
+      }
+    </div>
+
+    <div class="set-picker__footer">
+      <button type="button" class="btn btn-primary" (click)="closeDialog()">Done</button>
+    </div>
+
+  </div>
+</dialog>

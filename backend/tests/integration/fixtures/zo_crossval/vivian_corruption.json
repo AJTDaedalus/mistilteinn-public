@@ -1,0 +1,55 @@
+{
+  "_comment": "Golden fixture for Vivian bare build (M0, L60, no W-engine, no discs) — Ether/Corruption. All values formula-derived and independently verified.",
+  "archetype": "vivian_corruption",
+  "build_ref": "bare_build:agent=Vivian,M0,L60,no_discs",
+  "zo_commit": "464e7a2",
+  "stat_line": {
+    "atk": 880,
+    "crit_rate_pct": 5.0,
+    "crit_dmg_pct": 50.0,
+    "anomaly_proficiency": 118,
+    "anomaly_mastery": 108,
+    "pen_flat": 0,
+    "pen_ratio_pct": 0.0,
+    "ether_dmg_pct": 0.0
+  },
+  "enemy": {
+    "level": 70,
+    "defense": 953,
+    "ether_res": 0
+  },
+  "events": [
+    {
+      "kind": "hit",
+      "element": "ether",
+      "ordinal": 0,
+      "move_name": "Basic Attack: Featherbloom",
+      "hit_index": 0,
+      "expected": 197,
+      "source": "formula_derived",
+      "formula": "base=floor(880*44000/10000)=3872; *10000(no_boost)=3872; *10250(crit_1.025)=3968; *498(def_area)/10000=197",
+      "formula_notes": "MV@L12=22000+2000*11=44000; DEF_area=794*10000//(953*794//50+794)=498; crit_area=10000+500*5000//10000=10250. ATK=880 = L60 base 805 (base_atk 127 + growth 76728bp*59//10000 + promotion_stats[5].atk 226) + 75 flat ATK from core_stats[5] at core level 5 (ZO Characters/Vivian.json coreStats agrees). The prior 806 omitted the core flat ATK.",
+      "tolerance_pct": 1.0
+    },
+    {
+      "kind": "anomaly_tick",
+      "element": "ether",
+      "ordinal": 0,
+      "move_name": "Corruption",
+      "expected": 62,
+      "source": "formula_derived",
+      "formula": "base=floor(880*6250/10000)=550; *10000(no_boost)=550; *498(def)/10000=27; *11800(AP_area)/10000=31; *20000(level_area)/10000=62; *10000(no_anomaly_boost)/10000=62",
+      "formula_notes": "Corruption MV=62.5% per tick; AP_area=118*100=11800 (Vivian's DB base_anomaly_proficiency is 118 — the prior fixture had proficiency/mastery transposed); level_area=20000; no anomaly_dmg_bonus for bare Vivian; 20 procs is the theoretical max, see proc_counts",
+      "leifa_ref": "references/DMG Formula for Anomaly, Disorder and Vortex Leifa.html — Corruption 62.5% base mult per tick",
+      "tolerance_pct": 1.0
+    }
+  ],
+  "proc_counts": {
+    "corruption": {
+      "expected_procs": 3,
+      "expected_total": 186,
+      "source": "formula_derived",
+      "formula_notes": "7-hit rotation with 1.0s fallback duration; hits land at t=1.0..7.0. Corruption triggers at t=5.0 and the 10s window [5.0, 15.0] then contains hits at t=5.0, 6.0 and 7.0 — the rotation ends at t=7.0, so 3 on-hit ticks (3 x 62 = 186). Corruption is on-hit gated with a 0.5s internal CD, and these hits are 1.0s apart, so every remaining hit ticks. 20 procs is the theoretical max (Leifa) but requires >=20 hits inside the 10s window; this rotation validates per-hit gating, not max-proc count."
+    }
+  }
+}

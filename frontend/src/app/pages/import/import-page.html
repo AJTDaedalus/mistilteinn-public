@@ -1,0 +1,244 @@
+<section class="page">
+  <header class="page__header">
+    <span class="eyebrow">Tool · 04</span>
+    <h1>Import</h1>
+    <p class="page__lede">
+      Import discs (and optionally builds) from a ZZZ-Scanner export.
+      <strong>ZOD</strong> files add discs to your inventory.
+      <strong>eZOD</strong> files also recreate equipped builds for each agent.
+    </p>
+  </header>
+
+  <div
+    class="drop"
+    [class.drop--active]="dragging()"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave()"
+    (drop)="onDrop($event)"
+  >
+    <span class="drop__hint">Drop a .ZOD.json file here</span>
+    <span class="drop__or eyebrow">or</span>
+    <label class="btn btn--small">
+      Choose file
+      <input type="file" accept="application/json,.json" hidden (change)="onFileInput($event)" />
+    </label>
+  </div>
+
+  <textarea
+    class="paste"
+    rows="8"
+    placeholder="…or paste JSON here"
+    [value]="pasteText()"
+    (input)="onPasteInput($event)"
+  ></textarea>
+
+  @if (validation(); as v) {
+    <div class="error mono" data-test="validation-error">! {{ v }}</div>
+  }
+
+  @if (preview(); as p) {
+    @if (validation() === null) {
+      <div class="preview" data-test="preview">
+        <span class="eyebrow">Looks good</span>
+        <p class="mono">
+          format <strong>{{ p.format }}</strong> ·
+          <strong>{{ p.discCount }}</strong> discs
+          @if (p.source) {
+            · source <strong>{{ p.source }}</strong>
+          }
+        </p>
+        <label class="mode mono">
+          Discs:
+          <select
+            [value]="discMode()"
+            (change)="onDiscModeChange($event)"
+            data-test="disc-mode"
+          >
+            <option value="merge">merge into inventory</option>
+            <option value="clean">replace inventory (delete existing)</option>
+          </select>
+        </label>
+
+        @if (isEzod()) {
+          <label class="mode mono">
+            Builds:
+            <select
+              [value]="buildMode()"
+              (change)="onBuildModeChange($event)"
+              data-test="build-mode"
+            >
+              <option value="merge">merge into saved builds</option>
+              <option value="clean">replace builds (delete existing)</option>
+            </select>
+          </label>
+        }
+
+        @if (showConflict()) {
+          <label class="conflict mono">
+            If a build already exists for an agent:
+            <select
+              [value]="conflictMode()"
+              (change)="onConflictChange($event)"
+              data-test="conflict-select"
+            >
+              <option value="skip">keep existing (skip)</option>
+              <option value="overwrite">overwrite from file</option>
+            </select>
+          </label>
+        }
+      </div>
+    }
+  }
+
+  @if (hazard() && validation() === null && parsed()?.ok) {
+    <div class="warn mono" data-test="hazard-warning">
+      ⚠ Builds you keep will lose their equipped discs — replacing the inventory
+      does not re-equip them.
+    </div>
+  }
+
+  @if (submitError(); as e) {
+    <div class="error mono" data-test="submit-error">! {{ e }}</div>
+  }
+
+  @if (result(); as r) {
+    <div class="result" data-test="result">
+      <span class="eyebrow">Done</span>
+
+      @if (r.teams_deleted || r.combos_deleted) {
+        <div class="result__fallout mono">
+          @if (r.teams_deleted) {
+            <p data-test="teams-deleted">
+              ⚠ Deleted <strong>{{ r.teams_deleted }}</strong> team(s) — none of
+              their agents were in this file.
+            </p>
+          }
+          @if (r.combos_deleted) {
+            <p data-test="combos-deleted">
+              ⚠ Deleted <strong>{{ r.combos_deleted }}</strong> combo(s) that
+              belonged to those teams.
+            </p>
+          }
+        </div>
+      }
+
+      <p class="result__headline mono" data-test="summary">
+        <strong>{{ r.imported }}</strong> disc(s) imported,
+        <strong>{{ totalSkipped() }}</strong> skipped.
+        @if (totalSkipped() > 0) {
+          <span class="result__headline-hint">Reasons below.</span>
+        }
+      </p>
+
+      <ul class="result__list mono">
+        <li>Imported: <strong>{{ r.imported }}</strong></li>
+        @if (r.skipped_duplicate) {
+          <li>Skipped (already in inventory): {{ r.skipped_duplicate }}</li>
+        }
+        @if (r.skipped_unknown_set) {
+          <li>Skipped (unknown set): {{ r.skipped_unknown_set }}</li>
+        }
+        @if (r.skipped_invalid) {
+          <li>Skipped (invalid): {{ r.skipped_invalid }}</li>
+        }
+        @if (r.builds_created) {
+          <li>Builds created: <strong>{{ r.builds_created }}</strong></li>
+        }
+        @if (r.builds_overwritten) {
+          <li>Builds overwritten: {{ r.builds_overwritten }}</li>
+        }
+        @if (r.builds_skipped) {
+          <li>Builds skipped (already exist): {{ r.builds_skipped }}</li>
+        }
+        @if (r.discs_deleted) {
+          <li data-test="discs-deleted">
+            Discs deleted (replaced inventory): {{ r.discs_deleted }}
+          </li>
+        }
+        @if (r.builds_deleted) {
+          <li data-test="builds-deleted">
+            Builds deleted (replaced builds): {{ r.builds_deleted }}
+          </li>
+        }
+        @if (r.team_slots_remapped) {
+          <li data-test="slots-remapped">
+            Team slots re-pointed to the imported builds:
+            <strong>{{ r.team_slots_remapped }}</strong>
+          </li>
+        }
+      </ul>
+      @if (r.notices && r.notices.length > 0) {
+        <details class="result__errors">
+          <summary>{{ r.notices.length }} advisory notice(s) — import succeeded</summary>
+          <ul>
+            @for (n of r.notices; track $index) {
+              <li>{{ n }}</li>
+            }
+          </ul>
+        </details>
+      }
+      @if (r.errors.length > 0) {
+        <details class="result__errors">
+          <summary>{{ r.errors.length }} error rows</summary>
+          <ul class="mono">
+            @for (err of r.errors; track $index) {
+              <li>{{ err }}</li>
+            }
+          </ul>
+        </details>
+      }
+
+      <div class="result__links">
+        <a class="btn" routerLink="/discs" data-test="view-discs">View discs</a>
+        <!-- Overwritten counts too. This gated on `builds_created` alone, which was
+             harmless while that counter also incremented on overwrites — but #141 fixed
+             it to mean *created*, so a pure re-import (the most common flow) would have
+             set it to 0 and hidden this link from a user who had just imported builds.
+             ZOD and skip-only imports still leave both at 0, so those stay hidden. -->
+        @if (r.builds_created || r.builds_overwritten) {
+          <a class="btn" routerLink="/builds" data-test="view-builds">View builds</a>
+        }
+        <button class="btn" type="button" (click)="reset()">Import another</button>
+      </div>
+    </div>
+  }
+
+  @if (!result()) {
+    @if (confirming()) {
+      <div class="confirm" data-test="confirm">
+        <p class="mono">{{ confirmMessage() }}</p>
+        <div class="form-actions">
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="!canSubmit()"
+            (click)="submit()"
+            data-test="confirm-yes"
+          >
+            Yes, delete and import
+          </button>
+          <button
+            type="button"
+            class="btn"
+            (click)="cancelConfirm()"
+            data-test="confirm-cancel"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    } @else {
+      <div class="form-actions">
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="!canSubmit()"
+          (click)="onImportClick()"
+          data-test="submit"
+        >
+          {{ submitting() ? 'Importing…' : 'Import' }}
+        </button>
+      </div>
+    }
+  }
+</section>

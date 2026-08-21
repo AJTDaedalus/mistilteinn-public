@@ -1,0 +1,250 @@
+{
+  "_comment": "Trimmed eZOD fixture for integration tests. Three characters: Rina (full: engine + 6 discs), Anby (partial: no engine, 4 discs), Lucy (bare: no engine, no discs). Plus 2 unequipped discs. BashfulDemon engine equipped to Rina. Set keys validated against seeded DB (PufferElectro, AstralVoice). Format confirmed: eZOD v1.",
+  "format": "eZOD",
+  "version": 1,
+  "source": "Youkai",
+  "characters": [
+    {
+      "key": "Rina",
+      "level": 60,
+      "constellation": 6,
+      "ascension": 6,
+      "talent": {
+        "basic": 12,
+        "dodge": 12,
+        "assist": 11,
+        "special": 12,
+        "chain": 12,
+        "core": 6
+      }
+    },
+    {
+      "key": "Anby",
+      "level": 50,
+      "constellation": 2,
+      "ascension": 4,
+      "talent": {
+        "basic": 10,
+        "dodge": 10,
+        "assist": 8,
+        "special": 10,
+        "chain": 10,
+        "core": 4
+      }
+    },
+    {
+      "key": "Lucy",
+      "level": 40,
+      "constellation": 0,
+      "ascension": 3,
+      "talent": {
+        "basic": 6,
+        "dodge": 6,
+        "assist": 5,
+        "special": 6,
+        "chain": 6,
+        "core": 0
+      }
+    }
+  ],
+  "weapons": [
+    {
+      "key": "BashfulDemon",
+      "level": 60,
+      "ascension": 5,
+      "refinement": 1,
+      "location": "Rina",
+      "lock": false
+    },
+    {
+      "key": "BashfulDemon",
+      "level": 30,
+      "ascension": 2,
+      "refinement": 1,
+      "location": "",
+      "lock": false
+    }
+  ],
+  "discs": [
+    {
+      "setKey": "PufferElectro",
+      "slotKey": "1",
+      "level": 15,
+      "rarity": 4,
+      "mainStatKey": "hp",
+      "location": "Rina",
+      "lock": true,
+      "substats": [
+        { "key": "atk_", "value": 9.0 },
+        { "key": "crit_", "value": 7.2 },
+        { "key": "crit_dmg_", "value": 14.4 },
+        { "key": "pen", "value": 9.0 }
+      ]
+    },
+    {
+      "setKey": "PufferElectro",
+      "slotKey": "2",
+      "level": 15,
+      "rarity": 4,
+      "mainStatKey": "atk",
+      "location": "Rina",
+      "lock": true,
+      "substats": [
+        { "key": "hp_", "value": 9.0 },
+        { "key": "crit_", "value": 9.6 },
+        { "key": "crit_dmg_", "value": 19.2 },
+        { "key": "atk_", "value": 6.0 }
+      ]
+    },
+    {
+      "setKey": "PufferElectro",
+      "slotKey": "3",
+      "level": 15,
+      "rarity": 4,
+      "mainStatKey": "def",
+      "location": "Rina",
+      "lock": false,
+      "substats": [
+        { "key": "atk_", "value": 12.0 },
+        { "key": "crit_", "value": 4.8 },
+        { "key": "crit_dmg_", "value": 9.6 },
+        { "key": "", "value": 0.0 }
+      ]
+    },
+    {
+      "setKey": "PufferElectro",
+      "slotKey": "4",
+      "level": 15,
+      "rarity": 4,
+      "mainStatKey": "crit_dmg_",
+      "location": "Rina",
+      "lock": true,
+      "substats": [
+        { "key": "atk_", "value": 9.0 },
+        { "key": "hp_", "value": 6.0 },
+        { "key": "crit_", "value": 7.2 },
+        { "key": "", "value": 0.0 }
+      ]
+    },
+    {
+      "setKey": "PufferElectro",
+      "slotKey": "5",
+      "level": 15,
+      "rarity": 4,
+      "mainStatKey": "electric_dmg_",
+      "location": "Rina",
+      "lock": true,
+      "substats": [
+        { "key": "crit_", "value": 9.6 },
+        { "key": "crit_dmg_", "value": 19.2 },
+        { "key": "atk_", "value": 6.0 },
+        { "key": "pen", "value": 9.0 }
+      ]
+    },
+    {
+      "setKey": "PufferElectro",
+      "slotKey": "6",
+      "level": 15,
+      "rarity": 4,
+      "mainStatKey": "atk_",
+      "location": "Rina",
+      "lock": true,
+      "substats": [
+        { "key": "crit_", "value": 9.6 },
+        { "key": "crit_dmg_", "value": 24.0 },
+        { "key": "atk_", "value": 9.0 },
+        { "key": "pen", "value": 27.0 }
+      ]
+    },
+    {
+      "setKey": "AstralVoice",
+      "slotKey": "1",
+      "level": 12,
+      "rarity": 4,
+      "mainStatKey": "hp",
+      "location": "Anby",
+      "lock": false,
+      "substats": [
+        { "key": "atk_", "value": 6.0 },
+        { "key": "def_", "value": 9.6 },
+        { "key": "crit_", "value": 4.8 },
+        { "key": "", "value": 0.0 }
+      ]
+    },
+    {
+      "setKey": "AstralVoice",
+      "slotKey": "2",
+      "level": 9,
+      "rarity": 4,
+      "mainStatKey": "atk",
+      "location": "Anby",
+      "lock": false,
+      "substats": [
+        { "key": "hp_", "value": 6.0 },
+        { "key": "crit_dmg_", "value": 9.6 },
+        { "key": "", "value": 0.0 },
+        { "key": "", "value": 0.0 }
+      ]
+    },
+    {
+      "setKey": "AstralVoice",
+      "slotKey": "4",
+      "level": 15,
+      "rarity": 4,
+      "mainStatKey": "crit_",
+      "location": "Anby",
+      "lock": false,
+      "substats": [
+        { "key": "atk_", "value": 9.0 },
+        { "key": "crit_dmg_", "value": 14.4 },
+        { "key": "pen", "value": 18.0 },
+        { "key": "", "value": 0.0 }
+      ]
+    },
+    {
+      "setKey": "AstralVoice",
+      "slotKey": "5",
+      "level": 9,
+      "rarity": 4,
+      "mainStatKey": "electric_dmg_",
+      "location": "Anby",
+      "lock": false,
+      "substats": [
+        { "key": "crit_", "value": 4.8 },
+        { "key": "crit_dmg_", "value": 9.6 },
+        { "key": "atk_", "value": 3.0 },
+        { "key": "pen", "value": 9.0 }
+      ]
+    },
+    {
+      "setKey": "WoodpeckerElectro",
+      "slotKey": "2",
+      "level": 6,
+      "rarity": 4,
+      "mainStatKey": "atk",
+      "location": "",
+      "lock": false,
+      "substats": [
+        { "key": "hp_", "value": 3.0 },
+        { "key": "def_", "value": 4.8 },
+        { "key": "", "value": 0.0 },
+        { "key": "", "value": 0.0 }
+      ]
+    },
+    {
+      "setKey": "WoodpeckerElectro",
+      "slotKey": "4",
+      "level": 3,
+      "rarity": 3,
+      "mainStatKey": "crit_",
+      "location": "",
+      "lock": false,
+      "substats": [
+        { "key": "atk_", "value": 3.0 },
+        { "key": "", "value": 0.0 },
+        { "key": "", "value": 0.0 },
+        { "key": "", "value": 0.0 }
+      ]
+    }
+  ]
+}

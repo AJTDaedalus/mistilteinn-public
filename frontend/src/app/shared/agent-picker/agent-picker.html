@@ -1,0 +1,237 @@
+<button
+  type="button"
+  class="cb-trigger"
+  [class.cb-trigger--disabled]="disabled()"
+  [disabled]="disabled()"
+  (click)="openDialog()"
+>
+  <span class="cb-trigger__content">
+    @if (selectedAgent(); as agent) {
+      @if (agentIcon(agent.icon_path); as url) {
+        <img [src]="url" class="cb-trigger__img" alt="" />
+      }
+      <span class="cb-trigger__label">{{ agent.name }}</span>
+    } @else {
+      <span class="cb-trigger__label cb-trigger__label--empty">{{ placeholder() }}</span>
+    }
+  </span>
+  <span class="cb-trigger__caret">▼</span>
+</button>
+
+<!-- Backdrop click-to-close is a mouse-only convenience; keyboard users
+     already close the native <dialog> via Escape. -->
+<!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+<dialog #pickerDialog class="agent-picker-dialog" (click)="$event.target === $event.currentTarget && closeDialog()">
+  <div class="ap-inner">
+    
+    <!-- Header -->
+    <div class="ap-header">
+      <h2 class="ap-title">Select Agent</h2>
+      <div class="ap-header-actions">
+        <button type="button" class="icon-btn" (click)="closeDialog()" aria-label="Close">✕</button>
+      </div>
+    </div>
+
+    <!-- Filters Bar -->
+    <div class="ap-filters">
+      <!-- Search Input -->
+      <div class="ap-filter-group ap-filter-group--search">
+        <input
+          type="search"
+          class="ap-search-input"
+          placeholder="Filter Agents…"
+          [value]="search()"
+          (input)="search.set($any($event.target).value)"
+        />
+      </div>
+
+      <!-- Elements Filters -->
+      <div class="ap-filter-group ap-filter-group--elements">
+        <span class="filter-group-label eyebrow">Element</span>
+        <div class="filter-chips">
+          <button
+            type="button"
+            class="chip-btn"
+            [class.chip-btn--active]="selectedElement() === null"
+            (click)="selectedElement.set(null)"
+          >
+            ALL
+          </button>
+          @for (elem of elements; track elem) {
+            <button
+              type="button"
+              class="chip-btn element-chip chip-btn--icon"
+              [class.chip-btn--active]="selectedElement() === elem"
+              [class]="'element-chip--' + elem"
+              (click)="toggleElement(elem)"
+              [title]="elem | titlecase"
+            >
+              @if (elementIcon(elem); as url) {
+                <img [src]="url" class="chip-btn__img" [alt]="elem" loading="lazy" />
+              }
+              <span class="chip-btn__text">{{ elem }}</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Specialties Filters -->
+      <div class="ap-filter-group ap-filter-group--classes">
+        <span class="filter-group-label eyebrow">Class</span>
+        <div class="filter-chips">
+          <button
+            type="button"
+            class="chip-btn"
+            [class.chip-btn--active]="selectedSpecialty() === null"
+            (click)="selectedSpecialty.set(null)"
+          >
+            ALL
+          </button>
+          @for (spec of specialties; track spec) {
+            <button
+              type="button"
+              class="chip-btn chip-btn--icon"
+              [class.chip-btn--active]="selectedSpecialty() === spec"
+              (click)="toggleSpecialty(spec)"
+              [title]="spec"
+            >
+              @if (specialtyIcon(spec); as url) {
+                <img [src]="url" class="chip-btn__img" [alt]="spec" loading="lazy" />
+              }
+              <span class="chip-btn__text">{{ spec }}</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Factions & Rarity Filters -->
+      <div class="ap-filter-row-extra">
+        <!-- Faction Selector Custom Dropdown -->
+        <div class="ap-filter-group ap-filter-group--faction">
+          <span class="filter-group-label eyebrow">Faction</span>
+          <!-- Propagation guard only (prevents document-level close-on-click
+               from firing when clicking inside the dropdown) — not interactive itself. -->
+          <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+          <div class="custom-dropdown" (click)="$event.stopPropagation()">
+            <button
+              type="button"
+              class="ap-dropdown-trigger"
+              (click)="toggleFactionDropdown()"
+            >
+              <span class="ap-dropdown-trigger__content">
+                @if (selectedFaction(); as fact) {
+                  @if (factionIcon(fact); as url) {
+                    <img [src]="url" class="ap-dropdown-trigger__icon" alt="" />
+                  }
+                  <span class="ap-dropdown-trigger__text">{{ formatFaction(fact) }}</span>
+                } @else {
+                  <span class="ap-dropdown-trigger__text ap-dropdown-trigger__text--empty">ALL FACTIONS</span>
+                }
+              </span>
+              <span class="ap-dropdown-trigger__caret">▼</span>
+            </button>
+            
+            @if (factionDropdownOpen()) {
+              <div class="ap-dropdown-menu">
+                <button
+                  type="button"
+                  class="ap-dropdown-item"
+                  [class.ap-dropdown-item--active]="selectedFaction() === null"
+                  (click)="selectFaction(null)"
+                >
+                  <span class="ap-dropdown-item__text">ALL FACTIONS</span>
+                </button>
+                @for (fact of uniqueFactions(); track fact) {
+                  <button
+                    type="button"
+                    class="ap-dropdown-item"
+                    [class.ap-dropdown-item--active]="selectedFaction() === fact"
+                    (click)="selectFaction(fact)"
+                  >
+                    @if (factionIcon(fact); as url) {
+                      <img [src]="url" class="ap-dropdown-item__icon" [alt]="fact" />
+                    }
+                    <span class="ap-dropdown-item__text">{{ formatFaction(fact) }}</span>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Rarity Filters -->
+        <div class="ap-filter-group ap-filter-group--rarity">
+          <span class="filter-group-label eyebrow">Rarity</span>
+          <div class="filter-chips">
+            @for (rar of rarities; track rar) {
+              <button
+                type="button"
+                class="chip-btn"
+                [class.chip-btn--active]="isRaritySelected(rar)"
+                (click)="toggleRarity(rar)"
+              >
+                {{ rar }}-RANK
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grid List -->
+    <div class="ap-grid-container">
+      @if (filteredAgents().length === 0) {
+        <div class="ap-empty mono">No matching Agents found.</div>
+      } @else {
+        <div class="ap-grid">
+          @for (a of filteredAgents(); track a.id) {
+            <button
+              type="button"
+              class="agent-card"
+              [class.agent-card--selected]="a.id === selectedId()"
+              [class.agent-card--rarity-S]="a.rarity === 'S'"
+              [class.agent-card--rarity-A]="a.rarity === 'A'"
+              (click)="selectAgent(a.id)"
+            >
+              <!-- Background Radial Gradient by Rarity -->
+              <div class="agent-card__bg"></div>
+
+              <!-- Specialty overlay badge -->
+              @if (specialtyIcon(a.specialty); as url) {
+                <img [src]="url" class="agent-card__spec-icon" [alt]="a.specialty" [title]="a.specialty | titlecase" />
+              }
+
+              <!-- Element overlay badge -->
+              @if (elementIcon(a.element); as url) {
+                <img
+                  [src]="url"
+                  class="agent-card__elem-icon"
+                  [alt]="a.element"
+                  [title]="a.element | titlecase"
+                  [attr.data-element]="a.element.toLowerCase()"
+                />
+              }
+
+              <!-- Avatar Image -->
+              @if (agentIcon(a.icon_path); as url) {
+                <img [src]="url" class="agent-card__portrait" [alt]="a.name" loading="lazy" />
+              } @else {
+                <div class="agent-card__portrait-placeholder">👤</div>
+              }
+
+              <!-- Text & Info Overlay at Bottom -->
+              <div class="agent-card__overlay">
+                <span class="agent-card__name">{{ a.name }}</span>
+                <span class="agent-card__rarity-stars">
+                  @if (a.rarity === 'S') { ✦✦✦✦✦ }
+                  @else if (a.rarity === 'A') { ✦✦✦✦ }
+                </span>
+              </div>
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+  </div>
+</dialog>

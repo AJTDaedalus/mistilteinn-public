@@ -1,0 +1,221 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+Mistilteinn is a Genshin Impact build optimizer + rotation simulator, forked from
+[fairy](https://github.com/AJTDaedalus/fairy) (the ZZZ optimizer) and reusing its engine with a
+rewritten domain layer.
+
+**Read `docs/BRIEF_mistilteinn.md` and `docs/RESEARCH_genshin_port.md` first** — they are the
+founding documents (goals, non-goals, approach, tool decisions, constraints handed to Planner)
+and nothing in this repo overrides them.
+
+## ⚠️ Fork state — read before trusting anything here
+
+This tree is a **fork of fairy `dev` @ 76909c4, with the ZZZ corpus stripped and nothing yet
+ported.** It is a starting point, not a working application.
+
+- **The code is ZZZ code.** `backend/app/` still models agents, discs, W-Engines, anomaly,
+  stun, and decibels. Every domain concept is wrong for Genshin until rewritten.
+- **The tests do not pass, and are not expected to.** The stripped data corpus is loaded by
+  code that is still present. Do not treat a red suite as a regression — treat it as the
+  size of the port.
+- **Do not "fix" ZZZ code to make it run.** Per the BRIEF: *delete* ZZZ concepts rather than
+  aliasing them. Leaked ZZZ shapes in the Genshin domain model are the fork strategy's main
+  long-term hazard.
+
+### What was stripped in the fork commit
+
+| Removed | Why |
+|---|---|
+| `references/` | ZZZ community docs (Leifa anomaly/stun references), ZO exports, screenshots |
+| `backend/app/data/{modifiers,skill_overrides,moves,atlas,validation}` | ZZZ kit corpus + validation ledgers |
+| `backend/app/data/dimbreath/` | ZZZ upstream snapshots (Genshin's equivalent is AnimeGameData) |
+| `backend/app/data/core_stats_overrides.yaml` | ZZZ per-agent overrides |
+| `frontend/public/icons/` | ZZZ agent art |
+| `docs/*` except `DEPLOY.md` | fairy's feature-cycle docs (BRIEF/DESIGN/TASKS/LOG/RESEARCH/MAP) |
+
+Everything stripped still exists in `/root/fairy` and in the fairy repo — copy anything back
+that turns out to be worth porting rather than re-deriving.
+
+### Carried over but NOT ported
+
+- `.claude/agents/kit-{curator,auditor}.md` and `.claude/skills/kit-curation/` — the curation
+  pipeline the BRIEF wants ported. Still written entirely against ZZZ kits.
+- `.github/workflows/` — still dispatches fairy's kit-validation harness (`validate_kits.py`,
+  levels L0–LR/LU) against data that no longer exists.
+- `docs/DEPLOY.md` — fairy's runbook; hosts, tunnel config, and DB names are fairy's.
+- `docker-compose.yml` binds host ports **5432 / 8000 / 4200**, the same as fairy. Both stacks
+  cannot run at once on this box until one side is re-mapped.
+- **Package and project identifiers still say `fairy`** — `backend/pyproject.toml`,
+  `frontend/package.json`, `frontend/angular.json`, and assorted code comments. Renaming them is
+  a deliberate Task 0 decision, not a blind `sed`.
+- **`backend/scripts/download_*_icons.py` write to `/root/fairy/frontend/public/icons`** — a
+  hardcoded path into the *other* repo. Do not run them; they are ZZZ icon fetchers anyway.
+
+### Changed in the fork commit
+
+- `.github/workflows/deploy-prod.yml` **deleted** — it targeted the `fairy-prod` self-hosted
+  runner and `/home/ubuntu/fairy`, so running it from this repo would have redeployed fairy's
+  production directory. Re-author it when mistilteinn has its own deploy target.
+- DB identity renamed fairy → mistilteinn in `.env.example`, `backend/app/config.py` (default
+  URL), and `.github/workflows/test.yml` (service-container credentials).
+- `security/zap/` retargeted from `fairy.aetherus.dev` to `mistilteinn.aetherus.dev` (which does
+  not exist yet — do not run the scan until it does).
+- `docker-compose.yml`: dropped the `./references` and `./frontend/public/icons` bind mounts
+  (both directories were stripped); healthcheck now uses `${POSTGRES_USER}`.
+
+## Tech Stack
+
+Unchanged from fairy (a deliberate BRIEF decision):
+
+- **Backend**: FastAPI + SQLAlchemy 2.0 async + PostgreSQL + Alembic
+- **Frontend**: Angular (deferred — backend-first development)
+- **Infrastructure**: Docker Compose (db, backend, frontend containers)
+- **Deploy**: Cloudflare Tunnel, target `mistilteinn.aetherus.dev`
+
+## Data Source of Truth
+
+**The PostgreSQL database is the single source of truth for all game data** — this rule ports
+over from fairy unchanged and is load-bearing.
+
+- **Always query the DB first** when you need character/weapon/artifact data. Never hardcode or
+  manually derive element, weapon type, or other metadata.
+- Static JSON files (modifier configs) are supplementary artifacts derived from DB data — they
+  do not replace or override the DB.
+- Planned sources per the BRIEF: gi.hakush.in + Project Amber (ambr.top) as the live importers;
+  Dimbreath AnimeGameData as **committed snapshots only**, never a live-fetch gate; GOOD format
+  for user artifact import; gcsim as the crossval oracle.
+
+## Docker Commands
+
+```bash
+docker compose up -d db             # Start only PostgreSQL
+docker compose up -d                # Start all services
+docker compose exec backend alembic upgrade head   # Run migrations
+docker compose run --rm backend pytest             # Run tests
+docker compose run --rm backend ruff check app/    # Lint
+docker compose down                 # Stop containers (data preserved)
+```
+
+### Frontend dependency changes — gotcha
+
+The frontend service uses anonymous volumes to shadow `node_modules` and `.angular`. Those
+volumes **persist across container recreation**, so a plain `up -d --build` reuses the stale
+one and new deps are missing in the running container. Whenever `frontend/package.json` or
+`package-lock.json` changes:
+
+```bash
+docker compose up -d --build --force-recreate --renew-anon-volumes frontend
+```
+
+## Local Development (conda)
+
+```bash
+cd backend && pip install -e ".[dev]"
+pytest
+ruff check app/
+```
+
+`ruff` and `pytest` are pinned to exact versions in `backend/pyproject.toml` so that "run
+`ruff check` before every commit" means the same program CI runs.
+
+### `backend/build/` is a stale shadow copy of `app/` — never search it
+
+`pip install -e .` leaves a full duplicate of every module under `backend/build/lib/app/`. It
+is gitignored but can be weeks behind source, and a call-site audit that picks up those files
+gets phantom hits for code that no longer exists. Use `rg` (respects `.gitignore`) rather than
+plain `grep -rn`, or scope the search to `backend/app backend/tests`.
+
+### Run backend scripts as `python -m`, never by file path
+
+`python backend/scripts/foo.py` sets `sys.path[0]` to `backend/scripts/`, so `import app` falls
+through to the editable install — which points at whatever checkout was installed, not the tree
+you are looking at. Always `cd backend && python -m scripts.<name>`, matching CI.
+
+## Architecture
+
+- **Repository pattern** for data access — no raw queries in services
+- **Service layer** for business logic — no SQLAlchemy imports in services
+- **Pydantic v2 schemas** for all API I/O validation
+- **Dependency injection** via FastAPI `Depends()`
+- All database operations are **async** (asyncpg driver)
+- API versioned under `/api/v1/`
+
+## Domain: Genshin Impact
+
+Not yet modeled. The domain layer is Planner's first body of work — see
+`docs/BRIEF_mistilteinn.md` ("Constraints handed to Planner") for the phase order:
+domain models/importers → damage chain + crossval → optimizer/GOOD → gauge sim → kit corpus.
+
+**Do not write damage or reaction formulas from memory.** Every multiplier, reaction
+coefficient, and level curve must be sourced from gcsim, KQM, or Project Amber and cited in
+the code or the DESIGN doc that introduces it. Fairy's hardest-won lesson was fabricated
+citations in curated data — do not import that failure mode into this repo.
+
+## Code Conventions
+
+- Python: PEP 8, enforced by Ruff
+- All public functions must have type hints
+- No business logic in route handlers — delegate to services
+- Every feature gets tests FIRST (TDD)
+- Commit messages: conventional commits (`feat:`, `fix:`, `test:`, `docs:`, `refactor:`)
+- **Fix pre-existing lint errors in files you touch**
+- **Fix pre-existing failing tests in scope** — but see the fork-state warning above: a ZZZ
+  test failing because its data was stripped is not "in scope", it is the port.
+
+## Git Workflow
+
+- **Commit atomically as you go — do not wait to be asked.** This project overrides Claude
+  Code's default "only commit when explicitly asked" behavior: on a feature/fix branch
+  (never `dev`/`main`), once a logical unit of work is complete and clean, commit it right
+  away. This is a standing authorization for the *timing* of ordinary commits on the current
+  branch — it does not extend to pushing, merging, force operations, or anything on
+  `dev`/`main`, all of which still require the user to ask.
+- **Test before committing when the change is big enough to warrant it.** For anything that
+  touches logic or more than a couple of files, run the relevant tests and `ruff check` first
+  — a commit should represent a *verified* unit of work, not just a completed one.
+- **Commit early and often** — each commit should be atomic (one logical change)
+- **Never bundle unrelated changes** in a single commit
+- Branch naming: `feat/<short-description>`, `fix/<short-description>`, `refactor/<short-description>`
+- Feature branches off `dev`, merge to `dev` via PR. `main` is for releases only.
+- **No direct commits to `dev` or `main`.** All work happens on a feature/fix branch; `dev` is
+  updated only by PR merge after review. Verify `git branch --show-current` before every commit.
+- **Every DESIGN doc (`docs/DESIGN_<feature>.md`) must include a "Branch policy" section** near
+  the top that names the branch, restates the no-direct-`dev`/`main` rule, lists sub-branches if
+  the feature has parallel tracks, and points at Task 0 of its TASKS file as the branch-setup
+  gate.
+- Run `ruff check` and `pytest` before every commit — code must pass lint and tests
+- Keep commits buildable: every commit should leave the project in a working state
+
+### Gate discipline ported from fairy (apply as the equivalents are built)
+
+Two rules cost fairy real incidents and should be honored from day one here — the BRIEF calls
+this "process parity":
+
+1. **A skipped check BLOCKS. It is never a pass.** A validation level that could not run
+   (no seeded DB, missing fixture) means *could not check*, not *checked and clean*. Fairy's
+   crossval suite was green-by-absence on CI for months and shipped a stale golden fixture.
+   Build require-DB modes in from the start (`CROSSVAL_REQUIRE_DB=1`-style guards) rather than
+   retrofitting them.
+2. **The agent RUNS the harness; it never reasons in its place.** A model answering a
+   ground-truth question from the same JSON file where the error lives will confirm the error.
+   Query the DB; do not infer.
+
+## Testing
+
+- **Unit tests**: `backend/tests/unit/` — pure logic, mocked DB
+- **Integration tests**: `backend/tests/integration/` — real DB via Docker
+- **Fixtures**: Factory Boy factories in `backend/tests/factories/`
+- Target: >90% coverage on services, 100% on damage calculation
+
+## Session Cadence
+
+After completing each task from a TASKS file, **stop and report** what was done and what the
+next task is. Do not continue to the next task without user confirmation.
+
+**Handoff Blurb Policy**: Whenever finishing a major task in a design doc, provide a structured
+handoff blurb summarizing current state, branch details, tasks completed, and the immediate next
+task, so the user can paste it into a new conversation.

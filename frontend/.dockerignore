@@ -1,0 +1,27 @@
+# Version control
+.git
+.gitignore
+
+# Environment & secrets
+.env
+.env.*
+*.env
+
+# Node / build artifacts
+node_modules/
+dist/
+.angular/
+
+# Test artifacts
+coverage/
+.nyc_output/
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Docs
+*.md

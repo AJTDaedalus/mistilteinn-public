@@ -1,0 +1,57 @@
+# Production compose override — use alongside docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Key differences from dev:
+#   - No source bind mounts (images must be pre-built)
+#   - Backend runs without --reload
+#   - Postgres port not published to host
+#   - Cloudflare named tunnel is always active (no profile required)
+#   - Every service restarts on reboot (see restart: unless-stopped below)
+
+services:
+  db:
+    ports: !reset []  # Do not publish 5432 to host in production
+    restart: unless-stopped  # Must survive host reboot — see note at end of file
+
+  backend:
+    ports: !reset []  # Not published to host; nginx proxies /api/ internally
+    volumes: !reset []  # No source bind mounts; image contains the code
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    ports: !reset []  # No host ports — cloudflared reaches nginx via internal network
+    volumes: !reset []  # No bind mounts; nginx serves pre-built static files
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  cloudflared:
+    # Named tunnel — requires CLOUDFLARE_TUNNEL_TOKEN in .env
+    # Tunnel routes traffic to nginx (frontend) which proxies /api/ to backend
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    depends_on:
+      - frontend
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    command:
+      - tunnel
+      - --no-autoupdate
+      - --url
+      - http://frontend:80
+      - run
+    profiles: !reset []  # Active by default in prod (no profile flag required)
+
+# Why `restart: unless-stopped` on every service:
+#
+# Until 2026-07-28 only `cloudflared` carried a restart policy. After a host
+# reboot the tunnel would come back and connect to Cloudflare, but `db`,
+# `backend`, and `frontend` stayed down — so the site returned 502 rather than
+# failing obviously, and recovery needed a manual `docker compose up -d`.
+# `unless-stopped` (not `always`) is deliberate: a service you deliberately
+# stopped for maintenance stays stopped across a reboot.

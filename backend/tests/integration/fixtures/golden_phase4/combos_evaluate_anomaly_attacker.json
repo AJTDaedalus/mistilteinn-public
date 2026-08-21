@@ -1,0 +1,29 @@
+{
+  "anomaly_total": 0,
+  "by_category": [
+    {
+      "category": "special",
+      "pct": 100.0,
+      "total": 38086
+    }
+  ],
+  "by_element": [
+    {
+      "element": "fire",
+      "pct": 100.0,
+      "total": 38086
+    }
+  ],
+  "standard_total": 38086,
+  "steps": [
+    {
+      "label": "Flame1",
+      "total": 19043
+    },
+    {
+      "label": "Flame2",
+      "total": 19043
+    }
+  ],
+  "total_damage": 38086
+}

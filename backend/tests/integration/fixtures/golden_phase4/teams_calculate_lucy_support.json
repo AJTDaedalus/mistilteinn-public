@@ -1,0 +1,28 @@
+{
+  "anomaly_total": 0,
+  "applied_team_buffs": [],
+  "auto_conditions": [
+    "attack_in_team",
+    "same_attribute_or_faction_in_team",
+    "same_attribute_or_faction_or_stun_in_team",
+    "same_attribute_or_stun_in_team",
+    "same_element_in_team",
+    "support_in_team"
+  ],
+  "by_category": [
+    {
+      "category": "basic",
+      "pct": 100.0,
+      "total": 67720
+    }
+  ],
+  "by_element": [
+    {
+      "element": "fire",
+      "pct": 100.0,
+      "total": 67720
+    }
+  ],
+  "standard_total": 67720,
+  "total_damage": 67720
+}

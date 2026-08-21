@@ -1,0 +1,197 @@
+@if (visible()) {
+  <div class="pb-panel">
+
+    <div class="pb-panel__header">
+      <span class="pb-panel__title eyebrow">Priority Builds</span>
+      <div class="pb-panel__enemy-tabs" role="tablist" aria-label="Enemy list filter">
+        @for (t of enemyTabs; track t.key) {
+          <button
+            type="button"
+            role="tab"
+            class="pb-panel__enemy-tab"
+            [class.pb-panel__enemy-tab--active]="enemyTab() === t.key"
+            [attr.aria-selected]="enemyTab() === t.key"
+            (click)="onEnemyTabChange(t.key)"
+          >{{ t.label }}</button>
+        }
+      </div>
+      <button class="pb-panel__add" (click)="addRow()">+ Add build</button>
+    </div>
+
+    @if (rows().length === 0) {
+      <div class="pb-panel__empty mono">No priority builds. Click "+ Add build" to add one.</div>
+    }
+
+    @for (row of rows(); track row.id) {
+      <div class="pb-panel__row">
+
+        <div class="pb-panel__field">
+          <label class="pb-panel__label eyebrow" [for]="'pb-build-' + row.id">Build</label>
+          <select
+            [id]="'pb-build-' + row.id"
+            class="pb-panel__select"
+            [value]="row.buildId ?? ''"
+            (change)="onBuildChange(row.id, $any($event.target).value)"
+          >
+            <option value="">— choose —</option>
+            @for (b of builds(); track b.id) {
+              <option [value]="b.id">{{ buildLabel(b) }}</option>
+            }
+          </select>
+        </div>
+
+        @if (row.buildId) {
+          <div class="pb-panel__field">
+            <label class="pb-panel__label eyebrow" [for]="'pb-combo-' + row.id">Combo</label>
+            @if (row.loadingCombos) {
+              <span class="pb-panel__hint">Loading…</span>
+            } @else if (row.combos.length === 0) {
+              <select
+                [id]="'pb-combo-' + row.id"
+                class="pb-panel__select"
+                [value]="row.comboBuildId ?? ''"
+                (change)="onComboBuildChange(row.id, $any($event.target).value)"
+              >
+                <option value="">— from build… —</option>
+                @for (b of builds(); track b.id) {
+                  @if (b.id !== row.buildId) {
+                    <option [value]="b.id">{{ buildLabel(b) }}</option>
+                  }
+                }
+              </select>
+            } @else {
+              <select
+                [id]="'pb-combo-' + row.id"
+                class="pb-panel__select"
+                [value]="row.comboId ?? ''"
+                (change)="onComboChange(row.id, $any($event.target).value)"
+              >
+                <option value="">— choose —</option>
+                @for (c of row.combos; track c.id) {
+                  <option [value]="c.id">{{ c.name }}</option>
+                }
+              </select>
+            }
+          </div>
+
+          <div class="pb-panel__field">
+            <label class="pb-panel__label eyebrow" [for]="'pb-enemy-' + row.id">Enemy</label>
+            <select
+              [id]="'pb-enemy-' + row.id"
+              class="pb-panel__select"
+              [value]="row.enemyProfileId ?? ''"
+              (change)="onEnemyChange(row.id, $any($event.target).value)"
+            >
+              <option value="">— choose —</option>
+              @for (e of filteredEnemies(); track e.id) {
+                <option [value]="e.id">{{ e.name }} Lv{{ e.level }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="pb-panel__field pb-panel__field--weight">
+            <label class="pb-panel__label eyebrow" [for]="'pb-weight-' + row.id">Weight</label>
+            <input
+              [id]="'pb-weight-' + row.id"
+              type="number"
+              class="pb-panel__input"
+              [value]="row.weight"
+              min="0.01"
+              step="0.1"
+              (change)="onWeightChange(row.id, +$any($event.target).value)"
+            />
+          </div>
+
+          @if (row.availableSupportSlots.length > 0) {
+            <div class="pb-panel__field pb-panel__field--support-slot">
+              <label class="pb-panel__label eyebrow" [for]="'pb-support-slot-' + row.id">
+                Score for support
+              </label>
+              <select
+                [id]="'pb-support-slot-' + row.id"
+                class="pb-panel__select"
+                [value]="row.supportSlot ?? ''"
+                (change)="onSupportSlotChange(row.id, $any($event.target).value)"
+              >
+                <option value="">— DPS (default) —</option>
+                @for (slot of row.availableSupportSlots; track slot) {
+                  <option [value]="slot">Support {{ slot }}</option>
+                }
+              </select>
+            </div>
+          }
+
+          <div class="pb-panel__field pb-panel__field--sets">
+            <div class="pb-panel__set-header">
+              <span class="pb-panel__label eyebrow">Sets</span>
+              @if (row.allowedSetIds && row.allowedSetIds.length > 0) {
+                <button class="pb-panel__set-clear" (click)="clearSets(row.id)">all sets</button>
+              }
+            </div>
+            <div class="pb-panel__chips">
+              @for (s of allSets(); track s.hakushin_id) {
+                <button
+                  class="pb-panel__chip"
+                  [class.pb-panel__chip--active]="isSetSelected(row, s.hakushin_id)"
+                  [title]="s.name"
+                  (click)="toggleSet(row.id, s.hakushin_id)"
+                >
+                  @if (iconUrl(s.icon_path); as url) {
+                    <img class="pb-panel__chip-icon" [src]="url" [alt]="s.name" />
+                  }
+                  <span class="pb-panel__chip-name">{{ s.name }}</span>
+                </button>
+              }
+            </div>
+            <span class="pb-panel__set-hint mono">{{ setHint(row) }}</span>
+          </div>
+
+          <div class="pb-panel__field pb-panel__field--filter">
+            <span class="pb-panel__label eyebrow">Main stat</span>
+            <div class="pb-panel__chips pb-panel__chips--filter">
+              @for (opt of mainStatOptions; track opt.key) {
+                <button
+                  type="button"
+                  class="pb-panel__chip pb-panel__chip--sm"
+                  [class.pb-panel__chip--active]="isRowMainStatSelected(row, opt.key)"
+                  (click)="toggleRowMainStat(row.id, opt.key)"
+                >{{ opt.label }}</button>
+              }
+            </div>
+          </div>
+
+          <div class="pb-panel__field pb-panel__field--filter">
+            <span class="pb-panel__label eyebrow">Rarity</span>
+            <div class="pb-panel__chips pb-panel__chips--filter">
+              @for (r of rarityOptions; track r) {
+                <button
+                  type="button"
+                  class="pb-panel__chip pb-panel__chip--sm"
+                  [class.pb-panel__chip--active]="isRowRaritySelected(row, r)"
+                  (click)="toggleRowRarity(row.id, r)"
+                >{{ r }}</button>
+              }
+            </div>
+          </div>
+        }
+
+        <button class="pb-panel__remove" (click)="removeRow(row.id)" title="Remove">✕</button>
+
+      </div>
+    }
+
+    @if (errorMessage(); as err) {
+      <div class="pb-panel__error mono">! {{ err }}</div>
+    }
+
+    <div class="pb-panel__footer">
+      <button
+        type="button"
+        class="btn btn-primary pb-panel__score-btn"
+        [disabled]="!isReady()"
+        (click)="requestScore()"
+      >Score Discs</button>
+    </div>
+
+  </div>
+}

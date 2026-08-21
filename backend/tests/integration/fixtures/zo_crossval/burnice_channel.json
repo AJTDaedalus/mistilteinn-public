@@ -1,0 +1,31 @@
+{
+  "archetype": "burnice_channel",
+  "agent": "Burnice",
+  "move": "EX Special Attack: Intense Heat Stirring Method",
+  "provenance": {
+    "kind": "self-consistency",
+    "why_not_zo": "ZO does not model channels at all — it reads Burnice's Continuous Spray row as one instantaneous multiplier. There is no external golden number to cross-reference, so inventing one and calling it a ZO figure would be a fabricated citation of exactly the kind docs/DECISIONS.md records this repo shipping before (Nicole M1, Astra core, Lucy core). This fixture therefore pins RELATIONSHIPS that follow from the authored spec by arithmetic, not absolute damage read off a third party.",
+    "hold_lengths_assumed": {
+      "full": 2.0,
+      "half": 1.0
+    },
+    "why_those_lengths": "2.0s is max_s and nominal_s (owner ruling D-CH4, 2026-08-19) — the hold the authored 543.80% multiplier is the total OF, so a full hold must reproduce it exactly. 1.0s is half of it, chosen because linearity in the hold length is the single property the whole whole_channel basis rests on: if a half hold is not half the spray, D-CH2's reading is wrong and every spray number in the game is wrong with it.",
+    "what_would_invalidate_this": "A change to max_s/nominal_s (which rescales everything), to tick_s (which changes only the cadence and tick count, never the totals), or an owner ruling that revisits D-CH2's whole-duration reading.",
+    "recorded": "2026-08-19, docs/TASKS_channeled_moves.md Task 14"
+  },
+  "full_hold": {
+    "tick_count": 4,
+    "release_count": 1,
+    "tick_scale_sum": 1.0,
+    "release_scale": 1.0,
+    "hit_offsets_s": [0.5, 1.0, 1.5, 2.0, 2.5],
+    "energy_billed": 70.0
+  },
+  "half_hold": {
+    "tick_count": 2,
+    "release_count": 1,
+    "tick_scale_sum": 0.5,
+    "spray_damage_ratio_vs_full": 0.5,
+    "energy_billed": 57.5
+  }
+}

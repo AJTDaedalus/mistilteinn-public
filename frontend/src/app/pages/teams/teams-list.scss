@@ -1,0 +1,146 @@
+.page {
+  display: grid;
+  gap: var(--space-6);
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.page__header {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 60ch;
+
+  h1 {
+    font-size: var(--text-2xl);
+  }
+}
+
+.page__lede {
+  margin: 0;
+  color: var(--ink-dim);
+}
+
+.page__actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.error {
+  color: var(--cyan-bright);
+  background: rgba(255, 60, 60, 0.08);
+  border: 1px solid rgba(255, 100, 100, 0.4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-1);
+  font-size: var(--text-sm);
+}
+
+.empty {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--ink-dim);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-4);
+}
+
+.card {
+  position: relative;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  background: var(--surface);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-2);
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color var(--t-fast) var(--ease),
+              box-shadow var(--t-fast) var(--ease),
+              transform var(--t-fast) var(--ease);
+
+  &:hover {
+    text-decoration: none;
+    border-color: var(--halo);
+    box-shadow: var(--glow-cyan);
+    transform: translateY(-2px);
+  }
+}
+
+.card__name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.card__name {
+  margin: 0;
+  font-size: var(--text-base);
+}
+
+.card__portraits {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.portrait {
+  width: 48px;
+  height: 88px;
+  border-radius: var(--radius-1);
+  border: 2px solid var(--surface-rule);
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-raised, var(--surface));
+}
+
+.portrait__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.portrait__fallback {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.card__delete {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  display: none;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: rgba(255, 60, 60, 0.12);
+  border: 1px solid rgba(255, 100, 100, 0.3);
+  border-radius: var(--radius-1);
+  color: rgba(255, 120, 120, 0.8);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  line-height: 1;
+  transition: background var(--t-fast) var(--ease),
+              color var(--t-fast) var(--ease);
+
+  &:hover {
+    background: rgba(255, 60, 60, 0.3);
+    color: #fff;
+  }
+
+  .card:hover & {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

@@ -1,0 +1,41 @@
+<div class="cb" [class.cb--open]="open()" [class.cb--disabled]="disabled()">
+  <input
+    class="cb__input mono"
+    type="text"
+    autocomplete="off"
+    [value]="displayValue()"
+    [placeholder]="placeholder()"
+    [disabled]="disabled()"
+    (focus)="onFocus()"
+    (input)="onInput($event)"
+    (keydown)="onKeydown($event)"
+  />
+  <span class="cb__caret" aria-hidden="true">▾</span>
+
+  @if (open()) {
+    <ul class="cb__list" role="listbox">
+      @if (filtered().length === 0) {
+        <li class="cb__empty">No matches</li>
+      }
+      @for (group of groups(); track group.label) {
+        @if (group.label) {
+          <li class="cb__group">{{ group.label }}</li>
+        }
+        @for (o of group.items; track o.value) {
+          <li
+            class="cb__item"
+            [class.cb__item--active]="isHighlighted(o)"
+            [class.cb__item--disabled]="o.disabled"
+            (mouseenter)="setHighlight(o)"
+            (mousedown)="$event.preventDefault(); pick(o)"
+          >
+            <span class="cb__label">{{ o.label }}</span>
+            @if (o.detail) {
+              <span class="cb__detail mono">{{ o.detail }}</span>
+            }
+          </li>
+        }
+      }
+    </ul>
+  }
+</div>

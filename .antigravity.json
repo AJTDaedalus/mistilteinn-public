@@ -1,0 +1,21 @@
+{
+  "assistant": "Antigravity",
+  "project": "Fairy",
+  "rules": {
+    "instructions": [
+      "./CLAUDE.md",
+      "./backend/CLAUDE.md",
+      "./frontend/CLAUDE.md"
+    ],
+    "git": {
+      "protected_branches": ["dev", "main"],
+      "development_branch": "dev",
+      "feature_branch_suffix": "_agy",
+      "pr_required": true,
+      "flow": "Create a feature branch with `_agy` suffix off `dev` for all edits, push changes, and request user PR review before merging into `dev`."
+    },
+    "session_cadence": {
+      "task_completion_policy": "Whenever finishing a major task in a design doc, provide a structured blurb summarizing progress, active branch, and next steps that can be copy-pasted directly into a new conversation to carry over context seamlessly."
+    }
+  }
+}

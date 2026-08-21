@@ -1,0 +1,15 @@
+{
+  "attack_multiplier": 15500,
+  "base_dmg": 26300,
+  "boost_mult": 10000,
+  "crit_mult": 23313,
+  "def_mult": 4547,
+  "res_mult": 10000,
+  "stun_mult": 10000,
+  "total": 27879,
+  "total_atk": 16968,
+  "total_crit_dmg": 18440,
+  "total_crit_rate": 7220,
+  "total_pen_ratio": 0,
+  "vulnerability_mult": 10000
+}

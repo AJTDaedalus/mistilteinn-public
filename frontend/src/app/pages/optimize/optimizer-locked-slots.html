@@ -1,0 +1,39 @@
+<div class="locked-slots">
+  <button type="button" class="locked-slots__toggle" (click)="toggle()">
+    Locked slots {{ expanded() ? '▲' : '▾' }}
+  </button>
+
+  @if (expanded()) {
+    <table class="locked-slots__table">
+      <thead>
+        <tr>
+          <th>Slot</th>
+          <th>Disc ID</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (slot of slots; track slot) {
+          <tr>
+            <td class="locked-slots__slot-num">{{ slot }}</td>
+            <td>
+              <input
+                type="text"
+                class="locked-slots__input mono"
+                placeholder="disc UUID or blank"
+                [value]="getValue(slot)"
+                #slotInput
+                (change)="setValue(slot, slotInput.value)"
+              />
+            </td>
+            <td>
+              @if (getValue(slot)) {
+                <button type="button" class="locked-slots__clear" (click)="clear(slot)" aria-label="Clear slot {{ slot }}">✕</button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

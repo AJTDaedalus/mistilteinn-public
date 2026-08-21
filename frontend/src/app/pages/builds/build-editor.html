@@ -1,0 +1,36 @@
+<section class="page">
+  <header class="page__header">
+    <a class="back" routerLink="/builds">← Builds</a>
+    <span class="eyebrow">{{ isCreate() ? 'New build' : 'Editing build' }}</span>
+  </header>
+
+  @if (error(); as err) {
+    <div class="error mono">! {{ err }}</div>
+  }
+
+  <build-editor-form
+    [build]="dpsBuildRead()"
+    [agents]="agents()"
+    [wEngines]="wEngines()"
+    [discSets]="discSets()"
+    [discs]="discsForBuild(buildId())"
+    [mode]="isCreate() ? 'create' : 'edit'"
+    (saved)="onDpsSaved($event)"
+    (equipped)="onDpsEquipped($event)"
+    (errored)="error.set($event)"
+  />
+
+  @if (buildId()) {
+    <div class="surface section">
+      <buff-toggles [buildId]="buildId()" [roleToBuildId]="roleToBuildId()" [reloadKey]="reloadKey()" />
+    </div>
+  }
+
+  @if (buildId()) {
+    <a
+      class="optimizer-link"
+      [routerLink]="['/optimize']"
+      [queryParams]="{ buildId: buildId() }"
+    >Open in Optimizer →</a>
+  }
+</section>

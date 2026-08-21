@@ -1,0 +1,90 @@
+{
+  "_comment": "Golden fixture for Yanagi build reconstructed from this fixture's own stat_line (was DB build 019e673e, Timeweaver R1, M0, L60, 4pc Chaos Jazz + 2pc Freedom Blues). ZO repo 464e7a2 has only a README; no ZO UI capture was performed. All values formula-derived and independently verified. BUILD SOURCE CHANGED 2026-08-07: the DB build this named existed only in one developer's database and was never checked in, so this archetype skipped for everyone else and FAILED under CROSSVAL_REQUIRE_DB=1 — the mode a reviewer is told to run before merging a damage-chain change. The build is now reconstructed from `stat_line` + `active_modifiers` below, which is what every `formula` here already derives from; the golden values did not move.",
+  "archetype": "yanagi_shock",
+  "build_ref": "fixture_stat_line:yanagi_shock",
+  "zo_commit": "464e7a2",
+  "stat_line": {
+    "atk": 3603,
+    "crit_rate_pct": 12.2,
+    "crit_dmg_pct": 64.4,
+    "anomaly_proficiency": 347,
+    "anomaly_mastery": 240,
+    "pen_flat": 18,
+    "pen_ratio_pct": 10.0,
+    "electric_dmg_pct": 25.0,
+    "_pen_ratio_note": "CORRECTED 2026-08-07. This field read 0.0 while `active_modifiers.pen_ratio_bp` read 1000 and every golden `def_area` here was computed at 10% — 794*10000 // (953*794//50*0.9 - 18 + 794) = 551, which is the value the three hit events and the anomaly tick all divide by; at 0% it is 499. So the stat line disagreed with its own events, and the events were right. Found when the archetype's build was switched from a DB UUID that no longer exists to a reconstruction from this stat line (issue #83 review), which is exactly the kind of disagreement that stays invisible while the stat line is documentation nothing executes."
+  },
+  "enemy": {
+    "level": 70,
+    "defense": 953,
+    "physical_res": 0,
+    "electric_res": 0
+  },
+  "active_modifiers": {
+    "electric_dmg_bp": 2500,
+    "pen_flat": 18,
+    "pen_ratio_bp": 1000,
+    "_atk_note": "ATK=3603: agent L60 base 797 + core_stats[5].atk 75 = 872, + Timeweaver@L60 713 = 1585 base; disc ATK% 75% + Timeweaver secondary ATK% 30% = 105%; disc flat ATK 316+38=354; ATK = 1585*2.05 + 354 = 3603. The prior 4651 was wrong twice over: it omitted the 75 core flat ATK (which lives in the base bracket and is therefore scaled by ATK%), and it added a 'core_passive_flat_ATK=1200' term that has no source — no Yanagi kit row past or present grants flat ATK, ZO Characters/Yanagi.json coreStats gives atk 75 at tier 5, and the DB core_skills text grants only Disorder DMG / Electric DMG / Electric Anomaly Buildup. It was fabricated.",
+    "_dmg_note": "electric_dmg=2500bp = Chaos Jazz 4pc 1500 (equipper_is_electric, resolved at snapshot) + Yanagi's Jougen stance buff 1000 (always). The prior 3500 used a 'Core: Electric DMG' 2000bp row gated on always; the Task 17 Batch 5 audit re-gated that row to after_ex_hit per the DB core_skills text ('When her EX Special Attack hits an enemy, Yanagi's Electric DMG against the target is increased ... for 15s'), and this rotation is 4x Stance: Jougen with no EX Special, so it is correctly inactive. pen_ratio=1000bp is Yanagi's Kagen stance buff (DB Basic Attack text: 'Kagen stance buff: PEN Ratio increases by 10%'); it and the Jougen Electric DMG buff are both modelled as always because the same DB text states 'For 8s after switching stances, Yanagi retains the bonus from the previous stance', and every one of her Special/EX/Chain/Ultimate/Assist-Follow-Up skills switches stances, so both are continuously refreshed in any real rotation. No anomaly_dmg_bonus (M0, no active modifier). No res_ignore (M4/M6 inactive at M0).",
+    "_element_dmg_note": "Implementation applies agent element DMG bonus (electric_dmg=35%) to ALL hit elements including physical. This is how the sim works; physical_hit=384 reflects this."
+  },
+  "events": [
+    {
+      "kind": "hit",
+      "element": "physical",
+      "ordinal": 0,
+      "move_name": "Stance: Jougen",
+      "hit_index": 0,
+      "expected": 304,
+      "source": "formula_derived",
+      "formula": "base=floor(3603*11380/10000)=4100; *12500(electric_dmg_on_physical)/10000=5125; *10785(crit)/10000=5527; *551(def_area)/10000=304",
+      "formula_notes": "MV@L12=5660+520*11=11380; electric_dmg boost=10000+2500=12500 (agent element bonus applied uniformly); crit=10000+1220*6440//10000=10785; DEF_area now includes the Kagen 10% pen_ratio: eff_def=(953*794//50)*9000//10000-18=13601, 794*10000//(13601+794)=551",
+      "tolerance_pct": 1.0
+    },
+    {
+      "kind": "hit",
+      "element": "electric",
+      "ordinal": 0,
+      "move_name": "Stance: Jougen",
+      "hit_index": 1,
+      "expected": 534,
+      "source": "formula_derived",
+      "formula": "base=floor(3603*19980/10000)=7198; *12500/10000=8997; *10785/10000=9703; *551/10000=534",
+      "formula_notes": "MV@L12=9970+910*11=19980",
+      "tolerance_pct": 1.0
+    },
+    {
+      "kind": "hit",
+      "element": "electric",
+      "ordinal": 3,
+      "move_name": "Stance: Jougen",
+      "hit_index": 4,
+      "expected": 1269,
+      "source": "formula_derived",
+      "formula": "base=floor(3603*47450/10000)=17096; *12500/10000=21370; *10785/10000=23047; *551/10000=1269",
+      "formula_notes": "MV@L12=23690+2160*11=47450",
+      "tolerance_pct": 1.0
+    },
+    {
+      "kind": "anomaly_tick",
+      "element": "electric",
+      "ordinal": 0,
+      "move_name": "Shock",
+      "expected": 2150,
+      "source": "formula_derived",
+      "formula": "base=floor(3603*12500/10000)=4503; *12500(electric_dmg_boost)/10000=5628; *551(def_area)/10000=310; *34700(AP_area)/10000=1075; *20000(level_area)/10000=2150; *10000(no_anomaly_boost)/10000=2150",
+      "formula_notes": "Shock MV=125%; electric_dmg boost=2500bp; DEF_area=551 (pen_flat=18 + Kagen pen_ratio 10%); AP_area=347*100=34700 (347=114_agent+173_disc+30_CJ2pc+30_FB2pc — the prior 345 used 112, which is Yanagi's anomaly MASTERY; proficiency/mastery were transposed); level_area=20000; no anomaly_dmg_bonus (M0 Yanagi, no active modifier); see proc_counts for why this rotation yields 5 ticks, not 16",
+      "leifa_ref": "references/DMG Formula for Anomaly, Disorder and Vortex Leifa.html — Shock 125% base mult per tick",
+      "tolerance_pct": 1.0
+    }
+  ],
+  "proc_counts": {
+    "shock": {
+      "expected_procs": 5,
+      "expected_total": 10750,
+      "source": "formula_derived",
+      "formula_notes": "Shock is on-hit gated with a 1s internal CD (CLAUDE.md). This rotation is 4x Stance: Jougen; with the curated move spec's real duration_s=1.5 (docs/TASKS_move_key_resolution.md Task 8 — the crossval harness now loads moves/agents/*.json instead of forcing the tolerant fallback's hardcoded 1.0s), the rotation spans t=0.3..6.0 (5-hit sequential combo, hit timestamps 0.3/0.6/0.9/1.2/1.5 per press), so 5 one-second CD buckets fall inside it before the 10s Shock window closes (ticks at t=1.5, 2.7, 3.6, 4.5, 5.7 — verified via `python -m scripts.dump_crossval --archetype yanagi_shock`). Was 4 procs/8600 total under the old 1.0s fallback duration this fixture was previously calibrated against; per-tick damage (2150) is unchanged, only tick count. Leifa's 16-proc figure is the theoretical max over a full 10s window and needs a rotation at least that long; this fixture validates the on-hit gate and per-tick damage, not max-proc count (same treatment as vivian_corruption).",
+      "leifa_ref": "references/DMG Formula for Anomaly, Disorder and Vortex Leifa.html — Shock 125% base mult per tick; 16 procs is the 10s-window max"
+    }
+  }
+}

@@ -1,0 +1,156 @@
+<div class="ctx-bar">
+
+  <div class="ctx-bar__field">
+    <label class="ctx-bar__label eyebrow" for="rank-team">Team</label>
+    @if (teams().length === 0) {
+      <span class="ctx-bar__hint"><a href="/teams/new">Create a team →</a></span>
+    } @else {
+      <select
+        id="rank-team"
+        class="ctx-bar__select"
+        [ngModel]="selectedTeamId() ?? ''"
+        (ngModelChange)="onTeamChange($event)"
+        data-test="team-select"
+      >
+        <option value="">— choose —</option>
+        @for (t of teams(); track t.id) {
+          <option [value]="t.id">{{ t.name }}</option>
+        }
+      </select>
+    }
+  </div>
+
+  @if (selectedTeamId()) {
+
+    @if (teamMemberIndices().length > 1) {
+      <div class="ctx-bar__field">
+        <label class="ctx-bar__label eyebrow" for="rank-member">Member</label>
+        <select
+          id="rank-member"
+          class="ctx-bar__select"
+          [ngModel]="selectedActiveIndex()"
+          (ngModelChange)="onMemberChange(+$event)"
+          data-test="member-select"
+        >
+          @for (m of teamMemberIndices(); track m.index) {
+            <option [value]="m.index">{{ m.label }}</option>
+          }
+        </select>
+      </div>
+    }
+
+    <div class="ctx-bar__field">
+      <label class="ctx-bar__label eyebrow" for="rank-combo">Combo</label>
+      @if (combos().length === 0) {
+        <span class="ctx-bar__hint">No combos — <a [href]="'/teams/' + selectedTeamId()">add one</a></span>
+      } @else {
+        <select
+          id="rank-combo"
+          class="ctx-bar__select"
+          [ngModel]="selectedComboId() ?? ''"
+          (ngModelChange)="onComboChange($event)"
+        >
+          <option value="">— choose —</option>
+          @for (c of combos(); track c.id) {
+            <option [value]="c.id">{{ c.name }}</option>
+          }
+        </select>
+      }
+    </div>
+
+    <div class="ctx-bar__field">
+      <label class="ctx-bar__label eyebrow" for="rank-enemy">Enemy</label>
+      <div class="ctx-bar__enemy-tabs" role="tablist" aria-label="Enemy list filter">
+        @for (t of enemyTabs; track t.key) {
+          <button
+            type="button"
+            role="tab"
+            class="ctx-bar__enemy-tab"
+            [class.ctx-bar__enemy-tab--active]="enemyTab() === t.key"
+            [attr.aria-selected]="enemyTab() === t.key"
+            (click)="onEnemyTabChange(t.key)"
+          >{{ t.label }}</button>
+        }
+      </div>
+      <select
+        id="rank-enemy"
+        class="ctx-bar__select"
+        [ngModel]="selectedEnemyId() ?? ''"
+        (ngModelChange)="onEnemyChange($event)"
+      >
+        <option value="">— choose —</option>
+        @for (e of filteredEnemies(); track e.id) {
+          <option [value]="e.id">{{ e.name }} Lv{{ e.level }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="ctx-bar__field ctx-bar__field--sets">
+      <div class="ctx-bar__set-header">
+        <span class="ctx-bar__label eyebrow">Sets</span>
+        @if (selectedSetIds().length > 0) {
+          <button class="ctx-bar__set-clear" (click)="clearSets()">all sets</button>
+        }
+      </div>
+      <div class="ctx-bar__chips">
+        @if (allSets().length === 0) {
+          <span class="ctx-bar__hint">Loading…</span>
+        } @else {
+          @for (s of allSets(); track s.hakushin_id) {
+            <button
+              class="ctx-bar__chip"
+              [class.ctx-bar__chip--active]="isSetSelected(s.hakushin_id)"
+              [title]="s.name"
+              (click)="toggleSet(s.hakushin_id)"
+            >
+              @if (iconUrl(s.icon_path); as url) {
+                <img class="ctx-bar__chip-icon" [src]="url" [alt]="s.name" />
+              }
+              <span class="ctx-bar__chip-name">{{ s.name }}</span>
+            </button>
+          }
+        }
+      </div>
+      <span class="ctx-bar__set-hint mono">
+        @if (selectedSetIds().length === 0) {
+          all sets
+        } @else {
+          {{ selectedSetIds().length }} set{{ selectedSetIds().length === 1 ? '' : 's' }} selected
+        }
+      </span>
+    </div>
+
+    <div class="ctx-bar__field ctx-bar__field--filter">
+      <span class="ctx-bar__label eyebrow">Main stat</span>
+      <div class="ctx-bar__chips ctx-bar__chips--filter">
+        @for (opt of mainStatOptions; track opt.key) {
+          <button
+            type="button"
+            class="ctx-bar__chip ctx-bar__chip--sm"
+            [class.ctx-bar__chip--active]="isMainStatSelected(opt.key)"
+            (click)="toggleMainStat(opt.key)"
+          >{{ opt.label }}</button>
+        }
+      </div>
+    </div>
+
+    <div class="ctx-bar__field ctx-bar__field--filter">
+      <span class="ctx-bar__label eyebrow">Rarity</span>
+      <div class="ctx-bar__chips ctx-bar__chips--filter">
+        @for (r of rarityOptions; track r) {
+          <button
+            type="button"
+            class="ctx-bar__chip ctx-bar__chip--sm"
+            [class.ctx-bar__chip--active]="isRaritySelected(r)"
+            (click)="toggleRarity(r)"
+          >{{ r }}</button>
+        }
+      </div>
+    </div>
+  }
+
+  @if (errorMessage(); as err) {
+    <div class="ctx-bar__error mono">! {{ err }}</div>
+  }
+
+</div>

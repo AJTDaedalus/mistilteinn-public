@@ -1,0 +1,15 @@
+<div class="pending-wrap">
+  <div class="pending-card">
+    <span class="eyebrow">access pending</span>
+    <h2 class="pending-card__title">Awaiting approval</h2>
+    <p class="pending-card__lede">
+      @if (auth.me(); as me) {
+        Your account <strong>{{ me.label || me.email }}</strong> is pending manual approval.
+      } @else {
+        Your account is pending manual approval.
+      }
+      Check back later — there's nothing else to do on your end.
+    </p>
+    <button class="btn" type="button" (click)="logout()">Sign out</button>
+  </div>
+</div>

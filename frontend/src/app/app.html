@@ -1,0 +1,32 @@
+<div class="shell">
+  <header class="shell__header">
+    <a class="brand" routerLink="/">
+      <img class="brand__emblem" src="fairy-emblem.webp" alt="" />
+      <span class="brand__wordmark">Fairy</span>
+      <span class="brand__sub eyebrow">ZZZ Optimizer</span>
+    </a>
+    @if (auth.status() === 'approved') {
+      <nav class="shell__nav">
+        <a routerLink="/calculate" routerLinkActive="active">Calculate</a>
+        <a routerLink="/builds" routerLinkActive="active">Builds</a>
+        <a routerLink="/discs" routerLinkActive="active">Discs</a>
+        <a routerLink="/import" routerLinkActive="active">Import</a>
+        <a routerLink="/optimize" routerLinkActive="active">Optimize</a>
+        <a routerLink="/rank" routerLinkActive="active">Rank</a>
+        <a routerLink="/teams" routerLinkActive="active">Teams</a>
+        <span class="identity-chip">
+          <span class="identity-chip__name mono">{{ auth.me()?.label || auth.me()?.email }}</span>
+          <button class="identity-chip__signout" (click)="signOut()">Sign out</button>
+        </span>
+      </nav>
+    }
+  </header>
+
+  <main class="shell__main">
+    <router-outlet />
+  </main>
+
+  <footer class="shell__footer mono">
+    <span>v0.1 · dev build</span>
+  </footer>
+</div>

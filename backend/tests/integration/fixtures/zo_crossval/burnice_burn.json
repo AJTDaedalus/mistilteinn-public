@@ -1,0 +1,72 @@
+{
+  "_comment": "Golden fixture for Burnice build reconstructed from this fixture's own stat_line (was DB build 019e7ade, Electro-Lip Gloss R1, M0, L60, 4pc Chaos Jazz + 2pc Freedom Blues). ZO repo 464e7a2 has only a README; no ZO UI capture was performed. All values formula-derived and independently verified. BUILD SOURCE CHANGED 2026-08-07: the DB build this named existed only in one developer's database and was never checked in, so this archetype skipped for everyone else and FAILED under CROSSVAL_REQUIRE_DB=1 — the mode a reviewer is told to run before merging a damage-chain change. The build is now reconstructed from `stat_line` + `active_modifiers` below, which is what every `formula` here already derives from; the golden values did not move.",
+  "archetype": "burnice_burn",
+  "build_ref": "fixture_stat_line:burnice_burn",
+  "zo_commit": "464e7a2",
+  "stat_line": {
+    "atk": 2597,
+    "crit_rate_pct": 19.4,
+    "crit_dmg_pct": 93.2,
+    "anomaly_proficiency": 437,
+    "anomaly_mastery": 118,
+    "pen_flat": 9,
+    "pen_ratio_pct": 0.0,
+    "fire_dmg_pct": 15.0
+  },
+  "enemy": {
+    "level": 70,
+    "defense": 953,
+    "fire_res": 0
+  },
+  "active_modifiers": {
+    "fire_dmg_bp": 1500,
+    "pen_flat": 9,
+    "_note": "fire_dmg=1500 from Chaos Jazz 4pc (equipper_is_fire, resolved to always at snapshot). Electro-Lip Gloss passive (enemy_has_anomaly) is inactive in crossval conditions. AP=437: agent_base=120 + disc=182 (main+substats) + ELG_secondary@L60=75 + CJ_2pc=30 + FB_2pc=30 (the prior 435 used 118, which is Burnice's anomaly MASTERY — proficiency/mastery were transposed). ATK=2597 = ((agent L60 base 788 + core_stats[5].atk 75) + Electro-Lip Gloss 594) * 1.54 + 354 flat; the prior 2480 omitted the core flat ATK, which sits in the base bracket and is therefore scaled by ATK%. NO anomaly_dmg_bonus: the prior fixture applied 3000bp from a 'Core: Afterburn DMG (max, approx)' kit row that the Task 17 Batch 4 audit deleted as unsound on two counts — it hardcoded the AP-scaled '+1% Afterburn DMG per 10 Anomaly Proficiency, max 30%' at its cap, and Afterburn is a separate teammate-triggered Fire DMG instance, not the Burn anomaly ticks this fixture measures."
+  },
+  "events": [
+    {
+      "kind": "hit",
+      "element": "fire",
+      "ordinal": 0,
+      "move_name": "Basic Attack: Direct Flame Blend",
+      "hit_index": 0,
+      "expected": 157,
+      "source": "formula_derived",
+      "formula": "base=floor(2597*8990/10000)=2334; *11500(fire_dmg_boost)/10000=2684; *11808(crit_1.1808)/10000=3169; *498(def_area)/10000=157",
+      "formula_notes": "MV@L12=4480+410*11=8990; fire_dmg boost=10000+1500=11500; crit_area=10000+1940*9320//10000=11808; DEF_area: eff_def=953*794//50-9=15124, 794*10000//15918=498",
+      "tolerance_pct": 1.0
+    },
+    {
+      "kind": "hit",
+      "element": "fire",
+      "ordinal": 4,
+      "move_name": "Basic Attack: Direct Flame Blend",
+      "hit_index": 4,
+      "expected": 339,
+      "source": "formula_derived",
+      "formula": "base=floor(2597*19310/10000)=5015; *11500/10000=5767; *11808/10000=6809; *498/10000=339",
+      "formula_notes": "MV@L12=9630+880*11=19310",
+      "tolerance_pct": 1.0
+    },
+    {
+      "kind": "anomaly_tick",
+      "element": "fire",
+      "ordinal": 0,
+      "move_name": "Burn",
+      "expected": 646,
+      "source": "formula_derived",
+      "formula": "base=floor(2597*5000/10000)=1298; *11500(fire_dmg)/10000=1492; *498(def)/10000=74; *10000(no_res)/10000=74; *43700(AP_area)/10000=323; *20000(level_area)/10000=646; *10000(no_anomaly_boost)/10000=646",
+      "formula_notes": "Burn MV=50%; fire_dmg boost=1500bp; DEF_area=498 (pen_flat=9 applied); AP_area=437*100=43700 (437=120_agent+182_disc+75_ELG_secondary+30_CJ2pc+30_FB2pc); anomaly_boost=10000 (none — see active_modifiers._note); no res_ignore (M6 inactive at M0)",
+      "leifa_ref": "references/DMG Formula for Anomaly, Disorder and Vortex Leifa.html — Burn 50% base mult per tick",
+      "tolerance_pct": 1.0
+    }
+  ],
+  "proc_counts": {
+    "burn": {
+      "expected_procs": 20,
+      "expected_total": 12920,
+      "source": "Leifa",
+      "leifa_ref": "references/DMG Formula for Anomaly, Disorder and Vortex Leifa.html — Burn 20 procs, 10s duration (0.5s interval)"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+# Cloudflare Named Tunnel — ingress config
+#
+# Used when CLOUDFLARE_TUNNEL_TOKEN is set in docker-compose.
+# Replace <your-hostname> with the hostname you configured in the
+# Cloudflare Zero Trust dashboard (e.g. api.example.com).
+#
+# The tunnel token encodes the tunnel ID and account credentials;
+# this file only describes routing rules.
+
+tunnel: <tunnel-id>
+credentials-file: /etc/cloudflared/creds.json  # not needed when using token-based auth
+
+ingress:
+  - hostname: <your-hostname>
+    service: http://backend:8000
+  # Catch-all rule (required by cloudflared)
+  - service: http_status:404

@@ -1,0 +1,125 @@
+.error {
+  color: var(--cyan-bright);
+  background: rgba(255, 60, 60, 0.08);
+  border: 1px solid rgba(255, 100, 100, 0.4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-1);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-4);
+}
+
+.form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.section {
+  display: grid;
+  gap: var(--space-4);
+
+  h3 {
+    margin: 0;
+  }
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-4);
+
+  &.grid--2 { grid-template-columns: 1fr 1fr; }
+  &.grid--3 { grid-template-columns: repeat(3, 1fr); }
+}
+
+.field {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.field__label {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.field__unit {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--cyan-bright);
+}
+
+.skills {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.skills__row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-3);
+}
+
+.hint {
+  margin: 0;
+  color: var(--ink-faint);
+  font-size: var(--text-sm);
+}
+
+.form__actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+  padding-top: var(--space-2);
+}
+
+.disc-slots {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.disc-slot {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.icon-field {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.icon-field__img {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--surface-rule);
+  box-shadow: var(--glow-cyan);
+  object-fit: cover;
+  flex-shrink: 0;
+
+  &--round  { border-radius: 50%; }
+  &--square { border-radius: var(--radius-1); }
+
+  // Agent portraits are tall (~1:2); show the whole agent rather than a
+  // cropped circle.
+  &--portrait {
+    width: 90px;
+    height: 160px;
+    border-radius: var(--radius-1);
+    object-fit: contain;
+  }
+}
+
+.icon-field__input {
+  flex: 1;
+}

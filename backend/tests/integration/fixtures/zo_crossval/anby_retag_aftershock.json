@@ -1,0 +1,13 @@
+{
+  "_comment": "Soldier 0 - Anby (1381) on-field Chain re-tag: Chain Attack: Leaping Thunderstrike (MV=56380 bp, scope=chain) is re-tagged as Aftershock DMG via retag_as_aftershock=['chain','ultimate']. The hit remains a kind='hit' event (no separate aftershock proc event). totals['aftershock'] is incremented by the hit's damage. With only a single Chain hit in the rotation, totals['aftershock'] == totals['total']. No external ZO/Leifa source for exact totals; liveness gate only.",
+  "archetype": "anby_retag_aftershock",
+  "build_ref": "bare_build:agent=Soldier 0 - Anby,M0,L60,no_discs",
+  "source": "formula_derived",
+  "step_list": ["Chain Attack: Leaping Thunderstrike"],
+  "retag_check": {
+    "min_aftershock": 1,
+    "aftershock_equals_total": true,
+    "source": "formula_derived",
+    "formula_notes": "Chain Attack MV=56380 bp (DB attacks hit_index 0 for Chain scope, agent_id 019e4c7e-6792-7253-b261-b2976764d9c1). Re-tag adds damage to totals['aftershock']; total also incremented once. With one chain hit: totals['aftershock'] = totals['total'] = Anby_ATK * 563.80% * CritArea * DEFArea * RESArea."
+  }
+}

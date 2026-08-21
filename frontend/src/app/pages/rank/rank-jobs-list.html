@@ -1,0 +1,48 @@
+<div class="jobs-list">
+  @if (jobs().length === 0) {
+    <p class="jobs-list__empty">No ranking jobs yet. Submit a rank run to begin.</p>
+  } @else {
+    <table class="jobs-list__table">
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>Created</th>
+          <th>Agents</th>
+          <th>Scored</th>
+          <th>Progress</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (job of jobs(); track job.id) {
+          <tr class="jobs-list__row" [class.jobs-list__row--terminal]="isTerminal(job)">
+            <td>
+              <span class="jobs-list__badge jobs-list__badge--{{ job.status }}">{{ job.status }}</span>
+            </td>
+            <td class="mono">{{ formatDate(job.created_at) }}</td>
+            <td>{{ job.agent_name }}</td>
+            <td class="mono">{{ job.evaluated }}</td>
+            <td>
+              @if (job.assignments_total > 0) {
+                <div class="jobs-list__progress">
+                  <div class="jobs-list__progress-bar" [style.width.%]="progressPct(job)"></div>
+                  <span class="jobs-list__progress-label">{{ progressPct(job) }}%</span>
+                </div>
+              } @else {
+                <span class="jobs-list__progress-label">—</span>
+              }
+            </td>
+            <td class="jobs-list__actions">
+              @if (job.status === 'succeeded') {
+                <button class="btn-small" (click)="view.emit(job.id)">View</button>
+              }
+              @if (!isTerminal(job)) {
+                <button class="btn-small btn-small--danger" (click)="cancelJob.emit(job.id)">Cancel</button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

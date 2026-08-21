@@ -1,0 +1,40 @@
+{
+  "count": 7,
+  "results": [
+    {
+      "best_build_avg": -1.705006,
+      "best_build_max": -4.195404,
+      "slot": null
+    },
+    {
+      "best_build_avg": -1.705006,
+      "best_build_max": -4.195404,
+      "slot": null
+    },
+    {
+      "best_build_avg": -1.705006,
+      "best_build_max": -4.195404,
+      "slot": null
+    },
+    {
+      "best_build_avg": -0.302978,
+      "best_build_max": -0.026606,
+      "slot": null
+    },
+    {
+      "best_build_avg": 0.0,
+      "best_build_max": 0.0,
+      "slot": null
+    },
+    {
+      "best_build_avg": -2.044152,
+      "best_build_max": -3.742346,
+      "slot": null
+    },
+    {
+      "best_build_avg": -25.613596,
+      "best_build_max": -23.681266,
+      "slot": null
+    }
+  ]
+}

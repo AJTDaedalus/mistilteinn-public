@@ -1,0 +1,63 @@
+<div class="filters">
+  <div class="filters__row">
+    <input
+      type="search"
+      class="search-input"
+      placeholder="Search agent…"
+      [ngModel]="filters().name"
+      (ngModelChange)="setName($event)"
+    />
+  </div>
+
+  <div class="filters__row filters__row--chips">
+    <span class="filters__label eyebrow">Element</span>
+    <div class="chip-group">
+      @for (e of elements; track e) {
+        <button
+          type="button"
+          class="chip chip--icon"
+          [class.chip--active]="activeElements().has(e)"
+          (click)="toggleElement(e)"
+          [title]="e"
+        >
+          @if (elementIcon(e); as url) {
+            <img [src]="url" [alt]="e" class="chip__icon" />
+          }
+        </button>
+      }
+    </div>
+
+    <span class="filters__label eyebrow">Specialty</span>
+    <div class="chip-group">
+      @for (s of specialties; track s) {
+        <button
+          type="button"
+          class="chip chip--icon"
+          [class.chip--active]="activeSpecialties().has(s)"
+          (click)="toggleSpecialty(s)"
+          [title]="s"
+        >
+          @if (specialtyIcon(s); as url) {
+            <img [src]="url" [alt]="s" class="chip__icon" />
+          }
+        </button>
+      }
+    </div>
+
+    <span class="filters__label eyebrow">Rarity</span>
+    <div class="chip-group">
+      @for (r of rarities; track r) {
+        <button
+          type="button"
+          class="chip"
+          [class.chip--active]="activeRarities().has(r)"
+          (click)="toggleRarity(r)"
+        >{{ r }}</button>
+      }
+    </div>
+
+    @if (hasActiveFilters) {
+      <button type="button" class="reset-btn" (click)="reset()">Clear</button>
+    }
+  </div>
+</div>

@@ -1,0 +1,16 @@
+# gitleaks config — extends the default ruleset with a project allowlist.
+# gitleaks-action@v2 auto-detects this file at the repo root.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Project allowlist: third-party keys in saved reference HTML; test placeholders"
+# Saved community reference docs (Leifa / ZZZ stat HTML) embed Google/GCP iframe
+# API keys. These are not project secrets — they belong to the third-party pages.
+paths = [
+  '''references/.*''',
+]
+# False positive: a function argument in an auth integration test.
+regexes = [
+  '''ttl_seconds=30''',
+]

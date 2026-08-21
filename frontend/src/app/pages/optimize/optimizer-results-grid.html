@@ -1,0 +1,118 @@
+<div class="results-grid">
+  @if (results().length > 0) {
+    <div class="results-grid__controls">
+      <span class="eyebrow">Sort by:</span>
+      <button
+        type="button"
+        class="link-btn"
+        [class.active]="sortKey() === 'total_damage'"
+        (click)="sortKey.set('total_damage')"
+      >Total dmg</button>
+      <button
+        type="button"
+        class="link-btn"
+        [class.active]="sortKey() === 'delta'"
+        (click)="sortKey.set('delta')"
+      >Δ vs current</button>
+      @for (col of statColumns; track col.key) {
+        <button
+          type="button"
+          class="link-btn"
+          [class.active]="sortKey() === col.key"
+          (click)="sortKey.set(col.key)"
+        >{{ col.label }}</button>
+      }
+    </div>
+
+    <table class="results-grid__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th
+            class="sortable"
+            [class.sorted]="sortKey() === 'total_damage'"
+            (click)="sortKey.set('total_damage')"
+          >Total dmg</th>
+          <th
+            class="sortable"
+            [class.sorted]="sortKey() === 'delta'"
+            (click)="sortKey.set('delta')"
+          >Δ%</th>
+          @for (col of statColumns; track col.key) {
+            <th
+              class="sortable"
+              [class.sorted]="sortKey() === col.key"
+              (click)="sortKey.set(col.key)"
+            >{{ col.label }}</th>
+          }
+          <th>Sets</th>
+          <th></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (build of sorted(); track build.disc_ids[0]; let i = $index) {
+          <tr
+            class="results-grid__row"
+            [class.results-grid__row--expanded]="isExpanded(i)"
+            (click)="toggleExpand(i)"
+          >
+            <td class="mono">{{ i + 1 }}</td>
+            <td class="mono stat-value">{{ build.total_damage.toFixed(0) }}</td>
+            <td class="mono" [class]="deltaClass(build.total_damage)">
+              {{ formatDelta(build.total_damage) }}
+            </td>
+            @for (col of statColumns; track col.key) {
+              <td class="mono">{{ formatStat(build, col.key, col.bpField) }}</td>
+            }
+            <td class="results-grid__sets">
+              @for (pill of setPillsFor(build); track pill.setId) {
+                <span class="set-icon-pill" [title]="pill.name + ' ×' + pill.count">
+                  @if (pill.iconUrl) {
+                    <img class="set-icon-pill__img" [src]="pill.iconUrl" [alt]="pill.name" />
+                  } @else {
+                    <span class="set-icon-pill__fallback eyebrow">{{ pill.name }}</span>
+                  }
+                  <span class="set-icon-pill__count eyebrow">{{ pill.count }}</span>
+                </span>
+              }
+            </td>
+            <td>
+              <button
+                type="button"
+                class="btn btn-sm"
+                (click)="$event.stopPropagation(); onEquip(build)"
+              >Equip</button>
+            </td>
+            <td>
+              <button
+                type="button"
+                class="btn btn-sm btn-breakdown"
+                [disabled]="!hasDeepLinkContext()"
+                [attr.title]="hasDeepLinkContext() ? null : 'No team/combo/enemy context to evaluate against'"
+                (click)="$event.stopPropagation(); openBreakdown(build, i)"
+              >Breakdown</button>
+            </td>
+          </tr>
+          @if (isExpanded(i)) {
+            <tr class="results-grid__detail">
+              <td colspan="11">
+                <optimizer-build-detail [build]="build" />
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  }
+
+  @if (breakdownOpen()) {
+    <rank-breakdown-panel
+      [discLabel]="breakdownLabel()"
+      [loading]="breakdownLoading()"
+      [error]="breakdownError()"
+      [response]="breakdownResponse()"
+      (closed)="closeBreakdown()"
+    />
+  }
+</div>

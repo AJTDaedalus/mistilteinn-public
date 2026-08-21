@@ -1,0 +1,121 @@
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-tabs">
+      <button
+        class="login-tab"
+        [class.active]="mode() === 'signin'"
+        type="button"
+        (click)="mode.set('signin')"
+      >Sign in</button>
+      <button
+        class="login-tab"
+        [class.active]="mode() === 'register'"
+        type="button"
+        (click)="mode.set('register')"
+      >Request access</button>
+    </div>
+
+    @if (mode() === 'signin') {
+      <form class="login-form" (ngSubmit)="signIn()">
+        <label class="field">
+          <span class="field__label eyebrow">Email</span>
+          <input
+            class="field__input"
+            type="email"
+            placeholder="you@example.com"
+            [ngModel]="email()"
+            (ngModelChange)="email.set($event)"
+            name="email"
+            required
+            autocomplete="email"
+          />
+        </label>
+        <label class="field">
+          <span class="field__label eyebrow">Password</span>
+          <input
+            class="field__input"
+            type="password"
+            placeholder="Your password"
+            [ngModel]="password()"
+            (ngModelChange)="password.set($event)"
+            name="password"
+            required
+            autocomplete="current-password"
+          />
+        </label>
+        @if (error()) {
+          <p class="login-error">{{ error() }}</p>
+        }
+        <button class="btn btn-primary" type="submit" [disabled]="loading()">
+          {{ loading() ? 'Signing in…' : 'Sign in' }}
+        </button>
+      </form>
+    }
+
+    @if (mode() === 'register') {
+      <form class="login-form" (ngSubmit)="requestAccess()">
+        <label class="field">
+          <span class="field__label eyebrow">Email</span>
+          <input
+            class="field__input"
+            type="email"
+            placeholder="you@example.com"
+            [ngModel]="email()"
+            (ngModelChange)="email.set($event)"
+            name="email"
+            required
+            autocomplete="email"
+          />
+        </label>
+        <label class="field">
+          <span class="field__label eyebrow">Label <span class="ink-faint">(optional)</span></span>
+          <input
+            class="field__input"
+            type="text"
+            placeholder="e.g. my username"
+            [ngModel]="label()"
+            (ngModelChange)="label.set($event)"
+            name="label"
+            autocomplete="nickname"
+          />
+        </label>
+        <label class="field">
+          <span class="field__label eyebrow">Password</span>
+          <input
+            class="field__input"
+            type="password"
+            placeholder="At least 12 characters"
+            [ngModel]="password()"
+            (ngModelChange)="password.set($event)"
+            name="password"
+            required
+            autocomplete="new-password"
+          />
+        </label>
+        <label class="field">
+          <span class="field__label eyebrow">Confirm password</span>
+          <input
+            class="field__input"
+            [class.field__input--error]="password2Mismatch"
+            type="password"
+            placeholder="Repeat your password"
+            [ngModel]="confirmPassword()"
+            (ngModelChange)="confirmPassword.set($event)"
+            name="confirmPassword"
+            required
+            autocomplete="new-password"
+          />
+          @if (password2Mismatch) {
+            <span class="field__hint field__hint--error">Passwords do not match.</span>
+          }
+        </label>
+        @if (error()) {
+          <p class="login-error">{{ error() }}</p>
+        }
+        <button class="btn btn-primary" type="submit" [disabled]="loading() || password2Mismatch">
+          {{ loading() ? 'Submitting…' : 'Request access' }}
+        </button>
+      </form>
+    }
+  </div>
+</div>

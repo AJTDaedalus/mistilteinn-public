@@ -1,0 +1,33 @@
+# npm audit allowlist — advisories reviewed and accepted for this repo.
+#
+# Every entry here must be a devDependency-only finding (build/lint tooling that
+# never reaches the shipped bundle) with a one-line reason. scripts/check-audit-
+# allowlist.sh fails the build if:
+#   - npm audit reports a GHSA ID NOT listed here (new, unreviewed finding), or
+#   - an entry here is no longer reported by npm audit (stale — remove it)
+# so this list can't silently rot in either direction — same discipline as
+# backend/app/data/validation/known_issues.json in the kit-validation harness (D-KV7).
+#
+# Format: GHSA-xxxx-xxxx-xxxx  # reason
+
+# ---------------------------------------------------------------------------
+# Related: security `overrides` in package.json
+#
+# Two transitive deps pin a vulnerable version *exactly*, so no range bump
+# reaches them and there is no advisory left here for them to appear under:
+#
+#   @angular/build         pins undici  7.28.0 -> overridden to ^7.29.0
+#   @redocly/openapi-core  pins js-yaml 4.3.0  -> overridden to ^4.3.1
+#
+# Both are scoped to those consumers on purpose. A blanket `undici` override
+# also catches node-gyp, which declares ^6.25.0 and is already patched at
+# 6.28.0 (that advisory ends at 6.27.0) — a blanket pin would force an
+# unrequested major bump on a package with no finding.
+#
+# Unlike the entries above, these overrides have NO staleness detection: this
+# script only reconciles GHSA IDs against `npm audit`, and a satisfied override
+# reports nothing. So when either parent is upgraded, check whether its pinned
+# version has caught up and DELETE the override rather than leaving it to hold
+# the dep back — an override outliving its advisory is the same silent rot the
+# stale-entry check exists to prevent, just in a file this script cannot see.
+# ---------------------------------------------------------------------------

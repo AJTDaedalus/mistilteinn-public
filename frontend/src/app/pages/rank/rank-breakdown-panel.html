@@ -1,0 +1,65 @@
+<div
+  class="breakdown-backdrop"
+  role="button"
+  tabindex="0"
+  aria-label="Close breakdown"
+  (click)="onBackdrop($event)"
+  (keydown.escape)="close()"
+>
+  <div class="breakdown-panel" role="dialog" aria-modal="true">
+    <header class="breakdown-panel__header">
+      <h3>Full breakdown — {{ discLabel() }}</h3>
+      <button type="button" class="close-btn" (click)="close()" aria-label="Close">✕</button>
+    </header>
+
+    @if (loading()) {
+      <p class="hint">Evaluating…</p>
+    } @else if (error()) {
+      <p class="error">{{ error() }}</p>
+    } @else if (response(); as r) {
+      <div class="breakdown-panel__summary mono">
+        <div>
+          <span class="label">{{ r.dps_agent_name }}</span> ×
+          <span class="label">{{ r.combo_name }}</span> vs
+          <span class="label">{{ r.enemy_name }}</span>
+        </div>
+        <div class="stat-value total-damage">{{ r.total_damage | number: '1.0-0' }} total dmg</div>
+        @if (gainPct(); as gain) {
+          <div class="gain" [class.positive]="r.delta!.pct_change >= 0">
+            {{ gain }} vs. equipped ({{ r.delta!.from_total | number: '1.0-0' }} →
+            {{ r.delta!.to_total | number: '1.0-0' }})
+          </div>
+        }
+      </div>
+
+      @if (zoneRows().length > 0) {
+        <table class="zone-table mono">
+          <thead>
+            <tr>
+              <th>Zone</th>
+              <th>Equipped</th>
+              <th>Candidate</th>
+              <th>Gain Share</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (z of zoneRows(); track z.zone) {
+              <tr>
+                <td class="zone-name">{{ z.zone }}</td>
+                <td>{{ z.fromMult }}</td>
+                <td>{{ z.toMult }}</td>
+                <td>{{ z.sharePct }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        @if (deltaApproximate()) {
+          <p class="hint">
+            Gain shares are approximate for this combo — a zone (e.g. a stun
+            window or standard/anomaly mix) varies across steps.
+          </p>
+        }
+      }
+    }
+  </div>
+</div>

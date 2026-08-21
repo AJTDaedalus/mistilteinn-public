@@ -1,0 +1,70 @@
+<h1>Disc Ranker</h1>
+
+<div class="rank-page__toolbar">
+  <div class="rank-page__single-build">
+    <rank-context-bar (selectionChange)="onSelectionChange($event)" />
+    <button
+      type="button"
+      class="btn btn-primary rank-page__score-btn"
+      [disabled]="!singleCtx || loading()"
+      (click)="scoreSingle()"
+    >Score Discs</button>
+  </div>
+  <button class="rank-page__priority-toggle" (click)="togglePriorityPanel()">
+    {{ priorityPanelVisible() ? 'Hide priority builds' : 'Priority builds' }}
+  </button>
+</div>
+
+@if (jobs().length > 0) {
+  <rank-jobs-list
+    [jobs]="jobs()"
+    (view)="onViewJob($event)"
+    (cancelJob)="onCancelJob($event)"
+  />
+}
+
+<priority-builds-panel
+  [visible]="priorityPanelVisible()"
+  (contextsChange)="onPriorityContextsChange($event)"
+  (filtersChange)="onPriorityFiltersChange($event)"
+  (scoreRequested)="scorePriority()"
+/>
+
+@if (initError(); as err) {
+  <div class="rank-page__error mono">! {{ err }}</div>
+}
+
+@if (hasResults) {
+  <rank-filters
+    [discSets]="discSets()"
+    (filtersChange)="onFiltersChange($event)"
+  />
+}
+
+@if (loading()) {
+  <div class="rank-page__loading eyebrow">
+    @if (jobProgress() !== null) {
+      Ranking discs… {{ jobProgress() }}%
+    } @else {
+      Ranking discs…
+    }
+  </div>
+} @else if (scoreError(); as err) {
+  <div class="rank-page__error mono">! {{ err }}</div>
+} @else if (hasResults) {
+  <div class="rank-page__summary mono">
+    Ranked {{ rankResults()!.length }} of {{ totalDiscCount() }} discs
+  </div>
+  <rank-table
+    [scores]="scores()"
+    [discMap]="discMap()"
+    [setNames]="setNames()"
+    [setIcons]="setIcons()"
+    [buildNames]="buildNames()"
+    [filters]="filters()"
+    [rankResults]="rankResults()"
+    [supportBuildIds]="supportBuildIds()"
+  />
+} @else if (totalDiscCount() > 0) {
+  <div class="rank-page__empty eyebrow">Select a build, combo, and enemy to rank your discs.</div>
+}

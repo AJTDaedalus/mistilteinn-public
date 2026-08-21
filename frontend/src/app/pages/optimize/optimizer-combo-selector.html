@@ -1,0 +1,32 @@
+<div class="combo-selector">
+  <div class="combo-selector__header">
+    <span class="eyebrow">Combos to score</span>
+    <div class="combo-selector__actions">
+      <button type="button" class="link-btn" (click)="selectAll()">All</button>
+      <span class="combo-selector__sep">·</span>
+      <button type="button" class="link-btn" (click)="clearAll()">None</button>
+    </div>
+  </div>
+
+  @if (combos().length === 0) {
+    <p class="hint">No combos defined. Add combos in the Combos section.</p>
+  } @else {
+    <ul class="combo-selector__list">
+      @for (combo of combos(); track combo.id) {
+        <li class="combo-selector__item">
+          <label class="combo-selector__label">
+            <input
+              type="checkbox"
+              [checked]="isSelected(combo.id)"
+              (change)="toggle(combo.id)"
+            />
+            <span class="combo-selector__name">{{ combo.name }}</span>
+            <span class="combo-selector__steps eyebrow">
+              {{ (combo.sequence?.length || 0) }} steps
+            </span>
+          </label>
+        </li>
+      }
+    </ul>
+  }
+</div>

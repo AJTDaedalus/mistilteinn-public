@@ -1,0 +1,125 @@
+:host {
+  display: block;
+  position: relative;
+}
+
+.cb {
+  position: relative;
+}
+
+.cb__input {
+  width: 100%;
+  padding: var(--space-2) var(--space-6) var(--space-2) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  transition: border-color var(--t-fast) var(--ease),
+              box-shadow var(--t-fast) var(--ease);
+
+  &::placeholder {
+    color: var(--ink-faint);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--cyan);
+    box-shadow: var(--glow-cyan);
+  }
+}
+
+.cb--open .cb__input {
+  border-color: var(--cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+.cb--disabled .cb__input {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cb__caret {
+  position: absolute;
+  right: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-dim);
+  pointer-events: none;
+  font-size: var(--text-xs);
+  transition: transform var(--t-fast) var(--ease);
+}
+
+.cb--open .cb__caret {
+  transform: translateY(-50%) rotate(180deg);
+  color: var(--cyan);
+}
+
+.cb__list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--surface-hi);
+  border: 1px solid var(--cyan);
+  border-radius: var(--radius-1);
+  box-shadow: var(--glow-cyan), var(--shadow-card);
+}
+
+.cb__group {
+  padding: var(--space-2) var(--space-3) var(--space-1);
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+.cb__item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-1);
+  cursor: pointer;
+  font-size: var(--text-sm);
+
+  &--active {
+    background: var(--cobalt);
+    color: var(--ink);
+  }
+
+  &--disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.cb__label {
+  color: inherit;
+}
+
+.cb__detail {
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+  text-align: right;
+}
+
+.cb__item--active .cb__detail {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.cb__empty {
+  padding: var(--space-3);
+  color: var(--ink-faint);
+  font-size: var(--text-sm);
+  text-align: center;
+}

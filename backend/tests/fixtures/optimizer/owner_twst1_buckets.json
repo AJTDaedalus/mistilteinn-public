@@ -1,0 +1,84 @@
+{
+  "source_job": "019f162b-74a8-75d0-a5d6-a75287889d96",
+  "owner_id": "019e5510-5be0-74b3-a76b-b64dd3560515",
+  "frame": {
+    "32700": 2,
+    "33500": 4
+  },
+  "n_candidates": 595,
+  "exhaustive_combos": 12529002,
+  "buckets": [
+    {
+      "set_id": 32700,
+      "set_name": "Branch & Blade Song",
+      "slot": 1,
+      "count": 3
+    },
+    {
+      "set_id": 32700,
+      "set_name": "Branch & Blade Song",
+      "slot": 2,
+      "count": 18
+    },
+    {
+      "set_id": 32700,
+      "set_name": "Branch & Blade Song",
+      "slot": 3,
+      "count": 19
+    },
+    {
+      "set_id": 32700,
+      "set_name": "Branch & Blade Song",
+      "slot": 4,
+      "count": 18
+    },
+    {
+      "set_id": 32700,
+      "set_name": "Branch & Blade Song",
+      "slot": 5,
+      "count": 6
+    },
+    {
+      "set_id": 32700,
+      "set_name": "Branch & Blade Song",
+      "slot": 6,
+      "count": 12
+    },
+    {
+      "set_id": 33500,
+      "set_name": "White Water Ballad",
+      "slot": 1,
+      "count": 11
+    },
+    {
+      "set_id": 33500,
+      "set_name": "White Water Ballad",
+      "slot": 2,
+      "count": 7
+    },
+    {
+      "set_id": 33500,
+      "set_name": "White Water Ballad",
+      "slot": 3,
+      "count": 10
+    },
+    {
+      "set_id": 33500,
+      "set_name": "White Water Ballad",
+      "slot": 4,
+      "count": 4
+    },
+    {
+      "set_id": 33500,
+      "set_name": "White Water Ballad",
+      "slot": 5,
+      "count": 7
+    },
+    {
+      "set_id": 33500,
+      "set_name": "White Water Ballad",
+      "slot": 6,
+      "count": 13
+    }
+  ]
+}

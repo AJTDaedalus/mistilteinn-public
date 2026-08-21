@@ -1,0 +1,33 @@
+{
+  "anomaly_total": 0,
+  "by_category": [
+    {
+      "category": "basic",
+      "pct": 100.0,
+      "total": 83637
+    }
+  ],
+  "by_element": [
+    {
+      "element": "physical",
+      "pct": 100.0,
+      "total": 83637
+    }
+  ],
+  "standard_total": 83637,
+  "steps": [
+    {
+      "label": "BA1",
+      "total": 27879
+    },
+    {
+      "label": "BA2",
+      "total": 27879
+    },
+    {
+      "label": "BA3",
+      "total": 27879
+    }
+  ],
+  "total_damage": 83637
+}

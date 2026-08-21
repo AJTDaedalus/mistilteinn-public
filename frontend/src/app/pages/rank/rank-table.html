@@ -1,0 +1,196 @@
+@if (scores().length === 0) {
+  <p class="hint">No discs to rank. Select a build, combo, and enemy to load scores.</p>
+} @else {
+  @let hasPriority = hasPriorityList();
+  <div class="rank-table-wrap">
+    <div class="rank-grid" role="table">
+      <div
+        class="rank-grid__header"
+        role="row"
+        [style.gridTemplateColumns]="gridTemplate()"
+      >
+        <div
+          class="rank-grid__hcell sortable"
+          role="columnheader"
+          tabindex="0"
+          [class.sorted]="sortKey() === 'owner'"
+          (click)="setSort('owner')"
+          (keydown.enter)="setSort('owner')"
+          (keydown.space)="setSort('owner'); $event.preventDefault()"
+        >Owner{{ sortIndicator('owner') }}</div>
+        <div
+          class="rank-grid__hcell sortable"
+          role="columnheader"
+          tabindex="0"
+          [class.sorted]="sortKey() === 'set_name'"
+          (click)="setSort('set_name')"
+          (keydown.enter)="setSort('set_name')"
+          (keydown.space)="setSort('set_name'); $event.preventDefault()"
+        >Set{{ sortIndicator('set_name') }}</div>
+        <div
+          class="rank-grid__hcell sortable"
+          role="columnheader"
+          tabindex="0"
+          [class.sorted]="sortKey() === 'slot'"
+          (click)="setSort('slot')"
+          (keydown.enter)="setSort('slot')"
+          (keydown.space)="setSort('slot'); $event.preventDefault()"
+        >Slot{{ sortIndicator('slot') }}</div>
+        <div
+          class="rank-grid__hcell sortable"
+          role="columnheader"
+          tabindex="0"
+          [class.sorted]="sortKey() === 'rarity'"
+          (click)="setSort('rarity')"
+          (keydown.enter)="setSort('rarity')"
+          (keydown.space)="setSort('rarity'); $event.preventDefault()"
+        >Rarity{{ sortIndicator('rarity') }}</div>
+        <div
+          class="rank-grid__hcell sortable"
+          role="columnheader"
+          tabindex="0"
+          [class.sorted]="sortKey() === 'level'"
+          (click)="setSort('level')"
+          (keydown.enter)="setSort('level')"
+          (keydown.space)="setSort('level'); $event.preventDefault()"
+        >Lv{{ sortIndicator('level') }}</div>
+        <div
+          class="rank-grid__hcell sortable"
+          role="columnheader"
+          tabindex="0"
+          [class.sorted]="sortKey() === 'main_stat'"
+          (click)="setSort('main_stat')"
+          (keydown.enter)="setSort('main_stat')"
+          (keydown.space)="setSort('main_stat'); $event.preventDefault()"
+        >Main Stat{{ sortIndicator('main_stat') }}</div>
+        @for (col of substatCols; track col.key) {
+          <div
+            class="rank-grid__hcell sortable substat-col"
+            role="columnheader"
+            tabindex="0"
+            [class.sorted]="sortKey() === col.key"
+            (click)="setSort(col.key)"
+            (keydown.enter)="setSort(col.key)"
+            (keydown.space)="setSort(col.key); $event.preventDefault()"
+          >{{ col.label }}{{ sortIndicator(col.key) }}</div>
+        }
+        @if (!hasPriority) {
+          <div
+            class="rank-grid__hcell sortable"
+            role="columnheader"
+            tabindex="0"
+            [class.sorted]="sortKey() === 'avg_pct'"
+            (click)="setSort('avg_pct')"
+            (keydown.enter)="setSort('avg_pct')"
+            (keydown.space)="setSort('avg_pct'); $event.preventDefault()"
+          >Avg %{{ sortIndicator('avg_pct') }}</div>
+          <div
+            class="rank-grid__hcell sortable"
+            role="columnheader"
+            tabindex="0"
+            [class.sorted]="sortKey() === 'max_pct'"
+            (click)="setSort('max_pct')"
+            (keydown.enter)="setSort('max_pct')"
+            (keydown.space)="setSort('max_pct'); $event.preventDefault()"
+          >Max %{{ sortIndicator('max_pct') }}</div>
+        }
+        @if (hasPriority) {
+          <div
+            class="rank-grid__hcell sortable priority-col"
+            role="columnheader"
+            tabindex="0"
+            [class.sorted]="sortKey() === 'best_build_avg'"
+            (click)="setSort('best_build_avg')"
+            (keydown.enter)="setSort('best_build_avg')"
+            (keydown.space)="setSort('best_build_avg'); $event.preventDefault()"
+            title="Average potential of this disc in the build it fits best"
+          >Best Build Avg%{{ sortIndicator('best_build_avg') }}</div>
+          <div
+            class="rank-grid__hcell sortable priority-col"
+            role="columnheader"
+            tabindex="0"
+            [class.sorted]="sortKey() === 'best_build_max'"
+            (click)="setSort('best_build_max')"
+            (keydown.enter)="setSort('best_build_max')"
+            (keydown.space)="setSort('best_build_max'); $event.preventDefault()"
+            title="Maximum potential of this disc in the build it fits best"
+          >Best Build Max%{{ sortIndicator('best_build_max') }}</div>
+          <div
+            class="rank-grid__hcell sortable priority-col"
+            role="columnheader"
+            tabindex="0"
+            [class.sorted]="sortKey() === 'portfolio_avg'"
+            (click)="setSort('portfolio_avg')"
+            (keydown.enter)="setSort('portfolio_avg')"
+            (keydown.space)="setSort('portfolio_avg'); $event.preventDefault()"
+            title="Average potential across all builds in the priority list"
+          >All Builds Avg%{{ sortIndicator('portfolio_avg') }}</div>
+        }
+        <div class="rank-grid__hcell" role="columnheader">Breakdown</div>
+      </div>
+
+      <cdk-virtual-scroll-viewport itemSize="32" role="rowgroup">
+        <div
+          class="rank-grid__row"
+          role="row"
+          *cdkVirtualFor="let row of rows(); trackBy: trackByDiscId"
+          [style.gridTemplateColumns]="gridTemplate()"
+        >
+          <div class="rank-grid__cell owner-col" role="cell">{{ row.owner }}</div>
+          <div class="rank-grid__cell set-col" role="cell">
+            <span class="set-col__inner">
+              @if (row.setIconUrl) {
+                <img class="set-icon" [src]="row.setIconUrl" [alt]="row.setName" />
+              }
+              {{ row.setName }}
+            </span>
+          </div>
+          <div class="rank-grid__cell mono" role="cell">{{ row.slot }}</div>
+          <div class="rank-grid__cell rarity-col" role="cell">{{ row.rarity }}</div>
+          <div class="rank-grid__cell mono" role="cell">{{ row.level }}</div>
+          <div class="rank-grid__cell main-stat-col" role="cell">{{ row.mainStat }}</div>
+          @for (sub of row.substats; track $index) {
+            <div class="rank-grid__cell mono substat-col" role="cell">{{ sub }}</div>
+          }
+          @if (!hasPriority) {
+            <div class="rank-grid__cell mono stat-value avg-pct" role="cell">{{ row.avgPct }}</div>
+            <div class="rank-grid__cell mono stat-value max-pct" role="cell">{{ row.maxPct }}</div>
+          }
+          @if (hasPriority) {
+            <div class="rank-grid__cell mono stat-value best-build-avg-pct" role="cell">
+              {{ row.bestBuildAvg }}
+              @if (row.bestBuildLabel) {
+                <span class="best-build-label">{{ row.bestBuildLabel }}</span>
+              }
+              @if (row.bestBuildReferenceLabel) {
+                <span class="best-build-reference-mode">{{ row.bestBuildReferenceLabel }}</span>
+              }
+              @if (row.isBestBuildSupport) {
+                <span class="support-badge">support</span>
+              }
+            </div>
+            <div class="rank-grid__cell mono stat-value best-build-max-pct" role="cell">{{ row.bestBuildMax }}</div>
+            <div class="rank-grid__cell mono stat-value portfolio-avg-pct" role="cell">{{ row.portfolioAvg }}</div>
+          }
+          <div class="rank-grid__cell breakdown-col" role="cell">
+            <button
+              type="button"
+              class="breakdown-btn"
+              (click)="openBreakdown(row.discId)"
+            >Full breakdown →</button>
+          </div>
+        </div>
+      </cdk-virtual-scroll-viewport>
+    </div>
+  </div>
+
+  @if (breakdownOpen()) {
+    <rank-breakdown-panel
+      [discLabel]="breakdownLabel()"
+      [loading]="breakdownLoading()"
+      [error]="breakdownError()"
+      [response]="breakdownResponse()"
+      (closed)="closeBreakdown()"
+    />
+  }
+}

@@ -1,0 +1,11 @@
+@if (current(); as msg) {
+  <div class="toast" role="status" aria-live="polite">
+    <span class="toast__text">{{ msg.text }}</span>
+    @if (msg.action) {
+      <button type="button" class="toast__action" (click)="msg.action!.callback(); dismiss()">
+        {{ msg.action.label }}
+      </button>
+    }
+    <button type="button" class="toast__close" (click)="dismiss()" aria-label="Dismiss">✕</button>
+  </div>
+}

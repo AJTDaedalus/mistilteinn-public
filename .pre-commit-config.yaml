@@ -1,0 +1,44 @@
+# Ruff is pinned to v0.16.1 to match `backend/pyproject.toml`'s exact pin and the
+# version CI installs (issue #135). This said `rev: v0.5.0` — eleven minor versions
+# behind — so a checkout with hooks installed ran a *third* ruleset, different from
+# both the local one and CI's, and could "fix" code into a state CI then rejected.
+# Bump all three together, or the drift comes straight back.
+#
+# `ruff-format` is deliberately NOT enabled (issue #142). It mutates files, and at
+# v0.16.1 it reformats 75 of the 372 backend files the lint command covers. Applying
+# that piecemeal — only to whatever files a commit happens to touch — is the worst of
+# both worlds: the churn lands in unrelated diffs over months instead of one reviewable
+# commit, and `git blame` degrades the whole way. Adopting formatting is a real decision
+# with a real cost; it belongs in a deliberate pass that also adds `ruff format --check`
+# to CI, not in a hook that arrives as a side effect of a version bump.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.1
+    hooks:
+      - id: ruff
+        args: [--fix]
+        # Must mirror CI's path list exactly (.github/workflows/test.yml, "Ruff"):
+        #     ruff check app/ tests/ scripts/validate_kits.py scripts/refresh_kit_refs.py
+        # `^backend/` was wrong in the same way the stale `rev` was: it swept in all of
+        # `scripts/`, which carries ~65 pre-existing violations that CI deliberately
+        # does not lint. At v0.5.0 that was quiet; at v0.16.1 the hook reports 64 errors
+        # and auto-fixes unrelated one-off scripts on an unrelated commit. A hook that
+        # rejects or rewrites code CI is happy with trains people to `--no-verify`.
+        # No extension anchor on the `app|tests` arm: the hook's own
+        # `types_or: [python, pyi, jupyter]` already restricts it to what ruff lints,
+        # and `ruff check app/ tests/` covers `.pyi` and `.ipynb` too. Anchoring on
+        # `\.py$` here would silently skip a stub or a notebook that CI still checks.
+        files: ^backend/(app|tests)/|^backend/scripts/(validate_kits|refresh_kit_refs)\.py$
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks

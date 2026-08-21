@@ -1,0 +1,60 @@
+<section class="page">
+  <header class="page__header">
+    <span class="eyebrow">Tool · 03</span>
+    <h1>Teams</h1>
+    <p class="page__lede">
+      Group your builds into teams of up to three agents, then run squad calculations.
+    </p>
+    <div class="page__actions">
+      <a
+        class="btn btn-primary"
+        routerLink="/teams/new"
+        data-test="new-team"
+      >+ New team</a>
+    </div>
+  </header>
+
+  @if (error(); as err) {
+    <div class="error mono">! {{ err }}</div>
+  }
+
+  @if (!loading() && teams().length === 0) {
+    <div class="empty surface" data-test="empty">
+      <span class="eyebrow">No teams yet</span>
+      <p>Create a team to group your builds together.</p>
+    </div>
+  }
+
+  <div class="cards" data-test="cards-grid">
+    @for (team of teams(); track team.id) {
+      <a class="card" [routerLink]="['/teams', team.id]" data-test="team-card">
+        <div class="card__name-row">
+          <h3 class="card__name">{{ team.name || 'Untitled' }}</h3>
+        </div>
+        <div class="card__portraits" data-test="member-portraits">
+          @for (m of memberPortraits()(team); track m.name) {
+            <div class="portrait" [title]="m.name">
+              @if (m.iconUrl) {
+                <img
+                  class="portrait__img"
+                  [src]="m.iconUrl"
+                  [alt]="m.name"
+                  (error)="$event.target.style.display='none'"
+                />
+              } @else {
+                <span class="portrait__fallback">{{ m.name[0] }}</span>
+              }
+            </div>
+          }
+        </div>
+        <button
+          class="card__delete"
+          type="button"
+          aria-label="Delete team"
+          data-test="delete-team"
+          (click)="deleteTeam($event, team.id)"
+        >✕</button>
+      </a>
+    }
+  </div>
+</section>

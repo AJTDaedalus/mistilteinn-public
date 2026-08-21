@@ -1,0 +1,223 @@
+.page {
+  display: grid;
+  gap: var(--space-6);
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.page__header {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 60ch;
+
+  h1 {
+    font-size: var(--text-2xl);
+  }
+}
+
+.page__lede {
+  margin: 0;
+  color: var(--ink-dim);
+}
+
+.page__actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.error {
+  color: var(--cyan-bright);
+  background: rgba(255, 60, 60, 0.08);
+  border: 1px solid rgba(255, 100, 100, 0.4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-1);
+  font-size: var(--text-sm);
+}
+
+.empty {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--ink-dim);
+}
+
+.btn--active {
+  border-color: var(--halo);
+  box-shadow: var(--glow-cyan);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-4);
+}
+
+// ── Card: in-game agent-card layout ──────────────────────────────────
+// Portrait fills the frame; rank, element, specialty, mindscape and level
+// are overlaid. Only the name sits below the art.
+.card {
+  position: relative;
+  display: grid;
+  gap: var(--space-1);
+  color: var(--ink);
+  text-decoration: none;
+
+  &:hover { text-decoration: none; }
+}
+
+.card__frame {
+  position: relative;
+  aspect-ratio: 5 / 6;
+  border-radius: var(--radius-2);
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--surface-rule);
+  transition: border-color var(--t-fast) var(--ease),
+              box-shadow var(--t-fast) var(--ease),
+              transform var(--t-fast) var(--ease);
+
+  .card:hover & {
+    border-color: var(--halo);
+    box-shadow: var(--glow-cyan);
+    transform: translateY(-2px);
+  }
+}
+
+.card__portrait {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+// Rank badge — top-left, tinted by rarity.
+.card__rank {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 34px;
+  padding-top: 2px;
+  border-bottom-right-radius: 6px;
+  font-family: var(--font-display);
+  line-height: 0.78;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+
+  b { font-size: var(--text-xl); }
+  small { font-size: 7px; letter-spacing: 0.06em; opacity: 0.9; }
+
+  &--S { background: linear-gradient(150deg, #FF9A1E, #FFC24D); }
+  &--A { background: linear-gradient(150deg, #9A6BFF, #C7A8FF); }
+  &--B { background: linear-gradient(150deg, #3E8BFF, #7DBBFF); }
+}
+
+// Mindscape — top-right, shown only when > 0.
+.card__mindscape {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  z-index: 3;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: var(--radius-1);
+  background: rgba(10, 18, 36, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+// Element + specialty badges — stacked under the rank badge.
+.card__badges {
+  position: absolute;
+  top: 38px;
+  left: 5px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.card__badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(10, 18, 36, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 3px;
+  object-fit: contain;
+}
+
+// Level — bottom gradient bar.
+.card__level {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  padding: 5px 0 6px;
+  text-align: center;
+  font-size: var(--text-sm);
+  letter-spacing: 0.04em;
+  background: linear-gradient(to top, rgba(7, 12, 24, 0.92) 60%, rgba(7, 12, 24, 0));
+}
+
+.card__name {
+  margin: 0;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card__optimize {
+  display: block;
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--ink-dim);
+  text-decoration: none;
+
+  &:hover { color: var(--halo); }
+}
+
+.card__delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 4;
+  display: none;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: rgba(255, 60, 60, 0.55);
+  border: 1px solid rgba(255, 100, 100, 0.5);
+  border-radius: var(--radius-1);
+  color: #fff;
+  font-size: var(--text-xs);
+  cursor: pointer;
+  line-height: 1;
+  transition: background var(--t-fast) var(--ease);
+
+  &:hover { background: rgba(255, 60, 60, 0.85); }
+
+  .card:hover & {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

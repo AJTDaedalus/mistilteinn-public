@@ -1,0 +1,186 @@
+name: Tests
+
+# The repo had no test CI lane — only deploy-prod.yml and security.yml. So nothing
+# stopped a kit JSON with a fabricated citation, an unmapped stat key, or a modifier the
+# calc silently ignores from reaching `dev` (and `dev` deploys straight to prod).
+#
+# Everything here is HERMETIC: no network, no ZO clone, no seeded game data. The kit
+# validators read committed fixtures (app/data/validation/*.json, refreshed by
+# scripts/refresh_kit_refs.py), so a change in an upstream source shows up as a reviewable
+# diff in a PR rather than a silent green→red flip in CI. See docs/DESIGN_kit_validation.md.
+#
+# The integration lane stands up a Postgres service, which does not break that property:
+# the database is EMPTY and the suite builds its own schema and fixtures. Hermetic means
+# "no external state this workflow does not create", not "no database" — conflating the
+# two is what kept the integration suite out of CI (see the `integration` job).
+#
+# Deliberately outside CI: kit-validation L4/L5, which need real seeded game data. They
+# are proven by the pre-merge agent review instead — see CLAUDE.md's kit gate paragraph
+# and docs/DECISIONS.md (2026-07-30, issue #114). That is a division of labour, not a gap.
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend — lint + unit tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        run: pip install -e ".[dev]"
+
+      - name: Ruff
+        # `scripts/` as a whole is not linted: it carries ~65 pre-existing violations in
+        # unrelated one-off scripts, and fixing them is not this lane's job. The two
+        # scripts the harness depends on are linted explicitly so they cannot rot.
+        run: ruff check app/ tests/ scripts/validate_kits.py scripts/refresh_kit_refs.py
+
+      - name: Unit tests
+        # Unit only. Integration runs in its own job below so this lane stays fast
+        # and dependency-free — not because integration is unrunnable here.
+        run: pytest tests/unit -q
+
+  integration:
+    # The comment this job replaces said integration tests "need a seeded Postgres,
+    # which this lane deliberately does not stand up". Half of that is wrong, and the
+    # wrong half is why 500+ tests sat outside CI: `tests/conftest.py` builds the
+    # schema with `Base.metadata.create_all` and every test creates its own fixtures,
+    # so the suite needs an EMPTY Postgres and no seed, no migrations, and no network.
+    # It is exactly as hermetic as the unit lane.
+    #
+    # What that cost: `test_a_mixed_voidflare_store_splits_by_provenance` went red the
+    # moment E-F3 landed in Phase 2 and stayed red for the whole phase, because the
+    # only thing that ran it was a developer remembering to. PR #113 found it by
+    # accident. Two subsequent reviews had to verify 500 tests by hand.
+    #
+    # Genuinely seeded-DB tests (tests/integration/test_zo_crossval.py) skip
+    # themselves here: `DATABASE_URL` points at this same empty database, so their
+    # `app_db` fixture finds no agents and skips with a message saying so.
+    name: Backend — integration tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: mistilteinn
+          POSTGRES_PASSWORD: mistilteinn_dev
+          POSTGRES_DB: mistilteinn_test
+        ports:
+          - 5432:5432
+        # Without this the job races the container: asyncpg connects before Postgres
+        # finishes its first-boot init and the whole suite errors on connection.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgresql+asyncpg://mistilteinn:mistilteinn_dev@localhost:5432/mistilteinn_test
+      DATABASE_URL: postgresql+asyncpg://mistilteinn:mistilteinn_dev@localhost:5432/mistilteinn_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        run: pip install -e ".[dev]"
+
+      - name: Integration tests
+        run: pytest tests/integration -q
+
+  kit-validation:
+    # The name states what a green run *proves*, not what the harness dispatches.
+    #
+    # L4 and L5 are proven by the pre-merge agent review against a seeded DB, not here
+    # — a division of labour, not a gap (issue #114, docs/DECISIONS.md 2026-07-30).
+    # They cannot come back to CI: L5 reads `attacks.param_name`, which only the nanoka
+    # importer populates, so no offline seed produces it; and nanoka.cc inside a
+    # manually-confirmed gate would make the gate flaky, which trains reviewers to wave
+    # it through. CLAUDE.md's gate paragraph is the authority on both halves.
+    #
+    # DO NOT "tidy" the run below into `--level l0 --level l1 --level l2 --level lc`.
+    # The stale-waiver check is gated on `set(levels) == set(LEVELS)` — grep that
+    # expression in validate_kits.py rather than chasing a line number. Narrowing the
+    # dispatch switches staleness off for L0–L2 as well, the opposite of what the
+    # narrowing would look like it was doing.
+    # Dispatching everything and letting L4/L5 skip is load-bearing: skipping is what
+    # makes `_unrunnable_waiver_codes` exempt their codes and only their codes.
+    name: Kit validation harness (L0–L2, L6, LC, LU)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        run: pip install -e ".[dev]"
+
+      - name: Validate kit modifiers
+        # Exits non-zero on any finding not listed in app/data/validation/known_issues.json
+        # — and also on a listed finding that no longer fires, so the ledger cannot rot
+        # (D-KV7).
+        #
+        # `--gate` additionally fails while any `branch_debt` waiver is open, which is the
+        # merge criterion this branch set for itself. `upstream_blocked` entries are
+        # excluded by design: they wait on a third party (D-KV22 — an agent whose ZO sheet
+        # is an unimplemented stub), so gating on them would only pressure someone into
+        # inventing a citation, the exact defect this harness exists to catch.
+        run: python -m scripts.validate_kits --gate
+
+  frontend:
+    name: Frontend — unit tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Unit tests
+        # Includes L3 (stat-meta.spec.ts): every stat key used by a modifier JSON must
+        # have a STAT_META entry, or it ships as a raw `FINAL_ATK_PCT +1000` chip (#62).
+        run: npm test

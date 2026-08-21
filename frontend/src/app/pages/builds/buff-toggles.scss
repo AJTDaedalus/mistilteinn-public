@@ -1,0 +1,238 @@
+.buffs {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.conditions {
+  display: grid;
+  gap: var(--space-3);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--surface-rule);
+}
+
+.conditions__header {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.conditions__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.conditions__label {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  cursor: pointer;
+  transition: border-color 0.12s ease;
+
+  &:hover {
+    border-color: var(--cyan);
+  }
+
+  input[type='checkbox'] {
+    accent-color: var(--cyan-bright);
+    cursor: pointer;
+  }
+}
+
+.conditions__name {
+  color: var(--cyan-bright);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.conditions__source {
+  color: var(--ink-dim);
+  font-size: var(--text-sm);
+}
+
+.buffs__header {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.error {
+  color: var(--cyan-bright);
+  background: rgba(255, 60, 60, 0.08);
+  border: 1px solid rgba(255, 100, 100, 0.4);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-1);
+  font-size: var(--text-sm);
+}
+
+.role {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--surface-rule);
+
+  &:first-of-type {
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
+.role__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.role__agent {
+  color: var(--ink);
+  font-size: var(--text-md);
+  font-weight: 500;
+}
+
+.ability {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--bg);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-2);
+}
+
+.ability__head {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.ability__name {
+  margin: 0;
+  font-size: var(--text-md);
+  color: var(--ink);
+}
+
+.ability__desc {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--ink-dim);
+  white-space: pre-wrap;
+}
+
+.ability__buffs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.buff__row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+
+  &:hover {
+    border-color: var(--cyan);
+  }
+
+  input[type='checkbox'] {
+    accent-color: var(--cyan-bright);
+    cursor: pointer;
+  }
+}
+
+.buff__main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.buff__stat {
+  color: var(--cyan-bright);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.buff__tag {
+  align-self: start;
+  display: inline-block;
+  padding: 1px var(--space-2);
+  background: rgba(79, 182, 255, 0.12);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  color: var(--ink-dim);
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.buff__stacks {
+  align-self: start;
+  color: var(--ink-dim);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.buff__preview {
+  color: var(--cyan-bright);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-sm);
+}
+
+.buff__total {
+  margin-left: var(--space-2);
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+}
+
+.buff__stack-edit {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3) var(--space-2) calc(var(--space-3) + 1.5rem);
+}
+
+.buff__stack-edit-label {
+  color: var(--ink-dim);
+  font-size: var(--text-sm);
+}
+
+.buff__stack-edit-input {
+  width: 4rem;
+  padding: var(--space-1) var(--space-2);
+  background: var(--bg);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  color: var(--cyan-bright);
+  font-size: var(--text-sm);
+  text-align: right;
+
+  &:focus {
+    outline: none;
+    border-color: var(--cyan);
+  }
+}
+
+.buff__stack-edit-max {
+  color: var(--ink-dim);
+  font-size: var(--text-sm);
+}

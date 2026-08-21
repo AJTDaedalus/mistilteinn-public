@@ -1,0 +1,50 @@
+<div class="inv-filter">
+  <div class="inv-filter__section">
+    <span class="eyebrow">Min rarity</span>
+    <div class="inv-filter__chips">
+      @for (r of rarities; track r) {
+        <button
+          type="button"
+          class="rarity-chip"
+          [class.rarity-chip--active]="state().minRarity === r"
+          (click)="setRarity(r)"
+        >{{ r }}</button>
+      }
+    </div>
+  </div>
+
+  <div class="inv-filter__section">
+    <span class="eyebrow">Min level</span>
+    <input
+      type="number"
+      class="inv-filter__level mono"
+      min="0"
+      max="15"
+      [value]="state().minLevel"
+      #levelInput
+      (change)="setLevel(levelInput.value)"
+    />
+  </div>
+
+  <div class="inv-filter__section inv-filter__section--column">
+    <span class="eyebrow">Main stat (slots 4 / 5 / 6)</span>
+    @for (slot of mainStatSlots; track slot) {
+      <div class="inv-filter__slot-row">
+        <span class="inv-filter__slot-label mono">Slot {{ slot }}</span>
+        <div class="inv-filter__main-chips">
+          @for (m of slotMains[slot]; track m.key) {
+            <button
+              type="button"
+              class="main-chip"
+              [class.main-chip--active]="isMainSelected(slot, m.key)"
+              (click)="toggleMain(slot, m.key)"
+            >{{ m.label }}</button>
+          }
+          @if (slotMainsCount(slot) === 0) {
+            <span class="inv-filter__any-hint">any</span>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>
