@@ -105,8 +105,15 @@ happened to roll.
 
 ### Why it is not zero
 
-Exactly one understood difference separates the two sides on the `ayaka_normal_1` case, and
-it is not arithmetic: the float32-vs-decimal growth curve above, worth ≤2.5e-8 relative.
+**The measured agreement is 1.33e-8 relative, not zero** — `108.53040079774516` here against
+gcsim's `108.53039935232651`. Exactly one understood difference separates the two sides on
+the `ayaka_normal_1` case, and it is not arithmetic: the float32-vs-decimal growth curve
+above, worth ≤2.5e-8 relative.
+
+(A hand check during F.8 appeared to show an exact match and was reported as one. It had
+substituted gcsim's own base ATK for this repo's, so it compared gcsim against itself for
+that term. Any "exact match" claim about a curve-scaled quantity should be treated as a
+measurement error until it survives the end-to-end harness.)
 Everything else agrees exactly — **crit rate and crit DMG, which no curve touches, match bit
 for bit**, and that is the check that the residual really is curve provenance rather than
 something structural.
@@ -119,8 +126,9 @@ substat — moves the answer by *percent*, not by parts per ten-million.
 
 That is not an assertion:
 `test_the_tolerance_cannot_hide_a_formula_error` drops the enemy's resistance and checks the
-result lands **outside** the tolerance, by more than 10%. If that test ever passes, the
-tolerance has been widened past the point of meaning anything.
+result lands **outside** the tolerance, by more than 10%. A passing run is the healthy state.
+If that test ever **fails**, the tolerance has been widened past the point of meaning
+anything.
 
 ### What this tolerance does not cover
 

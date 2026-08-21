@@ -465,8 +465,9 @@ The first chunk where correctness, not mechanics, is the risk.
 matches a gcsim fixture within an agreed tolerance, with the tolerance and its justification
 written into the crossval doc.
 
-> **Delivered 2026-08-21 (PRs #6, #7, #8).** Exit met — **bit-identical** to gcsim
-> (`108.53039935232651`), tolerance `1e-7` argued in `docs/CROSSVAL_gcsim.md`. Four
+> **Delivered 2026-08-21 (PRs #6, #7, #8).** Exit met — `108.53040079774516` against
+> gcsim's `108.53039935232651`, a **1.3e-8** relative match inside the `1e-7` tolerance
+> argued in `docs/CROSSVAL_gcsim.md`. Four
 > departures from this sketch, all in the LOG (F.1-F.8):
 >
 > 1. **The stat formula is single-stage.** fairy's two-stage `pre`/`final` shape has no

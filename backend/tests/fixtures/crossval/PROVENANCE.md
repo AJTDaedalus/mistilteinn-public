@@ -22,15 +22,23 @@ reviewable diff rather than as a side effect of running the tests.
 
 ```bash
 # gcsim is not vendored: it is a 35 MB Go binary and building it needs a Go toolchain.
-git clone https://github.com/genshinsim/gcsim && cd gcsim
+CASES=$(pwd)/backend/tests/fixtures/crossval      # run this from the repo root
+git clone https://github.com/genshinsim/gcsim /tmp/gcsim && cd /tmp/gcsim
 git checkout 3647a07a7cc3004bc1e79d9bb5f7444de20dceaa
 go build -o gcsim ./cmd/gcsim
-./gcsim -c ayaka_normal_1.txt -nb -out ayaka_normal_1.json
+./gcsim -c "$CASES/ayaka_normal_1.txt" -nb -out "$CASES/ayaka_normal_1.json"
 ```
 
-`sample_seed` and `build_date` are stripped from the committed copy: both change on every
-run and carry no information, and leaving them in would make the fixture diff every time
-anyone regenerated it for an unrelated case.
+The config lives in this directory and not in the clone, so the paths have to be absolute —
+the first version of this recipe `cd`-ed into the clone and then named the config by its bare
+filename, which fails with "no such file". A regeneration recipe that does not run is worse
+than none, because it reads as though the oracle is reproducible on demand.
+
+**Strip the per-run noise before committing**: `sample_seed`, `build_date`, every
+`statistics.*_seed` field, and `statistics.dev_debug.seeded_dps[].seed`. All change on every
+run and carry no information, and leaving them in makes the fixture diff on every
+regeneration — including regenerations done for an unrelated case. (The first version of
+this note claimed two fields were enough; six more were still in the file.)
 
 ## The cases
 

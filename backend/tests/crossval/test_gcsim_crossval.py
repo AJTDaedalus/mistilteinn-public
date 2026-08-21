@@ -46,14 +46,16 @@ _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "crossval"
 PINNED_GCSIM = "3647a07a7cc3004bc1e79d9bb5f7444de20dceaa"
 
 #: gcsim's `character_details[].snapshot` is indexed by its `Stat` enum
-#: (`pkg/core/attributes/stats.go:12-40`). These four indices were confirmed **empirically**
-#: — by adding a known flat HP, ATK%, crit rate and EM to a config and watching which slots
-#: moved — rather than counted off the enum, because an off-by-one here would make a passing
-#: assertion meaningless.
+#: (`pkg/core/attributes/stats.go:12-40`). **Four of these seven were confirmed
+#: empirically** — HP, ATK, crit rate and EM, by adding a known amount of each to a config
+#: and watching which slot moved — because an off-by-one here would make a passing assertion
+#: meaningless. DEF, CD and ER are read off the enum and agree with non-zero values in the
+#: fixture, which is weaker evidence; a case that perturbs them would make it as strong.
 SNAPSHOT_TOTAL_DEF = 2
 SNAPSHOT_TOTAL_HP = 3
 SNAPSHOT_TOTAL_ATK = 5
 SNAPSHOT_ENERGY_RECHARGE = 7
+#: Unused until a case has non-zero EM — see the note in the stats test.
 SNAPSHOT_ELEMENTAL_MASTERY = 8
 SNAPSHOT_CRIT_RATE = 9
 SNAPSHOT_CRIT_DMG = 10
@@ -186,11 +188,14 @@ async def test_the_stat_layer_matches_gcsims_snapshot(crossval_session: AsyncSes
     ):
         assert calculator.compute(node) == snapshot[index], f"{label} disagrees with gcsim"
 
+    # Elemental mastery is deliberately **not** asserted here: Ayaka has none, so the slot
+    # is 0 and the check would pass against half a dozen wrong indices. It becomes a real
+    # assertion when a case with non-zero EM exists — an amplifying-reaction case will have
+    # one — and asserting it now would be a placeholder pretending to be coverage.
     for index, node, label in (
         (SNAPSHOT_TOTAL_HP, stat_nodes.HP_NODE, "HP"),
         (SNAPSHOT_TOTAL_ATK, stat_nodes.ATK_NODE, "ATK"),
         (SNAPSHOT_TOTAL_DEF, stat_nodes.DEF_NODE, "DEF"),
-        (SNAPSHOT_ELEMENTAL_MASTERY, stat_nodes.ELEMENTAL_MASTERY_NODE, "elemental mastery"),
     ):
         assert calculator.compute(node) == pytest.approx(
             snapshot[index], rel=RELATIVE_TOLERANCE,
@@ -275,8 +280,9 @@ async def test_the_tolerance_cannot_hide_a_formula_error(crossval_session: Async
     """A tolerance that could absorb a real mistake would make the exercise decorative.
 
     Dropping the enemy's resistance — the smallest single error available — moves the figure
-    by 10%, six orders of magnitude outside the tolerance. If this test ever passes, the
-    tolerance has been widened past the point of meaning anything.
+    by 10%, six orders of magnitude outside the tolerance. **A passing run is the healthy
+    state**: it means a wrong number lands outside. If this test ever *fails*, the tolerance
+    has been widened past the point of meaning anything.
     """
     log, character = await _ayaka_dull_blade(crossval_session)
     multiplier = await _first_normal_attack_multiplier(crossval_session, character.id)

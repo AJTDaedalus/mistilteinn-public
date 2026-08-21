@@ -41,9 +41,15 @@ from tests.unit.nanoka_transport import FIXTURE_DIR, FixtureTransport
 #: Set this in CI. When set, an unreachable database is a **failure**, never a skip.
 REQUIRE_DB_ENV = "CROSSVAL_REQUIRE_DB"
 
-#: The entities the committed cases need. Kept explicit so that adding a case that needs a
-#: new character also has to commit its payload — the fixture and the seed cannot drift.
-SEEDED = {"character": "10000002", "weapon": "11101"}
+#: The entities the committed cases need, as `(entity, index key)` pairs. Kept explicit so
+#: that adding a case which needs a new character also has to commit its payload — the
+#: fixture and the seed cannot drift.
+#:
+#: A **set of pairs**, not `{entity: key}`: the mapping form could hold only one id per
+#: entity type, so adding a second character would have silently dropped one of them at the
+#: dict-key collision. The second crossval case needs exactly that, so the shape was wrong
+#: one case before it would have mattered.
+SEEDED: set[tuple[str, str]] = {("character", "10000002"), ("weapon", "11101")}
 
 
 def _required() -> bool:
@@ -65,10 +71,10 @@ def _transport() -> FixtureTransport:
     """Serve exactly the committed payloads the cases need."""
     details = {}
     indexes: dict[str, dict] = {}
-    for entity, key in SEEDED.items():
+    for entity, key in sorted(SEEDED):
         path = Path(FIXTURE_DIR) / "detail" / f"{entity}_{key}.json"
         details[entity, key] = json.loads(path.read_text(encoding="utf-8"))
-        indexes[entity] = {key: {}}
+        indexes.setdefault(entity, {})[key] = {}
     return FixtureTransport(indexes=indexes, details=details)
 
 
@@ -91,15 +97,39 @@ async def crossval_session():
         await engine.dispose()
         _unavailable(f"cannot reach it ({type(exc).__name__}: {exc})")
 
-    async with engine.connect() as connection:
-        transaction = await connection.begin()
-        session = AsyncSession(bind=connection, expire_on_commit=False)
-        importer = NanokaGIImporter(session, transport=_transport())
-        await importer.import_characters()
-        await importer.import_weapons()
-        try:
-            yield session
-        finally:
-            await session.close()
-            await transaction.rollback()
-    await engine.dispose()
+    try:
+        async with engine.connect() as connection:
+            transaction = await connection.begin()
+            session = AsyncSession(bind=connection, expire_on_commit=False)
+            importer = NanokaGIImporter(session, transport=_transport())
+            await importer.import_characters()
+            await importer.import_weapons()
+            _check_import(importer)
+            try:
+                yield session
+            finally:
+                await session.close()
+                await transaction.rollback()
+    finally:
+        # The engine is function-scoped, so a run that failed part way used to leave one
+        # live connection pool per failing test.
+        await engine.dispose()
+
+
+def _check_import(importer: NanokaGIImporter) -> None:
+    """Fail here if the importer could not map what crossval needs.
+
+    `_run_pass` records a per-item mapping failure in `EntityResult.failed` and carries on,
+    which is right for a 1,000-entity seed and wrong here: without this, a field-mapping
+    regression on Ayaka would show up much later as "no Ayaka in the database, re-run
+    seed_db" — remediation advice for a script this harness does not use, pointing the
+    reader away from the importer bug the harness exists to catch.
+    """
+    for result in importer.results:
+        if result.failed or result.imported != len(
+            [pair for pair in SEEDED if pair[0] == result.entity],
+        ):
+            pytest.fail(
+                f"crossval could not seed {result.entity}: {result}. This is an importer "
+                f"mapping failure against a committed payload, not a database problem.",
+            )

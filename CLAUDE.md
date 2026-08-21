@@ -18,8 +18,9 @@ This tree is a fork of fairy `dev` @ 76909c4. **Chunks A, B, C, D, E and F of
 `docs/TASKS_mistilteinn.md` are done:** the ZZZ domain layer is deleted, the infrastructure
 core is green, the Genshin domain models exist, the nanoka GI importer seeds them, and the
 committed YuanShenResources snapshot supplies what nanoka does not publish, and the damage
-chain reproduces **gcsim bit for bit** on its first crossval case. **Chunk G — the artifact
-optimizer and GOOD import — is next.**
+chain **matches gcsim to 1.3e-8 relative** on its first crossval case — inside the argued
+`1e-7` tolerance, with the residual fully explained (float32 curves in the dump against
+decimals in gcsim). **Chunk G — the artifact optimizer and GOOD import — is next.**
 
 - **The backend suite passes.** 584 tests, 1 skipped (`tests/perf`, awaiting G.7).
   `ruff check app/ tests/ scripts/seed_db.py scripts/verify_seed.py
@@ -54,9 +55,11 @@ optimizer and GOOD import — is next.**
   exits non-zero and deletes nothing; `python -m scripts.seed_db --force-prune` is the
   override for when a patch really did retract that much and someone has read the numbers.
 - **The damage chain is verified against gcsim, not merely cited to it.**
-  `pytest tests/crossval` recomputes a committed gcsim run and matches it to a relative
-  `1e-7` — the tolerance is argued in `docs/CROSSVAL_gcsim.md`, and a test proves it cannot
-  hide a formula error. **CI runs it with `CROSSVAL_REQUIRE_DB=1`, so a skip is a failure**;
+  `pytest tests/crossval` recomputes a committed gcsim run and matches it to **1.3e-8**,
+  inside the argued `1e-7` — the tolerance and the residual are explained in
+  `docs/CROSSVAL_gcsim.md`, and a test proves the tolerance cannot hide a formula error.
+  **It is not an exact match, and nothing here should say it is**: the residual is real,
+  understood, and the reason the tolerance is not zero. **CI runs it with `CROSSVAL_REQUIRE_DB=1`, so a skip is a failure**;
   that is the gate fairy shipped a stale golden fixture without. The harness seeds itself
   from the committed nanoka fixtures through the real importer, so it needs no network.
 - **Two deliberate divergences from gcsim** are recorded in `docs/CROSSVAL_gcsim.md`: the
