@@ -194,3 +194,38 @@ async def test_batching_does_not_change_what_gets_imported(
     await importer._run_pass("weapon", Weapon, mapper)
 
     assert seen == keys
+
+
+async def test_a_database_level_failure_does_not_poison_the_rest_of_the_pass(
+    db_session: AsyncSession,
+):
+    """One IntegrityError must cost one row, not the whole pass.
+
+    Without a per-item savepoint the failed flush leaves the transaction unusable, and every
+    remaining item fails too — a single bad payload gets reported as a broken import.
+    """
+    await _make_weapon(db_session, 2, "Occupies the id the mapper will collide with")
+    importer = NanokaGIImporter(db_session, transport=_weapon_transport("1", "2", "3"))
+
+    async def mapper(key: str, payload: dict[str, Any]) -> bool:
+        # Key "2" collides on the unique `nanoka_id`, which fails at flush time rather
+        # than in Python.
+        db_session.add(
+            Weapon(
+                nanoka_id=int(key),
+                name=payload["name"],
+                weapon_type=WeaponType.SWORD,
+                rarity=Rarity.FOUR_STAR,
+            ),
+        )
+        await db_session.flush()
+        return True
+
+    result = await importer._run_pass("weapon", Weapon, mapper)
+
+    assert result.failed == ["2"]
+    assert result.imported == 2
+    names = (await db_session.execute(select(Weapon.name).order_by(Weapon.nanoka_id))).scalars()
+    assert list(names) == [
+        "Weapon 1", "Occupies the id the mapper will collide with", "Weapon 3",
+    ]

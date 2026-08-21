@@ -439,6 +439,11 @@ class NanokaGIImporter(BaseImporter):
         per id — one malformed payload must not abandon the other 584 — but it is recorded
         in `failed`, and D.7 turns a non-empty `failed` into a non-zero exit. Swallowing it
         into a log line is how fairy shipped a silent field-mapping regression.
+
+        Each item runs inside a **savepoint**, so a failure rolls back that item's partial
+        writes and nothing else. The alternative is worse in both directions: without one, a
+        database-level failure poisons the transaction and takes the rest of the pass with
+        it; with a full rollback, a failure at item 900 discards 899 good rows.
         """
         index = await self.transport.fetch_index(entity)
         keys = _index_keys(index)
@@ -457,7 +462,12 @@ class NanokaGIImporter(BaseImporter):
                     result.failed.append(key)
                     continue
                 try:
-                    wrote = await mapper(key, payload)
+                    # Each item maps inside a SAVEPOINT. Without one, a mapper that fails
+                    # *at the database* — an IntegrityError on flush, say — leaves the
+                    # transaction poisoned, and every remaining item in the pass then fails
+                    # too: one bad payload would be reported as 149 broken characters.
+                    async with self.session.begin_nested():
+                        wrote = await mapper(key, payload)
                 except Exception:
                     logger.exception("Failed to map %s %s", entity, key)
                     result.failed.append(key)
