@@ -123,6 +123,25 @@ async def test_team_get_all_scoped_to_owner(db_session: AsyncSession) -> None:
     assert [t.name for t in teams] == ["Mine"]
 
 
+async def test_team_count_scoped_to_owner(db_session: AsyncSession) -> None:
+    """`count()` feeds `total` in the pagination envelope, so it leaks if unscoped.
+
+    Regression test: `BaseRepository.count()` was a bare `SELECT count(*)` with no owner
+    filter, so `GET /api/v1/teams` answered one user's page of items alongside the whole
+    table's row count.
+    """
+    owner = await _make_user(db_session, f"a_{uuid.uuid4().hex[:8]}@test.example")
+    other = await _make_user(db_session, f"b_{uuid.uuid4().hex[:8]}@test.example")
+    await _make_team(db_session, owner, name="Mine")
+    await _make_team(db_session, other, name="Theirs1")
+    await _make_team(db_session, other, name="Theirs2")
+
+    assert (await TeamRepository(db_session, owner_id=str(owner.id)).count()) == 1
+    assert (await TeamRepository(db_session, owner_id=str(other.id)).count()) == 2
+    # No owner_id at all still means "every row" — admin/global callers rely on it.
+    assert (await TeamRepository(db_session).count()) == 3
+
+
 # ── OptimizationJobRepository ─────────────────────────────────────────────────
 
 

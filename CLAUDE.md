@@ -78,9 +78,12 @@ that turns out to be worth porting rather than re-deriving.
 
 The `mistilteinn` and `mistilteinn_test` databases live in the **fairy stack's Postgres
 container** (DESIGN §A3) and were created by hand in A.6 — nothing in this repo creates them.
-`docker compose up` needs the fairy stack's `db` service running, because `backend` joins
-`fairy_default` as an external network. If it is down the app says so and retries before
-failing loudly (`app/database.py`, A.7).
+`docker compose up` needs `fairy-db-1` running. The backend reaches it over the **host
+gateway** (`host.docker.internal:5432`), not by joining fairy's compose network — joining it
+registered this backend under the alias `backend` on `fairy_default`, where fairy's own
+`backend` service already lives, so fairy's tunnel would have intermittently served
+mistilteinn's API. If the database is down the app says so and retries before failing loudly
+(`app/database.py`, A.7).
 
 Host ports are **8001** (backend) and **4201** (frontend), so both stacks run at once.
 
@@ -97,7 +100,9 @@ Host ports are **8001** (backend) and **4201** (frontend), so both stacks run at
   `aetherus.dev` has wildcard DNS onto Cloudflare — so "it does not resolve" is not the check;
   it answers `525` because there is no origin behind it yet.
 - `docker-compose.yml`: dropped the `./references` and `./frontend/public/icons` bind mounts
-  (both directories were stripped); healthcheck now uses `${POSTGRES_USER}`.
+  (both directories were stripped). ~~healthcheck now uses `${POSTGRES_USER}`~~ — **superseded
+  in A.4:** there is no `db` service, so no healthcheck and no `POSTGRES_*` variables; the
+  three of them were removed from `.env.example` because nothing read them any more.
 
 ## Tech Stack
 
@@ -124,13 +129,23 @@ over from fairy unchanged and is load-bearing.
 ## Docker Commands
 
 ```bash
-docker compose up -d db             # Start only PostgreSQL
-docker compose up -d                # Start all services
+docker start fairy-db-1             # The database lives in the FAIRY stack (see §Database)
+docker compose up -d                # Start this stack (backend :8001, frontend :4201)
 docker compose exec backend alembic upgrade head   # Run migrations
 docker compose run --rm backend pytest             # Run tests
 docker compose run --rm backend ruff check app/    # Lint
-docker compose down                 # Stop containers (data preserved)
+docker compose down                 # Stop containers (the database is not ours to stop)
 ```
+
+There is **no `db` service here** — `docker compose up -d db` fails with
+`no such service: db`. The backend reaches the shared Postgres over the host gateway
+(`host.docker.internal:5432`) and deliberately does *not* join fairy's compose network; the
+header of `docker-compose.yml` explains why.
+
+**Generate Alembic revisions on the host, not in the container.**
+`docker compose run --rm backend alembic revision --autogenerate` fails with
+`PermissionError` on `/app/alembic/versions/` — the image runs as a non-root user against a
+root-owned bind mount. `upgrade` and `downgrade` work fine in the container.
 
 ### Frontend dependency changes — gotcha
 

@@ -14,9 +14,18 @@
 #   - There is no `db` service here and no `depends_on: db`. Startup ordering
 #     is no longer ours to enforce, so the backend retries its first connect
 #     with a bounded backoff and then fails loudly (app/database.py, A.7).
-#   - `backend` joins the fairy stack's default network so the hostname `db`
-#     resolves to that container. Override the network name with
-#     SHARED_DB_NETWORK if fairy's compose project is named something else.
+#   - `backend` reaches Postgres over the **host gateway**, not by joining fairy's
+#     compose network. Joining it was the original design and it was wrong: Compose
+#     registers the *service name* as a network alias on every network a service
+#     joins, so `mistilteinn-backend-1` claimed the alias `backend` on
+#     `fairy_default` — where fairy's own `backend` service already lives. Docker's
+#     embedded DNS then round-robins `http://backend:8000` between the two, and
+#     fairy's cloudflared and nginx both resolve exactly that name. With both stacks
+#     up, fairy's public tunnel would intermittently serve mistilteinn's API.
+#     Verified on the running container before the change:
+#       fairy_default: [mistilteinn-backend-1 backend]
+#     Explicit `aliases:` cannot fix it — they are additive; the service-name alias
+#     is not removable. So we do not join the network at all.
 #   - The databases and the `mistilteinn` role must PRE-EXIST. Nothing here
 #     creates them; see the A.6 entry in docs/LOG_mistilteinn.md for the exact
 #     CREATE statements.
@@ -36,9 +45,10 @@ services:
       TESTING: "false"
       LOG_LEVEL: info
       PYTHONPATH: /app
-    networks:
-      - default
-      - shared-db
+    extra_hosts:
+      # Reach the shared Postgres through the host's published 5432 rather than by
+      # joining fairy's compose network — see the note at the top of this file.
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./backend:/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-include '*.py' --reload-exclude '*.json' --reload-exclude '*.yaml'
@@ -103,11 +113,5 @@ services:
     profiles:
       - tunnel
 
-networks:
-  # The fairy compose stack's default network, joined from the outside so that
-  # `db` resolves to its postgres container. `external: true` means compose
-  # refuses to start when the fairy stack has never been up — a loud failure,
-  # which is the one we want for a dependency we do not own.
-  shared-db:
-    external: true
-    name: ${SHARED_DB_NETWORK:-fairy_default}
+# No `networks:` block. mistilteinn's services share this project's implicit default
+# network and nothing else; the database is reached through the host gateway above.

@@ -29,7 +29,9 @@ set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 config="${here}/zap.yaml"
 
-target="$(grep -oE 'https?://[A-Za-z0-9.-]+' "${config}" | head -n 1)"
+# The port is part of the pattern: without it a `zap.yaml` targeting
+# `http://host:8080` would be pre-flighted as `http://host`, i.e. a different service.
+target="$(grep -oE 'https?://[A-Za-z0-9.-]+(:[0-9]+)?' "${config}" | head -n 1)"
 
 if [[ "${ZAP_SCAN_ENABLED:-0}" != "1" ]]; then
   echo "SKIPPED: ZAP baseline scan did not run (ZAP_SCAN_ENABLED is not 1)."
@@ -39,11 +41,23 @@ if [[ "${ZAP_SCAN_ENABLED:-0}" != "1" ]]; then
   exit 78
 fi
 
-status="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "${target}" || echo 000)"
-if [[ "${status}" == "000" || "${status}" -ge 500 ]]; then
+# Capture curl's exit status separately. `curl -w '%{http_code}'` prints `000` on a
+# connection failure AND exits non-zero, so the obvious `$(curl ... || echo 000)` yields
+# the string "000000" — which matches neither `== "000"` nor `-ge 500` (it evaluates as
+# the integer 0), and the guard sails straight through. That is a fail-open in exactly
+# the case this check exists for: a target that is not answering at all. The A.11
+# verification missed it because Cloudflare *did* answer, with 525.
+if ! status="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "${target}")"; then
+  status="000"
+fi
+
+# Anything that is not a three-digit code is treated as unreachable rather than compared
+# numerically, so a future change to how `status` is produced cannot fail open again.
+if [[ ! "${status}" =~ ^[0-9]{3}$ ]] || [[ "${status}" == "000" ]] || (( status >= 500 )); then
   echo "BLOCKED: ${target} answered HTTP ${status} — nothing is serving there."
-  echo "         (5xx includes Cloudflare's 52x origin errors: the DNS name resolves"
-  echo "          via a wildcard, but no origin is behind it.)"
+  echo "         (000 = no connection at all. 5xx includes Cloudflare's 52x origin"
+  echo "          errors: aetherus.dev resolves via a wildcard, so the name answers"
+  echo "          even when no origin is behind it.)"
   echo "         Refusing to scan: a scan of a host that is not serving the app"
   echo "         produces an all-PASS report that means nothing. Chunk K stands up"
   echo "         the deploy target; until then this refusal is the correct outcome."
