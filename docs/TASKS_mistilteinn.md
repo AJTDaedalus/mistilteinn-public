@@ -215,7 +215,7 @@ Each task below is **one commit**. Commit message form:
 
 ## Chunk C — Genshin domain models, enums, initial migration
 
-### C.1 — Capture the enum ground truth
+### [x] C.1 — Capture the enum ground truth
 - **Do:** fetch and commit a sample of `character.json`, `weapon.json`, `artifact.json` (index
   level) under `backend/tests/fixtures/nanoka_gi/`, with the version and fetch date recorded.
   Derive the distinct `element` / `weapon` / `rank` value sets from the committed files, not from
