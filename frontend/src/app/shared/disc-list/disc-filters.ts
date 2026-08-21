@@ -65,7 +65,7 @@ const EQUIPPED_OPTIONS: { value: EquippedFilter; label: string }[] = [
 const SLOT_OPTIONS = [0, 1, 2, 3, 4, 5, 6] as const;
 
 @Component({
-  selector: 'fairy-disc-filters',
+  selector: 'mist-disc-filters',
   standalone: true,
   imports: [FormsModule, SetPicker],
   templateUrl: './disc-filters.html',

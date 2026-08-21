@@ -49,8 +49,17 @@ class BaseRepository[T: Base]:
         return result.scalars().all()
 
     async def count(self) -> int:
-        """Total row count for the model."""
+        """Row count for the model, scoped to ``owner_id`` when set.
+
+        The owner filter here matters as much as the one on ``get_all``: this value is
+        returned as ``total`` in the paginated list envelope. Unscoped it reported the
+        whole table's row count next to one user's page of items — broken pagination and
+        a cross-tenant count leak from an ordinary, correctly-written route handler.
+        Inherited unscoped from fairy; caught in the Chunk A+B review.
+        """
         stmt = select(func.count()).select_from(self.model)
+        if self.owner_id is not None and hasattr(self.model, "owner_id"):
+            stmt = stmt.where(self.model.owner_id == self.owner_id)
         result = await self.session.execute(stmt)
         return result.scalar_one()
 

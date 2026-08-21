@@ -1,4 +1,11 @@
-"""Pydantic schemas for OptimizationJob — async optimizer/scorer job status and results."""
+"""Pydantic schemas for OptimizationJob — async optimizer/scorer job status and results.
+
+TODO(chunk-G): `agent_name` / `combo_name` are display labels mirroring columns on the
+`optimization_jobs` table. They read as ZZZ vocabulary but are structurally neutral, and
+renaming them to `character_name` / `rotation_name` means a model change, a repository
+change, and a migration — so it lands with the optimizer surface that writes them (G.6),
+not mid-demolition.
+"""
 
 from __future__ import annotations
 

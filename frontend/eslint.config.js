@@ -30,7 +30,7 @@ module.exports = defineConfig([
       ],
       // The codebase predates this linter and already has an established,
       // deliberate multi-prefix convention: 'app-' for shell/global pieces,
-      // 'page-' for route-level smart components, 'fairy-' for a few shared
+      // 'page-' for route-level smart components, 'mist-' for a few shared
       // components, and bare descriptive names for the rest (see
       // src/app/pages/**, src/app/shared/**). Enforcing a single 'app-'
       // prefix would force a ~38-component rename touching every template
@@ -39,7 +39,7 @@ module.exports = defineConfig([
         'error',
         {
           type: 'element',
-          prefix: ['app', 'page', 'fairy', ''],
+          prefix: ['app', 'page', 'mist', ''],
           style: 'kebab-case',
         },
       ],

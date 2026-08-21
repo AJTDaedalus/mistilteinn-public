@@ -1,5 +1,5 @@
 {
-  "name": "fairy",
+  "name": "mistilteinn",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
@@ -10,7 +10,7 @@
     "watch": "ng build --watch --configuration development",
     "pretest": "npm run codegen",
     "test": "ng test",
-    "openapi:fetch": "curl -sf http://localhost:8000/openapi.json -o openapi.json",
+    "openapi:fetch": "curl -sf http://localhost:8001/openapi.json -o openapi.json",
     "codegen": "openapi-typescript ./openapi.json --output ./src/app/api/api.types.ts",
     "lint": "ng lint"
   },

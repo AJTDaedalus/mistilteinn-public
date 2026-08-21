@@ -89,10 +89,10 @@ should use `class="mono"` or `.stat-value` so they line up.
 
 ```bash
 docker compose up -d                     # full stack incl. frontend
-# → http://localhost:4200 (HMR via --poll 1000)
+# → http://localhost:4201 (HMR via --poll 1000; container serves 4200)
 
 # Direct npm (when iterating without docker):
-cd frontend && npm install && npm start  # → http://localhost:4200
+cd frontend && npm install && npm start  # → http://localhost:4200 (no docker)
 
 npm test                                  # vitest in jsdom
 npm run build                             # production bundle

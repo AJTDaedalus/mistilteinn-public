@@ -1,3 +1,8 @@
+# NOT RUNNABLE UNTIL CHUNK G. B.9 keeps this benchmark, but its imports
+# (app.services.build_damage_service, app.services.combo_types) point at modules the
+# demolition moved to app/services/_ported/ or deleted outright. It is kept because
+# G.7 re-baselines tests/perf for the 5-slot Genshin search space and this is the
+# harness that produced fairy's numbers — not because it works today.
 """Task 6b — run the math checkpoints (CP1-CP8) from DESIGN_optimizer_granularity.md.
 
 DB-free: reads only the Task 6a fixtures under

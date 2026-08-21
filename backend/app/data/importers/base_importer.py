@@ -1,25 +1,30 @@
-"""Abstract adapter interface shared by all data-source importers (nanoka, hakushin, scanner)."""
+"""Abstract adapter interface shared by all data-source importers.
+
+**Port state.** B.8 deleted every concrete importer (nanoka, the three hakushin
+adapters, ezod, dimbreath resource costs, and the ZO scanner) and the
+``AnomalyStats`` NamedTuple, which existed to keep ZZZ's Anomaly Mastery and
+Proficiency from being swapped positionally — a bug fairy actually shipped. Neither
+stat exists in Genshin.
+
+The abstract method names were retargeted at the same time, which B.8 did not ask
+for but the BRIEF's "delete ZZZ concepts rather than aliasing them" requires: a kept
+base class advertising ``import_disc_sets()`` is an instruction to the next person
+who implements it. Per DESIGN §2.5 the entity mapping is agents→characters,
+w_engines→weapons, disc_sets→artifact_sets, enemies→enemies.
+
+Chunk D writes the concrete implementation against this interface
+(`nanoka_gi_importer.py`, D.1); the transport layer it ports —  manifest pin, index
+fetch, detail fetch, upsert, stale prune — is in
+/root/fairy/backend/app/data/importers/nanoka_importer.py.
+"""
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
-
-
-class AnomalyStats(NamedTuple):
-    """Anomaly Mastery / Proficiency pair, named so call sites cannot swap them silently.
-
-    These two were stored backwards on every agent until 2026-07-25 because both
-    sources' field names are counter-intuitive and the assignment was positional.
-    Accessing by attribute (``.mastery`` / ``.proficiency``) makes a re-swap visible
-    at the call site — see docs/RESEARCH_batch32c_followups.md.
-    """
-
-    mastery: int
-    proficiency: int
 
 
 class BaseImporter(ABC):
@@ -29,16 +34,16 @@ class BaseImporter(ABC):
         self.session = session
 
     @abstractmethod
-    async def import_agents(self) -> int:
-        """Import agent/character data. Returns count of imported agents."""
+    async def import_characters(self) -> int:
+        """Import character data. Returns count of imported characters."""
 
     @abstractmethod
-    async def import_w_engines(self) -> int:
-        """Import W-Engine/weapon data. Returns count of imported W-Engines."""
+    async def import_weapons(self) -> int:
+        """Import weapon data. Returns count of imported weapons."""
 
     @abstractmethod
-    async def import_disc_sets(self) -> int:
-        """Import disc set data. Returns count of imported disc sets."""
+    async def import_artifact_sets(self) -> int:
+        """Import artifact-set data. Returns count of imported sets."""
 
     @abstractmethod
     async def import_enemies(self) -> int:
@@ -47,8 +52,8 @@ class BaseImporter(ABC):
     async def import_all(self) -> dict[str, int]:
         """Run all importers. Returns counts per entity type."""
         return {
-            "agents": await self.import_agents(),
-            "w_engines": await self.import_w_engines(),
-            "disc_sets": await self.import_disc_sets(),
+            "characters": await self.import_characters(),
+            "weapons": await self.import_weapons(),
+            "artifact_sets": await self.import_artifact_sets(),
             "enemies": await self.import_enemies(),
         }

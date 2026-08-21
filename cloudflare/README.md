@@ -28,18 +28,18 @@ Requires a domain added to your Cloudflare account.
 
 3. Create the tunnel:
    ```bash
-   cloudflared tunnel create fairy-api
+   cloudflared tunnel create mistilteinn-api
    ```
    Note the tunnel ID in the output.
 
 4. In the Cloudflare Zero Trust dashboard (one.dash.cloudflare.com):
-   - Go to **Networks → Tunnels → fairy-api → Configure → Public Hostnames**
-   - Add a hostname: `api.<your-domain>` → `http://localhost:8000`
+   - Go to **Networks → Tunnels → mistilteinn-api → Configure → Public Hostnames**
+   - Add a hostname: `api.<your-domain>` → `http://localhost:8001`
    - (The hostname and routing can also be configured via `config.yml` if
      you mount it into the container, but the dashboard approach is simpler
      when using token-based auth.)
 
-5. Copy the tunnel token from the dashboard (**Networks → Tunnels → fairy-api →
+5. Copy the tunnel token from the dashboard (**Networks → Tunnels → mistilteinn-api →
    Configure → Overview → Install connector → Docker**) — it looks like a long
    JWT string.
 
@@ -61,7 +61,7 @@ Cloudflare-managed TLS certificate.
 
 Once the frontend hostname is known, add it to `.env`:
 ```
-ALLOWED_ORIGINS=https://fairy.pages.dev,https://your-custom-domain.com
+ALLOWED_ORIGINS=https://mistilteinn.aetherus.dev,https://your-custom-domain.com
 ```
 
 The backend CORS middleware reads this at startup (see `app/main.py`).

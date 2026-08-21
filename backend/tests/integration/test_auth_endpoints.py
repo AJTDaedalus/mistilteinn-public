@@ -62,42 +62,17 @@ async def _make_approved_user(db_session: AsyncSession) -> tuple[User, str]:
 # (method, path, body) for every user-data endpoint.
 # Body only needs to be syntactically valid JSON; the auth check fires first.
 _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
-    # builds
-    ("GET", "/api/v1/builds", None),
-    ("POST", "/api/v1/builds", {"name": "x", "agent_id": None}),
-    ("PUT", "/api/v1/builds/priority", {"ordered_build_ids": []}),
-    ("GET", "/api/v1/builds/00000000-0000-0000-0000-000000000001", None),
-    ("PATCH", "/api/v1/builds/00000000-0000-0000-0000-000000000001", {}),
-    ("DELETE", "/api/v1/builds/00000000-0000-0000-0000-000000000001", None),
-    ("GET", "/api/v1/builds/00000000-0000-0000-0000-000000000001/buffs", None),
-    ("PUT", "/api/v1/builds/00000000-0000-0000-0000-000000000001/discs/1", {"disc_id": None}),
-    ("PATCH", "/api/v1/builds/00000000-0000-0000-0000-000000000001/equip-discs", {"discs": {}}),
-    ("GET", "/api/v1/builds/00000000-0000-0000-0000-000000000001/conditions", None),
-    # discs
-    ("GET", "/api/v1/discs", None),
-    ("POST", "/api/v1/discs", {}),
-    ("GET", "/api/v1/discs/00000000-0000-0000-0000-000000000001", None),
-    ("PATCH", "/api/v1/discs/00000000-0000-0000-0000-000000000001", {}),
-    ("DELETE", "/api/v1/discs/00000000-0000-0000-0000-000000000001", None),
-    ("POST", "/api/v1/discs/import", {}),
-    # teams
+    # teams — the only owner-scoped surface left after B.6.
     ("GET", "/api/v1/teams", None),
     ("POST", "/api/v1/teams", {}),
     ("GET", "/api/v1/teams/00000000-0000-0000-0000-000000000001", None),
     ("PATCH", "/api/v1/teams/00000000-0000-0000-0000-000000000001", {}),
     ("DELETE", "/api/v1/teams/00000000-0000-0000-0000-000000000001", None),
-    ("POST", "/api/v1/teams/00000000-0000-0000-0000-000000000001/calculate", {}),
-    # combos
-    ("GET", "/api/v1/combos", None),
-    ("POST", "/api/v1/combos", {}),
-    ("GET", "/api/v1/combos/00000000-0000-0000-0000-000000000001", None),
-    ("PATCH", "/api/v1/combos/00000000-0000-0000-0000-000000000001", {}),
-    ("DELETE", "/api/v1/combos/00000000-0000-0000-0000-000000000001", None),
-    # optimizer jobs
-    ("POST", "/api/v1/optimizer/discs", {}),
-    ("GET", "/api/v1/optimizer/jobs", None),
-    ("GET", "/api/v1/optimizer/jobs/00000000-0000-0000-0000-000000000001", None),
-    ("DELETE", "/api/v1/optimizer/jobs/00000000-0000-0000-0000-000000000001", None),
+    # TODO(chunk-D/F/G): this table is a 401 sweep over *every* user-data endpoint, and it
+    # only proves what it lists. B.12 removed the builds, discs, combos and optimizer-jobs
+    # rows because those routes were deleted in B.6. **Every route restored in Chunk D, F
+    # or G must be added back here in the same commit that adds the route** — a handler
+    # that forgets its auth dependency is invisible to every other test in this suite.
 ]
 
 
@@ -138,42 +113,7 @@ async def test_register_is_public(client: AsyncClient) -> None:
     assert resp.status_code == 201
 
 
-@pytest.mark.asyncio
-async def test_agents_is_public(client: AsyncClient) -> None:
-    resp = await client.get("/api/v1/agents")
-    assert resp.status_code == 200
-
-
 # ── token accepted ────────────────────────────────────────────────────────────
-
-
-@pytest.mark.asyncio
-async def test_builds_list_with_valid_token(
-    client: AsyncClient,
-    db_session: AsyncSession,
-) -> None:
-    _, raw_token = await _make_approved_user(db_session)
-    resp = await client.get(
-        "/api/v1/builds",
-        headers={"Authorization": f"Bearer {raw_token}"},
-    )
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["items"] == []
-
-
-@pytest.mark.asyncio
-async def test_discs_list_with_valid_token(
-    client: AsyncClient,
-    db_session: AsyncSession,
-) -> None:
-    _, raw_token = await _make_approved_user(db_session)
-    resp = await client.get(
-        "/api/v1/discs",
-        headers={"Authorization": f"Bearer {raw_token}"},
-    )
-    assert resp.status_code == 200
-    assert resp.json()["items"] == []
 
 
 @pytest.mark.asyncio
@@ -188,17 +128,3 @@ async def test_teams_list_with_valid_token(
     )
     assert resp.status_code == 200
     assert resp.json()["items"] == []
-
-
-@pytest.mark.asyncio
-async def test_optimizer_jobs_list_with_valid_token(
-    client: AsyncClient,
-    db_session: AsyncSession,
-) -> None:
-    _, raw_token = await _make_approved_user(db_session)
-    resp = await client.get(
-        "/api/v1/optimizer/jobs",
-        headers={"Authorization": f"Bearer {raw_token}"},
-    )
-    assert resp.status_code == 200
-    assert resp.json() == []

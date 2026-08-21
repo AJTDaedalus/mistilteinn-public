@@ -29,9 +29,12 @@ from app.services.password import hash_password
 _TEST_PASSWORD = "alpha-test-password-1234"  # noqa: S105
 _SESSION_TTL_SECONDS = 30 * 24 * 3600
 
+# Default deliberately names mistilteinn_test, not fairy_test. The two projects
+# share one Postgres server (DESIGN §A3), and these fixtures create and drop
+# tables — pointed at fairy_test they would rewrite the *other* repo's schema.
 TEST_DATABASE_URL = os.environ.get(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://fairy:fairy_dev@localhost:5432/fairy_test",
+    "postgresql+asyncpg://mistilteinn:mistilteinn_dev@localhost:5432/mistilteinn_test",
 )
 
 

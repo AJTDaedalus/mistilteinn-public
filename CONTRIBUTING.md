@@ -1,10 +1,14 @@
-# Contributing to Fairy
+# Contributing to mistilteinn
 
-Fairy is a Zenless Zone Zero (ZZZ) optimizer: FastAPI + SQLAlchemy async +
-PostgreSQL backend, Angular 21 frontend. This doc covers how to get set up,
-how the codebase is organized to work in, and the conventions a PR is
-expected to follow. For *where things live*, see
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+mistilteinn is a Genshin Impact build optimizer and rotation simulator:
+FastAPI + SQLAlchemy async + PostgreSQL backend, Angular 21 frontend. It is
+forked from [fairy](https://github.com/AJTDaedalus/fairy), the ZZZ optimizer,
+and reuses its engine with a rewritten domain layer.
+
+This doc covers how to get set up, how the codebase is organized to work in,
+and the conventions a PR is expected to follow. For *where things live*, see
+[`CLAUDE.md`](CLAUDE.md) and [`docs/DESIGN_mistilteinn.md`](docs/DESIGN_mistilteinn.md)
+— fairy's `docs/ARCHITECTURE.md` did not come along in the fork.
 
 ## Dev setup
 
@@ -16,7 +20,7 @@ Two supported paths — pick one:
 docker compose up -d
 ```
 
-Frontend at <http://localhost:4200>, backend at <http://localhost:8000>
+Frontend at <http://localhost:4201>, backend at <http://localhost:8001>
 (Swagger at `/docs`). Source edits flow through both containers via bind
 mounts. See the root [README](README.md#quick-start) for the full command
 table, including the anonymous-volume gotcha after editing
@@ -25,7 +29,7 @@ table, including the anonymous-volume gotcha after editing
 **Conda (backend-only, faster iteration on Python):**
 
 ```bash
-conda activate fairy
+conda activate mistilteinn   # or whichever env holds this checkout
 cd backend && pip install -e ".[dev]"
 pytest
 ```

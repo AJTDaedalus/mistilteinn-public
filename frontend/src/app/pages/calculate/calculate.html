@@ -11,7 +11,7 @@
   <form class="form surface" (submit)="$event.preventDefault(); evaluate()">
     <div class="field">
       <span class="field__label">Team</span>
-      <fairy-combobox
+      <mist-combobox
         [options]="teamOptions()"
         [value]="teamId() || null"
         placeholder="Select team…"
@@ -21,7 +21,7 @@
 
     <div class="field">
       <span class="field__label">Rotation</span>
-      <fairy-combobox
+      <mist-combobox
         [options]="comboOptions()"
         [value]="comboId() || null"
         [disabled]="!teamId() || combos().length === 0"
@@ -44,7 +44,7 @@
           >{{ t.label }}</button>
         }
       </div>
-      <fairy-combobox
+      <mist-combobox
         [options]="enemyNameOptions()"
         [value]="enemyName() || null"
         placeholder="Select enemy…"
@@ -54,7 +54,7 @@
 
     <div class="field" [class.field--hidden]="enemyVariantOptions().length <= 1">
       <span class="field__label">Variant</span>
-      <fairy-combobox
+      <mist-combobox
         [options]="enemyVariantOptions()"
         [value]="enemyId() || null"
         [disabled]="enemyVariantOptions().length === 0"

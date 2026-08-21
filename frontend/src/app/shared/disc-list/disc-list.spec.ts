@@ -42,7 +42,7 @@ describe('DiscList filtering', () => {
     const discs = [makeDisc({ id: 'd1' }), makeDisc({ id: 'd2' })];
     const fixture = createComponent(discs);
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelectorAll('fairy-disc-card')).toHaveLength(2);
+    expect(el.querySelectorAll('mist-disc-card')).toHaveLength(2);
   });
 
   it('main stat filter narrows to matching discs only', () => {
@@ -56,7 +56,7 @@ describe('DiscList filtering', () => {
     comp['filters'].set({ ...comp['filters'](), mainStats: ['atk_pct'] });
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelectorAll('fairy-disc-card')).toHaveLength(2);
+    expect(el.querySelectorAll('mist-disc-card')).toHaveLength(2);
   });
 
   it('substat filter uses AND semantics — only discs with ALL selected substats', () => {
@@ -71,7 +71,7 @@ describe('DiscList filtering', () => {
     comp['filters'].set({ ...comp['filters'](), substats: ['crit_rate', 'crit_dmg'] });
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelectorAll('fairy-disc-card')).toHaveLength(1);
+    expect(el.querySelectorAll('mist-disc-card')).toHaveLength(1);
   });
 
   it('set + rarity filter uses AND across categories', () => {
@@ -85,7 +85,7 @@ describe('DiscList filtering', () => {
     comp['filters'].set({ ...comp['filters'](), sets: ['set-a'], rarities: ['S'] });
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelectorAll('fairy-disc-card')).toHaveLength(1);
+    expect(el.querySelectorAll('mist-disc-card')).toHaveLength(1);
   });
 
   it('minLevel filter excludes discs below threshold', () => {
@@ -99,7 +99,7 @@ describe('DiscList filtering', () => {
     comp['filters'].set({ ...comp['filters'](), minLevel: 10 });
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelectorAll('fairy-disc-card')).toHaveLength(1);
+    expect(el.querySelectorAll('mist-disc-card')).toHaveLength(1);
   });
 
   it('equipped=unequipped hides discs with a build_id', () => {
@@ -113,7 +113,7 @@ describe('DiscList filtering', () => {
     comp['filters'].set({ ...comp['filters'](), equipped: 'unequipped' });
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelectorAll('fairy-disc-card')).toHaveLength(2);
+    expect(el.querySelectorAll('mist-disc-card')).toHaveLength(2);
   });
 
   it('sort level desc orders highest level first', () => {

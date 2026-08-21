@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "fairy": {
+    "mistilteinn": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -74,10 +74,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "fairy:build:production"
+              "buildTarget": "mistilteinn:build:production"
             },
             "development": {
-              "buildTarget": "fairy:build:development"
+              "buildTarget": "mistilteinn:build:development"
             }
           },
           "defaultConfiguration": "development"

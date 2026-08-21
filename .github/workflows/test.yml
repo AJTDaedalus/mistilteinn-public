@@ -1,22 +1,24 @@
 name: Tests
 
-# The repo had no test CI lane — only deploy-prod.yml and security.yml. So nothing
-# stopped a kit JSON with a fabricated citation, an unmapped stat key, or a modifier the
-# calc silently ignores from reaching `dev` (and `dev` deploys straight to prod).
+# ---------------------------------------------------------------------------
+# PORT STATE (Chunk A, 2026-08-21) — read before trusting a green run here.
 #
-# Everything here is HERMETIC: no network, no ZO clone, no seeded game data. The kit
-# validators read committed fixtures (app/data/validation/*.json, refreshed by
-# scripts/refresh_kit_refs.py), so a change in an upstream source shows up as a reviewable
-# diff in a PR rather than a silent green→red flip in CI. See docs/DESIGN_kit_validation.md.
+# This workflow came from fairy and was built around its kit-validation harness.
+# The ZZZ kit corpus (app/data/{modifiers,validation,skill_overrides}) was stripped
+# in the fork commit, so the `kit-validation` job below dispatches a script against
+# data that no longer exists. It is DISABLED, not deleted — see the TODO(chunk-H)
+# block on the job itself for exactly what has to come back and when.
 #
-# The integration lane stands up a Postgres service, which does not break that property:
-# the database is EMPTY and the suite builds its own schema and fixtures. Hermetic means
-# "no external state this workflow does not create", not "no database" — conflating the
-# two is what kept the integration suite out of CI (see the `integration` job).
+# The backend suite went green at Chunk B's exit gate (B.13) and stays that way:
+# 24 test files, 220 tests, 1 skipped (tests/perf, awaiting G.7). A red run here is
+# a regression, not "the size of the port" — that excuse expired at B.13. See
+# CLAUDE.md's repo-state section.
 #
-# Deliberately outside CI: kit-validation L4/L5, which need real seeded game data. They
-# are proven by the pre-merge agent review instead — see CLAUDE.md's kit gate paragraph
-# and docs/DECISIONS.md (2026-07-30, issue #114). That is a division of labour, not a gap.
+# Everything here is HERMETIC: no network, no seeded game data. The integration
+# lane stands up an EMPTY Postgres and the suite builds its own schema via
+# `Base.metadata.create_all` plus per-test fixtures — hermetic means "no external
+# state this workflow does not create", not "no database".
+# ---------------------------------------------------------------------------
 
 on:
   push:
@@ -52,9 +54,14 @@ jobs:
 
       - name: Ruff
         # `scripts/` as a whole is not linted: it carries ~65 pre-existing violations in
-        # unrelated one-off scripts, and fixing them is not this lane's job. The two
-        # scripts the harness depends on are linted explicitly so they cannot rot.
-        run: ruff check app/ tests/ scripts/validate_kits.py scripts/refresh_kit_refs.py
+        # unrelated one-off scripts, and fixing them is not this lane's job.
+        #
+        # TODO(chunk-H): fairy additionally linted `scripts/validate_kits.py` and
+        # `scripts/refresh_kit_refs.py` by name, so the two the harness depends on could
+        # not rot. Both are deleted in B.9. Re-add their Genshin replacements here when
+        # Chunk H ports the harness — the point of naming them was that an unlinted
+        # harness script is a harness nobody trusts.
+        run: ruff check app/ tests/
 
       - name: Unit tests
         # Unit only. Integration runs in its own job below so this lane stays fast
@@ -74,9 +81,12 @@ jobs:
     # only thing that ran it was a developer remembering to. PR #113 found it by
     # accident. Two subsequent reviews had to verify 500 tests by hand.
     #
-    # Genuinely seeded-DB tests (tests/integration/test_zo_crossval.py) skip
-    # themselves here: `DATABASE_URL` points at this same empty database, so their
-    # `app_db` fixture finds no agents and skips with a message saying so.
+    # fairy's genuinely seeded-DB tests (test_zo_crossval.py) skipped themselves here,
+    # because `DATABASE_URL` points at this same empty database. Those files are deleted
+    # in B.12. TODO(chunk-F): the Genshin crossval harness must ship with
+    # `CROSSVAL_REQUIRE_DB=1` from its first commit so that "skipped" is a hard failure
+    # in the lane that is supposed to run it — fairy shipped a stale golden fixture
+    # precisely because a skip read as a pass here (DESIGN §3, Chunk F).
     name: Backend — integration tests
     runs-on: ubuntu-latest
     defaults:
@@ -117,53 +127,55 @@ jobs:
         run: pytest tests/integration -q
 
   kit-validation:
-    # The name states what a green run *proves*, not what the harness dispatches.
+    # =======================================================================
+    # DISABLED FOR THE PORT — TODO(chunk-H). Do not delete this job.
     #
-    # L4 and L5 are proven by the pre-merge agent review against a seeded DB, not here
-    # — a division of labour, not a gap (issue #114, docs/DECISIONS.md 2026-07-30).
-    # They cannot come back to CI: L5 reads `attacks.param_name`, which only the nanoka
-    # importer populates, so no offline seed produces it; and nanoka.cc inside a
-    # manually-confirmed gate would make the gate flaky, which trains reviewers to wave
-    # it through. CLAUDE.md's gate paragraph is the authority on both halves.
+    # `if: false` is deliberate and this stanza stays in the file, because a gate
+    # that is silently removed becomes a permanent gap — the exact green-by-absence
+    # failure CLAUDE.md names. Deleting it would leave nothing in the repo that says
+    # kit validation is supposed to exist.
     #
-    # DO NOT "tidy" the run below into `--level l0 --level l1 --level l2 --level lc`.
-    # The stale-waiver check is gated on `set(levels) == set(LEVELS)` — grep that
-    # expression in validate_kits.py rather than chasing a line number. Narrowing the
-    # dispatch switches staleness off for L0–L2 as well, the opposite of what the
-    # narrowing would look like it was doing.
-    # Dispatching everything and letting L4/L5 skip is load-bearing: skipping is what
-    # makes `_unrunnable_waiver_codes` exempt their codes and only their codes.
-    name: Kit validation harness (L0–L2, L6, LC, LU)
+    # WHY IT IS OFF: `scripts/validate_kits.py` reads app/data/modifiers/**,
+    # app/data/validation/known_issues.json and the ZO reference exports. All of it
+    # was stripped in the fork commit (6e691e7) and the script itself is deleted in
+    # B.9. There is nothing for it to validate and nothing it could report but noise.
+    #
+    # WHAT MUST BE RESTORED, exactly (fairy dispatched everything and let the
+    # DB-dependent levels skip):
+    #   L0  schema — every kit JSON matches the modifier schema
+    #   L1  references — every cited source resolves
+    #   L2  citations — no uncited modifier; no unverifiable citation
+    #   L6  coverage — every seeded character has a kit entry
+    #   LC  consistency — cross-kit contradictions
+    #   LU  unmapped — stat keys with no STAT_META entry
+    #   L4/L5 stay OUT of CI: they need real seeded game data and are proven by the
+    #        pre-merge agent review instead (fairy issue #114). Genshin's equivalents
+    #        are Chunk H's call, not an automatic carry-over.
+    #
+    # DO NOT restore this as `--level l0 --level l1 ...`. fairy's stale-waiver check
+    # is gated on `set(levels) == set(LEVELS)`; narrowing the dispatch silently
+    # switches staleness detection off for the levels that *are* listed. Dispatch
+    # everything and let the unrunnable levels skip themselves.
+    #
+    # RESTORE WHEN: Chunk H lands the Genshin kit-JSON schema, the ported harness,
+    # and a non-empty corpus. Its own DESIGN doc owns the decision.
+    # =======================================================================
+    if: false
+    name: "Kit validation harness (DISABLED — see TODO(chunk-H))"
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: backend/pyproject.toml
-
-      - name: Install backend
-        run: pip install -e ".[dev]"
-
-      - name: Validate kit modifiers
-        # Exits non-zero on any finding not listed in app/data/validation/known_issues.json
-        # — and also on a listed finding that no longer fires, so the ledger cannot rot
-        # (D-KV7).
-        #
-        # `--gate` additionally fails while any `branch_debt` waiver is open, which is the
-        # merge criterion this branch set for itself. `upstream_blocked` entries are
-        # excluded by design: they wait on a third party (D-KV22 — an agent whose ZO sheet
-        # is an unimplemented stub), so gating on them would only pressure someone into
-        # inventing a citation, the exact defect this harness exists to catch.
-        run: python -m scripts.validate_kits --gate
+      - name: Placeholder
+        run: |
+          echo "Kit validation is disabled for the ZZZ->Genshin port."
+          echo "See the TODO(chunk-H) block in this file for the restore conditions."
+          exit 1
 
   frontend:
-    name: Frontend — unit tests
+    name: "Frontend — lint (unit tests disabled: see TODO(chunk-J))"
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -180,7 +192,34 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Lint
+        # eslint only — it does not full-type-check, so it still passes and is worth
+        # keeping. It is the only frontend signal left until Chunk J.
+        run: npm run lint
+
       - name: Unit tests
-        # Includes L3 (stat-meta.spec.ts): every stat key used by a modifier JSON must
-        # have a STAT_META entry, or it ships as a raw `FINAL_ATK_PCT +1000` chip (#62).
+        # =====================================================================
+        # DISABLED — TODO(chunk-J). Do not delete this step.
+        #
+        # `npm test` and `npm run build` both fail to compile: **161 TypeScript
+        # errors**, mostly TS2339/TS2345 against endpoints and schemas that no
+        # longer exist (`/api/v1/agents`, `/api/v1/discs`, `/api/v1/buff-presets/*`,
+        # `/api/v1/damage/*`, `DiscSetSummary`, `WEngineSummary`, …).
+        #
+        # This is not a regression introduced by disabling anything. The SPA is
+        # fairy's ZZZ frontend, frozen until Chunk J by DESIGN §3. It was only ever
+        # green because `frontend/openapi.json` was **stale**: `npm run codegen`
+        # regenerates `api.types.ts` from that committed file on `pretest`, so the
+        # app type-checked against a contract describing 44 endpoints while the
+        # backend served 7. Regenerating the contract (review of PR #1) replaced a
+        # green lane that proved nothing with a red one that is telling the truth.
+        #
+        # `backend/tests/unit/test_openapi_contract_is_current.py` now prevents the
+        # contract from silently drifting again, so this cannot be "fixed" by
+        # letting the spec rot.
+        #
+        # RESTORE WHEN: Chunk J rewrites the disc-shaped pages against the Genshin
+        # API. That is the chunk that makes this compile; nothing smaller will.
+        # =====================================================================
+        if: false
         run: npm test

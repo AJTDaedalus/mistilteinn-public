@@ -84,7 +84,7 @@
                   <option [value]="m.buildId" [selected]="m.buildId === ownerBuildId(s.agent_id)">{{ m.agentName }}</option>
                 }
               </select>
-              <fairy-combobox
+              <mist-combobox
                 [options]="getMoveOptionsForOwner(s.agent_id)"
                 [value]="stepMoveValue(s) || null"
                 placeholder="Pick move…"

@@ -12,7 +12,8 @@ RUN npm run build
 # ── runtime ────────────────────────────────────────────────────────────────────
 FROM nginx:stable-alpine AS runtime
 
-COPY --from=builder /app/dist/fairy/browser /usr/share/nginx/html
+# Path follows the angular.json project name, renamed fairy -> mistilteinn in A.2.
+COPY --from=builder /app/dist/mistilteinn/browser /usr/share/nginx/html
 COPY nginx.prod.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80

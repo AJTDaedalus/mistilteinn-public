@@ -1,8 +1,23 @@
-"""JobRunner — bounded threadpool executor for async optimizer jobs.
+"""JobRunner — bounded threadpool executor for async search jobs.
 
 Submits CPU-bound search tasks to a dedicated ThreadPoolExecutor so they
 run off the async event loop. Provides cooperative cancellation via
 per-job threading.Events and DB persistence via run_coroutine_threadsafe.
+
+TODO(chunk-G): this module kept its generic machinery through the ZZZ demolition
+(B.2) but lost both concrete job types, because each one imported a pipeline that
+is now read-only porting source under ``app/services/_ported/``:
+
+    submit_optimizer_job / _execute_optimizer  <- optimizer_pipeline, disc_optimizer
+    submit_rank_job      / _execute_rank       <- rank_pipeline, disc_ranker
+
+Chunk G restores them against the Genshin artifact optimizer (G.3 ports
+``optimizer_pipeline``, G.4 ports ``rank_pipeline``). Until then the runner accepts
+generic callables via ``submit()`` and nothing else, so ``_optimizer_queue`` /
+``_rank_queue`` stay empty in practice — they are kept, rather than deleted and
+rewritten, because the per-kind concurrency cap and the queue-drop-on-cancel
+semantics are the parts that were hard to get right, not the pipeline calls.
+Recover the deleted bodies from fairy@76909c4:backend/app/services/job_runner.py.
 """
 
 from __future__ import annotations
@@ -10,29 +25,23 @@ from __future__ import annotations
 import asyncio
 import logging
 import math
-import os
-import sys
 import threading
-import time
 from collections import deque
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 from app.repositories.optimization_job import OptimizationJobRepository
-from app.services.disc_optimizer import OptimizerCancelled, OptimizerProgress
-from app.services.disc_ranker import RankCancelled, RankProgress
-from app.services.optimizer_pipeline import run_optimizer_pipeline_with_progress
-from app.services.rank_pipeline import run_rank_pipeline_with_progress
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
 
     from sqlalchemy.ext.asyncio import async_sessionmaker
 
-    from app.services.optimizer_pipeline import ResolvedPayload
-
 logger = logging.getLogger(__name__)
 
+# Throttle for progress writes from a worker thread. Unreferenced since B.2 removed the
+# two concrete job types; kept rather than deleted because it is a tuned value, and Chunk G
+# restores the code that reads it (see the module TODO).
 PROGRESS_WRITE_INTERVAL_S = 0.5
 
 
@@ -46,7 +55,24 @@ async def run_orphan_sweep(session_factory: async_sessionmaker) -> int:
     return count
 
 
-def _eta(p: OptimizerProgress) -> float | None:
+class SearchProgress(Protocol):
+    """Structural type for a search-progress callback payload.
+
+    Was ``disc_optimizer.OptimizerProgress``, which moved to ``_ported/`` in B.1.
+    Stated structurally so the ETA formula and the progress writer survive the
+    demolition without importing porting source; Chunk G's optimizer supplies a
+    concrete class that satisfies this.
+    """
+
+    assignments_done: int
+    assignments_total: int
+    evaluated: int
+    pruned_sets: int
+    pruned_stats: int
+    elapsed_seconds: float
+
+
+def _eta(p: SearchProgress) -> float | None:
     """ETA in seconds per §Q6 formula; None during warmup."""
     threshold = max(3, math.ceil(p.assignments_total * 0.05))
     if p.assignments_done < threshold or p.assignments_done == 0:
@@ -96,7 +122,10 @@ class JobRunner:
     # Public API
 
     def submit(self, job_id: str, runner_fn: Callable, *args: Any, **kwargs: Any) -> None:
-        """Submit a generic callable to the threadpool (used by unit tests).
+        """Submit a generic callable to the threadpool.
+
+        Was "used by unit tests" while `submit_optimizer_job` and `submit_rank_job` existed;
+        since B.2 removed those, this is the only public submit path until Chunk G.
 
         ``runner_fn`` is called with ``cancel_event`` as the first positional
         arg, followed by ``*args`` and ``**kwargs``.
@@ -115,41 +144,6 @@ class JobRunner:
         )
         with self._lock:
             self._futures[job_id] = future
-
-    def submit_optimizer_job(self, job_id: str, payload: ResolvedPayload) -> None:
-        """Submit an optimizer job with full DB lifecycle management.
-
-        If the per-kind concurrency cap is reached the job is held in an
-        in-memory queue; it stays ``queued`` in the DB until the running job
-        completes and the next one is dispatched automatically.
-        """
-        cancel_event = threading.Event()
-        with self._lock:
-            self._cancel_events[job_id] = cancel_event
-            if self._optimizer_running < self._max_optimizer:
-                self._optimizer_running += 1
-                future = self._executor.submit(
-                    self._execute_optimizer, job_id, cancel_event, payload
-                )
-                self._futures[job_id] = future
-            else:
-                self._optimizer_queue.append((job_id, cancel_event, payload))
-
-    def submit_rank_job(self, job_id: str, payload: Any) -> None:
-        """Submit a rank job with full DB lifecycle management.
-
-        Same queuing semantics as ``submit_optimizer_job`` but with a
-        separate concurrency cap so rank and optimizer jobs don't share slots.
-        """
-        cancel_event = threading.Event()
-        with self._lock:
-            self._cancel_events[job_id] = cancel_event
-            if self._rank_running < self._max_rank:
-                self._rank_running += 1
-                future = self._executor.submit(self._execute_rank, job_id, cancel_event, payload)
-                self._futures[job_id] = future
-            else:
-                self._rank_queue.append((job_id, cancel_event, payload))
 
     def cancel(self, job_id: str) -> None:
         """Request cancellation for a queued or running job.
@@ -221,7 +215,7 @@ class JobRunner:
             repo = OptimizationJobRepository(session)
             await repo.mark_running(job_id)
 
-    async def _update_progress(self, job_id: str, p: OptimizerProgress, eta: float | None) -> None:
+    async def _update_progress(self, job_id: str, p: SearchProgress, eta: float | None) -> None:
         async with self._session_factory() as session:  # type: ignore[misc]
             repo = OptimizationJobRepository(session)
             await repo.update_progress(
@@ -249,128 +243,3 @@ class JobRunner:
         async with self._session_factory() as session:  # type: ignore[misc]
             repo = OptimizationJobRepository(session)
             await repo.mark_cancelled(job_id)
-
-    def _execute_optimizer(
-        self,
-        job_id: str,
-        cancel_event: threading.Event,
-        payload: ResolvedPayload,
-    ) -> None:
-        try:
-            self._db_call(self._mark_running(job_id))
-
-            last_write_at = [0.0]
-
-            def cb(p: OptimizerProgress) -> None:
-                if cancel_event.is_set():
-                    raise OptimizerCancelled  # noqa: TRY301
-                now = time.perf_counter()
-                if (
-                    now - last_write_at[0] < PROGRESS_WRITE_INTERVAL_S
-                    and p.assignments_done < p.assignments_total
-                ):
-                    return
-                last_write_at[0] = now
-                self._db_call(self._update_progress(job_id, p, _eta(p)))
-
-            response = run_optimizer_pipeline_with_progress(payload, cb)
-            top_damage = response.builds[0].total_damage if response.builds else None
-            self._db_call(self._mark_succeeded(job_id, response.model_dump(), top_damage))
-
-        except OptimizerCancelled:
-            self._db_call(self._mark_cancelled(job_id))
-        except Exception:
-            logger.exception("Optimizer job %s failed", job_id)
-            err = repr(sys.exc_info()[1])[:2000]
-            self._db_call(self._mark_failed(job_id, err))
-        finally:
-            with self._lock:
-                self._cancel_events.pop(job_id, None)
-                self._futures.pop(job_id, None)
-                self._optimizer_running -= 1
-                if self._optimizer_queue:
-                    next_id, next_cancel, next_payload = self._optimizer_queue.popleft()
-                    self._optimizer_running += 1
-                    try:
-                        future = self._executor.submit(
-                            self._execute_optimizer, next_id, next_cancel, next_payload
-                        )
-                        self._futures[next_id] = future
-                    except RuntimeError:
-                        # Executor is shutting down; queued job won't run this
-                        # session.  Orphan sweep on next startup will recover it.
-                        self._optimizer_running -= 1
-
-    # ------------------------------------------------------------------
-    # Internal — rank job path
-
-    async def _update_rank_progress(self, job_id: str, p: RankProgress) -> None:
-        eta = (
-            p.elapsed_seconds * (p.discs_total - p.discs_done) / p.discs_done
-            if p.discs_done > 0
-            else None
-        )
-        async with self._session_factory() as session:  # type: ignore[misc]
-            repo = OptimizationJobRepository(session)
-            await repo.update_progress(
-                job_id,
-                assignments_done=p.discs_done,
-                assignments_total=p.discs_total,
-                evaluated=p.discs_done,
-                pruned_sets=0,
-                pruned_stats=0,
-                elapsed_seconds=p.elapsed_seconds,
-                eta_seconds=eta,
-            )
-
-    def _execute_rank(
-        self,
-        job_id: str,
-        cancel_event: threading.Event,
-        payload: Any,
-    ) -> None:
-        try:
-            self._db_call(self._mark_running(job_id))
-
-            last_write_at = [0.0]
-
-            def cb(p: RankProgress) -> None:
-                if cancel_event.is_set():
-                    raise RankCancelled  # noqa: TRY301
-                now = time.perf_counter()
-                if (
-                    now - last_write_at[0] < PROGRESS_WRITE_INTERVAL_S
-                    and p.discs_done < p.discs_total
-                ):
-                    return
-                last_write_at[0] = now
-                self._db_call(self._update_rank_progress(job_id, p))
-
-            result_list = run_rank_pipeline_with_progress(
-                payload, cb, max_workers=max(1, (os.cpu_count() or 2) // 2)
-            )
-            self._db_call(self._mark_succeeded(job_id, {"discs": result_list}, None))
-
-        except RankCancelled:
-            self._db_call(self._mark_cancelled(job_id))
-        except Exception:
-            logger.exception("Rank job %s failed", job_id)
-            err = repr(sys.exc_info()[1])[:2000]
-            self._db_call(self._mark_failed(job_id, err))
-        finally:
-            with self._lock:
-                self._cancel_events.pop(job_id, None)
-                self._futures.pop(job_id, None)
-                self._rank_running -= 1
-                if self._rank_queue:
-                    next_id, next_cancel, next_payload = self._rank_queue.popleft()
-                    self._rank_running += 1
-                    try:
-                        future = self._executor.submit(
-                            self._execute_rank, next_id, next_cancel, next_payload
-                        )
-                        self._futures[next_id] = future
-                    except RuntimeError:
-                        # Executor is shutting down; queued job won't run this
-                        # session.  Orphan sweep on next startup will recover it.
-                        self._rank_running -= 1

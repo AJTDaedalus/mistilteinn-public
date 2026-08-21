@@ -27,8 +27,6 @@ htmlcov/
 *.env
 
 # Docker — postgres data dir is a host bind mount, not tracked
-docker/postgres_data/
-docker/*.sql
 
 # Claude Code local settings (session state, permissions, handoffs) —
 # but land shared workflow files (agents/, skills/) so they ship with the repo

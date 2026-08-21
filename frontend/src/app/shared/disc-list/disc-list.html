@@ -1,5 +1,5 @@
 <div class="disc-list">
-  <fairy-disc-filters
+  <mist-disc-filters
     [discSets]="discSets()"
     [slotConstraint]="slotConstraint()"
     [filters]="filters()"
@@ -26,7 +26,7 @@
         (keydown.enter)="onSelect(disc.id)"
         (keydown.space)="onSelect(disc.id); $event.preventDefault()"
       >
-        <fairy-disc-card
+        <mist-disc-card
           [disc]="disc"
           [setNames]="setNames()"
           [setIcons]="setIcons()"

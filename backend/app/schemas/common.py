@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 
 class PaginatedResponse[T](BaseModel):
-    """Generic paginated list envelope shared by list endpoints (agents, discs, enemies, ...)."""
+    """Generic paginated list envelope shared by list endpoints."""
 
     items: list[T]
     total: int
