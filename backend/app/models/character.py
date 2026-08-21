@@ -17,7 +17,7 @@ from sqlalchemy import Float, ForeignKey, Index, Integer, String, Text, UniqueCo
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, uuid_pk
+from app.models.base import Base, TimestampMixin, enum_column, uuid_pk
 from app.models.enums import Element, Rarity, StatType, TalentType, WeaponType
 
 
@@ -50,9 +50,9 @@ class Character(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
 
     #: Null for the two unaligned entries whose payload element is the literal "None".
-    element: Mapped[Element | None] = mapped_column(String(16), nullable=True)
-    weapon_type: Mapped[WeaponType] = mapped_column(String(32), nullable=False)
-    rarity: Mapped[Rarity] = mapped_column(String(16), nullable=False)
+    element: Mapped[Element | None] = mapped_column(enum_column(Element, 16), nullable=True)
+    weapon_type: Mapped[WeaponType] = mapped_column(enum_column(WeaponType, 32), nullable=False)
+    rarity: Mapped[Rarity] = mapped_column(enum_column(Rarity, 16), nullable=False)
     region: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     base_hp: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
@@ -61,7 +61,9 @@ class Character(TimestampMixin, Base):
 
     #: The stat a character gains on ascension (Crit DMG for Ayaka, EM, ATK%, …). Derived
     #: from `stats_modifier.ascension`; see the class docstring.
-    ascension_stat_type: Mapped[StatType | None] = mapped_column(String(48), nullable=True)
+    ascension_stat_type: Mapped[StatType | None] = mapped_column(
+        enum_column(StatType, 48), nullable=True,
+    )
 
     #: `stats_modifier.ascension` verbatim: six rows of `{prop_key: value}`. Stored as JSONB
     #: rather than a sixth table because it is always read as one unit and nothing queries an
@@ -114,7 +116,7 @@ class Talent(TimestampMixin, Base):
         ForeignKey("characters.id", ondelete="CASCADE"), nullable=False, index=True,
     )
     nanoka_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    talent_type: Mapped[TalentType] = mapped_column(String(24), nullable=False)
+    talent_type: Mapped[TalentType] = mapped_column(enum_column(TalentType, 24), nullable=False)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     icon: Mapped[str | None] = mapped_column(String(128), nullable=True)

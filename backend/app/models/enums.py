@@ -194,6 +194,28 @@ class ArtifactSlot(enum.StrEnum):
     GOBLET = "equip_ring"
     CIRCLET = "equip_dress"
 
+    @property
+    def sort_index(self) -> int:
+        """Position in the conventional flower→plume→sands→goblet→circlet order.
+
+        Needed because the *values* are the payload's internal keys, so sorting on the
+        column sorts alphabetically — `equip_bracer, equip_dress, equip_necklace,
+        equip_ring, equip_shoes`, i.e. **flower, circlet, plume, goblet, sands**. Any UI or
+        export iterating in column order would put the circlet second.
+        """
+        return _SLOT_ORDER.index(self)
+
+
+#: Declaration order of `ArtifactSlot` is the conventional display order; the enum's values
+#: are not, so this list is what `sort_index` and the SQL ordering both key off.
+_SLOT_ORDER: list[ArtifactSlot] = [
+    ArtifactSlot.FLOWER,
+    ArtifactSlot.PLUME,
+    ArtifactSlot.SANDS,
+    ArtifactSlot.GOBLET,
+    ArtifactSlot.CIRCLET,
+]
+
 
 class TalentType(enum.StrEnum):
     """What a character's `skills[]` entry actually is.

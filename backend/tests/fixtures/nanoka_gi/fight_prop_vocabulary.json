@@ -4,8 +4,8 @@
   "version": "7.0.51",
   "fetched": "2026-08-21",
   "task": "C.2",
-  "derivation": "affix_prop_counts: every affix[].add_props[].prop_type across all 65 artifact set detail payloads. element_dmg_bonus: prop_type paired with the element named in that affix's own English desc text ('<X> DMG Bonus'), for affixes carrying exactly one non-NONE prop \u2014 so the mapping is read off the payload, never asserted from memory.",
-  "regenerate": "iterate the ids in ../artifact.json, GET each detail URL with a non-default User-Agent (nanoka answers 403 to urllib's default), aggregate as above"
+  "derivation": "affix_prop_counts: every affix[].add_props[].prop_type across every artifact set detail payload. element_dmg_bonus: prop_type paired with the element named in that affix's own English desc text ('<X> DMG Bonus'), for affixes carrying exactly one non-NONE prop \u2014 so the mapping is read off the payload, never asserted from memory.",
+  "regenerate": "cd backend && python -m scripts.harvest_nanoka_vocabulary"
  },
  "affix_prop_counts": {
   "FIGHT_PROP_ATTACK_PERCENT": 13,

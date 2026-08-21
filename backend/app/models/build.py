@@ -20,7 +20,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.artifact import Artifact
+from app.models.artifact import Artifact, artifact_slot_sort_order
 from app.models.base import Base, TimestampMixin, uuid_pk
 from app.models.character import Character
 from app.models.user import User  # noqa: F401 — ensures FK target is registered
@@ -34,6 +34,14 @@ class Build(TimestampMixin, Base):
     row. That is the shape fairy used for discs and the reason still holds: a piece is
     equipped by at most one build, unequipping must not delete it, and the alternative is
     five nullable FKs plus a constraint that they are distinct.
+
+    **`uq_builds_owner_character` means one build per character per user.** Inherited
+    verbatim from fairy's `uq_builds_owner_agent` and kept here *pending an owner decision*,
+    not because it is obviously right: it forbids saving a C0 and a C6 of the same
+    character side by side, or a Physical and a Cryo Eula, which are ordinary things to want
+    to compare in this game. Raised in the PR #2 review; changing it is a product call, so
+    it is documented rather than quietly dropped. If it goes, `Build` needs a `name` column
+    to tell two builds of one character apart.
 
     `talent_levels` is JSONB keyed by `TalentType` value — normal attack, elemental skill
     and elemental burst each level 1-15 independently (constellations can raise the cap to
@@ -57,6 +65,22 @@ class Build(TimestampMixin, Base):
             "refinement BETWEEN 1 AND 5",
             name="refinement_range",
         ),
+        # The other three bounded integers. Grounded in the committed 7.0.51 payloads
+        # rather than assumed: `level_exp` has 90 entries and `xp_requirements` is keyed
+        # 1..90, so both level caps are 90; `stats_modifier.ascension` has 6 rows, so
+        # phase 0 (unascended) through 6.
+        CheckConstraint(
+            "ascension_phase BETWEEN 0 AND 6",
+            name="ascension_phase_range",
+        ),
+        CheckConstraint(
+            "character_level BETWEEN 1 AND 90",
+            name="character_level_range",
+        ),
+        CheckConstraint(
+            "weapon_level BETWEEN 1 AND 90",
+            name="weapon_level_range",
+        ),
     )
 
     id: Mapped[uuid_pk]
@@ -71,15 +95,27 @@ class Build(TimestampMixin, Base):
         ForeignKey("weapons.id", ondelete="SET NULL"), nullable=True, default=None,
     )
 
-    character_level: Mapped[int] = mapped_column(Integer, nullable=False, default=90)
+    character_level: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=90, server_default=text("90"),
+    )
     #: 0-6 ascension phases; distinct from level because two builds at level 80 can differ.
-    ascension_phase: Mapped[int] = mapped_column(Integer, nullable=False, default=6)
-    weapon_level: Mapped[int] = mapped_column(Integer, nullable=False, default=90)
-    refinement: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    constellation_level: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    ascension_phase: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=6, server_default=text("6"),
+    )
+    weapon_level: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=90, server_default=text("90"),
+    )
+    refinement: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1, server_default=text("1"),
+    )
+    constellation_level: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default=text("0"),
+    )
 
     #: `{"normal_attack": 10, "elemental_skill": 10, "elemental_burst": 10}`
-    talent_levels: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    talent_levels: Mapped[dict] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb"),
+    )
 
     notes: Mapped[str] = mapped_column(String(1000), nullable=False, default="")
     optimizer_priority: Mapped[int | None] = mapped_column(
@@ -90,7 +126,11 @@ class Build(TimestampMixin, Base):
     weapon: Mapped[Weapon | None] = relationship()
     artifacts: Mapped[list[Artifact]] = relationship(
         foreign_keys="Artifact.build_id",
-        order_by="Artifact.slot",
+        # NOT `order_by="Artifact.slot"`. The column holds the payload's internal keys, so
+        # sorting on it gives flower, **circlet**, plume, goblet, sands. This orders by the
+        # conventional slot sequence instead; `ArtifactSlot.sort_index` is the same order in
+        # Python.
+        order_by=artifact_slot_sort_order(),
         # The FK is ON DELETE SET NULL and that is the whole intent: deleting a build
         # unequips its pieces, it does not destroy them. `passive_deletes` lets the database
         # do the nulling — without it SQLAlchemy loads every artifact to null it in Python,

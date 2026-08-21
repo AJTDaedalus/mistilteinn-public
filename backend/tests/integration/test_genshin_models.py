@@ -8,6 +8,14 @@ constraint on the wrong pair of columns.
 Values come from the committed nanoka fixtures where a real value exists, so the column
 widths are exercised against data the importer will actually produce rather than against
 `"x"`.
+
+**Every read-back goes through `_reload`, which expires the object first.** The session is
+built with `expire_on_commit=False`, so `session.get()` after a `flush()` returns the
+instance the test just constructed — straight out of the identity map, with no SELECT. Tests
+written that way assert against their own Python objects and pass regardless of what the
+database or the column types do. That is not hypothetical: it hid a real defect through a
+whole review round, where `Mapped[Element]` over a bare `String` came back as `str` and
+`Rarity.stars` raised `AttributeError` on any row loaded in a new session.
 """
 
 from __future__ import annotations
@@ -36,7 +44,15 @@ from app.models.character import (
     Talent,
     TalentScaling,
 )
-from app.models.enums import ArtifactSlot, Element, Rarity, StatType, TalentType, UserStatus
+from app.models.enums import (
+    ArtifactSlot,
+    Element,
+    Rarity,
+    StatType,
+    TalentType,
+    UserStatus,
+    WeaponType,
+)
 from app.models.user import User
 from app.models.weapon import Weapon, WeaponRefinement
 
@@ -53,6 +69,13 @@ def _ayaka() -> dict:
 def _unique_id() -> int:
     """A nanoka_id that cannot collide with another test's row."""
     return uuid.uuid4().int % 10_000_000
+
+
+async def _reload(db: AsyncSession, instance: object) -> object:
+    """Expire and re-SELECT `instance`, so the assertion exercises the load path."""
+    db.expire(instance)
+    await db.refresh(instance)
+    return instance
 
 
 async def _make_user(db: AsyncSession) -> User:
@@ -72,7 +95,10 @@ async def _make_character(db: AsyncSession) -> Character:
         nanoka_id=_unique_id(),
         name=payload["name"],
         element=Element.parse(payload["element"]),
-        weapon_type=payload["weapon"],
+        # Through the parser, not raw: the same passthrough on the *weapon* index would
+        # write `ITEM_TPS_WEAPON` where characters hold `WEAPON_CROSSBOW`, and any join on
+        # weapon type would silently lose the eight crossbows. D.3 should copy this line.
+        weapon_type=WeaponType.parse(payload["weapon"]),
         rarity=Rarity.parse(payload["rarity"]),
         region=payload["chara_info"].get("region"),
         base_hp=payload["base_hp"],
@@ -92,7 +118,7 @@ async def _make_weapon(db: AsyncSession) -> Weapon:
     weapon = Weapon(
         nanoka_id=_unique_id(),
         name="Mistsplitter Reforged",
-        weapon_type="WEAPON_SWORD_ONE_HAND",
+        weapon_type=WeaponType.SWORD,
         rarity=Rarity.FIVE_STAR,
         base_atk=47.537,
         base_atk_curve="GROW_CURVE_ATTACK_302",
@@ -124,9 +150,8 @@ async def _make_set(db: AsyncSession) -> ArtifactSet:
 async def test_character_round_trips_with_its_fixture_values(db_session: AsyncSession):
     character = await _make_character(db_session)
 
-    fetched = await db_session.get(Character, character.id)
+    fetched = await _reload(db_session, character)
 
-    assert fetched is not None
     assert fetched.name == "Kamisato Ayaka"
     assert fetched.element is Element.CRYO
     assert fetched.rarity is Rarity.FIVE_STAR
@@ -141,7 +166,7 @@ async def test_a_character_with_no_vision_is_storable(db_session: AsyncSession):
     character.element = None
     await db_session.flush()
 
-    assert (await db_session.get(Character, character.id)).element is None
+    assert (await _reload(db_session, character)).element is None
 
 
 async def test_talent_and_scaling_round_trip(db_session: AsyncSession):
@@ -167,7 +192,7 @@ async def test_talent_and_scaling_round_trip(db_session: AsyncSession):
     )
     await db_session.flush()
 
-    fetched = await db_session.get(Talent, talent.id)
+    fetched = await _reload(db_session, talent)
     await db_session.refresh(fetched, ["scalings"])
 
     assert fetched.talent_type is TalentType.NORMAL_ATTACK
@@ -197,7 +222,7 @@ async def test_constellations_and_passives_round_trip(db_session: AsyncSession):
         )
     await db_session.flush()
 
-    fetched = await db_session.get(Character, character.id)
+    fetched = await _reload(db_session, character)
     await db_session.refresh(fetched, ["constellations", "ascension_passives"])
 
     assert [c.position for c in fetched.constellations] == [1, 2, 3, 4, 5, 6]
@@ -214,48 +239,99 @@ async def test_weapon_and_refinements_round_trip(db_session: AsyncSession):
         )
     await db_session.flush()
 
-    fetched = await db_session.get(Weapon, weapon.id)
+    fetched = await _reload(db_session, weapon)
     await db_session.refresh(fetched, ["refinements"])
 
     assert [r.level for r in fetched.refinements] == [1, 2, 3, 4, 5]
     assert fetched.sub_stat_type is StatType.CRIT_DMG
 
 
-async def test_column_widths_fit_the_longest_payload_values(db_session: AsyncSession):
-    """A `String(n)` too narrow for real data fails at import time, on one unlucky row.
+def _longest(values) -> str:
+    return max((v for v in values if isinstance(v, str)), key=len, default="")
 
-    Measured against the committed 7.0.51 fixtures: the longest weapon name is 49 chars
-    ("Specialized Frag Crystals within the Shadow Realm"), the longest icon 45, the longest
-    artifact affix name 39 — and the longest affix description is **858** characters, which
-    is why descriptions are `Text` and not `String`.
+
+@pytest.mark.parametrize(
+    ("column", "longest"),
+    [
+        (Character.name, lambda f: _longest(v["en"] for v in f["character"].values())),
+        (Character.icon, lambda f: _longest(v["icon"] for v in f["character"].values())),
+        (
+            Character.release_date,
+            lambda f: _longest(v["release"] for v in f["character"].values()),
+        ),
+        (Weapon.name, lambda f: _longest(v["en"] for v in f["weapon"].values())),
+        (Weapon.icon, lambda f: _longest(v["icon"] for v in f["weapon"].values())),
+        (
+            ArtifactSetAffix.name,
+            lambda f: _longest(
+                a["name"]["en"] for s in f["artifact"].values() for a in s["set"].values()
+            ),
+        ),
+        (
+            ArtifactSet.icon,
+            lambda f: _longest(v["icon"] for v in f["artifact"].values()),
+        ),
+    ],
+)
+def test_every_string_column_is_wide_enough_for_the_committed_payloads(column, longest):
+    """A `String(n)` narrower than real data fails at import time, on one unlucky row.
+
+    Derived from the fixtures rather than hardcoded, so a longer value in a future patch is
+    caught by refreshing `tests/fixtures/nanoka_gi/` — the same mechanism as the enum tests.
+    The original version of this test asserted a 49-character name against `String(120)` and
+    called it covered; it could not have failed.
     """
     import json
 
     fixtures = Path(__file__).resolve().parents[1] / "fixtures" / "nanoka_gi"
-    weapons = json.loads((fixtures / "weapon.json").read_text())
-    longest_name = max((w["en"] for w in weapons.values()), key=len)
-    longest_icon = max((w["icon"] for w in weapons.values()), key=len)
-    artifacts = json.loads((fixtures / "artifact.json").read_text())
-    longest_desc = max(
-        (a["desc"]["en"] for s in artifacts.values() for a in s["set"].values()), key=len,
+    payloads = {
+        name: json.loads((fixtures / f"{name}.json").read_text())
+        for name in ("character", "weapon", "artifact")
+    }
+    value = longest(payloads)
+    limit = column.type.length
+
+    assert value, "fixture produced no value for this column — the accessor is wrong"
+    assert len(value) <= limit, (
+        f"{column} is String({limit}) but the longest committed value is "
+        f"{len(value)} chars: {value!r}"
     )
 
-    weapon = Weapon(
-        nanoka_id=_unique_id(), name=longest_name, icon=longest_icon,
-        weapon_type="WEAPON_CLAYMORE", rarity=Rarity.FOUR_STAR,
+
+def test_the_enum_columns_are_wide_enough_for_their_own_members():
+    """A `String(n)` narrower than the longest enum value truncates or errors on write."""
+    for column, enum_cls in (
+        (Character.element, Element),
+        (Character.weapon_type, WeaponType),
+        (Character.rarity, Rarity),
+        (Character.ascension_stat_type, StatType),
+        (Talent.talent_type, TalentType),
+        (Artifact.slot, ArtifactSlot),
+    ):
+        longest = max(len(m.value) for m in enum_cls)
+        assert longest <= column.type.length, (
+            f"{column} holds {enum_cls.__name__}, whose longest value is {longest} chars"
+        )
+
+
+async def test_a_long_affix_description_survives_a_text_column(db_session: AsyncSession):
+    """The longest committed affix description is 858 characters — hence `Text`, not `String`."""
+    import json
+
+    fixtures = Path(__file__).resolve().parents[1] / "fixtures" / "nanoka_gi"
+    artifacts = json.loads((fixtures / "artifact.json").read_text())
+    longest_desc = _longest(
+        a["desc"]["en"] for s in artifacts.values() for a in s["set"].values()
     )
-    db_session.add(weapon)
     artifact_set = await _make_set(db_session)
-    db_session.add(
-        ArtifactSetAffix(
-            artifact_set_id=artifact_set.id, position=0, pieces_required=4,
-            name="Nighttime Whispers in the Echoing Woods", description=longest_desc,
-        ),
+    affix = ArtifactSetAffix(
+        artifact_set_id=artifact_set.id, position=0, pieces_required=4,
+        name="Long", description=longest_desc,
     )
+    db_session.add(affix)
     await db_session.flush()
 
-    assert (await db_session.get(Weapon, weapon.id)).name == longest_name
-    assert len(longest_desc) > 800
+    assert (await _reload(db_session, affix)).description == longest_desc
 
 
 async def test_a_weapon_with_no_base_atk_or_substat_is_storable(db_session: AsyncSession):
@@ -263,13 +339,13 @@ async def test_a_weapon_with_no_base_atk_or_substat_is_storable(db_session: Asyn
     weapon = Weapon(
         nanoka_id=_unique_id(),
         name="Frag Crystal - Pyro",
-        weapon_type="WEAPON_CROSSBOW",
+        weapon_type=WeaponType.CROSSBOW,
         rarity=Rarity.FOUR_STAR,
     )
     db_session.add(weapon)
     await db_session.flush()
 
-    fetched = await db_session.get(Weapon, weapon.id)
+    fetched = await _reload(db_session, weapon)
     assert fetched.base_atk is None
     assert fetched.sub_stat_type is None
 
@@ -291,8 +367,8 @@ async def test_artifact_set_round_trips_including_a_one_piece_set(db_session: As
     )
     await db_session.flush()
 
-    assert (await db_session.get(ArtifactSet, prayers.id)).piece_thresholds == [1]
-    fetched = await db_session.get(ArtifactSet, two_four.id)
+    assert (await _reload(db_session, prayers)).piece_thresholds == [1]
+    fetched = await _reload(db_session, two_four)
     await db_session.refresh(fetched, ["affixes"])
     assert fetched.affixes[0].add_props[0]["prop_type"] == "FIGHT_PROP_GRASS_ADD_HURT"
 
@@ -309,7 +385,7 @@ async def test_artifact_round_trips_with_substats(db_session: AsyncSession):
     db_session.add(artifact)
     await db_session.flush()
 
-    fetched = await db_session.get(Artifact, artifact.id)
+    fetched = await _reload(db_session, artifact)
     assert fetched.slot is ArtifactSlot.GOBLET
     assert fetched.main_stat_type is StatType.DENDRO_DMG_BONUS
     assert fetched.substats[0]["rolls"] == 3
@@ -336,7 +412,7 @@ async def test_build_round_trips_with_its_relationships(db_session: AsyncSession
     )
     await db_session.flush()
 
-    fetched = await db_session.get(Build, build.id)
+    fetched = await _reload(db_session, build)
     await db_session.refresh(fetched, ["artifacts", "character", "weapon"])
 
     assert fetched.character.name == "Kamisato Ayaka"
@@ -354,7 +430,7 @@ async def test_enemy_profile_round_trips_all_eight_resistance_channels(db_sessio
     db_session.add(enemy)
     await db_session.flush()
 
-    fetched = await db_session.get(EnemyProfile, enemy.id)
+    fetched = await _reload(db_session, enemy)
     assert fetched.physical_res == pytest.approx(0.7)
     assert fetched.pyro_res == pytest.approx(-0.5), "negative RES is a weakness, not invalid"
 
@@ -389,6 +465,154 @@ async def test_refinement_is_range_checked(db_session: AsyncSession):
         await db_session.flush()
 
 
+async def test_the_accepted_boundaries_really_are_accepted(db_session: AsyncSession):
+    """The other half of a range check.
+
+    `test_constellation_level_is_range_checked` inserts 7 and expects a failure — but so
+    would `BETWEEN 0 AND 5`. Without this, an off-by-one that rejects legitimate values is
+    invisible: nobody notices C6 is unsavable until a user tries.
+    """
+    owner = await _make_user(db_session)
+    build = Build(
+        owner_id=owner.id,
+        constellation_level=6,
+        refinement=5,
+        ascension_phase=6,
+        character_level=90,
+        weapon_level=90,
+    )
+    db_session.add(build)
+    await db_session.flush()
+
+    reloaded = await _reload(db_session, build)
+    assert reloaded.constellation_level == 6
+    assert reloaded.refinement == 5
+
+    floor_build = Build(
+        owner_id=owner.id,
+        constellation_level=0,
+        refinement=1,
+        ascension_phase=0,
+        character_level=1,
+        weapon_level=1,
+    )
+    db_session.add(floor_build)
+    await db_session.flush()
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("ascension_phase", 7),
+        ("character_level", 91),
+        ("character_level", 0),
+        ("weapon_level", 91),
+    ],
+)
+async def test_the_other_bounded_columns_are_range_checked(
+    db_session: AsyncSession, field: str, value: int,
+):
+    """Added in the PR #2 review — three of the five bounded columns had no check at all."""
+    owner = await _make_user(db_session)
+    db_session.add(Build(owner_id=owner.id, **{field: value}))
+
+    with pytest.raises(IntegrityError):
+        await db_session.flush()
+
+
+async def test_a_build_cannot_hold_two_artifacts_in_the_same_slot(db_session: AsyncSession):
+    """Two flowers on one build would make every set count and stat sum silently wrong."""
+    owner = await _make_user(db_session)
+    build = Build(owner_id=owner.id)
+    db_session.add(build)
+    await db_session.flush()
+    for _ in range(2):
+        db_session.add(
+            Artifact(
+                owner_id=owner.id, build_id=build.id, slot=ArtifactSlot.FLOWER,
+                rarity=Rarity.FIVE_STAR, main_stat_type=StatType.HP_FLAT,
+                main_stat_value=4780,
+            ),
+        )
+
+    with pytest.raises(IntegrityError):
+        await db_session.flush()
+
+
+async def test_unequipped_artifacts_are_exempt_from_the_slot_uniqueness(
+    db_session: AsyncSession,
+):
+    """The index is partial: an inventory of twenty spare flowers is normal."""
+    owner = await _make_user(db_session)
+    for _ in range(3):
+        db_session.add(
+            Artifact(
+                owner_id=owner.id, slot=ArtifactSlot.FLOWER, rarity=Rarity.FIVE_STAR,
+                main_stat_type=StatType.HP_FLAT, main_stat_value=4780,
+            ),
+        )
+    await db_session.flush()
+
+    count = await db_session.execute(
+        select(func.count()).select_from(Artifact).where(Artifact.owner_id == owner.id),
+    )
+    assert count.scalar_one() == 3
+
+
+async def test_build_artifacts_come_back_in_conventional_slot_order(db_session: AsyncSession):
+    """Ordering on the column alone would give flower, *circlet*, plume, goblet, sands."""
+    owner = await _make_user(db_session)
+    build = Build(owner_id=owner.id)
+    db_session.add(build)
+    await db_session.flush()
+    for slot in (ArtifactSlot.CIRCLET, ArtifactSlot.FLOWER, ArtifactSlot.GOBLET,
+                 ArtifactSlot.PLUME, ArtifactSlot.SANDS):
+        db_session.add(
+            Artifact(
+                owner_id=owner.id, build_id=build.id, slot=slot, rarity=Rarity.FIVE_STAR,
+                main_stat_type=StatType.ATK_PCT, main_stat_value=0.466,
+            ),
+        )
+    await db_session.flush()
+
+    fetched = await _reload(db_session, build)
+    await db_session.refresh(fetched, ["artifacts"])
+
+    assert [a.slot for a in fetched.artifacts] == [
+        ArtifactSlot.FLOWER,
+        ArtifactSlot.PLUME,
+        ArtifactSlot.SANDS,
+        ArtifactSlot.GOBLET,
+        ArtifactSlot.CIRCLET,
+    ]
+
+
+async def test_nanoka_ids_are_unique_per_catalogue_table(db_session: AsyncSession):
+    """Re-running the importer must collide rather than duplicate the roster."""
+    character = await _make_character(db_session)
+    db_session.add(
+        Character(
+            nanoka_id=character.nanoka_id, name="Impostor", weapon_type=WeaponType.SWORD,
+            rarity=Rarity.FOUR_STAR,
+        ),
+    )
+
+    with pytest.raises(IntegrityError):
+        await db_session.flush()
+
+
+async def test_one_build_per_character_per_owner(db_session: AsyncSession):
+    """Inherited from fairy's `uq_builds_owner_agent`; see the note in the Build docstring."""
+    owner = await _make_user(db_session)
+    character = await _make_character(db_session)
+    db_session.add(Build(owner_id=owner.id, character_id=character.id))
+    await db_session.flush()
+    db_session.add(Build(owner_id=owner.id, character_id=character.id))
+
+    with pytest.raises(IntegrityError):
+        await db_session.flush()
+
+
 # ── cascades ──────────────────────────────────────────────────────────────────
 
 
@@ -410,6 +634,14 @@ async def test_deleting_a_character_cascades_to_its_talents(db_session: AsyncSes
         select(func.count()).select_from(Talent).where(Talent.character_id == character.id),
     )
     assert remaining.scalar_one() == 0
+    # The grandchild too — `talent_scalings` cascades from `talents`, which cascades from
+    # `characters`. Setting that up without asserting it proves nothing.
+    orphaned = await db_session.execute(
+        select(func.count())
+        .select_from(TalentScaling)
+        .where(TalentScaling.talent_id == talent.id),
+    )
+    assert orphaned.scalar_one() == 0
 
 
 async def test_deleting_a_build_does_not_delete_the_users_artifacts(db_session: AsyncSession):

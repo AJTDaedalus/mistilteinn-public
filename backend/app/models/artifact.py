@@ -10,11 +10,22 @@ Field provenance: `tests/fixtures/nanoka_gi/artifact.json` (index),
 
 from __future__ import annotations
 
-from sqlalchemy import Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Case,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    case,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, uuid_pk
+from app.models.base import Base, TimestampMixin, enum_column, uuid_pk
 from app.models.enums import ArtifactSlot, Rarity, StatType
 
 #: Slot → the main stats that slot can roll, **as data rather than `if` branches** (C.5).
@@ -97,10 +108,12 @@ class ArtifactSetAffix(TimestampMixin, Base):
     `ArtifactSet.piece_thresholds`; the payload's affix ids end in that ordinal, but the
     ordinal is what the pairing relies on, not the id arithmetic.
 
-    `add_props` is the payload's structured effect (`[{prop_type, value}, …]`), kept
-    alongside the human text so Chunk H has something to build modifiers from that is not
-    parsed prose. Most entries are `FIGHT_PROP_NONE` placeholders — 324 of them across the
-    65 sets — because conditional bonuses live only in the description.
+    `add_props` is the payload's structured effect (`[{prop_type, value}, …]`) and
+    `param_list` its numeric parameters. Both are kept alongside the human text so Chunk H
+    builds modifiers from data rather than from parsed prose. **`param_list` is the load-
+    bearing one**: 324 of the affix rows across the 65 sets have `add_props` entirely
+    `FIGHT_PROP_NONE`, because a conditional bonus has no static prop — for those rows
+    `param_list` holds the only numbers that exist outside the description markup.
     """
 
     __tablename__ = "artifact_set_affixes"
@@ -119,6 +132,13 @@ class ArtifactSetAffix(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(120), nullable=False, default="")
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     add_props: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+
+    #: The affix's numeric parameters, e.g. `[0.3, 8, …]` for a 30% RES shred lasting 8s.
+    #: **This is where the numbers actually are.** 324 of the affix rows across the 65 sets
+    #: have `add_props` entirely `FIGHT_PROP_NONE`, because a conditional bonus has no static
+    #: prop — for those rows `param_list` is the only structured data, and the prose is
+    #: `<color=#99FFFFFF>30%</color>` markup. Dropping it would leave Chunk H regexing HTML.
+    param_list: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
 
     artifact_set: Mapped[ArtifactSet] = relationship(back_populates="affixes")
 
@@ -141,6 +161,17 @@ class Artifact(TimestampMixin, Base):
     __tablename__ = "artifacts"
     __table_args__ = (
         Index("ix_artifacts_owner_slot", "owner_id", "slot"),
+        # A build holds at most one piece per slot. Without this, a GOOD import or an
+        # optimizer write path that equips before unequipping leaves two flowers attached:
+        # `Build.artifacts` then yields six pieces and every set-bonus count and stat sum is
+        # silently wrong. Partial, so unequipped pieces (`build_id IS NULL`) are unaffected —
+        # same idiom as `uq_builds_owner_character`.
+        Index(
+            "uq_artifacts_build_slot",
+            "build_id", "slot",
+            unique=True,
+            postgresql_where=text("build_id IS NOT NULL"),
+        ),
     )
 
     id: Mapped[uuid_pk]
@@ -154,11 +185,11 @@ class Artifact(TimestampMixin, Base):
         ForeignKey("builds.id", ondelete="SET NULL"), nullable=True, index=True,
     )
 
-    slot: Mapped[ArtifactSlot] = mapped_column(String(24), nullable=False)
-    rarity: Mapped[Rarity] = mapped_column(String(16), nullable=False)
+    slot: Mapped[ArtifactSlot] = mapped_column(enum_column(ArtifactSlot, 24), nullable=False)
+    rarity: Mapped[Rarity] = mapped_column(enum_column(Rarity, 16), nullable=False)
     level: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    main_stat_type: Mapped[StatType] = mapped_column(String(48), nullable=False)
+    main_stat_type: Mapped[StatType] = mapped_column(enum_column(StatType, 48), nullable=False)
     main_stat_value: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
 
     substats: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
@@ -167,3 +198,16 @@ class Artifact(TimestampMixin, Base):
 
     def __repr__(self) -> str:
         return f"<Artifact {self.slot} +{self.level} {self.main_stat_type}>"
+
+
+def artifact_slot_sort_order() -> Case:
+    """A SQL `CASE` putting artifacts in flower→plume→sands→goblet→circlet order.
+
+    `ORDER BY slot` sorts the *payload keys* alphabetically — `equip_bracer, equip_dress,
+    equip_necklace, equip_ring, equip_shoes` — which is flower, circlet, plume, goblet,
+    sands. Correct-looking, and wrong for any UI or export that iterates the collection.
+    """
+    return case(
+        {slot.value: slot.sort_index for slot in ArtifactSlot},
+        value=Artifact.slot,
+    )

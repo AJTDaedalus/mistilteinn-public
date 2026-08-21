@@ -14,7 +14,7 @@ from sqlalchemy import Float, ForeignKey, Index, Integer, String, Text, UniqueCo
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, uuid_pk
+from app.models.base import Base, TimestampMixin, enum_column, uuid_pk
 from app.models.enums import Rarity, StatType, WeaponType
 
 
@@ -50,13 +50,15 @@ class Weapon(TimestampMixin, Base):
     nanoka_id: Mapped[int] = mapped_column(Integer, unique=True, nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
 
-    weapon_type: Mapped[WeaponType] = mapped_column(String(32), nullable=False)
-    rarity: Mapped[Rarity] = mapped_column(String(16), nullable=False)
+    weapon_type: Mapped[WeaponType] = mapped_column(enum_column(WeaponType, 32), nullable=False)
+    rarity: Mapped[Rarity] = mapped_column(enum_column(Rarity, 16), nullable=False)
 
     base_atk: Mapped[float | None] = mapped_column(Float, nullable=True)
     base_atk_curve: Mapped[str | None] = mapped_column(String(48), nullable=True)
 
-    sub_stat_type: Mapped[StatType | None] = mapped_column(String(48), nullable=True)
+    sub_stat_type: Mapped[StatType | None] = mapped_column(
+        enum_column(StatType, 48), nullable=True,
+    )
     sub_stat_base_value: Mapped[float | None] = mapped_column(Float, nullable=True)
     sub_stat_curve: Mapped[str | None] = mapped_column(String(48), nullable=True)
 
@@ -81,9 +83,10 @@ class WeaponRefinement(TimestampMixin, Base):
     """One refinement step, R1-R5.
 
     Source: the detail payload's `refinement` object, keyed `"1"`..`"5"`, each with the
-    passive's `name` and `desc`. The numbers inside `desc` are baked into its markup, so
-    the text is stored as given and parsing it into modifiers is Chunk H's job — not
-    something to half-do here and have to redo against the kit schema.
+    passive's `name`, `desc` and `param_list`. The text is stored as given — turning it into
+    modifiers is Chunk H's job, not something to half-do here and redo against the kit
+    schema — but `param_list` carries the numbers in structured form so that work starts
+    from data rather than from `<color=#99FFFFFF>20%</color>`.
     """
 
     __tablename__ = "weapon_refinements"
@@ -98,6 +101,10 @@ class WeaponRefinement(TimestampMixin, Base):
     level: Mapped[int] = mapped_column(Integer, nullable=False)
     name: Mapped[str] = mapped_column(String(120), nullable=False, default="")
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    #: `refinement["<level>"].param_list`, e.g. `[0.2, 1, 2, 15, 0, 0, 0, 0]` — the numbers
+    #: the description renders inside `<color=…>` markup. Kept so Chunk H reads data instead
+    #: of regexing prose, and so the R1→R5 progression is queryable.
+    param_list: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
 
     weapon: Mapped[Weapon] = relationship(back_populates="refinements")
 
