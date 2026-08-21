@@ -279,7 +279,7 @@ Each task below is **one commit**. Commit message form:
   swap `zzz` for `gi` in the URL grammar. **Transport only — no field mapping yet.**
 - **Accept:** a dry-run mode fetches all four indexes and reports counts without writing.
 
-### D.2 — Commit a detail-payload sample **(do this before writing any mapping)**
+### [x] D.2 — Commit a detail-payload sample **(do this before writing any mapping)**
 - **Do:** save one full character, weapon, artifact, and monster detail payload under
   `backend/tests/fixtures/nanoka_gi/detail/`. Write a short key-map note in the LOG.
 - **Accept:** fixtures committed; the note names where ascension stats, talent tables, and
