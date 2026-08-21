@@ -16,65 +16,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.enums import UserStatus
 from app.models.user import User
-from app.repositories.agent import AgentRepository
-from app.repositories.attack import AttackRepository
-from app.repositories.buff_preset import BuffPresetRepository
-from app.repositories.build import BuildRepository, ComboRepository, EnemyProfileRepository
-from app.repositories.disc import DiscRepository, DiscSetRepository
 from app.repositories.optimization_job import OptimizationJobRepository
 from app.repositories.session import SessionRepository
 from app.repositories.team import TeamRepository
 from app.repositories.user import UserRepository
-from app.repositories.w_engine import WEngineRepository
 
 DBSession = Annotated[AsyncSession, Depends(get_db)]
 
 # ── Public (no auth) repo factories ──────────────────────────────────────────
-
-
-async def get_agent_repo(session: DBSession) -> AgentRepository:
-    """FastAPI DI factory for `AgentRepository`."""
-    return AgentRepository(session)
-
-
-async def get_attack_repo(session: DBSession) -> AttackRepository:
-    """FastAPI DI factory for `AttackRepository`."""
-    return AttackRepository(session)
-
-
-async def get_w_engine_repo(session: DBSession) -> WEngineRepository:
-    """FastAPI DI factory for `WEngineRepository`."""
-    return WEngineRepository(session)
-
-
-async def get_disc_set_repo(session: DBSession) -> DiscSetRepository:
-    """FastAPI DI factory for `DiscSetRepository`."""
-    return DiscSetRepository(session)
-
-
-async def get_disc_repo(session: DBSession) -> DiscRepository:
-    """FastAPI DI factory for `DiscRepository` (unscoped — see `get_owned_disc_repo`)."""
-    return DiscRepository(session)
-
-
-async def get_build_repo(session: DBSession) -> BuildRepository:
-    """FastAPI DI factory for `BuildRepository` (unscoped — see `get_owned_build_repo`)."""
-    return BuildRepository(session)
-
-
-async def get_team_repo(session: DBSession) -> TeamRepository:
-    """FastAPI DI factory for `TeamRepository` (unscoped — see `get_owned_team_repo`)."""
-    return TeamRepository(session)
-
-
-async def get_combo_repo(session: DBSession) -> ComboRepository:
-    """FastAPI DI factory for `ComboRepository` (unscoped — see `get_owned_combo_repo`)."""
-    return ComboRepository(session)
-
-
-async def get_enemy_repo(session: DBSession) -> EnemyProfileRepository:
-    """FastAPI DI factory for `EnemyProfileRepository`."""
-    return EnemyProfileRepository(session)
+#
+# TODO(chunk-D/F/G): B.7 removed the factories for every deleted repository —
+# get_agent_repo, get_attack_repo, get_w_engine_repo, get_disc_set_repo,
+# get_disc_repo, get_build_repo, get_combo_repo, get_enemy_repo, and the owned
+# variants get_owned_build_repo / get_owned_disc_repo / get_owned_combo_repo /
+# get_owned_buff_preset_repo. Each comes back with the route that needs it, not
+# before: an injectable for a repository nothing calls is dead wiring.
 
 
 async def get_optimization_job_repo(session: DBSession) -> OptimizationJobRepository:
@@ -182,35 +138,9 @@ CurrentUserAnyStatus = Annotated[User, Depends(get_current_user_any_status)]
 # ── Owner-scoped repo factories (require auth) ────────────────────────────────
 
 
-async def get_owned_build_repo(session: DBSession, current_user: CurrentUser) -> BuildRepository:
-    """FastAPI DI factory for a `BuildRepository` scoped to the authenticated user's own rows."""
-    return BuildRepository(session, owner_id=str(current_user.id))
-
-
-async def get_owned_disc_repo(session: DBSession, current_user: CurrentUser) -> DiscRepository:
-    """FastAPI DI factory for a `DiscRepository` scoped to the authenticated user's own rows."""
-    return DiscRepository(session, owner_id=str(current_user.id))
-
-
 async def get_owned_team_repo(session: DBSession, current_user: CurrentUser) -> TeamRepository:
     """FastAPI DI factory for a `TeamRepository` scoped to the authenticated user's own rows."""
     return TeamRepository(session, owner_id=str(current_user.id))
-
-
-async def get_owned_combo_repo(session: DBSession, current_user: CurrentUser) -> ComboRepository:
-    """FastAPI DI factory for a `ComboRepository` scoped to the authenticated user's own rows."""
-    return ComboRepository(session, owner_id=str(current_user.id))
-
-
-async def get_owned_buff_preset_repo(
-    session: DBSession, current_user: CurrentUser
-) -> BuffPresetRepository:
-    """FastAPI DI factory for a `BuffPresetRepository` scoped to the current user's rows.
-
-    There is no unscoped variant on purpose (#64): a stage-buff preset is user data with
-    no public read, so every route reaches it through the owner-scoped repo.
-    """
-    return BuffPresetRepository(session, owner_id=str(current_user.id))
 
 
 async def get_owned_optimization_job_repo(

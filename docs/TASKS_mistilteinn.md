@@ -163,7 +163,7 @@ Each task below is **one commit**. Commit message form:
   and their router registrations. Keep `auth.py`, `health.py`, `teams.py` (trim its ZZZ members).
 - **Accept:** `uvicorn app.main:app` starts; `/docs` renders; `/api/v1/health` returns 200.
 
-### B.7 — Delete ZZZ repositories
+### [x] B.7 — Delete ZZZ repositories
 - **Do:** delete `app/repositories/{agent,attack,disc,w_engine,buff_preset,build}.py`; trim
   `team.py`. Keep `base.py`, `optimization_job.py`, `session.py`, `user.py`.
 - **Accept:** import clean; surviving repository tests pass.
