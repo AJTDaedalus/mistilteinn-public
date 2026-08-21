@@ -59,6 +59,10 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
 asyncio_default_test_loop_scope = "session"
 testpaths = ["tests"]
+# Belt and braces: `testpaths` already keeps collection inside tests/, but naming
+# _ported here means the exclusion survives anyone running `pytest app/` or widening
+# testpaths later.
+norecursedirs = ["build", "app/services/_ported"]
 filterwarnings = [
     "ignore::DeprecationWarning",
 ]
@@ -72,7 +76,10 @@ target-version = "py312"
 # `build/` holds a stale shadow copy of `app/` after `pip install -e .` / `python -m build`.
 # Ruff already skips it via `respect-gitignore` (`.gitignore:8`), but that is a default that
 # could be flipped; naming it here means correctness does not rest on it. See issue #74.
-extend-exclude = ["build"]
+# app/services/_ported/ is read-only ZZZ porting source staged in B.1 — it imports
+# modules that Chunk B deletes, so linting it would produce permanent noise about code
+# nobody is allowed to edit. See app/services/_ported/README.md.
+extend-exclude = ["build", "app/services/_ported"]
 
 [tool.ruff.lint]
 select = [

@@ -122,7 +122,7 @@
 Each task below is **one commit**. Commit message form:
 `refactor: delete ZZZ <group> (was fairy@76909c4:<path>) — replaced by <chunk>`
 
-### B.1 — Stage the port-reference set
+### [x] B.1 — Stage the port-reference set
 - **Do:** move the six PORT-marked services into `backend/app/services/_ported/` and exclude that
   directory from `ruff`, from `pytest` collection, and from any runtime import:
   `optimizer_pipeline.py`, `disc_optimizer.py`, `damage_dag_service.py`, `rank_pipeline.py`,
