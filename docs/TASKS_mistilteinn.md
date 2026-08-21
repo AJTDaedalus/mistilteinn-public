@@ -185,7 +185,7 @@ Each task below is **one commit**. Commit message form:
   `seed_db.py` / `verify_seed.py` as **stubs to be rewritten in D.7/D.8**.
 - **Accept:** `ls backend/scripts` matches the keep list.
 
-### B.10 — Delete migration history
+### [x] B.10 — Delete migration history
 - **Do:** delete all 39 files in `backend/alembic/versions/`. Leave `alembic/env.py` and
   `script.py.mako`. There is no production database to preserve.
 - **Accept:** `alembic history` is empty; `alembic heads` reports none.
