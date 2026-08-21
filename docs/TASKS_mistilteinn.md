@@ -300,7 +300,7 @@ Each task below is **one commit**. Commit message form:
 - **Accept:** `cd backend && python -m scripts.seed_db` fills a cold `mistilteinn`; a second run
   is a no-op diff.
 
-### D.8 — `verify_seed.py` rewrite
+### [x] D.8 — `verify_seed.py` rewrite
 - **Do:** per-table row counts asserted against the index lengths, plus a handful of hand-checked
   anchor values that fail loudly on drift.
 - **Accept:** green against the seeded DB; **fails** when an anchor is deliberately corrupted
