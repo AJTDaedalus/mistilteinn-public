@@ -12,19 +12,34 @@ rewritten domain layer.
 founding documents (goals, non-goals, approach, tool decisions, constraints handed to Planner)
 and nothing in this repo overrides them.
 
-## ⚠️ Fork state — read before trusting anything here
+## Repo state — read before trusting anything here
 
-This tree is a **fork of fairy `dev` @ 76909c4, with the ZZZ corpus stripped and nothing yet
-ported.** It is a starting point, not a working application.
+This tree is a fork of fairy `dev` @ 76909c4. **Chunks A and B of
+`docs/TASKS_mistilteinn.md` are done: the ZZZ domain layer has been deleted and the
+infrastructure core is green.** Chunk C (Genshin domain models) is next.
 
-- **The code is ZZZ code.** `backend/app/` still models agents, discs, W-Engines, anomaly,
-  stun, and decibels. Every domain concept is wrong for Genshin until rewritten.
-- **The tests do not pass, and are not expected to.** The stripped data corpus is loaded by
-  code that is still present. Do not treat a red suite as a regression — treat it as the
-  size of the port.
+- **The suite passes.** 24 test files, 220 tests, 1 skipped (`tests/perf`, awaiting G.7).
+  `ruff check app/ tests/` is clean and `uvicorn app.main:app` serves `/api/v1/health`,
+  `/docs`, and the auth and team endpoints. **A red suite is now a regression, not the
+  size of the port** — that excuse expired at B.13.
+- **There is no game layer at all.** `app/` has no characters, weapons, artifacts, damage
+  chain, or optimizer. It has auth, sessions, users, teams, optimization-job plumbing, the
+  `formula` IR, and the `pando` calculator. Seven tables, seven API paths, one migration.
+- **`app/services/_ported/` is read-only porting source, not runtime code.** Eight ZZZ
+  modules staged in B.1/B.3 for Chunks F, G and H to port *against*, excluded from ruff and
+  pytest, with no `__init__.py` so they are not importable. Each is deleted when its port
+  lands — see that directory's README.
 - **Do not "fix" ZZZ code to make it run.** Per the BRIEF: *delete* ZZZ concepts rather than
   aliasing them. Leaked ZZZ shapes in the Genshin domain model are the fork strategy's main
-  long-term hazard.
+  long-term hazard. This applies with full force to Chunk C: new files, new class names, no
+  column that exists because its ZZZ counterpart did.
+- **What is deliberately unfinished** is marked in-place with `TODO(chunk-X)` naming the task
+  that finishes it — the disabled CI kit-validation gate, the two `scripts/` stubs that exit
+  non-zero, the removed DI factories, the skipped perf baseline, the 401-sweep table in
+  `tests/integration/test_auth_endpoints.py`. `rg "TODO\(chunk-" ` is the inventory.
+
+`docs/LOG_mistilteinn.md` records every task, including the findings that contradicted the
+plan. Read it before assuming DESIGN is describing the current tree.
 
 ### What was stripped in the fork commit
 
@@ -44,18 +59,30 @@ that turns out to be worth porting rather than re-deriving.
 
 - `.claude/agents/kit-{curator,auditor}.md` and `.claude/skills/kit-curation/` — the curation
   pipeline the BRIEF wants ported. Still written entirely against ZZZ kits.
-- `.github/workflows/` — still dispatches fairy's kit-validation harness (`validate_kits.py`,
-  levels L0–LR/LU) against data that no longer exists.
+- ~~`.github/workflows/` — still dispatches fairy's kit-validation harness.~~
+  **Resolved in A.10:** the `kit-validation` job is `if: false` with a `TODO(chunk-H)` block
+  naming every level to restore; `validate_kits.py` itself was deleted in B.9.
 - `docs/DEPLOY.md` — fairy's runbook; hosts, tunnel config, and DB names are fairy's.
 - ~~`docker-compose.yml` binds host ports **5432 / 8000 / 4200**, the same as fairy.~~
   **Resolved in A.4/A.5:** there is no `db` service any more (mistilteinn uses fairy's
   Postgres server and owns separate databases in it), and the host ports are **8001 / 4201**.
   Both stacks run simultaneously.
-- **Package and project identifiers still say `fairy`** — `backend/pyproject.toml`,
-  `frontend/package.json`, `frontend/angular.json`, and assorted code comments. Renaming them is
-  a deliberate Task 0 decision, not a blind `sed`.
-- **`backend/scripts/download_*_icons.py` write to `/root/fairy/frontend/public/icons`** — a
-  hardcoded path into the *other* repo. Do not run them; they are ZZZ icon fetchers anyway.
+- ~~**Package and project identifiers still say `fairy`.**~~ **Resolved in A.1/A.2/A.12.**
+  Surviving `fairy` hits are deliberate: the shared-Postgres wiring in `docker-compose.yml`,
+  upstream provenance in prose, and `frontend/src/styles/_tokens.scss` (the Fairy palette
+  stays until Chunk J supplies a Mitya-derived one — DESIGN §A4).
+- ~~**`backend/scripts/download_*_icons.py` write into the other repo.**~~ **Resolved in B.9:**
+  all four were deleted unrun.
+
+### Database
+
+The `mistilteinn` and `mistilteinn_test` databases live in the **fairy stack's Postgres
+container** (DESIGN §A3) and were created by hand in A.6 — nothing in this repo creates them.
+`docker compose up` needs the fairy stack's `db` service running, because `backend` joins
+`fairy_default` as an external network. If it is down the app says so and retries before
+failing loudly (`app/database.py`, A.7).
+
+Host ports are **8001** (backend) and **4201** (frontend), so both stacks run at once.
 
 ### Changed in the fork commit
 

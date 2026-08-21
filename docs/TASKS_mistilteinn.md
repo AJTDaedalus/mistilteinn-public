@@ -203,7 +203,7 @@ Each task below is **one commit**. Commit message form:
   formula-core tests. `tests/perf` is kept but marked skip until Chunk G re-baselines it.
 - **Accept:** surviving suite is ~30–40 files; `pytest` collection reports no import errors.
 
-### B.13 — Chunk B exit gate **(hard gate)**
+### [x] B.13 — Chunk B exit gate **(hard gate)**
 - **Do:** run the full surviving suite against `mistilteinn_test`, plus `ruff check app/`.
 - **Accept:** **`pytest` green**, `ruff` clean, `uvicorn app.main:app` serves `/api/v1/health`
   and the auth endpoints. A red suite here blocks Chunk C — this is the point where "the tests

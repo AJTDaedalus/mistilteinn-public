@@ -1,4 +1,11 @@
-"""Integration tests: per-owner rate limiting returns 429 on burst."""
+"""Integration tests: per-owner rate limiting returns 429 on burst.
+
+**Port state.** These exercised `DELETE /api/v1/optimizer/jobs/{id}`, deleted in B.6. They now
+use `DELETE /api/v1/teams/{id}`, which carries the same `@limiter.limit(WRITE_LIMIT)`
+decorator — the middleware is what is under test, not the route. Owner B's expected
+not-rate-limited response is still a 404 (the id does not exist), which is exactly the point:
+404 proves the request reached the handler instead of being rejected by A's bucket.
+"""
 
 from __future__ import annotations
 
@@ -12,8 +19,8 @@ if TYPE_CHECKING:
 
 @pytest.mark.asyncio
 async def test_write_endpoint_rate_limit_returns_429(authed_client: AsyncClient) -> None:
-    """Burst over the 60/minute write limit on DELETE /optimizer/jobs → 429."""
-    url = "/api/v1/optimizer/jobs/00000000-0000-0000-0000-000000000001"
+    """Burst over the 60/minute write limit on a write route → 429."""
+    url = "/api/v1/teams/00000000-0000-0000-0000-000000000001"
     # Each authed_client has a fresh random token → fresh rate-limit bucket.
     # The write limit is 60/minute; we send up to 70 requests and expect 429.
     for _ in range(70):
@@ -32,7 +39,7 @@ async def test_rate_limit_is_per_owner(
 ) -> None:
     """Two different owners have independent rate-limit buckets.
 
-    We exhaust owner A's budget on DELETE /optimizer/jobs, then verify
+    We exhaust owner A's budget on a write route, then verify
     owner B (a freshly minted token in authed_client2) is not rate-limited.
     """
     import secrets
@@ -54,7 +61,7 @@ async def test_rate_limit_is_per_owner(
     await session.flush()
     raw_token_b = await make_session_for(user_b, session)
 
-    url = "/api/v1/optimizer/jobs/00000000-0000-0000-0000-000000000001"
+    url = "/api/v1/teams/00000000-0000-0000-0000-000000000001"
 
     # Exhaust owner A's limit
     hit_429 = False
