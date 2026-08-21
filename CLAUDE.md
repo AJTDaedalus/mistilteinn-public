@@ -64,8 +64,11 @@ that turns out to be worth porting rather than re-deriving.
   production directory. Re-author it when mistilteinn has its own deploy target.
 - DB identity renamed fairy → mistilteinn in `.env.example`, `backend/app/config.py` (default
   URL), and `.github/workflows/test.yml` (service-container credentials).
-- `security/zap/` retargeted from `fairy.aetherus.dev` to `mistilteinn.aetherus.dev` (which does
-  not exist yet — do not run the scan until it does).
+- `security/zap/` retargeted from `fairy.aetherus.dev` to `mistilteinn.aetherus.dev`. The scan
+  is gated behind `security/zap/run-baseline.sh` (A.11): opt-in via `ZAP_SCAN_ENABLED=1`, and it
+  refuses to scan a target that is not serving. Note the host **does** resolve —
+  `aetherus.dev` has wildcard DNS onto Cloudflare — so "it does not resolve" is not the check;
+  it answers `525` because there is no origin behind it yet.
 - `docker-compose.yml`: dropped the `./references` and `./frontend/public/icons` bind mounts
   (both directories were stripped); healthcheck now uses `${POSTGRES_USER}`.
 

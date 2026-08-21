@@ -104,7 +104,7 @@
 - **Accept:** workflow YAML parses (`actionlint` or a push to the branch); the disabled gate is
   visible in the file with its restore condition written down.
 
-### A.11 — Gate the ZAP scan
+### [x] A.11 — Gate the ZAP scan
 - **Do:** `security/zap/` targets `mistilteinn.aetherus.dev`, which does not resolve. Add an
   explicit opt-in guard so the scan cannot report a false pass against a nonexistent host.
 - **Files:** `security/zap/*`, `.github/workflows/security.yml`.

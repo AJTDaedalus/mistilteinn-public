@@ -1,5 +1,23 @@
 name: Security Scan
 
+# ---------------------------------------------------------------------------
+# What this workflow covers: SAST (bandit), dependency audit (pip-audit,
+# npm audit against a reviewed allowlist), and secret scanning (gitleaks).
+#
+# What it does NOT cover: DAST. There is no ZAP job here and never was — the
+# baseline scan in security/zap/ is a manual step. TASKS A.11 assumed a job in
+# this file to gate; there is none, so the guard lives in the only place the
+# scan is invoked from: security/zap/run-baseline.sh, which is opt-in
+# (ZAP_SCAN_ENABLED=1) and additionally refuses to scan a target that is not
+# serving. Both refusals exit non-zero, because a skipped check blocks.
+#
+# TODO(chunk-K): once mistilteinn.aetherus.dev has a real origin, decide
+# whether the baseline scan becomes a scheduled job here. Do not add one that
+# runs against a dead host — aetherus.dev has wildcard DNS, so an unreachable
+# target still answers, and an unguarded scan reports ~59 PASS against a
+# Cloudflare error page. See security/zap/README.md.
+# ---------------------------------------------------------------------------
+
 on:
   push:
     branches: [dev, main]
