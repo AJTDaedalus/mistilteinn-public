@@ -45,6 +45,11 @@ Chunk E (YuanShen snapshots) is next; Chunk F (damage chain) is what E unblocks.
   seed run: version pinned, per-entity counts, failed ids, and whether the run finished.
   `succeeded` is written `False` first and flipped at the end, so a run that died half way
   does not look complete. **Query it before trusting a stale checkout's database.**
+- **A seed refuses to prune an implausible share of a table.** If an index comes back empty
+  or truncated — a valid HTTP 200 that no retry can detect — deleting every row would take
+  each user's builds with it through `ON DELETE CASCADE`. The pass reports `PRUNE REFUSED`,
+  exits non-zero and deletes nothing; `python -m scripts.seed_db --force-prune` is the
+  override for when a patch really did retract that much and someone has read the numbers.
 - **Enemy base stats are curve bases, not level-90 stats.** A Hilichurl's `base_hp` is
   `13.584`; the growth curve is named in `enemy_profiles.stat_curves` and the curve *tables*
   are Chunk E's (`MonsterCurveExcelConfigData`), not nanoka's. Anything that multiplies
