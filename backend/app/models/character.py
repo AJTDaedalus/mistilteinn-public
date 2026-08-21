@@ -18,7 +18,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, uuid_pk
-from app.models.enums import Element, Rarity, StatType, TalentType
+from app.models.enums import Element, Rarity, StatType, TalentType, WeaponType
 
 
 class Character(TimestampMixin, Base):
@@ -51,7 +51,7 @@ class Character(TimestampMixin, Base):
 
     #: Null for the two unaligned entries whose payload element is the literal "None".
     element: Mapped[Element | None] = mapped_column(String(16), nullable=True)
-    weapon_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    weapon_type: Mapped[WeaponType] = mapped_column(String(32), nullable=False)
     rarity: Mapped[Rarity] = mapped_column(String(16), nullable=False)
     region: Mapped[str | None] = mapped_column(String(64), nullable=True)
 

@@ -221,6 +221,43 @@ async def test_weapon_and_refinements_round_trip(db_session: AsyncSession):
     assert fetched.sub_stat_type is StatType.CRIT_DMG
 
 
+async def test_column_widths_fit_the_longest_payload_values(db_session: AsyncSession):
+    """A `String(n)` too narrow for real data fails at import time, on one unlucky row.
+
+    Measured against the committed 7.0.51 fixtures: the longest weapon name is 49 chars
+    ("Specialized Frag Crystals within the Shadow Realm"), the longest icon 45, the longest
+    artifact affix name 39 — and the longest affix description is **858** characters, which
+    is why descriptions are `Text` and not `String`.
+    """
+    import json
+
+    fixtures = Path(__file__).resolve().parents[1] / "fixtures" / "nanoka_gi"
+    weapons = json.loads((fixtures / "weapon.json").read_text())
+    longest_name = max((w["en"] for w in weapons.values()), key=len)
+    longest_icon = max((w["icon"] for w in weapons.values()), key=len)
+    artifacts = json.loads((fixtures / "artifact.json").read_text())
+    longest_desc = max(
+        (a["desc"]["en"] for s in artifacts.values() for a in s["set"].values()), key=len,
+    )
+
+    weapon = Weapon(
+        nanoka_id=_unique_id(), name=longest_name, icon=longest_icon,
+        weapon_type="WEAPON_CLAYMORE", rarity=Rarity.FOUR_STAR,
+    )
+    db_session.add(weapon)
+    artifact_set = await _make_set(db_session)
+    db_session.add(
+        ArtifactSetAffix(
+            artifact_set_id=artifact_set.id, position=0, pieces_required=4,
+            name="Nighttime Whispers in the Echoing Woods", description=longest_desc,
+        ),
+    )
+    await db_session.flush()
+
+    assert (await db_session.get(Weapon, weapon.id)).name == longest_name
+    assert len(longest_desc) > 800
+
+
 async def test_a_weapon_with_no_base_atk_or_substat_is_storable(db_session: AsyncSession):
     """The 8 ITEM_TPS_WEAPON rows carry null atk and sub — importing them must not 500."""
     weapon = Weapon(
