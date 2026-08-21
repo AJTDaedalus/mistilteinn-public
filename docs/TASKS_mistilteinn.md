@@ -90,7 +90,7 @@
   `frontend/public/fairy-emblem.webp` (delete).
 - **Accept:** no rendered string says "Fairy"; no 404 for the favicon.
 
-### A.9 — Regenerate `frontend/openapi.json`
+### [x] A.9 — Regenerate `frontend/openapi.json`
 - **Do:** regenerate from the running backend rather than editing by hand.
 - **Accept:** diff shows only the identifier/title change.
 

@@ -51,7 +51,7 @@ def create_app() -> FastAPI:
     is_local = settings.ENV == "local"
     application = FastAPI(
         title="Mistilteinn - Genshin Optimizer",
-        description="Zenless Zone Zero build optimizer and damage calculator",
+        description="Genshin Impact build optimizer and rotation simulator",
         version="0.1.0",
         lifespan=lifespan,
         docs_url="/docs" if is_local else None,
