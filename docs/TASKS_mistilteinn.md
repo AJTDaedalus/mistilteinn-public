@@ -346,6 +346,10 @@ Each task below is **one commit**. Commit message form:
 - **Hard rule, every task:** no multiplier, coefficient, or curve written from memory. Each
   constant cites gcsim / KQM / Amber **at the line that introduces it**. A task that cannot
   produce a citation is **blocked** (`!`) and escalated, not guessed.
+- **Second hard rule (DESIGN §1 A6):** take gcsim's *numbers*, not its *shape*. One
+  implementation per mechanic, no per-character branching in the chain, and a damage figure
+  that can say which multipliers produced it. F.4/F.5 are where that is decided; retrofitting
+  it once a crossval suite defines "correct" is the thing A6 rejects by name.
 - **Coverage:** 100% on damage calculation per CLAUDE.md.
 
 ---
@@ -366,6 +370,11 @@ Each task below is **one commit**. Commit message form:
 ---
 
 ## Chunk H — Kit corpus, modifier DSL, validation harness **[Planner: own DESIGN doc first]**
+
+**DESIGN §1 A6 makes this chunk's schema the load-bearing artifact of the legibility ruling.**
+Its DESIGN doc must answer "what happens when a kit does not fit the schema" with something
+other than "special-case it" — a kit that needs a bespoke code path means the model is
+missing a concept, and the concept is what gets added.
 
 Sketch: retarget the modifier DSL scope vocabulary → define the Genshin kit-JSON schema →
 port `validate_kits.py` L0–L2/L4–L6/LR/LU → **restore the CI gate disabled in A.10** →
