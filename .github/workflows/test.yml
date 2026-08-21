@@ -9,10 +9,10 @@ name: Tests
 # data that no longer exists. It is DISABLED, not deleted — see the TODO(chunk-H)
 # block on the job itself for exactly what has to come back and when.
 #
-# The backend suite is EXPECTED RED until Chunk B's exit gate (B.13). That is the
-# size of the port, not a regression; see CLAUDE.md's fork-state section and
-# docs/TASKS_mistilteinn.md. Do not open the PR from feat/genshin-domain to dev
-# before B.13 is green.
+# The backend suite went green at Chunk B's exit gate (B.13) and stays that way:
+# 24 test files, 220 tests, 1 skipped (tests/perf, awaiting G.7). A red run here is
+# a regression, not "the size of the port" — that excuse expired at B.13. See
+# CLAUDE.md's repo-state section.
 #
 # Everything here is HERMETIC: no network, no seeded game data. The integration
 # lane stands up an EMPTY Postgres and the suite builds its own schema via
