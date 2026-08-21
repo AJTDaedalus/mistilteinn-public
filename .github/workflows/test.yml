@@ -54,14 +54,17 @@ jobs:
 
       - name: Ruff
         # `scripts/` as a whole is not linted: it carries ~65 pre-existing violations in
-        # unrelated one-off scripts, and fixing them is not this lane's job.
+        # unrelated one-off scripts, and fixing them is not this lane's job. The scripts
+        # something *depends on* are named individually, which is the convention fairy used
+        # for its harness — an unlinted script that a gate runs is a gate nobody trusts.
+        # Chunk D adds the three that seed and verify the database.
         #
         # TODO(chunk-H): fairy additionally linted `scripts/validate_kits.py` and
-        # `scripts/refresh_kit_refs.py` by name, so the two the harness depends on could
-        # not rot. Both are deleted in B.9. Re-add their Genshin replacements here when
-        # Chunk H ports the harness — the point of naming them was that an unlinted
-        # harness script is a harness nobody trusts.
-        run: ruff check app/ tests/
+        # `scripts/refresh_kit_refs.py` by name. Both are deleted in B.9. Re-add their
+        # Genshin replacements here when Chunk H ports the harness.
+        run: >-
+          ruff check app/ tests/
+          scripts/seed_db.py scripts/verify_seed.py scripts/capture_nanoka_fixtures.py
 
       - name: Unit tests
         # Unit only. Integration runs in its own job below so this lane stays fast

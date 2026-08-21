@@ -294,7 +294,7 @@ Each task below is **one commit**. Commit message form:
   the fixture with no network; then run it live against the full index.
 - **Accept (each):** unit test green offline; live run upserts and re-runs idempotently.
 
-### D.7 — `seed_db.py` rewrite
+### [x] D.7 — `seed_db.py` rewrite
 - **Do:** orchestrate the four passes; write a seed-provenance row recording the nanoka version
   pinned (`manifest.json → gi.latest`) and the run timestamp.
 - **Accept:** `cd backend && python -m scripts.seed_db` fills a cold `mistilteinn`; a second run
