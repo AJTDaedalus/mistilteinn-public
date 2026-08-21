@@ -243,7 +243,9 @@ async def load_indexes(*, live: bool, version: str) -> dict[str, int]:
             )
             raise SystemExit(msg)
         return {
-            entity: len(json.loads((FIXTURE_DIR / f"{entity}.json").read_text()))
+            entity: len(
+                json.loads((FIXTURE_DIR / f"{entity}.json").read_text(encoding="utf-8")),
+            )
             for entity in ENTITIES
         }
 
@@ -294,11 +296,22 @@ async def verify(
             )
         if recorded["failed"]:
             failures.append(f"{entity}: the run failed on {recorded['failed']}")
-        rows = await session.scalar(select(func.count()).select_from(model))
+        # Scoped to rows the importer owns. `EnemyProfile.nanoka_id` is deliberately
+        # nullable — a hand-authored crossval target is a legitimate row — and `_prune`
+        # deliberately preserves those. Counting them here would turn the first Chunk F
+        # test dummy into a permanent red gate, and a gate that goes red for a supported
+        # configuration is a gate that gets switched off.
+        rows = await session.scalar(
+            select(func.count()).select_from(model).where(model.nanoka_id.isnot(None)),
+        )
         if rows != recorded["imported"]:
             failures.append(
-                f"{entity}: {rows} rows in {model.__tablename__} against "
+                f"{entity}: {rows} importer-owned rows in {model.__tablename__} against "
                 f"{recorded['imported']} the run says it imported",
+            )
+        if recorded.get("prune_blocked"):
+            failures.append(
+                f"{entity}: the run refused to prune — {recorded['prune_blocked']}",
             )
 
     for anchor, actual in await _anchor_values(session):

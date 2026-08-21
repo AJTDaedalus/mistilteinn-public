@@ -164,3 +164,23 @@ def test_an_unmappable_rarity_raises():
 
     with pytest.raises(NanokaMappingError, match="unmappable rarity"):
         weapon_fields("99999", payload)
+
+
+def test_an_unmapped_substat_raises_rather_than_importing_as_no_substat():
+    """`FIGHT_PROP_NONE` means "none"; an unknown prop means the vocabulary moved.
+
+    Both make `stat_type_for` return None, and treating the second as "no substat" writes a
+    weapon the optimizer reads as having no secondary stat — on a green seed run.
+    """
+    payload = {
+        "name": "Patch 8.0 Sword",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "rarity": 5,
+        "weapon_prop": [
+            {"init_value": 47.5, "prop_type": "FIGHT_PROP_BASE_ATTACK", "type": "GROW_A"},
+            {"init_value": 0.2, "prop_type": "FIGHT_PROP_NEW_THING", "type": "GROW_B"},
+        ],
+    }
+
+    with pytest.raises(NanokaMappingError, match="not in StatType"):
+        weapon_fields("11599", payload)

@@ -57,6 +57,7 @@ async def test_a_full_run_records_every_pass_in_one_provenance_row(db_session: A
     assert sorted(counts) == ["artifact", "character", "monster", "weapon"]
     assert counts["character"] == {
         "total": 1, "imported": 1, "skipped": 0, "pruned": 0, "failed": [],
+        "prune_blocked": None,
     }
     assert await db_session.scalar(select(func.count()).select_from(SeedRun)) == 1
 

@@ -104,3 +104,18 @@ async def test_a_monster_that_leaves_the_index_is_pruned(db_session: AsyncSessio
 
     assert await _count(db_session, EnemyProfile) == 1
     assert importer.results[-1].pruned == 1
+
+
+async def test_a_monster_that_loses_its_children_loses_its_row(db_session: AsyncSession):
+    """Same as the weapon-skin case: a skip must delete, since prune will not see it."""
+    await NanokaGIImporter(
+        db_session, transport=_transport({"21010101": _monster("21010101")}),
+    ).import_enemies()
+    assert await _count(db_session, EnemyProfile) == 1
+
+    stripped = {**_monster("21010101"), "child": {}}
+    importer = NanokaGIImporter(db_session, transport=_transport({"21010101": stripped}))
+    await importer.import_enemies()
+
+    assert await _count(db_session, EnemyProfile) == 0
+    assert importer.results[-1].skipped == 1

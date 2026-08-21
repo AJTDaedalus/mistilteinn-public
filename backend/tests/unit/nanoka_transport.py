@@ -11,7 +11,8 @@ Every importer test in Chunks D runs against this. Two reasons, both learned ups
 
 `from_committed_fixtures()` serves exactly what is committed and raises `KeyError` on
 anything else, so a test asking for a payload nobody captured fails loudly instead of
-quietly exercising a default.
+quietly exercising a default. "What is committed" is read off the directory rather than
+listed here — a hand-maintained list silently stops covering the fixture D.2 adds next.
 """
 
 from __future__ import annotations
@@ -69,13 +70,20 @@ class FixtureTransport:
 
     @classmethod
     def from_committed_fixtures(cls) -> FixtureTransport:
-        """Serve `tests/fixtures/nanoka_gi/` — the three indexes and three details."""
+        """Serve everything under `tests/fixtures/nanoka_gi/`, discovered from disk.
+
+        Both maps are built by globbing, so a fixture added by editing
+        `scripts/capture_nanoka_fixtures.py` is served here without a second edit. The
+        earlier hand-written entity list had already gone stale: it did not include
+        `monster.json`, so the monster pass could not be driven through this helper at all.
+        """
         indexes = {
-            entity: json.loads((FIXTURE_DIR / f"{entity}.json").read_text())
-            for entity in ("character", "weapon", "artifact")
+            path.stem: json.loads(path.read_text(encoding="utf-8"))
+            for path in sorted(FIXTURE_DIR.glob("*.json"))
+            if path.stem != "manifest" and not path.stem.endswith("_vocabulary")
         }
         details: dict[tuple[str, str], dict[str, Any]] = {}
         for path in sorted((FIXTURE_DIR / "detail").glob("*.json")):
             entity, _, raw_id = path.stem.rpartition("_")
-            details[entity, raw_id] = json.loads(path.read_text())
+            details[entity, raw_id] = json.loads(path.read_text(encoding="utf-8"))
         return cls(indexes=indexes, details=details)

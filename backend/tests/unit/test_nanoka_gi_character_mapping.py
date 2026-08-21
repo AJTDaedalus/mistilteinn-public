@@ -230,3 +230,11 @@ def test_an_energy_cost_row_with_no_param_reference_is_skipped():
 def test_a_skill_with_no_promote_entries_classifies_as_nothing():
     """`skills: []` exists (two Traveler bodies); an empty `promote` should not crash."""
     assert classify_talent({"id": 1, "promote": {}}) is None
+
+
+def test_an_unmapped_ascension_prop_raises():
+    """NULL would say "this character gains nothing on ascension" — true of no character."""
+    rows = [{"fight_prop_base_hp": 1.0, "fight_prop_brand_new": 0.2}]
+
+    with pytest.raises(NanokaMappingError, match="not in StatType"):
+        ascension_stat_type("10000002", rows)

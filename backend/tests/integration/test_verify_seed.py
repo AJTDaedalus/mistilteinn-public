@@ -96,7 +96,7 @@ async def test_rows_disappearing_after_the_run_fails(db_session: AsyncSession):
 
     failures = await verify(db_session, indexes=_ONE_EACH)
 
-    assert any("0 rows in weapons against 1" in failure for failure in failures)
+    assert any("0 importer-owned rows in weapons against 1" in failure for failure in failures)
 
 
 async def test_a_corrupted_anchor_fails_and_names_its_source(db_session: AsyncSession):
@@ -126,3 +126,25 @@ async def test_the_offline_index_lengths_come_from_the_committed_fixtures():
     lengths = await load_indexes(live=False, version=FIXTURE_VERSION)
 
     assert lengths == {"character": 150, "weapon": 286, "artifact": 65, "monster": 585}
+
+
+async def test_a_hand_authored_enemy_profile_does_not_make_the_gate_red(
+    db_session: AsyncSession,
+):
+    """`EnemyProfile.nanoka_id` is nullable and `_prune` preserves those rows on purpose.
+
+    Counting them here would turn the first Chunk F crossval dummy into a permanently red
+    verifier, and a gate that goes red for a supported configuration gets switched off.
+    """
+    from app.models.build import EnemyProfile
+
+    await _seed(db_session)
+    before = await verify(db_session, indexes=_ONE_EACH)
+    db_session.add(EnemyProfile(name="Crossval dummy", nanoka_id=None, level=90))
+    await db_session.flush()
+
+    # Compared against the same run without the dummy rather than against `[]`: this
+    # four-row stand-in cannot satisfy anchors that name the Pyro Traveler or the Prayers
+    # sets, and those failures are not what this test is about.
+    assert await verify(db_session, indexes=_ONE_EACH) == before
+    assert not any("enemy_profiles" in failure for failure in before)

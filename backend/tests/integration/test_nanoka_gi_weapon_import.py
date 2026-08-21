@@ -128,3 +128,22 @@ async def test_a_weapon_that_leaves_the_index_is_pruned(db_session: AsyncSession
     assert importer.results[-1].pruned == 1
     # The pruned weapon's refinements go with it; the survivor keeps its own.
     assert await _count(db_session, WeaponRefinement) == 5
+
+
+async def test_a_weapon_reclassified_as_a_skin_loses_its_row(db_session: AsyncSession):
+    """The skip path has to delete, not just decline to write.
+
+    The key stays in the index, so prune never sees it as stale; without the delete the old
+    stats would survive every future seed, counted as `skipped`, on a green run.
+    """
+    await NanokaGIImporter(
+        db_session, transport=_transport({"11501": _aquila()}),
+    ).import_weapons()
+    assert await _count(db_session, Weapon) == 1
+
+    importer = NanokaGIImporter(db_session, transport=_transport({"11501": _SKIN}))
+    await importer.import_weapons()
+
+    assert await _count(db_session, Weapon) == 0
+    assert await _count(db_session, WeaponRefinement) == 0
+    assert importer.results[-1].skipped == 1

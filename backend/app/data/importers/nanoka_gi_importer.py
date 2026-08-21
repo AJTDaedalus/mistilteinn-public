@@ -72,6 +72,22 @@ ENTITIES: tuple[str, ...] = ("character", "weapon", "artifact", "monster")
 #: so a run is reproducible and a failure names the right id.
 DETAIL_CONCURRENCY = 8
 
+#: The largest share of an existing table a single prune may delete before it is treated as
+#: a bad index rather than as upstream retracting content. nanoka answering `{}` — or a
+#: truncated index — with HTTP 200 during a deploy is not something a retry can detect: it is
+#: a valid response. Without this rail, one such answer deletes all 150 characters, takes
+#: every user's build with them through `builds.character_id ON DELETE CASCADE`, and reports
+#: success. Real churn is a handful of retracted beta ids; the threshold is deliberately far
+#: above that, because the failure it guards is catastrophic and the false-positive is a
+#: re-run with `--force-prune` once someone has looked.
+PRUNE_STALE_LIMIT = 0.25
+
+#: …but a prune of at most this many rows is always allowed, whatever share of the table it
+#: is. Retracted beta content is a handful of ids, and a fraction alone would block that on
+#: any small table while still permitting it on a large one — the wrong way round. A bad
+#: index strands the whole table, which is orders of magnitude above this.
+PRUNE_STALE_FLOOR = 5
+
 #: Attempts per request, and the base for exponential backoff between them. Retries cover
 #: transport errors and 5xx only: a 404 is a real answer (the index listed an id the detail
 #: tree does not serve) and retrying it would just turn a reportable gap into a slow one.
@@ -138,10 +154,15 @@ class HttpNanokaTransport:
         """Pin `gi.latest` from the manifest, once per transport."""
         if self._version:
             return self._version
-        manifest = await self._get_json(f"{BASE_URL}/manifest.json")
+        manifest = await self.fetch_manifest()
         self._version = str(manifest["gi"]["latest"])
         logger.info("Pinned nanoka GI version %s", self._version)
         return self._version
+
+    async def fetch_manifest(self) -> dict[str, Any]:
+        """The raw manifest. Fetched even when a version was pinned explicitly, because
+        `scripts/capture_nanoka_fixtures` commits this file and has to see the live one."""
+        return await self._get_json(f"{BASE_URL}/manifest.json")
 
     async def fetch_index(self, entity: str) -> dict[str, Any]:
         """Fetch one entity index at the pinned version."""
@@ -187,6 +208,10 @@ class HttpNanokaTransport:
             self._client = None
 
 
+class PruneGuardError(RuntimeError):
+    """Raised when a prune would delete an implausible share of a table."""
+
+
 @dataclass
 class EntityResult:
     """What one entity pass did, in enough detail for D.8 to assert against.
@@ -206,13 +231,22 @@ class EntityResult:
     #: `imported` because a dry run writes nothing, and a report reading "1/150 imported"
     #: describes a write that did not happen.
     sampled: int = 0
+    #: Set when the prune guard refused to delete; the rows are still there and the run is
+    #: not allowed to report success.
+    prune_blocked: str | None = None
 
     @property
     def ok(self) -> bool:
-        """True when every id in the index was accounted for without an exception."""
-        return not self.failed
+        """True when every id was accounted for and nothing was refused."""
+        return not self.failed and self.prune_blocked is None
 
     def __str__(self) -> str:
+        if self.prune_blocked:
+            return (
+                f"{self.entity}: {self.imported}/{self.total} imported, "
+                f"{self.skipped} skipped, PRUNE REFUSED ({self.prune_blocked}), "
+                f"{len(self.failed)} failed"
+            )
         if self.sampled or not (self.imported or self.skipped or self.pruned):
             return (
                 f"{self.entity}: {self.total} in index, {self.sampled} detail(s) sampled, "
@@ -240,8 +274,10 @@ class NanokaGIImporter(BaseImporter):
         version: str | None = None,
         timeout: float = 30.0,
         concurrency: int = DETAIL_CONCURRENCY,
+        force_prune: bool = False,
     ) -> None:
         super().__init__(session)
+        self._force_prune = force_prune
         self.transport: NanokaTransport = transport or HttpNanokaTransport(
             version=version, timeout=timeout,
         )
@@ -347,6 +383,7 @@ class NanokaGIImporter(BaseImporter):
         """One weapon row plus its refinements, or a skip for a cosmetic skin."""
         if is_weapon_skin(payload):
             logger.debug("Skipping weapon skin %s (%s)", key, payload.get("name"))
+            await self._delete_existing(Weapon, int(key))
             return False
 
         fields = weapon_fields(key, payload)
@@ -407,6 +444,7 @@ class NanokaGIImporter(BaseImporter):
         """One profile row, or a skip for a codex entry with no combat stats."""
         if is_statless_monster(payload):
             logger.debug("Skipping stat-less monster %s (%s)", key, payload.get("name"))
+            await self._delete_existing(EnemyProfile, int(key))
             return False
 
         fields = enemy_profile_fields(key, payload)
@@ -473,7 +511,13 @@ class NanokaGIImporter(BaseImporter):
                     else:
                         result.skipped += 1
 
-        result.pruned = await self._prune(model, set(keys))
+        try:
+            result.pruned = await self._prune(model, set(keys))
+        except PruneGuardError as exc:
+            # Reported, not raised: the rows that *were* imported are good, and the run
+            # exits non-zero on `prune_blocked` anyway.
+            logger.error("Prune refused for %s: %s", entity, exc)  # noqa: TRY400
+            result.prune_blocked = str(exc)
         await self.session.flush()
         self.results.append(result)
         logger.info("%s", result)
@@ -489,6 +533,10 @@ class NanokaGIImporter(BaseImporter):
 
         Rows with a NULL key are untouched: `EnemyProfile` allows hand-authored profiles,
         and pruning those would delete the user's own data on every seed.
+
+        **Raises `PruneGuardError` rather than deleting an implausible share of the
+        table** — see `PRUNE_STALE_LIMIT`. `force` overrides it for the case where a patch
+        really did retract that much and a human has looked at the numbers.
         """
         column = model.nanoka_id
         rows = await self.session.execute(select(column).where(column.isnot(None)))
@@ -496,12 +544,35 @@ class NanokaGIImporter(BaseImporter):
         stale = {value for value in stored if str(value) not in source_keys}
         if not stale:
             return 0
+        share = len(stale) / len(stored)
+        guard_tripped = len(stale) > PRUNE_STALE_FLOOR and share > PRUNE_STALE_LIMIT
+        if guard_tripped and not self._force_prune:
+            msg = (
+                f"{len(stale)} of {len(stored)} {model.__tablename__} rows "
+                f"({share:.0%}) are missing from an index of {len(source_keys)} entries. "
+                f"That is more likely a bad index than upstream retracting content, so "
+                f"nothing was deleted. Re-run with force_prune=True if it is real."
+            )
+            raise PruneGuardError(msg)
         await self.session.execute(delete(model).where(column.in_(stale)))
         logger.info(
             "Pruned %d stale %s row(s): nanoka_id=%s",
             len(stale), model.__tablename__, sorted(map(str, stale)),
         )
         return len(stale)
+
+    async def _delete_existing(self, model: type, key: int | str) -> None:
+        """Remove the row for `key`, if there is one.
+
+        Called when a mapper *skips* an entity. Without it, an entity that upstream
+        reclassifies — a weapon that becomes a skin, a monster that loses its `child` map —
+        keeps its old row forever: the upsert never runs for it, and prune never sees it as
+        stale because its id is still in the index.
+        """
+        await self.session.execute(
+            delete(model).where(model.nanoka_id == key),
+        )
+        await self.session.flush()
 
     async def _get_existing(self, model: type, key: int | str) -> Any | None:
         """The existing row for a source key, or None. The upsert half of every mapping.

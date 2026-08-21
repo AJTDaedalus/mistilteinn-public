@@ -229,3 +229,58 @@ async def test_a_database_level_failure_does_not_poison_the_rest_of_the_pass(
     assert list(names) == [
         "Weapon 1", "Occupies the id the mapper will collide with", "Weapon 3",
     ]
+
+
+async def test_an_empty_index_refuses_to_prune_the_catalogue(db_session: AsyncSession):
+    """nanoka answering `{}` with HTTP 200 is a valid response no retry can detect.
+
+    Without the guard it deletes every row, takes each user's builds with them through
+    `builds.character_id ON DELETE CASCADE`, and exits 0. The rows must survive and the run
+    must not report success.
+    """
+    for nanoka_id in range(1, 21):
+        await _make_weapon(db_session, nanoka_id)
+    importer = NanokaGIImporter(db_session, transport=_weapon_transport())
+
+    async def mapper(key: str, payload: dict[str, Any]) -> bool:  # pragma: no cover
+        raise AssertionError("an empty index has nothing to map")
+
+    result = await importer._run_pass("weapon", Weapon, mapper)
+
+    assert result.pruned == 0
+    assert result.prune_blocked is not None
+    assert "20 of 20" in result.prune_blocked
+    assert not result.ok
+    # The summary line `seed_db` prints has to say so too — a refusal that reads like a
+    # clean pass in the console is the failure this guard exists to make visible.
+    assert "PRUNE REFUSED" in str(result)
+    assert await db_session.scalar(select(func.count()).select_from(Weapon)) == 20
+
+
+async def test_a_handful_of_retracted_ids_still_prunes(db_session: AsyncSession):
+    """The guard must not block what it exists to allow: beta content really is retracted.
+
+    Five stale rows out of six is 83% — far past the share limit — and is pruned anyway,
+    because the floor is what separates "a few ids went away" from "the index is broken".
+    """
+    for nanoka_id in range(1, 7):
+        await _make_weapon(db_session, nanoka_id)
+    importer = NanokaGIImporter(db_session, transport=_weapon_transport())
+
+    pruned = await importer._prune(Weapon, {"1"})
+
+    assert pruned == 5
+    assert await db_session.scalar(select(func.count()).select_from(Weapon)) == 1
+
+
+async def test_force_prune_overrides_the_guard(db_session: AsyncSession):
+    """For the case where a patch really did retract that much and a human has looked."""
+    for nanoka_id in range(1, 21):
+        await _make_weapon(db_session, nanoka_id)
+    importer = NanokaGIImporter(
+        db_session, transport=_weapon_transport(), force_prune=True,
+    )
+
+    pruned = await importer._prune(Weapon, {"1"})
+
+    assert pruned == 19

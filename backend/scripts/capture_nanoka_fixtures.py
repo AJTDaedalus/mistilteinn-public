@@ -33,6 +33,17 @@ FIXTURE_DIR = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "nano
 #: The entity indexes committed under `tests/fixtures/nanoka_gi/`.
 INDEXES: tuple[str, ...] = ("character", "weapon", "artifact", "monster")
 
+#: `manifest.json` is committed too, and is not an entity index — it is the file the pinned
+#: version is *read from*, which both `scripts/verify_seed.py:FIXTURE_VERSION` and
+#: `tests/unit/nanoka_transport.py:FIXTURE_VERSION` are hand-maintained against. Capturing
+#: it here is what lets `--check` notice when `gi.latest` moves.
+MANIFEST_NAME = "manifest.json"
+
+#: …and it was captured with a **trailing newline**, where the indexes were not. A third
+#: style for a third one-off command. Reproduced rather than normalised, for the same reason
+#: as the other two: a re-capture should diff the data, not the whitespace.
+_MANIFEST_SUFFIX = "\n"
+
 #: The detail payloads committed under `tests/fixtures/nanoka_gi/detail/`, with the reason
 #: each one is there. Every mapping task reads these instead of guessing at the shape.
 DETAILS: tuple[tuple[str, str, str], ...] = (
@@ -46,7 +57,8 @@ DETAILS: tuple[tuple[str, str, str], ...] = (
 
 #: How C.1/C.2 wrote the committed files, recovered by matching their bytes rather than
 #: assumed: indexes are `indent=2, ensure_ascii=False`, details `indent=1,
-#: ensure_ascii=True`, and **neither ends in a newline**. The two differ because they were
+#: ensure_ascii=True`, and **neither ends in a newline** (`manifest.json` does — see
+#: `_MANIFEST_SUFFIX`). The two differ because they were
 #: captured by different one-off commands; reproducing them byte for byte is what makes a
 #: re-capture a diff of the *data* rather than a diff of the formatting, which matters more
 #: than the inconsistency does. Normalising them would be a whitespace-only diff across
@@ -74,6 +86,13 @@ async def capture(version: str | None, *, check_only: bool) -> int:
     try:
         pinned = await transport.resolve_version()
         print(f"nanoka GI version {pinned}")
+        manifest = await transport.fetch_manifest()
+        drifted += _emit(
+            FIXTURE_DIR / MANIFEST_NAME,
+            _serialize(manifest, _INDEX_DUMP) + _MANIFEST_SUFFIX,
+            None,
+            check_only=check_only,
+        )
         for entity in INDEXES:
             payload = await transport.fetch_index(entity)
             drifted += _emit(
@@ -110,15 +129,20 @@ def _emit(path: Path, body: str, entries: int | None, *, check_only: bool) -> li
     """Write `body` to `path`, or compare against it. Returns the drifted paths."""
     label = path.relative_to(FIXTURE_DIR)
     count = "" if entries is None else f", {entries} entries"
-    existing = path.read_text() if path.exists() else None
+    # Encoded length, not character count: the indexes are written with
+    # `ensure_ascii=False`, so a Chinese set name is one character and three bytes. The
+    # PROVENANCE.md table is copied from this line, and reporting characters as bytes put
+    # four wrong numbers in it.
+    size = len(body.encode("utf-8"))
+    existing = path.read_text(encoding="utf-8") if path.exists() else None
     if check_only:
         state = "MATCH" if existing == body else "DRIFT"
-        print(f"  {state} {label} ({len(body):,} bytes{count})")
+        print(f"  {state} {label} ({size:,} bytes{count})")
         return [] if existing == body else [str(label)]
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(body)
+    path.write_text(body, encoding="utf-8")
     state = "unchanged" if existing == body else ("new" if existing is None else "updated")
-    print(f"  {state:>9} {label} ({len(body):,} bytes{count})")
+    print(f"  {state:>9} {label} ({size:,} bytes{count})")
     return []
 
 

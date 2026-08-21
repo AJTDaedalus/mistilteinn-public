@@ -22,6 +22,7 @@ from app.models.enums import (
     StatType,
     TalentType,
     WeaponType,
+    is_absent_stat_key,
     stat_type_for,
 )
 
@@ -112,7 +113,18 @@ def ascension_stat_type(key: str, ascension: list[dict[str, Any]]) -> StatType |
             f"upstream shape change, and choosing one of several would be a guess."
         )
         raise NanokaMappingError(msg)
-    return stat_type_for(next(iter(extras)))
+    raw = next(iter(extras))
+    mapped = stat_type_for(raw)
+    if mapped is None:
+        # Same reasoning as `_substat`: a prop this build does not know is a moved
+        # vocabulary, and storing NULL would say "this character gains nothing on
+        # ascension" — which is not a thing that is true of any character.
+        msg = (
+            f"character {key}: ascension prop {raw!r} is not in StatType. Add it to "
+            f"app/models/enums.py and refresh tests/fixtures/nanoka_gi/."
+        )
+        raise NanokaMappingError(msg)
+    return mapped
 
 
 def burst_energy_cost(payload: dict[str, Any]) -> int | None:
@@ -301,7 +313,7 @@ def weapon_fields(key: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise NanokaMappingError(msg)
 
     base, sub = _split_weapon_props(key, payload.get("weapon_prop") or [])
-    sub_stat_type = stat_type_for(sub.get("prop_type")) if sub else None
+    sub_stat_type = _substat(key, sub)
     return {
         "nanoka_id": int(key),
         "name": payload.get("name", ""),
@@ -320,6 +332,30 @@ def weapon_fields(key: str, payload: dict[str, Any]) -> dict[str, Any]:
         "icon": payload.get("icon"),
         "description": payload.get("desc", "") or "",
     }
+
+
+def _substat(key: str, sub: dict[str, Any] | None) -> StatType | None:
+    """The substat's `StatType`, or None when the weapon genuinely has none.
+
+    **Absent and unmapped are different answers.** Ten weapons carry `FIGHT_PROP_NONE`,
+    which means "no substat" and is fine. A prop this build does not know means the
+    vocabulary moved, and returning None there would import a weapon the optimizer reads
+    as having no secondary stat — on an otherwise green run. So that raises.
+    """
+    if sub is None:
+        return None
+    raw = sub.get("prop_type")
+    if is_absent_stat_key(raw):
+        return None
+    mapped = stat_type_for(raw)
+    if mapped is None:
+        msg = (
+            f"weapon {key}: substat {raw!r} is not in StatType. Add it to "
+            f"app/models/enums.py and refresh tests/fixtures/nanoka_gi/ — importing it as "
+            f"'no substat' would be a wrong row on a green run."
+        )
+        raise NanokaMappingError(msg)
+    return mapped
 
 
 def _split_weapon_props(
