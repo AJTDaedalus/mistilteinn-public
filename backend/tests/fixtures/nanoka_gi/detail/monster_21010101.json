@@ -1,0 +1,582 @@
+{
+ "name": "Hilichurl",
+ "desc": "The primitive wandering inhabitants of Teyvat's wildernesses.\\nThey look very similar to humanity but seem to have lost both their intellect and spirituality. Their presence on the continent has been recorded for over a thousand years, and yet they have neither history nor civilization.\\nSince the pitch-black calamity from five hundred years ago, they have begun to spread in large numbers across the land. They are not very strong, and they lack organization, but they nonetheless bring sizable trouble to humans every once in a while.",
+ "icon": "UI_MonsterIcon_Hili_None_01",
+ "codex": "HILICHURL",
+ "title": "Hilichurl",
+ "special_names": [
+  "A Simple Creature"
+ ],
+ "reward": [
+  {
+   "id": 202,
+   "rank": 3,
+   "icon": "UI_ItemIcon_202"
+  },
+  {
+   "id": 112007,
+   "rank": 3,
+   "icon": "UI_ItemIcon_112007"
+  },
+  {
+   "id": 112006,
+   "rank": 2,
+   "icon": "UI_ItemIcon_112006"
+  },
+  {
+   "id": 112005,
+   "rank": 1,
+   "icon": "UI_ItemIcon_112005"
+  }
+ ],
+ "child": {
+  "21010101": {
+   "monster_name": "Hili_None_01",
+   "type": "MONSTER_ORDINARY",
+   "hp_drops": [
+    {
+     "drop_id": 22010010,
+     "hp_percent": 60
+    },
+    {},
+    {}
+   ],
+   "kill_drop_id": 22010010,
+   "prop": [
+    {
+     "grow_curve": "GROW_CURVE_HP",
+     "type": "FIGHT_PROP_BASE_HP"
+    },
+    {
+     "grow_curve": "GROW_CURVE_ATTACK",
+     "type": "FIGHT_PROP_BASE_ATTACK"
+    },
+    {
+     "grow_curve": "GROW_CURVE_DEFENSE",
+     "type": "FIGHT_PROP_BASE_DEFENSE"
+    }
+   ],
+   "local_legend": false,
+   "sub_hurt": {
+    "fire": 0.1,
+    "grass": 0.1,
+    "water": 0.1,
+    "elec": 0.1,
+    "wind": 0.1,
+    "ice": 0.1,
+    "rock": 0.1,
+    "physical": 0.1
+   },
+   "base": {
+    "hp": 13.584,
+    "atk": 22.608,
+    "def": 500,
+    "em": 0
+   }
+  },
+  "21010103": {
+   "monster_name": "Hili_None_01",
+   "type": "MONSTER_ORDINARY",
+   "hp_drops": [
+    {
+     "drop_id": 22010010,
+     "hp_percent": 60
+    },
+    {},
+    {}
+   ],
+   "kill_drop_id": 22010010,
+   "prop": [
+    {
+     "grow_curve": "GROW_CURVE_HP",
+     "type": "FIGHT_PROP_BASE_HP"
+    },
+    {
+     "grow_curve": "GROW_CURVE_ATTACK",
+     "type": "FIGHT_PROP_BASE_ATTACK"
+    },
+    {
+     "grow_curve": "GROW_CURVE_DEFENSE",
+     "type": "FIGHT_PROP_BASE_DEFENSE"
+    }
+   ],
+   "local_legend": false,
+   "sub_hurt": {
+    "fire": 0.1,
+    "grass": 0.1,
+    "water": 0.1,
+    "elec": 0.1,
+    "wind": 0.1,
+    "ice": 0.1,
+    "rock": 0.1,
+    "physical": 0.1
+   },
+   "base": {
+    "hp": 13.584,
+    "atk": 22.608,
+    "def": 500,
+    "em": 0
+   }
+  },
+  "21010104": {
+   "monster_name": "Hili_None_01",
+   "type": "MONSTER_ORDINARY",
+   "hp_drops": [
+    {},
+    {},
+    {}
+   ],
+   "kill_drop_id": 0,
+   "prop": [
+    {
+     "grow_curve": "GROW_CURVE_HP",
+     "type": "FIGHT_PROP_BASE_HP"
+    },
+    {
+     "grow_curve": "GROW_CURVE_ATTACK",
+     "type": "FIGHT_PROP_BASE_ATTACK"
+    },
+    {
+     "grow_curve": "GROW_CURVE_DEFENSE",
+     "type": "FIGHT_PROP_BASE_DEFENSE"
+    }
+   ],
+   "local_legend": false,
+   "sub_hurt": {
+    "fire": 0.1,
+    "grass": 0.1,
+    "water": 0.1,
+    "elec": 0.1,
+    "wind": 0.1,
+    "ice": 0.1,
+    "rock": 0.1,
+    "physical": 0.1
+   },
+   "base": {
+    "hp": 13.584,
+    "atk": 22.608,
+    "def": 500,
+    "em": 0
+   }
+  },
+  "21010105": {
+   "monster_name": "Hili_None_01",
+   "type": "MONSTER_ORDINARY",
+   "hp_drops": [
+    {},
+    {},
+    {}
+   ],
+   "kill_drop_id": 0,
+   "prop": [
+    {
+     "grow_curve": "GROW_CURVE_HP",
+     "type": "FIGHT_PROP_BASE_HP"
+    },
+    {
+     "grow_curve": "GROW_CURVE_ATTACK",
+     "type": "FIGHT_PROP_BASE_ATTACK"
+    },
+    {
+     "grow_curve": "GROW_CURVE_DEFENSE",
+     "type": "FIGHT_PROP_BASE_DEFENSE"
+    }
+   ],
+   "local_legend": false,
+   "sub_hurt": {
+    "fire": 0.1,
+    "grass": 0.1,
+    "water": 0.1,
+    "elec": 0.1,
+    "wind": 0.1,
+    "ice": 0.1,
+    "rock": 0.1,
+    "physical": 0.1
+   },
+   "base": {
+    "hp": 13.584,
+    "atk": 22.608,
+    "def": 500,
+    "em": 0
+   }
+  },
+  "21010107": {
+   "monster_name": "Hili_None_01",
+   "type": "MONSTER_ORDINARY",
+   "hp_drops": [
+    {
+     "drop_id": 22010010,
+     "hp_percent": 60
+    },
+    {},
+    {}
+   ],
+   "kill_drop_id": 22010010,
+   "prop": [
+    {
+     "grow_curve": "GROW_CURVE_HP",
+     "type": "FIGHT_PROP_BASE_HP"
+    },
+    {
+     "grow_curve": "GROW_CURVE_ATTACK",
+     "type": "FIGHT_PROP_BASE_ATTACK"
+    },
+    {
+     "grow_curve": "GROW_CURVE_DEFENSE",
+     "type": "FIGHT_PROP_BASE_DEFENSE"
+    }
+   ],
+   "local_legend": false,
+   "sub_hurt": {
+    "fire": 0.1,
+    "grass": 0.1,
+    "water": 0.1,
+    "elec": 0.1,
+    "wind": 0.1,
+    "ice": 0.1,
+    "rock": 0.1,
+    "physical": 0.1
+   },
+   "base": {
+    "hp": 13.584,
+    "atk": 22.608,
+    "def": 500,
+    "em": 0
+   }
+  },
+  "21010108": {
+   "monster_name": "Hili_None_01_SlimeBallV2",
+   "type": "MONSTER_ORDINARY",
+   "hp_drops": [
+    {},
+    {},
+    {}
+   ],
+   "kill_drop_id": 0,
+   "prop": [
+    {
+     "grow_curve": "GROW_CURVE_HP",
+     "type": "FIGHT_PROP_BASE_HP"
+    },
+    {
+     "grow_curve": "GROW_CURVE_ATTACK",
+     "type": "FIGHT_PROP_BASE_ATTACK"
+    },
+    {
+     "grow_curve": "GROW_CURVE_DEFENSE",
+     "type": "FIGHT_PROP_BASE_DEFENSE"
+    }
+   ],
+   "local_legend": false,
+   "sub_hurt": {
+    "fire": 0.1,
+    "grass": 0.1,
+    "water": 0.1,
+    "elec": 0.1,
+    "wind": 0.1,
+    "ice": 0.1,
+    "rock": 0.1,
+    "physical": 0.1
+   },
+   "base": {
+    "hp": 13.584,
+    "atk": 22.608,
+    "def": 500,
+    "em": 0
+   }
+  },
+  "21010109": {
+   "monster_name": "Hili_None_01_CooperateChallenge",
+   "type": "MONSTER_ORDINARY",
+   "hp_drops": [
+    {},
+    {},
+    {}
+   ],
+   "kill_drop_id": 0,
+   "prop": [
+    {
+     "grow_curve": "GROW_CURVE_HP",
+     "type": "FIGHT_PROP_BASE_HP"
+    },
+    {
+     "grow_curve": "GROW_CURVE_ATTACK",
+     "type": "FIGHT_PROP_BASE_ATTACK"
+    },
+    {
+     "grow_curve": "GROW_CURVE_DEFENSE",
+     "type": "FIGHT_PROP_BASE_DEFENSE"
+    }
+   ],
+   "local_legend": false,
+   "sub_hurt": {
+    "fire": 0.1,
+    "grass": 0.1,
+    "water": 0.1,
+    "elec": 0.1,
+    "wind": 0.1,
+    "ice": 0.1,
+    "rock": 0.1,
+    "physical": 0.1
+   },
+   "base": {
+    "hp": 13.584,
+    "atk": 22.608,
+    "def": 500,
+    "em": 0
+   }
+  },
+  "21010110": {
+   "monster_name": "Hili_None_01_NoAI",
+   "type": "MONSTER_ORDINARY",
+   "hp_drops": [
+    {},
+    {},
+    {}
+   ],
+   "kill_drop_id": 0,
+   "prop": [
+    {
+     "grow_curve": "GROW_CURVE_HP",
+     "type": "FIGHT_PROP_BASE_HP"
+    },
+    {
+     "grow_curve": "GROW_CURVE_ATTACK",
+     "type": "FIGHT_PROP_BASE_ATTACK"
+    },
+    {
+     "grow_curve": "GROW_CURVE_DEFENSE",
+     "type": "FIGHT_PROP_BASE_DEFENSE"
+    }
+   ],
+   "local_legend": false,
+   "sub_hurt": {
+    "fire": 0.1,
+    "grass": 0.1,
+    "water": 0.1,
+    "elec": 0.1,
+    "wind": 0.1,
+    "ice": 0.1,
+    "rock": 0.1,
+    "physical": 0.1
+   },
+   "base": {
+    "hp": 13.584,
+    "atk": 22.608,
+    "def": 500,
+    "em": 0
+   }
+  },
+  "21010111": {
+   "monster_name": "Hili_None_01_DaggerWave",
+   "type": "MONSTER_ORDINARY",
+   "hp_drops": [
+    {},
+    {},
+    {}
+   ],
+   "kill_drop_id": 0,
+   "prop": [
+    {
+     "grow_curve": "GROW_CURVE_HP",
+     "type": "FIGHT_PROP_BASE_HP"
+    },
+    {
+     "grow_curve": "GROW_CURVE_ATTACK",
+     "type": "FIGHT_PROP_BASE_ATTACK"
+    },
+    {
+     "grow_curve": "GROW_CURVE_DEFENSE",
+     "type": "FIGHT_PROP_BASE_DEFENSE"
+    }
+   ],
+   "local_legend": false,
+   "sub_hurt": {
+    "fire": 0.1,
+    "grass": 0.1,
+    "water": 0.1,
+    "elec": 0.1,
+    "wind": 0.1,
+    "ice": 0.1,
+    "rock": 0.1,
+    "physical": 0.1
+   },
+   "base": {
+    "hp": 13.584,
+    "atk": 22.608,
+    "def": 500,
+    "em": 0
+   }
+  },
+  "21010121": {
+   "monster_name": "Hili_None_01",
+   "type": "MONSTER_ORDINARY",
+   "hp_drops": [
+    {
+     "drop_id": 22010010,
+     "hp_percent": 60
+    },
+    {},
+    {}
+   ],
+   "kill_drop_id": 22010010,
+   "prop": [
+    {
+     "grow_curve": "GROW_CURVE_HP",
+     "type": "FIGHT_PROP_BASE_HP"
+    },
+    {
+     "grow_curve": "GROW_CURVE_ATTACK",
+     "type": "FIGHT_PROP_BASE_ATTACK"
+    },
+    {
+     "grow_curve": "GROW_CURVE_DEFENSE",
+     "type": "FIGHT_PROP_BASE_DEFENSE"
+    }
+   ],
+   "local_legend": false,
+   "sub_hurt": {
+    "fire": 0.1,
+    "grass": 0.1,
+    "water": 0.1,
+    "elec": 0.1,
+    "wind": 0.1,
+    "ice": 0.1,
+    "rock": 0.1,
+    "physical": 0.1
+   },
+   "base": {
+    "hp": 13.584,
+    "atk": 22.608,
+    "def": 500,
+    "em": 0
+   }
+  },
+  "21010102": {
+   "monster_name": "Hili_None_01",
+   "type": "MONSTER_ORDINARY",
+   "hp_drops": [
+    {},
+    {},
+    {}
+   ],
+   "kill_drop_id": 0,
+   "prop": [
+    {
+     "grow_curve": "GROW_CURVE_HP",
+     "type": "FIGHT_PROP_BASE_HP"
+    },
+    {
+     "grow_curve": "GROW_CURVE_ATTACK",
+     "type": "FIGHT_PROP_BASE_ATTACK"
+    },
+    {
+     "grow_curve": "GROW_CURVE_DEFENSE",
+     "type": "FIGHT_PROP_BASE_DEFENSE"
+    }
+   ],
+   "local_legend": false,
+   "sub_hurt": {
+    "fire": 0.1,
+    "grass": 0.1,
+    "water": 0.1,
+    "elec": 0.1,
+    "wind": 0.1,
+    "ice": 0.1,
+    "rock": 0.1,
+    "physical": 0.1
+   },
+   "base": {
+    "hp": 13.584,
+    "atk": 22.608,
+    "def": 500,
+    "em": 0
+   }
+  },
+  "21010106": {
+   "monster_name": "Hili_None_01",
+   "type": "MONSTER_ORDINARY",
+   "hp_drops": [
+    {},
+    {},
+    {}
+   ],
+   "kill_drop_id": 0,
+   "prop": [
+    {
+     "grow_curve": "GROW_CURVE_HP",
+     "type": "FIGHT_PROP_BASE_HP"
+    },
+    {
+     "grow_curve": "GROW_CURVE_ATTACK",
+     "type": "FIGHT_PROP_BASE_ATTACK"
+    },
+    {
+     "grow_curve": "GROW_CURVE_DEFENSE",
+     "type": "FIGHT_PROP_BASE_DEFENSE"
+    }
+   ],
+   "local_legend": false,
+   "sub_hurt": {
+    "fire": 0.1,
+    "grass": 0.1,
+    "water": 0.1,
+    "elec": 0.1,
+    "wind": 0.1,
+    "ice": 0.1,
+    "rock": 0.1,
+    "physical": 0.1
+   },
+   "base": {
+    "hp": 13.584,
+    "atk": 22.608,
+    "def": 500,
+    "em": 0
+   }
+  },
+  "21010181": {
+   "monster_name": "Hili_None_01",
+   "type": "MONSTER_ORDINARY",
+   "hp_drops": [
+    {
+     "drop_id": 22010010,
+     "hp_percent": 60
+    },
+    {},
+    {}
+   ],
+   "kill_drop_id": 22010010,
+   "prop": [
+    {
+     "grow_curve": "GROW_CURVE_HP",
+     "type": "FIGHT_PROP_BASE_HP"
+    },
+    {
+     "grow_curve": "GROW_CURVE_ATTACK",
+     "type": "FIGHT_PROP_BASE_ATTACK"
+    },
+    {
+     "grow_curve": "GROW_CURVE_DEFENSE",
+     "type": "FIGHT_PROP_BASE_DEFENSE"
+    }
+   ],
+   "local_legend": false,
+   "sub_hurt": {
+    "fire": 0.1,
+    "grass": 0.1,
+    "water": 0.1,
+    "elec": 0.1,
+    "wind": 0.1,
+    "ice": 0.1,
+    "rock": 0.1,
+    "physical": 0.1
+   },
+   "base": {
+    "hp": 13.584,
+    "atk": 22.608,
+    "def": 500,
+    "em": 0
+   }
+  }
+ }
+}

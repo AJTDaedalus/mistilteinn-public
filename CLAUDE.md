@@ -14,15 +14,17 @@ and nothing in this repo overrides them.
 
 ## Repo state — read before trusting anything here
 
-This tree is a fork of fairy `dev` @ 76909c4. **Chunks A, B and C of
+This tree is a fork of fairy `dev` @ 76909c4. **Chunks A, B, C and D of
 `docs/TASKS_mistilteinn.md` are done:** the ZZZ domain layer is deleted, the infrastructure
-core is green, and the Genshin domain models exist. Chunk D (nanoka importer) and Chunk E
-(YuanShen snapshots) are next and are parallel-safe with each other.
+core is green, the Genshin domain models exist, and the nanoka GI importer seeds them.
+Chunk E (YuanShen snapshots) is next; Chunk F (damage chain) is what E unblocks.
 
-- **The backend suite passes.** 25 test files, 225 tests, 1 skipped (`tests/perf`, awaiting
-  G.7). `ruff check app/ tests/` is clean and `uvicorn app.main:app` serves `/api/v1/health`,
-  `/docs`, and the auth and team endpoints. **A red backend suite is now a regression, not
-  the size of the port** — that excuse expired at B.13.
+- **The backend suite passes.** 397 tests, 1 skipped (`tests/perf`, awaiting G.7).
+  `ruff check app/ tests/ scripts/seed_db.py scripts/verify_seed.py
+  scripts/capture_nanoka_fixtures.py` is clean — that is CI's exact command — and
+  `uvicorn app.main:app` serves `/api/v1/health`, `/docs`, and the auth and team endpoints.
+  **A red backend suite is now a regression, not the size of the port** — that excuse
+  expired at B.13.
 - **The frontend does not compile, and that is the honest state.** 161 TypeScript errors
   against endpoints and schemas B.6 deleted. It was green until the PR #1 review only
   because `frontend/openapi.json` was stale — `npm run codegen` builds `api.types.ts` from
@@ -30,11 +32,28 @@ core is green, and the Genshin domain models exist. Chunk D (nanoka importer) an
   backend served 7. The contract is now regenerated and guarded by
   `backend/tests/unit/test_openapi_contract_is_current.py`. CI runs `npm run lint` only;
   `npm test` is a disabled step with a `TODO(chunk-J)`. **Chunk J is what makes it compile.**
-- **There are models but no behaviour yet.** 17 tables across three migrations — characters,
-  talents, talent scalings, constellations, ascension passives, weapons, refinements,
-  artifact sets, set affixes, artifacts, builds, enemy profiles, plus the infrastructure
-  core. There is still **no damage chain, no optimizer, no importer, and no seeded data**,
-  and the API still serves seven paths.
+- **The catalogue is seeded; the behaviour on top of it is not built.** 18 tables across six
+  migrations — characters, talents, talent scalings, constellations, ascension passives,
+  weapons, refinements, artifact sets, set affixes, artifacts, builds, enemy profiles, seed
+  runs, plus the infrastructure core. `cd backend && python -m scripts.seed_db` fills them
+  from nanoka GI **7.0.51** in ~10s (150 characters including all 28 Traveler variants, 260
+  weapons, 65 artifact sets, 360 enemy profiles) and `python -m scripts.verify_seed` checks
+  the result against the committed indexes and nine hand-read anchors. There is still **no
+  damage chain and no optimizer**, and the API still serves seven paths — nothing in the
+  seeded data is exposed over HTTP yet.
+- **A seeded database says which patch it is.** `seed_runs` holds one append-only row per
+  seed run: version pinned, per-entity counts, failed ids, and whether the run finished.
+  `succeeded` is written `False` first and flipped at the end, so a run that died half way
+  does not look complete. **Query it before trusting a stale checkout's database.**
+- **A seed refuses to prune an implausible share of a table.** If an index comes back empty
+  or truncated — a valid HTTP 200 that no retry can detect — deleting every row would take
+  each user's builds with it through `ON DELETE CASCADE`. The pass reports `PRUNE REFUSED`,
+  exits non-zero and deletes nothing; `python -m scripts.seed_db --force-prune` is the
+  override for when a patch really did retract that much and someone has read the numbers.
+- **Enemy base stats are curve bases, not level-90 stats.** A Hilichurl's `base_hp` is
+  `13.584`; the growth curve is named in `enemy_profiles.stat_curves` and the curve *tables*
+  are Chunk E's (`MonsterCurveExcelConfigData`), not nanoka's. Anything that multiplies
+  those numbers and calls the result damage is wrong.
 - **`app/models/artifact.py:MAIN_STAT_POOL` is empty on purpose.** The slot→main-stat pools
   are not in any nanoka payload; they need the Chunk E YuanShenResources snapshot.
   `main_stats_for()` raises rather than returning an empty tuple. Do not fill it in from
@@ -133,7 +152,9 @@ Unchanged from fairy (a deliberate BRIEF decision):
 over from fairy unchanged and is load-bearing.
 
 - **Always query the DB first** when you need character/weapon/artifact data. Never hardcode or
-  manually derive element, weapon type, or other metadata.
+  manually derive element, weapon type, or other metadata. Fill it with
+  `cd backend && python -m scripts.seed_db` (Chunk D) and check it with
+  `python -m scripts.verify_seed`; `seed_runs` records which patch it holds.
 - Static JSON files (modifier configs) are supplementary artifacts derived from DB data — they
   do not replace or override the DB.
 - Planned sources per the BRIEF: gi.hakush.in + Project Amber (ambr.top) as the live importers;

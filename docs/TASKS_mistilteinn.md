@@ -273,40 +273,40 @@ Each task below is **one commit**. Commit message form:
 
 *Sub-branch `feat/nanoka-gi-importer`. Parallel-safe with Chunk E.*
 
-### D.1 — Port the importer transport layer
+### [x] D.1 — Port the importer transport layer
 - **Do:** new `app/data/importers/nanoka_gi_importer.py`. Copy the manifest-pin → index-fetch →
   detail-fetch → upsert → stale-prune skeleton from `/root/fairy`'s `nanoka_importer.py`;
   swap `zzz` for `gi` in the URL grammar. **Transport only — no field mapping yet.**
 - **Accept:** a dry-run mode fetches all four indexes and reports counts without writing.
 
-### D.2 — Commit a detail-payload sample **(do this before writing any mapping)**
+### [x] D.2 — Commit a detail-payload sample **(do this before writing any mapping)**
 - **Do:** save one full character, weapon, artifact, and monster detail payload under
   `backend/tests/fixtures/nanoka_gi/detail/`. Write a short key-map note in the LOG.
 - **Accept:** fixtures committed; the note names where ascension stats, talent tables, and
   constellations actually live in the payload. **Every mapping task below reads this note, not
   the ZZZ importer's assumptions.**
 
-### D.3 — Character mapping
-### D.4 — Weapon mapping
-### D.5 — Artifact-set mapping
-### D.6 — Monster / enemy-profile mapping
+### [x] D.3 — Character mapping
+### [x] D.4 — Weapon mapping
+### [x] D.5 — Artifact-set mapping
+### [x] D.6 — Monster / enemy-profile mapping
 - **Do (each):** map the committed fixture to the Chunk C models; unit-test the mapping against
   the fixture with no network; then run it live against the full index.
 - **Accept (each):** unit test green offline; live run upserts and re-runs idempotently.
 
-### D.7 — `seed_db.py` rewrite
+### [x] D.7 — `seed_db.py` rewrite
 - **Do:** orchestrate the four passes; write a seed-provenance row recording the nanoka version
   pinned (`manifest.json → gi.latest`) and the run timestamp.
 - **Accept:** `cd backend && python -m scripts.seed_db` fills a cold `mistilteinn`; a second run
   is a no-op diff.
 
-### D.8 — `verify_seed.py` rewrite
+### [x] D.8 — `verify_seed.py` rewrite
 - **Do:** per-table row counts asserted against the index lengths, plus a handful of hand-checked
   anchor values that fail loudly on drift.
 - **Accept:** green against the seeded DB; **fails** when an anchor is deliberately corrupted
   (prove the gate can fail — a gate never observed failing is not a gate).
 
-### D.9 — Chunk D close-out
+### [x] D.9 — Chunk D close-out
 - **Accept:** roster present and queryable; `docs/LOG_mistilteinn.md` records the pinned version.
 
 ---

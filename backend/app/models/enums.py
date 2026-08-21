@@ -332,6 +332,18 @@ _DMG_BONUS_BY_ELEMENT: dict[Element, StatType] = {
 _ABSENT_STAT_KEYS = frozenset({None, "", "FIGHT_PROP_NONE"})
 
 
+def is_absent_stat_key(raw: str | None) -> bool:
+    """True when `raw` is one of the two ways the source spells "there is no stat here".
+
+    Exists so a caller can tell **absent** from **unmapped**: `stat_type_for` returns None
+    for both, and a mapping that treats a brand-new `FIGHT_PROP_*` as "no stat" stores a
+    weapon the optimizer reads as having no substat — quietly wrong, on a green run.
+    """
+    if raw in _ABSENT_STAT_KEYS:
+        return True
+    return isinstance(raw, str) and raw.upper() in _ABSENT_STAT_KEYS
+
+
 def stat_type_for(raw: str | None) -> StatType | None:
     """Map a `FIGHT_PROP_*` key, returning None for the two "absent" encodings.
 

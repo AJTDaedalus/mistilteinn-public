@@ -71,6 +71,15 @@ def _unique_id() -> int:
     return uuid.uuid4().int % 10_000_000
 
 
+def _unique_character_key() -> str:
+    """A `characters.nanoka_id`, which is a **string** — see the D.3 widening.
+
+    Shaped like a Traveler variant on purpose: `"10000005-2"` is the case an integer column
+    could not hold, so the fixture that exercises the column should look like one.
+    """
+    return f"{_unique_id()}-2"
+
+
 async def _reload(db: AsyncSession, instance: object) -> object:
     """Expire and re-SELECT `instance`, so the assertion exercises the load path."""
     db.expire(instance)
@@ -92,7 +101,7 @@ async def _make_user(db: AsyncSession) -> User:
 async def _make_character(db: AsyncSession) -> Character:
     payload = _ayaka()
     character = Character(
-        nanoka_id=_unique_id(),
+        nanoka_id=_unique_character_key(),
         name=payload["name"],
         element=Element.parse(payload["element"]),
         # Through the parser, not raw: the same passthrough on the *weapon* index would
@@ -220,13 +229,26 @@ async def test_constellations_and_passives_round_trip(db_session: AsyncSession):
                 description=passive["desc"],
             ),
         )
+    # The list form of `unlock`, which 33 passives across the 150 characters carry and
+    # which an `Integer NOT NULL` column could not hold at all (D.3).
+    db_session.add(
+        AscensionPassive(
+            character_id=character.id, nanoka_id=55101, name="Foreign Starfire",
+            unlock_ascension=None, unlock_condition_ids=[603101],
+        ),
+    )
     await db_session.flush()
 
     fetched = await _reload(db_session, character)
     await db_session.refresh(fetched, ["constellations", "ascension_passives"])
 
     assert [c.position for c in fetched.constellations] == [1, 2, 3, 4, 5, 6]
-    assert sorted(p.unlock_ascension for p in fetched.ascension_passives) == [0, 1, 4]
+    gates = [p.unlock_ascension for p in fetched.ascension_passives]
+    # Ordered by the relationship: phase gates ascending, then the condition-gated one,
+    # whose gate is NULL rather than a 0 that would claim it is simply ungated.
+    assert gates == [0, 1, 4, None]
+    condition = fetched.ascension_passives[-1]
+    assert condition.unlock_condition_ids == [603101]
 
 
 async def test_weapon_and_refinements_round_trip(db_session: AsyncSession):

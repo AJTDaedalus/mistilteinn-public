@@ -13,7 +13,16 @@ does not have to re-derive it.
 
 from __future__ import annotations
 
-from sqlalchemy import Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -26,6 +35,12 @@ class Character(TimestampMixin, Base):
 
     Payload map (`.../en/character/{nanoka_id}.json`):
 
+    * The payload key → `nanoka_id`, **verbatim and as a string**. 28 of the 150 entries in
+      the 7.0.51 index are `"{body}-{element}"` — `10000005-2` … `10000005-8`, and the same
+      for 10000007, 10000117 and 10000118: four Traveler bodies × seven elements, each a
+      genuinely different kit, and the bare `10000005` is not in the index at all. This
+      column was `Integer` until D.3; `int(key)` raises on the first Traveler and
+      skip-on-parse-failure loses all 28. See `_index_keys` in the nanoka importer.
     * `element` → `element`, via `Element.parse` — **nullable**, because two of the 150
       entries carry the literal `"None"`.
     * `weapon` → `weapon_type`; `rarity` → `rarity` via `Rarity.parse`.
@@ -46,7 +61,9 @@ class Character(TimestampMixin, Base):
     )
 
     id: Mapped[uuid_pk]
-    nanoka_id: Mapped[int] = mapped_column(Integer, unique=True, nullable=False, index=True)
+    #: The source key verbatim: `"10000002"`, or `"10000005-2"` for a Traveler variant.
+    #: A string, not an integer — see the class docstring.
+    nanoka_id: Mapped[str] = mapped_column(String(24), unique=True, nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
 
     #: Null for the two unaligned entries whose payload element is the literal "None".
@@ -91,7 +108,9 @@ class Character(TimestampMixin, Base):
         back_populates="character",
         cascade="all, delete-orphan",
         passive_deletes=True,
-        order_by="AscensionPassive.unlock_ascension",
+        # NULLs sort last in Postgres ASC, which puts the condition-gated passives after
+        # the phase-gated ones; `nanoka_id` breaks the tie so the order is total.
+        order_by="AscensionPassive.unlock_ascension, AscensionPassive.nanoka_id",
     )
 
     def __repr__(self) -> str:
@@ -199,9 +218,19 @@ class Constellation(TimestampMixin, Base):
 class AscensionPassive(TimestampMixin, Base):
     """A passive talent: 1st-ascension, 4th-ascension, or the always-on utility one.
 
-    `unlock_ascension` is the payload's `passives[].unlock`, observed as `1`, `4` and `0` —
-    the two ascension gates and the utility passive that is never gated. Stored as the raw
-    number rather than an enum so a future kit with a different gate is data, not a crash.
+    **`passives[].unlock` has two shapes, and C.3 only knew about one.** Swept across all
+    150 character payloads at 7.0.51 (D.2): it is an integer 460 times — `0` (164), `1`
+    (148) and `4` (148), the utility passive and the two ascension gates — and a **list**
+    33 times, always a single id: `[603101]` on the Traveler's "Foreign Starfire",
+    `[7469304]` on Cyno's "A Star With Which to Start the Journey", `[7469604]` on Qiqi's
+    "Seven Sacred Treasures". Assigning that list to an `Integer NOT NULL` column is a
+    crash on 33 of ~460 passives.
+
+    So the two shapes get two columns. `unlock_ascension` keeps the integer gate and is
+    **nullable**, null meaning "the payload expressed the unlock as a condition instead";
+    `unlock_condition_ids` holds the list verbatim. The payload does not say what those ids
+    refer to and nothing here guesses — the name says what it is (an id list gating the
+    unlock), not what it means.
     """
 
     __tablename__ = "ascension_passives"
@@ -216,7 +245,16 @@ class AscensionPassive(TimestampMixin, Base):
         ForeignKey("characters.id", ondelete="CASCADE"), nullable=False, index=True,
     )
     nanoka_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    unlock_ascension: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    #: The ascension phase that unlocks this passive (`0`, `1` or `4`), or NULL when the
+    #: payload gave a condition list instead. Not an enum: a future kit with a different
+    #: gate should be data, not a crash.
+    unlock_ascension: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    #: `passives[].unlock` in its list form, verbatim; `[]` when the unlock is an integer
+    #: gate. Kept rather than dropped so the 33 affected passives stay distinguishable
+    #: from a genuinely ungated one.
+    unlock_condition_ids: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"),
+    )
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     icon: Mapped[str | None] = mapped_column(String(128), nullable=True)
@@ -224,4 +262,5 @@ class AscensionPassive(TimestampMixin, Base):
     character: Mapped[Character] = relationship(back_populates="ascension_passives")
 
     def __repr__(self) -> str:
-        return f"<AscensionPassive {self.name} (A{self.unlock_ascension})>"
+        gate = f"A{self.unlock_ascension}" if self.unlock_ascension is not None else "cond"
+        return f"<AscensionPassive {self.name} ({gate})>"

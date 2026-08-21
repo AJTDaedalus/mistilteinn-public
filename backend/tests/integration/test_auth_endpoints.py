@@ -68,11 +68,12 @@ _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     ("GET", "/api/v1/teams/00000000-0000-0000-0000-000000000001", None),
     ("PATCH", "/api/v1/teams/00000000-0000-0000-0000-000000000001", {}),
     ("DELETE", "/api/v1/teams/00000000-0000-0000-0000-000000000001", None),
-    # TODO(chunk-D/F/G): this table is a 401 sweep over *every* user-data endpoint, and it
+    # TODO(chunk-F/G): this table is a 401 sweep over *every* user-data endpoint, and it
     # only proves what it lists. B.12 removed the builds, discs, combos and optimizer-jobs
-    # rows because those routes were deleted in B.6. **Every route restored in Chunk D, F
-    # or G must be added back here in the same commit that adds the route** — a handler
-    # that forgets its auth dependency is invisible to every other test in this suite.
+    # rows because those routes were deleted in B.6. **Every route restored in Chunk F or G
+    # must be added back here in the same commit that adds the route** — a handler that
+    # forgets its auth dependency is invisible to every other test in this suite.
+    # Chunk D is done and added no routes: it seeds the catalogue and exposes none of it.
 ]
 
 

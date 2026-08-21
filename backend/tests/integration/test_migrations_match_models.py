@@ -149,3 +149,55 @@ async def test_downgrade_base_removes_everything_the_migrations_created(
     await engine.dispose()
 
     assert tables == ["alembic_version"], f"downgrade left tables behind: {tables}"
+
+
+async def test_the_character_key_downgrade_drops_the_rows_it_cannot_represent(
+    scratch_database: str,
+):
+    """D.3's downgrade deletes data, so it needs testing against data.
+
+    `characters.nanoka_id` widened to `String(24)` for the 28 Traveler keys like
+    `10000005-2`, which have no integer form at all. The downgrade therefore deletes those
+    rows rather than failing halfway through the cast — and the same for the
+    condition-gated passives whose `unlock_ascension` is NULL. Every other migration test
+    here runs against an *empty* database, where a conditional DELETE is a no-op and proves
+    nothing.
+    """
+    await _run_alembic("upgrade", scratch_database, "head")
+    engine = create_async_engine(scratch_database)
+    async with engine.begin() as conn:
+        for nanoka_id in ("10000002", "10000005-2"):
+            await conn.execute(
+                text(
+                    "INSERT INTO characters (id, nanoka_id, name, weapon_type, rarity, "
+                    "base_hp, base_atk, base_def, ascension_stats) VALUES "
+                    "(:id, :nanoka_id, 'Test', 'WEAPON_SWORD_ONE_HAND', 'five_star', "
+                    "0, 0, 0, '[]'::jsonb)",
+                ),
+                {"id": f"id-{nanoka_id}", "nanoka_id": nanoka_id},
+            )
+        await conn.execute(
+            text(
+                "INSERT INTO ascension_passives (id, character_id, nanoka_id, name, "
+                "description, icon, unlock_ascension, unlock_condition_ids) VALUES "
+                "('p1', 'id-10000002', 1, 'Gated', '', '', 1, '[]'::jsonb), "
+                "('p2', 'id-10000002', 2, 'Conditional', '', '', NULL, "
+                "'[603101]'::jsonb)",
+            ),
+        )
+
+    await _run_alembic("downgrade", scratch_database, "852f0b1613ff")
+
+    async with engine.connect() as conn:
+        keys = sorted(
+            row[0] for row in await conn.execute(text("SELECT nanoka_id FROM characters"))
+        )
+        passives = sorted(
+            row[0] for row in await conn.execute(text("SELECT name FROM ascension_passives"))
+        )
+    await engine.dispose()
+
+    # The Traveler key is gone; the ordinary one survived the cast as an integer.
+    assert keys == [10000002]
+    # The condition-gated passive is gone rather than being given a `0` it never had.
+    assert passives == ["Gated"]

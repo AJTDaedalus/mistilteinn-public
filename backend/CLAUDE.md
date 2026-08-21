@@ -21,7 +21,7 @@ app/
   repositories/     — Data access layer: BaseRepository[T] + entity-specific
   services/         — Business logic (no SQLAlchemy imports here)
   api/v1/           — Versioned route handlers, thin controllers
-  data/importers/   — Hakushin + Dimbreath + scanner import adapters
+  data/importers/   — nanoka GI transport (nanoka_gi_importer) + payload mappings
 tests/
   conftest.py       — async test DB session, test client, factory registration
   unit/             — Pure function tests, mocked dependencies
@@ -75,9 +75,22 @@ memory.** If you need fairy's ZZZ version for structural reference, it is in
 
 ## Data Values
 
-**Not yet ported.** Fairy's basis-point conventions were hakushin/ZZZ-specific (skill
-multipliers, monster RES, disc substat rolls). Genshin's importer conventions get documented
-here as the importers are written.
+Fairy's basis-point conventions were hakushin/ZZZ-specific and are gone. What the nanoka GI
+importer (Chunk D) actually stores:
+
+- **Fractions, not percents or basis points.** 10% RES is `0.1`; a 15% DMG bonus affix is
+  `0.15`. That is how the source expresses them, and converting on the way in would mean
+  every citation had to be re-checked against a converted number.
+- **Talent multipliers are kept as published tables**, one row per level, with the `desc`
+  format strings (`"1-Hit DMG|{param1:F1P}"`) beside the `param` list. Parsing them is Chunk
+  F's job; a mis-parse there is then a bug in a parser rather than data that was lost on
+  import.
+- **Enemy `base_hp`/`base_atk`/`base_def` are curve bases, not level-90 stats.** The curve
+  name is in `enemy_profiles.stat_curves`; the curve tables are Chunk E's.
+- **Weapon `base_atk` and substat carry their `GROW_CURVE_*` name** for the same reason.
+- **Absent is absent.** A `FIGHT_PROP_NONE` substat is stored as NULL, not as a substat worth
+  zero; a passive gated by a condition rather than an ascension phase has a NULL gate, not a
+  `0` that would claim it is ungated.
 
 ## Linting
 
@@ -85,14 +98,16 @@ Ruff with a comprehensive rule set, pinned to an exact version in `pyproject.tom
 local gate is the CI gate (#135). Run **exactly what CI runs**:
 
 ```bash
-ruff check app/ tests/
+ruff check app/ tests/ scripts/seed_db.py scripts/verify_seed.py scripts/capture_nanoka_fixtures.py
 ```
 
 `scripts/` as a whole is not linted — it carries ~65 pre-existing violations in unrelated
-one-off scripts. fairy additionally named `scripts/validate_kits.py` and
-`scripts/refresh_kit_refs.py` so the two the harness depended on could not rot unlinted; both
-are deleted in B.9 and their Genshin replacements are re-added to this command in Chunk H
-(see the `TODO(chunk-H)` on the Ruff step in `.github/workflows/test.yml`).
+one-off scripts. Scripts something *depends on* are named individually instead, which is the
+convention fairy used for its harness: an unlinted script that a gate runs is a gate nobody
+trusts. Chunk D adds the three above (D.2/D.7/D.8). fairy also named
+`scripts/validate_kits.py` and `scripts/refresh_kit_refs.py`; both are deleted in B.9 and
+their Genshin replacements are re-added to this command in Chunk H (see the `TODO(chunk-H)`
+on the Ruff step in `.github/workflows/test.yml`).
 
 `app/services/_ported/` is excluded in `pyproject.toml`: it is read-only ZZZ porting source
 that imports deleted modules, so linting it would be permanent noise.

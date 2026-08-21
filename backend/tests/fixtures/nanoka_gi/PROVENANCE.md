@@ -5,7 +5,7 @@
 | **Source** | `https://static.nanoka.cc/gi/{version}/{entity}.json` |
 | **Version** | **7.0.51** — pinned from `https://static.nanoka.cc/manifest.json` → `gi.latest` (`gi.live` was `7.0`) |
 | **Fetched** | 2026-08-21 |
-| **Task** | C.1 |
+| **Tasks** | C.1 (indexes + first details), D.2 (`monster.json` and the remaining details) |
 
 | File | Entries | Bytes |
 |---|---:|---:|
@@ -13,10 +13,33 @@
 | `character.json` | 150 | 67,991 |
 | `weapon.json` | 286 | 125,429 |
 | `artifact.json` | 65 | 116,597 |
+| `monster.json` | 585 | 421,515 |
+| `detail/character_10000002.json` | — | 93,499 |
+| `detail/character_10000005-2.json` | — | 350,356 |
+| `detail/weapon_11501.json` | — | 10,584 |
+| `detail/artifact_15025.json` | — | 3,595 |
+| `detail/monster_21010101.json` | — | 10,625 |
+| `detail/monster_24010101.json` | — | 15,007 |
 
-`monster.json` (585 entries, 412 KB) is **not** committed here. C.1 asks for the three entity
-indexes the enums are derived from; the monster index feeds `EnemyProfile` mapping in D.6 and
-is committed there if it turns out to be needed.
+## How to refresh
+
+    cd backend && python -m scripts.capture_nanoka_fixtures            # rewrite
+    cd backend && python -m scripts.capture_nanoka_fixtures --check    # report drift only
+
+The **Bytes** column is what `--check` prints, i.e. UTF-8 encoded length. The index files
+are written with `ensure_ascii=False`, so they hold multi-byte characters and their byte
+count is larger than their character count — the D.2 table reported characters, which put
+four wrong numbers here until the PR #3 review caught it.
+
+That script is the single definition of *what* is committed here (its `INDEXES` and
+`DETAILS` constants, each detail carrying the reason it exists) and of the exact
+serialisation — indexes `indent=2, ensure_ascii=False`, details `indent=1,
+ensure_ascii=True`, neither with a trailing newline. Adding a fixture means editing that
+list in a reviewable commit, which is what keeps this directory from accreting drive-by
+downloads. `--check` exits non-zero on drift; drift is a finding, not a failure.
+
+Why each detail payload is here — and the key map derived from them — is in
+`docs/LOG_mistilteinn.md`, the D.2 entry.
 
 ## Why these are committed
 

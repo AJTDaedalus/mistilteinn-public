@@ -25,12 +25,15 @@ DBSession = Annotated[AsyncSession, Depends(get_db)]
 
 # ── Public (no auth) repo factories ──────────────────────────────────────────
 #
-# TODO(chunk-D/F/G): B.7 removed the factories for every deleted repository —
+# TODO(chunk-F/G): B.7 removed the factories for every deleted repository —
 # get_agent_repo, get_attack_repo, get_w_engine_repo, get_disc_set_repo,
 # get_disc_repo, get_build_repo, get_combo_repo, get_enemy_repo, and the owned
 # variants get_owned_build_repo / get_owned_disc_repo / get_owned_combo_repo /
 # get_owned_buff_preset_repo. Each comes back with the route that needs it, not
 # before: an injectable for a repository nothing calls is dead wiring.
+#
+# Chunk D is done and added none of them: it seeds the catalogue but exposes nothing over
+# HTTP, so the read surface — and its factories — is G.6's.
 
 
 async def get_optimization_job_repo(session: DBSession) -> OptimizationJobRepository:

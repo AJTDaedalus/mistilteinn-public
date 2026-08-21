@@ -347,6 +347,24 @@ upsert → stale prune), rewrite the mapping layer against the GI payloads.
 passes; 150 characters / 286 weapons / 65 artifact sets present (counts as of 7.0.51 — the
 assertion is "matches the index length", not the literal number).
 
+> **Delivered 2026-08-21 (PR #3).** Exit met, with four corrections this sketch could not
+> have made — all of them found by sweeping every payload of an entity rather than reading
+> one, and all recorded in `docs/LOG_mistilteinn.md` (D.1-D.9):
+>
+> 1. **Index keys are strings.** 28 of the 150 character keys are `"{body}-{element}"`
+>    (Traveler variants); `characters.nanoka_id` had to widen from `Integer`.
+> 2. **"Matches the index length" is not the right assertion for two of the four passes.**
+>    26 weapon entries are cosmetic skins and 225 monster entries are stat-less codex
+>    wildlife; both are *skipped*, so the exit condition is `imported + skipped + failed ==
+>    index length`, which is what `verify_seed` checks.
+> 3. **A monster payload is a family**, not a row — the stats are on 1-17 children and they
+>    differ. The canonical child is chosen by a stated rule and recorded per row.
+> 4. **`passives[].unlock` has two shapes** (int gate, or a condition id list), so
+>    `unlock_ascension` is nullable with `unlock_condition_ids` beside it.
+>
+> Also delivered beyond the sketch: `scripts/capture_nanoka_fixtures.py`, so the committed
+> ground truth has a reproducible derivation and a `--check` drift mode.
+
 ### Chunk E — YuanShenResources snapshot toolkit (≈2 sessions, parallel-safe with D)
 
 Port `scripts/dimbreath/` → `scripts/yuanshen/` from the `/root/fairy` copy.
