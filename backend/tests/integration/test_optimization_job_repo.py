@@ -16,9 +16,9 @@ async def queued_job(repo):
         {
             "status": "queued",
             "request": {"combo_id": "c1"},
-            "agent_name": "Zhu Yuan",
+            "character_name": "Zhu Yuan",
             "enemy_name": "Metal Crab",
-            "combo_name": "DPS Combo",
+            "rotation_name": "DPS Combo",
         }
     )
 
@@ -28,7 +28,7 @@ class TestOptimizationJobRepo:
         fetched = await repo.get_by_id(queued_job.id)
         assert fetched is not None
         assert fetched.status == "queued"
-        assert fetched.agent_name == "Zhu Yuan"
+        assert fetched.character_name == "Zhu Yuan"
 
     async def test_list_all(self, repo, queued_job):
         jobs = await repo.list()
@@ -40,9 +40,9 @@ class TestOptimizationJobRepo:
             {
                 "status": "failed",
                 "request": {},
-                "agent_name": "Jane",
+                "character_name": "Jane",
                 "enemy_name": "Crab",
-                "combo_name": "Combo",
+                "rotation_name": "Combo",
             }
         )
         queued = await repo.list(status=["queued"])

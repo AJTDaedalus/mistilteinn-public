@@ -17,9 +17,9 @@ class TestOptimizationJobModel:
             "owner_id",
             "status",
             "request",
-            "agent_name",
+            "character_name",
             "enemy_name",
-            "combo_name",
+            "rotation_name",
             "assignments_done",
             "assignments_total",
             "evaluated",
@@ -58,15 +58,15 @@ class TestOptimizationJobModel:
         job = OptimizationJob(
             status="running",
             request={"combo_id": "c1"},
-            agent_name="Zhu Yuan",
+            character_name="Zhu Yuan",
             enemy_name="Metal Crab",
-            combo_name="DPS Combo",
+            rotation_name="DPS Combo",
             assignments_done=5,
             assignments_total=20,
             evaluated=1000,
         )
         assert job.status == "running"
-        assert job.agent_name == "Zhu Yuan"
+        assert job.character_name == "Zhu Yuan"
         assert job.enemy_name == "Metal Crab"
         assert job.assignments_done == 5
         assert job.assignments_total == 20

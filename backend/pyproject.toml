@@ -143,6 +143,10 @@ convention = "pep257"
 "tests/perf/**/*.py" = ["E501"]
 "alembic/**/*.py" = ["ANN", "ERA", "D"]
 "app/schemas/**/*.py" = ["TC001"]
+# SQLAlchemy resolves `Mapped[Element]` annotations at runtime through
+# typing.get_type_hints, so an enum moved into a TYPE_CHECKING block makes every model in
+# the file fail to map. Same reason app/schemas/ is listed above.
+"app/models/**/*.py" = ["TC001"]
 "app/api/**/*.py" = ["TC001", "ARG001"]
 
 [tool.ruff.format]

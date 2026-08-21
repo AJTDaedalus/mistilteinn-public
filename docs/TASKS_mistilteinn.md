@@ -215,7 +215,7 @@ Each task below is **one commit**. Commit message form:
 
 ## Chunk C — Genshin domain models, enums, initial migration
 
-### C.1 — Capture the enum ground truth
+### [x] C.1 — Capture the enum ground truth
 - **Do:** fetch and commit a sample of `character.json`, `weapon.json`, `artifact.json` (index
   level) under `backend/tests/fixtures/nanoka_gi/`, with the version and fetch date recorded.
   Derive the distinct `element` / `weapon` / `rank` value sets from the committed files, not from
@@ -223,7 +223,7 @@ Each task below is **one commit**. Commit message form:
 - **Accept:** fixture files committed; a short note in the DESIGN or LOG lists the observed value
   sets, including `WEAPON_CROSSBOW` and the literal `"None"` element.
 
-### C.2 — `app/models/enums.py` rewrite
+### [x] C.2 — `app/models/enums.py` rewrite
 - **Do:** write `Element` (7 visions, Physical **excluded**), `DamageType`, `WeaponType` (6,
   including crossbow), `Rarity` (with the character `QUALITY_*` ↔ weapon integer-`rank` split
   normalized), `ArtifactSlot` (5-member `StrEnum`), `TalentType`, `StatType` from the observed
@@ -232,38 +232,38 @@ Each task below is **one commit**. Commit message form:
 - **Accept:** unit tests assert each enum's membership against the committed fixture; an
   unmapped key produces a warning, never a silent drop.
 
-### C.3 — `characters` model
+### [x] C.3 — `characters` model
 - **Do:** new `app/models/character.py` — `Character`, `Talent`, `TalentScaling`,
   `Constellation`, `AscensionPassive`, per DESIGN §2.5. **New file, new class names; do not
   edit the deleted `agent.py` back into existence.**
 - **Accept:** import clean; type hints on all public members; `ruff` clean.
 
-### C.4 — `weapons` model
+### [x] C.4 — `weapons` model
 - **Do:** new `app/models/weapon.py` — `Weapon` with `weapon_type`, rarity, base ATK, sub-stat
   type/value, refinement rows R1–R5.
 
-### C.5 — `artifacts` model
+### [x] C.5 — `artifacts` model
 - **Do:** new `app/models/artifact.py` — `ArtifactSet` (with the `need: [2,4]` piece thresholds
   and per-rank affix text observed in the payload) and `Artifact` (slot, main stat, substats,
   level, owner, build binding).
 - **Accept:** slot→allowed-main-stat table lives here as data, not as `if` branches.
 
-### C.6 — `build` / `enemy_profile` rewrite
+### [x] C.6 — `build` / `enemy_profile` rewrite
 - **Do:** rewrite `app/models/build.py` for Genshin: 5 artifact slots, weapon FK, talent levels,
   constellation level. `EnemyProfile`: level and per-element RES; **no daze/anomaly columns**.
 
-### C.7 — Initial migration
+### [x] C.7 — Initial migration
 - **Do:** `alembic revision --autogenerate -m "initial genshin schema"`; review the generated
   SQL by hand (autogenerate misses server defaults and JSONB details).
 - **Accept:** `alembic upgrade head` on an empty `mistilteinn` DB succeeds; `downgrade base`
   reverses cleanly; re-running `autogenerate` produces an empty diff.
 
-### C.8 — Model round-trip tests
+### [x] C.8 — Model round-trip tests
 - **Do:** integration tests creating and reading one row per table against `mistilteinn_test`,
   including cascade deletes.
 - **Accept:** green; coverage on `app/models/` ≥ 90%.
 
-### C.9 — Chunk C close-out
+### [x] C.9 — Chunk C close-out
 - **Accept:** `rg -n "agent|disc|w_engine|anomaly|mindscape|specialty|stun" app/models app/schemas`
   returns nothing outside comments. Commit; report.
 

@@ -1,0 +1,57 @@
+{
+ "_provenance": {
+  "source": "https://static.nanoka.cc/gi/7.0.51/en/artifact/{set_id}.json, all 65 sets",
+  "version": "7.0.51",
+  "fetched": "2026-08-21",
+  "task": "C.2",
+  "derivation": "affix_prop_counts: every affix[].add_props[].prop_type across every artifact set detail payload. element_dmg_bonus: prop_type paired with the element named in that affix's own English desc text ('<X> DMG Bonus'), for affixes carrying exactly one non-NONE prop \u2014 so the mapping is read off the payload, never asserted from memory.",
+  "regenerate": "cd backend && python -m scripts.harvest_nanoka_vocabulary"
+ },
+ "affix_prop_counts": {
+  "FIGHT_PROP_ATTACK_PERCENT": 13,
+  "FIGHT_PROP_CHARGE_EFFICIENCY": 5,
+  "FIGHT_PROP_CRITICAL": 1,
+  "FIGHT_PROP_DEFENSE": 1,
+  "FIGHT_PROP_DEFENSE_PERCENT": 2,
+  "FIGHT_PROP_ELEC_ADD_HURT": 1,
+  "FIGHT_PROP_ELEC_SUB_HURT": 1,
+  "FIGHT_PROP_ELEMENT_MASTERY": 6,
+  "FIGHT_PROP_FIRE_ADD_HURT": 1,
+  "FIGHT_PROP_FIRE_SUB_HURT": 1,
+  "FIGHT_PROP_GRASS_ADD_HURT": 1,
+  "FIGHT_PROP_HEALED_ADD": 1,
+  "FIGHT_PROP_HEAL_ADD": 3,
+  "FIGHT_PROP_HP": 1,
+  "FIGHT_PROP_HP_PERCENT": 2,
+  "FIGHT_PROP_ICE_ADD_HURT": 3,
+  "FIGHT_PROP_NONE": 324,
+  "FIGHT_PROP_PHYSICAL_ADD_HURT": 2,
+  "FIGHT_PROP_ROCK_ADD_HURT": 1,
+  "FIGHT_PROP_SHIELD_COST_MINUS_RATIO": 1,
+  "FIGHT_PROP_WATER_ADD_HURT": 2,
+  "FIGHT_PROP_WIND_ADD_HURT": 2
+ },
+ "element_dmg_bonus": {
+  "FIGHT_PROP_ELEC_ADD_HURT": [
+   "Electro"
+  ],
+  "FIGHT_PROP_FIRE_ADD_HURT": [
+   "Pyro"
+  ],
+  "FIGHT_PROP_GRASS_ADD_HURT": [
+   "Dendro"
+  ],
+  "FIGHT_PROP_ICE_ADD_HURT": [
+   "Cryo"
+  ],
+  "FIGHT_PROP_ROCK_ADD_HURT": [
+   "Geo"
+  ],
+  "FIGHT_PROP_WATER_ADD_HURT": [
+   "Hydro"
+  ],
+  "FIGHT_PROP_WIND_ADD_HURT": [
+   "Anemo"
+  ]
+ }
+}

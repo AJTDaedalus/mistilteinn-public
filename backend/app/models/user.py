@@ -7,7 +7,7 @@ import datetime  # noqa: TC003 — SQLAlchemy resolves Mapped[datetime.datetime]
 from sqlalchemy import DateTime, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, TimestampMixin, uuid_pk
+from app.models.base import Base, TimestampMixin, enum_column, uuid_pk
 from app.models.enums import UserStatus
 
 
@@ -21,7 +21,7 @@ class User(TimestampMixin, Base):
     label: Mapped[str] = mapped_column(String(200), nullable=False, default="")
     password_hash: Mapped[str] = mapped_column(String(72), nullable=False)
     status: Mapped[UserStatus] = mapped_column(
-        String(16), nullable=False, default=UserStatus.PENDING
+        enum_column(UserStatus, 16), nullable=False, default=UserStatus.PENDING,
     )
     approved_at: Mapped[datetime.datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

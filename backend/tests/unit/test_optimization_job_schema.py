@@ -17,9 +17,9 @@ def _summary_data() -> dict:
         "id": "01234567-0000-7000-8000-000000000001",
         "status": "queued",
         "job_type": "optimize",
-        "agent_name": "Zhu Yuan",
+        "character_name": "Zhu Yuan",
         "enemy_name": "Metal Crab",
-        "combo_name": "DPS Combo",
+        "rotation_name": "DPS Combo",
         "assignments_done": 0,
         "assignments_total": 0,
         "evaluated": 0,
@@ -39,7 +39,7 @@ class TestOptimizationJobSummary:
         obj = OptimizationJobSummary(**data)
         assert obj.id == data["id"]
         assert obj.status == "queued"
-        assert obj.agent_name == "Zhu Yuan"
+        assert obj.character_name == "Zhu Yuan"
         assert obj.eta_seconds is None
 
     def test_all_statuses_valid(self):

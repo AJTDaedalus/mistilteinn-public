@@ -9,8 +9,13 @@ from alembic import context
 
 config = context.config
 
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+# `fileConfig` defaults to disable_existing_loggers=True, which silences every logger the
+# host process already configured. That is harmless on the CLI and destructive in-process:
+# running a migration from a test used to leave `app.models.enums`'s unmapped-key warnings
+# undeliverable, so an unrelated test asserting on that warning failed depending on test
+# order. Callers that drive alembic programmatically set `configure_logger` to False.
+if config.config_file_name is not None and config.attributes.get("configure_logger", True):
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 # Override sqlalchemy.url from environment if available
 database_url = os.environ.get("DATABASE_URL")
