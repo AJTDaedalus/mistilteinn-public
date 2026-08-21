@@ -72,7 +72,7 @@
 - **Accept:** `psql -l` shows four databases (`fairy`, `fairy_test`, `mistilteinn`,
   `mistilteinn_test`); `DATABASE_URL` connects.
 
-### A.7 — Backend boot-time connect retry
+### [x] A.7 — Backend boot-time connect retry
 - **Do:** the DB is no longer a `depends_on` we control, so add a bounded retry-with-backoff
   around initial engine connect. Fail loudly after the budget — never fall through to a
   half-started app.

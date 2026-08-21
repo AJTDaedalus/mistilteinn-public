@@ -21,6 +21,14 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list[str] = ["http://localhost:4201", "http://localhost:4200"]
     ENV: str = "local"  # "local" | "production"
 
+    # Boot-time database connect retry (A.7). There is no `depends_on: db` any more —
+    # the Postgres server belongs to the fairy compose stack (DESIGN §A3) — so the app
+    # may legitimately start before the database is reachable. Defaults spend roughly
+    # 47s (0.5, 1, 2, 4, then 8s ceilings) before failing loudly.
+    DB_CONNECT_ATTEMPTS: int = 10
+    DB_CONNECT_BASE_DELAY: float = 0.5
+    DB_CONNECT_MAX_DELAY: float = 8.0
+
 
 @lru_cache
 def get_settings() -> Settings:

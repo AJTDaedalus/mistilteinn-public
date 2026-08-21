@@ -13,7 +13,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.api.v1 import v1_router
 from app.config import settings
-from app.database import async_session_factory
+from app.database import async_session_factory, wait_for_db
 from app.middleware.body_size import BodySizeLimitMiddleware
 from app.middleware.rate_limit import limiter
 from app.middleware.security_headers import SecurityHeadersMiddleware
@@ -25,7 +25,8 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
-    """Purge expired sessions/orphaned jobs on startup; start and stop the job runner."""
+    """Wait for the database, purge expired sessions/orphaned jobs, run the job runner."""
+    await wait_for_db()
     async with async_session_factory() as db:
         deleted = await SessionRepository(db).delete_expired()
         if deleted:
