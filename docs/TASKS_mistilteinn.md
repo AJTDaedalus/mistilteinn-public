@@ -94,7 +94,7 @@
 - **Do:** regenerate from the running backend rather than editing by hand.
 - **Accept:** diff shows only the identifier/title change.
 
-### A.10 — Retarget CI
+### [x] A.10 — Retarget CI
 - **Do:** in `.github/workflows/test.yml`, drop the `validate_kits.py` invocations (the data they
   read was stripped) and the ZZZ-specific jobs. **Leave the job stanza in place, disabled, with
   a `TODO(chunk-H)` comment naming exactly which levels must be restored** — a silently removed
