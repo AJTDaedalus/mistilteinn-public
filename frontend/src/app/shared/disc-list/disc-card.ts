@@ -16,7 +16,7 @@ const SLOT_LABEL: Record<number, string> = {
 };
 
 @Component({
-  selector: 'fairy-disc-card',
+  selector: 'mist-disc-card',
   standalone: true,
   imports: [NgClass],
   templateUrl: './disc-card.html',

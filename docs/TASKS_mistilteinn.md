@@ -34,7 +34,7 @@
 - **Accept:** `pip install -e "backend/.[dev]"` succeeds; `rg -i fairy backend/pyproject.toml backend/alembic.ini` returns nothing.
 - **Tests:** `pytest tests/unit -x -q` no worse than before (suite is expected red per fork state — record the count, do not fix).
 
-### A.2 — Rename project identifiers (frontend)
+### [x] A.2 — Rename project identifiers (frontend)
 - **Do:** `fairy` → `mistilteinn` in `frontend/package.json`, `frontend/angular.json`,
   `frontend/eslint.config.js`, `frontend/CLAUDE.md`. Do **not** hand-edit
   `frontend/openapi.json` (generated — regenerate in A.9) or `frontend/package-lock.json`

@@ -8,7 +8,7 @@ import { type DiscSetSummary, discSetIconUrl } from '../icon-url';
 export type DiscListMode = 'browse' | 'pick';
 
 @Component({
-  selector: 'fairy-disc-list',
+  selector: 'mist-disc-list',
   standalone: true,
   imports: [DiscCard, DiscFiltersPanel],
   templateUrl: './disc-list.html',

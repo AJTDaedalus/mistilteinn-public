@@ -19,7 +19,7 @@ async function renderFilters(discSets = DISC_SETS) {
   const emitted: DiscFilterState[] = [];
 
   @Component({
-    template: `<fairy-disc-filters [discSets]="sets" (filtersChange)="onFilters($event)" />`,
+    template: `<mist-disc-filters [discSets]="sets" (filtersChange)="onFilters($event)" />`,
     imports: [DiscFiltersPanel],
     standalone: true,
   })

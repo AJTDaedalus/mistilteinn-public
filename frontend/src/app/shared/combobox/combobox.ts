@@ -30,7 +30,7 @@ interface OptionGroup {
 }
 
 @Component({
-  selector: 'fairy-combobox',
+  selector: 'mist-combobox',
   imports: [],
   templateUrl: './combobox.html',
   styleUrl: './combobox.scss',
