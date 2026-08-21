@@ -1,6 +1,6 @@
 {
  "pinned_commit_sha": "5445617e33b29f057b9479883cc8e5e77c7d128d",
- "note": "artifact slot -> the main stats it can roll. Slot keys are app.models.enums.ArtifactSlot values (nanoka's `parts` keys); the config tables spell them EQUIP_*. Derived by scripts/yuanshen/build_snapshot.py:derive_main_stat_pools — read that docstring before editing this file by hand, which you should not do.",
+ "note": "artifact slot -> the main stats it can roll **at `rank`** (5-star). Slot keys are app.models.enums.ArtifactSlot values (nanoka's `parts` keys); the config tables spell them EQUIP_*. `corroborated_slots` names the slots the second scheme table also covers — the others rest on one table. Derived by scripts/yuanshen/build_snapshot.py:derive_main_stat_pools — read that docstring before editing this file by hand, which you should not do.",
  "sources": [
   "ReliquarySetSchemeMainPropExcelConfigData",
   "ReliquaryWearMainPropExcelConfigData",
@@ -9,6 +9,12 @@
   "ReliquaryMainPropExcelConfigData",
   "ReliquaryAffixExcelConfigData",
   "ReliquaryLevelExcelConfigData"
+ ],
+ "rank": 5,
+ "corroborated_slots": [
+  "EQUIP_DRESS",
+  "EQUIP_RING",
+  "EQUIP_SHOES"
  ],
  "prop_ids": {
   "EQUIP_BRACER": [

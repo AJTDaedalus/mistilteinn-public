@@ -20,7 +20,23 @@ _NETWORK_CAPABLE = {"app/data/importers/nanoka_gi_importer.py"}
 #: Modules whose import means the file can open a connection. Matched against **parsed
 #: imports**, not against the file's text — several modules name these in a docstring while
 #: importing nothing, and a substring check would report those as offenders.
-_NETWORK_MODULES = ("httpx", "urllib.request", "urllib3", "requests", "socket", "aiohttp")
+_NETWORK_MODULES = (
+    "httpx",
+    "httpcore",
+    "urllib.request",
+    "urllib3",
+    "requests",
+    "aiohttp",
+    "socket",
+    # `socket` catches raw use but not the stdlib HTTP client sitting on top of it, and
+    # `from http.client import HTTPSConnection` would otherwise sail through the gate whose
+    # entire purpose is "nothing here fetches".
+    "http.client",
+    "ftplib",
+    "telnetlib",
+    "smtplib",
+    "asyncio.open_connection",
+)
 
 
 def _python_sources() -> list[Path]:
@@ -81,3 +97,17 @@ def test_the_guard_itself_works():
     """A gate never observed failing is not a gate."""
     with pytest.raises(NetworkAccessDeniedError):
         socket.socket().connect(("gitlab.com", 443))
+
+
+def test_the_import_check_would_catch_a_stdlib_http_client(tmp_path: Path):
+    """The list is only as good as what is on it — this is the entry that is easy to miss."""
+    module = tmp_path / "sneaky.py"
+    module.write_text("from http.client import HTTPSConnection\n", encoding="utf-8")
+
+    imported = _imported_modules(module)
+
+    assert any(
+        name == module_name or name.startswith(f"{module_name}.")
+        for name in imported
+        for module_name in _NETWORK_MODULES
+    )

@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import urllib.error
 import urllib.parse
@@ -135,7 +136,12 @@ def fetch_raw(path: str, sha: str | None = None, *, refresh: bool = False) -> by
     )
     data = _http_get(url)
     cached.parent.mkdir(parents=True, exist_ok=True)
-    cached.write_bytes(data)
+    # Written through a temp file and renamed. A Ctrl-C part way through the 54 MB
+    # TextMapEN.json would otherwise leave a truncated file that every later call happily
+    # serves from disk, with `rm -rf cache/` as the only recovery.
+    partial = cached.with_suffix(cached.suffix + ".partial")
+    partial.write_bytes(data)
+    partial.replace(cached)
     return data
 
 
@@ -153,19 +159,32 @@ def list_tree(path: str, sha: str | None = None) -> list[dict[str, Any]]:
     """
     sha = sha or pinned_sha()
     template = load_provenance()["access"]["tree_api"]
+    page_size = _page_size(template)
     entries: list[dict[str, Any]] = []
     page = 1
     while True:
         url = template.format(sha=sha, path=urllib.parse.quote(path, safe=""), page=page)
         batch = json.loads(_http_get(url))
         entries.extend(batch)
-        if len(batch) < _TREE_PAGE_SIZE:
+        if len(batch) < page_size:
             return entries
         page += 1
 
 
-#: Must match the `per_page` in the provenance record's `tree_api` template.
-_TREE_PAGE_SIZE = 100
+def _page_size(template: str) -> int:
+    """The `per_page` the tree URL asks for, read out of the URL rather than duplicated.
+
+    "Stop when a page comes back short" is only correct against the size actually
+    requested. Holding that number as a second constant beside the template made the two
+    silently separable: lower `per_page` in `provenance.json` and the first page would end
+    the loop, so `build_table_catalog` would catalog 20 of 1,935 tables and report success —
+    the exact failure pagination is here to prevent.
+    """
+    match = re.search(r"[?&]per_page=(\d+)", template)
+    if match is None:
+        msg = f"the tree_api template does not set per_page: {template!r}"
+        raise YuanShenFetchError(msg)
+    return int(match.group(1))
 
 
 # -- TextMap ------------------------------------------------------------------------
@@ -221,11 +240,11 @@ def layer_of(key: str | int, lang: str = "en", sha: str | None = None) -> str | 
 
 # -- CLI ----------------------------------------------------------------------------
 
-def _cmd_textmap(lang: str, sha: str | None) -> int:
+def _cmd_textmap(lang: str, sha: str | None, *, refresh: bool = False) -> int:
     from scripts.yuanshen.anchors import check_textmap_anchors  # noqa: PLC0415 - CLI-only
 
-    full = load_textmap_layer(lang, sha, medium=False)
-    medium = load_textmap_layer(lang, sha, medium=True)
+    full = load_textmap_layer(lang, sha, medium=False, refresh=refresh)
+    medium = load_textmap_layer(lang, sha, medium=True, refresh=refresh)
     textmap = load_textmap(lang, sha)
     print(f"lang={lang.upper()}  sha={(sha or pinned_sha())[:12]}")
     print(f"  TextMap{lang.upper()}        = {len(full):,} keys")
@@ -245,8 +264,8 @@ def _cmd_textmap(lang: str, sha: str | None) -> int:
     return 0
 
 
-def _cmd_file(path: str, sha: str | None) -> int:
-    data = fetch_json(path, sha)
+def _cmd_file(path: str, sha: str | None, *, refresh: bool = False) -> int:
+    data = fetch_json(path, sha, refresh=refresh)
     if isinstance(data, dict):
         print(f"{path}: dict, {len(data):,} keys")
     elif isinstance(data, list):
@@ -302,6 +321,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--tree", help="list a repo directory at the pinned commit")
     parser.add_argument("--drift", action="store_true", help="compare the pin against live")
     parser.add_argument("--sha", help="override the pinned commit SHA")
+    parser.add_argument(
+        "--refresh",
+        action="store_true",
+        help="re-download rather than reading the cache, for a cache you do not trust",
+    )
     args = parser.parse_args(argv)
 
     if args.drift:
@@ -309,9 +333,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.tree:
         return _cmd_tree(args.tree, args.sha)
     if args.file:
-        return _cmd_file(args.file, args.sha)
+        return _cmd_file(args.file, args.sha, refresh=args.refresh)
     if args.merge or args.textmap:
-        return _cmd_textmap(args.lang, args.sha)
+        return _cmd_textmap(args.lang, args.sha, refresh=args.refresh)
     parser.print_help()
     return 0
 

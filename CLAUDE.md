@@ -20,9 +20,10 @@ core is green, the Genshin domain models exist, the nanoka GI importer seeds the
 committed YuanShenResources snapshot supplies what nanoka does not publish. **Chunk F — the
 damage chain — is next, and is what all of that was for.**
 
-- **The backend suite passes.** 397 tests, 1 skipped (`tests/perf`, awaiting G.7).
+- **The backend suite passes.** 437 tests, 1 skipped (`tests/perf`, awaiting G.7).
   `ruff check app/ tests/ scripts/seed_db.py scripts/verify_seed.py
-  scripts/capture_nanoka_fixtures.py` is clean — that is CI's exact command — and
+  scripts/capture_nanoka_fixtures.py scripts/yuanshen/` is clean — that is CI's exact
+  command — and
   `uvicorn app.main:app` serves `/api/v1/health`, `/docs`, and the auth and team endpoints.
   **A red backend suite is now a regression, not the size of the port** — that excuse
   expired at B.13.

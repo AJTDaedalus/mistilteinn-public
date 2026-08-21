@@ -43,9 +43,15 @@ from app.models.enums import ArtifactSlot, Rarity, StatType, stat_type_for
 #: cross-checks six config tables against each other and refuses to resolve anything it
 #: cannot pin.
 #:
+#: **These are the 5★ pools.** The snapshot is derived at `rank 5` — what the optimizer
+#: searches — and its `rank` field says so. Lower rarities share most of the pools but not
+#: all of them, so a caller building a 4★ or 3★ piece is reading an assumption; when
+#: something needs those, the builder takes a rank and this becomes a lookup.
+#:
 #: Still empty if the snapshot file is missing — a broken checkout, not a supported state.
-#: `main_stats_for` raises in that case, and `tests/unit/test_artifact_main_stat_pools.py`
-#: fails, so it cannot pass unnoticed.
+#: `main_stats_for` raises in that case, and
+#: `tests/unit/test_yuanshen_snapshot.py::test_every_slot_has_a_main_stat_pool` fails, so
+#: it cannot pass unnoticed.
 def _load_main_stat_pool() -> dict[ArtifactSlot, tuple[StatType, ...]]:
     """Read the committed snapshot into `{slot: (stat, …)}`.
 
@@ -84,7 +90,7 @@ class ArtifactMainStatPoolUnavailableError(RuntimeError):
 
 
 def main_stats_for(slot: ArtifactSlot) -> tuple[StatType, ...]:
-    """The main stats `slot` can roll.
+    """The main stats `slot` can roll **at 5★** — see `MAIN_STAT_POOL` on the rarity scope.
 
     Raises rather than returning an empty tuple: a caller that treats "no allowed main
     stats" as a valid answer would silently generate an empty candidate set in the

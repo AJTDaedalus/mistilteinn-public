@@ -77,14 +77,7 @@ def derive_main_stat_pools(sha: str | None = None) -> dict[str, Any]:
     """
     scheme = _scheme_ids("ReliquarySetSchemeMainPropExcelConfigData", sha)
     wear = _scheme_ids("ReliquaryWearMainPropExcelConfigData", sha)
-    for equip_type, ids in wear.items():
-        if scheme.get(equip_type) != ids:
-            msg = (
-                f"{equip_type}: the two main-prop scheme tables disagree — "
-                f"SetScheme={sorted(scheme.get(equip_type, ()))} vs Wear={sorted(ids)}. "
-                f"Both describe the same rule; a disagreement means neither can be trusted."
-            )
-            raise SnapshotError(msg)
+    corroborated = _cross_check_scheme_tables(scheme, wear)
 
     depot_props = _depot_props(sha)
     slot_props = _slot_candidate_props(sha, depot_props)
@@ -107,9 +100,10 @@ def derive_main_stat_pools(sha: str | None = None) -> dict[str, Any]:
     return {
         "pinned_commit_sha": sha or pinned_sha(),
         "note": (
-            "artifact slot -> the main stats it can roll. Slot keys are "
-            "app.models.enums.ArtifactSlot values (nanoka's `parts` keys); the config "
-            "tables spell them EQUIP_*. Derived by "
+            "artifact slot -> the main stats it can roll **at `rank`** (5-star). Slot keys "
+            "are app.models.enums.ArtifactSlot values (nanoka's `parts` keys); the config "
+            "tables spell them EQUIP_*. `corroborated_slots` names the slots the second "
+            "scheme table also covers — the others rest on one table. Derived by "
             "scripts/yuanshen/build_snapshot.py:derive_main_stat_pools — read that "
             "docstring before editing this file by hand, which you should not do."
         ),
@@ -122,12 +116,53 @@ def derive_main_stat_pools(sha: str | None = None) -> dict[str, Any]:
             "ReliquaryAffixExcelConfigData",
             "ReliquaryLevelExcelConfigData",
         ],
+        "rank": ARTIFACT_RANK,
+        "corroborated_slots": corroborated,
         "prop_ids": {
             SLOT_EQUIP_TYPES[slot]: sorted(scheme[SLOT_EQUIP_TYPES[slot]]) for slot in pools
         },
         "prop_id_names": {str(key): value for key, value in sorted(resolved.items())},
         "pools": pools,
     }
+
+
+def _cross_check_scheme_tables(
+    scheme: dict[str, set[int]], wear: dict[str, set[int]],
+) -> list[str]:
+    """Check the two main-prop tables against each other; return the slots corroborated.
+
+    **A loop over `wear` alone is not a check.** The wear table holds only three rows at
+    the pinned commit (shoes, ring, dress), so the flower and plume were never corroborated
+    by it — and if a re-pin renamed or emptied that table, `wear` would be `{}`, the loop
+    would run zero times, and the build would proceed on a single uncorroborated source
+    while reporting that the tables agreed. That is a skipped check reading as a pass.
+
+    So: an empty wear table is a failure, a wear entry naming a slot the scheme table does
+    not is a failure, and the slots that *were* corroborated are returned and recorded in
+    the snapshot — a shrink then shows up as a diff instead of as silence.
+    """
+    if not wear:
+        msg = (
+            "ReliquaryWearMainPropExcelConfigData is empty, so nothing corroborates "
+            "ReliquarySetSchemeMainPropExcelConfigData. The pools are derived from one "
+            "source or from two; they are not derived from one source called two."
+        )
+        raise SnapshotError(msg)
+    for equip_type, ids in wear.items():
+        if equip_type not in scheme:
+            msg = (
+                f"{equip_type} is in the wear table but not the scheme table; the two no "
+                f"longer describe the same slots"
+            )
+            raise SnapshotError(msg)
+        if scheme[equip_type] != ids:
+            msg = (
+                f"{equip_type}: the two main-prop scheme tables disagree — "
+                f"SetScheme={sorted(scheme[equip_type])} vs Wear={sorted(ids)}. "
+                f"Both describe the same rule; a disagreement means neither can be trusted."
+            )
+            raise SnapshotError(msg)
+    return sorted(wear)
 
 
 def _scheme_ids(table: str, sha: str | None) -> dict[str, set[int]]:
@@ -373,13 +408,32 @@ def build_substat_values(sha: str | None = None) -> dict[str, Any]:
         rows.sort(key=lambda entry: entry["id"])
     return {
         "pinned_commit_sha": sha or pinned_sha(),
-        "sources": ["ReliquaryAffixExcelConfigData"],
+        "sources": ["ReliquaryAffixExcelConfigData", "ReliquaryExcelConfigData"],
         "note": (
-            "appendPropDepotId -> the substat rolls it offers. A piece's depot is "
-            "ReliquaryExcelConfigData.appendPropDepotId."
+            "appendPropDepotId -> the substat rolls it offers, plus the rarities that use "
+            "each depot. **The rarity map is the point.** Without it the only way to use "
+            "this table offline would be to infer `501 == 5-star` from the id pattern — "
+            "an uncited derivation from memory, which is exactly what the no-network rule "
+            "is supposed to prevent rather than force."
         ),
+        "depot_ranks": _depot_ranks(sha),
         "depots": depots,
     }
+
+
+def _depot_ranks(sha: str | None) -> dict[str, list[int]]:
+    """`appendPropDepotId -> the rarities of the pieces that use it`.
+
+    Joined here, at build time, because `ReliquaryExcelConfigData` is 4,352 rows and lives
+    only in the gitignored cache. Committing the join is what makes the substat table
+    usable by Chunk G without a network call or a guess.
+    """
+    ranks: dict[str, set[int]] = {}
+    for row in fetch_json("ExcelBinOutput/ReliquaryExcelConfigData.json", sha):
+        depot, rank = row.get("appendPropDepotId"), row.get("rankLevel")
+        if depot and rank:
+            ranks.setdefault(str(depot), set()).add(rank)
+    return {depot: sorted(values) for depot, values in sorted(ranks.items())}
 
 
 def build_growth_curves(sha: str | None = None) -> dict[str, Any]:
@@ -446,7 +500,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    known = table_names()
+    known = table_names(args.sha)
     drifted: list[str] = []
     SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
     for name, builder in BUILDERS.items():

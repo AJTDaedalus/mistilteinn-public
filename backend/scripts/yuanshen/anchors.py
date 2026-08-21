@@ -11,7 +11,10 @@ committed in `tests/fixtures/nanoka_gi/`, which Chunk D already seeded the datab
 So a passing anchor says more than "the file downloaded" — it says the two independent
 sources agree about the same object, which is the property Chunk F's citations will rest on.
 
-TODO(chunk-E, E.5): extend this with a per-table row-count anchor once the snapshot lands.
+Row counts are **not** anchored here. The snapshot's own tests do that job against the
+committed files (`tests/unit/test_yuanshen_snapshot.py` pins 200 monster curve levels and
+21 artifact levels), and a second copy of those numbers in a module that only the fetch CLI
+imports would be a place for them to drift apart.
 """
 
 from __future__ import annotations

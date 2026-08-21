@@ -135,3 +135,34 @@ def test_the_artifact_value_tables_cover_five_star_level_twenty():
 
     assert values["5"]["21"]["FIGHT_PROP_CRITICAL_HURT"] > 0
     assert len(values["5"]) == 21  # levels 1..21 inclusive of the +0 row
+
+
+def test_the_main_stat_pools_record_the_rarity_they_were_derived_at():
+    """The pools are the 5★ ones; a snapshot that does not say so is an invitation."""
+    payload = _load("artifact_main_stat_pools")
+
+    assert payload["rank"] == 5
+    assert "5-star" in payload["note"]
+
+
+def test_the_scheme_cross_check_records_which_slots_it_covered():
+    """The second scheme table only covers three slots, so two rest on one source.
+
+    Recording that is the difference between "corroborated" and "nobody looked" — and it
+    makes a table that shrinks upstream show up as a diff rather than as silence.
+    """
+    payload = _load("artifact_main_stat_pools")
+
+    assert payload["corroborated_slots"] == ["EQUIP_DRESS", "EQUIP_RING", "EQUIP_SHOES"]
+
+
+def test_the_substat_table_can_be_joined_to_a_rarity_without_the_network():
+    """`ReliquaryExcelConfigData` lives only in the gitignored cache, so the join is
+    committed. Without it, using this table offline would mean inferring `501 == 5★` from
+    the id pattern — an uncited guess, which is what the no-network rule must not force."""
+    payload = _load("artifact_substat_values")
+
+    five_star = [depot for depot, ranks in payload["depot_ranks"].items() if ranks == [5]]
+    assert "501" in five_star
+    assert payload["depots"]["501"], "the 5-star depot must carry rolls"
+    assert all(entry["prop"].startswith("FIGHT_PROP_") for entry in payload["depots"]["501"])
