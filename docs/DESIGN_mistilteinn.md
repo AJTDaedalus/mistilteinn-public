@@ -32,7 +32,7 @@ they get their own DESIGN docs when they come up.
 
 ## 1. Amendments to the BRIEF
 
-Four owner rulings and one measurement land after the BRIEF was written. They amend it; the
+Five owner rulings and one measurement land after the BRIEF was written. They amend it; the
 BRIEF is otherwise unchanged and still governs.
 
 ### A1 — nanoka.cc is the primary importer source, not hakushin/Amber
@@ -131,6 +131,42 @@ in the fairy repo at `76909c4` — deletion here is not destruction.
 optimization jobs, repository base, middleware, formula core, pando) stays alive and its tests
 stay green through the whole demolition. "Scorched earth" applies to the game layer only.
 Chunk B ends with a green (if small) suite, not a red one.
+
+### A6 — Legibility is a product goal, not a nicety
+
+Owner ruling 2026-08-21, recorded after Chunk E. **gcsim and Genshin Optimizer are the
+references for correctness and for feature scope — they are not the references for code
+structure.** Both are widely described, including by their own communities, as difficult to
+follow: logic that no one fully understands is logic no one can check. This project takes
+the domain knowledge and rejects the shape.
+
+What that means concretely, as a standing constraint on Chunks F through I:
+
+1. **Characters are modelled as data, not as code.** A character's kit is a described thing
+   — talents, scalings, conditions, buffs — that a shared evaluator reads. Per-character
+   branching in the damage chain is the failure mode to avoid; a kit that needs a bespoke
+   code path is a signal the model is missing a concept, and the concept is what should be
+   added.
+2. **One mechanic, one implementation.** Reactions, DEF and RES terms, level curves,
+   snapshot-vs-dynamic timing: each gets a single place it lives, reused by everything.
+   Duplicated formulas are how two callers quietly disagree about the same rule.
+3. **A number must be able to explain itself.** The chain should be able to say *why* a
+   damage figure is what it is — which multipliers applied, in what order, from which
+   source — not merely produce it. That is what makes a crossval mismatch a five-minute
+   diagnosis instead of an afternoon, and it is the difference between a calculator users
+   trust and one they check against something else.
+4. **Efficiency comes from structure, not from shortcuts.** The optimizer's speed should
+   come from the search strategy and from evaluating a clean model, never from an inlined
+   special case that is faster because nothing else can reuse it.
+
+This is not a licence to over-engineer ahead of need, and it does not override the citation
+rule: an explainable wrong number is still wrong. It is a constraint on *how* the damage
+chain and kit corpus are built, and it is expected to cost some implementation speed in
+Chunks F and H and repay it in every chunk after.
+
+**Consequence for Chunk H:** the kit corpus schema is the load-bearing artifact of this
+ruling, and its DESIGN doc (already required before H starts) has to answer "what happens
+when a kit does not fit the schema" with something other than "special-case it".
 
 ---
 

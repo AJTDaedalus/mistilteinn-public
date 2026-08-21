@@ -229,6 +229,17 @@ you are looking at. Always `cd backend && python -m scripts.<name>`, matching CI
 
 ## Architecture
 
+**Legibility is a product goal (DESIGN §1 A6, owner ruling).** gcsim and Genshin Optimizer
+are the references for correctness and feature scope, **not** for code structure — logic
+nobody can follow is logic nobody can check. Four standing constraints on Chunks F-I:
+characters are modelled as **data a shared evaluator reads**, never per-character branches in
+the damage chain; each mechanic (reactions, DEF/RES terms, curves, snapshot timing) has
+**one** implementation everything reuses; a damage number must be able to **explain itself**
+— which multipliers applied, in what order, from where; and speed comes from the search
+strategy and a clean model, not from inlined special cases nothing else can reuse. This costs
+implementation speed in F and H on purpose. It does not override the citation rule: an
+explainable wrong number is still wrong.
+
 - **Repository pattern** for data access — no raw queries in services
 - **Service layer** for business logic — no SQLAlchemy imports in services
 - **Pydantic v2 schemas** for all API I/O validation

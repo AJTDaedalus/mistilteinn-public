@@ -4,6 +4,28 @@ Tradeoffs, rejected alternatives, and rationale — any tier. Newest first.
 
 ---
 
+## 2026-08-21 — Take gcsim's and GO's knowledge, not their shape
+
+**Owner ruling.** gcsim and Genshin Optimizer are the references for *correctness* and for
+*feature scope*. They are explicitly **not** the references for code structure: both are
+widely described as hard to follow, and logic nobody fully understands is logic nobody can
+check. Legibility here is a product goal, not a cleanup task — see DESIGN §1 A6 for the four
+concrete constraints (characters as data, one mechanic one implementation, numbers that can
+explain themselves, efficiency from structure rather than special cases).
+
+**Rejected:** port-then-tidy — "match gcsim's structure first, refactor once the numbers
+agree". The numbers agreeing is precisely the moment the structure stops being changeable,
+because every later edit then risks a regression against a crossval suite that has become
+the definition of correct. The shape has to be right before the corpus grows into it.
+
+**Rejected:** legibility as a Chunk J/documentation concern. Explainability is a property of
+the damage chain's *data flow* — what carries provenance through a calculation — and cannot
+be added by a UI or a docstring after the fact.
+
+**Cost accepted:** Chunks F and H are expected to be slower than a direct port, and the kit
+schema will need concepts a special case would not. **Does not override the citation rule**:
+an explainable wrong number is still wrong.
+
 ## 2026-08-21 — Rebrand target: Mitya, identifiers now / visuals later
 
 **Owner ruling.** fairy's visual identity derives from the ZZZ NPC "Fairy" (cobalt/cyan halo
