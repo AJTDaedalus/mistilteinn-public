@@ -261,3 +261,104 @@ def _first_promote(skill: dict[str, Any]) -> dict[str, Any]:
         return {}
     first_key = min(promote, key=int)
     return promote[first_key]
+
+
+# -- Weapons (D.4) ------------------------------------------------------------------
+
+#: `weapon_prop[]` always leads with the base-ATK entry (252 of 252 stat-carrying weapons at
+#: 7.0.51), but the mapping matches on `prop_type` rather than on position, because
+#: position is exactly the kind of thing a patch reorders silently.
+_BASE_ATK_PROP = "FIGHT_PROP_BASE_ATTACK"
+
+
+def is_weapon_skin(payload: dict[str, Any]) -> bool:
+    """True for a cosmetic skin, which is in the weapon index but is not a weapon.
+
+    26 of the 286 entries at 7.0.51 (ids `3xxxxx`) carry `"skin": true` and a completely
+    different payload shape: no `weapon_prop`, no `ascension`, no `refinement`, no
+    `stats_modifier`, and in two cases not even a name. Importing them would put stat-less
+    rows in the catalogue that the optimizer would then have to learn to ignore.
+    """
+    return bool(payload.get("skin"))
+
+
+def weapon_fields(key: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """The `Weapon` column values for one detail payload.
+
+    Tolerates the stat-less shape on purpose. The eight `ITEM_TPS_WEAPON` entries
+    (224001-224008, `"tps": true`) carry no `weapon_prop`, `ascension` or `refinement` at
+    all — C.4 made `base_atk` and `sub_stat_type` nullable for exactly them, so that they
+    import visibly rather than dying on a NOT NULL violation, and whether they belong in
+    the optimizer stays a Chunk G question.
+    """
+    weapon_type = WeaponType.parse(payload.get("weapon_type"))
+    if weapon_type is None:
+        msg = f"weapon {key}: unmappable weapon type {payload.get('weapon_type')!r}"
+        raise NanokaMappingError(msg)
+    rarity = Rarity.parse(payload.get("rarity"))
+    if rarity is None:
+        msg = f"weapon {key}: unmappable rarity {payload.get('rarity')!r}"
+        raise NanokaMappingError(msg)
+
+    base, sub = _split_weapon_props(key, payload.get("weapon_prop") or [])
+    sub_stat_type = stat_type_for(sub.get("prop_type")) if sub else None
+    return {
+        "nanoka_id": int(key),
+        "name": payload.get("name", ""),
+        "weapon_type": weapon_type,
+        "rarity": rarity,
+        "base_atk": base.get("init_value") if base else None,
+        "base_atk_curve": base.get("type") if base else None,
+        "sub_stat_type": sub_stat_type,
+        # Value and curve follow the *stat*, not the entry: the ten weapons whose second
+        # prop is `FIGHT_PROP_NONE` still carry an `init_value` of 0 and a curve name, and
+        # storing those would say "this weapon has a substat worth 0" rather than "this
+        # weapon has no substat".
+        "sub_stat_base_value": sub.get("init_value") if sub_stat_type else None,
+        "sub_stat_curve": sub.get("type") if sub_stat_type else None,
+        "ascension_atk": payload.get("ascension") or {},
+        "icon": payload.get("icon"),
+        "description": payload.get("desc", "") or "",
+    }
+
+
+def _split_weapon_props(
+    key: str, props: list[dict[str, Any]],
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+    """Separate the base-ATK entry from the substat entry.
+
+    Observed shapes at 7.0.51 are exactly two: two entries (252 weapons) or none (the 26
+    skins and 8 TPS weapons). A third entry would mean weapons now carry two substats, and
+    silently keeping the first is the kind of guess that ships wrong numbers — so it raises.
+    """
+    base = next((prop for prop in props if prop.get("prop_type") == _BASE_ATK_PROP), None)
+    others = [prop for prop in props if prop is not base]
+    if len(others) > 1:
+        msg = (
+            f"weapon {key}: expected at most one substat prop, found "
+            f"{[prop.get('prop_type') for prop in others]}"
+        )
+        raise NanokaMappingError(msg)
+    return base, others[0] if others else None
+
+
+def refinement_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    """R1-R5, from the `refinement` object keyed `"1"`..`"5"`.
+
+    Not always five, and not always present: 239 weapons publish five levels, three publish
+    exactly one (Sword of Descension, Predator, Kagotsurube Isshin — the event weapons that
+    cannot be refined), and 44 publish none at all (the ten 1★/2★ weapons with no passive,
+    plus the 34 skins and TPS entries). All three are data, not gaps to fill in.
+    """
+    return sorted(
+        (
+            {
+                "level": int(level),
+                "name": entry.get("name", "") or "",
+                "description": entry.get("desc", "") or "",
+                "param_list": entry.get("param_list") or [],
+            }
+            for level, entry in (payload.get("refinement") or {}).items()
+        ),
+        key=lambda row: row["level"],
+    )

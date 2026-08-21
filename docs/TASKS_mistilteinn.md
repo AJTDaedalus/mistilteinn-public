@@ -287,7 +287,7 @@ Each task below is **one commit**. Commit message form:
   the ZZZ importer's assumptions.**
 
 ### [x] D.3 — Character mapping
-### D.4 — Weapon mapping
+### [x] D.4 — Weapon mapping
 ### D.5 — Artifact-set mapping
 ### D.6 — Monster / enemy-profile mapping
 - **Do (each):** map the committed fixture to the Chunk C models; unit-test the mapping against

@@ -214,7 +214,6 @@ async def test_dry_run_records_a_failed_sample_instead_of_raising():
 @pytest.mark.parametrize(
     ("method", "task"),
     [
-        ("import_weapons", "D.4"),
         ("import_artifact_sets", "D.5"),
         ("import_enemies", "D.6"),
     ],

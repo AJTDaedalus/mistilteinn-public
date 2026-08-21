@@ -37,10 +37,14 @@ from app.data.importers.base_importer import BaseImporter
 from app.data.importers.nanoka_gi_mappings import (
     character_fields,
     constellation_rows,
+    is_weapon_skin,
     passive_rows,
+    refinement_rows,
     talent_rows,
+    weapon_fields,
 )
 from app.models.character import AscensionPassive, Character, Constellation, Talent, TalentScaling
+from app.models.weapon import Weapon, WeaponRefinement
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Iterable, Sequence
@@ -333,8 +337,35 @@ class NanokaGIImporter(BaseImporter):
             )
 
     async def import_weapons(self) -> int:
-        """TODO(chunk-D.4): map the weapon detail payload to `Weapon`/`WeaponRefinement`."""
-        raise NanokaImportError(_NOT_MAPPED.format(entity="weapon", task="D.4"))
+        """Upsert every weapon in the index with its refinement ladder, skipping skins."""
+        result = await self._run_pass("weapon", Weapon, self._map_weapon)
+        return result.imported
+
+    async def _map_weapon(self, key: str, payload: dict[str, Any]) -> bool:
+        """One weapon row plus its refinements, or a skip for a cosmetic skin."""
+        if is_weapon_skin(payload):
+            logger.debug("Skipping weapon skin %s (%s)", key, payload.get("name"))
+            return False
+
+        fields = weapon_fields(key, payload)
+        weapon = await self._get_existing(Weapon, int(key))
+        if weapon is None:
+            weapon = Weapon(**fields)
+            self.session.add(weapon)
+        else:
+            for column, value in fields.items():
+                setattr(weapon, column, value)
+        await self.session.flush()
+
+        # Rebuilt rather than diffed, and flushed in between, for the same reason as the
+        # character children: the unique constraint is on (weapon_id, level).
+        await self.session.execute(
+            delete(WeaponRefinement).where(WeaponRefinement.weapon_id == weapon.id),
+        )
+        await self.session.flush()
+        for row in refinement_rows(payload):
+            self.session.add(WeaponRefinement(weapon_id=weapon.id, **row))
+        return True
 
     async def import_artifact_sets(self) -> int:
         """TODO(chunk-D.5): map the artifact detail payload to `ArtifactSet` and affixes."""
