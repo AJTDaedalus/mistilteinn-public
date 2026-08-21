@@ -34,6 +34,13 @@ import httpx
 from sqlalchemy import delete, select
 
 from app.data.importers.base_importer import BaseImporter
+from app.data.importers.nanoka_gi_mappings import (
+    character_fields,
+    constellation_rows,
+    passive_rows,
+    talent_rows,
+)
+from app.models.character import AscensionPassive, Character, Constellation, Talent, TalentScaling
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Iterable, Sequence
@@ -275,8 +282,55 @@ class NanokaGIImporter(BaseImporter):
     # -- Entity passes ---------------------------------------------------------
 
     async def import_characters(self) -> int:
-        """TODO(chunk-D.3): map the character detail payload to `Character` and friends."""
-        raise NanokaImportError(_NOT_MAPPED.format(entity="character", task="D.3"))
+        """Upsert every character in the index, with its talents, cons and passives."""
+        result = await self._run_pass("character", Character, self._map_character)
+        return result.imported
+
+    async def _map_character(self, key: str, payload: dict[str, Any]) -> bool:
+        """One character row plus its four child tables. Always writes; never skips."""
+        fields = character_fields(key, payload)
+        character = await self._get_existing(Character, key)
+        if character is None:
+            character = Character(**fields)
+            self.session.add(character)
+        else:
+            for column, value in fields.items():
+                setattr(character, column, value)
+        await self.session.flush()
+
+        # Children are replaced wholesale rather than diffed. A talent's identity is its
+        # nanoka id and nothing outside this table references it, so a rebuild is cheaper
+        # to reason about than a three-way merge — and it cannot leave an orphan behind
+        # when a kit is reworked. The flush in between matters: the unique constraints are
+        # on (character_id, nanoka_id), so re-inserting before the DELETE lands would
+        # collide with the rows being replaced.
+        await self._delete_children(character.id)
+        await self.session.flush()
+
+        for row in talent_rows(key, payload):
+            scalings = row.pop("scalings")
+            talent = Talent(character_id=character.id, **row)
+            self.session.add(talent)
+            await self.session.flush()
+            for scaling in scalings:
+                self.session.add(TalentScaling(talent_id=talent.id, **scaling))
+        for row in constellation_rows(payload):
+            self.session.add(Constellation(character_id=character.id, **row))
+        for row in passive_rows(payload):
+            self.session.add(AscensionPassive(character_id=character.id, **row))
+        return True
+
+    async def _delete_children(self, character_id: str) -> None:
+        """Drop a character's talents, constellations and passives.
+
+        `talent_scalings` is not deleted explicitly: its FK is `ON DELETE CASCADE`, and the
+        DELETE below is emitted as SQL rather than through the ORM's cascade, so the
+        database is what removes them.
+        """
+        for model in (Talent, Constellation, AscensionPassive):
+            await self.session.execute(
+                delete(model).where(model.character_id == character_id),
+            )
 
     async def import_weapons(self) -> int:
         """TODO(chunk-D.4): map the weapon detail payload to `Weapon`/`WeaponRefinement`."""
@@ -297,8 +351,6 @@ class NanokaGIImporter(BaseImporter):
         entity: str,
         model: type,
         mapper: Callable[[str, dict[str, Any]], Awaitable[bool]],
-        *,
-        key_attr: str = "nanoka_id",
     ) -> EntityResult:
         """Index → details → mapper → prune, recording an `EntityResult`.
 
@@ -335,26 +387,24 @@ class NanokaGIImporter(BaseImporter):
                     else:
                         result.skipped += 1
 
-        result.pruned = await self._prune(model, set(keys), key_attr=key_attr)
+        result.pruned = await self._prune(model, set(keys))
         await self.session.flush()
         self.results.append(result)
         logger.info("%s", result)
         return result
 
-    async def _prune(
-        self, model: type, source_keys: set[str], *, key_attr: str = "nanoka_id",
-    ) -> int:
-        """Delete rows whose source key has left the index.
+    async def _prune(self, model: type, source_keys: set[str]) -> int:
+        """Delete rows whose `nanoka_id` has left the index.
 
-        `key_attr` names the column holding the nanoka key, because the column's *type*
-        differs by entity: characters are keyed by the raw string (`10000005-2`, see
-        `_index_keys`), everything else by an integer. Comparison is done on the string
-        form of the stored value so one code path serves both.
+        Every catalogue model names the column `nanoka_id`, but its *type* differs by
+        entity: characters hold the raw string key (`10000005-2`, see `_index_keys`),
+        everything else an integer. Comparison is on the string form of the stored value,
+        so one code path serves both.
 
         Rows with a NULL key are untouched: `EnemyProfile` allows hand-authored profiles,
         and pruning those would delete the user's own data on every seed.
         """
-        column = getattr(model, key_attr)
+        column = model.nanoka_id
         rows = await self.session.execute(select(column).where(column.isnot(None)))
         stored = {row[0] for row in rows.all()}
         stale = {value for value in stored if str(value) not in source_keys}
@@ -362,17 +412,19 @@ class NanokaGIImporter(BaseImporter):
             return 0
         await self.session.execute(delete(model).where(column.in_(stale)))
         logger.info(
-            "Pruned %d stale %s row(s): %s=%s",
-            len(stale), model.__tablename__, key_attr, sorted(map(str, stale)),
+            "Pruned %d stale %s row(s): nanoka_id=%s",
+            len(stale), model.__tablename__, sorted(map(str, stale)),
         )
         return len(stale)
 
-    async def _get_existing(
-        self, model: type, key: int | str, *, key_attr: str = "nanoka_id",
-    ) -> Any | None:
-        """The existing row for a source key, or None. The upsert half of every mapping."""
+    async def _get_existing(self, model: type, key: int | str) -> Any | None:
+        """The existing row for a source key, or None. The upsert half of every mapping.
+
+        `key` must already be the column's type — the string index key for characters, an
+        int for everything else. The mapping knows which; this does not guess.
+        """
         rows = await self.session.execute(
-            select(model).where(getattr(model, key_attr) == key),
+            select(model).where(model.nanoka_id == key),
         )
         return rows.scalar_one_or_none()
 

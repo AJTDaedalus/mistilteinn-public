@@ -286,7 +286,7 @@ Each task below is **one commit**. Commit message form:
   constellations actually live in the payload. **Every mapping task below reads this note, not
   the ZZZ importer's assumptions.**
 
-### D.3 — Character mapping
+### [x] D.3 — Character mapping
 ### D.4 — Weapon mapping
 ### D.5 — Artifact-set mapping
 ### D.6 — Monster / enemy-profile mapping

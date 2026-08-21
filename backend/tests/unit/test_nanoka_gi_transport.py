@@ -214,14 +214,17 @@ async def test_dry_run_records_a_failed_sample_instead_of_raising():
 @pytest.mark.parametrize(
     ("method", "task"),
     [
-        ("import_characters", "D.3"),
         ("import_weapons", "D.4"),
         ("import_artifact_sets", "D.5"),
         ("import_enemies", "D.6"),
     ],
 )
 async def test_unmapped_entity_passes_raise_and_name_their_task(method, task):
-    """D.1 is transport only. An unwritten mapping must not report zero rows imported."""
+    """An unwritten mapping must not report zero rows imported.
+
+    `import_characters` dropped off this list when D.3 wrote it; each of the remaining
+    three leaves as its own task lands.
+    """
     importer = NanokaGIImporter(MagicMock(), transport=FixtureTransport())
 
     with pytest.raises(NanokaImportError, match=task):
