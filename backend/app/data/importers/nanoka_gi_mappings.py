@@ -362,3 +362,71 @@ def refinement_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
         ),
         key=lambda row: row["level"],
     )
+
+
+# -- Artifact sets (D.5) ------------------------------------------------------------
+
+def artifact_set_fields(key: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """The `ArtifactSet` column values for one detail payload.
+
+    **The set's name is not a top-level field.** It lives on each affix, and all 65 sets at
+    7.0.51 have exactly one distinct name across their affixes — so `affix[0].name` is the
+    set name rather than a first-of-several guess. A set with no affixes at all would have
+    no name to take, and raises instead of being stored as `""`.
+    """
+    affixes = payload.get("affix") or []
+    if not affixes:
+        msg = f"artifact set {key}: no affix rows, so the payload carries no set name"
+        raise NanokaMappingError(msg)
+    return {
+        "nanoka_id": int(key),
+        "name": affixes[0].get("name", ""),
+        "icon": payload.get("icon"),
+        # `need` is per-set data, not the constant [2, 4]: 60 sets are [2, 4] and five are
+        # [1] — the "Prayers" circlets (15009-15013), genuine one-piece sets (C.5).
+        "piece_thresholds": payload.get("need") or [],
+        "available_ranks": payload.get("rank") or [],
+    }
+
+
+def artifact_affix_rows(key: str, payload: dict[str, Any]) -> list[dict[str, Any]]:
+    """One row per set-bonus tier, paired with its piece requirement.
+
+    `position` is the affix's own `level` (0 for the 2-piece bonus, 1 for the 4-piece), and
+    it is cross-checked against the list index: they agree on all 125 affixes at 7.0.51, and
+    a disagreement would mean the pairing with `need` — which is positional — is no longer
+    sound. `pieces_required` comes from `need[position]`, so a mismatched length raises
+    rather than pairing a 4-piece bonus with a 2-piece threshold.
+    """
+    affixes = payload.get("affix") or []
+    thresholds = payload.get("need") or []
+    if len(thresholds) != len(affixes):
+        msg = (
+            f"artifact set {key}: {len(affixes)} affix rows against {len(thresholds)} "
+            f"piece thresholds {thresholds}; the pairing is positional and cannot be guessed"
+        )
+        raise NanokaMappingError(msg)
+
+    rows = []
+    for index, affix in enumerate(affixes):
+        position = affix.get("level", index)
+        if position != index:
+            msg = (
+                f"artifact set {key}: affix at index {index} declares level {position}; "
+                f"the pairing with need={thresholds} is positional"
+            )
+            raise NanokaMappingError(msg)
+        rows.append(
+            {
+                "position": position,
+                "pieces_required": thresholds[index],
+                "name": affix.get("name", ""),
+                "description": affix.get("desc", "") or "",
+                # Both kept: 324 affix rows across the 65 sets have `add_props` entirely
+                # FIGHT_PROP_NONE, and for those `param_list` holds the only numbers that
+                # exist outside `<color=…>` markup (C.5, PR #2 review finding 5).
+                "add_props": affix.get("add_props") or [],
+                "param_list": affix.get("param_list") or [],
+            },
+        )
+    return rows

@@ -35,6 +35,8 @@ from sqlalchemy import delete, select
 
 from app.data.importers.base_importer import BaseImporter
 from app.data.importers.nanoka_gi_mappings import (
+    artifact_affix_rows,
+    artifact_set_fields,
     character_fields,
     constellation_rows,
     is_weapon_skin,
@@ -43,6 +45,7 @@ from app.data.importers.nanoka_gi_mappings import (
     talent_rows,
     weapon_fields,
 )
+from app.models.artifact import ArtifactSet, ArtifactSetAffix
 from app.models.character import AscensionPassive, Character, Constellation, Talent, TalentScaling
 from app.models.weapon import Weapon, WeaponRefinement
 
@@ -368,8 +371,33 @@ class NanokaGIImporter(BaseImporter):
         return True
 
     async def import_artifact_sets(self) -> int:
-        """TODO(chunk-D.5): map the artifact detail payload to `ArtifactSet` and affixes."""
-        raise NanokaImportError(_NOT_MAPPED.format(entity="artifact", task="D.5"))
+        """Upsert every artifact set in the index with its bonus affixes."""
+        result = await self._run_pass("artifact", ArtifactSet, self._map_artifact_set)
+        return result.imported
+
+    async def _map_artifact_set(self, key: str, payload: dict[str, Any]) -> bool:
+        """One set row plus its affix rows."""
+        fields = artifact_set_fields(key, payload)
+        artifact_set = await self._get_existing(ArtifactSet, int(key))
+        if artifact_set is None:
+            artifact_set = ArtifactSet(**fields)
+            self.session.add(artifact_set)
+        else:
+            for column, value in fields.items():
+                setattr(artifact_set, column, value)
+        await self.session.flush()
+
+        # Rebuilt, flushed in between: the unique constraint is on (artifact_set_id,
+        # position), so a re-insert before the DELETE lands would collide.
+        await self.session.execute(
+            delete(ArtifactSetAffix).where(
+                ArtifactSetAffix.artifact_set_id == artifact_set.id,
+            ),
+        )
+        await self.session.flush()
+        for row in artifact_affix_rows(key, payload):
+            self.session.add(ArtifactSetAffix(artifact_set_id=artifact_set.id, **row))
+        return True
 
     async def import_enemies(self) -> int:
         """TODO(chunk-D.6): map the monster detail payload to `EnemyProfile`."""
