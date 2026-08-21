@@ -16,7 +16,7 @@ Two supported paths — pick one:
 docker compose up -d
 ```
 
-Frontend at <http://localhost:4200>, backend at <http://localhost:8000>
+Frontend at <http://localhost:4201>, backend at <http://localhost:8001>
 (Swagger at `/docs`). Source edits flow through both containers via bind
 mounts. See the root [README](README.md#quick-start) for the full command
 table, including the anonymous-volume gotcha after editing

@@ -47,8 +47,10 @@ that turns out to be worth porting rather than re-deriving.
 - `.github/workflows/` — still dispatches fairy's kit-validation harness (`validate_kits.py`,
   levels L0–LR/LU) against data that no longer exists.
 - `docs/DEPLOY.md` — fairy's runbook; hosts, tunnel config, and DB names are fairy's.
-- `docker-compose.yml` binds host ports **5432 / 8000 / 4200**, the same as fairy. Both stacks
-  cannot run at once on this box until one side is re-mapped.
+- ~~`docker-compose.yml` binds host ports **5432 / 8000 / 4200**, the same as fairy.~~
+  **Resolved in A.4/A.5:** there is no `db` service any more (mistilteinn uses fairy's
+  Postgres server and owns separate databases in it), and the host ports are **8001 / 4201**.
+  Both stacks run simultaneously.
 - **Package and project identifiers still say `fairy`** — `backend/pyproject.toml`,
   `frontend/package.json`, `frontend/angular.json`, and assorted code comments. Renaming them is
   a deliberate Task 0 decision, not a blind `sed`.

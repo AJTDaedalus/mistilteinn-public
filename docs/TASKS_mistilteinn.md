@@ -58,14 +58,14 @@
   that `mistilteinn` / `mistilteinn_test` must pre-exist.
 - **Tests:** none yet (DB does not exist until A.6).
 
-### A.5 — Remap host ports
+### [x] A.5 — Remap host ports
 - **Do:** backend `8000:8000` → `8001:8000`; frontend `4200:4200` → `4201:4200`. Update
   `CORS_ORIGINS` default in `backend/app/config.py` and the frontend API base URL.
 - **Files:** `docker-compose.yml`, `backend/app/config.py`, `frontend/src/app/api/api.client.ts`.
 - **Accept:** with the fairy stack running, `docker compose up -d backend` starts with no port
   conflict; `curl localhost:8001/api/v1/health` answers.
 
-### A.6 — Create the mistilteinn databases
+### [x] A.6 — Create the mistilteinn databases
 - **Do:** in the running fairy Postgres container, `CREATE DATABASE mistilteinn;` and
   `CREATE DATABASE mistilteinn_test;` owned by the mistilteinn role (create the role if absent).
   Record the exact commands in `docs/LOG_mistilteinn.md` — this is manual, one-time infra.

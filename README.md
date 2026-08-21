@@ -32,12 +32,14 @@ docker compose up -d
 
 | URL | What |
 |---|---|
-| <http://localhost:4200>          | Frontend (Angular dev server, HMR) |
-| <http://localhost:8000>          | Backend (FastAPI, auto-reload) |
-| <http://localhost:8000/docs>     | Swagger API explorer |
+| <http://localhost:4201>          | Frontend (Angular dev server, HMR) |
+| <http://localhost:8001>          | Backend (FastAPI, auto-reload) |
+| <http://localhost:8001/docs>     | Swagger API explorer |
 
-⚠️ These are the same host ports fairy uses (5432 / 8000 / 4200). Both stacks cannot run
-simultaneously until one side is re-mapped.
+These are deliberately *not* fairy's ports (8000 / 4200), so both stacks run at once.
+There is no Postgres here at all — mistilteinn uses the fairy stack's database server on
+5432 and owns the `mistilteinn` / `mistilteinn_test` databases inside it. Start fairy's
+`db` service before this one.
 
 ### Common commands
 

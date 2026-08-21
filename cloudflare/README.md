@@ -34,7 +34,7 @@ Requires a domain added to your Cloudflare account.
 
 4. In the Cloudflare Zero Trust dashboard (one.dash.cloudflare.com):
    - Go to **Networks → Tunnels → fairy-api → Configure → Public Hostnames**
-   - Add a hostname: `api.<your-domain>` → `http://localhost:8000`
+   - Add a hostname: `api.<your-domain>` → `http://localhost:8001`
    - (The hostname and routing can also be configured via `config.yml` if
      you mount it into the container, but the dashboard approach is simpler
      when using token-based auth.)

@@ -14,7 +14,11 @@ class Settings(BaseSettings):
     TESTING: bool = False
     LOG_LEVEL: str = "info"
     API_V1_PREFIX: str = "/api/v1"
-    CORS_ORIGINS: list[str] = ["http://localhost:4200"]
+    # Two dev origins, because there are two supported ways to reach the SPA:
+    # 4201 is the compose-published port (host 4201 -> container 4200, remapped off
+    # fairy's 4200 so both stacks can run at once), and 4200 is what a bare
+    # `npm start` on the host still serves. Production overrides this via env.
+    CORS_ORIGINS: list[str] = ["http://localhost:4201", "http://localhost:4200"]
     ENV: str = "local"  # "local" | "production"
 
 
