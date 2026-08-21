@@ -9,6 +9,20 @@ description = "Project allowlist: third-party keys in saved reference HTML; test
 # API keys. These are not project secrets — they belong to the third-party pages.
 paths = [
   '''references/.*''',
+  # Generated, not written: `backend/app/data/yuanshen/schema/table_catalog.json` maps
+  # each of the 1,935 public game-config table names to the **git blob id** GitLab
+  # reports for it. Four of those names contain "Key" or "Token"
+  # (`CharMasterKeyExcelConfigData`, `GCGTokenDescConfigData`,
+  # `ShopSpecialKeysDataExcelConfigData`, `WidgetTreasureKeyExcelConfigData`), so a
+  # 40-hex object id sitting beside them reads to `generic-api-key` as a credential. It
+  # is not one, and no future table name can make it one.
+  #
+  # Allowlisted by path rather than by regex on purpose: a regex pinned to today's four
+  # names would go red again the first time upstream adds a fifth. The file cannot
+  # smuggle a real secret past review either way — it is rebuilt by
+  # `python -m scripts.yuanshen.build_table_catalog`, and that script's `--check` mode
+  # reports any hand edit as drift.
+  '''backend/app/data/yuanshen/schema/table_catalog\.json''',
 ]
 # False positive: a function argument in an auth integration test.
 regexes = [

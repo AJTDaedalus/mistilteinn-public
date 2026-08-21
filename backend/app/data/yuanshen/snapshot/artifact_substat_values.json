@@ -1,0 +1,2005 @@
+{
+ "pinned_commit_sha": "5445617e33b29f057b9479883cc8e5e77c7d128d",
+ "sources": [
+  "ReliquaryAffixExcelConfigData",
+  "ReliquaryExcelConfigData"
+ ],
+ "note": "appendPropDepotId -> the substat rolls it offers, plus the rarities that use each depot. **The rarity map is the point.** Without it the only way to use this table offline would be to infer `501 == 5-star` from the id pattern — an uncited derivation from memory, which is exactly what the no-network rule is supposed to prevent rather than force.",
+ "depot_ranks": {
+  "101": [
+   1
+  ],
+  "201": [
+   2
+  ],
+  "301": [
+   3
+  ],
+  "401": [
+   4
+  ],
+  "501": [
+   5
+  ],
+  "941": [
+   4
+  ],
+  "942": [
+   4
+  ],
+  "943": [
+   4
+  ],
+  "946": [
+   4
+  ],
+  "961": [
+   4,
+   5
+  ],
+  "962": [
+   4,
+   5
+  ],
+  "963": [
+   4,
+   5
+  ],
+  "964": [
+   4,
+   5
+  ],
+  "965": [
+   4,
+   5
+  ],
+  "966": [
+   1
+  ],
+  "967": [
+   1
+  ],
+  "968": [
+   1
+  ],
+  "969": [
+   1
+  ],
+  "970": [
+   1
+  ],
+  "971": [
+   1
+  ],
+  "972": [
+   1
+  ],
+  "973": [
+   1
+  ],
+  "974": [
+   1
+  ],
+  "975": [
+   1
+  ],
+  "976": [
+   1
+  ],
+  "977": [
+   1
+  ],
+  "978": [
+   1
+  ],
+  "979": [
+   1
+  ],
+  "980": [
+   1
+  ],
+  "981": [
+   1
+  ],
+  "982": [
+   1
+  ],
+  "983": [
+   1
+  ],
+  "984": [
+   1
+  ],
+  "985": [
+   1
+  ],
+  "986": [
+   1
+  ],
+  "987": [
+   1
+  ],
+  "988": [
+   1
+  ],
+  "989": [
+   1
+  ],
+  "990": [
+   1
+  ],
+  "991": [
+   1
+  ],
+  "992": [
+   1
+  ],
+  "993": [
+   1
+  ],
+  "994": [
+   1
+  ],
+  "999": [
+   1
+  ]
+ },
+ "depots": {
+  "101": [
+   {
+    "id": 101021,
+    "prop": "FIGHT_PROP_HP",
+    "value": 23.899999618530273
+   },
+   {
+    "id": 101022,
+    "prop": "FIGHT_PROP_HP",
+    "value": 29.8799991607666
+   },
+   {
+    "id": 101031,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.011699999682605267
+   },
+   {
+    "id": 101032,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.014600000344216824
+   },
+   {
+    "id": 101051,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 1.559999942779541
+   },
+   {
+    "id": 101052,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 1.9500000476837158
+   },
+   {
+    "id": 101061,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.011699999682605267
+   },
+   {
+    "id": 101062,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.014600000344216824
+   },
+   {
+    "id": 101081,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 1.850000023841858
+   },
+   {
+    "id": 101082,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 2.309999942779541
+   },
+   {
+    "id": 101091,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.014600000344216824
+   },
+   {
+    "id": 101092,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.018200000748038292
+   },
+   {
+    "id": 101201,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.007799999788403511
+   },
+   {
+    "id": 101202,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.009700000286102295
+   },
+   {
+    "id": 101221,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.01549999974668026
+   },
+   {
+    "id": 101222,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.01940000057220459
+   },
+   {
+    "id": 101231,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.013000000268220901
+   },
+   {
+    "id": 101232,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.016200000420212746
+   },
+   {
+    "id": 101241,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 4.659999847412109
+   },
+   {
+    "id": 101242,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 5.829999923706055
+   }
+  ],
+  "201": [
+   {
+    "id": 201021,
+    "prop": "FIGHT_PROP_HP",
+    "value": 50.189998626708984
+   },
+   {
+    "id": 201022,
+    "prop": "FIGHT_PROP_HP",
+    "value": 60.95000076293945
+   },
+   {
+    "id": 201023,
+    "prop": "FIGHT_PROP_HP",
+    "value": 71.69999694824219
+   },
+   {
+    "id": 201031,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.016300000250339508
+   },
+   {
+    "id": 201032,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.01979999989271164
+   },
+   {
+    "id": 201033,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.02329999953508377
+   },
+   {
+    "id": 201051,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 3.2699999809265137
+   },
+   {
+    "id": 201052,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 3.9700000286102295
+   },
+   {
+    "id": 201053,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 4.670000076293945
+   },
+   {
+    "id": 201061,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.016300000250339508
+   },
+   {
+    "id": 201062,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.01979999989271164
+   },
+   {
+    "id": 201063,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.02329999953508377
+   },
+   {
+    "id": 201081,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 3.890000104904175
+   },
+   {
+    "id": 201082,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 4.71999979019165
+   },
+   {
+    "id": 201083,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 5.559999942779541
+   },
+   {
+    "id": 201091,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.020400000736117363
+   },
+   {
+    "id": 201092,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.024800000712275505
+   },
+   {
+    "id": 201093,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.029100000858306885
+   },
+   {
+    "id": 201201,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.010900000110268593
+   },
+   {
+    "id": 201202,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.013199999928474426
+   },
+   {
+    "id": 201203,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.01549999974668026
+   },
+   {
+    "id": 201221,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.021800000220537186
+   },
+   {
+    "id": 201222,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.026399999856948853
+   },
+   {
+    "id": 201223,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.031099999323487282
+   },
+   {
+    "id": 201231,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.01810000091791153
+   },
+   {
+    "id": 201232,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.02199999988079071
+   },
+   {
+    "id": 201233,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.02590000070631504
+   },
+   {
+    "id": 201241,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 6.53000020980835
+   },
+   {
+    "id": 201242,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 7.929999828338623
+   },
+   {
+    "id": 201243,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 9.329999923706055
+   }
+  ],
+  "301": [
+   {
+    "id": 301021,
+    "prop": "FIGHT_PROP_HP",
+    "value": 100.37999725341797
+   },
+   {
+    "id": 301022,
+    "prop": "FIGHT_PROP_HP",
+    "value": 114.72000122070312
+   },
+   {
+    "id": 301023,
+    "prop": "FIGHT_PROP_HP",
+    "value": 129.05999755859375
+   },
+   {
+    "id": 301024,
+    "prop": "FIGHT_PROP_HP",
+    "value": 143.39999389648438
+   },
+   {
+    "id": 301031,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.02449999935925007
+   },
+   {
+    "id": 301032,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.02800000086426735
+   },
+   {
+    "id": 301033,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.03150000050663948
+   },
+   {
+    "id": 301034,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.03500000014901161
+   },
+   {
+    "id": 301051,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 6.539999961853027
+   },
+   {
+    "id": 301052,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 7.46999979019165
+   },
+   {
+    "id": 301053,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 8.399999618530273
+   },
+   {
+    "id": 301054,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 9.34000015258789
+   },
+   {
+    "id": 301061,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.02449999935925007
+   },
+   {
+    "id": 301062,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.02800000086426735
+   },
+   {
+    "id": 301063,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.03150000050663948
+   },
+   {
+    "id": 301064,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.03500000014901161
+   },
+   {
+    "id": 301081,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 7.78000020980835
+   },
+   {
+    "id": 301082,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 8.890000343322754
+   },
+   {
+    "id": 301083,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 10
+   },
+   {
+    "id": 301084,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 11.109999656677246
+   },
+   {
+    "id": 301091,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.03060000017285347
+   },
+   {
+    "id": 301092,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.03500000014901161
+   },
+   {
+    "id": 301093,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.03929999843239784
+   },
+   {
+    "id": 301094,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.043699998408555984
+   },
+   {
+    "id": 301201,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.016300000250339508
+   },
+   {
+    "id": 301202,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.01860000006854534
+   },
+   {
+    "id": 301203,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.020999999716877937
+   },
+   {
+    "id": 301204,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.02329999953508377
+   },
+   {
+    "id": 301221,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.032600000500679016
+   },
+   {
+    "id": 301222,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.037300001829862595
+   },
+   {
+    "id": 301223,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.041999999433755875
+   },
+   {
+    "id": 301224,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.04659999907016754
+   },
+   {
+    "id": 301231,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.0272000003606081
+   },
+   {
+    "id": 301232,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.031099999323487282
+   },
+   {
+    "id": 301233,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.03500000014901161
+   },
+   {
+    "id": 301234,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.03889999911189079
+   },
+   {
+    "id": 301241,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 9.789999961853027
+   },
+   {
+    "id": 301242,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 11.1899995803833
+   },
+   {
+    "id": 301243,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 12.59000015258789
+   },
+   {
+    "id": 301244,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 13.989999771118164
+   }
+  ],
+  "401": [
+   {
+    "id": 401021,
+    "prop": "FIGHT_PROP_HP",
+    "value": 167.3000030517578
+   },
+   {
+    "id": 401022,
+    "prop": "FIGHT_PROP_HP",
+    "value": 191.1999969482422
+   },
+   {
+    "id": 401023,
+    "prop": "FIGHT_PROP_HP",
+    "value": 215.10000610351562
+   },
+   {
+    "id": 401024,
+    "prop": "FIGHT_PROP_HP",
+    "value": 239
+   },
+   {
+    "id": 401031,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.032600000500679016
+   },
+   {
+    "id": 401032,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.037300001829862595
+   },
+   {
+    "id": 401033,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.041999999433755875
+   },
+   {
+    "id": 401034,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.04659999907016754
+   },
+   {
+    "id": 401051,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 10.890000343322754
+   },
+   {
+    "id": 401052,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 12.449999809265137
+   },
+   {
+    "id": 401053,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 14
+   },
+   {
+    "id": 401054,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 15.5600004196167
+   },
+   {
+    "id": 401061,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.032600000500679016
+   },
+   {
+    "id": 401062,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.037300001829862595
+   },
+   {
+    "id": 401063,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.041999999433755875
+   },
+   {
+    "id": 401064,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.04659999907016754
+   },
+   {
+    "id": 401081,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 12.960000038146973
+   },
+   {
+    "id": 401082,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 14.819999694824219
+   },
+   {
+    "id": 401083,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 16.670000076293945
+   },
+   {
+    "id": 401084,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 18.520000457763672
+   },
+   {
+    "id": 401091,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.040800001472234726
+   },
+   {
+    "id": 401092,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.04659999907016754
+   },
+   {
+    "id": 401093,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.05249999836087227
+   },
+   {
+    "id": 401094,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.05829999968409538
+   },
+   {
+    "id": 401201,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.021800000220537186
+   },
+   {
+    "id": 401202,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.024900000542402267
+   },
+   {
+    "id": 401203,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.02800000086426735
+   },
+   {
+    "id": 401204,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.031099999323487282
+   },
+   {
+    "id": 401221,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.04349999874830246
+   },
+   {
+    "id": 401222,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.04969999939203262
+   },
+   {
+    "id": 401223,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.0560000017285347
+   },
+   {
+    "id": 401224,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.062199998646974564
+   },
+   {
+    "id": 401231,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.03629999980330467
+   },
+   {
+    "id": 401232,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.0414000004529953
+   },
+   {
+    "id": 401233,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.04659999907016754
+   },
+   {
+    "id": 401234,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.05180000141263008
+   },
+   {
+    "id": 401241,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 13.0600004196167
+   },
+   {
+    "id": 401242,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 14.920000076293945
+   },
+   {
+    "id": 401243,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 16.790000915527344
+   },
+   {
+    "id": 401244,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 18.649999618530273
+   }
+  ],
+  "501": [
+   {
+    "id": 501021,
+    "prop": "FIGHT_PROP_HP",
+    "value": 209.1300048828125
+   },
+   {
+    "id": 501022,
+    "prop": "FIGHT_PROP_HP",
+    "value": 239
+   },
+   {
+    "id": 501023,
+    "prop": "FIGHT_PROP_HP",
+    "value": 268.8800048828125
+   },
+   {
+    "id": 501024,
+    "prop": "FIGHT_PROP_HP",
+    "value": 298.75
+   },
+   {
+    "id": 501031,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.040800001472234726
+   },
+   {
+    "id": 501032,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.04659999907016754
+   },
+   {
+    "id": 501033,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.05249999836087227
+   },
+   {
+    "id": 501034,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.05829999968409538
+   },
+   {
+    "id": 501051,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 13.619999885559082
+   },
+   {
+    "id": 501052,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 15.5600004196167
+   },
+   {
+    "id": 501053,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 17.510000228881836
+   },
+   {
+    "id": 501054,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 19.450000762939453
+   },
+   {
+    "id": 501061,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.040800001472234726
+   },
+   {
+    "id": 501062,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.04659999907016754
+   },
+   {
+    "id": 501063,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.05249999836087227
+   },
+   {
+    "id": 501064,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.05829999968409538
+   },
+   {
+    "id": 501081,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 16.200000762939453
+   },
+   {
+    "id": 501082,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 18.520000457763672
+   },
+   {
+    "id": 501083,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 20.829999923706055
+   },
+   {
+    "id": 501084,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 23.149999618530273
+   },
+   {
+    "id": 501091,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.050999999046325684
+   },
+   {
+    "id": 501092,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.05829999968409538
+   },
+   {
+    "id": 501093,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.06560000032186508
+   },
+   {
+    "id": 501094,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.07289999723434448
+   },
+   {
+    "id": 501201,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.0272000003606081
+   },
+   {
+    "id": 501202,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.031099999323487282
+   },
+   {
+    "id": 501203,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.03500000014901161
+   },
+   {
+    "id": 501204,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.03889999911189079
+   },
+   {
+    "id": 501221,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.0544000007212162
+   },
+   {
+    "id": 501222,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.062199998646974564
+   },
+   {
+    "id": 501223,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.06989999860525131
+   },
+   {
+    "id": 501224,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.07769999653100967
+   },
+   {
+    "id": 501231,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.04529999941587448
+   },
+   {
+    "id": 501232,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.05180000141263008
+   },
+   {
+    "id": 501233,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.05829999968409538
+   },
+   {
+    "id": 501234,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.06480000168085098
+   },
+   {
+    "id": 501241,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 16.31999969482422
+   },
+   {
+    "id": 501242,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 18.649999618530273
+   },
+   {
+    "id": 501243,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 20.979999542236328
+   },
+   {
+    "id": 501244,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 23.309999465942383
+   }
+  ],
+  "941": [
+   {
+    "id": 941001,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.09319999814033508
+   },
+   {
+    "id": 941002,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.09319999814033508
+   },
+   {
+    "id": 941003,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.11659999936819077
+   },
+   {
+    "id": 941004,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.062199998646974564
+   },
+   {
+    "id": 941005,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.10360000282526016
+   },
+   {
+    "id": 941006,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 37.29999923706055
+   },
+   {
+    "id": 941007,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.12430000305175781
+   }
+  ],
+  "942": [
+   {
+    "id": 942001,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.09319999814033508
+   },
+   {
+    "id": 942002,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.09319999814033508
+   },
+   {
+    "id": 942003,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.11659999936819077
+   },
+   {
+    "id": 942004,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.062199998646974564
+   },
+   {
+    "id": 942005,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.10360000282526016
+   },
+   {
+    "id": 942006,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 37.29999923706055
+   },
+   {
+    "id": 942007,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.12430000305175781
+   }
+  ],
+  "943": [
+   {
+    "id": 943001,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.09319999814033508
+   },
+   {
+    "id": 943002,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.09319999814033508
+   },
+   {
+    "id": 943003,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.11659999936819077
+   },
+   {
+    "id": 943004,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.062199998646974564
+   },
+   {
+    "id": 943005,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.10360000282526016
+   },
+   {
+    "id": 943006,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 37.29999923706055
+   },
+   {
+    "id": 943007,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.12430000305175781
+   }
+  ],
+  "946": [
+   {
+    "id": 946001,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.09319999814033508
+   },
+   {
+    "id": 946002,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.09319999814033508
+   },
+   {
+    "id": 946003,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.11659999936819077
+   },
+   {
+    "id": 946004,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.062199998646974564
+   },
+   {
+    "id": 946005,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.10360000282526016
+   },
+   {
+    "id": 946006,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 37.29999923706055
+   },
+   {
+    "id": 946007,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.12430000305175781
+   }
+  ],
+  "947": [
+   {
+    "id": 947001,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.03959999978542328
+   },
+   {
+    "id": 947002,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.03959999978542328
+   },
+   {
+    "id": 947003,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.0494999997317791
+   },
+   {
+    "id": 947004,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.026399999856948853
+   },
+   {
+    "id": 947005,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.04399999976158142
+   },
+   {
+    "id": 947006,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 15.850000381469727
+   },
+   {
+    "id": 947007,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.052799999713897705
+   },
+   {
+    "id": 947008,
+    "prop": "FIGHT_PROP_HP",
+    "value": 203.14999389648438
+   },
+   {
+    "id": 947009,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 13.229999542236328
+   },
+   {
+    "id": 947010,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 15.739999771118164
+   }
+  ],
+  "951": [
+   {
+    "id": 951001,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 951002,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 951003,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.18209999799728394
+   },
+   {
+    "id": 951004,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.09709999710321426
+   },
+   {
+    "id": 951005,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.16189999878406525
+   },
+   {
+    "id": 951006,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 58.279998779296875
+   },
+   {
+    "id": 951007,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.19429999589920044
+   }
+  ],
+  "952": [
+   {
+    "id": 952001,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 952002,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 952003,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.18209999799728394
+   },
+   {
+    "id": 952004,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.09709999710321426
+   },
+   {
+    "id": 952005,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.16189999878406525
+   },
+   {
+    "id": 952006,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 58.279998779296875
+   },
+   {
+    "id": 952007,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.19429999589920044
+   }
+  ],
+  "953": [
+   {
+    "id": 953001,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 953002,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 953003,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.18209999799728394
+   },
+   {
+    "id": 953004,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.09709999710321426
+   },
+   {
+    "id": 953005,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.16189999878406525
+   },
+   {
+    "id": 953006,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 58.279998779296875
+   },
+   {
+    "id": 953007,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.19429999589920044
+   }
+  ],
+  "956": [
+   {
+    "id": 956001,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 956002,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 956003,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.18209999799728394
+   },
+   {
+    "id": 956004,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.09709999710321426
+   },
+   {
+    "id": 956005,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.16189999878406525
+   },
+   {
+    "id": 956006,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 58.279998779296875
+   },
+   {
+    "id": 956007,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.19429999589920044
+   }
+  ],
+  "961": [
+   {
+    "id": 961001,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 961002,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 961003,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.18209999799728394
+   },
+   {
+    "id": 961004,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.09709999710321426
+   },
+   {
+    "id": 961005,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.16189999878406525
+   },
+   {
+    "id": 961006,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 58.279998779296875
+   },
+   {
+    "id": 961007,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.19429999589920044
+   },
+   {
+    "id": 961008,
+    "prop": "FIGHT_PROP_HP",
+    "value": 746.8800048828125
+   },
+   {
+    "id": 961009,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 48.630001068115234
+   },
+   {
+    "id": 961010,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 57.869998931884766
+   }
+  ],
+  "962": [
+   {
+    "id": 962001,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 962002,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 962003,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.18209999799728394
+   },
+   {
+    "id": 962004,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.09709999710321426
+   },
+   {
+    "id": 962005,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.16189999878406525
+   },
+   {
+    "id": 962006,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 58.279998779296875
+   },
+   {
+    "id": 962007,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.19429999589920044
+   },
+   {
+    "id": 962008,
+    "prop": "FIGHT_PROP_HP",
+    "value": 746.8800048828125
+   },
+   {
+    "id": 962009,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 48.630001068115234
+   },
+   {
+    "id": 962010,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 57.869998931884766
+   }
+  ],
+  "963": [
+   {
+    "id": 963001,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 963002,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 963003,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.18209999799728394
+   },
+   {
+    "id": 963004,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.09709999710321426
+   },
+   {
+    "id": 963005,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.16189999878406525
+   },
+   {
+    "id": 963006,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 58.279998779296875
+   },
+   {
+    "id": 963007,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.19429999589920044
+   },
+   {
+    "id": 963008,
+    "prop": "FIGHT_PROP_HP",
+    "value": 746.8800048828125
+   },
+   {
+    "id": 963009,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 48.630001068115234
+   },
+   {
+    "id": 963010,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 57.869998931884766
+   }
+  ],
+  "964": [
+   {
+    "id": 964001,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 964002,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 964003,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.18209999799728394
+   },
+   {
+    "id": 964004,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.09709999710321426
+   },
+   {
+    "id": 964005,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.16189999878406525
+   },
+   {
+    "id": 964006,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 58.279998779296875
+   },
+   {
+    "id": 964007,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.19429999589920044
+   },
+   {
+    "id": 964008,
+    "prop": "FIGHT_PROP_HP",
+    "value": 746.8800048828125
+   },
+   {
+    "id": 964009,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 48.630001068115234
+   },
+   {
+    "id": 964010,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 57.869998931884766
+   }
+  ],
+  "965": [
+   {
+    "id": 965001,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 965002,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 965003,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.18209999799728394
+   },
+   {
+    "id": 965004,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.09709999710321426
+   },
+   {
+    "id": 965005,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.16189999878406525
+   },
+   {
+    "id": 965006,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 58.279998779296875
+   },
+   {
+    "id": 965007,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.19429999589920044
+   },
+   {
+    "id": 965008,
+    "prop": "FIGHT_PROP_HP",
+    "value": 746.8800048828125
+   },
+   {
+    "id": 965009,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 48.630001068115234
+   },
+   {
+    "id": 965010,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 57.869998931884766
+   }
+  ],
+  "966": [
+   {
+    "id": 966001,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 300
+   }
+  ],
+  "967": [
+   {
+    "id": 967001,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 1
+   }
+  ],
+  "968": [
+   {
+    "id": 968001,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": -300
+   }
+  ],
+  "969": [
+   {
+    "id": 969001,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": -500
+   }
+  ],
+  "970": [
+   {
+    "id": 970001,
+    "prop": "FIGHT_PROP_SUB_HURT",
+    "value": 0.800000011920929
+   }
+  ],
+  "971": [
+   {
+    "id": 971001,
+    "prop": "FIGHT_PROP_ADD_HURT",
+    "value": 0.800000011920929
+   }
+  ],
+  "972": [
+   {
+    "id": 972001,
+    "prop": "FIGHT_PROP_PHYSICAL_SUB_HURT",
+    "value": 0.800000011920929
+   }
+  ],
+  "973": [
+   {
+    "id": 973001,
+    "prop": "FIGHT_PROP_ICE_SUB_HURT",
+    "value": 0.800000011920929
+   }
+  ],
+  "974": [
+   {
+    "id": 974001,
+    "prop": "FIGHT_PROP_ROCK_SUB_HURT",
+    "value": 0.800000011920929
+   }
+  ],
+  "975": [
+   {
+    "id": 975001,
+    "prop": "FIGHT_PROP_WIND_SUB_HURT",
+    "value": 0.800000011920929
+   }
+  ],
+  "976": [
+   {
+    "id": 976001,
+    "prop": "FIGHT_PROP_GRASS_SUB_HURT",
+    "value": 0.800000011920929
+   }
+  ],
+  "977": [
+   {
+    "id": 977001,
+    "prop": "FIGHT_PROP_WATER_SUB_HURT",
+    "value": 0.800000011920929
+   }
+  ],
+  "978": [
+   {
+    "id": 978001,
+    "prop": "FIGHT_PROP_ELEC_SUB_HURT",
+    "value": 0.800000011920929
+   }
+  ],
+  "979": [
+   {
+    "id": 979001,
+    "prop": "FIGHT_PROP_FIRE_SUB_HURT",
+    "value": 0.800000011920929
+   }
+  ],
+  "980": [
+   {
+    "id": 980001,
+    "prop": "FIGHT_PROP_PHYSICAL_ADD_HURT",
+    "value": 0.800000011920929
+   }
+  ],
+  "981": [
+   {
+    "id": 981001,
+    "prop": "FIGHT_PROP_ICE_ADD_HURT",
+    "value": 0.800000011920929
+   }
+  ],
+  "982": [
+   {
+    "id": 982001,
+    "prop": "FIGHT_PROP_ROCK_ADD_HURT",
+    "value": 0.800000011920929
+   }
+  ],
+  "983": [
+   {
+    "id": 983001,
+    "prop": "FIGHT_PROP_WIND_ADD_HURT",
+    "value": 0.800000011920929
+   }
+  ],
+  "984": [
+   {
+    "id": 984001,
+    "prop": "FIGHT_PROP_GRASS_ADD_HURT",
+    "value": 0.800000011920929
+   }
+  ],
+  "985": [
+   {
+    "id": 985001,
+    "prop": "FIGHT_PROP_WATER_ADD_HURT",
+    "value": 0.800000011920929
+   }
+  ],
+  "986": [
+   {
+    "id": 986001,
+    "prop": "FIGHT_PROP_ELEC_ADD_HURT",
+    "value": 0.800000011920929
+   }
+  ],
+  "987": [
+   {
+    "id": 987001,
+    "prop": "FIGHT_PROP_FIRE_ADD_HURT",
+    "value": 0.800000011920929
+   }
+  ],
+  "988": [
+   {
+    "id": 988001,
+    "prop": "FIGHT_PROP_SPEED_PERCENT",
+    "value": 0.30000001192092896
+   }
+  ],
+  "989": [
+   {
+    "id": 989001,
+    "prop": "FIGHT_PROP_SKILL_CD_MINUS_RATIO",
+    "value": 0.5
+   }
+  ],
+  "990": [
+   {
+    "id": 990001,
+    "prop": "FIGHT_PROP_HEALED_ADD",
+    "value": 0.800000011920929
+   }
+  ],
+  "991": [
+   {
+    "id": 991001,
+    "prop": "FIGHT_PROP_HEAL_ADD",
+    "value": 0.800000011920929
+   }
+  ],
+  "992": [
+   {
+    "id": 992001,
+    "prop": "FIGHT_PROP_SHIELD_COST_MINUS_RATIO",
+    "value": 0.800000011920929
+   }
+  ],
+  "993": [
+   {
+    "id": 993001,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.800000011920929
+   }
+  ],
+  "994": [
+   {
+    "id": 994001,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.800000011920929
+   }
+  ],
+  "995": [
+   {
+    "id": 995001,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 995002,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 995003,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.18209999799728394
+   },
+   {
+    "id": 995004,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.09709999710321426
+   },
+   {
+    "id": 995005,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.16189999878406525
+   },
+   {
+    "id": 995006,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 58.279998779296875
+   },
+   {
+    "id": 995007,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.19429999589920044
+   }
+  ],
+  "996": [
+   {
+    "id": 996001,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.09319999814033508
+   },
+   {
+    "id": 996002,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.09319999814033508
+   },
+   {
+    "id": 996003,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.11659999936819077
+   },
+   {
+    "id": 996004,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.062199998646974564
+   },
+   {
+    "id": 996005,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.10360000282526016
+   },
+   {
+    "id": 996006,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 37.29999923706055
+   },
+   {
+    "id": 996007,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.12430000305175781
+   },
+   {
+    "id": 996008,
+    "prop": "FIGHT_PROP_HP",
+    "value": 478
+   },
+   {
+    "id": 996009,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 31.1200008392334
+   },
+   {
+    "id": 996010,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 37.040000915527344
+   }
+  ],
+  "997": [
+   {
+    "id": 997001,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.09319999814033508
+   },
+   {
+    "id": 997002,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.09319999814033508
+   },
+   {
+    "id": 997003,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.11659999936819077
+   },
+   {
+    "id": 997004,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.062199998646974564
+   },
+   {
+    "id": 997005,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.10360000282526016
+   },
+   {
+    "id": 997006,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 37.29999923706055
+   },
+   {
+    "id": 997007,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.12430000305175781
+   }
+  ],
+  "998": [
+   {
+    "id": 998001,
+    "prop": "FIGHT_PROP_HP_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 998002,
+    "prop": "FIGHT_PROP_ATTACK_PERCENT",
+    "value": 0.14569999277591705
+   },
+   {
+    "id": 998003,
+    "prop": "FIGHT_PROP_DEFENSE_PERCENT",
+    "value": 0.18209999799728394
+   },
+   {
+    "id": 998004,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 0.09709999710321426
+   },
+   {
+    "id": 998005,
+    "prop": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "value": 0.16189999878406525
+   },
+   {
+    "id": 998006,
+    "prop": "FIGHT_PROP_ELEMENT_MASTERY",
+    "value": 58.279998779296875
+   },
+   {
+    "id": 998007,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 0.19429999589920044
+   }
+  ],
+  "999": [
+   {
+    "id": 999001,
+    "prop": "FIGHT_PROP_CRITICAL_HURT",
+    "value": 3.5
+   },
+   {
+    "id": 999002,
+    "prop": "FIGHT_PROP_CRITICAL",
+    "value": 1
+   },
+   {
+    "id": 999003,
+    "prop": "FIGHT_PROP_ATTACK",
+    "value": 233333
+   },
+   {
+    "id": 999004,
+    "prop": "FIGHT_PROP_DEFENSE",
+    "value": 233333
+   }
+  ]
+ }
+}

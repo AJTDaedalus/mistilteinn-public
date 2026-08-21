@@ -315,15 +315,18 @@ Each task below is **one commit**. Commit message form:
 
 *Sub-branch `feat/yuanshen-snapshots`. Parallel-safe with Chunk D.*
 
-### E.1 — Port `fetch.py` with a GitLab adapter (pinned SHA, byte cache)
-### E.2 — Port the TextMap `base ⊕ overwrite` merge + anchor assertion
-### E.3 — Build the table catalog from `ExcelBinOutput/` (do not guess table names)
-### E.4 — Port `build_column_dicts.py` / `build_upstream_mv.py` to the Genshin tables
-### E.5 — Commit the first snapshot (avatar / weapon / reliquary) + `provenance.json`
-### E.6 — Assert no gate, test, or importer reaches the network at run time
+### [x] E.1 — Port `fetch.py` with a GitLab adapter (pinned SHA, byte cache)
+### [x] E.2 — Port the TextMap `base ⊕ overwrite` merge + anchor assertion
+### [x] E.3 — Build the table catalog from `ExcelBinOutput/` (do not guess table names)
+### [x] E.4 — Port `build_column_dicts.py` / `build_upstream_mv.py` to the Genshin tables
+### [x] E.5 — Commit the first snapshot (avatar / weapon / reliquary) + `provenance.json`
+### [x] E.6 — Assert no gate, test, or importer reaches the network at run time
 
-- **Accept (chunk):** `python -m scripts.yuanshen.fetch --lang en --merge` works and asserts its
-  anchor; snapshots committed; `pytest` passes with networking disabled.
+- **[x] Accept (chunk):** `python -m scripts.yuanshen.fetch --lang en --merge` works and asserts
+  its anchor; snapshots committed; `pytest` passes with networking disabled. Delivered
+  2026-08-21 (PR #4); see the E.1-E.6 entries in `docs/LOG_mistilteinn.md`, including why
+  E.4 is a catalog plus a snapshot builder rather than a line-for-line port of
+  `build_column_dicts.py`.
 
 ---
 
