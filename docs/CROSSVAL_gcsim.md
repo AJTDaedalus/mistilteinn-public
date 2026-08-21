@@ -32,6 +32,10 @@ citations it invalidates — the same rule the YuanShenResources snapshot follow
 | element list | `pkg/core/attributes/element.go:13-27` | `formula/genshin/tags.py` |
 | attack-tag (scope) list | `pkg/core/attacks/attack.go:5-20` | `formula/genshin/tags.py` |
 | strike types | `pkg/core/attacks/attack.go:52-59` | `formula/genshin/tags.py` |
+| character base stats: `base * GrowCurve[curve][level-1]` + the ascension row | `pkg/core/player/character/basestat.go:73-101` | `services/stat_calculator.py:add_character` |
+| a character starts at **100% Energy Recharge** (`res[ER] += 1`) | `pkg/core/player/character/basestat.go:82` | `services/stat_calculator.py:BASE_ENERGY_RECHARGE` |
+| base CRIT rate 5% / CRIT DMG 50% — **and the payloads' disagreement with it** | `pkg/core/player/character/basestat.go:82-84` | `models/character.py:base_crit_rate`, migration `55afb8679231` |
+| weapon base stats: each published prop is `init_value * GrowCurve[its own curve][level-1]`, plus the ascension row | `pkg/core/player/character/basestat.go:102-126` | `services/stat_calculator.py:add_weapon` |
 
 Extend this table in the same commit that adds the citation. A constant whose row is missing
 here is a constant nobody can re-check.

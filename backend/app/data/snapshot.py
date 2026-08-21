@@ -115,9 +115,28 @@ def artifact_main_stat_value(rarity: int, level: int, prop: str) -> float:
     return float(value)
 
 
-def main_stat_pools() -> dict[str, list[str]]:
-    """Slot key → the main stats it can roll, as the snapshot spells them."""
-    return _load("artifact_main_stat_pools")["pools"]
+def artifact_level_count(rarity: int) -> int:
+    """How many upgrade levels a rarity publishes. **Rarity 1 has 16, the rest 21.**"""
+    values = _load("artifact_main_stat_values")["values"]
+    by_level = values.get(str(rarity))
+    if by_level is None:
+        msg = f"no main-stat values for rarity {rarity}; the snapshot has {sorted(values)}"
+        raise SnapshotUnavailableError(msg)
+    return len(by_level)
+
+
+def main_stat_pools() -> dict[str, tuple[str, ...]]:
+    """Slot key → the main stats it can roll, as the snapshot spells them.
+
+    Returns tuples over a fresh dict, not the parsed structure: everything here is behind
+    an `@cache`, so a caller that sorted or filtered a returned list in place would corrupt
+    the table for every later reader in the process, and it would stay corrupt until
+    restart. "One reader" only means something if what it hands out cannot be edited.
+    """
+    return {
+        slot: tuple(props)
+        for slot, props in _load("artifact_main_stat_pools")["pools"].items()
+    }
 
 
 def substat_rolls(depot_id: int) -> list[dict[str, Any]]:
@@ -127,7 +146,8 @@ def substat_rolls(depot_id: int) -> list[dict[str, Any]]:
     if rolls is None:
         msg = f"no substat depot {depot_id}; the snapshot has {sorted(depots)[:8]}…"
         raise SnapshotUnavailableError(msg)
-    return rolls
+    # Copied for the same reason as `main_stat_pools` — these dicts live in the cache.
+    return [dict(roll) for roll in rolls]
 
 
 def substat_depots_for_rarity(rarity: int) -> list[int]:

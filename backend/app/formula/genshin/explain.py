@@ -30,7 +30,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from app.formula.builder import const
-from app.formula.genshin.tags import ALL_SOURCES, stat_tag
+from app.formula.genshin.tags import ALL_SOURCES, Q, stat_tag
 
 if TYPE_CHECKING:
     from app.formula.tags import Tag
@@ -92,6 +92,16 @@ class ContributionLog:
         if value == 0:
             return
         registration = tag if tag is not None else stat_tag(quantity)
+        declared = registration.get(Q)
+        if declared != quantity:
+            # Otherwise the contribution registers into one pool while the account reports
+            # another, and *both* the DAG total and the printed explanation look plausible
+            # — the precise drift this class exists to make impossible.
+            msg = (
+                f"tag {registration} registers under {declared!r} but the contribution "
+                f"says {quantity!r}. The graph and the account would disagree."
+            )
+            raise ValueError(msg)
         self.registry.register(registration, const(value))
         self.contributions.append(
             Contribution(

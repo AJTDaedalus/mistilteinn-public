@@ -263,12 +263,35 @@ def test_the_published_base_crit_and_em_are_stored_rather_than_assumed(ayaka):
     assert fields["base_elemental_mastery"] == 0
 
 
+_CURVES = [
+    {"type": "FIGHT_PROP_BASE_HP", "grow_curve": "GROW_CURVE_HP_S5"},
+    {"type": "FIGHT_PROP_BASE_ATTACK", "grow_curve": "GROW_CURVE_ATTACK_S5"},
+    {"type": "FIGHT_PROP_BASE_DEFENSE", "grow_curve": "GROW_CURVE_HP_S5"},
+]
+
+
 def test_a_character_with_innate_elemental_mastery_keeps_it():
     """Lauma's 200 base EM would be invisible if the mapping assumed gcsim's zero."""
     payload = {
         "name": "Lauma", "weapon": "WEAPON_CATALYST", "rarity": "QUALITY_ORANGE",
         "element": "Dendro", "elemental_mastery": 200, "crit_rate": 0.05, "crit_dmg": 0.5,
-        "stats_modifier": {"ascension": [], "prop_grow_curves": []},
+        "stats_modifier": {"ascension": [], "prop_grow_curves": _CURVES},
     }
 
     assert character_fields("10000119", payload)["base_elemental_mastery"] == 200
+
+
+def test_a_character_with_no_growth_curves_fails_at_import_not_at_calculation():
+    """The one mapping in this module that used to default instead of raising.
+
+    A character seeded without curves imports clean, the seed exits zero, and the failure
+    surfaces much later as `publishes no growth curve` from the stat calculator — a long
+    way from the thing that caused it.
+    """
+    payload = {
+        "name": "Curveless", "weapon": "WEAPON_CATALYST", "rarity": "QUALITY_ORANGE",
+        "element": "Dendro", "stats_modifier": {"ascension": [], "prop_grow_curves": []},
+    }
+
+    with pytest.raises(NanokaMappingError, match="no growth curve"):
+        character_fields("99999", payload)

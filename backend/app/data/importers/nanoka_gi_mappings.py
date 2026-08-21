@@ -89,18 +89,43 @@ def character_fields(key: str, payload: dict[str, Any]) -> dict[str, Any]:
         "base_def": payload.get("base_def", 0.0),
         "ascension_stat_type": ascension_stat_type(key, ascension),
         "ascension_stats": ascension,
-        # Without the curves the three base stats above cannot be evaluated at any level.
-        "prop_curves": {
-            entry["type"]: entry["grow_curve"]
-            for entry in payload.get("stats_modifier", {}).get("prop_grow_curves") or []
-            if entry.get("type") and entry.get("grow_curve")
-        },
+        # Without the curves the three base stats above cannot be evaluated at any level,
+        # so this raises rather than defaulting — it was the one mapping in this module
+        # that let a missing field through, and the failure would have surfaced much later
+        # as a calculation error on a database that seeded clean.
+        "prop_curves": _prop_curves(key, payload),
         "base_elemental_mastery": payload.get("elemental_mastery", 0.0) or 0.0,
         "base_crit_rate": payload.get("crit_rate", 0.0) or 0.0,
         "base_crit_dmg": payload.get("crit_dmg", 0.0) or 0.0,
         "burst_energy_cost": burst_energy_cost(payload),
         "icon": payload.get("icon"),
     }
+
+
+def _prop_curves(key: str, payload: dict[str, Any]) -> dict[str, str]:
+    """`{FIGHT_PROP_BASE_*: GROW_CURVE_*}` from `stats_modifier.prop_grow_curves`.
+
+    All 150 characters at 7.0.51 publish exactly three complete entries, and the three base
+    stats are unusable without them, so anything else raises. Note that **every character
+    grows DEF on an HP curve** — the pairing is read here, never derived from the stat.
+    """
+    entries = payload.get("stats_modifier", {}).get("prop_grow_curves") or []
+    curves = {
+        entry["type"]: entry["grow_curve"]
+        for entry in entries
+        if entry.get("type") and entry.get("grow_curve")
+    }
+    missing = {"FIGHT_PROP_BASE_HP", "FIGHT_PROP_BASE_ATTACK", "FIGHT_PROP_BASE_DEFENSE"} - set(
+        curves,
+    )
+    if missing:
+        msg = (
+            f"character {key}: no growth curve for {sorted(missing)}. The published base "
+            f"stats cannot be evaluated at any level without them, and a character seeded "
+            f"without them would fail at calculation time instead of at import time."
+        )
+        raise NanokaMappingError(msg)
+    return curves
 
 
 def ascension_stat_type(key: str, ascension: list[dict[str, Any]]) -> StatType | None:

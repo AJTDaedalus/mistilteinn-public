@@ -144,3 +144,15 @@ def test_a_scope_gated_contribution_is_still_attributed():
     (contribution,) = log.for_quantity(tags.Q_DMG_BONUS)
     assert contribution.tag.get(tags.SCOPE) == "charged"
     assert "C2" in str(contribution)
+
+
+def test_a_tag_that_registers_under_another_quantity_is_rejected():
+    """Otherwise the value lands in one pool while the account reports another — and both
+    the DAG total and the printed explanation look entirely plausible."""
+    log = _log()
+
+    with pytest.raises(ValueError, match="the account would disagree"):
+        log.add(
+            tags.Q_DMG_BONUS, 0.4, tags.SRC_CONSTELLATION, "C2",
+            tag=tags.scoped_stat_tag(tags.Q_ATK_PCT, "charged"),
+        )

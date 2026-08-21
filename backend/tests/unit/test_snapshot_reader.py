@@ -107,3 +107,27 @@ def test_a_missing_snapshot_file_says_how_to_rebuild_it(monkeypatch, tmp_path):
             snapshot.growth_curve("avatar", "GROW_CURVE_HP_S5", 1)
     finally:
         snapshot._load.cache_clear()
+
+
+def test_what_the_reader_hands_out_cannot_corrupt_the_cache():
+    """Everything here is behind an `@cache`; a caller that edited a returned structure
+    would corrupt the table for every later reader in the process, until restart."""
+    pools = snapshot.main_stat_pools()
+    pools["equip_bracer"] = ("FIGHT_PROP_CRITICAL_HURT",)
+
+    assert snapshot.main_stat_pools()["equip_bracer"] == ("FIGHT_PROP_HP",)
+
+    rolls = snapshot.substat_rolls(501)
+    rolls[0]["value"] = -1
+
+    assert snapshot.substat_rolls(501)[0]["value"] > 0
+
+
+def test_rarity_one_publishes_fewer_upgrade_levels_than_the_rest():
+    assert snapshot.artifact_level_count(1) == 16
+    assert snapshot.artifact_level_count(5) == 21
+
+
+def test_asking_the_level_count_for_an_unpublished_rarity_raises():
+    with pytest.raises(snapshot.SnapshotUnavailableError, match="no main-stat values"):
+        snapshot.artifact_level_count(9)

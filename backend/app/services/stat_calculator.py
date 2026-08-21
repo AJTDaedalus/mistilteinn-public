@@ -44,7 +44,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from app.data.snapshot import artifact_main_stat_value, growth_curve
+from app.data.snapshot import (
+    artifact_level_count,
+    artifact_main_stat_value,
+    growth_curve,
+    main_stat_pools,
+)
 from app.formula.genshin import tags
 from app.formula.genshin.explain import ContributionLog
 
@@ -221,28 +226,60 @@ def add_weapon(
     _check_range("weapon level", level, 1, MAX_WEAPON_LEVEL)
     _check_range("ascension phase", ascension_phase, 0, MAX_ASCENSION_PHASE)
 
+    registered_base_atk = False
     for prop in weapon.props:
-        prop_type = str(prop.get("prop_type", ""))
+        # Not stringified: `weapons.sub_stat_type` is **NULL** for the ten no-substat
+        # weapons (D.4), and `str(None)` is the literal `"None"` — which is neither a
+        # FIGHT_PROP nor the absent marker, so it raised on every weapon read from the
+        # database while passing on every one read from a fixture.
+        prop_type = prop.get("prop_type")
         quantity = _quantity_for_prop(prop_type, allow_absent=True)
         if quantity is None:
             continue
         curve = str(prop.get("type", ""))
-        value = float(prop.get("init_value", 0.0)) * growth_curve("weapon", curve, level)
+        value = float(prop.get("init_value") or 0.0) * growth_curve("weapon", curve, level)
         log.add(quantity, value, tags.SRC_WEAPON, f"{weapon.name} level {level} ({curve})")
+        registered_base_atk = registered_base_atk or quantity == tags.Q_BASE_ATK
+
+    # Absence is legitimate in the substat slot and nowhere else. A payload whose *base
+    # ATK* prop is absent would otherwise produce a weapon contributing nothing at all —
+    # the "silently weaker build" `_quantity_for_prop` exists to prevent.
+    if weapon.props and not registered_base_atk:
+        msg = (
+            f"{weapon.name} publishes {len(weapon.props)} prop(s) but no base ATK. A "
+            f"weapon with no stats at all publishes none (the eight TPS entries, D.4); "
+            f"one that publishes props must include FIGHT_PROP_BASE_ATTACK."
+        )
+        raise StatInputError(msg)
 
     if ascension_phase:
+        row = weapon.ascension.get(str(ascension_phase))
+        if row is None:
+            # The character path raises here; this one used to return `{}`, which cost
+            # Aquila 187 of its 674 base ATK — a 28% understatement, silently, on any
+            # caller that forgot to pass the ascension table.
+            msg = (
+                f"{weapon.name} publishes no ascension row for phase {ascension_phase} "
+                f"(it has {sorted(weapon.ascension) or 'none'}). A weapon with no "
+                f"ascension table cannot be ascended; pass phase 0."
+            )
+            raise StatInputError(msg)
         _add_ascension_row(
-            log,
-            weapon.ascension.get(str(ascension_phase), {}),
-            tags.SRC_WEAPON,
-            f"{weapon.name} ascension phase {ascension_phase}",
+            log, row, tags.SRC_WEAPON, f"{weapon.name} ascension phase {ascension_phase}",
         )
 
 
 def add_artifact(log: ContributionLog, artifact: ArtifactStats) -> None:
-    """Register one artifact's main stat and substats."""
-    _check_range("artifact level", artifact.level, 0, 20)
+    """Register one artifact's main stat and substats.
+
+    Validates the piece against the game before valuing it: a flower with a CRIT DMG main
+    stat cannot exist, and accepting one produces a fully plausible, entirely fictional
+    build — which a GOOD import or an optimizer candidate could otherwise introduce
+    without anything complaining.
+    """
     _check_range("artifact rarity", artifact.rarity, 1, 5)
+    _check_range("artifact level", artifact.level, 0, max_artifact_level(artifact.rarity))
+    _check_main_stat(artifact.slot, artifact.main_stat)
 
     # Quantity first, value second: an unknown prop should report "no DAG quantity, add it
     # here", not "not a main stat at rarity 5", which reads as a data problem when it is a
@@ -256,13 +293,43 @@ def add_artifact(log: ContributionLog, artifact: ArtifactStats) -> None:
         f"{artifact.slot} main stat +{artifact.level}",
     )
     for substat in artifact.substats:
-        stat = str(substat.get("stat", ""))
         log.add(
-            _quantity_for_prop(stat),
+            _quantity_for_prop(substat.get("stat")),
             float(substat.get("value", 0.0)),
             tags.SRC_ARTIFACT,
             f"{artifact.slot} substat",
         )
+
+
+def max_artifact_level(rarity: int) -> int:
+    """The highest upgrade level a piece of this rarity has.
+
+    Not the constant 20: **rarity 1 publishes only 16 rows** (+0 to +4). A rarity-blind
+    range check let a 1★ at +20 escape as a `SnapshotUnavailableError` — a caller catching
+    `StatInputError` to reject bad build input would crash instead, and the message blamed
+    the snapshot for what is a caller's mistake.
+    """
+    return artifact_level_count(rarity) - 1
+
+
+def _check_main_stat(slot: str, main_stat: str) -> None:
+    """Reject a main stat the slot cannot roll.
+
+    Checked against `app/data/yuanshen/snapshot/artifact_main_stat_pools.json` rather than
+    `app.models.artifact.main_stats_for`, which is the same data: services do not import the
+    ORM layer, and the snapshot reader is the one place that table is read from anyway.
+    """
+    pools = main_stat_pools()
+    pool = pools.get(slot)
+    if pool is None:
+        msg = f"{slot!r} is not an artifact slot; the five are {sorted(pools)}"
+        raise StatInputError(msg)
+    if main_stat.upper() not in pool:
+        msg = (
+            f"{slot} cannot roll {main_stat} as a main stat. It rolls {sorted(pool)}. "
+            f"A piece the game cannot produce would score as a real one."
+        )
+        raise StatInputError(msg)
 
 
 def build_log(registry: NodeRegistry) -> ContributionLog:
@@ -305,17 +372,29 @@ _PROP_QUANTITIES: dict[str, str] = {
     },
 }
 
-#: The two ways the source spells "no stat here" (C.2). Neither is an error.
+#: The ways the source spells "no stat here" (C.2), minus the `None` that
+#: `_quantity_for_prop` handles before it gets here. Kept in step with
+#: `app/models/enums.py:_ABSENT_STAT_KEYS`; a test asserts they agree.
 _ABSENT_PROPS = frozenset({"", "FIGHT_PROP_NONE"})
 
 
-def _quantity_for_prop(prop: str, *, allow_absent: bool = False) -> str | None:
+def _quantity_for_prop(prop: str | None, *, allow_absent: bool = False) -> str | None:
     """Map a `FIGHT_PROP_*` key to a DAG quantity.
+
+    Accepts `None`, because that is one of the **three** ways the data spells "no stat
+    here": a JSON null, an empty string, and the literal `FIGHT_PROP_NONE`. `enums.py`'s
+    `_ABSENT_STAT_KEYS` has said so since C.2; this module briefly disagreed, and the
+    disagreement only showed up on rows read from the database rather than from a fixture.
 
     Raises on an unknown prop rather than skipping it. A weapon whose substat this build
     does not know would otherwise be imported as having no substat — the exact failure D.4's
     review round fixed one layer up, and it would be no less quiet here.
     """
+    if prop is None:
+        if allow_absent:
+            return None
+        msg = "a null prop type is the absent-stat marker, which is not a quantity"
+        raise StatInputError(msg)
     upper = prop.upper()
     if upper in _ABSENT_PROPS:
         if allow_absent:

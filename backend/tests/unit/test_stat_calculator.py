@@ -231,23 +231,35 @@ def test_substats_are_taken_as_rolled():
 
 
 def test_a_five_artifact_build_sums_into_one_pool_per_stat():
+    """Each piece carries a main stat its slot can actually roll — see the slot check."""
     log = build_log(NodeRegistry())
-    for slot in ("equip_bracer", "equip_necklace", "equip_shoes", "equip_ring", "equip_dress"):
+    for slot, main in (
+        ("equip_bracer", "FIGHT_PROP_HP"),
+        ("equip_necklace", "FIGHT_PROP_ATTACK"),
+        ("equip_shoes", "FIGHT_PROP_ATTACK_PERCENT"),
+        ("equip_ring", "FIGHT_PROP_ICE_ADD_HURT"),
+        ("equip_dress", "FIGHT_PROP_CRITICAL"),
+    ):
         add_artifact(log, ArtifactStats(
-            slot=slot, rarity=5, level=20, main_stat="FIGHT_PROP_HP",
+            slot=slot, rarity=5, level=20, main_stat=main,
             substats=[{"stat": "FIGHT_PROP_CRITICAL", "value": 0.05}],
         ))
 
-    assert _totals(log).compute(stats.CRIT_RATE_NODE) == pytest.approx(0.25)
+    assert _totals(log).compute(stats.CRIT_RATE_NODE) == pytest.approx(0.25 + 0.311, abs=0.01)
 
 
 def test_an_unknown_prop_raises_rather_than_being_dropped():
-    """D.4's lesson one layer down: a stat this build does not know must not import as none."""
+    """D.4's lesson one layer down: a stat this build does not know must not import as none.
+
+    Exercised on a **substat**, because a main stat now meets the slot check first — an
+    unknown prop there is rejected for a better reason.
+    """
     log = build_log(NodeRegistry())
 
     with pytest.raises(StatInputError, match="no DAG quantity"):
         add_artifact(log, ArtifactStats(
-            slot="equip_ring", rarity=5, level=20, main_stat="FIGHT_PROP_LUNAR_CHARGE",
+            slot="equip_ring", rarity=5, level=20, main_stat="FIGHT_PROP_ICE_ADD_HURT",
+            substats=[{"stat": "FIGHT_PROP_LUNAR_CHARGE", "value": 1.0}],
         ))
 
 
@@ -283,8 +295,89 @@ def test_an_ascension_phase_beyond_the_published_rows_raises():
 
 
 def test_the_absent_stat_marker_is_not_a_quantity_outside_a_weapon_prop():
-    """Weapons may publish `FIGHT_PROP_NONE`; an artifact main stat may not be nothing."""
+    """Weapons may publish `FIGHT_PROP_NONE`; an artifact substat may not be nothing."""
     with pytest.raises(StatInputError, match="absent-stat marker"):
         add_artifact(build_log(NodeRegistry()), ArtifactStats(
-            slot="equip_ring", rarity=5, level=20, main_stat="FIGHT_PROP_NONE",
+            slot="equip_ring", rarity=5, level=20, main_stat="FIGHT_PROP_ICE_ADD_HURT",
+            substats=[{"stat": "FIGHT_PROP_NONE", "value": 0.1}],
+        ))
+
+
+# ---- The refusals the PR #6 review asked for ------------------------------
+
+def test_a_missing_weapon_ascension_row_raises_rather_than_contributing_nothing():
+    """It cost Aquila 187 of its 674 base ATK — 28%, silently, with no log line.
+
+    The character path already raised here; the weapon path returned `{}`.
+    """
+    unascended = WeaponStats(name="Aquila Favonia", props=_aquila().props)
+
+    with pytest.raises(StatInputError, match="no ascension row for phase 6"):
+        add_weapon(build_log(NodeRegistry()), unascended, level=90, ascension_phase=6)
+
+
+def test_a_weapon_with_a_null_substat_is_read_from_the_database_shape():
+    """`weapons.sub_stat_type` is **NULL** for the ten no-substat weapons (D.4).
+
+    `str(None)` is the literal `"None"`, which is neither a FIGHT_PROP nor an absent
+    marker — so this path raised on every weapon read from the database and passed on every
+    weapon read from a fixture.
+    """
+    log = build_log(NodeRegistry())
+    add_weapon(log, WeaponStats(
+        name="Dull Blade",
+        props=[
+            {"prop_type": "FIGHT_PROP_BASE_ATTACK", "init_value": 23.0,
+             "type": "GROW_CURVE_ATTACK_101"},
+            {"prop_type": None, "init_value": None, "type": None},
+        ],
+    ), level=1, ascension_phase=0)
+
+    assert [c.quantity for c in log.contributions] == [tags.Q_BASE_ATK]
+
+
+def test_a_weapon_publishing_props_but_no_base_atk_raises():
+    """Absence is legitimate in the substat slot and nowhere else."""
+    with pytest.raises(StatInputError, match="no base ATK"):
+        add_weapon(build_log(NodeRegistry()), WeaponStats(
+            name="Statless", props=[{"prop_type": None, "init_value": 0, "type": None}],
+        ), level=1, ascension_phase=0)
+
+
+def test_a_slot_cannot_carry_a_main_stat_it_does_not_roll():
+    """A flower with CRIT DMG cannot exist; accepting one scores a fictional build."""
+    with pytest.raises(StatInputError, match="cannot roll"):
+        add_artifact(build_log(NodeRegistry()), ArtifactStats(
+            slot="equip_bracer", rarity=5, level=20, main_stat="FIGHT_PROP_CRITICAL_HURT",
+        ))
+
+
+def test_an_unknown_slot_is_rejected():
+    with pytest.raises(StatInputError, match="not an artifact slot"):
+        add_artifact(build_log(NodeRegistry()), ArtifactStats(
+            slot="equip_cape", rarity=5, level=20, main_stat="FIGHT_PROP_HP",
+        ))
+
+
+def test_the_artifact_level_range_depends_on_rarity():
+    """Rarity 1 publishes 16 rows, not 21 — a rarity-blind check let a 1★ +20 escape as a
+    `SnapshotUnavailableError`, which a caller filtering bad input would not catch."""
+    with pytest.raises(StatInputError, match=r"outside 0\.\.15"):
+        add_artifact(build_log(NodeRegistry()), ArtifactStats(
+            slot="equip_bracer", rarity=1, level=20, main_stat="FIGHT_PROP_HP",
+        ))
+
+    log = build_log(NodeRegistry())
+    add_artifact(log, ArtifactStats(
+        slot="equip_bracer", rarity=1, level=15, main_stat="FIGHT_PROP_HP",
+    ))
+    assert log.contributions
+
+
+def test_a_null_prop_outside_a_weapon_slot_is_still_an_error():
+    """The database's NULL is legitimate in a weapon's substat and nowhere else."""
+    with pytest.raises(StatInputError, match="null prop type"):
+        add_artifact(build_log(NodeRegistry()), ArtifactStats(
+            slot="equip_ring", rarity=5, level=20, main_stat="FIGHT_PROP_ICE_ADD_HURT",
+            substats=[{"stat": None, "value": 0.1}],
         ))
