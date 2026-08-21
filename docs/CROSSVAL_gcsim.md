@@ -78,7 +78,20 @@ This project uses `>=`, which is continuous.
 `test_the_curve_is_continuous_at_exactly_three_quarters` pins it. A crossval case against an
 enemy at exactly 75% resistance would disagree with gcsim by 2.5x; nothing else would.
 
-### 2. Crit is computed, not rolled
+### 2. Growth curves are float32 in the dump and decimal in gcsim
+
+`GROW_CURVE_HP_S5` at level 90 is **`8.73900032043457`** in the YuanShenResources dump —
+exactly the float32 representation of `8.739` — while gcsim's data pipeline stores the
+decimal `8.739`. One is the value the game's binary holds; the other is the value a designer
+typed.
+
+This project keeps the datamined value. Rounding it to look tidier would be inventing a
+number, and the whole snapshot exists so that values are read rather than chosen.
+
+The two differ by **3.7e-8 relative**, which propagates to ≤2.5e-8 on any stat and on any
+damage figure. That is the entire reason the tolerance below is not zero.
+
+### 3. Crit is computed, not rolled
 
 gcsim simulates and rolls against crit rate (`damage.go:101`). A calculator reports
 `non_crit`, `crit` and `expected = 1 + clamp(rate) * dmg` — an optimizer has to score on the
@@ -88,13 +101,34 @@ happened to roll.
 
 ## Tolerance
 
-**Not yet set — F.8 sets it, with its justification, and this section is where it goes.**
+**`1e-7` relative**, set in F.8 at `backend/tests/crossval/test_gcsim_crossval.py`.
 
-The number will not be zero and the reason is structural: gcsim simulates a rotation frame
-by frame with its own rounding at each step, while this project evaluates a single
-configured hit. What has to be argued is *why* a given tolerance is small enough that a real
-formula error could not hide inside it. "It matched to 3 decimal places" is a measurement,
-not a justification.
+### Why it is not zero
+
+Exactly one understood difference separates the two sides on the `ayaka_normal_1` case, and
+it is not arithmetic: the float32-vs-decimal growth curve above, worth ≤2.5e-8 relative.
+Everything else agrees exactly — **crit rate and crit DMG, which no curve touches, match bit
+for bit**, and that is the check that the residual really is curve provenance rather than
+something structural.
+
+### Why it is small enough to mean something
+
+`1e-7` is **five orders of magnitude** tighter than any formula error could be. The smallest
+single mistake available — a dropped 10% resistance, the wrong ascension row, a missing
+substat — moves the answer by *percent*, not by parts per ten-million.
+
+That is not an assertion:
+`test_the_tolerance_cannot_hide_a_formula_error` drops the enemy's resistance and checks the
+result lands **outside** the tolerance, by more than 10%. If that test ever passes, the
+tolerance has been widened past the point of meaning anything.
+
+### What this tolerance does not cover
+
+The case it was argued for is deliberately minimal: one hit, no rotation, no crit averaging,
+no artifacts, and a weapon with no passive. **A case that adds a rotation or averages over
+crit RNG will need a looser, separately argued number — add it with its own tolerance and
+its own paragraph. Do not widen this one to accommodate a different kind of case**, which is
+how a tolerance stops being evidence and becomes a knob.
 
 ## The rule that is pre-paid
 

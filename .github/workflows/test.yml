@@ -87,10 +87,13 @@ jobs:
     #
     # fairy's genuinely seeded-DB tests (test_zo_crossval.py) skipped themselves here,
     # because `DATABASE_URL` points at this same empty database. Those files are deleted
-    # in B.12. TODO(chunk-F): the Genshin crossval harness must ship with
-    # `CROSSVAL_REQUIRE_DB=1` from its first commit so that "skipped" is a hard failure
-    # in the lane that is supposed to run it — fairy shipped a stale golden fixture
-    # precisely because a skip read as a pass here (DESIGN §3, Chunk F).
+    # in B.12.
+    #
+    # RESOLVED in F.7: the `Crossval` step below runs with `CROSSVAL_REQUIRE_DB=1`, so a
+    # skip is a hard failure in the lane that is supposed to run it — fairy shipped a stale
+    # golden fixture precisely because a skip read as a pass here. The harness seeds its own
+    # schema from the committed nanoka fixtures through the real importer, so it stays as
+    # hermetic as the rest of this lane: no network, no seed step, no migrations.
     name: Backend — integration tests
     runs-on: ubuntu-latest
     defaults:
@@ -129,6 +132,14 @@ jobs:
 
       - name: Integration tests
         run: pytest tests/integration -q
+
+      - name: Crossval against gcsim
+        # CROSSVAL_REQUIRE_DB=1 is the whole point: without it an unreachable database
+        # makes these tests skip, and a skipped crossval is what let fairy ship a stale
+        # golden fixture. Here a skip is a failure. See tests/crossval/conftest.py.
+        env:
+          CROSSVAL_REQUIRE_DB: "1"
+        run: pytest tests/crossval -q
 
   kit-validation:
     # =======================================================================
