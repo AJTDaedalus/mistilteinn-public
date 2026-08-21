@@ -14,13 +14,14 @@ and nothing in this repo overrides them.
 
 ## Repo state — read before trusting anything here
 
-This tree is a fork of fairy `dev` @ 76909c4. **Chunks A, B, C, D and E of
+This tree is a fork of fairy `dev` @ 76909c4. **Chunks A, B, C, D, E and F of
 `docs/TASKS_mistilteinn.md` are done:** the ZZZ domain layer is deleted, the infrastructure
 core is green, the Genshin domain models exist, the nanoka GI importer seeds them, and the
-committed YuanShenResources snapshot supplies what nanoka does not publish. **Chunk F — the
-damage chain — is next, and is what all of that was for.**
+committed YuanShenResources snapshot supplies what nanoka does not publish, and the damage
+chain reproduces **gcsim bit for bit** on its first crossval case. **Chunk G — the artifact
+optimizer and GOOD import — is next.**
 
-- **The backend suite passes.** 437 tests, 1 skipped (`tests/perf`, awaiting G.7).
+- **The backend suite passes.** 584 tests, 1 skipped (`tests/perf`, awaiting G.7).
   `ruff check app/ tests/ scripts/seed_db.py scripts/verify_seed.py
   scripts/capture_nanoka_fixtures.py scripts/yuanshen/` is clean — that is CI's exact
   command — and
@@ -52,6 +53,16 @@ damage chain — is next, and is what all of that was for.**
   each user's builds with it through `ON DELETE CASCADE`. The pass reports `PRUNE REFUSED`,
   exits non-zero and deletes nothing; `python -m scripts.seed_db --force-prune` is the
   override for when a patch really did retract that much and someone has read the numbers.
+- **The damage chain is verified against gcsim, not merely cited to it.**
+  `pytest tests/crossval` recomputes a committed gcsim run and matches it to a relative
+  `1e-7` — the tolerance is argued in `docs/CROSSVAL_gcsim.md`, and a test proves it cannot
+  hide a formula error. **CI runs it with `CROSSVAL_REQUIRE_DB=1`, so a skip is a failure**;
+  that is the gate fairy shipped a stale golden fixture without. The harness seeds itself
+  from the committed nanoka fixtures through the real importer, so it needs no network.
+- **Two deliberate divergences from gcsim** are recorded in `docs/CROSSVAL_gcsim.md`: the
+  RES curve is continuous at exactly 0.75 (gcsim's `>` looks like a `>=`), and crit is
+  computed rather than rolled. A crossval mismatch landing on either is not a formula error
+  here.
 - **Enemy base stats are curve bases, not level-90 stats.** A Hilichurl's `base_hp` is
   `13.584`; the growth curve is named in `enemy_profiles.stat_curves` and the curve table is
   `app/data/yuanshen/snapshot/growth_curves.json` (E.5). **Nothing applies them yet** —
