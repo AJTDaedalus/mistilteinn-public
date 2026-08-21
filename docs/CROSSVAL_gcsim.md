@@ -36,9 +36,55 @@ citations it invalidates — the same rule the YuanShenResources snapshot follow
 | a character starts at **100% Energy Recharge** (`res[ER] += 1`) | `pkg/core/player/character/basestat.go:82` | `services/stat_calculator.py:BASE_ENERGY_RECHARGE` |
 | base CRIT rate 5% / CRIT DMG 50% — **and the payloads' disagreement with it** | `pkg/core/player/character/basestat.go:82-84` | `models/character.py:base_crit_rate`, migration `55afb8679231` |
 | weapon base stats: each published prop is `init_value * GrowCurve[its own curve][level-1]`, plus the ascension row | `pkg/core/player/character/basestat.go:102-126` | `services/stat_calculator.py:add_weapon` |
+| the damage chain: `base x (1+dmgBonus) x def x res x crit x amp` | `pkg/enemy/damage.go:11-130` | `formula/genshin/damage.py:compute_damage` |
+| DMG bonus is `elemental[channel] + generic`, each once | `pkg/enemy/damage.go:47` | `formula/genshin/stats.py:hit_dmg_bonus_node` |
+| base is `mult * stat * (1 + baseDmgBonus) + flat`, flat **inside** the bonus | `pkg/enemy/damage.go:65-66` | `formula/genshin/damage.py:compute_damage` |
+| a talent may scale off ATK, HP, DEF or EM | `pkg/enemy/damage.go:52-62` | `formula/genshin/damage.py:ScalingStat` |
+| DEF term, with reduction and ignore multiplied **separately** | `pkg/enemy/damage.go:81-84` | `formula/genshin/damage.py:def_multiplier` |
+| DEF reduction capped at 0.9; DEF ignore at 1.0 | `pkg/enemy/damage.go:76-80` | `formula/genshin/damage.py:MAX_DEF_REDUCTION` |
+| RES term, three branches | `pkg/enemy/damage.go:89-93` | `formula/genshin/damage.py:res_multiplier` — **see the divergence below** |
+| crit rate clamped to [0, 1] | `pkg/enemy/damage.go:66-71` | `formula/genshin/damage.py:crit_multiplier` |
+| amplifying EM bonus `2.78*em/(1400+em)`, added to the reaction bonus inside the bracket | `pkg/enemy/damage.go:113-116` | `formula/genshin/damage.py:amplifying_multiplier` |
+| melt multipliers: Pyro→Cryo 2.0, Cryo→Pyro 1.5 | `pkg/reactable/melt.go:23,30` | `formula/genshin/damage.py:_AMP_MULTIPLIERS` |
+| vaporize multipliers: Hydro→Pyro 2.0, Pyro→Hydro 1.5 | `pkg/reactable/vaporize.go:26,33` | `formula/genshin/damage.py:_AMP_MULTIPLIERS` |
 
 Extend this table in the same commit that adds the citation. A constant whose row is missing
 here is a constant nobody can re-check.
+
+## Known divergences from the oracle
+
+Deliberate, tested, and listed here because **F.8's tolerance argument has to know about
+them** — a crossval mismatch that lands on one of these is not a formula error on this side.
+
+### 1. The RES curve is continuous at exactly 0.75
+
+gcsim (`pkg/enemy/damage.go:89-93`):
+
+```go
+resmod := 1 - res/2
+if res >= 0 && res < 0.75 {
+    resmod = 1 - res
+} else if res > 0.75 {
+    resmod = 1 / (4*res + 1)
+}
+```
+
+A resistance of **exactly** 0.75 matches neither branch and falls through to the
+negative-RES default, giving `1 - 0.75/2 = 0.625` — where both neighbouring branches give
+`0.25`. That is a 2.5x discontinuity at a single point, and since the two surrounding
+formulas agree there, it reads as a `>` that should be `>=`.
+
+This project uses `>=`, which is continuous.
+`test_the_curve_is_continuous_at_exactly_three_quarters` pins it. A crossval case against an
+enemy at exactly 75% resistance would disagree with gcsim by 2.5x; nothing else would.
+
+### 2. Crit is computed, not rolled
+
+gcsim simulates and rolls against crit rate (`damage.go:101`). A calculator reports
+`non_crit`, `crit` and `expected = 1 + clamp(rate) * dmg` — an optimizer has to score on the
+expectation, and a build whose score depended on a random draw would not be reproducible.
+Compare a crossval fixture against the matching field, not against whichever number gcsim
+happened to roll.
 
 ## Tolerance
 

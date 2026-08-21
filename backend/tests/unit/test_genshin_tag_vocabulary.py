@@ -19,9 +19,11 @@ from app.models.enums import Element, StatType
 #: `StatType` member → the DAG quantity it corresponds to. Every member must appear, which
 #: is what makes this table a check rather than a convenience.
 #:
-#: The four `FIGHT_PROP_*_SUB_HURT` members map to resistance quantities: C.2 added them
-#: because artifact affixes shred RES, and the DAG treats shred as a negative contribution
-#: to the enemy's own pool (see `stats.res_node`).
+#: The `FIGHT_PROP_*_SUB_HURT` members map to the **wearer's own** resistance, not to enemy
+#: shred. C.2 read them off artifact affixes and described them as "RES shred"; the PR #7
+#: review established they are a defensive stat (a Pyro-resistant character, not a
+#: Pyro-vulnerable enemy). Enemy shred has its own `*_res_shred` pool, which no importable
+#: `FIGHT_PROP` writes to — a shred effect is kit text, and therefore Chunk H's.
 _EXPECTED: dict[StatType, str] = {
     StatType.HP_FLAT: tags.Q_FLAT_HP,
     StatType.HP_PCT: tags.Q_HP_PCT,
@@ -47,8 +49,8 @@ _EXPECTED: dict[StatType, str] = {
     StatType.HYDRO_DMG_BONUS: tags.dmg_bonus_q("hydro"),
     StatType.PYRO_DMG_BONUS: tags.dmg_bonus_q("pyro"),
     StatType.PHYSICAL_DMG_BONUS: tags.dmg_bonus_q("physical"),
-    StatType.ELECTRO_RES: tags.res_q("electro"),
-    StatType.PYRO_RES: tags.res_q("pyro"),
+    StatType.ELECTRO_RES: tags.self_res_q("electro"),
+    StatType.PYRO_RES: tags.self_res_q("pyro"),
 }
 
 
@@ -84,14 +86,19 @@ def test_every_vision_is_a_damage_channel_with_a_bonus_stat():
 
 
 @pytest.mark.parametrize("channel", tags.DAMAGE_CHANNELS)
-def test_each_channel_has_both_a_bonus_and_a_resistance_quantity(channel: str):
+def test_each_channel_has_a_bonus_a_shred_and_a_self_resistance_quantity(channel: str):
     assert tags.dmg_bonus_q(channel) in tags.ALL_QUANTITIES
-    assert tags.res_q(channel) in tags.ALL_QUANTITIES
+    assert tags.res_shred_q(channel) in tags.ALL_QUANTITIES
+    assert tags.self_res_q(channel) in tags.ALL_QUANTITIES
 
 
-def test_the_two_res_stat_types_are_a_subset_of_the_channels():
-    """C.2 only observed Electro and Pyro RES shred on affixes; the DAG has all eight, which
-    is the right direction for the asymmetry — a new shred affix needs no DAG change."""
-    res_quantities = {tags.res_q(channel) for channel in tags.DAMAGE_CHANNELS}
+def test_enemy_shred_and_the_wearers_own_resistance_are_different_pools():
+    """The distinction the PR #7 review drew: mapping `*_SUB_HURT` into the shred pool made
+    a Pyro-resistant character deal *less* Pyro damage."""
+    for channel in tags.DAMAGE_CHANNELS:
+        assert tags.res_shred_q(channel) != tags.self_res_q(channel)
 
-    assert {_EXPECTED[StatType.ELECTRO_RES], _EXPECTED[StatType.PYRO_RES]} <= res_quantities
+    stat_types = {_EXPECTED[StatType.ELECTRO_RES], _EXPECTED[StatType.PYRO_RES]}
+    shred = {tags.res_shred_q(channel) for channel in tags.DAMAGE_CHANNELS}
+
+    assert stat_types.isdisjoint(shred)

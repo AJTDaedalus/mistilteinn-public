@@ -337,9 +337,9 @@ Each task below is **one commit**. Commit message form:
 ### [x] F.1 — `formula/genshin/tags.py` (scope/tag vocabulary)
 ### [x] F.2 — `formula/genshin/stats.py` (stat graph feeding `app/pando`)
 ### [x] F.3 — `stat_calculator.py` — base curves, ascension, weapon, artifacts, EM
-### F.4 — `formula/genshin/sheets.py` + `damage.py`
-### F.5 — `damage_calculator.py` — base × (1+DMG%) × crit × DEF term × RES term
-### F.6 — Amplifying reactions only (vape/melt) — **no transformative, no additive**
+### [x] F.4 — `formula/genshin/damage.py` (sheets deferred — see the LOG)
+### [x] F.5 — `damage_calculator.py` — base × (1+DMG%) × crit × DEF term × RES term
+### [x] F.6 — Amplifying reactions only (vape/melt) — **no transformative, no additive**
 ### F.7 — gcsim crossval fixture harness with `CROSSVAL_REQUIRE_DB=1` from the first commit
 ### F.8 — First crossval case green within a written, justified tolerance
 

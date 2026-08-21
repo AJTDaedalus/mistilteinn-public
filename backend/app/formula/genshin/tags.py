@@ -145,10 +145,24 @@ Q_DMG_BONUS = "dmg_bonus"
 #: so adding a channel is one edit to `DAMAGE_CHANNELS`.
 _DMG_BONUS_SUFFIX = "_dmg_bonus"
 
-#: Enemy-side quantities. Resistance is per channel like the bonus is; `def_reduction` and
-#: `def_ignore` are distinct mechanics that the DEF term treats differently (F.5), so they
-#: are two names from the start rather than one that later has to be split.
-_RES_SUFFIX = "_res"
+#: Enemy-side **resistance shred**, per channel. `def_reduction` and `def_ignore` are
+#: distinct mechanics that the DEF term treats differently (F.5), so they are two names from
+#: the start rather than one that later has to be split.
+#:
+#: **This pool is shred only — it is not where an enemy's base resistance lives.** The base
+#: comes from the enemy profile (`services.damage_calculator.Enemy`), because the enemy is
+#: fixed while the build varies, and the optimizer would otherwise have to re-register it
+#: into every candidate. A build's contributions to this pool are negative (Deepwood's 4pc
+#: is `-0.30`). Putting the base here as well double-counts it, which is exactly what the
+#: PR #7 review found.
+_RES_SUFFIX = "_res_shred"
+
+#: The **wearer's own** elemental resistance — a defensive stat, and emphatically not the
+#: enemy's. `FIGHT_PROP_FIRE_SUB_HURT` on an artifact or an ascension row means "this
+#: character resists Pyro"; mapping it into the shred pool would make a Pyro-resistant
+#: character deal *less* Pyro damage. Nothing reads these yet — there is no incoming-damage
+#: model — and they exist so that the import path has somewhere correct to put them.
+_SELF_RES_SUFFIX = "_self_res"
 Q_DEF_REDUCTION = "def_reduction"
 Q_DEF_IGNORE = "def_ignore"
 Q_ENEMY_LEVEL = "enemy_level"
@@ -169,10 +183,16 @@ def dmg_bonus_q(channel: str) -> str:
     return f"{channel}{_DMG_BONUS_SUFFIX}"
 
 
-def res_q(channel: str) -> str:
-    """The resistance quantity for a damage channel: `pyro` → `pyro_res`."""
+def res_shred_q(channel: str) -> str:
+    """The enemy resistance-**shred** quantity for a channel: `pyro` → `pyro_res_shred`."""
     _require_channel(channel)
     return f"{channel}{_RES_SUFFIX}"
+
+
+def self_res_q(channel: str) -> str:
+    """The **wearer's own** resistance quantity: `pyro` → `pyro_self_res`."""
+    _require_channel(channel)
+    return f"{channel}{_SELF_RES_SUFFIX}"
 
 
 def _require_channel(channel: str) -> None:
@@ -195,7 +215,8 @@ ALL_QUANTITIES: tuple[str, ...] = (
     Q_HEALING_BONUS, Q_INCOMING_HEALING_BONUS, Q_SHIELD_STRENGTH,
     Q_DMG_BONUS,
     *(dmg_bonus_q(channel) for channel in DAMAGE_CHANNELS),
-    *(res_q(channel) for channel in DAMAGE_CHANNELS),
+    *(res_shred_q(channel) for channel in DAMAGE_CHANNELS),
+    *(self_res_q(channel) for channel in DAMAGE_CHANNELS),
     Q_DEF_REDUCTION, Q_DEF_IGNORE, Q_ENEMY_LEVEL, Q_CHARACTER_LEVEL,
     Q_TALENT_MULTIPLIER, Q_AMPLIFYING_MULTIPLIER,
 )

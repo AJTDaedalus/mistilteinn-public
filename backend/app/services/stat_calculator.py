@@ -363,8 +363,12 @@ _PROP_QUANTITIES: dict[str, str] = {
             ("ROCK", "geo"), ("WATER", "hydro"), ("FIRE", "pyro"), ("PHYSICAL", "physical"),
         )
     },
+    # `*_SUB_HURT` on a character, weapon or artifact is the **wearer's own** resistance —
+    # a defensive stat. It is *not* enemy resistance shred, and mapping it there (as this
+    # did until the PR #7 review) would make a Pyro-resistant character deal less Pyro
+    # damage. Nothing reads these yet; there is no incoming-damage model.
     **{
-        f"FIGHT_PROP_{internal}_SUB_HURT": tags.res_q(channel)
+        f"FIGHT_PROP_{internal}_SUB_HURT": tags.self_res_q(channel)
         for internal, channel in (
             ("WIND", "anemo"), ("ICE", "cryo"), ("GRASS", "dendro"), ("ELEC", "electro"),
             ("ROCK", "geo"), ("WATER", "hydro"), ("FIRE", "pyro"), ("PHYSICAL", "physical"),
