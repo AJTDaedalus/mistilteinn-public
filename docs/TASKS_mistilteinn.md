@@ -190,7 +190,7 @@ Each task below is **one commit**. Commit message form:
   `script.py.mako`. There is no production database to preserve.
 - **Accept:** `alembic history` is empty; `alembic heads` reports none.
 
-### B.11 — Delete orphaned root-level ZZZ artifacts
+### [x] B.11 — Delete orphaned root-level ZZZ artifacts
 - **Do:** delete `backend/all_multi_moves.txt`, `backend/inspect_multi_hits.py`, and root
   `create_user.py` / `set_pw.py` if they duplicate `scripts/` equivalents (**check first**).
 - **Accept:** no untracked-purpose files left at `backend/` root.
