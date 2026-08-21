@@ -137,14 +137,19 @@ def test_the_generic_dmg_bonus_is_not_folded_into_a_channel():
     assert _value(stats.dmg_bonus_node("pyro"), dmg_bonus=0.4) == 0
 
 
-def test_resistance_is_a_pool_so_shred_is_a_negative_contribution():
-    """Deepwood's 4-piece is -30% Dendro RES; the enemy's own 10% is +0.1 in the same pool."""
+def test_the_shred_pool_holds_shred_and_not_the_enemys_own_resistance():
+    """**The PR #7 HIGH finding, pinned.** The enemy's base RES lives on the enemy profile,
+    not in this pool; adding both read a 10% enemy as 20% and understated every hit by ~11%.
+
+    Contributions here are the build's: Deepwood's 4pc is -30%, and nothing else.
+    """
     registry = NodeRegistry()
     log = ContributionLog(registry=registry)
-    log.add(tags.res_q("dendro"), 0.1, tags.SRC_ENEMY, "Hilichurl base RES")
-    log.add(tags.res_q("dendro"), -0.3, tags.SRC_ARTIFACT_SET, "Deepwood Memories 4pc")
+    log.add(tags.res_shred_q("dendro"), -0.3, tags.SRC_ARTIFACT_SET, "Deepwood Memories 4pc")
 
-    assert Calculator(registry=registry).compute(stats.res_node("dendro")) == pytest.approx(-0.2)
+    total = Calculator(registry=registry).compute(stats.res_shred_node("dendro"))
+
+    assert total == pytest.approx(-0.3)
 
 
 def test_every_channel_has_a_total_and_there_are_eight_of_them():
@@ -169,7 +174,9 @@ def test_a_channel_name_cannot_be_invented_at_a_call_site():
     with pytest.raises(ValueError, match="not a damage channel"):
         tags.dmg_bonus_q("quantum")
     with pytest.raises(ValueError, match="not a damage channel"):
-        tags.res_q("imaginary")
+        tags.res_shred_q("imaginary")
+    with pytest.raises(ValueError, match="not a damage channel"):
+        tags.self_res_q("imaginary")
 
 
 def test_a_scope_name_cannot_be_invented_either():
@@ -205,6 +212,19 @@ def test_attribution_does_not_hide_the_contribution_it_attributes():
 
 
 def test_a_hit_cannot_be_evaluated_under_an_invented_scope():
-    """The read that gates buffs must reject a scope no buff could have registered under."""
+    """The one place scope enters an evaluation must reject a scope nothing could register."""
     with pytest.raises(ValueError, match="not an attack scope"):
-        stats.hit_dmg_bonus_node("pyro", "ultimate")
+        stats.scoped(stats.ATK_NODE, "ultimate")
+
+
+def test_the_wearers_own_resistance_has_its_own_pool():
+    """Nothing reads it yet — there is no incoming-damage model — but the import path needs
+    somewhere correct to put `FIGHT_PROP_*_SUB_HURT`, and that somewhere is not enemy shred.
+    """
+    registry = NodeRegistry()
+    log = ContributionLog(registry=registry)
+    log.add(tags.self_res_q("pyro"), 0.4, tags.SRC_ARTIFACT_SET, "2pc: +40% Pyro RES")
+    calculator = Calculator(registry=registry)
+
+    assert calculator.compute(stats.self_res_node("pyro")) == pytest.approx(0.4)
+    assert calculator.compute(stats.res_shred_node("pyro")) == 0

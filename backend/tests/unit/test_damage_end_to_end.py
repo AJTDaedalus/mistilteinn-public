@@ -105,7 +105,7 @@ def test_the_numbers_the_chain_used_are_the_ones_the_stat_layer_resolved():
     calculator = Calculator(registry=log.registry)
 
     total_atk = calculator.compute(stats.ATK_NODE)
-    cryo_bonus = calculator.compute(stats.hit_dmg_bonus_node("cryo", "burst"))
+    cryo_bonus = calculator.compute(stats.scoped(stats.hit_dmg_bonus_node("cryo"), "burst"))
     crit_dmg = calculator.compute(stats.CRIT_DMG_NODE)
 
     # Ayaka 342 + Aquila 674 base, x (1 + 46.6% sands) + 311 plume.

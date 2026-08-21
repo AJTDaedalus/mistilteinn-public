@@ -47,7 +47,9 @@ from app.formula.genshin.tags import (
     Q_CRIT_DMG,
     Q_CRIT_RATE,
     Q_DEF,
+    Q_DEF_IGNORE,
     Q_DEF_PCT,
+    Q_DEF_REDUCTION,
     Q_DMG_BONUS,
     Q_ELEMENTAL_MASTERY,
     Q_ENERGY_RECHARGE,
@@ -62,7 +64,8 @@ from app.formula.genshin.tags import (
     SCOPE,
     SCOPES,
     dmg_bonus_q,
-    res_q,
+    res_shred_q,
+    self_res_q,
     stat_tag,
 )
 from app.formula.tags import Tag
@@ -133,40 +136,67 @@ def dmg_bonus_node(channel: str) -> AnyNode:
     return _pool(dmg_bonus_q(channel))
 
 
-def hit_dmg_bonus_node(channel: str, scope: str) -> AnyNode:
-    """The DMG bonus applying to a hit of this channel in this scope.
-
-    Two pools, added once each:
-
-    * the channel's own bonus (`pyro_dmg_bonus`), and
-    * the **generic** `dmg_bonus`, which applies to every channel.
-
-    Both are read with `scope` pushed into the tag context, so a scope-gated buff
-    (`{q: dmg_bonus, scope: charged}`) is included for a charged attack and invisible for a
-    burst — the mechanism that lets a kit be data rather than a branch (F.1).
+def hit_dmg_bonus_node(channel: str) -> AnyNode:
+    """The DMG bonus applying to a hit of this channel: the channel's own plus the generic.
 
     gcsim does the same addition in one line: `dmgBonus = elePer + Stats[DmgP]`
     (`pkg/enemy/damage.go:47`).
+
+    **Scope is not applied here.** It used to be, and that made this the only read in the
+    whole chain that honoured a scope-gated contribution — so a scope-gated *crit rate*
+    (Ganyu's A1 is exactly that) was invisible under every scope, silently. Scope now enters
+    once, in `scoped`, wrapped around every read the damage chain makes. One mechanic, one
+    implementation (DESIGN §1 A6).
+    """
+    return sum_(_pool(dmg_bonus_q(channel)), _pool(Q_DMG_BONUS))
+
+
+def scoped(node: AnyNode, scope: str) -> AnyNode:
+    """Evaluate `node` with `scope` in the tag context.
+
+    This is the **only** place attack scope enters an evaluation. Anything read through it
+    picks up contributions registered with `scoped_stat_tag(...)` for that scope, and
+    nothing else does — which is what makes a scope-gated buff on *any* quantity work, not
+    just on DMG bonus.
     """
     if scope not in SCOPES:
         msg = f"{scope!r} is not an attack scope. The seven are {SCOPES}."
         raise ValueError(msg)
-    context = Tag.of(**{SCOPE: scope})
-    return sum_(
-        tag_(_pool(dmg_bonus_q(channel)), context),
-        tag_(_pool(Q_DMG_BONUS), context),
-    )
+    return tag_(node, Tag.of(**{SCOPE: scope}))
 
 
-def res_node(channel: str) -> AnyNode:
-    """The enemy's resistance in one damage channel, before the RES-to-multiplier curve.
+def res_shred_node(channel: str) -> AnyNode:
+    """Resistance **shred** registered against one damage channel.
 
-    The curve is F.5's, and it arrives with its own citation. This is the raw fraction the
-    enemy profile carries (`0.1` = 10%) plus any shred registered against it — shred is a
-    negative contribution to the same pool, which is why RES can go below zero and why the
-    curve has a branch for that.
+    Shred only. The enemy's own resistance is not in this pool — it comes from the enemy
+    profile, because the enemy is fixed while the build varies. Adding both was the PR #7
+    review's HIGH finding: a 10% enemy read as 20%, understating every hit by ~11% with no
+    error anywhere.
+
+    Contributions here are negative (Deepwood's 4pc is `-0.30`), which is how total RES goes
+    below zero and why the curve has a branch for that.
     """
-    return _pool(res_q(channel))
+    return _pool(res_shred_q(channel))
+
+
+def self_res_node(channel: str) -> AnyNode:
+    """The **wearer's own** resistance in a channel. Defensive; nothing reads it yet."""
+    return _pool(self_res_q(channel))
+
+
+def def_reduction_node() -> AnyNode:
+    """Registered DEF reduction (Zhongli's shred and friends).
+
+    Read from the DAG like RES shred is. It used to come only from the enemy dataclass while
+    RES shred came from the graph, and that asymmetry meant a DEF shred registered the
+    natural way — the way Deepwood's 4pc is registered — was dropped with no error.
+    """
+    return _pool(Q_DEF_REDUCTION)
+
+
+def def_ignore_node() -> AnyNode:
+    """Registered DEF ignore. A different mechanic from reduction; see `damage.def_multiplier`."""
+    return _pool(Q_DEF_IGNORE)
 
 
 #: Every resolved total by quantity name, for callers that want to report a whole stat block

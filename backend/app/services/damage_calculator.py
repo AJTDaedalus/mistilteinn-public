@@ -1,4 +1,4 @@
-"""Evaluate one hit against one enemy, from a build's registered contributions.
+"""Evaluate hits against an enemy, from a build's registered contributions.
 
 The join between the two halves of Chunk F: `app.formula.genshin.stats` aggregates a build
 into totals (with scope gating), and `app.formula.genshin.damage` multiplies them into a
@@ -8,11 +8,23 @@ the second.
 **It contains no game constants.** Every multiplier lives in `damage.py` beside its
 citation; everything here is plumbing. That separation is what keeps "where does this number
 come from" answerable in one file rather than two.
+
+## Where base resistance lives, and why it is not in the DAG
+
+`Enemy.resistances` carries the enemy's own resistance; the `*_res_shred` pool carries only
+what the *build* does to it. One home each. The PR #7 review found them being added
+together — a 10% enemy read as 20%, understating every hit by ~11% with no error — and the
+names now make that hard to re-introduce.
+
+The split is not arbitrary: an optimizer varies the build across millions of candidates
+while the enemy stays fixed, so registering the enemy into every candidate's graph would be
+work done a million times for a value that never changes.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from functools import cache
 from typing import TYPE_CHECKING
 
 from app.formula.genshin import stats, tags
@@ -39,14 +51,25 @@ _SCALING_NODES = {
 }
 
 
+@cache
+def _dmg_bonus_node(channel: str) -> AnyNode:
+    """The per-channel bonus node, built once.
+
+    Node construction is pure and the graph is immutable, so rebuilding this subtree per hit
+    was work an optimizer would repeat millions of times. Cached by channel — eight entries,
+    for the lifetime of the process.
+    """
+    return stats.hit_dmg_bonus_node(channel)
+
+
 @dataclass(frozen=True, slots=True)
 class Enemy:
     """The target of a hit.
 
-    `resistances` is per damage channel and defaults to nothing, which is **not** the same
-    as a defenceless enemy: `resistance_for` raises for a channel the profile does not
-    mention, because silently treating an unlisted channel as 0% RES would overstate every
-    hit against it by around 10%.
+    `resistances` must name **all eight** damage channels. A partial profile used to be
+    accepted at construction and to fail much later, mid-calculation; the guard belongs at
+    the boundary that exists to catch it. Treating an unlisted channel as 0% RES would
+    overstate every hit against it by around 10%, in the direction nobody questions.
     """
 
     level: int
@@ -54,52 +77,89 @@ class Enemy:
     def_reduction: float = 0.0
     def_ignore: float = 0.0
 
-    def resistance_for(self, channel: str) -> float:
-        """This enemy's resistance in one channel."""
-        if channel not in self.resistances:
+    def __post_init__(self) -> None:
+        missing = sorted(set(tags.DAMAGE_CHANNELS) - set(self.resistances))
+        unknown = sorted(set(self.resistances) - set(tags.DAMAGE_CHANNELS))
+        if unknown:
+            msg = f"{unknown} are not damage channels; the eight are {tags.DAMAGE_CHANNELS}"
+            raise DamageInputError(msg)
+        if missing:
             msg = (
-                f"this enemy profile does not give a {channel} resistance (it has "
-                f"{sorted(self.resistances)}). Treating a missing channel as 0% would "
-                f"overstate every hit against it."
+                f"this enemy profile gives no resistance for {missing}. All eight channels "
+                f"are required: treating a missing one as 0% would overstate every hit "
+                f"against it."
             )
             raise DamageInputError(msg)
+
+    def resistance_for(self, channel: str) -> float:
+        """This enemy's own resistance in one channel, before the build's shred."""
         return self.resistances[channel]
+
+
+@dataclass
+class BuildEvaluator:
+    """One build, evaluated against one enemy, for as many hits as you like.
+
+    Holds the `Calculator` — and therefore its memo cache — across hits. `evaluate_hit`
+    below rebuilds one per call, which is fine for a single figure and wrong for an
+    optimizer; `damage.py`'s docstring promises the chain can be called millions of times
+    without rebuilding a graph, and this is the object that keeps that promise.
+    """
+
+    registry: NodeRegistry
+    enemy: Enemy
+    character_level: int
+    _calculator: Calculator = field(init=False)
+
+    def __post_init__(self) -> None:
+        self._calculator = Calculator(registry=self.registry)
+
+    def _value(self, node: AnyNode, scope: str) -> float:
+        """Resolve a node with the hit's scope in context.
+
+        **Every** read goes through here. Scope used to be applied to the DMG-bonus read
+        alone, which made a scope-gated contribution to any other quantity — a scope-gated
+        crit rate, say, which Ganyu's first ascension passive is — invisible under every
+        scope and silently worth nothing.
+        """
+        return float(self._calculator.compute(stats.scoped(node, scope)))
+
+    def evaluate(self, hit: Hit) -> DamageResult:
+        """Resolve the stats this hit needs and run the damage chain."""
+        scope = hit.scope
+        resistance = self.enemy.resistance_for(hit.channel) + self._value(
+            stats.res_shred_node(hit.channel), scope,
+        )
+        return compute_damage(
+            hit,
+            scaling_value=self._value(_SCALING_NODES[hit.scaling_stat], scope),
+            dmg_bonus=self._value(_dmg_bonus_node(hit.channel), scope),
+            crit_rate=self._value(stats.CRIT_RATE_NODE, scope),
+            crit_dmg=self._value(stats.CRIT_DMG_NODE, scope),
+            elemental_mastery=self._value(stats.ELEMENTAL_MASTERY_NODE, scope),
+            character_level=self.character_level,
+            enemy_level=self.enemy.level,
+            resistance=resistance,
+            # Both enemy-side DEF mechanics read the same way RES shred does: the profile's
+            # own value plus whatever the build registers. They used to come from the
+            # dataclass only, so a DEF shred registered the natural way was dropped.
+            def_reduction=self.enemy.def_reduction
+            + self._value(stats.def_reduction_node(), scope),
+            def_ignore=self.enemy.def_ignore + self._value(stats.def_ignore_node(), scope),
+        )
 
 
 def evaluate_hit(
     registry: NodeRegistry, hit: Hit, enemy: Enemy, character_level: int,
 ) -> DamageResult:
-    """Resolve the stats this hit needs and run the damage chain.
+    """One hit, one figure. Sugar over `BuildEvaluator` for callers evaluating a single hit.
 
-    The DMG bonus is read with the hit's **scope** in context, so scope-gated buffs apply to
-    exactly the attacks they name. Resistance shred registered against the enemy's channel
-    is picked up the same way — it is a negative contribution to the same pool (F.2), so a
-    Deepwood 4-piece and the enemy's own 10% resolve to a single number here.
+    Use `BuildEvaluator` directly when evaluating many hits against one build — it keeps the
+    calculator's memo cache instead of discarding it per call.
     """
-    calculator = Calculator(registry=registry)
-
-    def value(node: AnyNode) -> float:
-        return float(calculator.compute(node))
-
-    channel_res = enemy.resistance_for(hit.channel)
-    shred = value(stats.res_node(hit.channel))
-
-    return compute_damage(
-        hit,
-        scaling_value=value(_SCALING_NODES[hit.scaling_stat]),
-        dmg_bonus=value(stats.hit_dmg_bonus_node(hit.channel, hit.scope)),
-        crit_rate=value(stats.CRIT_RATE_NODE),
-        crit_dmg=value(stats.CRIT_DMG_NODE),
-        elemental_mastery=value(stats.ELEMENTAL_MASTERY_NODE),
-        character_level=character_level,
-        enemy_level=enemy.level,
-        # The enemy's own resistance plus whatever has been registered against that
-        # channel. Shred is negative, which is why RES can go below zero and why the curve
-        # has a branch for it.
-        resistance=channel_res + shred,
-        def_reduction=enemy.def_reduction,
-        def_ignore=enemy.def_ignore,
-    )
+    return BuildEvaluator(
+        registry=registry, enemy=enemy, character_level=character_level,
+    ).evaluate(hit)
 
 
 def enemy_from_profile(
@@ -110,8 +170,4 @@ def enemy_from_profile(
     Kept here rather than on the model so that `EnemyProfile`'s ORM row and this dataclass
     stay independent — the optimizer evaluates enemies that were never in the database.
     """
-    unknown = sorted(set(resistances) - set(tags.DAMAGE_CHANNELS))
-    if unknown:
-        msg = f"{unknown} are not damage channels; the eight are {tags.DAMAGE_CHANNELS}"
-        raise DamageInputError(msg)
     return Enemy(level=level, resistances=dict(resistances), **modifiers)
