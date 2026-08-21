@@ -14,10 +14,11 @@ and nothing in this repo overrides them.
 
 ## Repo state — read before trusting anything here
 
-This tree is a fork of fairy `dev` @ 76909c4. **Chunks A, B, C and D of
+This tree is a fork of fairy `dev` @ 76909c4. **Chunks A, B, C, D and E of
 `docs/TASKS_mistilteinn.md` are done:** the ZZZ domain layer is deleted, the infrastructure
-core is green, the Genshin domain models exist, and the nanoka GI importer seeds them.
-Chunk E (YuanShen snapshots) is next; Chunk F (damage chain) is what E unblocks.
+core is green, the Genshin domain models exist, the nanoka GI importer seeds them, and the
+committed YuanShenResources snapshot supplies what nanoka does not publish. **Chunk F — the
+damage chain — is next, and is what all of that was for.**
 
 - **The backend suite passes.** 397 tests, 1 skipped (`tests/perf`, awaiting G.7).
   `ruff check app/ tests/ scripts/seed_db.py scripts/verify_seed.py
@@ -51,13 +52,21 @@ Chunk E (YuanShen snapshots) is next; Chunk F (damage chain) is what E unblocks.
   exits non-zero and deletes nothing; `python -m scripts.seed_db --force-prune` is the
   override for when a patch really did retract that much and someone has read the numbers.
 - **Enemy base stats are curve bases, not level-90 stats.** A Hilichurl's `base_hp` is
-  `13.584`; the growth curve is named in `enemy_profiles.stat_curves` and the curve *tables*
-  are Chunk E's (`MonsterCurveExcelConfigData`), not nanoka's. Anything that multiplies
-  those numbers and calls the result damage is wrong.
-- **`app/models/artifact.py:MAIN_STAT_POOL` is empty on purpose.** The slot→main-stat pools
-  are not in any nanoka payload; they need the Chunk E YuanShenResources snapshot.
-  `main_stats_for()` raises rather than returning an empty tuple. Do not fill it in from
-  memory — that is the citation rule, and the reason it is empty rather than plausible.
+  `13.584`; the growth curve is named in `enemy_profiles.stat_curves` and the curve table is
+  `app/data/yuanshen/snapshot/growth_curves.json` (E.5). **Nothing applies them yet** —
+  wiring base × curve into a stat is Chunk F. Anything that multiplies those numbers today
+  and calls the result damage is wrong.
+- **`app/models/artifact.py:MAIN_STAT_POOL` is populated from the committed snapshot** —
+  `app/data/yuanshen/snapshot/artifact_main_stat_pools.json`, E.5. It is *derived*, and the
+  derivation refuses to resolve anything it cannot pin: read
+  `scripts/yuanshen/build_snapshot.py:derive_main_stat_pools` before touching it, and
+  rebuild with `python -m scripts.yuanshen.build_snapshot` rather than editing the JSON.
+  `main_stats_for()` still raises on an empty pool.
+- **The YuanShen data is a committed snapshot, never a live fetch.** `app/data/yuanshen/`
+  holds `schema/` (provenance + the 1,935-table catalog) and `snapshot/` (main-stat pools,
+  artifact value tables, growth curves); `cache/` is the gitignored working copy and the
+  54 MB TextMap lives only there. The unit lane runs with `socket.connect` blocked and
+  asserts by parsed imports that nothing in `app/` imports the toolkit (E.6).
 - **`app/services/_ported/` is read-only porting source, not runtime code.** Eight ZZZ
   modules staged in B.1/B.3 for Chunks F, G and H to port *against*, excluded from ruff and
   pytest, with no `__init__.py` so they are not importable. Each is deleted when its port

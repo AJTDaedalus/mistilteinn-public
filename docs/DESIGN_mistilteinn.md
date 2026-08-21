@@ -384,6 +384,26 @@ Port `scripts/dimbreath/` → `scripts/yuanshen/` from the `/root/fairy` copy.
 asserts its anchor; a committed snapshot of at least the avatar/weapon/reliquary tables exists;
 no test touches the network.
 
+> **Delivered 2026-08-21 (PR #4).** Exit met, with three corrections — full detail in
+> `docs/LOG_mistilteinn.md` (E.1-E.6):
+>
+> 1. **There is no `base ⊕ overwrite` TextMap merge to port** — Genshin publishes no
+>    Overwrite layer. It publishes two near-disjoint files per language (589,892 and
+>    231,397 keys, 363 shared), so the rule is a **union**, and it is just as mandatory:
+>    every character, weapon and set name resolves through `_Medium` alone.
+> 2. **The pin is `main` (OSCBWin7.0.51), not `live` (OSRELWin7.0.0)** — matching the
+>    nanoka version Chunk D seeded from. Two sources on different patches would be worse
+>    than either alone.
+> 3. **`MAIN_STAT_POOL` is not a depot join.** This dump has no `weight` column, so the
+>    depot lists are supersets; the allowed lists come from
+>    `ReliquarySetSchemeMainPropExcelConfigData` and are cross-checked against a second
+>    table and against their own cardinalities.
+>
+> `build_column_dicts.py` / `build_upstream_mv.py` were **not** ported as such: their ZZZ
+> job was to make an unfamiliar 1,900-table corpus navigable, and `build_table_catalog.py`
+> plus a snapshot builder that names its sources covers what Chunks F-H actually need. Port
+> the column-dictionary tooling when a task wants it, not before.
+
 ### Chunk F — Stats and the damage chain (≈2–3 sessions)
 
 The first chunk where correctness, not mechanics, is the risk.

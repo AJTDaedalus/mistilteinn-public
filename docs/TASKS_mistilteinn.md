@@ -322,8 +322,11 @@ Each task below is **one commit**. Commit message form:
 ### [x] E.5 — Commit the first snapshot (avatar / weapon / reliquary) + `provenance.json`
 ### [x] E.6 — Assert no gate, test, or importer reaches the network at run time
 
-- **Accept (chunk):** `python -m scripts.yuanshen.fetch --lang en --merge` works and asserts its
-  anchor; snapshots committed; `pytest` passes with networking disabled.
+- **[x] Accept (chunk):** `python -m scripts.yuanshen.fetch --lang en --merge` works and asserts
+  its anchor; snapshots committed; `pytest` passes with networking disabled. Delivered
+  2026-08-21 (PR #4); see the E.1-E.6 entries in `docs/LOG_mistilteinn.md`, including why
+  E.4 is a catalog plus a snapshot builder rather than a line-for-line port of
+  `build_column_dicts.py`.
 
 ---
 
