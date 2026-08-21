@@ -1,0 +1,6 @@
+# Cached YuanShenResources raw files, keyed by pinned commit SHA. Large — TextMapEN.json
+# alone is 54 MB — and re-fetchable, so not committed. The *snapshots* under
+# `app/data/yuanshen/snapshot/` are what gets committed; this is the working copy the
+# snapshot builder reads from.
+*
+!.gitignore

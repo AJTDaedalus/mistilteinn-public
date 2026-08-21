@@ -1,0 +1,25 @@
+{
+  "source": "GuraFoundation/YuanShenResources (GitLab)",
+  "project_url": "https://gitlab.com/GuraFoundation/YuanShenResources",
+  "project_id": 81135933,
+  "branch": "main",
+  "pinned_commit_sha": "5445617e33b29f057b9479883cc8e5e77c7d128d",
+  "commit_timestamp": "2026-08-17T07:21:33.000-03:00",
+  "commit_title": "OSCBWin7.0.51",
+  "captured_at": "2026-08-21",
+  "task": "E.1",
+  "branch_note": "Two branches: `main` is the closed beta (OSCBWin7.0.51) and `live` is the shipped build (OSRELWin7.0.0, ddd9855b2ee5, 2026-08-10). `main` is pinned because it matches the nanoka version Chunk D seeded from \u2014 nanoka's `gi.latest` is 7.0.51 and its `gi.live` is 7.0, the same split. Two sources describing different patches would be worse than either alone.",
+  "access": {
+    "branch_api": "https://gitlab.com/api/v4/projects/GuraFoundation%2FYuanShenResources/repository/branches/{branch}",
+    "tree_api": "https://gitlab.com/api/v4/projects/GuraFoundation%2FYuanShenResources/repository/tree?ref={sha}&path={path}&per_page=100&page={page}",
+    "raw_commit": "https://gitlab.com/api/v4/projects/GuraFoundation%2FYuanShenResources/repository/files/{path}/raw?ref={sha}",
+    "file_meta": "https://gitlab.com/api/v4/projects/GuraFoundation%2FYuanShenResources/repository/files/{path}?ref={sha}",
+    "path_encoding": "URL-encoded, so `TextMap/TextMapEN.json` becomes `TextMap%2FTextMapEN.json`."
+  },
+  "layering": {
+    "rule": "NONE. Genshin's TextMap has no overwrite layer \u2014 see the note below.",
+    "textmap": "TextMap/TextMap<LANG>.json",
+    "textmap_medium": "TextMap/TextMap_Medium<LANG>.json",
+    "note": "ZZZ published `TextMap_<LANG>TemplateTb.json` plus a `..OverwriteTemplateTb.json` layer, and fairy's toolkit merged them base-then-overwrite because beta content lived only in the overwrite layer. **This repository has no Overwrite file for any of its 16 languages** \u2014 the 31 entries in TextMap/ are one full map and one `_Medium` map per language (plus TH split in two). The merge is therefore not ported; the anchor assertion that made it trustworthy is."
+  }
+}
