@@ -43,7 +43,7 @@
 - **Accept:** `npm ci && npm run build` in `frontend/` succeeds.
 - **Tests:** `npm test -- --watch=false` result recorded (may be red; do not fix ZZZ specs).
 
-### A.3 — Delete stale scan artifact
+### [x] A.3 — Delete stale scan artifact
 - **Do:** delete `security/zap/zap-baseline-prod.html` (105 fairy references; a captured scan of
   fairy's production host, meaningless here).
 - **Accept:** file gone; `rg -il fairy` no longer lists it.
