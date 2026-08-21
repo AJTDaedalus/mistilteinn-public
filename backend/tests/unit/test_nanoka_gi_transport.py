@@ -13,7 +13,6 @@ import httpx
 import pytest
 
 from app.data.importers.nanoka_gi_importer import (
-    _NOT_MAPPED,
     ENTITIES,
     USER_AGENT,
     HttpNanokaTransport,
@@ -211,18 +210,18 @@ async def test_dry_run_records_a_failed_sample_instead_of_raising():
     assert not any(summary.ok for summary in summaries.values())
 
 
-async def test_the_unmapped_pass_message_names_its_task():
-    """D.1 left every pass raising with its task id; D.3-D.6 have now claimed all four.
+async def test_every_entity_has_a_pass_that_actually_maps_it():
+    """D.1 left the four passes raising with their task ids; D.3-D.6 claimed all four.
 
-    The message is kept — and tested — because it is the shape any *future* entity pass
-    should start from: an importer that reports zero rows imported is indistinguishable
-    from one that found an empty index.
+    The placeholder is gone with them — the guard now is that `ENTITIES` and the mapped
+    passes cannot drift apart, since an entity nobody wired up would silently never be
+    seeded. `scripts/seed_db` pairs the two, and this is the assertion that they match.
     """
-    message = _NOT_MAPPED.format(entity="gcg", task="D.9")
+    from scripts.seed_db import PASSES
 
-    assert "gcg" in message
-    assert "D.9" in message
-    assert "zero rows imported" in message
+    assert list(PASSES) == list(ENTITIES)
+    for method in PASSES.values():
+        assert callable(getattr(NanokaGIImporter, method))
 
 
 async def test_close_releases_the_transport():

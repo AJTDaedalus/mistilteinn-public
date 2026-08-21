@@ -64,8 +64,6 @@ PYRO_TRAVELER = "10000005-2"
 AQUILA_FAVONIA = 11501
 DEEPWOOD_MEMORIES = 15025
 RUIN_GUARD = 24010101
-#: Ayaka's alternate sprint, "Kamisato Art: Senho".
-AYAKA_SPRINT_TALENT = 10013
 
 #: Entity → the model whose rows that pass writes.
 ENTITY_MODELS: dict[str, type] = {
@@ -204,21 +202,23 @@ async def _anchor_values(session: AsyncSession) -> list[tuple[Anchor, Any]]:
     return checks
 
 
+#: The order the payload lists a character's `skills[]`, which is the order the Ayaka
+#: anchor was read in. Not the order `TalentType` declares its members, and not something
+#: SQL can produce — hence the sort here rather than an `ORDER BY`.
+_PAYLOAD_TALENT_ORDER = [
+    TalentType.NORMAL_ATTACK,
+    TalentType.ELEMENTAL_SKILL,
+    TalentType.ALTERNATE_SPRINT,
+    TalentType.ELEMENTAL_BURST,
+]
+
+
 async def _talent_types(session: AsyncSession, character_id: str) -> list[TalentType]:
+    """A character's talent types, in payload order."""
     rows = await session.execute(
-        select(Talent.talent_type)
-        .where(Talent.character_id == character_id)
-        .order_by(Talent.nanoka_id == AYAKA_SPRINT_TALENT, Talent.talent_type),
+        select(Talent.talent_type).where(Talent.character_id == character_id),
     )
-    types = list(rows.scalars())
-    # Ordered the way the payload lists them, which is what the anchor was read from.
-    order = [
-        TalentType.NORMAL_ATTACK,
-        TalentType.ELEMENTAL_SKILL,
-        TalentType.ALTERNATE_SPRINT,
-        TalentType.ELEMENTAL_BURST,
-    ]
-    return sorted(types, key=lambda value: order.index(value) if value in order else 99)
+    return sorted(rows.scalars(), key=_PAYLOAD_TALENT_ORDER.index)
 
 
 async def _count_where(session: AsyncSession, model: type, column: Any, value: Any) -> int:

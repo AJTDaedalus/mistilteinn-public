@@ -224,10 +224,6 @@ class EntityResult:
         )
 
 
-class NanokaImportError(RuntimeError):
-    """Raised when an entity pass is asked for before its mapping exists."""
-
-
 class NanokaGIImporter(BaseImporter):
     """Fetch Genshin data from nanoka.cc and upsert it into the database.
 
@@ -518,13 +514,6 @@ class NanokaGIImporter(BaseImporter):
         )
         return rows.scalar_one_or_none()
 
-
-_NOT_MAPPED = (
-    "The nanoka GI {entity} mapping is not written yet (task {task}). D.1 landed the "
-    "transport layer only; use dry_run() until the mapping lands. This raises rather "
-    "than returning 0, because an importer that reports zero rows imported is "
-    "indistinguishable from one that found an empty index."
-)
 
 
 def _index_keys(index: dict[str, Any]) -> list[str]:
