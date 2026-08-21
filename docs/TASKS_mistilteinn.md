@@ -195,7 +195,7 @@ Each task below is **one commit**. Commit message form:
   `create_user.py` / `set_pw.py` if they duplicate `scripts/` equivalents (**check first**).
 - **Accept:** no untracked-purpose files left at `backend/` root.
 
-### B.12 — Triage the test suite
+### [x] B.12 — Triage the test suite
 - **Do:** delete every test whose subject was deleted in B.2–B.11 (expect ~270 of ~304 files).
   **Preserve:** auth (`test_auth_*`), sessions, users, teams (trimmed), optimization jobs,
   repository base/owner-scoping, middleware (`test_rate_limit`, `test_body_size_limit`),

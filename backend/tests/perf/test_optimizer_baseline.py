@@ -1,3 +1,4 @@
+# ruff: noqa: E402, I001 — the module-level skip below runs before the imports it guards.
 """Performance baseline for optimize_discs — YSG realistic filtered inventory.
 
 Run with:  pytest -x -m perf backend/tests/perf/test_optimizer_baseline.py
@@ -18,9 +19,30 @@ baseline and the post-A2 time, not the absolute number.
 Expected combos: 3×3×3×4×3×3 = 972
 Expected baseline time: ~2–5 s (unoptimised, ~2 ms/combo)
 Expected post-A2 time: <0.5 s (overlay path, ~0.1-0.3 ms/combo)
+
+**PORT STATE — SKIPPED, NOT DELETED (B.12).** Every import below points at a module the
+demolition removed or staged: `build_damage_service` and `disc_optimizer` and `modifiers`
+live in `app/services/_ported/`, `combo_types` is gone. The file is kept because **G.7
+re-baselines `tests/perf` for the 5-slot Genshin search space** and this is the harness that
+produced fairy's numbers — the structure (fixed inventory, slot filters, ratio-not-absolute
+reasoning) ports; the ZZZ build and enemy do not.
+
+The skip is module-level and unconditional. It is *not* a `-m perf` gate: this file cannot
+even be imported today, and a collection error is not the same message as "not re-baselined
+yet".
 """
 
-from __future__ import annotations
+import pytest
+
+pytest.skip(
+    "tests/perf is not re-baselined for Genshin yet — see G.7 and the module docstring.",
+    allow_module_level=True,
+)
+
+# NOTE: `from __future__ import annotations` was removed here. Python requires it to be the
+# first statement in the file, and the module-level `pytest.skip` above has to come first —
+# the file would otherwise raise SyntaxError at *collection*, which is a hard error rather
+# than a skip. Restore it at the top when G.7 restores the imports.
 
 import time
 
