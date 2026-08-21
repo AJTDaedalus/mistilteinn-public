@@ -10,10 +10,10 @@
 | File | Entries | Bytes |
 |---|---:|---:|
 | `manifest.json` | — | 14,560 |
-| `character.json` | 150 | 64,989 |
-| `weapon.json` | 286 | 116,931 |
-| `artifact.json` | 65 | 80,708 |
-| `monster.json` | 585 | 398,539 |
+| `character.json` | 150 | 67,991 |
+| `weapon.json` | 286 | 125,429 |
+| `artifact.json` | 65 | 116,597 |
+| `monster.json` | 585 | 421,515 |
 | `detail/character_10000002.json` | — | 93,499 |
 | `detail/character_10000005-2.json` | — | 350,356 |
 | `detail/weapon_11501.json` | — | 10,584 |
@@ -25,6 +25,11 @@
 
     cd backend && python -m scripts.capture_nanoka_fixtures            # rewrite
     cd backend && python -m scripts.capture_nanoka_fixtures --check    # report drift only
+
+The **Bytes** column is what `--check` prints, i.e. UTF-8 encoded length. The index files
+are written with `ensure_ascii=False`, so they hold multi-byte characters and their byte
+count is larger than their character count — the D.2 table reported characters, which put
+four wrong numbers here until the PR #3 review caught it.
 
 That script is the single definition of *what* is committed here (its `INDEXES` and
 `DETAILS` constants, each detail carrying the reason it exists) and of the exact
