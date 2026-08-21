@@ -36,7 +36,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from app.formula.builder import prod_, read_, sum_
+from app.formula.builder import prod_, read_, sum_, tag_
 from app.formula.genshin.tags import (
     DAMAGE_CHANNELS,
     Q_ATK,
@@ -48,6 +48,7 @@ from app.formula.genshin.tags import (
     Q_CRIT_RATE,
     Q_DEF,
     Q_DEF_PCT,
+    Q_DMG_BONUS,
     Q_ELEMENTAL_MASTERY,
     Q_ENERGY_RECHARGE,
     Q_FLAT_ATK,
@@ -58,10 +59,13 @@ from app.formula.genshin.tags import (
     Q_HP_PCT,
     Q_INCOMING_HEALING_BONUS,
     Q_SHIELD_STRENGTH,
+    SCOPE,
+    SCOPES,
     dmg_bonus_q,
     res_q,
     stat_tag,
 )
+from app.formula.tags import Tag
 
 if TYPE_CHECKING:
     from app.formula.nodes import AnyNode
@@ -127,6 +131,31 @@ def dmg_bonus_node(channel: str) -> AnyNode:
     would make it invisible in an explained figure and double-counted in a two-element hit.
     """
     return _pool(dmg_bonus_q(channel))
+
+
+def hit_dmg_bonus_node(channel: str, scope: str) -> AnyNode:
+    """The DMG bonus applying to a hit of this channel in this scope.
+
+    Two pools, added once each:
+
+    * the channel's own bonus (`pyro_dmg_bonus`), and
+    * the **generic** `dmg_bonus`, which applies to every channel.
+
+    Both are read with `scope` pushed into the tag context, so a scope-gated buff
+    (`{q: dmg_bonus, scope: charged}`) is included for a charged attack and invisible for a
+    burst — the mechanism that lets a kit be data rather than a branch (F.1).
+
+    gcsim does the same addition in one line: `dmgBonus = elePer + Stats[DmgP]`
+    (`pkg/enemy/damage.go:47`).
+    """
+    if scope not in SCOPES:
+        msg = f"{scope!r} is not an attack scope. The seven are {SCOPES}."
+        raise ValueError(msg)
+    context = Tag.of(**{SCOPE: scope})
+    return sum_(
+        tag_(_pool(dmg_bonus_q(channel)), context),
+        tag_(_pool(Q_DMG_BONUS), context),
+    )
 
 
 def res_node(channel: str) -> AnyNode:

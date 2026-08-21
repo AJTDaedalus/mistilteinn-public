@@ -202,3 +202,9 @@ def test_attribution_does_not_hide_the_contribution_it_attributes():
     trap = NodeRegistry()
     trap.register(Tag.of(q=tags.Q_ELEMENTAL_MASTERY, src=tags.SRC_ARTIFACT), const(187.0))
     assert Calculator(registry=trap).compute(stats.ELEMENTAL_MASTERY_NODE) == 0
+
+
+def test_a_hit_cannot_be_evaluated_under_an_invented_scope():
+    """The read that gates buffs must reject a scope no buff could have registered under."""
+    with pytest.raises(ValueError, match="not an attack scope"):
+        stats.hit_dmg_bonus_node("pyro", "ultimate")
