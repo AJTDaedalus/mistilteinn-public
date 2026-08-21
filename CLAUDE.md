@@ -18,10 +18,17 @@ This tree is a fork of fairy `dev` @ 76909c4. **Chunks A and B of
 `docs/TASKS_mistilteinn.md` are done: the ZZZ domain layer has been deleted and the
 infrastructure core is green.** Chunk C (Genshin domain models) is next.
 
-- **The suite passes.** 24 test files, 220 tests, 1 skipped (`tests/perf`, awaiting G.7).
-  `ruff check app/ tests/` is clean and `uvicorn app.main:app` serves `/api/v1/health`,
-  `/docs`, and the auth and team endpoints. **A red suite is now a regression, not the
-  size of the port** — that excuse expired at B.13.
+- **The backend suite passes.** 25 test files, 225 tests, 1 skipped (`tests/perf`, awaiting
+  G.7). `ruff check app/ tests/` is clean and `uvicorn app.main:app` serves `/api/v1/health`,
+  `/docs`, and the auth and team endpoints. **A red backend suite is now a regression, not
+  the size of the port** — that excuse expired at B.13.
+- **The frontend does not compile, and that is the honest state.** 161 TypeScript errors
+  against endpoints and schemas B.6 deleted. It was green until the PR #1 review only
+  because `frontend/openapi.json` was stale — `npm run codegen` builds `api.types.ts` from
+  that file, so the SPA type-checked against a contract describing 44 endpoints while the
+  backend served 7. The contract is now regenerated and guarded by
+  `backend/tests/unit/test_openapi_contract_is_current.py`. CI runs `npm run lint` only;
+  `npm test` is a disabled step with a `TODO(chunk-J)`. **Chunk J is what makes it compile.**
 - **There is no game layer at all.** `app/` has no characters, weapons, artifacts, damage
   chain, or optimizer. It has auth, sessions, users, teams, optimization-job plumbing, the
   `formula` IR, and the `pando` calculator. Seven tables, seven API paths, one migration.

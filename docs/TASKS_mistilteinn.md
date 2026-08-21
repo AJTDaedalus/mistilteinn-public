@@ -381,6 +381,17 @@ Sketch: **[Owner]** supply Mitya reference art (**OQ-P1**) → derive `_tokens.s
 way fairy derived its own from `references/NPC_Fairy.webp` → new emblem asset → rewrite the
 disc-shaped pages (`discs`, `disc-slot-picker`, disc filters) as artifact pages.
 
+**Now also a blocking obligation, not just a polish pass.** The SPA has **161 TypeScript
+errors** against endpoints and schemas deleted in B.6, so `npm test` and `npm run build` both
+fail. It compiled only while `frontend/openapi.json` was stale (44 declared paths against 7
+served); regenerating it in the PR #1 review made the breakage visible.
+
+Chunk J must therefore **restore the `Unit tests` step in `.github/workflows/test.yml`'s
+`frontend` job**, currently `if: false` with a `TODO(chunk-J)`. Until then CI runs `npm run
+lint` only. Do not restore it by letting the contract rot again —
+`backend/tests/unit/test_openapi_contract_is_current.py` will fail if the committed spec stops
+matching the app.
+
 ## Chunk K — Deploy **[deferred]**
 
 Sketch: re-author `deploy-prod.yml` against a mistilteinn target → DNS for
