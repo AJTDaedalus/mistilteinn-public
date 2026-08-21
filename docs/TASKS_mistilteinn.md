@@ -81,7 +81,7 @@
   connects immediately.
 - **Tests:** unit test on the retry helper with a mocked connect that fails N times.
 
-### A.8 — Wordmark, title, favicon → mistilteinn placeholder
+### [x] A.8 — Wordmark, title, favicon → mistilteinn placeholder
 - **Do:** `<title>Fairy</title>` → `mistilteinn`; brand wordmark → `mistilteinn`; sub-wordmark
   `ZZZ Optimizer` → `Genshin Optimizer`; remove the `fairy-emblem.webp` favicon link and delete
   the asset. **Leave `frontend/src/styles/_tokens.scss` untouched** — the Fairy palette stays
