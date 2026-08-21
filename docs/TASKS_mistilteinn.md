@@ -158,7 +158,7 @@ Each task below is **one commit**. Commit message form:
   Keep `auth.py`, `common.py`, `optimization_job.py`, `team.py`. Update `__init__.py`.
 - **Accept:** `python -c "import app.schemas"` succeeds.
 
-### B.6 — Delete ZZZ routes
+### [x] B.6 — Delete ZZZ routes
 - **Do:** delete `app/api/v1/{agents,discs,disc_sets,w_engines,damage,combos,simulate,scorer,optimizer,builds,buff_presets,enemies}.py`
   and their router registrations. Keep `auth.py`, `health.py`, `teams.py` (trim its ZZZ members).
 - **Accept:** `uvicorn app.main:app` starts; `/docs` renders; `/api/v1/health` returns 200.
