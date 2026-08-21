@@ -110,7 +110,7 @@
 - **Files:** `security/zap/*`, `.github/workflows/security.yml`.
 - **Accept:** scan is skipped-by-default and the skip is *reported as a skip*, not a pass.
 
-### A.12 — Chunk A close-out
+### [x] A.12 — Chunk A close-out
 - **Do:** `rg -il fairy --glob '!docs/**'` and confirm every remaining hit is deliberate
   provenance. Record the surviving list in `docs/LOG_mistilteinn.md`.
 - **Accept:** backend boots on 8001 against the shared DB; `ruff check app/` clean; commit.

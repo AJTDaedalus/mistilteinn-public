@@ -4,7 +4,7 @@ import type { components } from './api.types';
 
 type MeResponse = components['schemas']['MeResponse'];
 
-const STORAGE_KEY = 'fairy.token';
+const STORAGE_KEY = 'mistilteinn.token';
 
 export class PendingUserError extends Error {
   constructor() {

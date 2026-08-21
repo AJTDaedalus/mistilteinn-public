@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { API_BASE_URL } from './api.client';
 import { AuthService, PendingUserError } from './auth.service';
 
-const STORAGE_KEY = 'fairy.token';
+const STORAGE_KEY = 'mistilteinn.token';
 
 function setup(): AuthService {
   TestBed.configureTestingModule({

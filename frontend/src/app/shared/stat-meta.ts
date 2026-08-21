@@ -111,7 +111,7 @@ export const STAT_META: Record<string, { label: string; unit: 'bp' | 'raw' }> = 
   // Remielle (Lumiflux, DESIGN_remielle.md §6.1/§7.1)
   refringe_flat_bonus_bp:    { label: 'Refringe Coefficient', unit: 'bp'  },
 
-  // Fairy-internal sim markers (no ZO/display equivalent, D-KV21) — boolean
+  // Internal sim markers (no ZO/display equivalent, D-KV21) — boolean
   // "set" flags, not scaled quantities; value is always 1.
   frostbite_frost_variant:   { label: 'Frostbite: Frost Variant', unit: 'raw' },
 };
