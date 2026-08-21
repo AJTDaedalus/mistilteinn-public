@@ -334,9 +334,9 @@ Each task below is **one commit**. Commit message form:
 
 *Sub-branch `feat/genshin-damage`. **Read DESIGN §3 Chunk F before starting.***
 
-### F.1 — `formula/genshin/tags.py` (scope/tag vocabulary)
-### F.2 — `formula/genshin/stats.py` (stat graph feeding `app/pando`)
-### F.3 — `stat_calculator.py` — base curves, ascension, weapon, artifacts, EM
+### [x] F.1 — `formula/genshin/tags.py` (scope/tag vocabulary)
+### [x] F.2 — `formula/genshin/stats.py` (stat graph feeding `app/pando`)
+### [x] F.3 — `stat_calculator.py` — base curves, ascension, weapon, artifacts, EM
 ### F.4 — `formula/genshin/sheets.py` + `damage.py`
 ### F.5 — `damage_calculator.py` — base × (1+DMG%) × crit × DEF term × RES term
 ### F.6 — Amplifying reactions only (vape/melt) — **no transformative, no additive**
