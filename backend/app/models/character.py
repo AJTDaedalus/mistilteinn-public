@@ -45,7 +45,9 @@ class Character(TimestampMixin, Base):
       entries carry the literal `"None"`.
     * `weapon` → `weapon_type`; `rarity` → `rarity` via `Rarity.parse`.
     * `base_hp` / `base_atk` / `base_def` are the level-1 values; the per-phase table is
-      `stats_modifier.ascension` (6 rows) and lands in `ascension_stats`.
+      `stats_modifier.ascension` (6 rows) and lands in `ascension_stats`, and the growth
+      curve each one follows is `stats_modifier.prop_grow_curves` → `prop_curves`. All
+      three are needed to get a stat at a level; F.3 found that out by having two of them.
     * `ascension_stat_type` is derived, not given: it is the key in an
       `stats_modifier.ascension` row that is not one of the three base stats.
     * `chara_info.region` → `region`; `chara_info.release_date` → `release_date`.
@@ -81,6 +83,27 @@ class Character(TimestampMixin, Base):
     ascension_stat_type: Mapped[StatType | None] = mapped_column(
         enum_column(StatType, 48), nullable=True,
     )
+
+    #: `stats_modifier.prop_grow_curves` as `{FIGHT_PROP_BASE_*: GROW_CURVE_*}`. **Without
+    #: this the three base stats above cannot be evaluated at any level** — they are level-1
+    #: values that grow on a named curve, and F.3 found the gap by trying.
+    #:
+    #: Read from the payload, never derived from the stat: **every one of the 150 characters
+    #: grows DEF on an HP curve** (`GROW_CURVE_HP_S4`/`_S5`), so "the DEF curve" is not a
+    #: thing. Project Amber publishes the same pairing independently.
+    prop_curves: Mapped[dict] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb"),
+    )
+
+    #: The three per-character base values the payload publishes beside the scaling stats.
+    #: gcsim hardcodes `CR += 0.05` / `CD += 0.5` (`basestat.go:82-84`) and reads EM from
+    #: the character data — and the payloads show why the last one matters and the first
+    #: does not quite hold: **Lauma publishes 200 base EM and Nefer 100**, while the two
+    #: unreleased Traveler bodies publish `crit_rate: 0` rather than 0.05. Storing what the
+    #: payload says costs three columns and removes three assumptions.
+    base_elemental_mastery: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    base_crit_rate: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    base_crit_dmg: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
 
     #: `stats_modifier.ascension` verbatim: six rows of `{prop_key: value}`. Stored as JSONB
     #: rather than a sixth table because it is always read as one unit and nothing queries an

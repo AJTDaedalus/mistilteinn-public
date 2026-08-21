@@ -10,9 +10,6 @@ Field provenance: `tests/fixtures/nanoka_gi/artifact.json` (index),
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
-
 from sqlalchemy import (
     Case,
     Float,
@@ -28,6 +25,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.data.snapshot import SnapshotUnavailableError, main_stat_pools
 from app.models.base import Base, TimestampMixin, enum_column, uuid_pk
 from app.models.enums import ArtifactSlot, Rarity, StatType, stat_type_for
 
@@ -55,17 +53,21 @@ from app.models.enums import ArtifactSlot, Rarity, StatType, stat_type_for
 def _load_main_stat_pool() -> dict[ArtifactSlot, tuple[StatType, ...]]:
     """Read the committed snapshot into `{slot: (stat, …)}`.
 
+    Reads through `app.data.snapshot`, which is the **only** module that opens those files
+    (DESIGN §1 A6). This function used to parse the JSON itself; a second parser for the
+    substat table would have followed, and then the two would have disagreed about what a
+    missing file means.
+
     A prop the snapshot names and `StatType` does not is a **hard** error: it means the two
     halves of this repo disagree about the stat vocabulary, and the optimizer would silently
     search a smaller space than the game allows.
     """
-    path = (
-        Path(__file__).resolve().parents[1]
-        / "data" / "yuanshen" / "snapshot" / "artifact_main_stat_pools.json"
-    )
-    if not path.exists():
+    try:
+        pools = main_stat_pools()
+    except SnapshotUnavailableError:
+        # An absent snapshot leaves the pool empty and `main_stats_for` raises with the
+        # rebuild command — a broken checkout, not a supported state.
         return {}
-    pools = json.loads(path.read_text(encoding="utf-8"))["pools"]
     loaded: dict[ArtifactSlot, tuple[StatType, ...]] = {}
     for raw_slot, props in pools.items():
         stats = []
@@ -73,8 +75,8 @@ def _load_main_stat_pool() -> dict[ArtifactSlot, tuple[StatType, ...]]:
             stat = stat_type_for(prop)
             if stat is None:
                 msg = (
-                    f"{path.name} lists {prop!r} for {raw_slot}, which is not in "
-                    f"app/models/enums.py:StatType"
+                    f"artifact_main_stat_pools.json lists {prop!r} for {raw_slot}, which "
+                    f"is not in app/models/enums.py:StatType"
                 )
                 raise ValueError(msg)
             stats.append(stat)

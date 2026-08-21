@@ -89,6 +89,15 @@ def character_fields(key: str, payload: dict[str, Any]) -> dict[str, Any]:
         "base_def": payload.get("base_def", 0.0),
         "ascension_stat_type": ascension_stat_type(key, ascension),
         "ascension_stats": ascension,
+        # Without the curves the three base stats above cannot be evaluated at any level.
+        "prop_curves": {
+            entry["type"]: entry["grow_curve"]
+            for entry in payload.get("stats_modifier", {}).get("prop_grow_curves") or []
+            if entry.get("type") and entry.get("grow_curve")
+        },
+        "base_elemental_mastery": payload.get("elemental_mastery", 0.0) or 0.0,
+        "base_crit_rate": payload.get("crit_rate", 0.0) or 0.0,
+        "base_crit_dmg": payload.get("crit_dmg", 0.0) or 0.0,
         "burst_energy_cost": burst_energy_cost(payload),
         "icon": payload.get("icon"),
     }
