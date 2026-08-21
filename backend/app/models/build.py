@@ -155,6 +155,24 @@ class EnemyProfile(TimestampMixin, Base):
     Values are fractions (`0.10` = 10% RES), matching how the source expresses them.
     Negative means a weakness. **The RES-to-multiplier formula is not here** — it is Chunk
     F's, and it has to arrive with a gcsim/KQM citation at the line that introduces it.
+
+    **`base_hp` / `base_atk` / `base_def` are curve bases, not level-90 stats.** A Hilichurl's
+    `base_hp` is `13.584`. The number a damage calculation needs is that base scaled by the
+    growth curve named in `stat_curves` at `level`, and those curve tables
+    (`MonsterCurveExcelConfigData`) are **YuanShenResources data, i.e. Chunk E** — nanoka
+    does not publish them. `level` therefore describes what the profile is *for*; it is not
+    a level these stats have already been evaluated at. Anything that multiplies these
+    numbers by a crit multiplier and calls the result damage is wrong.
+
+    **One row is one monster family, not one spawn.** A nanoka monster payload holds a
+    `child` map of 1-17 spawn configurations, and 189 of the 360 families with children have
+    children that differ in base stats (85 differ in resistances). D.6 stores the canonical
+    child — the one whose id equals the family id, else the lowest — and records which in
+    `variant_nanoka_id` with `variant_count` beside it, so "these are one of N configs" is a
+    query rather than a thing you have to know.
+
+    `nanoka_id` stays nullable: a hand-authored profile (a test dummy, a Chunk F crossval
+    target) is a legitimate row that no importer owns, and `_prune` leaves NULLs alone.
     """
 
     __tablename__ = "enemy_profiles"
@@ -180,6 +198,20 @@ class EnemyProfile(TimestampMixin, Base):
     pyro_res: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
 
     tags: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+
+    #: The `child` entry these stats came from, and how many that family had. Provenance
+    #: for a choice the payload does not make for us — see the class docstring.
+    variant_nanoka_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    variant_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default=text("0"),
+    )
+
+    #: `{FIGHT_PROP_BASE_HP: "GROW_CURVE_HP_2", …}` from the child's `prop[]`. Without it
+    #: the three base columns cannot be evaluated at any level at all, and Chunk F would
+    #: have to re-fetch the payload to find out how they scale.
+    stat_curves: Mapped[dict] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb"),
+    )
 
     def __repr__(self) -> str:
         return f"<EnemyProfile {self.name} lv{self.level}>"

@@ -430,3 +430,107 @@ def artifact_affix_rows(key: str, payload: dict[str, Any]) -> list[dict[str, Any
             },
         )
     return rows
+
+
+# -- Enemies (D.6) ------------------------------------------------------------------
+
+#: `sub_hurt` key → the `EnemyProfile` resistance column. The payload's internal names are
+#: not display names, and the mapping is the one C.2 already established and asserted
+#: against the affix descriptions: GRASS is Dendro, ROCK is Geo, ELEC is Electro, WATER is
+#: Hydro, WIND is Anemo, ICE is Cryo, FIRE is Pyro (`enums.StatType`).
+_SUB_HURT_COLUMNS: dict[str, str] = {
+    "fire": "pyro_res",
+    "water": "hydro_res",
+    "wind": "anemo_res",
+    "ice": "cryo_res",
+    "elec": "electro_res",
+    "rock": "geo_res",
+    "grass": "dendro_res",
+    "physical": "physical_res",
+}
+
+#: A prop entry with no stat. Six children at 7.0.51 carry `FIGHT_PROP_NONE` with
+#: `GROW_CURVE_NONE` (monster 29010101); they name no curve and are dropped rather than
+#: stored as a curve called "none".
+_NO_CURVE = "GROW_CURVE_NONE"
+
+
+def is_statless_monster(payload: dict[str, Any]) -> bool:
+    """True for a codex entry with no `child` map, and therefore no combat stats at all.
+
+    225 of the 585 monster entries at 7.0.51 are this shape — a four-key payload of
+    `codex`/`desc`/`icon`/`name`, all of them CRITTER, FISH, ANIMAL or AVIARY wildlife.
+    They are codex entries, not damage targets, and a row with three zero stats and eight
+    zero resistances would be indistinguishable from a mapping bug.
+    """
+    return not (payload.get("child") or {})
+
+
+def canonical_variant(key: str, payload: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    """Pick the `child` entry a profile's stats come from.
+
+    A monster payload is a **family**: `child` holds 1-17 spawn configurations (a plain
+    Hilichurl, its NoAI variant, its co-op challenge variant, …), and the stats live only
+    on the children. The choice matters — 189 of the 360 families with children have
+    children whose `base` differs, 85 whose `sub_hurt` differs — so it is made by a stated
+    rule rather than by `next(iter(...))`:
+
+    1. the child whose id **equals the family id**, which is the plain spawn and exists for
+       358 of the 360 families;
+    2. otherwise the **lowest** child id, which is deterministic where "first" is not.
+
+    The chosen id and the family's child count are both stored (`variant_nanoka_id`,
+    `variant_count`) so the choice is visible in the database rather than only here.
+    """
+    children = payload.get("child") or {}
+    if not children:
+        msg = f"monster {key}: no child entries to take stats from"
+        raise NanokaMappingError(msg)
+    if key in children:
+        return key, children[key]
+    lowest = min(children, key=lambda raw: (len(raw), raw))
+    return lowest, children[lowest]
+
+
+def enemy_profile_fields(key: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """The `EnemyProfile` column values for one monster family.
+
+    The three base stats are the child's curve **bases**, not level-90 values — see the
+    `EnemyProfile` docstring. `base.em` is dropped: it is `0` on all 1,512 children at
+    7.0.51 and enemy Elemental Mastery does not enter a player's damage calculation, so a
+    column of zeroes would be a claim that it might.
+    """
+    variant_id, variant = canonical_variant(key, payload)
+    base = variant.get("base") or {}
+    fields: dict[str, Any] = {
+        "nanoka_id": int(key),
+        "name": payload.get("name", ""),
+        "tags": payload.get("codex", "") or "",
+        "base_hp": base.get("hp", 0.0),
+        "base_atk": base.get("atk", 0.0),
+        "base_def": base.get("def", 0.0),
+        "variant_nanoka_id": int(variant_id),
+        "variant_count": len(payload.get("child") or {}),
+        "stat_curves": _stat_curves(variant),
+    }
+    sub_hurt = variant.get("sub_hurt") or {}
+    unknown = set(sub_hurt) - set(_SUB_HURT_COLUMNS)
+    if unknown:
+        msg = (
+            f"monster {key}: unmapped sub_hurt channel(s) {sorted(unknown)}. Eight channels "
+            f"are modelled as eight columns; a ninth needs a column, not a silent drop."
+        )
+        raise NanokaMappingError(msg)
+    for channel, column in _SUB_HURT_COLUMNS.items():
+        fields[column] = sub_hurt.get(channel, 0.0)
+    return fields
+
+
+def _stat_curves(variant: dict[str, Any]) -> dict[str, str]:
+    """`{prop: grow_curve}` from a child's `prop[]`, dropping the no-curve entries."""
+    return {
+        prop["type"]: prop["grow_curve"]
+        for prop in (variant.get("prop") or [])
+        if prop.get("grow_curve") not in (None, "", _NO_CURVE)
+        and prop.get("type") not in (None, "", "FIGHT_PROP_NONE")
+    }

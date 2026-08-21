@@ -39,6 +39,8 @@ from app.data.importers.nanoka_gi_mappings import (
     artifact_set_fields,
     character_fields,
     constellation_rows,
+    enemy_profile_fields,
+    is_statless_monster,
     is_weapon_skin,
     passive_rows,
     refinement_rows,
@@ -46,6 +48,7 @@ from app.data.importers.nanoka_gi_mappings import (
     weapon_fields,
 )
 from app.models.artifact import ArtifactSet, ArtifactSetAffix
+from app.models.build import EnemyProfile
 from app.models.character import AscensionPassive, Character, Constellation, Talent, TalentScaling
 from app.models.weapon import Weapon, WeaponRefinement
 
@@ -400,8 +403,26 @@ class NanokaGIImporter(BaseImporter):
         return True
 
     async def import_enemies(self) -> int:
-        """TODO(chunk-D.6): map the monster detail payload to `EnemyProfile`."""
-        raise NanokaImportError(_NOT_MAPPED.format(entity="monster", task="D.6"))
+        """Upsert one enemy profile per monster family, skipping the stat-less codex ones."""
+        result = await self._run_pass("monster", EnemyProfile, self._map_enemy)
+        return result.imported
+
+    async def _map_enemy(self, key: str, payload: dict[str, Any]) -> bool:
+        """One profile row, or a skip for a codex entry with no combat stats."""
+        if is_statless_monster(payload):
+            logger.debug("Skipping stat-less monster %s (%s)", key, payload.get("name"))
+            return False
+
+        fields = enemy_profile_fields(key, payload)
+        profile = await self._get_existing(EnemyProfile, int(key))
+        if profile is None:
+            profile = EnemyProfile(**fields)
+            self.session.add(profile)
+        else:
+            for column, value in fields.items():
+                setattr(profile, column, value)
+        await self.session.flush()
+        return True
 
     # -- Shared machinery the D.3-D.6 mappings run on --------------------------
 

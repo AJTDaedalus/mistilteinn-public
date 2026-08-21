@@ -13,11 +13,11 @@ import httpx
 import pytest
 
 from app.data.importers.nanoka_gi_importer import (
+    _NOT_MAPPED,
     ENTITIES,
     USER_AGENT,
     HttpNanokaTransport,
     NanokaGIImporter,
-    NanokaImportError,
     _batched,
     _index_keys,
 )
@@ -211,22 +211,18 @@ async def test_dry_run_records_a_failed_sample_instead_of_raising():
     assert not any(summary.ok for summary in summaries.values())
 
 
-@pytest.mark.parametrize(
-    ("method", "task"),
-    [
-        ("import_enemies", "D.6"),
-    ],
-)
-async def test_unmapped_entity_passes_raise_and_name_their_task(method, task):
-    """An unwritten mapping must not report zero rows imported.
+async def test_the_unmapped_pass_message_names_its_task():
+    """D.1 left every pass raising with its task id; D.3-D.6 have now claimed all four.
 
-    `import_characters` dropped off this list when D.3 wrote it; each of the remaining
-    three leaves as its own task lands.
+    The message is kept — and tested — because it is the shape any *future* entity pass
+    should start from: an importer that reports zero rows imported is indistinguishable
+    from one that found an empty index.
     """
-    importer = NanokaGIImporter(MagicMock(), transport=FixtureTransport())
+    message = _NOT_MAPPED.format(entity="gcg", task="D.9")
 
-    with pytest.raises(NanokaImportError, match=task):
-        await getattr(importer, method)()
+    assert "gcg" in message
+    assert "D.9" in message
+    assert "zero rows imported" in message
 
 
 async def test_close_releases_the_transport():

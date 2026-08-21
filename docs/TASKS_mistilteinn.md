@@ -289,7 +289,7 @@ Each task below is **one commit**. Commit message form:
 ### [x] D.3 — Character mapping
 ### [x] D.4 — Weapon mapping
 ### [x] D.5 — Artifact-set mapping
-### D.6 — Monster / enemy-profile mapping
+### [x] D.6 — Monster / enemy-profile mapping
 - **Do (each):** map the committed fixture to the Chunk C models; unit-test the mapping against
   the fixture with no network; then run it live against the full index.
 - **Accept (each):** unit test green offline; live run upserts and re-runs idempotently.
