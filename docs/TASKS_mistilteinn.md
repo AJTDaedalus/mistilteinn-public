@@ -153,7 +153,7 @@ Each task below is **one commit**. Commit message form:
   Update `app/models/__init__.py`.
 - **Accept:** `python -c "import app.models"` succeeds.
 
-### B.5 — Delete ZZZ schemas
+### [x] B.5 — Delete ZZZ schemas
 - **Do:** delete `app/schemas/{agent,disc,w_engine,damage,optimizer,scorer,simulate,buff_preset,build}.py`.
   Keep `auth.py`, `common.py`, `optimization_job.py`, `team.py`. Update `__init__.py`.
 - **Accept:** `python -c "import app.schemas"` succeeds.
