@@ -382,15 +382,16 @@ potential score built on a guessed roll count is a confident number with nothing
 committed the value tables. Until then `artifact_ranker` ranks pieces as they are.
 
 `TODO(chunk-G.9)` in `app/services/artifact_ranker.py`.
-### G.10 — Move optimize/rank behind the job runner
+### [x] G.10 — Move optimize/rank behind the job runner
 
-Both endpoints run the search **synchronously** in the request. That is correct for the
-inventories the tests use and wrong for a scanned account: the prefilter's budget targets
-300s of work, and no HTTP client waits that long. `app/services/job_runner.py` kept its
-generic machinery through the demolition (`TODO(chunk-G)` in that file) and the
-`optimization_jobs` table and repository already exist. `artifact_optimizer.optimize` takes
-a `progress_callback` and honours `artifact_prefilter.Cancelled` precisely so this is a
-wiring job and not a rewrite.
+**Done for `optimize`; `rank-artifacts` is still synchronous** and stays that way — a
+ranking is O(inventory), not O(inventory^5), so it finishes in the request by construction.
+Owner decision (2026-08-22): the optimize contract is **hybrid** — 200 with the result when
+the search fits inside `optimizer_job_service.SYNC_SECONDS`, 202 with a `poll_url` when it
+does not. Always-async was rejected as making the ordinary case worse to serve the rare one.
+
+Also renamed the last ZZZ columns on `optimization_jobs` (migration `9c4a1d7be2f0`):
+`assignments_*` were set-assignment *frames*, which this game does not have.
 
 ### [x] G.11 — Make a lazy load a loud failure, not a 500
 

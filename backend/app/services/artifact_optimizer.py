@@ -168,7 +168,14 @@ class OptimizerProgress:
     combinations_done: int
     combinations_total: int
     evaluated: int
-    elapsed_seconds: float
+    #: Refused before scoring, by a `required_sets` constraint and by a `min_stats` floor.
+    #: Carried on the *progress* snapshot and not only on the result, because a user
+    #: watching a long search wants "40,000 done, 38,000 of them rejected by your 4-piece
+    #: requirement" while it is still running — that is the reading that tells them to stop
+    #: it and loosen the constraint.
+    rejected_by_sets: int = 0
+    rejected_by_stats: int = 0
+    elapsed_seconds: float = 0.0
 
     @property
     def fraction(self) -> float:
@@ -297,6 +304,8 @@ def optimize(
                         combinations_done=done,
                         combinations_total=total,
                         evaluated=evaluated,
+                        rejected_by_sets=rejected_by_sets,
+                        rejected_by_stats=rejected_by_stats,
                         elapsed_seconds=now - started,
                     ),
                 )
@@ -339,6 +348,8 @@ def optimize(
                 combinations_done=done,
                 combinations_total=total,
                 evaluated=evaluated,
+                rejected_by_sets=rejected_by_sets,
+                rejected_by_stats=rejected_by_stats,
                 elapsed_seconds=time.monotonic() - started,
             ),
         )

@@ -59,17 +59,17 @@ class TestOptimizationJobRepo:
         await repo.mark_running(queued_job.id)
         await repo.update_progress(
             queued_job.id,
-            assignments_done=5,
-            assignments_total=20,
+            combinations_done=5,
+            combinations_total=20,
             evaluated=1000,
-            pruned_sets=10,
-            pruned_stats=5,
+            rejected_by_sets=10,
+            rejected_by_stats=5,
             elapsed_seconds=2.5,
             eta_seconds=7.5,
         )
         await db_session.refresh(queued_job)
-        assert queued_job.assignments_done == 5
-        assert queued_job.assignments_total == 20
+        assert queued_job.combinations_done == 5
+        assert queued_job.combinations_total == 20
         assert queued_job.eta_seconds == 7.5
 
     async def test_mark_succeeded(self, repo, db_session, queued_job):

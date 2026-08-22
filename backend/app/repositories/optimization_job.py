@@ -58,11 +58,11 @@ class OptimizationJobRepository(BaseRepository[OptimizationJob]):
         self,
         job_id: str,
         *,
-        assignments_done: int,
-        assignments_total: int,
+        combinations_done: int,
+        combinations_total: int,
         evaluated: int,
-        pruned_sets: int,
-        pruned_stats: int,
+        rejected_by_sets: int,
+        rejected_by_stats: int,
         elapsed_seconds: float,
         eta_seconds: float | None,
     ) -> None:
@@ -71,11 +71,11 @@ class OptimizationJobRepository(BaseRepository[OptimizationJob]):
             update(OptimizationJob)
             .where(OptimizationJob.id == job_id)
             .values(
-                assignments_done=assignments_done,
-                assignments_total=assignments_total,
+                combinations_done=combinations_done,
+                combinations_total=combinations_total,
                 evaluated=evaluated,
-                pruned_sets=pruned_sets,
-                pruned_stats=pruned_stats,
+                rejected_by_sets=rejected_by_sets,
+                rejected_by_stats=rejected_by_stats,
                 elapsed_seconds=elapsed_seconds,
                 eta_seconds=eta_seconds,
                 updated_at=datetime.datetime.now(tz=datetime.UTC),

@@ -25,8 +25,8 @@ class OptimizationJobSummary(BaseModel):
     character_name: str
     enemy_name: str
     rotation_name: str
-    assignments_done: int
-    assignments_total: int
+    combinations_done: int
+    combinations_total: int
     evaluated: int
     elapsed_seconds: float
     eta_seconds: float | None

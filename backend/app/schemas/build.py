@@ -242,3 +242,19 @@ class RankResponse(BaseModel):
     baseline_damage: float
     artifacts: list[RankedArtifactRead]
     skipped_conditional_bonuses: int = 0
+
+
+class JobAccepted(BaseModel):
+    """202 body: the search was too large to answer inside the request.
+
+    Returned instead of `OptimizeResponse` when the estimated combination count exceeds what
+    `optimizer_job_service.SYNC_SECONDS` allows. Poll `poll_url` until `status` is terminal.
+
+    `estimated_combinations` and `sync_limit` are both here so "why did this become a job"
+    is answerable from the response, without reading the source or guessing at a threshold.
+    """
+
+    job_id: str
+    poll_url: str
+    estimated_combinations: int
+    sync_limit: int
