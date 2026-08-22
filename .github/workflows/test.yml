@@ -65,7 +65,7 @@ jobs:
         run: >-
           ruff check app/ tests/
           scripts/seed_db.py scripts/verify_seed.py scripts/capture_nanoka_fixtures.py
-          scripts/yuanshen/ scripts/bench_optimizer.py
+          scripts/yuanshen/ scripts/bench_optimizer.py scripts/gcsim/
 
       - name: Unit tests
         # Unit only. Integration runs in its own job below so this lane stays fast
@@ -235,6 +235,23 @@ jobs:
         # numbers as the crossval fixture, the native binary and the WASI probe. Asserted
         # here rather than assumed, and it exits non-zero on any other value.
         run: npm run gcsim:verify
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Emit sample gcsim configs
+        # The emitter is Python and the only authority on what a valid config is is a
+        # WebAssembly module, so the two halves meet through files rather than a claim.
+        working-directory: backend
+        run: |
+          pip install -e .
+          python -m scripts.gcsim.emit_sample_configs
+
+      - name: Verify gcsim accepts what we emit
+        # A config that parses in our head and not in gcsim's is worth nothing, and would
+        # surface as a runtime error inside a Web Worker rather than as a failing test.
+        run: npm run gcsim:verify-config
 
       - name: Typecheck
         # `tsconfig.app.json`, **not** the root `tsconfig.json`. The root config has

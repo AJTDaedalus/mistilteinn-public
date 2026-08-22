@@ -98,11 +98,18 @@ one layer up**, and it gets B.6's treatment: delete the ZZZ concepts rather than
 - **Measured:** instantiate 0.09 s; **31.35 ms per Monte Carlo iteration** single-threaded on
   a two-character 90-second rotation. See the DESIGN §3.5 correction this forced.
 
-### [ ] B.3 — Config generation from a build
-- **Do:** emit gcsim config text from a stored build. Needs the character-key alias table
-  (`RESEARCH_gcsim_embed.md` §5: 111 of 150 match naively; the rest are surname-prefixed).
-- **Accept:** **refuses** an unmatched key naming it, exactly as `good_import_service`
-  refuses an unknown `setKey`. A test asserts the alias table is injective.
+### [x] B.3 — Config generation from a build
+- **Done**, and `RESEARCH_gcsim_embed.md` §5 was **wrong about the keys**. It read gcsim's
+  *directory* names and concluded the surname is dropped (`ayaka`). The authority is
+  `pkg/core/keys/*.dm.go`, and the real keys are the **full** names — `kamisatoayaka`,
+  `kaedeharakazuha`, `raidenshogun`. So there is no surname alias table at all.
+- What the unmatched 45 actually are: **28 Traveler variants** (structured — body id +
+  element → `aetherpyro`, `luminehydro`; gcsim has **six** elements, no Cryo Traveler) and
+  **17 characters newer than the pin**. The second group is refused, correctly: gcsim cannot
+  simulate what it does not implement.
+- `app/data/gcsim/keys.json` is the committed derivation (`scripts/gcsim/build_key_snapshot.py`),
+  and CI feeds emitted configs to **gcsim's own `validateConfig`** — the only authority on
+  whether the text is a config.
 
 ### [ ] B.4 — Context runs, bucketed by ER
 - **Do:** one run per ER bucket for a context (DESIGN §3.5), cached in Postgres, keyed by the

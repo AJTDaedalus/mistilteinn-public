@@ -96,12 +96,22 @@ Real, bounded, and none of it novel:
 
 1. **Config generation.** Emitting gcsim config text from our DB models — character/weapon/
    set keys, levels, refinement, constellation, artifact stats. Mechanical.
-2. **A character-key alias table.** Naive normalisation matches **111 of 150**; the 39 misses
-   are mostly surname-prefixed names — gcsim calls Kamisato Ayaka `ayaka`, Kaedehara Kazuha
-   `kazuha`, Raiden Shogun `raiden` — plus characters newer than the pin (Kachina, Mizuki,
-   Iansan, Ifa) and non-characters. **This is exactly the GOOD `setKey` problem from G.6b**,
-   and it gets the same treatment: normalise, alias the exceptions, and **refuse rather than
-   guess** on an unmatched name.
+2. **A character-key mapping.** ~~Naive normalisation matches 111 of 150; the 39 misses are
+   mostly surname-prefixed names — gcsim calls Kamisato Ayaka `ayaka`.~~ **Corrected in B.3:
+   that read gcsim's *directory* names, which are not its keys.** The authority is
+   `pkg/core/keys/*.dm.go`, and the real keys are the **full** names — `kamisatoayaka`,
+   `kaedeharakazuha`, `raidenshogun`. There is no surname alias table.
+
+   Measured against the real keys: **105 of 150** match by normalisation. The 45 misses are
+   **28 Traveler variants**, which are structured rather than aliased (body id + element →
+   `aetherpyro`; gcsim has six elements, with no Cryo Traveler), and **17 characters released
+   after the pin**. The second group is refused — gcsim cannot simulate what it does not
+   implement, and a re-pin is what changes that. Weapons match 231/284 and artifact sets
+   53/65, with the same character: the misses are things gcsim has no key for.
+
+   **The `refuse rather than guess` rule from G.6b still applies**, and matters more here: a
+   wrong-but-plausible key makes gcsim simulate *a different character* and return a number
+   that looks entirely reasonable.
 3. **Action lists.** gcsim needs a rotation to simulate. The BRIEF already plans for this
    (*"rotation corpus (community action-list DB → default rotations per team archetype)"*).
 4. **Re-pinning discipline.** gcsim becomes a dependency whose upgrades change results. The
