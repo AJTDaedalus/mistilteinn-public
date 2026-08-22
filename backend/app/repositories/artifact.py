@@ -1,0 +1,94 @@
+"""Data access for a user's owned artifacts.
+
+Owner-scoped, unlike the catalogue repositories: an artifact belongs to someone. Every
+query here goes through `BaseRepository`'s `owner_id`, so a missing scope is a missing
+filter rather than a silently global read.
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from sqlalchemy import func, select
+from sqlalchemy.orm import selectinload
+
+from app.models.artifact import Artifact, artifact_slot_sort_order
+from app.repositories.base import BaseRepository
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from sqlalchemy import Select
+
+    from app.models.enums import ArtifactSlot
+
+
+class ArtifactRepository(BaseRepository[Artifact]):
+    """Sole data-access point for owned artifacts."""
+
+    model = Artifact
+
+    def _filtered(
+        self, *, slot: ArtifactSlot | None, set_id: str | None, equipped: bool | None,
+    ) -> Select[tuple[Artifact]]:
+        stmt = select(Artifact)
+        if self.owner_id is not None:
+            stmt = stmt.where(Artifact.owner_id == self.owner_id)
+        if slot is not None:
+            stmt = stmt.where(Artifact.slot == slot)
+        if set_id is not None:
+            stmt = stmt.where(Artifact.artifact_set_id == set_id)
+        if equipped is not None:
+            stmt = (
+                stmt.where(Artifact.build_id.isnot(None)) if equipped
+                else stmt.where(Artifact.build_id.is_(None))
+            )
+        return stmt
+
+    async def search(
+        self,
+        *,
+        slot: ArtifactSlot | None = None,
+        set_id: str | None = None,
+        equipped: bool | None = None,
+        offset: int = 0,
+        limit: int = 100,
+    ) -> Sequence[Artifact]:
+        """Filtered, paginated list in **game slot order**, with each piece's set.
+
+        Ordered by `artifact_slot_sort_order()`, not by `slot`: sorting on the column sorts
+        the payload keys alphabetically — flower, circlet, plume, goblet, sands — which
+        looks deliberate and is wrong for anything that iterates the result.
+        """
+        stmt = (
+            self._filtered(slot=slot, set_id=set_id, equipped=equipped)
+            .options(selectinload(Artifact.artifact_set))
+            .order_by(artifact_slot_sort_order(), Artifact.level.desc(), Artifact.id)
+            .offset(offset)
+            .limit(limit)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
+    async def count_filtered(
+        self,
+        *,
+        slot: ArtifactSlot | None = None,
+        set_id: str | None = None,
+        equipped: bool | None = None,
+    ) -> int:
+        """Total matching `search`'s filters, so a filtered page's `total` is its own."""
+        stmt = self._filtered(slot=slot, set_id=set_id, equipped=equipped)
+        result = await self.session.execute(
+            select(func.count()).select_from(stmt.subquery()),
+        )
+        return int(result.scalar_one())
+
+    async def get_with_set(self, artifact_id: str) -> Artifact | None:
+        """One owned artifact with its set eager-loaded."""
+        stmt = select(Artifact).where(Artifact.id == artifact_id)
+        if self.owner_id is not None:
+            stmt = stmt.where(Artifact.owner_id == self.owner_id)
+        stmt = stmt.options(selectinload(Artifact.artifact_set))
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
