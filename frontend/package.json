@@ -13,6 +13,7 @@
     "openapi:fetch": "curl -sf http://localhost:8001/openapi.json -o openapi.json",
     "codegen": "openapi-typescript ./openapi.json --output ./src/app/api/api.types.ts",
     "lint": "ng lint",
+    "pretypecheck": "npm run codegen",
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "private": true,
