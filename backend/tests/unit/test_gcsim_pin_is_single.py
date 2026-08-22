@@ -97,3 +97,26 @@ def test_ci_builds_and_verifies_the_browser_wasm():
         "nothing generates the configs the validator reads, so it would exit on an empty "
         "directory — which it does deliberately, rather than passing on nothing."
     )
+
+
+def test_the_browser_verifier_uses_the_deterministic_case():
+    """gcsim **rolls** crit, so a live re-run is not reproducible.
+
+    `verify-gcsim-wasm.mjs` re-runs the browser build on every CI job. Pointed at
+    `ayaka_normal_1.txt` it passed five runs and then returned 40.894 against an expected
+    21.706 — a ratio of 1.884, which is exactly `1 + Ayaka's crit DMG at 90/6`. It had rolled
+    a crit.
+
+    A gate that fails 5% of the time is worse than no gate: it teaches people to re-run CI,
+    and the day it fails for a real reason nobody believes it. The `_nocrit` variant clamps
+    crit rate to zero and is reproducible — verified by forcing the opposite (`cr=1`), which
+    returns 204.471 on 40 runs out of 40 against the no-crit 108.530.
+    """
+    verifier = (REPO / "frontend" / "scripts" / "verify-gcsim-wasm.mjs").read_text()
+
+    assert "ayaka_normal_1_nocrit.txt" in verifier, (
+        "the browser verifier no longer uses the no-crit case. Anything that re-runs gcsim "
+        "and compares to a recorded number is flaky, because gcsim rolls crit."
+    )
+    assert (REPO / "backend" / "tests" / "fixtures" / "crossval"
+            / "ayaka_normal_1_nocrit.txt").exists()
