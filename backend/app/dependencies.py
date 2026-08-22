@@ -16,14 +16,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.enums import UserStatus
 from app.models.user import User
+from app.repositories.artifact_set import ArtifactSetRepository
+from app.repositories.character import CharacterRepository
+from app.repositories.enemy import EnemyProfileRepository
 from app.repositories.optimization_job import OptimizationJobRepository
 from app.repositories.session import SessionRepository
 from app.repositories.team import TeamRepository
 from app.repositories.user import UserRepository
+from app.repositories.weapon import WeaponRepository
 
 DBSession = Annotated[AsyncSession, Depends(get_db)]
 
 # ── Public (no auth) repo factories ──────────────────────────────────────────
+#
+# G.6 restores the four catalogue factories above. The rest are still absent:
 #
 # TODO(chunk-F/G): B.7 removed the factories for every deleted repository —
 # get_agent_repo, get_attack_repo, get_w_engine_repo, get_disc_set_repo,
@@ -34,6 +40,26 @@ DBSession = Annotated[AsyncSession, Depends(get_db)]
 #
 # Chunk D is done and added none of them: it seeds the catalogue but exposes nothing over
 # HTTP, so the read surface — and its factories — is G.6's.
+
+
+async def get_character_repo(session: DBSession) -> CharacterRepository:
+    """FastAPI DI factory for `CharacterRepository` (catalogue — no owner scope)."""
+    return CharacterRepository(session)
+
+
+async def get_weapon_repo(session: DBSession) -> WeaponRepository:
+    """FastAPI DI factory for `WeaponRepository` (catalogue — no owner scope)."""
+    return WeaponRepository(session)
+
+
+async def get_artifact_set_repo(session: DBSession) -> ArtifactSetRepository:
+    """FastAPI DI factory for `ArtifactSetRepository` (catalogue — no owner scope)."""
+    return ArtifactSetRepository(session)
+
+
+async def get_enemy_profile_repo(session: DBSession) -> EnemyProfileRepository:
+    """FastAPI DI factory for `EnemyProfileRepository` (catalogue — no owner scope)."""
+    return EnemyProfileRepository(session)
 
 
 async def get_optimization_job_repo(session: DBSession) -> OptimizationJobRepository:

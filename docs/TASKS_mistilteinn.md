@@ -363,7 +363,10 @@ Each task below is **one commit**. Commit message form:
 ### [x] G.3 — Pareto + budget-K pruning, progress and cancellation (`artifact_prefilter.py`)
 ### [x] G.4 — `rank_pipeline.py` port → `artifact_ranker.py` (marginal value across contexts)
 ### [x] G.5 — `good_importer.py` — GOOD schema validation, reject-don't-coerce on unknown keys
-### G.6 — Optimizer + builds + artifacts API surface restored
+### [~] G.6 — Optimizer + builds + artifacts API surface restored
+- **[x] G.6a — catalogue read endpoints** (characters, weapons, artifact sets, enemies)
+- **[ ] G.6b — user artifacts + GOOD import endpoint**
+- **[ ] G.6c — builds, and the optimize/rank endpoints behind the job runner**
 ### G.7 — Re-baseline `tests/perf` for the 5-slot search space
 ### G.8 — Delete the consumed files from `app/services/_ported/`
 ### G.9 — Artifact upgrade-potential scoring **[BLOCKED — needs a citation]**
