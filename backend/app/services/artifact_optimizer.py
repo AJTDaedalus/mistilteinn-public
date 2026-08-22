@@ -250,7 +250,7 @@ def optimize(
     # it appeared in — N^4 times for N pieces per slot. The per-candidate *stat resolution*
     # is the cost this module accepts; repeating an immutable value is not part of it.
     resolved = {
-        candidate.artifact_id: _validated_stats(candidate)
+        candidate.artifact_id: validated_stats(candidate)
         for bucket in by_slot.values()
         for candidate in bucket
     }
@@ -258,7 +258,7 @@ def optimize(
     # Pruning **after** validation, not before. The prefilter values a candidate's main stat
     # against the snapshot, so an illegal piece reaching it raises `SnapshotUnavailableError`
     # from inside the pruning layer — blaming the snapshot for a caller's bad input, and
-    # losing the artifact id that `_validated_stats` puts in the message.
+    # losing the artifact id that `validated_stats` puts in the message.
     by_slot, report = artifact_prefilter.prune(
         by_slot=by_slot,
         base_contributions=base_contributions,
@@ -305,11 +305,10 @@ def optimize(
             rejected_by_sets += 1
             continue
 
-        log = build_log(NodeRegistry())
-        log.replay(base_contributions)
-        for candidate in combination:
-            add_artifact(log, resolved[candidate.artifact_id])
-        skipped_conditional |= _apply_set_bonuses(log, counts, bonuses)
+        log, skipped = build_combination_log(
+            base_contributions, combination, bonuses, resolved=resolved, counts=counts,
+        )
+        skipped_conditional |= skipped
 
         evaluator = BuildEvaluator(
             registry=log.registry, enemy=enemy, character_level=character_level,
@@ -354,6 +353,42 @@ def optimize(
     )
 
 
+def build_combination_log(
+    base_contributions: Sequence[Contribution],
+    combination: Sequence[ArtifactCandidate],
+    bonuses: dict[int, list[SetBonus]],
+    *,
+    resolved: dict[str, ArtifactStats] | None = None,
+    counts: dict[int, int] | None = None,
+) -> tuple[ContributionLog, set[tuple[int, int]]]:
+    """Everything a five-piece build contributes, as one log. The only definition of it.
+
+    Both the search (`optimize`) and the ranker read a build's damage through this, so
+    "what a set of five artifacts is worth" cannot come to mean two different things —
+    A6's one-mechanic rule at the point where a second opinion would be plausible enough to
+    go unnoticed for months.
+
+    `resolved` and `counts` are the search's caches, passed in when it already has them and
+    computed here when a caller does not.
+    """
+    if counts is None:
+        counts = _count_sets(combination)
+    log = build_log(NodeRegistry())
+    log.replay(base_contributions)
+    for candidate in combination:
+        stats = (
+            resolved[candidate.artifact_id] if resolved is not None
+            else validated_stats(candidate)
+        )
+        add_artifact(log, stats)
+    return log, _apply_set_bonuses(log, counts, bonuses)
+
+
+def bonuses_by_set(bonuses: Iterable[SetBonus]) -> dict[int, list[SetBonus]]:
+    """Group set bonuses the way `build_combination_log` wants them."""
+    return _bonuses_by_set(bonuses)
+
+
 def _bucket_by_slot(
     candidates: Iterable[ArtifactCandidate], constraints: OptimizerConstraints,
 ) -> dict[str, list[ArtifactCandidate]]:
@@ -384,7 +419,7 @@ def _bucket_by_slot(
     return buckets
 
 
-def _validated_stats(candidate: ArtifactCandidate) -> ArtifactStats:
+def validated_stats(candidate: ArtifactCandidate) -> ArtifactStats:
     """Check one candidate and build its stat record, naming it if it is not legal.
 
     Done once per candidate rather than once per combination it appears in: an illegal piece
