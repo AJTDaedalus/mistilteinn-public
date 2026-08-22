@@ -49,8 +49,11 @@ corpus — is next, and needs its own DESIGN doc before any code.**
   weapons, 65 artifact sets, 360 enemy profiles) and `python -m scripts.verify_seed` checks
   the result against the committed indexes and nine hand-read anchors. **G.6 exposed it**:
   the catalogue is readable at `/api/v1/{characters,weapons,artifact-sets,enemies}`, a GOOD
-  export imports at `/api/v1/artifacts/import/good`, and `/api/v1/builds/{id}/optimize` and
-  `/rank-artifacts` run the Chunk F damage chain over it.
+  export imports at `/api/v1/artifacts/import/good`, and `/api/v1/builds/{id}/explain` and
+  `/compare-weapons` run the Chunk F damage chain over it. **C.6 deleted `/optimize` and
+  `/rank-artifacts`**: searching runs in the browser now, and until that UI lands there is
+  deliberately no reachable optimizer. `artifact_optimizer.optimize` survives as the oracle
+  the browser kernel's fixtures are generated from, not as a route.
 - **A seeded database says which patch it is.** `seed_runs` holds one append-only row per
   seed run: version pinned, per-entity counts, failed ids, and whether the run finished.
   `succeeded` is written `False` first and flipped at the end, so a run that died half way

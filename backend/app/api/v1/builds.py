@@ -1,21 +1,20 @@
-"""Saved builds, and the optimizer and ranker over them.
-
-This is where Chunks F and G become reachable. Until now the damage chain and the artifact
-search existed and nothing could call them.
+"""Saved builds, and explaining and comparing them.
 
 ## The hit is supplied, not derived
 
-`POST /builds/{id}/optimize` takes a `hit` — multiplier, scaling stat, damage channel,
+`POST /builds/{id}/explain` takes a `hit` — multiplier, scaling stat, damage channel,
 scope. It does **not** work one out from the build's character. Deriving a talent's numbers
 from its stored rows is the kit corpus's job (Chunk H) and this repo has no kit corpus;
 parsing a multiplier out of a `desc` string and serving the result would be presenting a
 guess as though it came from the game. `TODO(chunk-H)`.
 
-## The search reports what it skipped
+## The search is not here any more
 
-Every optimize response carries `search`, including `is_exact`. A near-answer presented as
-an answer is worse than a slow search, and the caller is the one who can decide to re-run
-exhaustively.
+C.6 deleted `/optimize` and `/rank-artifacts`. Searching runs in the browser (DESIGN §3.5:
+nothing combinatorial lands on the server), and what is left here is the part that reads the
+database — explaining one build, and comparing candidate weapons in it. Both reach the damage
+chain through `build_combination_log`, which stays the single definition of what five
+artifacts are worth.
 """
 
 from typing import TYPE_CHECKING, Annotated
