@@ -319,7 +319,37 @@ runs exist but the nearest is beyond `MAX_NEIGHBOUR_BUCKETS`. They call for diff
 simulate the set this search needs, or simulate this one bucket — so collapsing them would
 leave the caller guessing how much it is in for, which is the difference between a stated
 outcome and a shrug.
-### [ ] D.4 — Explanation from contribution log + retrieved runs + catalogue text
+### [x] D.4 — Explanation from contribution log + retrieved runs + catalogue text — **done**
+
+`app/services/build_explanation.py` and `POST /api/v1/builds/{id}/explain`. Every number in
+the output **arrives** rather than being computed: contributions from
+`build_combination_log` (the same path the search and the ranker use), set text from the
+catalogue verbatim, and the simulated figure from `sim_retrieval` carrying its own measured
+divergence. Nothing in the explanation layer multiplies anything — a second implementation of
+the chain would be free to disagree with the first (DESIGN §1 A6), and there is a test that
+the set of values out is a subset of the values in.
+
+**What it refuses to say** is most of what was built:
+
+- **A set effect with no catalogue text is `null` plus an `uncited` line**, never a fluent
+  paraphrase. Writing an effect from memory is forbidden everywhere else in this repo, and an
+  explanation is where it would be least likely to be caught — the output reads like prose,
+  so a reader's guard is down.
+- **`sum_of_parts`, not `total`.** `base * (1 + pct) + flat` is not the sum of its parts, and
+  a field called `total` would invite a reader to believe otherwise.
+- **Four pieces explained as five is a 404**, not a partial answer.
+- **Differences are ranked by *relative* size.** `flat_atk +311` above `crit_dmg +0.20` would
+  rank builds by which stats happen to be big numbers.
+- **The same total from different pieces is a difference, not a match** — telling a user
+  their swap did nothing, when the *stat* did nothing and the piece changed, is a different
+  and wrong claim.
+
+**And it found a real defect in existing code.** The join key was a guess and matched nothing:
+set bonuses recorded themselves as `"set 15025 2pc"`, an internal nanoka id, which contradicts
+`Contribution.note`'s own docstring — *"because 'artifact' alone does not tell a user which of
+five pieces to change"*. The format now lives in one function, `artifact_optimizer.set_bonus_note`,
+that both the writer and the description map call, and a test changes the format at that one
+definition to prove neither side hand-builds it.
 ### [ ] D.5 — Weapon comparison across N candidate weapons (DESIGN §3.5) — **v1**
 
 ---
