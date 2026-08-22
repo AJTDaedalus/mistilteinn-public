@@ -1,0 +1,4 @@
+
+
+# Sandbox the injection harness's own tests build and tear down.
+tests/_inject_tmp/
