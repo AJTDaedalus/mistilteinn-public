@@ -72,6 +72,22 @@ class WeaponRepository(BaseRepository[Weapon]):
         )
         return int(result.scalar_one())
 
+    async def get_many_with_refinements(self, weapon_ids: Sequence[str]) -> list[Weapon]:
+        """Several weapons by primary key, each with its refinement rows.
+
+        Refinements eagerly, because the caller reads them to *name what it cannot model* —
+        and a lazy relationship touched inside an async request is the `MissingGreenlet`
+        shape Chunk G met three times before `lazy="raise_on_sql"` was turned on.
+        """
+        if not weapon_ids:
+            return []
+        stmt = (
+            select(Weapon)
+            .where(Weapon.id.in_(list(weapon_ids)))
+            .options(selectinload(Weapon.refinements))
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
     async def get_by_nanoka_id(self, nanoka_id: int) -> Weapon | None:
         """One weapon by its source id, with its five refinement rows."""
         stmt = (

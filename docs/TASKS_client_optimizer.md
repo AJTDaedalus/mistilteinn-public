@@ -350,7 +350,31 @@ set bonuses recorded themselves as `"set 15025 2pc"`, an internal nanoka id, whi
 five pieces to change"*. The format now lives in one function, `artifact_optimizer.set_bonus_note`,
 that both the writer and the description map call, and a test changes the format at that one
 definition to prove neither side hand-builds it.
-### [ ] D.5 — Weapon comparison across N candidate weapons (DESIGN §3.5) — **v1**
+### [x] D.5 — Weapon comparison across N candidate weapons (DESIGN §3.5) — **v1, done**
+
+`app/services/weapon_comparison.py` and `POST /api/v1/builds/{id}/compare-weapons`. DESIGN
+§3.5 predicted this: *"the G.4 ranker generalises to it for free — swap it in, hold the rest
+constant, report the difference against what is equipped"*. It did. No new scoring path; the
+same `build_combination_log` and `BuildEvaluator` the search and the ranker use, and the
+"why" is D.4's contribution diff on a new axis.
+
+**Two limits are reported in the response rather than buried in a docstring, because each can
+change the answer and not merely its precision:**
+
+1. **Weapon passives are not applied.** `weapon_refinements` holds every step's name, text and
+   `param_list`; turning text into modifiers is Chunk H. For artifact sets the equivalent gap
+   is usually a correction — **for weapons it is frequently the entire reason to equip one**,
+   so a stat-stick will out-rank a signature weapon with a precise-looking number.
+   `unmodelled_passives` names every candidate that has one, `is_complete` is all-or-nothing,
+   and `caveat` says the *ordering* may be wrong. `TODO(chunk-H)`.
+2. **Artifacts are held fixed.** §3.5's fuller version searches per weapon and compares the
+   winners, but searches belong on the client. This answers "which weapon is better in the
+   build I have" — a cheaper and genuinely different question, since a weapon wanting a
+   different artifact set loses a comparison it would win with its own pieces.
+
+The equipped weapon is forced into the candidate list whether or not the caller lists it: a
+marginal-value comparison measures against what is worn, and without it every delta would be
+against an arbitrary candidate while the response still looked exactly like a ranking.
 
 ---
 
