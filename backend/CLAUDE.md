@@ -124,3 +124,58 @@ adding `ruff format --check` to CI; until then formatting is unenforced and left
 ## API Versioning
 
 All routes under `/api/v1/`. If breaking changes needed, create `/api/v2/`.
+
+## Verification tooling
+
+Two scripts exist because *checking the check* went wrong twice in one session, and both
+times the harness reported something the run had not produced.
+
+### `python -m scripts.ci_local` — run what CI runs, here
+
+Reads `.github/workflows/*.yml` **at run time** and executes their steps. Add a step to CI
+and it runs locally on the next invocation with no edit; delete one and it stops. There is no
+second list to fall out of date, which is the whole point — "run what CI runs" degrades into
+"run what I remember CI running" within a week, and the gap is invisible because everything
+passes.
+
+```bash
+cd backend && python -m scripts.ci_local            # everything
+cd backend && python -m scripts.ci_local --list     # the plan, without running it
+cd backend && python -m scripts.ci_local --job frontend
+cd backend && python -m scripts.ci_local --clean    # from a fresh clone of HEAD
+```
+
+**Adaptations are the only place a gate can go missing**, so each one carries a reason *and* a
+precondition proving the thing it skips is genuinely present — skipping the
+`mesa-vulkan-drivers` install on a box with no ICD would turn the GPU gate into a silent
+no-op. `tests/unit/test_ci_local_covers_the_workflows.py` fails if a CI step is neither run
+nor adapted, if an adaptation has no reason, or if a skip has nothing verifying its
+justification.
+
+**What it cannot do.** CI runs on a clean checkout on a machine that is not yours, and that
+has caught two real bugs here: the WGSL gate passed locally because this box had
+`mesa-vulkan-drivers` and runners did not, and `npm run typecheck` passed against a
+gitignored, stale `api.types.ts` while CI failed. `--clean` recovers the second class by
+cloning HEAD into a temp directory. It does **not** recover "a different machine". Green here
+is not green there, and the summary line says so every run.
+
+`pip-audit` is the sharpest example: `--local` audits the *environment*, and this box has 212
+packages against the project's 20, so it reports 84 vulnerabilities in things the project does
+not depend on. The adaptation audits `backend/` instead.
+
+### `python -m scripts.inject` — mutation testing that refuses to guess
+
+Break something on purpose and check a test notices. **Exit codes are inverted**: `0` when the
+mutation is caught, `1` when it *survives* (a guard nobody is holding), `2` when the harness
+cannot vouch for the run.
+
+```bash
+cd backend && python -m scripts.inject --file app/services/x.py \
+    --old 'if value < 0:' --new 'if False:' --tests tests/unit/test_x.py
+cd backend && python -m scripts.inject --spec docs/injections/some.json
+```
+
+It refuses rather than reports when the target is missing or ambiguous, when the suite was
+already red, or when the source did not come back — the three ways the hand-rolled version
+produced fiction. Its own meta-tests are `tests/unit/test_inject_harness.py`, and they caught
+a real parsing bug in it on the first run.
