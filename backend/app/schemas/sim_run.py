@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -134,6 +134,77 @@ class SimRunCoverage(BaseModel):
     #: `dps_mean` per cached bucket, aligned with `er_buckets`. Null where the run recorded
     #: none. Enough to see the shape of the ER cliff without fetching every run.
     dps_means: list[float | None]
+
+
+class DivergenceRead(BaseModel):
+    """How much substituting a neighbouring bucket appears to cost, and the noise under it.
+
+    Both numbers, never one verdict. `docs/RESEARCH_er_bucketing.md` records the significance
+    test that flagged a bucket where no context change was possible — burst casts are
+    discrete, so per-iteration DPS is a multi-modal mixture and `sd/√n` understates it. A test
+    that misfired on its first dataset is not a test to hide a number behind.
+    """
+
+    reference_bucket: int
+    dps_delta: float
+    dps_delta_pct: float
+    noise_floor: float
+    #: A hint that the delta is larger than the two runs' combined standard error. **Not** a
+    #: significance test — see above.
+    exceeds_noise: bool
+
+
+class RetrievalRead(BaseModel):
+    """A run, and everything needed to judge whether it should have been used."""
+
+    run: SimRunRead
+    requested_bucket: int
+    matched_bucket: int
+    bucket_distance: int
+    #: The *key* matched. Not the same as the answer being exact: the run was simulated at one
+    #: point inside a 5% band and the build sits at another, which
+    #: `docs/RESEARCH_er_bucketing.md` measured at up to 13.3% in the steepest bucket.
+    is_exact_bucket: bool
+    #: Null when the corpus holds no immediate neighbour to measure against. Absent, not
+    #: zero — "no comparison was possible" and "the comparison came out at zero" are
+    #: different claims, and merging them is how an approximation stops reporting its error.
+    divergence: DivergenceRead | None
+
+
+#: Why nothing was retrieved. Two values rather than one because they call for **different
+#: actions**: `cold` means simulate the buckets this search needs, `too_far` means simulate
+#: this one. Collapsing them would leave the caller guessing how much work it is in for.
+NOT_RETRIEVED_COLD = "cold"
+NOT_RETRIEVED_TOO_FAR = "too_far"
+
+
+class RetrievalOutcome(BaseModel):
+    """What retrieval found, **or did not** — always a 200, never a 404.
+
+    DESIGN §3.5: *"A search can still arrive with no cached context. That must be a stated
+    outcome, not a silent fallback: simulate it now (a second or two), or say so. It must
+    never be to retrieve a distant neighbour and report its score as though it were close."*
+
+    A 404 would be the wrong shape for the second half of that. "Nothing close enough is
+    cached" is an **answer** — the caller acts on it by simulating — and dressing it as an
+    error invites the two reflexes an error provokes: retry it, or catch it and carry on with
+    whatever value was already in hand. The first wastes a round trip; the second is the
+    silent fallback this rule exists to forbid.
+
+    So the outcome is always 200 and `retrieved` is either present or explicitly null with a
+    reason beside it. A client cannot read this response and fail to notice which it got.
+    """
+
+    context_key: str
+    gcsim_pin: str
+    #: The bucket the build falls in — reported whether or not anything was found, because it
+    #: is what the caller must simulate if nothing was.
+    requested_bucket: int
+    retrieved: RetrievalRead | None
+    #: `None` when something was retrieved. One of the two constants above otherwise.
+    not_retrieved_because: Literal["cold", "too_far"] | None = None
+    #: Prose for a human reading a log or a UI. Null when something was retrieved.
+    detail: str | None = None
 
 
 class SimRunStored(BaseModel):

@@ -302,7 +302,23 @@ For bucket 120 the nearest neighbour reports 3.7 % against a true within-bucket 
 reference is now the immediate neighbour that moved *most* (8.2 % there), and the docstring
 says plainly that this is a lower bound — "the fastest the answer is moving nearby", not "the
 most this can be wrong".
-### [ ] D.3 — "No retrievable neighbour" as a stated outcome, never a silent fallback
+### [x] D.3 — "No retrievable neighbour" as a stated outcome, never a silent fallback — **done**
+
+`GET /api/v1/sim-runs/retrieve` — the endpoint D.2 deliberately left unbuilt, landing both
+halves of the contract at once.
+
+**Always 200, never a 404.** `retrieved` is either present or explicitly null with
+`not_retrieved_because` beside it. A 404 would be the wrong shape: "nothing close enough is
+cached" is an *answer* — the caller acts on it by simulating — and dressing it as an error
+invites the two reflexes an error provokes. Retrying wastes a round trip; catching it and
+carrying on with whatever value was already in hand **is** the silent fallback DESIGN §3.5
+forbids by name, and it is the one that would never appear in a log.
+
+**Two absences, not one.** `cold` means nothing is cached for this context; `too_far` means
+runs exist but the nearest is beyond `MAX_NEIGHBOUR_BUCKETS`. They call for different work —
+simulate the set this search needs, or simulate this one bucket — so collapsing them would
+leave the caller guessing how much it is in for, which is the difference between a stated
+outcome and a shrug.
 ### [ ] D.4 — Explanation from contribution log + retrieved runs + catalogue text
 ### [ ] D.5 — Weapon comparison across N candidate weapons (DESIGN §3.5) — **v1**
 
