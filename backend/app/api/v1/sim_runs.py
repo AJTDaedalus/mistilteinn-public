@@ -61,6 +61,17 @@ _ContextKeyQuery = Annotated[str, Query(min_length=64, max_length=64, pattern=_D
 _ContextKeyPath = Annotated[str, Path(min_length=64, max_length=64, pattern=_DIGEST)]
 _ERBucket = Annotated[int, Path(ge=0, le=10_000)]
 
+#: Energy recharge as a **fraction** — `1.8` is 180 %, the way every stat in this codebase is
+#: expressed (`backend/CLAUDE.md`, "Fractions, not percents or basis points").
+#:
+#: The ceiling exists to catch the unit error rather than to model the game. A caller that
+#: sends `180` meaning 180 % would otherwise be bucketed at 18000, miss every time, and be
+#: told it has a cold context — forever, with no symptom other than never getting a hit. That
+#: is the same shape as the unbucketed read D.1's review caught, arriving from the other
+#: direction. Ten is far above any real build and far below a plausible unit slip.
+_MAX_ENERGY_RECHARGE = 10.0
+_EnergyRecharge = Annotated[float, Query(ge=0.0, le=_MAX_ENERGY_RECHARGE)]
+
 
 def _require_our_pin(submitted: str) -> str:
     """Refuse a run from a gcsim this server does not mean."""
@@ -103,7 +114,7 @@ async def get_coverage(repo: _Repo, context_key: _ContextKeyQuery) -> SimRunCove
 async def retrieve_run(
     repo: _Repo,
     context_key: _ContextKeyQuery,
-    energy_recharge: Annotated[float, Query(ge=0.0, le=100.0)],
+    energy_recharge: _EnergyRecharge,
 ) -> RetrievalOutcome:
     """The cached run for a build at this ER — **or a stated reason there is none**.
 
@@ -120,7 +131,11 @@ async def retrieve_run(
 
     if found is None:
         cold = not runs
-        nearest = None if cold else min(runs, key=lambda r: abs(r.er_bucket - wanted))
+        # Lower bucket on a tie, matching `sim_retrieval.retrieve` — a message that named
+        # a different bucket than the one the decision was about would be its own bug.
+        nearest = None if cold else min(
+            runs, key=lambda r: (abs(r.er_bucket - wanted), r.er_bucket)
+        )
         detail = (
             f"nothing is cached for this context at pin {pin[:12]}. Simulate the buckets this "
             f"search needs, starting with {wanted}."
@@ -128,7 +143,7 @@ async def retrieve_run(
             else (
                 f"the nearest cached run is bucket {nearest.er_bucket}, "
                 f"{abs(nearest.er_bucket - wanted) // ER_BUCKET_PERCENT} buckets from "
-                f"{wanted}, and at most {MAX_NEIGHBOUR_BUCKETS} is offered. Simulate "
+                f"{wanted}, and at most {MAX_NEIGHBOUR_BUCKETS} away is offered. Simulate "
                 f"{wanted}; a run that far away describes a different part of the ER curve."
             )
         )

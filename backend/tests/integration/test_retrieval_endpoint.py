@@ -169,6 +169,21 @@ async def test_another_context_is_not_retrieved(authed_client: AsyncClient):
     assert other["not_retrieved_because"] == "cold"
 
 
+async def test_energy_recharge_is_a_fraction_and_a_percent_is_refused(
+    authed_client: AsyncClient,
+):
+    """`1.8` is 180 %. A caller sending `180` must be told, not quietly given a cold context.
+
+    Without the ceiling it buckets at 18000, misses every time, and reports `cold` forever —
+    the same shape as the unbucketed read D.1's review caught, from the other direction.
+    """
+    key = _key()
+    await _cache(authed_client, key, 180, 100.0)
+
+    assert (await _get(authed_client, key, 1.80)).json()["retrieved"] is not None
+    assert (await _get(authed_client, key, 180.0)).status_code == 422
+
+
 async def test_retrieval_requires_auth(client: AsyncClient):
     assert (await _get(client, _key(), 1.80)).status_code == 401
 
