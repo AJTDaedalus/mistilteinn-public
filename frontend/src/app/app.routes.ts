@@ -25,6 +25,22 @@ export const routes: Routes = [
     canMatch: [requireApproved],
   },
   {
+    path: 'weapons',
+    loadComponent: () => import('./pages/catalogue/weapons').then((m) => m.WeaponsPage),
+    canMatch: [requireApproved],
+  },
+  {
+    path: 'artifact-sets',
+    loadComponent: () =>
+      import('./pages/catalogue/artifact-sets').then((m) => m.ArtifactSetsPage),
+    canMatch: [requireApproved],
+  },
+  {
+    path: 'enemies',
+    loadComponent: () => import('./pages/catalogue/enemies').then((m) => m.EnemiesPage),
+    canMatch: [requireApproved],
+  },
+  {
     path: '**',
     redirectTo: '',
   },

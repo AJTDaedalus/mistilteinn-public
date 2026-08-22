@@ -1,0 +1,43 @@
+<section class="catalogue">
+  <header>
+    <h1>Weapons</h1>
+    <input
+      type="search"
+      name="search"
+      placeholder="Search by name…"
+      [(ngModel)]="search"
+      (keyup.enter)="load()"
+      aria-label="Search weapons by name"
+    />
+    <button type="button" (click)="load()">Search</button>
+  </header>
+
+  @if (list.error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  } @else if (list.loading()) {
+    <p class="muted">Loading…</p>
+  } @else {
+    <p class="muted">{{ list.total() }} matching</p>
+    <ul class="grid">
+      @for (weapon of list.items(); track weapon.id) {
+        <li class="card">
+          <span class="name">{{ weapon.name }}</span>
+          <span class="meta">{{ weapon.weapon_type }} · {{ weapon.rarity }}</span>
+          <!-- Labelled a curve base, not "ATK": it is the value at the bottom of a growth
+               curve, and printing it bare would read as the weapon's actual attack. -->
+          <span class="meta">
+            @if (weapon.base_atk !== null && weapon.base_atk !== undefined) {
+              base ATK curve from {{ weapon.base_atk }}
+            } @else {
+              no ATK curve
+            }
+          </span>
+          <span class="meta">{{ weapon.sub_stat_type ?? 'no substat' }}</span>
+          <span class="key">{{ weapon.nanoka_id }}</span>
+        </li>
+      } @empty {
+        <li class="muted">No weapons match that search.</li>
+      }
+    </ul>
+  }
+</section>

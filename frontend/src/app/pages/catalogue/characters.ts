@@ -1,6 +1,7 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { catalogueList } from './catalogue-list';
 import { CatalogueService, type CharacterSummary } from './catalogue.service';
 
 /**
@@ -15,14 +16,13 @@ import { CatalogueService, type CharacterSummary } from './catalogue.service';
   selector: 'page-characters',
   imports: [FormsModule],
   templateUrl: './characters.html',
-  styleUrl: './characters.scss',
+  styleUrl: './catalogue.scss',
 })
 export class CharactersPage implements OnInit {
-  protected readonly characters = signal<CharacterSummary[]>([]);
-  protected readonly total = signal(0);
-  protected readonly loading = signal(false);
-  protected readonly error = signal<string | null>(null);
   protected search = '';
+  protected readonly list = catalogueList<CharacterSummary>((name) =>
+    this.catalogue.listCharacters({ name, limit: 200 }),
+  );
 
   private readonly catalogue = inject(CatalogueService);
 
@@ -30,24 +30,7 @@ export class CharactersPage implements OnInit {
     void this.load();
   }
 
-  protected async load(): Promise<void> {
-    this.loading.set(true);
-    this.error.set(null);
-    try {
-      const page = await this.catalogue.listCharacters({
-        name: this.search.trim() || undefined,
-        limit: 200,
-      });
-      this.characters.set(page.items);
-      this.total.set(page.total);
-    } catch {
-      // Surfaced, never swallowed: an empty list and a failed request look identical on
-      // screen, and only one of them means "no matches".
-      this.error.set('Could not load the character catalogue.');
-      this.characters.set([]);
-      this.total.set(0);
-    } finally {
-      this.loading.set(false);
-    }
+  protected load(): Promise<void> {
+    return this.list.run(this.search, 'character catalogue');
   }
 }

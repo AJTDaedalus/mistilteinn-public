@@ -1,0 +1,52 @@
+<section class="catalogue">
+  <header>
+    <h1>Artifact sets</h1>
+    <input
+      type="search"
+      name="search"
+      placeholder="Search by name…"
+      [(ngModel)]="search"
+      (keyup.enter)="load()"
+      aria-label="Search artifact sets by name"
+    />
+    <button type="button" (click)="load()">Search</button>
+  </header>
+
+  @if (list.error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  } @else if (list.loading()) {
+    <p class="muted">Loading…</p>
+  } @else {
+    <p class="muted">{{ list.total() }} matching</p>
+    <ul class="grid wide">
+      @for (set of list.items(); track set.id) {
+        <li class="card">
+          <span class="name">{{ set.name }}</span>
+          <!-- From the row, never assumed to be [2, 4]: one-piece sets exist. -->
+          <span class="meta">
+            {{ set.piece_thresholds.join('pc / ') }}pc
+          </span>
+          <ul class="affixes">
+            @for (affix of set.affixes; track affix.pieces_required) {
+              <li>
+                <strong>{{ affix.pieces_required }}pc</strong>
+                <!-- The catalogue's own words. A paraphrase here would be the same mistake
+                     D.4 refuses to make in the explanation. -->
+                @if (affix.description) {
+                  {{ affix.description }}
+                } @else {
+                  <em class="muted">no published text for this tier</em>
+                }
+              </li>
+            } @empty {
+              <li class="muted">no affix rows</li>
+            }
+          </ul>
+          <span class="key">{{ set.nanoka_id }}</span>
+        </li>
+      } @empty {
+        <li class="muted">No artifact sets match that search.</li>
+      }
+    </ul>
+  }
+</section>
