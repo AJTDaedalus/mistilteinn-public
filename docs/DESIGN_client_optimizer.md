@@ -98,6 +98,60 @@ changes than damage is. That is plausible and it is not proven, so:
 - **The top N are verified by real simulation** before they are shown. Retrieval ranks;
   simulation confirms. That bound is what makes the approximation safe to act on.
 
+## 3.5 What compute costs, and where it lands
+
+Taking as given that doing this properly costs more compute than a stat-heuristic optimizer.
+The useful question is not whether to accept that but **where it lands**, because this design
+moves most of it somewhere it is free to us.
+
+| Cost | Lands on | Scales with |
+|---|---|---|
+| Permutation search | the user's GPU | how thorough the user asks the search to be |
+| Top-N verification by simulation | the user's browser (gcsim WASM) | N, which we choose |
+| **Corpus generation** | **our server** | **the corpus's dimensions — see below** |
+| Retrieval | our server | queries, but it is an index lookup |
+
+Two of those four grow with usage and cost us nothing, because they run on the user's
+machine. That is the point of the client-side ruling, and it means "more compute" is mostly
+a relocation rather than a bill.
+
+**One cost does land on us, and it is combinatorial.** Corpus generation, measured against
+the 0.238 s/run from Chunk S §3:
+
+| Corpus shape | runs | 1 core | 8 cores |
+|---|---:|---:|---:|
+| per-character only, no teams | 38,160 | 2.5 h | 0.3 h |
+| + 5 teams × 3 rotations | 572,400 | 37.8 h | 4.7 h |
+| + 10 teams × 10 rotations | 3,816,000 | 252.3 h | 31.5 h |
+
+*(106 characters × 5 weapons × 3 constellation tiers × 2 refinements × stat buckets.)*
+
+**The team × rotation dimension is the multiplier that decides everything**, and it is the
+number that must be chosen deliberately rather than allowed to drift. Everything else is
+bounded by the game.
+
+### The corpus is demand-driven, with a precomputed head
+
+- **Head:** precompute the meta roster. **BRIEF constraint 4's "~20–30 character MVP cut,
+  for owner approval" survives** — it looked superseded along with Chunk H, and it is in fact
+  exactly the right definition of what to precompute first. At 25 characters with 5 teams × 3
+  rotations that is **135,000 runs ≈ 1.1 h on 8 cores**: an overnight job, not a programme.
+- **Tail:** generated on demand for combinations a user actually asks for, and cached.
+  Obscure characters cost nothing until someone wants one.
+- **The cache is write-once per gcsim pin.** The BRIEF already noticed that Genshin kits are
+  immutable post-release; the same property applies here one level up — **a simulated run
+  stays valid until the pin moves**, so the corpus is invalidated by a deliberate, reviewed
+  re-pin rather than by time. `optimization_jobs`, retargeted per §5, is what tracks a
+  re-pin's regeneration.
+
+### The constraint this puts on §3
+
+Demand-driven generation means a search can arrive with **no retrievable neighbour at all**.
+That must be a stated outcome, not a silent fallback to a bad score: the honest answers are
+to simulate directly (slower, exact) or to say the neighbourhood is uncovered and offer to
+generate it. It must not be to retrieve a distant neighbour and report the score as though it
+were close — which is the same rule §3 already sets, arriving from the other direction.
+
 ## 4. Explanation
 
 The same index, read the other way. A build's explanation is assembled from its own
