@@ -155,6 +155,7 @@ def set_bonuses(artifact_sets: Sequence[ArtifactSet]) -> list[SetBonus]:
     return [
         SetBonus(
             set_id=row.nanoka_id,
+            set_name=row.name,
             pieces_required=affix.pieces_required,
             add_props=tuple(dict(p) for p in affix.add_props),
         )

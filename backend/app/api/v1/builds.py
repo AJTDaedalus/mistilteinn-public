@@ -29,6 +29,7 @@ from app.dependencies import (
     get_owned_artifact_repo,
     get_owned_build_repo,
     get_owned_optimization_job_repo,
+    get_owned_sim_run_repo,
 )
 from app.formula.genshin.damage import Hit
 from app.middleware.rate_limit import WRITE_LIMIT, limiter
@@ -36,11 +37,15 @@ from app.repositories.artifact import ArtifactRepository
 from app.repositories.build import BuildRepository
 from app.repositories.enemy import EnemyProfileRepository
 from app.repositories.optimization_job import OptimizationJobRepository
+from app.repositories.sim_run import SimRunRepository
 from app.schemas.build import (
     BuildCreate,
     BuildRead,
     BuildUpdate,
+    ContributionRead,
     EnemySpec,
+    ExplainRequest,
+    ExplainResponse,
     HitSpec,
     JobAccepted,
     OptimizedBuildRead,
@@ -50,16 +55,24 @@ from app.schemas.build import (
     RankRequest,
     RankResponse,
     SearchTransparency,
+    SetEffectRead,
+    SimulationNoteRead,
+    StatAccountRead,
+    StatDifferenceRead,
+    UncitedRead,
 )
 from app.schemas.common import PaginatedResponse
 from app.services import (
     artifact_optimizer,
     artifact_ranker,
     build_assembler,
+    build_explanation,
     optimizer_job_service,
+    sim_retrieval,
 )
 from app.services.build_assembler import BuildAssemblyError
-from app.services.damage_calculator import Enemy, enemy_from_profile
+from app.services.damage_calculator import BuildEvaluator, Enemy, enemy_from_profile
+from app.services.gcsim_keys import pinned_commit
 from app.services.job_runner import JobRunner
 from app.services.stat_calculator import StatInputError
 
@@ -403,6 +416,225 @@ def _sets_of(artifacts: "Sequence[Artifact]") -> list["ArtifactSet"]:
         if artifact.artifact_set is not None:
             seen.setdefault(artifact.artifact_set.nanoka_id, artifact.artifact_set)
     return list(seen.values())
+
+
+@router.post("/{build_id}/explain", response_model=ExplainResponse)
+@limiter.limit(WRITE_LIMIT)
+async def explain_build(
+    request: Request,
+    build_id: str,
+    body: ExplainRequest,
+    builds: Annotated[BuildRepository, Depends(get_owned_build_repo)],
+    artifacts: Annotated[ArtifactRepository, Depends(get_owned_artifact_repo)],
+    enemies: Annotated[EnemyProfileRepository, Depends(get_enemy_profile_repo)],
+    sim_runs: Annotated[SimRunRepository, Depends(get_owned_sim_run_repo)],
+) -> ExplainResponse:
+    """Why this build scores what it scores — and, by default, why it beats what is worn.
+
+    Every number here **arrives** rather than being computed: contributions come from
+    `build_combination_log`, the same path the search and the ranker use; set text comes from
+    the catalogue verbatim; the simulation figure comes from `sim_retrieval` carrying its own
+    measured divergence. Nothing in the explanation layer multiplies anything, because a
+    second implementation of the chain would be free to disagree with the first (DESIGN §1
+    A6).
+    """
+    build = await _require_full_build(builds, build_id)
+    base = _base_contributions(build)
+    owned = await artifacts.search(limit=_FETCH_CAP)
+    by_id = {str(row.id): row for row in owned}
+    bonuses = build_assembler.set_bonuses(_sets_of(owned))
+    hit, enemy = _hit(body.hit), await _enemy(body.enemy, enemies)
+
+    equipped_rows = list(build.artifacts)
+    if body.artifact_ids is None:
+        proposed_rows = equipped_rows
+    else:
+        missing = [aid for aid in body.artifact_ids if aid not in by_id]
+        if missing:
+            # 404 rather than "explained what we could find": an explanation of four pieces
+            # presented as an explanation of five is wrong in the way that is hardest to see.
+            raise HTTPException(
+                status_code=404,
+                detail=f"artifacts not in this account: {sorted(missing)}",
+            )
+        proposed_rows = [by_id[aid] for aid in body.artifact_ids]
+
+    _require_one_per_slot(proposed_rows, "the pieces to explain")
+    if body.compare_to_equipped and body.artifact_ids is not None:
+        _require_one_per_slot(equipped_rows, "the equipped build")
+
+    try:
+        proposed, proposed_damage = _scored(
+            base, proposed_rows, bonuses, hit, enemy, build.character_level,
+        )
+        equipped = proposed
+        equipped_damage = proposed_damage
+        if body.compare_to_equipped and body.artifact_ids is not None:
+            equipped, equipped_damage = _scored(
+                base, equipped_rows, bonuses, hit, enemy, build.character_level,
+            )
+    except (artifact_optimizer.OptimizerInputError, StatInputError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    retrieval = await _retrieval(body, sim_runs)
+    account = build_explanation.explain(
+        proposed,
+        set_descriptions=_set_descriptions(owned),
+        retrieval=retrieval,
+    )
+    comparing = equipped is not proposed
+    diff = build_explanation.compare(equipped, proposed) if comparing else None
+
+    return ExplainResponse(
+        damage=proposed_damage,
+        stats=[
+            StatAccountRead(
+                quantity=account_.quantity,
+                parts=[_contribution(c) for c in account_.parts],
+                sum_of_parts=account_.sum_of_parts,
+                sources=list(account_.sources),
+            )
+            for account_ in account.stats
+        ],
+        set_effects=[
+            SetEffectRead(
+                note=effect.note,
+                description=effect.description,
+                contributions=[_contribution(c) for c in effect.contributions],
+            )
+            for effect in account.set_effects
+        ],
+        simulation=None if account.simulation is None else SimulationNoteRead(
+            matched_bucket=account.simulation.matched_bucket,
+            requested_bucket=account.simulation.requested_bucket,
+            bucket_distance=account.simulation.bucket_distance,
+            is_exact_bucket=account.simulation.is_exact_bucket,
+            dps_mean=account.simulation.dps_mean,
+            divergence_pct=account.simulation.divergence_pct,
+            noise_floor=account.simulation.noise_floor,
+            exceeds_noise=account.simulation.exceeds_noise,
+            caveat=account.simulation.caveat,
+        ),
+        uncited=[UncitedRead(what=u.what, why=u.why) for u in account.uncited],
+        differences=None if diff is None else [
+            StatDifferenceRead(
+                quantity=d.quantity,
+                equipped=d.left,
+                proposed=d.right,
+                delta=d.delta,
+                gained=[_contribution(c) for c in d.gained],
+                lost=[_contribution(c) for c in d.lost],
+            )
+            for d in diff.differences
+        ],
+        equipped_damage=None if diff is None else equipped_damage,
+        unchanged=None if diff is None else list(diff.unchanged),
+    )
+
+
+def _require_one_per_slot(rows: "Sequence[Artifact]", what: str) -> None:
+    """Five pieces, one per slot — the same rule `artifact_ranker.RankContext` enforces.
+
+    Nothing downstream checks this: `build_combination_log` iterates whatever it is handed,
+    so two goblets would count a goblet twice and four pieces would be scored as four. The
+    search never meets that because it builds combinations one-per-slot by construction, and
+    the ranker refuses it explicitly. This endpoint takes ids from the caller, so it is the
+    first place the question is actually open.
+
+    Both failures produce a plausible number: a duplicated piece inflates the build a user
+    cannot actually wear, and a short list quietly compares a three-piece proposal against a
+    five-piece build and reports two slots' worth of "losses" as though the user had chosen
+    them.
+    """
+    slots = [str(row.slot) for row in rows]
+    ids = [str(row.id) for row in rows]
+    if len(set(ids)) != len(ids):
+        raise HTTPException(
+            status_code=422,
+            detail=f"{what} names the same artifact more than once; a build wears each piece "
+            f"at most once.",
+        )
+    missing = sorted(set(artifact_optimizer.SLOTS) - set(slots))
+    if missing or len(slots) != len(artifact_optimizer.SLOTS):
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"{what} must be five pieces, one per slot. Missing {missing}; got "
+                f"{sorted(slots)}. A partial build scores as a partial build, and next to a "
+                f"full one that difference reads as a choice the user made."
+            ),
+        )
+
+
+def _contribution(c: "Contribution") -> ContributionRead:
+    return ContributionRead(quantity=c.quantity, value=c.value, source=c.source, note=c.note)
+
+
+def _scored(
+    base: "Sequence[Contribution]",
+    rows: "Sequence[Artifact]",
+    bonuses: "Sequence[artifact_optimizer.SetBonus]",
+    hit: Hit,
+    enemy: Enemy,
+    character_level: int,
+) -> "tuple[tuple[Contribution, ...], float]":
+    """Contributions and damage for one set of pieces, through the one scoring path."""
+    combination = build_assembler.candidates(rows)
+    log, _ = artifact_optimizer.build_combination_log(
+        base, combination, artifact_optimizer.bonuses_by_set(bonuses),
+    )
+    evaluator = BuildEvaluator(
+        registry=log.registry, enemy=enemy, character_level=character_level,
+    )
+    return tuple(log.contributions), evaluator.evaluate(hit).expected
+
+
+def _set_descriptions(rows: "Sequence[Artifact]") -> dict[str, str]:
+    """Map a set contribution's note to the catalogue's published text.
+
+    Keyed through `artifact_optimizer.set_bonus_note`, the **same function** that writes the
+    note, so the two cannot drift. Building the key here by hand is what D.4 did first, and
+    it silently matched nothing: the note was `"set 15025 2pc"` rather than the set's name.
+    A set the catalogue has no affix text for simply has no entry, and the explanation
+    reports it as uncited rather than inventing a sentence.
+    """
+    descriptions: dict[str, str] = {}
+    for row in rows:
+        artifact_set = row.artifact_set
+        if artifact_set is None:
+            continue
+        for affix in artifact_set.affixes:
+            if affix.description:
+                key = artifact_optimizer.set_bonus_note(
+                    artifact_set.nanoka_id, artifact_set.name, affix.pieces_required,
+                )
+                descriptions[key] = affix.description
+    return descriptions
+
+
+async def _retrieval(
+    body: ExplainRequest, repo: SimRunRepository,
+) -> "sim_retrieval.Retrieval | None":
+    """The cached run for this context, when the caller supplied one to look for.
+
+    Both `context_key` and `energy_recharge` or neither: a key with no ER cannot pick a
+    bucket, and an ER with no key has no context to pick one from. Half of the pair is a
+    caller mistake worth naming rather than silently ignoring.
+    """
+    if body.context_key is None and body.energy_recharge is None:
+        return None
+    if body.context_key is None or body.energy_recharge is None:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "context_key and energy_recharge go together: a key with no ER cannot pick "
+                "a bucket, and an ER with no key has no context to pick one from."
+            ),
+        )
+    runs = await repo.get_buckets(
+        context_key=body.context_key, gcsim_pin=pinned_commit(),
+    )
+    return sim_retrieval.retrieve(runs, body.energy_recharge)
 
 
 async def _require_build(repo: BuildRepository, build_id: str) -> "Build":

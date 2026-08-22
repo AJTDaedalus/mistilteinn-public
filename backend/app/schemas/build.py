@@ -244,6 +244,113 @@ class RankResponse(BaseModel):
     skipped_conditional_bonuses: int = 0
 
 
+class ExplainRequest(BaseModel):
+    """Body for `POST /builds/{id}/explain`.
+
+    **No contributions in the body, deliberately.** The caller names artifacts by id and the
+    server resolves them through the same `build_combination_log` the search and the ranker
+    use. Accepting numbers from the client would make the explanation an account of whatever
+    was posted rather than of the build, and an explanation of a lie is the one output where
+    that would be hardest to notice.
+    """
+
+    hit: HitSpec
+    enemy: EnemySpec
+    #: The five pieces to explain. Omit to explain what is currently equipped.
+    artifact_ids: list[str] | None = None
+    #: When given, the explanation is a comparison against what is equipped — "why is this
+    #: better" rather than "what is this made of".
+    compare_to_equipped: bool = True
+    #: Together these pull in a simulated run and its measured divergence. Both or neither:
+    #: a context key with no ER cannot pick a bucket, and an ER with no key has no context to
+    #: pick one from.
+    context_key: str | None = None
+    energy_recharge: float | None = None
+
+
+class ContributionRead(BaseModel):
+    """One value and where it came from."""
+
+    quantity: str
+    value: float
+    source: str
+    note: str = ""
+
+
+class StatAccountRead(BaseModel):
+    """One quantity and every contribution recorded against it."""
+
+    quantity: str
+    parts: list[ContributionRead]
+    #: The **arithmetic sum of the parts**, which is not necessarily the stat: an additive
+    #: pool agrees with the damage chain, `base * (1 + pct) + flat` does not. Named for what
+    #: it is so no reader takes it for a total.
+    sum_of_parts: float
+    sources: list[str]
+
+
+class SetEffectRead(BaseModel):
+    """A set bonus that applied, in the catalogue's own words."""
+
+    note: str
+    #: Null when the catalogue publishes no text for it — never a paraphrase composed here.
+    description: str | None
+    contributions: list[ContributionRead]
+
+
+class SimulationNoteRead(BaseModel):
+    """What the retrieved run says, and how far it was from this build."""
+
+    matched_bucket: int
+    requested_bucket: int
+    bucket_distance: int
+    is_exact_bucket: bool
+    dps_mean: float | None
+    divergence_pct: float | None
+    noise_floor: float | None
+    exceeds_noise: bool | None
+    #: One sentence a reader must not be able to miss — stated even at distance zero, because
+    #: an exact *key* is not an exact *answer*.
+    caveat: str
+
+
+class UncitedRead(BaseModel):
+    """Something the explanation could not attribute, reported rather than dropped."""
+
+    what: str
+    why: str
+
+
+class StatDifferenceRead(BaseModel):
+    """One quantity that differs between the proposal and what is equipped."""
+
+    quantity: str
+    equipped: float
+    proposed: float
+    delta: float
+    gained: list[ContributionRead]
+    lost: list[ContributionRead]
+
+
+class ExplainResponse(BaseModel):
+    """A build's account of itself, and optionally of what it improves on."""
+
+    damage: float
+    stats: list[StatAccountRead]
+    set_effects: list[SetEffectRead]
+    simulation: SimulationNoteRead | None = None
+    #: Anything that could not be tied to a contribution, a run, or the catalogue. Listed
+    #: rather than rendered anyway — a confident sentence with nothing behind it is the
+    #: failure mode this repo has spent every chunk avoiding.
+    uncited: list[UncitedRead] = []
+    #: Null when nothing was compared against. Largest *relative* difference first: a
+    #: quantity is only comparable with itself, so ranking by absolute size would order
+    #: builds by which stats happen to be big numbers.
+    differences: list[StatDifferenceRead] | None = None
+    equipped_damage: float | None = None
+    unchanged: list[str] | None = None
+
+
 class JobAccepted(BaseModel):
     """202 body: the search was too large to answer inside the request.
 

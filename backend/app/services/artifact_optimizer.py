@@ -109,6 +109,9 @@ class SetBonus:
 
     set_id: int
     pieces_required: int
+    #: The catalogue's name for the set. Empty when the caller had only ids to hand, in which
+    #: case `set_bonus_note` falls back to the id rather than inventing a name.
+    set_name: str = ""
     #: `[{prop_type, value}, …]` — the affix's static props. A conditional affix's are all
     #: `FIGHT_PROP_NONE`, and this optimizer skips those; see the module docstring.
     add_props: tuple[dict[str, object], ...] = ()
@@ -528,9 +531,27 @@ def _apply_set_bonuses(
                     quantity,
                     float(prop.get("value", 0.0)),
                     tags.SRC_ARTIFACT_SET,
-                    f"set {set_id} {tier.pieces_required}pc",
+                    set_bonus_note(set_id, tier.set_name, tier.pieces_required),
                 )
     return skipped
+
+
+def set_bonus_note(set_id: int, set_name: str, pieces: int) -> str:
+    """The note a set bonus records itself under. **One definition, on purpose.**
+
+    `Contribution.note` exists so a user can be told *which of five pieces to change* — its
+    own docstring gives `"Deepwood Memories 4pc"` as the example. This used to write
+    `"set 15025 2pc"`, which satisfies neither a reader nor anything trying to join catalogue
+    text onto it, and D.4 found it by joining on a guess and getting nothing back.
+
+    So the format lives here and both the writer and the explanation's description map call
+    it. Two copies of a string format is two things that can drift, and the one that drifted
+    would be the one nobody was reading.
+
+    The id remains in the note when a name is unavailable: a stable, ugly key beats a
+    friendly one that silently collides with another set of the same name.
+    """
+    return f"{set_name} {pieces}pc" if set_name else f"set {set_id} {pieces}pc"
 
 
 def _meets_floors(
