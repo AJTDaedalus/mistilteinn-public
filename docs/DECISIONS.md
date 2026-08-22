@@ -83,14 +83,45 @@ Honest accounting, because the ruling lands on top of work finished the same wee
 importer, the YuanShen snapshot, the GOOD importer, the catalogue and inventory APIs,
 `optimization_jobs`. Client compute changes where the search runs, not where the truth lives.
 
-**Changes role, keeps its value** — the Chunk F chain and the Chunk G optimizer. They become
-(a) the reference implementation, (b) the corpus generator that populates the retrieval index
-offline, and (c) **the crossval-verified definition of correct that the client kernel is
-measured against**. A rewrite with a ready-made oracle and a settled algorithm is a very
-different proposition from a rewrite without one — G.3's lossless Pareto layer, budget-K, and
-G.4's marginal-value ranking are *designs* that port, not code that is thrown away.
+**Has no production consumer, and should eventually be deleted** — the Chunk F chain and the
+Chunk G optimizer.
 
-**Is genuinely new work** — the kernel itself, and the toolchain for it.
+An earlier draft of this entry claimed they would survive as the reference implementation,
+the corpus generator, and the oracle. **Two of those three are wrong**, and the correction
+matters because it decides whether a whole subsystem is kept alive for no reason:
+
+- *Corpus generator* — **no.** The corpus is simulated runs, and **gcsim** generates those.
+  The chain has no part in it.
+- *The oracle* — **no.** gcsim is the oracle. `tests/crossval`'s fixtures are gcsim configs
+  and gcsim's own JSON output, so a client kernel can be validated against them **directly**,
+  with no Python in the path.
+- *Reference implementation* — **no.** A reference nothing runs is dead code.
+
+Everything the server still does — catalogue, GOOD import, builds, retrieval, corpus
+generation, auth, Postgres — needs **zero damage math**.
+
+**They do earn their keep through the port**, for one reason that is not sentiment. The
+committed crossval corpus is **two cases**. The Python chain is crossval-verified and can
+generate expected values for *thousands* of arbitrary inputs — random builds, DEF-scaling
+hits, capped crit rate, absent substats — to **differential-test** the kernel against, with
+gcsim confirming a sample. Two fixtures cannot catch a kernel that is right on
+Ayaka-with-no-artifacts and wrong everywhere else. That is a far denser signal than the
+crossval gate alone, and it is the standard way to port a numerical kernel safely.
+
+Then they are deleted when the kernel passes — the rule `app/services/_ported/README.md`
+already states and this project already follows: *"delete each file when its port lands."*
+
+**Is genuinely new work** — the kernel itself, and the toolchain for it. G.3's lossless
+Pareto layer, budget-K, and G.4's marginal-value ranking are *designs* that port, so the
+rewrite starts from a settled algorithm rather than a blank page.
+
+### Consequence: G.10's job runner probably goes too
+
+Named here rather than left to be discovered. `JobRunner` and the hybrid 202 contract exist
+to background **long server-side searches**. With the search client-side there is no such
+thing to background. `optimization_jobs` may survive to track corpus-generation runs, which
+is a genuinely long server-side job — but the optimize endpoint that motivated it would not.
+Decide it in the DESIGN doc; do not let it rot as a subsystem nothing calls.
 
 ### Open: what the kernel is written in
 
