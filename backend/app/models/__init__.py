@@ -31,6 +31,7 @@ from app.models.enums import (
 from app.models.optimization_job import OptimizationJob
 from app.models.seed_provenance import SeedRun
 from app.models.session import Session
+from app.models.sim_run import SimRun
 from app.models.team import Team
 from app.models.user import User
 from app.models.weapon import Weapon, WeaponRefinement
@@ -55,6 +56,7 @@ __all__ = [
     "Rarity",
     "SeedRun",
     "Session",
+    "SimRun",
     "StatType",
     "Talent",
     "TalentScaling",
