@@ -45,3 +45,8 @@ Thumbs.db
 
 # Generated API types — refresh with `npm run codegen`
 src/app/api/api.types.ts
+
+# gcsim browser build — built by scripts/build-gcsim-wasm.sh, see gcsim/PROVENANCE.md
+gcsim/gcsim.wasm
+gcsim/wasm_exec.js
+gcsim/BUILT_FROM

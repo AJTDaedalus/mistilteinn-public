@@ -122,18 +122,28 @@ Everything except ER is a multiplier the kernel applies itself. **ER is the only
 because it is the only one that can change whether the rotation happens at all — and while
 the BRIEF ships amplifying reactions first, it is the only one that matters.
 
-So the runs a search needs are **one per ER bucket**, for that one context:
+So the runs a search needs are **one per ER bucket**, for that one context.
 
-| ER buckets | gcsim runs | time |
-|---:|---:|---|
-| 4 | 4 | ~1.0 s |
-| 6 | 6 | ~1.4 s |
-| 12 | 12 | ~2.9 s |
+**Corrected against the measurement B.2 produced.** An earlier draft of this table costed
+those runs at 0.238 s each — the *native, parallel* figure from Chunk S. The browser build is
+**31.35 ms per Monte Carlo iteration, single-threaded**, so a 100-iteration context run is
+**3.13 s**, and the draft was **13× optimistic**. The real shape:
 
-**In the browser, via gcsim WASM, and cached afterwards.** Seconds, not the 4.7–31.5 hours
-an earlier draft of this section projected from enumerating teams × rotations. That draft was
-answering a question nobody asks: it costed *"simulate every team and rotation in advance"*,
-when a user always arrives with a specific one.
+| ER buckets | runs | 1 worker | 4 workers | 8 workers |
+|---:|---:|---:|---:|---:|
+| 4 | 4 | 12.5 s | 3.1 s | 1.6 s |
+| 6 | 6 | 18.8 s | 4.7 s | 2.4 s |
+| 12 | 12 | 37.6 s | 9.4 s | 4.7 s |
+
+**The levers are explicit, because the single number hid them:** iterations per run (100 here
+— fewer may suffice for *context*, which is uptimes and energy rather than a damage
+distribution), and Web Worker count. Browsers give 4–16; the search kernel wants the GPU, not
+the CPU cores, so the workers are free for this.
+
+Seconds-to-tens-of-seconds, once, then cached — against the 4.7–31.5 hours an earlier draft
+projected from enumerating teams × rotations. That draft was answering a question nobody
+asks: it costed *"simulate every team and rotation in advance"*, when a user always arrives
+with a specific one. The collapse stands; only its arithmetic was wrong.
 
 ### Which leaves compute landing almost entirely on the user
 
@@ -172,18 +182,21 @@ A user selecting a few candidate weapons to optimize across is **separable**: fo
 weapon, find its best artifacts; then compare the winners. N independent problems, not one
 problem N times harder — the same structure as everything else here.
 
-| weapons | context runs | browser time | GPU searches |
-|---:|---:|---|---:|
-| 1 | 6 | ~1.4 s | 1 |
-| 3 | 18 | ~4.3 s | 3 |
-| 5 | 30 | ~7.1 s | 5 |
-| 10 | 60 | ~14.3 s | 10 |
+| weapons | context runs | 8 workers | GPU searches |
+|---:|---:|---:|---:|
+| 1 | 6 | 2.4 s | 1 |
+| 3 | 18 | 7.1 s | 3 |
+| 5 | 30 | 11.8 s | 5 |
+| 10 | 60 | 23.5 s | 10 |
+
+*(6 ER buckets each, at the measured 3.13 s per run, divided across 8 Web Workers.)*
 
 A weapon does have to be a **context** dimension rather than a pure multiplier, because a
 passive can change the rotation's feasibility the same way ER does — Favonius generating
 particles is the obvious case. So it multiplies the *context* runs, and each `(weapon, ER
-bucket)` pair is its own run. At a second and a half per weapon that is affordable, and the
-GPU searches are free by comparison.
+bucket)` pair is its own run. At a couple of seconds per weapon on a typical
+machine that is affordable, and the GPU searches are free by comparison. It is not the
+sub-second-per-weapon the first draft implied.
 
 **This is only cheap because of the collapse above.** Had the corpus been a server-side
 enumeration of weapons × teams × rotations, adding a weapon dimension would have multiplied a

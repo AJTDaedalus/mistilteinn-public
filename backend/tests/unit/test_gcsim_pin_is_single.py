@@ -1,0 +1,91 @@
+"""There is **one** gcsim pin, and `docs/CROSSVAL_gcsim.md` owns it.
+
+Three things now depend on which gcsim commit this project means: the crossval fixtures
+(`sim_version` is asserted against it), the browser WASM build the frontend serves, and every
+formula citation that names a file and line range.
+
+Two pins that can drift apart are two definitions of what "correct" means — and this repo
+already knows the failure, because `tests/crossval` asserts a fixture's `sim_version` for
+exactly that reason. A second pin sitting in a build script would let the browser run one
+gcsim while the oracle asserts another, and the numbers would diverge with nothing to say why.
+
+So the build script *reads* the pin rather than declaring one, and this test asserts that
+nothing else declares one either.
+"""
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[3]
+CROSSVAL_DOC = REPO / "docs" / "CROSSVAL_gcsim.md"
+BUILD_SCRIPT = REPO / "frontend" / "scripts" / "build-gcsim-wasm.sh"
+
+#: A 40-character hex string that is not obviously something else.
+_SHA = re.compile(r"\b[0-9a-f]{40}\b")
+
+
+def _declared_pin() -> str:
+    row = re.search(r"^\| \*\*Commit\*\* \| `([0-9a-f]{40})`", CROSSVAL_DOC.read_text(), re.M)
+    assert row, "docs/CROSSVAL_gcsim.md no longer declares a `**Commit**` row"
+    return row.group(1)
+
+
+def test_the_doc_declares_the_pin():
+    assert len(_declared_pin()) == 40
+
+
+def test_the_build_script_reads_the_pin_rather_than_repeating_it():
+    """A hard-coded SHA here is the drift this test exists to prevent."""
+    script = BUILD_SCRIPT.read_text()
+
+    assert "CROSSVAL_gcsim.md" in script, (
+        "the wasm build script does not read the pin from docs/CROSSVAL_gcsim.md"
+    )
+    hard_coded = _SHA.findall(script)
+    assert not hard_coded, (
+        f"the wasm build script hard-codes {hard_coded}. It must read the pin from "
+        f"docs/CROSSVAL_gcsim.md so a re-pin cannot leave the browser running one gcsim "
+        f"while the crossval oracle asserts another."
+    )
+
+
+def test_the_crossval_fixtures_were_produced_by_the_pinned_commit():
+    """The fixtures already carry `sim_version`; this ties it to the same single pin."""
+    import json
+
+    pin = _declared_pin()
+    fixtures = sorted((REPO / "backend" / "tests" / "fixtures" / "crossval").glob("*.json"))
+    assert fixtures, "no crossval fixtures found"
+    for fixture in fixtures:
+        recorded = json.loads(fixture.read_text()).get("sim_version")
+        assert recorded == pin, (
+            f"{fixture.name} was produced by gcsim {recorded}, but the pin is {pin}. "
+            f"Regenerating a fixture is a new claim about what is correct and should arrive "
+            f"as a reviewed diff — see that directory's PROVENANCE.md."
+        )
+
+
+def test_ci_builds_and_verifies_the_browser_wasm():
+    """The verifier is only a gate if something runs it.
+
+    `npm test` does not: it is a standalone Node script, deliberately, because it needs the
+    real WebAssembly host and Go's JS runtime rather than Angular's test environment. So one
+    deleted CI step would leave the browser build unverified while everything stayed green —
+    the shape `test_ci_runs_the_perf_gate.py` already guards for the backend.
+    """
+    import yaml
+
+    workflow = yaml.safe_load((REPO / ".github" / "workflows" / "test.yml").read_text())
+    runs = [
+        str(step.get("run", ""))
+        for job in workflow["jobs"].values()
+        for step in job.get("steps", [])
+    ]
+
+    assert any("gcsim:build" in r for r in runs), "no CI step builds the gcsim browser wasm"
+    assert any("gcsim:verify" in r for r in runs), (
+        "no CI step verifies the gcsim browser build against the oracle. Building it and "
+        "never checking it agrees is how a silently different simulator ships."
+    )
