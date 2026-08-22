@@ -99,10 +99,13 @@ the kit corpus — is the niche neither incumbent occupies.
 - **OQ-S1:** ~~what "RAG-based artifact optimizer" means concretely.~~ **ANSWERED
   2026-08-22 (owner): both** — retrieval makes simulator-quality scoring tractable *and*
   grounds the explanation, over one shared index of simulated runs. See `DECISIONS.md`.
-- **OQ-S2 (new, 2026-08-22):** what the browser search kernel is written in — Go (one WASM
-  toolchain with gcsim), Rust (leanest, no GC), or WebGPU compute shaders (what Fribbels
-  does, and the only one that uses the GPU). Deferred to the DESIGN doc: the answer follows
-  from whether the kernel scores candidates singly or in parallel batches.
+- **OQ-S2:** ~~what the browser search kernel is written in.~~ **ANSWERED in
+  `DESIGN_client_optimizer.md` §2: WGSL compute shaders, with a TypeScript CPU fallback.**
+  Not Rust and not Go — the kernel is batched (each combination is independent), batching is
+  what makes a GPU possible, and the GPU carries a ~10^6 factor, so the CPU fallback needs to
+  be correct and universal rather than fast. TypeScript adds no language to the stack.
+- **OQ-S3 / OQ-S4 (new):** inventory shipped to the client vs fetched per search; and how the
+  WebGPU path gets tested in CI at all. Both in `DESIGN_client_optimizer.md` §7.
 - **OQ-M1:** Public competitiveness vs personal tool? Decides how much the incumbent-strength
   risk matters and whether MVP polish (onboarding, docs, sharing) is in scope.
 - **OQ-M2:** ~~Approve the gcsim-embed spike (timebox: ~2–3 sessions) before gauge-engine work, or
