@@ -17,9 +17,9 @@ from app.formula.genshin import stats
 from app.models.character import Character
 from app.models.weapon import Weapon
 from app.pando.calculator import Calculator, NodeRegistry
+from app.services.build_assembler import character_stats, weapon_stats
 from app.services.stat_calculator import (
     CharacterStats,
-    WeaponStats,
     add_character,
     add_weapon,
     build_log,
@@ -41,24 +41,14 @@ async def _seed(db: AsyncSession) -> None:
 
 
 def _character_stats(row: Character) -> CharacterStats:
-    """Map a stored row into the calculator's inputs.
+    """The **product** mapping, not a copy of it.
 
-    This mapping lives in the test for now, deliberately: the first *product* caller is
-    G.6's read surface, and writing the adapter before there is somewhere to call it from
-    would be building ahead of need (DESIGN §1 A6). What the test proves is that everything
-    the adapter will need is on the row.
+    This lived in this file until G.6c, when the API became the first real caller. Keeping a
+    second copy here would have left the tested mapping and the served mapping free to
+    drift, both looking right — so `build_assembler` owns it and this test exercises it.
     """
-    return CharacterStats(
-        name=row.name,
-        base_hp=row.base_hp,
-        base_atk=row.base_atk,
-        base_def=row.base_def,
-        prop_curves=row.prop_curves,
-        ascension_rows=row.ascension_stats,
-        elemental_mastery=row.base_elemental_mastery,
-        crit_rate=row.base_crit_rate,
-        crit_dmg=row.base_crit_dmg,
-    )
+    return character_stats(row)
+
 
 
 async def test_a_seeded_ayaka_reaches_the_same_base_stats(db_session: AsyncSession):
@@ -81,16 +71,7 @@ async def test_a_seeded_weapon_contributes_its_stored_curve_and_base(db_session:
     log = build_log(NodeRegistry())
     add_weapon(
         log,
-        WeaponStats(
-            name=row.name,
-            props=[
-                {"prop_type": "FIGHT_PROP_BASE_ATTACK", "init_value": row.base_atk,
-                 "type": row.base_atk_curve},
-                {"prop_type": row.sub_stat_type, "init_value": row.sub_stat_base_value,
-                 "type": row.sub_stat_curve},
-            ],
-            ascension=row.ascension_atk,
-        ),
+        weapon_stats(row),
         level=90,
         ascension_phase=6,
     )

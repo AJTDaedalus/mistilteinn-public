@@ -366,7 +366,7 @@ Each task below is **one commit**. Commit message form:
 ### [~] G.6 — Optimizer + builds + artifacts API surface restored
 - **[x] G.6a — catalogue read endpoints** (characters, weapons, artifact sets, enemies)
 - **[x] G.6b — user artifacts + GOOD import endpoint**
-- **[ ] G.6c — builds, and the optimize/rank endpoints behind the job runner**
+- **[x] G.6c — builds, and the optimize/rank endpoints** (synchronous; the job runner is G.10)
 ### G.7 — Re-baseline `tests/perf` for the 5-slot search space
 ### G.8 — Delete the consumed files from `app/services/_ported/`
 ### G.9 — Artifact upgrade-potential scoring **[BLOCKED — needs a citation]**
@@ -382,6 +382,27 @@ potential score built on a guessed roll count is a confident number with nothing
 committed the value tables. Until then `artifact_ranker` ranks pieces as they are.
 
 `TODO(chunk-G.9)` in `app/services/artifact_ranker.py`.
+### G.10 — Move optimize/rank behind the job runner
+
+Both endpoints run the search **synchronously** in the request. That is correct for the
+inventories the tests use and wrong for a scanned account: the prefilter's budget targets
+300s of work, and no HTTP client waits that long. `app/services/job_runner.py` kept its
+generic machinery through the demolition (`TODO(chunk-G)` in that file) and the
+`optimization_jobs` table and repository already exist. `artifact_optimizer.optimize` takes
+a `progress_callback` and honours `artifact_prefilter.Cancelled` precisely so this is a
+wiring job and not a rewrite.
+
+### G.11 — Make a lazy load a loud failure, not a 500
+
+**Three separate `MissingGreenlet` bugs in Chunk G**, each an eager-load chain that stopped
+one relationship short of what a response schema read: `Talent.scalings` (G.6a),
+`ArtifactSet.affixes` from an artifact (G.6c), and the same from a build (G.6c). Every one
+looked correct in review and in unit tests, and failed only when a route actually ran.
+
+Setting `lazy="raise_on_sql"` on the relationships services read turns that into an
+immediate, obvious error at the first touch instead of a 500 in production. Deferred rather
+than done here because the seeder and importers may rely on lazy loading and untangling that
+is its own change — but a fourth instance should not be discovered the same way.
 
 ---
 

@@ -18,6 +18,7 @@ from app.models.enums import UserStatus
 from app.models.user import User
 from app.repositories.artifact import ArtifactRepository
 from app.repositories.artifact_set import ArtifactSetRepository
+from app.repositories.build import BuildRepository
 from app.repositories.character import CharacterRepository
 from app.repositories.enemy import EnemyProfileRepository
 from app.repositories.optimization_job import OptimizationJobRepository
@@ -178,6 +179,13 @@ async def get_owned_artifact_repo(
 ) -> ArtifactRepository:
     """FastAPI DI factory for an `ArtifactRepository` scoped to the current user's pieces."""
     return ArtifactRepository(session, owner_id=str(current_user.id))
+
+
+async def get_owned_build_repo(
+    session: DBSession, current_user: CurrentUser
+) -> BuildRepository:
+    """FastAPI DI factory for a `BuildRepository` scoped to the current user's builds."""
+    return BuildRepository(session, owner_id=str(current_user.id))
 
 
 async def get_owned_optimization_job_repo(
