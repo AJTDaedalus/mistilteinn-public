@@ -152,14 +152,35 @@ one layer up**, and it gets B.6's treatment: delete the ZZZ concepts rather than
   link longer than DESIGN §6 implied; what keeps it honest is crossval running with
   `CROSSVAL_REQUIRE_DB=1` so the anchor cannot skip.
 
-### [ ] C.2 — Argue the f32 tolerance **[Planner]**
+### [x] C.2 — Argue the f32 tolerance **[Planner]**
 - **Do:** derive it from f32 precision compounded over the chain's operations, in writing, in
   `docs/CROSSVAL_gcsim.md`'s style. **Before the kernel is written.**
-- **Accept:** a test proves the tolerance cannot hide a formula error — the property
-  `tests/crossval` already asserts for the float64 chain.
+- **Done: `1e-6` relative**, argued in `docs/CROSSVAL_gcsim.md` and made executable in
+  `tests/unit/test_f32_tolerance.py`. Both halves are **measured over the 2,000-case sweep**,
+  not asserted:
+  - f32 end-to-end divergence: median 6.78e-08, p95 1.91e-07, **max 3.51e-07**. So `1e-7`
+    (the f64 chain's tolerance) would fail ~5% of cases for reasons that are not bugs, and
+    `1e-6` is ~2.8x the measured maximum.
+  - smallest plausible formula error: **206x** the tolerance (a forgotten crit clamp), then
+    226x (DEF mechanics combined additively) and 1,500,000x (the RES boundary).
+  - The constant is pinned **from both sides**: widening it to 1e-2 fails 5 tests, tightening
+    it to 1e-9 fails 2. A tolerance that only resists widening is one that can quietly become
+    unachievable slack.
 
-### [ ] C.3 — TypeScript CPU kernel: stats and one hit
-- **Accept:** passes C.1's harness within C.2's tolerance.
+### [x] C.3 — TypeScript CPU kernel: stats and one hit
+- **Done:** `src/app/sim/damage.ts` matches the Python chain on **all 2,000 cases, worst
+  3.379e-07** against the 1e-6 tolerance — landing almost exactly on the 3.51e-07 C.2's f32
+  model predicted, which is independent confirmation both are right.
+- **Every operation goes through `Math.fround`.** JavaScript is f64 and WGSL has no f64, so
+  computing natively here would make this backend *more* accurate than the GPU one — and a
+  user switching backends would watch their build's number change for no reason they could
+  act on. Matching the GPU's precision is worth more than having more of it.
+- The sweep is `scripts/verify-kernel.mjs`, a standalone Node gate (Node 24 strips types, so
+  it imports the kernel source and there is no build artifact to go stale). CI runs it and a
+  guard test fails if that step disappears.
+- **Verified by injecting three real formula bugs**: a forgotten crit clamp (598 cases
+  diverge), DEF mechanics added rather than multiplied (255), and gcsim's reading of the
+  0.75 RES boundary (511).
 
 ### [ ] C.4 — TypeScript CPU kernel: the five-slot search
 - **Do:** the Cartesian product, the bounded top-N heap, and the lossless Pareto layer —

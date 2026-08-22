@@ -147,3 +147,75 @@ fairy's crossval suite was green-by-absence on CI for months — the DB it neede
 there, the levels skipped, and the summary said green — and it shipped a stale golden
 fixture on the strength of it. That is the single most expensive bug in this project's
 lineage, and it is the reason this paragraph exists before the harness does.
+
+
+---
+
+# The f32 tolerance, for the browser kernel
+
+**C.2, argued before the kernel was written** — DESIGN_client_optimizer §6 requires that
+order, because a tolerance chosen after the fact is a tolerance chosen to make the kernel
+pass.
+
+WGSL has **no f64**. The kernel runs in `f32`, and the chain above matches gcsim to
+**1.3e-8** in float64 with a `1e-7` tolerance. An f32 kernel cannot reach that, so it needs
+its own number — derived, not guessed.
+
+## The tolerance
+
+**`1e-6` relative**, against the Python chain's answer.
+
+## What it was derived from
+
+Both halves are measured, over the 2,000 cases in `tests/fixtures/kernel/cases.json`.
+
+### 1. How far f32 actually drifts
+
+The chain reimplemented in `float32` and compared to the committed f64 answers:
+
+| | relative divergence |
+|---|---|
+| median | 6.78e-08 |
+| p95 | 1.91e-07 |
+| p99.9 | 3.15e-07 |
+| **max** | **3.51e-07** |
+
+f32's machine epsilon is 1.19e-07, and the chain is a sequence of five to seven
+multiplications, so a worst case of ~3× epsilon is what the arithmetic predicts and what was
+observed. **`1e-6` is ~2.8× the measured maximum** — enough headroom for cases the sweep did
+not reach, without being loose.
+
+This also settles the question the other way: an f32 kernel held to the f64 chain's `1e-7`
+would fail on roughly **5% of cases** for reasons that are not bugs.
+
+### 2. That it cannot hide a formula error
+
+The property `test_the_tolerance_cannot_hide_a_formula_error` asserts for the f64 chain,
+re-established for this one. Three mistakes a reimplementation plausibly makes, measured as
+relative divergence on the cases where each applies:
+
+| plausible bug | smallest divergence | margin over `1e-6` |
+|---|---|---|
+| crit-rate clamp forgotten | 2.06e-04 | **206×** |
+| DEF reduction and ignore combined additively | 2.27e-04 | **226×** |
+| RES boundary read as gcsim's `>` | 1.50e+00 | **1,500,000×** |
+
+The smallest is **206× the tolerance**. There is no plausible formula error that fits inside
+`1e-6`, and the two-and-a-half orders of magnitude between "worst floating-point noise" and
+"smallest real bug" is what makes a single number safe to use for both.
+
+## What this tolerance is *not*
+
+It is **not** a claim that the kernel matches gcsim to 1e-6. It matches **this repo's Python
+chain**, which matches gcsim to 1.3e-8. The kernel's total distance from the oracle is the
+sum, and `1e-6` dominates it — so **the kernel is the least accurate link**, by design and by
+about two orders of magnitude.
+
+That is acceptable because of what the number is used for: ranking artifact combinations
+whose damage differs by fractions of a percent, not reproducing a specific in-game figure. A
+1e-6 relative error cannot reorder two builds that differ by more than 1e-6 relative, and two
+builds closer than that are indistinguishable in play.
+
+**If the kernel is ever used to display an absolute damage figure rather than to rank**, this
+argument does not carry, and the figure should come from the simulator rather than the
+kernel.
