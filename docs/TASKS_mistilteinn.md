@@ -362,7 +362,7 @@ Each task below is **one commit**. Commit message form:
 ### [x] G.2 — Per-slot main-stat pools as data
 ### G.3 — `optimizer_pipeline.py` port (top-K / Pareto / budget-K intact)
 ### G.4 — `rank_pipeline.py` port
-### G.5 — `good_importer.py` — GOOD schema validation, reject-don't-coerce on unknown keys
+### [x] G.5 — `good_importer.py` — GOOD schema validation, reject-don't-coerce on unknown keys
 ### G.6 — Optimizer + builds + artifacts API surface restored
 ### G.7 — Re-baseline `tests/perf` for the 5-slot search space
 ### G.8 — Delete the consumed files from `app/services/_ported/`
