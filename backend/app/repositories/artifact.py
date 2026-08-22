@@ -12,15 +12,28 @@ from typing import TYPE_CHECKING
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
-from app.models.artifact import Artifact, artifact_slot_sort_order
+from app.models.artifact import Artifact, ArtifactSet, artifact_slot_sort_order
 from app.repositories.base import BaseRepository
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from sqlalchemy import Select
+    from sqlalchemy.orm.strategy_options import _AbstractLoad
 
     from app.models.enums import ArtifactSlot
+
+
+def _with_set() -> _AbstractLoad:
+    """Load each piece's set **and that set's affixes**.
+
+    Down to the affixes, not just to the set. `build_assembler.set_bonuses` reads
+    `ArtifactSet.affixes`, so stopping at the set leaves a lazy relationship to be touched
+    inside an async request — `MissingGreenlet`, a 500. This is the third instance of that
+    exact shape in Chunk G (`Talent.scalings` in G.6a was the first), and every one of them
+    looked correct until a route actually ran.
+    """
+    return selectinload(Artifact.artifact_set).selectinload(ArtifactSet.affixes)
 
 
 class ArtifactRepository(BaseRepository[Artifact]):
@@ -62,7 +75,7 @@ class ArtifactRepository(BaseRepository[Artifact]):
         """
         stmt = (
             self._filtered(slot=slot, set_id=set_id, equipped=equipped)
-            .options(selectinload(Artifact.artifact_set))
+            .options(_with_set())
             .order_by(artifact_slot_sort_order(), Artifact.level.desc(), Artifact.id)
             .offset(offset)
             .limit(limit)
@@ -89,6 +102,6 @@ class ArtifactRepository(BaseRepository[Artifact]):
         stmt = select(Artifact).where(Artifact.id == artifact_id)
         if self.owner_id is not None:
             stmt = stmt.where(Artifact.owner_id == self.owner_id)
-        stmt = stmt.options(selectinload(Artifact.artifact_set))
+        stmt = stmt.options(_with_set())
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
