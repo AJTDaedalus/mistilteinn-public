@@ -96,10 +96,9 @@ the kit corpus — is the niche neither incumbent occupies.
 
 ## Open questions (owner, not Planner)
 
-- **OQ-S1 (new, 2026-08-22):** what "RAG-based artifact optimizer" means concretely —
-  retrieval of simulated context to make simulator-quality scoring tractable, an LLM
-  explanation layer over the optimizer's own contribution log, or both. Logged in
-  `DECISIONS.md`; blocks S.5 and any Chunk-S follow-on.
+- **OQ-S1:** ~~what "RAG-based artifact optimizer" means concretely.~~ **ANSWERED
+  2026-08-22 (owner): both** — retrieval makes simulator-quality scoring tractable *and*
+  grounds the explanation, over one shared index of simulated runs. See `DECISIONS.md`.
 - **OQ-M1:** Public competitiveness vs personal tool? Decides how much the incumbent-strength
   risk matters and whether MVP polish (onboarding, docs, sharing) is in scope.
 - **OQ-M2:** ~~Approve the gcsim-embed spike (timebox: ~2–3 sessions) before gauge-engine work, or

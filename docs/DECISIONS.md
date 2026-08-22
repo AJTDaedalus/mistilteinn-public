@@ -39,11 +39,51 @@ Two things that grounding settles:
   simulator in its inner loop.
 - **gcsim is adopted as infrastructure**, sidecar-first per §7.
 
-### What it does not decide
+### Fribbels runs entirely on the user's machine — and that is the opening
 
-The concrete meaning of "RAG-based" — see the open question logged with this entry. The
-readings differ materially and the wrong guess is expensive, so it is asked rather than
-assumed.
+Verified, not assumed: `package.json` declares
+`"homepage": "https://fribbels.github.io/hsr-optimizer"` and `"deploy": "gh-pages -d dist"`.
+GitHub Pages serves **static files only**. There is no backend directory; Vite builds a
+bundle. `src/lib/gpu/` is **WebGPU** (`webgpuDevice.ts`, `navigator.gpu`), so the permutation
+search runs on **the user's GPU**, with `worker/` for Web Workers.
+
+That is a sharper contrast than "GO + gcsim", and it cuts both ways:
+
+- **Fribbels' advantage:** enormous parallelism for free. Someone else's GPU, someone else's
+  electricity, zero marginal cost per user. mistilteinn searches on a shared server, which is
+  exactly why G.3's Pareto and budget-K layers had to exist at all.
+- **Fribbels' structural limit:** with no server it can **precompute nothing, retrieve
+  nothing, and hold no state across users or sessions**. Every answer is computed from
+  scratch, in a browser, from what that browser already has.
+
+mistilteinn is backend-first with Postgres. The server is the cost; it is also the one
+capability the gold standard cannot buy. **That is what makes the retrieval framing load-
+bearing rather than decorative** — retrieval needs a server and a corpus, and this project
+has both by construction.
+
+### OQ-S1 answered — retrieval does both jobs
+
+**Owner ruling, same day.** Retrieval serves the search *and* the explanation, over one
+shared corpus of simulated runs:
+
+```
+offline:  gcsim over representative builds -> index by build features
+
+search:   candidate -> retrieve nearest simulated context
+                    -> score through the Chunk F chain
+                    -> verify the top N by real simulation
+
+explain:  winning build + its contribution log + retrieved runs + kit text
+                    -> a grounded "why", citing real numbers
+```
+
+The two halves are one system because they share the index. And the split respects §3's
+measurement: **the simulator never enters the inner loop** — it populates the corpus offline
+and verifies finalists, while the 5.5e-4 s/combination chain does the searching.
+
+The explanation half is why F.5's "a damage number must be able to explain itself" and G.1's
+`contributions` log were worth their cost. They were built as a legibility constraint; they
+turn out to be the retrieval corpus for the product's second differentiator.
 
 **Rejected:** "GO + gcsim in one site." It is the obvious synthesis and it is not a product:
 it combines two things that already exist without being better than either at anything.

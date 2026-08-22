@@ -427,9 +427,26 @@ with better crossval tooling."* Walking away is a success condition.
 - **[x] S.2** — Both work. `GOOS=wasip1` builds (40 MB) and runs from Python via wasmtime, bit-identical to native. Upstream's own WASM target is `js/wasm` and not Python-hostable; ours is 30 lines.
 - **[x] S.3** — native 0.238 s, WASI 2.6–3.2 s, Chunk F chain 5.5e-4 s/combination. gcsim is ~430× (native) to ~4,700× (WASI) too slow to be the optimizer's inner loop, and fine for a rotation.
 - **[x] S.4** — 106 characters, 53 artifact sets: substantially the whole roster, and **the kit corpus Chunk H exists to build**. Costs: config generation, a ~39-entry character-key alias table, action lists, re-pinning discipline.
-- **[~] S.5** — `docs/RESEARCH_gcsim_embed.md` written; recommends **sidecar, not WASM, keep the Chunk F chain**. **Blocked on the owner** for §6: if gcsim supplies both the sim and the kits, what is mistilteinn? That answer decides whether Chunk H survives, and therefore what TASKS' order should be.
+- **[x] S.5** — `docs/RESEARCH_gcsim_embed.md` written; recommends **sidecar, not WASM, keep
+  the Chunk F chain**. §6 answered by the owner the same day (`DECISIONS.md`): the optimizer
+  and explainability are the product, gcsim is infrastructure, retrieval serves both search
+  and explanation. **Chunk order reconciled below.**
 
-## Chunk H — Kit corpus, modifier DSL, validation harness **[Planner: own DESIGN doc first]**
+## Chunk H — Kit corpus, modifier DSL, validation harness **[SUPERSEDED 2026-08-22]**
+
+**Superseded by Chunk S's finding**, and deliberately not merely deferred. gcsim implements
+**106 characters and 53 artifact sets** at the pin — the corpus this chunk existed to curate.
+The BRIEF named this the project's highest-risk chunk *because* it is where fabricated
+citations did fairy the most damage, and the resolution is to not curate a corpus at all.
+
+What does **not** disappear with it: the CI kit-validation gate A.10 disabled
+(`TODO(chunk-H)` in `.github/workflows/test.yml`) still needs an answer, since there is now
+nothing for it to validate. Decide its fate in the DESIGN doc that replaces this chunk rather
+than leaving a disabled gate pointing at a superseded chunk.
+
+The original sketch is kept below for the record.
+
+### (superseded) original sketch
 
 **DESIGN §1 A6 makes this chunk's schema the load-bearing artifact of the legibility ruling.**
 Its DESIGN doc must answer "what happens when a kit does not fit the schema" with something
