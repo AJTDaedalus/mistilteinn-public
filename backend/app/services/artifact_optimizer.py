@@ -1,8 +1,9 @@
 """Search a user's artifacts for the build that does the most damage.
 
 Five slots, a pool of owned pieces per slot, and one question: which combination maximises
-the damage of a described hit. The search is exhaustive here; the pruning machinery
-(top-K prefilter, Pareto, budget-K) is G.3's port and slots in around this.
+the damage of a described hit. The search itself is a plain Cartesian product; the two
+layers that make it finish live in `app.services.artifact_prefilter`, which is also where
+the difference between "smaller" and "different" is argued out.
 
 ## What this does not contain
 
@@ -13,8 +14,9 @@ optimizer with its own scoring shortcut is how a tool ends up recommending build
 calculator disagrees with, and the disagreement is invisible until a user notices.
 
 The cost is real — a full stat resolution per candidate — and it is the right cost to pay
-first. G.3's prefilters make the search smaller; they do not make the scoring cheaper by
-making it different.
+first. The prefilters make the search smaller; they do not make the scoring cheaper by
+making it different. The live-dimension probe they rank on goes through this same evaluator
+for the same reason.
 
 ## Set bonuses
 
@@ -33,12 +35,15 @@ from __future__ import annotations
 
 import heapq
 import itertools
+import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from app.data.snapshot import main_stat_pools
 from app.formula.genshin import tags
 from app.pando.calculator import NodeRegistry
+from app.services import artifact_prefilter
+from app.services.artifact_prefilter import PrefilterReport
 from app.services.damage_calculator import BuildEvaluator
 from app.services.stat_calculator import (
     ArtifactStats,
@@ -49,7 +54,7 @@ from app.services.stat_calculator import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Callable, Iterable, Sequence
 
     from app.formula.genshin.damage import Hit
     from app.formula.genshin.explain import Contribution, ContributionLog
@@ -138,6 +143,10 @@ class OptimizerConstraints:
     #: `{quantity: minimum}` over resolved stats — an energy-recharge floor, typically.
     min_stats: dict[str, float] = field(default_factory=dict)
     top_n: int = 10
+    #: Candidates each slot keeps in the lossy layer. `None` decides from the time budget,
+    #: `artifact_prefilter.EXACT` refuses to prune at all. The lossless Pareto layer is not
+    #: controlled from here: there is no reason to want a search to do redundant work.
+    prefilter_top_k: int | None = None
 
     def __post_init__(self) -> None:
         if self.top_n <= 0:
@@ -146,6 +155,27 @@ class OptimizerConstraints:
             # a 500 rather than an empty result.
             msg = f"top_n must be at least 1; got {self.top_n}"
             raise OptimizerInputError(msg)
+
+
+#: How often the search offers the callback a chance to look at it, and to cancel.
+PROGRESS_TICK_SECONDS: float = 2.0
+
+
+@dataclass(frozen=True, slots=True)
+class OptimizerProgress:
+    """Where the search has got to. Handed to the progress callback, never returned."""
+
+    combinations_done: int
+    combinations_total: int
+    evaluated: int
+    elapsed_seconds: float
+
+    @property
+    def fraction(self) -> float:
+        """Progress in 0..1. `combinations_total` is exact, so this does not drift."""
+        if self.combinations_total <= 0:
+            return 1.0
+        return self.combinations_done / self.combinations_total
 
 
 @dataclass(frozen=True, slots=True)
@@ -175,6 +205,17 @@ class OptimizerResult:
     #: Set affixes skipped because their effect is conditional text (Chunk H). Reported so
     #: "why is my 4-piece not showing up" has an answer that is not a shrug.
     skipped_conditional_bonuses: int = 0
+    #: What the pruning layers removed, and whether the answer is proven optimal.
+    prefilter: PrefilterReport = field(default_factory=PrefilterReport)
+
+    @property
+    def is_exact(self) -> bool:
+        """Whether these builds are the true optimum over the inventory as given."""
+        return self.prefilter.is_exact
+
+    def summary(self) -> str:
+        """One line describing the search, for a caller that has to show its work."""
+        return self.prefilter.summary(self.evaluated)
 
 
 def optimize(
@@ -185,12 +226,18 @@ def optimize(
     character_level: int,
     set_bonuses: Iterable[SetBonus] = (),
     constraints: OptimizerConstraints | None = None,
+    progress_callback: Callable[[OptimizerProgress], None] | None = None,
 ) -> OptimizerResult:
     """Score every allowed five-piece combination and return the best.
 
     `base_contributions` is the character-and-weapon half of the build, already resolved by
     `stat_calculator` — it does not change across candidates, so it is computed once and
     replayed rather than rebuilt.
+
+    `progress_callback` is offered a snapshot every couple of seconds and may raise
+    `artifact_prefilter.Cancelled` to stop the search. Cancellation is cooperative: this is
+    a synchronous CPU-bound loop, so there is no other way to interrupt it, and a callback
+    that never raises costs a clock read per tick.
     """
     constraints = constraints or OptimizerConstraints()
     by_slot = _bucket_by_slot(candidates, constraints)
@@ -208,6 +255,22 @@ def optimize(
         for candidate in bucket
     }
 
+    # Pruning **after** validation, not before. The prefilter values a candidate's main stat
+    # against the snapshot, so an illegal piece reaching it raises `SnapshotUnavailableError`
+    # from inside the pruning layer — blaming the snapshot for a caller's bad input, and
+    # losing the artifact id that `_validated_stats` puts in the message.
+    by_slot, report = artifact_prefilter.prune(
+        by_slot=by_slot,
+        base_contributions=base_contributions,
+        hit=hit,
+        enemy=enemy,
+        character_level=character_level,
+        # Floors are kept in the comparison whatever the damage probe says about them; see
+        # `artifact_prefilter`'s docstring for why Energy Recharge is the case that bites.
+        floor_quantities=constraints.min_stats,
+        prefilter_top_k=constraints.prefilter_top_k,
+    )
+
     evaluated = 0
     rejected_by_sets = 0
     rejected_by_stats = 0
@@ -217,18 +280,32 @@ def optimize(
     skipped_conditional: set[tuple[int, int]] = set()
     best: list[OptimizedBuild] = []
 
+    total = artifact_prefilter.combination_count(by_slot)
+    started = time.monotonic()
+    next_tick = started + PROGRESS_TICK_SECONDS
+    done = 0
+
     for combination in itertools.product(*(by_slot[slot] for slot in SLOTS)):
+        done += 1
+        if progress_callback is not None:
+            now = time.monotonic()
+            if now >= next_tick:
+                next_tick = now + PROGRESS_TICK_SECONDS
+                progress_callback(
+                    OptimizerProgress(
+                        combinations_done=done,
+                        combinations_total=total,
+                        evaluated=evaluated,
+                        elapsed_seconds=now - started,
+                    ),
+                )
         counts = _count_sets(combination)
         if not _satisfies_sets(counts, constraints.required_sets):
             rejected_by_sets += 1
             continue
 
         log = build_log(NodeRegistry())
-        for contribution in base_contributions:
-            log.add(
-                contribution.quantity, contribution.value, contribution.source,
-                contribution.note, tag=contribution.tag,
-            )
+        log.replay(base_contributions)
         for candidate in combination:
             add_artifact(log, resolved[candidate.artifact_id])
         skipped_conditional |= _apply_set_bonuses(log, counts, bonuses)
@@ -254,12 +331,25 @@ def optimize(
         elif build.damage > best[0].damage:
             heapq.heappushpop(best, build)
 
+    if progress_callback is not None:
+        # A final tick, so a consumer's last reading is 100% rather than wherever the
+        # two-second clock happened to land.
+        progress_callback(
+            OptimizerProgress(
+                combinations_done=done,
+                combinations_total=total,
+                evaluated=evaluated,
+                elapsed_seconds=time.monotonic() - started,
+            ),
+        )
+
     return OptimizerResult(
         builds=tuple(sorted(best, key=lambda entry: entry.damage, reverse=True)),
         evaluated=evaluated,
         rejected_by_sets=rejected_by_sets,
         rejected_by_stats=rejected_by_stats,
         skipped_conditional_bonuses=len(skipped_conditional),
+        prefilter=report,
     )
 
 

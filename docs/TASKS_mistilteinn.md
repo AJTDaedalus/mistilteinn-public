@@ -360,7 +360,7 @@ Each task below is **one commit**. Commit message form:
 
 ### [x] G.1 — `disc_optimizer.py` → `artifact_optimizer.py` (5 slots, fixed flower/plume mains)
 ### [x] G.2 — Per-slot main-stat pools as data
-### G.3 — `optimizer_pipeline.py` port (top-K / Pareto / budget-K intact)
+### [x] G.3 — Pareto + budget-K pruning, progress and cancellation (`artifact_prefilter.py`)
 ### G.4 — `rank_pipeline.py` port
 ### [x] G.5 — `good_importer.py` — GOOD schema validation, reject-don't-coerce on unknown keys
 ### G.6 — Optimizer + builds + artifacts API surface restored
