@@ -65,10 +65,15 @@ def test_an_empty_corpus_retrieves_nothing():
     assert retrieve([], 1.80) is None
 
 
-def test_a_tie_between_neighbours_is_broken_deterministically():
-    """175 and 185 are both one bucket from 180. Which one is arbitrary; *stable* is not."""
+def test_a_tie_between_neighbours_is_broken_toward_the_lower_bucket():
+    """175 and 185 are both one bucket from 180, and the tie is not broken arbitrarily.
+
+    Down, for the same reason `er_bucket` rounds down: the higher neighbour is a run that got
+    its burst off when this build may not, so breaking the tie upward would hand out uptime
+    the build has not earned.
+    """
     picks = {retrieve([_run(185, 2.0), _run(175, 1.0)], 1.80).matched_bucket for _ in range(5)}
-    assert len(picks) == 1
+    assert picks == {175}
 
 
 # ── What it says about itself ─────────────────────────────────────────────────

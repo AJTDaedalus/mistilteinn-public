@@ -210,6 +210,9 @@ def retrieve(runs: Sequence[SimRun], energy_recharge: float) -> Retrieval | None
         return None
 
     wanted = er_bucket(energy_recharge)
+    # Nearest bucket, and on a tie the **lower** one. Same reasoning as `er_bucket` rounding
+    # down: a build offered the higher neighbour is being shown a run that got its burst off
+    # when this one may not, and a tie should not be broken toward the optimistic side.
     matched = min(runs, key=lambda run: (abs(run.er_bucket - wanted), run.er_bucket))
     distance = abs(matched.er_bucket - wanted) // ER_BUCKET_PERCENT
     if distance > MAX_NEIGHBOUR_BUCKETS:
