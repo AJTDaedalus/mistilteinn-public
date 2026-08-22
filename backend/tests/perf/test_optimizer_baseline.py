@@ -1,609 +1,162 @@
-# ruff: noqa: E402, I001 — the module-level skip below runs before the imports it guards.
-"""Performance baseline for optimize_discs — YSG realistic filtered inventory.
+"""G.7 — the performance baseline for the five-slot artifact search.
 
-Run with:  pytest -x -m perf backend/tests/perf/test_optimizer_baseline.py
-Skipped by default (no -m perf flag).
+**Ported in structure, not in numbers.** fairy's version timed `optimize_discs` over a
+six-slot ZZZ inventory and reasoned about the *ratio* between two step shapes rather than
+absolute milliseconds, because run-to-run spread on a shared runner was ~35%. That reasoning
+ports; the build, the enemy and every import did not, and B.12 skipped the file rather than
+deleting it so this task had the harness that produced fairy's numbers to work from.
 
-Build: Ye Shunguang (ice/attack) — 4pc White Water Ballad (33500) + 2pc Branch & Blade Song (32700).
-Enemy: Ye Shiyuan the Thrall (level 60, ice-neutral).
+## What is asserted, and why it is not just "is it fast"
 
-Slot filters applied before the optimizer call (matching frontend filter behaviour):
-  Slot 4 main stat: atk_pct | crit_rate | crit_dmg
-  Slot 5 main stat: atk_pct only
-  Slot 6 main stat: atk_pct only
+The load-bearing assertion is that the measured cost per combination still matches
+**`artifact_prefilter.SECONDS_PER_COMBINATION`** — the constant the automatic budget divides
+a 300-second target by. That constant is the only thing standing between a large inventory
+and a search that either runs for twenty minutes or prunes lossily when it did not need to.
+A perf test that only said "under N seconds" would let it drift silently.
 
-Inventory is intentionally small (~3-4 per slot) so the test completes in seconds
-even at the unoptimised rate.  The interesting signal is the RATIO between this
-baseline and the post-A2 time, not the absolute number.
+The band is deliberately wide (`_TOLERANCE`). This runs on shared CI hardware where noise is
+one-directional — it only ever adds time — so the assertion is an order-of-magnitude
+regression guard, not a benchmark. The measured value is printed either way, so
+re-baselining is reading one line rather than instrumenting anything.
 
-Expected combos: 3×3×3×4×3×3 = 972
-Expected baseline time: ~2–5 s (unoptimised, ~2 ms/combo)
-Expected post-A2 time: <0.5 s (overlay path, ~0.1-0.3 ms/combo)
+Two further assertions are **exact**, because they are structural rather than timed: the
+lossless layer must actually remove work, and budget-K must actually keep the search inside
+its budget. Those are the properties the timing depends on, and they cannot be flaky.
 
-**PORT STATE — SKIPPED, NOT DELETED (B.12).** Every import below points at a module the
-demolition removed or staged: `build_damage_service` and `disc_optimizer` and `modifiers`
-live in `app/services/_ported/`, `combo_types` is gone. The file is kept because **G.7
-re-baselines `tests/perf` for the 5-slot Genshin search space** and this is the harness that
-produced fairy's numbers — the structure (fixed inventory, slot filters, ratio-not-absolute
-reasoning) ports; the ZZZ build and enemy do not.
+## It runs in CI
 
-The skip is module-level and unconditional. It is *not* a `-m perf` gate: this file cannot
-even be imported today, and a collection error is not the same message as "not re-baselined
-yet".
+`-m perf` is opt-in locally, and `.github/workflows/test.yml` runs it. A perf test nobody
+runs is fairy's green-by-absence failure in a new costume — and this repo's rule is that a
+check which did not run is not a pass.
 """
 
-import pytest
-
-pytest.skip(
-    "tests/perf is not re-baselined for Genshin yet — see G.7 and the module docstring.",
-    allow_module_level=True,
-)
-
-# NOTE: `from __future__ import annotations` was removed here. Python requires it to be the
-# first statement in the file, and the module-level `pytest.skip` above has to come first —
-# the file would otherwise raise SyntaxError at *collection*, which is a hard error rather
-# than a skip. Restore it at the top when G.7 restores the imports.
+from __future__ import annotations
 
 import time
 
 import pytest
 
-from app.services.build_damage_service import BuildSnapshot, EnemySnapshot
-from app.services.combo_types import AnomalyStep, ComboStep
-from app.services.disc_optimizer import (
-    DiscCandidate,
-    OptimizerConstraints,
-    SetFrame,
-    optimize_discs,
-)
-from app.services.modifiers import (
-    ActiveConditions,
-    AttackScope,
-    Condition,
-    Modifier,
-    ModifierSource,
-    ModifierTarget,
-)
+from app.formula.genshin import tags
+from app.formula.genshin.damage import Hit
+from app.services import artifact_prefilter
+from app.services.artifact_optimizer import SLOTS, OptimizerConstraints, optimize
+from app.services.damage_calculator import Enemy
+from scripts.bench_optimizer import base_contributions, build_inventory
 
-# ---------------------------------------------------------------------------
-# Set IDs
-# ---------------------------------------------------------------------------
-WWB = 33500  # White Water Ballad
-BBS = 32700  # Branch & Blade Song
+pytestmark = pytest.mark.perf
 
-# Repeats for the step-shape comparison; best-of-N, not mean (see `_time`).
-_PERF_REPEATS = 3
+#: Best-of-N, not mean. Noise on a shared runner only ever *adds* time, so the minimum is
+#: the closest estimate of the real cost; the mean would mostly measure the box.
+_REPEATS = 3
+
+#: How far over `SECONDS_PER_COMBINATION` the measured cost may run before this fails.
+#: Eight, because the constant was measured on a developer machine and CI is slower and
+#: noisier — this catches "the damage chain got an order of magnitude more expensive",
+#: which is what would silently break the budget, and nothing finer.
+_TOLERANCE = 8.0
+
+_ENEMY = Enemy(level=90, resistances=dict.fromkeys(tags.DAMAGE_CHANNELS, 0.1))
+_HIT = Hit(multiplier=2.0, channel="cryo", scope="burst")
+_SEED = 20260821
 
 
-# ---------------------------------------------------------------------------
-# Set modifiers (always-on only; matches typical "all conditions active" run)
-# ---------------------------------------------------------------------------
-
-
-def _disc_mod(stat: str, value: int, source: ModifierSource) -> Modifier:
-    return Modifier(
-        stat=stat,
-        value=value,
-        source=source,
-        source_label=stat,
-        target=ModifierTarget.SELF,
-        conditions=(Condition.ALWAYS,),
-        scopes=(AttackScope.ALL,),
-        max_stacks=1,
+def _run(inventory, **constraint_kwargs):
+    return optimize(
+        base_contributions(), inventory, _HIT, _ENEMY, character_level=90,
+        constraints=OptimizerConstraints(**constraint_kwargs),
     )
 
 
-def _wwb_mods() -> list[Modifier]:
-    return [
-        _disc_mod("physical_dmg", 1000, ModifierSource.DISC_SET_2PC),  # 2pc +10%
-        _disc_mod("crit_rate", 1000, ModifierSource.DISC_SET_4PC),  # 4pc +10% CR
-    ]
+def _time(inventory, **constraint_kwargs) -> tuple[float, object]:
+    """Seconds for the best of `_REPEATS` runs, and that run's result."""
+    best = float("inf")
+    result = None
+    for _ in range(_REPEATS):
+        started = time.perf_counter()
+        result = _run(inventory, **constraint_kwargs)
+        best = min(best, time.perf_counter() - started)
+    return best, result
 
 
-def _bbs_mods() -> list[Modifier]:
-    return [
-        _disc_mod("crit_dmg", 1600, ModifierSource.DISC_SET_2PC),  # 2pc +16% CD
-    ]
+def test_cost_per_combination_still_matches_the_budget_constant():
+    """`SECONDS_PER_COMBINATION` is what the automatic budget divides 300 seconds by.
 
-
-# ---------------------------------------------------------------------------
-# Build — Ye Shunguang (ice, attack)
-# ---------------------------------------------------------------------------
-
-
-def _ysg_build() -> BuildSnapshot:
-    return BuildSnapshot(
-        agent_base_atk=859,
-        wengine_base_atk=594,
-        agent_element="ice",
-        modifiers=[
-            _disc_mod("crit_rate", 3000, ModifierSource.CORE_SKILL),  # Core +30% CR
-            _disc_mod("dmg_bonus", 2500, ModifierSource.CORE_SKILL),  # Core +25% DMG
-        ],
-    )
-
-
-def _ye_shiyuan() -> EnemySnapshot:
-    """Ye Shiyuan the Thrall — level 60 elite, ice-neutral RES."""
-    return EnemySnapshot(level=60, base_def=50, element_res=0)
-
-
-# ---------------------------------------------------------------------------
-# Combo — Basic + EX Special (typical YSG test combo)
-# ---------------------------------------------------------------------------
-
-
-def _test_combo() -> list[ComboStep]:
-    return [
-        ComboStep(
-            label="BA1",
-            attack_id="att-ba1",
-            attack_name="Basic 1",
-            scope=AttackScope.BASIC,
-            multiplier=10000,
-            element="ice",
-        ),
-        ComboStep(
-            label="EX",
-            attack_id="att-ex",
-            attack_name="EX Special",
-            scope=AttackScope.EX_SPECIAL,
-            multiplier=30000,
-            element="ice",
-        ),
-    ]
-
-
-def _team_rotation_combo() -> list[ComboStep | AnomalyStep]:
-    """The post-Task-26 (issue #112) step shape: a full-team rotation.
-
-    Before Task 26 the optimizer cut a team combo down to the target's own steps
-    *before* simulating, so `/optimize` scored the 2-signature shape `_test_combo`
-    above models. Now the whole team is simulated and the resulting events are
-    filtered by ownership, which leaves the target with more steps AND — the part
-    that costs — more **distinct signatures**: every cross-agent mechanic that was
-    previously dead now varies `procs_override` per aura, and an `AnomalyStep`
-    signature keys on it (`disc_optimizer.py:452`).
-
-    Distinct signatures are what the per-candidate loop pays for: `sig_to_ctx`
-    builds one context per signature per frame, and `sig_counts` then reuses it.
-    Step *count* is nearly free by comparison. PR #113 reported this fixture's
-    real-world analogue going 20 → 47 steps and 1 → 5 signatures, so that is what
-    is modelled here: 47 steps over 5 signatures.
-
-    The five signatures, and why a team rotation produces them:
-      1. the target's own basic         (standard, BASIC)
-      2. the target's own EX            (standard, EX_SPECIAL)
-      3. burn ticks at neutral Refringe (aura fed before she banked a point)
-      4. burn ticks at Refringed 1.04   (RefringeArea folded in — Task 35)
-      5. burn ticks at a shared-aura buildup share (Task 26's fractional owner
-         share, only producible once teammates are in the same rotation)
+    If the real cost drifts above it the budget over-promises and a search runs long; if it
+    drifts far below, the budget prunes lossily on inventories it could have searched
+    exactly. Either way the number stops describing this program, and nothing else in the
+    suite would notice.
     """
-    steps: list[ComboStep | AnomalyStep] = [
-        ComboStep(
-            label="BA1",
-            attack_id="att-ba1",
-            attack_name="Basic 1",
-            scope=AttackScope.BASIC,
-            multiplier=10000,
-            element="ice",
-        ),
-        ComboStep(
-            label="EX",
-            attack_id="att-ex",
-            attack_name="EX Special",
-            scope=AttackScope.EX_SPECIAL,
-            multiplier=30000,
-            element="ice",
-        ),
-    ]
-    # 45 anomaly ticks spread over the three distinct `procs_override` values.
-    for i, scale in enumerate((1.0, 1.04, 0.25) * 15):
-        steps.append(
-            AnomalyStep(
-                label=f"Anomaly Tick (ice) {i}",
-                attack_id=f"anomaly_tick_ice_{i}",
-                anomaly_type="shatter",
-                element="ice",
-                procs_override=scale,
-            )
+    inventory = build_inventory(per_slot=6, seed=_SEED)
+    elapsed, result = _time(inventory, prefilter_top_k=artifact_prefilter.EXACT)
+
+    scored = result.evaluated + result.rejected_by_sets + result.rejected_by_stats
+    per_combination = elapsed / scored
+    ceiling = artifact_prefilter.SECONDS_PER_COMBINATION * _TOLERANCE
+
+    print(
+        f"\n[perf] {len(inventory)} pieces, {scored:,} combinations in {elapsed:.3f}s "
+        f"→ {per_combination:.3e} s/combination "
+        f"(constant {artifact_prefilter.SECONDS_PER_COMBINATION:.3e}, "
+        f"ceiling {ceiling:.3e}). Re-baseline with "
+        f"`python -m scripts.bench_optimizer`.",
+    )
+
+    assert scored > 0
+    assert per_combination < ceiling, (
+        f"{per_combination:.3e} s/combination is more than {_TOLERANCE}x the constant the "
+        f"auto-budget is computed from. Re-measure with scripts/bench_optimizer.py and "
+        f"update artifact_prefilter.SECONDS_PER_COMBINATION, or find what got slower."
+    )
+
+
+def test_the_lossless_layer_removes_work_the_search_would_otherwise_do():
+    """Exact, not timed. If Pareto stops pruning, the timing above starts measuring a
+    different search and the budget constant quietly becomes wrong for the real one."""
+    inventory = build_inventory(per_slot=6, seed=_SEED)
+    # Every piece duplicated with a strictly worse copy: same slot, same set, same main,
+    # each substat reduced. None of them can appear in an optimal build.
+    inventory += [
+        type(piece)(
+            artifact_id=f"{piece.artifact_id}-worse",
+            slot=piece.slot, set_id=piece.set_id, rarity=piece.rarity, level=piece.level,
+            main_stat=piece.main_stat,
+            substats=tuple(
+                {**sub, "value": float(sub["value"]) * 0.5} for sub in piece.substats
+            ),
         )
-    return steps
-
-
-# ---------------------------------------------------------------------------
-# Inventory — realistic post-filter size (3-4 per slot → ~972 combos)
-# ---------------------------------------------------------------------------
-
-
-def _d(
-    disc_id: str,
-    slot: int,
-    set_id: int,
-    main_stat_type: str,
-    main_stat_value: int,
-    substats: list[dict],
-) -> DiscCandidate:
-    return DiscCandidate(
-        disc_id=disc_id,
-        slot=slot,
-        set_id=set_id,
-        main_stat_type=main_stat_type,
-        main_stat_value=main_stat_value,
-        substats=substats,
-    )
-
-
-def _build_inventory() -> list[DiscCandidate]:
-    """
-    Filtered inventory for 4pc WWB / 2pc BBS build.
-
-    Slots 1-4: WWB discs  |  Slots 5-6: BBS discs.
-    Slot 4 filtered to atk_pct / crit_rate / crit_dmg main stats only.
-    Slot 5-6 filtered to atk_pct main stat only.
-
-    3 candidates per unfiltered slot, 4 across slot-4 filters.
-    """
-
-    # Per-roll value helper (cycles so each disc is distinct).
-    def r(base: int, seed: int) -> int:
-        return base + (seed * base // 3) % (base * 2)
-
-    return [
-        # --- Slot 1 (WWB, HP main — unfiltered) ---
-        _d(
-            "wwb-s1-a",
-            1,
-            WWB,
-            "hp",
-            0,
-            [
-                {"stat": "crit_rate", "value": r(240, 1)},
-                {"stat": "crit_dmg", "value": r(480, 2)},
-                {"stat": "atk_pct", "value": r(300, 3)},
-            ],
-        ),
-        _d(
-            "wwb-s1-b",
-            1,
-            WWB,
-            "hp",
-            0,
-            [
-                {"stat": "crit_rate", "value": r(240, 4)},
-                {"stat": "crit_dmg", "value": r(480, 5)},
-                {"stat": "atk_pct", "value": r(300, 6)},
-            ],
-        ),
-        _d(
-            "wwb-s1-c",
-            1,
-            WWB,
-            "hp",
-            0,
-            [
-                {"stat": "crit_rate", "value": r(240, 7)},
-                {"stat": "crit_dmg", "value": r(480, 8)},
-                {"stat": "atk_pct", "value": r(300, 9)},
-            ],
-        ),
-        # --- Slot 2 (WWB, ATK main — unfiltered) ---
-        _d(
-            "wwb-s2-a",
-            2,
-            WWB,
-            "atk",
-            0,
-            [
-                {"stat": "crit_rate", "value": r(240, 2)},
-                {"stat": "crit_dmg", "value": r(480, 3)},
-                {"stat": "atk_pct", "value": r(300, 4)},
-            ],
-        ),
-        _d(
-            "wwb-s2-b",
-            2,
-            WWB,
-            "atk",
-            0,
-            [
-                {"stat": "crit_rate", "value": r(240, 5)},
-                {"stat": "crit_dmg", "value": r(480, 6)},
-                {"stat": "atk_pct", "value": r(300, 7)},
-            ],
-        ),
-        _d(
-            "wwb-s2-c",
-            2,
-            WWB,
-            "atk",
-            0,
-            [
-                {"stat": "crit_rate", "value": r(240, 8)},
-                {"stat": "crit_dmg", "value": r(480, 9)},
-                {"stat": "atk_pct", "value": r(300, 1)},
-            ],
-        ),
-        # --- Slot 3 (WWB, ATK main — unfiltered) ---
-        _d(
-            "wwb-s3-a",
-            3,
-            WWB,
-            "atk",
-            0,
-            [
-                {"stat": "crit_rate", "value": r(240, 3)},
-                {"stat": "crit_dmg", "value": r(480, 4)},
-                {"stat": "atk_pct", "value": r(300, 5)},
-            ],
-        ),
-        _d(
-            "wwb-s3-b",
-            3,
-            WWB,
-            "atk",
-            0,
-            [
-                {"stat": "crit_rate", "value": r(240, 6)},
-                {"stat": "crit_dmg", "value": r(480, 7)},
-                {"stat": "atk_pct", "value": r(300, 8)},
-            ],
-        ),
-        _d(
-            "wwb-s3-c",
-            3,
-            WWB,
-            "atk",
-            0,
-            [
-                {"stat": "crit_rate", "value": r(240, 9)},
-                {"stat": "crit_dmg", "value": r(480, 1)},
-                {"stat": "atk_pct", "value": r(300, 2)},
-            ],
-        ),
-        # --- Slot 4 (WWB, filtered: atk_pct | crit_rate | crit_dmg) ---
-        # One of each main stat type + one extra atk_pct (realistic: more ATK pieces in pool)
-        _d(
-            "wwb-s4-atk-a",
-            4,
-            WWB,
-            "atk_pct",
-            3000,
-            [{"stat": "crit_rate", "value": r(240, 1)}, {"stat": "crit_dmg", "value": r(480, 2)}],
-        ),
-        _d(
-            "wwb-s4-atk-b",
-            4,
-            WWB,
-            "atk_pct",
-            3000,
-            [{"stat": "crit_rate", "value": r(240, 4)}, {"stat": "crit_dmg", "value": r(480, 5)}],
-        ),
-        _d(
-            "wwb-s4-cr",
-            4,
-            WWB,
-            "crit_rate",
-            2400,
-            [{"stat": "crit_dmg", "value": r(480, 3)}, {"stat": "atk_pct", "value": r(300, 6)}],
-        ),
-        _d(
-            "wwb-s4-cd",
-            4,
-            WWB,
-            "crit_dmg",
-            4800,
-            [{"stat": "crit_rate", "value": r(240, 7)}, {"stat": "atk_pct", "value": r(300, 8)}],
-        ),
-        # --- Slot 5 (BBS, filtered: atk_pct only) ---
-        _d(
-            "bbs-s5-a",
-            5,
-            BBS,
-            "atk_pct",
-            3000,
-            [
-                {"stat": "crit_rate", "value": r(240, 2)},
-                {"stat": "crit_dmg", "value": r(480, 3)},
-                {"stat": "pen_ratio", "value": r(240, 4)},
-            ],
-        ),
-        _d(
-            "bbs-s5-b",
-            5,
-            BBS,
-            "atk_pct",
-            3000,
-            [
-                {"stat": "crit_rate", "value": r(240, 5)},
-                {"stat": "crit_dmg", "value": r(480, 6)},
-                {"stat": "atk_pct", "value": r(300, 7)},
-            ],
-        ),
-        _d(
-            "bbs-s5-c",
-            5,
-            BBS,
-            "atk_pct",
-            3000,
-            [
-                {"stat": "crit_rate", "value": r(240, 8)},
-                {"stat": "crit_dmg", "value": r(480, 9)},
-                {"stat": "anomaly_proficiency", "value": r(9, 1)},
-            ],
-        ),
-        # --- Slot 6 (BBS, filtered: atk_pct only) ---
-        _d(
-            "bbs-s6-a",
-            6,
-            BBS,
-            "atk_pct",
-            3000,
-            [
-                {"stat": "crit_rate", "value": r(240, 3)},
-                {"stat": "crit_dmg", "value": r(480, 4)},
-                {"stat": "pen_ratio", "value": r(240, 5)},
-            ],
-        ),
-        _d(
-            "bbs-s6-b",
-            6,
-            BBS,
-            "atk_pct",
-            3000,
-            [
-                {"stat": "crit_rate", "value": r(240, 6)},
-                {"stat": "crit_dmg", "value": r(480, 7)},
-                {"stat": "atk_pct", "value": r(300, 8)},
-            ],
-        ),
-        _d(
-            "bbs-s6-c",
-            6,
-            BBS,
-            "atk_pct",
-            3000,
-            [
-                {"stat": "crit_rate", "value": r(240, 9)},
-                {"stat": "crit_dmg", "value": r(480, 1)},
-                {"stat": "anomaly_proficiency", "value": r(9, 2)},
-            ],
-        ),
+        for piece in list(inventory)
     ]
 
+    result = _run(inventory, prefilter_top_k=artifact_prefilter.EXACT)
 
-@pytest.mark.perf
-def test_optimizer_baseline_timing() -> None:
-    """Time optimize_discs on a filtered YSG inventory and print elapsed ms.
+    assert result.prefilter.pareto_removed > 0
+    # Still exact: the lossless layer removing work does not make an answer approximate.
+    assert result.is_exact
+    assert all(not i.endswith("-worse") for i in result.builds[0].artifact_ids)
 
-    This records the BEFORE number for A2's context-cache optimisation.
-    Expected combos: 3×3×3×4×3×3 = 972.
-    """
-    inventory = _build_inventory()
-    by_slot: dict[int, int] = {}
-    for d in inventory:
-        by_slot[d.slot] = by_slot.get(d.slot, 0) + 1
-    print(f"\n[perf] Inventory per slot: {dict(sorted(by_slot.items()))}")
 
-    expected_combos = 3 * 3 * 3 * 4 * 3 * 3  # 972
-    print(f"[perf] Expected combos: {expected_combos}")
+def test_budget_k_keeps_the_search_inside_the_budget_it_was_given():
+    """Exact, not timed. The budget exists so a large inventory finishes; a K that does not
+    actually bound the product would leave that promise unkept while reporting a K."""
+    inventory = build_inventory(per_slot=8, seed=_SEED)
+    budget = 200
 
-    start = time.perf_counter()
-    result = optimize_discs(
-        base_build=_ysg_build(),
-        enemy=_ye_shiyuan(),
-        combo_steps=_test_combo(),
-        inventory=inventory,
-        disc_set_modifiers={WWB: _wwb_mods(), BBS: _bbs_mods()},
-        constraints=OptimizerConstraints(
-            top_n=10,
-            allowed_frames=[SetFrame({WWB: 4, BBS: 2})],
-        ),
-        conditions=ActiveConditions(),
-    )
-    elapsed_ms = (time.perf_counter() - start) * 1000
-
-    print(
-        f"[perf] optimize_discs BASELINE: {elapsed_ms:.1f} ms  "
-        f"(evaluated={result.evaluated}, pruned_sets={result.pruned_sets}, "
-        f"builds={len(result.builds)})"
+    kept, report = artifact_prefilter.prune(
+        by_slot=_by_slot(inventory),
+        base_contributions=base_contributions(),
+        hit=_HIT,
+        enemy=_ENEMY,
+        character_level=90,
+        budget=budget,
     )
 
-    assert result.evaluated > 0, "No combos evaluated — check inventory / set frame"
-    assert len(result.builds) > 0
-    assert result.builds[0].total_damage > 0
+    assert report.effective_k is not None, "this inventory does not fit in the budget"
+    assert artifact_prefilter.combination_count(kept) <= budget
+    assert not report.is_exact, "a lossy search must say so"
 
 
-@pytest.mark.perf
-def test_team_rotation_step_shape_timing() -> None:
-    """Time the same inventory against the target-only vs full-team step shape.
-
-    Task 26 (issue #112) changed what `/optimize` scores: the full team is now
-    simulated and filtered by ownership, so a team combo's step list gains both
-    steps and distinct signatures. PR #113's perf section argued from
-    `simulate()` (1.06 → 4.20 ms, paid ≤4× per job, not per candidate) and from
-    "the perf baseline is unchanged" — but the baseline above feeds a hand-built
-    2-step list straight into `optimize_discs`, so it is unchanged *by
-    construction* and says nothing about the shape that moved.
-
-    This is the measurement that does. Same inventory, same frame, same build —
-    only the step list differs, so the ratio isolates the per-candidate cost of
-    the new shape. Prints rather than asserts a threshold: this file's own
-    preamble says the interesting signal is the ratio, and absolute numbers are
-    machine-dependent.
-    """
-    inventory = _build_inventory()
-    common = {
-        "base_build": _ysg_build(),
-        "enemy": _ye_shiyuan(),
-        "inventory": inventory,
-        "disc_set_modifiers": {WWB: _wwb_mods(), BBS: _bbs_mods()},
-        "constraints": OptimizerConstraints(
-            top_n=10,
-            allowed_frames=[SetFrame({WWB: 4, BBS: 2})],
-        ),
-        "conditions": ActiveConditions(),
-    }
-
-    target_only = _test_combo()
-    full_team = _team_rotation_combo()
-
-    # Warm up before timing anything. `optimize_discs`' inputs are all frozen
-    # dataclasses and it holds no module-level cache, so the runs below cannot
-    # contaminate each other — but the *first* call of either still absorbs
-    # import and interpreter warmup, and that call would be the ratio's
-    # denominator. Without this the baseline is inflated and the ratio
-    # understates the real cost (measured: 4.4x unwarmed vs 5-7x warmed).
-    optimize_discs(combo_steps=target_only, **common)
-
-    def _time(steps: list) -> tuple[float, object]:
-        """Best of `_PERF_REPEATS`. Noise on a shared runner is one-directional —
-        it only ever adds time — so the minimum is the closest estimate of the
-        real cost, and the mean would mostly measure whatever else the box was
-        doing. Run-to-run spread on the raw single-shot numbers was ~35%.
-        """
-        best = float("inf")
-        result = None
-        for _ in range(_PERF_REPEATS):
-            start = time.perf_counter()
-            result = optimize_discs(combo_steps=steps, **common)
-            best = min(best, (time.perf_counter() - start) * 1000)
-        return best, result
-
-    before_ms, before = _time(target_only)
-    after_ms, after = _time(full_team)
-
-    def _sigs(steps: list) -> int:
-        standard = {(s.scope, s.multiplier) for s in steps if isinstance(s, ComboStep)}
-        anomaly = {
-            (s.anomaly_type, s.procs_override) for s in steps if isinstance(s, AnomalyStep)
-        }
-        return len(standard) + len(anomaly)
-
-    print(
-        f"\n[perf] target-only shape: {len(target_only)} steps, "
-        f"{_sigs(target_only)} signatures → {before_ms:.1f} ms "
-        f"(evaluated={before.evaluated}, {before_ms / before.evaluated:.3f} ms/candidate)"
-    )
-    print(
-        f"[perf] full-team shape:   {len(full_team)} steps, "
-        f"{_sigs(full_team)} signatures → {after_ms:.1f} ms "
-        f"(evaluated={after.evaluated}, {after_ms / after.evaluated:.3f} ms/candidate)"
-    )
-    print(
-        f"[perf] wall-clock {after_ms / before_ms:.2f}x  |  "
-        f"per-candidate {(after_ms / after.evaluated) / (before_ms / before.evaluated):.2f}x  |  "
-        f"candidates {after.evaluated / before.evaluated:.2f}x"
-    )
-
-    # The fixture only earns its keep if it actually models the shape change.
-    assert _sigs(full_team) == 5, "fixture drifted from PR #113's reported 5 signatures"
-    assert len(full_team) == 47, "fixture drifted from PR #113's reported 47 steps"
-    # Not asserted equal, because they are not: the anomaly steps pull
-    # `anomaly_proficiency` into the union keep-set (`disc_optimizer.py:692`), so
-    # the full-team shape survives the prefilter with a wider candidate set. That
-    # is the second, compounding half of the cost and the reason wall-clock moves
-    # more than the per-candidate figure — both are printed above so a regression
-    # in either is visible.
-    assert after.evaluated >= before.evaluated
-    assert after.builds[0].total_damage > 0
+def _by_slot(inventory):
+    buckets = {slot: [] for slot in SLOTS}
+    for piece in inventory:
+        buckets[piece.slot].append(piece)
+    return buckets

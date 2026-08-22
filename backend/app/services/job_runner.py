@@ -4,19 +4,25 @@ Submits CPU-bound search tasks to a dedicated ThreadPoolExecutor so they
 run off the async event loop. Provides cooperative cancellation via
 per-job threading.Events and DB persistence via run_coroutine_threadsafe.
 
-TODO(chunk-G): this module kept its generic machinery through the ZZZ demolition
-(B.2) but lost both concrete job types, because each one imported a pipeline that
-is now read-only porting source under ``app/services/_ported/``:
+TODO(chunk-G.10): this module kept its generic machinery through the ZZZ demolition
+(B.2) but lost both concrete job types. **Their replacements now exist** —
+``app.services.artifact_optimizer.optimize`` and ``app.services.artifact_ranker.rank``,
+landed in G.1/G.3/G.4 — and G.6c calls both *synchronously inside the request*. G.10 is the
+wiring that moves them here, which matters because ``artifact_prefilter``'s automatic budget
+targets 300 seconds of work and no HTTP client waits that long.
 
-    submit_optimizer_job / _execute_optimizer  <- optimizer_pipeline, disc_optimizer
-    submit_rank_job      / _execute_rank       <- rank_pipeline, disc_ranker
+Two things G.10 will hit, recorded here rather than rediscovered:
 
-Chunk G restores them against the Genshin artifact optimizer (G.3 ports
-``optimizer_pipeline``, G.4 ports ``rank_pipeline``). Until then the runner accepts
-generic callables via ``submit()`` and nothing else, so ``_optimizer_queue`` /
-``_rank_queue`` stay empty in practice — they are kept, rather than deleted and
-rewritten, because the per-kind concurrency cap and the queue-drop-on-cancel
-semantics are the parts that were hard to get right, not the pipeline calls.
+* ``SearchProgress`` below still describes fairy's ZZZ payload
+  (``assignments_done`` / ``pruned_sets``). ``OptimizerProgress`` reports
+  ``combinations_done`` / ``combinations_total`` / ``evaluated`` / ``elapsed_seconds``
+  and does **not** satisfy this protocol. One of the two has to move; the ETA formula
+  below is what the protocol exists for, so read that before changing either.
+* ``artifact_optimizer.optimize`` already takes a ``progress_callback`` and honours
+  ``artifact_prefilter.Cancelled``, so cooperative cancellation needs no new mechanism.
+
+The per-kind concurrency cap and the queue-drop-on-cancel semantics are the parts that were
+hard to get right, which is why the queues are kept rather than deleted and rewritten.
 Recover the deleted bodies from fairy@76909c4:backend/app/services/job_runner.py.
 """
 
@@ -58,10 +64,15 @@ async def run_orphan_sweep(session_factory: async_sessionmaker) -> int:
 class SearchProgress(Protocol):
     """Structural type for a search-progress callback payload.
 
-    Was ``disc_optimizer.OptimizerProgress``, which moved to ``_ported/`` in B.1.
-    Stated structurally so the ETA formula and the progress writer survive the
-    demolition without importing porting source; Chunk G's optimizer supplies a
-    concrete class that satisfies this.
+    Was ``disc_optimizer.OptimizerProgress``, deleted in G.8. Stated structurally so the
+    ETA formula and the progress writer survived the demolition without importing porting
+    source.
+
+    **Nothing satisfies it today.** ``artifact_optimizer.OptimizerProgress`` reports
+    ``combinations_done`` / ``combinations_total`` / ``evaluated`` / ``elapsed_seconds`` —
+    no ``assignments_*`` and no ``pruned_sets``, because the Genshin search has no
+    set-assignment frames to count. Reconciling the two is G.10's first job; this docstring
+    says so rather than leaving the mismatch to be found by a type error.
     """
 
     assignments_done: int
