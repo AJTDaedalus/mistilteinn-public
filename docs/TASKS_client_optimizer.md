@@ -215,13 +215,36 @@ one layer up**, and it gets B.6's treatment: delete the ZZZ concepts rather than
   CPU backend, and porting the product loop to a compute shader is where DESIGN §2's billion
   permutations per second actually comes from.
 
-### [ ] C.6 — Delete the Python chain and optimizer
+### [!] C.6 — Delete the Python chain and optimizer **[DEFERRED — two reasons the plan did not foresee]**
 - **Do:** only once C.3–C.5 pass. `formula/genshin/*`, `stat_calculator`,
   `damage_calculator`, `artifact_optimizer`, `artifact_prefilter`, `artifact_ranker`, and the
   server-side optimize/rank endpoints.
 - **Why:** the rule `_ported/README.md` states — delete each file when its port lands.
 - **Accept:** suite green without them; `optimization_jobs` retargeted to re-pin regeneration
   (DESIGN §5).
+
+**Not done, and deliberately.** C.3–C.5 pass, which was the stated precondition. Two things
+the plan could not have known then say to wait:
+
+1. **Nothing in the UI reaches the client search yet.** `search.ts` is a library with gates;
+   no page calls it. Deleting the server endpoints now would leave the product with **no
+   reachable optimizer at all** — the server path removed and the client path not yet wired
+   to anything. The order has to be: make the browser search user-reachable, *then* delete
+   what it replaces.
+2. **The Python chain generates the gates' own fixtures.** `scripts/kernel/generate_cases.py`
+   and `generate_search_cases.py` import it to produce the 2,000 damage cases and the 40
+   search cases that C.3, C.4 and C.5 all read. Deleting it freezes those fixtures: they stop
+   being derived and become hand-maintained data, and a new mechanic (a transformative
+   reaction, say) would have no way to produce expected values.
+
+**What C.6 should become**, when it happens: delete the *production surface* — the
+optimize/rank endpoints, their schemas, their DI wiring — and keep the chain as **test
+infrastructure** feeding the generators, the way `bench_optimizer.py` and
+`build_key_snapshot.py` are already tools rather than product. That is a smaller, safer claim
+than "delete the chain", and it does not leave A6 violated: one implementation ships, the
+other exists only to check it, which is what an oracle is.
+
+**Unblocks when** a page uses `search.ts`. That needs OQ-S3 answered (D.1).
 
 ---
 
