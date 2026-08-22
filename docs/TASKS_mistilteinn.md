@@ -358,8 +358,8 @@ Each task below is **one commit**. Commit message form:
 
 *Sub-branch `feat/artifact-optimizer`.*
 
-### G.1 — `disc_optimizer.py` → `artifact_optimizer.py` (5 slots, fixed flower/plume mains)
-### G.2 — Per-slot main-stat pools as data
+### [x] G.1 — `disc_optimizer.py` → `artifact_optimizer.py` (5 slots, fixed flower/plume mains)
+### [x] G.2 — Per-slot main-stat pools as data
 ### G.3 — `optimizer_pipeline.py` port (top-K / Pareto / budget-K intact)
 ### G.4 — `rank_pipeline.py` port
 ### G.5 — `good_importer.py` — GOOD schema validation, reject-don't-coerce on unknown keys
