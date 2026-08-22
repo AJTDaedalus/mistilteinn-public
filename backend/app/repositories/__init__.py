@@ -16,14 +16,12 @@ against a skeleton model would only have to be rewritten in C.6.
 """
 
 from app.repositories.base import BaseRepository
-from app.repositories.optimization_job import OptimizationJobRepository
 from app.repositories.session import SessionRepository
 from app.repositories.team import TeamRepository
 from app.repositories.user import UserRepository
 
 __all__ = [
     "BaseRepository",
-    "OptimizationJobRepository",
     "SessionRepository",
     "TeamRepository",
     "UserRepository",

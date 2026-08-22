@@ -5,7 +5,6 @@ import os
 import secrets
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -75,7 +74,6 @@ def get_test_settings() -> Settings:
 @pytest.fixture
 async def client(db_session) -> AsyncGenerator[AsyncClient, None]:
     app = create_app()
-    app.state.job_runner = MagicMock()
     app.dependency_overrides[get_settings] = get_test_settings
 
     async def override_get_db():
@@ -134,7 +132,6 @@ async def authed_client(
     _, raw_token = authed_user
 
     app = create_app()
-    app.state.job_runner = MagicMock()
     app.dependency_overrides[get_settings] = get_test_settings
 
     async def override_get_db():

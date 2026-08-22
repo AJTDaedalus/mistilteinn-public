@@ -28,7 +28,6 @@ from app.models.enums import (
     UserStatus,
     WeaponType,
 )
-from app.models.optimization_job import OptimizationJob
 from app.models.seed_provenance import SeedRun
 from app.models.session import Session
 from app.models.sim_run import SimRun
@@ -52,7 +51,6 @@ __all__ = [
     "DamageType",
     "Element",
     "EnemyProfile",
-    "OptimizationJob",
     "Rarity",
     "SeedRun",
     "Session",

@@ -61,20 +61,99 @@ async def _make_approved_user(db_session: AsyncSession) -> tuple[User, str]:
 
 # (method, path, body) for every user-data endpoint.
 # Body only needs to be syntactically valid JSON; the auth check fires first.
+#
+# **This list is checked against the app, not maintained by memory.** It used to carry a
+# `TODO` asking that every restored route be added here in the same commit — and Chunks G and
+# D then added six owned routes without it. The instruction was right and following it was
+# optional, which is the same thing as not having it.
+#
+# `test_the_sweep_covers_every_owned_route` walks the app's dependency graph for
+# `get_current_user` and fails if this table misses one. Adding a route with auth now breaks
+# the suite until it is listed.
 _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
-    # teams — the only owner-scoped surface left after B.6.
+    ("GET", "/api/v1/auth/me", None),
+    ("POST", "/api/v1/auth/logout", {}),
+    # teams
     ("GET", "/api/v1/teams", None),
     ("POST", "/api/v1/teams", {}),
     ("GET", "/api/v1/teams/00000000-0000-0000-0000-000000000001", None),
     ("PATCH", "/api/v1/teams/00000000-0000-0000-0000-000000000001", {}),
     ("DELETE", "/api/v1/teams/00000000-0000-0000-0000-000000000001", None),
-    # TODO(chunk-F/G): this table is a 401 sweep over *every* user-data endpoint, and it
-    # only proves what it lists. B.12 removed the builds, discs, combos and optimizer-jobs
-    # rows because those routes were deleted in B.6. **Every route restored in Chunk F or G
-    # must be added back here in the same commit that adds the route** — a handler that
-    # forgets its auth dependency is invisible to every other test in this suite.
-    # Chunk D is done and added no routes: it seeds the catalogue and exposes none of it.
+    # builds — G.6c
+    ("GET", "/api/v1/builds", None),
+    ("POST", "/api/v1/builds", {}),
+    ("GET", "/api/v1/builds/00000000-0000-0000-0000-000000000001", None),
+    ("PATCH", "/api/v1/builds/00000000-0000-0000-0000-000000000001", {}),
+    ("DELETE", "/api/v1/builds/00000000-0000-0000-0000-000000000001", None),
+    ("POST", "/api/v1/builds/00000000-0000-0000-0000-000000000001/explain", {}),
+    ("POST", "/api/v1/builds/00000000-0000-0000-0000-000000000001/compare-weapons", {}),
+    # artifacts — G.6b and D.1
+    ("GET", "/api/v1/artifacts", None),
+    ("GET", "/api/v1/artifacts/inventory", None),
+    ("GET", "/api/v1/artifacts/00000000-0000-0000-0000-000000000001", None),
+    ("DELETE", "/api/v1/artifacts/00000000-0000-0000-0000-000000000001", None),
+    ("POST", "/api/v1/artifacts/import/good", {}),
+    # the run corpus — D.1 and D.3
+    ("GET", "/api/v1/sim-runs", None),
+    ("POST", "/api/v1/sim-runs", {}),
+    ("GET", "/api/v1/sim-runs/retrieve", None),
+    ("GET", f"/api/v1/sim-runs/{'a' * 64}/180", None),
 ]
+
+
+def _routes_requiring_auth() -> set[tuple[str, str]]:
+    """Every `(method, path)` whose dependency graph reaches the auth dependency.
+
+    Read off the running app rather than a list someone keeps up to date, because the thing
+    being guarded is precisely that a route can be added without anyone remembering.
+    """
+    from app.dependencies import get_current_user, get_current_user_any_status
+    from app.main import create_app
+
+    def needs_auth(dependant: object) -> bool:
+        if dependant.call in (get_current_user, get_current_user_any_status):
+            return True
+        return any(needs_auth(child) for child in dependant.dependencies)
+
+    return {
+        (method, route.path)
+        for route in create_app().routes
+        if getattr(route, "dependant", None) is not None and needs_auth(route.dependant)
+        for method in (route.methods or set())
+    }
+
+
+def test_the_sweep_covers_every_owned_route() -> None:
+    """The table only proves what it lists, so what it lists is checked against the app.
+
+    A handler that forgets its auth dependency is invisible to every other test in this
+    suite — it simply works, for everyone. That is the failure this sweep exists for, and a
+    sweep that silently stops covering new routes is the same failure wearing a green tick.
+    """
+    template = "00000000-0000-0000-0000-000000000001"
+    listed = set()
+    for method, path, _ in _OWNED_ENDPOINTS:
+        # Concrete ids in the table map back to the route's parameter names.
+        parts = []
+        for segment in path.split("/"):
+            if segment == template or len(segment) == 64 or segment == "180":
+                parts.append("{}")
+            else:
+                parts.append(segment)
+        listed.add((method, "/".join(parts)))
+
+    actual = {
+        (method, "/".join("{}" if s.startswith("{") else s for s in path.split("/")))
+        for method, path in _routes_requiring_auth()
+    }
+
+    missing = sorted(actual - listed)
+    assert not missing, (
+        f"these routes require auth and the 401 sweep does not cover them: {missing}. "
+        f"Add them to _OWNED_ENDPOINTS — a handler that forgets its auth dependency is "
+        f"invisible to every other test in this suite."
+    )
+
 
 
 @pytest.mark.parametrize(("method", "path", "body"), _OWNED_ENDPOINTS)

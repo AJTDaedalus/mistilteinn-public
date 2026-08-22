@@ -165,34 +165,13 @@ async def test_deleting_a_build_unequips_its_artifacts_rather_than_deleting_them
     assert all(a.build_id is None for a in remaining)
 
 
-# ---- Optimizing ------------------------------------------------------------
-
-@pytest.mark.asyncio
-async def test_optimizing_returns_a_ranked_build_and_says_what_it_searched(
-    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
-):
-    user, _ = authed_user
-    character, weapon, sets = await _catalogue(db_session)
-    build = await _build_with_five(db_session, user, character, weapon, sets, spares=2)
-
-    response = await client.post(
-        f"/api/v1/builds/{build.id}/optimize",
-        json={"hit": CRYO_BURST, "top_n": 3},
-        headers=_auth(authed_user),
-    )
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body["builds"], "five slots are filled, so there is at least one combination"
-    assert body["builds"][0]["damage"] > 0
-    assert len(body["builds"][0]["artifact_ids"]) == 5
-    # A6 reaches the API: a recommendation nobody can interrogate is one nobody should act
-    # on, so the winning build carries its own account.
-    assert {c["source"] for c in body["builds"][0]["contributions"]} >= {
-        "character", "weapon", "artifact",
-    }
-    assert body["search"]["is_exact"] is True
-    assert "exact" in body["search"]["summary"]
+# ---- Scoring a build -------------------------------------------------------
+#
+# C.6 deleted `/optimize` and `/rank-artifacts`; searching moved to the browser. The cases
+# below are the ones whose *property* outlived the endpoint they were written against, ported
+# onto `/explain` — it reaches the same `build_combination_log` and `BuildEvaluator`, so they
+# still guard what they were written to guard. The ones that went with the surface were about
+# the search itself: ranking, transparency counters, inventory coverage.
 
 
 @pytest.mark.asyncio
@@ -201,27 +180,30 @@ async def test_a_set_bonus_is_counted_once_however_many_pieces_carry_it(
 ):
     """`set_bonuses` expands every affix of every set row it is handed.
 
-    The first version passed the build's equipped sets *and* the whole inventory's, so a
-    build wearing five of one set handed the same `ArtifactSet` in six times — and its
-    2-piece Cryo bonus registered six times over. The build's damage would have been several
-    times what it really is, in a response that otherwise looks entirely normal.
+    An early version passed the build's equipped sets *and* the whole inventory's, so a build
+    wearing five of one set handed the same `ArtifactSet` in six times — and its 2-piece Cryo
+    bonus registered six times over. The damage would have been several times what it really
+    is, in a response that otherwise looks entirely normal.
     """
     user, _ = authed_user
     character, weapon, sets = await _catalogue(db_session)
     build = await _build_with_five(db_session, user, character, weapon, sets)
 
     body = (await client.post(
-        f"/api/v1/builds/{build.id}/optimize",
-        json={"hit": CRYO_BURST},
+        f"/api/v1/builds/{build.id}/explain",
+        json={"hit": CRYO_BURST, "enemy": {"level": 90, "default_resistance": 0.1}},
         headers=_auth(authed_user),
     )).json()
 
-    bonus = [
-        c for c in body["builds"][0]["contributions"]
-        if c["source"] == "artifact_set" and c["quantity"] == "cryo_dmg_bonus"
+    parts = [
+        part
+        for account in body["stats"]
+        if account["quantity"] == "cryo_dmg_bonus"
+        for part in account["parts"]
+        if part["source"] == "artifact_set"
     ]
-    assert len(bonus) == 1, "one 2-piece bonus, registered once"
-    assert bonus[0]["value"] == pytest.approx(0.15)
+    assert len(parts) == 1, "one 2-piece bonus, registered once"
+    assert parts[0]["value"] == pytest.approx(0.15)
 
 
 @pytest.mark.asyncio
@@ -236,37 +218,13 @@ async def test_a_build_with_no_character_is_refused_rather_than_scored(
     await db_session.flush()
 
     response = await client.post(
-        f"/api/v1/builds/{build.id}/optimize",
-        json={"hit": CRYO_BURST},
+        f"/api/v1/builds/{build.id}/explain",
+        json={"hit": CRYO_BURST, "enemy": {"level": 90, "default_resistance": 0.1}},
         headers=_auth(authed_user),
     )
 
     assert response.status_code == 422
     assert "no character" in response.json()["detail"]
-
-
-@pytest.mark.asyncio
-async def test_an_empty_slot_is_refused_with_a_reason(
-    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
-):
-    """The Cartesian product of an empty bucket is empty, so the search would otherwise
-    return no builds and no reason. A user missing a goblet should be told that."""
-    user, _ = authed_user
-    character, weapon, _sets = await _catalogue(db_session)
-    build = Build(
-        owner_id=str(user.id), character_id=str(character.id), weapon_id=str(weapon.id),
-    )
-    db_session.add(build)
-    await db_session.flush()
-
-    response = await client.post(
-        f"/api/v1/builds/{build.id}/optimize",
-        json={"hit": CRYO_BURST},
-        headers=_auth(authed_user),
-    )
-
-    assert response.status_code == 422
-    assert "equip_bracer" in response.json()["detail"]
 
 
 @pytest.mark.asyncio
@@ -284,7 +242,8 @@ async def test_a_hit_must_name_a_real_channel_and_a_real_scope(
                 {"multiplier": 1.0, "channel": "cryo", "scope": "ultimate"},
                 {"multiplier": 0.0, "channel": "cryo", "scope": "burst"}):
         response = await client.post(
-            f"/api/v1/builds/{build.id}/optimize", json={"hit": bad},
+            f"/api/v1/builds/{build.id}/explain",
+            json={"hit": bad, "enemy": {"level": 90, "default_resistance": 0.1}},
             headers=_auth(authed_user),
         )
         assert response.status_code == 422, bad
@@ -301,8 +260,9 @@ async def test_the_scope_has_no_default(
     build = await _build_with_five(db_session, user, character, weapon, sets)
 
     response = await client.post(
-        f"/api/v1/builds/{build.id}/optimize",
-        json={"hit": {"multiplier": 1.0, "channel": "cryo"}},
+        f"/api/v1/builds/{build.id}/explain",
+        json={"hit": {"multiplier": 1.0, "channel": "cryo"},
+              "enemy": {"level": 90, "default_resistance": 0.1}},
         headers=_auth(authed_user),
     )
 
@@ -325,17 +285,17 @@ async def test_an_enemy_profile_supplies_the_target(
     await db_session.flush()
 
     resistant = (await client.post(
-        f"/api/v1/builds/{build.id}/optimize",
+        f"/api/v1/builds/{build.id}/explain",
         json={"hit": CRYO_BURST, "enemy": {"enemy_profile_id": str(profile.id)}},
         headers=_auth(authed_user),
     )).json()
     plain = (await client.post(
-        f"/api/v1/builds/{build.id}/optimize",
+        f"/api/v1/builds/{build.id}/explain",
         json={"hit": CRYO_BURST, "enemy": {"level": 90, "resistances": {"cryo": 0.1}}},
         headers=_auth(authed_user),
     )).json()
 
-    assert resistant["builds"][0]["damage"] < plain["builds"][0]["damage"]
+    assert resistant["damage"] < plain["damage"]
 
 
 @pytest.mark.asyncio
@@ -347,7 +307,7 @@ async def test_an_unknown_enemy_profile_is_a_404(
     build = await _build_with_five(db_session, user, character, weapon, sets)
 
     response = await client.post(
-        f"/api/v1/builds/{build.id}/optimize",
+        f"/api/v1/builds/{build.id}/explain",
         json={"hit": CRYO_BURST,
               "enemy": {"enemy_profile_id": "00000000-0000-0000-0000-000000000000"}},
         headers=_auth(authed_user),
@@ -357,7 +317,7 @@ async def test_an_unknown_enemy_profile_is_a_404(
 
 
 @pytest.mark.asyncio
-async def test_optimizing_someone_elses_build_is_a_404(
+async def test_scoring_someone_elses_build_is_a_404(
     client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
 ):
     character, _weapon, _sets = await _catalogue(db_session)
@@ -366,125 +326,9 @@ async def test_optimizing_someone_elses_build_is_a_404(
     await db_session.flush()
 
     response = await client.post(
-        f"/api/v1/builds/{stranger.id}/optimize",
-        json={"hit": CRYO_BURST},
+        f"/api/v1/builds/{stranger.id}/explain",
+        json={"hit": CRYO_BURST, "enemy": {"level": 90, "default_resistance": 0.1}},
         headers=_auth(authed_user),
     )
 
     assert response.status_code == 404
-
-
-# ---- Ranking ---------------------------------------------------------------
-
-@pytest.mark.asyncio
-async def test_ranking_reports_what_each_piece_is_worth_instead_of_the_equipped_one(
-    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
-):
-    user, _ = authed_user
-    character, weapon, sets = await _catalogue(db_session)
-    build = await _build_with_five(db_session, user, character, weapon, sets, spares=2)
-
-    body = (await client.post(
-        f"/api/v1/builds/{build.id}/rank-artifacts",
-        json={"hit": CRYO_BURST, "slot": "equip_ring"},
-        headers=_auth(authed_user),
-    )).json()
-
-    assert body["baseline_damage"] > 0
-    by_id = {a["artifact_id"]: a for a in body["artifacts"]}
-    equipped = await db_session.scalar(
-        select(Artifact).where(
-            Artifact.build_id == str(build.id), Artifact.slot == ArtifactSlot.GOBLET,
-        ),
-    )
-    # The equipped piece is its own baseline.
-    assert by_id[str(equipped.id)]["improvement_pct"] == pytest.approx(0.0)
-    # The spares carry crit DMG the equipped goblet does not, so they are upgrades, and the
-    # list is best-first.
-    assert body["artifacts"][0]["improvement_pct"] > 0
-    assert [a["improvement_pct"] for a in body["artifacts"]] == sorted(
-        (a["improvement_pct"] for a in body["artifacts"]), reverse=True,
-    )
-
-
-@pytest.mark.asyncio
-async def test_a_downgrade_ranks_negative_rather_than_zero(
-    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
-):
-    """Clamping would report "no change", which is the opposite of what it tells a player."""
-    user, _ = authed_user
-    character, weapon, sets = await _catalogue(db_session)
-    build = await _build_with_five(db_session, user, character, weapon, sets)
-    equipped = await db_session.scalar(
-        select(Artifact).where(
-            Artifact.build_id == str(build.id), Artifact.slot == ArtifactSlot.GOBLET,
-        ),
-    )
-    equipped.substats = [{"stat": "FIGHT_PROP_CRITICAL_HURT", "value": 0.6}]
-    db_session.add(Artifact(
-        owner_id=str(user.id), artifact_set_id=str(sets.id), slot=ArtifactSlot.GOBLET,
-        rarity=Rarity.FIVE_STAR, level=20, main_stat_type=StatType.CRYO_DMG_BONUS,
-        main_stat_value=0.0, substats=[],
-    ))
-    await db_session.flush()
-
-    body = (await client.post(
-        f"/api/v1/builds/{build.id}/rank-artifacts",
-        json={"hit": CRYO_BURST, "slot": "equip_ring"},
-        headers=_auth(authed_user),
-    )).json()
-
-    assert min(a["improvement_pct"] for a in body["artifacts"]) < 0
-
-
-@pytest.mark.asyncio
-async def test_ranking_a_build_with_an_empty_slot_is_refused(
-    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
-):
-    """A ranking measures a swap. With an empty slot every candidate for it would score as a
-    free upgrade."""
-    user, _ = authed_user
-    character, weapon, _sets = await _catalogue(db_session)
-    build = Build(
-        owner_id=str(user.id), character_id=str(character.id), weapon_id=str(weapon.id),
-    )
-    db_session.add(build)
-    await db_session.flush()
-
-    response = await client.post(
-        f"/api/v1/builds/{build.id}/rank-artifacts",
-        json={"hit": CRYO_BURST},
-        headers=_auth(authed_user),
-    )
-
-    assert response.status_code == 422
-
-
-@pytest.mark.asyncio
-async def test_the_search_reports_how_much_of_the_inventory_it_looked_at(
-    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
-    monkeypatch,
-):
-    """A bound on coverage the response does not mention reads as "searched everything".
-
-    The per-request inventory cap is the one bound here that the prefilter's own reporting
-    does not cover, so it gets the same treatment: `inventory_considered` against
-    `inventory_total`, differing exactly when the cap bit.
-    """
-    # Per slot, so capping at 1 keeps one of every slot and drops the spares — a global
-    # cap would truncate in slot order and leave the search with no circlet at all.
-    monkeypatch.setattr("app.api.v1.builds._SLOT_CAP", 1)
-    user, _ = authed_user
-    character, weapon, sets = await _catalogue(db_session)
-    build = await _build_with_five(db_session, user, character, weapon, sets, spares=3)
-
-    response = await client.post(
-        f"/api/v1/builds/{build.id}/optimize",
-        json={"hit": CRYO_BURST},
-        headers=_auth(authed_user),
-    )
-    body = response.json()
-
-    assert response.status_code == 200, body
-    assert body["search"]["inventory_total"] == 8
-    assert body["search"]["inventory_considered"] == 5, "one per slot, three spares dropped"
