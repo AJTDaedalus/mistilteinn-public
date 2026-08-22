@@ -166,6 +166,43 @@ now its main remaining job rather than a large upfront batch.
 constraint 4's "~20–30 character MVP cut" is the natural definition of *popular* if that is
 ever wanted. It is no longer on the critical path.
 
+### Weapon options are cheap, and belong in v1
+
+A user selecting a few candidate weapons to optimize across is **separable**: for each
+weapon, find its best artifacts; then compare the winners. N independent problems, not one
+problem N times harder — the same structure as everything else here.
+
+| weapons | context runs | browser time | GPU searches |
+|---:|---:|---|---:|
+| 1 | 6 | ~1.4 s | 1 |
+| 3 | 18 | ~4.3 s | 3 |
+| 5 | 30 | ~7.1 s | 5 |
+| 10 | 60 | ~14.3 s | 10 |
+
+A weapon does have to be a **context** dimension rather than a pure multiplier, because a
+passive can change the rotation's feasibility the same way ER does — Favonius generating
+particles is the obvious case. So it multiplies the *context* runs, and each `(weapon, ER
+bucket)` pair is its own run. At a second and a half per weapon that is affordable, and the
+GPU searches are free by comparison.
+
+**This is only cheap because of the collapse above.** Had the corpus been a server-side
+enumeration of weapons × teams × rotations, adding a weapon dimension would have multiplied a
+combinatorial cost. Since context is per-search and client-side, it multiplies seconds.
+
+Two consequences worth noting:
+
+- **The G.4 ranker generalises to it for free.** "Which weapon should I use" is the same
+  marginal-value question as "which artifact should I use" — swap it in, hold the rest
+  constant, report the difference against what is equipped. The ranker does not need a new
+  concept, only a new axis.
+- **The explanation must attribute across weapons**, not just within a build: "this weapon
+  wins because its passive raises your burst uptime", not merely "this build scores higher".
+  That is §4's job, and it is the more useful answer.
+
+**Recommended for v1**, on the strength of the cost. If it slips, it slips for UI reasons —
+comparing results across weapons needs a display concept that comparing artifacts does not —
+and not for compute ones.
+
 ### The constraint that survives
 
 A search can still arrive with no cached context. That must be a stated outcome, not a silent
