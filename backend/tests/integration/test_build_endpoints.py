@@ -458,3 +458,33 @@ async def test_ranking_a_build_with_an_empty_slot_is_refused(
     )
 
     assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_the_search_reports_how_much_of_the_inventory_it_looked_at(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+    monkeypatch,
+):
+    """A bound on coverage the response does not mention reads as "searched everything".
+
+    The per-request inventory cap is the one bound here that the prefilter's own reporting
+    does not cover, so it gets the same treatment: `inventory_considered` against
+    `inventory_total`, differing exactly when the cap bit.
+    """
+    # Per slot, so capping at 1 keeps one of every slot and drops the spares — a global
+    # cap would truncate in slot order and leave the search with no circlet at all.
+    monkeypatch.setattr("app.api.v1.builds._SLOT_CAP", 1)
+    user, _ = authed_user
+    character, weapon, sets = await _catalogue(db_session)
+    build = await _build_with_five(db_session, user, character, weapon, sets, spares=3)
+
+    response = await client.post(
+        f"/api/v1/builds/{build.id}/optimize",
+        json={"hit": CRYO_BURST},
+        headers=_auth(authed_user),
+    )
+    body = response.json()
+
+    assert response.status_code == 200, body
+    assert body["search"]["inventory_total"] == 8
+    assert body["search"]["inventory_considered"] == 5, "one per slot, three spares dropped"

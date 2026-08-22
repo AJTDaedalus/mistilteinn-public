@@ -197,6 +197,11 @@ class SearchTransparency(BaseModel):
     #: Set affixes skipped because their effect is conditional text (Chunk H). Reported so
     #: "why is my 4-piece not showing up" has an answer.
     skipped_conditional_bonuses: int = 0
+    #: How many owned pieces the search actually looked at, and how many the caller owns.
+    #: They differ only when the per-request inventory cap bit — a bound on coverage the
+    #: response does not mention reads as "searched everything".
+    inventory_considered: int = 0
+    inventory_total: int = 0
 
 
 class OptimizeResponse(BaseModel):

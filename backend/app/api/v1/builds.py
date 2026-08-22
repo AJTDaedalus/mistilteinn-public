@@ -143,10 +143,11 @@ async def optimize_build(
     build = await _require_full_build(builds, build_id)
     base = _base_contributions(build)
     # One fetch. Equipped pieces are owned pieces, so this already covers the build's own
-    # five — querying twice and concatenating would have counted each of their sets twice
-    # in `set_bonuses`, which is harmless only because the optimizer groups by set id.
-    owned = await artifacts.search(limit=_INVENTORY_CAP)
-    inventory = build_assembler.candidates(owned)
+    # five. Querying twice and concatenating passed each equipped set in a second time, and
+    # `set_bonuses` expands every affix of every row it is handed — see `_sets_of`.
+    owned = await artifacts.search(limit=_FETCH_CAP)
+    owned_total = await artifacts.count_filtered()
+    inventory = build_assembler.candidates(_capped_per_slot(owned))
     bonuses = build_assembler.set_bonuses(_sets_of(owned))
 
     constraints = artifact_optimizer.OptimizerConstraints(
@@ -196,6 +197,8 @@ async def optimize_build(
             is_exact=result.is_exact,
             summary=result.summary(),
             skipped_conditional_bonuses=result.skipped_conditional_bonuses,
+            inventory_considered=len(inventory),
+            inventory_total=owned_total,
         ),
     )
 
@@ -217,7 +220,7 @@ async def rank_artifacts(
     """
     build = await _require_full_build(builds, build_id)
     equipped = build_assembler.candidates(build.artifacts)
-    owned = await artifacts.search(limit=_INVENTORY_CAP)
+    owned = await artifacts.search(limit=_FETCH_CAP)
     inventory = build_assembler.candidates(
         [row for row in owned if body.slot is None or row.slot == body.slot][: body.limit],
     )
@@ -225,7 +228,7 @@ async def rank_artifacts(
 
     try:
         context = artifact_ranker.RankContext(
-            name="build",
+            name=_CONTEXT,
             base_contributions=_base_contributions(build),
             equipped=tuple(equipped),
             hit=_hit(body.hit),
@@ -237,13 +240,16 @@ async def rank_artifacts(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     return RankResponse(
-        baseline_damage=result.baselines["build"],
+        baseline_damage=result.baselines[_CONTEXT],
         artifacts=[
             RankedArtifactRead(
                 artifact_id=entry.artifact_id,
                 slot=entry.slot,
                 improvement_pct=entry.mean_improvement_pct,
-                damage=entry.scores[0].damage,
+                # By name, not by position. One context today, and `artifact_ranker` takes a
+                # list precisely because that changes — an index would keep working and stop
+                # meaning this build.
+                damage=next(s.damage for s in entry.scores if s.context == _CONTEXT),
             )
             for entry in result.artifacts
         ],
@@ -251,11 +257,43 @@ async def rank_artifacts(
     )
 
 
-#: How many owned pieces a single request will search over. A scanned account runs to a few
-#: thousand; this is a guard against a request that would sit in the worker for minutes
-#: before the prefilter's own time budget got a look at it, not a statement about inventory
-#: size.
-_INVENTORY_CAP = 5000
+#: How many owned pieces one request will read out of the database.
+_FETCH_CAP = 20_000
+
+#: How many pieces **per slot** a single request will search over, best-levelled first.
+#:
+#: Per slot, not overall. A global cap truncates the inventory in slot order — flower,
+#: plume, sands, goblet, circlet — so it removes whole *slots* from the tail rather than
+#: trimming each one, and the search then refuses with "no candidates for
+#: ['equip_dress']". A cap that turns a large inventory into an impossible search is worse
+#: than no cap at all.
+#:
+#: **And it is reported, never silent.** `SearchTransparency.inventory_considered` and
+#: `inventory_total` differ exactly when it bit. A bound on coverage the response does not
+#: mention reads as "searched everything" — the rule the prefilter already follows for its
+#: own pruning, with no reason this one is exempt.
+_SLOT_CAP = 500
+
+#: The single ranking context this route builds. Named, because `artifact_ranker` reports
+#: per-context results by name and `RankRequest` will grow a multi-build form (G.6c-multi).
+_CONTEXT = "build"
+
+
+def _capped_per_slot(artifacts: "Sequence[Artifact]") -> list["Artifact"]:
+    """At most `_SLOT_CAP` pieces per slot, keeping the best-levelled.
+
+    Relies on the repository's ordering — slot order, then level descending — so "the first
+    N of this slot" is "the N most upgraded".
+    """
+    kept: list[Artifact] = []
+    seen: dict[str, int] = {}
+    for artifact in artifacts:
+        slot = artifact.slot.value
+        if seen.get(slot, 0) >= _SLOT_CAP:
+            continue
+        seen[slot] = seen.get(slot, 0) + 1
+        kept.append(artifact)
+    return kept
 
 
 def _sets_of(artifacts: "Sequence[Artifact]") -> list["ArtifactSet"]:
