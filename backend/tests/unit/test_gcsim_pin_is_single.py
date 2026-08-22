@@ -89,3 +89,11 @@ def test_ci_builds_and_verifies_the_browser_wasm():
         "no CI step verifies the gcsim browser build against the oracle. Building it and "
         "never checking it agrees is how a silently different simulator ships."
     )
+    assert any("gcsim:verify-config" in r for r in runs), (
+        "no CI step checks that gcsim accepts the configs this repo emits. String tests "
+        "pin the emitter's decisions; only gcsim can say the result is a config."
+    )
+    assert any("emit_sample_configs" in r for r in runs), (
+        "nothing generates the configs the validator reads, so it would exit on an empty "
+        "directory — which it does deliberately, rather than passing on nothing."
+    )

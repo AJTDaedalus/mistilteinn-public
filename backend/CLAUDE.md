@@ -99,7 +99,8 @@ local gate is the CI gate (#135). Run **exactly what CI runs**:
 
 ```bash
 ruff check app/ tests/ scripts/seed_db.py scripts/verify_seed.py \
-    scripts/capture_nanoka_fixtures.py scripts/yuanshen/ scripts/bench_optimizer.py
+    scripts/capture_nanoka_fixtures.py scripts/yuanshen/ scripts/bench_optimizer.py \
+    scripts/gcsim/
 ```
 
 `scripts/` as a whole is not linted — it carries ~65 pre-existing violations in unrelated
