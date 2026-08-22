@@ -220,6 +220,22 @@ jobs:
       - name: Install
         run: npm ci
 
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      - name: Build the gcsim browser wasm
+        # Not vendored — 40 MB, and a fresh blob on every re-pin. `frontend/gcsim/
+        # PROVENANCE.md` explains the choice and names the two precedents in this repo that
+        # point the same way. The pin comes from docs/CROSSVAL_gcsim.md; nothing restates it.
+        run: npm run gcsim:build
+
+      - name: Verify it agrees with the oracle
+        # The whole client-side architecture rests on the browser build producing the same
+        # numbers as the crossval fixture, the native binary and the WASI probe. Asserted
+        # here rather than assumed, and it exits non-zero on any other value.
+        run: npm run gcsim:verify
+
       - name: Typecheck
         # `tsconfig.app.json`, **not** the root `tsconfig.json`. The root config has
         # `files: []` and no `include`, so `tsc -p tsconfig.json` compiles nothing and

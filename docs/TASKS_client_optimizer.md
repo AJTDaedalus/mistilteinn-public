@@ -75,18 +75,28 @@ one layer up**, and it gets B.6's treatment: delete the ZZZ concepts rather than
 
 ## Chunk B — gcsim in the browser
 
-### [ ] B.1 — Vendor the gcsim WASM build **[snapshot discipline]**
-- **Do:** build upstream's `cmd/wasm` at the pin in `CROSSVAL_gcsim.md` and commit the
-  artifact plus `wasm_exec.js`, with a `PROVENANCE.md` naming the commit and the build
-  command — the rule `app/data/yuanshen/` already follows. **Never a live fetch.**
-- **Accept:** provenance records the pin; a test asserts the committed pin matches
-  `CROSSVAL_gcsim.md`'s.
+### [x] B.1 — ~~Vendor~~ **build** the gcsim WASM from the pin **[snapshot discipline]**
+- **Revised during execution: the artifact is *not* committed.** It is **40 MB** (7 MB
+  gzipped, and `-ldflags="-w -s"` saves ~1 MB at a documented performance cost), so
+  committing it would add a multi-megabyte blob on every re-pin, permanently. Two precedents
+  in this repo point the other way — the crossval `PROVENANCE.md` (*"gcsim is not vendored:
+  it is a 35 MB Go binary"*) and `app/data/yuanshen/`, whose 54 MB TextMap lives only in the
+  gitignored cache. **The pin and the recipe are committed; the artifact is built.**
+- **Done:** `scripts/build-gcsim-wasm.sh`, `frontend/gcsim/PROVENANCE.md`, gitignored
+  artifacts, and CI builds it. The script **reads** the pin out of `CROSSVAL_gcsim.md`;
+  `test_gcsim_pin_is_single.py` fails on a hard-coded SHA anywhere, because two pins that can
+  drift are two definitions of correct.
 
-### [ ] B.2 — Run one simulation in the browser
-- **Do:** load the module in a Web Worker, feed it the committed `ayaka_normal_1.txt`.
-- **Accept:** it returns **21.706079870465302** — the value the native binary, the WASI probe
-  and the committed fixture all agree on (`RESEARCH_gcsim_embed.md` §2). Anything else means
-  the browser build and the oracle disagree, which is a blocker, not a rounding note.
+### [x] B.2 — Run one simulation in the browser build
+- **Done, and it agrees:** driven through upstream's own JS bindings
+  (`initializeAggregator` → `initializeWorker` → `simulate` → `aggregate` → `flush`) the
+  browser build returns **21.706079870465302** — the committed fixture's value, the native
+  binary's, and the WASI probe's, **to the last digit**. Four independent paths.
+- `scripts/verify-gcsim-wasm.mjs` is a standalone Node gate (it needs the real WebAssembly
+  host, not Angular's test environment) and CI runs it; a guard test fails if that step goes
+  away. Checked by pointing it at a wrong expectation and watching it exit 1.
+- **Measured:** instantiate 0.09 s; **31.35 ms per Monte Carlo iteration** single-threaded on
+  a two-character 90-second rotation. See the DESIGN §3.5 correction this forced.
 
 ### [ ] B.3 — Config generation from a build
 - **Do:** emit gcsim config text from a stored build. Needs the character-key alias table
