@@ -239,3 +239,47 @@ def test_a_substat_that_is_not_an_object_is_rejected_not_crashed_on():
     result = parse_good(_export(_artifact(substats=["critRate_ 10.5"])))
 
     assert "substat entries must be objects" in str(result.rejected[0])
+
+
+# ---- The PR #9 review's findings ------------------------------------------
+
+def test_a_slot_that_cannot_roll_the_main_stat_is_rejected_at_import():
+    """Checking the stat key against the flat vocabulary is not enough: a flower with CRIT
+    DMG passes that and is not a thing.
+
+    One scanner misread would otherwise import cleanly and then raise from inside the
+    optimizer's hot loop — turning 798 good artifacts into a search that dies partway
+    through, which is the failure this importer exists to prevent.
+    """
+    result = parse_good(_export(_artifact(slotKey="flower", mainStatKey="critDMG_")))
+
+    assert result.artifacts == ()
+    assert "cannot roll" in str(result.rejected[0])
+
+
+def test_a_plume_must_carry_flat_attack():
+    result = parse_good(_export(_artifact(slotKey="plume", mainStatKey="def")))
+
+    assert "cannot roll" in str(result.rejected[0])
+
+
+def test_a_legal_pair_for_every_slot_is_accepted():
+    """The other side of the check: the pools it validates against are the real ones."""
+    for slot, key in (
+        ("flower", "hp"), ("plume", "atk"), ("sands", "enerRech_"),
+        ("goblet", "pyro_dmg_"), ("circlet", "critRate_"),
+    ):
+        result = parse_good(_export(_artifact(slotKey=slot, mainStatKey=key)))
+        assert result.ok, (slot, key, result.rejected)
+
+
+def test_a_boolean_rarity_is_not_a_one_star():
+    """`True == 1` in Python, so it would have imported as a one-star with a +4 cap."""
+    result = parse_good(_export(_artifact(rarity=True)))
+
+    assert "unknown rarity" in str(result.rejected[0])
+
+
+def test_a_boolean_version_is_not_version_one():
+    with pytest.raises(GoodImportError, match="is not supported"):
+        parse_good({"format": "GOOD", "version": True})

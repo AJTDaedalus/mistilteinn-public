@@ -65,8 +65,10 @@ SLOTS: tuple[str, ...] = (
     "equip_dress",      # circlet
 )
 
-#: The absent-prop marker a conditional affix uses for every one of its props (C.5).
+#: The absent-prop markers an affix uses to pad its unused prop slots (C.2/C.5). A tier is
+#: conditional when *every* slot is one of these.
 _NO_PROP = "FIGHT_PROP_NONE"
+_ABSENT_PROPS = frozenset({_NO_PROP, ""})
 
 
 class OptimizerInputError(ValueError):
@@ -108,11 +110,18 @@ class SetBonus:
 
     @property
     def is_conditional(self) -> bool:
-        """True when the affix grants nothing this repo can apply yet."""
+        """True when the affix grants nothing this repo can apply yet.
+
+        "Absent" has more than one spelling (C.2): `FIGHT_PROP_NONE`, an empty string, and a
+        JSON null. Checking only the first would call a blank-padded affix "static" here and
+        then fail on it downstream.
+        """
+        if not self.add_props:
+            return True
         return all(
-            str(prop.get("prop_type", _NO_PROP)).upper() == _NO_PROP
+            str(prop.get("prop_type") or _NO_PROP).upper() in _ABSENT_PROPS
             for prop in self.add_props
-        ) if self.add_props else True
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,6 +138,14 @@ class OptimizerConstraints:
     #: `{quantity: minimum}` over resolved stats — an energy-recharge floor, typically.
     min_stats: dict[str, float] = field(default_factory=dict)
     top_n: int = 10
+
+    def __post_init__(self) -> None:
+        if self.top_n <= 0:
+            # `0 < 0` is False, so the heap push was skipped and the elif indexed an empty
+            # list. G.6 exposes this as a request parameter, where `?topN=0` would have been
+            # a 500 rather than an empty result.
+            msg = f"top_n must be at least 1; got {self.top_n}"
+            raise OptimizerInputError(msg)
 
 
 @dataclass(frozen=True, slots=True)
@@ -178,11 +195,26 @@ def optimize(
     constraints = constraints or OptimizerConstraints()
     by_slot = _bucket_by_slot(candidates, constraints)
     bonuses = _bonuses_by_set(set_bonuses)
+    _check_floor_keys(constraints.min_stats)
+
+    # Each candidate is validated **once**, and its `ArtifactStats` built once. Both used to
+    # happen inside the product loop: an illegal piece raised after an arbitrary amount of
+    # work without naming itself, and every flower was re-materialised once per combination
+    # it appeared in — N^4 times for N pieces per slot. The per-candidate *stat resolution*
+    # is the cost this module accepts; repeating an immutable value is not part of it.
+    resolved = {
+        candidate.artifact_id: _validated_stats(candidate)
+        for bucket in by_slot.values()
+        for candidate in bucket
+    }
 
     evaluated = 0
     rejected_by_sets = 0
     rejected_by_stats = 0
-    skipped_conditional = 0
+    #: Which tiers were skipped, not how many times they were skipped — the count used to be
+    #: multiplied by the number of combinations, so a real inventory reported millions and
+    #: the number stopped answering the question it exists for.
+    skipped_conditional: set[tuple[int, int]] = set()
     best: list[OptimizedBuild] = []
 
     for combination in itertools.product(*(by_slot[slot] for slot in SLOTS)):
@@ -198,8 +230,8 @@ def optimize(
                 contribution.note, tag=contribution.tag,
             )
         for candidate in combination:
-            add_artifact(log, candidate.as_stats())
-        skipped_conditional += _apply_set_bonuses(log, counts, bonuses)
+            add_artifact(log, resolved[candidate.artifact_id])
+        skipped_conditional |= _apply_set_bonuses(log, counts, bonuses)
 
         evaluator = BuildEvaluator(
             registry=log.registry, enemy=enemy, character_level=character_level,
@@ -227,7 +259,7 @@ def optimize(
         evaluated=evaluated,
         rejected_by_sets=rejected_by_sets,
         rejected_by_stats=rejected_by_stats,
-        skipped_conditional_bonuses=skipped_conditional,
+        skipped_conditional_bonuses=len(skipped_conditional),
     )
 
 
@@ -261,6 +293,51 @@ def _bucket_by_slot(
     return buckets
 
 
+def _validated_stats(candidate: ArtifactCandidate) -> ArtifactStats:
+    """Check one candidate and build its stat record, naming it if it is not legal.
+
+    Done once per candidate rather than once per combination it appears in: an illegal piece
+    used to raise from inside the product loop, after arbitrary work, without saying which
+    artifact it was.
+    """
+    stats = candidate.as_stats()
+    try:
+        _check_candidate(stats)
+    except StatInputError as exc:
+        msg = f"{candidate.artifact_id} cannot be searched over: {exc}"
+        raise OptimizerInputError(msg) from exc
+    return stats
+
+
+def _check_candidate(stats: ArtifactStats) -> None:
+    """Run the same validation `add_artifact` would, without registering anything."""
+    from app.services.stat_calculator import (  # noqa: PLC0415 - avoids an import cycle
+        _check_main_stat,
+        _check_range,
+        max_artifact_level,
+    )
+
+    _check_range("artifact rarity", stats.rarity, 1, 5)
+    _check_range("artifact level", stats.level, 0, max_artifact_level(stats.rarity))
+    _check_main_stat(stats.slot, stats.main_stat)
+
+
+def _check_floor_keys(floors: dict[str, float]) -> None:
+    """Reject an unknown floor before the search, not during it.
+
+    The lookup used to happen inside the loop, so a misspelled stat went unreported whenever
+    the set filter rejected every combination — leaving a caller debugging "why did I get no
+    builds" with no mention of their typo.
+    """
+    unknown = sorted(set(floors) - set(_FLOOR_NODES))
+    if unknown:
+        msg = (
+            f"{unknown} are not stats this optimizer can put a floor on; "
+            f"it knows {sorted(_FLOOR_NODES)}"
+        )
+        raise StatInputError(msg)
+
+
 def _count_sets(combination: Sequence[ArtifactCandidate]) -> dict[int, int]:
     counts: dict[int, int] = {}
     for candidate in combination:
@@ -284,26 +361,34 @@ def _bonuses_by_set(bonuses: Iterable[SetBonus]) -> dict[int, list[SetBonus]]:
 
 def _apply_set_bonuses(
     log: ContributionLog, counts: dict[int, int], bonuses: dict[int, list[SetBonus]],
-) -> int:
-    """Register every static set bonus the combination earns. Returns the number skipped.
+) -> set[tuple[int, int]]:
+    """Register every static set bonus the combination earns.
+
+    Returns the `(set_id, pieces_required)` of each tier it could not apply — identities, not
+    a count, so the caller can report how many *tiers* were skipped rather than how many
+    times it skipped them.
 
     Thresholds come from the set's own data, so a one-piece "Prayers" set contributes at one
     piece and a `[2, 4]` set does not.
     """
-    skipped = 0
+    skipped: set[tuple[int, int]] = set()
     for set_id, pieces in counts.items():
         for tier in bonuses.get(set_id, ()):
             if pieces < tier.pieces_required:
                 continue
             if tier.is_conditional:
-                skipped += 1
+                skipped.add((set_id, tier.pieces_required))
                 continue
             for prop in tier.add_props:
-                prop_type = str(prop.get("prop_type", ""))
-                if prop_type.upper() == _NO_PROP:
+                # `allow_absent`, because a real affix pads its unused prop slots — with
+                # `FIGHT_PROP_NONE` *or* with an empty string, both of which C.2 records as
+                # absent markers. Testing only for the first meant a blank prop raised and
+                # aborted the entire search.
+                quantity = _quantity_for_prop(prop.get("prop_type"), allow_absent=True)
+                if quantity is None:
                     continue
                 log.add(
-                    _quantity_for_prop(prop_type),
+                    quantity,
                     float(prop.get("value", 0.0)),
                     tags.SRC_ARTIFACT_SET,
                     f"set {set_id} {tier.pieces_required}pc",
@@ -320,14 +405,8 @@ def _meets_floors(
     evaluated without it would disagree with the number the build is finally scored on.
     """
     for quantity, minimum in floors.items():
-        node = _FLOOR_NODES.get(quantity)
-        if node is None:
-            msg = (
-                f"{quantity!r} is not a stat this optimizer can put a floor on; "
-                f"it knows {sorted(_FLOOR_NODES)}"
-            )
-            raise StatInputError(msg)
-        if evaluator._value(node, scope) < minimum:  # noqa: SLF001 - same package concern
+        # Keys are validated up front by `_check_floor_keys`, so this cannot miss.
+        if evaluator._value(_FLOOR_NODES[quantity], scope) < minimum:  # noqa: SLF001
             return False
     return True
 

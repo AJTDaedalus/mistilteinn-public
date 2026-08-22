@@ -177,7 +177,7 @@ def _check_envelope(payload: dict[str, Any]) -> None:
         )
         raise GoodImportError(msg)
     version = payload.get("version")
-    if version not in SUPPORTED_VERSIONS:
+    if isinstance(version, bool) or version not in SUPPORTED_VERSIONS:
         msg = (
             f"GOOD version {version!r} is not supported (this reads {SUPPORTED_VERSIONS}). "
             f"A newer version may have changed field meanings, and reading it as though it "
@@ -194,7 +194,8 @@ def _parse_artifact(record: dict[str, Any]) -> ParsedArtifact:
 
     slot = _require(SLOT_KEYS, record.get("slotKey"), "slot")
     rarity_value = record.get("rarity")
-    if rarity_value not in MAX_LEVEL_BY_RARITY:
+    if isinstance(rarity_value, bool) or rarity_value not in MAX_LEVEL_BY_RARITY:
+        # `True == 1` in Python, so a boolean would have imported as a one-star artifact.
         msg = f"unknown rarity {rarity_value!r}; GOOD publishes {sorted(MAX_LEVEL_BY_RARITY)}"
         raise GoodImportError(msg)
 
@@ -208,6 +209,7 @@ def _parse_artifact(record: dict[str, Any]) -> ParsedArtifact:
         raise GoodImportError(msg)
 
     main_stat = _require(STAT_KEYS, record.get("mainStatKey"), "main stat")
+    _check_slot_can_roll(slot, main_stat, record.get("mainStatKey"))
     set_key = record.get("setKey")
     if not isinstance(set_key, str) or not set_key:
         msg = f"missing or non-string `setKey`: {set_key!r}"
@@ -223,6 +225,27 @@ def _parse_artifact(record: dict[str, Any]) -> ParsedArtifact:
         location=str(record.get("location") or ""),
         lock=bool(record.get("lock", False)),
     )
+
+
+def _check_slot_can_roll(slot: ArtifactSlot, main_stat: str, given: Any) -> None:
+    """Reject a slot/main-stat pair the game cannot produce.
+
+    Checking the stat key against the flat vocabulary is not enough: a flower with CRIT DMG
+    passes that and is not a thing. **One OCR misread from a scanner would otherwise import
+    cleanly and then raise from inside the optimizer's hot loop**, turning 798 good artifacts
+    into a search that dies partway through — the exact "a piece the game cannot produce
+    would score as a real one" failure this importer exists to prevent.
+
+    The per-slot table is already in this module; it is the same one E.5 derived and GO
+    maintains independently.
+    """
+    allowed = slot_main_stat_keys()[slot.value]
+    if main_stat not in allowed:
+        msg = (
+            f"a {slot.name.lower()} cannot roll {given!r} as a main stat "
+            f"(it rolls {sorted(allowed)}). A scanner misread is the usual cause."
+        )
+        raise GoodImportError(msg)
 
 
 def _parse_substats(substats: Iterable[Any]) -> list[dict[str, Any]]:

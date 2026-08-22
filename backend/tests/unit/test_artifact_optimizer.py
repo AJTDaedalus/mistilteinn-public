@@ -211,7 +211,7 @@ def test_a_stat_floor_rejects_builds_that_miss_it():
 
 
 def test_a_floor_on_an_unsupported_stat_says_which_ones_work():
-    with pytest.raises(ValueError, match="not a stat this optimizer"):
+    with pytest.raises(ValueError, match="not stats this optimizer"):
         optimize(
             _base(), _one_of_each(), HIT, ORDINARY, character_level=90,
             constraints=OptimizerConstraints(min_stats={"vitality": 1.0}),
@@ -336,3 +336,118 @@ def test_a_partly_conditional_bonus_applies_only_its_static_props():
 
     assert with_bonus.skipped_conditional_bonuses == 0
     assert with_bonus.builds[0].damage > without.builds[0].damage
+
+
+# ---- The PR #9 review's findings, each pinned -----------------------------
+
+def test_asking_for_zero_builds_is_rejected_rather_than_crashing():
+    """`0 < 0` skipped the heap push and the elif then indexed an empty list. G.6 exposes
+    `top_n` as a request parameter, where `?topN=0` would have been a 500."""
+    with pytest.raises(OptimizerInputError, match="top_n must be at least 1"):
+        OptimizerConstraints(top_n=0)
+
+
+def test_the_skipped_bonus_count_counts_tiers_not_combinations():
+    """It used to accumulate per combination, so one conditional 4pc over a real inventory
+    reported millions — a number that stops answering the question it exists for.
+
+    The single-combination test above cannot see this; this one has three.
+    """
+    conditional = SetBonus(
+        set_id=1, pieces_required=4,
+        add_props=({"prop_type": "FIGHT_PROP_NONE", "value": 0},),
+    )
+    inventory = _one_of_each()
+    for index in range(2):
+        inventory.append(ArtifactCandidate(
+            artifact_id=f"extra-circlet-{index}", slot="equip_dress", set_id=1, rarity=5,
+            level=20, main_stat="FIGHT_PROP_CRITICAL_HURT",
+        ))
+
+    result = optimize(
+        _base(), inventory, HIT, ORDINARY, character_level=90, set_bonuses=[conditional],
+    )
+
+    assert result.evaluated == 3
+    assert result.skipped_conditional_bonuses == 1
+
+
+def test_a_blank_prop_slot_does_not_abort_the_search():
+    """"Absent" has more than one spelling (C.2). Testing only for `FIGHT_PROP_NONE` meant
+    an affix padded with an empty string raised and killed the whole `optimize()` call."""
+    padded_with_blanks = SetBonus(
+        set_id=1, pieces_required=2,
+        add_props=(
+            {"prop_type": "FIGHT_PROP_ATTACK_PERCENT", "value": 0.18},
+            {"prop_type": "", "value": 0},
+        ),
+    )
+
+    result = optimize(
+        _base(), _one_of_each(), HIT, ORDINARY, character_level=90,
+        set_bonuses=[padded_with_blanks],
+    )
+
+    assert result.builds
+    assert result.skipped_conditional_bonuses == 0
+
+
+def test_a_wholly_blank_tier_counts_as_conditional():
+    blank = SetBonus(
+        set_id=1, pieces_required=2, add_props=({"prop_type": "", "value": 0},),
+    )
+
+    result = optimize(
+        _base(), _one_of_each(), HIT, ORDINARY, character_level=90, set_bonuses=[blank],
+    )
+
+    assert result.skipped_conditional_bonuses == 1
+
+
+def test_an_illegal_candidate_is_named_before_the_search_starts():
+    """It used to raise from inside the product loop, after arbitrary work, without saying
+    which artifact was at fault."""
+    inventory = _one_of_each()
+    inventory.append(ArtifactCandidate(
+        artifact_id="impossible-flower", slot="equip_bracer", set_id=1, rarity=5, level=20,
+        main_stat="FIGHT_PROP_CRITICAL_HURT",
+    ))
+
+    with pytest.raises(OptimizerInputError, match="impossible-flower cannot be searched"):
+        optimize(_base(), inventory, HIT, ORDINARY, character_level=90)
+
+
+def test_a_candidate_level_beyond_its_rarity_is_named_too():
+    inventory = _one_of_each()
+    inventory.append(ArtifactCandidate(
+        artifact_id="overlevelled", slot="equip_bracer", set_id=1, rarity=1, level=20,
+        main_stat="FIGHT_PROP_HP",
+    ))
+
+    with pytest.raises(OptimizerInputError, match="overlevelled cannot be searched"):
+        optimize(_base(), inventory, HIT, ORDINARY, character_level=90)
+
+
+def test_a_misspelled_stat_floor_is_reported_even_when_nothing_survives_the_set_filter():
+    """The lookup used to sit inside the loop, so a typo went unreported whenever the set
+    filter rejected every combination — leaving "why did I get no builds" unanswered."""
+    with pytest.raises(ValueError, match="not stats this optimizer"):
+        optimize(
+            _base(), _one_of_each(), HIT, ORDINARY, character_level=90,
+            constraints=OptimizerConstraints(
+                required_sets={999: 1}, min_stats={"vitality": 1.0},
+            ),
+        )
+
+
+def test_a_tier_with_no_props_at_all_is_conditional():
+    """The importer stores `add_props: []` when the payload has none; there is nothing to
+    apply, so the tier is reported as skipped rather than treated as a silent zero."""
+    empty = SetBonus(set_id=1, pieces_required=2, add_props=())
+
+    result = optimize(
+        _base(), _one_of_each(), HIT, ORDINARY, character_level=90, set_bonuses=[empty],
+    )
+
+    assert result.skipped_conditional_bonuses == 1
+    assert result.builds
