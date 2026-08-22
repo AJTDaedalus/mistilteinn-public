@@ -202,9 +202,13 @@ one layer up**, and it gets B.6's treatment: delete the ZZZ concepts rather than
 - **Done:** `damage.wgsl` + `gpu.ts` match the Python chain on all 2,000 cases (worst
   3.426e-07), and the gate also asserts the two backends agree with **each other** (1,291
   bit-identical, worst 4.244e-07).
-- **OQ-S4 answered, and neither option it offered was needed.** CI runners carry Mesa's
-  `llvmpipe`; Dawn selects it; the WGSL path is genuinely exercised. No GPU hardware, no
-  exemption. The gate fails rather than skips when no adapter exists.
+- **OQ-S4 answered, and neither option it offered was needed.** CI installs
+  `mesa-vulkan-drivers` (lavapipe); Dawn selects the software adapter; the WGSL path is
+  genuinely exercised. No GPU hardware, no exemption. The gate fails rather than skips when
+  no adapter exists.
+- **The first answer was wrong in a way worth recording**: it generalised from a dev box that
+  happened to have Mesa installed. Runners ship `libvulkan` and **no ICD**, so Dawn found no
+  adapter at all and CI failed. "It works on my machine" applied to a *driver*.
 - Verified by injecting the same three formula bugs the CPU gate catches — 598, 255 and 511
   cases, identical counts, which is itself evidence both backends read the same sweep.
 - **Still to do:** the *search* on GPU. This lands the damage chain; C.4's search runs on the

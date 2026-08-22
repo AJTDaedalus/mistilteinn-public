@@ -106,11 +106,12 @@ the kit corpus — is the niche neither incumbent occupies.
   be correct and universal rather than fast. TypeScript adds no language to the stack.
 - **OQ-S3 (new):** inventory shipped to the client vs fetched per search.
   `DESIGN_client_optimizer.md` §7; decide in D.1.
-- **OQ-S4:** ~~how the WebGPU path gets tested in CI at all.~~ **ANSWERED in C.5: it runs.**
-  CI runners have no GPU but do carry Mesa's `llvmpipe` software rasteriser, which Dawn
-  selects, so the WGSL kernel is checked against the same 2,000 cases as the CPU one. **No
-  exemption was needed** — and the gate *fails* rather than skipping if no adapter exists,
-  because a skip there is a third damage chain shipping unverified.
+- **OQ-S4:** ~~how the WebGPU path gets tested in CI at all.~~ **ANSWERED in C.5: it runs,
+  on a software driver CI installs.** Runners have no GPU *and no Vulkan ICD* — Dawn reports
+  `vkCreateInstance: Found no drivers!` even with `libvulkan` present. Installing
+  `mesa-vulkan-drivers` gives lavapipe, a CPU Vulkan implementation, and the WGSL kernel is
+  then checked against the same 2,000 cases as the CPU one. **No exemption was needed**, and
+  the gate *fails* rather than skipping if no adapter exists.
 - **OQ-M1:** Public competitiveness vs personal tool? Decides how much the incumbent-strength
   risk matters and whether MVP polish (onboarding, docs, sharing) is in scope.
 - **OQ-M2:** ~~Approve the gcsim-embed spike (timebox: ~2–3 sessions) before gauge-engine work, or

@@ -1,8 +1,10 @@
 // C.5 — the WGSL backend against the same 2,000 cases as the CPU one.
 //
 // **OQ-S4 answered here**: this repo's rule is that a check which cannot run is not a pass,
-// and CI runners have no GPU. They do have Mesa's `llvmpipe`, a software rasteriser, and
-// Dawn will pick it up — so the GPU path is genuinely exercised in CI rather than exempted.
+// and CI runners have no GPU. They do not have a Vulkan driver either — that was the first
+// answer's mistake, generalised from a dev box that happened to have Mesa installed. CI now
+// installs `mesa-vulkan-drivers` (lavapipe), and Dawn picks up the software adapter, so the
+// GPU path is genuinely exercised rather than exempted.
 // Software adapters are slow, which does not matter: this gate checks that the shader
 // computes the right numbers, not that it computes them quickly.
 //
@@ -46,8 +48,12 @@ const gpu = create([]);
 const adapter = await gpu.requestAdapter();
 if (!adapter) {
   console.error(
-    'no WebGPU adapter. CI runners have no GPU but do have Mesa llvmpipe; if that is gone, ' +
-      'the GPU backend is unverified and this fails rather than skipping.',
+    'no WebGPU adapter, so the GPU backend is unverified — this fails rather than skipping.\n' +
+      'On a machine without a GPU this usually means no Vulkan ICD is installed: Dawn reports\n' +
+      '`vkCreateInstance: Found no drivers!` even though libvulkan is present. Install a\n' +
+      'software driver:\n' +
+      '    sudo apt-get install -y mesa-vulkan-drivers   # provides lavapipe (lvp_icd.json)\n' +
+      'CI does exactly this; see the workflow step above `kernel:verify-gpu`.',
   );
   process.exit(1);
 }

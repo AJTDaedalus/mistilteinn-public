@@ -283,8 +283,8 @@ Only once the kernel passes are the Python modules deleted, under the rule
   is the store, but shipping a 2,000-piece inventory to the client on every search is a
   design choice with a real latency cost and an obvious cache answer.
 - **OQ-S4 — answered in C.5, and better than the options this listed.** Neither a GPU runner
-  nor an exemption was needed: CI carries Mesa's `llvmpipe` software rasteriser, Dawn selects
-  it, and the WGSL kernel runs against the same 2,000 cases as the CPU backend (worst
+  nor an exemption was needed: CI installs `mesa-vulkan-drivers` (lavapipe, a CPU Vulkan
+  implementation), Dawn selects the software adapter, and the WGSL kernel runs against the same 2,000 cases as the CPU backend (worst
   3.426e-07). A software adapter is slow, which is irrelevant to a gate that checks *what*
   the shader computes. The gate **fails** rather than skipping when no adapter exists.
 
