@@ -8,7 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.models.weapon import Weapon
-from app.repositories.base import BaseRepository
+from app.repositories.base import BaseRepository, ilike_contains
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -36,7 +36,7 @@ class WeaponRepository(BaseRepository[Weapon]):
         if rarity is not None:
             stmt = stmt.where(Weapon.rarity == rarity)
         if name:
-            stmt = stmt.where(Weapon.name.ilike(f"%{name}%"))
+            stmt = stmt.where(ilike_contains(Weapon.name, name))
         return stmt
 
     async def search(

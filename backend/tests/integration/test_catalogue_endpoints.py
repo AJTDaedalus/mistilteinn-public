@@ -333,3 +333,26 @@ async def test_an_unknown_filter_value_is_rejected_not_ignored(client: AsyncClie
     response = await client.get("/api/v1/characters", params={"element": "cryo"})
 
     assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_a_wildcard_in_a_name_search_is_taken_literally(
+    client: AsyncClient, db_session: AsyncSession,
+):
+    """`ILIKE '%' || term || '%'` makes the user's `%` a wildcard, so a search for `%`
+    returns the whole table and `a_c` matches `abc`. Not injection — the term is bound —
+    but a filter quietly answering a different question, which is the shape of bug this
+    chunk keeps producing.
+    """
+    await _character(db_session)
+    await _character(db_session, nanoka_id="10000003", name="100% Real Character")
+
+    wildcard = await client.get("/api/v1/characters", params={"name": "%"})
+    underscore = await client.get("/api/v1/characters", params={"name": "Ay_ka"})
+    literal = await client.get("/api/v1/characters", params={"name": "100%"})
+
+    # Exactly one: the row whose name really contains a percent sign. Not both rows, which
+    # is what a wildcard would return, and not zero — a literal search still finds literals.
+    assert [c["name"] for c in wildcard.json()["items"]] == ["100% Real Character"]
+    assert underscore.json()["total"] == 0, "_ must not stand in for a character"
+    assert [c["name"] for c in literal.json()["items"]] == ["100% Real Character"]

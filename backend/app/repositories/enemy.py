@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import func, select
 
 from app.models.build import EnemyProfile
-from app.repositories.base import BaseRepository
+from app.repositories.base import BaseRepository, ilike_contains
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -23,7 +23,7 @@ class EnemyProfileRepository(BaseRepository[EnemyProfile]):
     def _filtered(self, *, name: str | None) -> Select[tuple[EnemyProfile]]:
         stmt = select(EnemyProfile)
         if name:
-            stmt = stmt.where(EnemyProfile.name.ilike(f"%{name}%"))
+            stmt = stmt.where(ilike_contains(EnemyProfile.name, name))
         return stmt
 
     async def search(

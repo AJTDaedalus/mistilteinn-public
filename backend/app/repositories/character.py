@@ -13,7 +13,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.models.character import Character, Talent
-from app.repositories.base import BaseRepository
+from app.repositories.base import BaseRepository, ilike_contains
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -44,7 +44,7 @@ class CharacterRepository(BaseRepository[Character]):
         if rarity is not None:
             stmt = stmt.where(Character.rarity == rarity)
         if name:
-            stmt = stmt.where(Character.name.ilike(f"%{name}%"))
+            stmt = stmt.where(ilike_contains(Character.name, name))
         return stmt
 
     async def search(

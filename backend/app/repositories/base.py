@@ -14,6 +14,26 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
 
+#: The characters `LIKE` treats as wildcards, and the escape this module uses for them.
+_LIKE_WILDCARDS = str.maketrans({"\\": "\\\\", "%": "\\%", "_": "\\_"})
+
+
+def ilike_contains(column: Any, term: str) -> Any:
+    """A case-insensitive substring match on `term`, taken **literally**.
+
+    `ILIKE '%' || term || '%'` treats `%` and `_` in the user's term as wildcards, so a
+    search for `%` returns the entire table and a search for `a_c` matches `abc`. Neither is
+    a SQL-injection hole — the term is still bound, not interpolated — but both are a filter
+    quietly answering a different question than the one asked, which is the same failure
+    shape as a filter that does not filter.
+
+    One implementation, used by every catalogue repository, so the escape cannot be right in
+    three of them.
+    """
+    escaped = term.translate(_LIKE_WILDCARDS)
+    return column.ilike(f"%{escaped}%", escape="\\")
+
+
 class BaseRepository[T: Base]:
     """Base repository providing async CRUD for a SQLAlchemy model."""
 

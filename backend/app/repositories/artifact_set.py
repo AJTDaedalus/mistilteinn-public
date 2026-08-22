@@ -8,7 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.models.artifact import ArtifactSet
-from app.repositories.base import BaseRepository
+from app.repositories.base import BaseRepository, ilike_contains
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -24,7 +24,7 @@ class ArtifactSetRepository(BaseRepository[ArtifactSet]):
     def _filtered(self, *, name: str | None) -> Select[tuple[ArtifactSet]]:
         stmt = select(ArtifactSet)
         if name:
-            stmt = stmt.where(ArtifactSet.name.ilike(f"%{name}%"))
+            stmt = stmt.where(ilike_contains(ArtifactSet.name, name))
         return stmt
 
     async def search(
