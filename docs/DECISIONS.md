@@ -4,6 +4,52 @@ Tradeoffs, rejected alternatives, and rationale — any tier. Newest first.
 
 ---
 
+## 2026-08-22 — The optimizer and its explainability are the product; gcsim goes underneath
+
+**Owner ruling**, answering §6 of `RESEARCH_gcsim_embed.md` ("if gcsim supplies both the
+simulation and the kits, what is mistilteinn?").
+
+**The artifact optimizer and explainability are the distinguishing features.** The simulator
+is infrastructure beneath them, not the product. The shape the owner named is *"a RAG-based
+artifact optimizer built on top of the simulator"*.
+
+**And the bar is Fribbels, not GO+gcsim.** `fribbels/hsr-optimizer` — the Honkai Star Rail
+optimizer the community treats as the gold standard, and what fairy was loosely built from —
+is the reference for *how to be distinct*, explicitly not "GO and gcsim combined in one
+site". Verified at 659 stars, TypeScript, pushed the day this was written; its `src/lib`
+carries `optimization`, `simulations`, `scoring` and **`gpu`** as separate modules, plus
+`relics` organisation and recommendations.
+
+Two things that grounding settles:
+
+1. **A simulation layer *beneath* an optimizer is the proven shape**, not a novel bet — the
+   gold standard already separates `simulations` from `optimization` from `scoring`. Chunk S
+   §3's two-tier recommendation matches it.
+2. **The "relic organizer and recommendations" tool is G.4's ranker**, arrived at
+   independently. That is corroboration that the marginal-value framing is the right one.
+
+### What this decides
+
+- **Chunk H's hand-curated kit corpus is superseded.** gcsim's 106 character implementations
+  replace it. This retires the chunk the BRIEF named as highest-risk *for the reason it was
+  risky* — it is where fabricated citations did fairy the most damage, and the answer is to
+  not curate a corpus at all.
+- **Chunks F and G are the product**, and are kept. §3's measurement is why they must be:
+  the Chunk F chain is 430–4,700× faster than a gcsim run, and no optimizer can call a
+  simulator in its inner loop.
+- **gcsim is adopted as infrastructure**, sidecar-first per §7.
+
+### What it does not decide
+
+The concrete meaning of "RAG-based" — see the open question logged with this entry. The
+readings differ materially and the wrong guess is expensive, so it is asked rather than
+assumed.
+
+**Rejected:** "GO + gcsim in one site." It is the obvious synthesis and it is not a product:
+it combines two things that already exist without being better than either at anything.
+
+---
+
 ## 2026-08-21 — Take gcsim's and GO's knowledge, not their shape
 
 **Owner ruling.** gcsim and Genshin Optimizer are the references for *correctness* and for
