@@ -1,0 +1,59 @@
+import { DecimalPipe } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+
+import { catalogueList } from './catalogue-list';
+import { CatalogueService, type EnemyProfileRead } from './catalogue.service';
+
+/** The eight damage channels, in the order the resistance columns are read. */
+const CHANNELS = [
+  ['physical', 'physical_res'],
+  ['anemo', 'anemo_res'],
+  ['cryo', 'cryo_res'],
+  ['dendro', 'dendro_res'],
+  ['electro', 'electro_res'],
+  ['geo', 'geo_res'],
+  ['hydro', 'hydro_res'],
+  ['pyro', 'pyro_res'],
+] as const;
+
+/**
+ * The seeded enemy profiles — 360 entries.
+ *
+ * **Resistances are what this page is for**, because they are the only part of a profile the
+ * damage chain reads. `base_hp`/`base_atk`/`base_def` are deliberately *not* shown as stats:
+ * they are **curve bases**, not level-90 values (`backend/CLAUDE.md` — a Hilichurl's
+ * `base_hp` is `13.584`), and nothing in this repo applies the curve yet. Printing `13.584`
+ * next to the word "HP" would be a number that means something else, which is the failure
+ * this project has spent every chunk avoiding.
+ */
+@Component({
+  selector: 'page-enemies',
+  imports: [FormsModule, DecimalPipe],
+  templateUrl: './enemies.html',
+  styleUrl: './catalogue.scss',
+})
+export class EnemiesPage implements OnInit {
+  protected search = '';
+  protected readonly list = catalogueList<EnemyProfileRead>((name) =>
+    this.catalogue.listEnemies({ name, limit: 400 }),
+  );
+
+  private readonly catalogue = inject(CatalogueService);
+
+  ngOnInit(): void {
+    void this.load();
+  }
+
+  protected load(): Promise<void> {
+    return this.list.run(this.search, 'enemy catalogue');
+  }
+
+  /** Resistances as `(channel, percent)`, so the template does not repeat eight fields. */
+  protected resistances(enemy: EnemyProfileRead): { channel: string; percent: number }[] {
+    return CHANNELS.map(([channel, field]) => ({
+      channel,
+      percent: (enemy[field] ?? 0) * 100,
+    }));
+  }
+}

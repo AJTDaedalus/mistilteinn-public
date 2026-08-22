@@ -7,6 +7,7 @@ export type CharacterSummary = components['schemas']['CharacterSummary'];
 export type CharacterRead = components['schemas']['CharacterRead'];
 export type WeaponSummary = components['schemas']['WeaponSummary'];
 export type ArtifactSetRead = components['schemas']['ArtifactSetRead'];
+export type EnemyProfileRead = components['schemas']['EnemyProfileRead'];
 
 /**
  * Reads of the seeded catalogue — G.6a's endpoints.
@@ -62,6 +63,14 @@ export class CatalogueService {
       params: { query: params },
     });
     if (error) throw new Error('Could not load artifact sets');
+    return data;
+  }
+
+  async listEnemies(params: { name?: string; offset?: number; limit?: number } = {}) {
+    const { data, error } = await this.api.GET('/api/v1/enemies', {
+      params: { query: params },
+    });
+    if (error) throw new Error('Could not load enemies');
     return data;
   }
 }

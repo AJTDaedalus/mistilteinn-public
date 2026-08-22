@@ -24,9 +24,9 @@ describe('CharactersPage', () => {
 
     await page['load']();
 
-    expect(page['characters']()).toHaveLength(1);
-    expect(page['total']()).toBe(1);
-    expect(page['error']()).toBeNull();
+    expect(page['list'].items()).toHaveLength(1);
+    expect(page['list'].total()).toBe(1);
+    expect(page['list'].error()).toBeNull();
   });
 
   it('reports a failed load instead of rendering it as "no results"', async () => {
@@ -40,9 +40,9 @@ describe('CharactersPage', () => {
 
     await page['load']();
 
-    expect(page['error']()).not.toBeNull();
-    expect(page['characters']()).toEqual([]);
-    expect(page['loading']()).toBe(false);
+    expect(page['list'].error()).not.toBeNull();
+    expect(page['list'].items()).toEqual([]);
+    expect(page['list'].loading()).toBe(false);
   });
 
   it('sends the search term to the server, not a client-side filter', async () => {

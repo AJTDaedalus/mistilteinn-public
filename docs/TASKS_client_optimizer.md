@@ -59,13 +59,26 @@ one layer up**, and it gets B.6's treatment: delete the ZZZ concepts rather than
 - **Accept:** `tsc -p tsconfig.app.json` is **clean**; `npm run lint` clean; the app builds
   and the surviving routes render.
 
-### [~] A.3 — Catalogue pages against the real API
+### [x] A.3 — Catalogue pages against the real API — **done**
 - **Do:** the read surface G.6a shipped — characters, weapons, artifact sets, enemies — as
   simple list/detail pages, replacing the deleted ZZZ ones so the app is not an empty shell.
 - **Accept:** each page renders from `/api/v1/...` with no hand-written types; `npm run codegen`
   is the only source of API types.
-- **Characters done.** Weapons, artifact sets and enemies follow the same shape —
-  `CatalogueService` already has their methods.
+- **All four done.** Weapons, artifact sets and enemies landed together, and `characters`
+  was refactored onto the same helper so the shared behaviour has **one** implementation
+  rather than four copies (`catalogue-list.ts`).
+
+  What the helper owns is the part worth getting right once: an error is **surfaced, never
+  swallowed** — an empty list and a failed request look identical on screen and only one of
+  them means "no matches"; `total` comes from the **server**, which computes it with the same
+  `WHERE` the page asked for; and the list is **cleared on failure**, because stale rows under
+  a fresh error read as an answer to the new search.
+
+  Two places the pages refuse to print a number that means something else:
+  **enemy HP/ATK/DEF are not shown** — they are curve bases (a Hilichurl's `base_hp` is
+  `13.584`) and nothing applies the curve yet, so the pages show **resistances**, which are
+  what the damage chain actually reads. And a weapon's `base_atk` is labelled *"base ATK curve
+  from N"* rather than "ATK", for the same reason.
 
 ### [x] A.4 — Re-enable the frontend test lane **(done with A.2 — the tests already passed once the ZZZ pages were gone)**
 - **Do:** CI runs `npm test` — currently a disabled step with a `TODO(chunk-J)`.

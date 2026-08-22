@@ -1,0 +1,45 @@
+<section class="catalogue">
+  <header>
+    <h1>Enemies</h1>
+    <input
+      type="search"
+      name="search"
+      placeholder="Search by name…"
+      [(ngModel)]="search"
+      (keyup.enter)="load()"
+      aria-label="Search enemies by name"
+    />
+    <button type="button" (click)="load()">Search</button>
+  </header>
+
+  @if (list.error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  } @else if (list.loading()) {
+    <p class="muted">Loading…</p>
+  } @else {
+    <p class="muted">{{ list.total() }} matching</p>
+    <ul class="grid wide">
+      @for (enemy of list.items(); track enemy.id) {
+        <li class="card">
+          <span class="name">{{ enemy.name }}</span>
+          <!-- Resistances only. HP/ATK/DEF are curve bases, not stats, and nothing applies
+               the curve yet — showing them next to those labels would be a number that means
+               something other than what it says. -->
+          <ul class="res">
+            @for (entry of resistances(enemy); track entry.channel) {
+              <li [class.negative]="entry.percent < 0">
+                {{ entry.channel }} {{ entry.percent | number: '1.0-1' }}%
+              </li>
+            }
+          </ul>
+          @if (enemy.variant_count && enemy.variant_count > 1) {
+            <span class="meta">{{ enemy.variant_count }} variants</span>
+          }
+          <span class="key">{{ enemy.nanoka_id }}</span>
+        </li>
+      } @empty {
+        <li class="muted">No enemies match that search.</li>
+      }
+    </ul>
+  }
+</section>
