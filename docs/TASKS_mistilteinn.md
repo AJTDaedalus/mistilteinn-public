@@ -363,7 +363,7 @@ Each task below is **one commit**. Commit message form:
 ### [x] G.3 — Pareto + budget-K pruning, progress and cancellation (`artifact_prefilter.py`)
 ### [x] G.4 — `rank_pipeline.py` port → `artifact_ranker.py` (marginal value across contexts)
 ### [x] G.5 — `good_importer.py` — GOOD schema validation, reject-don't-coerce on unknown keys
-### [~] G.6 — Optimizer + builds + artifacts API surface restored
+### [x] G.6 — Optimizer + builds + artifacts API surface restored
 - **[x] G.6a — catalogue read endpoints** (characters, weapons, artifact sets, enemies)
 - **[x] G.6b — user artifacts + GOOD import endpoint**
 - **[x] G.6c — builds, and the optimize/rank endpoints** (synchronous; the job runner is G.10)

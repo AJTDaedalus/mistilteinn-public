@@ -20,17 +20,18 @@ core is green, the Genshin domain models exist, the nanoka GI importer seeds the
 committed YuanShenResources snapshot supplies what nanoka does not publish, and the damage
 chain **matches gcsim to 1.3e-8 relative** on its first crossval case — inside the argued
 `1e-7` tolerance, with the residual fully explained (float32 curves in the dump against
-decimals in gcsim). **Chunk G is done bar three follow-ups** — the artifact optimizer,
-its lossless/lossy pruning, the ranker, the GOOD importer and the whole read-and-write API
-over them. What is left in G is recorded as **G.9** (upgrade-potential scoring, blocked on a
-citation), **G.10** (move optimize/rank behind the job runner) and **G.11** (make a lazy
-load a loud failure). **Chunk H — the kit corpus — is next.**
+decimals in gcsim). **Chunk G is complete except G.9**, which is **blocked on a citation**:
+upgrade-potential scoring needs the substat roll schedule, and the committed snapshot
+publishes roll values and depots but not the schedule. Everything else landed — the artifact
+optimizer, its lossless/lossy pruning, the ranker, the GOOD importer, the whole
+read-and-write API, and a large search running as a background job. **Chunk H — the kit
+corpus — is next, and needs its own DESIGN doc before any code.**
 
-- **The backend suite passes, with nothing skipped.** 757 tests, **0 skipped** — G.7
-  re-baselined `tests/perf`, which was the last one.
+- **The backend suite passes, with nothing skipped.** 779 tests, **0 skipped** — G.7
+  re-baselined `tests/perf`, which was the last one, and CI runs it with `-m perf`.
   `ruff check app/ tests/ scripts/seed_db.py scripts/verify_seed.py
   scripts/capture_nanoka_fixtures.py scripts/yuanshen/ scripts/bench_optimizer.py` is clean
-  — that is CI's exact command — and `uvicorn app.main:app` serves 22 paths.
+  — that is CI's exact command — and `uvicorn app.main:app` serves 25 paths.
   **A red backend suite is now a regression, not the size of the port** — that excuse
   expired at B.13.
 - **The frontend does not compile, and that is the honest state.** 161 TypeScript errors
