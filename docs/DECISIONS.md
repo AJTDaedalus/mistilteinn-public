@@ -39,6 +39,75 @@ Two things that grounding settles:
   simulator in its inner loop.
 - **gcsim is adopted as infrastructure**, sidecar-first per §7.
 
+### Compute goes to the user's machine; Postgres keeps everything
+
+**Owner ruling, 2026-08-22.** Both the simulator *and* the artifact search run in the
+browser. The server keeps Postgres, the retrieval index, and corpus generation. Marginal
+compute cost per user is zero.
+
+```
+browser:   gcsim WASM  +  search kernel (WASM/WebGPU, on the user's GPU)
+server:    retrieval, corpus generation, the API
+postgres:  catalogue, inventories, builds, and the simulated-run corpus
+```
+
+This is Fribbels' compute model with the persistence Fribbels structurally cannot have —
+and it is the combination neither GO, gcsim, nor Fribbels currently occupies.
+
+**The simulator half is nearly free.** Chunk S proved gcsim compiles to WebAssembly, and
+upstream *already maintains a browser build* — `cmd/wasm`, `//go:build js && wasm`, exposing
+`validateConfig` / `initializeWorker` / `simulate`. That half is adoption, not invention.
+
+**The search half is a rewrite, and it breaks a rule this project has held all along.**
+
+DESIGN §1 A6 says one mechanic, one implementation. A browser search kernel means **two
+damage chains that must agree** — precisely the failure mode this repo spent Chunk G
+avoiding, most concretely when `build_combination_log` was extracted so the optimizer and the
+ranker could not drift. Naming it plainly rather than discovering it later:
+
+- **Accepted, with a specific mitigation.** `tests/crossval` already pins the Python chain to
+  gcsim at **1.3e-8 relative**. Extending it to run the same committed cases through the
+  client kernel makes the oracle serve both, so "the two chains agree" becomes a gate rather
+  than a hope. **The kernel does not ship until that gate exists** — a second chain without a
+  test binding it to the first is the whole hazard.
+- Pyodide was considered and rejected: it would run the *same* Python in the browser and keep
+  one implementation, but it is single-threaded and several times slower than CPython, so a
+  9,000-combination search would take **longer in the browser than it currently takes on the
+  server**. Fribbels uses WebGPU because that is the only way this is a win.
+
+### What this costs and what survives
+
+Honest accounting, because the ruling lands on top of work finished the same week:
+
+**Survives unchanged** — everything that is data or storage. Domain models, the nanoka
+importer, the YuanShen snapshot, the GOOD importer, the catalogue and inventory APIs,
+`optimization_jobs`. Client compute changes where the search runs, not where the truth lives.
+
+**Changes role, keeps its value** — the Chunk F chain and the Chunk G optimizer. They become
+(a) the reference implementation, (b) the corpus generator that populates the retrieval index
+offline, and (c) **the crossval-verified definition of correct that the client kernel is
+measured against**. A rewrite with a ready-made oracle and a settled algorithm is a very
+different proposition from a rewrite without one — G.3's lossless Pareto layer, budget-K, and
+G.4's marginal-value ranking are *designs* that port, not code that is thrown away.
+
+**Is genuinely new work** — the kernel itself, and the toolchain for it.
+
+### Open: what the kernel is written in
+
+Not decided here. The live options, with the argument for each:
+
+- **Go** — one WASM toolchain for the whole browser payload, since gcsim is already Go and
+  already shipped there. Cost: Go's WASM is large (gcsim's `wasip1` build is 40 MB) and
+  carries a GC.
+- **Rust** — leanest WASM, mature `wasm-bindgen`, no GC. Cost: a third language in the stack.
+- **WebGPU compute shaders** — what the gold standard actually does, and the only option that
+  uses the user's GPU rather than one CPU thread. Cost: a compute-shader rewrite, not a port,
+  and it is the least legible of the three against DESIGN §1 A6.
+
+Recommendation deferred until the DESIGN doc, because the answer depends on whether the
+kernel evaluates candidates one at a time or in parallel batches — which is a design
+question, not a language question.
+
 ### Fribbels runs entirely on the user's machine — and that is the opening
 
 Verified, not assumed: `package.json` declares
