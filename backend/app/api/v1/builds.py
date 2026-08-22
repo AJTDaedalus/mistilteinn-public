@@ -30,6 +30,7 @@ from app.dependencies import (
     get_owned_build_repo,
     get_owned_optimization_job_repo,
     get_owned_sim_run_repo,
+    get_weapon_repo,
 )
 from app.formula.genshin.damage import Hit
 from app.middleware.rate_limit import WRITE_LIMIT, limiter
@@ -38,10 +39,13 @@ from app.repositories.build import BuildRepository
 from app.repositories.enemy import EnemyProfileRepository
 from app.repositories.optimization_job import OptimizationJobRepository
 from app.repositories.sim_run import SimRunRepository
+from app.repositories.weapon import WeaponRepository
 from app.schemas.build import (
     BuildCreate,
     BuildRead,
     BuildUpdate,
+    CompareWeaponsRequest,
+    CompareWeaponsResponse,
     ContributionRead,
     EnemySpec,
     ExplainRequest,
@@ -60,6 +64,8 @@ from app.schemas.build import (
     StatAccountRead,
     StatDifferenceRead,
     UncitedRead,
+    UnmodelledPassiveRead,
+    WeaponScoreRead,
 )
 from app.schemas.common import PaginatedResponse
 from app.services import (
@@ -69,6 +75,7 @@ from app.services import (
     build_explanation,
     optimizer_job_service,
     sim_retrieval,
+    weapon_comparison,
 )
 from app.services.build_assembler import BuildAssemblyError
 from app.services.damage_calculator import BuildEvaluator, Enemy, enemy_from_profile
@@ -82,6 +89,7 @@ if TYPE_CHECKING:
     from app.formula.genshin.explain import Contribution
     from app.models.artifact import Artifact, ArtifactSet
     from app.models.build import Build
+    from app.models.weapon import Weapon
 
 router = APIRouter(prefix="/builds", tags=["builds"])
 
@@ -530,6 +538,140 @@ async def explain_build(
         equipped_damage=None if diff is None else equipped_damage,
         unchanged=None if diff is None else list(diff.unchanged),
     )
+
+
+@router.post("/{build_id}/compare-weapons", response_model=CompareWeaponsResponse)
+@limiter.limit(WRITE_LIMIT)
+async def compare_weapons(
+    request: Request,
+    build_id: str,
+    body: CompareWeaponsRequest,
+    builds: Annotated[BuildRepository, Depends(get_owned_build_repo)],
+    artifacts: Annotated[ArtifactRepository, Depends(get_owned_artifact_repo)],
+    enemies: Annotated[EnemyProfileRepository, Depends(get_enemy_profile_repo)],
+    weapons: Annotated[WeaponRepository, Depends(get_weapon_repo)],
+) -> CompareWeaponsResponse:
+    """Score each candidate weapon in this build, holding the artifacts fixed.
+
+    **Two limits are reported rather than buried, because both can change the answer and not
+    merely its precision:**
+
+    - **Weapon passives are not applied.** They are imported into `weapon_refinements` but
+      turning text into modifiers is Chunk H's job. For weapons that gap is frequently the
+      entire reason to equip one, so `unmodelled_passives` names every candidate that has a
+      passive and the response's `caveat` says the ordering may be wrong.
+    - **Artifacts are held fixed.** DESIGN §3.5's fuller version searches per weapon and
+      compares the winners, but searches belong on the client. This answers "which weapon is
+      better in the build I have", which is a cheaper and different question — a weapon
+      wanting a different artifact set loses a comparison it would win with its own pieces.
+
+    `TODO(chunk-H)` for the first.
+    """
+    build = await _require_full_build(builds, build_id)
+    if build.weapon is None:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "this build has no weapon, so there is nothing to compare against. A "
+                "marginal-value comparison measures each candidate against what is worn."
+            ),
+        )
+
+    equipped_rows = list(build.artifacts)
+    _require_one_per_slot(equipped_rows, "the equipped build")
+    owned = await artifacts.search(limit=_FETCH_CAP)
+    bonuses = build_assembler.set_bonuses(_sets_of(owned))
+    combination = build_assembler.candidates(equipped_rows)
+
+    # The equipped weapon is always a candidate whether or not the caller listed it: the
+    # baseline is what is worn, and a comparison with no baseline reports every delta
+    # against an arbitrary weapon while looking exactly like a ranking.
+    wanted = list(dict.fromkeys([str(build.weapon.id), *body.weapon_ids]))
+    rows = await weapons.get_many_with_refinements(wanted)
+    found = {str(row.id): row for row in rows}
+    missing = [wid for wid in wanted if wid not in found]
+    if missing:
+        raise HTTPException(status_code=404, detail=f"no such weapons: {sorted(missing)}")
+
+    try:
+        candidates = [
+            _weapon_candidate(build, found[wid]) for wid in wanted
+        ]
+        result = weapon_comparison.compare_weapons(
+            candidates,
+            str(build.weapon.id),
+            combination,
+            _hit(body.hit),
+            await _enemy(body.enemy, enemies),
+            character_level=build.character_level,
+            set_bonuses=bonuses,
+        )
+    except (BuildAssemblyError, StatInputError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return CompareWeaponsResponse(
+        weapons=[
+            WeaponScoreRead(
+                weapon_id=score.weapon_id,
+                name=score.name,
+                damage=score.damage,
+                delta=score.delta,
+                delta_pct=score.delta_pct,
+                is_equipped=score.weapon_id == result.equipped_weapon_id,
+                differences=[
+                    StatDifferenceRead(
+                        quantity=d.quantity, equipped=d.left, proposed=d.right,
+                        delta=d.delta,
+                        gained=[_contribution(c) for c in d.gained],
+                        lost=[_contribution(c) for c in d.lost],
+                    )
+                    for d in score.differences
+                ],
+            )
+            for score in result.weapons
+        ],
+        equipped_weapon_id=result.equipped_weapon_id,
+        unmodelled_passives=[
+            UnmodelledPassiveRead(
+                weapon_id=p.weapon_id, weapon_name=p.weapon_name,
+                passive_name=p.passive_name, text=p.text,
+            )
+            for p in result.unmodelled_passives
+        ],
+        is_complete=result.is_complete,
+        caveat=result.caveat(),
+    )
+
+
+def _weapon_candidate(build: "Build", weapon: "Weapon") -> weapon_comparison.WeaponCandidate:
+    """One candidate, with the build's character half and *this* weapon's contribution.
+
+    Assembled through `build_assembler`, not here: building a base from rows is that module's
+    job, and a second way of doing it is how two definitions of "what a build starts from"
+    begin.
+    """
+    base = build_assembler.base_contributions_with_weapon(
+        build, weapon, weapon_level=build.weapon_level,
+    )
+    return weapon_comparison.WeaponCandidate(
+        weapon_id=str(weapon.id),
+        name=weapon.name,
+        base_contributions=base,
+        unmodelled_passive=_passive_of(weapon, build.refinement),
+    )
+
+
+def _passive_of(weapon: "Weapon", refinement: int) -> "tuple[str, str] | None":
+    """The refinement passive this comparison cannot apply, or None if there is none.
+
+    Read off the stored row rather than assumed: a weapon with no passive is a real case —
+    every white and green weapon — and reporting one anyway would put a permanent doubt
+    beside a comparison that is actually complete.
+    """
+    for row in weapon.refinements:
+        if row.level == refinement and (row.description or row.name):
+            return (row.name or "unnamed passive", row.description)
+    return None
 
 
 def _require_one_per_slot(rows: "Sequence[Artifact]", what: str) -> None:

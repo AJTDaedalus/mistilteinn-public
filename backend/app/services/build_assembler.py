@@ -122,6 +122,43 @@ def base_contributions(build: Build) -> tuple[Contribution, ...]:
     return tuple(log.contributions)
 
 
+def base_contributions_with_weapon(
+    build: Build, weapon: Weapon, *, weapon_level: int | None = None,
+) -> tuple[Contribution, ...]:
+    """The same base, with `weapon` substituted for the build's own.
+
+    D.5 compares candidate weapons in a fixed build, and every candidate needs the character
+    half of that build unchanged beneath it. Written here rather than in the comparison,
+    because assembling a base from rows is this module's job and a second way of doing it is
+    how two definitions of "what a build starts from" begin — the drift the note-format
+    finding in D.4 had already made concrete once.
+
+    Deliberately **not** a copy of `base_contributions`: it delegates, so a change to how a
+    character contributes reaches both.
+    """
+    if build.character is None:
+        msg = (
+            f"build {build.id} has no character, so there is no base to put a weapon on. "
+            f"Comparing weapons on it would rank them by their own stats and call it a build."
+        )
+        raise BuildAssemblyError(msg)
+
+    log = build_log(NodeRegistry())
+    add_character(
+        log,
+        character_stats(build.character),
+        level=build.character_level,
+        ascension_phase=build.ascension_phase,
+    )
+    add_weapon(
+        log,
+        weapon_stats(weapon),
+        level=build.weapon_level if weapon_level is None else weapon_level,
+        ascension_phase=build.ascension_phase,
+    )
+    return tuple(log.contributions)
+
+
 def candidates(artifacts: Iterable[Artifact]) -> list[ArtifactCandidate]:
     """Owned artifacts as search candidates.
 

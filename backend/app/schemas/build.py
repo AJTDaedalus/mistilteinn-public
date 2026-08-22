@@ -351,6 +351,57 @@ class ExplainResponse(BaseModel):
     unchanged: list[str] | None = None
 
 
+class CompareWeaponsRequest(BaseModel):
+    """Body for `POST /builds/{id}/compare-weapons`."""
+
+    hit: HitSpec
+    enemy: EnemySpec
+    #: Candidate weapons by catalogue id. The build's own weapon is always compared as the
+    #: baseline whether or not it is listed — a marginal-value question measures against what
+    #: is worn, so omitting it would leave nothing to be better than.
+    weapon_ids: list[str] = Field(..., min_length=1)
+
+
+class WeaponScoreRead(BaseModel):
+    """One weapon's damage in this build, and what it changed."""
+
+    weapon_id: str
+    name: str
+    damage: float
+    delta: float
+    delta_pct: float
+    is_equipped: bool
+    #: The contribution diff against the equipped weapon — the "why", not just the "how
+    #: much". Empty for the equipped weapon itself.
+    differences: list[StatDifferenceRead] = []
+
+
+class UnmodelledPassiveRead(BaseModel):
+    """A passive stored in the catalogue that this comparison does not apply."""
+
+    weapon_id: str
+    weapon_name: str
+    passive_name: str
+    text: str
+
+
+class CompareWeaponsResponse(BaseModel):
+    """Every candidate scored in one build, best first — and what the ranking cannot see."""
+
+    weapons: list[WeaponScoreRead]
+    equipped_weapon_id: str
+    #: **Not a footnote.** Weapon passives are imported but not yet applied (Chunk H), and
+    #: for weapons the unmodelled part is frequently the entire reason to equip one. A
+    #: non-empty list means the ordering above may be *wrong*, not merely imprecise.
+    unmodelled_passives: list[UnmodelledPassiveRead] = []
+    #: True only when every candidate's effect is modelled. All-or-nothing: one unapplied
+    #: passive is enough to reorder the list.
+    is_complete: bool
+    #: One sentence naming what the ranking does not know. A caller that shows the numbers
+    #: without this is publishing a ranking this API does not claim to have made.
+    caveat: str
+
+
 class JobAccepted(BaseModel):
     """202 body: the search was too large to answer inside the request.
 
