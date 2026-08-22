@@ -28,6 +28,38 @@ class ArtifactRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class InventorySnapshot(BaseModel):
+    """Every owned artifact in one response, plus the version that identifies it.
+
+    **OQ-S3, answered: the browser holds the inventory and revalidates it.** The transfer is
+    not the deciding factor — a 2,000-piece account is ~936 KB of JSON, ~234 KB gzipped, so
+    fetching per search and holding across searches cost about the same. What differs is
+    **staleness**: an inventory held across a GOOD re-import is an inventory containing
+    artifacts the user no longer owns, and a search over it would recommend wearing them.
+
+    So the payload carries a `version` and the route serves `304 Not Modified` against
+    `If-None-Match`. The browser keeps the pieces and asks a cheap question before each
+    search, which is the correctness of fetching at the cost of holding.
+
+    Paging is deliberately not offered here. `GET /artifacts` pages for a UI list; a search
+    needs the whole inventory at one instant, and four paged round-trips have no such
+    instant — a concurrent import shifts every offset under the reader.
+    """
+
+    #: A digest over every piece's identity and stats. Changes when the inventory changes,
+    #: and *only* then, so an unchanged account revalidates for free.
+    version: str
+    #: In the repository's game-slot order — slot, then level descending, then id. Fully
+    #: determined, which is what the version depends on: a version that flipped because
+    #: Postgres returned rows in another order would make every revalidation a full transfer.
+    artifacts: list[ArtifactRead]
+    total: int
+    #: True when the account holds more pieces than one response will carry. The list is then
+    #: a prefix of that order and the version covers only what was sent, so a search must
+    #: treat it as "the server would not answer" rather than as a complete inventory.
+    truncated: bool = False
+
+
 class GoodImportRequest(BaseModel):
     """Body for `POST /artifacts/import/good`.
 

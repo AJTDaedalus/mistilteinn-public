@@ -104,8 +104,14 @@ the kit corpus — is the niche neither incumbent occupies.
   Not Rust and not Go — the kernel is batched (each combination is independent), batching is
   what makes a GPU possible, and the GPU carries a ~10^6 factor, so the CPU fallback needs to
   be correct and universal rather than fast. TypeScript adds no language to the stack.
-- **OQ-S3 (new):** inventory shipped to the client vs fetched per search.
-  `DESIGN_client_optimizer.md` §7; decide in D.1.
+- **OQ-S3:** ~~inventory shipped to the client vs fetched per search.~~ **ANSWERED in D.1:
+  the browser holds it and revalidates.** The transfer was not what decided it — a
+  2,000-piece account is ~936 KB of JSON, ~234 KB gzipped, so either shape costs about the
+  same. **Staleness** decided it: an inventory held across a GOOD re-import contains
+  artifacts the user no longer owns, and a search over it would recommend wearing them.
+  `GET /api/v1/artifacts/inventory` returns the whole inventory with a version digest over
+  what a search actually reads, and answers `304` to `If-None-Match` — the correctness of
+  fetching at the cost of holding.
 - **OQ-S4:** ~~how the WebGPU path gets tested in CI at all.~~ **ANSWERED in C.5: it runs,
   on a software driver CI installs.** Runners have no GPU *and no Vulkan ICD* — Dawn reports
   `vkCreateInstance: Found no drivers!` even with `libvulkan` present. Installing

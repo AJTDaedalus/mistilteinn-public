@@ -244,13 +244,35 @@ infrastructure** feeding the generators, the way `bench_optimizer.py` and
 than "delete the chain", and it does not leave A6 violated: one implementation ships, the
 other exists only to check it, which is what an oracle is.
 
-**Unblocks when** a page uses `search.ts`. That needs OQ-S3 answered (D.1).
+**Unblocks when** a page uses `search.ts`. OQ-S3 is now answered (D.1) and the inventory
+endpoint exists, so what remains is the page itself.
 
 ---
 
 ## Chunk D — Retrieval and explanation
 
-### [ ] D.1 — The run corpus: schema and write path
+### [x] D.1 — The run corpus: schema and write path — **done**
+
+The schema landed early: G.12 built `sim_runs`, `SimRunRepository` and `sim_context`, keyed
+`(owner_id, context_key, er_bucket, gcsim_pin)`. What D.1 added is the **write path** — three
+routes under `/api/v1/sim-runs` — and the validation that makes a client-produced corpus
+trustworthy, because the browser computes these numbers and every field crosses a trust
+boundary:
+
+- **A run from another gcsim is refused (409).** A stale browser WASM build would otherwise
+  fill the corpus with a different simulator's runs, each looking like a hit. Checked
+  *before* the database is touched, and there is a test for the ordering as well as the
+  outcome — the outcome test passes either way, because `get_db` rolls back on any exception.
+- **An unbucketed ER value is refused (422).** `er_bucket()` rounds down, so `179` is a key
+  no reader ever generates; storing it fills a cache the writer cannot hit, and the miss
+  looks like a cold context rather than a bug.
+- **A `created` flag that is true.** Read from `xmax`, so a POST that replaced says `200`
+  and `created: false` rather than claiming `201`.
+- **A miss is a 404 naming the bucket**, which is the outcome D.3 turns into a stated one.
+
+**OQ-S3 answered** — see the BRIEF. `GET /api/v1/artifacts/inventory` returns the whole
+inventory with a version digest and answers `304` to `If-None-Match`. The deciding factor was
+staleness, not transfer size.
 ### [ ] D.2 — Retrieval by context key, **reporting its own error** (DESIGN §3)
 ### [ ] D.3 — "No retrievable neighbour" as a stated outcome, never a silent fallback
 ### [ ] D.4 — Explanation from contribution log + retrieved runs + catalogue text
@@ -260,6 +282,8 @@ other exists only to check it, which is what an oracle is.
 
 ## Open questions
 
-- **OQ-S3** — browser holds the inventory vs fetches per search. Decide in D.1.
+- ~~**OQ-S3** — browser holds the inventory vs fetches per search.~~ **ANSWERED in D.1: it
+  holds it and revalidates.** Not a latency question — ~234 KB gzipped for a large account
+  either way — a staleness one. See `DESIGN_client_optimizer.md` §7.
 - **OQ-S4** — how the WebGPU path is tested in CI. Decide in C.5; it is a gate question,
   not a nicety.

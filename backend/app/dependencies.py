@@ -23,6 +23,7 @@ from app.repositories.character import CharacterRepository
 from app.repositories.enemy import EnemyProfileRepository
 from app.repositories.optimization_job import OptimizationJobRepository
 from app.repositories.session import SessionRepository
+from app.repositories.sim_run import SimRunRepository
 from app.repositories.team import TeamRepository
 from app.repositories.user import UserRepository
 from app.repositories.weapon import WeaponRepository
@@ -186,6 +187,19 @@ async def get_owned_build_repo(
 ) -> BuildRepository:
     """FastAPI DI factory for a `BuildRepository` scoped to the current user's builds."""
     return BuildRepository(session, owner_id=str(current_user.id))
+
+
+async def get_owned_sim_run_repo(
+    session: DBSession, current_user: CurrentUser
+) -> SimRunRepository:
+    """FastAPI DI factory for a `SimRunRepository` scoped to the current user's cached runs.
+
+    Owner-scoped deliberately: the browser produces these numbers, so a tampered client can
+    submit whatever it likes and scoping the rows means it only poisons its own cache. See
+    `app/models/sim_run.py` on why sharing runs between users is a separate feature with a
+    separate threat model.
+    """
+    return SimRunRepository(session, owner_id=str(current_user.id))
 
 
 async def get_owned_optimization_job_repo(

@@ -17,6 +17,7 @@ from app.api.v1.builds import router as builds_router
 from app.api.v1.catalogue import router as catalogue_router
 from app.api.v1.health import router as health_router
 from app.api.v1.optimizer_jobs import router as optimizer_jobs_router
+from app.api.v1.sim_runs import router as sim_runs_router
 from app.api.v1.teams import router as teams_router
 
 v1_router = APIRouter(prefix="/api/v1")
@@ -27,3 +28,4 @@ v1_router.include_router(catalogue_router)
 v1_router.include_router(artifacts_router)
 v1_router.include_router(builds_router)
 v1_router.include_router(optimizer_jobs_router)
+v1_router.include_router(sim_runs_router)

@@ -41,7 +41,7 @@ _PRECISION = 6
 #: ER is bucketed in whole percent: `100` is 1.00 ER. Coarse on purpose — the question is
 #: which side of the burst-uptime cliff a build sits on, not its exact value, and a key per
 #: 0.1% would cache nothing twice.
-_ER_BUCKET_PERCENT = 5
+ER_BUCKET_PERCENT = 5
 
 
 def er_bucket(energy_recharge: float) -> int:
@@ -52,7 +52,7 @@ def er_bucket(energy_recharge: float) -> int:
     cache hit never claims more uptime than the build has earned.
     """
     percent = int(energy_recharge * 100)
-    return percent - (percent % _ER_BUCKET_PERCENT)
+    return percent - (percent % ER_BUCKET_PERCENT)
 
 
 def _canonical(value: Any) -> Any:
