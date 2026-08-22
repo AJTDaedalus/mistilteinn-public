@@ -51,7 +51,8 @@ _MAIN_STATS = {
 }
 
 
-def _inventory(per_slot: int, seed: int) -> list[ArtifactCandidate]:
+def build_inventory(per_slot: int, seed: int) -> list[ArtifactCandidate]:
+    """A deterministic synthetic inventory. Shared with `tests/perf` — one fixture."""
     rng = random.Random(seed)  # noqa: S311 - a timing fixture, not a security decision
     out: list[ArtifactCandidate] = []
     for slot in SLOTS:
@@ -72,7 +73,8 @@ def _inventory(per_slot: int, seed: int) -> list[ArtifactCandidate]:
     return out
 
 
-def _base_contributions() -> tuple:
+def base_contributions() -> tuple:
+    """The character-and-weapon half the timing runs against. Shared with `tests/perf`."""
     log = build_log(NodeRegistry())
     log.add(tags.Q_BASE_ATK, 800.0, tags.SRC_CHARACTER, "character")
     log.add(tags.Q_BASE_ATK, 500.0, tags.SRC_WEAPON, "weapon")
@@ -88,13 +90,13 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=20260821)
     args = parser.parse_args()
 
-    inventory = _inventory(args.per_slot, args.seed)
+    inventory = build_inventory(args.per_slot, args.seed)
     enemy = Enemy(level=90, resistances=dict.fromkeys(tags.DAMAGE_CHANNELS, 0.1))
     hit = Hit(multiplier=2.0, channel="cryo", scope="burst")
 
     started = time.perf_counter()
     result = optimize(
-        _base_contributions(), inventory, hit, enemy, character_level=90,
+        base_contributions(), inventory, hit, enemy, character_level=90,
         # EXACT, because the point is to time the search, not to time the thing that
         # decides how much of the search to skip.
         constraints=OptimizerConstraints(prefilter_top_k=artifact_prefilter.EXACT),

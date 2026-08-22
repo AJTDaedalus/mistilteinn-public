@@ -20,20 +20,24 @@ core is green, the Genshin domain models exist, the nanoka GI importer seeds the
 committed YuanShenResources snapshot supplies what nanoka does not publish, and the damage
 chain **matches gcsim to 1.3e-8 relative** on its first crossval case — inside the argued
 `1e-7` tolerance, with the residual fully explained (float32 curves in the dump against
-decimals in gcsim). **Chunk G — the artifact optimizer and GOOD import — is next.**
+decimals in gcsim). **Chunk G is done bar three follow-ups** — the artifact optimizer,
+its lossless/lossy pruning, the ranker, the GOOD importer and the whole read-and-write API
+over them. What is left in G is recorded as **G.9** (upgrade-potential scoring, blocked on a
+citation), **G.10** (move optimize/rank behind the job runner) and **G.11** (make a lazy
+load a loud failure). **Chunk H — the kit corpus — is next.**
 
-- **The backend suite passes.** 584 tests, 1 skipped (`tests/perf`, awaiting G.7).
+- **The backend suite passes, with nothing skipped.** 757 tests, **0 skipped** — G.7
+  re-baselined `tests/perf`, which was the last one.
   `ruff check app/ tests/ scripts/seed_db.py scripts/verify_seed.py
-  scripts/capture_nanoka_fixtures.py scripts/yuanshen/` is clean — that is CI's exact
-  command — and
-  `uvicorn app.main:app` serves `/api/v1/health`, `/docs`, and the auth and team endpoints.
+  scripts/capture_nanoka_fixtures.py scripts/yuanshen/ scripts/bench_optimizer.py` is clean
+  — that is CI's exact command — and `uvicorn app.main:app` serves 22 paths.
   **A red backend suite is now a regression, not the size of the port** — that excuse
   expired at B.13.
 - **The frontend does not compile, and that is the honest state.** 161 TypeScript errors
   against endpoints and schemas B.6 deleted. It was green until the PR #1 review only
   because `frontend/openapi.json` was stale — `npm run codegen` builds `api.types.ts` from
   that file, so the SPA type-checked against a contract describing 44 endpoints while the
-  backend served 7. The contract is now regenerated and guarded by
+  backend served 7. The contract is regenerated on every API change and guarded by
   `backend/tests/unit/test_openapi_contract_is_current.py`. CI runs `npm run lint` only;
   `npm test` is a disabled step with a `TODO(chunk-J)`. **Chunk J is what makes it compile.**
 - **The catalogue is seeded; the behaviour on top of it is not built.** 18 tables across six
@@ -42,9 +46,10 @@ decimals in gcsim). **Chunk G — the artifact optimizer and GOOD import — is 
   runs, plus the infrastructure core. `cd backend && python -m scripts.seed_db` fills them
   from nanoka GI **7.0.51** in ~10s (150 characters including all 28 Traveler variants, 260
   weapons, 65 artifact sets, 360 enemy profiles) and `python -m scripts.verify_seed` checks
-  the result against the committed indexes and nine hand-read anchors. There is still **no
-  damage chain and no optimizer**, and the API still serves seven paths — nothing in the
-  seeded data is exposed over HTTP yet.
+  the result against the committed indexes and nine hand-read anchors. **G.6 exposed it**:
+  the catalogue is readable at `/api/v1/{characters,weapons,artifact-sets,enemies}`, a GOOD
+  export imports at `/api/v1/artifacts/import/good`, and `/api/v1/builds/{id}/optimize` and
+  `/rank-artifacts` run the Chunk F damage chain over it.
 - **A seeded database says which patch it is.** `seed_runs` holds one append-only row per
   seed run: version pinned, per-entity counts, failed ids, and whether the run finished.
   `succeeded` is written `False` first and flipped at the end, so a run that died half way

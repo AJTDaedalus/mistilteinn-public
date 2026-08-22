@@ -367,8 +367,8 @@ Each task below is **one commit**. Commit message form:
 - **[x] G.6a — catalogue read endpoints** (characters, weapons, artifact sets, enemies)
 - **[x] G.6b — user artifacts + GOOD import endpoint**
 - **[x] G.6c — builds, and the optimize/rank endpoints** (synchronous; the job runner is G.10)
-### G.7 — Re-baseline `tests/perf` for the 5-slot search space
-### G.8 — Delete the consumed files from `app/services/_ported/`
+### [x] G.7 — Re-baseline `tests/perf` for the 5-slot search space
+### [x] G.8 — Delete the consumed files from `app/services/_ported/`
 ### G.9 — Artifact upgrade-potential scoring **[BLOCKED — needs a citation]**
 
 "What could this +0 piece become at +20" needs the **substat roll schedule**: how many

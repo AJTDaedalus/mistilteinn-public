@@ -72,6 +72,19 @@ jobs:
         # and dependency-free — not because integration is unrunnable here.
         run: pytest tests/unit -q
 
+      - name: Performance baseline
+        # `-m perf` is deselected by default, so this step is the only thing that runs it.
+        # Without it the file would be green-by-absence — fairy's crossval failure in a new
+        # costume, and this repo's rule is that a check which did not run is not a pass.
+        # `tests/unit/test_ci_runs_the_perf_gate.py` fails if this step or its `-m perf`
+        # flag goes away; both cases were checked by removing them.
+        #
+        # No database and no network: the inventory is synthetic and shared with
+        # `scripts/bench_optimizer.py`. The timing assertion is an order-of-magnitude guard
+        # with an 8x band, because this runner is slower and noisier than the machine
+        # `SECONDS_PER_COMBINATION` was measured on; the other two assertions are exact.
+        run: pytest tests/perf -m perf -q
+
   integration:
     # The comment this job replaces said integration tests "need a seeded Postgres,
     # which this lane deliberately does not stand up". Half of that is wrong, and the

@@ -9,10 +9,10 @@ disposition table. `translator.py` joined them in B.3 — see the note below the
 
 | File | Lines | Consumed by | Becomes |
 |---|---:|---|---|
-| `optimizer_pipeline.py` | 1826 | Chunk G (G.3) | ported in place — top-K / Pareto / budget-K machinery is game-agnostic |
-| `disc_optimizer.py` | 1525 | Chunk G (G.1) | `artifact_optimizer.py` — 6 slots → 5, two with fixed main stats |
+| ~~`optimizer_pipeline.py`~~ | 1826 | Chunk G (G.3) | **deleted in G.8.** Its bulk was ZZZ combo machinery; what ported was the *shape* — lossless-then-lossy ordering, bisection for auto-K, solo-score ranking against a filler build, cooperative cancellation — into `artifact_prefilter.py`. Its time constant was **not** ported; `scripts/bench_optimizer.py` measures this codebase instead. |
+| ~~`disc_optimizer.py`~~ | 1525 | Chunk G (G.1) | **deleted in G.8** → `artifact_optimizer.py` + `artifact_prefilter.py` (6 slots → 5). The Pareto layer and `_CONSTRAINT_STAT_ALIASES` were the parts worth having; missing the second cost a review finding. |
 | `damage_dag_service.py` | 984 | Chunk F (F.4) | ported — DAG assembly is game-agnostic, the sheets it assembles are not |
-| `rank_pipeline.py` | 743 | Chunk G (G.4) | ported — slot-count and stat-vocabulary edits |
+| ~~`rank_pipeline.py`~~ | 743 | Chunk G (G.4) | **deleted in G.8** → `artifact_ranker.py`. Its process-pool fan-out and potential-scoring did not port: the first is G.10's job runner, the second needs a roll schedule this repo cannot cite (G.9). |
 | `build_damage_service.py` | 707 | Chunk F/G | ported |
 | `modifiers.py` + `buff_resolver.py` | 1168 | Chunk H | the modifier DSL — `attack_scope` vocabulary retargeted, not replaced |
 | `translator.py` (was `app/pando/translator.py`) | 152 | Chunk F (F.1/F.4) | modifier → DAG translation, rewritten against `formula/genshin/tags.py` |
@@ -33,8 +33,8 @@ translator — so moving it out leaves `import app.pando` clean, which is what B
 
 1. **Delete each file when its port lands.** A file still sitting here after its chunk closes is
    a leak: the BRIEF names ZZZ shapes bleeding into the Genshin domain as this fork's main
-   long-term hazard, and stale reference code is how that happens. Chunk G.8 deletes the
-   optimizer set explicitly; do the same for the rest.
+   long-term hazard, and stale reference code is how that happens. **G.8 deleted the
+   optimizer set**; do the same for the rest as their chunks close.
 2. **Do not import from here.** There is deliberately no `__init__.py`, so setuptools'
    `packages.find` does not install it and it is not a package.
 3. **Do not edit these files to make anything run.** They are a historical record. Read them,
