@@ -4,6 +4,192 @@ Tradeoffs, rejected alternatives, and rationale — any tier. Newest first.
 
 ---
 
+## 2026-08-22 — The optimizer and its explainability are the product; gcsim goes underneath
+
+**Owner ruling**, answering §6 of `RESEARCH_gcsim_embed.md` ("if gcsim supplies both the
+simulation and the kits, what is mistilteinn?").
+
+**The artifact optimizer and explainability are the distinguishing features.** The simulator
+is infrastructure beneath them, not the product. The shape the owner named is *"a RAG-based
+artifact optimizer built on top of the simulator"*.
+
+**And the bar is Fribbels, not GO+gcsim.** `fribbels/hsr-optimizer` — the Honkai Star Rail
+optimizer the community treats as the gold standard, and what fairy was loosely built from —
+is the reference for *how to be distinct*, explicitly not "GO and gcsim combined in one
+site". Verified at 659 stars, TypeScript, pushed the day this was written; its `src/lib`
+carries `optimization`, `simulations`, `scoring` and **`gpu`** as separate modules, plus
+`relics` organisation and recommendations.
+
+Two things that grounding settles:
+
+1. **A simulation layer *beneath* an optimizer is the proven shape**, not a novel bet — the
+   gold standard already separates `simulations` from `optimization` from `scoring`. Chunk S
+   §3's two-tier recommendation matches it.
+2. **The "relic organizer and recommendations" tool is G.4's ranker**, arrived at
+   independently. That is corroboration that the marginal-value framing is the right one.
+
+### What this decides
+
+- **Chunk H's hand-curated kit corpus is superseded.** gcsim's 106 character implementations
+  replace it. This retires the chunk the BRIEF named as highest-risk *for the reason it was
+  risky* — it is where fabricated citations did fairy the most damage, and the answer is to
+  not curate a corpus at all.
+- **Chunks F and G are the product**, and are kept. §3's measurement is why they must be:
+  the Chunk F chain is 430–4,700× faster than a gcsim run, and no optimizer can call a
+  simulator in its inner loop.
+- **gcsim is adopted as infrastructure**, sidecar-first per §7.
+
+### Compute goes to the user's machine; Postgres keeps everything
+
+**Owner ruling, 2026-08-22.** Both the simulator *and* the artifact search run in the
+browser. The server keeps Postgres, the retrieval index, and corpus generation. Marginal
+compute cost per user is zero.
+
+```
+browser:   gcsim WASM  +  search kernel (WASM/WebGPU, on the user's GPU)
+server:    retrieval, corpus generation, the API
+postgres:  catalogue, inventories, builds, and the simulated-run corpus
+```
+
+This is Fribbels' compute model with the persistence Fribbels structurally cannot have —
+and it is the combination neither GO, gcsim, nor Fribbels currently occupies.
+
+**The simulator half is nearly free.** Chunk S proved gcsim compiles to WebAssembly, and
+upstream *already maintains a browser build* — `cmd/wasm`, `//go:build js && wasm`, exposing
+`validateConfig` / `initializeWorker` / `simulate`. That half is adoption, not invention.
+
+**The search half is a rewrite, and it breaks a rule this project has held all along.**
+
+DESIGN §1 A6 says one mechanic, one implementation. A browser search kernel means **two
+damage chains that must agree** — precisely the failure mode this repo spent Chunk G
+avoiding, most concretely when `build_combination_log` was extracted so the optimizer and the
+ranker could not drift. Naming it plainly rather than discovering it later:
+
+- **Accepted, with a specific mitigation.** `tests/crossval` already pins the Python chain to
+  gcsim at **1.3e-8 relative**. Extending it to run the same committed cases through the
+  client kernel makes the oracle serve both, so "the two chains agree" becomes a gate rather
+  than a hope. **The kernel does not ship until that gate exists** — a second chain without a
+  test binding it to the first is the whole hazard.
+- Pyodide was considered and rejected: it would run the *same* Python in the browser and keep
+  one implementation, but it is single-threaded and several times slower than CPython, so a
+  9,000-combination search would take **longer in the browser than it currently takes on the
+  server**. Fribbels uses WebGPU because that is the only way this is a win.
+
+### What this costs and what survives
+
+Honest accounting, because the ruling lands on top of work finished the same week:
+
+**Survives unchanged** — everything that is data or storage. Domain models, the nanoka
+importer, the YuanShen snapshot, the GOOD importer, the catalogue and inventory APIs,
+`optimization_jobs`. Client compute changes where the search runs, not where the truth lives.
+
+**Has no production consumer, and should eventually be deleted** — the Chunk F chain and the
+Chunk G optimizer.
+
+An earlier draft of this entry claimed they would survive as the reference implementation,
+the corpus generator, and the oracle. **Two of those three are wrong**, and the correction
+matters because it decides whether a whole subsystem is kept alive for no reason:
+
+- *Corpus generator* — **no.** The corpus is simulated runs, and **gcsim** generates those.
+  The chain has no part in it.
+- *The oracle* — **no.** gcsim is the oracle. `tests/crossval`'s fixtures are gcsim configs
+  and gcsim's own JSON output, so a client kernel can be validated against them **directly**,
+  with no Python in the path.
+- *Reference implementation* — **no.** A reference nothing runs is dead code.
+
+Everything the server still does — catalogue, GOOD import, builds, retrieval, corpus
+generation, auth, Postgres — needs **zero damage math**.
+
+**They do earn their keep through the port**, for one reason that is not sentiment. The
+committed crossval corpus is **two cases**. The Python chain is crossval-verified and can
+generate expected values for *thousands* of arbitrary inputs — random builds, DEF-scaling
+hits, capped crit rate, absent substats — to **differential-test** the kernel against, with
+gcsim confirming a sample. Two fixtures cannot catch a kernel that is right on
+Ayaka-with-no-artifacts and wrong everywhere else. That is a far denser signal than the
+crossval gate alone, and it is the standard way to port a numerical kernel safely.
+
+Then they are deleted when the kernel passes — the rule `app/services/_ported/README.md`
+already states and this project already follows: *"delete each file when its port lands."*
+
+**Is genuinely new work** — the kernel itself, and the toolchain for it. G.3's lossless
+Pareto layer, budget-K, and G.4's marginal-value ranking are *designs* that port, so the
+rewrite starts from a settled algorithm rather than a blank page.
+
+### Consequence: G.10's job runner probably goes too
+
+Named here rather than left to be discovered. `JobRunner` and the hybrid 202 contract exist
+to background **long server-side searches**. With the search client-side there is no such
+thing to background. `optimization_jobs` may survive to track corpus-generation runs, which
+is a genuinely long server-side job — but the optimize endpoint that motivated it would not.
+Decide it in the DESIGN doc; do not let it rot as a subsystem nothing calls.
+
+### Open: what the kernel is written in
+
+Not decided here. The live options, with the argument for each:
+
+- **Go** — one WASM toolchain for the whole browser payload, since gcsim is already Go and
+  already shipped there. Cost: Go's WASM is large (gcsim's `wasip1` build is 40 MB) and
+  carries a GC.
+- **Rust** — leanest WASM, mature `wasm-bindgen`, no GC. Cost: a third language in the stack.
+- **WebGPU compute shaders** — what the gold standard actually does, and the only option that
+  uses the user's GPU rather than one CPU thread. Cost: a compute-shader rewrite, not a port,
+  and it is the least legible of the three against DESIGN §1 A6.
+
+Recommendation deferred until the DESIGN doc, because the answer depends on whether the
+kernel evaluates candidates one at a time or in parallel batches — which is a design
+question, not a language question.
+
+### Fribbels runs entirely on the user's machine — and that is the opening
+
+Verified, not assumed: `package.json` declares
+`"homepage": "https://fribbels.github.io/hsr-optimizer"` and `"deploy": "gh-pages -d dist"`.
+GitHub Pages serves **static files only**. There is no backend directory; Vite builds a
+bundle. `src/lib/gpu/` is **WebGPU** (`webgpuDevice.ts`, `navigator.gpu`), so the permutation
+search runs on **the user's GPU**, with `worker/` for Web Workers.
+
+That is a sharper contrast than "GO + gcsim", and it cuts both ways:
+
+- **Fribbels' advantage:** enormous parallelism for free. Someone else's GPU, someone else's
+  electricity, zero marginal cost per user. mistilteinn searches on a shared server, which is
+  exactly why G.3's Pareto and budget-K layers had to exist at all.
+- **Fribbels' structural limit:** with no server it can **precompute nothing, retrieve
+  nothing, and hold no state across users or sessions**. Every answer is computed from
+  scratch, in a browser, from what that browser already has.
+
+mistilteinn is backend-first with Postgres. The server is the cost; it is also the one
+capability the gold standard cannot buy. **That is what makes the retrieval framing load-
+bearing rather than decorative** — retrieval needs a server and a corpus, and this project
+has both by construction.
+
+### OQ-S1 answered — retrieval does both jobs
+
+**Owner ruling, same day.** Retrieval serves the search *and* the explanation, over one
+shared corpus of simulated runs:
+
+```
+offline:  gcsim over representative builds -> index by build features
+
+search:   candidate -> retrieve nearest simulated context
+                    -> score through the Chunk F chain
+                    -> verify the top N by real simulation
+
+explain:  winning build + its contribution log + retrieved runs + kit text
+                    -> a grounded "why", citing real numbers
+```
+
+The two halves are one system because they share the index. And the split respects §3's
+measurement: **the simulator never enters the inner loop** — it populates the corpus offline
+and verifies finalists, while the 5.5e-4 s/combination chain does the searching.
+
+The explanation half is why F.5's "a damage number must be able to explain itself" and G.1's
+`contributions` log were worth their cost. They were built as a legibility constraint; they
+turn out to be the retrieval corpus for the product's second differentiator.
+
+**Rejected:** "GO + gcsim in one site." It is the obvious synthesis and it is not a product:
+it combines two things that already exist without being better than either at anything.
+
+---
+
 ## 2026-08-21 — Take gcsim's and GO's knowledge, not their shape
 
 **Owner ruling.** gcsim and Genshin Optimizer are the references for *correctness* and for

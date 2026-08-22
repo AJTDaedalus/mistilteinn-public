@@ -119,7 +119,14 @@ optimizer (which gcsim has no equivalent of, and which is 430× too fast to give
 inventory, the DB-as-truth catalogue, and a UI.
 
 That is a strategy question, not an engineering one, and it is above the tier that ran this
-spike. It is why this document ends in a recommendation rather than a `TASKS` entry.
+spike.
+
+**Answered 2026-08-22 (owner).** The artifact optimizer and its explainability are the
+product; gcsim is infrastructure beneath them. The bar is `fribbels/hsr-optimizer`, not
+"GO + gcsim in one site" — and the opening against Fribbels is that it runs **entirely in the
+browser** (GitHub Pages, WebGPU) and therefore cannot precompute, retrieve, or hold state,
+while this project is backend-first and can. Retrieval serves both the search and the
+explanation over one shared corpus of simulated runs. Full entry in `DECISIONS.md`.
 
 ## 7. Recommendation
 
