@@ -26,7 +26,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, enum_column, uuid_pk
+from app.models.base import GUARDED_LAZY, Base, TimestampMixin, enum_column, uuid_pk
 from app.models.enums import Element, Rarity, StatType, TalentType, WeaponType
 
 
@@ -117,17 +117,20 @@ class Character(TimestampMixin, Base):
     release_date: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     talents: Mapped[list[Talent]] = relationship(
+        lazy=GUARDED_LAZY,
         back_populates="character",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
     constellations: Mapped[list[Constellation]] = relationship(
+        lazy=GUARDED_LAZY,
         back_populates="character",
         cascade="all, delete-orphan",
         passive_deletes=True,
         order_by="Constellation.position",
     )
     ascension_passives: Mapped[list[AscensionPassive]] = relationship(
+        lazy=GUARDED_LAZY,
         back_populates="character",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -165,6 +168,7 @@ class Talent(TimestampMixin, Base):
 
     character: Mapped[Character] = relationship(back_populates="talents")
     scalings: Mapped[list[TalentScaling]] = relationship(
+        lazy=GUARDED_LAZY,
         back_populates="talent",
         cascade="all, delete-orphan",
         passive_deletes=True,

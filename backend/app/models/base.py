@@ -110,3 +110,21 @@ def enum_column(enum_cls: type[enum.Enum], length: int) -> Enum:
         create_constraint=False,
         values_callable=lambda e: [m.value for m in e],
     )
+
+
+#: `lazy=` for a relationship a **service reads**: refuse to fetch it rather than emitting
+#: the query the caller's `selectinload` forgot.
+#:
+#: Chunk G shipped three `MissingGreenlet` bugs of one shape — an eager-load chain stopping
+#: one relationship short of what a response schema read (`Talent.scalings`, and
+#: `ArtifactSet.affixes` down two separate paths). Each looked correct in review, passed
+#: every unit test, and failed only when a route actually ran.
+#:
+#: `raise_on_sql`, not `raise`: an already-loaded relationship — eager-loaded, or on a
+#: pending object — resolves normally, so building rows is unaffected and only a load that
+#: would emit SQL is refused. It also raises **synchronously**, where `MissingGreenlet`
+#: never appears, so a script or a sync test catches the gap too.
+#:
+#: `tests/integration/test_lazy_loads_are_refused.py` lists every relationship carrying this
+#: and fails if one loses it.
+GUARDED_LAZY = "raise_on_sql"
