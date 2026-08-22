@@ -266,8 +266,9 @@ def optimize(
         enemy=enemy,
         character_level=character_level,
         # Floors are kept in the comparison whatever the damage probe says about them; see
-        # `artifact_prefilter`'s docstring for why Energy Recharge is the case that bites.
-        floor_quantities=constraints.min_stats,
+        # `artifact_prefilter`'s docstring for why Energy Recharge is the case that bites,
+        # and `_FLOOR_INPUTS` for why a floor on ATK is not the quantity `atk`.
+        floor_quantities=_floor_inputs(constraints.min_stats),
         prefilter_top_k=constraints.prefilter_top_k,
     )
 
@@ -516,6 +517,30 @@ def _floor_nodes() -> dict[str, object]:
 
 
 _FLOOR_NODES = _floor_nodes()
+
+#: The artifact-borne quantities that feed each floor. ATK, HP and DEF are **computed** —
+#: `base * (1 + pct) + flat` — so no artifact contributes to them by name; a floor on `atk`
+#: is satisfied through `atk_pct` and `flat_atk`.
+#:
+#: This mapping is what keeps the Pareto layer lossless in the presence of a floor. Without
+#: it, a floor on ATK over an HP-scaling hit passes `atk` to the prefilter, which does not
+#: recognise it, and the damage probe correctly reports ATK as worth nothing to that hit —
+#: so the ATK dimensions are projected away, a piece carrying the ATK needed to clear the
+#: floor is dominated by one that does not, and the search reports no builds for an
+#: inventory that had one. Every other floor stat is contributed by name and maps to itself.
+_FLOOR_INPUTS: dict[str, tuple[str, ...]] = {
+    tags.Q_ATK: (tags.Q_ATK_PCT, tags.Q_FLAT_ATK),
+    tags.Q_HP: (tags.Q_HP_PCT, tags.Q_FLAT_HP),
+    tags.Q_DEF: (tags.Q_DEF_PCT, tags.Q_FLAT_DEF),
+}
+
+
+def _floor_inputs(floors: Iterable[str]) -> tuple[str, ...]:
+    """The artifact quantities a set of floors depends on."""
+    out: set[str] = set()
+    for quantity in floors:
+        out.update(_FLOOR_INPUTS.get(quantity, (quantity,)))
+    return tuple(sorted(out))
 
 
 def slot_main_stat_pool(slot: str) -> tuple[str, ...]:

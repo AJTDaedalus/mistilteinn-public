@@ -11,13 +11,14 @@ from __future__ import annotations
 import pytest
 
 from app.formula.genshin import tags
-from app.formula.genshin.damage import Hit
+from app.formula.genshin.damage import Hit, ScalingStat
 from app.pando.calculator import NodeRegistry
 from app.services import artifact_prefilter as pf
 from app.services.artifact_optimizer import (
     ArtifactCandidate,
     OptimizerConstraints,
     OptimizerProgress,
+    _floor_inputs,
     optimize,
 )
 from app.services.damage_calculator import Enemy
@@ -530,3 +531,52 @@ def test_a_stat_floor_survives_the_lossy_layer():
 
 def test_progress_fraction_is_one_for_an_empty_total():
     assert OptimizerProgress(0, 0, 0, 0.0).fraction == 1.0
+
+
+# ---- Floors that no artifact contributes to by name -------------------------
+
+def test_a_floor_maps_to_the_quantities_that_actually_feed_it():
+    assert _floor_inputs([tags.Q_ATK]) == (tags.Q_ATK_PCT, tags.Q_FLAT_ATK)
+    assert _floor_inputs([tags.Q_HP]) == (tags.Q_FLAT_HP, tags.Q_HP_PCT)
+    assert _floor_inputs([tags.Q_DEF]) == (tags.Q_DEF_PCT, tags.Q_FLAT_DEF)
+    # Everything else is contributed by name and maps to itself.
+    assert _floor_inputs([tags.Q_ENERGY_RECHARGE]) == (tags.Q_ENERGY_RECHARGE,)
+
+
+def test_an_atk_floor_survives_a_hit_that_does_not_scale_on_atk():
+    """The case that makes the lossless layer lossy if floors are passed through raw.
+
+    ATK is *computed* — `base * (1 + pct) + flat` — so no artifact contributes to `atk` by
+    that name. On an HP-scaling hit the damage probe correctly reports ATK as worth nothing,
+    which projects the ATK dimensions out of the comparison; the piece carrying the ATK% the
+    floor needs is then dominated by a piece with more HP and no ATK, and the search returns
+    "no builds" for an inventory that had one.
+    """
+    log = build_log(NodeRegistry())
+    log.add(tags.Q_BASE_HP, 15000.0, tags.SRC_CHARACTER, "character")
+    log.add(tags.Q_BASE_ATK, 800.0, tags.SRC_CHARACTER, "character")
+    log.add(tags.Q_CRIT_RATE, 0.05, tags.SRC_CHARACTER, "base")
+    log.add(tags.Q_CRIT_DMG, 0.5, tags.SRC_CHARACTER, "base")
+    hp_base = tuple(log.contributions)
+    hp_hit = Hit(
+        multiplier=1.0, channel="cryo", scope="burst", scaling_stat=ScalingStat.HP,
+    )
+
+    inventory = [_piece(slot, slot) for slot in _MAIN_STATS if slot != "equip_shoes"]
+    inventory += [
+        # Strictly better on HP, and carries no ATK at all.
+        _piece("equip_shoes", "hp-sands", main="FIGHT_PROP_HP_PERCENT", substats=(
+            {"stat": "FIGHT_PROP_HP_PERCENT", "value": 0.30},)),
+        # Worse on HP, and the only piece in the inventory that can clear the ATK floor.
+        _piece("equip_shoes", "atk-sands", main="FIGHT_PROP_HP_PERCENT", substats=(
+            {"stat": "FIGHT_PROP_ATTACK_PERCENT", "value": 0.60},)),
+    ]
+
+    result = optimize(
+        hp_base, inventory, hp_hit, ORDINARY, character_level=90,
+        constraints=OptimizerConstraints(min_stats={tags.Q_ATK: 1200.0}),
+    )
+
+    assert tags.Q_ATK_PCT in result.prefilter.live_quantities
+    assert result.builds, "the ATK sands must survive a comparison that ignores ATK damage"
+    assert result.builds[0].artifact_ids[2] == "atk-sands"
