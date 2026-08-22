@@ -280,6 +280,12 @@ async def _accept_job(
         "character_name": build.character.name if build.character else "",
         "combinations_total": estimate,
     })
+    # **Commit before submitting.** `get_db` commits when the handler returns, which is
+    # after this line — and the worker's very first act is `_mark_running`, an UPDATE from a
+    # *separate* session. Against an uncommitted row that matches nothing, so the job would
+    # sit `queued` for ever and its result would be discarded silently. Nothing would raise,
+    # and the route tests could not see it because they mock the runner.
+    await jobs.session.commit()
     runner.submit_search(
         str(job.id), optimizer_job_service.search_fn(payload, to_response),
     )

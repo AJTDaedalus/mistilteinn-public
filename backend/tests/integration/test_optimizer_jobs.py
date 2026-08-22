@@ -192,3 +192,48 @@ async def test_cancelling_a_finished_job_is_a_409(
 
     assert response.status_code == 409
     assert "already finished" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_the_job_row_is_committed_before_the_search_is_submitted(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+    monkeypatch,
+):
+    """The race that would have made every large search silently do nothing.
+
+    `get_db` commits when the handler returns — *after* the submit. The worker's first act is
+    `_mark_running`, an UPDATE from a separate session, which against an uncommitted row
+    matches nothing. The job would then sit `queued` for ever and its result would be
+    discarded, with nothing raising anywhere.
+
+    Asserted as an ordering because that is the invariant: the route tests mock the runner,
+    so they cannot observe the worker losing the race, and a test that waited to see it lose
+    would be timing-dependent.
+    """
+    monkeypatch.setattr(optimizer_job_service, "SYNC_SECONDS", 0.0)
+    user, _ = authed_user
+    character, weapon, sets = await _catalogue(db_session)
+    build = await _build_with_five(db_session, user, character, weapon, sets, spares=2)
+
+    order: list[str] = []
+    real_commit = db_session.commit
+
+    async def recording_commit():
+        order.append("commit")
+        await real_commit()
+
+    monkeypatch.setattr(db_session, "commit", recording_commit)
+    runner = client._transport.app.state.job_runner
+    runner.submit_search.side_effect = lambda *_a, **_k: order.append("submit")
+
+    response = await client.post(
+        f"/api/v1/builds/{build.id}/optimize",
+        json={"hit": CRYO_BURST}, headers=_auth(authed_user),
+    )
+
+    assert response.status_code == 202
+    assert "commit" in order, "the job row was never committed"
+    assert order.index("commit") < order.index("submit"), (
+        "the search was handed to the runner before its job row was visible to any other "
+        "session"
+    )
