@@ -152,11 +152,20 @@ one layer up**, and it gets B.6's treatment: delete the ZZZ concepts rather than
   link longer than DESIGN §6 implied; what keeps it honest is crossval running with
   `CROSSVAL_REQUIRE_DB=1` so the anchor cannot skip.
 
-### [ ] C.2 — Argue the f32 tolerance **[Planner]**
+### [x] C.2 — Argue the f32 tolerance **[Planner]**
 - **Do:** derive it from f32 precision compounded over the chain's operations, in writing, in
   `docs/CROSSVAL_gcsim.md`'s style. **Before the kernel is written.**
-- **Accept:** a test proves the tolerance cannot hide a formula error — the property
-  `tests/crossval` already asserts for the float64 chain.
+- **Done: `1e-6` relative**, argued in `docs/CROSSVAL_gcsim.md` and made executable in
+  `tests/unit/test_f32_tolerance.py`. Both halves are **measured over the 2,000-case sweep**,
+  not asserted:
+  - f32 end-to-end divergence: median 6.78e-08, p95 1.91e-07, **max 3.51e-07**. So `1e-7`
+    (the f64 chain's tolerance) would fail ~5% of cases for reasons that are not bugs, and
+    `1e-6` is ~2.8x the measured maximum.
+  - smallest plausible formula error: **206x** the tolerance (a forgotten crit clamp), then
+    226x (DEF mechanics combined additively) and 1,500,000x (the RES boundary).
+  - The constant is pinned **from both sides**: widening it to 1e-2 fails 5 tests, tightening
+    it to 1e-9 fails 2. A tolerance that only resists widening is one that can quietly become
+    unachievable slack.
 
 ### [ ] C.3 — TypeScript CPU kernel: stats and one hit
 - **Accept:** passes C.1's harness within C.2's tolerance.
