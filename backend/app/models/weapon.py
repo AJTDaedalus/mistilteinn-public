@@ -14,7 +14,7 @@ from sqlalchemy import Float, ForeignKey, Index, Integer, String, Text, UniqueCo
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, enum_column, uuid_pk
+from app.models.base import GUARDED_LAZY, Base, TimestampMixin, enum_column, uuid_pk
 from app.models.enums import Rarity, StatType, WeaponType
 
 
@@ -69,7 +69,7 @@ class Weapon(TimestampMixin, Base):
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
 
     refinements: Mapped[list[WeaponRefinement]] = relationship(
-        lazy="raise_on_sql",
+        lazy=GUARDED_LAZY,
         back_populates="weapon",
         cascade="all, delete-orphan",
         passive_deletes=True,

@@ -21,7 +21,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.artifact import Artifact, artifact_slot_sort_order
-from app.models.base import Base, TimestampMixin, uuid_pk
+from app.models.base import GUARDED_LAZY, Base, TimestampMixin, uuid_pk
 from app.models.character import Character
 from app.models.user import User  # noqa: F401 — ensures FK target is registered
 from app.models.weapon import Weapon
@@ -123,11 +123,11 @@ class Build(TimestampMixin, Base):
     )
 
     character: Mapped[Character | None] = relationship(
-        foreign_keys=[character_id], lazy="raise_on_sql",
+        foreign_keys=[character_id], lazy=GUARDED_LAZY,
     )
-    weapon: Mapped[Weapon | None] = relationship(lazy="raise_on_sql")
+    weapon: Mapped[Weapon | None] = relationship(lazy=GUARDED_LAZY)
     artifacts: Mapped[list[Artifact]] = relationship(
-        lazy="raise_on_sql",
+        lazy=GUARDED_LAZY,
         foreign_keys="Artifact.build_id",
         # NOT `order_by="Artifact.slot"`. The column holds the payload's internal keys, so
         # sorting on it gives flower, **circlet**, plume, goblet, sands. This orders by the

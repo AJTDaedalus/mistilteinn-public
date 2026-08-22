@@ -26,7 +26,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.data.snapshot import SnapshotUnavailableError, main_stat_pools
-from app.models.base import Base, TimestampMixin, enum_column, uuid_pk
+from app.models.base import GUARDED_LAZY, Base, TimestampMixin, enum_column, uuid_pk
 from app.models.enums import ArtifactSlot, Rarity, StatType, stat_type_for
 
 
@@ -135,7 +135,7 @@ class ArtifactSet(TimestampMixin, Base):
     available_ranks: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
 
     affixes: Mapped[list[ArtifactSetAffix]] = relationship(
-        lazy="raise_on_sql",
+        lazy=GUARDED_LAZY,
         back_populates="artifact_set",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -239,7 +239,7 @@ class Artifact(TimestampMixin, Base):
 
     substats: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
 
-    artifact_set: Mapped[ArtifactSet | None] = relationship(lazy="raise_on_sql")
+    artifact_set: Mapped[ArtifactSet | None] = relationship(lazy=GUARDED_LAZY)
 
     def __repr__(self) -> str:
         return f"<Artifact {self.slot} +{self.level} {self.main_stat_type}>"

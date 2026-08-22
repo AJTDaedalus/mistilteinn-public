@@ -189,6 +189,9 @@ async def test_the_guard_covers_every_relationship_a_response_schema_reads(
     from app.models.artifact import Artifact
     guarded.add((Artifact, "artifact_set"))
 
+    # Compared against the **literal**, not `models.base.GUARDED_LAZY`. Asserting the
+    # constant would pass happily if someone redefined it to `"select"` — the guard would be
+    # gone and its own test would agree that everything was guarded.
     unguarded = [
         f"{model.__name__}.{name}"
         for model, name in sorted(guarded, key=lambda pair: (pair[0].__name__, pair[1]))
