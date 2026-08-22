@@ -6,13 +6,7 @@
     </a>
     @if (auth.status() === 'approved') {
       <nav class="shell__nav">
-        <a routerLink="/calculate" routerLinkActive="active">Calculate</a>
-        <a routerLink="/builds" routerLinkActive="active">Builds</a>
-        <a routerLink="/discs" routerLinkActive="active">Discs</a>
-        <a routerLink="/import" routerLinkActive="active">Import</a>
-        <a routerLink="/optimize" routerLinkActive="active">Optimize</a>
-        <a routerLink="/rank" routerLinkActive="active">Rank</a>
-        <a routerLink="/teams" routerLinkActive="active">Teams</a>
+        <a routerLink="/characters" routerLinkActive="active">Characters</a>
         <span class="identity-chip">
           <span class="identity-chip__name mono">{{ auth.me()?.label || auth.me()?.email }}</span>
           <button class="identity-chip__signout" (click)="signOut()">Sign out</button>

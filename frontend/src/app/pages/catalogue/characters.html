@@ -1,0 +1,35 @@
+<section class="catalogue">
+  <header>
+    <h1>Characters</h1>
+    <input
+      type="search"
+      name="search"
+      placeholder="Search by name…"
+      [(ngModel)]="search"
+      (keyup.enter)="load()"
+      aria-label="Search characters by name"
+    />
+    <button type="button" (click)="load()">Search</button>
+  </header>
+
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  } @else if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else {
+    <p class="muted">{{ total() }} matching</p>
+    <ul class="grid">
+      @for (character of characters(); track character.id) {
+        <li class="card">
+          <span class="name">{{ character.name }}</span>
+          <span class="meta">
+            {{ character.element ?? 'No vision' }} · {{ character.rarity }}
+          </span>
+          <span class="key">{{ character.nanoka_id }}</span>
+        </li>
+      } @empty {
+        <li class="muted">No characters match that search.</li>
+      }
+    </ul>
+  }
+</section>

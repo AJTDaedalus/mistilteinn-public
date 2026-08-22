@@ -4,6 +4,17 @@ Read-only. Nothing here has a `Create` or `Update` sibling: these rows come from
 importer and a route that let a user edit them would put fabricated game data behind an API
 whose whole value is that it is the game's.
 
+## The enums are the enums
+
+`element`, `weapon_type` and `rarity` are typed as their `models.enums` members rather than
+as `str`. The wire format is identical — they are `StrEnum`s whose values are the payload's
+own spellings — but the *schema* then says what the field can actually be, and the generated
+client gets the same precision the query parameters already had.
+
+A response typed `str` where an enum is always returned is the contract under-describing
+itself: it forces every consumer to re-state the vocabulary or cast, which is how a second
+definition of the same list gets created.
+
 ## Two shapes per entity, on purpose
 
 A `*Summary` is what a list returns and a `*Read` is what one row returns. The catalogue's
@@ -27,6 +38,8 @@ from __future__ import annotations
 from typing import Any
 
 from pydantic import BaseModel
+
+from app.models.enums import Element, Rarity, WeaponType
 
 _FROM_ORM = {"from_attributes": True}
 
@@ -96,9 +109,9 @@ class CharacterSummary(BaseModel):
     nanoka_id: str
     name: str
     #: Null for the two entries whose payload element is the literal `"None"`.
-    element: str | None = None
-    weapon_type: str
-    rarity: str
+    element: Element | None = None
+    weapon_type: WeaponType
+    rarity: Rarity
     region: str | None = None
     icon: str | None = None
 
@@ -154,8 +167,8 @@ class WeaponSummary(BaseModel):
     id: str
     nanoka_id: int
     name: str
-    weapon_type: str
-    rarity: str
+    weapon_type: WeaponType
+    rarity: Rarity
     base_atk: float | None = None
     sub_stat_type: str | None = None
     icon: str | None = None

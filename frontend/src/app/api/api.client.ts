@@ -21,8 +21,8 @@ export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL', {
  * Use from a service:
  * ```ts
  *   private api = injectApi();
- *   async listAgents() {
- *     const { data, error } = await this.api.GET('/api/v1/agents');
+ *   async listCharacters() {
+ *     const { data, error } = await this.api.GET('/api/v1/characters');
  *     ...
  *   }
  * ```

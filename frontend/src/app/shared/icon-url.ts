@@ -13,9 +13,7 @@ export function buildIconUrl(iconPath: string | null | undefined): string | null
   return `/icons/${base}.webp`;
 }
 
-export const discSetIconUrl = buildIconUrl;
 export const wEngineIconUrl = buildIconUrl;
-export const agentIconUrl   = buildIconUrl;
 
 export function specialtyIconUrl(specialty: string | null | undefined): string | null {
   if (!specialty) return null;
