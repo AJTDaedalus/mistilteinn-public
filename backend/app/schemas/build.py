@@ -383,6 +383,9 @@ class UnmodelledPassiveRead(BaseModel):
     weapon_name: str
     passive_name: str
     text: str
+    #: Which refinement step the text was read at — the build's own, because a candidate the
+    #: user does not own has no refinement of its own. Reported so nobody infers otherwise.
+    refinement: int
 
 
 class CompareWeaponsResponse(BaseModel):

@@ -593,6 +593,24 @@ async def compare_weapons(
     if missing:
         raise HTTPException(status_code=404, detail=f"no such weapons: {sorted(missing)}")
 
+    # A character can only hold one weapon type. Nothing downstream checks it —
+    # `add_weapon` applies whatever stats it is handed — so a claymore compared for a sword
+    # user would score, rank, and be recommended, and the user could not equip it.
+    wrong_type = sorted(
+        f"{found[wid].name} ({found[wid].weapon_type.value})"
+        for wid in wanted
+        if build.character is not None and found[wid].weapon_type != build.character.weapon_type
+    )
+    if wrong_type:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"{build.character.name} uses "
+                f"{build.character.weapon_type.value}; these cannot be equipped: "
+                f"{wrong_type}. Scoring them would rank a weapon the character cannot hold."
+            ),
+        )
+
     try:
         candidates = [
             _weapon_candidate(build, found[wid]) for wid in wanted
@@ -634,7 +652,7 @@ async def compare_weapons(
         unmodelled_passives=[
             UnmodelledPassiveRead(
                 weapon_id=p.weapon_id, weapon_name=p.weapon_name,
-                passive_name=p.passive_name, text=p.text,
+                passive_name=p.passive_name, text=p.text, refinement=p.refinement,
             )
             for p in result.unmodelled_passives
         ],
@@ -658,6 +676,7 @@ def _weapon_candidate(build: "Build", weapon: "Weapon") -> weapon_comparison.Wea
         name=weapon.name,
         base_contributions=base,
         unmodelled_passive=_passive_of(weapon, build.refinement),
+        passive_refinement=build.refinement,
     )
 
 
@@ -667,6 +686,11 @@ def _passive_of(weapon: "Weapon", refinement: int) -> "tuple[str, str] | None":
     Read off the stored row rather than assumed: a weapon with no passive is a real case —
     every white and green weapon — and reporting one anyway would put a permanent doubt
     beside a comparison that is actually complete.
+
+    **The level is the build's**, because a candidate the user does not own has no refinement
+    of its own to read. That is an assumption, so the response reports which level it quoted
+    rather than leaving a reader to infer that an R1 Mistsplitter's text is what they were
+    shown. It affects only the words: nothing here applies the passive at any level.
     """
     for row in weapon.refinements:
         if row.level == refinement and (row.description or row.name):

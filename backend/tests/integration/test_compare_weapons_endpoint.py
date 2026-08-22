@@ -223,7 +223,38 @@ async def test_even_a_complete_comparison_states_the_fixed_artifacts_limit(
     assert "held fixed" in body["caveat"]
 
 
+async def test_the_quoted_refinement_step_is_reported(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """The level is the *build's*, because a candidate the user does not own has none.
+
+    That is an assumption, so it is reported rather than left for a reader to infer that an
+    R1 Mistsplitter's text is what they were shown.
+    """
+    body = (await _compare(authed_client, scene.build_id, [scene.strong_id])).json()
+    assert body["unmodelled_passives"][0]["refinement"] == 5
+
+
 # ── Refusals ──────────────────────────────────────────────────────────────────
+
+
+async def test_a_weapon_the_character_cannot_hold_is_refused(
+    authed_client: AsyncClient, db_session: AsyncSession, scene: Scene,
+):
+    """Nothing downstream checks weapon type — `add_weapon` applies whatever it is handed.
+
+    So a claymore compared for a sword user would score, rank, and be recommended, and the
+    user could not equip it. A recommendation nobody can act on is worse than none.
+    """
+    claymore = _weapon(12503, "Wolf's Gravestone", 46.0)
+    claymore.weapon_type = WeaponType.CLAYMORE
+    db_session.add(claymore)
+    await db_session.flush()
+
+    response = await _compare(authed_client, scene.build_id, [str(claymore.id)])
+    assert response.status_code == 422
+    assert "cannot be equipped" in response.json()["detail"]
+    assert "Wolf's Gravestone" in response.json()["detail"]
 
 
 async def test_an_unknown_weapon_is_refused(authed_client: AsyncClient, scene: Scene):

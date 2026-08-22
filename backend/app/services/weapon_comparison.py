@@ -72,6 +72,10 @@ class WeaponCandidate:
     #: weapon has none — which is a real answer and the only case where the comparison is
     #: complete.
     unmodelled_passive: tuple[str, str] | None = None
+    #: Which refinement step's text `unmodelled_passive` was read from. The build's own, since
+    #: a candidate the user does not own has no refinement to read — an assumption, so it is
+    #: reported rather than left for a reader to infer.
+    passive_refinement: int = 1
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,6 +104,8 @@ class UnmodelledPassive:
     weapon_name: str
     passive_name: str
     text: str
+    #: The refinement step this text was read at. See `WeaponCandidate.passive_refinement`.
+    refinement: int = 1
 
 
 @dataclass(frozen=True, slots=True)
@@ -205,6 +211,7 @@ def compare_weapons(
                 weapon_name=candidate.name,
                 passive_name=name,
                 text=text,
+                refinement=candidate.passive_refinement,
             ))
 
     return WeaponComparison(
