@@ -41,8 +41,37 @@ jobs:
       - name: bandit
         run: bandit -r backend/app -ll  # fail on medium+ severity
 
+      # PyPI's vulnerability API answers 503 during outages, and a single 5xx on any one
+      # of ~100 dependency queries kills the whole gate — `pip_audit/_service/pypi.py`
+      # treats any non-404 HTTPError as a hard ServiceError. That happened here on
+      # 2026-08-22 and cost a green run.
+      #
+      # A gate that fails on upstream weather is a gate people learn to re-run past, which
+      # is the same disease as treating a skipped check as a pass. So: retry, bounded.
+      #
+      # **This makes the gate less flaky, never less strict.** The retry fires only when the
+      # output names a transport failure. A real finding is not a transport failure, so it
+      # fails on the first attempt, immediately and loudly — and if PyPI never answers, the
+      # step still fails rather than passing by exhaustion.
       - name: pip-audit
-        run: pip-audit --local
+        run: |
+          set -uo pipefail
+          for attempt in 1 2 3; do
+            if out=$(pip-audit --local 2>&1); then
+              echo "$out"
+              exit 0
+            fi
+            echo "$out"
+            if ! grep -qE 'ServiceError|ConnectionError|Could not connect to' <<<"$out"; then
+              echo "::error::pip-audit reported a finding, not a transport failure."
+              exit 1
+            fi
+            echo "::warning::pip-audit could not reach its feed (attempt ${attempt}/3)."
+            [ "$attempt" -lt 3 ] && sleep $((attempt * 15))
+          done
+          echo "::error::pip-audit could not reach its vulnerability feed after 3 attempts."
+          echo "This is a could-not-check, which is never a pass."
+          exit 1
         shell: bash
 
   frontend-security:
