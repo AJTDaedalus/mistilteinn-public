@@ -107,7 +107,7 @@ async def store_good_import(
 
     resolved: list[tuple[ParsedArtifact, str]] = []
     rejected = [(row.index, row.reason) for row in parsed.rejected]
-    for index, artifact in enumerate(parsed.artifacts):
+    for artifact in parsed.artifacts:
         set_id = sets_by_key.get(set_lookup_key(artifact.set_key))
         if set_id is None:
             reason = (
@@ -115,7 +115,10 @@ async def store_good_import(
                 f"would hide every set bonus it could contribute to, so it is refused "
                 f"instead."
             )
-            rejected.append((index, reason))
+            # `source_index`, not the position in `parsed.artifacts`: those differ by
+            # however many records the parser already refused, so enumerating here would
+            # point a user at the wrong line of their own export.
+            rejected.append((artifact.source_index, reason))
             continue
         resolved.append((artifact, set_id))
 

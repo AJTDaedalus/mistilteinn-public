@@ -441,3 +441,34 @@ async def test_an_unknown_artifact_is_a_404_not_a_403(
     )
 
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_a_rejection_names_the_record_in_the_file_not_in_the_survivors(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+):
+    """`RejectedArtifact.index` exists so a user can find the record in their export.
+
+    The parser numbers records by their position in the file; the importer's own rejections
+    (a set this database does not know) were numbered by position among the artifacts that
+    *survived* parsing. Those differ by however many the parser refused first, so with one
+    bad record before an unknown set the report named index 1 **twice** and never mentioned
+    index 2 — pointing the user at a record that was already accounted for.
+    """
+    await _seed_sets(db_session)
+
+    body = (await client.post(
+        "/api/v1/artifacts/import/good",
+        json={"mode": "append", "payload": _good(
+            _artifact(),                                              # 0: fine
+            _artifact(slotKey="flower", mainStatKey="critDMG_"),      # 1: parser refuses
+            _artifact(setKey="SetFromAFuturePatch"),                  # 2: unknown set
+        )},
+        headers=_auth(authed_user),
+    )).json()
+
+    assert body["inserted"] == 1
+    assert sorted(r["index"] for r in body["rejected"]) == [1, 2]
+    by_index = {r["index"]: r["reason"] for r in body["rejected"]}
+    assert "flower" in by_index[1]
+    assert "SetFromAFuturePatch" in by_index[2]
