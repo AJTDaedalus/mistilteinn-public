@@ -59,11 +59,13 @@ one layer up**, and it gets B.6's treatment: delete the ZZZ concepts rather than
 - **Accept:** `tsc -p tsconfig.app.json` is **clean**; `npm run lint` clean; the app builds
   and the surviving routes render.
 
-### [ ] A.3 — Catalogue pages against the real API
+### [~] A.3 — Catalogue pages against the real API
 - **Do:** the read surface G.6a shipped — characters, weapons, artifact sets, enemies — as
   simple list/detail pages, replacing the deleted ZZZ ones so the app is not an empty shell.
 - **Accept:** each page renders from `/api/v1/...` with no hand-written types; `npm run codegen`
   is the only source of API types.
+- **Characters done.** Weapons, artifact sets and enemies follow the same shape —
+  `CatalogueService` already has their methods.
 
 ### [x] A.4 — Re-enable the frontend test lane **(done with A.2 — the tests already passed once the ZZZ pages were gone)**
 - **Do:** CI runs `npm test` — currently a disabled step with a `TODO(chunk-J)`.

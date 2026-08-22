@@ -19,6 +19,12 @@ export const routes: Routes = [
     canMatch: [requireApproved],
   },
   {
+    path: 'characters',
+    loadComponent: () =>
+      import('./pages/catalogue/characters').then((m) => m.CharactersPage),
+    canMatch: [requireApproved],
+  },
+  {
     path: '**',
     redirectTo: '',
   },
