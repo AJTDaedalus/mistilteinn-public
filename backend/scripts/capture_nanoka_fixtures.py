@@ -50,6 +50,14 @@ DETAILS: tuple[tuple[str, str, str], ...] = (
     ("character", "10000002", "Ayaka — four skills, so talent type cannot be positional"),
     ("character", "10000005-2", "Pyro Traveler — the 28 string-keyed variant entries"),
     ("weapon", "11501", "Aquila Favonia — 5-star sword, full refinement ladder"),
+    (
+        "weapon",
+        "11101",
+        (
+            "Dull Blade — 1-star, no substat and no passive: F.8's crossval weapon, chosen "
+            "so the comparison measures the chain and not an unmodelled weapon effect"
+        ),
+    ),
     ("artifact", "15025", "Marechaussee Hunter — an ordinary [2, 4] set"),
     ("monster", "21010101", "Hilichurl — the baseline enemy shape, uniform 10% RES"),
     ("monster", "24010101", "Ruin Guard — 70% physical RES, so RES is not a constant"),

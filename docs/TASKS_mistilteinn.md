@@ -340,8 +340,8 @@ Each task below is **one commit**. Commit message form:
 ### [x] F.4 — `formula/genshin/damage.py` (sheets deferred — see the LOG)
 ### [x] F.5 — `damage_calculator.py` — base × (1+DMG%) × crit × DEF term × RES term
 ### [x] F.6 — Amplifying reactions only (vape/melt) — **no transformative, no additive**
-### F.7 — gcsim crossval fixture harness with `CROSSVAL_REQUIRE_DB=1` from the first commit
-### F.8 — First crossval case green within a written, justified tolerance
+### [x] F.7 — gcsim crossval fixture harness with `CROSSVAL_REQUIRE_DB=1` from the first commit
+### [x] F.8 — First crossval case green within a written, justified tolerance
 
 - **Hard rule, every task:** no multiplier, coefficient, or curve written from memory. Each
   constant cites gcsim / KQM / Amber **at the line that introduces it**. A task that cannot

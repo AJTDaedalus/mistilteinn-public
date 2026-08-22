@@ -5,7 +5,7 @@
 | **Source** | `https://static.nanoka.cc/gi/{version}/{entity}.json` |
 | **Version** | **7.0.51** — pinned from `https://static.nanoka.cc/manifest.json` → `gi.latest` (`gi.live` was `7.0`) |
 | **Fetched** | 2026-08-21 |
-| **Tasks** | C.1 (indexes + first details), D.2 (`monster.json` and the remaining details) |
+| **Tasks** | C.1 (indexes + first details), D.2 (`monster.json` and the remaining details), F.8 (`weapon_11101`) |
 
 | File | Entries | Bytes |
 |---|---:|---:|
@@ -16,6 +16,7 @@
 | `monster.json` | 585 | 421,515 |
 | `detail/character_10000002.json` | — | 93,499 |
 | `detail/character_10000005-2.json` | — | 350,356 |
+| `detail/weapon_11101.json` | — | 7,118 |
 | `detail/weapon_11501.json` | — | 10,584 |
 | `detail/artifact_15025.json` | — | 3,595 |
 | `detail/monster_21010101.json` | — | 10,625 |

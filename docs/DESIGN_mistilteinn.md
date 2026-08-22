@@ -465,6 +465,23 @@ The first chunk where correctness, not mechanics, is the risk.
 matches a gcsim fixture within an agreed tolerance, with the tolerance and its justification
 written into the crossval doc.
 
+> **Delivered 2026-08-21 (PRs #6, #7, #8).** Exit met — `108.53040079774516` against
+> gcsim's `108.53039935232651`, a **1.3e-8** relative match inside the `1e-7` tolerance
+> argued in `docs/CROSSVAL_gcsim.md`. Four
+> departures from this sketch, all in the LOG (F.1-F.8):
+>
+> 1. **The stat formula is single-stage.** fairy's two-stage `pre`/`final` shape has no
+>    Genshin counterpart; porting it would have invented a concept the game lacks.
+> 2. **The damage chain is a pipeline of named steps, not a DAG.** Aggregation needs tags;
+>    an ordered multiplication does not, and A6 wants the order legible.
+> 3. **`sheets.py` was not built.** A per-character formula bundle is the schema Chunk H is
+>    meant to design, and F.8 needs one talent multiplier, which `Hit` takes as data.
+> 4. **Two divergences from the oracle are deliberate and recorded** — the RES curve's
+>    continuity at exactly 0.75, and computed-rather-than-rolled crit.
+>
+> The crossval harness seeds itself from committed nanoka fixtures through the real
+> importer, so CI runs it hermetically with `CROSSVAL_REQUIRE_DB=1`.
+
 ### Chunk G — Artifact optimizer + GOOD import (≈1–2 sessions)
 
 - `disc_optimizer.py` → `artifact_optimizer.py`: 5 slots, fixed flower/plume mains, per-slot
