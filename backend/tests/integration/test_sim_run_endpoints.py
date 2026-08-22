@@ -120,8 +120,9 @@ async def test_the_pin_is_checked_before_the_database_is_touched(
     """The refusal must be a decision, not a write that happens to be rolled back.
 
     This route is one explicit `session.commit()` away from persisting a refused run, and
-    that is not hypothetical: `optimizer_jobs` commits inside its handler for ordering
-    reasons. A rollback nobody wrote down is a guarantee nobody is maintaining.
+    that was not hypothetical: `optimizer_jobs` used to commit inside its handler for
+    ordering reasons, until C.6 deleted it. A rollback nobody wrote down is a guarantee
+    nobody is maintaining, and the precedent existing once is enough.
     """
     touched = False
 

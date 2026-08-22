@@ -4,13 +4,10 @@ from __future__ import annotations
 
 import hashlib
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Annotated
+from typing import Annotated
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-
-if TYPE_CHECKING:
-    from app.services.job_runner import JobRunner
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -21,7 +18,6 @@ from app.repositories.artifact_set import ArtifactSetRepository
 from app.repositories.build import BuildRepository
 from app.repositories.character import CharacterRepository
 from app.repositories.enemy import EnemyProfileRepository
-from app.repositories.optimization_job import OptimizationJobRepository
 from app.repositories.session import SessionRepository
 from app.repositories.sim_run import SimRunRepository
 from app.repositories.team import TeamRepository
@@ -63,16 +59,6 @@ async def get_artifact_set_repo(session: DBSession) -> ArtifactSetRepository:
 async def get_enemy_profile_repo(session: DBSession) -> EnemyProfileRepository:
     """FastAPI DI factory for `EnemyProfileRepository` (catalogue — no owner scope)."""
     return EnemyProfileRepository(session)
-
-
-async def get_optimization_job_repo(session: DBSession) -> OptimizationJobRepository:
-    """FastAPI DI factory for `OptimizationJobRepository` (unscoped — see the owned variant)."""
-    return OptimizationJobRepository(session)
-
-
-def get_job_runner(request: Request) -> JobRunner:
-    """Return the app-wide `JobRunner` stashed on `app.state` at startup."""
-    return request.app.state.job_runner
 
 
 # ── Auth dependency ───────────────────────────────────────────────────────────
@@ -202,8 +188,3 @@ async def get_owned_sim_run_repo(
     return SimRunRepository(session, owner_id=str(current_user.id))
 
 
-async def get_owned_optimization_job_repo(
-    session: DBSession, current_user: CurrentUser
-) -> OptimizationJobRepository:
-    """FastAPI DI factory for an `OptimizationJobRepository` scoped to the current user's rows."""
-    return OptimizationJobRepository(session, owner_id=str(current_user.id))

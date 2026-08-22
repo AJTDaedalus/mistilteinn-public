@@ -1,6 +1,5 @@
 """FastAPI app factory: lifespan startup/shutdown, middleware, and router wiring."""
 
-import asyncio
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -18,27 +17,25 @@ from app.middleware.body_size import BodySizeLimitMiddleware
 from app.middleware.rate_limit import limiter
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.repositories.session import SessionRepository
-from app.services.job_runner import JobRunner, run_orphan_sweep
 
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
-    """Wait for the database, purge expired sessions/orphaned jobs, run the job runner."""
+    """Wait for the database and purge expired sessions.
+
+    C.6 removed the background job runner along with the endpoints it served. The orphan
+    sweep went with it: it existed to fail jobs a restart had interrupted, and there are no
+    jobs. Searching moved to the browser (DESIGN §3.5), where a search interrupted by a
+    closed tab needs no server-side reconciliation.
+    """
     await wait_for_db()
     async with async_session_factory() as db:
         deleted = await SessionRepository(db).delete_expired()
         if deleted:
             logger.info("Startup: purged %d expired sessions", deleted)
-    await run_orphan_sweep(async_session_factory)
-    loop = asyncio.get_event_loop()
-    runner = JobRunner(max_workers=2, session_factory=async_session_factory, loop=loop)
-    _app.state.job_runner = runner
-    try:
-        yield
-    finally:
-        runner.shutdown(wait=False)
+    yield
 
 
 async def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:  # noqa: ARG001

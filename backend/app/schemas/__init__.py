@@ -13,17 +13,9 @@ The Genshin schemas arrive with the surfaces that need them — Chunk F (damage)
 """
 
 from app.schemas.common import PaginatedResponse
-from app.schemas.optimization_job import (
-    OptimizationJobRead,
-    OptimizationJobStatus,
-    OptimizationJobSummary,
-)
 from app.schemas.team import TeamCreate, TeamRead, TeamUpdate
 
 __all__ = [
-    "OptimizationJobRead",
-    "OptimizationJobStatus",
-    "OptimizationJobSummary",
     "PaginatedResponse",
     "TeamCreate",
     "TeamRead",

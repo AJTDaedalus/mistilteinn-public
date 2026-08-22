@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from pydantic import BaseModel, Field, field_validator
 
 from app.formula.genshin import tags
@@ -139,109 +137,6 @@ class EnemySpec(BaseModel):
             channel: self.resistances.get(channel, self.default_resistance)
             for channel in tags.DAMAGE_CHANNELS
         }
-
-
-class OptimizeRequest(BaseModel):
-    """Body for `POST /builds/{id}/optimize`."""
-
-    hit: HitSpec
-    enemy: EnemySpec = EnemySpec()
-    top_n: int = Field(10, ge=1, le=50)
-    #: `{quantity: minimum}` over resolved stats — an energy-recharge floor, typically.
-    min_stats: dict[str, float] = {}
-    #: `{set nanoka_id: minimum pieces}`.
-    required_sets: dict[int, int] = {}
-    #: `{slot: artifact id}` — "I am not re-rolling my flower".
-    locked_slots: dict[str, str] = {}
-    #: Candidates each slot keeps in the lossy prefilter. `null` decides from the time
-    #: budget; `-1` refuses to prune and searches exhaustively.
-    prefilter_top_k: int | None = None
-
-
-class OptimizedArtifact(BaseModel):
-    """One piece of a returned build."""
-
-    artifact_id: str
-    slot: str
-
-
-class OptimizedBuildRead(BaseModel):
-    """One scored combination."""
-
-    damage: float
-    artifact_ids: list[str]
-    set_counts: dict[int, int]
-    #: The build's account of itself: every contribution, in registration order. A
-    #: recommendation nobody can interrogate is one nobody should act on (DESIGN §1 A6).
-    contributions: list[dict[str, Any]] = []
-
-
-class SearchTransparency(BaseModel):
-    """What the search skipped, and whether the answer is proven optimal.
-
-    `is_exact` is False only when the **lossy** layer fired. Pareto pruning is arithmetic —
-    a dominated piece cannot appear in an optimal build — so it does not appear here;
-    marking a losslessly-pruned search inexact would train a reader to ignore the flag on
-    the runs where it means something.
-    """
-
-    evaluated: int
-    total_space: int
-    rejected_by_sets: int
-    rejected_by_stats: int
-    pareto_removed: int
-    prefiltered: int
-    effective_k: int | None = None
-    is_exact: bool
-    summary: str
-    #: Set affixes skipped because their effect is conditional text (Chunk H). Reported so
-    #: "why is my 4-piece not showing up" has an answer.
-    skipped_conditional_bonuses: int = 0
-    #: How many owned pieces the search actually looked at, and how many the caller owns.
-    #: They differ only when the per-request inventory cap bit — a bound on coverage the
-    #: response does not mention reads as "searched everything".
-    inventory_considered: int = 0
-    inventory_total: int = 0
-
-
-class OptimizeResponse(BaseModel):
-    """The ranked builds, and an honest account of the search that found them."""
-
-    builds: list[OptimizedBuildRead]
-    search: SearchTransparency
-
-
-class RankRequest(BaseModel):
-    """Body for `POST /builds/{id}/rank-artifacts`.
-
-    One context per request here: ranking across several builds at once is real and useful
-    (`artifact_ranker` takes a list), but it needs a request shape that names them, and the
-    route is scoped to one build's id. `TODO(chunk-G.6c-multi)`.
-    """
-
-    hit: HitSpec
-    enemy: EnemySpec = EnemySpec()
-    slot: str | None = None
-    limit: int = Field(50, ge=1, le=500)
-
-
-class RankedArtifactRead(BaseModel):
-    """One artifact's marginal value against the build as currently equipped."""
-
-    artifact_id: str
-    slot: str
-    #: Percentage change against the equipped build. **Negative for a downgrade** — clamping
-    #: would report "no change", the opposite of what it tells a player.
-    improvement_pct: float
-    damage: float
-
-
-class RankResponse(BaseModel):
-    """Every candidate, best first, and what it is being compared against."""
-
-    baseline_damage: float
-    artifacts: list[RankedArtifactRead]
-    skipped_conditional_bonuses: int = 0
 
 
 class ExplainRequest(BaseModel):
@@ -405,17 +300,3 @@ class CompareWeaponsResponse(BaseModel):
     caveat: str
 
 
-class JobAccepted(BaseModel):
-    """202 body: the search was too large to answer inside the request.
-
-    Returned instead of `OptimizeResponse` when the estimated combination count exceeds what
-    `optimizer_job_service.SYNC_SECONDS` allows. Poll `poll_url` until `status` is terminal.
-
-    `estimated_combinations` and `sync_limit` are both here so "why did this become a job"
-    is answerable from the response, without reading the source or guessing at a threshold.
-    """
-
-    job_id: str
-    poll_url: str
-    estimated_combinations: int
-    sync_limit: int

@@ -1,11 +1,14 @@
 """Owner scoping is a security boundary — cross-owner reads and writes must not resolve.
 
-**Port state.** B.12 rewrote this file. fairy's version covered `BuildRepository`,
-`DiscRepository`, `ComboRepository` and `OptimizationJobRepository`; the first three were
-deleted in B.7 along with their models. What remains is the same property tested against the
-two owner-scoped repositories that survive — `TeamRepository` and
-`OptimizationJobRepository` — plus the `get_all` scoping that `BaseRepository` subclasses
-rely on.
+**Port state.** B.12 rewrote this file for the surviving repositories, and C.6 moved its
+second half again: `OptimizationJobRepository` went with the endpoints it served, so its
+cases now cover **`SimRunRepository`** instead.
+
+That is an upgrade rather than a substitution. The job repository was owner-scoped as
+housekeeping; the sim-run cache is owner-scoped as its **entire threat model** — the browser
+computes those numbers, so a tampered client can submit whatever it likes, and scoping is
+what confines the damage to the caller's own cache (`app/models/sim_run.py`). A leak there
+serves another user a confident damage figure for a build they never asked about.
 
 This is not a formality: the owner filter lives in each repository rather than in the route,
 so a repository that forgets it leaks another user's rows through a perfectly ordinary
@@ -20,10 +23,10 @@ import uuid
 from typing import TYPE_CHECKING
 
 from app.models.enums import UserStatus
-from app.models.optimization_job import OptimizationJob
+from app.models.sim_run import SimRun
 from app.models.team import Team
 from app.models.user import User
-from app.repositories.optimization_job import OptimizationJobRepository
+from app.repositories.sim_run import SimRunRepository
 from app.repositories.team import TeamRepository
 
 if TYPE_CHECKING:
@@ -52,16 +55,18 @@ async def _make_team(db_session: AsyncSession, owner: User, name: str = "Team") 
     return team
 
 
-async def _make_job(db_session: AsyncSession, owner: User) -> OptimizationJob:
-    job = OptimizationJob(
+async def _make_run(db_session: AsyncSession, owner: User, *, bucket: int = 180) -> SimRun:
+    run = SimRun(
         owner_id=str(owner.id),
-        job_type="optimizer",
-        status="queued",
-        request={},
+        context_key=hashlib.sha256(f"{owner.id}:{bucket}".encode()).hexdigest(),
+        er_bucket=bucket,
+        gcsim_pin="0" * 40,
+        result={"statistics": {"iterations": 1, "dps": {"mean": 1.0, "sd": 0.0}}},
+        dps_mean=1.0,
     )
-    db_session.add(job)
+    db_session.add(run)
     await db_session.flush()
-    return job
+    return run
 
 
 # ── TeamRepository ────────────────────────────────────────────────────────────
@@ -142,25 +147,47 @@ async def test_team_count_scoped_to_owner(db_session: AsyncSession) -> None:
     assert (await TeamRepository(db_session).count()) == 3
 
 
-# ── OptimizationJobRepository ─────────────────────────────────────────────────
+# ── SimRunRepository ──────────────────────────────────────────────────────────
 
 
-async def test_job_get_by_id_cross_owner_returns_none(db_session: AsyncSession) -> None:
+async def test_sim_run_get_by_id_cross_owner_returns_none(db_session: AsyncSession) -> None:
     owner = await _make_user(db_session, f"a_{uuid.uuid4().hex[:8]}@test.example")
     other = await _make_user(db_session, f"b_{uuid.uuid4().hex[:8]}@test.example")
-    job = await _make_job(db_session, owner)
+    run = await _make_run(db_session, owner)
 
-    repo = OptimizationJobRepository(db_session, owner_id=str(other.id))
+    repo = SimRunRepository(db_session, owner_id=str(other.id))
 
-    assert (await repo.get_by_id(str(job.id))) is None
+    assert (await repo.get_by_id(str(run.id))) is None
 
 
-async def test_job_list_scoped_to_owner(db_session: AsyncSession) -> None:
+async def test_sim_run_list_scoped_to_owner(db_session: AsyncSession) -> None:
     owner = await _make_user(db_session, f"a_{uuid.uuid4().hex[:8]}@test.example")
     other = await _make_user(db_session, f"b_{uuid.uuid4().hex[:8]}@test.example")
-    mine = await _make_job(db_session, owner)
-    await _make_job(db_session, other)
+    mine = await _make_run(db_session, owner)
+    await _make_run(db_session, other)
 
-    jobs = await OptimizationJobRepository(db_session, owner_id=str(owner.id)).get_all()
+    runs = await SimRunRepository(db_session, owner_id=str(owner.id)).get_all()
 
-    assert [str(j.id) for j in jobs] == [str(mine.id)]
+    assert [str(r.id) for r in runs] == [str(mine.id)]
+
+
+async def test_sim_run_cache_lookup_does_not_cross_owners(db_session: AsyncSession) -> None:
+    """The one that matters most: a *cache hit* for someone else's run.
+
+    `get_by_id` leaking is bad and obvious. This is the quiet version — the cache is read by
+    `(context_key, er_bucket, pin)`, and two users optimising the same character at the same
+    ER produce **the same context key**. Without the owner filter, one user's submitted
+    numbers would answer the other's search and look exactly like a legitimate hit.
+    """
+    owner = await _make_user(db_session, f"a_{uuid.uuid4().hex[:8]}@test.example")
+    other = await _make_user(db_session, f"b_{uuid.uuid4().hex[:8]}@test.example")
+    run = await _make_run(db_session, owner)
+
+    theirs = SimRunRepository(db_session, owner_id=str(other.id))
+
+    assert (await theirs.get(
+        context_key=run.context_key, er_bucket=run.er_bucket, gcsim_pin=run.gcsim_pin,
+    )) is None
+    assert (await theirs.get_buckets(
+        context_key=run.context_key, gcsim_pin=run.gcsim_pin,
+    )) == []

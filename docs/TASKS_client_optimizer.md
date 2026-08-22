@@ -236,62 +236,42 @@ one layer up**, and it gets B.6's treatment: delete the ZZZ concepts rather than
   CPU backend, and porting the product loop to a compute shader is where DESIGN §2's billion
   permutations per second actually comes from.
 
-### [!] C.6 — Delete the Python chain and optimizer **[DEFERRED — two reasons the plan did not foresee]**
-- **Do:** only once C.3–C.5 pass. `formula/genshin/*`, `stat_calculator`,
-  `damage_calculator`, `artifact_optimizer`, `artifact_prefilter`, `artifact_ranker`, and the
-  server-side optimize/rank endpoints.
-- **Why:** the rule `_ported/README.md` states — delete each file when its port lands.
-- **Accept:** suite green without them; `optimization_jobs` retargeted to re-pin regeneration
-  (DESIGN §5).
+### [x] C.6 — Delete the Python chain and optimizer — **done, as the shrunk version**
 
-**Not done, and deliberately.** C.3–C.5 pass, which was the stated precondition. Two things
-the plan could not have known then say to wait:
+Owner ruling, 2026-08-22: *"I don't see this as a functional app until bare minimum the
+completion of the current plan. No need to keep things we don't need just for interim
+functionality."* — so option 2: delete now, accept the gap.
 
-1. **Nothing in the UI reaches the client search yet.** `search.ts` is a library with gates;
-   no page calls it. Deleting the server endpoints now would leave the product with **no
-   reachable optimizer at all** — the server path removed and the client path not yet wired
-   to anything. The order has to be: make the browser search user-reachable, *then* delete
-   what it replaces.
-2. **The Python chain generates the gates' own fixtures.** `scripts/kernel/generate_cases.py`
-   and `generate_search_cases.py` import it to produce the 2,000 damage cases and the 40
-   search cases that C.3, C.4 and C.5 all read. Deleting it freezes those fixtures: they stop
-   being derived and become hand-maintained data, and a new mechanic (a transformative
-   reaction, say) would have no way to produce expected values.
+**Deleted — the reachable surface and everything that existed only to serve it:**
+`POST /builds/{id}/optimize`, `POST /builds/{id}/rank-artifacts`, the five `optimizer-jobs`
+routes, `optimizer_job_service`, `job_runner`, `artifact_ranker`, the `OptimizationJob`
+model/repository/schemas, their DI factories, the startup orphan sweep, and the
+`optimization_jobs` table (migration `d5f1a7c3e920`). **31 API paths → 26.**
 
-**What C.6 should become**, when it happens: delete the *production surface* — the
-optimize/rank endpoints, their schemas, their DI wiring — and keep the chain as **test
-infrastructure** feeding the generators, the way `bench_optimizer.py` and
-`build_key_snapshot.py` are already tools rather than product. That is a smaller, safer claim
-than "delete the chain", and it does not leave A6 violated: one implementation ships, the
-other exists only to check it, which is what an oracle is.
+**Kept — and each for a stated, checkable reason, not "we might want it":**
 
-**Unblocks when** a page uses `search.ts`. Re-checked when the rest of the plan closed, and
-it is still blocked — but the reason has narrowed to one thing, and that thing is a decision
-rather than a task.
+- **`artifact_optimizer.optimize` and `artifact_prefilter`.** Not dead code:
+  `scripts/kernel/generate_search_cases.py` runs `optimize()` to produce the 40 fixtures the
+  browser kernel's search gate is checked against, and `tests/perf` measures it to pin
+  `SECONDS_PER_COMBINATION`. Both are CI gates. It ships as **the oracle the client is
+  verified against** — the same role gcsim already holds without being shipped.
+- **`build_combination_log` and its helpers**, because `build_explanation` and
+  `weapon_comparison` read a build's damage through them. That must stay the single
+  definition of what five artifacts are worth (A6).
 
-Everything the browser needs to run a search now exists **except a screen to run it from**:
+**The ranker went.** After the endpoint, it had zero callers, and a module with tests but no
+caller drifts silently: its own tests keep passing while the chain beneath it moves. It is at
+`b16dbbd:backend/app/services/artifact_ranker.py` when the ranking UI wants it back.
 
-| piece | state |
-|---|---|
-| the kernel, CPU and GPU | C.3–C.5, gated against 2,000 cases |
-| the five-slot search | C.4, gated against 40 fixtures from the Python optimizer |
-| the inventory, held and revalidated | D.1, `GET /artifacts/inventory` |
-| retrieval with its measured error | D.2/D.3 |
-| explanation and weapon comparison | D.4/D.5 |
-| **the base stats a search starts from** | **no endpoint returns them in kernel shape** |
-| **a page to drive it** | **does not exist** |
+**Tests were ported, not deleted.** The cases written against `/optimize` that tested
+properties outliving it — set bonuses counted once, a character-less build refused, channel
+and scope validation, enemy profiles supplying the target, cross-owner 404 — now run against
+`/explain`, which reaches the same evaluator. Only the ones about the *search* went: ranking,
+transparency counters, inventory coverage. `test_owner_scoped_repositories` moved its second
+half from `OptimizationJobRepository` to **`SimRunRepository`**, an upgrade rather than a
+substitution: the job repo was owner-scoped as housekeeping, the sim-run cache is owner-scoped
+as its entire threat model.
 
-The last two are a **new chunk**, not a task in this file, and the repo's rule is that a
-chunk gets a DESIGN doc before any code. So C.6 stays deferred, and what it waits on is the
-owner's call between:
-
-1. **Build the client-optimizer UI first** — a search-context endpoint plus the page — then
-   delete the server surface once the browser can do the job. C.6 lands last and the product
-   is never without an optimizer.
-2. **Delete the server surface now** and accept that nothing can run an optimization until
-   the UI lands. Honest, smaller, and leaves the product briefly without a headline feature.
-
-Option 1 is the one the deferral note already argued for. Neither is a code question.
 
 ---
 

@@ -11,8 +11,18 @@ model — was deleted in B.2 (`refactor: delete ZZZ services`). What survives is
 game-agnostic infrastructure:
 
     password.py    bcrypt hashing
-    job_runner.py  bounded threadpool + cooperative cancellation + job lifecycle
+
+`job_runner.py` was here too, and C.6 deleted it with the endpoints it served: searching
+moved to the browser (DESIGN §3.5), so there is no long-running server work left to queue,
+cancel or sweep after a restart.
 
 `_ported/` holds read-only porting source and is not importable; see its README.
-The Genshin services arrive in Chunks F (stats, damage) and G (artifact optimizer).
+
+**What C.6 kept, and why.** `artifact_optimizer` and `artifact_prefilter` have no route and
+are not dead: `scripts/kernel/generate_search_cases.py` runs `optimize()` to produce the 40
+fixtures the browser kernel's search gate is checked against, and `tests/perf` measures it to
+pin `SECONDS_PER_COMBINATION`. They ship as the oracle the client is verified against, the
+same role gcsim already has. `build_combination_log` and its helpers stay for a second
+reason: `build_explanation` and `weapon_comparison` read a build's damage through them, and
+that must remain the single definition of what five artifacts are worth.
 """
