@@ -279,9 +279,31 @@ Only once the kernel passes are the Python modules deleted, under the rule
 
 ## 7. Open questions
 
-- **OQ-S3:** does the browser hold the artifact inventory, or fetch it per search? Postgres
-  is the store, but shipping a 2,000-piece inventory to the client on every search is a
-  design choice with a real latency cost and an obvious cache answer.
+- **OQ-S3 — answered in D.1, and on a different axis than this question assumed.** It reads
+  as a latency question. It is not: at 479 bytes per artifact a 2,000-piece account is ~936
+  KB of JSON, ~234 KB gzipped, and 234 KB once per search is not a cost worth designing
+  around. What actually separates the two options is **staleness**. A held inventory is
+  wrong the moment a GOOD re-import lands, and wrong in the worst way — a search over it
+  recommends artifacts the user no longer owns, with no symptom other than the recommendation
+  being unfollowable.
+
+  So the browser holds it **and revalidates**. `GET /api/v1/artifacts/inventory` returns the
+  whole inventory in one response with a `version` digest, and answers `304 Not Modified` to
+  a matching `If-None-Match`. The version is computed over what a search reads — slot,
+  rarity, level, main stat, substats, set, equipped-to — and deliberately *not* over
+  `updated_at`, so bookkeeping does not force a re-transfer while levelling a piece does.
+
+  Two consequences worth stating:
+
+  - **The endpoint does not page.** `GET /artifacts` pages for a UI list. A search needs the
+    whole inventory *at one instant*, and four paged round-trips have no such instant: a
+    concurrent import shifts every offset under the reader. Above `INVENTORY_CAP` the
+    response says `truncated: true` rather than quietly sending a prefix, because a search
+    told it holds a complete inventory when it holds 20,000 of 25,000 pieces reports the best
+    build *of what it was shown* and calls it the best build.
+  - **This is the §3 rule in a third place.** A retrieved damage number must say what it was
+    retrieved from; a retrieved *inventory* must say what it is a copy of. The version is
+    that statement.
 - **OQ-S4 — answered in C.5, and better than the options this listed.** Neither a GPU runner
   nor an exemption was needed: CI installs `mesa-vulkan-drivers` (lavapipe, a CPU Vulkan
   implementation), Dawn selects the software adapter, and the WGSL kernel runs against the same 2,000 cases as the CPU backend (worst

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import select
+from sqlalchemy import literal_column, select
 from sqlalchemy.dialects.postgresql import insert
 
 from app.models.sim_run import SimRun
@@ -57,12 +57,17 @@ class SimRunRepository(BaseRepository[SimRun]):
         gcsim_pin: str,
         result: dict[str, Any],
         dps_mean: float | None,
-    ) -> SimRun:
-        """Insert, or replace what is there for the same key.
+    ) -> tuple[SimRun, bool]:
+        """Insert, or replace what is there for the same key. Returns `(run, created)`.
 
         Upsert rather than insert-or-fail: two tabs can finish the same context run at once,
         and a unique-violation surfacing to the user as an error would be a worse answer than
         keeping either result — they are the same simulation of the same thing.
+
+        `created` is read from `xmax`, which an upsert leaves at 0 on the rows it inserted
+        and non-zero on the rows it updated. Obscure, but it is the only way to learn which
+        branch fired without a second query that a concurrent tab could invalidate between
+        the two — and a POST that reports 201 while it replaced is a lie about what happened.
         """
         stmt = (
             insert(SimRun)
@@ -78,6 +83,7 @@ class SimRunRepository(BaseRepository[SimRun]):
                 constraint="uq_sim_runs_owner_context_bucket_pin",
                 set_={"result": result, "dps_mean": dps_mean},
             )
-            .returning(SimRun)
+            .returning(SimRun, (literal_column("xmax") == 0).label("created"))
         )
-        return (await self.session.execute(stmt)).scalar_one()
+        row = (await self.session.execute(stmt)).one()
+        return row[0], bool(row.created)

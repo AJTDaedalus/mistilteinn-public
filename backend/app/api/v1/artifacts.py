@@ -5,9 +5,21 @@ artifact belongs to someone, unlike the catalogue, and every route reaches the d
 through a repository already carrying the caller's id.
 """
 
-from typing import Annotated
+from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+import hashlib
+from typing import TYPE_CHECKING, Annotated
+
+from fastapi import (
+    APIRouter,
+    Depends,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    status,
+)
 
 from app.data.importers.good_importer import GoodImportError, parse_good
 from app.dependencies import CurrentUser, DBSession, get_owned_artifact_repo
@@ -19,9 +31,15 @@ from app.schemas.artifact import (
     GoodImportRequest,
     GoodImportResponse,
     ImportRejection,
+    InventorySnapshot,
 )
 from app.schemas.common import PaginatedResponse
 from app.services.good_import_service import ReplaceRefusedError, store_good_import
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from app.models.artifact import Artifact
 
 router = APIRouter(prefix="/artifacts", tags=["artifacts"])
 
@@ -50,6 +68,61 @@ async def list_artifacts(
         total=await repo.count_filtered(**filters),
         offset=offset,
         limit=limit,
+    )
+
+
+#: Pieces one inventory response will carry. Above this the response says so rather than
+#: silently sending a prefix: a search told it has the whole inventory when it has 20,000 of
+#: 25,000 pieces would report a best build that is only the best of what it was shown.
+INVENTORY_CAP = 20_000
+
+
+def _inventory_version(rows: Sequence[Artifact]) -> str:
+    """A digest over what a search would actually read.
+
+    Over the *stats*, not `updated_at`: levelling a piece changes the search, and a touched
+    timestamp on a piece whose numbers did not move does not. A version that changed for
+    bookkeeping would make every revalidation a full transfer, which is the cost this exists
+    to avoid.
+    """
+    parts = [
+        f"{row.id}:{row.slot}:{row.rarity}:{row.level}:{row.main_stat_type}:"
+        f"{row.main_stat_value!r}:{row.artifact_set_id}:{row.build_id}:{row.substats!r}"
+        for row in rows
+    ]
+    return hashlib.sha256("\n".join(parts).encode()).hexdigest()[:32]
+
+
+# Declared before `/{artifact_id}` for the same reason the GOOD import is: a path parameter
+# would otherwise swallow it.
+@router.get("/inventory", response_model=InventorySnapshot)
+async def get_inventory(
+    repo: Annotated[ArtifactRepository, Depends(get_owned_artifact_repo)],
+    response: Response,
+    if_none_match: Annotated[str | None, Header()] = None,
+) -> InventorySnapshot | Response:
+    """The caller's whole inventory at one instant, for the client-side search.
+
+    Answers `304` when the caller already holds this version. See `InventorySnapshot` for
+    why the browser holds it at all (OQ-S3).
+    """
+    rows = await repo.search(offset=0, limit=INVENTORY_CAP + 1)
+    truncated = len(rows) > INVENTORY_CAP
+    rows = rows[:INVENTORY_CAP]
+
+    version = _inventory_version(rows)
+    etag = f'"{version}"'
+    # Weak-comparison-free on purpose: this is a strong ETag over exact bytes of meaning, and
+    # a `W/` prefix from a proxy should miss rather than be normalised into a hit here.
+    if if_none_match is not None and etag in [t.strip() for t in if_none_match.split(",")]:
+        return Response(status_code=status.HTTP_304_NOT_MODIFIED, headers={"ETag": etag})
+
+    response.headers["ETag"] = etag
+    return InventorySnapshot(
+        version=version,
+        artifacts=[ArtifactRead.model_validate(row) for row in rows],
+        total=len(rows),
+        truncated=truncated,
     )
 
 
