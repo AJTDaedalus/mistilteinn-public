@@ -182,10 +182,19 @@ one layer up**, and it gets B.6's treatment: delete the ZZZ concepts rather than
   diverge), DEF mechanics added rather than multiplied (255), and gcsim's reading of the
   0.75 RES boundary (511).
 
-### [ ] C.4 — TypeScript CPU kernel: the five-slot search
+### [x] C.4 — TypeScript CPU kernel: the five-slot search
 - **Do:** the Cartesian product, the bounded top-N heap, and the lossless Pareto layer —
   algorithms ported from G.1/G.3, implementation new.
-- **Accept:** same winners as the Python optimizer on shared fixtures.
+- **Done:** `src/app/sim/search.ts` picks the **same winner as the Python optimizer on all
+  40 shared fixtures**, worst damage divergence 2.275e-07, and the lossless Pareto layer
+  removes the same pieces — arithmetic, so it must agree exactly rather than approximately.
+- **Budget-K deliberately did not port.** It exists in the Python optimizer because a server
+  is slow; DESIGN §2 expects the GPU to search exhaustively, so a lossy layer would trade
+  exactness for time that is not being spent. `isExact` is kept anyway — a flag that is
+  always true today is still the flag that tells you about the day it is not.
+- Verified by injecting three search bugs: Pareto losing its tie-break so identical pieces
+  remove each other (2 cases), grouping by slot without set (35), and a top-N that keeps the
+  worst (40).
 
 ### [ ] C.5 — WGSL GPU backend behind the same interface
 - **Do:** batch evaluation. Mind WGSL's limits (DESIGN §2): no f64, and a permutation id that

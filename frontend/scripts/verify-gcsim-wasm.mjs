@@ -17,10 +17,19 @@ const FRONTEND = join(HERE, '..');
 const REPO = join(FRONTEND, '..');
 
 const WASM = join(FRONTEND, 'gcsim', 'gcsim.wasm');
-const CASE = join(REPO, 'backend', 'tests', 'fixtures', 'crossval', 'ayaka_normal_1.txt');
+// The **no-crit** variant, deliberately. gcsim rolls crit, so re-running the plain case is
+// not deterministic — this check passed five CI runs and then returned 40.894 against an
+// expected 21.706, a ratio of exactly `1 + Ayaka's crit DMG`. It had rolled a crit, and a
+// gate that fails 5% of the time is worse than no gate: it trains people to re-run CI.
+// Forcing crit to zero makes the run reproducible. See the fixtures' PROVENANCE.md.
+const CASE = join(REPO, 'backend', 'tests', 'fixtures', 'crossval', 'ayaka_normal_1_nocrit.txt');
 
-/** What the committed fixture, the native binary and the WASI probe all report. */
-const EXPECTED_DPS = 21.706079870465302;
+/**
+ * Total damage for the no-crit case — the same figure `ayaka_normal_1.json` recorded, since
+ * that roll did not crit either. Compared as a total rather than DPS because the total is
+ * what the fixture states; the DPS is that divided by the 5-second duration.
+ */
+const EXPECTED_TOTAL = 108.53039935232651;
 
 await import(join(FRONTEND, 'gcsim', 'wasm_exec.js'));   // assigns globalThis.Go
 
@@ -40,12 +49,12 @@ globalThis.initializeAggregator(cfg);
 globalThis.initializeWorker(cfg);
 globalThis.aggregate(globalThis.simulate());
 const out = JSON.parse(globalThis.flush());
-const actual = out?.stats?.dps?.mean;
+const actual = out?.stats?.total_damage?.mean;
 
-if (actual !== EXPECTED_DPS) {
+if (actual !== EXPECTED_TOTAL) {
   console.error(
     `gcsim's browser build disagrees with the oracle.\n` +
-      `  expected ${EXPECTED_DPS}\n` +
+      `  expected ${EXPECTED_TOTAL}\n` +
       `  got      ${actual}\n` +
       `This is a blocker, not a rounding note: the crossval fixture, the native binary and ` +
       `the WASI probe all report the expected value, so a fourth answer means the browser ` +

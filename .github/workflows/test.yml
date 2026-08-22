@@ -261,6 +261,12 @@ jobs:
         # about to be widened.
         run: npm run kernel:verify
 
+      - name: Verify the kernel's search against the Python optimizer
+        # C.3's gate pins the kernel's arithmetic; this pins its search. Same inventory, same
+        # winner — including the lossless Pareto layer removing the same pieces, which is
+        # arithmetic rather than a heuristic and so must agree exactly.
+        run: npm run kernel:verify-search
+
       - name: Typecheck
         # `tsconfig.app.json`, **not** the root `tsconfig.json`. The root config has
         # `files: []` and no `include`, so `tsc -p tsconfig.json` compiles nothing and

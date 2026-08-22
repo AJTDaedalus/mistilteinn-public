@@ -196,6 +196,10 @@ def test_ci_runs_the_kernel_differential_gate():
         for step in job.get("steps", [])
     ]
 
+    assert any("kernel:verify-search" in r for r in runs), (
+        "no CI step runs the kernel's search gate. The arithmetic gate does not cover the "
+        "search: a kernel can compute every hit correctly and still pick the wrong build."
+    )
     assert any("kernel:verify" in r for r in runs), (
         "no CI step runs the kernel differential gate. Without it a second damage chain "
         "exists with nothing binding it to the first, which is the whole hazard DESIGN §6 "
