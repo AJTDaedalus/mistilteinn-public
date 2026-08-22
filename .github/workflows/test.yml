@@ -203,7 +203,7 @@ jobs:
           exit 1
 
   frontend:
-    name: "Frontend — lint (unit tests disabled: see TODO(chunk-J))"
+    name: "Frontend — typecheck, lint, unit tests"
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -220,34 +220,23 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Typecheck
+        # `tsconfig.app.json`, **not** the root `tsconfig.json`. The root config has
+        # `files: []` and no `include`, so `tsc -p tsconfig.json` compiles nothing and
+        # exits 0 — it reported a clean frontend while 147 errors sat in the app. That was
+        # caught only by injecting a deliberate type error and noticing it passed too.
+        # `backend/tests/unit/test_ci_typechecks_the_frontend.py` fails if this step or its
+        # project flag goes away.
+        run: npm run typecheck
+
       - name: Lint
-        # eslint only — it does not full-type-check, so it still passes and is worth
-        # keeping. It is the only frontend signal left until Chunk J.
+        # eslint does not full-type-check, which is why the step above exists separately.
         run: npm run lint
 
       - name: Unit tests
-        # =====================================================================
-        # DISABLED — TODO(chunk-J). Do not delete this step.
-        #
-        # `npm test` and `npm run build` both fail to compile: **161 TypeScript
-        # errors**, mostly TS2339/TS2345 against endpoints and schemas that no
-        # longer exist (`/api/v1/agents`, `/api/v1/discs`, `/api/v1/buff-presets/*`,
-        # `/api/v1/damage/*`, `DiscSetSummary`, `WEngineSummary`, …).
-        #
-        # This is not a regression introduced by disabling anything. The SPA is
-        # fairy's ZZZ frontend, frozen until Chunk J by DESIGN §3. It was only ever
-        # green because `frontend/openapi.json` was **stale**: `npm run codegen`
-        # regenerates `api.types.ts` from that committed file on `pretest`, so the
-        # app type-checked against a contract describing 44 endpoints while the
-        # backend served 7. Regenerating the contract (review of PR #1) replaced a
-        # green lane that proved nothing with a red one that is telling the truth.
-        #
-        # `backend/tests/unit/test_openapi_contract_is_current.py` now prevents the
-        # contract from silently drifting again, so this cannot be "fixed" by
-        # letting the spec rot.
-        #
-        # RESTORE WHEN: Chunk J rewrites the disc-shaped pages against the Genshin
-        # API. That is the chunk that makes this compile; nothing smaller will.
-        # =====================================================================
-        if: false
+        # Re-enabled in A.2 (client-optimizer plan). It was disabled with a
+        # `TODO(chunk-J)` because `npm test` and `npm run build` both failed to compile:
+        # 147 TypeScript errors against endpoints and schemas B.6 deleted. The SPA was
+        # fairy's ZZZ frontend, and the fix was that chunk's fix — delete the ZZZ pages
+        # rather than alias them. 8 files, 59 tests.
         run: npm test

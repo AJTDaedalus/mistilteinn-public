@@ -1,7 +1,3 @@
-import type { components } from '../api/api.types';
-
-export type DiscSetSummary = components['schemas']['DiscSetSummary'];
-
 export function extractBasename(path: string | null | undefined): string | null {
   if (!path) return null;
   const parts = path.split('/');
