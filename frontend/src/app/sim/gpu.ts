@@ -136,5 +136,13 @@ export function createGpuKernel(
     return result;
   }
 
-  return { computeDamageBatch, destroy: () => module };
+  return {
+    computeDamageBatch,
+    // Nothing to release: every buffer is destroyed at the end of the call that made it, and
+    // a `GPUShaderModule` has no `destroy`. Kept on the interface so a future backend that
+    // *does* hold resources — a persistent buffer pool, say — can implement it without every
+    // caller changing. An earlier version returned the module here, which type-checks
+    // against `void` and quietly means nothing.
+    destroy: () => undefined,
+  };
 }
