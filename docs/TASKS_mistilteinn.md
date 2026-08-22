@@ -361,11 +361,24 @@ Each task below is **one commit**. Commit message form:
 ### [x] G.1 — `disc_optimizer.py` → `artifact_optimizer.py` (5 slots, fixed flower/plume mains)
 ### [x] G.2 — Per-slot main-stat pools as data
 ### [x] G.3 — Pareto + budget-K pruning, progress and cancellation (`artifact_prefilter.py`)
-### G.4 — `rank_pipeline.py` port
+### [x] G.4 — `rank_pipeline.py` port → `artifact_ranker.py` (marginal value across contexts)
 ### [x] G.5 — `good_importer.py` — GOOD schema validation, reject-don't-coerce on unknown keys
 ### G.6 — Optimizer + builds + artifacts API surface restored
 ### G.7 — Re-baseline `tests/perf` for the 5-slot search space
 ### G.8 — Delete the consumed files from `app/services/_ported/`
+### G.9 — Artifact upgrade-potential scoring **[BLOCKED — needs a citation]**
+
+"What could this +0 piece become at +20" needs the **substat roll schedule**: how many
+additional rolls a piece gains as it levels, per rarity. That rule is not in the committed
+snapshot — `artifact_substat_values.json` publishes the roll *values* and the depots, not
+the schedule — and writing it from memory is exactly what the citation rule forbids. A
+potential score built on a guessed roll count is a confident number with nothing behind it.
+
+**Unblocks when** the schedule is read from a primary source (AnimeGameData's
+`ReliquaryLevelExcelConfigData` / the append-depot rules) and committed the same way E.5
+committed the value tables. Until then `artifact_ranker` ranks pieces as they are.
+
+`TODO(chunk-G.9)` in `app/services/artifact_ranker.py`.
 
 ---
 

@@ -305,11 +305,10 @@ def optimize(
             rejected_by_sets += 1
             continue
 
-        log = build_log(NodeRegistry())
-        log.replay(base_contributions)
-        for candidate in combination:
-            add_artifact(log, resolved[candidate.artifact_id])
-        skipped_conditional |= _apply_set_bonuses(log, counts, bonuses)
+        log, skipped = build_combination_log(
+            base_contributions, combination, bonuses, resolved=resolved, counts=counts,
+        )
+        skipped_conditional |= skipped
 
         evaluator = BuildEvaluator(
             registry=log.registry, enemy=enemy, character_level=character_level,
@@ -352,6 +351,42 @@ def optimize(
         skipped_conditional_bonuses=len(skipped_conditional),
         prefilter=report,
     )
+
+
+def build_combination_log(
+    base_contributions: Sequence[Contribution],
+    combination: Sequence[ArtifactCandidate],
+    bonuses: dict[int, list[SetBonus]],
+    *,
+    resolved: dict[str, ArtifactStats] | None = None,
+    counts: dict[int, int] | None = None,
+) -> tuple[ContributionLog, set[tuple[int, int]]]:
+    """Everything a five-piece build contributes, as one log. The only definition of it.
+
+    Both the search (`optimize`) and the ranker read a build's damage through this, so
+    "what a set of five artifacts is worth" cannot come to mean two different things —
+    A6's one-mechanic rule at the point where a second opinion would be plausible enough to
+    go unnoticed for months.
+
+    `resolved` and `counts` are the search's caches, passed in when it already has them and
+    computed here when a caller does not.
+    """
+    if counts is None:
+        counts = _count_sets(combination)
+    log = build_log(NodeRegistry())
+    log.replay(base_contributions)
+    for candidate in combination:
+        stats = (
+            resolved[candidate.artifact_id] if resolved is not None
+            else _validated_stats(candidate)
+        )
+        add_artifact(log, stats)
+    return log, _apply_set_bonuses(log, counts, bonuses)
+
+
+def bonuses_by_set(bonuses: Iterable[SetBonus]) -> dict[int, list[SetBonus]]:
+    """Group set bonuses the way `build_combination_log` wants them."""
+    return _bonuses_by_set(bonuses)
 
 
 def _bucket_by_slot(
