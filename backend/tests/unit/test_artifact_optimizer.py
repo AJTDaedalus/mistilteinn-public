@@ -113,11 +113,18 @@ def test_it_picks_the_better_of_two_goblets():
 
 def test_top_n_bounds_what_is_kept_not_what_is_scored():
     inventory = _one_of_each()
+    # Trading ATK% against CRIT DMG, so no circlet dominates another and the lossless
+    # Pareto layer (G.3) has nothing to remove — this test is about `top_n`, and it should
+    # fail for `top_n` reasons only. The bare circlet from `_one_of_each` *is* dominated by
+    # all five, which is why six pieces produce five combinations.
     for index in range(5):
         inventory.append(ArtifactCandidate(
             artifact_id=f"circlet-{index}", slot="equip_dress", set_id=1, rarity=5,
             level=20, main_stat="FIGHT_PROP_CRITICAL_HURT",
-            substats=({"stat": "FIGHT_PROP_ATTACK_PERCENT", "value": 0.05 * index},),
+            substats=(
+                {"stat": "FIGHT_PROP_ATTACK_PERCENT", "value": 0.05 * (5 - index)},
+                {"stat": "FIGHT_PROP_CRITICAL_HURT", "value": 0.05 * index},
+            ),
         ))
 
     result = optimize(
@@ -125,7 +132,7 @@ def test_top_n_bounds_what_is_kept_not_what_is_scored():
         constraints=OptimizerConstraints(top_n=3),
     )
 
-    assert result.evaluated == 6
+    assert result.evaluated == 5
     assert len(result.builds) == 3
     # Descending, so the caller can read the first as the answer.
     assert [b.damage for b in result.builds] == sorted(
@@ -357,12 +364,24 @@ def test_the_skipped_bonus_count_counts_tiers_not_combinations():
         set_id=1, pieces_required=4,
         add_props=({"prop_type": "FIGHT_PROP_NONE", "value": 0},),
     )
+    # Three circlets, each best at a different stat, so all three survive the Pareto layer
+    # and the search really does run three combinations. Identical spare circlets would
+    # collapse to one and quietly restore the single-combination blind spot this test
+    # exists to close.
     inventory = _one_of_each()
-    for index in range(2):
+    for index, substat in enumerate((
+        {"stat": "FIGHT_PROP_ATTACK_PERCENT", "value": 0.15},
+        {"stat": "FIGHT_PROP_CRITICAL", "value": 0.10},
+    )):
         inventory.append(ArtifactCandidate(
             artifact_id=f"extra-circlet-{index}", slot="equip_dress", set_id=1, rarity=5,
-            level=20, main_stat="FIGHT_PROP_CRITICAL_HURT",
+            level=20, main_stat="FIGHT_PROP_CRITICAL_HURT", substats=(substat,),
         ))
+    inventory[4] = ArtifactCandidate(
+        artifact_id="circlet", slot="equip_dress", set_id=1, rarity=5, level=20,
+        main_stat="FIGHT_PROP_CRITICAL_HURT",
+        substats=({"stat": "FIGHT_PROP_CRITICAL_HURT", "value": 0.15},),
+    )
 
     result = optimize(
         _base(), inventory, HIT, ORDINARY, character_level=90, set_bonuses=[conditional],

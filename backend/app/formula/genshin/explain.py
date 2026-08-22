@@ -33,6 +33,8 @@ from app.formula.builder import const
 from app.formula.genshin.tags import ALL_SOURCES, Q, stat_tag
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from app.formula.tags import Tag
     from app.pando.calculator import NodeRegistry
 
@@ -108,6 +110,18 @@ class ContributionLog:
                 quantity=quantity, value=value, source=source, note=note, tag=registration,
             ),
         )
+
+    def replay(self, contributions: Iterable[Contribution]) -> None:
+        """Re-register contributions recorded by another log.
+
+        The character-and-weapon half of a build does not change while an optimizer varies
+        artifacts, so it is resolved once and replayed onto each fresh log rather than
+        rebuilt. Replaying goes back through `add`, not around it: a contribution restored
+        by assignment would skip the tag/quantity agreement check, and a log that can be
+        populated two ways is a log with two definitions of what it means.
+        """
+        for c in contributions:
+            self.add(c.quantity, c.value, c.source, c.note, tag=c.tag)
 
     def for_quantity(self, quantity: str) -> list[Contribution]:
         """Everything recorded against one quantity, in registration order."""
