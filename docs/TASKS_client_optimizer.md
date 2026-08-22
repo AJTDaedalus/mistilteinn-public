@@ -34,7 +34,7 @@ one layer up**, and it gets B.6's treatment: delete the ZZZ concepts rather than
   branch policy names them.
 - **Accept:** `git branch --show-current` is `feat/client-optimizer`.
 
-### [ ] A.1 — Pin the real compile gate
+### [x] A.1 — Pin the real compile gate
 - **Do:** a check that type-checks `tsconfig.app.json`, and CI runs it.
 - **Why it is task one:** the root `tsconfig.json` has `files: []` and no `include`, so
   `npx tsc --noEmit -p tsconfig.json` exits 0 on a project with 147 errors. That reads as a
@@ -44,12 +44,16 @@ one layer up**, and it gets B.6's treatment: delete the ZZZ concepts rather than
 - **Tests:** a CI step, plus the equivalent of `test_ci_runs_the_perf_gate.py` proving the
   step exists and names `tsconfig.app.json`.
 
-### [ ] A.2 — Delete the ZZZ feature pages
+### [x] A.2 — Delete the ZZZ feature pages
 - **Do:** delete `pages/{builds,rank,calculate,optimize,discs}` (~150 files) and the ZZZ
   `shared/` modules — `agent-picker`, `wengine-picker`, `disc-list`, `disc-rolls`,
   `stage-buffs`, `buff-context.store`, `buff-presets.service`, `custom-buff-id`. Drop their
   routes.
-- **Do not** delete `pages/{auth,landing,teams,import}` — game-neutral or still served.
+- **Revised during execution:** `teams` and `import` had to go too. Both import from the
+  deleted `builds` module — `teams` for its build list and combo builder, `import` for the
+  ZZZ disc scanner — so they were coupled to ZZZ concepts rather than merely adjacent. Their
+  Genshin replacements are A.3's job (`teams` against `/api/v1/builds`, `import` against the
+  GOOD endpoint G.6b shipped). `auth` and `landing` survive.
 - **Commit message:** `refactor: delete ZZZ frontend pages (was fairy@76909c4:<path>)`,
   matching B.6's form.
 - **Accept:** `tsc -p tsconfig.app.json` is **clean**; `npm run lint` clean; the app builds
@@ -61,7 +65,7 @@ one layer up**, and it gets B.6's treatment: delete the ZZZ concepts rather than
 - **Accept:** each page renders from `/api/v1/...` with no hand-written types; `npm run codegen`
   is the only source of API types.
 
-### [ ] A.4 — Re-enable the frontend test lane
+### [x] A.4 — Re-enable the frontend test lane **(done with A.2 — the tests already passed once the ZZZ pages were gone)**
 - **Do:** CI runs `npm test` — currently a disabled step with a `TODO(chunk-J)`.
 - **Accept:** the step runs and is required. A skipped check is not a pass.
 

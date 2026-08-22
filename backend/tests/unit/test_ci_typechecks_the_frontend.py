@@ -1,0 +1,100 @@
+"""CI must type-check the frontend **against the project that has files in it**.
+
+`frontend/tsconfig.json` has `files: []` and no `include`. `tsc --noEmit -p tsconfig.json`
+therefore compiles nothing and exits 0 — it reported a clean frontend while **147 errors**
+sat in the app, and an injected type error passed too. Only `tsconfig.app.json`
+(`include: ["src/**/*.ts"]`) actually checks anything.
+
+So the risk this guards is not "someone deletes the step". It is "someone points the step at
+the wrong project and it goes green" — which is worse, because it looks like a passing gate.
+
+Same shape as `test_ci_runs_the_perf_gate.py`, and **parsed rather than grepped** for the
+same reason: a workflow that merely mentions `tsconfig.app.json` in a comment would satisfy a
+substring search.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+from pathlib import Path
+from typing import Any
+
+import pytest
+import yaml
+
+REPO = Path(__file__).resolve().parents[3]
+WORKFLOW = REPO / ".github" / "workflows" / "test.yml"
+FRONTEND = REPO / "frontend"
+
+#: The only tsconfig in the frontend that compiles anything.
+REAL_PROJECT = "tsconfig.app.json"
+
+
+def _frontend_steps() -> list[dict[str, Any]]:
+    workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    return [
+        step
+        for job in workflow["jobs"].values()
+        if job.get("defaults", {}).get("run", {}).get("working-directory") == "frontend"
+        for step in job.get("steps", [])
+    ]
+
+
+def test_a_ci_step_typechecks_the_frontend():
+    steps = [s for s in _frontend_steps() if "typecheck" in str(s.get("run", ""))]
+
+    assert steps, (
+        "no CI step runs the frontend typecheck. eslint does not full-type-check, so "
+        "without this the lane is green on a project that does not compile — which is "
+        "exactly the state it was in until the client-optimizer plan's A.2."
+    )
+
+
+def test_the_typecheck_script_names_the_project_that_has_files():
+    """The failure mode is a green gate pointing at an empty project, not a missing gate."""
+    scripts = json.loads((FRONTEND / "package.json").read_text())["scripts"]
+
+    assert "typecheck" in scripts, "package.json has no `typecheck` script for CI to run"
+    assert REAL_PROJECT in scripts["typecheck"], (
+        f"the typecheck script does not name {REAL_PROJECT}. The root tsconfig.json has "
+        f"`files: []` and compiles nothing, so pointing at it exits 0 on any number of "
+        f"errors: got {scripts['typecheck']!r}"
+    )
+
+
+def test_the_root_tsconfig_still_compiles_nothing():
+    """Pins the reason this guard exists, so a future reader does not 'simplify' it away.
+
+    If someone ever gives the root config an `include`, this test failing is the prompt to
+    re-read the guard rather than to delete it.
+    """
+    raw = (FRONTEND / "tsconfig.json").read_text()
+    # Angular ships tsconfig with both `//` and `/* */` comments, and `json` accepts
+    # neither. Stripping only line comments left a block comment behind and the parse
+    # failed, which would have read as "the root config changed" — a guard failing for a
+    # reason that has nothing to do with what it guards.
+    without_blocks = re.sub(r"/\*.*?\*/", "", raw, flags=re.S)
+    stripped = "\n".join(
+        line for line in without_blocks.splitlines() if not line.strip().startswith("//")
+    )
+    config = json.loads(stripped)
+
+    assert config.get("files") == [], (
+        "frontend/tsconfig.json no longer has `files: []` — re-check whether the typecheck "
+        "script should still target tsconfig.app.json"
+    )
+    assert "include" not in config
+
+
+def test_the_frontend_unit_tests_are_not_disabled():
+    """`if: false` is how this lane spent the whole port reporting success on nothing."""
+    for step in _frontend_steps():
+        if str(step.get("run", "")).strip() == "npm test":
+            assert step.get("if") is not False, (
+                "the frontend unit-test step is disabled again. A skipped check is not a "
+                "pass — this repo's rule, and the reason the step carried a TODO rather "
+                "than being deleted."
+            )
+            return
+    pytest.fail("no CI step runs `npm test`")
