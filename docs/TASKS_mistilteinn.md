@@ -407,6 +407,31 @@ is its own change — but a fourth instance should not be discovered the same wa
 
 ---
 
+## Chunk S — gcsim-embed spike **[timeboxed ~2–3 sessions]**
+
+**Inserted 2026-08-22, and it is why the lettering now jumps.** The BRIEF's phase order is
+`optimizer/GOOD → gauge sim → kit corpus rolling`, with *"gcsim-embed spike sits at the front
+of the gauge-sim phase"*. TASKS was written with no chunk for the gauge sim at all and went
+straight from G to the kit corpus — recorded as an ESCALATION in `LOG_mistilteinn.md` at the
+end of Chunk G, and resolved by the owner answering **OQ-M2: run the spike**.
+
+Lettered `S` rather than renumbering H–K: those letters are referenced by `TODO(chunk-H)` and
+`TODO(chunk-J)` markers throughout the tree and by four merged PR titles, and renumbering
+would invalidate every one of them to buy alphabetical tidiness.
+
+**This chunk ends in a recommendation, not an implementation.** The BRIEF's framing is the
+whole point: *"If integration is clean, it collapses the hardest phase; if not, walk away
+with better crossval tooling."* Walking away is a success condition.
+
+- **S.1** — Can gcsim be driven programmatically at all? Interface, inputs, outputs.
+- **S.2** — Go→WASM and sidecar, both costed. Which can this stack actually host?
+- **S.3** — Throughput: what a single run costs, against what the optimizer and the rotation
+  model would each need.
+- **S.4** — Coverage: what gcsim gives that the Chunk F chain does not, and what it demands
+  that this repo cannot supply (frame data, action lists, per-character implementations).
+- **S.5** — `docs/RESEARCH_gcsim_embed.md` + a recommendation, and reconcile TASKS' chunk
+  order with the BRIEF's phase order either way.
+
 ## Chunk H — Kit corpus, modifier DSL, validation harness **[Planner: own DESIGN doc first]**
 
 **DESIGN §1 A6 makes this chunk's schema the load-bearing artifact of the legibility ruling.**
