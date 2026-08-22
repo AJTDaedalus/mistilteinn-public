@@ -35,7 +35,7 @@ matters which.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any
 
 from app.models.enums import ArtifactSlot, Rarity
@@ -125,6 +125,12 @@ class ParsedArtifact:
     set_key: str
     location: str = ""
     lock: bool = False
+    #: Where this record sat in the export's `artifacts` array. Carried because a rejection
+    #: reported later — by the *importer*, for a set this database does not know — has to
+    #: name the same record the user is looking at. Enumerating the surviving artifacts
+    #: gives an index into the filtered list, which drifts from the file by however many
+    #: records the parser refused before it.
+    source_index: int = -1
 
 
 @dataclass(frozen=True, slots=True)
@@ -153,7 +159,7 @@ def parse_good(payload: dict[str, Any]) -> GoodImportResult:
     rejected: list[RejectedArtifact] = []
     for index, record in enumerate(payload.get("artifacts") or []):
         try:
-            parsed.append(_parse_artifact(record))
+            parsed.append(replace(_parse_artifact(record), source_index=index))
         except GoodImportError as exc:
             rejected.append(RejectedArtifact(index=index, reason=str(exc), record=record))
 

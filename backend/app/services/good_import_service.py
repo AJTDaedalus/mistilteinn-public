@@ -1,0 +1,180 @@
+"""Turn a parsed GOOD export into rows in this user's `artifacts` table.
+
+`app/data/importers/good_importer.py` validates the file and speaks the format's
+vocabulary; this puts the result in the database. The split matters because the two have
+different jobs: the parser refuses anything the game cannot produce, and this refuses
+anything **this database cannot identify**.
+
+## Resolving GOOD's `setKey` — the one derivation here, and why it refuses
+
+A GOOD record names its set as `"BlizzardStrayer"`. This database stores
+`"Blizzard Strayer"`, the English display name the nanoka payload publishes. Genshin
+Optimizer builds its keys by stripping the punctuation and spaces out of that same name, so
+the two sides match once both are reduced to lowercase alphanumerics.
+
+**That correspondence is a mechanical normalisation, not a citation**, and it is not
+verified against GO's own key list — that list is not committed to this repo and the
+snapshot rule forbids fetching it at runtime. So the mechanism is built to fail loudly
+instead of quietly:
+
+* an unresolvable `setKey` **rejects the artifact**, naming the key. It does *not* import
+  with a null `artifact_set_id`. A piece with no set is one the optimizer can never award a
+  bonus for, so a silent null would hand a user a search that ignores half of what artifacts
+  do — and it would do so for a whole set at a time, invisibly.
+* `test_set_key_normalisation_is_injective` asserts no two of the 65 seeded sets reduce to
+  the same key. If they ever did, a match could bind the wrong set, and *that* failure would
+  be invisible in a way a rejection is not.
+
+## Import modes are chosen, never defaulted
+
+`replace` deletes every artifact this user owns before inserting; `append` adds to what is
+there. Neither is a safe default: GOOD carries **no stable per-artifact identifier**, so
+`append` run twice duplicates an entire inventory — and duplicates are worse than clutter
+here, because the optimizer will happily build around wearing the same goblet twice. And
+`replace` deletes data. The request has to say which, so the destructive one is never
+reached by omission.
+"""
+
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+from sqlalchemy import delete, select
+
+from app.data.snapshot import artifact_main_stat_value
+from app.models.artifact import Artifact, ArtifactSet
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from app.data.importers.good_importer import GoodImportResult, ParsedArtifact
+
+#: Everything that is not a letter or a digit. GOOD's keys are the display name with these
+#: removed; reducing both sides the same way is the whole of the mapping.
+_NOT_ALNUM = re.compile(r"[^a-z0-9]+")
+
+REPLACE = "replace"
+APPEND = "append"
+MODES = (REPLACE, APPEND)
+
+
+def set_lookup_key(name: str) -> str:
+    """`"Gladiator's Finale"` and `"GladiatorsFinale"` both reduce to `gladiatorsfinale`."""
+    return _NOT_ALNUM.sub("", name.lower())
+
+
+class ReplaceRefusedError(RuntimeError):
+    """A `replace` import would have deleted an inventory and stored nothing."""
+
+
+@dataclass(frozen=True, slots=True)
+class StoredImport:
+    """What reached the database, and what did not."""
+
+    inserted: int
+    deleted: int
+    #: `(index, reason)` for artifacts the parser refused **and** ones whose set this
+    #: database does not know. Both are refusals; a caller should not have to tell them
+    #: apart to show a user what happened.
+    rejected: tuple[tuple[int, str], ...]
+
+    @property
+    def ok(self) -> bool:
+        """True when every artifact in the export was stored."""
+        return not self.rejected
+
+
+async def store_good_import(
+    session: AsyncSession,
+    owner_id: str,
+    parsed: GoodImportResult,
+    mode: str,
+) -> StoredImport:
+    """Write a parsed GOOD export to `owner_id`'s inventory.
+
+    Set resolution happens **before** anything is deleted, and a `replace` that resolved
+    nothing at all refuses rather than wiping — see `ReplaceRefusedError`.
+    """
+    if mode not in MODES:
+        msg = f"import mode must be one of {MODES}; got {mode!r}"
+        raise ValueError(msg)
+
+    sets_by_key = await _sets_by_lookup_key(session)
+
+    resolved: list[tuple[ParsedArtifact, str]] = []
+    rejected = [(row.index, row.reason) for row in parsed.rejected]
+    for artifact in parsed.artifacts:
+        set_id = sets_by_key.get(set_lookup_key(artifact.set_key))
+        if set_id is None:
+            reason = (
+                f"unknown artifact set {artifact.set_key!r}. Importing it without a set "
+                f"would hide every set bonus it could contribute to, so it is refused "
+                f"instead."
+            )
+            # `source_index`, not the position in `parsed.artifacts`: those differ by
+            # however many records the parser already refused, so enumerating here would
+            # point a user at the wrong line of their own export.
+            rejected.append((artifact.source_index, reason))
+            continue
+        resolved.append((artifact, set_id))
+
+    if mode == REPLACE and parsed.artifacts and not resolved:
+        # The seeder's `PRUNE REFUSED` rule, one layer up (D.7). A file that parsed as valid
+        # GOOD but whose sets this build cannot resolve — a patch adding sets this snapshot
+        # predates, most obviously — would otherwise delete the user's whole inventory and
+        # insert nothing, reporting a successful import of zero artifacts. Resolving first
+        # is not enough on its own; the delete has to be conditional on the resolution
+        # having produced something.
+        msg = (
+            f"refusing to replace an inventory with nothing: all "
+            f"{len(parsed.artifacts)} artifacts in this export were rejected. "
+            f"Nothing was deleted."
+        )
+        raise ReplaceRefusedError(msg)
+
+    deleted = 0
+    if mode == REPLACE:
+        result = await session.execute(
+            delete(Artifact).where(Artifact.owner_id == owner_id),
+        )
+        deleted = int(result.rowcount or 0)
+
+    session.add_all([
+        Artifact(
+            owner_id=owner_id,
+            artifact_set_id=set_id,
+            slot=artifact.slot,
+            rarity=artifact.rarity,
+            level=artifact.level,
+            main_stat_type=artifact.main_stat,
+            # Derived from the committed value table, **not** taken from the export. GOOD
+            # carries the number a scanner read off the screen; E.5 committed the table it
+            # came from. Storing the OCR result where the table exists would let a misread
+            # digit become a stat the optimizer then builds around — and the damage path
+            # reads the table anyway, so the two would silently disagree.
+            main_stat_value=artifact_main_stat_value(
+                artifact.rarity.stars, artifact.level, artifact.main_stat,
+            ),
+            substats=list(artifact.substats),
+        )
+        for artifact, set_id in resolved
+    ])
+    await session.flush()
+
+    return StoredImport(
+        inserted=len(resolved),
+        deleted=deleted,
+        rejected=tuple(sorted(rejected)),
+    )
+
+
+async def _sets_by_lookup_key(session: AsyncSession) -> dict[str, str]:
+    """`{normalised name: artifact_sets.id}` for every seeded set."""
+    rows: Sequence[ArtifactSet] = (
+        await session.execute(select(ArtifactSet))
+    ).scalars().all()
+    return {set_lookup_key(row.name): str(row.id) for row in rows}

@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.enums import UserStatus
 from app.models.user import User
+from app.repositories.artifact import ArtifactRepository
 from app.repositories.artifact_set import ArtifactSetRepository
 from app.repositories.character import CharacterRepository
 from app.repositories.enemy import EnemyProfileRepository
@@ -170,6 +171,13 @@ CurrentUserAnyStatus = Annotated[User, Depends(get_current_user_any_status)]
 async def get_owned_team_repo(session: DBSession, current_user: CurrentUser) -> TeamRepository:
     """FastAPI DI factory for a `TeamRepository` scoped to the authenticated user's own rows."""
     return TeamRepository(session, owner_id=str(current_user.id))
+
+
+async def get_owned_artifact_repo(
+    session: DBSession, current_user: CurrentUser
+) -> ArtifactRepository:
+    """FastAPI DI factory for an `ArtifactRepository` scoped to the current user's pieces."""
+    return ArtifactRepository(session, owner_id=str(current_user.id))
 
 
 async def get_owned_optimization_job_repo(
