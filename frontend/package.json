@@ -18,7 +18,8 @@
     "gcsim:build": "./scripts/build-gcsim-wasm.sh",
     "gcsim:verify": "node scripts/verify-gcsim-wasm.mjs",
     "gcsim:verify-config": "node scripts/verify-gcsim-config.mjs",
-    "kernel:verify": "node scripts/verify-kernel.mjs"
+    "kernel:verify": "node --import ./scripts/ts-resolve.mjs scripts/verify-kernel.mjs",
+    "kernel:verify-search": "node --import ./scripts/ts-resolve.mjs scripts/verify-kernel-search.mjs"
   },
   "private": true,
   "packageManager": "npm@11.9.0",
