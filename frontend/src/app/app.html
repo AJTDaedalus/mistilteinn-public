@@ -7,6 +7,9 @@
     @if (auth.status() === 'approved') {
       <nav class="shell__nav">
         <a routerLink="/characters" routerLinkActive="active">Characters</a>
+        <a routerLink="/weapons" routerLinkActive="active">Weapons</a>
+        <a routerLink="/artifact-sets" routerLinkActive="active">Artifacts</a>
+        <a routerLink="/enemies" routerLinkActive="active">Enemies</a>
         <span class="identity-chip">
           <span class="identity-chip__name mono">{{ auth.me()?.label || auth.me()?.email }}</span>
           <button class="identity-chip__signout" (click)="signOut()">Sign out</button>

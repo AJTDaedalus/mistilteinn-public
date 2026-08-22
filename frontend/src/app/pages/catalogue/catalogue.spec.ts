@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { ArtifactSetsPage } from './artifact-sets';
 import { catalogueList } from './catalogue-list';
 import { CatalogueService } from './catalogue.service';
-import { EnemiesPage } from './enemies';
+import { EnemiesPage, resistancesOf } from './enemies';
 import { WeaponsPage } from './weapons';
 
 function pageWith<T>(ctor: new () => T, service: Partial<CatalogueService>): T {
@@ -135,12 +135,28 @@ describe('EnemiesPage', () => {
     expect(listEnemies).toHaveBeenCalledWith({ name: undefined, limit: 400 });
   });
 
-  it('turns the eight resistance columns into percentages, in channel order', async () => {
+  it('shapes the resistances once at load, not on every render', async () => {
+    // A template method would rebuild 360 x 8 objects per change-detection pass and hand
+    // `@for` a fresh array identity each time, so nothing could be reused.
     const page = pageWith(EnemiesPage, {
-      listEnemies: vi.fn().mockResolvedValue(EMPTY),
+      listEnemies: vi.fn().mockResolvedValue({
+        items: [{ id: 'e1', name: 'Hilichurl', cryo_res: 0.1 }],
+        total: 1,
+        offset: 0,
+        limit: 400,
+      }),
     } as unknown as CatalogueService);
 
-    const rows = page['resistances']({
+    await page['load']();
+
+    const [row] = page['list'].items();
+    expect(row.resistances).toHaveLength(8);
+    // Same array on a second read: the work happened once, at load.
+    expect(page['list'].items()[0].resistances).toBe(row.resistances);
+  });
+
+  it('turns the eight resistance columns into percentages, in channel order', () => {
+    const rows = resistancesOf({
       physical_res: 0.1,
       anemo_res: 0.1,
       cryo_res: -0.5,
@@ -162,14 +178,10 @@ describe('EnemiesPage', () => {
     expect(rows[2].percent).toBeCloseTo(-50);
   });
 
-  it('treats a missing resistance as zero rather than dropping the channel', async () => {
+  it('treats a missing resistance as zero rather than dropping the channel', () => {
     // All eight channels always appear: an absent one silently vanishing from the list
     // would read as "this enemy has no cryo resistance" rather than "we do not know".
-    const page = pageWith(EnemiesPage, {
-      listEnemies: vi.fn().mockResolvedValue(EMPTY),
-    } as unknown as CatalogueService);
-
-    const rows = page['resistances']({ physical_res: 0.1 } as never);
+    const rows = resistancesOf({ physical_res: 0.1 } as never);
 
     expect(rows).toHaveLength(8);
     expect(rows[1].percent).toBe(0);

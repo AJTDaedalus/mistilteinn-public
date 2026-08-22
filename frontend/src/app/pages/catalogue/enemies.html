@@ -26,7 +26,7 @@
                the curve yet — showing them next to those labels would be a number that means
                something other than what it says. -->
           <ul class="res">
-            @for (entry of resistances(enemy); track entry.channel) {
+            @for (entry of enemy.resistances; track entry.channel) {
               <li [class.negative]="entry.percent < 0">
                 {{ entry.channel }} {{ entry.percent | number: '1.0-1' }}%
               </li>

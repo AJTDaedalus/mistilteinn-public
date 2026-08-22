@@ -17,6 +17,11 @@ const CHANNELS = [
   ['pyro', 'pyro_res'],
 ] as const;
 
+/** One profile with its resistances already shaped for the template. */
+type EnemyRow = EnemyProfileRead & {
+  resistances: { channel: string; percent: number }[];
+};
+
 /**
  * The seeded enemy profiles — 360 entries.
  *
@@ -35,9 +40,17 @@ const CHANNELS = [
 })
 export class EnemiesPage implements OnInit {
   protected search = '';
-  protected readonly list = catalogueList<EnemyProfileRead>((name) =>
-    this.catalogue.listEnemies({ name, limit: 400 }),
-  );
+  // Reshaped **once per load**, not once per change-detection pass. Calling a method from
+  // the template would rebuild 360 x 8 objects every cycle and hand `@for` a fresh array
+  // identity each time, so nothing could be reused. The work is the same either way; how
+  // often it happens is not.
+  protected readonly list = catalogueList<EnemyRow>(async (name) => {
+    const page = await this.catalogue.listEnemies({ name, limit: 400 });
+    return {
+      items: page.items.map((enemy) => ({ ...enemy, resistances: resistancesOf(enemy) })),
+      total: page.total,
+    };
+  });
 
   private readonly catalogue = inject(CatalogueService);
 
@@ -48,12 +61,21 @@ export class EnemiesPage implements OnInit {
   protected load(): Promise<void> {
     return this.list.run(this.search, 'enemy catalogue');
   }
+}
 
-  /** Resistances as `(channel, percent)`, so the template does not repeat eight fields. */
-  protected resistances(enemy: EnemyProfileRead): { channel: string; percent: number }[] {
-    return CHANNELS.map(([channel, field]) => ({
-      channel,
-      percent: (enemy[field] ?? 0) * 100,
-    }));
-  }
+/**
+ * Resistances as `(channel, percent)`, so the template does not repeat eight fields.
+ *
+ * All eight are always returned. A channel the row leaves null becomes `0` rather than
+ * vanishing from the list: an absent entry would read as "this enemy has no cryo resistance"
+ * when what it means is "we do not know", and `Enemy` in the damage chain refuses a partial
+ * profile for exactly that reason.
+ */
+export function resistancesOf(
+  enemy: EnemyProfileRead,
+): { channel: string; percent: number }[] {
+  return CHANNELS.map(([channel, field]) => ({
+    channel,
+    percent: (enemy[field] ?? 0) * 100,
+  }));
 }
