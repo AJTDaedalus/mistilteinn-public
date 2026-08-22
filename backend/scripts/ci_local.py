@@ -27,6 +27,16 @@ new step appears that this file has no answer for.
 That inversion is the important part. The default is *run it*; skipping requires a stated
 reason that a test can see.
 
+## A number you did not run is a number you made up
+
+The commit that introduced this file claimed "985 tests" in its message. The real figure was
+**955**. Nothing had run `pytest -q`; the number was inferred from arithmetic on remembered
+counts, in a commit whose entire subject is not doing that.
+
+It is recorded here rather than quietly amended because the mistake is the argument for the
+tool: `--list` and the per-step tally exist so that what ran is *read off a run*, never
+reconstructed afterwards. Corrected in the following commit.
+
 ## What this cannot do, stated plainly
 
 CI runs on a **clean checkout on a machine that is not mine**, and that has caught two real
