@@ -267,6 +267,14 @@ jobs:
         # arithmetic rather than a heuristic and so must agree exactly.
         run: npm run kernel:verify-search
 
+      - name: Verify the GPU kernel
+        # OQ-S4 answered: runners have no GPU, but they do have Mesa's llvmpipe software
+        # rasteriser, which Dawn picks up — so the WGSL path is genuinely exercised rather
+        # than exempted. Software adapters are slow and that does not matter: this checks
+        # what the shader computes, not how fast. If no adapter exists at all it FAILS,
+        # because a skip would be the third damage chain shipping unverified.
+        run: npm run kernel:verify-gpu
+
       - name: Typecheck
         # `tsconfig.app.json`, **not** the root `tsconfig.json`. The root config has
         # `files: []` and no `include`, so `tsc -p tsconfig.json` compiles nothing and

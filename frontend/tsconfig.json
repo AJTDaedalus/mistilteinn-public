@@ -3,6 +3,10 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    // WebGPU's types are not in lib.dom yet. The GPU backend is typed against the real
+    // interface rather than `any`, because `any` on a buffer-marshalling layer is where
+    // off-by-one field offsets go to hide.
+    "types": ["@webgpu/types"],
     "strict": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,

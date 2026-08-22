@@ -196,6 +196,11 @@ def test_ci_runs_the_kernel_differential_gate():
         for step in job.get("steps", [])
     ]
 
+    assert any("kernel:verify-gpu" in r for r in runs), (
+        "no CI step runs the GPU kernel gate. OQ-S4's answer is that runners have Mesa's "
+        "llvmpipe, so the WGSL path can be checked without GPU hardware — an exemption is "
+        "not needed and would leave a third damage chain unverified."
+    )
     assert any("kernel:verify-search" in r for r in runs), (
         "no CI step runs the kernel's search gate. The arithmetic gate does not cover the "
         "search: a kernel can compute every hit correctly and still pick the wrong build."
