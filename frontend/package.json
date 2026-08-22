@@ -19,7 +19,8 @@
     "gcsim:verify": "node scripts/verify-gcsim-wasm.mjs",
     "gcsim:verify-config": "node scripts/verify-gcsim-config.mjs",
     "kernel:verify": "node --import ./scripts/ts-resolve.mjs scripts/verify-kernel.mjs",
-    "kernel:verify-search": "node --import ./scripts/ts-resolve.mjs scripts/verify-kernel-search.mjs"
+    "kernel:verify-search": "node --import ./scripts/ts-resolve.mjs scripts/verify-kernel-search.mjs",
+    "kernel:verify-gpu": "node --import ./scripts/ts-resolve.mjs scripts/verify-kernel-gpu.mjs"
   },
   "private": true,
   "packageManager": "npm@11.9.0",
@@ -40,6 +41,8 @@
     "@angular/cli": "^21.2.8",
     "@angular/compiler-cli": "^21.2.19",
     "@eslint/js": "^10.0.1",
+    "@kmamal/gpu": "^0.2.1",
+    "@webgpu/types": "^0.1.72",
     "angular-eslint": "21.4.0",
     "eslint": "^10.3.0",
     "jsdom": "^28.0.0",

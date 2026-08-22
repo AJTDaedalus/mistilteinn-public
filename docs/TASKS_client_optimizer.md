@@ -196,11 +196,24 @@ one layer up**, and it gets B.6's treatment: delete the ZZZ concepts rather than
   remove each other (2 cases), grouping by slot without set (35), and a top-N that keeps the
   worst (40).
 
-### [ ] C.5 — WGSL GPU backend behind the same interface
+### [x] C.5 — WGSL GPU backend behind the same interface
 - **Do:** batch evaluation. Mind WGSL's limits (DESIGN §2): no f64, and a permutation id that
   needs 64-bit arithmetic emulated with 32-bit ints.
-- **Accept:** identical winners to C.4 on the same inputs; **OQ-S4** answered — either CI has
-  a GPU or the exemption is recorded, because a check that cannot run is not a pass.
+- **Done:** `damage.wgsl` + `gpu.ts` match the Python chain on all 2,000 cases (worst
+  3.426e-07), and the gate also asserts the two backends agree with **each other** (1,291
+  bit-identical, worst 4.244e-07).
+- **OQ-S4 answered, and neither option it offered was needed.** CI installs
+  `mesa-vulkan-drivers` (lavapipe); Dawn selects the software adapter; the WGSL path is
+  genuinely exercised. No GPU hardware, no exemption. The gate fails rather than skips when
+  no adapter exists.
+- **The first answer was wrong in a way worth recording**: it generalised from a dev box that
+  happened to have Mesa installed. Runners ship `libvulkan` and **no ICD**, so Dawn found no
+  adapter at all and CI failed. "It works on my machine" applied to a *driver*.
+- Verified by injecting the same three formula bugs the CPU gate catches — 598, 255 and 511
+  cases, identical counts, which is itself evidence both backends read the same sweep.
+- **Still to do:** the *search* on GPU. This lands the damage chain; C.4's search runs on the
+  CPU backend, and porting the product loop to a compute shader is where DESIGN §2's billion
+  permutations per second actually comes from.
 
 ### [ ] C.6 — Delete the Python chain and optimizer
 - **Do:** only once C.3–C.5 pass. `formula/genshin/*`, `stat_calculator`,

@@ -267,6 +267,22 @@ jobs:
         # arithmetic rather than a heuristic and so must agree exactly.
         run: npm run kernel:verify-search
 
+      - name: Install a software Vulkan driver
+        # OQ-S4's answer needs this, and the first attempt got it wrong by generalising from
+        # a dev box. Runners ship `libvulkan` but **no ICD**, so Dawn fails with
+        # `vkCreateInstance: Found no drivers!` and there is no adapter at all.
+        # `mesa-vulkan-drivers` provides lavapipe (`lvp_icd.json`), a CPU Vulkan
+        # implementation — which is what lets the WGSL path be tested without GPU hardware.
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends mesa-vulkan-drivers
+
+      - name: Verify the GPU kernel
+        # OQ-S4 answered: runners have no GPU, but with lavapipe installed above Dawn gets a
+        # software adapter, so the WGSL path is genuinely exercised rather than exempted.
+        # Software adapters are slow and that does not matter: this checks what the shader
+        # computes, not how fast. If no adapter exists at all it FAILS, because a skip would
+        # be the third damage chain shipping unverified.
+        run: npm run kernel:verify-gpu
+
       - name: Typecheck
         # `tsconfig.app.json`, **not** the root `tsconfig.json`. The root config has
         # `files: []` and no `include`, so `tsc -p tsconfig.json` compiles nothing and
