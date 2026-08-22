@@ -100,57 +100,84 @@ changes than damage is. That is plausible and it is not proven, so:
 
 ## 3.5 What compute costs, and where it lands
 
-Taking as given that doing this properly costs more compute than a stat-heuristic optimizer.
-The useful question is not whether to accept that but **where it lands**, because this design
-moves most of it somewhere it is free to us.
+**An optimization is defined for one team and one rotation.** That is the observation this
+section turns on, and it collapses most of what an earlier draft costed.
+
+If team and rotation are *inputs*, then so are character, weapon, refinement and
+constellation — every one of those is **the user's build**. The only thing being searched is
+the artifacts. So there is no corpus to enumerate: the context of a search is fully
+determined before it starts, except for the stats the artifacts themselves change.
+
+### Only one artifact-borne stat feeds back into context
+
+| stat | changes the context? |
+|---|---|
+| **energy recharge** | **Yes** — burst uptime depends on energy, so the rotation itself executes differently |
+| elemental mastery | No — it changes reaction *damage*, which the Chunk F chain scales directly |
+| ATK / HP / DEF | No — pure scaling |
+| crit rate / crit DMG | No — pure scaling |
+| elemental DMG bonus | No — pure scaling |
+
+Everything except ER is a multiplier the kernel applies itself. **ER is the only coupling**,
+because it is the only one that can change whether the rotation happens at all — and while
+the BRIEF ships amplifying reactions first, it is the only one that matters.
+
+So the runs a search needs are **one per ER bucket**, for that one context:
+
+| ER buckets | gcsim runs | time |
+|---:|---:|---|
+| 4 | 4 | ~1.0 s |
+| 6 | 6 | ~1.4 s |
+| 12 | 12 | ~2.9 s |
+
+**In the browser, via gcsim WASM, and cached afterwards.** Seconds, not the 4.7–31.5 hours
+an earlier draft of this section projected from enumerating teams × rotations. That draft was
+answering a question nobody asks: it costed *"simulate every team and rotation in advance"*,
+when a user always arrives with a specific one.
+
+### Which leaves compute landing almost entirely on the user
 
 | Cost | Lands on | Scales with |
 |---|---|---|
-| Permutation search | the user's GPU | how thorough the user asks the search to be |
-| Top-N verification by simulation | the user's browser (gcsim WASM) | N, which we choose |
-| **Corpus generation** | **our server** | **the corpus's dimensions — see below** |
-| Retrieval | our server | queries, but it is an index lookup |
+| Permutation search | the user's GPU | how thorough the user asks for |
+| Context runs (one per ER bucket) | the user's browser | ER buckets — a constant |
+| Top-N verification | the user's browser | N, which we choose |
+| Retrieval | our server | queries, and it is an index lookup |
 
-Two of those four grow with usage and cost us nothing, because they run on the user's
-machine. That is the point of the client-side ruling, and it means "more compute" is mostly
-a relocation rather than a bill.
+**Nothing combinatorial lands on the server.** "More compute" is a relocation, not a bill.
 
-**One cost does land on us, and it is combinatorial.** Corpus generation, measured against
-the 0.238 s/run from Chunk S §3:
+### What the server-side corpus is actually for
 
-| Corpus shape | runs | 1 core | 8 cores |
-|---|---:|---:|---:|
-| per-character only, no teams | 38,160 | 2.5 h | 0.3 h |
-| + 5 teams × 3 rotations | 572,400 | 37.8 h | 4.7 h |
-| + 10 teams × 10 rotations | 3,816,000 | 252.3 h | 31.5 h |
+Not for making the search possible — the browser does that unaided. It accumulates from real
+searches and earns its keep elsewhere:
 
-*(106 characters × 5 weapons × 3 constellation tiers × 2 refinements × stat buckets.)*
+- **Explanation** (§4): grounding "why is this better" in a body of real runs rather than one.
+- **Cross-user knowledge**: benchmark builds, what a well-built version of this character
+  looks like, which is something no client-side tool can offer.
+- **Not recomputing** what another user already simulated at the same pin.
 
-**The team × rotation dimension is the multiplier that decides everything**, and it is the
-number that must be chosen deliberately rather than allowed to drift. Everything else is
-bounded by the game.
+It is **demand-driven by construction**, and **write-once per gcsim pin** — the BRIEF's
+observation that Genshin kits are immutable post-release, applied one level up: a simulated
+run stays valid until the pin moves, so the corpus is invalidated by a deliberate, reviewed
+re-pin rather than by time. `optimization_jobs` (§5) tracks a re-pin's regeneration, which is
+now its main remaining job rather than a large upfront batch.
 
-### The corpus is demand-driven, with a precomputed head
+**Optional, not required:** warming the cache for popular contexts ahead of demand. BRIEF
+constraint 4's "~20–30 character MVP cut" is the natural definition of *popular* if that is
+ever wanted. It is no longer on the critical path.
 
-- **Head:** precompute the meta roster. **BRIEF constraint 4's "~20–30 character MVP cut,
-  for owner approval" survives** — it looked superseded along with Chunk H, and it is in fact
-  exactly the right definition of what to precompute first. At 25 characters with 5 teams × 3
-  rotations that is **135,000 runs ≈ 1.1 h on 8 cores**: an overnight job, not a programme.
-- **Tail:** generated on demand for combinations a user actually asks for, and cached.
-  Obscure characters cost nothing until someone wants one.
-- **The cache is write-once per gcsim pin.** The BRIEF already noticed that Genshin kits are
-  immutable post-release; the same property applies here one level up — **a simulated run
-  stays valid until the pin moves**, so the corpus is invalidated by a deliberate, reviewed
-  re-pin rather than by time. `optimization_jobs`, retargeted per §5, is what tracks a
-  re-pin's regeneration.
+### The constraint that survives
 
-### The constraint this puts on §3
+A search can still arrive with no cached context. That must be a stated outcome, not a silent
+fallback: simulate it now (a second or two), or say so. It must never be to retrieve a
+distant neighbour and report its score as though it were close — the rule §3 sets, arriving
+from the other direction.
 
-Demand-driven generation means a search can arrive with **no retrievable neighbour at all**.
-That must be a stated outcome, not a silent fallback to a bad score: the honest answers are
-to simulate directly (slower, exact) or to say the neighbourhood is uncovered and offer to
-generate it. It must not be to retrieve a distant neighbour and report the score as though it
-were close — which is the same rule §3 already sets, arriving from the other direction.
+### The caveat
+
+This holds because the rotation is **fixed and supplied**. If the rotation itself ever becomes
+something to optimize — Chunk I territory — the collapse does not survive, and the cost
+question reopens on new terms. Worth knowing before that chunk starts rather than during it.
 
 ## 4. Explanation
 
