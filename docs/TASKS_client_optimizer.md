@@ -167,8 +167,20 @@ one layer up**, and it gets B.6's treatment: delete the ZZZ concepts rather than
     it to 1e-9 fails 2. A tolerance that only resists widening is one that can quietly become
     unachievable slack.
 
-### [ ] C.3 — TypeScript CPU kernel: stats and one hit
-- **Accept:** passes C.1's harness within C.2's tolerance.
+### [x] C.3 — TypeScript CPU kernel: stats and one hit
+- **Done:** `src/app/sim/damage.ts` matches the Python chain on **all 2,000 cases, worst
+  3.379e-07** against the 1e-6 tolerance — landing almost exactly on the 3.51e-07 C.2's f32
+  model predicted, which is independent confirmation both are right.
+- **Every operation goes through `Math.fround`.** JavaScript is f64 and WGSL has no f64, so
+  computing natively here would make this backend *more* accurate than the GPU one — and a
+  user switching backends would watch their build's number change for no reason they could
+  act on. Matching the GPU's precision is worth more than having more of it.
+- The sweep is `scripts/verify-kernel.mjs`, a standalone Node gate (Node 24 strips types, so
+  it imports the kernel source and there is no build artifact to go stale). CI runs it and a
+  guard test fails if that step disappears.
+- **Verified by injecting three real formula bugs**: a forgotten crit clamp (598 cases
+  diverge), DEF mechanics added rather than multiplied (255), and gcsim's reading of the
+  0.75 RES boundary (511).
 
 ### [ ] C.4 — TypeScript CPU kernel: the five-slot search
 - **Do:** the Cartesian product, the bounded top-N heap, and the lossless Pareto layer —

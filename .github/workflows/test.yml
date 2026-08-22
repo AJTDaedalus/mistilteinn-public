@@ -253,6 +253,14 @@ jobs:
         # surface as a runtime error inside a Web Worker rather than as a failing test.
         run: npm run gcsim:verify-config
 
+      - name: Verify the kernel against the differential harness
+        # DESIGN §6's gate: the browser kernel is a second damage chain, and this is what
+        # binds it to the first. 2,000 generated cases, each carrying the Python chain's
+        # answer, matched to the 1e-6 derived in docs/CROSSVAL_gcsim.md. It also fails if the
+        # worst case creeps past half the tolerance — a gate that is only just passing is one
+        # about to be widened.
+        run: npm run kernel:verify
+
       - name: Typecheck
         # `tsconfig.app.json`, **not** the root `tsconfig.json`. The root config has
         # `files: []` and no `include`, so `tsc -p tsconfig.json` compiles nothing and

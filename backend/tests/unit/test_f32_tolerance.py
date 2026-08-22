@@ -175,3 +175,29 @@ def test_the_documented_tolerance_matches_the_constant():
         "reads. Keep the document and F32_TOLERANCE in step."
     )
     assert F32_TOLERANCE == 1e-6
+
+
+def test_ci_runs_the_kernel_differential_gate():
+    """The gate is only a gate if something runs it.
+
+    `npm test` does not — the sweep reads a fixture from disk and Angular's test builder
+    targets the browser, so it is a standalone Node script. That makes it exactly the shape
+    that goes green by being forgotten, which is why `test_ci_runs_the_perf_gate.py` exists
+    for the backend's equivalent.
+    """
+    import yaml
+
+    workflow = yaml.safe_load(
+        (Path(__file__).resolve().parents[3] / ".github" / "workflows" / "test.yml").read_text(),
+    )
+    runs = [
+        str(step.get("run", ""))
+        for job in workflow["jobs"].values()
+        for step in job.get("steps", [])
+    ]
+
+    assert any("kernel:verify" in r for r in runs), (
+        "no CI step runs the kernel differential gate. Without it a second damage chain "
+        "exists with nothing binding it to the first, which is the whole hazard DESIGN §6 "
+        "accepts the second chain under."
+    )
