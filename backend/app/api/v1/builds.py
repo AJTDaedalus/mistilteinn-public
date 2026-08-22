@@ -459,6 +459,10 @@ async def explain_build(
             )
         proposed_rows = [by_id[aid] for aid in body.artifact_ids]
 
+    _require_one_per_slot(proposed_rows, "the pieces to explain")
+    if body.compare_to_equipped and body.artifact_ids is not None:
+        _require_one_per_slot(equipped_rows, "the equipped build")
+
     try:
         proposed, proposed_damage = _scored(
             base, proposed_rows, bonuses, hit, enemy, build.character_level,
@@ -526,6 +530,40 @@ async def explain_build(
         equipped_damage=None if diff is None else equipped_damage,
         unchanged=None if diff is None else list(diff.unchanged),
     )
+
+
+def _require_one_per_slot(rows: "Sequence[Artifact]", what: str) -> None:
+    """Five pieces, one per slot — the same rule `artifact_ranker.RankContext` enforces.
+
+    Nothing downstream checks this: `build_combination_log` iterates whatever it is handed,
+    so two goblets would count a goblet twice and four pieces would be scored as four. The
+    search never meets that because it builds combinations one-per-slot by construction, and
+    the ranker refuses it explicitly. This endpoint takes ids from the caller, so it is the
+    first place the question is actually open.
+
+    Both failures produce a plausible number: a duplicated piece inflates the build a user
+    cannot actually wear, and a short list quietly compares a three-piece proposal against a
+    five-piece build and reports two slots' worth of "losses" as though the user had chosen
+    them.
+    """
+    slots = [str(row.slot) for row in rows]
+    ids = [str(row.id) for row in rows]
+    if len(set(ids)) != len(ids):
+        raise HTTPException(
+            status_code=422,
+            detail=f"{what} names the same artifact more than once; a build wears each piece "
+            f"at most once.",
+        )
+    missing = sorted(set(artifact_optimizer.SLOTS) - set(slots))
+    if missing or len(slots) != len(artifact_optimizer.SLOTS):
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"{what} must be five pieces, one per slot. Missing {missing}; got "
+                f"{sorted(slots)}. A partial build scores as a partial build, and next to a "
+                f"full one that difference reads as a choice the user made."
+            ),
+        )
 
 
 def _contribution(c: "Contribution") -> ContributionRead:

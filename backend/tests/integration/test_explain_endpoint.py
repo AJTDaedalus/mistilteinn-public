@@ -267,6 +267,25 @@ async def test_an_artifact_from_another_account_is_refused(
     assert "not in this account" in response.json()["detail"]
 
 
+async def test_the_same_piece_twice_is_refused(authed_client: AsyncClient, scene: Scene):
+    """Nothing downstream checks this. `build_combination_log` iterates what it is handed,
+    so a duplicated goblet counts twice and inflates a build the user cannot wear."""
+    duplicated = [*scene.equipped_ids[:4], scene.equipped_ids[0]]
+    response = await _explain(authed_client, scene.build_id, artifact_ids=duplicated)
+    assert response.status_code == 422
+    assert "more than once" in response.json()["detail"]
+
+
+async def test_a_short_proposal_is_refused(authed_client: AsyncClient, scene: Scene):
+    """Three pieces scored against a five-piece build reports two slots of "losses" as
+    though the user had chosen them."""
+    response = await _explain(
+        authed_client, scene.build_id, artifact_ids=scene.equipped_ids[:3],
+    )
+    assert response.status_code == 422
+    assert "one per slot" in response.json()["detail"]
+
+
 # ── The simulation, joined in ─────────────────────────────────────────────────
 
 
