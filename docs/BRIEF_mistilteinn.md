@@ -98,8 +98,15 @@ the kit corpus — is the niche neither incumbent occupies.
 
 - **OQ-M1:** Public competitiveness vs personal tool? Decides how much the incumbent-strength
   risk matters and whether MVP polish (onboarding, docs, sharing) is in scope.
-- **OQ-M2:** Approve the gcsim-embed spike (timebox: ~2–3 sessions) before gauge-engine work, or
-  skip straight to building fidelity (b)?
+- **OQ-M2:** ~~Approve the gcsim-embed spike (timebox: ~2–3 sessions) before gauge-engine work, or
+  skip straight to building fidelity (b)?~~ **ANSWERED 2026-08-22 (owner): run the spike.**
+  Timebox stands at ~2–3 sessions. Findings go to `docs/RESEARCH_gcsim_embed.md`; the spike
+  ends with a recommendation, not with an implementation.
+
+  Asked at the end of Chunk G, when the escalation in `LOG_mistilteinn.md` found that the
+  BRIEF's phase order (`optimizer/GOOD → gauge sim → kit corpus`) and TASKS' chunk order
+  (`H — Kit corpus → I — Rotation`) disagreed, and that the phase the BRIEF names next was
+  gated on this question.
 - **OQ-M3:** Same VM or separate hosting for prod?
 
 ---
