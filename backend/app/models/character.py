@@ -117,17 +117,20 @@ class Character(TimestampMixin, Base):
     release_date: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     talents: Mapped[list[Talent]] = relationship(
+        lazy="raise_on_sql",
         back_populates="character",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
     constellations: Mapped[list[Constellation]] = relationship(
+        lazy="raise_on_sql",
         back_populates="character",
         cascade="all, delete-orphan",
         passive_deletes=True,
         order_by="Constellation.position",
     )
     ascension_passives: Mapped[list[AscensionPassive]] = relationship(
+        lazy="raise_on_sql",
         back_populates="character",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -165,6 +168,7 @@ class Talent(TimestampMixin, Base):
 
     character: Mapped[Character] = relationship(back_populates="talents")
     scalings: Mapped[list[TalentScaling]] = relationship(
+        lazy="raise_on_sql",
         back_populates="talent",
         cascade="all, delete-orphan",
         passive_deletes=True,

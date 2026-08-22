@@ -69,6 +69,7 @@ class Weapon(TimestampMixin, Base):
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
 
     refinements: Mapped[list[WeaponRefinement]] = relationship(
+        lazy="raise_on_sql",
         back_populates="weapon",
         cascade="all, delete-orphan",
         passive_deletes=True,

@@ -122,9 +122,12 @@ class Build(TimestampMixin, Base):
         Integer, nullable=True, default=None, index=True,
     )
 
-    character: Mapped[Character | None] = relationship(foreign_keys=[character_id])
-    weapon: Mapped[Weapon | None] = relationship()
+    character: Mapped[Character | None] = relationship(
+        foreign_keys=[character_id], lazy="raise_on_sql",
+    )
+    weapon: Mapped[Weapon | None] = relationship(lazy="raise_on_sql")
     artifacts: Mapped[list[Artifact]] = relationship(
+        lazy="raise_on_sql",
         foreign_keys="Artifact.build_id",
         # NOT `order_by="Artifact.slot"`. The column holds the payload's internal keys, so
         # sorting on it gives flower, **circlet**, plume, goblet, sands. This orders by the

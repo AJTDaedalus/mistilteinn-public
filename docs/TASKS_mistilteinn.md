@@ -392,7 +392,7 @@ generic machinery through the demolition (`TODO(chunk-G)` in that file) and the
 a `progress_callback` and honours `artifact_prefilter.Cancelled` precisely so this is a
 wiring job and not a rewrite.
 
-### G.11 — Make a lazy load a loud failure, not a 500
+### [x] G.11 — Make a lazy load a loud failure, not a 500
 
 **Three separate `MissingGreenlet` bugs in Chunk G**, each an eager-load chain that stopped
 one relationship short of what a response schema read: `Talent.scalings` (G.6a),

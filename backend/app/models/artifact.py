@@ -135,6 +135,7 @@ class ArtifactSet(TimestampMixin, Base):
     available_ranks: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
 
     affixes: Mapped[list[ArtifactSetAffix]] = relationship(
+        lazy="raise_on_sql",
         back_populates="artifact_set",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -238,7 +239,7 @@ class Artifact(TimestampMixin, Base):
 
     substats: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
 
-    artifact_set: Mapped[ArtifactSet | None] = relationship()
+    artifact_set: Mapped[ArtifactSet | None] = relationship(lazy="raise_on_sql")
 
     def __repr__(self) -> str:
         return f"<Artifact {self.slot} +{self.level} {self.main_stat_type}>"
