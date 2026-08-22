@@ -111,10 +111,21 @@ one layer up**, and it gets B.6's treatment: delete the ZZZ concepts rather than
   and CI feeds emitted configs to **gcsim's own `validateConfig`** — the only authority on
   whether the text is a config.
 
-### [ ] B.4 — Context runs, bucketed by ER
-- **Do:** one run per ER bucket for a context (DESIGN §3.5), cached in Postgres, keyed by the
-  gcsim pin.
-- **Accept:** a repeat search does no new simulation; a pin change invalidates.
+### [x] B.4 — Context runs, bucketed by ER
+- **Done:** `sim_runs` (migration `c0318f0bbead`), `sim_context.context_key`,
+  `SimRunRepository`. A repeat lookup hits; a different pin, ER bucket or rotation misses.
+- **The key is a hash, not a row of columns**, because a cache key must be all-or-nothing —
+  columns invite a lookup that matches a subset and returns a run for a different context
+  while looking like a hit. The pin is inside the hash *and* in the lookup, so forgetting
+  either still misses rather than serving a number from a different simulator.
+- **A team is a set; a rotation is a sequence.** Reordering a team hits, reordering a
+  rotation misses. Both asserted.
+- **ER rounds down**, so a hit never claims uptime the build has not earned: 179% must not
+  read a run from 180% that got its burst off.
+- **Owner-scoped.** The browser produces these numbers, so a tampered client could submit
+  anything; scoping limits that to poisoning its own cache. Sharing is a separate feature
+  with its own threat model, and `owner_id` is nullable so a server-generated corpus can be
+  shared explicitly rather than by accident.
 
 ---
 
