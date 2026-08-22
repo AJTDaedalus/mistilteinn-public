@@ -36,6 +36,11 @@ from app.dependencies import get_owned_sim_run_repo
 from app.middleware.rate_limit import WRITE_LIMIT, limiter
 from app.repositories.sim_run import SimRunRepository
 from app.schemas.sim_run import (
+    NOT_RETRIEVED_COLD,
+    NOT_RETRIEVED_TOO_FAR,
+    DivergenceRead,
+    RetrievalOutcome,
+    RetrievalRead,
     SimRunCoverage,
     SimRunRead,
     SimRunStored,
@@ -43,7 +48,8 @@ from app.schemas.sim_run import (
     dps_mean_of,
 )
 from app.services.gcsim_keys import pinned_commit
-from app.services.sim_context import ER_BUCKET_PERCENT
+from app.services.sim_context import ER_BUCKET_PERCENT, er_bucket
+from app.services.sim_retrieval import MAX_NEIGHBOUR_BUCKETS, retrieve
 
 router = APIRouter(prefix="/sim-runs", tags=["sim-runs"])
 
@@ -54,6 +60,17 @@ _DIGEST = r"^[0-9a-f]{64}$"
 _ContextKeyQuery = Annotated[str, Query(min_length=64, max_length=64, pattern=_DIGEST)]
 _ContextKeyPath = Annotated[str, Path(min_length=64, max_length=64, pattern=_DIGEST)]
 _ERBucket = Annotated[int, Path(ge=0, le=10_000)]
+
+#: Energy recharge as a **fraction** — `1.8` is 180 %, the way every stat in this codebase is
+#: expressed (`backend/CLAUDE.md`, "Fractions, not percents or basis points").
+#:
+#: The ceiling exists to catch the unit error rather than to model the game. A caller that
+#: sends `180` meaning 180 % would otherwise be bucketed at 18000, miss every time, and be
+#: told it has a cold context — forever, with no symptom other than never getting a hit. That
+#: is the same shape as the unbucketed read D.1's review caught, arriving from the other
+#: direction. Ten is far above any real build and far below a plausible unit slip.
+_MAX_ENERGY_RECHARGE = 10.0
+_EnergyRecharge = Annotated[float, Query(ge=0.0, le=_MAX_ENERGY_RECHARGE)]
 
 
 def _require_our_pin(submitted: str) -> str:
@@ -87,6 +104,79 @@ async def get_coverage(repo: _Repo, context_key: _ContextKeyQuery) -> SimRunCove
         gcsim_pin=pin,
         er_buckets=[row.er_bucket for row in rows],
         dps_means=[row.dps_mean for row in rows],
+    )
+
+
+# Declared before `/{context_key}/{er_bucket}` — the two do not collide today, since this
+# has one path segment where that has two, but a future `/retrieve/{something}` would be
+# swallowed and finding that out from a 404 is a bad afternoon.
+@router.get("/retrieve", response_model=RetrievalOutcome)
+async def retrieve_run(
+    repo: _Repo,
+    context_key: _ContextKeyQuery,
+    energy_recharge: _EnergyRecharge,
+) -> RetrievalOutcome:
+    """The cached run for a build at this ER — **or a stated reason there is none**.
+
+    Always 200. `retrieved` is either present or explicitly null with `not_retrieved_because`
+    beside it, and never a distant neighbour dressed up as a close one. See
+    `RetrievalOutcome` for why "nothing close enough is cached" is an answer rather than a
+    404: an error invites a retry or a swallowed exception, and the second is the silent
+    fallback DESIGN §3.5 forbids by name.
+    """
+    pin = pinned_commit()
+    runs = await repo.get_buckets(context_key=context_key, gcsim_pin=pin)
+    wanted = er_bucket(energy_recharge)
+    found = retrieve(runs, energy_recharge)
+
+    if found is None:
+        cold = not runs
+        # Lower bucket on a tie, matching `sim_retrieval.retrieve` — a message that named
+        # a different bucket than the one the decision was about would be its own bug.
+        nearest = None if cold else min(
+            runs, key=lambda r: (abs(r.er_bucket - wanted), r.er_bucket)
+        )
+        detail = (
+            f"nothing is cached for this context at pin {pin[:12]}. Simulate the buckets this "
+            f"search needs, starting with {wanted}."
+            if cold
+            else (
+                f"the nearest cached run is bucket {nearest.er_bucket}, "
+                f"{abs(nearest.er_bucket - wanted) // ER_BUCKET_PERCENT} buckets from "
+                f"{wanted}, and at most {MAX_NEIGHBOUR_BUCKETS} away is offered. Simulate "
+                f"{wanted}; a run that far away describes a different part of the ER curve."
+            )
+        )
+        return RetrievalOutcome(
+            context_key=context_key,
+            gcsim_pin=pin,
+            requested_bucket=wanted,
+            retrieved=None,
+            not_retrieved_because=NOT_RETRIEVED_COLD if cold else NOT_RETRIEVED_TOO_FAR,
+            detail=detail,
+        )
+
+    divergence = found.divergence
+    return RetrievalOutcome(
+        context_key=context_key,
+        gcsim_pin=pin,
+        requested_bucket=found.requested_bucket,
+        retrieved=RetrievalRead(
+            run=SimRunRead.model_validate(found.run),
+            requested_bucket=found.requested_bucket,
+            matched_bucket=found.matched_bucket,
+            bucket_distance=found.bucket_distance,
+            is_exact_bucket=found.is_exact_bucket,
+            divergence=None
+            if divergence is None
+            else DivergenceRead(
+                reference_bucket=divergence.reference_bucket,
+                dps_delta=divergence.dps_delta,
+                dps_delta_pct=divergence.dps_delta_pct,
+                noise_floor=divergence.noise_floor,
+                exceeds_noise=divergence.exceeds_noise,
+            ),
+        ),
     )
 
 
