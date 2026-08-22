@@ -29,10 +29,18 @@ The errors are not scattered — they concentrate in fairy's ZZZ feature pages, 
 `DiscSetSummary`, `WEngineSummary`, disc services and buff presets. **This is B.6's demolition
 one layer up**, and it gets B.6's treatment: delete the ZZZ concepts rather than alias them.
 
-### [ ] A.0 — Branch setup **(gate)**
+### [~] A.0 — Branch setup **(gate)** — **superseded, not skipped**
 - **Do:** create `feat/client-optimizer` from `dev`; sub-branches off it as the DESIGN's
   branch policy names them.
-- **Accept:** `git branch --show-current` is `feat/client-optimizer`.
+- **What happened instead:** every task branched from `dev` directly and merged back by PR —
+  `feat/sim-corpus-api`, `feat/sim-retrieval`, `feat/catalogue-pages`, and so on.
+- **Why that was right.** An umbrella branch is for work that must land as one unit. This
+  chunk did not: A, B, C and D each shipped independently and several were merged days apart.
+  Stacking them under one long-lived branch would have meant either a single enormous PR or
+  sub-branches whose diffs were unreadable against a moving base — and the repo's own rule
+  ("feature branches off `dev`, merge to `dev` via PR") describes what was actually done.
+- **The gate's purpose was met**: no commit in this chunk landed on `dev` or `main` outside a
+  PR.
 
 ### [x] A.1 — Pin the real compile gate
 - **Do:** a check that type-checks `tsconfig.app.json`, and CI runs it.
@@ -257,8 +265,33 @@ infrastructure** feeding the generators, the way `bench_optimizer.py` and
 than "delete the chain", and it does not leave A6 violated: one implementation ships, the
 other exists only to check it, which is what an oracle is.
 
-**Unblocks when** a page uses `search.ts`. OQ-S3 is now answered (D.1) and the inventory
-endpoint exists, so what remains is the page itself.
+**Unblocks when** a page uses `search.ts`. Re-checked when the rest of the plan closed, and
+it is still blocked — but the reason has narrowed to one thing, and that thing is a decision
+rather than a task.
+
+Everything the browser needs to run a search now exists **except a screen to run it from**:
+
+| piece | state |
+|---|---|
+| the kernel, CPU and GPU | C.3–C.5, gated against 2,000 cases |
+| the five-slot search | C.4, gated against 40 fixtures from the Python optimizer |
+| the inventory, held and revalidated | D.1, `GET /artifacts/inventory` |
+| retrieval with its measured error | D.2/D.3 |
+| explanation and weapon comparison | D.4/D.5 |
+| **the base stats a search starts from** | **no endpoint returns them in kernel shape** |
+| **a page to drive it** | **does not exist** |
+
+The last two are a **new chunk**, not a task in this file, and the repo's rule is that a
+chunk gets a DESIGN doc before any code. So C.6 stays deferred, and what it waits on is the
+owner's call between:
+
+1. **Build the client-optimizer UI first** — a search-context endpoint plus the page — then
+   delete the server surface once the browser can do the job. C.6 lands last and the product
+   is never without an optimizer.
+2. **Delete the server surface now** and accept that nothing can run an optimization until
+   the UI lands. Honest, smaller, and leaves the product briefly without a headline feature.
+
+Option 1 is the one the deferral note already argued for. Neither is a code question.
 
 ---
 
@@ -396,5 +429,11 @@ against an arbitrary candidate while the response still looked exactly like a ra
 - ~~**OQ-S3** — browser holds the inventory vs fetches per search.~~ **ANSWERED in D.1: it
   holds it and revalidates.** Not a latency question — ~234 KB gzipped for a large account
   either way — a staleness one. See `DESIGN_client_optimizer.md` §7.
-- **OQ-S4** — how the WebGPU path is tested in CI. Decide in C.5; it is a gate question,
-  not a nicety.
+- ~~**OQ-S4** — how the WebGPU path is tested in CI.~~ **ANSWERED in C.5: it runs, on a
+  software driver CI installs.** Runners have no GPU *and no Vulkan ICD*; installing
+  `mesa-vulkan-drivers` gives lavapipe, and the WGSL kernel is checked against the same 2,000
+  cases as the CPU one (worst 3.426e-07). No exemption was needed, and the gate **fails**
+  rather than skipping when no adapter exists. Recorded in the BRIEF and DESIGN at the time;
+  this line was left stale until the plan was closed out.
+
+**No open questions remain.**
