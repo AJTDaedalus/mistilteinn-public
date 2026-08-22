@@ -52,6 +52,7 @@ from app.services.artifact_optimizer import (
     OptimizerInputError,
     bonuses_by_set,
     build_combination_log,
+    validated_stats,
 )
 from app.services.damage_calculator import BuildEvaluator
 
@@ -62,6 +63,7 @@ if TYPE_CHECKING:
     from app.formula.genshin.explain import Contribution
     from app.services.artifact_optimizer import ArtifactCandidate, SetBonus
     from app.services.damage_calculator import Enemy
+    from app.services.stat_calculator import ArtifactStats
 
 #: How often the ranking offers the callback a chance to look at it, and to cancel.
 PROGRESS_TICK_SECONDS: float = 2.0
@@ -170,6 +172,11 @@ class RankResult:
 
     artifacts: tuple[RankedArtifact, ...]
     baselines: dict[str, float] = field(default_factory=dict)
+    #: Set affixes met during the ranking whose effect is conditional text (Chunk H), by
+    #: `(set_id, pieces)`. The optimizer reports these; a ranking that dropped them would
+    #: leave "why is this 4-piece worth nothing" unanswerable in exactly the tool a player
+    #: consults *before* deciding to keep the piece.
+    skipped_conditional_bonuses: int = 0
 
     def for_slot(self, slot: str) -> tuple[RankedArtifact, ...]:
         """Just one slot's ranking — "what should I farm" is asked a slot at a time."""
@@ -196,12 +203,24 @@ def rank(
         raise OptimizerInputError(msg)
 
     bonuses = bonuses_by_set(set_bonuses)
-    baselines = {
-        context.name: _damage(context, context.equipped, bonuses) for context in contexts
-    }
-    total_weight = sum(context.weight for context in contexts)
-
     inventory = list(candidates)
+
+    # Every piece is validated and its stat record built **once**, not once per swap. The
+    # unchanged four-fifths of a build were being re-validated for every candidate in every
+    # context — the same repeated-immutable-work finding the PR #9 review raised against the
+    # search, at a smaller exponent and no more justified for it.
+    resolved: dict[str, ArtifactStats] = {}
+    for candidate in (*inventory, *(worn for c in contexts for worn in c.equipped)):
+        if candidate.artifact_id not in resolved:
+            resolved[candidate.artifact_id] = validated_stats(candidate)
+
+    skipped: set[tuple[int, int]] = set()
+    baselines = {}
+    for context in contexts:
+        baselines[context.name] = _damage(
+            context, context.equipped, bonuses, resolved, skipped,
+        )
+    total_weight = sum(context.weight for context in contexts)
     total = len(inventory) * len(contexts)
     started = time.monotonic()
     next_tick = started + PROGRESS_TICK_SECONDS
@@ -209,10 +228,9 @@ def rank(
 
     ranked: list[RankedArtifact] = []
     for candidate in inventory:
-        if candidate.slot not in SLOTS:
-            msg = f"{candidate.artifact_id} is in slot {candidate.slot!r}; the five are {SLOTS}"
-            raise OptimizerInputError(msg)
-
+        # No slot check here: `validated_stats` above already refuses a slot that is not one
+        # of the five, with the same list in the message. A second copy would be a second
+        # place for that list to be right.
         scores = []
         for context in contexts:
             swapped = tuple(
@@ -221,7 +239,7 @@ def rank(
             )
             scores.append(ContextScore(
                 context=context.name,
-                damage=_damage(context, swapped, bonuses),
+                damage=_damage(context, swapped, bonuses, resolved, skipped),
                 baseline=baselines[context.name],
             ))
             scored += 1
@@ -251,6 +269,7 @@ def rank(
     return RankResult(
         artifacts=tuple(sorted(ranked, reverse=True)),
         baselines=baselines,
+        skipped_conditional_bonuses=len(skipped),
     )
 
 
@@ -258,11 +277,19 @@ def _damage(
     context: RankContext,
     combination: Sequence[ArtifactCandidate],
     bonuses: dict[int, list[SetBonus]],
+    resolved: dict[str, ArtifactStats],
+    skipped: set[tuple[int, int]],
 ) -> float:
-    """One build's damage, through the one path that defines what a build is worth."""
-    log, _skipped = build_combination_log(
-        context.base_contributions, combination, bonuses,
+    """One build's damage, through the one path that defines what a build is worth.
+
+    `skipped` is accumulated into, by tier identity rather than by count — the same
+    correction the PR #9 review made to the search, where summing per combination turned
+    one conditional 4-piece into a report of millions.
+    """
+    log, tiers = build_combination_log(
+        context.base_contributions, combination, bonuses, resolved=resolved,
     )
+    skipped |= tiers
     evaluator = BuildEvaluator(
         registry=log.registry,
         enemy=context.enemy,

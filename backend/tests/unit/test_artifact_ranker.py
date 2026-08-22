@@ -14,6 +14,7 @@ import pytest
 from app.formula.genshin import tags
 from app.formula.genshin.damage import Hit
 from app.pando.calculator import NodeRegistry
+from app.services import artifact_ranker
 from app.services.artifact_optimizer import (
     ArtifactCandidate,
     OptimizerInputError,
@@ -252,6 +253,8 @@ def test_ranking_with_no_contexts_is_refused():
 
 
 def test_a_candidate_in_an_unknown_slot_is_refused():
+    """Refused by the shared validation, which already names the five. The ranker had its
+    own copy of that check and its own copy of the list; one place is enough."""
     odd = ArtifactCandidate(
         artifact_id="odd", slot="equip_hat", set_id=1, rarity=5, level=20,
         main_stat="FIGHT_PROP_HP",
@@ -319,3 +322,60 @@ def test_a_ranking_with_no_candidates_is_empty_not_an_error():
 
     assert result.artifacts == ()
     assert "main" in result.baselines
+
+
+# ---- Findings from reviewing this PR ---------------------------------------
+
+def test_a_conditional_set_bonus_is_reported_not_silently_dropped():
+    """The search reports these. A ranking that dropped them would leave "why is this
+    4-piece worth nothing" unanswerable in exactly the tool a player consults *before*
+    deciding whether to keep the piece.
+
+    Counted by tier identity, not per swap — the PR #9 correction, which would otherwise
+    have to be made a second time here once the numbers got large enough to notice.
+    """
+    conditional = SetBonus(set_id=2, pieces_required=2, add_props=(
+        {"prop_type": "FIGHT_PROP_NONE", "value": 0},))
+    worn = _equipped(**{
+        slot: _piece(slot, f"worn-{slot}", set_id=2)
+        for slot in ("equip_bracer", "equip_necklace")
+    })
+    context = _context(equipped=worn)
+
+    result = rank(
+        [_piece("equip_ring", f"g{i}") for i in range(4)],
+        [context, _context("second", PYRO_HIT, equipped=worn)],
+        set_bonuses=[conditional],
+    )
+
+    # Four candidates x two contexts x (one baseline each) all meet the same tier.
+    assert result.skipped_conditional_bonuses == 1
+
+
+def test_every_piece_is_validated_once_not_once_per_swap(monkeypatch):
+    """The unchanged four-fifths of a build were re-validated for every candidate in every
+    context — the repeated-immutable-work finding from the search, at a smaller exponent."""
+    calls: list[str] = []
+    real = artifact_ranker.validated_stats
+
+    def counting(candidate):
+        calls.append(candidate.artifact_id)
+        return real(candidate)
+
+    monkeypatch.setattr(artifact_ranker, "validated_stats", counting)
+
+    candidates = [_piece("equip_ring", f"g{i}") for i in range(4)]
+    rank(candidates, [_context("a"), _context("b", PYRO_HIT)])
+
+    # Five worn pieces (shared by both contexts) plus four candidates. Once each.
+    assert sorted(calls) == sorted({*(c.artifact_id for c in candidates),
+                                   *(w.artifact_id for w in _equipped())})
+
+
+def test_an_illegal_candidate_is_named():
+    illegal = ArtifactCandidate(
+        artifact_id="impossible-flower", slot="equip_bracer", set_id=1, rarity=5,
+        level=20, main_stat="FIGHT_PROP_CRITICAL_HURT",
+    )
+    with pytest.raises(OptimizerInputError, match="impossible-flower"):
+        rank([illegal], [_context()])

@@ -250,7 +250,7 @@ def optimize(
     # it appeared in — N^4 times for N pieces per slot. The per-candidate *stat resolution*
     # is the cost this module accepts; repeating an immutable value is not part of it.
     resolved = {
-        candidate.artifact_id: _validated_stats(candidate)
+        candidate.artifact_id: validated_stats(candidate)
         for bucket in by_slot.values()
         for candidate in bucket
     }
@@ -258,7 +258,7 @@ def optimize(
     # Pruning **after** validation, not before. The prefilter values a candidate's main stat
     # against the snapshot, so an illegal piece reaching it raises `SnapshotUnavailableError`
     # from inside the pruning layer — blaming the snapshot for a caller's bad input, and
-    # losing the artifact id that `_validated_stats` puts in the message.
+    # losing the artifact id that `validated_stats` puts in the message.
     by_slot, report = artifact_prefilter.prune(
         by_slot=by_slot,
         base_contributions=base_contributions,
@@ -378,7 +378,7 @@ def build_combination_log(
     for candidate in combination:
         stats = (
             resolved[candidate.artifact_id] if resolved is not None
-            else _validated_stats(candidate)
+            else validated_stats(candidate)
         )
         add_artifact(log, stats)
     return log, _apply_set_bonuses(log, counts, bonuses)
@@ -419,7 +419,7 @@ def _bucket_by_slot(
     return buckets
 
 
-def _validated_stats(candidate: ArtifactCandidate) -> ArtifactStats:
+def validated_stats(candidate: ArtifactCandidate) -> ArtifactStats:
     """Check one candidate and build its stat record, naming it if it is not legal.
 
     Done once per candidate rather than once per combination it appears in: an illegal piece
