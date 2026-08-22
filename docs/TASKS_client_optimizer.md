@@ -273,7 +273,35 @@ boundary:
 **OQ-S3 answered** — see the BRIEF. `GET /api/v1/artifacts/inventory` returns the whole
 inventory with a version digest and answers `304` to `If-None-Match`. The deciding factor was
 staleness, not transfer size.
-### [ ] D.2 — Retrieval by context key, **reporting its own error** (DESIGN §3)
+### [x] D.2 — Retrieval by context key, **reporting its own error** (DESIGN §3) — **done**
+
+`app/services/sim_retrieval.py` — a pure function over the runs cached for one context. It
+returns the run **with** what was asked for, what was matched, how far that is, and how much
+the substitution appears to cost. The HTTP surface is deliberately left to D.3, because
+"retrieved" and "nothing retrievable" are two halves of one contract and shipping the first
+shape now would mean reshaping it one task later.
+
+**The assumption was measured before anything was built on it** —
+`docs/RESEARCH_er_bucketing.md`, 54 gcsim runs at the pin, one per whole ER percent. Three
+findings changed the design:
+
+1. **Skill casts, attack casts and aura uptime are *exactly* invariant** across 100–153 % ER.
+   The §3 assumption holds outright for most of what "context" means.
+2. **A 5 % bucket is not uniformly safe.** Bucket 120 — the one straddling the burst-count
+   climb — is **13.3 %** wide in DPS at 5.9× the runs' standard error, while buckets away
+   from the transition sit at the noise floor. A single global error figure would be
+   complacent at 120 % and alarmist at 145 %.
+3. **The significance test misfired**, flagging a bucket where burst count was flat and no
+   context change was possible. Burst casts are discrete, so per-iteration DPS is multi-modal
+   and `sd/√n` understates it. `Divergence` therefore reports the delta **and** the noise
+   floor rather than pronouncing on them.
+
+And one more found by a test rather than by reading: **the nearest neighbour underestimates.**
+For bucket 120 the nearest neighbour reports 3.7 % against a true within-bucket spread of
+13.3 %, because the curve is steep in the half of the bucket that neighbour cannot see. The
+reference is now the immediate neighbour that moved *most* (8.2 % there), and the docstring
+says plainly that this is a lower bound — "the fastest the answer is moving nearby", not "the
+most this can be wrong".
 ### [ ] D.3 — "No retrievable neighbour" as a stated outcome, never a silent fallback
 ### [ ] D.4 — Explanation from contribution log + retrieved runs + catalogue text
 ### [ ] D.5 — Weapon comparison across N candidate weapons (DESIGN §3.5) — **v1**
