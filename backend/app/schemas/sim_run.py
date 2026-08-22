@@ -32,11 +32,15 @@ class SimRunSubmit(BaseModel):
     context_key: str
     #: Whole percent, and it must be a bucket boundary — see the validator.
     er_bucket: int = Field(..., ge=0, le=10_000)
-    #: What gcsim reported, verbatim. Not interpreted here; §3's error measurement reads it.
+    #: What gcsim reported, verbatim. §3's error measurement reads it.
+    #:
+    #: There is deliberately **no `dps_mean` field here**. The headline number is *derived*
+    #: from this payload by `dps_mean_of()`, not submitted alongside it: a client that sent
+    #: both could send a mean that disagrees with the run it claims to summarise, and a
+    #: cache whose headline figure refers to something other than its body is the precise
+    #: failure this project keeps meeting. Two fields that can disagree are worse than one
+    #: field that can be absent.
     result: dict[str, Any]
-    #: Pulled out for the common read. Null is allowed: a context run is wanted for its
-    #: uptimes and energy, and one that reports no DPS is still worth caching.
-    dps_mean: float | None = None
 
     @field_validator("context_key")
     @classmethod
@@ -80,6 +84,26 @@ class SimRunSubmit(BaseModel):
             )
             raise ValueError(msg)
         return value
+
+
+#: Where gcsim's own summary puts the mean DPS. Read off a committed run at the pin —
+#: `tests/fixtures/crossval/ayaka_normal_1.json` — not from memory.
+_DPS_MEAN_PATH = ("statistics", "dps", "mean")
+
+
+def dps_mean_of(result: dict[str, Any]) -> float | None:
+    """The run's headline DPS, or None when the payload does not carry one.
+
+    None rather than zero. A context run is wanted for its uptimes and energy, and one that
+    reports no DPS is still worth caching — but "no DPS reported" and "a DPS of zero" are
+    different claims and a cache should not merge them.
+    """
+    node: Any = result
+    for step in _DPS_MEAN_PATH:
+        if not isinstance(node, dict) or step not in node:
+            return None
+        node = node[step]
+    return float(node) if isinstance(node, (int, float)) and not isinstance(node, bool) else None
 
 
 class SimRunRead(BaseModel):

@@ -35,8 +35,15 @@ from fastapi import (
 from app.dependencies import get_owned_sim_run_repo
 from app.middleware.rate_limit import WRITE_LIMIT, limiter
 from app.repositories.sim_run import SimRunRepository
-from app.schemas.sim_run import SimRunCoverage, SimRunRead, SimRunStored, SimRunSubmit
+from app.schemas.sim_run import (
+    SimRunCoverage,
+    SimRunRead,
+    SimRunStored,
+    SimRunSubmit,
+    dps_mean_of,
+)
 from app.services.gcsim_keys import pinned_commit
+from app.services.sim_context import ER_BUCKET_PERCENT
 
 router = APIRouter(prefix="/sim-runs", tags=["sim-runs"])
 
@@ -46,6 +53,7 @@ _Repo = Annotated[SimRunRepository, Depends(get_owned_sim_run_repo)]
 _DIGEST = r"^[0-9a-f]{64}$"
 _ContextKeyQuery = Annotated[str, Query(min_length=64, max_length=64, pattern=_DIGEST)]
 _ContextKeyPath = Annotated[str, Path(min_length=64, max_length=64, pattern=_DIGEST)]
+_ERBucket = Annotated[int, Path(ge=0, le=10_000)]
 
 
 def _require_our_pin(submitted: str) -> str:
@@ -83,13 +91,25 @@ async def get_coverage(repo: _Repo, context_key: _ContextKeyQuery) -> SimRunCove
 
 
 @router.get("/{context_key}/{er_bucket}", response_model=SimRunRead)
-async def get_run(repo: _Repo, context_key: _ContextKeyPath, er_bucket: int) -> SimRunRead:
+async def get_run(repo: _Repo, context_key: _ContextKeyPath, er_bucket: _ERBucket) -> SimRunRead:
     """One cached run, or a 404 that says which bucket was missing.
 
     The 404 is the outcome D.3 turns into a stated one: a caller that gets it must simulate
     or say so, and must never widen its search to a neighbouring bucket and report the score
     as though it were this one's.
     """
+    if er_bucket % ER_BUCKET_PERCENT != 0:
+        # The same value the writer refuses. Letting the reader ask for it would 404 forever:
+        # the caller would simulate, store under the bucketed key, ask again with the raw
+        # value, miss again, and never see anything but a cold context.
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"{er_bucket} is not a bucket boundary; buckets are multiples of "
+                f"{ER_BUCKET_PERCENT}. Bucket the ER with sim_context.er_bucket() — asking "
+                f"for a raw value would miss every time, and look like a cold context."
+            ),
+        )
     run = await repo.get(
         context_key=context_key, er_bucket=er_bucket, gcsim_pin=pinned_commit(),
     )
@@ -124,7 +144,7 @@ async def store_run(
         er_bucket=body.er_bucket,
         gcsim_pin=pin,
         result=body.result,
-        dps_mean=body.dps_mean,
+        dps_mean=dps_mean_of(body.result),
     )
     response.status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
     return SimRunStored(run=SimRunRead.model_validate(run), created=created)

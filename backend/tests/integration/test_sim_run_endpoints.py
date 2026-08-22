@@ -41,11 +41,17 @@ def _key(**overrides) -> str:
 
 
 def _body(key: str, *, bucket: int = 180, dps: float | None = 1234.5) -> dict:
+    """A submission shaped like gcsim's own output — `statistics.dps.mean` is where the
+    headline number lives, read off the committed run at the pin rather than invented."""
     return {
         "context_key": key,
         "er_bucket": bucket,
-        "result": {"dps": {"mean": dps}, "uptimes": {"cryo_resonance": 0.71}},
-        "dps_mean": dps,
+        "result": {
+            "statistics": {
+                "dps": {"mean": dps, "min": dps, "max": dps},
+                "target_aura_uptime": {"cryo": 0.71},
+            },
+        },
     }
 
 
@@ -66,7 +72,7 @@ async def test_a_run_is_stored_and_read_back(authed_client: AsyncClient):
 
     got = await authed_client.get(f"/api/v1/sim-runs/{key}/180")
     assert got.status_code == 200
-    assert got.json()["result"]["uptimes"]["cryo_resonance"] == 0.71
+    assert got.json()["result"]["statistics"]["target_aura_uptime"]["cryo"] == 0.71
     assert got.json()["gcsim_pin"] == pinned_commit()
 
 
@@ -172,6 +178,35 @@ async def test_an_oversized_result_is_refused(authed_client: AsyncClient):
     assert (await _post(authed_client, body)).status_code == 422
 
 
+async def test_the_headline_dps_is_derived_from_the_run_not_submitted(
+    authed_client: AsyncClient,
+):
+    """A client cannot claim a mean that disagrees with the run it summarises.
+
+    There is no `dps_mean` field to send. Sending one is ignored rather than believed —
+    the stored figure comes from `statistics.dps.mean` in the payload itself.
+    """
+    key = _key()
+    body = _body(key, dps=1000.0)
+    body["dps_mean"] = 999_999.0  # a client trying to inflate its own headline number
+
+    await _post(authed_client, body)
+    assert (await authed_client.get(f"/api/v1/sim-runs/{key}/180")).json()["dps_mean"] == 1000.0
+
+
+async def test_a_run_with_no_dps_is_cached_with_none(authed_client: AsyncClient):
+    """A context run wanted for uptimes and energy is still worth caching.
+
+    None rather than zero: "no DPS reported" and "a DPS of zero" are different claims.
+    """
+    key = _key()
+    body = _body(key)
+    body["result"] = {"statistics": {"target_aura_uptime": {"cryo": 0.71}}}
+
+    assert (await _post(authed_client, body)).status_code == 201
+    assert (await authed_client.get(f"/api/v1/sim-runs/{key}/180")).json()["dps_mean"] is None
+
+
 # ── Coverage, and the stated miss ─────────────────────────────────────────────
 
 
@@ -204,6 +239,19 @@ async def test_a_missing_bucket_is_a_404_naming_it(authed_client: AsyncClient):
     missing = await authed_client.get(f"/api/v1/sim-runs/{key}/100")
     assert missing.status_code == 404
     assert "100" in missing.json()["detail"]
+
+
+async def test_reading_an_unbucketed_value_is_refused_rather_than_missing_forever(
+    authed_client: AsyncClient,
+):
+    """The reader must refuse what the writer refuses, or the caller loops.
+
+    Ask for 179, miss; simulate; store under 175; ask for 179 again, miss again. A 404 here
+    would be an infinite cold context that never once looks like a bug.
+    """
+    response = await authed_client.get(f"/api/v1/sim-runs/{_key()}/179")
+    assert response.status_code == 422
+    assert str(ER_BUCKET_PERCENT) in response.json()["detail"]
 
 
 async def test_coverage_does_not_leak_another_context(authed_client: AsyncClient):
