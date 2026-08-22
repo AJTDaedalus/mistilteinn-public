@@ -20,11 +20,11 @@ class TestOptimizationJobModel:
             "character_name",
             "enemy_name",
             "rotation_name",
-            "assignments_done",
-            "assignments_total",
+            "combinations_done",
+            "combinations_total",
             "evaluated",
-            "pruned_sets",
-            "pruned_stats",
+            "rejected_by_sets",
+            "rejected_by_stats",
             "elapsed_seconds",
             "eta_seconds",
             "result",
@@ -61,15 +61,15 @@ class TestOptimizationJobModel:
             character_name="Zhu Yuan",
             enemy_name="Metal Crab",
             rotation_name="DPS Combo",
-            assignments_done=5,
-            assignments_total=20,
+            combinations_done=5,
+            combinations_total=20,
             evaluated=1000,
         )
         assert job.status == "running"
         assert job.character_name == "Zhu Yuan"
         assert job.enemy_name == "Metal Crab"
-        assert job.assignments_done == 5
-        assert job.assignments_total == 20
+        assert job.combinations_done == 5
+        assert job.combinations_total == 20
         assert job.evaluated == 1000
 
     def test_indexes_defined(self):
@@ -95,3 +95,34 @@ class TestOptimizationJobModel:
         sd = cols["job_type"].server_default
         assert sd is not None
         assert "optimize" in str(sd.arg)
+
+
+def test_optimizer_progress_satisfies_the_runners_protocol():
+    """`SearchProgress` is structural, so nothing enforces the match at runtime.
+
+    G.8's notes recorded that `OptimizerProgress` did *not* satisfy it — the protocol still
+    described fairy's ZZZ payload (`assignments_done` over set-assignment frames, which this
+    game has none of). G.10 reconciled them by renaming the columns and the protocol to
+    combinations. A drift back would surface as a job whose progress silently never updates,
+    because `_update_progress` would raise inside a worker thread.
+    """
+    from app.services.artifact_optimizer import OptimizerProgress
+    from app.services.job_runner import SearchProgress
+
+    required = set(SearchProgress.__annotations__)
+    provided = set(OptimizerProgress.__annotations__)
+
+    assert required <= provided, f"OptimizerProgress is missing {sorted(required - provided)}"
+
+
+def test_the_progress_columns_use_this_games_vocabulary():
+    """No column exists here because its ZZZ counterpart did (CLAUDE.md's fork rule).
+
+    "Assignments" were set-assignment *frames*, a ZZZ optimizer concept; this search is a
+    plain product over five slots and counts combinations.
+    """
+    columns = set(OptimizationJob.__table__.columns.keys())
+
+    assert {"combinations_done", "combinations_total"} <= columns
+    assert {"rejected_by_sets", "rejected_by_stats"} <= columns
+    assert not {"assignments_done", "assignments_total", "pruned_sets", "pruned_stats"} & columns

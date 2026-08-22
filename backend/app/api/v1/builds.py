@@ -18,26 +18,31 @@ an answer is worse than a slow search, and the caller is the one who can decide 
 exhaustively.
 """
 
+from functools import partial
 from typing import TYPE_CHECKING, Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 
 from app.dependencies import (
     get_enemy_profile_repo,
+    get_job_runner,
     get_owned_artifact_repo,
     get_owned_build_repo,
+    get_owned_optimization_job_repo,
 )
 from app.formula.genshin.damage import Hit
 from app.middleware.rate_limit import WRITE_LIMIT, limiter
 from app.repositories.artifact import ArtifactRepository
 from app.repositories.build import BuildRepository
 from app.repositories.enemy import EnemyProfileRepository
+from app.repositories.optimization_job import OptimizationJobRepository
 from app.schemas.build import (
     BuildCreate,
     BuildRead,
     BuildUpdate,
     EnemySpec,
     HitSpec,
+    JobAccepted,
     OptimizedBuildRead,
     OptimizeRequest,
     OptimizeResponse,
@@ -47,13 +52,19 @@ from app.schemas.build import (
     SearchTransparency,
 )
 from app.schemas.common import PaginatedResponse
-from app.services import artifact_optimizer, artifact_ranker, build_assembler
+from app.services import (
+    artifact_optimizer,
+    artifact_ranker,
+    build_assembler,
+    optimizer_job_service,
+)
 from app.services.build_assembler import BuildAssemblyError
 from app.services.damage_calculator import Enemy, enemy_from_profile
+from app.services.job_runner import JobRunner
 from app.services.stat_calculator import StatInputError
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
 
     from app.formula.genshin.explain import Contribution
     from app.models.artifact import Artifact, ArtifactSet
@@ -129,17 +140,30 @@ async def delete_build(
     await repo.delete(build_id)
 
 
-@router.post("/{build_id}/optimize", response_model=OptimizeResponse)
+@router.post(
+    "/{build_id}/optimize",
+    response_model=OptimizeResponse | JobAccepted,
+    responses={202: {"model": JobAccepted}},
+)
 @limiter.limit(WRITE_LIMIT)
 async def optimize_build(
     request: Request,
     build_id: str,
     body: OptimizeRequest,
+    response: Response,
     builds: Annotated[BuildRepository, Depends(get_owned_build_repo)],
     artifacts: Annotated[ArtifactRepository, Depends(get_owned_artifact_repo)],
     enemies: Annotated[EnemyProfileRepository, Depends(get_enemy_profile_repo)],
-) -> OptimizeResponse:
-    """Search the caller's inventory for the best five pieces for this build."""
+    jobs: Annotated[OptimizationJobRepository, Depends(get_owned_optimization_job_repo)],
+    runner: Annotated[JobRunner, Depends(get_job_runner)],
+) -> OptimizeResponse | JobAccepted:
+    """Search the caller's inventory for the best five pieces for this build.
+
+    **200 with the answer, or 202 with a job id.** A search that fits inside
+    `optimizer_job_service.SYNC_SECONDS` runs here and returns its result; a larger one is
+    queued and answered with a `poll_url`. A contract that always returned a job id would
+    make the ordinary case worse in order to serve the rare one.
+    """
     build = await _require_full_build(builds, build_id)
     base = _base_contributions(build)
     # One fetch. Equipped pieces are owned pieces, so this already covers the build's own
@@ -157,19 +181,53 @@ async def optimize_build(
         top_n=body.top_n,
         prefilter_top_k=body.prefilter_top_k,
     )
+    payload = optimizer_job_service.SearchPayload(
+        base_contributions=tuple(base),
+        candidates=tuple(inventory),
+        hit=_hit(body.hit),
+        enemy=await _enemy(body.enemy, enemies),
+        character_level=build.character_level,
+        set_bonuses=tuple(bonuses),
+        constraints=constraints,
+    )
+
+    estimate = optimizer_job_service.estimated_combinations(payload.candidates)
+    limit = optimizer_job_service.sync_combination_limit()
+    if estimate > limit:
+        # Too big to answer inside the request. Everything above already validated, so a
+        # job is only ever created for a search that would actually have run.
+        return await _accept_job(
+            response, jobs, runner, build, payload, estimate, limit,
+            partial(_to_response, owned_total=owned_total),
+        )
+
     try:
         result = artifact_optimizer.optimize(
-            base,
-            inventory,
-            _hit(body.hit),
-            await _enemy(body.enemy, enemies),
-            character_level=build.character_level,
-            set_bonuses=bonuses,
-            constraints=constraints,
+            payload.base_contributions,
+            payload.candidates,
+            payload.hit,
+            payload.enemy,
+            character_level=payload.character_level,
+            set_bonuses=payload.set_bonuses,
+            constraints=payload.constraints,
         )
     except (artifact_optimizer.OptimizerInputError, StatInputError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+    return OptimizeResponse.model_validate(
+        _to_response(result, considered=len(inventory), owned_total=owned_total),
+    )
+
+
+def _to_response(
+    result: artifact_optimizer.OptimizerResult, *, considered: int, owned_total: int,
+) -> dict:
+    """One shape for both paths.
+
+    A job persists this dict and a synchronous request returns it, so "what an optimize
+    answer looks like" has one definition. Two of them would drift, and the one that drifted
+    would be whichever path the tests exercised less.
+    """
     return OptimizeResponse(
         builds=[
             OptimizedBuildRead(
@@ -197,9 +255,40 @@ async def optimize_build(
             is_exact=result.is_exact,
             summary=result.summary(),
             skipped_conditional_bonuses=result.skipped_conditional_bonuses,
-            inventory_considered=len(inventory),
+            inventory_considered=considered,
             inventory_total=owned_total,
         ),
+    ).model_dump()
+
+
+async def _accept_job(
+    response: Response,
+    jobs: OptimizationJobRepository,
+    runner: JobRunner,
+    build: "Build",
+    payload: optimizer_job_service.SearchPayload,
+    estimate: int,
+    limit: int,
+    to_response: "Callable[[artifact_optimizer.OptimizerResult], dict]",
+) -> JobAccepted:
+    """Persist a queued job, hand the search to the runner, and answer 202."""
+    job = await jobs.create({
+        "owner_id": jobs.owner_id,
+        "job_type": "optimizer",
+        "status": "queued",
+        "request": {"build_id": str(build.id), "estimated_combinations": estimate},
+        "character_name": build.character.name if build.character else "",
+        "combinations_total": estimate,
+    })
+    runner.submit_search(
+        str(job.id), optimizer_job_service.search_fn(payload, to_response),
+    )
+    response.status_code = status.HTTP_202_ACCEPTED
+    return JobAccepted(
+        job_id=str(job.id),
+        poll_url=f"/api/v1/optimizer-jobs/{job.id}",
+        estimated_combinations=estimate,
+        sync_limit=limit,
     )
 
 

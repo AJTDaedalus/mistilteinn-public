@@ -14,7 +14,7 @@ targets 300 seconds of work and no HTTP client waits that long.
 Two things G.10 will hit, recorded here rather than rediscovered:
 
 * ``SearchProgress`` below still describes fairy's ZZZ payload
-  (``assignments_done`` / ``pruned_sets``). ``OptimizerProgress`` reports
+  (``combinations_done`` / ``rejected_by_sets``). ``OptimizerProgress`` reports
   ``combinations_done`` / ``combinations_total`` / ``evaluated`` / ``elapsed_seconds``
   and does **not** satisfy this protocol. One of the two has to move; the ETA formula
   below is what the protocol exists for, so read that before changing either.
@@ -33,13 +33,15 @@ import logging
 import math
 import threading
 from collections import deque
+from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor
 from typing import TYPE_CHECKING, Any, Protocol
 
 from app.repositories.optimization_job import OptimizationJobRepository
+from app.services.artifact_prefilter import Cancelled
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Coroutine
+    from collections.abc import Coroutine
 
     from sqlalchemy.ext.asyncio import async_sessionmaker
 
@@ -65,30 +67,47 @@ class SearchProgress(Protocol):
     """Structural type for a search-progress callback payload.
 
     Was ``disc_optimizer.OptimizerProgress``, deleted in G.8. Stated structurally so the
-    ETA formula and the progress writer survived the demolition without importing porting
-    source.
+    ETA formula and the progress writer survive without importing the optimizer — this
+    module is generic machinery and should not know which search it is running.
 
-    **Nothing satisfies it today.** ``artifact_optimizer.OptimizerProgress`` reports
-    ``combinations_done`` / ``combinations_total`` / ``evaluated`` / ``elapsed_seconds`` —
-    no ``assignments_*`` and no ``pruned_sets``, because the Genshin search has no
-    set-assignment frames to count. Reconciling the two is G.10's first job; this docstring
-    says so rather than leaving the mismatch to be found by a type error.
+    ``artifact_optimizer.OptimizerProgress`` satisfies it, and G.10 is where the two were
+    reconciled. The ZZZ shape it used to describe — ``assignments_done`` over
+    set-assignment *frames* — was renamed to combinations in the same change, because the
+    Genshin search has no frames to count; see the migration.
     """
 
-    assignments_done: int
-    assignments_total: int
+    combinations_done: int
+    combinations_total: int
     evaluated: int
-    pruned_sets: int
-    pruned_stats: int
+    rejected_by_sets: int
+    rejected_by_stats: int
     elapsed_seconds: float
+
+
+#: What `submit_search` runs on the worker thread: given a cancel event and a progress
+#: reporter, produce the result dict to persist.
+SearchFn = Callable[[threading.Event, Callable[["SearchProgress"], None]], dict]
+
+
+def _top_damage(result: dict) -> float | None:
+    """The best build's damage, for the job list's summary column.
+
+    `None` rather than `0.0` when a search returned nothing: a job that found no build and
+    a job whose best build does no damage are different outcomes, and a zero would render
+    as the second.
+    """
+    builds = result.get("builds") or []
+    if not builds:
+        return None
+    return float(builds[0].get("damage", 0.0))
 
 
 def _eta(p: SearchProgress) -> float | None:
     """ETA in seconds per §Q6 formula; None during warmup."""
-    threshold = max(3, math.ceil(p.assignments_total * 0.05))
-    if p.assignments_done < threshold or p.assignments_done == 0:
+    threshold = max(3, math.ceil(p.combinations_total * 0.05))
+    if p.combinations_done < threshold or p.combinations_done == 0:
         return None
-    return p.elapsed_seconds * (p.assignments_total - p.assignments_done) / p.assignments_done
+    return p.elapsed_seconds * (p.combinations_total - p.combinations_done) / p.combinations_done
 
 
 class JobRunner:
@@ -132,11 +151,69 @@ class JobRunner:
     # ------------------------------------------------------------------
     # Public API
 
+    def submit_search(self, job_id: str, search_fn: SearchFn) -> None:
+        """Queue a search, honouring the per-kind concurrency cap.
+
+        `search_fn(cancel_event, report)` runs on a worker thread. It reports progress
+        through `report`, returns the result dict to persist, and is expected to stop when
+        `cancel_event` is set — `artifact_optimizer.optimize` does that by raising
+        `artifact_prefilter.Cancelled` from its progress callback.
+
+        The job stays `queued` in the database until a slot frees, so a user watching two
+        submissions sees one running and one waiting rather than both claiming to run.
+        """
+        cancel_event = threading.Event()
+        with self._lock:
+            self._cancel_events[job_id] = cancel_event
+            if self._optimizer_running >= self._max_optimizer:
+                self._optimizer_queue.append((job_id, cancel_event, search_fn))
+                return
+            self._optimizer_running += 1
+        self._dispatch(job_id, cancel_event, search_fn)
+
+    def _dispatch(
+        self, job_id: str, cancel_event: threading.Event, search_fn: SearchFn,
+    ) -> None:
+        future = self._executor.submit(self._run_search, job_id, cancel_event, search_fn)
+        with self._lock:
+            self._futures[job_id] = future
+
+    def _run_search(
+        self, job_id: str, cancel_event: threading.Event, search_fn: SearchFn,
+    ) -> None:
+        """Worker-thread body: mark running, run, persist, then free the slot."""
+        try:
+            self._db_call(self._mark_running(job_id))
+            result = search_fn(cancel_event, lambda p: self._report(job_id, p))
+        except Cancelled:
+            self._db_call(self._mark_cancelled(job_id))
+        except Exception as exc:
+            logger.exception("Optimizer job %s failed", job_id)
+            self._db_call(self._mark_failed(job_id, f"{type(exc).__name__}: {exc}"))
+        else:
+            top = _top_damage(result)
+            self._db_call(self._mark_succeeded(job_id, result, top))
+        finally:
+            with self._lock:
+                self._cancel_events.pop(job_id, None)
+                self._futures.pop(job_id, None)
+                self._optimizer_running -= 1
+                queued = self._optimizer_queue.popleft() if self._optimizer_queue else None
+                if queued is not None:
+                    self._optimizer_running += 1
+            if queued is not None:
+                self._dispatch(*queued)
+
+    def _report(self, job_id: str, progress: SearchProgress) -> None:
+        """Persist one progress snapshot. Called from the worker thread."""
+        self._db_call(self._update_progress(job_id, progress, _eta(progress)))
+
     def submit(self, job_id: str, runner_fn: Callable, *args: Any, **kwargs: Any) -> None:
         """Submit a generic callable to the threadpool.
 
-        Was "used by unit tests" while `submit_optimizer_job` and `submit_rank_job` existed;
-        since B.2 removed those, this is the only public submit path until Chunk G.
+        Kept alongside `submit_search` because it is what the runner's own tests exercise —
+        the queueing and cancellation machinery is worth testing without a database or a
+        real search behind it.
 
         ``runner_fn`` is called with ``cancel_event`` as the first positional
         arg, followed by ``*args`` and ``**kwargs``.
@@ -231,11 +308,11 @@ class JobRunner:
             repo = OptimizationJobRepository(session)
             await repo.update_progress(
                 job_id,
-                assignments_done=p.assignments_done,
-                assignments_total=p.assignments_total,
+                combinations_done=p.combinations_done,
+                combinations_total=p.combinations_total,
                 evaluated=p.evaluated,
-                pruned_sets=p.pruned_sets,
-                pruned_stats=p.pruned_stats,
+                rejected_by_sets=p.rejected_by_sets,
+                rejected_by_stats=p.rejected_by_stats,
                 elapsed_seconds=p.elapsed_seconds,
                 eta_seconds=eta,
             )
