@@ -423,14 +423,11 @@ would invalidate every one of them to buy alphabetical tidiness.
 whole point: *"If integration is clean, it collapses the hardest phase; if not, walk away
 with better crossval tooling."* Walking away is a success condition.
 
-- **S.1** — Can gcsim be driven programmatically at all? Interface, inputs, outputs.
-- **S.2** — Go→WASM and sidecar, both costed. Which can this stack actually host?
-- **S.3** — Throughput: what a single run costs, against what the optimizer and the rotation
-  model would each need.
-- **S.4** — Coverage: what gcsim gives that the Chunk F chain does not, and what it demands
-  that this repo cannot supply (frame data, action lists, per-character implementations).
-- **S.5** — `docs/RESEARCH_gcsim_embed.md` + a recommendation, and reconcile TASKS' chunk
-  order with the BRIEF's phase order either way.
+- **[x] S.1** — Yes: `pkg/simulator.Run(ctx, Options{ConfigPath})`. Upstream's `cmd/wasm` proves the core is already separable behind a thin binding.
+- **[x] S.2** — Both work. `GOOS=wasip1` builds (40 MB) and runs from Python via wasmtime, bit-identical to native. Upstream's own WASM target is `js/wasm` and not Python-hostable; ours is 30 lines.
+- **[x] S.3** — native 0.238 s, WASI 2.6–3.2 s, Chunk F chain 5.5e-4 s/combination. gcsim is ~430× (native) to ~4,700× (WASI) too slow to be the optimizer's inner loop, and fine for a rotation.
+- **[x] S.4** — 106 characters, 53 artifact sets: substantially the whole roster, and **the kit corpus Chunk H exists to build**. Costs: config generation, a ~39-entry character-key alias table, action lists, re-pinning discipline.
+- **[~] S.5** — `docs/RESEARCH_gcsim_embed.md` written; recommends **sidecar, not WASM, keep the Chunk F chain**. **Blocked on the owner** for §6: if gcsim supplies both the sim and the kits, what is mistilteinn? That answer decides whether Chunk H survives, and therefore what TASKS' order should be.
 
 ## Chunk H — Kit corpus, modifier DSL, validation harness **[Planner: own DESIGN doc first]**
 
