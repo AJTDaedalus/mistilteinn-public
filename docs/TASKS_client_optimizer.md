@@ -131,14 +131,26 @@ one layer up**, and it gets B.6's treatment: delete the ZZZ concepts rather than
 
 ## Chunk C — The kernel
 
-### [ ] C.1 — The differential-testing harness, **before the kernel** **[gate]**
+### [x] C.1 — The differential-testing harness, **before the kernel** **[gate]**
 - **Do:** a generator producing thousands of arbitrary build/hit cases and their expected
   values from the Python chain, committed as fixtures, with a sample confirmed by gcsim.
 - **Why first:** DESIGN §6. A second damage chain without a test binding it to the first is
   the whole hazard, and building the kernel first means the harness gets shaped to fit
   whatever the kernel already does.
-- **Accept:** the harness runs against the *Python* chain and passes, before any kernel
-  exists.
+- **Done:** `scripts/kernel/generate_cases.py` sweeps the input surface into
+  `tests/fixtures/kernel/cases.json` — **2,000 cases**, deterministic from a fixed seed.
+- **Coverage is asserted, not assumed**: all 4 scaling stats, 8 channels, 7 scopes, all 4
+  amplifying reactions plus none, 30% past the crit-rate cap, all three resistance branches
+  including exactly 0.75, and 13% combining both enemy DEF mechanics.
+- `test_kernel_cases.py` replays every case **from the JSON alone**, which is the harness's
+  real failure mode: a fixture missing a field the chain reads would look like "the kernel is
+  wrong" and the first thing anyone would do is change the kernel. Verified by corrupting 50
+  cases and watching it fail.
+- **Anchoring is transitive and that is written down.** A case is a synthetic stat bundle,
+  and no gcsim config expresses one — gcsim simulates characters, not hypothetical stat
+  vectors. So `tests/crossval` pins the chain to gcsim and the chain generates these. One
+  link longer than DESIGN §6 implied; what keeps it honest is crossval running with
+  `CROSSVAL_REQUIRE_DB=1` so the anchor cannot skip.
 
 ### [ ] C.2 — Argue the f32 tolerance **[Planner]**
 - **Do:** derive it from f32 precision compounded over the chain's operations, in writing, in
