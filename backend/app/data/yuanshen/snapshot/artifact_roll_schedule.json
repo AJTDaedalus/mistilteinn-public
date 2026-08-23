@@ -1,0 +1,115 @@
+{
+ "pinned_commit_sha": "5445617e33b29f057b9479883cc8e5e77c7d128d",
+ "sources": [
+  "ReliquaryExcelConfigData"
+ ],
+ "note": "rarity -> when a piece gains a substat, in the artifact's own +0..+20 levels. `upgrade_levels` is converted from the 1-indexed `addPropLevels` the table publishes; `raw_add_prop_levels` is what it published, so the conversion can be checked rather than trusted. `initial_substat_counts` is every `appendPropNum` seen at that rarity, treating an omitted key as the zero these dumps do not write — a piece rolls with one of them, and which one is not knowable from the catalogue. `excluded_unupgradable` counts the setless starter relics that carry no addPropLevels at all.",
+ "excluded_unupgradable": 32,
+ "schedules": {
+  "4": {
+   "max_level": 16,
+   "raw_max_level": 17,
+   "upgrade_levels": [
+    4,
+    8,
+    12,
+    16
+   ],
+   "raw_add_prop_levels": [
+    5,
+    9,
+    13,
+    17
+   ]
+  },
+  "5": {
+   "max_level": 20,
+   "raw_max_level": 21,
+   "upgrade_levels": [
+    4,
+    8,
+    12,
+    16,
+    20
+   ],
+   "raw_add_prop_levels": [
+    5,
+    9,
+    13,
+    17,
+    21
+   ]
+  },
+  "1": {
+   "max_level": 4,
+   "raw_max_level": 5,
+   "upgrade_levels": [
+    4
+   ],
+   "raw_add_prop_levels": [
+    5
+   ]
+  },
+  "2": {
+   "max_level": 4,
+   "raw_max_level": 5,
+   "upgrade_levels": [
+    4
+   ],
+   "raw_add_prop_levels": [
+    5
+   ]
+  },
+  "3": {
+   "max_level": 12,
+   "raw_max_level": 13,
+   "upgrade_levels": [
+    4,
+    8,
+    12
+   ],
+   "raw_add_prop_levels": [
+    5,
+    9,
+    13
+   ]
+  }
+ },
+ "initial_substat_counts": {
+  "4": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ],
+  "5": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ],
+  "1": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ],
+  "2": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ],
+  "3": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ]
+ }
+}

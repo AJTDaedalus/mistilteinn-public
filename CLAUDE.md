@@ -20,11 +20,13 @@ core is green, the Genshin domain models exist, the nanoka GI importer seeds the
 committed YuanShenResources snapshot supplies what nanoka does not publish, and the damage
 chain **matches gcsim to 1.3e-8 relative** on its first crossval case — inside the argued
 `1e-7` tolerance, with the residual fully explained (float32 curves in the dump against
-decimals in gcsim). **Chunk G is complete except G.9**, which is **blocked on a citation**:
-upgrade-potential scoring needs the substat roll schedule, and the committed snapshot
-publishes roll values and depots but not the schedule. **Its `TODO(chunk-G.9)` marker went
-with `artifact_ranker.py` in C.6**, so it is tracked in `docs/TASKS_mistilteinn.md` instead —
-`rg "TODO(chunk-"` no longer lists it. Everything else in G landed — the artifact optimizer,
+decimals in gcsim). **Chunk G is complete except G.9's scoring, and G.9 is no longer blocked**: the substat roll
+schedule it needed is published in `ReliquaryExcelConfigData.addPropLevels`, now derived into
+`app/data/yuanshen/snapshot/artifact_roll_schedule.json` and read through
+`app/data/snapshot.py`. A 5-star upgrades at +4/+8/+12/+16/+20. What remains is the scoring
+function, which waits on a **consumer** — `artifact_ranker` was its home and C.6 deleted it —
+rather than on a citation. Tracked in `docs/TASKS_mistilteinn.md`, since its
+`TODO(chunk-G.9)` marker went with the ranker and `rg "TODO(chunk-"` no longer lists it. Everything else in G landed — the artifact optimizer,
 its lossless/lossy pruning, the ranker, the GOOD importer and the whole read-and-write API —
 **and C.6 has since deleted the optimizer's and ranker's endpoints, the job runner and the
 ranker itself.** Searching runs in the browser now.
@@ -41,7 +43,7 @@ comparison. What remains in `docs/TASKS_mistilteinn.md` is **G.9** (blocked on a
 ruling, on the grounds that this is not a functional app until the plan completes and interim
 functionality is not worth keeping for its own sake.
 
-- **The backend suite passes, with nothing skipped.** **927 tests, 0 skipped**, and
+- **The backend suite passes, with nothing skipped.** **951 tests, 0 skipped**, and
   `uvicorn app.main:app` serves **26 paths**. Run CI's own gates rather than a remembered
   subset: `cd backend && python -m scripts.ci_local` reads `.github/workflows/*.yml` and
   executes them here — 19 gates, including the WGSL kernel, gcsim crossval, gitleaks and

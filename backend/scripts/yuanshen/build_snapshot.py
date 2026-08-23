@@ -483,11 +483,109 @@ def build_growth_curves(sha: str | None = None) -> dict[str, Any]:
 
 # -- CLI ----------------------------------------------------------------------------
 
+def build_roll_schedule(sha: str | None = None) -> dict[str, Any]:
+    """When an artifact gains a substat roll, and how many it starts with (G.9).
+
+    **This is the citation G.9 was blocked on.** Upgrade-potential scoring — "what could this
+    +0 piece become at +20" — needs the number of rolls a piece gains as it levels, and the
+    task refused to guess it: *"a potential score built on a guessed roll count is a confident
+    number with nothing behind it."* Both halves turn out to be published, and neither had
+    been read:
+
+    - **`ReliquaryExcelConfigData.addPropLevels`** — the levels at which a piece gains a
+      substat, `[5, 9, 13, 17, 21]` wherever it appears.
+    - **`ReliquaryExcelConfigData.appendPropNum`** — how many substats it starts with.
+    - **`maxLevel`** — which of those upgrade levels a rarity actually reaches. A 3-star caps
+      at internal 13, so only three of the five apply. Reading the schedule without this
+      would credit a 3-star with a 5-star's upgrades.
+
+    ## Levels are converted here, once
+
+    The tables are **1-indexed** — internal level 1 is the artifact's `+0`, exactly as
+    `ReliquaryLevelExcelConfigData` is, which is why
+    `app.data.snapshot.artifact_main_stat_value` already shifts by one. The published
+    `[5, 9, 13, 17, 21]` therefore means game levels **+4, +8, +12, +16, +20**.
+    `raw_add_prop_levels` keeps the unconverted values beside them so the conversion can be
+    checked against the source rather than trusted.
+
+    ## The 32 rows that are excluded, and why they are counted rather than dropped
+
+    Rarity 1 publishes **two** kinds of piece: 300 ordinary ones capping at internal 5, and
+    32 that cap at 1, carry **no `setId`** and **no `addPropLevels` at all** — the setless
+    starter relics, which cannot be upgraded and belong to no set bonus. They are excluded
+    from the schedules and reported in `excluded_unupgradable`, because a builder that
+    silently dropped 32 rows is a builder whose output nobody can reconcile with the source.
+    """
+    rows = fetch_json("ExcelBinOutput/ReliquaryExcelConfigData.json", sha)
+
+    schedules: dict[str, dict[str, Any]] = {}
+    initial: dict[str, list[int]] = {}
+    excluded = 0
+    for row in rows:
+        rank, max_level = row.get("rankLevel"), row.get("maxLevel")
+        if rank is None or max_level is None:
+            continue
+        raw = [level for level in row.get("addPropLevels", ()) if level <= max_level]
+        if not raw:
+            excluded += 1
+            continue
+
+        key = str(rank)
+        entry = {
+            "max_level": max_level - 1,
+            "raw_max_level": max_level,
+            "upgrade_levels": [level - 1 for level in raw],
+            "raw_add_prop_levels": list(raw),
+        }
+        seen = schedules.setdefault(key, entry)
+        # Two schedules for one rarity would make "the schedule for 5-star" meaningless, so a
+        # disagreement is an error rather than last-write-wins.
+        if seen != entry:
+            msg = (
+                f"rarity {rank} publishes two different upgrade schedules: {seen} and "
+                f"{entry}. One rarity cannot have two."
+            )
+            raise SnapshotError(msg)
+
+        # A missing `appendPropNum` is **zero, not unknown**. These dumps omit zero-valued
+        # integers, which is checkable rather than assumed: in
+        # `ReliquaryLevelExcelConfigData` exactly one row omits `exp` and exactly one omits
+        # `rank` — the same row, `{"level": 1}`, which is rank 0 at zero exp. Reading the
+        # omission as "absent" instead would drop the 0-substat variant from every rarity and
+        # leave `initial_substat_counts` quietly starting at 1.
+        counts = initial.setdefault(key, [])
+        num = row.get("appendPropNum", 0)
+        if num not in counts:
+            counts.append(num)
+
+    for counts in initial.values():
+        counts.sort()
+
+    return {
+        "pinned_commit_sha": sha or pinned_sha(),
+        "sources": ["ReliquaryExcelConfigData"],
+        "note": (
+            "rarity -> when a piece gains a substat, in the artifact's own +0..+20 levels. "
+            "`upgrade_levels` is converted from the 1-indexed `addPropLevels` the table "
+            "publishes; `raw_add_prop_levels` is what it published, so the conversion can be "
+            "checked rather than trusted. `initial_substat_counts` is every `appendPropNum` "
+            "seen at that rarity, treating an omitted key as the zero these dumps do not "
+            "write — a piece rolls with one of them, and which one is not knowable from the "
+            "catalogue. `excluded_unupgradable` counts the setless starter relics that carry "
+            "no addPropLevels at all."
+        ),
+        "excluded_unupgradable": excluded,
+        "schedules": schedules,
+        "initial_substat_counts": initial,
+    }
+
+
 BUILDERS = {
     "artifact_main_stat_pools": derive_main_stat_pools,
     "artifact_main_stat_values": build_main_stat_values,
     "artifact_substat_values": build_substat_values,
     "growth_curves": build_growth_curves,
+    "artifact_roll_schedule": build_roll_schedule,
 }
 
 
