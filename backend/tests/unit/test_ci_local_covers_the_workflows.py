@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from scripts.ci_local import _ADAPTATIONS, WORKFLOWS, collect
+from scripts.ci_local import _ADAPTATIONS, NOT_RUN_LOCALLY, WORKFLOWS, collect
 
 REPO = Path(__file__).resolve().parents[3]
 
@@ -113,3 +113,25 @@ def test_the_named_gates_actually_run(gate: str):
     steps = collect()
     commands = "\n".join(step.command for step in steps)
     assert gate in commands, f"{gate!r} is not among the commands the local runner executes"
+
+
+def test_every_workflow_is_either_run_here_or_listed_as_not_run():
+    """A workflow that appears and is quietly ignored is a gate nobody notices losing.
+
+    The runner reads the files it is told to read, so adding `deploy-prod.yml` to the repo
+    changed nothing here and nothing failed — which is exactly the shape worth catching. It
+    genuinely should not run locally, and now it says so.
+    """
+    on_disk = {p.name for p in (REPO / ".github" / "workflows").glob("*.yml")}
+    accounted = set(WORKFLOWS) | set(NOT_RUN_LOCALLY)
+
+    unaccounted = sorted(on_disk - accounted)
+    assert not unaccounted, (
+        f"these workflows are neither run by scripts.ci_local nor listed in "
+        f"NOT_RUN_LOCALLY with a reason: {unaccounted}"
+    )
+
+
+def test_every_excluded_workflow_states_why():
+    for name, reason in NOT_RUN_LOCALLY.items():
+        assert len(reason) > 30, f"{name} is excluded without a real reason: {reason!r}"

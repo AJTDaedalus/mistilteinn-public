@@ -1,0 +1,152 @@
+name: Deploy to prod
+
+# Auto-deploys the prod stack whenever `dev` advances.
+#
+# Adapted from fairy's, which runs on the same box. The scars in that file were earned on
+# this hardware and are kept, not rediscovered — the IPv4 health-check address, the
+# anonymous-volume renewal, the rollback that does not swallow a stale-data failure.
+#
+# ── What is different, and why ───────────────────────────────────────────────
+#
+# **A different runner label.** A self-hosted runner is registered to one repository, so
+# fairy's `fairy-prod` runner cannot take jobs from this repo even though it is the same
+# machine. mistilteinn needs its own registration on the same box, labelled
+# `mistilteinn-prod`. See docs/DEPLOY.md §2.
+#
+# **A different directory.** `/home/ubuntu/mistilteinn`, holding this stack's `.env` and its
+# own `postgres-data` bind mount. Never `/home/ubuntu/fairy` — the deleted version of this
+# file targeted exactly that and would have redeployed fairy's production directory from
+# this repo's `dev`.
+#
+# **No seed-verification job.** fairy's second job runs its kit-validation harness against
+# the live database, because fairy's correctness depends on curated data a human had to
+# remember to re-seed. mistilteinn's game data is *derived*: seeded by
+# `scripts.seed_db` from a pinned nanoka snapshot, with `seed_runs` recording which patch
+# the database holds and whether the run finished. The equivalent check is
+# `scripts.verify_seed`, and it is run here for the same reason fairy runs L4 — **a
+# migration without a re-seed deploys green, health-checks green, and serves stale data
+# silently.**
+
+on:
+  push:
+    branches: [dev]
+
+# Never let two deploys overlap; queue them rather than cancelling a half-done one.
+concurrency:
+  group: prod-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Pull, rebuild, migrate, health-check
+    runs-on: [self-hosted, mistilteinn-prod]
+    env:
+      REPO_DIR: /home/ubuntu/mistilteinn
+      COMPOSE: docker compose -f docker-compose.yml -f docker-compose.prod.yml
+      # Resolved from inside the frontend (nginx) container — prod publishes no host ports.
+      # 127.0.0.1 rather than localhost: /etc/hosts maps localhost to ::1 as well, and nginx
+      # listens on IPv4 only, so a probe that lands on ::1 is refused. fairy's lesson.
+      HEALTH_URL: http://127.0.0.1/api/v1/health
+
+    steps:
+      - name: Update working tree to origin/dev
+        run: |
+          set -euo pipefail
+          cd "$REPO_DIR"
+          BEFORE=$(git rev-parse HEAD)
+          git fetch origin dev
+          git reset --hard origin/dev
+          AFTER=$(git rev-parse HEAD)
+          echo "before=$BEFORE" >> "$GITHUB_ENV"
+          echo "after=$AFTER"   >> "$GITHUB_ENV"
+          echo "Deploying $BEFORE -> $AFTER"
+
+      - name: Rebuild and restart stack
+        run: |
+          set -euo pipefail
+          cd "$REPO_DIR"
+          $COMPOSE up -d --build
+          # The frontend's anonymous node_modules/.angular volumes persist across
+          # recreation and mask new dependencies, so a plain rebuild ships the old ones.
+          if git diff --name-only "$before" "$after" \
+               | grep -qE '^frontend/package(-lock)?\.json$'; then
+            echo "Frontend deps changed -> renewing anonymous volumes"
+            $COMPOSE up -d --force-recreate --renew-anon-volumes frontend
+          fi
+
+      - name: Apply database migrations
+        run: |
+          set -euo pipefail
+          cd "$REPO_DIR"
+          # Idempotent: a no-op when already at head.
+          $COMPOSE run --rm backend alembic upgrade head
+
+      - name: Health check
+        run: |
+          set -euo pipefail
+          cd "$REPO_DIR"
+          for i in $(seq 1 30); do
+            if $COMPOSE exec -T frontend wget -qO- --timeout=5 "$HEALTH_URL" \
+                 | grep -q '"status":"ok"'; then
+              echo "Healthy after ${i} attempt(s)."
+              exit 0
+            fi
+            echo "Not healthy yet (attempt ${i}); retrying in 3s..."
+            sleep 3
+          done
+          echo "::error::Health check failed after deploy."
+          exit 1
+
+      - name: Rollback on failure
+        if: failure() && env.before != ''
+        run: |
+          set -euo pipefail
+          cd "$REPO_DIR"
+          echo "::warning::Deploy failed — rolling back to ${before}"
+          git reset --hard "$before"
+          $COMPOSE up -d --build
+          $COMPOSE run --rm backend alembic upgrade head || true
+
+  verify-seed:
+    # SEPARATE JOB, deliberately — the same reasoning fairy wrote down. `deploy` ends with a
+    # `Rollback on failure` step, so a verification step inside it would roll **working
+    # code** back because the *data* is stale. That is strictly worse than the problem. This
+    # job cannot trigger that rollback: its failure leaves the deployment in place and says
+    # loudly that prod needs a re-seed.
+    name: Verify the prod seed against the real database
+    needs: deploy
+    runs-on: [self-hosted, mistilteinn-prod]
+    env:
+      REPO_DIR: /home/ubuntu/mistilteinn
+      COMPOSE: docker compose -f docker-compose.yml -f docker-compose.prod.yml
+    steps:
+      - name: verify_seed against the seeded prod database
+        run: |
+          set -uo pipefail
+          cd "$REPO_DIR"
+          # `|| rc=$?` rather than a bare assignment. GitHub runs `run:` under `bash -e`,
+          # and `set -uo pipefail` does not turn `-e` off — so `out="$(cmd)"` aborts the
+          # step the instant cmd exits non-zero, before anything is printed. The operator
+          # then sees `Process completed with exit code 1` and nothing else, which defeats
+          # the job's entire purpose. fairy shipped that bug once; it is not repeated here.
+          rc=0
+          out="$($COMPOSE run --rm -T backend python -m scripts.verify_seed 2>&1)" || rc=$?
+          echo "$out"
+
+          # A SKIP IS NOT A PASS. An unseeded database is precisely the state this job
+          # exists to catch, and "could not check" exiting 0 is the green-by-absence
+          # failure this repo took from fairy as a founding rule.
+          if echo "$out" | grep -qiE 'skipped|no seed run|database is empty'; then
+            echo "::error::verify_seed could not check prod — the database is unseeded, or was migrated without a re-seed. Run 'docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm backend python -m scripts.seed_db' on the box, then re-run this job. The deployment is left in place."
+            exit 1
+          fi
+
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::verify_seed found problems against the live database. Usually this means the deployed code expects game data this database has not been seeded with. The deployment is left in place; re-seed and re-run."
+            exit "$rc"
+          fi
+
+          echo "Prod seed verified against real data."

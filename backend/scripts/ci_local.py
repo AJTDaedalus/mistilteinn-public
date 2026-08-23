@@ -75,7 +75,20 @@ from pathlib import Path
 import yaml
 
 REPO = Path(__file__).resolve().parents[2]
+
+#: The workflows this runs. Checking workflows, not every workflow.
 WORKFLOWS = ("test.yml", "security.yml")
+
+#: Workflows deliberately **not** run here, each with the reason. A file that is neither
+#: run nor listed fails `test_ci_local_covers_the_workflows.py` — the same rule the
+#: adaptations follow, because a whole workflow going unnoticed is the larger version of a
+#: step going unnoticed.
+NOT_RUN_LOCALLY = {
+    "deploy-prod.yml": (
+        "it deploys. Running it here would reset a production working tree to origin/dev "
+        "and rebuild a live stack, which is not a check and is not reversible by a test run."
+    ),
+}
 
 
 @dataclass(frozen=True, slots=True)
