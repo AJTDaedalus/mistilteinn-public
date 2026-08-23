@@ -16,9 +16,8 @@
 
 .brand {
   display: grid;
-  // Single column while there is no emblem. Chunk J adds the second column back
-  // when the Mitya identity supplies one; see .brand__emblem in git history.
-  grid-template-columns: auto;
+  // Two columns again: J supplied the emblem the placeholder was waiting for.
+  grid-template-columns: auto auto;
   grid-template-rows: auto auto;
   column-gap: var(--space-4);
   align-items: center;
@@ -27,10 +26,20 @@
 
   &:hover {
     text-decoration: none;
-    .brand__wordmark {
+    .brand__emblem {
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+
+.brand__wordmark {
       text-shadow: var(--text-glow);
     }
   }
+}
+
+.brand__emblem {
+  grid-row: 1 / span 2;
+  align-self: center;
 }
 
 .brand__wordmark {
@@ -61,13 +70,13 @@
     border-bottom: 1px solid transparent;
 
     &:hover {
-      color: var(--cyan);
+      color: var(--brass);
       text-decoration: none;
     }
 
     &.active {
       color: var(--ink);
-      border-bottom-color: var(--cyan);
+      border-bottom-color: var(--brass);
       text-shadow: var(--text-glow);
     }
   }
@@ -104,7 +113,7 @@
   transition: color var(--t-fast) var(--ease);
 
   &:hover {
-    color: var(--cyan);
+    color: var(--brass);
   }
 }
 

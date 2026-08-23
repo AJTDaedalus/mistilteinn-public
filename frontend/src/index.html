@@ -5,10 +5,11 @@
   <title>mistilteinn</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Empty data URI, not a missing tag: with no icon link at all the browser
-       requests /favicon.ico and logs a 404. There is no mistilteinn emblem yet —
-       the Mitya-derived identity is Chunk J and needs owner-supplied art (OQ-P1). -->
-  <link rel="icon" href="data:,">
+  <!-- The Mitya emblem. Same geometry as the in-app component, asserted equal by
+       emblem.spec.ts; the colours are literal here because a favicon renders outside
+       the app, where no CSS custom property exists to resolve. -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <meta name="theme-color" content="#1c2334">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link

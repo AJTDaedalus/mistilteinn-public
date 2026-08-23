@@ -63,13 +63,13 @@
 
   &.active {
     color: var(--ink);
-    border-bottom-color: var(--cyan);
+    border-bottom-color: var(--brass);
     text-shadow: var(--text-glow);
-    box-shadow: 0 0 8px var(--halo);
+    box-shadow: 0 0 8px var(--halo-brass);
   }
 
   &:hover:not(.active) {
-    color: var(--cyan);
+    color: var(--brass);
   }
 }
 
@@ -109,8 +109,8 @@
 
   &:focus {
     outline: none;
-    border-color: var(--halo);
-    box-shadow: var(--glow-cyan);
+    border-color: var(--halo-brass);
+    box-shadow: var(--glow-brass);
   }
 
   &.mono {
@@ -145,7 +145,7 @@
   padding: var(--space-4);
   font-size: var(--text-xs);
   word-break: break-all;
-  color: var(--cyan-bright);
+  color: var(--brass-hi);
   line-height: 1.6;
 }
 

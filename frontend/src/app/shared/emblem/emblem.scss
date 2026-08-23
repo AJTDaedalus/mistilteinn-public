@@ -1,0 +1,32 @@
+.emblem {
+  display: block;
+  overflow: visible;
+}
+
+// Class on each circle rather than a descendant selector on a wrapping `g`. The wrapper
+// version was correct in the browser and silently dropped by every simpler SVG renderer —
+// including the one used to check this mark, which drew the beads black and would have
+// shipped a favicon nobody had actually looked at.
+.emblem__bead {
+  fill: var(--ink-dim);
+  stroke: var(--brass-deep);
+  stroke-width: 1;
+}
+
+.emblem__gem {
+  fill: var(--azure);
+  stroke: var(--brass);
+  stroke-width: 1.4;
+}
+
+.emblem__core {
+  fill: var(--brass);
+  stroke: var(--brass-deep);
+  stroke-width: 1.4;
+}
+
+// The cabochon's highlight. Off-centre, because a centred one reads as a hole.
+.emblem__core-light {
+  fill: var(--brass-hi);
+  opacity: 0.85;
+}

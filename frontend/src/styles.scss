@@ -28,11 +28,11 @@ body {
 }
 
 a {
-  color: var(--cyan);
+  color: var(--brass);
   text-decoration: none;
 
   &:hover {
-    color: var(--cyan-bright);
+    color: var(--brass-hi);
     text-decoration: underline;
     text-underline-offset: 3px;
   }
@@ -54,8 +54,8 @@ button, .btn {
               transform var(--t-fast) var(--ease);
 
   &:hover {
-    border-color: var(--halo);
-    box-shadow: var(--glow-cyan);
+    border-color: var(--halo-brass);
+    box-shadow: var(--glow-brass);
   }
 
   &:active {
@@ -64,17 +64,17 @@ button, .btn {
 
   &:focus-visible {
     outline: none;
-    border-color: var(--cyan);
-    box-shadow: var(--glow-cyan);
+    border-color: var(--brass);
+    box-shadow: var(--glow-brass);
   }
 
   &.btn-primary {
-    background: var(--cobalt);
-    border-color: var(--cobalt);
+    background: var(--violet);
+    border-color: var(--violet);
 
     &:hover {
-      background: var(--cobalt-deep);
-      border-color: var(--cyan);
+      background: var(--violet-deep);
+      border-color: var(--brass);
     }
   }
 }
@@ -90,8 +90,8 @@ select, input, textarea {
 
   &:focus {
     outline: none;
-    border-color: var(--cyan);
-    box-shadow: var(--glow-cyan);
+    border-color: var(--brass);
+    box-shadow: var(--glow-brass);
   }
 }
 
@@ -104,6 +104,6 @@ select, input, textarea {
 }
 
 ::selection {
-  background: var(--cobalt);
+  background: var(--violet);
   color: var(--ink);
 }

@@ -296,3 +296,94 @@ internal element names that differ from display names (`GRASS` = Dendro).
 provenance comment naming the endpoint and version. This is the same class of rule as the
 damage-constant citation rule, applied one layer down: *the agent queries the source; it never
 reasons in its place.*
+
+---
+
+## Rotations are written by users, in our syntax rather than gcsim's (2026-08-22)
+
+**Owner ruling:** *"Rotations should be built by users, gcsim uses a convoluted rotation
+syntax, something more like fairy would be a big improvement."*
+
+This settles what was left of Chunk I. gcsim's action list is a small scripting language —
+`while 1 { if .kamisatoayaka.energy >= 80 { kamisatoayaka burst; } … }` — and this project
+learned its syntax the hard way while building the ER sweep for D.2: a bare action list runs
+**once** rather than looping, and an ungated `while 1` **deadlocks** because gcsim waits for an
+action whose energy it can no longer generate. Both produce a plausible JSON with exactly one
+burst in it. That is a bad first hour for a user who wanted to compare two artifacts.
+
+**Decision:** users build rotations in a friendlier model of our own, and it **compiles to
+gcsim's syntax**. gcsim stays the simulator; it stops being the authoring surface.
+
+**Rejected:** shipping default rotations per archetype and no editor. It was the cheaper half
+of the BRIEF's plan and it answers a different question — "what does a typical Ayaka do" rather
+than "what does *mine* do" — and the whole client-optimizer design turns on team and rotation
+being the user's inputs.
+
+**Consequence:** a compiler is a place two representations can disagree, so it needs the
+treatment every other translation layer here got: the emitted config is fed to real gcsim and
+checked, the way `npm run gcsim:verify-config` already checks emitted configs. A rotation
+editor that produces a config gcsim silently misreads is worse than gcsim's own syntax.
+
+**Not decided here:** whether the rotation ever becomes something to *optimize*.
+`DESIGN_client_optimizer.md` §3.5 warns that doing so reopens the entire client-side cost
+argument, since it rests on the rotation being an input. Authoring is not optimizing.
+
+---
+
+## The visual identity is Mitya's, and Mitya is not in it (2026-08-22)
+
+**Owner ruling:** *"Visual identity should be themed after the character Mitya … The character
+itself shouldn't be included in the design, but his color schemes, patterns, and ornament
+should be. I think the ornament, prettied up a little bit, would make a nice logo like the
+fairy 'eye' does for fairy."*
+
+**Decision:** the palette is sampled from `references/mitya.png` and
+`references/mitya_ornament.png`, and the mark is his ornament drawn as geometry.
+
+**The palette is derived, not chosen** — the same method fairy used on `NPC_Fairy.webp`:
+cluster by hue family and take each band's most saturated quartile, because the rest of a band
+is shading and averaging it in produces mud. Ground `#1c2334` from the coat's darkest
+*chromatic* pixels, so the grey studio backdrop cannot leak in; brass `#ddae21` and amber
+`#c59732` from the ornament's metal and cabochon; azure `#38a6d2` from its gems; mint `#80bec6`
+from the tassels; ink `#d5d6e1` from his hair.
+
+**Two accents, not one.** Fairy leaned monochrome and let a cyan halo carry all emphasis.
+Mitya's palette has a warm family and a cool one, so warm carries identity and action and cool
+carries data and state. Keeping them apart is what stops it reading as generic fantasy-purple,
+and it maps onto something real: a damage number and a button are different kinds of thing.
+
+**The mark is drawn, not traced.** A trace of a game asset carries that asset's licence and its
+rendering artefacts into the app, and silts up at favicon size. The ornament *is* three
+crossing ellipses with nodes at their tips, so drawing that structure reproduces it exactly and
+scales to 16px. Its nodes are placed at the computed orbit tips rather than by eye — the first
+draft eyeballed them and rendering it showed beads scattered near an atom rather than one
+device.
+
+**Consequence:** the mark exists twice — once in the component reading tokens, once in
+`favicon.svg` with literal colours, because a favicon renders where no custom property
+resolves. `tests/unit/test_emblem_matches_the_favicon.py` asserts the two agree node-for-node,
+since two copies of a mark is otherwise two marks.
+
+---
+
+## Deploy alongside fairy on the same host (2026-08-22)
+
+**Owner ruling:** *"Deployment should target the same server as fairy, I'd like them to co-exist
+if possible on aetherus.dev as fairy.aetherus.dev and mistilteinn.aetherus.dev."*
+
+**Decision:** one host, two stacks, two subdomains. The groundwork is already laid and was laid
+for this reason: A.4/A.5 moved this stack's host ports to **8001/4201** so both run at once, and
+A.6 put the `mistilteinn` databases inside fairy's existing Postgres container rather than
+standing up a second one.
+
+**The known hazard is recorded and must not be re-introduced.** Chunk A found that joining
+fairy's compose network registered this backend under the alias `backend` on `fairy_default`,
+where fairy's own `backend` service already lives — so fairy's tunnel would have intermittently
+served mistilteinn's API. Co-existing means **reaching the shared Postgres over the host
+gateway**, never joining that network. Anything in the deploy work that joins it is wrong for a
+reason that is invisible until traffic is served to the wrong app.
+
+**Spelling:** the ruling wrote *mistelteinn*; the repo, the database names and
+`security/zap/` all use **mistilteinn**, and `.github/workflows/deploy-prod.yml` was deleted in
+the fork commit precisely so nothing would deploy under a half-migrated identity. Using
+`mistilteinn.aetherus.dev` — flagged rather than silently corrected.

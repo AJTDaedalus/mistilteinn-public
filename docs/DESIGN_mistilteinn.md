@@ -560,8 +560,12 @@ Carried forward from the BRIEF, still owner-level, **not blocking Chunks A–G**
   Needed before Phase 3 / Chunk I.
 - **OQ-M3** — hosting. Partially resolved by A3 (shared Postgres); the remaining question is
   whether both stacks live on the same Oracle VM. Needed before Chunk K.
-- **OQ-P1 (new, Planner)** — Mitya reference art for the Chunk J palette. fairy's tokens were
-  sampled from a specific image; mistilteinn needs the equivalent. Owner supplies.
+- ~~**OQ-P1 (new, Planner)** — Mitya reference art for the Chunk J palette.~~ **ANSWERED
+  2026-08-22:** the owner supplied `references/mitya.png` and `references/mitya_ornament.png`.
+  The palette is sampled from them by hue family, the way fairy's was sampled from
+  `NPC_Fairy.webp`, and the ornament is the mark — see `DECISIONS.md`. **The character himself
+  stays out of the design**, by ruling: his colours, patterns and ornament are the brand, he
+  is not.
 
 ---
 **Planner output complete. Hand to Worker at `docs/TASKS_mistilteinn.md` Task 0.1.**

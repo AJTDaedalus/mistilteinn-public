@@ -1,30 +1,70 @@
-// Design tokens — Fairy palette.
+// Design tokens — Mitya palette.
 //
-// Sampled from references/NPC_Fairy.webp: deep navy field, cobalt rings,
-// luminous cyan halo, white core. The theme leans monochrome (no neon
-// contrast accents) — the cyan halo carries all emphasis. Aesthetic
-// reference: VHS / video-store / CRT-monitor.
+// **Every colour below was sampled from `references/mitya.png` and
+// `references/mitya_ornament.png`, not chosen.** The method is the one fairy used on
+// `NPC_Fairy.webp`: cluster by hue family, take the most saturated quartile of each band —
+// the rest of a band is shading, and averaging it in produces mud.
+//
+// | token | sampled | from |
+// |---|---|---|
+// | `--bg-deep` / `--bg` | `#1c2334` | the coat's deep navy-violet: darkest *chromatic* pixels, so the grey studio backdrop does not leak in |
+// | `--violet` | `#49336a` | the coat body |
+// | `--periwinkle` | `#888ec8` | the lighter coat panels |
+// | `--brass` | `#ddae21` | the ornament's metalwork |
+// | `--amber` | `#c59732` | the ornament's centre cabochon |
+// | `--azure` | `#38a6d2` | the ornament's two blue gems |
+// | `--mint` | `#80bec6` | the hanging tassels and sash lining |
+// | `--ink` | `#d5d6e1` | his hair |
+//
+// **The character is deliberately absent from the design** (owner ruling): his colours,
+// his patterns and his ornament are the brand, he is not. There is no portrait anywhere in
+// the app and there should not be one.
+//
+// The emphasis structure differs from fairy's on purpose. Fairy leaned monochrome and let a
+// cyan halo carry everything. Mitya is **two-accent**: warm brass for identity and action,
+// cool mint/azure for data and state. Keeping them apart is what stops the palette reading
+// as generic fantasy-purple — and it maps onto something real, since a damage number and a
+// button are different kinds of thing.
 
 :root {
-  // -- Surfaces (depth scale, deepest first)
-  --bg-deep: #0A1224;
-  --bg: #0F1830;
-  --surface: #161E36;
-  --surface-hi: #1E2848;
-  --surface-rule: #243152;
+  // -- Surfaces (depth scale, deepest first). Sampled #1c2334, stepped toward the coat's
+  //    violet rather than toward grey, so depth reads as fabric and not as a dimmer.
+  --bg-deep: #12172a;
+  --bg: #1c2334;
+  --surface: #262c44;
+  --surface-hi: #333a58;
+  --surface-rule: #434a70;
 
-  // -- Ink
-  --ink: #E8EFFF;
-  --ink-dim: #94A6CC;
-  --ink-faint: #5E6E94;
+  // -- Ink (his hair, and two steps down it)
+  --ink: #d5d6e1;
+  --ink-dim: #9a9db4;
+  --ink-faint: #6b6f8a;
 
-  // -- Brand / accent (Fairy emblem)
-  --cobalt: #2940DB;
-  --cobalt-deep: #1A28A8;
-  --cyan: #4FB6FF;
-  --cyan-bright: #7DCFFF;
-  --halo: rgba(79, 182, 255, 0.45);
-  --halo-strong: rgba(79, 182, 255, 0.75);
+  // -- Coat
+  --violet-deep: #2f2145;
+  --violet: #49336a;
+  --violet-hi: #5f4489;
+  --periwinkle: #888ec8;
+
+  // -- Brand: the ornament's metalwork. Warm, and the only warm thing in the palette —
+  //    which is what makes it read as identity rather than as decoration.
+  --brass: #ddae21;
+  --brass-hi: #f0c94f;
+  --brass-deep: #a67c12;
+  --amber: #c59732;
+
+  // -- Data / state: the ornament's gems and the coat's tassels. Cool, so a number never
+  //    competes with a button for the same attention.
+  --azure: #38a6d2;
+  --azure-hi: #63c4e8;
+  --mint: #80bec6;
+  --mint-hi: #a6dbe1;
+
+  // -- Halos, kept as two families for the same reason the accents are
+  --halo-brass: rgba(221, 174, 33, 0.42);
+  --halo-brass-strong: rgba(240, 201, 79, 0.7);
+  --halo-mint: rgba(128, 190, 198, 0.4);
+  --halo-mint-strong: rgba(166, 219, 225, 0.68);
 
   // -- Type families
   --font-display: 'Bebas Neue', 'Impact', 'Arial Narrow Bold', sans-serif;
@@ -51,22 +91,27 @@
   --space-12: 3rem;
   --space-16: 4rem;
 
-  // -- Radii (sharp by default — retro hardware feel)
+  // -- Radii. Softer than fairy's hard-edged CRT look: the ornament and the coat's hem
+  //    motif are built from arcs and loops, so square corners fight the source.
   --radius-0: 0;
-  --radius-1: 2px;
-  --radius-2: 4px;
+  --radius-1: 3px;
+  --radius-2: 6px;
+  --radius-pill: 999px;
 
   // -- Emphasis (non-colour-dependent highlight cue, see issue #57)
   --accent-border-width: 3px;
 
   // -- Shadows / glow
-  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset,
-                 0 8px 24px rgba(0, 0, 0, 0.4);
-  --glow-cyan: 0 0 0 1px var(--halo),
-               0 0 12px var(--halo),
-               0 0 32px rgba(79, 182, 255, 0.2);
-  --text-glow: 0 0 8px var(--halo-strong),
-               0 0 24px rgba(79, 182, 255, 0.3);
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.05) inset,
+                 0 8px 24px rgba(0, 0, 0, 0.45);
+  --glow-brass: 0 0 0 1px var(--halo-brass),
+                0 0 12px var(--halo-brass),
+                0 0 32px rgba(221, 174, 33, 0.18);
+  --glow-mint: 0 0 0 1px var(--halo-mint),
+               0 0 12px var(--halo-mint),
+               0 0 32px rgba(128, 190, 198, 0.16);
+  --text-glow: 0 0 8px var(--halo-brass-strong),
+               0 0 24px rgba(221, 174, 33, 0.25);
 
   // -- Motion
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
