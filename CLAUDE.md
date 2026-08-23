@@ -22,16 +22,30 @@ chain **matches gcsim to 1.3e-8 relative** on its first crossval case — inside
 `1e-7` tolerance, with the residual fully explained (float32 curves in the dump against
 decimals in gcsim). **Chunk G is complete except G.9**, which is **blocked on a citation**:
 upgrade-potential scoring needs the substat roll schedule, and the committed snapshot
-publishes roll values and depots but not the schedule. Everything else landed — the artifact
-optimizer, its lossless/lossy pruning, the ranker, the GOOD importer, the whole
-read-and-write API, and a large search running as a background job. **Chunk H — the kit
-corpus — is next, and needs its own DESIGN doc before any code.**
+publishes roll values and depots but not the schedule. **Its `TODO(chunk-G.9)` marker went
+with `artifact_ranker.py` in C.6**, so it is tracked in `docs/TASKS_mistilteinn.md` instead —
+`rg "TODO(chunk-"` no longer lists it. Everything else in G landed — the artifact optimizer,
+its lossless/lossy pruning, the ranker, the GOOD importer and the whole read-and-write API —
+**and C.6 has since deleted the optimizer's and ranker's endpoints, the job runner and the
+ranker itself.** Searching runs in the browser now.
 
-- **The backend suite passes, with nothing skipped.** 779 tests, **0 skipped** — G.7
-  re-baselined `tests/perf`, which was the last one, and CI runs it with `-m perf`.
-  `ruff check app/ tests/ scripts/seed_db.py scripts/verify_seed.py
-  scripts/capture_nanoka_fixtures.py scripts/yuanshen/ scripts/bench_optimizer.py` is clean
-  — that is CI's exact command — and `uvicorn app.main:app` serves 25 paths.
+**Chunk H is superseded, not next.** Chunk S found gcsim already implements 106 characters
+and 53 artifact sets at the pin, so there is no corpus to curate. `TASKS_client_optimizer.md`
+was inserted on that finding and is **complete** (PRs #31–#41): the browser kernel on CPU and
+GPU, the run corpus, retrieval that reports its own measured error, explanation, weapon
+comparison. What remains in `docs/TASKS_mistilteinn.md` is **G.9** (blocked on a citation),
+**I** (rotation model — needs a DESIGN), **J** (frontend identity — needs owner art) and
+**K** (deploy — no target yet). See that file's "Where this plan stands" banner.
+
+**There is deliberately no reachable optimizer** until the client-optimizer UI lands: an owner
+ruling, on the grounds that this is not a functional app until the plan completes and interim
+functionality is not worth keeping for its own sake.
+
+- **The backend suite passes, with nothing skipped.** **927 tests, 0 skipped**, and
+  `uvicorn app.main:app` serves **26 paths**. Run CI's own gates rather than a remembered
+  subset: `cd backend && python -m scripts.ci_local` reads `.github/workflows/*.yml` and
+  executes them here — 19 gates, including the WGSL kernel, gcsim crossval, gitleaks and
+  pip-audit. `--list` shows the plan; `--clean` runs from a fresh clone of HEAD.
   **A red backend suite is now a regression, not the size of the port** — that excuse
   expired at B.13.
 - **The frontend does not compile, and that is the honest state.** 161 TypeScript errors
