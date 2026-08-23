@@ -108,10 +108,11 @@ one-off scripts. Scripts something *depends on* are named individually instead, 
 convention fairy used for its harness: an unlinted script that a gate runs is a gate nobody
 trusts. Chunk D adds the first three (D.2/D.7/D.8), Chunk E `scripts/yuanshen/`, and Chunk G
 `scripts/bench_optimizer.py` — the run behind `artifact_prefilter.SECONDS_PER_COMBINATION`.
-fairy also named
-`scripts/validate_kits.py` and `scripts/refresh_kit_refs.py`; both are deleted in B.9 and
-their Genshin replacements are re-added to this command in Chunk H (see the `TODO(chunk-H)`
-on the Ruff step in `.github/workflows/test.yml`).
+fairy also named `scripts/validate_kits.py` and `scripts/refresh_kit_refs.py`; both were
+deleted in B.9 and **have no Genshin replacement coming** — the kit-validation job they
+served is retired, because gcsim implements the kits that harness existed to check. The
+scripts named here now are `scripts/inject.py` and `scripts/ci_local.py`, added with the
+verification tooling.
 
 `app/services/_ported/` is excluded in `pyproject.toml`: it is read-only ZZZ porting source
 that imports deleted modules, so linting it would be permanent noise.

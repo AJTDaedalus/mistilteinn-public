@@ -1,0 +1,172 @@
+{
+ "pinned_commit_sha": "3647a07a7cc3004bc1e79d9bb5f7444de20dceaa",
+ "note": "Seeded characters gcsim does not implement at the pin, so nothing here can be simulated in the browser or crossvalidated. A reviewed list, not a runtime surprise: a re-pin that implements one of these shows up as a diff, and a character that stops resolving fails the test rather than failing a user's search.",
+ "seeded_total": 150,
+ "unimplemented": [
+  {
+   "nanoka_id": "10000005-5",
+   "name": "Traveler",
+   "element": "Cryo"
+  },
+  {
+   "nanoka_id": "10000007-5",
+   "name": "Traveler",
+   "element": "Cryo"
+  },
+  {
+   "nanoka_id": "10000100",
+   "name": "Kachina",
+   "element": "Geo"
+  },
+  {
+   "nanoka_id": "10000110",
+   "name": "Iansan",
+   "element": "Electro"
+  },
+  {
+   "nanoka_id": "10000113",
+   "name": "Ifa",
+   "element": "Anemo"
+  },
+  {
+   "nanoka_id": "10000117-2",
+   "name": "Manekin",
+   "element": "Pyro"
+  },
+  {
+   "nanoka_id": "10000117-3",
+   "name": "Manekin",
+   "element": "Hydro"
+  },
+  {
+   "nanoka_id": "10000117-4",
+   "name": "Manekin",
+   "element": "Anemo"
+  },
+  {
+   "nanoka_id": "10000117-5",
+   "name": "Manekin",
+   "element": "Cryo"
+  },
+  {
+   "nanoka_id": "10000117-6",
+   "name": "Manekin",
+   "element": "Geo"
+  },
+  {
+   "nanoka_id": "10000117-7",
+   "name": "Manekin",
+   "element": "Electro"
+  },
+  {
+   "nanoka_id": "10000117-8",
+   "name": "Manekin",
+   "element": "Dendro"
+  },
+  {
+   "nanoka_id": "10000118-2",
+   "name": "Manekina",
+   "element": "Pyro"
+  },
+  {
+   "nanoka_id": "10000118-3",
+   "name": "Manekina",
+   "element": "Hydro"
+  },
+  {
+   "nanoka_id": "10000118-4",
+   "name": "Manekina",
+   "element": "Anemo"
+  },
+  {
+   "nanoka_id": "10000118-5",
+   "name": "Manekina",
+   "element": "Cryo"
+  },
+  {
+   "nanoka_id": "10000118-6",
+   "name": "Manekina",
+   "element": "Geo"
+  },
+  {
+   "nanoka_id": "10000118-7",
+   "name": "Manekina",
+   "element": "Electro"
+  },
+  {
+   "nanoka_id": "10000118-8",
+   "name": "Manekina",
+   "element": "Dendro"
+  },
+  {
+   "nanoka_id": "10000122",
+   "name": "Nefer",
+   "element": "Dendro"
+  },
+  {
+   "nanoka_id": "10000124",
+   "name": "Jahoda",
+   "element": "Anemo"
+  },
+  {
+   "nanoka_id": "10000126",
+   "name": "Zibai",
+   "element": "Geo"
+  },
+  {
+   "nanoka_id": "10000127",
+   "name": "Illuga",
+   "element": "Geo"
+  },
+  {
+   "nanoka_id": "10000129",
+   "name": "Lohen",
+   "element": "Cryo"
+  },
+  {
+   "nanoka_id": "10000130",
+   "name": "Linnea",
+   "element": "Geo"
+  },
+  {
+   "nanoka_id": "10000132",
+   "name": "Prune",
+   "element": "Anemo"
+  },
+  {
+   "nanoka_id": "10000133",
+   "name": "Sandrone",
+   "element": "Cryo"
+  },
+  {
+   "nanoka_id": "10000134",
+   "name": "Traveler",
+   "element": "None"
+  },
+  {
+   "nanoka_id": "10000135",
+   "name": "Traveler",
+   "element": "None"
+  },
+  {
+   "nanoka_id": "10000140",
+   "name": "Vodyanitsa",
+   "element": "Hydro"
+  },
+  {
+   "nanoka_id": "10000143",
+   "name": "Vesna",
+   "element": "Anemo"
+  },
+  {
+   "nanoka_id": "10000148",
+   "name": "Alyosha",
+   "element": "Electro"
+  },
+  {
+   "nanoka_id": "10000150",
+   "name": "Odette",
+   "element": "Cryo"
+  }
+ ]
+}

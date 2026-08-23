@@ -3,11 +3,10 @@ name: Tests
 # ---------------------------------------------------------------------------
 # PORT STATE (Chunk A, 2026-08-21) — read before trusting a green run here.
 #
-# This workflow came from fairy and was built around its kit-validation harness.
-# The ZZZ kit corpus (app/data/{modifiers,validation,skill_overrides}) was stripped
-# in the fork commit, so the `kit-validation` job below dispatches a script against
-# data that no longer exists. It is DISABLED, not deleted — see the TODO(chunk-H)
-# block on the job itself for exactly what has to come back and when.
+# This workflow came from fairy and was built around its kit-validation harness. That job
+# is **retired** — Chunk S found gcsim already implements the kits the corpus existed to
+# curate — and the stanza where it stood records where each of its validation levels went
+# rather than leaving a gap nobody can account for.
 #
 # The backend suite went green at Chunk B's exit gate (B.13) and stays that way:
 # 24 test files, 220 tests, 1 skipped (tests/perf, awaiting G.7). A red run here is
@@ -59,7 +58,7 @@ jobs:
         # for its harness — an unlinted script that a gate runs is a gate nobody trusts.
         # Chunk D adds the three that seed and verify the database.
         #
-        # TODO(chunk-H): fairy additionally linted `scripts/validate_kits.py` and
+        # Retired with the kit-validation job: fairy additionally linted `scripts/validate_kits.py` and
         # `scripts/refresh_kit_refs.py` by name. Both are deleted in B.9. Re-add their
         # Genshin replacements here when Chunk H ports the harness.
         run: >-
@@ -155,53 +154,43 @@ jobs:
           CROSSVAL_REQUIRE_DB: "1"
         run: pytest tests/crossval -q
 
-  kit-validation:
-    # =======================================================================
-    # DISABLED FOR THE PORT — TODO(chunk-H). Do not delete this job.
-    #
-    # `if: false` is deliberate and this stanza stays in the file, because a gate
-    # that is silently removed becomes a permanent gap — the exact green-by-absence
-    # failure CLAUDE.md names. Deleting it would leave nothing in the repo that says
-    # kit validation is supposed to exist.
-    #
-    # WHY IT IS OFF: `scripts/validate_kits.py` reads app/data/modifiers/**,
-    # app/data/validation/known_issues.json and the ZO reference exports. All of it
-    # was stripped in the fork commit (6e691e7) and the script itself is deleted in
-    # B.9. There is nothing for it to validate and nothing it could report but noise.
-    #
-    # WHAT MUST BE RESTORED, exactly (fairy dispatched everything and let the
-    # DB-dependent levels skip):
-    #   L0  schema — every kit JSON matches the modifier schema
-    #   L1  references — every cited source resolves
-    #   L2  citations — no uncited modifier; no unverifiable citation
-    #   L6  coverage — every seeded character has a kit entry
-    #   LC  consistency — cross-kit contradictions
-    #   LU  unmapped — stat keys with no STAT_META entry
-    #   L4/L5 stay OUT of CI: they need real seeded game data and are proven by the
-    #        pre-merge agent review instead (fairy issue #114). Genshin's equivalents
-    #        are Chunk H's call, not an automatic carry-over.
-    #
-    # DO NOT restore this as `--level l0 --level l1 ...`. fairy's stale-waiver check
-    # is gated on `set(levels) == set(LEVELS)`; narrowing the dispatch silently
-    # switches staleness detection off for the levels that *are* listed. Dispatch
-    # everything and let the unrunnable levels skip themselves.
-    #
-    # RESTORE WHEN: Chunk H lands the Genshin kit-JSON schema, the ported harness,
-    # and a non-empty corpus. Its own DESIGN doc owns the decision.
-    # =======================================================================
-    if: false
-    name: "Kit validation harness (DISABLED — see TODO(chunk-H))"
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-    steps:
-      - uses: actions/checkout@v4
-      - name: Placeholder
-        run: |
-          echo "Kit validation is disabled for the ZZZ->Genshin port."
-          echo "See the TODO(chunk-H) block in this file for the restore conditions."
-          exit 1
+  # ── The kit-validation job is retired, and here is where its levels went ────
+  #
+  # fairy dispatched a `validate_kits.py` harness over a curated ZZZ kit corpus. The corpus
+  # was stripped in the fork commit and the job has sat `if: false` since A.10, on the
+  # correct principle that a gate silently removed becomes a permanent gap.
+  #
+  # **Chunk S retired the premise.** gcsim implements 106 characters and 53 artifact sets at
+  # the pin — the corpus Chunk H existed to curate — so H is superseded, and this job would
+  # never have been restored as written. Leaving it disabled would leave a stanza pointing at
+  # a chunk that is not coming.
+  #
+  # The levels did not all die with it. Where each went:
+  #
+  #   L0  schema        — no kit JSON exists; gcsim owns kit implementation. Gone with the
+  #                       premise, rather than quietly dropped.
+  #   L1  references    — snapshot provenance: every derived file records its
+  #   L2  citations       `pinned_commit_sha` and its source tables, asserted by
+  #                       tests/unit/test_yuanshen_snapshot.py, test_artifact_roll_schedule.py
+  #                       and test_gcsim_pin_is_single.py. The citation discipline moved from
+  #                       hand-written kits to machine-derived snapshots, which is stricter.
+  #   L6  coverage      — tests/unit/test_gcsim_character_coverage.py. "Every seeded character
+  #                       has a kit entry" became "every seeded character resolves to a gcsim
+  #                       key, or is on a reviewed list of ones that do not": 117 of 150
+  #                       resolve, and the 33 that do not are committed so a re-pin shows up
+  #                       as a diff rather than as a surprise in someone's search.
+  #   LC  consistency   — tests/crossval recomputes a committed gcsim run and matches it to
+  #                       1.3e-8. A contradiction between our chain and gcsim's is what it
+  #                       catches, against the oracle rather than between kits.
+  #   LU  unmapped      — `_quantity_for_prop` raises on a prop with no DAG quantity, and
+  #                       test_genshin_enums.py asserts the vocabulary against the fixtures.
+  #   L4/L5             — stayed out of CI in fairy and have no Genshin equivalent to carry.
+  #
+  # If a curated corpus ever returns, this stanza is in the history at the commit that
+  # removed it, along with fairy's dispatch rules — including the one worth keeping: never
+  # restore it as `--level l0 --level l1 ...`, because the stale-waiver check was gated on
+  # `set(levels) == set(LEVELS)` and narrowing the dispatch switched staleness detection off
+  # for the levels that *were* listed.
 
   frontend:
     name: "Frontend — typecheck, lint, unit tests"

@@ -116,7 +116,7 @@ functionality is not worth keeping for its own sake.
   long-term hazard. This applies with full force to Chunk C: new files, new class names, no
   column that exists because its ZZZ counterpart did.
 - **What is deliberately unfinished** is marked in-place with `TODO(chunk-X)` naming the task
-  that finishes it — the disabled CI kit-validation gate, the two `scripts/` stubs that exit
+  that finishes it — the two `scripts/` stubs that exit
   non-zero, the removed DI factories, the skipped perf baseline, the 401-sweep table in
   `tests/integration/test_auth_endpoints.py`. `rg "TODO\(chunk-" ` is the inventory.
 
@@ -142,8 +142,11 @@ that turns out to be worth porting rather than re-deriving.
 - `.claude/agents/kit-{curator,auditor}.md` and `.claude/skills/kit-curation/` — the curation
   pipeline the BRIEF wants ported. Still written entirely against ZZZ kits.
 - ~~`.github/workflows/` — still dispatches fairy's kit-validation harness.~~
-  **Resolved in A.10:** the `kit-validation` job is `if: false` with a `TODO(chunk-H)` block
-  naming every level to restore; `validate_kits.py` itself was deleted in B.9.
+  **Resolved in A.10 and retired since:** the job sat `if: false` until Chunk S found gcsim
+  already implements the kits the corpus existed to curate. The stanza where it stood now
+  records where each validation level went — L6's coverage question became
+  `tests/unit/test_gcsim_character_coverage.py`, L1/L2's citation discipline became snapshot
+  provenance, LC became `tests/crossval`. `validate_kits.py` was deleted in B.9.
 - `docs/DEPLOY.md` — fairy's runbook; hosts, tunnel config, and DB names are fairy's.
 - ~~`docker-compose.yml` binds host ports **5432 / 8000 / 4200**, the same as fairy.~~
   **Resolved in A.4/A.5:** there is no `db` service any more (mistilteinn uses fairy's
