@@ -503,10 +503,22 @@ with better crossval tooling."* Walking away is a success condition.
 The BRIEF named this the project's highest-risk chunk *because* it is where fabricated
 citations did fairy the most damage, and the resolution is to not curate a corpus at all.
 
-What does **not** disappear with it: the CI kit-validation gate A.10 disabled
-(`TODO(chunk-H)` in `.github/workflows/test.yml`) still needs an answer, since there is now
-nothing for it to validate. Decide its fate in the DESIGN doc that replaces this chunk rather
-than leaving a disabled gate pointing at a superseded chunk.
+**Its CI gate is now answered too.** The disabled `kit-validation` job is **retired**, and
+the stanza where it stood records where each of its validation levels went rather than leaving
+a gap nobody can account for:
+
+| level | where it went |
+|---|---|
+| L0 schema | gone with the premise — no kit JSON exists, gcsim owns kit implementation |
+| L1/L2 references, citations | snapshot provenance: every derived file records its pin and sources, asserted by `test_yuanshen_snapshot.py`, `test_artifact_roll_schedule.py`, `test_gcsim_pin_is_single.py` |
+| **L6 coverage** | **`tests/unit/test_gcsim_character_coverage.py`** — "every seeded character has a kit entry" became "every seeded character resolves to a gcsim key, or is on a reviewed list": **117 of 150** resolve, and the 33 that do not are committed so a re-pin shows as a diff |
+| LC consistency | `tests/crossval`, which matches a committed gcsim run to 1.3e-8 — against the oracle rather than between kits |
+| LU unmapped | `_quantity_for_prop` raises on a prop with no DAG quantity; `test_genshin_enums.py` asserts the vocabulary |
+
+**`TODO(chunk-H)` markers elsewhere in the tree stay, and still mean something.** They mark
+places where *kit data* is unavailable — talent multipliers, weapon passives, conditional set
+affixes. What changed is how that data arrives: **from gcsim, not from curation**. The letter
+still labels the work; only the method is superseded.
 
 The original sketch is kept below for the record.
 
