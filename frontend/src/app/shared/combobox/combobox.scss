@@ -25,14 +25,14 @@
 
   &:focus {
     outline: none;
-    border-color: var(--cyan);
-    box-shadow: var(--glow-cyan);
+    border-color: var(--brass);
+    box-shadow: var(--glow-brass);
   }
 }
 
 .cb--open .cb__input {
-  border-color: var(--cyan);
-  box-shadow: var(--glow-cyan);
+  border-color: var(--brass);
+  box-shadow: var(--glow-brass);
 }
 
 .cb--disabled .cb__input {
@@ -53,7 +53,7 @@
 
 .cb--open .cb__caret {
   transform: translateY(-50%) rotate(180deg);
-  color: var(--cyan);
+  color: var(--brass);
 }
 
 .cb__list {
@@ -68,9 +68,9 @@
   max-height: 280px;
   overflow-y: auto;
   background: var(--surface-hi);
-  border: 1px solid var(--cyan);
+  border: 1px solid var(--brass);
   border-radius: var(--radius-1);
-  box-shadow: var(--glow-cyan), var(--shadow-card);
+  box-shadow: var(--glow-brass), var(--shadow-card);
 }
 
 .cb__group {
@@ -79,7 +79,7 @@
   font-size: var(--text-xs);
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--cyan);
+  color: var(--brass);
 }
 
 .cb__item {
@@ -93,7 +93,7 @@
   font-size: var(--text-sm);
 
   &--active {
-    background: var(--cobalt);
+    background: var(--violet);
     color: var(--ink);
   }
 

@@ -29,8 +29,8 @@
 
   &:focus-within,
   &:hover {
-    border-color: var(--halo);
-    box-shadow: var(--glow-cyan), var(--shadow-card);
+    border-color: var(--halo-brass);
+    box-shadow: var(--glow-brass), var(--shadow-card);
   }
 }
 
@@ -39,7 +39,7 @@
   background:
     radial-gradient(
       ellipse 40% 100% at 50% 50%,
-      rgba(79, 182, 255, 0.08),
+      rgba(221, 174, 33, 0.08),
       transparent 70%
     ),
     var(--bg-deep);

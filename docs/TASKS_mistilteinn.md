@@ -462,9 +462,9 @@ What is left in *this* file, and what each actually waits on:
 |---|---|---|
 | **G.9** | **unblocked** | the schedule is derived and committed (`artifact_roll_schedule.json`). What remains is the scoring function, which waits on a *consumer* rather than a citation. |
 | **H** | **superseded and closed** | nothing. Its last loose end — the disabled CI kit-validation gate — is retired, with each of its levels' successors recorded. L6 became `test_gcsim_character_coverage.py`. |
-| **I** — rotation/combo model | **sketch superseded** | **the owner.** gcsim implements the on-field model, swap cooldowns and energy economy the sketch described. What survives is where rotations *come from*, and whether the rotation is ever *optimized* — the second reopens the client-side cost argument, and both are product decisions before they are design ones. |
-| **J** — frontend rewrite + visual identity | not started | **the owner** — OQ-P1, Mitya reference art. `_tokens.scss` is still fairy's palette. |
-| **K** — deploy | deferred | a deploy target. There is none, which is also why Actions being billing-blocked is survivable. |
+| **I** — rotation/combo model | **scoped by ruling** | gcsim implements the simulation; the sketch is superseded. **Rotations are authored by users in our own syntax, compiled to gcsim's** (owner, 2026-08-22 — see `DECISIONS.md`). Needs a DESIGN doc for the editor and the compiler. Whether a rotation is ever *optimized* stays out of scope: §3.5 warns it reopens the client-side cost argument. |
+| **J** — frontend rewrite + visual identity | **palette + mark done** | OQ-P1 answered: `_tokens.scss` is now sampled from the Mitya references and the ornament is the emblem. What remains of J is applying it across pages as they are built. |
+| **K** — deploy | **target chosen** | fairy's host, co-existing as `fairy.aetherus.dev` and `mistilteinn.aetherus.dev` (owner, 2026-08-22). The groundwork is laid — ports 8001/4201, shared Postgres over the host gateway — and the hazard is recorded: **never join fairy's compose network**, which once made fairy's tunnel serve this backend. |
 
 **Nothing here is merely queued, and nothing left is blocked on evidence.** G.9's citation was
 found, H is closed, and I's sketch turned out to be work gcsim had already done. Every

@@ -10,7 +10,7 @@
   background:
     radial-gradient(
       ellipse 60% 100% at 50% -10%,
-      rgba(79, 182, 255, 0.18),
+      rgba(221, 174, 33, 0.18),
       transparent 70%
     ),
     var(--surface);
@@ -67,8 +67,8 @@
 
   &:hover {
     text-decoration: none;
-    border-color: var(--halo);
-    box-shadow: var(--glow-cyan);
+    border-color: var(--halo-brass);
+    box-shadow: var(--glow-brass);
     transform: translateY(-2px);
   }
 }
