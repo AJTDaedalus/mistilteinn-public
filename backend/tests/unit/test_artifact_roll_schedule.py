@@ -133,6 +133,37 @@ def test_an_impossible_level_raises_rather_than_returning_zero():
         artifact_rolls_remaining(5, -1)
 
 
+# ── What the schedule fixed elsewhere ────────────────────────────────────────
+
+
+def test_the_main_stat_table_no_longer_answers_for_an_unreachable_level():
+    """A pre-existing bug that only became *findable* once the caps were derived.
+
+    `ReliquaryLevelExcelConfigData` defines rows to internal 21 for rarities 2, 3 and 4,
+    which cap at +4, +12 and +16 — it is a value lookup, not a statement of what a piece can
+    reach. With nothing to check against, `artifact_main_stat_value(2, 20)` returned
+    **1721.0**: a five-star's HP, under a two-star's name, silently.
+
+    That is reachable from a GOOD import, where both the rarity and the level come from the
+    file being read.
+    """
+    from app.data.snapshot import artifact_main_stat_value
+
+    with pytest.raises(SnapshotUnavailableError, match=r"rarity-2 artifact caps at \+4"):
+        artifact_main_stat_value(2, 20, "FIGHT_PROP_HP")
+    with pytest.raises(SnapshotUnavailableError, match=r"rarity-3 artifact caps at \+12"):
+        artifact_main_stat_value(3, 16, "FIGHT_PROP_HP")
+
+
+def test_a_legitimate_level_still_answers():
+    """The fix must refuse the impossible without narrowing the possible."""
+    from app.data.snapshot import artifact_main_stat_value
+
+    assert artifact_main_stat_value(5, 20, "FIGHT_PROP_HP") == pytest.approx(4780.0)
+    assert artifact_main_stat_value(2, 4, "FIGHT_PROP_HP") == pytest.approx(551.0)
+    assert artifact_main_stat_value(4, 16, "FIGHT_PROP_HP") > 0
+
+
 def test_an_unknown_rarity_raises_and_says_what_is_available():
     with pytest.raises(SnapshotUnavailableError, match="no upgrade schedule for rarity 6"):
         artifact_upgrade_levels(6)

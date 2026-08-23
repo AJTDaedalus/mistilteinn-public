@@ -152,6 +152,24 @@ def artifact_main_stat_value(rarity: int, level: int, prop: str) -> float:
     if by_level is None:
         msg = f"no main-stat values for rarity {rarity}; the snapshot has {sorted(values)}"
         raise SnapshotUnavailableError(msg)
+
+    # **The published table over-publishes.** `ReliquaryLevelExcelConfigData` defines rows up
+    # to internal level 21 for rarities 2, 3 and 4, which cap at +4, +12 and +16 — it is a
+    # value lookup, not a declaration of what a piece can reach. Before G.9 derived the caps
+    # there was nothing to check against, so `artifact_main_stat_value(2, 20)` returned
+    # `1721.0`: a five-star's HP, for a level a two-star cannot be at, with no complaint.
+    #
+    # That is reachable from a GOOD import, whose rarity and level both come from the file.
+    ceiling = artifact_max_level(rarity)
+    if level > ceiling:
+        msg = (
+            f"a rarity-{rarity} artifact caps at +{ceiling}, so +{level} is not a level it "
+            f"can be at. The published value table has a row for it — it defines values "
+            f"beyond what each rarity reaches — and returning one would be a higher rarity's "
+            f"stat under this piece's name."
+        )
+        raise SnapshotUnavailableError(msg)
+
     row = by_level.get(str(level + 1))
     if row is None:
         msg = (
@@ -167,7 +185,13 @@ def artifact_main_stat_value(rarity: int, level: int, prop: str) -> float:
 
 
 def artifact_level_count(rarity: int) -> int:
-    """How many upgrade levels a rarity publishes. **Rarity 1 has 16, the rest 21.**"""
+    """How many main-stat rows a rarity **publishes**. Rarity 1 has 16, the rest 21.
+
+    A statement about the *table*, not about the artifact. The published rows run past what
+    each rarity can reach — a 2-star has 21 rows and caps at +4 — so this is not a level
+    limit and using it as one is the bug G.9's caps fixed in `max_artifact_level`. For "how
+    high can this piece go", use `artifact_max_level`.
+    """
     values = _load("artifact_main_stat_values")["values"]
     by_level = values.get(str(rarity))
     if by_level is None:

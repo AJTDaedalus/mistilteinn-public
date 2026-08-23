@@ -43,7 +43,7 @@ comparison. What remains in `docs/TASKS_mistilteinn.md` is **G.9** (blocked on a
 ruling, on the grounds that this is not a functional app until the plan completes and interim
 functionality is not worth keeping for its own sake.
 
-- **The backend suite passes, with nothing skipped.** **951 tests, 0 skipped**, and
+- **The backend suite passes, with nothing skipped.** **953 tests, 0 skipped**, and
   `uvicorn app.main:app` serves **26 paths**. Run CI's own gates rather than a remembered
   subset: `cd backend && python -m scripts.ci_local` reads `.github/workflows/*.yml` and
   executes them here — 19 gates, including the WGSL kernel, gcsim crossval, gitleaks and

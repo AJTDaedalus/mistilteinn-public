@@ -45,8 +45,8 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from app.data.snapshot import (
-    artifact_level_count,
     artifact_main_stat_value,
+    artifact_max_level,
     growth_curve,
     main_stat_pools,
 )
@@ -302,14 +302,21 @@ def add_artifact(log: ContributionLog, artifact: ArtifactStats) -> None:
 
 
 def max_artifact_level(rarity: int) -> int:
-    """The highest upgrade level a piece of this rarity has.
+    """The highest upgrade level a piece of this rarity can reach.
 
-    Not the constant 20: **rarity 1 publishes only 16 rows** (+0 to +4). A rarity-blind
-    range check let a 1★ at +20 escape as a `SnapshotUnavailableError` — a caller catching
-    `StatInputError` to reject bad build input would crash instead, and the message blamed
-    the snapshot for what is a caller's mistake.
+    Not the constant 20 — a 1★ caps at +4, a 3★ at +12, a 4★ at +16.
+
+    **This used to count published rows**, which was the closest thing available and was
+    wrong: `ReliquaryLevelExcelConfigData` defines values beyond what each rarity reaches, so
+    rarity 1's sixteen rows made the check say +15. The docstring at the time already said
+    "(+0 to +4)" in parentheses — the right answer was known and the code had no way to
+    express it.
+
+    G.9 gave it one. The caps now come from `ReliquaryExcelConfigData.maxLevel` via
+    `artifact_max_level`, so this and the snapshot reader refuse the same levels for the same
+    reason instead of disagreeing by nine.
     """
-    return artifact_level_count(rarity) - 1
+    return artifact_max_level(rarity)
 
 
 def _check_main_stat(slot: str, main_stat: str) -> None:

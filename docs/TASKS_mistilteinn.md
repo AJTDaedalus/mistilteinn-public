@@ -399,6 +399,22 @@ carries beside the converted ones:
   exactly one omits `rank` — the same row, `{"level": 1}`, rank 0 at zero exp. Reading the
   omission as "absent" drops the zero-substat variant from every rarity.
 
+### The caps fixed two things that were already wrong
+
+Deriving `maxLevel` turned out to matter beyond G.9, because **the published value table
+over-publishes**: `ReliquaryLevelExcelConfigData` defines rows up to internal 21 for rarities
+2, 3 and 4, which cap at +4, +12 and +16. It is a value lookup, not a statement of what a
+piece can reach — and with nothing to check against, two callers had quietly taken row count
+for a level limit.
+
+- **`artifact_main_stat_value(2, 20)` returned `1721.0`** — a five-star's HP, under a
+  two-star's name, silently. Reachable from a GOOD import, where both the rarity and the
+  level come out of the file being read. It now refuses.
+- **`stat_calculator.max_artifact_level` returned +15 for a 1★**, counting the sixteen rows
+  on file. Its own docstring already said *"(+0 to +4)"* in parentheses — the right answer was
+  known and the code had no way to express it. It now returns +4, so the range check and the
+  snapshot reader refuse the same levels for the same reason instead of disagreeing by nine.
+
 **What is left of G.9 is the scoring itself, and it waits on a consumer, not a citation.**
 `artifact_ranker` was its home and C.6 deleted it. A potential score with nothing calling it
 is precisely the dead code C.6 removed, so the function lands with whatever asks for it — the
