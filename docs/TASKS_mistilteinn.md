@@ -461,13 +461,15 @@ What is left in *this* file, and what each actually waits on:
 | chunk | state | waits on |
 |---|---|---|
 | **G.9** | **unblocked** | the schedule is derived and committed (`artifact_roll_schedule.json`). What remains is the scoring function, which waits on a *consumer* rather than a citation. |
-| **H** | **superseded**, not deferred | gcsim implements the corpus this chunk existed to curate. One loose end: the CI kit-validation gate A.10 disabled now has nothing to validate, and its fate belongs in whichever DESIGN replaces this chunk. |
-| **I** — rotation/combo model | not started | its own DESIGN doc. OQ-M2 is answered, so it is no longer blocked on that. |
+| **H** | **superseded and closed** | nothing. Its last loose end — the disabled CI kit-validation gate — is retired, with each of its levels' successors recorded. L6 became `test_gcsim_character_coverage.py`. |
+| **I** — rotation/combo model | **sketch superseded** | **the owner.** gcsim implements the on-field model, swap cooldowns and energy economy the sketch described. What survives is where rotations *come from*, and whether the rotation is ever *optimized* — the second reopens the client-side cost argument, and both are product decisions before they are design ones. |
 | **J** — frontend rewrite + visual identity | not started | **the owner** — OQ-P1, Mitya reference art. `_tokens.scss` is still fairy's palette. |
 | **K** — deploy | deferred | a deploy target. There is none, which is also why Actions being billing-blocked is survivable. |
 
-**Nothing here is merely queued.** Every remaining item needs either a citation, a DESIGN doc,
-or an owner input — which is why the client-optimizer insert was the right work to do first.
+**Nothing here is merely queued, and nothing left is blocked on evidence.** G.9's citation was
+found, H is closed, and I's sketch turned out to be work gcsim had already done. Every
+remaining item now waits on **an owner decision** — what v1 does about rotations, what the
+visual identity is, and where this deploys.
 
 ---
 
@@ -535,10 +537,48 @@ rewrite `.claude/agents/kit-{curator,auditor}.md` and `.claude/skills/kit-curati
 Genshin talents/constellations → **[Owner]** approve the ~20–30 character MVP roster cut
 (BRIEF constraint 4).
 
-## Chunk I — Rotation / combo model **[Planner: own DESIGN doc first]**
+## Chunk I — Rotation / combo model **[SKETCH SUPERSEDED 2026-08-22; what remains is different work]**
 
-Sketch: gcsim frame-data harvest as a committed snapshot (Chunk E pattern) → on-field/off-field
-model → swap cooldowns → burst energy and particle economy. Blocked on **OQ-M2**.
+The original sketch was: *"gcsim frame-data harvest as a committed snapshot (Chunk E pattern)
+→ on-field/off-field model → swap cooldowns → burst energy and particle economy."*
+
+**gcsim implements every one of those**, at the pin, and this repo already runs it in the
+browser (B.1–B.4). Checked rather than assumed:
+
+| sketch item | in gcsim at the pin |
+|---|---|
+| frame data | frame-based by construction — `SwapCDFrames = 60` |
+| on-field / off-field | `pkg/core/player/player.go`, `exec.go` |
+| swap cooldowns | `player.go:53 SwapCD`, `SwapICD` |
+| burst energy, particle economy | `pkg/core/energy.go`, `pkg/core/player/character/energy.go`, `DistributeParticle` |
+
+Chunk S said as much in prose — *"gcsim answers 'what does this build actually do over a
+rotation'"* — and the same finding that superseded Chunk H supersedes this sketch. Building an
+on-field model beside gcsim's would be a second implementation of a mechanic, which DESIGN §1
+A6 forbids for exactly the reason it would apply here: the two would disagree and the wrong
+one would be the one nobody was checking.
+
+### What actually remains, and it is not the sketch
+
+Two things survive, and **neither is a simulation problem**:
+
+**1. Where rotations come from.** gcsim needs an action list and will not invent one.
+`RESEARCH_gcsim_embed.md` §5 names this as a real cost, and the BRIEF plans for it: *"rotation
+corpus (community action-list DB → default rotations per team archetype)"*. Today
+`gcsim_config.build_config` refuses a config with no action list — correctly — which means a
+user must supply one. That is a **product decision** about v1's scope, not a modelling one.
+
+**2. Optimizing the rotation**, which is genuinely new territory and is flagged as such.
+`DESIGN_client_optimizer.md` §3.5 closes with the warning: *"This holds because the rotation is
+fixed and supplied. If the rotation itself ever becomes something to optimize — Chunk I
+territory — the collapse does not survive, and the cost question reopens on new terms."*
+
+The whole client-side cost argument rests on team and rotation being **inputs**. Making the
+rotation an output multiplies the search by the space of action lists, and gcsim costs ~4,700×
+a single damage-chain combination under WASI. That is not a chunk to start without re-costing.
+
+**[Owner]** Both need scoping before a DESIGN doc is worth writing: does v1 ship default
+rotations per archetype, ask the user to write one, or neither?
 
 ## Chunk J — Frontend rewrite + Mitya visual identity **[deferred]**
 

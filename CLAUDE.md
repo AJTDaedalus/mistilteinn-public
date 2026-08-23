@@ -35,9 +35,13 @@ ranker itself.** Searching runs in the browser now.
 and 53 artifact sets at the pin, so there is no corpus to curate. `TASKS_client_optimizer.md`
 was inserted on that finding and is **complete** (PRs #31–#41): the browser kernel on CPU and
 GPU, the run corpus, retrieval that reports its own measured error, explanation, weapon
-comparison. What remains in `docs/TASKS_mistilteinn.md` is **G.9** (blocked on a citation),
-**I** (rotation model — needs a DESIGN), **J** (frontend identity — needs owner art) and
-**K** (deploy — no target yet). See that file's "Where this plan stands" banner.
+comparison. **Everything left in `docs/TASKS_mistilteinn.md` now waits on an owner decision,
+not on evidence or design work**: G.9's citation was found (`artifact_roll_schedule.json`),
+H is closed with its CI gate retired and its levels' successors recorded, and I's sketch
+turned out to describe work gcsim had already done — what survives of I is *where rotations
+come from* and whether the rotation is ever *optimized*, which reopens the client-side cost
+argument. J needs reference art; K needs a deploy target. See that file's "Where this plan
+stands" banner.
 
 **There is deliberately no reachable optimizer** until the client-optimizer UI lands: an owner
 ruling, on the grounds that this is not a functional app until the plan completes and interim
