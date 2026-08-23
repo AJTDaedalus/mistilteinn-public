@@ -361,7 +361,7 @@ Each task below is **one commit**. Commit message form:
 ### [x] G.1 — `disc_optimizer.py` → `artifact_optimizer.py` (5 slots, fixed flower/plume mains)
 ### [x] G.2 — Per-slot main-stat pools as data
 ### [x] G.3 — Pareto + budget-K pruning, progress and cancellation (`artifact_prefilter.py`)
-### [x] G.4 — `rank_pipeline.py` port → `artifact_ranker.py` (marginal value across contexts)
+### [x] G.4 — `rank_pipeline.py` port → `artifact_ranker.py` — **deleted by C.6**
 ### [x] G.5 — `good_importer.py` — GOOD schema validation, reject-don't-coerce on unknown keys
 ### [x] G.6 — Optimizer + builds + artifacts API surface restored
 - **[x] G.6a — catalogue read endpoints** (characters, weapons, artifact sets, enemies)
@@ -379,10 +379,22 @@ potential score built on a guessed roll count is a confident number with nothing
 
 **Unblocks when** the schedule is read from a primary source (AnimeGameData's
 `ReliquaryLevelExcelConfigData` / the append-depot rules) and committed the same way E.5
-committed the value tables. Until then `artifact_ranker` ranks pieces as they are.
+committed the value tables.
 
-`TODO(chunk-G.9)` in `app/services/artifact_ranker.py`.
-### [x] G.10 — Move optimize/rank behind the job runner
+**Its marker is gone, and that is worth recording.** `TODO(chunk-G.9)` lived in
+`app/services/artifact_ranker.py`, which C.6 deleted along with the ranking endpoint. The
+repo treats `rg "TODO\(chunk-"` as the inventory of deliberate unfinished work, so this task
+silently dropped out of it — a blocked item made invisible by an unrelated deletion.
+
+It is tracked **here** instead until there is a file to mark. The ranker itself is at
+`b16dbbd:backend/app/services/artifact_ranker.py`, so whichever chunk restores ranking
+restores both the code and the marker.
+### [x] G.10 — Move optimize/rank behind the job runner — **later deleted by C.6**
+
+**Superseded by C.6 (2026-08-22).** Everything below happened and then went: the job runner,
+the hybrid contract, the `optimization_jobs` table and both endpoints were deleted when
+searching moved to the browser. Kept as the record of a decision that was correct for the
+server-side design it belonged to, and does not survive the client-side one. Original entry:
 
 **Done for `optimize`; `rank-artifacts` is still synchronous** and stays that way — a
 ranking is O(inventory), not O(inventory^5), so it finishes in the request by construction.
@@ -404,6 +416,27 @@ Setting `lazy="raise_on_sql"` on the relationships services read turns that into
 immediate, obvious error at the first touch instead of a 500 in production. Deferred rather
 than done here because the seeder and importers may rely on lazy loading and untangling that
 is its own change — but a fourth instance should not be discovered the same way.
+
+---
+
+## Where this plan stands (2026-08-22)
+
+**A–G are done**, with **G.9 blocked on a citation** (see below). **Chunk S is done** and its
+finding is what inserted `TASKS_client_optimizer.md`, which is now **complete** — Chunks A–D
+of that file, PRs #31–#41.
+
+What is left in *this* file, and what each actually waits on:
+
+| chunk | state | waits on |
+|---|---|---|
+| **G.9** | blocked | the substat roll schedule, from a primary source. Not a scheduling problem — a citation this repo does not have. |
+| **H** | **superseded**, not deferred | gcsim implements the corpus this chunk existed to curate. One loose end: the CI kit-validation gate A.10 disabled now has nothing to validate, and its fate belongs in whichever DESIGN replaces this chunk. |
+| **I** — rotation/combo model | not started | its own DESIGN doc. OQ-M2 is answered, so it is no longer blocked on that. |
+| **J** — frontend rewrite + visual identity | not started | **the owner** — OQ-P1, Mitya reference art. `_tokens.scss` is still fairy's palette. |
+| **K** — deploy | deferred | a deploy target. There is none, which is also why Actions being billing-blocked is survivable. |
+
+**Nothing here is merely queued.** Every remaining item needs either a citation, a DESIGN doc,
+or an owner input — which is why the client-optimizer insert was the right work to do first.
 
 ---
 
