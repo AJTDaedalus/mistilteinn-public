@@ -62,7 +62,12 @@ def test_main_stat_values_are_indexed_by_the_artifacts_own_level():
 def test_an_unknown_rarity_or_level_or_prop_raises():
     with pytest.raises(snapshot.SnapshotUnavailableError, match="no main-stat values"):
         snapshot.artifact_main_stat_value(9, 20, "FIGHT_PROP_HP")
-    with pytest.raises(snapshot.SnapshotUnavailableError, match="no main-stat row"):
+    # +21 used to be refused as "no main-stat row" — the table simply ran out. Since G.9
+    # derived the per-rarity caps it is refused earlier and more accurately: a five-star
+    # *caps* at +20, which is a statement about the artifact rather than about the table.
+    # The row-missing branch survives for a snapshot whose value table is shorter than the
+    # cap it publishes, which would be an inconsistent rebuild rather than a caller error.
+    with pytest.raises(snapshot.SnapshotUnavailableError, match=r"caps at \+20"):
         snapshot.artifact_main_stat_value(5, 21, "FIGHT_PROP_HP")
     with pytest.raises(snapshot.SnapshotUnavailableError, match="not a main stat"):
         snapshot.artifact_main_stat_value(5, 20, "FIGHT_PROP_LUNAR_CHARGE")
@@ -124,7 +129,9 @@ def test_what_the_reader_hands_out_cannot_corrupt_the_cache():
 
 
 def test_rarity_one_publishes_fewer_upgrade_levels_than_the_rest():
+    # Published rows, not reachable levels: rarity 1 caps at +4 with 16 rows on file.
     assert snapshot.artifact_level_count(1) == 16
+    assert snapshot.artifact_max_level(1) == 4
     assert snapshot.artifact_level_count(5) == 21
 
 

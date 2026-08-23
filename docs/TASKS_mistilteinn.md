@@ -369,26 +369,57 @@ Each task below is **one commit**. Commit message form:
 - **[x] G.6c — builds, and the optimize/rank endpoints** (synchronous; the job runner is G.10)
 ### [x] G.7 — Re-baseline `tests/perf` for the 5-slot search space
 ### [x] G.8 — Delete the consumed files from `app/services/_ported/`
-### G.9 — Artifact upgrade-potential scoring **[BLOCKED — needs a citation]**
+### [~] G.9 — Artifact upgrade-potential scoring — **unblocked; the citation exists**
 
-"What could this +0 piece become at +20" needs the **substat roll schedule**: how many
-additional rolls a piece gains as it levels, per rarity. That rule is not in the committed
-snapshot — `artifact_substat_values.json` publishes the roll *values* and the depots, not
-the schedule — and writing it from memory is exactly what the citation rule forbids. A
-potential score built on a guessed roll count is a confident number with nothing behind it.
+**The blocker is gone.** G.9 was blocked because the substat roll schedule — how many rolls a
+piece gains as it levels — was said not to be in the committed snapshot, and writing it from
+memory is what the citation rule forbids.
 
-**Unblocks when** the schedule is read from a primary source (AnimeGameData's
-`ReliquaryLevelExcelConfigData` / the append-depot rules) and committed the same way E.5
-committed the value tables.
+It was published all along, in a table the E.5 toolkit already caches:
 
-**Its marker is gone, and that is worth recording.** `TODO(chunk-G.9)` lived in
-`app/services/artifact_ranker.py`, which C.6 deleted along with the ranking endpoint. The
-repo treats `rg "TODO\(chunk-"` as the inventory of deliberate unfinished work, so this task
-silently dropped out of it — a blocked item made invisible by an unrelated deletion.
+| field | what it gives |
+|---|---|
+| `ReliquaryExcelConfigData.addPropLevels` | the levels a piece gains a substat: `[5, 9, 13, 17, 21]` |
+| `ReliquaryExcelConfigData.maxLevel` | which of those a rarity actually reaches |
+| `ReliquaryExcelConfigData.appendPropNum` | how many substats it starts with |
 
-It is tracked **here** instead until there is a file to mark. The ranker itself is at
-`b16dbbd:backend/app/services/artifact_ranker.py`, so whichever chunk restores ranking
-restores both the code and the marker.
+Derived and committed the same way E.5 committed the value tables:
+`app/data/yuanshen/snapshot/artifact_roll_schedule.json`, built by
+`scripts.yuanshen.build_snapshot`, read through `app/data/snapshot.py`
+(`artifact_upgrade_levels`, `artifact_max_level`, `artifact_rolls_remaining`).
+**A 5-star upgrades at +4/+8/+12/+16/+20; a 3-star gets three of those, not five.**
+
+Two things the derivation had to get right, both tested against the raw values the snapshot
+carries beside the converted ones:
+
+- **The tables are 1-indexed** — internal level 1 is the artifact's `+0`, the same shift
+  `artifact_main_stat_value` already makes. Converted once, at build time.
+- **A missing `appendPropNum` is zero, not absent.** These dumps omit zero-valued integers,
+  which is *checkable*: in `ReliquaryLevelExcelConfigData` exactly one row omits `exp` and
+  exactly one omits `rank` — the same row, `{"level": 1}`, rank 0 at zero exp. Reading the
+  omission as "absent" drops the zero-substat variant from every rarity.
+
+### The caps fixed two things that were already wrong
+
+Deriving `maxLevel` turned out to matter beyond G.9, because **the published value table
+over-publishes**: `ReliquaryLevelExcelConfigData` defines rows up to internal 21 for rarities
+2, 3 and 4, which cap at +4, +12 and +16. It is a value lookup, not a statement of what a
+piece can reach — and with nothing to check against, two callers had quietly taken row count
+for a level limit.
+
+- **`artifact_main_stat_value(2, 20)` returned `1721.0`** — a five-star's HP, under a
+  two-star's name, silently. Reachable from a GOOD import, where both the rarity and the
+  level come out of the file being read. It now refuses.
+- **`stat_calculator.max_artifact_level` returned +15 for a 1★**, counting the sixteen rows
+  on file. Its own docstring already said *"(+0 to +4)"* in parentheses — the right answer was
+  known and the code had no way to express it. It now returns +4, so the range check and the
+  snapshot reader refuse the same levels for the same reason instead of disagreeing by nine.
+
+**What is left of G.9 is the scoring itself, and it waits on a consumer, not a citation.**
+`artifact_ranker` was its home and C.6 deleted it. A potential score with nothing calling it
+is precisely the dead code C.6 removed, so the function lands with whatever asks for it — the
+client-side search is the natural place. The hard half is done and committed.
+
 ### [x] G.10 — Move optimize/rank behind the job runner — **later deleted by C.6**
 
 **Superseded by C.6 (2026-08-22).** Everything below happened and then went: the job runner,
@@ -429,7 +460,7 @@ What is left in *this* file, and what each actually waits on:
 
 | chunk | state | waits on |
 |---|---|---|
-| **G.9** | blocked | the substat roll schedule, from a primary source. Not a scheduling problem — a citation this repo does not have. |
+| **G.9** | **unblocked** | the schedule is derived and committed (`artifact_roll_schedule.json`). What remains is the scoring function, which waits on a *consumer* rather than a citation. |
 | **H** | **superseded**, not deferred | gcsim implements the corpus this chunk existed to curate. One loose end: the CI kit-validation gate A.10 disabled now has nothing to validate, and its fate belongs in whichever DESIGN replaces this chunk. |
 | **I** — rotation/combo model | not started | its own DESIGN doc. OQ-M2 is answered, so it is no longer blocked on that. |
 | **J** — frontend rewrite + visual identity | not started | **the owner** — OQ-P1, Mitya reference art. `_tokens.scss` is still fairy's palette. |

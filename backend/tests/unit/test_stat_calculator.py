@@ -360,16 +360,25 @@ def test_an_unknown_slot_is_rejected():
 
 
 def test_the_artifact_level_range_depends_on_rarity():
-    """Rarity 1 publishes 16 rows, not 21 — a rarity-blind check let a 1★ +20 escape as a
-    `SnapshotUnavailableError`, which a caller filtering bad input would not catch."""
-    with pytest.raises(StatInputError, match=r"outside 0\.\.15"):
+    """A 1★ caps at +4, not +20 — a rarity-blind check let a 1★ +20 escape as a
+    `SnapshotUnavailableError`, which a caller filtering bad input would not catch.
+
+    The bound used to be **+15**, counting published rows because there was nothing better;
+    G.9's `ReliquaryExcelConfigData.maxLevel` made it exact. A 1★ at +15 is now correctly
+    refused — it was always impossible, and the check simply could not say so.
+    """
+    with pytest.raises(StatInputError, match=r"outside 0\.\.4"):
         add_artifact(build_log(NodeRegistry()), ArtifactStats(
             slot="equip_bracer", rarity=1, level=20, main_stat="FIGHT_PROP_HP",
+        ))
+    with pytest.raises(StatInputError, match=r"outside 0\.\.4"):
+        add_artifact(build_log(NodeRegistry()), ArtifactStats(
+            slot="equip_bracer", rarity=1, level=15, main_stat="FIGHT_PROP_HP",
         ))
 
     log = build_log(NodeRegistry())
     add_artifact(log, ArtifactStats(
-        slot="equip_bracer", rarity=1, level=15, main_stat="FIGHT_PROP_HP",
+        slot="equip_bracer", rarity=1, level=4, main_stat="FIGHT_PROP_HP",
     ))
     assert log.contributions
 

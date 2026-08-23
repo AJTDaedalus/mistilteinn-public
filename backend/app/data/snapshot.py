@@ -89,6 +89,57 @@ def growth_curve(kind: CurveKind, name: str, level: int) -> float:
     return float(value)
 
 
+def artifact_upgrade_levels(rarity: int) -> tuple[int, ...]:
+    """The artifact levels at which a piece of this rarity gains a substat roll.
+
+    In the artifact's own `+0..+20` levels, already converted from the 1-indexed table — the
+    same shift `artifact_main_stat_value` makes, and made in the same place so no caller has
+    to know which convention a number is in.
+
+    5-star: `(4, 8, 12, 16, 20)`. A 3-star caps at +12 and gets three of them, not five.
+    """
+    schedules = _load("artifact_roll_schedule")["schedules"]
+    entry = schedules.get(str(rarity))
+    if entry is None:
+        msg = (
+            f"no upgrade schedule for rarity {rarity}; the snapshot has "
+            f"{sorted(schedules)}. Rebuild with scripts.yuanshen.build_snapshot."
+        )
+        raise SnapshotUnavailableError(msg)
+    return tuple(entry["upgrade_levels"])
+
+
+def artifact_max_level(rarity: int) -> int:
+    """The highest level a piece of this rarity can reach, in `+N` terms."""
+    schedules = _load("artifact_roll_schedule")["schedules"]
+    entry = schedules.get(str(rarity))
+    if entry is None:
+        msg = f"no upgrade schedule for rarity {rarity}; the snapshot has {sorted(schedules)}"
+        raise SnapshotUnavailableError(msg)
+    return int(entry["max_level"])
+
+
+def artifact_rolls_remaining(rarity: int, level: int) -> int:
+    """How many substat rolls a piece at `level` has still to gain.
+
+    **The number G.9 was blocked on**, and the reason it stayed blocked: writing "five rolls
+    for a 5-star" from memory would have been a confident number with nothing behind it. It
+    now comes from `ReliquaryExcelConfigData.addPropLevels` at the pinned commit.
+
+    A level above the rarity's maximum raises rather than returning zero. Zero is a real
+    answer — a +20 five-star has no rolls left — and a +25 five-star is a caller bug, so
+    collapsing the two would hide it behind a plausible result.
+    """
+    ceiling = artifact_max_level(rarity)
+    if level < 0 or level > ceiling:
+        msg = (
+            f"rarity {rarity} caps at +{ceiling}, so +{level} is not a level it can be at. "
+            f"A piece cannot have negative or impossible upgrades remaining."
+        )
+        raise SnapshotUnavailableError(msg)
+    return sum(1 for upgrade in artifact_upgrade_levels(rarity) if upgrade > level)
+
+
 def artifact_main_stat_value(rarity: int, level: int, prop: str) -> float:
     """The value an artifact's main stat has at `rarity` and `level`.
 
@@ -101,6 +152,24 @@ def artifact_main_stat_value(rarity: int, level: int, prop: str) -> float:
     if by_level is None:
         msg = f"no main-stat values for rarity {rarity}; the snapshot has {sorted(values)}"
         raise SnapshotUnavailableError(msg)
+
+    # **The published table over-publishes.** `ReliquaryLevelExcelConfigData` defines rows up
+    # to internal level 21 for rarities 2, 3 and 4, which cap at +4, +12 and +16 — it is a
+    # value lookup, not a declaration of what a piece can reach. Before G.9 derived the caps
+    # there was nothing to check against, so `artifact_main_stat_value(2, 20)` returned
+    # `1721.0`: a five-star's HP, for a level a two-star cannot be at, with no complaint.
+    #
+    # That is reachable from a GOOD import, whose rarity and level both come from the file.
+    ceiling = artifact_max_level(rarity)
+    if level > ceiling:
+        msg = (
+            f"a rarity-{rarity} artifact caps at +{ceiling}, so +{level} is not a level it "
+            f"can be at. The published value table has a row for it — it defines values "
+            f"beyond what each rarity reaches — and returning one would be a higher rarity's "
+            f"stat under this piece's name."
+        )
+        raise SnapshotUnavailableError(msg)
+
     row = by_level.get(str(level + 1))
     if row is None:
         msg = (
@@ -116,7 +185,13 @@ def artifact_main_stat_value(rarity: int, level: int, prop: str) -> float:
 
 
 def artifact_level_count(rarity: int) -> int:
-    """How many upgrade levels a rarity publishes. **Rarity 1 has 16, the rest 21.**"""
+    """How many main-stat rows a rarity **publishes**. Rarity 1 has 16, the rest 21.
+
+    A statement about the *table*, not about the artifact. The published rows run past what
+    each rarity can reach — a 2-star has 21 rows and caps at +4 — so this is not a level
+    limit and using it as one is the bug G.9's caps fixed in `max_artifact_level`. For "how
+    high can this piece go", use `artifact_max_level`.
+    """
     values = _load("artifact_main_stat_values")["values"]
     by_level = values.get(str(rarity))
     if by_level is None:
