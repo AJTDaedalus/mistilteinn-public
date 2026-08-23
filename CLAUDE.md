@@ -200,7 +200,13 @@ Unchanged from fairy (a deliberate BRIEF decision):
 - **Backend**: FastAPI + SQLAlchemy 2.0 async + PostgreSQL + Alembic
 - **Frontend**: Angular (deferred — backend-first development)
 - **Infrastructure**: Docker Compose (db, backend, frontend containers)
-- **Deploy**: Cloudflare Tunnel, target `mistilteinn.aetherus.dev`
+- **Deploy**: Cloudflare Tunnel, target `mistilteinn.aetherus.dev`, **alongside fairy on one
+  host** (owner, 2026-08-22). `docker-compose.prod.yml` + `.github/workflows/deploy-prod.yml`
+  exist; the box still needs a runner registration and a tunnel token — `docs/DEPLOY.md` §2
+  and §3. **Prod runs its own Postgres**: fairy's prod publishes no host port, so the dev
+  arrangement of borrowing its container cannot work there. And **never join fairy's compose
+  network** — it once had fairy's tunnel serving this API, and
+  `tests/unit/test_prod_stack_can_coexist_with_fairy.py` now enforces that
 
 ## Data Source of Truth
 
