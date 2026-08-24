@@ -284,22 +284,6 @@ async def test_the_accepted_talent_keys_are_the_ones_gcsim_is_given(
         assert accepted.status_code == 200, f"{talent} is rendered but refused"
 
 
-async def test_a_second_build_of_the_same_character_is_refused_not_a_500(
-    authed_client: AsyncClient, catalogue,
-):
-    """`uq_builds_owner_character` was enforced only by the database, so an ordinary action —
-    a second Ayaka build — raised a UniqueViolationError and the user was told the server
-    broke. The limit is real and under review (`app/models/build.py`); this makes it legible
-    rather than endorsing it.
-    """
-    await _existing(authed_client, catalogue)
-
-    second = await authed_client.post(BUILDS, json=_body(catalogue))
-
-    assert second.status_code == 409, second.text
-    assert "one build per character" in second.json()["detail"]
-
-
 async def test_another_users_build_does_not_block_mine(
     authed_client: AsyncClient, db_session: AsyncSession, catalogue,
 ):

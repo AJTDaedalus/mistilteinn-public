@@ -51,6 +51,28 @@
     `promote` table — not derived from constellation arithmetic, which gives 13.
   - Seven mutations, all CAUGHT.
 
+### [x] T.1a — A user may own several builds of one character **[unplanned; owner decision]**
+
+`uq_builds_owner_character` — inherited verbatim from fairy's `uq_builds_owner_agent` — was
+dropped (owner, 2026-08-24). It forbade saving a C0 and a C6 of the same character side by
+side, or a Physical Eula against a Cryo one, which are ordinary things to want to compare.
+T.1 had just turned the resulting 500 into a 409, which is what made the decision blocking:
+T.3 is where a user meets the limit.
+
+**The rule moved rather than vanished.** gcsim refuses a party holding one character twice —
+`pkg/simulation/setup.go:94` at pin `3647a07` returns `duplicated character %v` — so the
+collection may hold two and the **team** may not. Enforced in `app/api/v1/teams.py`, which
+also gained the validation `create_team` never had: a slot naming a build that does not exist
+reached the foreign key and became a 500, and a slot naming a *stranger's* build was stored
+and shown on every later read.
+
+`RotationRepository._roster` now **refuses** a duplicate rather than collapsing it. Keyed by
+`nanoka_id`, two Ayakas became one entry and a four-build team compiled against three
+characters. The rule lives in the application, not the schema, so a row from a script or a
+fixture can still arrive that way — the test writes one directly.
+
+Four mutations, all CAUGHT. Migration `27770f8ae917`, round-tripped up and down.
+
 ### [ ] T.2 — A build carries what a row needs
 - **Do:** `BuildRead` gains optional nested `character` and `weapon` summaries — name,
   element / weapon type, rarity, `nanoka_id`. Reuse the catalogue's summary shapes rather

@@ -12,7 +12,6 @@ from sqlalchemy import (
     CheckConstraint,
     Float,
     ForeignKey,
-    Index,
     Integer,
     String,
     text,
@@ -35,13 +34,16 @@ class Build(TimestampMixin, Base):
     equipped by at most one build, unequipping must not delete it, and the alternative is
     five nullable FKs plus a constraint that they are distinct.
 
-    **`uq_builds_owner_character` means one build per character per user.** Inherited
-    verbatim from fairy's `uq_builds_owner_agent` and kept here *pending an owner decision*,
-    not because it is obviously right: it forbids saving a C0 and a C6 of the same
-    character side by side, or a Physical and a Cryo Eula, which are ordinary things to want
-    to compare in this game. Raised in the PR #2 review; changing it is a product call, so
-    it is documented rather than quietly dropped. If it goes, `Build` needs a `name` column
-    to tell two builds of one character apart.
+    **A user may own several builds of one character.** `uq_builds_owner_character` —
+    inherited verbatim from fairy's `uq_builds_owner_agent` — forbade it, and was dropped by
+    owner decision (2026-08-24, T.1a): comparing a C0 against a C6, or a Physical Eula
+    against a Cryo one, is an ordinary thing to want in this game.
+
+    **The rule moved rather than vanished.** gcsim refuses a party holding the same character
+    twice — `pkg/simulation/setup.go:94` at pin `3647a07` returns
+    `duplicated character %v` — so two builds of one character can coexist in a collection
+    and cannot coexist on a **team**. `app/api/v1/teams.py` enforces that, which is where it
+    belongs: the collection is a shelf, the team is the thing being simulated.
 
     `talent_levels` is JSONB keyed by `TalentType` value — normal attack, elemental skill
     and elemental burst each level 1-15 independently (constellations can raise the cap to
@@ -51,12 +53,6 @@ class Build(TimestampMixin, Base):
 
     __tablename__ = "builds"
     __table_args__ = (
-        Index(
-            "uq_builds_owner_character",
-            "owner_id", "character_id",
-            unique=True,
-            postgresql_where=text("owner_id IS NOT NULL"),
-        ),
         CheckConstraint(
             "constellation_level BETWEEN 0 AND 6",
             name="constellation_level_range",
