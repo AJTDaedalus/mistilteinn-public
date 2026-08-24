@@ -23,7 +23,7 @@ from app.dependencies import get_owned_team_repo
 from app.middleware.rate_limit import WRITE_LIMIT, limiter
 from app.repositories.team import TeamRepository
 from app.schemas.common import PaginatedResponse
-from app.schemas.team import TeamCreate, TeamRead, TeamUpdate, assert_slots_distinct
+from app.schemas.team import TEAM_SLOTS, TeamCreate, TeamRead, TeamUpdate, assert_slots_distinct
 
 router = APIRouter(prefix="/teams", tags=["teams"])
 
@@ -83,13 +83,13 @@ async def update_team(
     # `TeamUpdate`'s validator only sees the patch body. A patch that moves one
     # slot onto an id the row already holds in another slot is a duplicate only
     # once merged, so check the *resulting* team, not the request.
-    if any(k in patch for k in ("build1_id", "build2_id", "build3_id")):
+    if any(k in patch for k in TEAM_SLOTS):
         existing = await repo.get_by_id(team_id)
         if existing is None:
             raise HTTPException(status_code=404, detail="Team not found")
         merged = {
             slot: patch.get(slot, getattr(existing, slot))
-            for slot in ("build1_id", "build2_id", "build3_id")
+            for slot in TEAM_SLOTS
         }
         try:
             assert_slots_distinct(**merged)

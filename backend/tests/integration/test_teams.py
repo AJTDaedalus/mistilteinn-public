@@ -14,11 +14,13 @@ helper should grow with it rather than being replaced.
 
 from __future__ import annotations
 
+import itertools
 from typing import TYPE_CHECKING
 
 import pytest
 
 from app.models.build import Build
+from app.schemas.team import TEAM_SLOTS
 
 if TYPE_CHECKING:
     from httpx import AsyncClient
@@ -41,7 +43,10 @@ async def _two_builds(
 
 @pytest.mark.parametrize(
     ("slot_a", "slot_b"),
-    [("build1_id", "build2_id"), ("build1_id", "build3_id"), ("build2_id", "build3_id")],
+    # Derived from TEAM_SLOTS rather than listed. The hand-written version covered the three
+    # pairs a ZZZ squad has; when the fourth Genshin slot arrived it would have kept passing
+    # while testing three quarters of the surface.
+    list(itertools.combinations(TEAM_SLOTS, 2)),
 )
 async def test_create_team_rejects_the_same_build_in_two_slots(
     authed_client: AsyncClient,
@@ -60,7 +65,7 @@ async def test_create_team_rejects_the_same_build_in_two_slots(
     assert "more than one slot" in resp.text
 
 
-async def test_create_team_still_accepts_three_distinct_builds(
+async def test_create_team_still_accepts_distinct_builds(
     authed_client: AsyncClient,
     db_session: AsyncSession,
     authed_user: tuple[User, str],
@@ -143,3 +148,62 @@ async def test_patch_touching_a_slot_on_an_unknown_team_is_still_404(
 
     assert resp.status_code == 404, resp.text
     assert resp.json()["detail"] == "Team not found"
+
+
+# ---- A Genshin party is four ------------------------------------------------
+
+
+async def test_a_team_holds_four_characters(
+    authed_client: AsyncClient,
+    db_session: AsyncSession,
+    authed_user: tuple[User, str],
+) -> None:
+    """The fork inherited three slots from ZZZ, where a squad is three agents.
+
+    A Genshin party is four, and a rotation for one cannot be expressed against three slots
+    at all — which is how this survived four chunks unnoticed: nothing had needed the fourth.
+    """
+    user, _ = authed_user
+    builds = [Build(owner_id=str(user.id), notes=f"PartyBuild{i}") for i in range(4)]
+    db_session.add_all(builds)
+    await db_session.flush()
+
+    body = {"name": "FullParty"} | {
+        slot: str(build.id) for slot, build in zip(TEAM_SLOTS, builds, strict=True)
+    }
+    resp = await authed_client.post("/api/v1/teams", json=body)
+
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["build4_id"] == str(builds[3].id)
+
+
+async def test_the_fourth_slot_is_covered_by_the_duplicate_guard(
+    authed_client: AsyncClient,
+    db_session: AsyncSession,
+    authed_user: tuple[User, str],
+) -> None:
+    """A slot the guard does not know about is a slot where the same build can sit twice."""
+    build_id, other_id = await _two_builds(db_session, authed_user)
+
+    resp = await authed_client.post(
+        "/api/v1/teams",
+        json={"name": "Dup4", "build1_id": build_id, "build4_id": build_id,
+              "build2_id": other_id},
+    )
+
+    assert resp.status_code == 422, resp.text
+    assert "more than one slot" in resp.text
+
+
+async def test_the_slot_list_has_one_definition():
+    """`TEAM_SLOTS` is what the model, schemas, repository and API all read.
+
+    It was four hand-written lists before, and when three became four every one of them had
+    to be found. This asserts the model's columns and the shared list agree, so a fifth slot
+    (or a rename) cannot half-land.
+    """
+    from app.models.team import Team
+
+    columns = {c.name for c in Team.__table__.columns if c.name.startswith("build")}
+    assert columns == set(TEAM_SLOTS)
+    assert len(TEAM_SLOTS) == 4
