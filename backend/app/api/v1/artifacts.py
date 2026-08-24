@@ -20,6 +20,7 @@ from fastapi import (
     Response,
     status,
 )
+from sqlalchemy.exc import IntegrityError
 
 from app.data.importers.good_importer import GoodImportError, parse_good
 from app.dependencies import (
@@ -237,7 +238,26 @@ async def equip_artifact(
                 ),
             )
 
-    updated = await repo.update(artifact_id, {"build_id": body.build_id})
+    # Read **before** the write. A failed flush expires the instance, so touching
+    # `artifact.slot` afterwards emits SQL from inside the exception handler — which is a
+    # `MissingGreenlet`, and turns the 422 below into the 500 it exists to prevent.
+    slot_name = artifact.slot.display
+    try:
+        updated = await repo.update(artifact_id, {"build_id": body.build_id})
+    except IntegrityError as exc:
+        # The check above and this write are not one operation, so two requests equipping the
+        # same slot can both pass it. `uq_artifacts_build_slot` is the backstop that keeps the
+        # data right — and without this it surfaces as a 500 for an ordinary race, which is
+        # the failure mode this endpoint exists to remove rather than relocate.
+        #
+        # No rollback here: `get_db` rolls back on any exception leaving the handler.
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"that build already has a {slot_name} equipped. Something filled the slot "
+                f"while this request was in flight — take it off and try again."
+            ),
+        ) from exc
     return ArtifactRead.model_validate(updated)
 
 

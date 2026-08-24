@@ -204,3 +204,38 @@ async def test_the_patch_takes_nothing_but_the_binding(authed_client: AsyncClien
 
     assert response.status_code == 422
     assert "level" in str(response.json()["detail"])
+
+
+async def test_a_race_for_one_slot_is_a_422_not_a_500(
+    authed_client: AsyncClient, db_session: AsyncSession, scene, monkeypatch,
+):
+    """The check and the write are not one operation.
+
+    Two requests equipping the same slot can both pass the check, and
+    `uq_artifacts_build_slot` is what keeps the data right afterwards. Without a handler that
+    is a 500 for an ordinary race — the failure this endpoint exists to remove rather than
+    relocate.
+
+    Simulated by making the pre-check lie, which is exactly what a concurrent request does to
+    it: reports the slot free when it is not.
+    """
+    from app.repositories.artifact import ArtifactRepository
+
+    await _equip(authed_client, scene["flower"], scene["build"])
+    monkeypatch.setattr(
+        ArtifactRepository, "equipped_in_slot", lambda self, build_id, slot: _none(),
+    )
+
+    response = await _equip(authed_client, scene["second_flower"], scene["build"])
+
+    assert response.status_code == 422, response.text
+    detail = response.json()["detail"]
+    assert "in flight" in detail
+    # Named, and read *before* the write: a failed flush expires the instance, so reading
+    # `artifact.slot` in the handler would emit SQL from inside the exception path and turn
+    # this 422 back into the 500 it exists to prevent.
+    assert "Flower" in detail
+
+
+async def _none() -> None:
+    """An awaitable `None`, standing in for a pre-check that saw the slot free."""
