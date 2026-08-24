@@ -18,9 +18,10 @@
 
 ---
 
-### [ ] A.0 — Branch setup **(gate)**
+### [x] A.0 — Branch setup **(gate)** — **held**
 - **Do:** per-task branches off `dev`; merge by PR.
 - **Accept:** `git log --first-parent dev` is merge commits only.
+- **Held.** PRs #67 through #71, and nothing beside them.
 
 ### [x] A.1 — Equipping — **done**
 - **Do:** `PATCH /artifacts/{id}` setting `build_id`, and clearing it to unequip.
@@ -102,6 +103,19 @@
   maxed piece, so collapsing the two would hide a broken row behind a plausible number.
 
 ---
+
+## Status
+
+**Complete.** A.0 through A.6, merged as PRs #67–#71. **G.9 is closed with it** — the last
+item in `docs/TASKS_mistilteinn.md` that was not an owner decision.
+
+| | |
+|---|---|
+| equipping | `PATCH /artifacts/{id}`, a filled slot refused by name rather than swapped |
+| the vocabulary | `GET /artifacts/options` — 26 stats with labels and a `percentage` flag, 5 slots in worn order, 5 rarities with stars |
+| the inventory | `pages/artifacts/`, GOOD import with every rejection shown, server-side slot filter |
+| the build panel | five slots on the build editor, offering only what the API accepts |
+| upgrade potential | rolls remaining with its working; **null, not zero**, when the schedule cannot answer |
 
 ## Open questions
 
