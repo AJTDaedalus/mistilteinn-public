@@ -101,6 +101,7 @@ _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     ("PATCH", "/api/v1/rotations/00000000-0000-0000-0000-000000000001", {}),
     ("DELETE", "/api/v1/rotations/00000000-0000-0000-0000-000000000001", None),
     ("POST", "/api/v1/rotations/00000000-0000-0000-0000-000000000001/compile", {}),
+    ("POST", "/api/v1/rotations/00000000-0000-0000-0000-000000000001/context-key", {}),  # R.6
     # the run corpus — D.1 and D.3
     ("GET", "/api/v1/sim-runs", None),
     ("POST", "/api/v1/sim-runs", {}),

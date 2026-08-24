@@ -97,6 +97,32 @@ class RotationOptions(BaseModel):
     teams: list[TeamRoster]
 
 
+class ContextKeyRequest(BaseModel):
+    """Body for `POST /rotations/{id}/context-key`."""
+
+    #: Which build on the rotation's team the key is for. `context_key` is per-character:
+    #: it hashes one character's own levels and weapon alongside the team it sits in.
+    build_id: str
+    #: The enemy to point gcsim at. Omitted means the default target, which is defined once
+    #: in `gcsim_config.target_fields` rather than restated here.
+    enemy_nanoka_id: str | None = None
+
+
+class ContextKeyRead(BaseModel):
+    """The cache key for a rotation, and the parts it was computed from.
+
+    The parts are returned because a key is a hash: opaque by design, and impossible to
+    check by eye. A caller that gets an unexpected cache miss can see *what was hashed*
+    rather than guess, which is the difference between a debuggable key and a magic one.
+    """
+
+    context_key: str
+    rotation: list[str]
+    team: list[str]
+    target: dict[str, object]
+    gcsim_pin: str
+
+
 class RotationCreate(BaseModel):
     """Body for `POST /rotations`."""
 
