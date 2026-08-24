@@ -1,0 +1,95 @@
+<section class="teams">
+  <header>
+    <h1>Teams</h1>
+    <p class="muted">
+      Up to four of your builds. A rotation's steps are checked against the team they belong
+      to.
+    </p>
+  </header>
+
+  @if (error(); as message) {
+    <p class="error" role="alert">
+      {{ message }}
+      <button type="button" (click)="load()">Retry</button>
+    </p>
+  } @else if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else if (builds().length === 0) {
+    <!-- A team is assembled from builds, so there is nothing to assemble until one exists.
+         Saying so beats a builder whose every slot is empty for an unstated reason. -->
+    <p class="muted">
+      You have no builds yet. A team is assembled from your builds, so
+      <a routerLink="/builds">make one first</a>.
+    </p>
+  } @else {
+    <div class="layout">
+      <div class="pane">
+        <h2>{{ editing() ? 'Editing' : 'New team' }}</h2>
+
+        <label>
+          Name
+          <input type="text" [(ngModel)]="name" placeholder="Freeze" aria-label="Team name" />
+        </label>
+
+        <ol class="slots">
+          @for (slot of slots; track slot; let i = $index) {
+            <li>
+              <span class="ordinal mono">{{ i + 1 }}</span>
+              <select
+                [attr.aria-label]="'Slot ' + (i + 1)"
+                [value]="picked()[slot] ?? ''"
+                (change)="pick(slot, $any($event.target).value)"
+              >
+                <option value="">Empty</option>
+                <!-- Only builds that break neither server rule: not already in another slot,
+                     and not a second build of a character already on the team. -->
+                @for (option of availableFor(slot); track option.id) {
+                  <option [value]="option.id">
+                    {{ option.character?.name || 'No character' }} ·
+                    C{{ option.constellation_level }} ·
+                    {{ option.weapon?.name || 'no weapon' }}
+                  </option>
+                }
+              </select>
+            </li>
+          }
+        </ol>
+
+        <div class="controls">
+          <button type="button" (click)="save()" [disabled]="!canSave()">
+            {{ editing() ? 'Save changes' : 'Save team' }}
+          </button>
+          @if (editing()) {
+            <button type="button" (click)="newTeam()">New</button>
+          }
+        </div>
+
+        @if (actionError(); as message) {
+          <p class="error" role="alert">{{ message }}</p>
+        }
+      </div>
+
+      <div class="pane">
+        <h2>Saved</h2>
+        <ul class="saved">
+          @for (team of teams(); track team.id) {
+            <li [class.active]="team.id === editing()?.id">
+              <button type="button" class="pick" (click)="edit(team)">
+                <span class="name">{{ team.name || 'Unnamed' }}</span>
+                <span class="meta">{{ members(team).join(' · ') || 'nobody' }}</span>
+              </button>
+              <button
+                type="button"
+                class="drop"
+                [attr.aria-label]="'Delete ' + (team.name || 'team')"
+                (click)="remove(team)"
+              >×</button>
+            </li>
+          } @empty {
+            <li class="muted">No teams yet.</li>
+          }
+        </ul>
+      </div>
+    </div>
+  }
+</section>
