@@ -39,6 +39,11 @@ export class ArtifactPanel {
   /** Null while a new build is being composed — nothing can be equipped to a build yet. */
   readonly buildId = input<string | null>(null);
 
+  // **A piece equipped to another build is not offered here.** The API would take it — A.1
+  // refuses a filled *target* slot, not a piece with an owner — but moving one silently
+  // strips it from the other build, and the user would find that out from a damage number.
+  // Taking it off there first is the visible version of the same move.
+
   protected readonly loading = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly slots = signal<PanelSlot[]>([]);
@@ -56,8 +61,10 @@ export class ArtifactPanel {
     });
   }
 
-  protected async equip(slot: PanelSlot, artifactId: string): Promise<void> {
+  protected async equip(artifactId: string): Promise<void> {
     const id = this.buildId();
+    // An empty selection is the "Empty" option, which means "leave this alone" rather than
+    // "equip nothing" — there is no piece to send.
     if (!id || !artifactId) return;
     await this.act(() => this.service.equip(artifactId, id));
   }
@@ -96,6 +103,10 @@ export class ArtifactPanel {
     this.error.set(null);
     try {
       this.options ??= await this.service.options();
+      // Two requests, not six. `build_id` has to be the server's — fetching every equipped
+      // piece to find five scales with the whole inventory. Splitting the *spare* pieces by
+      // slot does not: the five slot-filtered requests would carry exactly the same rows
+      // between them, so doing it here costs nothing and saves four round trips.
       const [equipped, free] = await Promise.all([
         this.service.list({ build_id: buildId }),
         this.service.list({ equipped: false }),

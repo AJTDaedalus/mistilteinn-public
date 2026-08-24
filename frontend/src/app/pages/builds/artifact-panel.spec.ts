@@ -114,9 +114,8 @@ describe('ArtifactPanel', () => {
     const equip = vi.fn().mockResolvedValue(piece('spare-flower', 'equip_bracer', 'b1'));
     const fixture = healthy({ equip } as unknown as ArtifactsService);
     await settle(fixture);
-    const [flower] = fixture.componentInstance['slots']();
 
-    await fixture.componentInstance['equip'](flower, 'spare-flower');
+    await fixture.componentInstance['equip']('spare-flower');
 
     expect(equip).toHaveBeenCalledWith('spare-flower', 'b1');
   });
@@ -137,9 +136,8 @@ describe('ArtifactPanel', () => {
     const equip = vi.fn();
     const fixture = healthy({ equip } as unknown as ArtifactsService);
     await settle(fixture);
-    const [flower] = fixture.componentInstance['slots']();
 
-    await fixture.componentInstance['equip'](flower, '');
+    await fixture.componentInstance['equip']('');
 
     expect(equip).not.toHaveBeenCalled();
   });
@@ -152,9 +150,8 @@ describe('ArtifactPanel', () => {
       equip: vi.fn().mockRejectedValue({ detail }),
     } as unknown as ArtifactsService);
     await settle(fixture);
-    const [flower] = fixture.componentInstance['slots']();
 
-    await fixture.componentInstance['equip'](flower, 'spare-flower');
+    await fixture.componentInstance['equip']('spare-flower');
 
     expect(fixture.componentInstance['error']()).toBe(detail);
   });

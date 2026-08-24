@@ -22,7 +22,7 @@
                than swapping, so offering an equipped piece would invite a refusal. -->
           <select
             [attr.aria-label]="'Equip a ' + slot.display"
-            (change)="equip(slot, $any($event.target).value)"
+            (change)="equip($any($event.target).value)"
           >
             <option value="">Empty</option>
             @for (option of slot.candidates; track option.id) {
