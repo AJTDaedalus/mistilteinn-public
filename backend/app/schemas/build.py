@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.formula.genshin import tags
 from app.formula.genshin.damage import Amplifying, ScalingStat
-from app.models.enums import LEVELLED_TALENTS, MAX_TALENT_LEVEL
+from app.models.enums import LEVELLED_TALENTS, MAX_TALENT_LEVEL, TalentType
 from app.schemas.catalogue import CharacterSummary, WeaponSummary
 
 
@@ -143,17 +143,40 @@ class BuildRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class HitSpec(BaseModel):
-    """The hit a search or a ranking is judged on — **supplied, not derived**.
+class TalentRef(BaseModel):
+    """Which hit of which talent, to be resolved against the build's own character.
 
-    Deriving a talent's multiplier, scaling stat and damage channel from a character's
-    stored talent rows is the kit corpus's job (Chunk H), and this repo has no kit corpus.
-    Rather than parse a multiplier out of a `desc` string and present the result as though
-    it came from the game, the caller states the hit. `TODO(chunk-H)`: a `talent` field that
-    resolves this from the build's own character replaces it.
+    This closed the chunk-H marker here. `HitSpec` used to require a bare `multiplier`,
+    because deriving one was the kit corpus's job and there is no kit corpus.
+    `talent_scaling` parses the published rows now, and M.4 checked that parse against gcsim
+    across 105 characters, so a caller can name the hit instead of typing 1.2091.
     """
 
-    multiplier: float = Field(..., gt=0)
+    talent: TalentType
+    #: The published label, e.g. `Cutting DMG` — the game's own wording, not an invented name.
+    label: str = Field(..., min_length=1, max_length=200)
+    #: Which hit under that label. `Low/High Plunge DMG` is two, and only an index separates
+    #: them.
+    index: int = Field(default=0, ge=0)
+
+
+class HitSpec(BaseModel):
+    """The hit a search or a ranking is judged on.
+
+    **Either a `multiplier` or a `talent`, never both and never neither.** Naming the talent
+    resolves the multiplier from the build's own character at its own talent level; giving a
+    multiplier outright still works, because asking about a hypothetical hit is legitimate and
+    the optimizer's fixtures do exactly that.
+
+    **`channel` stays required either way.** The published table gives a multiplier and says
+    nothing about which element the hit lands as — a normal attack is physical for most
+    characters and not for a catalyst user, and infusions move it. Deriving it would be
+    inventing a rule the data does not state.
+    """
+
+    multiplier: float | None = Field(default=None, gt=0)
+    #: Resolved against the build. Mutually exclusive with `multiplier`.
+    talent: TalentRef | None = None
     #: One of the seven visions or `physical`.
     channel: str
     #: What the multiplier scales off.
@@ -168,6 +191,23 @@ class HitSpec(BaseModel):
     #: Melt/vaporize, if this hit is amplified. Absent means no reaction.
     amplifying: Amplifying | None = None
     flat_damage: float = 0.0
+
+    @model_validator(mode="after")
+    def _exactly_one_source(self) -> HitSpec:
+        """One of the two, never both.
+
+        Both would mean the request states a multiplier *and* a talent that resolves to a
+        different one, and whichever the server picked would silently contradict the other
+        half of the same body. Neither leaves nothing to score.
+        """
+        if (self.multiplier is None) == (self.talent is None):
+            msg = (
+                "a hit needs exactly one of `multiplier` or `talent`. Both would let the "
+                "request state two different numbers for one hit; neither leaves nothing "
+                "to score."
+            )
+            raise ValueError(msg)
+        return self
 
     @field_validator("channel")
     @classmethod

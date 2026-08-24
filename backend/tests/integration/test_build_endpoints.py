@@ -15,8 +15,15 @@ from sqlalchemy import select
 
 from app.models.artifact import Artifact, ArtifactSet, ArtifactSetAffix
 from app.models.build import Build, EnemyProfile
-from app.models.character import Character
-from app.models.enums import ArtifactSlot, Element, Rarity, StatType, WeaponType
+from app.models.character import Character, Talent, TalentScaling
+from app.models.enums import (
+    ArtifactSlot,
+    Element,
+    Rarity,
+    StatType,
+    TalentType,
+    WeaponType,
+)
 from app.models.weapon import Weapon
 
 if TYPE_CHECKING:
@@ -332,3 +339,99 @@ async def test_scoring_someone_elses_build_is_a_404(
     )
 
     assert response.status_code == 404
+
+
+# ── naming a talent instead of typing a multiplier — M.2 ─────────────────────
+
+
+@pytest.mark.asyncio
+async def test_explain_resolves_a_named_talent_against_the_build(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """The `TODO(chunk-H)` this closes: `HitSpec` required a bare multiplier, so asking why a
+    build scores what it scores meant knowing that Ayaka's burst is 1.123 per cut.
+
+    The multiplier now comes from the character's own published table, at **this build's**
+    talent level. Both forms are scored so the comparison is against a known number rather
+    than against an assertion that it looks plausible.
+    """
+    user, _ = authed_user
+    character, weapon, sets = await _catalogue(db_session)
+    db_session.add(Talent(
+        character_id=str(character.id), nanoka_id=10024,
+        talent_type=TalentType.ELEMENTAL_BURST, name="Kamisato Art: Soumetsu",
+        description="",
+    ))
+    await db_session.flush()
+    talent = (await db_session.execute(
+        select(Talent).where(Talent.character_id == str(character.id)),
+    )).scalars().one()
+    for level, cutting in ((1, 1.123), (9, 1.9091)):
+        db_session.add(TalentScaling(
+            talent_id=str(talent.id), level=level,
+            labels=["Cutting DMG|{param1:P}", "Energy Cost|{param2:I}"],
+            params=[cutting, 80],
+        ))
+    build = await _build_with_five(db_session, user, character, weapon, sets)
+    build.talent_levels = {"elemental_burst": 9}
+    await db_session.flush()
+
+    def body(hit: dict) -> dict:
+        return {"hit": {"channel": "cryo", "scope": "burst", **hit},
+                "enemy": {"level": 90}}
+
+    named = await client.post(
+        f"/api/v1/builds/{build.id}/explain", headers=_auth(authed_user),
+        json=body({"talent": {"talent": "elemental_burst", "label": "Cutting DMG"}}),
+    )
+    typed = await client.post(
+        f"/api/v1/builds/{build.id}/explain", headers=_auth(authed_user),
+        json=body({"multiplier": 1.9091}),
+    )
+
+    assert named.status_code == 200, named.text
+    assert typed.status_code == 200, typed.text
+    assert named.json()["damage"] == pytest.approx(typed.json()["damage"])
+
+
+@pytest.mark.asyncio
+async def test_a_hit_needs_exactly_one_of_multiplier_or_talent(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """Both would let one request state two different numbers for one hit, and whichever the
+    server picked would silently contradict the other half of the same body."""
+    user, _ = authed_user
+    character, weapon, sets = await _catalogue(db_session)
+    build = await _build_with_five(db_session, user, character, weapon, sets)
+
+    for hit in (
+        {},
+        {"multiplier": 1.5, "talent": {"talent": "elemental_burst", "label": "Cutting DMG"}},
+    ):
+        response = await client.post(
+            f"/api/v1/builds/{build.id}/explain", headers=_auth(authed_user),
+            json={"hit": {"channel": "cryo", "scope": "burst", **hit},
+                  "enemy": {"level": 90}},
+        )
+        assert response.status_code == 422, hit
+
+
+@pytest.mark.asyncio
+async def test_a_talent_the_character_does_not_have_is_refused_with_its_reason(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    user, _ = authed_user
+    character, weapon, sets = await _catalogue(db_session)
+    build = await _build_with_five(db_session, user, character, weapon, sets)
+    build.talent_levels = {"elemental_burst": 9}
+    await db_session.flush()
+
+    response = await client.post(
+        f"/api/v1/builds/{build.id}/explain", headers=_auth(authed_user),
+        json={"hit": {"channel": "cryo", "scope": "burst",
+                      "talent": {"talent": "elemental_burst", "label": "Cutting DMG"}},
+              "enemy": {"level": 90}},
+    )
+
+    assert response.status_code == 422
+    assert "elemental_burst" in response.json()["detail"]

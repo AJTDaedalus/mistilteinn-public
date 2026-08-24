@@ -15,6 +15,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.artifact import Artifact, ArtifactSet
 from app.models.build import Build
+from app.models.character import Character, Talent
 from app.repositories.base import BaseRepository
 
 if TYPE_CHECKING:
@@ -24,7 +25,12 @@ if TYPE_CHECKING:
 def _full_build() -> tuple:
     """Everything an evaluation touches, in one round trip."""
     return (
-        selectinload(Build.character),
+        # Down to the talent scalings, because `HitSpec.talent` resolves a multiplier from
+        # them (M.2) and `lazy` is `raise_on_sql` — the same reasoning as the affixes below,
+        # and the fourth instance of this shape in the repo.
+        selectinload(Build.character).selectinload(Character.talents).selectinload(
+            Talent.scalings,
+        ),
         selectinload(Build.weapon),
         selectinload(Build.artifacts)
         .selectinload(Artifact.artifact_set)
