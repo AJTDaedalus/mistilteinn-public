@@ -24,6 +24,13 @@ const EMPTY = { items: [], total: 0, offset: 0, limit: 300 };
  * `catalogueList` and is tested once, below. What each page is individually responsible for
  * is *which endpoint it calls* and *what it asks for*, so that is what is checked here.
  */
+/**
+ * The pages gather every page rather than one.
+ *
+ * 260 weapons and 360 enemies against a `limit` capped at 200: a single request returned 200
+ * items beside a `total` of 360, and the page printed "360 matching" over the short list. Not
+ * an error, no warning — the count and the content simply disagreed.
+ */
 describe('catalogueList', () => {
   it('reports a failure instead of rendering it as "no results"', async () => {
     // The distinction the whole helper exists for. An empty list and a failed request look
@@ -99,7 +106,7 @@ describe('WeaponsPage', () => {
 
     await page['load']();
 
-    expect(listWeapons).toHaveBeenCalledWith({ name: 'Mistsplitter', limit: MAX_PAGE_LIMIT });
+    expect(listWeapons).toHaveBeenCalledWith({ name: 'Mistsplitter', offset: 0, limit: MAX_PAGE_LIMIT });
   });
 
   it('names the weapon catalogue in its error, not a generic failure', async () => {
@@ -122,7 +129,7 @@ describe('ArtifactSetsPage', () => {
 
     await page['load']();
 
-    expect(listArtifactSets).toHaveBeenCalledWith({ name: undefined, limit: MAX_PAGE_LIMIT });
+    expect(listArtifactSets).toHaveBeenCalledWith({ name: undefined, offset: 0, limit: MAX_PAGE_LIMIT });
   });
 });
 
@@ -133,7 +140,7 @@ describe('EnemiesPage', () => {
 
     await page['load']();
 
-    expect(listEnemies).toHaveBeenCalledWith({ name: undefined, limit: MAX_PAGE_LIMIT });
+    expect(listEnemies).toHaveBeenCalledWith({ name: undefined, offset: 0, limit: MAX_PAGE_LIMIT });
   });
 
   it('shapes the resistances once at load, not on every render', async () => {
@@ -186,5 +193,77 @@ describe('EnemiesPage', () => {
 
     expect(rows).toHaveLength(8);
     expect(rows[1].percent).toBe(0);
+  });
+});
+
+
+describe('a catalogue page larger than one API page', () => {
+  it('shows every row, not the first 200', async () => {
+    // The real shape: 360 enemies, `limit` capped at 200. Before `allPages` this rendered 200
+    // rows under the heading "360 matching".
+    const rows = Array.from({ length: 360 }, (_, i) => ({ id: `e${i}`, name: `Enemy ${i}` }));
+    const listEnemies = vi.fn(async (params: { offset?: number; limit?: number }) => ({
+      items: rows.slice(params.offset ?? 0, (params.offset ?? 0) + (params.limit ?? 200)),
+      total: rows.length,
+      offset: params.offset ?? 0,
+      limit: params.limit ?? 200,
+    }));
+    TestBed.configureTestingModule({
+      providers: [{ provide: CatalogueService, useValue: { listEnemies } as unknown as CatalogueService }],
+    });
+    const page = TestBed.runInInjectionContext(() => new EnemiesPage());
+
+    await page['load']();
+
+    expect(page['list'].items()).toHaveLength(360);
+    expect(page['list'].total()).toBe(360);
+    expect(page['list'].truncated()).toBe(false);
+    expect(listEnemies).toHaveBeenCalledTimes(2);
+  });
+});
+
+
+describe('catalogueList truncation', () => {
+  it('passes a short list through to the page', async () => {
+    // The mutation that survived first time: nothing in the page tests had `truncated` true,
+    // so hardcoding it to `false` changed no answer. This is the wiring the templates read to
+    // print "showing 200 of 360" instead of "360 matching" over 200 rows.
+    const list = catalogueList<number>(async () => ({
+      items: [1, 2, 3],
+      total: 360,
+      truncated: true,
+    }));
+
+    await list.run('', 'test catalogue');
+
+    expect(list.truncated()).toBe(true);
+    expect(list.total()).toBe(360);
+    expect(list.items()).toHaveLength(3);
+  });
+
+  it('reports a complete list as complete', async () => {
+    const list = catalogueList<number>(async () => ({ items: [1], total: 1, truncated: false }));
+
+    await list.run('', 'test catalogue');
+
+    expect(list.truncated()).toBe(false);
+  });
+
+  it('clears truncation on failure, so a stale flag cannot outlive its list', async () => {
+    let truncated = true;
+    const list = catalogueList<number>(async () => {
+      if (truncated) {
+        truncated = false;
+        return { items: [1], total: 99, truncated: true };
+      }
+      throw new Error('boom');
+    });
+    await list.run('', 'test catalogue');
+    expect(list.truncated()).toBe(true);
+
+    await list.run('', 'test catalogue');
+
+    expect(list.error()).not.toBeNull();
+    expect(list.truncated()).toBe(false);
   });
 });

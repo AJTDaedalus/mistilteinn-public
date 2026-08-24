@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 
 import { catalogueList } from './catalogue-list';
 import { CatalogueService, type WeaponSummary } from './catalogue.service';
-import { MAX_PAGE_LIMIT } from '../../api/page-size';
+import { allPages } from '../../api/all-pages';
 
 /**
  * The seeded weapon catalogue — 260 entries.
@@ -21,8 +21,10 @@ import { MAX_PAGE_LIMIT } from '../../api/page-size';
 })
 export class WeaponsPage implements OnInit {
   protected search = '';
+  // 260 weapons against a cap of 200, so this is one of the two pages that was showing a
+  // short list beside the full total.
   protected readonly list = catalogueList<WeaponSummary>((name) =>
-    this.catalogue.listWeapons({ name, limit: MAX_PAGE_LIMIT }),
+    allPages((offset, limit) => this.catalogue.listWeapons({ name, offset, limit })),
   );
 
   private readonly catalogue = inject(CatalogueService);

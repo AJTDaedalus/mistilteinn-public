@@ -56,7 +56,7 @@ describe('CharactersPage', () => {
 
     await page['load']();
 
-    expect(listCharacters).toHaveBeenCalledWith({ name: 'Ayaka', limit: MAX_PAGE_LIMIT });
+    expect(listCharacters).toHaveBeenCalledWith({ name: 'Ayaka', offset: 0, limit: MAX_PAGE_LIMIT });
   });
 
   it('omits an empty search rather than sending a blank filter', async () => {
@@ -66,6 +66,6 @@ describe('CharactersPage', () => {
 
     await page['load']();
 
-    expect(listCharacters).toHaveBeenCalledWith({ name: undefined, limit: MAX_PAGE_LIMIT });
+    expect(listCharacters).toHaveBeenCalledWith({ name: undefined, offset: 0, limit: MAX_PAGE_LIMIT });
   });
 });

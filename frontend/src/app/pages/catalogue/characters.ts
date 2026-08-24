@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 
 import { catalogueList } from './catalogue-list';
 import { CatalogueService, type CharacterSummary } from './catalogue.service';
-import { MAX_PAGE_LIMIT } from '../../api/page-size';
+import { allPages } from '../../api/all-pages';
 
 /**
  * The seeded character catalogue — 150 entries including all 28 Traveler variants.
@@ -22,7 +22,7 @@ import { MAX_PAGE_LIMIT } from '../../api/page-size';
 export class CharactersPage implements OnInit {
   protected search = '';
   protected readonly list = catalogueList<CharacterSummary>((name) =>
-    this.catalogue.listCharacters({ name, limit: MAX_PAGE_LIMIT }),
+    allPages((offset, limit) => this.catalogue.listCharacters({ name, offset, limit })),
   );
 
   private readonly catalogue = inject(CatalogueService);

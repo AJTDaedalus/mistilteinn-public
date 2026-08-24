@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { catalogueList } from './catalogue-list';
 import { CatalogueService, type EnemyProfileRead } from './catalogue.service';
-import { MAX_PAGE_LIMIT } from '../../api/page-size';
+import { allPages } from '../../api/all-pages';
 
 /** The eight damage channels, in the order the resistance columns are read. */
 const CHANNELS = [
@@ -45,11 +45,14 @@ export class EnemiesPage implements OnInit {
   // the template would rebuild 360 x 8 objects every cycle and hand `@for` a fresh array
   // identity each time, so nothing could be reused. The work is the same either way; how
   // often it happens is not.
+  // 360 enemies against a cap of 200 — the worse of the two short lists.
   protected readonly list = catalogueList<EnemyRow>(async (name) => {
-    const page = await this.catalogue.listEnemies({ name, limit: MAX_PAGE_LIMIT });
+    const page = await allPages((offset, limit) =>
+      this.catalogue.listEnemies({ name, offset, limit }),
+    );
     return {
+      ...page,
       items: page.items.map((enemy) => ({ ...enemy, resistances: resistancesOf(enemy) })),
-      total: page.total,
     };
   });
 
