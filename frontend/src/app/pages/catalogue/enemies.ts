@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { catalogueList } from './catalogue-list';
 import { CatalogueService, type EnemyProfileRead } from './catalogue.service';
+import { MAX_PAGE_LIMIT } from '../../api/page-size';
 
 /** The eight damage channels, in the order the resistance columns are read. */
 const CHANNELS = [
@@ -45,7 +46,7 @@ export class EnemiesPage implements OnInit {
   // identity each time, so nothing could be reused. The work is the same either way; how
   // often it happens is not.
   protected readonly list = catalogueList<EnemyRow>(async (name) => {
-    const page = await this.catalogue.listEnemies({ name, limit: 400 });
+    const page = await this.catalogue.listEnemies({ name, limit: MAX_PAGE_LIMIT });
     return {
       items: page.items.map((enemy) => ({ ...enemy, resistances: resistancesOf(enemy) })),
       total: page.total,

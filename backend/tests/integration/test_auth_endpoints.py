@@ -81,6 +81,7 @@ _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     ("DELETE", "/api/v1/teams/00000000-0000-0000-0000-000000000001", None),
     # builds — G.6c
     ("GET", "/api/v1/builds", None),
+    ("GET", "/api/v1/builds/options", None),  # T.3
     ("POST", "/api/v1/builds", {}),
     ("GET", "/api/v1/builds/00000000-0000-0000-0000-000000000001", None),
     ("PATCH", "/api/v1/builds/00000000-0000-0000-0000-000000000001", {}),

@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 
 import { catalogueList } from './catalogue-list';
 import { CatalogueService, type WeaponSummary } from './catalogue.service';
+import { MAX_PAGE_LIMIT } from '../../api/page-size';
 
 /**
  * The seeded weapon catalogue — 260 entries.
@@ -21,7 +22,7 @@ import { CatalogueService, type WeaponSummary } from './catalogue.service';
 export class WeaponsPage implements OnInit {
   protected search = '';
   protected readonly list = catalogueList<WeaponSummary>((name) =>
-    this.catalogue.listWeapons({ name, limit: 300 }),
+    this.catalogue.listWeapons({ name, limit: MAX_PAGE_LIMIT }),
   );
 
   private readonly catalogue = inject(CatalogueService);

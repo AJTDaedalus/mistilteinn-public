@@ -6,6 +6,7 @@ import { catalogueList } from './catalogue-list';
 import { CatalogueService } from './catalogue.service';
 import { EnemiesPage, resistancesOf } from './enemies';
 import { WeaponsPage } from './weapons';
+import { MAX_PAGE_LIMIT } from '../../api/page-size';
 
 function pageWith<T>(ctor: new () => T, service: Partial<CatalogueService>): T {
   TestBed.configureTestingModule({
@@ -98,7 +99,7 @@ describe('WeaponsPage', () => {
 
     await page['load']();
 
-    expect(listWeapons).toHaveBeenCalledWith({ name: 'Mistsplitter', limit: 300 });
+    expect(listWeapons).toHaveBeenCalledWith({ name: 'Mistsplitter', limit: MAX_PAGE_LIMIT });
   });
 
   it('names the weapon catalogue in its error, not a generic failure', async () => {
@@ -121,7 +122,7 @@ describe('ArtifactSetsPage', () => {
 
     await page['load']();
 
-    expect(listArtifactSets).toHaveBeenCalledWith({ name: undefined, limit: 200 });
+    expect(listArtifactSets).toHaveBeenCalledWith({ name: undefined, limit: MAX_PAGE_LIMIT });
   });
 });
 
@@ -132,7 +133,7 @@ describe('EnemiesPage', () => {
 
     await page['load']();
 
-    expect(listEnemies).toHaveBeenCalledWith({ name: undefined, limit: 400 });
+    expect(listEnemies).toHaveBeenCalledWith({ name: undefined, limit: MAX_PAGE_LIMIT });
   });
 
   it('shapes the resistances once at load, not on every render', async () => {
@@ -143,7 +144,7 @@ describe('EnemiesPage', () => {
         items: [{ id: 'e1', name: 'Hilichurl', cryo_res: 0.1 }],
         total: 1,
         offset: 0,
-        limit: 400,
+        limit: MAX_PAGE_LIMIT,
       }),
     } as unknown as CatalogueService);
 

@@ -50,7 +50,23 @@ export class CatalogueService {
     return data;
   }
 
-  async listWeapons(params: { name?: string; offset?: number; limit?: number } = {}) {
+  /**
+   * Weapons, optionally filtered to one class.
+   *
+   * `weapon_type` takes the source's internal spelling (`WEAPON_SWORD_ONE_HAND`), which is
+   * what `CharacterSummary.weapon_type` carries — so a caller passes a character's own value
+   * through rather than translating it. The filtering is the **server's**: T.1 refuses a
+   * weapon whose class does not match the character's, and a client-side filter would be a
+   * second copy of that rule, free to drift toward offering something the API then refuses.
+   */
+  async listWeapons(
+    params: {
+      name?: string;
+      weapon_type?: WeaponSummary['weapon_type'];
+      offset?: number;
+      limit?: number;
+    } = {},
+  ) {
     const { data, error } = await this.api.GET('/api/v1/weapons', {
       params: { query: params },
     });

@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from app.dependencies import (
+    CurrentUser,
     get_character_repo,
     get_enemy_profile_repo,
     get_owned_artifact_repo,
@@ -31,6 +32,7 @@ from app.dependencies import (
 )
 from app.formula.genshin.damage import Hit
 from app.middleware.rate_limit import WRITE_LIMIT, limiter
+from app.models.enums import LEVELLED_TALENTS, MAX_TALENT_LEVEL
 from app.repositories.artifact import ArtifactRepository
 from app.repositories.build import BuildRepository
 from app.repositories.character import CharacterRepository
@@ -39,6 +41,7 @@ from app.repositories.sim_run import SimRunRepository
 from app.repositories.weapon import WeaponRepository
 from app.schemas.build import (
     BuildCreate,
+    BuildOptions,
     BuildRead,
     BuildUpdate,
     CompareWeaponsRequest,
@@ -142,6 +145,24 @@ async def list_builds(
         total=await repo.count_filtered(),
         offset=offset,
         limit=limit,
+    )
+
+
+@router.get("/options", response_model=BuildOptions)
+async def build_options(_: CurrentUser) -> BuildOptions:
+    """The talent keys a build may carry, and the level cap.
+
+    Declared **above** `/{build_id}` — FastAPI matches in declaration order, and below it this
+    path is a build whose id is the word "options", which 404s and looks like an empty form
+    rather than a routing mistake. Same trap R.5 met.
+
+    No database, no owner: this is the vocabulary, not the caller's data. It still requires a
+    bearer token, because everything under `/builds` does and an exception would be a hole
+    someone has to remember.
+    """
+    return BuildOptions(
+        talents=[str(talent) for talent in LEVELLED_TALENTS],
+        max_talent_level=MAX_TALENT_LEVEL,
     )
 
 

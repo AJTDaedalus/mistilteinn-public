@@ -1,0 +1,154 @@
+<section class="builds">
+  <header>
+    <h1>Builds</h1>
+    <p class="muted">
+      A character, a weapon they can hold, and the levels. Teams are assembled from these.
+    </p>
+  </header>
+
+  @if (error(); as message) {
+    <p class="error" role="alert">
+      {{ message }}
+      <button type="button" (click)="load()">Retry</button>
+    </p>
+  } @else if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else {
+    <div class="layout">
+      <div class="pane">
+        <h2>{{ editing() ? 'Editing' : 'New build' }}</h2>
+
+        <label>
+          Character
+          <select
+            aria-label="Character"
+            [value]="characterId()"
+            (change)="selectCharacter($any($event.target).value)"
+            [disabled]="editing() !== null"
+          >
+            <option value="">Choose…</option>
+            @for (entry of characters(); track entry.id) {
+              <option [value]="entry.id">
+                {{ entry.name }} · {{ entry.element || 'no vision' }} ·
+                {{ entry.weapon_type_display }}
+              </option>
+            }
+          </select>
+        </label>
+        @if (editing()) {
+          <!-- `BuildUpdate` has no `character_id` and refuses one rather than dropping it
+               silently (T.1). Changing a build's character makes it a different build. -->
+          <p class="hint">A saved build keeps its character. Make a new one to change it.</p>
+        }
+
+        <label>
+          Weapon
+          <select
+            aria-label="Weapon"
+            [value]="weaponId() ?? ''"
+            (change)="weaponId.set($any($event.target).value || null)"
+            [disabled]="characterId() === ''"
+          >
+            <!-- Nullable by design (OQ-T3): a build being assembled is a real state, and the
+                 damage chain refuses to run without a weapon, which is the right place. -->
+            <option value="">None yet</option>
+            @for (weapon of weapons(); track weapon.id) {
+              <option [value]="weapon.id">{{ weapon.name }} · {{ weapon.rarity }}★</option>
+            }
+          </select>
+        </label>
+        @if (character(); as chosen) {
+          <p class="hint">
+            Only {{ chosen.weapon_type_display }}s are listed — {{ chosen.name }} cannot hold
+            anything else.
+          </p>
+        }
+
+        <div class="grid">
+          <label>
+            Character level
+            <input type="number" min="1" max="90" [(ngModel)]="fields.character_level" />
+          </label>
+          <label>
+            Ascension
+            <input type="number" min="0" max="6" [(ngModel)]="fields.ascension_phase" />
+          </label>
+          <label>
+            Weapon level
+            <input type="number" min="1" max="90" [(ngModel)]="fields.weapon_level" />
+          </label>
+          <label>
+            Refinement
+            <input type="number" min="1" max="5" [(ngModel)]="fields.refinement" />
+          </label>
+          <label>
+            Constellation
+            <input type="number" min="0" max="6" [(ngModel)]="fields.constellation_level" />
+          </label>
+        </div>
+
+        <fieldset class="talents">
+          <legend>Talents</legend>
+          <!-- Drawn from `/builds/options`, which publishes `LEVELLED_TALENTS`. A list here
+               would be a third copy of it — and a misspelling renders as level 1. -->
+          @for (talent of talents(); track talent) {
+            <label>
+              {{ talent.replace('_', ' ') }}
+              <input
+                type="number"
+                min="1"
+                [max]="maxTalent()"
+                [attr.aria-label]="talent"
+                [value]="talentLevel(talent)"
+                (change)="setTalent(talent, +$any($event.target).value)"
+              />
+            </label>
+          }
+        </fieldset>
+
+        <label class="notes">
+          Notes
+          <input type="text" [(ngModel)]="fields.notes" aria-label="Notes" />
+        </label>
+
+        <div class="controls">
+          <button type="button" (click)="save()" [disabled]="!canSave()">
+            {{ editing() ? 'Save changes' : 'Save build' }}
+          </button>
+          @if (editing()) {
+            <button type="button" (click)="newBuild()">New</button>
+          }
+        </div>
+
+        @if (actionError(); as message) {
+          <p class="error" role="alert">{{ message }}</p>
+        }
+      </div>
+
+      <div class="pane">
+        <h2>Saved</h2>
+        <ul class="saved">
+          @for (build of builds(); track build.id) {
+            <li [class.active]="build.id === editing()?.id">
+              <button type="button" class="pick" (click)="edit(build)">
+                <span class="name">{{ build.character?.name || 'No character' }}</span>
+                <span class="meta">
+                  C{{ build.constellation_level }} ·
+                  {{ build.weapon?.name || 'no weapon' }}
+                </span>
+              </button>
+              <button
+                type="button"
+                class="drop"
+                [attr.aria-label]="'Delete ' + (build.character?.name || 'build')"
+                (click)="remove(build)"
+              >×</button>
+            </li>
+          } @empty {
+            <li class="muted">No builds yet.</li>
+          }
+        </ul>
+      </div>
+    </div>
+  }
+</section>
