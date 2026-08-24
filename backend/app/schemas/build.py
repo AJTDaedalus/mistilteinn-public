@@ -98,6 +98,24 @@ class BuildUpdate(BaseModel):
         return None if value is None else _validated_talents(value)
 
 
+class BuildOptions(BaseModel):
+    """What an editor may offer for a build.
+
+    The same guarantee `/rotations/options` gives (R.5): **the form offers exactly what the
+    validator accepts.** `talents` is `LEVELLED_TALENTS`, which is both what `_validated_talents`
+    checks against and what `gcsim_config._talents` renders — so a form built from this cannot
+    produce a key that is stored and ignored, or one that renders as level 1.
+
+    A list rather than a TypeScript union, because a generated type is erased at runtime and a
+    page needs to *iterate* these to draw three inputs. Hardcoding them there would be a third
+    copy of the tuple.
+    """
+
+    #: In the order gcsim's `talent=` field expects, which is the order to draw them in.
+    talents: list[str]
+    max_talent_level: int
+
+
 class BuildRead(BaseModel):
     """One saved build."""
 

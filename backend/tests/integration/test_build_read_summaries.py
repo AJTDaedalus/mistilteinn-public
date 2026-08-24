@@ -183,3 +183,63 @@ async def test_a_weapon_class_reads_as_a_name_a_person_would_use(
     entry = listed.json()["items"][0]
     assert entry["weapon_type"] == "WEAPON_SWORD_ONE_HAND", "the raw value stays"
     assert entry["weapon_type_display"] == "Sword"
+
+
+# ── what the editor may offer ────────────────────────────────────────────────
+
+
+async def test_options_offer_exactly_the_talents_the_validator_accepts(
+    authed_client: AsyncClient, catalogue,
+):
+    """The R.5 guarantee, applied to talents: the form offers what the validator accepts.
+
+    Not "the list looks right" — every offered key is **posted** and must be accepted, and the
+    one `TalentType` the endpoint withholds is posted and must be refused. A form built from a
+    hardcoded list would drift toward offering `alternate_sprint`, whose level nothing reads,
+    or misspelling one, which renders as level 1.
+    """
+    from app.models.enums import TalentType
+
+    offered = (await authed_client.get(f"{BUILDS}/options")).json()
+    assert offered["talents"], "an empty list would pass this vacuously"
+
+    saved = await _saved(authed_client, catalogue)
+    for talent in offered["talents"]:
+        accepted = await authed_client.patch(
+            f"{BUILDS}/{saved['id']}", json={"talent_levels": {talent: 9}},
+        )
+        assert accepted.status_code == 200, f"offered but refused: {talent}"
+
+    for withheld in {str(t) for t in TalentType} - set(offered["talents"]):
+        refused = await authed_client.patch(
+            f"{BUILDS}/{saved['id']}", json={"talent_levels": {withheld: 9}},
+        )
+        assert refused.status_code == 422, f"withheld but accepted: {withheld}"
+
+
+async def test_options_publish_the_cap_the_validator_enforces(
+    authed_client: AsyncClient, catalogue,
+):
+    """A form whose `max` disagreed with the server would refuse a level the game allows, or
+    offer one it does not."""
+    cap = (await authed_client.get(f"{BUILDS}/options")).json()["max_talent_level"]
+    saved = await _saved(authed_client, catalogue)
+
+    at_cap = await authed_client.patch(
+        f"{BUILDS}/{saved['id']}", json={"talent_levels": {"elemental_burst": cap}},
+    )
+    over = await authed_client.patch(
+        f"{BUILDS}/{saved['id']}", json={"talent_levels": {"elemental_burst": cap + 1}},
+    )
+
+    assert at_cap.status_code == 200
+    assert over.status_code == 422
+
+
+async def test_the_options_path_is_not_read_as_a_build_id(authed_client: AsyncClient):
+    """Declared above `/{build_id}`. Below it, FastAPI matches a build whose id is the word
+    "options" and 404s — which looks like an empty form rather than a routing mistake."""
+    response = await authed_client.get(f"{BUILDS}/options")
+
+    assert response.status_code == 200
+    assert "talents" in response.json()

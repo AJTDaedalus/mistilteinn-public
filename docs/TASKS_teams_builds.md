@@ -92,7 +92,7 @@ Four mutations, all CAUGHT. Migration `27770f8ae917`, round-tripped up and down.
   class name so a page does not reimplement `WeaponType.display`; it lives on a
   `WeaponClassed` mixin after being written twice. Five mutations, all CAUGHT.
 
-### [ ] T.3 — The build editor
+### [x] T.3 — The build editor — **done**
 - **Do:** a page to create, edit and delete a build: pick a character, pick a weapon from the
   ones that character can hold, set levels, ascension, refinement, constellation and the three
   talent levels.
@@ -100,6 +100,14 @@ Four mutations, all CAUGHT. Migration `27770f8ae917`, round-tripped up and down.
 - **Accept:** reachable from the shell nav — `app.routes.spec.ts` fails otherwise; a failed
   load is surfaced rather than rendered as "no builds"; the server's refusal is shown
   verbatim; the weapon picker offers only what T.1 accepts, filtered **by the server**.
+- **Done.** `pages/builds/`, in the nav. Added `GET /builds/options`, publishing
+  `LEVELLED_TALENTS` and the cap — a hardcoded list on the page would have been a *third*
+  copy, after the validator and the gcsim renderer. Tested as one claim, R.5-style: every
+  offered talent is PATCHed and accepted, and the one `TalentType` withheld is refused.
+- **A mutation that survived found a real bug.** `save` reset the form unconditionally, so
+  saving an *edit* threw the user out of the build they were editing — indistinguishable on
+  screen from the edit having vanished. It now stays put after a patch and clears after a
+  create, with a test for each. Six mutations, six caught after that fix.
 
 ### [ ] T.4 — The team builder
 - **Do:** a page to assemble up to four builds into a team, name it, and delete it.
