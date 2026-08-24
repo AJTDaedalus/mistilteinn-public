@@ -237,3 +237,30 @@ def test_the_fixtures_really_contain_the_shapes_this_claims_to_handle() -> None:
                         seen["alternatives"] += 1
 
     assert all(count > 0 for count in seen.values()), seen
+
+
+def test_an_unrecognised_join_is_refused_rather_than_summed() -> None:
+    """Two params joined by something the parser has not been taught.
+
+    Summing by default would produce a confident multiplier for a hit whose composition
+    nobody checked — and it would be wrong somewhere downstream, with nothing pointing back
+    here. Refusing names the row.
+    """
+    with pytest.raises(TalentScalingError, match="does not recognise"):
+        parse_talent_row(["Skill DMG|{param1:P} and {param2:P}"], [1.0, 2.0])
+
+
+def test_alternatives_with_a_repeat_are_refused_rather_than_guessed() -> None:
+    """Not in the committed payloads, and refused rather than assumed: a repeat could apply
+    to each alternative or to only one, and picking is inventing a rule the data does not
+    state."""
+    with pytest.raises(TalentScalingError, match="alternatives"):
+        parse_talent_row(["Plunge DMG|{param1:P}/{param2:P}×3"], [1.0, 2.0])
+
+
+def test_a_single_param_still_takes_its_repeat() -> None:
+    """Guards the refusals above: the ordinary `×3` path must not have been broken by them."""
+    [hit] = parse_talent_row(["4-Hit DMG|{param1:F1P}×3"], [0.226464])
+
+    assert hit.hits == 3
+    assert hit.multiplier == pytest.approx(0.226464)

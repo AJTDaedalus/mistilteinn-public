@@ -121,13 +121,37 @@ def _hits_from(label: str, spec: str, param: list[float]) -> list[TalentHit]:
         raise TalentScalingError(msg)
 
     values = [_value(index, param, f"{label}|{spec}") for index, _ in found]
+    repeats = _repeats(spec)
+    separators = _PARAM.sub("", spec)
+
+    if len(values) == 1:
+        return [TalentHit(label=label, multiplier=values[0], hits=repeats)]
 
     # `/` means alternatives — two different actions, and never a sum.
-    if "/" in _PARAM.sub("", spec):
+    if "/" in separators:
+        if repeats > 1:
+            # Unreachable in the committed payloads and refused rather than guessed: `×N`
+            # could plausibly apply to each alternative or to only one, and picking is
+            # inventing a rule the data does not state.
+            msg = (
+                f"{label!r} lists alternatives *and* a repeat count: {spec!r}. Which "
+                f"alternative repeats is not something the payload says."
+            )
+            raise TalentScalingError(msg)
         return [TalentHit(label=label, multiplier=value) for value in values]
 
-    repeats = _repeats(spec)
-    return [TalentHit(label=label, multiplier=sum(values), hits=repeats)]
+    if "+" in separators:
+        return [TalentHit(label=label, multiplier=sum(values), hits=repeats)]
+
+    # **Not defaulted to a sum.** Two params joined by something this does not recognise is a
+    # shape the parser has not been taught, and summing them would produce a confident
+    # multiplier for a hit whose composition nobody checked. Refusing says which row to look
+    # at; a silent sum says nothing and is wrong somewhere downstream.
+    msg = (
+        f"{label!r} references {len(values)} params joined by {separators!r}, which this "
+        f"parser does not recognise: {spec!r}. Summing them would invent a composition."
+    )
+    raise TalentScalingError(msg)
 
 
 #: The repeat marker, spelled by codepoint.
