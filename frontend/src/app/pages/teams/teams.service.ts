@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 
 import { injectApi } from '../../api/api.client';
-import { MAX_PAGE_LIMIT } from '../../api/page-size';
+import { allPages } from '../../api/all-pages';
 import type { components } from '../../api/api.types';
 
 export type TeamRead = components['schemas']['TeamRead'];
@@ -22,12 +22,16 @@ export type TeamSlot = (typeof TEAM_SLOTS)[number];
 export class TeamsService {
   private api = injectApi();
 
+  /** Every team, gathered a page at a time — see `allPages` on why not one request. */
   async list(): Promise<TeamRead[]> {
-    const { data, error } = await this.api.GET('/api/v1/teams', {
-      params: { query: { limit: MAX_PAGE_LIMIT } },
+    const page = await allPages<TeamRead>(async (offset, limit) => {
+      const { data, error } = await this.api.GET('/api/v1/teams', {
+        params: { query: { offset, limit } },
+      });
+      if (error) throw new Error('Could not load teams');
+      return data;
     });
-    if (error) throw new Error('Could not load teams');
-    return data.items;
+    return page.items;
   }
 
   /**

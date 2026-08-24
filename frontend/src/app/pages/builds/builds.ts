@@ -2,7 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { apiErrorMessage } from '../../api/api-error';
-import { MAX_PAGE_LIMIT } from '../../api/page-size';
+import { allPages } from '../../api/all-pages';
 import { CatalogueService } from '../catalogue/catalogue.service';
 import {
   BuildsService,
@@ -84,7 +84,11 @@ export class BuildsPage implements OnInit {
       const [options, builds, characters] = await Promise.all([
         this.service.options(),
         this.service.list(),
-        this.catalogue.listCharacters({ limit: MAX_PAGE_LIMIT }),
+        // Every character, not the first page. 150 today against a cap of 200 — so this is
+        // latent rather than broken, and the failure when it lands is the worst kind: the
+        // picker would quietly lose the *newest* characters, which are exactly the ones
+        // someone opens this page to build.
+        allPages((offset, limit) => this.catalogue.listCharacters({ offset, limit })),
       ]);
       this.talents.set(options.talents);
       this.maxTalent.set(options.max_talent_level);
@@ -117,10 +121,9 @@ export class BuildsPage implements OnInit {
     const chosen = this.characters().find((c) => c.id === id);
     if (!chosen) return;
     try {
-      const page = await this.catalogue.listWeapons({
-        weapon_type: chosen.weapon_type,
-        limit: MAX_PAGE_LIMIT,
-      });
+      const page = await allPages((offset, limit) =>
+        this.catalogue.listWeapons({ weapon_type: chosen.weapon_type, offset, limit }),
+      );
       this.weapons.set(page.items as WeaponSummary[]);
     } catch {
       this.actionError.set('Could not load weapons for that character.');

@@ -17,7 +17,13 @@
   } @else if (list.loading()) {
     <p class="muted">Loading…</p>
   } @else {
-    <p class="muted">{{ list.total() }} matching</p>
+    <p class="muted">
+      @if (list.truncated()) {
+        Showing {{ list.items().length }} of {{ list.total() }} — the rest was not loaded.
+      } @else {
+        {{ list.total() }} matching
+      }
+    </p>
     <ul class="grid">
       @for (character of list.items(); track character.id) {
         <li class="card">

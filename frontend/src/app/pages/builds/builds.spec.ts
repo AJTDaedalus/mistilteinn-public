@@ -90,6 +90,7 @@ describe('BuildsPage', () => {
 
     expect(listWeapons).toHaveBeenCalledWith({
       weapon_type: 'WEAPON_SWORD_ONE_HAND',
+      offset: 0,
       limit: MAX_PAGE_LIMIT,
     });
   });
@@ -104,6 +105,23 @@ describe('BuildsPage', () => {
     await page['selectCharacter']('char-ganyu');
 
     expect(listWeapons.mock.calls[0][0].weapon_type).toBe('WEAPON_BOW');
+  });
+
+  it('gathers every character, not the first page', async () => {
+    // 150 today against a cap of 200, so this is latent rather than broken. When it lands the
+    // picker quietly loses the *newest* characters, which are exactly the ones someone opens
+    // this page to build — the worst version of a silent truncation.
+    const rows = Array.from({ length: 260 }, (_, i) => ({ ...AYAKA, id: `c${i}` }));
+    const listCharacters = vi.fn(async (p: { offset?: number; limit?: number }) => ({
+      items: rows.slice(p.offset ?? 0, (p.offset ?? 0) + (p.limit ?? 200)),
+      total: rows.length,
+    }));
+    const page = healthy({}, { listCharacters } as unknown as CatalogueService);
+
+    await page['load']();
+
+    expect(page['characters']()).toHaveLength(260);
+    expect(listCharacters).toHaveBeenCalledTimes(2);
   });
 
   it('clears the chosen weapon when the character changes', async () => {

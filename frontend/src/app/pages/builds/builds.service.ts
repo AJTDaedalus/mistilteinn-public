@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { injectApi } from '../../api/api.client';
 import type { components } from '../../api/api.types';
 import type { CharacterSummary, WeaponSummary } from '../catalogue/catalogue.service';
-import { MAX_PAGE_LIMIT } from '../../api/page-size';
+import { allPages } from '../../api/all-pages';
 
 export type BuildRead = components['schemas']['BuildRead'];
 export type BuildOptions = components['schemas']['BuildOptions'];
@@ -39,12 +39,16 @@ export class BuildsService {
     return data;
   }
 
+  /** Every build, gathered a page at a time — see `allPages` on why not one request. */
   async list(): Promise<BuildRead[]> {
-    const { data, error } = await this.api.GET('/api/v1/builds', {
-      params: { query: { limit: MAX_PAGE_LIMIT } },
+    const page = await allPages<BuildRead>(async (offset, limit) => {
+      const { data, error } = await this.api.GET('/api/v1/builds', {
+        params: { query: { offset, limit } },
+      });
+      if (error) throw new Error('Could not load builds');
+      return data;
     });
-    if (error) throw new Error('Could not load builds');
-    return data.items;
+    return page.items;
   }
 
   async create(body: BuildFields & { character_id: string; weapon_id: string | null }) {

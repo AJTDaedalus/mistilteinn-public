@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 
 import { catalogueList } from './catalogue-list';
 import { CatalogueService, type ArtifactSetRead } from './catalogue.service';
-import { MAX_PAGE_LIMIT } from '../../api/page-size';
+import { allPages } from '../../api/all-pages';
 
 /**
  * The seeded artifact sets — 65 entries, each with its affix rows.
@@ -22,7 +22,7 @@ import { MAX_PAGE_LIMIT } from '../../api/page-size';
 export class ArtifactSetsPage implements OnInit {
   protected search = '';
   protected readonly list = catalogueList<ArtifactSetRead>((name) =>
-    this.catalogue.listArtifactSets({ name, limit: MAX_PAGE_LIMIT }),
+    allPages((offset, limit) => this.catalogue.listArtifactSets({ name, offset, limit })),
   );
 
   private readonly catalogue = inject(CatalogueService);
