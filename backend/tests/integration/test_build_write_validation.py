@@ -298,3 +298,39 @@ async def test_a_second_build_of_the_same_character_is_refused_not_a_500(
 
     assert second.status_code == 409, second.text
     assert "one build per character" in second.json()["detail"]
+
+
+async def test_another_users_build_does_not_block_mine(
+    authed_client: AsyncClient, db_session: AsyncSession, catalogue,
+):
+    """`get_by_filters` was not owner-scoped, so the duplicate check asked "does a build for
+    this character exist?" across every tenant.
+
+    Two failures in one: a legitimate build refused because a stranger owns one, and the
+    stranger's row id disclosed in the refusal. It is the third method on `BaseRepository` to
+    have been written without the owner filter, after `get_all` and `count`.
+    """
+    from app.models.build import Build
+    from app.models.user import User
+
+    stranger = User(email="stranger@example.com", password_hash="not-a-hash")  # noqa: S106
+    db_session.add(stranger)
+    await db_session.flush()
+    theirs = Build(owner_id=str(stranger.id), character_id=catalogue["character"])
+    db_session.add(theirs)
+    await db_session.flush()
+
+    mine = await authed_client.post(BUILDS, json=_body(catalogue))
+
+    assert mine.status_code == 201, mine.text
+    assert str(theirs.id) not in mine.text
+
+
+async def test_a_typod_field_on_create_is_refused_not_dropped(
+    authed_client: AsyncClient, catalogue,
+):
+    """`constellation` for `constellation_level` would otherwise save a C0 build silently."""
+    response = await authed_client.post(BUILDS, json=_body(catalogue, constellation=6))
+
+    assert response.status_code == 422
+    assert "constellation" in json.dumps(response.json()["detail"])

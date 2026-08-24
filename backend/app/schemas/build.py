@@ -41,7 +41,14 @@ def _validated_talents(levels: dict[str, int]) -> dict[str, int]:
 
 
 class BuildCreate(BaseModel):
-    """Body for `POST /builds`."""
+    """Body for `POST /builds`.
+
+    Unknown fields are refused rather than dropped, for the reason `BuildUpdate` records: a
+    typo'd field name silently becomes "you did not set that", and the caller is told the
+    write succeeded.
+    """
+
+    model_config = {"extra": "forbid"}
 
     character_id: str
     weapon_id: str | None = None
