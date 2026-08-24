@@ -105,7 +105,12 @@ class ContextKeyRequest(BaseModel):
     build_id: str
     #: The enemy to point gcsim at. Omitted means the default target, which is defined once
     #: in `gcsim_config.target_fields` rather than restated here.
-    enemy_nanoka_id: str | None = None
+    #:
+    #: An **int**, unlike a character's `nanoka_id`. `EnemyProfile.nanoka_id` is an Integer
+    #: column; characters need a string because 28 Traveler variants are spelled
+    #: `10000005-2`. Typed as a string here it reached asyncpg as text for an integer column
+    #: and the whole branch raised — found in the R.6 self-review, untested until then.
+    enemy_nanoka_id: int | None = None
 
 
 class ContextKeyRead(BaseModel):

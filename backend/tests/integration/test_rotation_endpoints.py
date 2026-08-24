@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from app.models.build import Build
+from app.models.build import Build, EnemyProfile
 from app.models.character import Character
 from app.models.enums import Element, Rarity, WeaponType
 from app.models.team import Team
@@ -559,3 +559,118 @@ async def test_a_stale_rotation_has_no_key(
 
     assert response.status_code == 422
     assert "does not have" in response.json()["detail"]
+
+
+async def test_an_enemy_supplies_the_target(
+    authed_client: AsyncClient, db_session: AsyncSession, scene: Scene,
+):
+    """Untested until the R.6 self-review, and broken: `enemy_nanoka_id` was typed as a
+    string against an Integer column, so the branch reached asyncpg as text and raised."""
+    dummy = EnemyProfile(
+        nanoka_id=21010101, name="Hilichurl", level=93,
+        base_hp=13.584, base_atk=1.0, base_def=1.0,
+        physical_res=0.25, anemo_res=0.25, cryo_res=0.25, dendro_res=0.25,
+        electro_res=0.25, geo_res=0.25, hydro_res=0.25, pyro_res=0.25,
+    )
+    db_session.add(dummy)
+    await db_session.flush()
+    rotation_id = await _rotation(authed_client, scene, [_step(scene.ayaka, "burst")])
+
+    body = (await authed_client.post(
+        f"{ROTATIONS}/{rotation_id}/context-key",
+        json={"build_id": scene.ayaka_build, "enemy_nanoka_id": 21010101},
+    )).json()
+
+    assert body["target"] == {"lvl": 93, "resist": 0.25, "pos": "0,1"}
+
+
+async def test_the_enemy_changes_the_key(
+    authed_client: AsyncClient, db_session: AsyncSession, scene: Scene,
+):
+    """A run against a level-93 quarter-resist target is not a run against the default."""
+    db_session.add(EnemyProfile(
+        nanoka_id=21010102, name="Tougher", level=100,
+        base_hp=1.0, base_atk=1.0, base_def=1.0,
+        physical_res=0.5, anemo_res=0.5, cryo_res=0.5, dendro_res=0.5,
+        electro_res=0.5, geo_res=0.5, hydro_res=0.5, pyro_res=0.5,
+    ))
+    await db_session.flush()
+    rotation_id = await _rotation(authed_client, scene, [_step(scene.ayaka, "burst")])
+
+    default = await _key(authed_client, rotation_id, scene.ayaka_build)
+    against = (await authed_client.post(
+        f"{ROTATIONS}/{rotation_id}/context-key",
+        json={"build_id": scene.ayaka_build, "enemy_nanoka_id": 21010102},
+    )).json()
+
+    assert default["context_key"] != against["context_key"]
+
+
+async def test_an_unevenly_resistant_enemy_is_refused_not_averaged(
+    authed_client: AsyncClient, db_session: AsyncSession, scene: Scene,
+):
+    """gcsim's target takes one `resist=`, and an average is a number for an enemy that does
+    not exist. The refusal already existed in the config renderer; sharing `target_fields`
+    means the key inherits it rather than quietly hashing an averaged target."""
+    db_session.add(EnemyProfile(
+        nanoka_id=21010103, name="Lopsided", level=90,
+        base_hp=1.0, base_atk=1.0, base_def=1.0,
+        physical_res=0.1, anemo_res=0.9, cryo_res=0.1, dendro_res=0.1,
+        electro_res=0.1, geo_res=0.1, hydro_res=0.1, pyro_res=0.1,
+    ))
+    await db_session.flush()
+    rotation_id = await _rotation(authed_client, scene, [_step(scene.ayaka, "burst")])
+
+    response = await authed_client.post(
+        f"{ROTATIONS}/{rotation_id}/context-key",
+        json={"build_id": scene.ayaka_build, "enemy_nanoka_id": 21010103},
+    )
+
+    assert response.status_code == 422
+    assert "uneven resistances" in response.json()["detail"]
+
+
+async def test_an_unknown_enemy_is_a_404(authed_client: AsyncClient, scene: Scene):
+    rotation_id = await _rotation(authed_client, scene, [_step(scene.ayaka, "burst")])
+
+    response = await authed_client.post(
+        f"{ROTATIONS}/{rotation_id}/context-key",
+        json={"build_id": scene.ayaka_build, "enemy_nanoka_id": 999999999},
+    )
+
+    assert response.status_code == 404
+
+
+async def test_a_character_gcsim_does_not_implement_is_refused_with_its_reason(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+):
+    """A character released after the pin has no gcsim key. That is a refusal with a written
+    explanation — most likely released after the pin, re-pin deliberately — and it escaped as
+    a 500 in the first version of this handler, where nobody would ever have read it."""
+    user, _ = authed_user
+    unknown = Character(
+        nanoka_id="99999999", name="Someone Unreleased", element=Element.PYRO,
+        weapon_type=WeaponType.SWORD, rarity=Rarity.FIVE_STAR,
+        base_hp=1000.0, base_atk=26.0, base_def=60.0,
+        base_crit_rate=0.05, base_crit_dmg=0.5,
+    )
+    db_session.add(unknown)
+    await db_session.flush()
+    build = Build(owner_id=str(user.id), character_id=str(unknown.id))
+    db_session.add(build)
+    await db_session.flush()
+    team = Team(owner_id=str(user.id), name="Unsimulatable", build1_id=str(build.id))
+    db_session.add(team)
+    await db_session.flush()
+    created = await authed_client.post(ROTATIONS, json={
+        "name": "keyed", "team_id": str(team.id), "steps": [_step("99999999", "burst")],
+    })
+    assert created.status_code == 201, created.text
+
+    response = await authed_client.post(
+        f"{ROTATIONS}/{created.json()['id']}/context-key",
+        json={"build_id": str(build.id)},
+    )
+
+    assert response.status_code == 422, response.text
+    assert "gcsim has no character key" in response.json()["detail"]

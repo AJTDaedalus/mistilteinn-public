@@ -43,7 +43,7 @@ from app.schemas.rotation import (
 from app.schemas.team import TEAM_SLOTS
 from app.services import gcsim_keys
 from app.services.gcsim_config import GcsimConfigError, target_fields
-from app.services.gcsim_keys import authorable_actions, pinned_commit
+from app.services.gcsim_keys import GcsimKeyError, authorable_actions, pinned_commit
 from app.services.rotation_compiler import (
     RotationCompileError,
     compile_rotation,
@@ -288,7 +288,7 @@ async def rotation_context_key(
 
     enemy = None
     if body.enemy_nanoka_id is not None:
-        found = await enemies.get_by_filters(nanoka_id=body.enemy_nanoka_id)
+        found = await enemies.get_by_filters({"nanoka_id": body.enemy_nanoka_id})
         if not found:
             raise HTTPException(
                 status_code=404, detail=f"No enemy {body.enemy_nanoka_id!r}",
@@ -296,33 +296,38 @@ async def rotation_context_key(
         enemy = found[0]
 
     roster = await repo.character_rows(rotation.team_id)
+    # `GcsimKeyError` is in here too: a character or weapon released after the pin has no
+    # gcsim key, and that is a refusal with a written explanation, not a server fault. It
+    # escaped as a 500 in the first version of this handler — the message was already right,
+    # nobody was going to see it.
     try:
         signature = rotation_signature(rotation.steps or [], roster)
         target = target_fields(enemy)
-    except (RotationCompileError, GcsimConfigError) as exc:
+        members = sorted(
+            gcsim_keys.character_key(row.nanoka_id, row.name, row.element)
+            for row in roster.values()
+        )
+        key = context_key(
+            character_key=gcsim_keys.character_key(
+                build.character.nanoka_id, build.character.name, build.character.element,
+            ),
+            weapon_key=(
+                gcsim_keys.weapon_key(build.weapon.name)
+                if build.weapon is not None
+                else None
+            ),
+            character_level=build.character_level,
+            constellation=build.constellation_level,
+            weapon_level=build.weapon_level,
+            refinement=build.refinement,
+            talent_levels=build.talent_levels or {},
+            rotation=signature,
+            target=target,
+            gcsim_pin=pinned_commit(),
+            team=members,
+        )
+    except (RotationCompileError, GcsimConfigError, GcsimKeyError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-
-    members = sorted(
-        gcsim_keys.character_key(row.nanoka_id, row.name, row.element)
-        for row in roster.values()
-    )
-    key = context_key(
-        character_key=gcsim_keys.character_key(
-            build.character.nanoka_id, build.character.name, build.character.element,
-        ),
-        weapon_key=(
-            gcsim_keys.weapon_key(build.weapon.name) if build.weapon is not None else None
-        ),
-        character_level=build.character_level,
-        constellation=build.constellation_level,
-        weapon_level=build.weapon_level,
-        refinement=build.refinement,
-        talent_levels=build.talent_levels or {},
-        rotation=signature,
-        target=target,
-        gcsim_pin=pinned_commit(),
-        team=members,
-    )
     return ContextKeyRead(
         context_key=key, rotation=signature, team=members,
         target=target, gcsim_pin=pinned_commit(),
