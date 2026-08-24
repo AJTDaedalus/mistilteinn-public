@@ -14,66 +14,63 @@ and nothing in this repo overrides them.
 
 ## Repo state — read before trusting anything here
 
-This tree is a fork of fairy `dev` @ 76909c4. **Chunks A, B, C, D, E and F of
-`docs/TASKS_mistilteinn.md` are done:** the ZZZ domain layer is deleted, the infrastructure
-core is green, the Genshin domain models exist, the nanoka GI importer seeds them, and the
-committed YuanShenResources snapshot supplies what nanoka does not publish, and the damage
-chain **matches gcsim to 1.3e-8 relative** on its first crossval case — inside the argued
-`1e-7` tolerance, with the residual fully explained (float32 curves in the dump against
-decimals in gcsim). **Chunk G is complete except G.9's scoring, and G.9 is no longer blocked**: the substat roll
-schedule it needed is published in `ReliquaryExcelConfigData.addPropLevels`, now derived into
-`app/data/yuanshen/snapshot/artifact_roll_schedule.json` and read through
-`app/data/snapshot.py`. A 5-star upgrades at +4/+8/+12/+16/+20. What remains is the scoring
-function, which waits on a **consumer** — `artifact_ranker` was its home and C.6 deleted it —
-rather than on a citation. Tracked in `docs/TASKS_mistilteinn.md`, since its
-`TODO(chunk-G.9)` marker went with the ranker and `rg "TODO(chunk-"` no longer lists it. Everything else in G landed — the artifact optimizer,
-its lossless/lossy pruning, the ranker, the GOOD importer and the whole read-and-write API —
-**and C.6 has since deleted the optimizer's and ranker's endpoints, the job runner and the
-ranker itself.** Searching runs in the browser now.
+This tree is a fork of fairy `dev` @ 76909c4. **`docs/TASKS_mistilteinn.md` chunks A–G are
+done, S is done, `TASKS_client_optimizer.md` is complete (PRs #31–#41), K is deployed, and
+`docs/TASKS_rotation.md` R.0–R.6 is complete (PRs #50–#58).** Read each TASKS file's own
+status banner rather than this paragraph — this one is a summary and summaries go stale,
+which is why the numbers below name how to re-derive them.
 
-**Chunk H is superseded, not next.** Chunk S found gcsim already implements 106 characters
-and 53 artifact sets at the pin, so there is no corpus to curate. `TASKS_client_optimizer.md`
-was inserted on that finding and is **complete** (PRs #31–#41): the browser kernel on CPU and
-GPU, the run corpus, retrieval that reports its own measured error, explanation, weapon
-comparison. **Everything left in `docs/TASKS_mistilteinn.md` now waits on an owner decision,
-not on evidence or design work**: G.9's citation was found (`artifact_roll_schedule.json`),
-H is closed with its CI gate retired and its levels' successors recorded, and I's sketch
-turned out to describe work gcsim had already done — what survives of I is *where rotations
-come from* and whether the rotation is ever *optimized*, which reopens the client-side cost
-argument. J needs reference art; K needs a deploy target. See that file's "Where this plan
-stands" banner.
+**What is left, and what each waits on** (`TASKS_mistilteinn.md`, "Where this plan stands"):
 
-**There is deliberately no reachable optimizer** until the client-optimizer UI lands: an owner
-ruling, on the grounds that this is not a functional app until the plan completes and interim
-functionality is not worth keeping for its own sake.
+| | |
+|---|---|
+| **G.9** — upgrade-potential scoring | Not blocked on evidence. The roll schedule is derived and committed (`app/data/yuanshen/snapshot/artifact_roll_schedule.json`; a 5-star upgrades at +4/+8/+12/+16/+20). It waits on a **consumer**: `artifact_ranker` was its home and C.6 deleted it. |
+| **H** — kit corpus | **Superseded and closed.** Chunk S found gcsim already implements 106 characters and 53 artifact sets at the pin, so there is no corpus to curate. Its CI gate is retired with each validation level's successor recorded. **But see the `TODO(chunk-H)` note below — the markers outlived the chunk.** |
+| **I** — rotations | Authoring landed as the rotation chunk. What survives is whether a rotation is ever *optimized*, which DESIGN §3.5 warns reopens the client-side cost argument. |
+| **J** — frontend | Palette and emblem are done (Mitya references, #46). What remains is applying them as pages are built. |
+| **K** — deploy | **Live** at `https://mistilteinn.aetherus.dev`, beside `fairy.aetherus.dev` on one box. |
 
-- **The backend suite passes, with nothing skipped.** **953 tests, 0 skipped**, and
-  `uvicorn app.main:app` serves **26 paths**. Run CI's own gates rather than a remembered
-  subset: `cd backend && python -m scripts.ci_local` reads `.github/workflows/*.yml` and
-  executes them here — 19 gates, including the WGSL kernel, gcsim crossval, gitleaks and
-  pip-audit. `--list` shows the plan; `--clean` runs from a fresh clone of HEAD.
-  **A red backend suite is now a regression, not the size of the port** — that excuse
-  expired at B.13.
-- **The frontend does not compile, and that is the honest state.** 161 TypeScript errors
-  against endpoints and schemas B.6 deleted. It was green until the PR #1 review only
-  because `frontend/openapi.json` was stale — `npm run codegen` builds `api.types.ts` from
-  that file, so the SPA type-checked against a contract describing 44 endpoints while the
-  backend served 7. The contract is regenerated on every API change and guarded by
-  `backend/tests/unit/test_openapi_contract_is_current.py`. CI runs `npm run lint` only;
-  `npm test` is a disabled step with a `TODO(chunk-J)`. **Chunk J is what makes it compile.**
-- **The catalogue is seeded; the behaviour on top of it is not built.** 18 tables across six
-  migrations — characters, talents, talent scalings, constellations, ascension passives,
-  weapons, refinements, artifact sets, set affixes, artifacts, builds, enemy profiles, seed
-  runs, plus the infrastructure core. `cd backend && python -m scripts.seed_db` fills them
-  from nanoka GI **7.0.51** in ~10s (150 characters including all 28 Traveler variants, 260
-  weapons, 65 artifact sets, 360 enemy profiles) and `python -m scripts.verify_seed` checks
-  the result against the committed indexes and nine hand-read anchors. **G.6 exposed it**:
-  the catalogue is readable at `/api/v1/{characters,weapons,artifact-sets,enemies}`, a GOOD
-  export imports at `/api/v1/artifacts/import/good`, and `/api/v1/builds/{id}/explain` and
-  `/compare-weapons` run the Chunk F damage chain over it. **C.6 deleted `/optimize` and
-  `/rank-artifacts`**: searching runs in the browser now, and until that UI lands there is
-  deliberately no reachable optimizer. `artifact_optimizer.optimize` survives as the oracle
-  the browser kernel's fixtures are generated from, not as a route.
+**There is deliberately no reachable optimizer** — an owner ruling, on the grounds that this
+is not a functional app until the plan completes and interim functionality is not worth
+keeping for its own sake. `artifact_optimizer.optimize` survives as the oracle the browser
+kernel's fixtures are generated from, not as a route.
+
+**There is also no UI for creating a team or a build.** The rotation editor's empty state
+tells a user to build a team first, and as of this writing there is nowhere to do that. Known
+gap, not an oversight to route around.
+
+- **Both suites pass, with nothing skipped.** **1055 backend tests, 0 skipped**; **87
+  frontend tests**; `create_app()` serves **31 paths**. Re-derive rather than trust:
+  `cd backend && python -m pytest -q`, `cd frontend && npm test`. Run CI's own gates rather
+  than a remembered subset: `cd backend && python -m scripts.ci_local` reads
+  `.github/workflows/*.yml` and executes them here — 19 gates, including the WGSL kernel,
+  gcsim crossval, gitleaks and pip-audit. `--list` shows the plan; `--clean` runs from a
+  fresh clone of HEAD. **A red suite is a regression, not the size of the port** — that
+  excuse expired at B.13.
+- **`npm test` is `ng test`, and the distinction matters.** It builds the app first; a bare
+  `npx vitest run` skips that and every TestBed spec collapses — 53 failures that mean
+  nothing. *Run what CI runs* applies to the command, not only to the suite.
+- **The frontend compiles and is tested in CI.** It did not, at the fork: 161 TypeScript
+  errors against endpoints B.6 deleted, hidden because `frontend/openapi.json` was stale and
+  `npm run codegen` builds `api.types.ts` from that file. The contract is regenerated on
+  every API change and guarded by `backend/tests/unit/test_openapi_contract_is_current.py`.
+  Regenerate it in-process — `create_app().openapi()` — rather than by curling a running
+  backend; the contract test builds the app the same way and needs no server.
+- **The catalogue is seeded.** 19 tables across 13 migrations. `cd backend && python -m
+  scripts.seed_db` fills them from nanoka GI **7.0.51** in ~10s (150 characters including all
+  28 Traveler variants, 260 weapons, 65 artifact sets, 360 enemy profiles) and `python -m
+  scripts.verify_seed` checks the result against the committed indexes and nine hand-read
+  anchors. Readable at `/api/v1/{characters,weapons,artifact-sets,enemies}`; a GOOD export
+  imports at `/api/v1/artifacts/import/good`; `/api/v1/builds/{id}/explain` and
+  `/compare-weapons` run the Chunk F damage chain over it; `/api/v1/rotations` authors and
+  compiles rotations.
+- **A saved rotation is authored here and compiled to gcsim, never read back.** The compiler
+  emits the `while 1` loop and a `.ready` gate on every step, because gcsim's two worst
+  behaviours are silent: a bare action list runs **once**, and `while 1` **deadlocks** on an
+  ungated action — both producing a plausible config with exactly one burst in it.
+  `rotation_signature` and `compile_rotation` share `_resolve`, and `gcsim_config.target_fields`
+  backs both the rendered target and the hashed one, so a cache key and the config it was
+  cached from cannot describe different things.
 - **A seeded database says which patch it is.** `seed_runs` holds one append-only row per
   seed run: version pinned, per-entity counts, failed ids, and whether the run finished.
   `succeeded` is written `False` first and flipped at the end, so a run that died half way
@@ -88,18 +85,18 @@ functionality is not worth keeping for its own sake.
   inside the argued `1e-7` — the tolerance and the residual are explained in
   `docs/CROSSVAL_gcsim.md`, and a test proves the tolerance cannot hide a formula error.
   **It is not an exact match, and nothing here should say it is**: the residual is real,
-  understood, and the reason the tolerance is not zero. **CI runs it with `CROSSVAL_REQUIRE_DB=1`, so a skip is a failure**;
-  that is the gate fairy shipped a stale golden fixture without. The harness seeds itself
-  from the committed nanoka fixtures through the real importer, so it needs no network.
+  understood, and the reason the tolerance is not zero. **CI runs it with
+  `CROSSVAL_REQUIRE_DB=1`, so a skip is a failure** — that is the gate fairy shipped a stale
+  golden fixture without. The harness seeds itself from the committed nanoka fixtures through
+  the real importer, so it needs no network.
 - **Two deliberate divergences from gcsim** are recorded in `docs/CROSSVAL_gcsim.md`: the
   RES curve is continuous at exactly 0.75 (gcsim's `>` looks like a `>=`), and crit is
   computed rather than rolled. A crossval mismatch landing on either is not a formula error
   here.
 - **Enemy base stats are curve bases, not level-90 stats.** A Hilichurl's `base_hp` is
   `13.584`; the growth curve is named in `enemy_profiles.stat_curves` and the curve table is
-  `app/data/yuanshen/snapshot/growth_curves.json` (E.5). **Nothing applies them yet** —
-  wiring base × curve into a stat is Chunk F. Anything that multiplies those numbers today
-  and calls the result damage is wrong.
+  `app/data/yuanshen/snapshot/growth_curves.json` (E.5). Anything that multiplies those
+  numbers and calls the result damage without applying the curve is wrong.
 - **`app/models/artifact.py:MAIN_STAT_POOL` is populated from the committed snapshot** —
   `app/data/yuanshen/snapshot/artifact_main_stat_pools.json`, E.5. It is *derived*, and the
   derivation refuses to resolve anything it cannot pin: read
@@ -111,18 +108,26 @@ functionality is not worth keeping for its own sake.
   artifact value tables, growth curves); `cache/` is the gitignored working copy and the
   54 MB TextMap lives only there. The unit lane runs with `socket.connect` blocked and
   asserts by parsed imports that nothing in `app/` imports the toolkit (E.6).
-- **`app/services/_ported/` is read-only porting source, not runtime code.** Eight ZZZ
-  modules staged in B.1/B.3 for Chunks F, G and H to port *against*, excluded from ruff and
-  pytest, with no `__init__.py` so they are not importable. Each is deleted when its port
-  lands — see that directory's README.
+- **`app/services/_ported/` is read-only porting source, not runtime code.** Five ZZZ modules
+  remain of the eight staged in B.1/B.3, excluded from ruff and pytest, with no `__init__.py`
+  so they are not importable. Each is deleted when its port lands — see that directory's
+  README.
 - **Do not "fix" ZZZ code to make it run.** Per the BRIEF: *delete* ZZZ concepts rather than
   aliasing them. Leaked ZZZ shapes in the Genshin domain model are the fork strategy's main
-  long-term hazard. This applies with full force to Chunk C: new files, new class names, no
-  column that exists because its ZZZ counterpart did.
-- **What is deliberately unfinished** is marked in-place with `TODO(chunk-X)` naming the task
-  that finishes it — the two `scripts/` stubs that exit
-  non-zero, the removed DI factories, the skipped perf baseline, the 401-sweep table in
-  `tests/integration/test_auth_endpoints.py`. `rg "TODO\(chunk-" ` is the inventory.
+  long-term hazard.
+- **`rg "TODO\(chunk-"` is the inventory of what is deliberately unfinished — nine markers,
+  and seven of them name a chunk that is closed.** The `TODO(chunk-H)` markers are about
+  weapon and character passives the Chunk F chain does not model — `weapon_comparison`
+  carries `unmodelled_passives` precisely so a caller cannot publish a ranking it does not
+  claim to have made. That work is real and still undone; the chunk that would have done it
+  was closed because gcsim implements the kits. **Where it lands instead is an open
+  question, not a resolved one**, and the markers are left pointing at H rather than
+  re-pointed at a chunk that does not exist yet.
+- **Two verification harnesses exist because checking the check went wrong twice.**
+  `python -m scripts.ci_local` runs what CI runs, parsed from the workflow files at run time.
+  `python -m scripts.inject` is mutation testing with inverted exit codes — `0` caught, `1`
+  survived, `2` cannot vouch — and it **refuses** rather than reports when the target is
+  missing or ambiguous. Both are documented in `backend/CLAUDE.md`.
 
 `docs/LOG_mistilteinn.md` records every task, including the findings that contradicted the
 plan. Read it before assuming DESIGN is describing the current tree.
@@ -151,15 +156,18 @@ that turns out to be worth porting rather than re-deriving.
   records where each validation level went — L6's coverage question became
   `tests/unit/test_gcsim_character_coverage.py`, L1/L2's citation discipline became snapshot
   provenance, LC became `tests/crossval`. `validate_kits.py` was deleted in B.9.
-- `docs/DEPLOY.md` — fairy's runbook; hosts, tunnel config, and DB names are fairy's.
+- ~~`docs/DEPLOY.md` — fairy's runbook; hosts, tunnel config, and DB names are fairy's.~~
+  **Resolved in K:** rewritten for this stack — `mistilteinn-prod` runner, own Postgres,
+  own tunnel, `/home/ubuntu/mistilteinn`.
 - ~~`docker-compose.yml` binds host ports **5432 / 8000 / 4200**, the same as fairy.~~
   **Resolved in A.4/A.5:** there is no `db` service any more (mistilteinn uses fairy's
   Postgres server and owns separate databases in it), and the host ports are **8001 / 4201**.
   Both stacks run simultaneously.
 - ~~**Package and project identifiers still say `fairy`.**~~ **Resolved in A.1/A.2/A.12.**
   Surviving `fairy` hits are deliberate: the shared-Postgres wiring in `docker-compose.yml`,
-  upstream provenance in prose, and `frontend/src/styles/_tokens.scss` (the Fairy palette
-  stays until Chunk J supplies a Mitya-derived one — DESIGN §A4).
+  and upstream provenance in prose. ~~`frontend/src/styles/_tokens.scss` (the Fairy
+  palette)~~ **resolved in J:** the palette is sampled from the Mitya references and the
+  emblem is his ornament (#46).
 - ~~**`backend/scripts/download_*_icons.py` write into the other repo.**~~ **Resolved in B.9:**
   all four were deleted unrun.
 
@@ -198,8 +206,10 @@ Host ports are **8001** (backend) and **4201** (frontend), so both stacks run at
 Unchanged from fairy (a deliberate BRIEF decision):
 
 - **Backend**: FastAPI + SQLAlchemy 2.0 async + PostgreSQL + Alembic
-- **Frontend**: Angular (deferred — backend-first development)
-- **Infrastructure**: Docker Compose (db, backend, frontend containers)
+- **Frontend**: Angular 21, standalone components, signals — see `frontend/CLAUDE.md`.
+  No longer deferred: it compiles, it is tested in CI, and it serves eight routes plus a catch-all.
+- **Infrastructure**: Docker Compose (backend + frontend here; **no `db` service** — see
+  §Database)
 - **Deploy**: **live at `https://mistilteinn.aetherus.dev`**, alongside `fairy.aetherus.dev`
   on one host (2026-08-24). Separate compose projects, separate networks, **no host ports on
   either**, and mistilteinn owns its Postgres in prod because fairy's publishes none. Pushes
