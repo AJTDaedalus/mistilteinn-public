@@ -49,9 +49,16 @@ export class TeamsPage implements OnInit {
   protected name = '';
   protected readonly picked = signal<Record<TeamSlot, string | null>>(emptySlots());
 
-  /** A team needs a name and at least one member; the server requires `build1_id`. */
+  /**
+   * A team needs a name and a **first** member.
+   *
+   * `build1_id` is the one required slot in `TeamCreate` — a team with nobody in it is not a
+   * team. Requiring "at least one member" instead let a user fill slot 2 and leave slot 1
+   * empty, which the picker allowed and the server refused with a schema error about a field
+   * the page never showed them. Found in the T.4 self-review.
+   */
   protected readonly canSave = computed(
-    () => this.name.trim().length > 0 && this.filled().length > 0,
+    () => this.name.trim().length > 0 && this.picked().build1_id !== null,
   );
 
   private readonly teamsService = inject(TeamsService);
@@ -127,16 +134,23 @@ export class TeamsPage implements OnInit {
     if (!this.canSave()) return;
     this.actionError.set(null);
     try {
-      const body = { name: this.name.trim(), ...this.picked() };
+      const picked = this.picked();
       const existing = this.editing();
       if (existing) {
+        const body = { name: this.name.trim(), ...picked };
         const saved = await this.teamsService.update(existing.id, body);
         await this.load();
         // Stay in what was just saved, as the build editor does — being thrown out of an
         // edit is indistinguishable on screen from the edit having vanished.
         this.editing.set(saved ?? existing);
       } else {
-        await this.teamsService.create(body as never);
+        // `canSave` guarantees the first slot, which is what makes this typed rather than
+        // cast: the cast was hiding the mismatch this self-review found.
+        await this.teamsService.create({
+          ...picked,
+          name: this.name.trim(),
+          build1_id: picked.build1_id!,
+        });
         await this.load();
         this.newTeam();
       }

@@ -55,6 +55,12 @@
           }
         </ol>
 
+        @if (picked().build1_id === null) {
+          <!-- `build1_id` is the one required slot in `TeamCreate`. Said here rather than
+               discovered as a schema error naming a field the page never showed. -->
+          <p class="hint">The first slot must be filled.</p>
+        }
+
         <div class="controls">
           <button type="button" (click)="save()" [disabled]="!canSave()">
             {{ editing() ? 'Save changes' : 'Save team' }}

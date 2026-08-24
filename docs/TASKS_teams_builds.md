@@ -123,8 +123,9 @@ Four mutations, all CAUGHT. Migration `27770f8ae917`, round-tripped up and down.
 - **Done.** `pages/teams/`, in the nav. Each slot offers only builds that break neither
   server rule — not already in another slot (`assert_slots_distinct`), and not a second build
   of a character already on the team (T.1a). `TEAM_SLOTS` is checked against the committed
-  contract rather than trusted as a mirror; dropping the fourth slot is CAUGHT. Six mutations,
-  six caught.
+  contract rather than trusted as a mirror; dropping the fourth slot is CAUGHT. Seven
+  mutations, seven caught — including the self-review finding that `canSave` accepted "any
+  member" where the schema requires the **first** slot, hidden behind a `body as never` cast.
 
 ### [x] T.5 — The loop closes — **done**
 - **Do:** the rotation editor's empty state becomes a link to the team builder. One

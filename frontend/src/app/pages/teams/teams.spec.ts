@@ -138,6 +138,23 @@ describe('TeamsPage', () => {
     expect(page['canSave']()).toBe(true);
   });
 
+  it('requires the first slot specifically, not just any member', async () => {
+    // `build1_id` is the one required field in `TeamCreate`. Accepting "at least one member"
+    // let a user fill slot 2 alone, and the server refused it with a schema error naming a
+    // field the page never showed them. Found in the T.4 self-review.
+    const create = vi.fn();
+    const page = healthy({ create });
+    await page['load']();
+    page['name'] = 'Freeze';
+
+    page['pick']('build2_id', 'b-ayaka-c0');
+
+    expect(page['filled']()).toEqual(['build2_id']);
+    expect(page['canSave']()).toBe(false);
+    await page['save']();
+    expect(create).not.toHaveBeenCalled();
+  });
+
   it('sends every slot, including the empty ones as null', async () => {
     // An omitted slot means "leave it as it was" on a patch, which is a different
     // instruction from "empty it". Sent explicitly so clearing a slot actually clears it.

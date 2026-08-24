@@ -30,11 +30,17 @@ export class TeamsService {
     return data.items;
   }
 
-  async create(body: { name: string } & Partial<Record<TeamSlot, string | null>>) {
-    const { data, error } = await this.api.POST('/api/v1/teams', {
-      // `build1_id` is the one required slot: a team with nobody in it is not a team.
-      body: body as { name: string; build1_id: string },
-    });
+  /**
+   * `build1_id` is required, matching `TeamCreate`.
+   *
+   * Typed rather than cast. It was `body as never` first, and the cast hid that the page
+   * would happily send a null first slot — the picker let a user fill slot 2 alone, and the
+   * server refused it with a schema error about a field the page never showed them.
+   */
+  async create(
+    body: { name: string; build1_id: string } & Partial<Record<TeamSlot, string | null>>,
+  ) {
+    const { data, error } = await this.api.POST('/api/v1/teams', { body });
     if (error) throw error;
     return data;
   }
