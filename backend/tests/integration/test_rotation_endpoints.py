@@ -247,6 +247,77 @@ async def test_someone_elses_rotation_is_a_404(
     assert listed.json()["total"] == 0, "a leaked count is a leak"
 
 
+# ── What the editor is offered ───────────────────────────────────────────────
+
+
+async def test_options_offer_exactly_the_actions_the_validator_accepts(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """The picker and the validator must not be able to disagree.
+
+    Not "the offered list looks sensible" — every offered action is *posted*, and every
+    action the endpoint withheld is posted too and must be refused. A UI list that drifted
+    would tell a user their own selection was invalid.
+    """
+    from app.services.gcsim_keys import gcsim_actions
+
+    offered = (await authed_client.get(f"{ROTATIONS}/options")).json()["actions"]
+    assert offered, "an empty list would pass every assertion below vacuously"
+
+    for action in offered:
+        accepted = await authed_client.post(ROTATIONS, json={
+            "name": f"try {action}", "team_id": scene.team_id,
+            "steps": [_step(scene.ayaka, action)],
+        })
+        assert accepted.status_code == 201, f"offered but refused: {action}"
+
+    for hidden in set(gcsim_actions()) - set(offered):
+        refused = await authed_client.post(ROTATIONS, json={
+            "name": f"try {hidden}", "team_id": scene.team_id,
+            "steps": [_step(scene.ayaka, hidden)],
+        })
+        assert refused.status_code == 422, f"withheld but accepted: {hidden}"
+
+
+async def test_options_carry_each_team_and_who_is_on_it(
+    authed_client: AsyncClient, scene: Scene,
+):
+    teams = (await authed_client.get(f"{ROTATIONS}/options")).json()["teams"]
+
+    assert [t["name"] for t in teams] == ["Party"]
+    roster = teams[0]["characters"]
+    assert {c["nanoka_id"] for c in roster} == {scene.ayaka, scene.barbara}
+    assert {c["element"] for c in roster} == {"Cryo", "Hydro"}
+
+
+async def test_options_offer_only_the_callers_own_teams(
+    authed_client: AsyncClient, db_session: AsyncSession, scene: Scene,
+):
+    from app.models.user import User
+
+    stranger = User(email="other@example.com", password_hash="not-a-hash")  # noqa: S106
+    db_session.add(stranger)
+    await db_session.flush()
+    db_session.add(Team(owner_id=str(stranger.id), name="Not yours"))
+    await db_session.flush()
+
+    teams = (await authed_client.get(f"{ROTATIONS}/options")).json()["teams"]
+
+    assert [t["name"] for t in teams] == ["Party"]
+
+
+async def test_the_options_path_is_not_read_as_a_rotation_id(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """`/options` is declared above `/{rotation_id}`. Below it, FastAPI would match this as
+    a rotation whose id is the word "options" and return 404 — which looks like an empty
+    editor rather than a routing mistake."""
+    response = await authed_client.get(f"{ROTATIONS}/options")
+
+    assert response.status_code == 200
+    assert "actions" in response.json()
+
+
 # ── Compiling ─────────────────────────────────────────────────────────────────
 
 

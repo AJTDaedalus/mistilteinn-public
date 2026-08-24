@@ -36,7 +36,9 @@ class RotationStep(BaseModel):
     #: the compiler needs to reach a gcsim key. See `app/models/rotation.py` on why not a
     #: slot and not a build.
     character: str = Field(..., min_length=1, max_length=32)
-    action: str
+    #: Published to OpenAPI as an enum from the **same** call the validator below checks
+    #: against, so a generated client cannot offer an action this would then refuse.
+    action: str = Field(..., json_schema_extra={"enum": list(authorable_actions())})
     #: `attack ×3` compiles to gcsim's own `attack:3`.
     repeat: int = Field(default=1, ge=1, le=MAX_REPEAT)
     #: The user's own label for this step. Never interpreted.
@@ -63,6 +65,36 @@ class RotationStep(BaseModel):
             )
             raise ValueError(msg)
         return value
+
+
+class RosterCharacter(BaseModel):
+    """One character an editor may name in a step."""
+
+    nanoka_id: str
+    name: str
+    element: str
+
+
+class TeamRoster(BaseModel):
+    """A team, and who is on it."""
+
+    id: str
+    name: str
+    characters: list[RosterCharacter]
+
+
+class RotationOptions(BaseModel):
+    """Everything an editor needs to offer a step that will be accepted.
+
+    Both halves come from the same place the write path reads: `actions` from
+    `authorable_actions()`, `teams` from the roster extraction `_check_steps_against_team`
+    validates against. The guarantee is **the picker offers exactly what the validator
+    accepts** — the alternative is a UI list that drifts, and a user told their own
+    selection is invalid.
+    """
+
+    actions: list[str]
+    teams: list[TeamRoster]
 
 
 class RotationCreate(BaseModel):

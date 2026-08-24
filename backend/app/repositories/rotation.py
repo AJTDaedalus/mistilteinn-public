@@ -63,22 +63,16 @@ class RotationRepository(BaseRepository[Rotation]):
         """The nanoka ids of every character on a team — for validating steps on write."""
         return set(await self.character_rows(team_id))
 
-    async def character_rows(self, team_id: str) -> dict[str, Character]:
-        """`nanoka_id -> Character` for every build on a team.
+    def _teams(self) -> Select[tuple[Team]]:
+        """Teams, owner-scoped, eager-loaded down to each build's character.
 
-        Rows rather than ids, because the compiler needs a character's name and element to
-        reach its gcsim key. `team_characters` derives its set from this, so the two cannot
-        disagree about who is on a team — which they would if each ran its own query and one
-        forgot a slot.
-
-        Eager-loaded down to each build's character, because a lazy hop here is a
-        `MissingGreenlet` inside a request — the shape Chunk G met three times before
-        `lazy="raise_on_sql"` made it loud.
+        Eager, because a lazy hop here is a `MissingGreenlet` inside a request — the shape
+        Chunk G met three times before `lazy="raise_on_sql"` made it loud.
         """
-        stmt = select(Team).where(Team.id == team_id)
+        stmt = select(Team)
         if self.owner_id is not None:
             stmt = stmt.where(Team.owner_id == self.owner_id)
-        stmt = stmt.options(
+        return stmt.options(
             *(
                 selectinload(getattr(Team, name.removesuffix("_id"))).selectinload(
                     Build.character,
@@ -86,12 +80,42 @@ class RotationRepository(BaseRepository[Rotation]):
                 for name in TEAM_SLOTS
             ),
         )
-        team = (await self.session.execute(stmt)).scalar_one_or_none()
-        if team is None:
-            return {}
+
+    @staticmethod
+    def _roster(team: Team) -> dict[str, Character]:
+        """`nanoka_id -> Character` for one already-loaded team."""
         found: dict[str, Character] = {}
         for slot in TEAM_SLOTS:
             build = getattr(team, slot.removesuffix("_id"))
             if build is not None and build.character is not None:
                 found[str(build.character.nanoka_id)] = build.character
         return found
+
+    async def character_rows(self, team_id: str) -> dict[str, Character]:
+        """`nanoka_id -> Character` for every build on a team.
+
+        Rows rather than ids, because the compiler needs a character's name and element to
+        reach its gcsim key. `team_characters` derives its set from this, so the two cannot
+        disagree about who is on a team — which they would if each ran its own query and one
+        forgot a slot.
+        """
+        team = (
+            await self.session.execute(self._teams().where(Team.id == team_id))
+        ).scalar_one_or_none()
+        return {} if team is None else self._roster(team)
+
+    async def rosters(self) -> list[tuple[Team, dict[str, Character]]]:
+        """Every team the caller owns, with who is on it.
+
+        This is what the editor offers as step options, and it comes through `_roster` —
+        the same extraction the write path validates against. Two implementations would
+        eventually offer a character the validator then refused, and the user would be told
+        their own selection was invalid.
+        """
+        teams = (
+            (await self.session.execute(self._teams().order_by(Team.created_at.desc())))
+            .scalars()
+            .unique()
+            .all()
+        )
+        return [(team, self._roster(team)) for team in teams]
