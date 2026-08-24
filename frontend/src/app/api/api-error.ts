@@ -11,7 +11,7 @@ export function apiErrorMessage(error: unknown): string {
   if (error && typeof error === 'object' && 'detail' in error) {
     const detail = (error as { detail: unknown }).detail;
     if (typeof detail === 'string') {
-      return detail;
+      return truncate(detail);
     }
     if (Array.isArray(detail)) {
       const msgs = detail
@@ -20,9 +20,25 @@ export function apiErrorMessage(error: unknown): string {
         )
         .filter((m): m is string => !!m);
       if (msgs.length) {
-        return msgs.join('; ');
+        return truncate(msgs.join('; '));
       }
     }
   }
-  return JSON.stringify(error);
+  return truncate(JSON.stringify(error));
+}
+
+/** Longest message this will hand to the UI. */
+const MAX_MESSAGE = 200;
+
+/**
+ * Bound what reaches a user's screen.
+ *
+ * The fallback above stringifies an unrecognised body, and an unrecognised body can be
+ * enormous — a stack trace, a validation report over a large payload. The login page used to
+ * carry this guard privately, next to a `detail` extractor that was subtly wrong; the
+ * extractor is gone and the guard moved here, where every caller gets it rather than
+ * whichever one happened to reimplement it.
+ */
+function truncate(message: string): string {
+  return message.length <= MAX_MESSAGE ? message : `${message.slice(0, MAX_MESSAGE - 1)}…`;
 }

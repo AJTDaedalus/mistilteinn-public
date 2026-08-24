@@ -26,4 +26,19 @@ describe('apiErrorMessage', () => {
   it('stringifies non-object errors', () => {
     expect(apiErrorMessage('nope')).toBe('"nope"');
   });
+
+  it('bounds what reaches the screen', () => {
+    // The fallback stringifies an unrecognised body, and those can be enormous. This guard
+    // used to live privately on the login page, beside a `detail` extractor that was wrong;
+    // it moved here so every caller gets it rather than whichever one reimplemented it.
+    const huge = { detail: 'x'.repeat(500) };
+    const message = apiErrorMessage(huge);
+
+    expect(message.length).toBeLessThanOrEqual(200);
+    expect(message.endsWith('…')).toBe(true);
+  });
+
+  it('leaves a short message exactly as sent', () => {
+    expect(apiErrorMessage({ detail: 'Too many requests.' })).toBe('Too many requests.');
+  });
 });
