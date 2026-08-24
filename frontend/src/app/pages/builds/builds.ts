@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 
 import { apiErrorMessage } from '../../api/api-error';
 import { allPages } from '../../api/all-pages';
+import { ArtifactPanel } from './artifact-panel';
 import { CatalogueService } from '../catalogue/catalogue.service';
 import {
   BuildsService,
@@ -41,7 +42,7 @@ function blank(talents: string[]): BuildFields {
  */
 @Component({
   selector: 'page-builds',
-  imports: [FormsModule],
+  imports: [FormsModule, ArtifactPanel],
   templateUrl: './builds.html',
   styleUrl: './builds.scss',
 })

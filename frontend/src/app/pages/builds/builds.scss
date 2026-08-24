@@ -53,6 +53,15 @@
     label { text-transform: capitalize; }
   }
 
+  .artifacts {
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid rgb(255 255 255 / 12%);
+    border-radius: 0.3rem;
+
+    legend { padding: 0 0.35rem; font-size: 0.85rem; opacity: 0.8; }
+  }
+
   .notes input { flex: 1; }
 
   .controls {
