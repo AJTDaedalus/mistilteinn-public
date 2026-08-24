@@ -25,7 +25,7 @@
 - **Do:** per-task branches off `dev`; merge by PR.
 - **Accept:** `git log --first-parent dev` is merge commits only.
 
-### [ ] M.1 — The talent parser
+### [x] M.1 — The talent parser — **done**
 - **Do:** `desc` + `param` → structured hits. A pure function over two lists; no session.
 - **Files:** `app/services/talent_scaling.py`, tests.
 - **Accept:**
@@ -39,6 +39,11 @@
   - `Energy Cost|{paramN:I}` is extracted too — it is what `Character.burst_energy_cost` has
     been nullable for since Chunk D.
 - **Why it is first:** every other task reads what it produces.
+- **Done.** `app/services/talent_scaling.py`. Every one of the **91 promote rows** in the
+  committed fixtures parses — **345 hits, no errors** — which is the test the hand-written
+  cases cannot be: a parser exercised only on rows someone chose is tested against its own
+  author's imagination. A second test asserts the fixtures still *contain* `×N`, `A+B` and
+  `A/B`, so that sweep cannot pass by exercising nothing. Seven mutations, seven caught.
 
 ### [ ] M.2 — Resolve a hit from a build
 - **Do:** `HitSpec` gains the `talent` field its own `TODO(chunk-H)` names, resolving the
