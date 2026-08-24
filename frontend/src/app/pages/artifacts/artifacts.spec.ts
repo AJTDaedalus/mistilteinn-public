@@ -245,3 +245,34 @@ describe('ArtifactsPage', () => {
     expect(page['total']()).toBe(900);
   });
 });
+
+describe('a row the data does not fit', () => {
+  it('renders a malformed substat instead of taking the page down with it', async () => {
+    // `substats` is a JSONB column with no schema behind it, so a row written by an older
+    // importer or by hand can hold anything. `.toFixed` on that is a TypeError inside a
+    // computed — which takes out the **entire** inventory rather than one substat.
+    const page = healthy({
+      list: vi.fn().mockResolvedValue({
+        items: [
+          { ...CIRCLET, id: 'bad', substats: [{ stat: 'FIGHT_PROP_CRITICAL' }, null] },
+          { ...CIRCLET, id: 'good' },
+        ],
+        total: 2,
+        truncated: false,
+      }),
+    } as unknown as ArtifactsService);
+
+    await page['load']();
+
+    const rows = page['rows']();
+    expect(rows).toHaveLength(2);
+    expect(rows[1].substats).toEqual(['CRIT Rate 10.9%']);
+    expect(rows[0].substats[0]).toContain('CRIT Rate');
+  });
+
+  it('does not throw on a non-numeric value', () => {
+    expect(formatStat('oops', true)).toBe('oops');
+    expect(formatStat(undefined, false)).toBe('undefined');
+    expect(formatStat(Number.NaN, true)).toBe('NaN');
+  });
+});

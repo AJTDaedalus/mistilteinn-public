@@ -23,8 +23,17 @@ export interface ArtifactRow {
   equipped: boolean;
 }
 
-/** `0.466` → `46.6%`, `4780` → `4,780`. The flag decides; the page does not guess. */
-export function formatStat(value: number, percentage: boolean): string {
+/**
+ * `0.466` → `46.6%`, `4780` → `4,780`. The flag decides; the page does not guess.
+ *
+ * Non-numeric input is rendered rather than thrown on. `substats` is a JSONB column with no
+ * schema behind it, so a row written by an older importer or by hand can hold anything — and
+ * `.toFixed` on that is a `TypeError` inside a computed, which takes out **the entire
+ * inventory** rather than one substat. Showing the raw value keeps the bad row visible and
+ * the other 799 readable.
+ */
+export function formatStat(value: unknown, percentage: boolean): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return String(value);
   return percentage
     ? `${(value * 100).toFixed(1)}%`
     : value.toLocaleString(undefined, { maximumFractionDigits: 0 });
@@ -87,8 +96,8 @@ export class ArtifactsPage implements OnInit {
       stars: stars.get(piece.rarity) ?? 0,
       level: piece.level,
       mainStat: describe(piece.main_stat_type, piece.main_stat_value, stats),
-      substats: (piece.substats as { stat: string; value: number }[]).map((sub) =>
-        describe(sub.stat, sub.value, stats),
+      substats: (piece.substats as { stat?: string; value?: unknown }[]).map((sub) =>
+        describe(sub?.stat ?? 'unknown', sub?.value, stats),
       ),
       equipped: piece.build_id !== null,
     }));
@@ -172,7 +181,7 @@ export class ArtifactsPage implements OnInit {
 
 function describe(
   key: string,
-  value: number,
+  value: unknown,
   stats: Map<string, { display: string; percentage: boolean }>,
 ): string {
   const stat = stats.get(key);

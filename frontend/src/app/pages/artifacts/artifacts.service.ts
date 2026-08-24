@@ -74,12 +74,4 @@ export class ArtifactsService {
     if (error) throw error;
   }
 
-  async equip(id: string, buildId: string | null): Promise<ArtifactRead> {
-    const { data, error } = await this.api.PATCH('/api/v1/artifacts/{artifact_id}', {
-      params: { path: { artifact_id: id } },
-      body: { build_id: buildId },
-    });
-    if (error) throw error;
-    return data;
-  }
 }
