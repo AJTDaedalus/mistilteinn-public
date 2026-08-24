@@ -39,7 +39,7 @@
   equipped". `display` moved onto a shared `SourceSpelled` base that `WeaponType` and
   `ArtifactSlot` both inherit, rather than being written twice.
 
-### [ ] A.2 — The GOOD import form
+### [x] A.2 — The GOOD import form — **done**
 - **Do:** a page that takes a GOOD file and posts it, and renders the result in full.
 - **Accept:** `mode` is **chosen, never defaulted** — `replace` and `append` are different
   intentions and GOOD has no stable per-artifact id to merge on, so a default would be the UI
@@ -47,12 +47,21 @@
   409 from a `replace` that resolved nothing is shown verbatim; a failed load is surfaced
   rather than rendered as "no artifacts".
 
-### [ ] A.3 — The inventory
+### [x] A.3 — The inventory — **done**
 - **Do:** the list — every piece, filtered by slot and set, equipped ones marked (OQ-A3).
 - **Accept:** filters are the **server's** (`GET /artifacts` already takes `slot`, `set_id`,
   `equipped`); `total` matches what the filter returned; the list goes through `allPages`.
 - **Why with A.2:** an import form with nothing to show afterwards cannot be checked by the
   person using it.
+- **Done, with a backend half the design did not anticipate.** `slot`, `rarity` and
+  `main_stat_type` are all source spellings, and the stored values are **units-dependent** —
+  `4780.0` flat HP against `0.466` HP%. `GET /artifacts/options` publishes the vocabulary
+  once (26 stats with `display` + `percentage`, 5 slots in worn order, 5 rarities with
+  `stars`); `ArtifactRead` gains `set_name`, which is per-piece. `StatType.display` is
+  **derived** from the member name rather than a 26-entry table, and `is_percentage` is
+  checked against the committed value table rather than trusted.
+- Twelve mutations run; two survived and both were tests that could not distinguish — a
+  five-star-only fixture, and a redundant re-read. See the LOG.
 
 ### [ ] A.4 — The build's artifact panel
 - **Do:** five slots on the build editor, each showing the equipped piece or offering the

@@ -244,6 +244,17 @@ class Artifact(TimestampMixin, Base):
     def __repr__(self) -> str:
         return f"<Artifact {self.slot} +{self.level} {self.main_stat_type}>"
 
+    @property
+    def set_name(self) -> str | None:
+        """The set's display name, for `ArtifactRead`.
+
+        **Reads an eager relationship on purpose.** `lazy` is `raise_on_sql`, so a route that
+        hands this to `ArtifactRead` without loading `artifact_set` fails loudly rather than
+        emitting a query per row — which is what a defensive `None` here would hide. Every
+        such route uses `search` or `get_with_set`, and
+        `tests/integration/test_artifact_inventory.py` expires the session to prove it.
+        """
+        return self.artifact_set.name if self.artifact_set is not None else None
 
 def artifact_slot_sort_order() -> Case:
     """A SQL `CASE` putting artifacts in flower→plume→sands→goblet→circlet order.

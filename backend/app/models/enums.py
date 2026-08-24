@@ -306,6 +306,18 @@ LEVELLED_TALENTS: tuple[TalentType, ...] = (
 MAX_TALENT_LEVEL = 15
 
 
+#: Words that are acronyms in-game and would otherwise title-case into something nobody
+#: writes: `Hp`, `Atk`, `Def`, `Crit`, `Dmg`, `Em`.
+_ACRONYMS = {"HP", "ATK", "DEF", "CRIT", "DMG", "RES"}
+
+
+def _titled(name: str) -> str:
+    """`ELEMENTAL_MASTERY` -> `Elemental Mastery`, `CRIT_DMG` -> `CRIT DMG`."""
+    return " ".join(
+        word if word in _ACRONYMS else word.title() for word in name.split("_")
+    )
+
+
 class StatType(enum.StrEnum):
     """The `FIGHT_PROP_*` stat vocabulary.
 
@@ -367,6 +379,36 @@ class StatType(enum.StrEnum):
         """The DMG-bonus stat for a vision. Total, so a new element cannot slip through."""
         return _DMG_BONUS_BY_ELEMENT[element]
 
+    @property
+    def display(self) -> str:
+        """How the game writes this stat: `HP%`, `CRIT DMG`, `Elemental Mastery`.
+
+        **Derived from the member name, not a 26-entry table.** A hand-written map is a second
+        list to keep in step — a member added later gets a `KeyError` at best and a blank
+        label at worst — and the naming here is regular enough that a rule plus a handful of
+        acronyms covers it. `_ACRONYMS` exists because `Hp_Pct` and `Crit Dmg` are what naive
+        title-casing gives, and neither is what a player would recognise.
+        """
+        if self.name.endswith("_PCT"):
+            return f"{_titled(self.name.removesuffix('_PCT'))}%"
+        if self.name.endswith("_FLAT"):
+            return _titled(self.name.removesuffix("_FLAT"))
+        return _titled(self.name)
+
+    @property
+    def is_percentage(self) -> bool:
+        """Whether this stat's stored value is a **fraction** rather than an absolute.
+
+        `artifact_main_stat_value(5, 20, …)` is `4780.0` for flat HP and `0.466` for HP%. The
+        same float renders two ways and only this says which, so a page without it prints
+        "0.466 HP%" or "478000% HP" — neither obviously wrong at a glance.
+
+        `tests/unit/test_stat_labels.py` checks this against the committed value table rather
+        than trusting the list, because the only way it can hurt anyone is by disagreeing
+        with the numbers.
+        """
+        return self in _PERCENTAGE_STATS
+
 
 _DMG_BONUS_BY_ELEMENT: dict[Element, StatType] = {
     Element.ANEMO: StatType.ANEMO_DMG_BONUS,
@@ -377,6 +419,7 @@ _DMG_BONUS_BY_ELEMENT: dict[Element, StatType] = {
     Element.HYDRO: StatType.HYDRO_DMG_BONUS,
     Element.PYRO: StatType.PYRO_DMG_BONUS,
 }
+
 
 #: The source spells "this row has no stat" two ways: a JSON `null` (34 weapons) and the
 #: literal string `FIGHT_PROP_NONE` (10 weapons, and 324 artifact affix slots). Both mean
@@ -422,3 +465,29 @@ def stat_type_for(raw: str | None) -> StatType | None:
             raw,
         )
         return None
+
+#: The stats whose stored value is a fraction — `0.466` meaning 46.6%.
+#:
+#: Everything with a `_PCT` suffix, plus the ones the game writes with a `%` and the source
+#: does not name that way: crit, energy recharge, the DMG bonuses, healing and shield.
+_PERCENTAGE_STATS: frozenset[StatType] = frozenset({
+    StatType.HP_PCT,
+    StatType.ATK_PCT,
+    StatType.DEF_PCT,
+    StatType.CRIT_RATE,
+    StatType.CRIT_DMG,
+    StatType.ENERGY_RECHARGE,
+    StatType.HEALING_BONUS,
+    StatType.INCOMING_HEALING_BONUS,
+    StatType.SHIELD_STRENGTH,
+    StatType.ANEMO_DMG_BONUS,
+    StatType.CRYO_DMG_BONUS,
+    StatType.DENDRO_DMG_BONUS,
+    StatType.ELECTRO_DMG_BONUS,
+    StatType.GEO_DMG_BONUS,
+    StatType.HYDRO_DMG_BONUS,
+    StatType.PYRO_DMG_BONUS,
+    StatType.PHYSICAL_DMG_BONUS,
+    StatType.ELECTRO_RES,
+    StatType.PYRO_RES,
+})
