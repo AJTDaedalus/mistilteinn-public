@@ -19,8 +19,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
-from app.dependencies import get_owned_team_repo
+from app.dependencies import get_owned_build_repo, get_owned_team_repo
 from app.middleware.rate_limit import WRITE_LIMIT, limiter
+from app.repositories.build import BuildRepository
 from app.repositories.team import TeamRepository
 from app.schemas.common import PaginatedResponse
 from app.schemas.team import TEAM_SLOTS, TeamCreate, TeamRead, TeamUpdate, assert_slots_distinct
@@ -45,14 +46,72 @@ async def list_teams(
     )
 
 
+async def _validated_members(
+    builds: BuildRepository, slots: dict[str, str | None],
+) -> None:
+    """Refuse a team whose slots name builds the caller does not own, or two of one character.
+
+    T.1a. `create_team` was a bare `repo.create`, so a slot naming a build that does not exist
+    reached the foreign key and became a **500**, and a slot naming a *stranger's* build was
+    stored — after which every read of that team showed it.
+
+    The character rule is the one that moved. `uq_builds_owner_character` used to make it
+    impossible to own two builds of one character, so it was impossible to put two on a team
+    by accident. With that constraint dropped (owner decision, 2026-08-24) the collection may
+    hold a C0 and a C6 of the same character, and the team may not: gcsim refuses such a party
+    outright — `pkg/simulation/setup.go:94` at pin `3647a07` returns `duplicated character
+    %v`. Checked when the team is saved rather than when a simulation fails, which is both
+    later and further from the edit.
+    """
+    wanted = [build_id for build_id in slots.values() if build_id is not None]
+    if not wanted:
+        return
+    # Owner-scoped and character-eager, in one round trip. A stranger's build is simply
+    # absent — the right answer to give, since confirming it exists would disclose that it
+    # does — and the eager load matters because `GUARDED_LAZY` is `raise_on_sql`: reading
+    # `build.character` off a lazily-loaded row is a `MissingGreenlet` inside a request.
+    found = await builds.with_characters(wanted)
+    for build_id in wanted:
+        if build_id not in found:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"no build {build_id!r} of yours. A team is assembled from your own "
+                    f"builds."
+                ),
+            )
+
+    seen: dict[str, str] = {}
+    for build_id in wanted:
+        build = found[build_id]
+        character_id = build.character_id
+        if character_id is None:
+            continue
+        if character_id in seen:
+            name = build.character.name if build.character is not None else character_id
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"this team holds {name} twice ({seen[character_id]} and {build_id}). "
+                    f"A party cannot field the same character twice — gcsim refuses one "
+                    f"outright — so it is refused here rather than when the simulation "
+                    f"fails. Two builds of one character is fine to *own*; it is the team "
+                    f"that cannot hold both."
+                ),
+            )
+        seen[character_id] = build_id
+
+
 @router.post("", response_model=TeamRead, status_code=201)
 @limiter.limit(WRITE_LIMIT)
 async def create_team(
     request: Request,
     body: TeamCreate,
     repo: Annotated[TeamRepository, Depends(get_owned_team_repo)],
+    builds: Annotated[BuildRepository, Depends(get_owned_build_repo)],
 ) -> TeamRead:
-    """Create a team of up to three builds."""
+    """Create a team of up to four builds, having checked it is one that could be simulated."""
+    await _validated_members(builds, {slot: getattr(body, slot) for slot in TEAM_SLOTS})
     team = await repo.create(body.model_dump())
     return TeamRead.model_validate(team)
 
@@ -76,6 +135,7 @@ async def update_team(
     team_id: str,
     body: TeamUpdate,
     repo: Annotated[TeamRepository, Depends(get_owned_team_repo)],
+    builds: Annotated[BuildRepository, Depends(get_owned_build_repo)],
 ) -> TeamRead:
     """Partially update a team's name or member builds."""
     patch = body.model_dump(exclude_unset=True)
@@ -95,6 +155,10 @@ async def update_team(
             assert_slots_distinct(**merged)
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+        # Against the merged team, for the same reason `assert_slots_distinct` is: a patch
+        # adding a second Ayaka names one build, and is illegal only beside the one already
+        # in another slot.
+        await _validated_members(builds, merged)
 
     team = await repo.update(team_id, patch)
     if team is None:

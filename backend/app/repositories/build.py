@@ -61,6 +61,29 @@ class BuildRepository(BaseRepository[Build]):
         )
         return int(result.scalar_one())
 
+    async def with_characters(self, build_ids: Sequence[str]) -> dict[str, Build]:
+        """The named builds, owner-scoped, each with its character loaded.
+
+        One round trip rather than one per slot, and **eager** because `GUARDED_LAZY` is
+        `raise_on_sql`: reading `build.character` off a row this did not load is a
+        `MissingGreenlet` inside a request. The T.1a team check did exactly that and its test
+        passed anyway — the session still held the Character in its identity map, so the hop
+        emitted no SQL. Found by expiring the session in the test, which is what
+        `test_genshin_models.py`'s `_reload` exists for.
+
+        Missing ids are simply absent from the result, including builds owned by someone
+        else: the caller turns that into "no build of yours", which is the right answer to
+        give, since confirming it exists would disclose that it does.
+        """
+        if not build_ids:
+            return {}
+        stmt = select(Build).where(Build.id.in_(list(build_ids)))
+        if self.owner_id is not None:
+            stmt = stmt.where(Build.owner_id == self.owner_id)
+        stmt = stmt.options(selectinload(Build.character))
+        rows = (await self.session.execute(stmt)).scalars().all()
+        return {str(row.id): row for row in rows}
+
     async def get_full(self, build_id: str) -> Build | None:
         """One build with everything an evaluation reads."""
         stmt = select(Build).where(Build.id == build_id)

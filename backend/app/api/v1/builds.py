@@ -83,38 +83,6 @@ _Offset = Annotated[int, Query(ge=0)]
 _Limit = Annotated[int, Query(ge=1, le=200)]
 
 
-async def _refuse_duplicate(
-    repo: BuildRepository, *, character_id: str | None, excluding: str | None,
-) -> None:
-    """Refuse a second build of the same character, rather than letting the DB 500.
-
-    `uq_builds_owner_character` is one build per character per user. It was **enforced only
-    by the database**, so making a second Ayaka build — an ordinary thing to do — raised a
-    `UniqueViolationError` and the user was told the server broke.
-
-    This makes the existing rule legible; it does not endorse it. `app/models/build.py`
-    records that the constraint was inherited verbatim from fairy's `uq_builds_owner_agent`
-    and kept *pending an owner decision*, because it forbids saving a C0 and a C6 of the same
-    character side by side, or a Physical and a Cryo Eula. If that decision drops the
-    constraint, this function goes with it — and until then the refusal says what the limit
-    is instead of leaving a user to guess from a 500.
-    """
-    if character_id is None:
-        return
-    existing = await repo.get_by_filters({"character_id": character_id}, limit=2)
-    clashes = [row for row in existing if str(row.id) != excluding]
-    if clashes:
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                f"you already have a build for this character ({clashes[0].id}). The schema "
-                f"allows one build per character per user; edit that one, or delete it "
-                f"first. This limit is inherited from fairy and is under review — see "
-                f"app/models/build.py."
-            ),
-        )
-
-
 _Characters = Annotated[CharacterRepository, Depends(get_character_repo)]
 _Weapons = Annotated[WeaponRepository, Depends(get_weapon_repo)]
 
@@ -191,7 +159,6 @@ async def create_build(
         characters, weapons,
         character_id=body.character_id, weapon_id=body.weapon_id,
     )
-    await _refuse_duplicate(repo, character_id=body.character_id, excluding=None)
     build = await repo.create({**body.model_dump(), "owner_id": repo.owner_id})
     return BuildRead.model_validate(build)
 
@@ -236,8 +203,6 @@ async def update_build(
         characters, weapons,
         character_id=merged_character, weapon_id=merged_weapon,
     )
-    if "character_id" in patch:
-        await _refuse_duplicate(repo, character_id=merged_character, excluding=build_id)
 
     updated = await repo.update(build_id, patch)
     return BuildRead.model_validate(updated)

@@ -623,16 +623,27 @@ async def test_nanoka_ids_are_unique_per_catalogue_table(db_session: AsyncSessio
         await db_session.flush()
 
 
-async def test_one_build_per_character_per_owner(db_session: AsyncSession):
-    """Inherited from fairy's `uq_builds_owner_agent`; see the note in the Build docstring."""
+async def test_several_builds_of_one_character_per_owner(db_session: AsyncSession):
+    """The inverse of what this asserted until T.1a.
+
+    `uq_builds_owner_character`, inherited from fairy's `uq_builds_owner_agent`, forbade a C0
+    and a C6 of the same character side by side. Dropped by owner decision, 2026-08-24. The
+    rule that a *party* cannot field one character twice moved to `app/api/v1/teams.py`,
+    where gcsim's own refusal (`pkg/simulation/setup.go:94` at pin `3647a07`) is cited —
+    tests in `test_team_membership_rules.py`.
+    """
     owner = await _make_user(db_session)
     character = await _make_character(db_session)
-    db_session.add(Build(owner_id=owner.id, character_id=character.id))
+    db_session.add(Build(owner_id=owner.id, character_id=character.id, constellation_level=0))
     await db_session.flush()
-    db_session.add(Build(owner_id=owner.id, character_id=character.id))
+    db_session.add(Build(owner_id=owner.id, character_id=character.id, constellation_level=6))
 
-    with pytest.raises(IntegrityError):
-        await db_session.flush()
+    await db_session.flush()  # no IntegrityError
+
+    stored = await db_session.execute(
+        select(func.count()).select_from(Build).where(Build.character_id == character.id),
+    )
+    assert stored.scalar_one() == 2
 
 
 # ── cascades ──────────────────────────────────────────────────────────────────

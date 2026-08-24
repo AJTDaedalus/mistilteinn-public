@@ -30,6 +30,10 @@ class RotationStaleError(RuntimeError):
     """
 
 
+class DuplicateTeamMemberError(RuntimeError):
+    """A team row holds two builds of one character — impossible through the API (T.1a)."""
+
+
 class RotationRepository(BaseRepository[Rotation]):
     """Sole data-access point for rotations."""
 
@@ -83,12 +87,33 @@ class RotationRepository(BaseRepository[Rotation]):
 
     @staticmethod
     def _roster(team: Team) -> dict[str, Character]:
-        """`nanoka_id -> Character` for one already-loaded team."""
+        """`nanoka_id -> Character` for one already-loaded team.
+
+        **Refuses a team holding one character twice rather than collapsing it.** Keying by
+        `nanoka_id` means a duplicate would silently become a single entry, and a four-build
+        team would compile a rotation against three characters — a wrong answer that looks
+        like a right one, with nothing anywhere reporting a problem.
+
+        `app/api/v1/teams.py` refuses such a team on write, so this is not reachable through
+        the API (T.1a). It stays because the rule lives in the application and not in the
+        schema: a row written by a script, a fixture or a future code path would arrive here
+        with no other check in its way.
+        """
         found: dict[str, Character] = {}
         for slot in TEAM_SLOTS:
             build = getattr(team, slot.removesuffix("_id"))
-            if build is not None and build.character is not None:
-                found[str(build.character.nanoka_id)] = build.character
+            if build is None or build.character is None:
+                continue
+            nanoka_id = str(build.character.nanoka_id)
+            if nanoka_id in found:
+                msg = (
+                    f"team {team.id} holds {build.character.name} twice. A party cannot "
+                    f"field the same character twice — gcsim refuses one outright — and "
+                    f"keying the roster by character would have hidden the duplicate rather "
+                    f"than reported it."
+                )
+                raise DuplicateTeamMemberError(msg)
+            found[nanoka_id] = build.character
         return found
 
     async def character_rows(self, team_id: str) -> dict[str, Character]:
