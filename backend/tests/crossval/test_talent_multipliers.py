@@ -9,9 +9,21 @@ agreement turns the heuristic into a checked claim.
 this runs in any lane and cannot skip — which matters more here than usual, because a crossval
 that quietly stops comparing is the exact shape fairy shipped a stale golden fixture behind.
 
+## What this file covers, exactly
+
+**One character — Ayaka, 180 hits.** That is every nanoka character payload committed to
+`tests/fixtures/`, and it is less than the headline number this crossval is quoted for.
+
 The richer run is `python -m scripts.gcsim.crossval_multipliers` against a seeded database:
-**105 characters, 18,611 hits, 0 mismatches** as of this commit. This file is the part that
-runs every time.
+**105 characters, 18,611 hits, 0 mismatches** as of this commit. It is a manual gate, and its
+result is recorded in `docs/LOG_mistilteinn.md` rather than enforced here.
+
+`TODO(chunk-M)`: commit the **Venti** and **Rosaria** payloads and this file covers the two
+bugs M.4 actually found — Venti's `{param1}+{param1}` (summed when it is two hits) and
+Rosaria's skill and burst sharing the label `Skill DMG`. Neither is reachable from the
+committed fixtures today, so the regressions that motivated this crossval are guarded by the
+manual run and not by CI. `scripts/capture_nanoka_fixtures.py` is how they get added, and it
+needs network.
 """
 
 from __future__ import annotations
