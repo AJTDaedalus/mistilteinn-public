@@ -70,7 +70,7 @@ async def _validated_members(
     # absent — the right answer to give, since confirming it exists would disclose that it
     # does — and the eager load matters because `GUARDED_LAZY` is `raise_on_sql`: reading
     # `build.character` off a lazily-loaded row is a `MissingGreenlet` inside a request.
-    found = await builds.with_characters(wanted)
+    found = await builds.with_catalogue(wanted)
     for build_id in wanted:
         if build_id not in found:
             raise HTTPException(

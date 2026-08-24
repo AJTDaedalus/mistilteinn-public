@@ -61,8 +61,8 @@ class BuildRepository(BaseRepository[Build]):
         )
         return int(result.scalar_one())
 
-    async def with_characters(self, build_ids: Sequence[str]) -> dict[str, Build]:
-        """The named builds, owner-scoped, each with its character loaded.
+    async def with_catalogue(self, build_ids: Sequence[str]) -> dict[str, Build]:
+        """The named builds, owner-scoped, each with its character and weapon loaded.
 
         One round trip rather than one per slot, and **eager** because `GUARDED_LAZY` is
         `raise_on_sql`: reading `build.character` off a row this did not load is a
@@ -80,9 +80,19 @@ class BuildRepository(BaseRepository[Build]):
         stmt = select(Build).where(Build.id.in_(list(build_ids)))
         if self.owner_id is not None:
             stmt = stmt.where(Build.owner_id == self.owner_id)
-        stmt = stmt.options(selectinload(Build.character))
+        stmt = stmt.options(selectinload(Build.character), selectinload(Build.weapon))
         rows = (await self.session.execute(stmt)).scalars().all()
         return {str(row.id): row for row in rows}
+
+    async def get_with_catalogue(self, build_id: str) -> Build | None:
+        """One build with the catalogue rows `BuildRead` publishes.
+
+        `get_by_id` does not eager-load and `GUARDED_LAZY` is `raise_on_sql`, so returning a
+        row from it as a `BuildRead` is a `MissingGreenlet` the moment the schema reads
+        `.character`. Lighter than `get_full`, which also pulls artifacts, their sets and
+        those sets' affixes — none of which a build row displays.
+        """
+        return (await self.with_catalogue([build_id])).get(build_id)
 
     async def get_full(self, build_id: str) -> Build | None:
         """One build with everything an evaluation reads."""
