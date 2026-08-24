@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ArtifactsPage, formatStat } from './artifacts';
+import { ArtifactsPage, describePotential, formatStat } from './artifacts';
 import { ArtifactsService } from './artifacts.service';
 
 const OPTIONS = {
@@ -274,5 +274,70 @@ describe('a row the data does not fit', () => {
     expect(formatStat('oops', true)).toBe('oops');
     expect(formatStat(undefined, false)).toBe('undefined');
     expect(formatStat(Number.NaN, true)).toBe('NaN');
+  });
+});
+
+describe('describePotential', () => {
+  const full = {
+    rolls_remaining: 3, rolls_total: 5, level: 9, max_level: 20,
+    levels_to_max: 11,
+  };
+
+  it('shows the working, not just the headline', () => {
+    // "3 rolls left" alone is something a reader takes on trust. "of 5 · +9 of +20" is
+    // something they can check — the repo's rule that a number must explain itself applies
+    // to a two-digit figure as much as to a damage total.
+    expect(describePotential(full)).toEqual({
+      headline: '3 rolls left',
+      detail: 'of 5 · +9 of +20',
+    });
+  });
+
+  it('says a maxed piece is finished rather than "0 rolls left"', () => {
+    const maxed = describePotential({ ...full, rolls_remaining: 0, level: 20, levels_to_max: 0 });
+    expect(maxed?.headline).toBe('Fully upgraded');
+  });
+
+  it('reads as singular for one roll', () => {
+    expect(describePotential({ ...full, rolls_remaining: 1 })?.headline).toBe('1 roll left');
+  });
+
+  it('returns null when the schedule could not answer', () => {
+    // Not zero. Zero is the honest answer for a maxed piece; null means the row is at a level
+    // its rarity cannot reach, and "0 rolls left" would hide that behind a plausible number.
+    expect(describePotential(null)).toBeNull();
+  });
+});
+
+describe('ArtifactsPage potential', () => {
+  it('carries potential onto the row', async () => {
+    const page = healthy({
+      list: vi.fn().mockResolvedValue({
+        items: [{
+          ...CIRCLET,
+          potential: {
+            rolls_remaining: 2, rolls_total: 5, level: 12, max_level: 20,
+    levels_to_max: 8,
+          },
+        }],
+        total: 1, truncated: false,
+      }),
+    } as unknown as ArtifactsService);
+
+    await page['load']();
+
+    expect(page['rows']()[0].potential?.headline).toBe('2 rolls left');
+  });
+
+  it('leaves an unanswerable piece null rather than inventing a zero', async () => {
+    const page = healthy({
+      list: vi.fn().mockResolvedValue({
+        items: [{ ...CIRCLET, potential: null }], total: 1, truncated: false,
+      }),
+    } as unknown as ArtifactsService);
+
+    await page['load']();
+
+    expect(page['rows']()[0].potential).toBeNull();
   });
 });

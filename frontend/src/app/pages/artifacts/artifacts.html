@@ -101,6 +101,18 @@
             @if (row.equipped) { · equipped }
           </span>
           <span class="main mono">{{ row.mainStat }}</span>
+          @if (row.potential; as potential) {
+            <!-- Headline and working. "3 rolls left" alone is taken on trust; "of 5 · +9 of
+                 +20" can be checked. -->
+            <span class="potential">
+              {{ potential.headline }}
+              <span class="working mono">{{ potential.detail }}</span>
+            </span>
+          } @else {
+            <!-- Null, not zero: this piece is at a level its rarity cannot reach, and
+                 "0 rolls left" would hide that behind a plausible number. -->
+            <span class="potential unknown">Upgrade potential unknown</span>
+          }
           <ul class="subs mono">
             @for (sub of row.substats; track sub) {
               <li>{{ sub }}</li>

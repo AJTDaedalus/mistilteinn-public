@@ -211,3 +211,94 @@ async def test_artifacts_can_be_filtered_to_one_build(
     assert on_mine.json()["total"] == 1, "the count is the filter's, not the table's"
     assert on_other.json()["items"] == []
     assert on_other.json()["total"] == 0
+
+
+# ── upgrade potential — A.5/G.9 on the row ───────────────────────────────────
+
+
+async def test_a_piece_reports_its_upgrade_potential(
+    authed_client: AsyncClient, db_session: AsyncSession, piece: str,
+):
+    """The fixture is a maxed 5-star circlet: no rolls left, and it says so with the parts
+    that make that checkable rather than a bare figure."""
+    db_session.expire_all()
+
+    body = (await authed_client.get(f"{ARTIFACTS}/{piece}")).json()
+
+    assert body["potential"] == {
+        "rolls_remaining": 0,
+        "rolls_total": 5,
+        "level": 20,
+        "max_level": 20,
+        "levels_to_max": 0,
+    }
+    # The piece's substats are on the row itself, in full — not repeated inside the report.
+    assert body["substats"][0]["stat"] == "FIGHT_PROP_CRITICAL"
+
+
+async def test_a_fresh_piece_has_every_roll_ahead_of_it(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user,
+):
+    user, _ = authed_user
+    fresh = Artifact(
+        owner_id=str(user.id), slot=ArtifactSlot.FLOWER, rarity=Rarity.FIVE_STAR,
+        level=0, main_stat_type=StatType.HP_FLAT, main_stat_value=717.0, substats=[],
+    )
+    db_session.add(fresh)
+    await db_session.flush()
+    fresh_id = str(fresh.id)
+    db_session.expire_all()
+
+    body = (await authed_client.get(f"{ARTIFACTS}/{fresh_id}")).json()
+
+    assert body["potential"]["rolls_remaining"] == 5
+    assert body["potential"]["levels_to_max"] == 20
+
+
+async def test_rarity_changes_the_potential_at_the_same_level(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user,
+):
+    """A 4-star caps at +16 with four rolls. A calculation that ignored rarity would agree
+    with the 5-star case and nowhere else."""
+    user, _ = authed_user
+    four = Artifact(
+        owner_id=str(user.id), slot=ArtifactSlot.PLUME, rarity=Rarity.FOUR_STAR,
+        level=0, main_stat_type=StatType.ATK_FLAT, main_stat_value=27.0, substats=[],
+    )
+    db_session.add(four)
+    await db_session.flush()
+    four_id = str(four.id)
+    db_session.expire_all()
+
+    body = (await authed_client.get(f"{ARTIFACTS}/{four_id}")).json()
+
+    assert body["potential"]["rolls_total"] == 4
+    assert body["potential"]["max_level"] == 16
+
+
+async def test_an_impossible_piece_reports_no_potential_rather_than_zero(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user,
+):
+    """A 3-star cannot be +20. Reporting zero rolls would be a plausible number for an
+    impossible piece; **null** keeps the row visible and says the schedule could not answer.
+
+    And the row still loads — one corrupt piece must not take down a list of eight hundred,
+    which is the failure the inventory page met from the other side.
+    """
+    user, _ = authed_user
+    impossible = Artifact(
+        owner_id=str(user.id), slot=ArtifactSlot.SANDS, rarity=Rarity.THREE_STAR,
+        level=20, main_stat_type=StatType.HP_PCT, main_stat_value=0.1, substats=[],
+    )
+    db_session.add(impossible)
+    await db_session.flush()
+    impossible_id = str(impossible.id)
+    db_session.expire_all()
+
+    single = await authed_client.get(f"{ARTIFACTS}/{impossible_id}")
+    listed = await authed_client.get(ARTIFACTS)
+
+    assert single.status_code == 200, single.text
+    assert single.json()["potential"] is None
+    assert listed.status_code == 200, "one impossible row must not fail the list"
+    assert any(row["id"] == impossible_id for row in listed.json()["items"])

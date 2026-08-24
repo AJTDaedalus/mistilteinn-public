@@ -21,6 +21,15 @@ export interface ArtifactRow {
   mainStat: string;
   substats: string[];
   equipped: boolean;
+  /**
+   * How much upgrading is left, with the parts behind it — or null when the schedule could
+   * not answer for this piece.
+   *
+   * Null is not zero. Zero is the honest answer for a maxed piece; null means the row is at a
+   * level its rarity cannot reach, and showing "0 rolls left" for that would hide a broken
+   * piece behind a plausible number.
+   */
+  potential: { headline: string; detail: string } | null;
 }
 
 /**
@@ -100,6 +109,7 @@ export class ArtifactsPage implements OnInit {
         describe(sub?.stat ?? 'unknown', sub?.value, stats),
       ),
       equipped: piece.build_id !== null,
+      potential: describePotential(piece.potential),
     }));
   });
 
@@ -189,4 +199,23 @@ function describe(
   // vocabulary does not know is worth seeing, not worth silently dropping from the row.
   if (!stat) return `${key} ${value}`;
   return `${stat.display} ${formatStat(value, stat.percentage)}`;
+}
+
+
+/**
+ * Upgrade potential as a headline and the working behind it.
+ *
+ * Both, because **a score is a claim**: "3 rolls left" alone is something a reader takes on
+ * trust, and "of a possible 5 · +9 of +20" is something they can check. This repo's rule that
+ * a number must explain itself applies to a two-digit figure as much as to a damage total.
+ */
+export function describePotential(
+  potential: ArtifactRead['potential'],
+): { headline: string; detail: string } | null {
+  if (!potential) return null;
+  const rolls = potential.rolls_remaining;
+  return {
+    headline: rolls === 0 ? 'Fully upgraded' : `${rolls} roll${rolls === 1 ? '' : 's'} left`,
+    detail: `of ${potential.rolls_total} · +${potential.level} of +${potential.max_level}`,
+  };
 }

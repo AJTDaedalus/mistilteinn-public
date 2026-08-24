@@ -4,8 +4,11 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
+from app.data.snapshot import SnapshotUnavailableError
+from app.models.enums import Rarity
+from app.services.artifact_potential import upgrade_potential
 from app.services.good_import_service import APPEND, REPLACE
 
 
@@ -73,6 +76,27 @@ class ArtifactEquip(BaseModel):
     build_id: str | None
 
 
+class UpgradePotentialRead(BaseModel):
+    """How much upgrading a piece has left, and the parts behind it.
+
+    The parts, not just a figure, because **a score is a claim** and this repo's standing rule
+    is that a number must be able to explain itself. "Potential: 3" is something a reader has
+    to take on trust; three rolls of a possible five, at +9 of a possible +20, is something
+    they can check.
+
+    The piece's own substats are **not** repeated here: `ArtifactRead` carries them in full,
+    with values and roll counts, so listing their names again would be the same answer in a
+    worse form. And which substat a roll enhances is not in the committed data at all — see
+    `app/services/artifact_potential.py`.
+    """
+
+    rolls_remaining: int
+    rolls_total: int
+    level: int
+    max_level: int
+    levels_to_max: int
+
+
 class ArtifactRead(BaseModel):
     """One owned artifact."""
 
@@ -95,6 +119,35 @@ class ArtifactRead(BaseModel):
     set_name: str | None = None
     #: Null when the piece is not equipped. Unequipping does not delete it.
     build_id: str | None = None
+
+    @computed_field
+    @property
+    def potential(self) -> UpgradePotentialRead | None:
+        """A.5/G.9 — how much upgrading this piece has left.
+
+        **Null when the schedule cannot answer for this piece**: a rarity it does not cover,
+        or a level that rarity cannot reach. Null rather than raising, because one impossible
+        row must not take down a list of eight hundred — the failure the inventory page met
+        from the other side. And null rather than zero, because zero is the honest answer for
+        a maxed piece, so collapsing the two would hide the broken row behind a plausible
+        number.
+
+        Computed here rather than on the model: `app/models` importing `app/services` is the
+        wrong way round, and this needs nothing the row does not already carry.
+        """
+        try:
+            found = upgrade_potential(
+                stars=Rarity(self.rarity).stars, level=self.level,
+            )
+        except (SnapshotUnavailableError, ValueError):
+            return None
+        return UpgradePotentialRead(
+            rolls_remaining=found.rolls_remaining,
+            rolls_total=found.rolls_total,
+            level=found.level,
+            max_level=found.max_level,
+            levels_to_max=found.levels_to_max,
+        )
 
     model_config = {"from_attributes": True}
 
