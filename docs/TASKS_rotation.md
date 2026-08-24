@@ -10,9 +10,12 @@ cannot express, because the temptation in every one of these tasks is to add a c
 
 ---
 
-### [ ] R.0 — Branch setup **(gate)**
+### [x] R.0 — Branch setup **(gate)** — **held**
 - **Do:** work on `feat/rotation` or per-task branches off `dev`; merge by PR.
 - **Accept:** nothing reaches `dev` outside a PR.
+- **Held.** Per-task branches rather than one `feat/rotation`, so each task was reviewable on
+  its own. `git log --first-parent dev` is merge commits the whole way back through the
+  chunk — PRs #50 through #57, and nothing beside them.
 
 ### [x] R.1a — Genshin parties are four **[unplanned; found while starting R.1]**
 
@@ -115,6 +118,18 @@ unnoticed. The duplicate-slot test derives its pairs from that list too, so it n
   tests, and both survive mutation: sorting the signature and dropping `repeat` are CAUGHT.
 
 ---
+
+## Status
+
+**Complete.** R.0 through R.6, merged as PRs #50–#57. What the chunk leaves standing:
+
+| | |
+|---|---|
+| `rotations` table | owner- and team-scoped, steps as JSONB |
+| `rotation_compiler` | steps → a gated `while 1` gcsim block, and → a `context_key` signature |
+| `/api/v1/rotations` | eight routes: CRUD, `options`, `compile`, `context-key` |
+| the editor | `pages/rotations/`, reachable from the shell nav |
+| gcsim gate | `verify-gcsim-config.mjs` runs a compiled rotation and counts its actions |
 
 ## Open questions
 
