@@ -93,6 +93,13 @@ _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     ("GET", "/api/v1/artifacts/00000000-0000-0000-0000-000000000001", None),
     ("DELETE", "/api/v1/artifacts/00000000-0000-0000-0000-000000000001", None),
     ("POST", "/api/v1/artifacts/import/good", {}),
+    # rotations — R.4
+    ("GET", "/api/v1/rotations", None),
+    ("POST", "/api/v1/rotations", {}),
+    ("GET", "/api/v1/rotations/00000000-0000-0000-0000-000000000001", None),
+    ("PATCH", "/api/v1/rotations/00000000-0000-0000-0000-000000000001", {}),
+    ("DELETE", "/api/v1/rotations/00000000-0000-0000-0000-000000000001", None),
+    ("POST", "/api/v1/rotations/00000000-0000-0000-0000-000000000001/compile", {}),
     # the run corpus — D.1 and D.3
     ("GET", "/api/v1/sim-runs", None),
     ("POST", "/api/v1/sim-runs", {}),
