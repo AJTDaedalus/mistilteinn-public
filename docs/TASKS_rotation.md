@@ -31,12 +31,15 @@ repository eager-loads, API merge check — which is exactly how three-versus-fo
 unnoticed. The duplicate-slot test derives its pairs from that list too, so it now covers all
 **six** pairs rather than the three a ZZZ squad has.
 
-### [ ] R.1 — The rotation model and its schema **[decides OQ-R1, OQ-R2]**
+### [x] R.1 — The rotation model and its schema — **done; OQ-R1 and OQ-R2 decided**
 - **Do:** `rotations` table — name, owner, team (ordered character ids), `steps` JSONB — plus
   the model, repository and migration. Steps validate on the way in: a known action, a
   `repeat` of at least 1, a character that is in the team.
-- **Decide OQ-R1** (rotation belongs to a team or a build) and **OQ-R2** (a step naming a
-  character the team no longer has), and record both in `DECISIONS.md` with the reasoning.
+- **OQ-R1 → a team**, and OQ-R2 **→ a step names a character**, both recorded in
+  `DECISIONS.md`. The action vocabulary is derived into the committed gcsim snapshot
+  (`keys.json`, 13 actions parsed from `action.go`), and the authorable ten come from it by
+  subtraction — so a re-pin that adds an action offers it automatically rather than being
+  rejected by a list written down here.
 - **Accept:** a rotation round-trips; a step naming an unknown action is refused **naming the
   ten that exist**; a step naming a character outside the team is refused; owner scoping is
   covered in `test_owner_scoped_repositories.py` the way `SimRunRepository` is.
@@ -83,8 +86,8 @@ unnoticed. The duplicate-slot test derives its pairs from that list too, so it n
 
 ## Open questions
 
-- **OQ-R1** — a rotation belongs to a team, or to a build. Decide in R.1.
-- **OQ-R2** — a saved rotation naming a character the team no longer has. Decide in R.1.
+- ~~**OQ-R1**~~ **ANSWERED in R.1: a team.** See `DECISIONS.md`.
+- ~~**OQ-R2**~~ **ANSWERED in R.1: a step names a character, and a stale rotation is refused rather than repaired.**
 
 ## Not in this chunk
 

@@ -411,5 +411,20 @@
     "viridescentvenerer",
     "vourukashasglow",
     "wandererstroupe"
+  ],
+  "actions": [
+    "skill",
+    "burst",
+    "attack",
+    "charge",
+    "high_plunge",
+    "low_plunge",
+    "aim",
+    "dash",
+    "jump",
+    "swap",
+    "walk",
+    "wait",
+    "delay"
   ]
 }

@@ -28,6 +28,7 @@ from app.models.enums import (
     UserStatus,
     WeaponType,
 )
+from app.models.rotation import Rotation
 from app.models.seed_provenance import SeedRun
 from app.models.session import Session
 from app.models.sim_run import SimRun
@@ -52,6 +53,7 @@ __all__ = [
     "Element",
     "EnemyProfile",
     "Rarity",
+    "Rotation",
     "SeedRun",
     "Session",
     "SimRun",

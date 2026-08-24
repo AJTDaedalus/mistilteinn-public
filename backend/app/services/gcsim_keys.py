@@ -75,6 +75,32 @@ def pinned_commit() -> str:
     return str(_snapshot()["pinned_commit_sha"])
 
 
+#: Actions the rotation model exposes to a user, as a subset of what gcsim accepts.
+#:
+#: `swap` is excluded because it is **implicit** — `pkg/simulation/run.go:154` has the
+#: evaluator insert swaps when the next character is not active, so emitting our own would
+#: double them. `wait` and `delay` are excluded because they are timing controls, and
+#: `DESIGN_rotation.md` §2 keeps timing out of the model: exposing them invites the user back
+#: into frame counting, which is the thing being removed.
+_NOT_AUTHORED = frozenset({"swap", "wait", "delay"})
+
+
+def gcsim_actions() -> tuple[str, ...]:
+    """Every action name gcsim's parser accepts at the pin, in enum order."""
+    return tuple(_snapshot()["actions"])  # type: ignore[index]
+
+
+def authorable_actions() -> tuple[str, ...]:
+    """The actions a rotation step may name.
+
+    Derived by subtraction from gcsim's own list rather than written out, so a re-pin that
+    adds an action offers it automatically and one that removes an action stops offering it.
+    A hand-kept list would drift silently in the direction that matters most — offering
+    something gcsim would reject.
+    """
+    return tuple(a for a in gcsim_actions() if a not in _NOT_AUTHORED)
+
+
 def normalise(name: str) -> str:
     """`"Gladiator's Finale"` and `"GladiatorsFinale"` both reduce to `gladiatorsfinale`."""
     return _NOT_ALNUM.sub("", name.lower())
