@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
 import { AuthService, PendingUserError } from '../../api/auth.service';
+import { apiErrorMessage } from '../../api/api-error';
 
 @Component({
   selector: 'app-login',
@@ -51,18 +52,14 @@ export class LoginPage {
       await this.auth.register({ email: this.email().trim(), label: this.label(), password: this.password() });
       await this.router.navigateByUrl('/pending');
     } catch (e: unknown) {
-      const detail = this._extractDetail(e);
-      this.error.set(detail ?? 'Registration failed — this email may already be registered.');
+      // `apiErrorMessage`, not a local extractor. This page used to carry its own, which
+      // handled only the *string* form of `detail` — and FastAPI sends an **array** for
+      // request-validation errors. So a 422 saying "String should have at least 12
+      // characters" fell through to the fallback below, and a user with a short password
+      // was told their email was taken. They would look at the wrong field indefinitely.
+      this.error.set(apiErrorMessage(e) || 'Registration failed. Please try again.');
     } finally {
       this.loading.set(false);
     }
-  }
-
-  private _extractDetail(e: unknown): string | null {
-    if (e && typeof e === 'object' && 'detail' in e) {
-      const d = (e as { detail: unknown }).detail;
-      if (typeof d === 'string' && d.length <= 200) return d;
-    }
-    return null;
   }
 }

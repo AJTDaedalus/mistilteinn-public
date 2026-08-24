@@ -111,6 +111,38 @@ describe('LoginPage', () => {
 
       expect(comp.error()).toBe('Email already registered');
     });
+
+    it('surfaces a 422 validation message instead of blaming the email', async () => {
+      // The bug this exists to prevent, found in production by a real user.
+      //
+      // FastAPI sends `detail` as a **string** for HTTPException and as an **array** for
+      // request-validation errors. This page carried its own extractor that handled only
+      // the string form, so a 422 fell through to a fallback reading "this email may
+      // already be registered" — and a user whose password was 8 characters was told to
+      // change their email. They would look at the wrong field indefinitely.
+      //
+      // The test above passed throughout, because it only ever exercised the shape that
+      // worked.
+      const { comp, auth } = setup();
+      vi.spyOn(auth, 'register').mockRejectedValue({
+        detail: [
+          {
+            type: 'string_too_short',
+            loc: ['body', 'password'],
+            msg: 'String should have at least 12 characters',
+          },
+        ],
+      });
+      vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+
+      comp.email.set('new@example.com');
+      comp.password.set('short123');
+      comp.confirmPassword.set('short123');
+      await comp.requestAccess();
+
+      expect(comp.error()).toBe('String should have at least 12 characters');
+      expect(comp.error()).not.toContain('already');
+    });
   });
 
   describe('password2Mismatch', () => {
