@@ -88,6 +88,12 @@ async def test_a_team_refuses_two_builds_of_the_same_character(
         "character_id": str(ayaka.id), "constellation_level": 6,
     })).json()
 
+    # **Expired first.** Without this the session still holds the Character in its identity
+    # map, so `build.character` resolves with no SQL and the handler passes for a reason a
+    # real request does not have — the failure `test_genshin_models.py`'s `_reload` exists
+    # for. `GUARDED_LAZY` is `raise_on_sql`, so a lazy hop here is an exception in prod.
+    db_session.expire_all()
+
     response = await authed_client.post(TEAMS, json={
         "name": "Two Ayakas", "build1_id": c0["id"], "build2_id": c6["id"],
     })
@@ -112,6 +118,8 @@ async def test_a_patch_cannot_smuggle_a_duplicate_character_in(
     team = (await authed_client.post(TEAMS, json={
         "name": "Fine", "build1_id": first["id"], "build2_id": other["id"],
     })).json()
+
+    db_session.expire_all()  # a real request has no identity map primed by the test
 
     response = await authed_client.patch(
         f"{TEAMS}/{team['id']}", json={"build3_id": second_ayaka["id"]},

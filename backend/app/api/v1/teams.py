@@ -66,12 +66,13 @@ async def _validated_members(
     wanted = [build_id for build_id in slots.values() if build_id is not None]
     if not wanted:
         return
-    # `get_by_id` is owner-scoped, so a stranger's build reads as absent — which is the right
-    # answer to give: confirming it exists would disclose that it does.
-    found = {}
+    # Owner-scoped and character-eager, in one round trip. A stranger's build is simply
+    # absent — the right answer to give, since confirming it exists would disclose that it
+    # does — and the eager load matters because `GUARDED_LAZY` is `raise_on_sql`: reading
+    # `build.character` off a lazily-loaded row is a `MissingGreenlet` inside a request.
+    found = await builds.with_characters(wanted)
     for build_id in wanted:
-        build = await builds.get_by_id(build_id)
-        if build is None:
+        if build_id not in found:
             raise HTTPException(
                 status_code=422,
                 detail=(
@@ -79,10 +80,10 @@ async def _validated_members(
                     f"builds."
                 ),
             )
-        found[build_id] = build
 
     seen: dict[str, str] = {}
-    for build_id, build in found.items():
+    for build_id in wanted:
+        build = found[build_id]
         character_id = build.character_id
         if character_id is None:
             continue
