@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from app.dependencies import (
+    get_character_repo,
     get_enemy_profile_repo,
     get_owned_artifact_repo,
     get_owned_build_repo,
@@ -32,6 +33,7 @@ from app.formula.genshin.damage import Hit
 from app.middleware.rate_limit import WRITE_LIMIT, limiter
 from app.repositories.artifact import ArtifactRepository
 from app.repositories.build import BuildRepository
+from app.repositories.character import CharacterRepository
 from app.repositories.enemy import EnemyProfileRepository
 from app.repositories.sim_run import SimRunRepository
 from app.repositories.weapon import WeaponRepository
@@ -81,6 +83,84 @@ _Offset = Annotated[int, Query(ge=0)]
 _Limit = Annotated[int, Query(ge=1, le=200)]
 
 
+async def _refuse_duplicate(
+    repo: BuildRepository, *, character_id: str | None, excluding: str | None,
+) -> None:
+    """Refuse a second build of the same character, rather than letting the DB 500.
+
+    `uq_builds_owner_character` is one build per character per user. It was **enforced only
+    by the database**, so making a second Ayaka build — an ordinary thing to do — raised a
+    `UniqueViolationError` and the user was told the server broke.
+
+    This makes the existing rule legible; it does not endorse it. `app/models/build.py`
+    records that the constraint was inherited verbatim from fairy's `uq_builds_owner_agent`
+    and kept *pending an owner decision*, because it forbids saving a C0 and a C6 of the same
+    character side by side, or a Physical and a Cryo Eula. If that decision drops the
+    constraint, this function goes with it — and until then the refusal says what the limit
+    is instead of leaving a user to guess from a 500.
+    """
+    if character_id is None:
+        return
+    existing = await repo.get_by_filters({"character_id": character_id}, limit=2)
+    clashes = [row for row in existing if str(row.id) != excluding]
+    if clashes:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"you already have a build for this character ({clashes[0].id}). The schema "
+                f"allows one build per character per user; edit that one, or delete it "
+                f"first. This limit is inherited from fairy and is under review — see "
+                f"app/models/build.py."
+            ),
+        )
+
+
+_Characters = Annotated[CharacterRepository, Depends(get_character_repo)]
+_Weapons = Annotated[WeaponRepository, Depends(get_weapon_repo)]
+
+
+async def _validated_pairing(
+    characters: CharacterRepository,
+    weapons: WeaponRepository,
+    *,
+    character_id: str | None,
+    weapon_id: str | None,
+) -> None:
+    """Refuse a build whose character or weapon is absent, or which pairs them illegally.
+
+    T.1. The handler used to be a bare `repo.create`, so an absent `character_id` escaped as
+    a **500** from the foreign key — the user told the server broke, when what happened is
+    they named something that is not there — and a Sword character holding a Bow was stored
+    without comment. The game cannot equip that and gcsim cannot simulate it; it would have
+    surfaced at `/explain` or in a run, far from the edit that caused it (OQ-T1).
+
+    `weapon_id` of `None` is **allowed and is not the same as absent**: a build being
+    assembled is a real state, and the damage chain already refuses to run without a weapon,
+    which is the right place for that requirement (OQ-T3).
+    """
+    character = await characters.get_by_id(character_id) if character_id else None
+    if character_id and character is None:
+        raise HTTPException(
+            status_code=422,
+            detail=f"no character {character_id!r}. A build has to be of someone.",
+        )
+    if weapon_id is None:
+        return
+    weapon = await weapons.get_by_id(weapon_id)
+    if weapon is None:
+        raise HTTPException(status_code=422, detail=f"no weapon {weapon_id!r}.")
+    if character is not None and weapon.weapon_type != character.weapon_type:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"{character.name} wields a {character.weapon_type.display} and "
+                f"{weapon.name} is a {weapon.weapon_type.display}. The game cannot equip "
+                f"that pairing and gcsim cannot simulate it, so it is refused here rather "
+                f"than at the point of scoring."
+            ),
+        )
+
+
 @router.get("", response_model=PaginatedResponse[BuildRead])
 async def list_builds(
     repo: Annotated[BuildRepository, Depends(get_owned_build_repo)],
@@ -103,8 +183,15 @@ async def create_build(
     request: Request,
     body: BuildCreate,
     repo: Annotated[BuildRepository, Depends(get_owned_build_repo)],
+    characters: _Characters,
+    weapons: _Weapons,
 ) -> BuildRead:
-    """Save a build."""
+    """Save a build, having checked it is one that could exist."""
+    await _validated_pairing(
+        characters, weapons,
+        character_id=body.character_id, weapon_id=body.weapon_id,
+    )
+    await _refuse_duplicate(repo, character_id=body.character_id, excluding=None)
     build = await repo.create({**body.model_dump(), "owner_id": repo.owner_id})
     return BuildRead.model_validate(build)
 
@@ -125,11 +212,34 @@ async def update_build(
     build_id: str,
     body: BuildUpdate,
     repo: Annotated[BuildRepository, Depends(get_owned_build_repo)],
+    characters: _Characters,
+    weapons: _Weapons,
 ) -> BuildRead:
-    """Partially update one of the caller's builds."""
-    await _require_build(repo, build_id)
+    """Partially update one of the caller's builds.
+
+    The pairing is re-checked against the **merged** result, not against the patch body. What
+    is being validated is character-and-weapon *together*, and a patch that moves a sword
+    build onto an archer names only fields that are individually fine while leaving the
+    stored weapon unwieldable.
+    """
+    existing = await _require_build(repo, build_id)
     patch = body.model_dump(exclude_unset=True)
-    updated = await repo.update(build_id, patch) if patch else await repo.get_by_id(build_id)
+    if not patch:
+        return BuildRead.model_validate(existing)
+
+    merged_character = patch.get("character_id", existing.character_id)
+    # `.get` with a default is right here only because `exclude_unset` already dropped the
+    # keys that were not sent: an explicit `"weapon_id": null` means *unequip* and must
+    # survive as None rather than falling back to the stored weapon.
+    merged_weapon = patch.get("weapon_id", existing.weapon_id)
+    await _validated_pairing(
+        characters, weapons,
+        character_id=merged_character, weapon_id=merged_weapon,
+    )
+    if "character_id" in patch:
+        await _refuse_duplicate(repo, character_id=merged_character, excluding=build_id)
+
+    updated = await repo.update(build_id, patch)
     return BuildRead.model_validate(updated)
 
 

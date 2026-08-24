@@ -118,8 +118,18 @@ class BaseRepository[T: Base]:
         offset: int = 0,
         limit: int = 100,
     ) -> Sequence[T]:
-        """List rows matching an arbitrary equality filter dict, paginated."""
+        """List rows matching an arbitrary equality filter dict, paginated.
+
+        Scoped to ``owner_id`` when set — the **third** method to need saying so, after
+        ``get_all`` and ``count``, and the third to have been written without it. Unscoped it
+        answers "does a row like this exist?" across every tenant, which is both a wrong
+        answer and a disclosure: T.1's duplicate-build check would have refused one user's
+        build because another user owned one, and named the other user's row id while doing
+        it. Found in the T.1 self-review.
+        """
         stmt = select(self.model)
+        if self.owner_id is not None and hasattr(self.model, "owner_id"):
+            stmt = stmt.where(self.model.owner_id == self.owner_id)
         for attr, value in filters.items():
             stmt = stmt.where(getattr(self.model, attr) == value)
         stmt = stmt.offset(offset).limit(limit)
