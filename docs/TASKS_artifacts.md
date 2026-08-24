@@ -74,7 +74,7 @@
   says *whether* rather than *which*, and fetching every equipped piece to filter on the
   client scales with the whole inventory rather than with five. Five mutations, five caught.
 
-### [ ] A.5 — Upgrade potential **(closes G.9)**
+### [x] A.5 — Upgrade potential **(closes G.9)** — **done**
 - **Do:** the scoring function over `app/data/yuanshen/snapshot/artifact_roll_schedule.json`,
   returning **the parts, not just a figure**: rolls remaining, which substats can still grow,
   and the level the piece would reach.
@@ -83,11 +83,23 @@
   JSON fails a test rather than silently defaulting.
 - **OQ-A1 is answered:** with no build there are no substat weights, so this is **potential,
   not value**. A build-relative score arrives with the optimizer, where the weights come from.
+- **Done, and one thing the task asked for is deliberately not delivered.** "Which substats
+  could roll" needs the *placement* rule — which substat a roll enhances — and that is **not
+  in the committed data**. The schedule says *when* a piece gains a substat, not where it
+  goes. So the report lists the substats a piece **has**, and claims nothing about their
+  future. Asserting the placement rule from memory in the very task that unblocks G.9 would
+  have been perverse.
+- Five mutations, five caught, including one proving the schedule is *read* rather than
+  restated: deleting rarity 5 from the snapshot fails a test instead of falling back to a
+  hardcoded five.
 
-### [ ] A.6 — Showing it
+### [x] A.6 — Showing it — **done**
 - **Do:** the potential beside each piece in the inventory.
 - **Accept:** the parts are visible, not only a number — a score whose derivation is hidden is
   the "confident number computed for something else" failure with better presentation.
+- **Done.** "3 rolls left" with "of 5 · +9 of +20" beside it. A piece the schedule cannot
+  answer for shows **"Upgrade potential unknown"**, not zero — zero is the honest answer for a
+  maxed piece, so collapsing the two would hide a broken row behind a plausible number.
 
 ---
 
