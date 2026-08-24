@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi } from 'vitest';
 
+import { MAX_PAGE_LIMIT } from '../../api/page-size';
 import { CatalogueService } from '../catalogue/catalogue.service';
 import { BuildsPage } from './builds';
 import { BuildsService } from './builds.service';
@@ -89,7 +90,7 @@ describe('BuildsPage', () => {
 
     expect(listWeapons).toHaveBeenCalledWith({
       weapon_type: 'WEAPON_SWORD_ONE_HAND',
-      limit: 400,
+      limit: MAX_PAGE_LIMIT,
     });
   });
 

@@ -104,6 +104,11 @@ Four mutations, all CAUGHT. Migration `27770f8ae917`, round-tripped up and down.
   `LEVELLED_TALENTS` and the cap — a hardcoded list on the page would have been a *third*
   copy, after the validator and the gcsim renderer. Tested as one claim, R.5-style: every
   offered talent is PATCHed and accepted, and the one `TalentType` withheld is refused.
+- **Self-review found two *shipped* pages that could not load.** The enemies page asked for
+  400 rows and the weapons page 300, against endpoints capped at `le=200` — a 422 on every
+  load. The specs had pinned the broken values in `toHaveBeenCalledWith`, turning the bug into
+  a specification. `MAX_PAGE_LIMIT` is now one definition, checked against the committed
+  contract by `page-size.spec.ts`.
 - **A mutation that survived found a real bug.** `save` reset the form unconditionally, so
   saving an *edit* threw the user out of the build they were editing — indistinguishable on
   screen from the edit having vanished. It now stays put after a patch and clears after a

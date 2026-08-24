@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { CatalogueService } from './catalogue.service';
 import { CharactersPage } from './characters';
+import { MAX_PAGE_LIMIT } from '../../api/page-size';
 
 function pageWith(service: Partial<CatalogueService>) {
   TestBed.configureTestingModule({
@@ -18,7 +19,7 @@ describe('CharactersPage', () => {
         items: [{ id: 'a', nanoka_id: '10000002', name: 'Ayaka', element: 'Cryo' }],
         total: 1,
         offset: 0,
-        limit: 200,
+        limit: MAX_PAGE_LIMIT,
       }),
     } as unknown as CatalogueService);
 
@@ -55,7 +56,7 @@ describe('CharactersPage', () => {
 
     await page['load']();
 
-    expect(listCharacters).toHaveBeenCalledWith({ name: 'Ayaka', limit: 200 });
+    expect(listCharacters).toHaveBeenCalledWith({ name: 'Ayaka', limit: MAX_PAGE_LIMIT });
   });
 
   it('omits an empty search rather than sending a blank filter', async () => {
@@ -65,6 +66,6 @@ describe('CharactersPage', () => {
 
     await page['load']();
 
-    expect(listCharacters).toHaveBeenCalledWith({ name: undefined, limit: 200 });
+    expect(listCharacters).toHaveBeenCalledWith({ name: undefined, limit: MAX_PAGE_LIMIT });
   });
 });

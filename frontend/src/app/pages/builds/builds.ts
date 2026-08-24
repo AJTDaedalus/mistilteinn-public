@@ -2,6 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { apiErrorMessage } from '../../api/api-error';
+import { MAX_PAGE_LIMIT } from '../../api/page-size';
 import { CatalogueService } from '../catalogue/catalogue.service';
 import {
   BuildsService,
@@ -83,7 +84,7 @@ export class BuildsPage implements OnInit {
       const [options, builds, characters] = await Promise.all([
         this.service.options(),
         this.service.list(),
-        this.catalogue.listCharacters({ limit: 200 }),
+        this.catalogue.listCharacters({ limit: MAX_PAGE_LIMIT }),
       ]);
       this.talents.set(options.talents);
       this.maxTalent.set(options.max_talent_level);
@@ -118,7 +119,7 @@ export class BuildsPage implements OnInit {
     try {
       const page = await this.catalogue.listWeapons({
         weapon_type: chosen.weapon_type,
-        limit: 400,
+        limit: MAX_PAGE_LIMIT,
       });
       this.weapons.set(page.items as WeaponSummary[]);
     } catch {

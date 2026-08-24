@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { injectApi } from '../../api/api.client';
 import type { components } from '../../api/api.types';
 import type { CharacterSummary, WeaponSummary } from '../catalogue/catalogue.service';
+import { MAX_PAGE_LIMIT } from '../../api/page-size';
 
 export type BuildRead = components['schemas']['BuildRead'];
 export type BuildOptions = components['schemas']['BuildOptions'];
@@ -40,7 +41,7 @@ export class BuildsService {
 
   async list(): Promise<BuildRead[]> {
     const { data, error } = await this.api.GET('/api/v1/builds', {
-      params: { query: { limit: 200 } },
+      params: { query: { limit: MAX_PAGE_LIMIT } },
     });
     if (error) throw new Error('Could not load builds');
     return data.items;
