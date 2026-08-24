@@ -81,7 +81,27 @@ class DamageType(enum.StrEnum):
     PHYSICAL = "physical"
 
 
-class WeaponType(enum.StrEnum):
+class SourceSpelled(enum.StrEnum):
+    """A `StrEnum` whose **values** are the source's internal spellings.
+
+    `WEAPON_SWORD_ONE_HAND`, `equip_bracer`. Those are what the importer matches on and what
+    the API returns, and they are not labels — which is why `Element` reads well in API output
+    and these do not. The member *names* are the community terms, so `display` derives from
+    them and there is one readable name per member rather than one per message.
+
+    A base class rather than the property written twice: T.2 wrote the same computed field
+    into two schemas and `scripts.inject` refused an injection for an ambiguous target, which
+    is duplication surfacing as a tooling complaint before it surfaces as a bug. This repo's
+    recurring finding is a second implementation nobody is exercising.
+    """
+
+    @property
+    def display(self) -> str:
+        """`Sword`, `Flower` — the member name, not the payload key."""
+        return self.name.title()
+
+
+class WeaponType(SourceSpelled):
     """The six weapon classes.
 
     Source: `character.json` `weapon` and `weapon.json` `type`. **The two indexes disagree
@@ -98,16 +118,6 @@ class WeaponType(enum.StrEnum):
     BOW = "WEAPON_BOW"
     CATALYST = "WEAPON_CATALYST"
     CROSSBOW = "WEAPON_CROSSBOW"
-
-    @property
-    def display(self) -> str:
-        """`Sword`, not `WEAPON_SWORD_ONE_HAND`.
-
-        The value is the game's internal spelling and is not a label — it is why `Element`
-        reads well in API output and this does not. Anything shown to a person goes through
-        here, so there is one readable name per class rather than one per message.
-        """
-        return self.name.title()
 
     @classmethod
     def parse(cls, raw: str | None) -> WeaponType | None:
@@ -184,7 +194,7 @@ _RARITY_BY_QUALITY: dict[str, Rarity] = {
 
 
 
-class ArtifactSlot(enum.StrEnum):
+class ArtifactSlot(SourceSpelled):
     """The five artifact slots, keyed by the source's internal names.
 
     Source: the `parts` keys of an artifact *detail* payload

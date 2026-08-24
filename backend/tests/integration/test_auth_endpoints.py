@@ -92,6 +92,7 @@ _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     ("GET", "/api/v1/artifacts", None),
     ("GET", "/api/v1/artifacts/inventory", None),
     ("GET", "/api/v1/artifacts/00000000-0000-0000-0000-000000000001", None),
+    ("PATCH", "/api/v1/artifacts/00000000-0000-0000-0000-000000000001", {}),  # A.1
     ("DELETE", "/api/v1/artifacts/00000000-0000-0000-0000-000000000001", None),
     ("POST", "/api/v1/artifacts/import/good", {}),
     # rotations — R.4

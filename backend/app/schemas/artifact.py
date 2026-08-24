@@ -9,6 +9,25 @@ from pydantic import BaseModel, Field
 from app.services.good_import_service import APPEND, REPLACE
 
 
+class ArtifactEquip(BaseModel):
+    """Body for `PATCH /artifacts/{id}` — the equip binding, and nothing else.
+
+    **Only `build_id`.** An artifact's stats come from the GOOD import, with `main_stat_value`
+    *derived* from the committed value table for its rarity, level and main stat rather than
+    read off a screen. A patch that accepted `level` or `main_stat_value` would let the one
+    number this repo derives be overwritten by hand, and every later use of that piece would
+    be a confident calculation over a figure a user typed.
+
+    `None` means unequip, and is not the same as omitting the field — which
+    `extra="forbid"` plus a required `build_id` makes impossible to confuse.
+    """
+
+    model_config = {"extra": "forbid"}
+
+    #: The build to attach this piece to, or `None` to take it off.
+    build_id: str | None
+
+
 class ArtifactRead(BaseModel):
     """One owned artifact."""
 
