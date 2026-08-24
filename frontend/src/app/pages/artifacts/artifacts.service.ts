@@ -40,7 +40,12 @@ export class ArtifactsService {
   }
 
   async list(
-    filters: { slot?: ArtifactSlotKey; set_id?: string; equipped?: boolean } = {},
+    filters: {
+      slot?: ArtifactSlotKey;
+      set_id?: string;
+      equipped?: boolean;
+      build_id?: string;
+    } = {},
   ) {
     return allPages<ArtifactRead>(async (offset, limit) => {
       const { data, error } = await this.api.GET('/api/v1/artifacts', {
@@ -62,6 +67,22 @@ export class ArtifactsService {
   async importGood(mode: ImportMode, payload: unknown): Promise<GoodImportResponse> {
     const { data, error } = await this.api.POST('/api/v1/artifacts/import/good', {
       body: { mode, payload: payload as Record<string, never> },
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Attach a piece to a build, or take it off with `null`.
+   *
+   * A filled slot is **refused, naming the holder** (A.1) rather than swapped — so the
+   * caller's picker must offer only pieces that fit, and this is where its refusals come
+   * back when it does not.
+   */
+  async equip(id: string, buildId: string | null): Promise<ArtifactRead> {
+    const { data, error } = await this.api.PATCH('/api/v1/artifacts/{artifact_id}', {
+      params: { path: { artifact_id: id } },
+      body: { build_id: buildId },
     });
     if (error) throw error;
     return data;

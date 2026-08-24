@@ -187,3 +187,27 @@ async def test_options_say_how_many_stars_a_rarity_is(authed_client: AsyncClient
     assert by_key["five_star"] == 5
     assert by_key["one_star"] == 1
     assert set(by_key) == {rarity.value for rarity in Rarity}
+
+
+async def test_artifacts_can_be_filtered_to_one_build(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user, piece: str,
+):
+    """A.4's filter. `equipped` says *whether*, this says *which* — and a build's five slots
+    need the second. Answering it by fetching every equipped piece and filtering on the
+    client scales with the whole inventory rather than with five.
+    """
+    user, _ = authed_user
+    mine = Build(owner_id=str(user.id), character_id=None)
+    other = Build(owner_id=str(user.id), character_id=None)
+    db_session.add_all([mine, other])
+    await db_session.flush()
+    mine_id, other_id = str(mine.id), str(other.id)
+    await authed_client.patch(f"{ARTIFACTS}/{piece}", json={"build_id": mine_id})
+
+    on_mine = await authed_client.get(ARTIFACTS, params={"build_id": mine_id})
+    on_other = await authed_client.get(ARTIFACTS, params={"build_id": other_id})
+
+    assert [a["id"] for a in on_mine.json()["items"]] == [piece]
+    assert on_mine.json()["total"] == 1, "the count is the filter's, not the table's"
+    assert on_other.json()["items"] == []
+    assert on_other.json()["total"] == 0

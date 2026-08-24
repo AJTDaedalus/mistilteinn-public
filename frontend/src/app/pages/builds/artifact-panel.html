@@ -1,0 +1,42 @@
+@if (!hasBuild()) {
+  <!-- A piece is equipped to a build, so there is nothing to attach it to yet. Said, rather
+       than shown as five inert slots. -->
+  <p class="hint">Save this build to equip artifacts to it.</p>
+} @else if (error(); as message) {
+  <p class="error" role="alert">{{ message }}</p>
+} @else if (loading()) {
+  <p class="muted">Loading artifacts…</p>
+} @else {
+  <ol class="slots">
+    @for (slot of slots(); track slot.key) {
+      <li>
+        <span class="slot-name">{{ slot.display }}</span>
+        @if (slot.equipped; as piece) {
+          <span class="piece">
+            {{ piece.set_name || 'No set' }} · +{{ piece.level }} ·
+            <span class="mono">{{ describe(piece) }}</span>
+          </span>
+          <button type="button" (click)="unequip(slot)">Take off</button>
+        } @else {
+          <!-- Only unequipped pieces of this slot: A.1 refuses a filled slot by name rather
+               than swapping, so offering an equipped piece would invite a refusal. -->
+          <select
+            [attr.aria-label]="'Equip a ' + slot.display"
+            (change)="equip(slot, $any($event.target).value)"
+          >
+            <option value="">Empty</option>
+            @for (option of slot.candidates; track option.id) {
+              <option [value]="option.id">
+                {{ option.set_name || 'No set' }} · +{{ option.level }} ·
+                {{ describe(option) }}
+              </option>
+            }
+          </select>
+          @if (slot.candidates.length === 0) {
+            <span class="muted">nothing spare</span>
+          }
+        }
+      </li>
+    }
+  </ol>
+}

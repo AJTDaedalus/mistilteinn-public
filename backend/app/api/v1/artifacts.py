@@ -69,11 +69,15 @@ async def list_artifacts(
     slot: ArtifactSlot | None = None,
     set_id: str | None = None,
     equipped: bool | None = None,
+    #: Narrower than `equipped`: the pieces on **one** build, which is what a build's own five
+    #: slots need. Fetching every equipped piece and filtering on the client scales with the
+    #: whole inventory rather than with five.
+    build_id: str | None = None,
     offset: _Offset = 0,
     limit: _Limit = 50,
 ) -> PaginatedResponse[ArtifactRead]:
     """The caller's artifacts, in game slot order — flower, plume, sands, goblet, circlet."""
-    filters = {"slot": slot, "set_id": set_id, "equipped": equipped}
+    filters = {"slot": slot, "set_id": set_id, "equipped": equipped, "build_id": build_id}
     rows = await repo.search(**filters, offset=offset, limit=limit)
     return PaginatedResponse(
         items=[ArtifactRead.model_validate(row) for row in rows],

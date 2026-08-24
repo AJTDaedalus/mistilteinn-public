@@ -63,12 +63,16 @@
 - Twelve mutations run; two survived and both were tests that could not distinguish — a
   five-star-only fixture, and a redundant re-read. See the LOG.
 
-### [ ] A.4 — The build's artifact panel
+### [x] A.4 — The build's artifact panel — **done**
 - **Do:** five slots on the build editor, each showing the equipped piece or offering the
   inventory filtered to that slot.
 - **Accept:** the picker offers only pieces that would be accepted — right slot, not already
   equipped elsewhere — the picker-matches-validator guarantee this repo now applies
   everywhere; equipping and unequipping both work from here.
+- **Done.** `pages/builds/artifact-panel.ts`, its own component rather than more of
+  `builds.ts`. `GET /artifacts` gained a `build_id` filter — narrower than `equipped`, which
+  says *whether* rather than *which*, and fetching every equipped piece to filter on the
+  client scales with the whole inventory rather than with five. Five mutations, five caught.
 
 ### [ ] A.5 — Upgrade potential **(closes G.9)**
 - **Do:** the scoring function over `app/data/yuanshen/snapshot/artifact_roll_schedule.json`,
