@@ -79,12 +79,16 @@ unnoticed. The duplicate-slot test derives its pairs from that list too, so it n
 - **Why it is its own task:** acceptance by gcsim is not evidence of correctness. Both ER-sweep
   failures produced configs gcsim accepted happily.
 
-### [ ] R.4 — The API
+### [x] R.4 — The API — **done** (`75bfb22`)
 - **Do:** CRUD under `/api/v1/rotations`, owner-scoped, plus `POST /rotations/{id}/compile`
   returning the emitted config for inspection.
 - **Accept:** every new route added to the 401 sweep **in the same commit** —
   `test_the_sweep_covers_every_owned_route` fails otherwise, which is the point; `openapi.json`
   regenerated; the contract test green.
+- **Done:** six routes; the write path refuses a step naming someone off the team (422 on both
+  POST and PATCH, `scripts.inject` confirms three tests hold it); `/compile` refuses a stale
+  rotation and leaves the authored steps intact. 14 integration tests. `openapi.json` at 29
+  paths. Verified locally: 1034 passed / 0 skipped, `ci_local` 19/19.
 
 ### [ ] R.5 — The editor
 - **Do:** a page to build a rotation: pick a team, add steps, reorder, set `repeat`, save.
