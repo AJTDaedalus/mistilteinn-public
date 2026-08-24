@@ -9,6 +9,51 @@ from pydantic import BaseModel, Field
 from app.services.good_import_service import APPEND, REPLACE
 
 
+class StatVocabularyEntry(BaseModel):
+    """One stat, as a page needs to render it."""
+
+    #: The `FIGHT_PROP_*` key, which is what `main_stat_type` and substats carry.
+    key: str
+    #: `HP%`, `CRIT DMG` — how the game writes it.
+    display: str
+    #: The stored value is a **fraction**: `0.466` is 46.6%. Without this a page prints
+    #: "0.466 HP%" or "478000% HP", and neither looks obviously wrong at a glance.
+    percentage: bool
+
+
+class SlotVocabularyEntry(BaseModel):
+    """One artifact slot, as a page needs to render it."""
+
+    #: The payload key — `equip_bracer`, which is what `ArtifactRead.slot` carries.
+    key: str
+    #: `Flower`. The value is the source's internal spelling and is not a label.
+    display: str
+
+
+class RarityVocabularyEntry(BaseModel):
+    """One rarity, as a page needs to render it."""
+
+    #: The enum value — `five_star`, which is what `ArtifactRead.rarity` carries.
+    key: str
+    #: How many stars that is. `Rarity.stars` already knows; parsing `five_star` on the
+    #: client would be a second implementation of it.
+    stars: int
+
+
+class ArtifactOptions(BaseModel):
+    """The vocabulary an inventory needs to draw a row.
+
+    Published **once** rather than decorated onto every artifact: 26 stats and 5 slots
+    repeated across 800 pieces is the same table 800 times. The same reasoning as
+    `/rotations/options`, arrived at from the other direction — there the risk was a client
+    list drifting from the validator, here it is a client list existing at all.
+    """
+
+    stats: list[StatVocabularyEntry]
+    slots: list[SlotVocabularyEntry]
+    rarities: list[RarityVocabularyEntry]
+
+
 class ArtifactEquip(BaseModel):
     """Body for `PATCH /artifacts/{id}` — the equip binding, and nothing else.
 
@@ -41,6 +86,13 @@ class ArtifactRead(BaseModel):
     main_stat_value: float
     substats: list[Any] = []
     artifact_set_id: str | None = None
+    #: The set's display name, beside the id rather than instead of it.
+    #:
+    #: Denormalised for drawing, like `BuildRead.character` (T.2): a list showing "Blizzard
+    #: Strayer · Flower" should not need a second request per row, and resolving a UUID
+    #: against a catalogue keyed by `nanoka_id` is a conversion the client has no business
+    #: performing. Null for a piece whose set was not resolved on import.
+    set_name: str | None = None
     #: Null when the piece is not equipped. Unequipping does not delete it.
     build_id: str | None = None
 

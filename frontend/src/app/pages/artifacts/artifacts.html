@@ -1,0 +1,123 @@
+<section class="artifacts">
+  <header>
+    <h1>Artifacts</h1>
+    <p class="muted">
+      Imported from a GOOD export — the format Genshin Optimizer, Amenoma and Adachi all
+      produce.
+    </p>
+  </header>
+
+  <details class="import">
+    <summary>Import a GOOD export</summary>
+
+    <label>
+      Mode
+      <!-- No default. `replace` and `append` are different intentions, and GOOD carries no
+           stable per-artifact id to merge on — so a default here would be this page deciding
+           whether to delete someone's inventory. -->
+      <select [(ngModel)]="mode" aria-label="Import mode">
+        <option value="">Choose…</option>
+        <option value="append">Append — keep what is already here</option>
+        <option value="replace">Replace — delete the current inventory first</option>
+      </select>
+    </label>
+
+    <label class="payload">
+      Export
+      <textarea
+        rows="6"
+        [(ngModel)]="payloadText"
+        aria-label="GOOD export JSON"
+        placeholder='Paste the contents of your .json export'
+      ></textarea>
+    </label>
+
+    <button type="button" (click)="runImport()" [disabled]="!canImport()">
+      {{ importing() ? 'Importing…' : 'Import' }}
+    </button>
+
+    @if (importResult(); as result) {
+      <div class="result" role="status">
+        <p>
+          <strong>{{ result.inserted }}</strong> imported<!--
+          -->@if (result.deleted) {, <strong>{{ result.deleted }}</strong> replaced}.
+        </p>
+        @if (result.rejected.length) {
+          <!-- Every rejection, with its reason. The endpoint refuses individual artifacts
+               rather than failing the file — someone with 800 pieces and two odd ones wants
+               the 798 — so showing only the count throws away the only record of the two. -->
+          <p class="warn">
+            {{ result.rejected.length }} could not be imported:
+          </p>
+          <ul class="rejections">
+            @for (rejection of result.rejected; track rejection.index) {
+              <li><span class="mono">#{{ rejection.index }}</span> {{ rejection.reason }}</li>
+            }
+          </ul>
+        }
+      </div>
+    }
+
+    @if (actionError(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+  </details>
+
+  @if (error(); as message) {
+    <p class="error" role="alert">
+      {{ message }}
+      <button type="button" (click)="load()">Retry</button>
+    </p>
+  } @else if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else {
+    <div class="filters">
+      <button type="button" [class.active]="slotFilter === ''" (click)="filterBySlot('')">
+        All
+      </button>
+      @for (slot of slots(); track slot.key) {
+        <button
+          type="button"
+          [class.active]="slotFilter === slot.key"
+          (click)="filterBySlot(slot.key)"
+        >{{ slot.display }}</button>
+      }
+    </div>
+
+    <p class="muted">
+      @if (truncated()) {
+        Showing {{ rows().length }} of {{ total() }} — the rest was not loaded.
+      } @else {
+        {{ total() }} pieces
+      }
+    </p>
+
+    <ul class="grid">
+      @for (row of rows(); track row.id) {
+        <li class="card" [class.equipped]="row.equipped">
+          <span class="name">{{ row.setName }}</span>
+          <span class="meta">
+            {{ row.slot }} · {{ row.stars }}★ · +{{ row.level }}
+            @if (row.equipped) { · equipped }
+          </span>
+          <span class="main mono">{{ row.mainStat }}</span>
+          <ul class="subs mono">
+            @for (sub of row.substats; track sub) {
+              <li>{{ sub }}</li>
+            }
+          </ul>
+          <button
+            type="button"
+            class="drop"
+            [attr.aria-label]="'Delete ' + row.setName + ' ' + row.slot"
+            (click)="remove(row)"
+          >×</button>
+        </li>
+      } @empty {
+        <li class="muted">
+          No artifacts yet. Import a GOOD export above to fill your inventory.
+        </li>
+      }
+    </ul>
+  }
+</section>

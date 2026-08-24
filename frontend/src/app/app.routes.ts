@@ -36,6 +36,11 @@ export const routes: Routes = [
     canMatch: [requireApproved],
   },
   {
+    path: 'artifacts',
+    loadComponent: () => import('./pages/artifacts/artifacts').then((m) => m.ArtifactsPage),
+    canMatch: [requireApproved],
+  },
+  {
     path: 'builds',
     loadComponent: () => import('./pages/builds/builds').then((m) => m.BuildsPage),
     canMatch: [requireApproved],

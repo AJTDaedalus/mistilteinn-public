@@ -30,16 +30,20 @@ from app.dependencies import (
     get_owned_build_repo,
 )
 from app.middleware.rate_limit import WRITE_LIMIT, limiter
-from app.models.enums import ArtifactSlot
+from app.models.enums import ArtifactSlot, Rarity, StatType
 from app.repositories.artifact import ArtifactRepository
 from app.repositories.build import BuildRepository
 from app.schemas.artifact import (
     ArtifactEquip,
+    ArtifactOptions,
     ArtifactRead,
     GoodImportRequest,
     GoodImportResponse,
     ImportRejection,
     InventorySnapshot,
+    RarityVocabularyEntry,
+    SlotVocabularyEntry,
+    StatVocabularyEntry,
 )
 from app.schemas.common import PaginatedResponse
 from app.services.good_import_service import ReplaceRefusedError, store_good_import
@@ -137,6 +141,40 @@ async def get_inventory(
 # The import route is declared **before** `/{artifact_id}`. The two do not collide today —
 # one is a POST and the other a GET — but a future `GET /artifacts/import/...` would be
 # swallowed by the path parameter, and finding that out from a 404 is a bad afternoon.
+@router.get("/options", response_model=ArtifactOptions)
+async def artifact_options(_: CurrentUser) -> ArtifactOptions:
+    """The vocabulary an inventory needs to draw a row.
+
+    A.3. `slot` and `main_stat_type` carry the source's internal spellings — `equip_bracer`,
+    `FIGHT_PROP_HP_PERCENT` — which are keys, not labels. And the stored values are
+    units-dependent: `4780.0` for flat HP, `0.466` for HP%. A page with neither fact prints
+    "0.466 HP%" or "478000% HP", and neither looks obviously wrong at a glance.
+
+    Published **once** rather than decorated onto every row: 26 stats and 5 slots repeated
+    across 800 pieces is the same table 800 times.
+
+    Declared above `/{artifact_id}` — FastAPI matches in declaration order, and below it this
+    is an artifact whose id is the word "options", which 404s and looks like an empty
+    inventory rather than a routing mistake.
+    """
+    return ArtifactOptions(
+        stats=[
+            StatVocabularyEntry(
+                key=stat.value, display=stat.display, percentage=stat.is_percentage,
+            )
+            for stat in StatType
+        ],
+        slots=[
+            SlotVocabularyEntry(key=slot.value, display=slot.display)
+            for slot in sorted(ArtifactSlot, key=lambda s: s.sort_index)
+        ],
+        rarities=[
+            RarityVocabularyEntry(key=rarity.value, stars=rarity.stars)
+            for rarity in Rarity
+        ],
+    )
+
+
 @router.post("/import/good", response_model=GoodImportResponse)
 @limiter.limit(WRITE_LIMIT)
 async def import_good(
@@ -212,7 +250,11 @@ async def equip_artifact(
     `uq_artifacts_build_slot` would otherwise make this a 500 — the shape
     `uq_builds_owner_character` had before T.1a.
     """
-    artifact = await repo.get_by_id(artifact_id)
+    # Eager, and this is the load the **response** depends on too. `ArtifactRead` publishes
+    # `set_name`, which reads `artifact_set`; `lazy` is `raise_on_sql`, so fetching with
+    # `get_by_id` here is a `MissingGreenlet` at serialisation time — the trap T.2 and A.1
+    # both met. Weakening this line breaks the write path's response, not just its 404.
+    artifact = await repo.get_with_set(artifact_id)
     if artifact is None:
         raise HTTPException(status_code=404, detail=f"No artifact {artifact_id!r}")
 
@@ -243,6 +285,10 @@ async def equip_artifact(
     # `MissingGreenlet`, and turns the 422 below into the 500 it exists to prevent.
     slot_name = artifact.slot.display
     try:
+        # `update` re-reads through `get_by_id`, which returns the **same instance** this
+        # handler already loaded eagerly — so `set_name` stays resolvable without a second
+        # eager fetch. Injecting that fetch away changed no test, which is what says it was
+        # redundant rather than untested.
         updated = await repo.update(artifact_id, {"build_id": body.build_id})
     except IntegrityError as exc:
         # The check above and this write are not one operation, so two requests equipping the
