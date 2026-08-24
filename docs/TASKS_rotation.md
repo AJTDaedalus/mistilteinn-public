@@ -44,12 +44,19 @@ unnoticed. The duplicate-slot test derives its pairs from that list too, so it n
   ten that exist**; a step naming a character outside the team is refused; owner scoping is
   covered in `test_owner_scoped_repositories.py` the way `SimRunRepository` is.
 
-### [ ] R.2 — The compiler: rotation → gcsim action list
+### [x] R.2 — The compiler: rotation → gcsim action list — **done**
 - **Do:** a pure function, no I/O. `active <first>;`, then `while 1 { … }`, then one
   readiness-gated statement per step, `repeat` as `:n`, **no swap actions** (§3.3).
-- **Accept:** unit tests over the shape; the action vocabulary is derived from one place, not
-  restated; a burst-first rotation emits its gate. **Injection: remove the gate and the
-  deadlock test in R.3 must fail.**
+- **Done.** `app/services/rotation_compiler.py`, pure and session-free. `active` is the
+  **first step's** character rather than the team's first slot, so a rotation does not open
+  with an implicit swap the user did not write. Every step is gated, *including* `attack`:
+  gating selectively would need a hand-kept table of "which actions can stall", and a wrong
+  entry there brings the deadlock back silently.
+- A stale step is refused with **every** offending step named, not the first — the same
+  reasoning the GOOD importer uses when it reports each rejected artifact.
+- **Injections:** dropping the gates fails 2, dropping the loop fails 1, silently dropping
+  stale steps fails 2. Both of D.2's silent gcsim behaviours are now regression-tested at the
+  compiler; R.3 tests them against gcsim itself.
 
 ### [ ] R.3 — The compiler is checked by gcsim, not by us **[gate]**
 - **Do:** extend the `gcsim:verify-config` harness so compiled rotations are fed to real
