@@ -24,6 +24,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.team import Team
 from app.repositories.base import BaseRepository
+from app.schemas.team import TEAM_SLOTS
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -61,10 +62,11 @@ class TeamRepository(BaseRepository[Team]):
         stmt = select(Team).where(Team.id == entity_id)
         if self.owner_id is not None:
             stmt = stmt.where(Team.owner_id == self.owner_id)
+        # Derived from TEAM_SLOTS, not listed: a slot missing from this eager load is a
+        # `MissingGreenlet` the moment a route touches it, which is the shape Chunk G met
+        # three times before `lazy="raise_on_sql"` was turned on.
         stmt = stmt.options(
-            selectinload(Team.build1),
-            selectinload(Team.build2),
-            selectinload(Team.build3),
+            *(selectinload(getattr(Team, name.removesuffix("_id"))) for name in TEAM_SLOTS),
         )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()

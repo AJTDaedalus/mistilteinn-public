@@ -14,7 +14,24 @@ cannot express, because the temptation in every one of these tasks is to add a c
 - **Do:** work on `feat/rotation` or per-task branches off `dev`; merge by PR.
 - **Accept:** nothing reaches `dev` outside a PR.
 
-### [ ] R.1 — The model and its schema **[decides OQ-R1, OQ-R2]**
+### [x] R.1a — Genshin parties are four **[unplanned; found while starting R.1]**
+
+The fork inherited a **three-slot** `teams` table because a ZZZ squad is three agents, and its
+schema docstring said so in as many words: *"A team is three different characters."* A Genshin
+party is **four**.
+
+This is the leaked-shape hazard `CLAUDE.md` names as the fork's main long-term risk — *"no
+column that exists because its ZZZ counterpart did"* — and it survived four chunks because
+nothing had exercised the table beyond CRUD. Rotations are the first thing that cannot work
+around it: a four-character rotation cannot be expressed against three slots at all.
+
+Fixed additively (migration `a71c3e5b9d40`, round-tripped), and the slot names now have **one
+definition**, `TEAM_SLOTS`. They had been hand-written in four places — model, schemas,
+repository eager-loads, API merge check — which is exactly how three-versus-four went
+unnoticed. The duplicate-slot test derives its pairs from that list too, so it now covers all
+**six** pairs rather than the three a ZZZ squad has.
+
+### [ ] R.1 — The rotation model and its schema **[decides OQ-R1, OQ-R2]**
 - **Do:** `rotations` table — name, owner, team (ordered character ids), `steps` JSONB — plus
   the model, repository and migration. Steps validate on the way in: a known action, a
   `repeat` of at least 1, a character that is in the team.
