@@ -37,7 +37,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 
 from app.models.enums import Element, Rarity, WeaponType
 
@@ -100,7 +100,30 @@ class AscensionPassiveRead(BaseModel):
     model_config = _FROM_ORM
 
 
-class CharacterSummary(BaseModel):
+class WeaponClassed(BaseModel):
+    """A schema that names a weapon class, and publishes a readable label for it.
+
+    A mixin rather than the same four lines in two schemas. They were written twice first,
+    and the mutation harness refused the injection for an ambiguous target — which is the
+    duplication showing up as a tooling complaint before it shows up as a bug. This repo's
+    recurring failure is a second implementation nobody is exercising.
+    """
+
+    weapon_type: WeaponType
+
+    @computed_field
+    @property
+    def weapon_type_display(self) -> str:
+        """`Sword`, beside the raw `WEAPON_SWORD_ONE_HAND`.
+
+        The value is the game's internal spelling — the reason `Element` reads well in this
+        output and `WeaponType` does not. Published rather than left to each client, because
+        a page deriving it would be a second copy of `WeaponType.display`.
+        """
+        return self.weapon_type.display
+
+
+class CharacterSummary(WeaponClassed):
     """A character as a list entry."""
 
     id: str
@@ -110,7 +133,6 @@ class CharacterSummary(BaseModel):
     name: str
     #: Null for the two entries whose payload element is the literal `"None"`.
     element: Element | None = None
-    weapon_type: WeaponType
     rarity: Rarity
     region: str | None = None
     icon: str | None = None
@@ -156,7 +178,7 @@ class WeaponRefinementRead(BaseModel):
     model_config = _FROM_ORM
 
 
-class WeaponSummary(BaseModel):
+class WeaponSummary(WeaponClassed):
     """A weapon as a list entry.
 
     `base_atk` and `sub_stat_type` are nullable because eight rows (the `ITEM_TPS_WEAPON`
@@ -167,7 +189,6 @@ class WeaponSummary(BaseModel):
     id: str
     nanoka_id: int
     name: str
-    weapon_type: WeaponType
     rarity: Rarity
     base_atk: float | None = None
     sub_stat_type: str | None = None

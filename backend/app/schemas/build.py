@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, field_validator
 from app.formula.genshin import tags
 from app.formula.genshin.damage import Amplifying, ScalingStat
 from app.models.enums import LEVELLED_TALENTS, MAX_TALENT_LEVEL
+from app.schemas.catalogue import CharacterSummary, WeaponSummary
 
 
 def _validated_talents(levels: dict[str, int]) -> dict[str, int]:
@@ -110,6 +111,16 @@ class BuildRead(BaseModel):
     constellation_level: int
     talent_levels: dict[str, int] = {}
     notes: str = ""
+    #: The catalogue rows a list needs to draw a row, **beside** the ids rather than instead
+    #: of them: a client that stores `character_id` keeps working, and these are for drawing
+    #: rather than for referring.
+    #:
+    #: Explicitly `None` when absent rather than omitted — `weapon_id` is nullable by design
+    #: (OQ-T3), and a missing key would read as "we did not look" rather than "there is no
+    #: weapon". Reusing the catalogue's own summaries, so a build page and the catalogue page
+    #: describe a character the same way.
+    character: CharacterSummary | None = None
+    weapon: WeaponSummary | None = None
 
     model_config = {"from_attributes": True}
 

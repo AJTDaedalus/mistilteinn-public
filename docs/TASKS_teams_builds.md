@@ -73,7 +73,7 @@ fixture can still arrive that way — the test writes one directly.
 
 Four mutations, all CAUGHT. Migration `27770f8ae917`, round-tripped up and down.
 
-### [ ] T.2 — A build carries what a row needs
+### [x] T.2 — A build carries what a row needs — **done**
 - **Do:** `BuildRead` gains optional nested `character` and `weapon` summaries — name,
   element / weapon type, rarity, `nanoka_id`. Reuse the catalogue's summary shapes rather
   than defining new ones. Decide and implement server-side weapon filtering by
@@ -85,6 +85,12 @@ Four mutations, all CAUGHT. Migration `27770f8ae917`, round-tripped up and down.
   swords; contract test green.
 - **Why it is its own task:** it is the R.5 lesson applied — the client has no business
   mapping a UUID `character_id` to the `nanoka_id` the catalogue is keyed by.
+- **Done.** `BuildRead` gains `character`/`weapon`, reusing the catalogue's own summaries,
+  **beside** the ids rather than instead of them. Server-side `weapon_type` filtering already
+  existed on `/api/v1/weapons` and was **never exercised through the API** — it is now, since
+  the T.3 picker's whole guarantee rests on it. `weapon_type_display` publishes the readable
+  class name so a page does not reimplement `WeaponType.display`; it lives on a
+  `WeaponClassed` mixin after being written twice. Five mutations, all CAUGHT.
 
 ### [ ] T.3 — The build editor
 - **Do:** a page to create, edit and delete a build: pick a character, pick a weapon from the

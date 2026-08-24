@@ -160,7 +160,11 @@ async def create_build(
         character_id=body.character_id, weapon_id=body.weapon_id,
     )
     build = await repo.create({**body.model_dump(), "owner_id": repo.owner_id})
-    return BuildRead.model_validate(build)
+    # Re-read eagerly. The instance just created has no relationships loaded, and
+    # `GUARDED_LAZY` is `raise_on_sql`, so `BuildRead` reading `.character` off it is a
+    # `MissingGreenlet` in production — invisible in a test, whose session already holds the
+    # catalogue rows it made moments earlier (T.1a).
+    return BuildRead.model_validate(await repo.get_with_catalogue(str(build.id)))
 
 
 @router.get("/{build_id}", response_model=BuildRead)
@@ -168,8 +172,11 @@ async def get_build(
     build_id: str,
     repo: Annotated[BuildRepository, Depends(get_owned_build_repo)],
 ) -> BuildRead:
-    """One of the caller's builds."""
-    return BuildRead.model_validate(await _require_build(repo, build_id))
+    """One of the caller's builds, with the catalogue rows a page draws it from."""
+    build = await repo.get_with_catalogue(build_id)
+    if build is None:
+        raise HTTPException(status_code=404, detail="Build not found")
+    return BuildRead.model_validate(build)
 
 
 @router.patch("/{build_id}", response_model=BuildRead)
@@ -192,7 +199,7 @@ async def update_build(
     existing = await _require_build(repo, build_id)
     patch = body.model_dump(exclude_unset=True)
     if not patch:
-        return BuildRead.model_validate(existing)
+        return BuildRead.model_validate(await repo.get_with_catalogue(build_id))
 
     merged_character = patch.get("character_id", existing.character_id)
     # `.get` with a default is right here only because `exclude_unset` already dropped the
@@ -204,8 +211,8 @@ async def update_build(
         character_id=merged_character, weapon_id=merged_weapon,
     )
 
-    updated = await repo.update(build_id, patch)
-    return BuildRead.model_validate(updated)
+    await repo.update(build_id, patch)
+    return BuildRead.model_validate(await repo.get_with_catalogue(build_id))
 
 
 @router.delete("/{build_id}", status_code=status.HTTP_204_NO_CONTENT)
