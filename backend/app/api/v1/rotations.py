@@ -24,10 +24,14 @@ from app.repositories.rotation import RotationRepository
 from app.repositories.team import TeamRepository
 from app.schemas.common import PaginatedResponse
 from app.schemas.rotation import (
+    RosterCharacter,
     RotationCreate,
+    RotationOptions,
     RotationRead,
     RotationUpdate,
+    TeamRoster,
 )
+from app.services.gcsim_keys import authorable_actions
 from app.services.rotation_compiler import RotationCompileError, compile_rotation
 
 router = APIRouter(prefix="/rotations", tags=["rotations"])
@@ -96,6 +100,37 @@ async def list_rotations(
     return PaginatedResponse(
         items=[RotationRead.model_validate(r) for r in rows],
         total=await repo.count(), offset=offset, limit=limit,
+    )
+
+
+@router.get("/options", response_model=RotationOptions)
+async def rotation_options(repo: _Repo) -> RotationOptions:
+    """What an editor may offer: the ten actions, and the caller's teams with their rosters.
+
+    Declared **above** `/{rotation_id}` — FastAPI matches in declaration order, and below it
+    this path would be swallowed as a rotation whose id is the word "options".
+
+    One request rather than a walk from team to four builds to four characters. That walk
+    would also have to map `character_id` (a UUID) to the `nanoka_id` a step names, which is
+    a conversion the client has no business performing.
+    """
+    return RotationOptions(
+        actions=list(authorable_actions()),
+        teams=[
+            TeamRoster(
+                id=str(team.id),
+                name=team.name,
+                characters=[
+                    RosterCharacter(
+                        nanoka_id=nanoka_id,
+                        name=character.name,
+                        element=str(character.element.value),
+                    )
+                    for nanoka_id, character in sorted(roster.items())
+                ],
+            )
+            for team, roster in await repo.rosters()
+        ],
     )
 
 

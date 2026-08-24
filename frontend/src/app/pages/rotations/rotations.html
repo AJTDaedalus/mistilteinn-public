@@ -1,0 +1,191 @@
+<section class="rotations">
+  <header>
+    <h1>Rotations</h1>
+    <p class="muted">
+      Pick a team, list what each character does, and save. The gating and the loop are
+      emitted for you.
+    </p>
+  </header>
+
+  @if (error(); as message) {
+    <p class="error" role="alert">
+      {{ message }}
+      <button type="button" (click)="load()">Retry</button>
+    </p>
+  } @else if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else if (teams().length === 0) {
+    <!-- A team is what a rotation's steps are validated against, so there is nothing to
+         author until one exists. Saying so beats an editor whose every control is inert. -->
+    <p class="muted">
+      You have no teams yet. A rotation's steps are checked against a team's characters, so
+      build a team first.
+    </p>
+  } @else {
+    <div class="editor">
+      <div class="pane">
+        <h2>{{ editing() ? 'Editing' : 'New rotation' }}</h2>
+
+        <label>
+          Name
+          <input
+            type="text"
+            name="name"
+            [(ngModel)]="name"
+            placeholder="Melt opener"
+            aria-label="Rotation name"
+          />
+        </label>
+
+        <label>
+          Team
+          <select
+            name="team"
+            aria-label="Team"
+            [value]="teamId()"
+            (change)="selectTeam($any($event.target).value)"
+            [disabled]="editing() !== null"
+          >
+            @for (team of teams(); track team.id) {
+              <option [value]="team.id">{{ team.name }}</option>
+            }
+          </select>
+        </label>
+        @if (editing()) {
+          <!-- The API has no `team_id` on PATCH: moving a rotation would reinterpret every
+               step against a different party, and the steps that stopped resolving would be
+               found later, at compile time, far from the edit that caused it. -->
+          <p class="hint">
+            A saved rotation stays on its team. Build a new one for another team.
+          </p>
+        }
+
+        @if (roster().length === 0) {
+          <p class="hint">That team has no builds yet, so there is nobody to act.</p>
+        }
+
+        <ol class="steps">
+          @for (step of steps(); track $index) {
+            <li class="step">
+              <span class="ordinal mono">{{ $index + 1 }}</span>
+
+              <select
+                [attr.aria-label]="'Character for step ' + ($index + 1)"
+                [value]="step.character"
+                (change)="setStep($index, { character: $any($event.target).value })"
+              >
+                @for (member of roster(); track member.nanoka_id) {
+                  <option [value]="member.nanoka_id">
+                    {{ member.name }} · {{ member.element }}
+                  </option>
+                }
+              </select>
+
+              <select
+                [attr.aria-label]="'Action for step ' + ($index + 1)"
+                [value]="step.action"
+                (change)="setStep($index, { action: $any($event.target).value })"
+              >
+                @for (action of actions(); track action) {
+                  <option [value]="action">{{ action }}</option>
+                }
+              </select>
+
+              <label class="repeat">
+                ×
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  [attr.aria-label]="'Repeat for step ' + ($index + 1)"
+                  [value]="step.repeat"
+                  (change)="setStep($index, { repeat: +$any($event.target).value })"
+                />
+              </label>
+
+              <span class="reorder">
+                <button
+                  type="button"
+                  [attr.aria-label]="'Move step ' + ($index + 1) + ' up'"
+                  [disabled]="$first"
+                  (click)="move($index, -1)"
+                >↑</button>
+                <button
+                  type="button"
+                  [attr.aria-label]="'Move step ' + ($index + 1) + ' down'"
+                  [disabled]="$last"
+                  (click)="move($index, 1)"
+                >↓</button>
+              </span>
+
+              <button
+                type="button"
+                class="drop"
+                [attr.aria-label]="'Remove step ' + ($index + 1)"
+                (click)="removeStep($index)"
+              >×</button>
+            </li>
+          } @empty {
+            <li class="muted">No steps yet.</li>
+          }
+        </ol>
+
+        <div class="controls">
+          <button type="button" (click)="addStep()" [disabled]="roster().length === 0">
+            Add step
+          </button>
+          <button type="button" (click)="save()" [disabled]="!canSave()">
+            {{ editing() ? 'Save changes' : 'Save rotation' }}
+          </button>
+          <button
+            type="button"
+            (click)="compile()"
+            [disabled]="editing() === null || dirty()"
+            [attr.title]="
+              dirty() ? 'Save first — compiling reads the stored rotation, not the screen.' : null
+            "
+          >
+            Compile
+          </button>
+          @if (editing()) {
+            <button type="button" (click)="newRotation()">New</button>
+          }
+        </div>
+
+        @if (actionError(); as message) {
+          <p class="error" role="alert">{{ message }}</p>
+        }
+
+        @if (compiled(); as config) {
+          <!-- Shown because a compiler nobody can inspect is a compiler nobody can check. -->
+          <figure class="compiled">
+            <figcaption class="eyebrow">What gcsim receives</figcaption>
+            <pre class="mono">{{ config }}</pre>
+          </figure>
+        }
+      </div>
+
+      <div class="pane">
+        <h2>Saved</h2>
+        <ul class="saved">
+          @for (rotation of saved(); track rotation.id) {
+            <li [class.active]="rotation.id === editing()">
+              <button type="button" class="pick" (click)="edit(rotation)">
+                <span class="name">{{ rotation.name }}</span>
+                <span class="meta">{{ rotation.steps.length }} steps</span>
+              </button>
+              <button
+                type="button"
+                class="drop"
+                [attr.aria-label]="'Delete ' + rotation.name"
+                (click)="remove(rotation)"
+              >×</button>
+            </li>
+          } @empty {
+            <li class="muted">Nothing saved yet.</li>
+          }
+        </ul>
+      </div>
+    </div>
+  }
+</section>

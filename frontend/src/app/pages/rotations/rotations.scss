@@ -1,0 +1,115 @@
+.rotations {
+  padding: 1rem;
+
+  header {
+    margin-bottom: 1rem;
+
+    h1 { margin: 0 0 0.25rem; }
+  }
+
+  .editor {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(14rem, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .pane {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid rgb(255 255 255 / 12%);
+    border-radius: 0.4rem;
+
+    h2 { margin: 0; font-size: 1.1rem; }
+  }
+
+  label {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .step {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .ordinal { opacity: 0.5; min-width: 1.4rem; }
+
+  .repeat input { width: 3.5rem; }
+
+  .reorder button,
+  .drop {
+    padding: 0.1rem 0.45rem;
+    line-height: 1.2;
+  }
+
+  .controls {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.35rem;
+  }
+
+  .compiled {
+    margin: 0.5rem 0 0;
+
+    pre {
+      margin: 0.25rem 0 0;
+      padding: 0.6rem 0.75rem;
+      overflow-x: auto;
+      border: 1px solid rgb(255 255 255 / 12%);
+      border-radius: 0.3rem;
+      font-size: 0.85rem;
+      line-height: 1.45;
+    }
+  }
+
+  .saved {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+      display: flex;
+      gap: 0.35rem;
+      align-items: center;
+    }
+
+    li.active .name { font-weight: 700; }
+
+    .pick {
+      flex: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      text-align: left;
+    }
+  }
+
+  .name { font-weight: 600; }
+  .meta { font-size: 0.85rem; opacity: 0.8; }
+  .hint { margin: 0; font-size: 0.85rem; opacity: 0.7; }
+  .muted { opacity: 0.7; }
+  .error { color: #ff8080; }
+}
+
+@media (width <= 60rem) {
+  .rotations .editor { grid-template-columns: minmax(0, 1fr); }
+}
