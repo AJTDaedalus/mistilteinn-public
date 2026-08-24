@@ -22,11 +22,18 @@ from fastapi import (
 )
 
 from app.data.importers.good_importer import GoodImportError, parse_good
-from app.dependencies import CurrentUser, DBSession, get_owned_artifact_repo
+from app.dependencies import (
+    CurrentUser,
+    DBSession,
+    get_owned_artifact_repo,
+    get_owned_build_repo,
+)
 from app.middleware.rate_limit import WRITE_LIMIT, limiter
 from app.models.enums import ArtifactSlot
 from app.repositories.artifact import ArtifactRepository
+from app.repositories.build import BuildRepository
 from app.schemas.artifact import (
+    ArtifactEquip,
     ArtifactRead,
     GoodImportRequest,
     GoodImportResponse,
@@ -182,6 +189,56 @@ async def get_artifact(
     if artifact is None:
         raise HTTPException(status_code=404, detail=f"No artifact {artifact_id!r}")
     return ArtifactRead.model_validate(artifact)
+
+
+@router.patch("/{artifact_id}", response_model=ArtifactRead)
+@limiter.limit(WRITE_LIMIT)
+async def equip_artifact(
+    request: Request,  # slowapi reads the client address off it
+    artifact_id: str,
+    body: ArtifactEquip,
+    repo: Annotated[ArtifactRepository, Depends(get_owned_artifact_repo)],
+    builds: Annotated[BuildRepository, Depends(get_owned_build_repo)],
+) -> ArtifactRead:
+    """Attach a piece to a build, or take it off.
+
+    A.1. `Artifact.build_id` has existed since Chunk C and nothing set it, so an imported
+    inventory could not be attached to anything.
+
+    **A filled slot is refused, naming the piece that holds it** (OQ-A2). Swapping is a
+    reasonable thing to want and a terrible thing to do unasked: the displaced piece is still
+    equipped in the user's head, and they would find out later, from a damage number.
+    `uq_artifacts_build_slot` would otherwise make this a 500 — the shape
+    `uq_builds_owner_character` had before T.1a.
+    """
+    artifact = await repo.get_by_id(artifact_id)
+    if artifact is None:
+        raise HTTPException(status_code=404, detail=f"No artifact {artifact_id!r}")
+
+    if body.build_id is not None:
+        # Owner-scoped, so a stranger's build reads as absent. That is the right answer:
+        # confirming it exists would disclose that it does.
+        if await builds.get_by_id(body.build_id) is None:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"no build {body.build_id!r} of yours. A piece is equipped to one of "
+                    f"your own builds."
+                ),
+            )
+        holder = await repo.equipped_in_slot(body.build_id, artifact.slot)
+        if holder is not None and str(holder.id) != artifact_id:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"that build already has a {artifact.slot.display} equipped ({holder.id}). "
+                    f"Take it off first — swapping without being asked would leave you with "
+                    f"a piece you still think is equipped."
+                ),
+            )
+
+    updated = await repo.update(artifact_id, {"build_id": body.build_id})
+    return ArtifactRead.model_validate(updated)
 
 
 @router.delete("/{artifact_id}", status_code=status.HTTP_204_NO_CONTENT)

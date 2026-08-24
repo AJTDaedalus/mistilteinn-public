@@ -22,7 +22,7 @@
 - **Do:** per-task branches off `dev`; merge by PR.
 - **Accept:** `git log --first-parent dev` is merge commits only.
 
-### [ ] A.1 — Equipping
+### [x] A.1 — Equipping — **done**
 - **Do:** `PATCH /artifacts/{id}` setting `build_id`, and clearing it to unequip.
 - **Files:** `app/schemas/artifact.py`, `app/api/v1/artifacts.py`, tests.
 - **Accept:** equip, unequip, and three refusals — a build that is not the caller's (answered
@@ -31,6 +31,13 @@
   `scripts.inject`.
 - **Why it is first:** nothing sets `build_id` today, so an imported inventory cannot be
   attached to anything. It gates A.4 and, next chunk, the optimizer writing its result.
+- **Done.** `PATCH /artifacts/{id}` takes **only** `build_id` — an artifact's
+  `main_stat_value` is *derived* from the committed value table, and a patch accepting `level`
+  would let the one number this repo derives be typed in by hand. Five mutations run: four
+  CAUGHT, and the fifth exposed a guard that was **removed rather than tested** — see the LOG.
+- **`ArtifactSlot.value` is `equip_bracer`**, so the refusal read "already has a equip_bracer
+  equipped". `display` moved onto a shared `SourceSpelled` base that `WeaponType` and
+  `ArtifactSlot` both inherit, rather than being written twice.
 
 ### [ ] A.2 — The GOOD import form
 - **Do:** a page that takes a GOOD file and posts it, and renders the result in full.

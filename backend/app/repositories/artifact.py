@@ -105,3 +105,22 @@ class ArtifactRepository(BaseRepository[Artifact]):
         stmt = stmt.options(_with_set())
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def equipped_in_slot(self, build_id: str, slot: ArtifactSlot) -> Artifact | None:
+        """The piece a build already holds in `slot`, if any.
+
+        **Scoped by the build, deliberately not by `owner_id` as well.** Every other read here
+        carries the owner filter, and adding it looked like consistency until the mutation
+        harness showed it changed no test — because the caller has already established that
+        the build is the caller's, so no reachable row can differ on owner.
+
+        Where it *would* differ is a corrupt row: a stranger's artifact attached to my build.
+        The owner filter would hide it, this would report the slot as free, and
+        `uq_artifacts_build_slot` would then reject the insert as a **500**. Unfiltered, the
+        same row produces the ordinary 422. So the filter cannot help and can only turn a
+        clean refusal into a server error — which is why it is absent rather than untested.
+        """
+        stmt = select(Artifact).where(
+            Artifact.build_id == build_id, Artifact.slot == slot,
+        )
+        return (await self.session.execute(stmt)).scalar_one_or_none()
