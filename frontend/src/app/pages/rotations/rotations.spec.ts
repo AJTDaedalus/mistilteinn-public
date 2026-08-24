@@ -178,6 +178,54 @@ describe('RotationsPage', () => {
     expect(page['compiled']()).toBe('active ayaka;\n');
   });
 
+  it('will not compile a saved rotation that has been edited since', async () => {
+    // The hole the first version of this guard left open. `editing()` was set, so Compile
+    // stayed enabled, and it would have printed the config for the *stored* steps beside a
+    // screen showing different ones — the exact failure the guard was written to prevent.
+    const compile = vi.fn().mockResolvedValue('active ayaka;\n');
+    const page = healthy({ compile } as unknown as RotationsService);
+    await page['load']();
+    page['edit']({
+      id: 'rot-1', name: 'Saved', team_id: 'team-1', description: '',
+      steps: [{ character: '10000002', action: 'burst', repeat: 1, note: '' }],
+    });
+    expect(page['dirty']()).toBe(false);
+
+    page['setStep'](0, { repeat: 4 });
+
+    expect(page['dirty']()).toBe(true);
+    await page['compile']();
+    expect(compile).not.toHaveBeenCalled();
+  });
+
+  it('a rename alone is enough to make it dirty', async () => {
+    const page = healthy();
+    await page['load']();
+    page['edit']({
+      id: 'rot-1', name: 'Saved', team_id: 'team-1', description: '', steps: [],
+    });
+
+    page['name'] = 'Renamed';
+
+    expect(page['dirty']()).toBe(true);
+  });
+
+  it('saving clears dirty, so Compile becomes available again', async () => {
+    const page = healthy({
+      update: vi.fn().mockResolvedValue({ id: 'rot-1' }),
+    } as unknown as RotationsService);
+    await page['load']();
+    page['edit']({
+      id: 'rot-1', name: 'Saved', team_id: 'team-1', description: '',
+      steps: [{ character: '10000002', action: 'burst', repeat: 1, note: '' }],
+    });
+    page['setStep'](0, { repeat: 4 });
+
+    await page['save']();
+
+    expect(page['dirty']()).toBe(false);
+  });
+
   it('drops a stale compiled config as soon as the steps change', async () => {
     const page = healthy({
       compile: vi.fn().mockResolvedValue('active ayaka;\n'),

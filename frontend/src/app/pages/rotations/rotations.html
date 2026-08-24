@@ -137,7 +137,14 @@
           <button type="button" (click)="save()" [disabled]="!canSave()">
             {{ editing() ? 'Save changes' : 'Save rotation' }}
           </button>
-          <button type="button" (click)="compile()" [disabled]="editing() === null">
+          <button
+            type="button"
+            (click)="compile()"
+            [disabled]="editing() === null || dirty()"
+            [attr.title]="
+              dirty() ? 'Save first — compiling reads the stored rotation, not the screen.' : null
+            "
+          >
             Compile
           </button>
           @if (editing()) {

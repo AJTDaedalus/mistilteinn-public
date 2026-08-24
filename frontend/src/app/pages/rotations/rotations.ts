@@ -48,6 +48,20 @@ export class RotationsPage implements OnInit {
   /** The rotation being edited, or null while composing a new one. */
   protected readonly editing = signal<string | null>(null);
   protected readonly compiled = signal<string | null>(null);
+  /** What the server holds for `editing()`, so unsaved edits are detectable. */
+  private readonly stored = signal('');
+
+  /**
+   * The screen no longer matches what was saved.
+   *
+   * `/compile` reads the **stored** steps. Compiling while this is true would print the
+   * config for the last save beside a screen showing something else — "a number that looks
+   * right but refers to something else", which is the failure mode this project has met
+   * most often. So Compile is offered only when the two agree.
+   */
+  protected readonly dirty = computed(
+    () => this.editing() !== null && this.snapshot() !== this.stored(),
+  );
 
   /** Who the chosen team holds. An empty roster is why `addStep` refuses. */
   protected readonly roster = computed(
@@ -59,6 +73,11 @@ export class RotationsPage implements OnInit {
   );
 
   private readonly rotations = inject(RotationsService);
+
+  /** Name and steps as one comparable string. Order is part of it — order *is* the rotation. */
+  private snapshot(): string {
+    return JSON.stringify({ name: this.name.trim(), steps: this.steps() });
+  }
 
   ngOnInit(): void {
     void this.load();
@@ -150,6 +169,7 @@ export class RotationsPage implements OnInit {
             steps: this.steps(),
           });
       this.editing.set(rotation!.id);
+      this.stored.set(this.snapshot());
       await this.refreshList();
     } catch (err) {
       // The API's refusal is shown verbatim: it names the offending characters and lists who
@@ -167,6 +187,7 @@ export class RotationsPage implements OnInit {
     // and there is deliberately no test for it: the mutation survived, which means any test
     // claiming to hold it would be one that cannot fail.
     this.steps.set(rotation.steps.map((step) => ({ ...step })));
+    this.stored.set(this.snapshot());
     this.compiled.set(null);
     this.actionError.set(null);
   }
@@ -175,6 +196,7 @@ export class RotationsPage implements OnInit {
     this.editing.set(null);
     this.name = '';
     this.steps.set([]);
+    this.stored.set('');
     this.compiled.set(null);
     this.actionError.set(null);
   }
@@ -193,14 +215,15 @@ export class RotationsPage implements OnInit {
   /**
    * Show the gcsim config this rotation became.
    *
-   * Only a *saved* rotation can be compiled — the endpoint reads the stored steps. Offering
-   * it on unsaved edits would show the config for the last save while the screen displayed
-   * something else, which is the "a number that looks right but refers to something else"
-   * failure this project keeps meeting.
+   * Only a *saved and unmodified* rotation can be compiled — the endpoint reads the stored
+   * steps. Offering it on unsaved edits would show the config for the last save while the
+   * screen displayed something else, which is the "a number that looks right but refers to
+   * something else" failure this project keeps meeting. The first version of this guard
+   * covered only a brand-new rotation and left that hole open for edits to a saved one.
    */
   protected async compile(): Promise<void> {
     const id = this.editing();
-    if (!id) return;
+    if (!id || this.dirty()) return;
     this.actionError.set(null);
     try {
       this.compiled.set(await this.rotations.compile(id));
