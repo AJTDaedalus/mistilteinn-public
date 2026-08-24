@@ -280,7 +280,7 @@ describe('a row the data does not fit', () => {
 describe('describePotential', () => {
   const full = {
     rolls_remaining: 3, rolls_total: 5, level: 9, max_level: 20,
-    levels_to_max: 11, substats: [],
+    levels_to_max: 11,
   };
 
   it('shows the working, not just the headline', () => {
@@ -317,7 +317,7 @@ describe('ArtifactsPage potential', () => {
           ...CIRCLET,
           potential: {
             rolls_remaining: 2, rolls_total: 5, level: 12, max_level: 20,
-            levels_to_max: 8, substats: [],
+    levels_to_max: 8,
           },
         }],
         total: 1, truncated: false,

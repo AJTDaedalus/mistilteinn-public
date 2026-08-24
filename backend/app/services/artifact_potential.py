@@ -11,26 +11,24 @@ Everything here comes from `artifact_roll_schedule.json`, derived from
 +4/+8/+12/+16/+20, a 4-star at +4/+8/+12/+16, a 3-star at +4/+8/+12.
 
 **Where a roll lands is deliberately not claimed.** The schedule says *when* a piece gains a
-substat, not *which* one a roll enhances, and that rule is not in the committed data. So this
-reports the substats a piece **has** rather than asserting what will happen to them. Writing
-the placement rule from memory would be a confident number with nothing behind it — the
-failure G.9 stayed blocked to avoid, and it would be perverse to commit it in the task that
-finally unblocks it.
+substat, not *which* one a roll enhances, and that rule is not in the committed data. Writing
+it from memory would be a confident number with nothing behind it — the failure G.9 stayed
+blocked to avoid, and it would be perverse to commit it in the task that finally unblocks it.
+
+**Nor are the piece's own substats repeated here.** `ArtifactRead` already carries them in
+full, with values and roll counts; listing their names again inside the potential report is
+the same answer in a worse form. What this adds is rolls and levels, and nothing else.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 from app.data.snapshot import (
     artifact_max_level,
     artifact_rolls_remaining,
     artifact_upgrade_levels,
 )
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
 
 
 @dataclass(frozen=True)
@@ -49,9 +47,6 @@ class UpgradePotential:
     rolls_total: int
     level: int
     max_level: int
-    #: The substats the piece **has**. Not a claim about which will grow; see the module
-    #: docstring.
-    substats: tuple[str, ...]
 
     @property
     def levels_to_max(self) -> int:
@@ -59,9 +54,7 @@ class UpgradePotential:
         return self.max_level - self.level
 
 
-def upgrade_potential(
-    *, stars: int, level: int, substats: Sequence[object] = (),
-) -> UpgradePotential:
+def upgrade_potential(*, stars: int, level: int) -> UpgradePotential:
     """The upgrade potential of one piece.
 
     Three values rather than a row: this is arithmetic over a committed table, and taking an
@@ -79,20 +72,4 @@ def upgrade_potential(
         rolls_total=len(artifact_upgrade_levels(stars)),
         level=level,
         max_level=artifact_max_level(stars),
-        substats=_named(substats),
-    )
-
-
-def _named(substats: Sequence[object]) -> tuple[str, ...]:
-    """The `stat` key of each substat, skipping anything shaped wrong.
-
-    `substats` is a JSONB column with no schema behind it, so a row written by an older
-    importer or by hand can hold anything. A piece that cannot list its substats can still say
-    how many rolls it has left, and refusing to answer either would lose the useful half with
-    the useless one.
-    """
-    return tuple(
-        entry["stat"]
-        for entry in substats or ()
-        if isinstance(entry, dict) and isinstance(entry.get("stat"), str)
     )

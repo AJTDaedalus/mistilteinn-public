@@ -84,9 +84,10 @@ class UpgradePotentialRead(BaseModel):
     to take on trust; three rolls of a possible five, at +9 of a possible +20, is something
     they can check.
 
-    `substats` is what the piece **has**. The schedule says *when* a piece gains a substat,
-    not *which* one a roll enhances — that rule is not in the committed data, so it is not
-    asserted. See `app/services/artifact_potential.py`.
+    The piece's own substats are **not** repeated here: `ArtifactRead` carries them in full,
+    with values and roll counts, so listing their names again would be the same answer in a
+    worse form. And which substat a roll enhances is not in the committed data at all — see
+    `app/services/artifact_potential.py`.
     """
 
     rolls_remaining: int
@@ -94,7 +95,6 @@ class UpgradePotentialRead(BaseModel):
     level: int
     max_level: int
     levels_to_max: int
-    substats: list[str]
 
 
 class ArtifactRead(BaseModel):
@@ -137,9 +137,7 @@ class ArtifactRead(BaseModel):
         """
         try:
             found = upgrade_potential(
-                stars=Rarity(self.rarity).stars,
-                level=self.level,
-                substats=self.substats,
+                stars=Rarity(self.rarity).stars, level=self.level,
             )
         except (SnapshotUnavailableError, ValueError):
             return None
@@ -149,7 +147,6 @@ class ArtifactRead(BaseModel):
             level=found.level,
             max_level=found.max_level,
             levels_to_max=found.levels_to_max,
-            substats=list(found.substats),
         )
 
     model_config = {"from_attributes": True}

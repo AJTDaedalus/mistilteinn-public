@@ -6,9 +6,9 @@ knowable from `artifact_roll_schedule.json` alone is how many rolls remain and h
 maximum the piece is, and that is what this reports.
 
 **Where a roll lands is deliberately not claimed.** The schedule says *when* a piece gains a
-substat, not *which* substat it enhances — the placement rule is not in the committed data, so
-this reports the substats a piece has rather than asserting what will happen to them. Writing
-that rule from memory is the failure this repo exists not to repeat.
+substat, not *which* substat it enhances — the placement rule is not in the committed data,
+and writing it from memory is the failure this repo exists not to repeat. The piece's own
+substats are not repeated here either: `ArtifactRead` already carries them in full.
 """
 
 from __future__ import annotations
@@ -19,17 +19,16 @@ from app.services.artifact_potential import upgrade_potential
 
 
 def potential_of(piece: _Piece):
-    """The calculation takes three values; the tests build a piece for readability."""
-    return upgrade_potential(stars=piece.stars, level=piece.level, substats=piece.substats)
+    """The calculation takes two values; the tests build a piece for readability."""
+    return upgrade_potential(stars=piece.stars, level=piece.level)
 
 
 class _Piece:
-    """The three fields the calculation reads. A stand-in, so this stays a unit test."""
+    """The two values the calculation reads, named for readability at the call sites."""
 
-    def __init__(self, stars: int, level: int, substats: list | None = None) -> None:
+    def __init__(self, stars: int, level: int) -> None:
         self.stars = stars
         self.level = level
-        self.substats = substats if substats is not None else []
 
 
 def test_a_fresh_five_star_has_every_roll_ahead_of_it() -> None:
@@ -65,31 +64,6 @@ def test_rarity_changes_the_answer_at_the_same_level() -> None:
 def test_a_partly_levelled_piece_counts_only_what_is_ahead() -> None:
     """A +9 five-star has passed +4 and +8 and has +12, +16, +20 to come."""
     assert potential_of(_Piece(5, 9)).rolls_remaining == 3
-
-
-def test_the_substats_it_has_are_reported_not_what_they_will_become() -> None:
-    """The schedule says *when* a piece gains a substat, not *which* one a roll enhances.
-    That rule is not in the committed data, so it is not asserted here."""
-    piece = _Piece(5, 0, [
-        {"stat": "FIGHT_PROP_CRITICAL", "value": 0.031, "rolls": 1},
-        {"stat": "FIGHT_PROP_ATTACK_PERCENT", "value": 0.047, "rolls": 1},
-    ])
-
-    potential = potential_of(piece)
-
-    assert potential.substats == ("FIGHT_PROP_CRITICAL", "FIGHT_PROP_ATTACK_PERCENT")
-
-
-def test_a_malformed_substat_does_not_stop_the_count() -> None:
-    """`substats` is a JSONB column with no schema behind it. A row that cannot list its
-    substats can still say how many rolls it has left, and refusing to answer either would
-    lose the useful half with the useless one."""
-    piece = _Piece(5, 0, [{"value": 0.031}, None, "nonsense"])
-
-    potential = potential_of(piece)
-
-    assert potential.rolls_remaining == 5
-    assert potential.substats == ()
 
 
 @pytest.mark.parametrize(("stars", "level"), [(3, 20), (4, 17), (5, 21), (5, -1)])
