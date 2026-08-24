@@ -65,24 +65,43 @@ class GcsimConfigError(ValueError):
 def build_config(
     build: Build,
     *,
-    actions: Sequence[str],
+    actions: Sequence[str] | None = None,
+    action_block: str | None = None,
     enemy: EnemyProfile | None = None,
     iterations: int = 100,
     duration: int = 90,
 ) -> str:
     """The gcsim config text for one build.
 
-    `actions` is the rotation, supplied rather than derived — see the module docstring.
+    Two ways to supply the rotation, and exactly one may be used:
+
+    - **`action_block`** — a compiled block from `rotation_compiler`, emitted verbatim. This
+      is the real path: it carries the `while 1` loop and the readiness gates, without which
+      the rotation runs once or deadlocks.
+    - **`actions`** — a flat list of bare action names for the build's own character, emitted
+      one per line with no loop and no gates. It predates the rotation model and survives for
+      the B.3 sample configs, whose whole job is to prove the *character and gear* lines are
+      well-formed. **A config built this way runs its actions once**, which is correct for a
+      fixture and wrong for a simulation anybody reads a number off.
     """
+    if (actions is None) == (action_block is None):
+        msg = (
+            "supply exactly one of `actions` or `action_block`. Both would mean two "
+            "rotations in one config and a silent choice about which wins; neither means "
+            "a config that simulates a character standing still."
+        )
+        raise GcsimConfigError(msg)
     if build.character is None:
         msg = f"build {build.id} has no character; there is nothing to simulate"
         raise GcsimConfigError(msg)
-    if not actions:
+    if actions is not None and not actions:
         msg = (
-            "a gcsim config needs an action list. This repo has no rotation model yet, so "
-            "the caller supplies one; a guessed rotation would simulate something other "
-            "than what was asked for."
+            "a gcsim config needs an action list. A guessed rotation would simulate "
+            "something other than what was asked for."
         )
+        raise GcsimConfigError(msg)
+    if action_block is not None and not action_block.strip():
+        msg = "the compiled action block is empty; there is nothing to simulate"
         raise GcsimConfigError(msg)
 
     key = gcsim_keys.character_key(
@@ -109,8 +128,14 @@ def build_config(
     lines.append("")
     lines.append(_target(enemy))
     lines.append("")
-    lines.append(f"active {key};")
-    lines.extend(f"{key} {action};" for action in actions)
+    if action_block is not None:
+        # Verbatim: the block already names its own `active` character, which is the first
+        # *step's* rather than this build's — a multi-character rotation may open on someone
+        # else, and re-deriving it here would fight the compiler.
+        lines.append(action_block.rstrip("\n"))
+    else:
+        lines.append(f"active {key};")
+        lines.extend(f"{key} {action};" for action in actions or ())
     return "\n".join(lines) + "\n"
 
 

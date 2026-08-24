@@ -16,7 +16,9 @@ from __future__ import annotations
 import types
 from pathlib import Path
 
+from app.services import gcsim_keys
 from app.services.gcsim_config import build_config
+from app.services.rotation_compiler import compile_rotation
 
 OUT = Path(__file__).resolve().parents[3] / "frontend" / "gcsim" / "emitted"
 
@@ -67,12 +69,58 @@ CASES = {
 }
 
 
+#: The R.3 pair. One rotation, compiled two ways, and the **difference between them is the
+#: gate**.
+#:
+#: `rotation_gated` is what `rotation_compiler` really emits: a `while 1` loop with a
+#: readiness gate on every step. `rotation_ungated` is the same rotation written the way a
+#: person reasonably would before learning gcsim's two silent behaviours — no loop, no gates.
+#:
+#: Both are configs gcsim **accepts**, which is exactly the point: acceptance proves nothing.
+#: `verify-gcsim-config.mjs` runs both and requires the first to cycle many times and the
+#: second to run once. A gate that only ever sees passing input cannot be trusted to fail.
+ROTATION_STEPS = [
+    {"character": "10000002", "action": "burst", "repeat": 1},
+    {"character": "10000002", "action": "skill", "repeat": 1},
+    {"character": "10000002", "action": "attack", "repeat": 3},
+]
+
+
+def _rotation_cases() -> dict[str, str]:
+    """The gated config, and the ungated control it is measured against."""
+    character = _character("10000002", "Kamisato Ayaka", "Cryo")
+    build = _build(character, "Mistsplitter Reforged", "Blizzard Strayer")
+    roster = {"10000002": character}
+
+    gated = compile_rotation(ROTATION_STEPS, roster)
+
+    # The control, built by stripping the compiler's own output rather than by writing a
+    # second emitter. Two generators would drift, and the one that drifted would be the one
+    # nobody reads — leaving the gate comparing the real config against a stale idea of what
+    # "wrong" looks like.
+    key = gcsim_keys.character_key(character.nanoka_id, character.name, character.element)
+    ungated_lines = [f"active {key};"]
+    for step in ROTATION_STEPS:
+        repeat = step["repeat"]
+        call = f"{key} {step['action']}:{repeat};" if repeat > 1 else f"{key} {step['action']};"
+        ungated_lines.append(call)
+
+    return {
+        "rotation_gated": build_config(build, action_block=gated),
+        "rotation_ungated": build_config(build, action_block="\n".join(ungated_lines)),
+    }
+
+
 def main() -> None:
     """Write one config per case."""
     OUT.mkdir(parents=True, exist_ok=True)
     for name, (build, actions) in CASES.items():
         path = OUT / f"{name}.txt"
         path.write_text(build_config(build, actions=actions))
+        print(f"wrote {path.relative_to(OUT.parents[2])}")
+    for name, text in _rotation_cases().items():
+        path = OUT / f"{name}.txt"
+        path.write_text(text)
         print(f"wrote {path.relative_to(OUT.parents[2])}")
 
 

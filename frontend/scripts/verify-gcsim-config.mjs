@@ -54,3 +54,79 @@ if (failed > 0) {
   process.exit(1);
 }
 console.log(`gcsim accepted all ${files.length} emitted configs`);
+
+// ── R.3: acceptance is not evidence ─────────────────────────────────────────
+//
+// Everything above proves gcsim can *parse* what we emit. It cannot tell whether the
+// rotation actually happens, and that distinction is the whole reason this section exists:
+// building D.2's ER sweep, two different mistakes each produced a config gcsim accepted
+// happily and which ran the rotation **exactly once** over ninety seconds. The DPS figure
+// looked entirely ordinary.
+//
+// So the compiled rotation is *run*, and its action counts are read back.
+//
+// `rotation_ungated` is the control — the same rotation without the loop and gates the
+// compiler adds. It must run once. Without it this would be a gate that has only ever seen
+// passing input, which is not a gate.
+
+function runSim(cfg) {
+  globalThis.initializeAggregator(cfg);
+  globalThis.initializeWorker(cfg);
+  globalThis.aggregate(globalThis.simulate());
+  return JSON.parse(globalThis.flush());
+}
+
+/** How many times each action was used, summed over every character. */
+function actionCounts(out) {
+  const counts = {};
+  for (const entry of out?.stats?.character_actions ?? []) {
+    for (const [action, stat] of Object.entries(entry?.sources ?? {})) {
+      counts[action] = (counts[action] ?? 0) + (stat?.mean ?? 0);
+    }
+  }
+  return counts;
+}
+
+const pair = ['rotation_gated', 'rotation_ungated'];
+if (!pair.every((n) => files.includes(`${n}.txt`))) {
+  console.error(
+    `the rotation pair is missing from ${CASES}. Both are required: the gated config is ` +
+      `what the compiler emits, and the ungated one is the control that proves this check ` +
+      `can fail. Regenerate with: cd backend && python -m scripts.gcsim.emit_sample_configs`,
+  );
+  process.exit(1);
+}
+
+const measured = {};
+for (const name of pair) {
+  const out = runSim(readFileSync(join(CASES, `${name}.txt`), 'utf8'));
+  measured[name] = actionCounts(out);
+  console.log(`  ${name}: ${JSON.stringify(measured[name])}`);
+}
+
+// The rotation has one burst per cycle, so burst count *is* the cycle count.
+const gatedCycles = measured.rotation_gated.burst ?? 0;
+const ungatedCycles = measured.rotation_ungated.burst ?? 0;
+
+if (ungatedCycles > 1.5) {
+  console.error(
+    `the ungated control ran ${ungatedCycles} cycles. It is supposed to run once — that is ` +
+      `the failure this check exists to catch. If gcsim's behaviour changed, this check is ` +
+      `now measuring nothing and needs rewriting rather than relaxing.`,
+  );
+  process.exit(1);
+}
+
+if (gatedCycles < 2) {
+  console.error(
+    `the compiled rotation ran ${gatedCycles} cycle(s) over the configured duration. A ` +
+      `rotation is a cycle: it should repeat until the clock runs out. Running once is ` +
+      `exactly the D.2 failure — a plausible number for a question nobody asked.`,
+  );
+  process.exit(1);
+}
+
+console.log(
+  `rotation cycles: gated ${gatedCycles}, ungated control ${ungatedCycles} — ` +
+    `the loop and the gates are doing work gcsim can see`,
+);
