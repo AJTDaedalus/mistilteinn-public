@@ -24,6 +24,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from app.models.enums import LEVELLED_TALENTS
 from app.services import gcsim_keys
 
 if TYPE_CHECKING:
@@ -140,12 +141,15 @@ def build_config(
 
 
 def _talents(build: Build) -> str:
-    """Three levels, in the attack/skill/burst order gcsim expects."""
+    """Three levels, in the attack/skill/burst order gcsim expects.
+
+    The order and membership come from `LEVELLED_TALENTS`, which the build schema validates
+    against — so a key the schema accepts is a key this renders, and vice versa. They were
+    two lists until T.1, and the `get(name, 1)` below is why that mattered: an accepted key
+    this did not list was stored and ignored, and a misspelled one rendered as level 1.
+    """
     levels = build.talent_levels or {}
-    return ",".join(
-        str(levels.get(name, 1))
-        for name in ("normal_attack", "elemental_skill", "elemental_burst")
-    )
+    return ",".join(str(levels.get(str(talent), 1)) for talent in LEVELLED_TALENTS)
 
 
 def _artifact_lines(key: str, artifacts: Sequence[Artifact]) -> list[str]:

@@ -19,11 +19,11 @@
 
 ---
 
-### [ ] T.0 — Branch setup **(gate)**
+### [x] T.0 — Branch setup **(gate)** — held
 - **Do:** per-task branches off `dev`; merge by PR.
 - **Accept:** nothing reaches `dev` outside a PR — checkable with `git log --first-parent dev`.
 
-### [ ] T.1 — The build write path refuses what cannot be simulated
+### [x] T.1 — The build write path refuses what cannot be simulated — **done**
 - **Do:** validate `POST /builds` and `PATCH /builds/{id}`:
   - `character_id` must exist → 422 naming it (today: a 500 from the FK).
   - `weapon_id`, when given, must exist and its `weapon_type` must equal the character's →
@@ -38,6 +38,18 @@
 - **Why it is first:** DESIGN §2.2 — a misspelled talent key is currently read as level 1 by
   `gcsim_config._talents`, so a talent-9 burst simulates as talent 1. Building the UI first
   would mean shipping the page that makes that easy to do.
+- **Done, and it found three more than the design predicted:**
+  - **A second build of the same character was a 500.** `uq_builds_owner_character` was
+    enforced only by the database. Now a 409 naming the limit — which is inherited from fairy
+    and *under review* (`app/models/build.py`), so this makes it legible rather than
+    endorsing it. **Owner decision still outstanding; see the LOG.**
+  - **`BuildUpdate` silently dropped unknown fields.** A PATCH naming `character_id` returned
+    200 having changed nothing. `extra="forbid"` now refuses it.
+  - **The refusal message read `WEAPON_SWORD_ONE_HAND`.** That is the game's internal
+    spelling, not a label; `WeaponType.display` is now the one readable name per class.
+  - `MAX_TALENT_LEVEL` is **15, read off the fixtures** — every levelled talent has a 15-row
+    `promote` table — not derived from constellation arithmetic, which gives 13.
+  - Seven mutations, all CAUGHT.
 
 ### [ ] T.2 — A build carries what a row needs
 - **Do:** `BuildRead` gains optional nested `character` and `weapon` summaries — name,

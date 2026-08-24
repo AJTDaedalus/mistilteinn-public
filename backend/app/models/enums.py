@@ -99,6 +99,16 @@ class WeaponType(enum.StrEnum):
     CATALYST = "WEAPON_CATALYST"
     CROSSBOW = "WEAPON_CROSSBOW"
 
+    @property
+    def display(self) -> str:
+        """`Sword`, not `WEAPON_SWORD_ONE_HAND`.
+
+        The value is the game's internal spelling and is not a label — it is why `Element`
+        reads well in API output and this does not. Anything shown to a person goes through
+        here, so there is one readable name per class rather than one per message.
+        """
+        return self.name.title()
+
     @classmethod
     def parse(cls, raw: str | None) -> WeaponType | None:
         """Map either index's spelling to a single member; warn on anything unknown."""
@@ -238,6 +248,7 @@ class TalentType(enum.StrEnum):
     ELEMENTAL_BURST = "elemental_burst"
     ALTERNATE_SPRINT = "alternate_sprint"
 
+
     @classmethod
     def from_skill_icon(cls, icon: str | None) -> TalentType | None:
         """Classify a `skills[].promote[].icon`; warn on an unrecognised prefix."""
@@ -251,6 +262,38 @@ class TalentType(enum.StrEnum):
             return cls.ELEMENTAL_SKILL
         logger.warning("Unclassifiable skill icon %r — see app/models/enums.py", icon)
         return None
+
+
+
+#: The talents that carry a **level**, in the order gcsim's `talent=` field expects them.
+#:
+#: `ALTERNATE_SPRINT` is deliberately absent: it is a mode, not a skill with a scaling table,
+#: and a level stored against it is a number nothing reads.
+#:
+#: **One definition** (T.1). This was a hand-written tuple inside
+#: `gcsim_config._talents`, which renders `levels.get(name, 1)` — so any key the schema
+#: accepted that this tuple did not list would be stored and then silently ignored, and any
+#: key a user misspelled would render as level 1. A talent-9 burst simulated at talent 1 is a
+#: wrong number that looks right. The validator and the renderer now read the same tuple, so
+#: they cannot disagree about which three there are or what order they go in.
+LEVELLED_TALENTS: tuple[TalentType, ...] = (
+    TalentType.NORMAL_ATTACK,
+    TalentType.ELEMENTAL_SKILL,
+    TalentType.ELEMENTAL_BURST,
+)
+
+#: Highest talent level a scaling table publishes.
+#:
+#: **Read off the fixtures, not from constellation arithmetic.** Every levelled talent in
+#: `tests/fixtures/nanoka_gi/character_*.json` carries a 15-row `promote` table keyed `0..14`
+#: — so levels 1-15 each have a scaling row and none of them can miss the lookup. (The one
+#: 1-row table belongs to an alternate sprint, which is why `LEVELLED_TALENTS` excludes it.)
+#:
+#: `app/models/build.py` reasons to **13** instead, from C3 and C5 each adding three levels
+#: to a base of 10. That is about what is *reachable in the game*; this is about what the
+#: data can *express*. The bound here is the looser of the two on purpose: refusing a level
+#: the published table defines would be this repo asserting a game rule it has not cited.
+MAX_TALENT_LEVEL = 15
 
 
 class StatType(enum.StrEnum):

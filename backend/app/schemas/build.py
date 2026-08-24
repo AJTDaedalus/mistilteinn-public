@@ -6,6 +6,38 @@ from pydantic import BaseModel, Field, field_validator
 
 from app.formula.genshin import tags
 from app.formula.genshin.damage import Amplifying, ScalingStat
+from app.models.enums import LEVELLED_TALENTS, MAX_TALENT_LEVEL
+
+
+def _validated_talents(levels: dict[str, int]) -> dict[str, int]:
+    """Refuse a talent key nothing renders, or a level outside 1-15.
+
+    The key check is the load-bearing one. `gcsim_config._talents` reads a missing key as
+    level 1, so `{{"burst": 9}}` — which looks entirely reasonable — stores a 9 that nothing
+    reads and simulates the burst at level 1. Nothing errors and the number is wrong, which
+    is the failure this repo treats as non-negotiable.
+
+    Checked against `LEVELLED_TALENTS`, the tuple the renderer iterates, rather than a list
+    restated here. `alternate_sprint` is a real `TalentType` and is deliberately not in it:
+    a sprint has no scaling table, so a level against it is a number nothing reads.
+    """
+    known = [str(talent) for talent in LEVELLED_TALENTS]
+    unknown = sorted(set(levels) - set(known))
+    if unknown:
+        msg = (
+            f"{unknown} are not talents that carry a level. The three are {known} — a key "
+            f"outside them is stored and never read, and a misspelling of one is rendered "
+            f"as level 1, so the talent simulates far weaker than it is."
+        )
+        raise ValueError(msg)
+    out_of_range = sorted(k for k, v in levels.items() if not 1 <= v <= MAX_TALENT_LEVEL)
+    if out_of_range:
+        msg = (
+            f"{out_of_range} are outside 1-{MAX_TALENT_LEVEL}. The cap is "
+            f"{MAX_TALENT_LEVEL} rather than 10 because C3 and C5 each add three levels."
+        )
+        raise ValueError(msg)
+    return levels
 
 
 class BuildCreate(BaseModel):
@@ -23,9 +55,24 @@ class BuildCreate(BaseModel):
     talent_levels: dict[str, int] = {}
     notes: str = ""
 
+    @field_validator("talent_levels")
+    @classmethod
+    def _check_talents(cls, value: dict[str, int]) -> dict[str, int]:
+        return _validated_talents(value)
+
 
 class BuildUpdate(BaseModel):
-    """Body for `PATCH /builds/{id}` — all fields optional."""
+    """Body for `PATCH /builds/{id}` — all fields optional.
+
+    `character_id` is **not** here, and an unknown field is now a 422 rather than silently
+    dropped (T.1). Those two facts go together: sending `{"character_id": …}` used to return
+    200 having changed nothing, so a caller was told their edit succeeded when it had been
+    discarded. Changing a build's character makes it a different build — and
+    `uq_builds_owner_character` would collide with the existing one anyway — so the field
+    stays out, and refusing it says so instead of pretending.
+    """
+
+    model_config = {"extra": "forbid"}
 
     weapon_id: str | None = None
     character_level: int | None = Field(None, ge=1, le=90)
@@ -35,6 +82,12 @@ class BuildUpdate(BaseModel):
     constellation_level: int | None = Field(None, ge=0, le=6)
     talent_levels: dict[str, int] | None = None
     notes: str | None = None
+
+    @field_validator("talent_levels")
+    @classmethod
+    def _check_talents(cls, value: dict[str, int] | None) -> dict[str, int] | None:
+        # `None` means "not in this patch", which is not the same as an empty dict.
+        return None if value is None else _validated_talents(value)
 
 
 class BuildRead(BaseModel):
