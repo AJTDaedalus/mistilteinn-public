@@ -87,10 +87,10 @@ async def list_rotations(
 ) -> PaginatedResponse[RotationRead]:
     """The caller's rotations, optionally just one team's."""
     if team_id is not None:
-        rows = list(await repo.list_for_team(team_id))
+        rows = await repo.list_for_team(team_id, offset=offset, limit=limit)
         return PaginatedResponse(
             items=[RotationRead.model_validate(r) for r in rows],
-            total=len(rows), offset=0, limit=limit,
+            total=await repo.count_for_team(team_id), offset=offset, limit=limit,
         )
     rows = await repo.get_all(offset=offset, limit=limit)
     return PaginatedResponse(

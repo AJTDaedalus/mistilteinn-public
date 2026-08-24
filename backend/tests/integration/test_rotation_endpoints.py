@@ -97,6 +97,29 @@ async def test_listing_can_be_scoped_to_a_team(authed_client: AsyncClient, scene
     assert [r["name"] for r in listed.json()["items"]] == ["One"]
 
 
+async def test_a_team_scoped_page_reports_the_total_not_the_page_size(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """The envelope has to describe the page it returned.
+
+    The first version ignored `offset`/`limit` for a team-scoped list and returned every
+    row while declaring `limit=50` — a client paging through it would loop forever on
+    page one and never learn there was more.
+    """
+    for n in range(3):
+        await authed_client.post(ROTATIONS, json={
+            "name": f"R{n}", "team_id": scene.team_id, "steps": [_step(scene.ayaka)],
+        })
+
+    page = (await authed_client.get(
+        ROTATIONS, params={"team_id": scene.team_id, "offset": 1, "limit": 1},
+    )).json()
+
+    assert len(page["items"]) == 1
+    assert page["total"] == 3
+    assert (page["offset"], page["limit"]) == (1, 1)
+
+
 async def test_steps_are_replaced_wholesale(authed_client: AsyncClient, scene: Scene):
     """A rotation is an ordered list, so "change step 3" and "insert before step 3" are the
     same edit to a client and different ones to a per-index API. The ambiguity would land on
@@ -204,13 +227,24 @@ async def test_an_unknown_team_is_a_404(authed_client: AsyncClient, scene: Scene
 async def test_someone_elses_rotation_is_a_404(
     authed_client: AsyncClient, db_session: AsyncSession, scene: Scene,
 ):
+    """Owned by a real second account, not by nobody. A NULL owner would pass an
+    owner-scoped filter for the wrong reason and prove nothing about tenancy."""
     from app.models.rotation import Rotation
+    from app.models.user import User
 
-    stranger = Rotation(owner_id=None, team_id=scene.team_id, name="Theirs", steps=[])
+    stranger = User(email="stranger@example.com", password_hash="not-a-hash")  # noqa: S106
     db_session.add(stranger)
     await db_session.flush()
+    theirs = Rotation(
+        owner_id=str(stranger.id), team_id=scene.team_id, name="Theirs", steps=[],
+    )
+    db_session.add(theirs)
+    await db_session.flush()
 
-    assert (await authed_client.get(f"{ROTATIONS}/{stranger.id}")).status_code == 404
+    assert (await authed_client.get(f"{ROTATIONS}/{theirs.id}")).status_code == 404
+    listed = await authed_client.get(ROTATIONS, params={"team_id": scene.team_id})
+    assert [r["name"] for r in listed.json()["items"]] == []
+    assert listed.json()["total"] == 0, "a leaked count is a leak"
 
 
 # ── Compiling ─────────────────────────────────────────────────────────────────
