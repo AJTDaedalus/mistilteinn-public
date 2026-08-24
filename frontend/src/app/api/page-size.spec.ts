@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import spec from '../../../openapi.json';
+import { CONTRACT } from './contract';
 import { MAX_PAGE_LIMIT } from './page-size';
 
 /**
@@ -14,18 +14,8 @@ import { MAX_PAGE_LIMIT } from './page-size';
  * here rather than being silently left behind. `openapi.json` is the same file
  * `npm run codegen` builds `api.types.ts` from, and a backend test keeps it current.
  */
-interface LimitParam {
-  name: string;
-  schema?: { maximum?: number };
-}
-
 function schemaMaximum(path: string): number {
-  // Through `unknown`: TypeScript infers the imported JSON as a wall of literal types, and
-  // this test wants to look up a path by name rather than assert against that shape.
-  const paths = (spec as unknown as {
-    paths: Record<string, { get?: { parameters?: LimitParam[] } }>;
-  }).paths;
-  const params = paths[path]?.get?.parameters ?? [];
+  const params = CONTRACT.paths[path]?.['get']?.parameters ?? [];
   const limit = params.find((p) => p.name === 'limit');
   expect(limit?.schema?.maximum, `${path} publishes no limit maximum`).toBeTypeOf('number');
   return limit!.schema!.maximum!;

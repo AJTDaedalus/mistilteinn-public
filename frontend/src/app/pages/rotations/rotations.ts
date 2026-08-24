@@ -1,5 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 
 import { apiErrorMessage } from '../../api/api-error';
 import {
@@ -27,7 +28,7 @@ import {
  */
 @Component({
   selector: 'page-rotations',
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   templateUrl: './rotations.html',
   styleUrl: './rotations.scss',
 })

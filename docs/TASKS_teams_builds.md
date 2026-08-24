@@ -114,20 +114,31 @@ Four mutations, all CAUGHT. Migration `27770f8ae917`, round-tripped up and down.
   screen from the edit having vanished. It now stays put after a patch and clears after a
   create, with a test for each. Six mutations, six caught after that fix.
 
-### [ ] T.4 — The team builder
+### [x] T.4 — The team builder — **done**
 - **Do:** a page to assemble up to four builds into a team, name it, and delete it.
 - **Files:** `frontend/src/app/pages/teams/`, `app.routes.ts`, `app.html`.
 - **Accept:** in the nav; a build already in another slot cannot be picked twice, and the
   client rule and `assert_slots_distinct` cannot disagree — the same picker-matches-validator
   guarantee as R.5, tested as one claim; refusals verbatim.
+- **Done.** `pages/teams/`, in the nav. Each slot offers only builds that break neither
+  server rule — not already in another slot (`assert_slots_distinct`), and not a second build
+  of a character already on the team (T.1a). `TEAM_SLOTS` is checked against the committed
+  contract rather than trusted as a mirror; dropping the fourth slot is CAUGHT. Seven
+  mutations, seven caught — including the self-review finding that `canSave` accepted "any
+  member" where the schema requires the **first** slot, hidden behind a `body as never` cast.
 
-### [ ] T.5 — The loop closes
+### [x] T.5 — The loop closes — **done**
 - **Do:** the rotation editor's empty state becomes a link to the team builder. One
   integration test walks the whole path.
 - **Files:** `frontend/src/app/pages/rotations/rotations.html`, `backend/tests/integration/`.
 - **Accept:** an integration test creates two builds, assembles a team, authors a rotation and
   compiles it, in one flow. **Not** a unit test of each step — every piece already passes its
   own tests today while the app is unusable, so what needs proving is that they are connected.
+- **Done.** `test_the_loop_closes.py`: two builds → a team → the rotation editor's options →
+  a rotation whose steps use the ids that roster published → a gated, looped config → a
+  context key. Plus its counterpart, that each link **refuses** rather than passing something
+  broken along. The dead-end empty states are links now: the rotation editor points at the
+  team builder, and the team builder at the build editor.
 
 ---
 
