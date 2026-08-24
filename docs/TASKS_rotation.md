@@ -103,12 +103,16 @@ unnoticed. The duplicate-slot test derives its pairs from that list too, so it n
   passes. 12 component tests; two mutations CAUGHT, one SURVIVED and the unfailable test it
   exposed was removed rather than kept.
 
-### [ ] R.6 — Wire it to the run corpus
+### [x] R.6 — Wire it to the run corpus — **done**
 - **Do:** a saved rotation feeds `sim_context.context_key` and the D.1 corpus, so a rotation
   and a team together identify a cached run.
 - **Accept:** two rotations differing by one step produce different context keys; the same
   rotation reordered produces a different key — `context_key` already treats rotation order as
   significant, and this proves the compiler agrees.
+- **Done:** `POST /rotations/{id}/context-key`. `rotation_signature` shares `_resolve` with
+  the compiler, and `gcsim_config.target_fields` is now shared with the target line, so
+  neither the rotation nor the target can be described two ways. Both acceptance criteria are
+  tests, and both survive mutation: sorting the signature and dropping `repeat` are CAUGHT.
 
 ---
 

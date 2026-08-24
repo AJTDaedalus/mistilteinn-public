@@ -189,15 +189,21 @@ def _accumulate(stats: dict[str, float], prop: object, value: float) -> None:
     stats[name] = stats.get(name, 0.0) + value
 
 
-def _target(enemy: EnemyProfile | None) -> str:
-    """The target line.
+def target_fields(enemy: EnemyProfile | None) -> dict[str, object]:
+    """What gcsim is being pointed at, as fields.
+
+    Shared with `sim_context.context_key` (R.6) so a cache key and the config it was cached
+    from cannot describe different enemies. Rendering the line and hashing the target from
+    two separate readings of the profile would drift, and the drift would surface as a
+    cached number for the wrong target — which is what the key is for.
 
     A profile's resistances are per channel and gcsim takes one `resist=`, so a profile with
     uneven resistances cannot be expressed and is refused rather than averaged — an average
     is a number for an enemy that does not exist.
     """
     if enemy is None:
-        return "target lvl=90 resist=0.1 pos=0,1;"
+        # The default target, in one place. Two literals would be one literal and a copy.
+        return {"lvl": 90, "resist": 0.1, "pos": "0,1"}
 
     resistances = {
         enemy.physical_res, enemy.anemo_res, enemy.cryo_res, enemy.dendro_res,
@@ -210,4 +216,12 @@ def _target(enemy: EnemyProfile | None) -> str:
             f"that does not exist; pick a channel-specific target instead."
         )
         raise GcsimConfigError(msg)
-    return f"target lvl={enemy.level} resist={resistances.pop():g} pos=0,1;"
+    return {"lvl": enemy.level, "resist": resistances.pop(), "pos": "0,1"}
+
+
+def _target(enemy: EnemyProfile | None) -> str:
+    """The target line, rendered from `target_fields`."""
+    fields = target_fields(enemy)
+    return (
+        f"target lvl={fields['lvl']} resist={fields['resist']:g} pos={fields['pos']};"
+    )

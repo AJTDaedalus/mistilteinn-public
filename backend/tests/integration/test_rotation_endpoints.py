@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from app.models.build import Build
+from app.models.build import Build, EnemyProfile
 from app.models.character import Character
 from app.models.enums import Element, Rarity, WeaponType
 from app.models.team import Team
@@ -33,6 +33,8 @@ class Scene:
     team_id: str
     ayaka: str
     barbara: str
+    ayaka_build: str
+    barbara_build: str
 
 
 @pytest.fixture
@@ -62,7 +64,10 @@ async def scene(db_session: AsyncSession, authed_user: tuple[User, str]) -> Scen
     )
     db_session.add(team)
     await db_session.flush()
-    return Scene(team_id=str(team.id), ayaka="10000002", barbara="10000014")
+    return Scene(
+        team_id=str(team.id), ayaka="10000002", barbara="10000014",
+        ayaka_build=made["10000002"], barbara_build=made["10000014"],
+    )
 
 
 def _step(character: str, action: str = "burst", repeat: int = 1) -> dict:
@@ -374,3 +379,298 @@ async def test_a_rotation_gone_stale_is_refused_not_repaired(
 
     intact = await authed_client.get(f"{ROTATIONS}/{created['id']}")
     assert len(intact.json()["steps"]) == 2, "the authored steps must survive the refusal"
+
+
+# ── The cache key — R.6 ───────────────────────────────────────────────────────
+
+
+async def _key(client: AsyncClient, rotation_id: str, build_id: str) -> dict:
+    response = await client.post(
+        f"{ROTATIONS}/{rotation_id}/context-key", json={"build_id": build_id},
+    )
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+async def _rotation(client: AsyncClient, scene: Scene, steps: list[dict]) -> str:
+    created = await client.post(ROTATIONS, json={
+        "name": "keyed", "team_id": scene.team_id, "steps": steps,
+    })
+    assert created.status_code == 201, created.text
+    return created.json()["id"]
+
+
+async def test_one_step_different_is_a_different_key(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """R.6's first acceptance criterion.
+
+    A cached run is only reusable if it simulated the same rotation. If a key survived a
+    changed step, the cache would answer with a number computed for a rotation the user is
+    no longer asking about — and it would look like a hit.
+    """
+    base = [_step(scene.ayaka, "burst"), _step(scene.barbara, "skill")]
+    changed = [_step(scene.ayaka, "burst"), _step(scene.barbara, "attack")]
+
+    first = await _key(authed_client, await _rotation(authed_client, scene, base),
+                       scene.ayaka_build)
+    second = await _key(authed_client, await _rotation(authed_client, scene, changed),
+                        scene.ayaka_build)
+
+    assert first["context_key"] != second["context_key"]
+
+
+async def test_the_same_steps_reordered_is_a_different_key(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """R.6's second. Order *is* the rotation — bursting before a skill is not the same fight
+    as skilling before a burst, and `context_key` hashes `rotation` as a sequence. This test
+    is what proves the signature agrees with it rather than sorting on the way in."""
+    forwards = [_step(scene.ayaka, "burst"), _step(scene.barbara, "skill")]
+    backwards = [_step(scene.barbara, "skill"), _step(scene.ayaka, "burst")]
+
+    first = await _key(authed_client, await _rotation(authed_client, scene, forwards),
+                       scene.ayaka_build)
+    second = await _key(authed_client, await _rotation(authed_client, scene, backwards),
+                        scene.ayaka_build)
+
+    assert first["context_key"] != second["context_key"]
+    assert first["rotation"] != second["rotation"]
+    assert sorted(first["rotation"]) == sorted(second["rotation"]), (
+        "the same steps, so only their order may differ"
+    )
+
+
+async def test_repeat_is_part_of_the_key(authed_client: AsyncClient, scene: Scene):
+    """`attack:3` is not `attack`, and a run of one is not a run of the other."""
+    once = await _key(
+        authed_client,
+        await _rotation(authed_client, scene, [_step(scene.ayaka, "attack", 1)]),
+        scene.ayaka_build,
+    )
+    thrice = await _key(
+        authed_client,
+        await _rotation(authed_client, scene, [_step(scene.ayaka, "attack", 3)]),
+        scene.ayaka_build,
+    )
+
+    assert once["context_key"] != thrice["context_key"]
+
+
+async def test_the_same_rotation_keys_the_same_twice(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """Guards the guard. Every assertion above is about keys *differing*, and all of them
+    would pass if the key were simply random."""
+    steps = [_step(scene.ayaka, "burst"), _step(scene.barbara, "skill")]
+    rotation_id = await _rotation(authed_client, scene, steps)
+
+    first = await _key(authed_client, rotation_id, scene.ayaka_build)
+    second = await _key(authed_client, rotation_id, scene.ayaka_build)
+
+    assert first["context_key"] == second["context_key"]
+
+
+async def test_two_builds_on_one_team_key_differently(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """A key is per-character within a team: it hashes one character's own levels and weapon
+    alongside the team it sits in. Ayaka's run is not Barbara's."""
+    rotation_id = await _rotation(
+        authed_client, scene, [_step(scene.ayaka, "burst"), _step(scene.barbara, "skill")],
+    )
+
+    ayaka = await _key(authed_client, rotation_id, scene.ayaka_build)
+    barbara = await _key(authed_client, rotation_id, scene.barbara_build)
+
+    assert ayaka["context_key"] != barbara["context_key"]
+    assert ayaka["team"] == barbara["team"], "the same team, listed the same way"
+
+
+async def test_the_key_reports_what_it_hashed(authed_client: AsyncClient, scene: Scene):
+    """A hash is opaque by design, so the parts come back with it. A caller meeting an
+    unexpected miss can see what was hashed rather than guess."""
+    rotation_id = await _rotation(
+        authed_client, scene, [_step(scene.ayaka, "attack", 3)],
+    )
+
+    body = await _key(authed_client, rotation_id, scene.ayaka_build)
+
+    assert body["rotation"] == ["kamisatoayaka attack:3"]
+    assert body["team"] == ["barbara", "kamisatoayaka"]
+    assert body["target"] == {"lvl": 90, "resist": 0.1, "pos": "0,1"}
+    assert len(body["context_key"]) == 64
+
+
+async def test_the_signature_names_who_the_compiler_names(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """The key and the config gcsim actually receives must agree about who a step names.
+
+    Two readings of the steps would eventually differ, and the difference would surface as a
+    cached number for a rotation nobody ran. Both go through `_resolve`, and this checks the
+    result rather than the intention.
+    """
+    rotation_id = await _rotation(
+        authed_client, scene, [_step(scene.barbara, "skill"), _step(scene.ayaka, "burst")],
+    )
+
+    body = await _key(authed_client, rotation_id, scene.ayaka_build)
+    config = (await authed_client.post(f"{ROTATIONS}/{rotation_id}/compile")).json()["config"]
+
+    for entry in body["rotation"]:
+        key, action = entry.split(" ")[0], entry.split(" ")[1].split(":")[0]
+        assert f"{key} {action}" in config, f"{entry} is not in the config gcsim receives"
+
+
+async def test_a_build_from_another_team_is_refused(
+    authed_client: AsyncClient, db_session: AsyncSession, scene: Scene,
+    authed_user: tuple[User, str],
+):
+    user, _ = authed_user
+    outsider = Build(owner_id=str(user.id), character_id=None)
+    db_session.add(outsider)
+    await db_session.flush()
+    rotation_id = await _rotation(authed_client, scene, [_step(scene.ayaka, "burst")])
+
+    response = await authed_client.post(
+        f"{ROTATIONS}/{rotation_id}/context-key", json={"build_id": str(outsider.id)},
+    )
+
+    assert response.status_code == 422
+    assert "not on this rotation's team" in response.json()["detail"]
+
+
+async def test_a_stale_rotation_has_no_key(
+    authed_client: AsyncClient, db_session: AsyncSession, scene: Scene,
+):
+    """Refused, not silently keyed without the missing step. A key computed from a rotation
+    that cannot run would name a cached result for a simulation nobody could perform."""
+    rotation_id = await _rotation(
+        authed_client, scene, [_step(scene.ayaka, "burst"), _step(scene.barbara, "skill")],
+    )
+    team = await db_session.get(Team, scene.team_id)
+    team.build2_id = None
+    await db_session.flush()
+
+    response = await authed_client.post(
+        f"{ROTATIONS}/{rotation_id}/context-key", json={"build_id": scene.ayaka_build},
+    )
+
+    assert response.status_code == 422
+    assert "does not have" in response.json()["detail"]
+
+
+async def test_an_enemy_supplies_the_target(
+    authed_client: AsyncClient, db_session: AsyncSession, scene: Scene,
+):
+    """Untested until the R.6 self-review, and broken: `enemy_nanoka_id` was typed as a
+    string against an Integer column, so the branch reached asyncpg as text and raised."""
+    dummy = EnemyProfile(
+        nanoka_id=21010101, name="Hilichurl", level=93,
+        base_hp=13.584, base_atk=1.0, base_def=1.0,
+        physical_res=0.25, anemo_res=0.25, cryo_res=0.25, dendro_res=0.25,
+        electro_res=0.25, geo_res=0.25, hydro_res=0.25, pyro_res=0.25,
+    )
+    db_session.add(dummy)
+    await db_session.flush()
+    rotation_id = await _rotation(authed_client, scene, [_step(scene.ayaka, "burst")])
+
+    body = (await authed_client.post(
+        f"{ROTATIONS}/{rotation_id}/context-key",
+        json={"build_id": scene.ayaka_build, "enemy_nanoka_id": 21010101},
+    )).json()
+
+    assert body["target"] == {"lvl": 93, "resist": 0.25, "pos": "0,1"}
+
+
+async def test_the_enemy_changes_the_key(
+    authed_client: AsyncClient, db_session: AsyncSession, scene: Scene,
+):
+    """A run against a level-93 quarter-resist target is not a run against the default."""
+    db_session.add(EnemyProfile(
+        nanoka_id=21010102, name="Tougher", level=100,
+        base_hp=1.0, base_atk=1.0, base_def=1.0,
+        physical_res=0.5, anemo_res=0.5, cryo_res=0.5, dendro_res=0.5,
+        electro_res=0.5, geo_res=0.5, hydro_res=0.5, pyro_res=0.5,
+    ))
+    await db_session.flush()
+    rotation_id = await _rotation(authed_client, scene, [_step(scene.ayaka, "burst")])
+
+    default = await _key(authed_client, rotation_id, scene.ayaka_build)
+    against = (await authed_client.post(
+        f"{ROTATIONS}/{rotation_id}/context-key",
+        json={"build_id": scene.ayaka_build, "enemy_nanoka_id": 21010102},
+    )).json()
+
+    assert default["context_key"] != against["context_key"]
+
+
+async def test_an_unevenly_resistant_enemy_is_refused_not_averaged(
+    authed_client: AsyncClient, db_session: AsyncSession, scene: Scene,
+):
+    """gcsim's target takes one `resist=`, and an average is a number for an enemy that does
+    not exist. The refusal already existed in the config renderer; sharing `target_fields`
+    means the key inherits it rather than quietly hashing an averaged target."""
+    db_session.add(EnemyProfile(
+        nanoka_id=21010103, name="Lopsided", level=90,
+        base_hp=1.0, base_atk=1.0, base_def=1.0,
+        physical_res=0.1, anemo_res=0.9, cryo_res=0.1, dendro_res=0.1,
+        electro_res=0.1, geo_res=0.1, hydro_res=0.1, pyro_res=0.1,
+    ))
+    await db_session.flush()
+    rotation_id = await _rotation(authed_client, scene, [_step(scene.ayaka, "burst")])
+
+    response = await authed_client.post(
+        f"{ROTATIONS}/{rotation_id}/context-key",
+        json={"build_id": scene.ayaka_build, "enemy_nanoka_id": 21010103},
+    )
+
+    assert response.status_code == 422
+    assert "uneven resistances" in response.json()["detail"]
+
+
+async def test_an_unknown_enemy_is_a_404(authed_client: AsyncClient, scene: Scene):
+    rotation_id = await _rotation(authed_client, scene, [_step(scene.ayaka, "burst")])
+
+    response = await authed_client.post(
+        f"{ROTATIONS}/{rotation_id}/context-key",
+        json={"build_id": scene.ayaka_build, "enemy_nanoka_id": 999999999},
+    )
+
+    assert response.status_code == 404
+
+
+async def test_a_character_gcsim_does_not_implement_is_refused_with_its_reason(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+):
+    """A character released after the pin has no gcsim key. That is a refusal with a written
+    explanation — most likely released after the pin, re-pin deliberately — and it escaped as
+    a 500 in the first version of this handler, where nobody would ever have read it."""
+    user, _ = authed_user
+    unknown = Character(
+        nanoka_id="99999999", name="Someone Unreleased", element=Element.PYRO,
+        weapon_type=WeaponType.SWORD, rarity=Rarity.FIVE_STAR,
+        base_hp=1000.0, base_atk=26.0, base_def=60.0,
+        base_crit_rate=0.05, base_crit_dmg=0.5,
+    )
+    db_session.add(unknown)
+    await db_session.flush()
+    build = Build(owner_id=str(user.id), character_id=str(unknown.id))
+    db_session.add(build)
+    await db_session.flush()
+    team = Team(owner_id=str(user.id), name="Unsimulatable", build1_id=str(build.id))
+    db_session.add(team)
+    await db_session.flush()
+    created = await authed_client.post(ROTATIONS, json={
+        "name": "keyed", "team_id": str(team.id), "steps": [_step("99999999", "burst")],
+    })
+    assert created.status_code == 201, created.text
+
+    response = await authed_client.post(
+        f"{ROTATIONS}/{created.json()['id']}/context-key",
+        json={"build_id": str(build.id)},
+    )
+
+    assert response.status_code == 422, response.text
+    assert "gcsim has no character key" in response.json()["detail"]

@@ -17,13 +17,22 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
-from app.dependencies import get_owned_rotation_repo, get_owned_team_repo
+from app.dependencies import (
+    get_enemy_profile_repo,
+    get_owned_build_repo,
+    get_owned_rotation_repo,
+    get_owned_team_repo,
+)
 from app.middleware.rate_limit import WRITE_LIMIT, limiter
 from app.models.rotation import Rotation
+from app.repositories.build import BuildRepository
+from app.repositories.enemy import EnemyProfileRepository
 from app.repositories.rotation import RotationRepository
 from app.repositories.team import TeamRepository
 from app.schemas.common import PaginatedResponse
 from app.schemas.rotation import (
+    ContextKeyRead,
+    ContextKeyRequest,
     RosterCharacter,
     RotationCreate,
     RotationOptions,
@@ -31,13 +40,23 @@ from app.schemas.rotation import (
     RotationUpdate,
     TeamRoster,
 )
-from app.services.gcsim_keys import authorable_actions
-from app.services.rotation_compiler import RotationCompileError, compile_rotation
+from app.schemas.team import TEAM_SLOTS
+from app.services import gcsim_keys
+from app.services.gcsim_config import GcsimConfigError, target_fields
+from app.services.gcsim_keys import GcsimKeyError, authorable_actions, pinned_commit
+from app.services.rotation_compiler import (
+    RotationCompileError,
+    compile_rotation,
+    rotation_signature,
+)
+from app.services.sim_context import context_key
 
 router = APIRouter(prefix="/rotations", tags=["rotations"])
 
 _Repo = Annotated[RotationRepository, Depends(get_owned_rotation_repo)]
 _Teams = Annotated[TeamRepository, Depends(get_owned_team_repo)]
+_Builds = Annotated[BuildRepository, Depends(get_owned_build_repo)]
+_Enemies = Annotated[EnemyProfileRepository, Depends(get_enemy_profile_repo)]
 _Offset = Annotated[int, Query(ge=0)]
 _Limit = Annotated[int, Query(ge=1, le=200)]
 
@@ -220,3 +239,96 @@ async def compile_to_gcsim(
         return {"config": compile_rotation(rotation.steps or [], roster)}
     except RotationCompileError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/{rotation_id}/context-key", response_model=ContextKeyRead)
+@limiter.limit(WRITE_LIMIT)
+async def rotation_context_key(
+    request: Request,  # slowapi reads the client address off it
+    rotation_id: str,
+    body: ContextKeyRequest,
+    repo: _Repo,
+    teams: _Teams,
+    builds: _Builds,
+    enemies: _Enemies,
+) -> ContextKeyRead:
+    """The cache key identifying "this build, running this rotation, against this target".
+
+    R.6. `context_key` decides whether a cached gcsim run answers the question being asked,
+    and getting it wrong is not a performance bug — it serves a confident number computed for
+    something else. **So the server computes it.** Before this, the only callers were tests,
+    and a client wanting a cached run had to reproduce a canonicalising SHA-256 by hand; the
+    second implementation would have drifted, and the drift would look like a cache hit.
+
+    The rotation is fed in through `rotation_signature`, which shares `_resolve` with the
+    compiler — so the key and the config gcsim actually receives cannot disagree about who a
+    step names. The target comes through `gcsim_config.target_fields`, for the same reason.
+    """
+    rotation = await _require(repo, rotation_id)
+
+    team = await teams.get_by_id(rotation.team_id)
+    if team is None or body.build_id not in {
+        getattr(team, slot) for slot in TEAM_SLOTS
+    }:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"build {body.build_id!r} is not on this rotation's team. A context key is "
+                f"per-character within the team that ran the rotation, so a build from "
+                f"somewhere else would key a run that never happened."
+            ),
+        )
+
+    build = await builds.get_full(body.build_id)
+    if build is None or build.character is None:
+        raise HTTPException(
+            status_code=422,
+            detail=f"build {body.build_id!r} has no character, so there is nothing to key.",
+        )
+
+    enemy = None
+    if body.enemy_nanoka_id is not None:
+        found = await enemies.get_by_filters({"nanoka_id": body.enemy_nanoka_id})
+        if not found:
+            raise HTTPException(
+                status_code=404, detail=f"No enemy {body.enemy_nanoka_id!r}",
+            )
+        enemy = found[0]
+
+    roster = await repo.character_rows(rotation.team_id)
+    # `GcsimKeyError` is in here too: a character or weapon released after the pin has no
+    # gcsim key, and that is a refusal with a written explanation, not a server fault. It
+    # escaped as a 500 in the first version of this handler — the message was already right,
+    # nobody was going to see it.
+    try:
+        signature = rotation_signature(rotation.steps or [], roster)
+        target = target_fields(enemy)
+        members = sorted(
+            gcsim_keys.character_key(row.nanoka_id, row.name, row.element)
+            for row in roster.values()
+        )
+        key = context_key(
+            character_key=gcsim_keys.character_key(
+                build.character.nanoka_id, build.character.name, build.character.element,
+            ),
+            weapon_key=(
+                gcsim_keys.weapon_key(build.weapon.name)
+                if build.weapon is not None
+                else None
+            ),
+            character_level=build.character_level,
+            constellation=build.constellation_level,
+            weapon_level=build.weapon_level,
+            refinement=build.refinement,
+            talent_levels=build.talent_levels or {},
+            rotation=signature,
+            target=target,
+            gcsim_pin=pinned_commit(),
+            team=members,
+        )
+    except (RotationCompileError, GcsimConfigError, GcsimKeyError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return ContextKeyRead(
+        context_key=key, rotation=signature, team=members,
+        target=target, gcsim_pin=pinned_commit(),
+    )

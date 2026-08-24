@@ -91,6 +91,30 @@ def compile_rotation(
     return "\n".join(lines) + "\n"
 
 
+def rotation_signature(
+    steps: Sequence[Mapping[str, object]],
+    characters: Mapping[str, Character],
+) -> list[str]:
+    """The rotation as `sim_context.context_key` sees it — one string per step, in order.
+
+    R.6. A cached gcsim run is reusable only if it simulated the same rotation, so the key
+    has to change when the rotation does. It does, because this is derived from the same
+    steps and the same `_resolve` the compiler uses: **a signature and a config cannot
+    disagree about who a step names.** Two functions reading the steps separately would
+    eventually differ, and the failure would be a confident cached number computed for a
+    different rotation — the exact thing `context_key` exists to prevent.
+
+    Order is preserved, because `context_key` hashes `rotation` as a sequence and reordering
+    a rotation makes it a different rotation. `repeat` is in the string for the same reason:
+    `attack:3` is not `attack`.
+    """
+    keys = _resolve(steps, characters)
+    return [
+        f"{key} {step['action']}:{int(step.get('repeat', 1) or 1)}"
+        for key, step in zip(keys, steps, strict=True)
+    ]
+
+
 def _resolve(
     steps: Sequence[Mapping[str, object]],
     characters: Mapping[str, Character],
