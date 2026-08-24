@@ -17,10 +17,16 @@ hundredth of its real value.
 - `{p}×3` — one hit landing three times. The count stays **separate** (OQ-M2): the damage
   chain applies crit and DEF per hit, so a pre-multiplied `param × 3` would apply them once to
   a tripled number, which is a different and smaller answer.
-- `{a}+{b}` — two parts of one attack. Summed.
-- `{a}/{b}` — two **alternatives**, `Low/High Plunge DMG`. Returned as two hits (OQ-M1).
-  Summing them gives a multiplier for a hit nobody can perform, and collapsing to one loses
-  the other.
+- `{a}+{b}` — **two hits that both land**, not one summed multiplier. Venti's `1-Hit DMG` is
+  `{param1}+{param1}`: two arrows of 0.20382 each, and gcsim stores one per-hit value rather
+  than 0.40764. Summing applies crit and DEF once to a doubled figure, which is the same
+  mistake as folding `×3` into the multiplier — **M.4 caught it summing, and this is the fix.**
+- `{a}/{b}` — two **alternatives**, `Low/High Plunge DMG`. Only one of them happens. A
+  repeat binds to the alternative it follows: `{a}/{b}/{c}×3` repeats only `c`, which is how
+  gcsim models Clorinde's three Bond-of-Life lunges.
+
+Both shapes yield two hits; `exclusive` is what tells them apart, because a caller totalling a
+talent's damage adds the first pair and picks one of the second.
 
 ## What counts as damage
 
@@ -41,8 +47,29 @@ from dataclasses import dataclass
 #: `{param12:F1P}` — the index is 1-based against the `param` list.
 _PARAM = re.compile(r"\{param(\d+):([A-Za-z0-9]+)\}")
 
+#: The same, with the repeat marker that may follow it. The marker binds to **the param it
+#: follows**, not to the row: `{a}/{b}/{c}×3` repeats only `c`.
+#:
+#: `\u00d7` is U+00D7 MULTIPLICATION SIGN, which is what the payload contains. Written as an
+#: escape because ruff's ambiguity check is right that an inline `×` beside an ASCII `x` is
+#: indistinguishable to a reader.
+_PARAM_WITH_REPEAT = re.compile(
+    r"\{param(\d+):([A-Za-z0-9]+)\}(?:\u00d7(\d+))?",
+)
+
 #: What marks a row as damage. See the module docstring on why this is the label, not `FMT`.
 _DAMAGE = "DMG"
+
+#: Words that make a `DMG` label something other than an instance of damage.
+#:
+#: **Derived from the data, not guessed.** Of the 430 distinct `DMG` labels across the seeded
+#: catalogue, 50 carry one of these — `Shield DMG Absorption` is a shield's capacity,
+#: `Anemo DMG Bonus` is an additive modifier, `DMG Reduction` is damage *taken*, and
+#: `Elemental Mastery-Based Swirl DMG Increase` is a coefficient per point of EM. gcsim's own
+#: comment for that last one ends `per Point`, which is what first identified it (M.4).
+#:
+#: Treating any of them as a hit produces a multiplier for something that never strikes.
+_NOT_A_HIT = ("Bonus", "Increase", "Absorption", "Reduction", "Resistance", "per ")
 
 #: The row whose value is a burst's energy cost. `Character.burst_energy_cost` has been
 #: nullable since Chunk D precisely because this had never been parsed out.
@@ -69,6 +96,11 @@ class TalentHit:
     #: How many times this hit lands per use. Separate from the multiplier — see the module
     #: docstring.
     hits: int = 1
+    #: True when this hit is **one of several alternatives** and only one of them happens —
+    #: a low plunge against a high plunge. False for the parts of a multi-hit attack, which
+    #: all land. A caller totalling a talent's damage sums the latter and picks one of the
+    #: former, and without this it cannot tell which it is looking at.
+    exclusive: bool = False
 
 
 def parse_talent_row(
@@ -84,7 +116,7 @@ def parse_talent_row(
         if not entry:
             continue
         label, _, spec = entry.partition("|")
-        if _DAMAGE not in label:
+        if _DAMAGE not in label or any(word in label for word in _NOT_A_HIT):
             continue
         hits.extend(_hits_from(label, spec, param or []))
     return hits
@@ -111,62 +143,53 @@ def energy_cost(desc: list[str] | None, param: list[float] | None) -> int | None
 
 
 def _hits_from(label: str, spec: str, param: list[float]) -> list[TalentHit]:
-    """One `Label|spec` pair, as one hit or two alternatives."""
-    found = _PARAM.findall(spec)
-    if not found:
+    """One `Label|spec` pair, as the hits it describes.
+
+    The spec is read **positionally**, which is how the payload writes it:
+
+        {param4:F1P}/{param5:F1P}/{param7:F1P}×3
+
+    Split on `/` gives three alternatives; the `×3` belongs to the third because it follows
+    it. gcsim models exactly that — Clorinde's `Impale the Night` is three tables, no / low /
+    full Bond of Life, and only the third repeats (M.4). Within an alternative, `+` joins
+    parts that all land.
+    """
+    alternatives = spec.split("/")
+    exclusive = len(alternatives) > 1
+
+    hits: list[TalentHit] = []
+    for segment in alternatives:
+        found = _PARAM_WITH_REPEAT.findall(segment)
+        if not found:
+            continue
+        joins = _PARAM_WITH_REPEAT.sub("", segment).strip()
+        if len(found) > 1 and "+" not in joins:
+            # **Not defaulted to a sum.** Params joined by something this has not been taught
+            # is a shape nobody has checked, and combining them would produce a confident
+            # multiplier for a hit whose composition is a guess. Refusing names the row.
+            msg = (
+                f"{label!r} references {len(found)} params joined by {joins!r}, which this "
+                f"parser does not recognise: {spec!r}. Combining them would invent a "
+                f"composition."
+            )
+            raise TalentScalingError(msg)
+        for index, _, repeat in found:
+            hits.append(
+                TalentHit(
+                    label=label,
+                    multiplier=_value(index, param, f"{label}|{spec}"),
+                    hits=int(repeat) if repeat else 1,
+                    exclusive=exclusive,
+                ),
+            )
+
+    if not hits:
         msg = (
             f"{label!r} is a damage row with no param reference: {spec!r}. A hit the parser "
             f"cannot resolve is a gap in the parser, not a hit that does no damage."
         )
         raise TalentScalingError(msg)
-
-    values = [_value(index, param, f"{label}|{spec}") for index, _ in found]
-    repeats = _repeats(spec)
-    separators = _PARAM.sub("", spec)
-
-    if len(values) == 1:
-        return [TalentHit(label=label, multiplier=values[0], hits=repeats)]
-
-    # `/` means alternatives — two different actions, and never a sum.
-    if "/" in separators:
-        if repeats > 1:
-            # Unreachable in the committed payloads and refused rather than guessed: `×N`
-            # could plausibly apply to each alternative or to only one, and picking is
-            # inventing a rule the data does not state.
-            msg = (
-                f"{label!r} lists alternatives *and* a repeat count: {spec!r}. Which "
-                f"alternative repeats is not something the payload says."
-            )
-            raise TalentScalingError(msg)
-        return [TalentHit(label=label, multiplier=value) for value in values]
-
-    if "+" in separators:
-        return [TalentHit(label=label, multiplier=sum(values), hits=repeats)]
-
-    # **Not defaulted to a sum.** Two params joined by something this does not recognise is a
-    # shape the parser has not been taught, and summing them would produce a confident
-    # multiplier for a hit whose composition nobody checked. Refusing says which row to look
-    # at; a silent sum says nothing and is wrong somewhere downstream.
-    msg = (
-        f"{label!r} references {len(values)} params joined by {separators!r}, which this "
-        f"parser does not recognise: {spec!r}. Summing them would invent a composition."
-    )
-    raise TalentScalingError(msg)
-
-
-#: The repeat marker, spelled by codepoint.
-#:
-#: U+00D7 MULTIPLICATION SIGN is the character the payload uses, and ruff's ambiguity check
-#: rightly flags it inline — an ASCII `x` beside it would be indistinguishable to a reader and
-#: would silently match nothing. Named here so there is one place it is written and no
-#: blanket `noqa` over a module that also handles user-facing labels.
-_REPEAT = re.compile("\u00d7(\\d+)")
-
-
-def _repeats(spec: str) -> int:
-    """The repeat count after a param, or 1."""
-    found = _REPEAT.search(spec)
-    return int(found.group(1)) if found else 1
+    return hits
 
 
 def _value(index: str, param: list[float], entry: str) -> float:

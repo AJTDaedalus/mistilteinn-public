@@ -60,7 +60,7 @@
   total (DESIGN §1 A6 — a number must be able to explain itself); a failed load surfaced
   rather than rendered as a zero.
 
-### [ ] M.4 — Crossval the parse against gcsim
+### [x] M.4 — Crossval the parse against gcsim — **done, and brought forward**
 - **Do:** compare parsed multipliers against gcsim's generated `zz_*.dm.go` tables, over the
   characters both implement.
 - **Accept:** a disagreement **fails**; coverage is reported; **a run that compared nothing is
@@ -69,6 +69,22 @@
 - **Why it matters more than an ordinary test:** DESIGN §2.2's "a damage row is one whose
   label contains DMG" is an English-language heuristic. A heuristic that agrees with an
   independent implementation across a hundred characters is not resting on the heuristic.
+- **Brought forward ahead of M.2/M.3**, because until it ran the parser's correctness rested
+  on my own reading of 91 rows — and M.2 and M.3 build on it.
+- **It found three things immediately, and the first was a real bug.**
+  1. **`A+B` was summed and should be two hits.** Venti's `1-Hit DMG|{param1}+{param1}` is two
+     arrows of 0.20382; we produced 0.40764. Summing applies crit and DEF once to a doubled
+     figure — *the same mistake the parser already refused to make for `×3`*.
+  2. **`Elemental Mastery-Based Swirl DMG Increase` is not a hit.** gcsim's comment for it
+     ends `per Point`. 50 of the catalogue's 430 `DMG` labels are bonuses, shields,
+     reductions or per-point coefficients, and all are excluded now.
+  3. **A repeat binds to the alternative it follows.** M.1 refused `{a}/{b}/{c}×3` rather than
+     guess; gcsim models Clorinde's three lunges as three tables of which only the third
+     repeats, which answered it.
+- **Result: 105 characters, 18,611 hits, 0 mismatches, 0 refusals.** The committed test runs
+  the same comparison over the fixtures with no database and no clone, so it cannot skip.
+  Four mutations against the comparison itself, all caught — including "a run that compared
+  nothing reports success".
 
 ---
 
@@ -76,10 +92,12 @@
 
 - ~~**OQ-M1**~~ **Answered in DESIGN §8: a `/` row is two hits, and the caller picks.**
 - ~~**OQ-M2**~~ **Answered in DESIGN §8: `×3` is one hit with a count, not a tripled multiplier.**
-- **OQ-M3 — what happens when gcsim and nanoka disagree?** **Deliberately open.** It has not
-  happened, and inventing a policy for an unobserved disagreement is how a tolerance gets set
-  to hide one. The first real case decides it, and it goes in `docs/CROSSVAL_gcsim.md` beside
-  the two divergences already recorded there.
+- ~~**OQ-M3 — what happens when gcsim and nanoka disagree?**~~ **It did not arise, and that
+  is the answer for now.** Every one of the 18,611 comparable hits agrees exactly. The three
+  apparent disagreements were all *ours*: a summing bug, a label that is not a hit, and a
+  shape M.1 had refused to guess at. Where gcsim has no table for a row we parse, that is
+  recorded as coverage rather than disagreement — 2,944 such hits — because gcsim does not
+  model every published row.
 
 ## Not in this chunk
 

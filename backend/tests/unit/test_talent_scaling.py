@@ -97,12 +97,28 @@ def test_a_repeated_hit_keeps_its_count_separate() -> None:
     assert hits["4-Hit DMG"].hits == 3
 
 
-def test_a_summed_row_adds_its_parts() -> None:
-    """`A+B` is two parts of one attack."""
-    hits = _by_label(["Charged Attack DMG|{param6:F1P}+{param7:P}"], [0, 0, 0, 0, 0, 1.5, 2.0])
+def test_a_multi_part_attack_is_two_hits_that_both_land() -> None:
+    """`A+B` is **not** a sum, and M.4 is what proved it.
 
-    assert hits["Charged Attack DMG"].multiplier == pytest.approx(3.5)
-    assert hits["Charged Attack DMG"].hits == 1
+    Rosaria's skill is `Skill DMG|{param1:P}+{param2:P}` and gcsim stores 0.584 and 1.36 as
+    separate tables. Each part crits and takes DEF separately, so summing applies those once
+    to a combined figure — the same mistake as folding `×3` into the multiplier, which this
+    parser already refused to make.
+    """
+    parsed = parse_talent_row(["Skill DMG|{param1:P}+{param2:P}"], [0.584, 1.36])
+
+    assert [hit.multiplier for hit in parsed] == pytest.approx([0.584, 1.36])
+    assert not any(hit.exclusive for hit in parsed), "both parts land"
+
+
+def test_a_repeated_param_is_two_hits_of_the_same_size() -> None:
+    """Venti's `1-Hit DMG|{param1:F1P}+{param1:F1P}` — two arrows of 0.20382 each.
+
+    gcsim stores one per-hit value of 0.20382, not 0.40764. Summing here is what M.4 caught.
+    """
+    parsed = parse_talent_row(["1-Hit DMG|{param1:F1P}+{param1:F1P}"], [0.20382])
+
+    assert [hit.multiplier for hit in parsed] == pytest.approx([0.20382, 0.20382])
 
 
 def test_alternatives_are_two_hits_and_are_never_summed() -> None:
@@ -117,6 +133,8 @@ def test_alternatives_are_two_hits_and_are_never_summed() -> None:
     assert len(parsed) == 2
     assert [hit.multiplier for hit in parsed] == pytest.approx([1.0, 2.0])
     assert {hit.multiplier for hit in parsed} != {3.0}
+    # `exclusive` is what separates this from a multi-part attack, where both parts land.
+    assert all(hit.exclusive for hit in parsed)
 
 
 # ── what is not damage ───────────────────────────────────────────────────────
@@ -250,12 +268,21 @@ def test_an_unrecognised_join_is_refused_rather_than_summed() -> None:
         parse_talent_row(["Skill DMG|{param1:P} and {param2:P}"], [1.0, 2.0])
 
 
-def test_alternatives_with_a_repeat_are_refused_rather_than_guessed() -> None:
-    """Not in the committed payloads, and refused rather than assumed: a repeat could apply
-    to each alternative or to only one, and picking is inventing a rule the data does not
-    state."""
-    with pytest.raises(TalentScalingError, match="alternatives"):
-        parse_talent_row(["Plunge DMG|{param1:P}/{param2:P}×3"], [1.0, 2.0])
+def test_a_repeat_binds_to_the_alternative_it_follows() -> None:
+    """M.4 answered this from the data.
+
+    Clorinde's `Impale the Night DMG` is `{param4}/{param5}/{param7}×3` — three lunges, no /
+    low / full Bond of Life — and gcsim models it as **three** tables of which only the third
+    repeats. M.1 refused this shape rather than guess; gcsim said which guess was right, so
+    the spec is read positionally now.
+    """
+    parsed = parse_talent_row(
+        ["Impale the Night DMG|{param1:P}/{param2:P}/{param3:P}\u00d73"], [1.0, 2.0, 3.0],
+    )
+
+    assert [hit.multiplier for hit in parsed] == pytest.approx([1.0, 2.0, 3.0])
+    assert [hit.hits for hit in parsed] == [1, 1, 3]
+    assert all(hit.exclusive for hit in parsed)
 
 
 def test_a_single_param_still_takes_its_repeat() -> None:
@@ -264,3 +291,28 @@ def test_a_single_param_still_takes_its_repeat() -> None:
 
     assert hit.hits == 3
     assert hit.multiplier == pytest.approx(0.226464)
+
+
+@pytest.mark.parametrize("label", [
+    "Shield DMG Absorption",
+    "Anemo DMG Bonus",
+    "DMG Reduction",
+    "Elemental Mastery-Based Swirl DMG Increase",
+    "DMG per Star Jade",
+])
+def test_a_dmg_label_that_is_not_a_hit_is_excluded(label: str) -> None:
+    """Of the 430 distinct `DMG` labels in the seeded catalogue, 50 are not hits.
+
+    A shield's capacity, an additive bonus, damage *taken*, a coefficient per point of EM.
+    Treating any of them as a hit produces a multiplier for something that never strikes —
+    and gcsim's comment for the Swirl one ends `per Point`, which is what identified it (M.4).
+    """
+    assert parse_talent_row([f"{label}|{{param1:P}}"], [0.5]) == []
+
+
+def test_the_exclusion_does_not_swallow_real_hits() -> None:
+    """Guards the guard: the words above are common enough that an over-broad rule would
+    quietly drop ordinary attacks."""
+    for label in ("1-Hit DMG", "Charged Attack DMG", "Skill DMG", "Cutting DMG",
+                  "Low/High Plunge DMG", "Bloom DMG"):
+        assert parse_talent_row([f"{label}|{{param1:P}}"], [0.5]), label
