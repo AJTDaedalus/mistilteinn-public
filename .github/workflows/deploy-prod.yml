@@ -132,8 +132,22 @@ jobs:
           # step the instant cmd exits non-zero, before anything is printed. The operator
           # then sees `Process completed with exit code 1` and nothing else, which defeats
           # the job's entire purpose. fairy shipped that bug once; it is not repeated here.
+          # `tests/` is excluded from the runtime image by backend/.dockerignore — correct
+          # for a runtime image, and fatal for this check: `verify_seed` reads the committed
+          # nanoka indexes under tests/fixtures/nanoka_gi to compare against what was
+          # actually seeded. Without them it dies on FileNotFoundError, which is a *skip*
+          # wearing a failure's clothes: it proves nothing about the data.
+          #
+          # The repo is checked out on this box, so the fixtures are mounted read-only for
+          # the one-off run. Shipping them inside the image would put test data in a runtime
+          # artifact to serve a verification tool, which is the wrong trade.
+          #
+          # Found by deploying. It could not have been found by reading, because the
+          # dev-time invocation runs from a source tree where the path simply exists.
           rc=0
-          out="$($COMPOSE run --rm -T backend python -m scripts.verify_seed 2>&1)" || rc=$?
+          out="$($COMPOSE run --rm -T \
+                   -v "$REPO_DIR/backend/tests/fixtures:/app/tests/fixtures:ro" \
+                   backend python -m scripts.verify_seed 2>&1)" || rc=$?
           echo "$out"
 
           # A SKIP IS NOT A PASS. An unseeded database is precisely the state this job
