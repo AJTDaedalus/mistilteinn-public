@@ -58,6 +58,30 @@ def _keys(source: Path, filename: str) -> list[str]:
     return sorted(set(found))
 
 
+#: gcsim's action names live in a plain Go string slice, `astr`, whose order matches the
+#: `Action` enum above it. Parsed rather than restated, for the reason every other snapshot in
+#: this repo is derived: a re-pin that adds or renames an action becomes a reviewable diff
+#: instead of a silent divergence between what we emit and what gcsim accepts.
+_ASTR = re.compile(r"var astr = \[\]string\{(.*?)\}", re.S)
+_ASTR_ENTRY = re.compile(r'"([a-z_]+)"')
+
+
+def _actions(source: Path) -> list[str]:
+    """Every action name gcsim's parser accepts, in enum order."""
+    text = (source / "pkg" / "core" / "action" / "action.go").read_text()
+    block = _ASTR.search(text)
+    if block is None:
+        msg = "could not find `var astr` in pkg/core/action/action.go; the format changed"
+        raise SystemExit(msg)
+    found = _ASTR_ENTRY.findall(block.group(1))
+    # `invalid` is the zero value, not something a config can name.
+    actions = [a for a in found if a != "invalid"]
+    if not actions:
+        msg = "no actions parsed from action.go"
+        raise SystemExit(msg)
+    return actions
+
+
 def main() -> None:
     """Write the key snapshot from a gcsim clone."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -86,11 +110,12 @@ def main() -> None:
             "scripts/gcsim/build_key_snapshot.py; do not edit by hand."
         ),
         **{name: _keys(args.src, filename) for name, filename in _FILES.items()},
+        "actions": _actions(args.src),
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(snapshot, indent=2, sort_keys=False) + "\n")
 
-    counts = ", ".join(f"{k}={len(snapshot[k])}" for k in _FILES)
+    counts = ", ".join(f"{k}={len(snapshot[k])}" for k in (*_FILES, "actions"))
     print(f"wrote {OUT.relative_to(REPO)} at {pin}: {counts}")
 
 

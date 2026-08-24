@@ -387,3 +387,50 @@ reason that is invisible until traffic is served to the wrong app.
 `security/zap/` all use **mistilteinn**, and `.github/workflows/deploy-prod.yml` was deleted in
 the fork commit precisely so nothing would deploy under a half-migrated identity. Using
 `mistilteinn.aetherus.dev` — flagged rather than silently corrected.
+
+---
+
+## OQ-R1 — a rotation belongs to a team (2026-08-24)
+
+**Decision:** `rotations.team_id`, not `build_id`.
+
+A rotation names *several* characters acting in turn; a `Build` is one character with its
+weapon and artifacts, so a rotation cannot belong to one. The team's builds supply the stats
+for whoever is being simulated.
+
+It is also what the code already assumed: `sim_context.context_key` hashes `team` and
+`rotation` together, so the pairing existed at the cache layer before the schema admitted it.
+fairy attached combos to a team for the same reason, and the owner named fairy as the model.
+
+**Consequence:** `team_id` cascades. A rotation without its team is not a partial rotation, it
+is an ordered list of characters nobody can place — a row that can never compile and no screen
+could sensibly show.
+
+**Also decided here:** `RotationUpdate` has **no `team_id`**. Moving a rotation between teams
+would reinterpret every step against a different party, and the steps that stopped resolving
+would surface later, at compile time, far from the edit that caused it.
+
+---
+
+## OQ-R2 — a step names a character, and a stale rotation is refused (2026-08-24)
+
+**Decision:** a step carries the character's `nanoka_id`. Not a slot, not a build.
+
+**Not a slot**, because slots are positional: reordering the team would silently change what
+the rotation means, and a rotation that quietly becomes a *different* rotation is worse than
+one that visibly breaks.
+
+**Not a build**, because a build is a loadout. Swapping which Ayaka build sits on the team
+should not invalidate a rotation that says "Ayaka bursts".
+
+A `nanoka_id` is stable across both, and is what the compiler needs anyway to reach a gcsim
+key.
+
+**When the team loses that character, the rotation goes stale and is refused** — named steps
+and all — rather than repaired. The alternatives were to drop the offending steps, which
+deletes a user's authored work so an operation can succeed, or to reinterpret them against
+whoever now occupies the position, which is the silent-wrong-answer this repo refuses
+everywhere else. Saying no, and naming exactly which steps, leaves the user in control.
+
+This is D.3's rule applied one layer up: an outcome the caller must act on is **stated**, not
+silently substituted.
