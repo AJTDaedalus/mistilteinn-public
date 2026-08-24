@@ -90,12 +90,18 @@ unnoticed. The duplicate-slot test derives its pairs from that list too, so it n
   rotation and leaves the authored steps intact. 14 integration tests. `openapi.json` at 29
   paths. Verified locally: 1034 passed / 0 skipped, `ci_local` 19/19.
 
-### [ ] R.5 — The editor
+### [x] R.5 — The editor — **done**
 - **Do:** a page to build a rotation: pick a team, add steps, reorder, set `repeat`, save.
   Uses `catalogue-list.ts`'s error discipline and the Mitya tokens.
 - **Accept:** reachable from the shell nav — `app.routes.spec.ts` fails otherwise; a failed
   load is surfaced rather than rendered as "no results"; the compiled config is viewable, so a
   user can see what their rotation became.
+- **Done:** `pages/rotations/`, plus `GET /rotations/options` — the editor needs the action
+  vocabulary and each team's roster keyed by `nanoka_id`, and deriving the latter on the
+  client meant five round trips and a UUID→`nanoka_id` mapping it has no business doing.
+  Picker and validator read one source, tested as one. Nav link added; `app.routes.spec.ts`
+  passes. 12 component tests; two mutations CAUGHT, one SURVIVED and the unfailable test it
+  exposed was removed rather than kept.
 
 ### [ ] R.6 — Wire it to the run corpus
 - **Do:** a saved rotation feeds `sim_context.context_key` and the D.1 corpus, so a rotation
