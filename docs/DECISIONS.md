@@ -434,3 +434,20 @@ everywhere else. Saying no, and naming exactly which steps, leaves the user in c
 
 This is D.3's rule applied one layer up: an outcome the caller must act on is **stated**, not
 silently substituted.
+
+## Rotations are authored, never optimized (2026-08-25)
+
+**Owner decision.** Searching over rotations will not be built.
+
+`DESIGN_rotation.md` §5 had left this open on **cost** grounds — making the rotation an output
+multiplies the search by the space of action lists, against a gcsim run costing ~4,700× one
+damage-chain combination under WASI (Chunk S). A design pass was queued to decide whether that
+was affordable.
+
+It is settled on different grounds, which is why the design pass is cancelled rather than
+deferred: **a user writes a rotation deliberately, and one arrived at by search is not a
+rotation they would recognise as theirs.** Authoring is the product; the rotation is an input
+to the optimizer, not an output of it.
+
+What this closes: the remainder of Chunk I in `TASKS_mistilteinn.md`, and the queued design
+pass. Nothing in the tree changes — the boundary was already where this decision puts it.

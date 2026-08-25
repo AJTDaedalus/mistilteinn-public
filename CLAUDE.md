@@ -20,27 +20,36 @@ done, S is done, `TASKS_client_optimizer.md` is complete (PRs #31–#41), K is d
 status banner rather than this paragraph — this one is a summary and summaries go stale,
 which is why the numbers below name how to re-derive them.
 
-**What is left, and what each waits on** (`TASKS_mistilteinn.md`, "Where this plan stands"):
+**Every chunk in `TASKS_mistilteinn.md` is done**, and six further plans have been written
+and completed since. Each has its own file with its own status banner; read those rather than
+this list.
 
-| | |
+| plan | delivered |
 |---|---|
-| **G.9** — upgrade-potential scoring | Not blocked on evidence. The roll schedule is derived and committed (`app/data/yuanshen/snapshot/artifact_roll_schedule.json`; a 5-star upgrades at +4/+8/+12/+16/+20). It waits on a **consumer**: `artifact_ranker` was its home and C.6 deleted it. |
-| **H** — kit corpus | **Superseded and closed.** Chunk S found gcsim already implements 106 characters and 53 artifact sets at the pin, so there is no corpus to curate. Its CI gate is retired with each validation level's successor recorded. **But see the `TODO(chunk-H)` note below — the markers outlived the chunk.** |
-| **I** — rotations | Authoring landed as the rotation chunk. What survives is whether a rotation is ever *optimized*, which DESIGN §3.5 warns reopens the client-side cost argument. |
-| **J** — frontend | Palette and emblem are done (Mitya references, #46). What remains is applying them as pages are built. |
-| **K** — deploy | **Live** at `https://mistilteinn.aetherus.dev`, beside `fairy.aetherus.dev` on one box. |
+| `TASKS_client_optimizer.md` | the browser kernel — CPU, GPU, run corpus, retrieval (#31–#41) |
+| `TASKS_rotation.md` | authoring rotations, compiled to gcsim (#50–#58) |
+| `TASKS_teams_builds.md` | the build editor and team builder (#60–#65) |
+| `TASKS_artifacts.md` | inventory, GOOD import, equipping, upgrade potential — closes G.9 (#67–#72) |
+| `TASKS_multipliers.md` | talent multipliers, crossvalidated against gcsim (#73–#77) |
+| `TASKS_optimizer.md` | the search surface (#78–#82) |
 
-**There is deliberately no reachable optimizer** — an owner ruling, on the grounds that this
-is not a functional app until the plan completes and interim functionality is not worth
-keeping for its own sake. `artifact_optimizer.optimize` survives as the oracle the browser
-kernel's fixtures are generated from, not as a route.
+**The app is walkable end to end**: import a GOOD export, equip pieces to a build, assemble a
+team, author a rotation, compile it to gcsim, search your own artifacts for the best five, and
+ask why the winner won. The earlier notes here saying there was no reachable optimizer and no
+way to make a team were true when written and are not now.
 
-**There is also no UI for creating a team or a build.** The rotation editor's empty state
-tells a user to build a team first, and as of this writing there is nowhere to do that. Known
-gap, not an oversight to route around.
+**Two chunks closed without being built.** **H** was superseded — gcsim already implements the
+kits the corpus existed to curate — though its markers survive, pointing at weapon passives
+the damage chain does not model. **I's rotation-optimization half is closed by owner decision
+(2026-08-25): rotations are authored, never optimized.** A user writes a rotation deliberately,
+and one arrived at by search is not one they would recognise as theirs.
 
-- **Both suites pass, with nothing skipped.** **1055 backend tests, 0 skipped**; **87
-  frontend tests**; `create_app()` serves **31 paths**. Re-derive rather than trust:
+**What is genuinely open is five `TODO(chunk-)` markers and nothing else.** `rg "TODO\(chunk-"`
+is the inventory; none is blocking, and none has a plan file.
+
+- **Both suites pass, with nothing skipped.** **1221 backend tests, 0 skipped**; **207
+  frontend tests**; `create_app()` serves **35 paths**; the SPA has **13 routes plus a
+  catch-all**. Re-derive rather than trust:
   `cd backend && python -m pytest -q`, `cd frontend && npm test`. Run CI's own gates rather
   than a remembered subset: `cd backend && python -m scripts.ci_local` reads
   `.github/workflows/*.yml` and executes them here — 19 gates, including the WGSL kernel,
@@ -207,7 +216,8 @@ Unchanged from fairy (a deliberate BRIEF decision):
 
 - **Backend**: FastAPI + SQLAlchemy 2.0 async + PostgreSQL + Alembic
 - **Frontend**: Angular 21, standalone components, signals — see `frontend/CLAUDE.md`.
-  No longer deferred: it compiles, it is tested in CI, and it serves eight routes plus a catch-all.
+  No longer deferred: it compiles, it is tested in CI, and it serves thirteen routes plus a
+  catch-all.
 - **Infrastructure**: Docker Compose (backend + frontend here; **no `db` service** — see
   §Database)
 - **Deploy**: **live at `https://mistilteinn.aetherus.dev`**, alongside `fairy.aetherus.dev`
