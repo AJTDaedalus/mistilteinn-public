@@ -106,20 +106,50 @@ def _detail_path(entity: str, key: str) -> Path:
     return FIXTURE_DIR / "detail" / f"{entity}_{key}.json"
 
 
+def committed_version() -> str:
+    """The version the committed fixtures are at, read from the committed manifest.
+
+    **This is the default, not upstream's `gi.latest`.** The directory is ground truth for
+    every enum, column and mapping in this repo, and those are only true of *one* version —
+    so a capture that follows `latest` writes a payload from a newer patch into a directory
+    pinned to an older one, and nothing about the result says so.
+
+    N.2 did exactly that: adding two characters pulled them at 7.0.52 while every other file
+    was 7.0.51, and quietly rewrote three index files. `--version` is how a re-pin is asked
+    for deliberately, which is the only way it should happen.
+    """
+    manifest = json.loads((FIXTURE_DIR / MANIFEST_NAME).read_text())
+    return str(manifest["gi"]["latest"])
+
+
 async def capture(version: str | None, *, check_only: bool) -> int:
     """Fetch every declared fixture; write it, or report drift. Returns an exit code."""
-    transport = HttpNanokaTransport(version=version)
+    # `--check` deliberately asks upstream what *it* considers latest, because reporting drift
+    # is its whole job. A capture pins to what is committed unless told otherwise.
+    transport = HttpNanokaTransport(
+        version=version if check_only else (version or committed_version()),
+    )
     drifted: list[str] = []
     try:
         pinned = await transport.resolve_version()
         print(f"nanoka GI version {pinned}")
         manifest = await transport.fetch_manifest()
-        drifted += _emit(
-            FIXTURE_DIR / MANIFEST_NAME,
-            _serialize(manifest, _INDEX_DUMP) + _MANIFEST_SUFFIX,
-            None,
-            check_only=check_only,
-        )
+        # **The manifest is only rewritten by a deliberate re-pin.**
+        #
+        # `committed_version()` reads the pin out of this file, so writing upstream's current
+        # `gi.latest` into it moves the pin — and the *next* capture would then follow the new
+        # version without anyone asking. A pinned capture that quietly re-pins is worse than
+        # one that follows `latest`, because it looks like it did neither.
+        #
+        # `--check` still fetches and compares it: reporting that upstream has moved is
+        # exactly what `--check` is for, and it writes nothing.
+        if check_only or version is not None:
+            drifted += _emit(
+                FIXTURE_DIR / MANIFEST_NAME,
+                _serialize(manifest, _INDEX_DUMP) + _MANIFEST_SUFFIX,
+                None,
+                check_only=check_only,
+            )
         for entity in INDEXES:
             payload = await transport.fetch_index(entity)
             drifted += _emit(
@@ -179,7 +209,8 @@ def main() -> int:
     parser.add_argument(
         "--version",
         default=None,
-        help="nanoka GI version to capture (default: pin manifest.json -> gi.latest)",
+        help="nanoka GI version to capture (default: the committed manifest's version, "
+             "**not** upstream's latest — see `committed_version`)",
     )
     parser.add_argument(
         "--check",
