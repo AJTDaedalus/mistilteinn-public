@@ -27,6 +27,7 @@
     <ul class="grid wide">
       @for (set of list.items(); track set.id) {
         <li class="card">
+          <catalogue-icon [icon]="set.icon" [alt]="set.name" [size]="44" />
           <span class="name">{{ set.name }}</span>
           <!-- From the row, never assumed to be [2, 4]: one-piece sets exist. -->
           <span class="meta">

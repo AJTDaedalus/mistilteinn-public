@@ -1,6 +1,8 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { CatalogueIcon } from '../../shared/icon/icon';
+
 import { catalogueList } from './catalogue-list';
 import { CatalogueService, type CharacterSummary } from './catalogue.service';
 import { allPages } from '../../api/all-pages';
@@ -15,7 +17,7 @@ import { allPages } from '../../api/all-pages';
  */
 @Component({
   selector: 'page-characters',
-  imports: [FormsModule],
+  imports: [FormsModule, CatalogueIcon],
   templateUrl: './characters.html',
   styleUrl: './catalogue.scss',
 })

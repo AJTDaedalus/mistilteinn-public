@@ -26,7 +26,7 @@
 - **Do:** per-task branches off `dev`; merge by PR.
 - **Accept:** `git log --first-parent dev` is merge commits only.
 
-### [ ] N.1 — Icons
+### [x] N.1 — Icons — **done**
 - **Do:** a script that reads icon basenames out of the seeded database and vendors the images
   from `https://static.nanoka.cc/assets/gi/{basename}.webp`, plus the frontend using them for
   characters, weapons and artifact sets.
@@ -40,6 +40,15 @@
     repository's job.
 - **Why the basenames are already there:** `characters.icon`, `weapons.icon` and
   `artifact_sets.icon` were seeded by Chunk D. Nothing was missing; nothing was fetched.
+- **Done.** `scripts/download_icons.py` vendors **472 of 475**; a `catalogue-icon` component
+  draws them on the three catalogue pages.
+- **Three are genuinely not published upstream** — an unreleased weapon's placeholder and two
+  artifact sets, all 404. The script separates *"upstream has no art for this"* from *"the
+  fetch broke"*, because conflating them would make it exit non-zero forever, and **a check
+  that can never pass is a check nobody runs.** Zero rows had a null icon basename, so the
+  seeding half was already complete.
+- Eight mutations, eight caught — including one that only surfaced when I stopped testing
+  `Report` and started testing the branch that classifies a response.
 
 ### [ ] N.2 — Widen the multiplier crossval **(closes `TODO(chunk-M)`)**
 - **Do:** capture the **Venti** and **Rosaria** payloads into `tests/fixtures/nanoka_gi/`, via

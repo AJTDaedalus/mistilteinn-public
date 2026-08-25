@@ -27,6 +27,7 @@
     <ul class="grid">
       @for (weapon of list.items(); track weapon.id) {
         <li class="card">
+          <catalogue-icon [icon]="weapon.icon" [alt]="weapon.name" [size]="44" />
           <span class="name">{{ weapon.name }}</span>
           <span class="meta">{{ weapon.weapon_type }} · {{ weapon.rarity }}</span>
           <!-- Labelled a curve base, not "ATK": it is the value at the bottom of a growth
