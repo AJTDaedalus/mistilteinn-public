@@ -287,6 +287,60 @@ class AvailableHitRead(BaseModel):
     exclusive: bool
 
 
+class KernelSetBonus(BaseModel):
+    """One tier of one set, in the terms the browser kernel reads."""
+
+    set_id: int
+    pieces_required: int
+    #: Keyed by kernel quantity — `cryo_dmg_bonus`, not `FIGHT_PROP_ICE_ADD_HURT`.
+    stats: dict[str, float]
+
+
+class KernelHit(BaseModel):
+    """The hit, resolved. `search.ts`'s `Hit` in its own spelling."""
+
+    multiplier: float
+    channel: str
+    scaling_stat: str
+    amplifying: str | None = None
+
+
+class KernelTarget(BaseModel):
+    """What the search scores against. `search.ts`'s `Target`."""
+
+    level: int
+    resistance: float
+    def_reduction: float = 0.0
+    def_ignore: float = 0.0
+
+
+class SearchContextRead(BaseModel):
+    """Everything `search.ts`'s `SearchContext` needs except the inventory.
+
+    O.1. The inventory has its own home — `/artifacts/inventory`, which is ETag'd because the
+    browser holds it across searches (OQ-S3). This is the per-build, per-hit half.
+
+    **Published, not recomputed.** Every figure here is one the server already works out for
+    `/explain`: the base from `build_assembler.base_contributions`, set bonuses from the same
+    module, the hit through `resolve_talent_hit`. A second assembly of "what a build starts
+    from" is how two definitions of it begin — which `build_assembler` records having already
+    happened once.
+
+    `base` is keyed by **kernel quantity**, which is the reason this endpoint exists at all:
+    the kernel reads `base_atk` and the source spells it `FIGHT_PROP_BASE_ATTACK`, and the
+    mapping between them decides what every stat means.
+    """
+
+    base: dict[str, float]
+    hit: KernelHit
+    target: KernelTarget
+    character_level: int
+    #: Which damage-bonus quantity this hit reads, e.g. `cryo_dmg_bonus`. The kernel needs it
+    #: named because it sums that one quantity and ignores the other seven.
+    dmg_bonus_quantity: str
+    set_bonuses: list[KernelSetBonus]
+
+
 class ExplainRequest(BaseModel):
     """Body for `POST /builds/{id}/explain`.
 
