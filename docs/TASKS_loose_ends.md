@@ -50,7 +50,7 @@
 - Eight mutations, eight caught — including one that only surfaced when I stopped testing
   `Report` and started testing the branch that classifies a response.
 
-### [ ] N.2 — Widen the multiplier crossval **(closes `TODO(chunk-M)`)**
+### [x] N.2 — Widen the multiplier crossval — **done, closes `TODO(chunk-M)`**
 - **Do:** capture the **Venti** and **Rosaria** payloads into `tests/fixtures/nanoka_gi/`, via
   `scripts/capture_nanoka_fixtures.py`'s own `DETAILS` list with a reason per entry.
 - **Accept:** the committed crossval covers the two bugs M.4 actually found — Venti's
@@ -58,6 +58,14 @@
   label `Skill DMG`; the coverage floor in `test_talent_multipliers.py` rises with it.
 - **Note:** I recorded this as blocked on network and **that was wrong** — I tested
   `api.hakush.in`, which is not the host. `static.nanoka.cc` answers.
+- **Done.** 1 character → **3**, 180 hits → **570**, still 0 mismatches. A test now
+  reproduces M.4's summing bug against the committed fixtures and requires it to fail, so the
+  regression is guarded **in CI** rather than having been caught once against a seeded
+  database.
+- **The capture had to be pinned explicitly.** It defaults to `gi.latest`, and nanoka has
+  moved to **7.0.52** — so the first run pulled two payloads at 7.0.52 into a directory whose
+  every other file is 7.0.51, and rewrote three index files. `--version 7.0.51` fixes it. A
+  version bump is a deliberate separate change, not a side effect of adding two characters.
 
 ### [ ] N.3 — The GOOD importer's wipe-and-restore **(closes `TODO(chunk-G, G.5)`)**
 - **Do:** snapshot team slot bindings before a `replace` import and restore them after,

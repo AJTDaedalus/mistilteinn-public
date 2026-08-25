@@ -49,6 +49,25 @@ _MANIFEST_SUFFIX = "\n"
 DETAILS: tuple[tuple[str, str, str], ...] = (
     ("character", "10000002", "Ayaka — four skills, so talent type cannot be positional"),
     ("character", "10000005-2", "Pyro Traveler — the 28 string-keyed variant entries"),
+    (
+        "character",
+        "10000022",
+        (
+            "Venti — `1-Hit DMG|{param1}+{param1}`, two arrows of one value. M.4 found the "
+            "parser summing that into one hit of double the multiplier; gcsim stores the "
+            "per-hit figure. Committed so the crossval covers the bug rather than only "
+            "having found it once"
+        ),
+    ),
+    (
+        "character",
+        "10000045",
+        (
+            "Rosaria — skill and burst **both** labelled `Skill DMG`. M.4's first comparison "
+            "keyed on the label alone and was checking one against the other; this is the "
+            "payload that exposes it"
+        ),
+    ),
     ("weapon", "11501", "Aquila Favonia — 5-star sword, full refinement ladder"),
     (
         "weapon",
