@@ -1,0 +1,137 @@
+<section class="optimize">
+  <header>
+    <h1>Optimize</h1>
+    <p class="muted">
+      Search your own artifacts, in your own browser, for the five that hit hardest.
+    </p>
+  </header>
+
+  @if (error(); as message) {
+    <p class="error" role="alert">
+      {{ message }}
+      <button type="button" (click)="load()">Retry</button>
+    </p>
+  } @else if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else if (builds().length === 0) {
+    <p class="muted">
+      You have no builds yet — <a routerLink="/builds">make one first</a>.
+    </p>
+  } @else {
+    <div class="controls">
+      <label>
+        Build
+        <select
+          aria-label="Build"
+          [value]="buildId()"
+          (change)="selectBuild($any($event.target).value)"
+        >
+          @for (entry of builds(); track entry.id) {
+            <option [value]="entry.id">
+              {{ entry.character?.name || 'No character' }} · C{{ entry.constellation_level }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Hit
+        <select aria-label="Hit" [(ngModel)]="hitIndex">
+          @for (option of hits(); track $index) {
+            <option [value]="$index">
+              {{ talentLabel(option.talent) }} · {{ option.label }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Element
+        <select aria-label="Element" [(ngModel)]="channel">
+          @for (option of channels; track option) {
+            <option [value]="option">{{ option }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Scope
+        <select aria-label="Scope" [(ngModel)]="scope">
+          @for (option of scopes; track option) {
+            <option [value]="option">{{ option }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Enemy level
+        <input type="number" min="1" max="120" [(ngModel)]="enemyLevel" aria-label="Enemy level" />
+      </label>
+
+      <button type="button" (click)="run()" [disabled]="!canSearch()">
+        {{ searching() ? 'Searching…' : 'Search' }}
+      </button>
+    </div>
+
+    @if (!hit()) {
+      <p class="hint">
+        This build has no talent levels set, so there is no hit to optimise for.
+      </p>
+    }
+
+    @if (actionError(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+
+    @if (unreadable().length) {
+      <!-- OQ-O2: reported, never swallowed. A search over an inventory quietly missing
+           pieces recommends the best of what it was shown. -->
+      <p class="warn" role="alert">
+        {{ unreadable().length }} artifact(s) could not be read and were left out of the
+        search:
+      </p>
+      <ul class="unreadable">
+        @for (piece of unreadable(); track piece.artifact_id) {
+          <li><span class="mono">{{ piece.artifact_id }}</span> — {{ piece.reason }}</li>
+        }
+      </ul>
+    }
+
+    @if (truncated()) {
+      <p class="warn" role="alert">
+        Your inventory was larger than one snapshot holds, so this searched only part of it.
+      </p>
+    }
+
+    @if (result(); as found) {
+      <!-- What the answer claims is as important as the answer. A top-10 that is really the
+           top 10 of a pruned subset, shown without saying so, is a confident answer to a
+           question nobody asked. -->
+      <p class="provenance">
+        @if (found.isExact) {
+          <strong>Exact</strong> — the best five over this inventory.
+        } @else {
+          <strong>Not exact</strong> — pruning bounded this search, so a better set may exist.
+        }
+        <span class="muted mono">
+          {{ found.evaluated | number }} combinations scored ·
+          {{ found.paretoRemoved | number }} pieces pruned first
+        </span>
+      </p>
+
+      <ol class="results">
+        @for (row of rows(); track row.rank) {
+          <li>
+            <span class="rank mono">{{ row.rank }}</span>
+            <span class="damage mono">{{ row.damage | number: '1.0-1' }}</span>
+            <span class="pieces">{{ row.pieces.join(' · ') }}</span>
+          </li>
+        } @empty {
+          <li class="muted">
+            No complete build could be made — a search needs a piece in all five slots.
+          </li>
+        }
+      </ol>
+    }
+  }
+</section>
