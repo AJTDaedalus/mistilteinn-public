@@ -1,0 +1,159 @@
+<section class="explain">
+  <header>
+    <h1>Explain</h1>
+    <p class="muted">
+      What a hit does, and where every number in it came from.
+    </p>
+  </header>
+
+  @if (error(); as message) {
+    <p class="error" role="alert">
+      {{ message }}
+      <button type="button" (click)="load()">Retry</button>
+    </p>
+  } @else if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else if (builds().length === 0) {
+    <p class="muted">
+      You have no builds yet — <a routerLink="/builds">make one first</a>.
+    </p>
+  } @else {
+    <div class="controls">
+      <label>
+        Build
+        <select
+          aria-label="Build"
+          [value]="buildId()"
+          (change)="selectBuild($any($event.target).value)"
+        >
+          @for (entry of builds(); track entry.id) {
+            <option [value]="entry.id">
+              {{ entry.character?.name || 'No character' }} · C{{ entry.constellation_level }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Hit
+        <!-- Named, never typed. M.2 resolves the multiplier from the character's own
+             published table at this build's talent level; a number entered here would be a
+             second source for something the server already knows. -->
+        <select aria-label="Hit" [(ngModel)]="hitIndex">
+          @for (option of hits(); track $index) {
+            <option [value]="$index">
+              {{ talentLabel(option.talent) }} · {{ option.label }}
+              @if (option.hits > 1) { (×{{ option.hits }}) }
+            </option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Element
+        <!-- The caller's, deliberately: the published table gives a multiplier and says
+             nothing about which element the hit lands as. -->
+        <select aria-label="Element" [(ngModel)]="channel">
+          @for (option of channels; track option) {
+            <option [value]="option">{{ option }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Scope
+        <select aria-label="Scope" [(ngModel)]="scope">
+          @for (option of scopes; track option) {
+            <option [value]="option">{{ option }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Enemy level
+        <input type="number" min="1" max="120" [(ngModel)]="enemyLevel" aria-label="Enemy level" />
+      </label>
+
+      <button type="button" (click)="score()" [disabled]="!canScore()">
+        {{ scoring() ? 'Scoring…' : 'Explain' }}
+      </button>
+    </div>
+
+    @if (hit(); as chosen) {
+      <p class="hint">
+        Multiplier <span class="mono">{{ chosen.multiplier | number: '1.0-4' }}</span>
+        — from {{ build()?.character?.name }}'s own table at this build's talent level.
+        @if (chosen.exclusive) { One of several alternatives. }
+      </p>
+    } @else {
+      <p class="hint">
+        This build has no talent levels set, so there is nothing to explain yet.
+      </p>
+    }
+
+    @if (actionError(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+
+    @if (result(); as explained) {
+      <div class="result">
+        <p class="total">
+          <span class="label">Damage</span>
+          <span class="figure mono">{{ explained.damage | number: '1.0-1' }}</span>
+        </p>
+
+        <!-- The derivation, which is the point of the page. Every stat with the parts that
+             summed to it and where each came from — none of it recomputed here. -->
+        <h2>Where that comes from</h2>
+        <ul class="stats">
+          @for (stat of explained.stats; track stat.quantity) {
+            <li>
+              <span class="quantity">{{ stat.quantity }}</span>
+              <span class="figure mono">{{ stat.sum_of_parts | number: '1.0-4' }}</span>
+              <ul class="parts mono">
+                @for (source of stat.sources; track $index) {
+                  <li>{{ source }}</li>
+                }
+              </ul>
+            </li>
+          } @empty {
+            <li class="muted">No stat contributions returned.</li>
+          }
+        </ul>
+
+        @if (explained.set_effects.length) {
+          <h2>Set effects</h2>
+          <ul class="sets">
+            @for (effect of explained.set_effects; track $index) {
+              <li>
+                <span class="quantity">{{ effect.note }}</span>
+                <span class="detail">{{ effect.description }}</span>
+              </li>
+            }
+          </ul>
+        }
+
+        @if (explained.uncited.length) {
+          <!-- What the number does *not* include. Hiding this would publish a figure that
+               claims more than the chain models — the failure `unmodelled_passives` exists
+               for, one layer up. -->
+          <h2>Not included</h2>
+          <ul class="uncited">
+            @for (note of explained.uncited; track $index) {
+              <li><strong>{{ note.what }}</strong> — {{ note.why }}</li>
+            }
+          </ul>
+        }
+
+        @if (explained.simulation; as sim) {
+          <h2>Against the simulation</h2>
+          <p class="sim">
+            <span class="mono">{{ sim.dps_mean | number: '1.0-1' }}</span> DPS,
+            {{ sim.divergence_pct | number: '1.0-2' }}% from this figure.
+            @if (sim.caveat) { <span class="muted">{{ sim.caveat }}</span> }
+          </p>
+        }
+      </div>
+    }
+  }
+</section>

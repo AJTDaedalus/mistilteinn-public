@@ -21,9 +21,10 @@
 
 ---
 
-### [ ] M.0 — Branch setup **(gate)**
+### [x] M.0 — Branch setup **(gate)** — **held**
 - **Do:** per-task branches off `dev`; merge by PR.
 - **Accept:** `git log --first-parent dev` is merge commits only.
+- **Held.** PRs #73 through #77, and nothing beside them.
 
 ### [x] M.1 — The talent parser — **done**
 - **Do:** `desc` + `param` → structured hits. A pure function over two lists; no session.
@@ -65,12 +66,19 @@
   remain, because DESIGN §7 makes them a non-goal — nothing here changes what the damage chain
   knows. Five mutations, five caught.
 
-### [ ] M.3 — The explain page
+### [x] M.3 — The explain page — **done**
 - **Do:** pick a build, pick a talent and which of its hits, see the damage **and its
   derivation** — which `/builds/{id}/explain` already returns and nothing displays.
 - **Accept:** in the nav; the multipliers that produced the number are shown, not just the
   total (DESIGN §1 A6 — a number must be able to explain itself); a failed load surfaced
   rather than rendered as a zero.
+- **Done.** `pages/explain/`, in the nav. The talent is **named, never typed** — M.2 resolves
+  the multiplier from the character's own table, and a number entered on the page would be a
+  second source for something the server already knows. The derivation is the page: every
+  stat with the parts that summed to it and where each came from, plus what the figure does
+  **not** include.
+- Eight mutations, eight caught after two survived and exposed tests aimed at the page when
+  the request body is built in the service.
 
 ### [x] M.4 — Crossval the parse against gcsim — **done, and brought forward**
 - **Do:** compare parsed multipliers against gcsim's generated `zz_*.dm.go` tables, over the
@@ -99,6 +107,23 @@
   nothing reports success".
 
 ---
+
+## Status
+
+**Complete.** M.0 through M.4, merged as PRs #73–#77. M.4 was taken out of order on purpose,
+and found a real bug in M.1 within minutes of running.
+
+| | |
+|---|---|
+| `talent_scaling` | published rows → hits; `+` is two hits, `/` is alternatives, `×N` keeps its count |
+| `talent_hits` | a hit resolved from the build's own character at its own talent level |
+| `HitSpec` | exactly one of `multiplier` or `talent`; the channel stays the caller's |
+| `/builds/{id}/hits` | what the resolver accepts, from the same parse |
+| the explain page | the derivation, not the total |
+| `tests/crossval` | 18,611 hits agreeing with gcsim across 105 characters |
+
+**What this unblocks:** `src/app/sim/search.ts` needs a `hit`, and now something can supply
+one. That was the whole reason the optimizer had no reachable UI.
 
 ## Open questions
 

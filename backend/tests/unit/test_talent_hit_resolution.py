@@ -4,8 +4,10 @@
 
     Deriving a talent's multiplier, scaling stat and damage channel from a character's stored
     talent rows is the kit corpus's job (Chunk H), and this repo has no kit corpus. […]
-    `TODO(chunk-H)`: a `talent` field that resolves this from the build's own character
-    replaces it.
+    […] a `talent` field that resolves this from the build's own character replaces it.
+
+(Quoted with its marker removed, so a repo-wide search for open work counts open work rather
+than notes about work that is done.)
 
 Chunk H is closed. M.1 parses the rows and M.4 checked the parse against gcsim across 105
 characters, so the field can exist — and "the caller states the hit" can stop meaning "the
@@ -20,13 +22,13 @@ does not state, which is the whole failure this parser was written to avoid.
 from __future__ import annotations
 
 import pytest
+
+from app.models.enums import TalentType
 from app.services.talent_hits import (
     TalentHitUnavailableError,
     available_hits,
     resolve_talent_hit,
 )
-
-from app.models.enums import TalentType
 
 
 class _Scaling:
