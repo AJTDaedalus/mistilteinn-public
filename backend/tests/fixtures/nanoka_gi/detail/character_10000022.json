@@ -1,0 +1,5562 @@
+{
+ "name": "Venti",
+ "desc": "One of the many bards of Mondstadt, who freely wanders the city's streets and alleys.",
+ "chara_info": {
+  "release_date": "2020-09-15 04:00:00",
+  "birth": [
+   6,
+   16
+  ],
+  "vision": "Anemo",
+  "vision_special_type_before": "",
+  "vision_special_type_after": "",
+  "constellation": "Carmen Dei",
+  "region": "ASSOC_TYPE_MONDSTADT",
+  "title": "Windborne Bard",
+  "native": "Mondstadt",
+  "detail": "One of the many bards of Mondstadt, who freely wanders the city's streets and alleys.",
+  "va": {
+   "chinese": "\u55b5\u9171",
+   "japanese": "\u6751\u702c\u6b69",
+   "english": "Erika Harlacher",
+   "korean": "Jung Yoo-jung"
+  },
+  "stories": [
+   {
+    "title": "Character Details",
+    "text": "An unknown bard that came from nowhere. He sometimes sings outdated songs, other times he hums new ones that none have ever heard of.\\nHe likes apples and lively atmospheres, but hates cheese and anything that is slimy.\\nWhen channeling Anemo, it appears in the form of feathers, because he likes things that look light.",
+    "unlock": []
+   },
+   {
+    "title": "Character Story 1",
+    "text": "Back when traveling bard Venti had only been in Mondstadt for a few months, his income was far less than the other more established bards in town. But once he had a few Mora in the pot from his performance, you could be sure he would hurry off to spend it at the same place every time \u2014 one of the city's taverns.\\nUnfortunately for Venti, his childlike appearance meant that his attempts to acquire alcohol failed at every turn.\\nThe first time he was refused service, he was heard grumbling: \"I'm sure there were no such preposterous regulations last time I was here...\" Once he realized that the same rule applied to all taverns in town, he decided he would have to change his approach...\\nThe strategy he developed was drinking on the job \u2014 that is to say, playing the lyre while holding a wine cup in his mouth, urging his audience to buy him a drink from the bar if they liked his performances instead of giving him Mora.\\nThe novelty of this made him quite popular in Mondstadt.\\nThere was just one snag \u2014 he couldn't help but sneeze if a cat came close...\\nAnd if he happened to be holding a wine cup in his mouth when it happened... needless to say, it would spell disaster.\\nVenti, therefore, has one golden rule when selecting a spot to perform, and that is that there must be no cats in the vicinity.\\nEasier said than done \u2014 the stray cats of Mondstadt seem to be quite drawn to him.",
+    "unlock": [
+     "Unlocks at Friendship Lv. 2"
+    ]
+   },
+   {
+    "title": "Character Story 2",
+    "text": "There is a towering oak tree at the center of Windrise, said to have sprouted when Vennessa ascended to the heavens a millennium ago.\\nIn the past few months, travelers resting in the shade of the great oak sometimes hear a young boy singing the tales of Barbatos, the Anemo Archon.\\nUnlike the ruling deities of the other nations, Barbatos has long left Mondstadt. In fact, the only visible proof of his connection with Mondstadt is the Statues of The Seven that appear across the land \u2014 even then, the resemblance is vague at best. Fortunately, Barbatos's past deeds are recorded in books and epics, sung and passed on by the bards.\\nIn contrast to these more canonical works, Venti's ballads tend to include bizarre adventures and acts of mischief, such as the time that Barbatos pinched the Cryo Archon's scepter and replaced it with a hilichurl's wooden club...\\nWorshippers of Barbatos are quick to decry these frivolous tales as blasphemous fabrications. But whenever someone confronts Venti about this, his response suggests that he has not an ounce of remorse.\\n\"How can you know that they're fabrications?\"\\nHe has a point \u2014 even the most devoted sister could not possibly know the details of all of Barbatos's deeds from a millennium ago.\\nOnly Venti knows the truth behind his song lyrics, and it is a truth he hides behind an enigmatic smile.\\nReason being, yes \u2014 Venti's tall tales of Barbatos's unorthodox exploits are entirely fabricated.\\nHey, Venti finds that a few drinks really gets his muse going. Can you really blame him?",
+    "unlock": [
+     "Unlocks at Friendship Lv. 3"
+    ]
+   },
+   {
+    "title": "Character Story 3",
+    "text": "Around 2,600 years ago, the Archon War had yet to end, and the world had yet to fall under the dominion of The Seven.\\nIn those days, the city called \"Mondstadt\" was surrounded on all sides by gales impenetrable even to the birds of the air. The wind's ceaseless howling ground the soil and the rock of that city into smooth, flowing dust.\\nThe Lord of Wind who lived in his high tower was Decarabian, God of Storms. He squinted from on high at his subjects, who bowed before him in the unceasing wind, and, believing them submissive, thought this good.\\nIn those days, Venti was but a single thread of the thousand winds that roared through the northern lands.\\nHe who would in latter days be known as \"Barbatos\" was but a tiny elemental spirit, without a shred of divine dignity, a breeze that brought subtle changes for the better, or tiny seeds of hope.\\nIn Mondstadt of old, Venti met a young boy. This lad knew how to play the lyre, and longed to write the greatest poem of all.\\n\"I do so wish to see the birds in flight.\"\\nSo said the boy who had never seen the blue sky, eagles, or the green grass, his voice almost utterly drowned by the wind.\\n\"Friend, will you not come along?\"",
+    "unlock": [
+     "Unlocks at Friendship Lv. 4",
+     "Complete \"Should You Be Trapped in a Windless Land\""
+    ]
+   },
+   {
+    "title": "Character Story 4",
+    "text": "The elemental being Venti obtained the feather of an eagle for the lad living in that storm-shrouded city, who had never seen a bird in his life.\\nThen, war broke out in Mondstadt, in the name of freedom.\\nWith the feather tucked away in his breast pocket, Venti watched the fall of the eccentric ruler amid the wrack and ruin of revolt together with his friend.\\nThe ruler had believed that he had given his subjects a city free from the bitter cold, and to the end, he believed that they had loved him as he loved them.\\nYet, despite the victory, Venti was never able to give that feather to the lad, for that lad had fallen in the battle for the sake of song, sky, and birds, and for the people who, like him, had dwelled within the storm-wall.\\nWith the crumbling of an ancient seat of divinity, a new god was born. The Anemo Archon Barbatos felt power flowing at his fingertips.\\nHis first use of this power was to reconstitute himself in the likeness of that young lad.\\nFor only if he wore human shape could he play the lyre that the lad so loved.\\nPlucking its strings, he scattered the ice and snow and split the mountains with a divine wind.\\nHe bade Mondstadt become a city of freedom, a nation without a king.\\nIn future, he believed, it would become a better, more romantic city.\\n\"Surely, he too would have wanted to live in such a place.\"\\nThus, a new age began for Mondstadt.",
+    "unlock": [
+     "Unlocks at Friendship Lv. 5",
+     "Complete \"Should You Be Trapped in a Windless Land\""
+    ]
+   },
+   {
+    "title": "Character Story 5",
+    "text": "The Anemo Archon cannot take credit for everything in Mondstadt.\\nCredit should be given where credit is due, I shall sing now the praises of things beauteous and true:\\nWe thank the West Wind, whose enduring caress\\nBrings the blossoms of Spring, by whose scent we are blessed.\\n\\nFinches, ducks, rabbits and boars,\\nMondstadt's revival bid them thrive evermore.\\nIn summer the lion walks the plains,\\nNo words one finds to praise it but these:\\nDo you sweat out your water to make way for wine?\\nComes the heat of the summer from your mane of sunshine?\\n\\nThe mountain mouths and gorges low like drunkards wayward lie...\\nBut the East Wind cares not, for it doesn't walk \u2014 it flies!\\nOver the fruit trees it brushes low,\\nAnd its wings bring the harvest of things that grow.\\n\\nThe North Wind in the silent forest slumbers,\\nAnd around it pace the wolves in their numbers.\\nThough most have never a glimpse of them seen, for the Wind knows that none is of winter too keen,\\nYet the Anemo Archon glimpses and sees, that it dreams each night of warm reverie.\\n\\n\u2014As the four seasons in turn shall say their piece, so the four winds too shall never cease.\\nOf course, to look at it differently, I am the one who should be credited here, and not they.\\nCredits should be given where credits belong \u2014 if not for the bard who pens the song, then who shall ensure that these tales are passed on?",
+    "unlock": [
+     "Unlocks at Friendship Lv. 6",
+     "Complete \"Should You Be Trapped in a Windless Land\""
+    ]
+   },
+   {
+    "title": "Where the Wind Doth Not Blow",
+    "text": "After 1,600 years of history, Mondstadt's \"freedom\" had sunk to a heretofore unseen low.\\nBarbatos, unwilling to become a tyrant, had departed. But he had never imagined that those to whom he had gifted freedom would make for themselves a tyrant.\\nThe aristocracy ruled Mondstadt with a cruel hand, bringing slaves into this land and ignoring the cries of the oppressed.\\nThus the Anemo Archon returned after these 1,600 years to what was once the City of Freedom. He heard the cry of the slave girl Vennessa, and together with her raised a rebellion that overthrew the aristocracy.\\n\u2014Now, the above is what all know to be the official history of Mondstadt.\\nThe story has an interesting, little-known twist, however.\\nThe one who united the people of Mondstadt in this conflict was indeed the hero Vennessa \u2014 but that which caused many of the aristocracy's troops to turn coat was a \"treachery against the wind.\"\\nA secret treaty was found, a betrayal of the city \u2014 the aristocrats had forsaken the wind, and sold everything in Mondstadt to the Geo Archon of the neighboring land.\\nAt the treaty's end was carved an insignia inimitable by all save the deity so named: Rex Lapis.\\nHow the soldiers that had once oppressed the slaves shuddered when they saw that they too would become slaves in a foreign land.\\nThe news, and the conflict, spread like wildfire, consuming the aristocracy. It was only many years later that historians would discover that this treaty was fake.\\nAs it turned out, Venti had once practiced the art of forgery in order to play pranks on the Geo Archon, but could never deceive the god of wealth and transactions. Even so, his adeptness would come into play after several hundred years.\\nWhat a happy coincidence.",
+    "unlock": [
+     "Unlocks at Friendship Lv. 4",
+     "Complete \"Song of the Dragon and Freedom\""
+    ]
+   },
+   {
+    "title": "Vision",
+    "text": "The Seven Archons do not need Visions, for they already have great power.\\nYet Barbatos was fond of the mortal world, and wanted to roam Mondstadt more freely as \"Venti.\" As such, he constructed a glass ornament very much like the Visions worn by those chosen by the gods.\\nThe imitation has no special abilities, nor does Venti rely on it to channel elemental power.\\nHowever, since Venti does not keep the Holy Lyre der Himmel by his side, and since he is too lazy to bring a normal lyre, he gave his fake Vision the ability to turn into the wooden lyre \"Der Fr\u00fchling.\"",
+    "unlock": [
+     "Unlocks at Friendship Lv. 6",
+     "Complete \"Song of the Dragon and Freedom\""
+    ]
+   }
+  ],
+  "quotes": [
+   {
+    "title": "Hello",
+    "text": "*Yawn* That was a refreshing sleep. Ah, Traveler, we meet again! What? You don't remember me? Ahaha, well, allow me to join you on your quest once again. I must see to it that the bards of the world tell the Traveler's tales!",
+    "unlocked": []
+   },
+   {
+    "title": "Chat: Playing the Lyre",
+    "text": "Sure, I'll play you another tune, but it'll cost you an apple.",
+    "unlocked": []
+   },
+   {
+    "title": "Chat: Apple Cider",
+    "text": "Right now I wish I was sitting at the top of a tree, looking out over a meadow, cider in hand...",
+    "unlocked": []
+   },
+   {
+    "title": "Chat: Ballads",
+    "text": "Come on Traveler, let's go! The world is full of lost ballads just waiting to be rediscovered.",
+    "unlocked": []
+   },
+   {
+    "title": "When It Rains",
+    "text": "Let's go jumping in puddles and see who can make the biggest splash!",
+    "unlocked": []
+   },
+   {
+    "title": "After the Rain",
+    "text": "It's stopped raining already? A shame, I wanted to play some more.",
+    "unlocked": []
+   },
+   {
+    "title": "When It Snows",
+    "text": "Let's wait till the snow gets heavier and have a snowball fight!",
+    "unlocked": []
+   },
+   {
+    "title": "When the Wind Is Blowing",
+    "text": "The wind has returned! Quick, let's go gliding!",
+    "unlocked": []
+   },
+   {
+    "title": "Good Morning",
+    "text": "Morning! Ah... what's in store for today?",
+    "unlocked": []
+   },
+   {
+    "title": "Good Afternoon",
+    "text": "My tummy is rumbling, but I can't get caught pilfering food from the Dawn Winery again... Oh, it's you! Where are you heading? May I join?",
+    "unlocked": []
+   },
+   {
+    "title": "Good Evening",
+    "text": "Hmm, I'm still not sleepy. Fancy an evening stroll?",
+    "unlocked": []
+   },
+   {
+    "title": "Good Night",
+    "text": "Off to the land of nod? Haha, farewell, my friend!",
+    "unlocked": []
+   },
+   {
+    "title": "About Venti",
+    "text": "Practice? Me? There's no need \u2014 I already know every song in Teyvat!",
+    "unlocked": []
+   },
+   {
+    "title": "About Us: New Songs",
+    "text": "I have decided to write a song about you! What are you giving me that look for? Can't afford it? Don't be preposterous, the price for you, my friend, is precisely zero Mora! Although... one thing you could do is tell me a few more of your stories!",
+    "unlocked": []
+   },
+   {
+    "title": "About Us: Heroes",
+    "text": "#Haha, once the {M#hero}{F#heroine} in the song has actually rescued the {M#princess}{F#prince}, I will ensure this song spreads to every corner of the continent!",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 6"
+    ]
+   },
+   {
+    "title": "About Us: Apostles",
+    "text": "Ahh... an evening breeze really sets the mood for becoming my disciple, don't you think? We can do it right now... you just need to make me a small offering...",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 6",
+     "Complete \"Song of the Dragon and Freedom\""
+    ]
+   },
+   {
+    "title": "About Us: Requests",
+    "text": "What's that? You think I should try harder to be a good Anemo Archon? Well, you could be a better devotee too... you could be more pious, more passionate, or... um...",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 6",
+     "Complete \"Song of the Dragon and Freedom\""
+    ]
+   },
+   {
+    "title": "About the Vision",
+    "text": "Hmm? You want to know about my Vision? Oh, go on then, take a look for yourself. I can make you a matching one if you like! Hehehe.",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 4"
+    ]
+   },
+   {
+    "title": "Something to Share",
+    "text": "Olah! Haha, that's how the Hilichurls say \"hello.\" Why, I learned it to aid with my songwriting, of course! Vast knowledge makes for a richer composition... That said, I haven't actually written any songs in Hilichurlian so far...",
+    "unlocked": []
+   },
+   {
+    "title": "Interesting Things",
+    "text": "Traveler, have you ever seen a Cecilia? It's a magnificent white wildflower that only grows on the most remote mountains and clifftops. To me, at least, it is the most beautiful flower in all of Teyvat.",
+    "unlocked": []
+   },
+   {
+    "title": "About Jean",
+    "text": "Acting Grand Master Jean... Well, what do you think of her? Yes, I couldn't agree more: conscientious, courageous... kind and considerate too. Reminds me of another good friend...",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 4"
+    ]
+   },
+   {
+    "title": "About Diluc",
+    "text": "I'm not surprised you want to befriend Master Diluc. Just think of all the vintage wine he must have stored away... Mwuhahaha... Huh? He doesn't let you sample it? Not even the slightest drop? Huh... Well, I guess you can still appreciate the aroma. That's still better than no wine at all, right? No?",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 4"
+    ]
+   },
+   {
+    "title": "About Barbara",
+    "text": "The darling Deaconess with the sweet singing voice \u2014 do you know her? You do? Idol, huh? Meet and greets? Concerts? Wow... That's the power of music for you...",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 4"
+    ]
+   },
+   {
+    "title": "About Razor",
+    "text": "Ah yes, the white-haired fellow from Wolvendom? Raised by wolves? Really? ... No wonder his scent is so familiar...",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 4"
+    ]
+   },
+   {
+    "title": "About Mona",
+    "text": "Oh, that astrologer? How should I put it? Fortune-telling and my singing are the same: Both lead to you being so poor you can't even cough up the money for a drink! ...You think that astrology is a cultural tradition, so at least still has some value? Hmph, so rude. In that case, so too is singing, so it still has its value too!",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 4"
+    ]
+   },
+   {
+    "title": "About Diona",
+    "text": "There's a special drink known far and wide at Cat's Tail. But it ah... ahh... ACHOO! *sniffs* How about you go and fetch one for me? I'll be truly thankful, I promise.",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 4"
+    ]
+   },
+   {
+    "title": "About Albedo",
+    "text": "How do you explain white chalk in black soil, or the earth's dense crust amidst the emptiness of space? Same reason the purest soil gave birth to human life... It's an ancient power with unmistakable properties. Trying to harness it is dangerous indeed, I can't imagine what would happen if someone lost control of it in the city... Ah, never mind! What goes on within Mondstadt's walls is up to Mondstadt's people to deal with!",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 4"
+    ]
+   },
+   {
+    "title": "About Morax",
+    "text": "Have you seen that gentleman around? Huh? He's just a normal man by the name of Zhongli now? That must be quite the change for that old block-head. Come with me to see him, will you? I have a vintage I dug up from Windrise that I can take as a condolence gift. Oh, ahh... did he still seem strong when you saw him? How strong? Am I likely to get blown away?",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 4",
+     "Complete \"A New Star Approaches\""
+    ]
+   },
+   {
+    "title": "About Eula",
+    "text": "Eula has good taste when it comes to beverages of the alcoholic variety. Come summer or winter, she always likes them ice-cold. That's rare among Mondstadters these days! She and I would make great drinking buddies. Huh? My songs about the Lawrence Clan... She's heard them already? Eh, no harm done. Maybe she and I can do a duet sometime!",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 4"
+    ]
+   },
+   {
+    "title": "More About Venti: I",
+    "text": "Perfect timing, Traveler! I was about to ask you \u2014 what is your greatest wish?",
+    "unlocked": []
+   },
+   {
+    "title": "More About Venti: II",
+    "text": "There's never a dull moment traveling with you! The only minor inconvenience is that pesky little pixie thing that follows you everywhere... She never stops eating \u2014 I can't begin to imagine how much you spend on food!",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 3"
+    ]
+   },
+   {
+    "title": "More About Venti: III",
+    "text": "The Pyro Archon is a wayward, warmongering wretch, and the Geo Archon is a brutish, blundering buffoon! How do I know? Because, this is written in the epic poems of days gone by!",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 4"
+    ]
+   },
+   {
+    "title": "More About Venti: IV",
+    "text": "Celestia... I'm not sure even I could fly that far. In any case, the water there tastes foul, and the fruit is bland. You know what that means? No cider! Haha, in that case, I wouldn't go there even if I was invited.",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 5"
+    ]
+   },
+   {
+    "title": "More About Venti: V",
+    "text": "My greatest wish? It has always been to roam free and experience the whole world. Now, I would add that wherever I go, it simply must be with you! Each day with you is an adventure, and where adventurers go, storytellers must follow!",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 6"
+    ]
+   },
+   {
+    "title": "Venti's Hobbies",
+    "text": "I like to drink! And I like the wind! If only there were such a thing as wind-brewed cider...",
+    "unlocked": []
+   },
+   {
+    "title": "Venti's Troubles",
+    "text": "I'm actually highly allergic to cats. I start sneezing as soon as they enter the vicinity, and... Aah... Aa-choo! Ugh, apparently I can't even THINK about cats without sneezing. Do you think there is a cure for this monstrous affliction?",
+    "unlocked": []
+   },
+   {
+    "title": "Favorite Food",
+    "text": "Here, have an apple. I just picked it. Look how ripe and juicy it is... *munching* ... Truly the fruit of the gods.",
+    "unlocked": []
+   },
+   {
+    "title": "Least Favorite Food",
+    "text": "Hmm, what's that tasty morsel you've got there...? Eww! A melted cheese pancake? A smelly, sticky, slimy, disgusting mess!",
+    "unlocked": []
+   },
+   {
+    "title": "Birthday",
+    "text": "Someone once told me you're supposed to eat a cake on your birthday... Tada! Here's your birthday cake \u2014 it's apple-flavored! And here's a spoon. The cake didn't rise properly in the oven... That's why it looks more akin to an apple pie... Ugh, baking is really quite complicated!",
+    "unlocked": []
+   },
+   {
+    "title": "Feelings About Ascension: Intro",
+    "text": "Whoa! What was that?",
+    "unlocked": [
+     "Unlocks at Ascension Phase 1"
+    ]
+   },
+   {
+    "title": "Feelings About Ascension: Building Up",
+    "text": "Good work. Shall we repose for a moment with a tune? Shall it be a capriccio or a serenade?",
+    "unlocked": [
+     "Unlocks at Ascension Phase 2"
+    ]
+   },
+   {
+    "title": "Feelings About Ascension: Climax",
+    "text": "Come, sit with me. I've written a new poem. I call it \"Wind of the Traveler.\"",
+    "unlocked": [
+     "Unlocks at Ascension Phase 4"
+    ]
+   },
+   {
+    "title": "Feelings About Ascension: Conclusion",
+    "text": "Hmm... Though I've long since viewed this scenery a great many times, there is something different about seeing it again with you. Surely you're not still concealing some other wondrous abilities? Hmm, even if you were, it would simply further prove that my intuition is correct.",
+    "unlocked": [
+     "Unlocks at Ascension Phase 6"
+    ]
+   },
+   {
+    "title": "Elemental Skill: I",
+    "text": "Yoo-Hoo!",
+    "unlocked": []
+   },
+   {
+    "title": "Elemental Skill: II",
+    "text": "Here we go!",
+    "unlocked": []
+   },
+   {
+    "title": "Elemental Skill: III",
+    "text": "Brace yourselves!",
+    "unlocked": []
+   },
+   {
+    "title": "Elemental Skill: IV",
+    "text": "Let's play!",
+    "unlocked": []
+   },
+   {
+    "title": "Elemental Burst: I",
+    "text": "Think you can get away?",
+    "unlocked": []
+   },
+   {
+    "title": "Elemental Burst: II",
+    "text": "Time for takeoff!",
+    "unlocked": []
+   },
+   {
+    "title": "Sprint Start: I",
+    "text": "Wouldn't gliding be faster?",
+    "unlocked": []
+   },
+   {
+    "title": "Deploying Wind Glider: I",
+    "text": "Yahoo!",
+    "unlocked": []
+   },
+   {
+    "title": "Opening Treasure Chest: I",
+    "text": "*clears throat* Have you heard The Ballad of the Treasure Chest?",
+    "unlocked": []
+   },
+   {
+    "title": "Opening Treasure Chest: II",
+    "text": "Thank Barbatos! Wait a minute...",
+    "unlocked": []
+   },
+   {
+    "title": "Opening Treasure Chest: III",
+    "text": "What a find! I wonder how many bottles this'll be worth...",
+    "unlocked": []
+   },
+   {
+    "title": "Low HP: I",
+    "text": "Ugh, I'm not in the mood for this!",
+    "unlocked": []
+   },
+   {
+    "title": "Low HP: II",
+    "text": "Oh, dear!",
+    "unlocked": []
+   },
+   {
+    "title": "Low HP: III",
+    "text": "That was uncalled for.",
+    "unlocked": []
+   },
+   {
+    "title": "Ally at Low HP: I",
+    "text": "Let me try!",
+    "unlocked": []
+   },
+   {
+    "title": "Ally at Low HP: II",
+    "text": "Don't give up!",
+    "unlocked": []
+   },
+   {
+    "title": "Fallen: I",
+    "text": "Let me sleep a while...",
+    "unlocked": []
+   },
+   {
+    "title": "Fallen: II",
+    "text": "Oh no, my lyre is broken...",
+    "unlocked": []
+   },
+   {
+    "title": "Fallen: III",
+    "text": "Ah... Ugh...",
+    "unlocked": []
+   },
+   {
+    "title": "Light Hit Taken: I",
+    "text": "Ah!",
+    "unlocked": []
+   },
+   {
+    "title": "Heavy Hit Taken: I",
+    "text": "How rude!",
+    "unlocked": []
+   },
+   {
+    "title": "Joining Party: I",
+    "text": "Give me a moment to compose myself.",
+    "unlocked": []
+   },
+   {
+    "title": "Joining Party: II",
+    "text": "Didn't keep you waiting, did I?",
+    "unlocked": []
+   },
+   {
+    "title": "Joining Party: III",
+    "text": "Ready for a rehearsal?",
+    "unlocked": []
+   },
+   {
+    "title": "About Baal",
+    "text": "So, I hear you defeated the mighty Raiden Shogun? Ah, I recall the days when she was a kagemusha, seeking to perfect her martial prowess. Hehe, she now no doubt employs a wide range of reasoning to get you to train with her. Oh but yes, come close and I shall let you in on her weakness \u2014 desserts!",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 4",
+     "Complete \"Omnipresence Over Mortals\""
+    ]
+   },
+   {
+    "title": "Receiving a Gift: I",
+    "text": "Ahh, quite delightful! So... could I get the same again tomorrow? ...And maybe the day after that?",
+    "unlocked": []
+   },
+   {
+    "title": "Receiving a Gift: II",
+    "text": "Oof, I'm so full... I'll have to pass on the post-meal fruits this time...",
+    "unlocked": []
+   },
+   {
+    "title": "Receiving a Gift: III",
+    "text": "I can't believe it, but I don't think I can stomach this... Oh boy... What a predicament.",
+    "unlocked": []
+   },
+   {
+    "title": "About Buer",
+    "text": "The first thing you think of when you hear \"Dendro Archon\" is her power over dreams. Her dreams are akin to my ballads: full of emotion and imagination. It goes without saying that we get along really well.",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 4",
+     "Complete \"Akasha Pulses, the Kalpa Flame Rises\""
+    ]
+   },
+   {
+    "title": "About Furina",
+    "text": "A bard must be versed in both music and song, but a stage performer requires far more skills than just these... Hey, don't you think we should invite her over to put on a show at the next Windblume Festival? ...Huh? You want me to talk about how she saved Fontaine? Well, I mean, she's such a talented artiste, it's no wonder. I wouldn't be surprised even if she'd saved the entire world.",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 4",
+     "Complete \"Masquerade of the Guilty\""
+    ]
+   },
+   {
+    "title": "About Haborym",
+    "text": "This world sure is cruel, forcing generation upon generation of human heroes to become cannon fodder in the fight against darkness. But, under Mavuika's leadership, they achieved a truly god-like feat... Hehe, starting with \"her,\" I suppose the Natlanese have always been like that. Ah, right! I heard Mavuika likes to drink! Are you thinking what I'm thinking...?",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 4",
+     "Complete \"Incandescent Ode of Resurrection\""
+    ]
+   },
+   {
+    "title": "About Dahlia",
+    "text": "O, Traveler, do you seek to hear the voice of the wind and know its guidance? Then I say to you... chatting to the deacon is your best bet. Haha, I'm kidding \u2014 come chat with me over a drink any time you want! The reason I usually get Dahlia to be my intermediary is because... well, I imagine you can probably guess why. He loves listening to the blustering of the wind, but crucially he has his own compass, too.",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 4"
+    ]
+   },
+   {
+    "title": "About Durin",
+    "text": "Another one of Madame Mage's children here in Mondstadt, what fun! My new little friend looked like he wanted to play with a certain older, bigger friend of mine \u2014 so I arranged a little introduction, and voila! It turns out my big friend was the more excited of the two! Why, you should've seen him jumping for joy, patting his belly, and dancing in circles. Oh dear, did he hear what I just said? Quick, quick, let's take cover behind that tree!",
+    "unlocked": [
+     "Unlocks at Friendship Lv. 4",
+     "Complete \"The Magic Known as Storytelling\""
+    ]
+   }
+  ],
+  "special_food": {
+   "id": 108113,
+   "recipe": 3009,
+   "name": "A Buoyant Breeze",
+   "icon": "UI_ItemIcon_108113",
+   "rank": 3
+  },
+  "namecard": {
+   "id": 210007,
+   "name": "Venti: Azure Sky",
+   "desc": "Namecard style.\\nThe bright blue of a cloudless sky and the melodious tone of Der Fr\u00fchling complement each other perfectly.",
+   "icon": "UI_NameCardPic_Venti_P"
+  },
+  "costume": [
+   {
+    "id": 202200,
+    "name": "Breezy Ode",
+    "desc": "Venti's outfit. The clothes of a carefree bard.",
+    "icon": "",
+    "quality": 0
+   }
+  ],
+  "trace_effect": [
+   {
+    "id": 215010,
+    "name": "Echo: Windborne Bard",
+    "desc": "Venti's Envisaged Echo. \"As free as the wind, I shall sing now the praises of things beauteous and true.\"",
+    "icon": "UI_TraceEffectIcon_Venti"
+   }
+  ]
+ },
+ "weapon": "WEAPON_BOW",
+ "rarity": "QUALITY_ORANGE",
+ "element": "Anemo",
+ "icon": "UI_AvatarIcon_Venti",
+ "stamina_recovery": 25,
+ "base_hp": 819.8552,
+ "base_atk": 20.482,
+ "base_def": 52.0521,
+ "crit_rate": 0.05,
+ "crit_dmg": 0.5,
+ "elemental_mastery": 0,
+ "level_exp": [
+  1000,
+  1325,
+  1700,
+  2150,
+  2625,
+  3150,
+  3725,
+  4350,
+  5000,
+  5700,
+  6450,
+  7225,
+  8050,
+  8925,
+  9825,
+  10750,
+  11725,
+  12725,
+  13775,
+  14875,
+  16800,
+  18000,
+  19250,
+  20550,
+  21875,
+  23250,
+  24650,
+  26100,
+  27575,
+  29100,
+  30650,
+  32250,
+  33875,
+  35550,
+  37250,
+  38975,
+  40750,
+  42575,
+  44425,
+  46300,
+  50625,
+  52700,
+  54775,
+  56900,
+  59075,
+  61275,
+  63525,
+  65800,
+  68125,
+  70475,
+  76500,
+  79050,
+  81650,
+  84275,
+  86950,
+  89650,
+  92400,
+  95175,
+  98000,
+  100875,
+  108950,
+  112050,
+  115175,
+  118325,
+  121525,
+  124775,
+  128075,
+  131400,
+  134775,
+  138175,
+  148700,
+  152375,
+  156075,
+  159825,
+  163600,
+  167425,
+  171300,
+  175225,
+  179175,
+  183175,
+  216225,
+  243025,
+  273100,
+  306800,
+  344600,
+  386950,
+  434425,
+  487625,
+  547200,
+  613950
+ ],
+ "stats_modifier": {
+  "hp": {
+   "1": 1,
+   "2": 1.083,
+   "3": 1.166,
+   "4": 1.25,
+   "5": 1.333,
+   "6": 1.417,
+   "7": 1.5,
+   "8": 1.584,
+   "9": 1.668,
+   "10": 1.751,
+   "11": 1.835,
+   "12": 1.919,
+   "13": 2.003,
+   "14": 2.088,
+   "15": 2.172,
+   "16": 2.256,
+   "17": 2.341,
+   "18": 2.425,
+   "19": 2.51,
+   "20": 2.594,
+   "21": 2.679,
+   "22": 2.764,
+   "23": 2.849,
+   "24": 2.934,
+   "25": 3.019,
+   "26": 3.105,
+   "27": 3.19,
+   "28": 3.275,
+   "29": 3.361,
+   "30": 3.446,
+   "31": 3.532,
+   "32": 3.618,
+   "33": 3.704,
+   "34": 3.789,
+   "35": 3.875,
+   "36": 3.962,
+   "37": 4.048,
+   "38": 4.134,
+   "39": 4.22,
+   "40": 4.307,
+   "41": 4.393,
+   "42": 4.48,
+   "43": 4.567,
+   "44": 4.653,
+   "45": 4.74,
+   "46": 4.827,
+   "47": 4.914,
+   "48": 5.001,
+   "49": 5.089,
+   "50": 5.176,
+   "51": 5.263,
+   "52": 5.351,
+   "53": 5.438,
+   "54": 5.526,
+   "55": 5.614,
+   "56": 5.702,
+   "57": 5.79,
+   "58": 5.878,
+   "59": 5.966,
+   "60": 6.054,
+   "61": 6.142,
+   "62": 6.23,
+   "63": 6.319,
+   "64": 6.407,
+   "65": 6.496,
+   "66": 6.585,
+   "67": 6.673,
+   "68": 6.762,
+   "69": 6.851,
+   "70": 6.94,
+   "71": 7.029,
+   "72": 7.119,
+   "73": 7.208,
+   "74": 7.297,
+   "75": 7.387,
+   "76": 7.476,
+   "77": 7.566,
+   "78": 7.656,
+   "79": 7.746,
+   "80": 7.836,
+   "81": 7.926,
+   "82": 8.016,
+   "83": 8.106,
+   "84": 8.196,
+   "85": 8.286,
+   "86": 8.377,
+   "87": 8.467,
+   "88": 8.558,
+   "89": 8.649,
+   "90": 8.739,
+   "91": 8.83,
+   "92": 8.921,
+   "93": 9.012,
+   "94": 9.103,
+   "95": 9.195,
+   "96": 9.286,
+   "97": 9.377,
+   "98": 9.469,
+   "99": 9.56,
+   "100": 9.652
+  },
+  "atk": {
+   "1": 1,
+   "2": 1.083,
+   "3": 1.166,
+   "4": 1.25,
+   "5": 1.333,
+   "6": 1.417,
+   "7": 1.5,
+   "8": 1.584,
+   "9": 1.668,
+   "10": 1.751,
+   "11": 1.835,
+   "12": 1.919,
+   "13": 2.003,
+   "14": 2.088,
+   "15": 2.172,
+   "16": 2.256,
+   "17": 2.341,
+   "18": 2.425,
+   "19": 2.51,
+   "20": 2.594,
+   "21": 2.679,
+   "22": 2.764,
+   "23": 2.849,
+   "24": 2.934,
+   "25": 3.019,
+   "26": 3.105,
+   "27": 3.19,
+   "28": 3.275,
+   "29": 3.361,
+   "30": 3.446,
+   "31": 3.532,
+   "32": 3.618,
+   "33": 3.704,
+   "34": 3.789,
+   "35": 3.875,
+   "36": 3.962,
+   "37": 4.048,
+   "38": 4.134,
+   "39": 4.22,
+   "40": 4.307,
+   "41": 4.393,
+   "42": 4.48,
+   "43": 4.567,
+   "44": 4.653,
+   "45": 4.74,
+   "46": 4.827,
+   "47": 4.914,
+   "48": 5.001,
+   "49": 5.089,
+   "50": 5.176,
+   "51": 5.263,
+   "52": 5.351,
+   "53": 5.438,
+   "54": 5.526,
+   "55": 5.614,
+   "56": 5.702,
+   "57": 5.79,
+   "58": 5.878,
+   "59": 5.966,
+   "60": 6.054,
+   "61": 6.142,
+   "62": 6.23,
+   "63": 6.319,
+   "64": 6.407,
+   "65": 6.496,
+   "66": 6.585,
+   "67": 6.673,
+   "68": 6.762,
+   "69": 6.851,
+   "70": 6.94,
+   "71": 7.029,
+   "72": 7.119,
+   "73": 7.208,
+   "74": 7.297,
+   "75": 7.387,
+   "76": 7.476,
+   "77": 7.566,
+   "78": 7.656,
+   "79": 7.746,
+   "80": 7.836,
+   "81": 7.926,
+   "82": 8.016,
+   "83": 8.106,
+   "84": 8.196,
+   "85": 8.286,
+   "86": 8.377,
+   "87": 8.467,
+   "88": 8.558,
+   "89": 8.649,
+   "90": 8.739,
+   "91": 9.028,
+   "92": 9.317,
+   "93": 9.606,
+   "94": 9.895,
+   "95": 10.184,
+   "96": 10.473,
+   "97": 10.762,
+   "98": 11.051,
+   "99": 11.34,
+   "100": 11.629
+  },
+  "def": {
+   "1": 1,
+   "2": 1.083,
+   "3": 1.166,
+   "4": 1.25,
+   "5": 1.333,
+   "6": 1.417,
+   "7": 1.5,
+   "8": 1.584,
+   "9": 1.668,
+   "10": 1.751,
+   "11": 1.835,
+   "12": 1.919,
+   "13": 2.003,
+   "14": 2.088,
+   "15": 2.172,
+   "16": 2.256,
+   "17": 2.341,
+   "18": 2.425,
+   "19": 2.51,
+   "20": 2.594,
+   "21": 2.679,
+   "22": 2.764,
+   "23": 2.849,
+   "24": 2.934,
+   "25": 3.019,
+   "26": 3.105,
+   "27": 3.19,
+   "28": 3.275,
+   "29": 3.361,
+   "30": 3.446,
+   "31": 3.532,
+   "32": 3.618,
+   "33": 3.704,
+   "34": 3.789,
+   "35": 3.875,
+   "36": 3.962,
+   "37": 4.048,
+   "38": 4.134,
+   "39": 4.22,
+   "40": 4.307,
+   "41": 4.393,
+   "42": 4.48,
+   "43": 4.567,
+   "44": 4.653,
+   "45": 4.74,
+   "46": 4.827,
+   "47": 4.914,
+   "48": 5.001,
+   "49": 5.089,
+   "50": 5.176,
+   "51": 5.263,
+   "52": 5.351,
+   "53": 5.438,
+   "54": 5.526,
+   "55": 5.614,
+   "56": 5.702,
+   "57": 5.79,
+   "58": 5.878,
+   "59": 5.966,
+   "60": 6.054,
+   "61": 6.142,
+   "62": 6.23,
+   "63": 6.319,
+   "64": 6.407,
+   "65": 6.496,
+   "66": 6.585,
+   "67": 6.673,
+   "68": 6.762,
+   "69": 6.851,
+   "70": 6.94,
+   "71": 7.029,
+   "72": 7.119,
+   "73": 7.208,
+   "74": 7.297,
+   "75": 7.387,
+   "76": 7.476,
+   "77": 7.566,
+   "78": 7.656,
+   "79": 7.746,
+   "80": 7.836,
+   "81": 7.926,
+   "82": 8.016,
+   "83": 8.106,
+   "84": 8.196,
+   "85": 8.286,
+   "86": 8.377,
+   "87": 8.467,
+   "88": 8.558,
+   "89": 8.649,
+   "90": 8.739,
+   "91": 8.83,
+   "92": 8.921,
+   "93": 9.012,
+   "94": 9.103,
+   "95": 9.195,
+   "96": 9.286,
+   "97": 9.377,
+   "98": 9.469,
+   "99": 9.56,
+   "100": 9.652
+  },
+  "ascension": [
+   {
+    "fight_prop_base_hp": 702.9517,
+    "fight_prop_base_defense": 44.631,
+    "fight_prop_base_attack": 17.56018,
+    "fight_prop_charge_efficiency": 0
+   },
+   {
+    "fight_prop_base_hp": 1202.4174,
+    "fight_prop_base_defense": 76.3425,
+    "fight_prop_base_attack": 30.03715,
+    "fight_prop_charge_efficiency": 0.08
+   },
+   {
+    "fight_prop_base_hp": 1868.3716,
+    "fight_prop_base_defense": 118.6245,
+    "fight_prop_base_attack": 46.67311,
+    "fight_prop_charge_efficiency": 0.16
+   },
+   {
+    "fight_prop_base_hp": 2367.8374,
+    "fight_prop_base_defense": 150.336,
+    "fight_prop_base_attack": 59.15008,
+    "fight_prop_charge_efficiency": 0.16
+   },
+   {
+    "fight_prop_base_hp": 2867.303,
+    "fight_prop_base_defense": 182.0475,
+    "fight_prop_base_attack": 71.62705,
+    "fight_prop_charge_efficiency": 0.24
+   },
+   {
+    "fight_prop_base_hp": 3366.7688,
+    "fight_prop_base_defense": 213.759,
+    "fight_prop_base_attack": 84.10402,
+    "fight_prop_charge_efficiency": 0.32
+   }
+  ],
+  "prop_grow_curves": [
+   {
+    "grow_curve": "GROW_CURVE_HP_S5",
+    "type": "FIGHT_PROP_BASE_HP"
+   },
+   {
+    "grow_curve": "GROW_CURVE_ATTACK_S5",
+    "type": "FIGHT_PROP_BASE_ATTACK"
+   },
+   {
+    "grow_curve": "GROW_CURVE_HP_S5",
+    "type": "FIGHT_PROP_BASE_DEFENSE"
+   }
+  ],
+  "recommended_props": []
+ },
+ "skills": [
+  {
+   "id": 10221,
+   "name": "Divine Marksmanship",
+   "desc": "<color=#FFD780FF>Normal Attack</color>\\nPerforms up to 6 consecutive shots with a bow.\\n\\n<color=#FFD780FF>Charged Attack</color>\\nPerforms a more precise <color=#FFD780FF>Aimed Shot</color> with increased DMG.\\nWhile aiming, favorable winds will accumulate on the arrowhead. A fully charged wind arrow will deal <color=#80FFD7FF>Anemo DMG</color>.\\n\\n<color=#FFD780FF>Plunging Attack</color>\\nFires off a shower of arrows in mid-air before falling and striking the ground, dealing AoE DMG upon impact.",
+   "promote": {
+    "0": {
+     "level": 1,
+     "icon": "Skill_A_02",
+     "desc": [
+      "1-Hit DMG|{param1:F1P}+{param1:F1P}",
+      "2-Hit DMG|{param2:F1P}",
+      "3-Hit DMG|{param3:F1P}",
+      "4-Hit DMG|{param4:F1P}+{param4:F1P}",
+      "5-Hit DMG|{param5:F1P}",
+      "6-Hit DMG|{param6:F1P}",
+      "Aimed Shot|{param7:F1P}",
+      "Fully-Charged Aimed Shot|{param8:P}",
+      "Plunge DMG|{param9:F1P}",
+      "Low/High Plunge DMG|{param10:P}/{param11:P}",
+      "Windsunder Arrow DMG|{param12:F1P} Normal Attack DMG",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.20382,
+      0.44376,
+      0.52374,
+      0.26058,
+      0.50654,
+      0.7095,
+      0.4386,
+      1.24,
+      0.568288,
+      1.136335,
+      1.419344,
+      1.6,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "1": {
+     "level": 2,
+     "icon": "Skill_A_02",
+     "desc": [
+      "1-Hit DMG|{param1:F1P}+{param1:F1P}",
+      "2-Hit DMG|{param2:F1P}",
+      "3-Hit DMG|{param3:F1P}",
+      "4-Hit DMG|{param4:F1P}+{param4:F1P}",
+      "5-Hit DMG|{param5:F1P}",
+      "6-Hit DMG|{param6:F1P}",
+      "Aimed Shot|{param7:F1P}",
+      "Fully-Charged Aimed Shot|{param8:P}",
+      "Plunge DMG|{param9:F1P}",
+      "Low/High Plunge DMG|{param10:P}/{param11:P}",
+      "Windsunder Arrow DMG|{param12:F1P} Normal Attack DMG",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.22041,
+      0.47988,
+      0.56637,
+      0.28179,
+      0.54777,
+      0.76725,
+      0.4743,
+      1.333,
+      0.614544,
+      1.228828,
+      1.534872,
+      1.7,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "2": {
+     "level": 3,
+     "icon": "Skill_A_02",
+     "desc": [
+      "1-Hit DMG|{param1:F1P}+{param1:F1P}",
+      "2-Hit DMG|{param2:F1P}",
+      "3-Hit DMG|{param3:F1P}",
+      "4-Hit DMG|{param4:F1P}+{param4:F1P}",
+      "5-Hit DMG|{param5:F1P}",
+      "6-Hit DMG|{param6:F1P}",
+      "Aimed Shot|{param7:F1P}",
+      "Fully-Charged Aimed Shot|{param8:P}",
+      "Plunge DMG|{param9:F1P}",
+      "Low/High Plunge DMG|{param10:P}/{param11:P}",
+      "Windsunder Arrow DMG|{param12:F1P} Normal Attack DMG",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.237,
+      0.516,
+      0.609,
+      0.303,
+      0.589,
+      0.825,
+      0.51,
+      1.426,
+      0.6608,
+      1.32132,
+      1.6504,
+      1.8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "3": {
+     "level": 4,
+     "icon": "Skill_A_02",
+     "desc": [
+      "1-Hit DMG|{param1:F1P}+{param1:F1P}",
+      "2-Hit DMG|{param2:F1P}",
+      "3-Hit DMG|{param3:F1P}",
+      "4-Hit DMG|{param4:F1P}+{param4:F1P}",
+      "5-Hit DMG|{param5:F1P}",
+      "6-Hit DMG|{param6:F1P}",
+      "Aimed Shot|{param7:F1P}",
+      "Fully-Charged Aimed Shot|{param8:P}",
+      "Plunge DMG|{param9:F1P}",
+      "Low/High Plunge DMG|{param10:P}/{param11:P}",
+      "Windsunder Arrow DMG|{param12:F1P} Normal Attack DMG",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.2607,
+      0.5676,
+      0.6699,
+      0.3333,
+      0.6479,
+      0.9075,
+      0.561,
+      1.55,
+      0.72688,
+      1.453452,
+      1.81544,
+      1.9,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "4": {
+     "level": 5,
+     "icon": "Skill_A_02",
+     "desc": [
+      "1-Hit DMG|{param1:F1P}+{param1:F1P}",
+      "2-Hit DMG|{param2:F1P}",
+      "3-Hit DMG|{param3:F1P}",
+      "4-Hit DMG|{param4:F1P}+{param4:F1P}",
+      "5-Hit DMG|{param5:F1P}",
+      "6-Hit DMG|{param6:F1P}",
+      "Aimed Shot|{param7:F1P}",
+      "Fully-Charged Aimed Shot|{param8:P}",
+      "Plunge DMG|{param9:F1P}",
+      "Low/High Plunge DMG|{param10:P}/{param11:P}",
+      "Windsunder Arrow DMG|{param12:F1P} Normal Attack DMG",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.27729,
+      0.60372,
+      0.71253,
+      0.35451,
+      0.68913,
+      0.96525,
+      0.5967,
+      1.643,
+      0.773136,
+      1.545944,
+      1.930968,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "5": {
+     "level": 6,
+     "icon": "Skill_A_02",
+     "desc": [
+      "1-Hit DMG|{param1:F1P}+{param1:F1P}",
+      "2-Hit DMG|{param2:F1P}",
+      "3-Hit DMG|{param3:F1P}",
+      "4-Hit DMG|{param4:F1P}+{param4:F1P}",
+      "5-Hit DMG|{param5:F1P}",
+      "6-Hit DMG|{param6:P}",
+      "Aimed Shot|{param7:F1P}",
+      "Fully-Charged Aimed Shot|{param8:P}",
+      "Plunge DMG|{param9:F1P}",
+      "Low/High Plunge DMG|{param10:P}/{param11:P}",
+      "Windsunder Arrow DMG|{param12:F1P} Normal Attack DMG",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.29625,
+      0.645,
+      0.76125,
+      0.37875,
+      0.73625,
+      1.03125,
+      0.6375,
+      1.736,
+      0.826,
+      1.65165,
+      2.063,
+      2.1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "6": {
+     "level": 7,
+     "icon": "Skill_A_02",
+     "desc": [
+      "1-Hit DMG|{param1:F1P}+{param1:F1P}",
+      "2-Hit DMG|{param2:F1P}",
+      "3-Hit DMG|{param3:F1P}",
+      "4-Hit DMG|{param4:F1P}+{param4:F1P}",
+      "5-Hit DMG|{param5:F1P}",
+      "6-Hit DMG|{param6:P}",
+      "Aimed Shot|{param7:F1P}",
+      "Fully-Charged Aimed Shot|{param8:P}",
+      "Plunge DMG|{param9:F1P}",
+      "Low/High Plunge DMG|{param10:P}/{param11:P}",
+      "Windsunder Arrow DMG|{param12:F1P} Normal Attack DMG",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.32232,
+      0.70176,
+      0.82824,
+      0.41208,
+      0.80104,
+      1.122,
+      0.6936,
+      1.86,
+      0.898688,
+      1.796995,
+      2.244544,
+      2.2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "7": {
+     "level": 8,
+     "icon": "Skill_A_02",
+     "desc": [
+      "1-Hit DMG|{param1:F1P}+{param1:F1P}",
+      "2-Hit DMG|{param2:F1P}",
+      "3-Hit DMG|{param3:F1P}",
+      "4-Hit DMG|{param4:F1P}+{param4:F1P}",
+      "5-Hit DMG|{param5:F1P}",
+      "6-Hit DMG|{param6:P}",
+      "Aimed Shot|{param7:F1P}",
+      "Fully-Charged Aimed Shot|{param8:P}",
+      "Plunge DMG|{param9:F1P}",
+      "Low/High Plunge DMG|{param10:P}/{param11:P}",
+      "Windsunder Arrow DMG|{param12:F1P} Normal Attack DMG",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.34839,
+      0.75852,
+      0.89523,
+      0.44541,
+      0.86583,
+      1.21275,
+      0.7497,
+      1.984,
+      0.971376,
+      1.94234,
+      2.426088,
+      2.3,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "8": {
+     "level": 9,
+     "icon": "Skill_A_02",
+     "desc": [
+      "1-Hit DMG|{param1:F1P}+{param1:F1P}",
+      "2-Hit DMG|{param2:F1P}",
+      "3-Hit DMG|{param3:F1P}",
+      "4-Hit DMG|{param4:F1P}+{param4:F1P}",
+      "5-Hit DMG|{param5:F1P}",
+      "6-Hit DMG|{param6:P}",
+      "Aimed Shot|{param7:F1P}",
+      "Fully-Charged Aimed Shot|{param8:P}",
+      "Plunge DMG|{param9:F1P}",
+      "Low/High Plunge DMG|{param10:P}/{param11:P}",
+      "Windsunder Arrow DMG|{param12:F1P} Normal Attack DMG",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.37446,
+      0.81528,
+      0.96222,
+      0.47874,
+      0.93062,
+      1.3035,
+      0.8058,
+      2.108,
+      1.044064,
+      2.087686,
+      2.607632,
+      2.4,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "9": {
+     "level": 10,
+     "icon": "Skill_A_02",
+     "desc": [
+      "1-Hit DMG|{param1:F1P}+{param1:F1P}",
+      "2-Hit DMG|{param2:F1P}",
+      "3-Hit DMG|{param3:P}",
+      "4-Hit DMG|{param4:F1P}+{param4:F1P}",
+      "5-Hit DMG|{param5:P}",
+      "6-Hit DMG|{param6:P}",
+      "Aimed Shot|{param7:F1P}",
+      "Fully-Charged Aimed Shot|{param8:P}",
+      "Plunge DMG|{param9:F1P}",
+      "Low/High Plunge DMG|{param10:P}/{param11:P}",
+      "Windsunder Arrow DMG|{param12:F1P} Normal Attack DMG",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.4029,
+      0.8772,
+      1.0353,
+      0.5151,
+      1.0013,
+      1.4025,
+      0.867,
+      2.232,
+      1.12336,
+      2.246244,
+      2.80568,
+      2.5,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "10": {
+     "level": 11,
+     "icon": "Skill_A_02",
+     "desc": [
+      "1-Hit DMG|{param1:F1P}+{param1:F1P}",
+      "2-Hit DMG|{param2:F1P}",
+      "3-Hit DMG|{param3:P}",
+      "4-Hit DMG|{param4:F1P}+{param4:F1P}",
+      "5-Hit DMG|{param5:P}",
+      "6-Hit DMG|{param6:P}",
+      "Aimed Shot|{param7:F1P}",
+      "Fully-Charged Aimed Shot|{param8:P}",
+      "Plunge DMG|{param9:F1P}",
+      "Low/High Plunge DMG|{param10:P}/{param11:P}",
+      "Windsunder Arrow DMG|{param12:F1P} Normal Attack DMG",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.435487,
+      0.94815,
+      1.119037,
+      0.556762,
+      1.082288,
+      1.515937,
+      0.937125,
+      2.36096,
+      1.202656,
+      2.404802,
+      3.003728,
+      2.6,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "11": {
+     "level": 12,
+     "icon": "Skill_A_02",
+     "desc": [
+      "1-Hit DMG|{param1:F1P}+{param1:F1P}",
+      "2-Hit DMG|{param2:P}",
+      "3-Hit DMG|{param3:P}",
+      "4-Hit DMG|{param4:F1P}+{param4:F1P}",
+      "5-Hit DMG|{param5:P}",
+      "6-Hit DMG|{param6:P}",
+      "Aimed Shot|{param7:P}",
+      "Fully-Charged Aimed Shot|{param8:P}",
+      "Plunge DMG|{param9:F1P}",
+      "Low/High Plunge DMG|{param10:P}/{param11:P}",
+      "Windsunder Arrow DMG|{param12:F1P} Normal Attack DMG",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.47381,
+      1.031587,
+      1.217513,
+      0.605758,
+      1.177529,
+      1.64934,
+      1.019592,
+      2.5296,
+      1.281952,
+      2.563361,
+      3.201776,
+      2.7,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "12": {
+     "level": 13,
+     "icon": "Skill_A_02",
+     "desc": [
+      "1-Hit DMG|{param1:F1P}+{param1:F1P}",
+      "2-Hit DMG|{param2:P}",
+      "3-Hit DMG|{param3:P}",
+      "4-Hit DMG|{param4:F1P}+{param4:F1P}",
+      "5-Hit DMG|{param5:P}",
+      "6-Hit DMG|{param6:P}",
+      "Aimed Shot|{param7:P}",
+      "Fully-Charged Aimed Shot|{param8:P}",
+      "Plunge DMG|{param9:F1P}",
+      "Low/High Plunge DMG|{param10:P}/{param11:P}",
+      "Windsunder Arrow DMG|{param12:F1P} Normal Attack DMG",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.512133,
+      1.115024,
+      1.315988,
+      0.654753,
+      1.27277,
+      1.782742,
+      1.102059,
+      2.69824,
+      1.361248,
+      2.721919,
+      3.399824,
+      2.8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "13": {
+     "level": 14,
+     "icon": "Skill_A_02",
+     "desc": [
+      "1-Hit DMG|{param1:F1P}+{param1:F1P}",
+      "2-Hit DMG|{param2:P}",
+      "3-Hit DMG|{param3:P}",
+      "4-Hit DMG|{param4:F1P}+{param4:F1P}",
+      "5-Hit DMG|{param5:P}",
+      "6-Hit DMG|{param6:P}",
+      "Aimed Shot|{param7:P}",
+      "Fully-Charged Aimed Shot|{param8:P}",
+      "Plunge DMG|{param9:F1P}",
+      "Low/High Plunge DMG|{param10:P}/{param11:P}",
+      "Windsunder Arrow DMG|{param12:F1P} Normal Attack DMG",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.550456,
+      1.198462,
+      1.414463,
+      0.703748,
+      1.368011,
+      1.916145,
+      1.184526,
+      2.86688,
+      1.440544,
+      2.880478,
+      3.597872,
+      2.9,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "14": {
+     "level": 15,
+     "icon": "Skill_A_02",
+     "desc": [
+      "1-Hit DMG|{param1:F1P}+{param1:F1P}",
+      "2-Hit DMG|{param2:P}",
+      "3-Hit DMG|{param3:P}",
+      "4-Hit DMG|{param4:F1P}+{param4:F1P}",
+      "5-Hit DMG|{param5:P}",
+      "6-Hit DMG|{param6:P}",
+      "Aimed Shot|{param7:P}",
+      "Fully-Charged Aimed Shot|{param8:P}",
+      "Plunge DMG|{param9:F1P}",
+      "Low/High Plunge DMG|{param10:P}/{param11:P}",
+      "Windsunder Arrow DMG|{param12:F1P} Normal Attack DMG",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.592263,
+      1.289484,
+      1.521891,
+      0.757197,
+      1.471911,
+      2.061675,
+      1.27449,
+      3.03552,
+      1.51984,
+      3.039036,
+      3.79592,
+      3,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "special": true,
+   "special_desc": "<color=#FFD780FF>Normal Attack</color>\\nPerforms up to 6 consecutive shots with a bow.\\n\\n<color=#FFD780FF>Charged Attack</color>\\nPerforms a more precise <color=#FFD780FF>Aimed Shot</color> with increased DMG.\\nWhile aiming, favorable winds will accumulate on the arrowhead. A fully charged wind arrow will deal <color=#80FFD7FF>Anemo DMG</color>.\\n\\n<color=#FFD780FF>Plunging Attack</color>\\nFires off a shower of arrows in mid-air before falling and striking the ground, dealing AoE DMG upon impact.\\n\\n<color=#FFD780FF>Hexerei: Secret Rite</color>\\nWhile the Stormeye created by the Elemental Burst <color=#FFD780FF>Wind's Grand Ode</color> is active, Venti will gain additional buff effects:\\n\u00b7 Venti's Normal Attacks will be converted into enemy-piercing <color=#FFD780FF>Windsunder Arrows</color> that deal even more <color=#80FFD7FF>Anemo DMG</color> to opponents along the path.\\n\u00b7 When Venti's Normal Attacks hit opponents, Stormeye's duration is increased by 1s, and its CD is increased by 0.5s. This effect can be triggered once every 0.1s and up to 2 times after each use of the Elemental Burst <color=#FFD780FF>Wind's Grand Ode</color>."
+  },
+  {
+   "id": 10224,
+   "name": "Skyward Sonnet",
+   "desc": "#O wind upon which all hymns and songs fly, bear these earth-walkers up into the sky!\\n\\n<color=#FFD780FF>{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press}</color>\\nSummons a Wind Domain at the opponent's location, dealing <color=#80FFD7FF>AoE Anemo DMG</color> and launching opponents into the air.\\n\\n<color=#FFD780FF>Hold</color>\\nSummons an even larger Wind Domain with Venti as the epicenter, dealing <color=#80FFD7FF>AoE Anemo DMG</color> and launching affected opponents into the air.\\nAfter unleashing the Hold version of this ability, Venti rides the wind into the air.\\n\\nOpponents hit by Skyward Sonnet will fall to the ground slowly.\\n\\n<i>In the days when gods and men walked the earth together, the heavens were filled with countless songs. This melody has long since been forgotten.</i>",
+   "promote": {
+    "0": {
+     "level": 1,
+     "icon": "Skill_S_Venti_01",
+     "desc": [
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} DMG|{param1:P}",
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} CD|{param2:F1}s",
+      "Hold DMG|{param3:P}",
+      "Hold CD|{param4:F1}s",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      2.76,
+      6,
+      3.8,
+      15,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "1": {
+     "level": 2,
+     "icon": "Skill_S_Venti_01",
+     "desc": [
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} DMG|{param1:P}",
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} CD|{param2:F1}s",
+      "Hold DMG|{param3:P}",
+      "Hold CD|{param4:F1}s",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      2.967,
+      6,
+      4.085,
+      15,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "2": {
+     "level": 3,
+     "icon": "Skill_S_Venti_01",
+     "desc": [
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} DMG|{param1:P}",
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} CD|{param2:F1}s",
+      "Hold DMG|{param3:P}",
+      "Hold CD|{param4:F1}s",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      3.174,
+      6,
+      4.37,
+      15,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "3": {
+     "level": 4,
+     "icon": "Skill_S_Venti_01",
+     "desc": [
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} DMG|{param1:P}",
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} CD|{param2:F1}s",
+      "Hold DMG|{param3:P}",
+      "Hold CD|{param4:F1}s",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      3.45,
+      6,
+      4.75,
+      15,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "4": {
+     "level": 5,
+     "icon": "Skill_S_Venti_01",
+     "desc": [
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} DMG|{param1:P}",
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} CD|{param2:F1}s",
+      "Hold DMG|{param3:P}",
+      "Hold CD|{param4:F1}s",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      3.657,
+      6,
+      5.035,
+      15,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "5": {
+     "level": 6,
+     "icon": "Skill_S_Venti_01",
+     "desc": [
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} DMG|{param1:P}",
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} CD|{param2:F1}s",
+      "Hold DMG|{param3:P}",
+      "Hold CD|{param4:F1}s",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      3.864,
+      6,
+      5.32,
+      15,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "6": {
+     "level": 7,
+     "icon": "Skill_S_Venti_01",
+     "desc": [
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} DMG|{param1:P}",
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} CD|{param2:F1}s",
+      "Hold DMG|{param3:P}",
+      "Hold CD|{param4:F1}s",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      4.14,
+      6,
+      5.7,
+      15,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "7": {
+     "level": 8,
+     "icon": "Skill_S_Venti_01",
+     "desc": [
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} DMG|{param1:P}",
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} CD|{param2:F1}s",
+      "Hold DMG|{param3:P}",
+      "Hold CD|{param4:F1}s",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      4.416,
+      6,
+      6.08,
+      15,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "8": {
+     "level": 9,
+     "icon": "Skill_S_Venti_01",
+     "desc": [
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} DMG|{param1:P}",
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} CD|{param2:F1}s",
+      "Hold DMG|{param3:P}",
+      "Hold CD|{param4:F1}s",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      4.692,
+      6,
+      6.46,
+      15,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "9": {
+     "level": 10,
+     "icon": "Skill_S_Venti_01",
+     "desc": [
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} DMG|{param1:P}",
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} CD|{param2:F1}s",
+      "Hold DMG|{param3:P}",
+      "Hold CD|{param4:F1}s",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      4.968,
+      6,
+      6.84,
+      15,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "10": {
+     "level": 11,
+     "icon": "Skill_S_Venti_01",
+     "desc": [
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} DMG|{param1:P}",
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} CD|{param2:F1}s",
+      "Hold DMG|{param3:P}",
+      "Hold CD|{param4:F1}s",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      5.244,
+      6,
+      7.22,
+      15,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "11": {
+     "level": 12,
+     "icon": "Skill_S_Venti_01",
+     "desc": [
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} DMG|{param1:P}",
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} CD|{param2:F1}s",
+      "Hold DMG|{param3:P}",
+      "Hold CD|{param4:F1}s",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      5.52,
+      6,
+      7.6,
+      15,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "12": {
+     "level": 13,
+     "icon": "Skill_S_Venti_01",
+     "desc": [
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} DMG|{param1:P}",
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} CD|{param2:F1}s",
+      "Hold DMG|{param3:P}",
+      "Hold CD|{param4:F1}s",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      5.865,
+      6,
+      8.075,
+      15,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "13": {
+     "level": 14,
+     "icon": "Skill_S_Venti_01",
+     "desc": [
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} DMG|{param1:P}",
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} CD|{param2:F1}s",
+      "Hold DMG|{param3:P}",
+      "Hold CD|{param4:F1}s",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      6.21,
+      6,
+      8.55,
+      15,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "14": {
+     "level": 15,
+     "icon": "Skill_S_Venti_01",
+     "desc": [
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} DMG|{param1:P}",
+      "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} CD|{param2:F1}s",
+      "Hold DMG|{param3:P}",
+      "Hold CD|{param4:F1}s",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      6.555,
+      6,
+      9.025,
+      15,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   }
+  },
+  {
+   "id": 10225,
+   "name": "Wind's Grand Ode",
+   "desc": "Fires off an arrow made of countless coalesced winds, creating a huge Stormeye that sucks in opponents and deals continuous <color=#80FFD7FF>Anemo DMG</color>.\\n\\n<color=#FFD780FF>Elemental Absorption</color>\\nIf the Stormeye comes into contact with <color=#80C0FFFF>Hydro</color>/<color=#FF9999FF>Pyro</color>/<color=#99FFFFFF>Cryo</color>/<color=#FFACFFFF>Electro</color>, it will deal additional elemental DMG of that type.\\nElemental Absorption may only occur once per use.\\n\\n<i>Many hymns written in praise of the Anemo Archon have been lost to time. This one sings of his mastery over the wind.</i>",
+   "promote": {
+    "0": {
+     "level": 1,
+     "icon": "Skill_E_Venti_01",
+     "desc": [
+      "DoT|{param1:F1P}",
+      "Additional Elemental DMG|{param2:F1P}",
+      "Duration|{param3:F1}s",
+      "CD|{param4:F1}s",
+      "Energy Cost|{param5:I}",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.376,
+      0.188,
+      8,
+      15,
+      60,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "1": {
+     "level": 2,
+     "icon": "Skill_E_Venti_01",
+     "desc": [
+      "DoT|{param1:F1P}",
+      "Additional Elemental DMG|{param2:F1P}",
+      "Duration|{param3:F1}s",
+      "CD|{param4:F1}s",
+      "Energy Cost|{param5:I}",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.4042,
+      0.2021,
+      8,
+      15,
+      60,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "2": {
+     "level": 3,
+     "icon": "Skill_E_Venti_01",
+     "desc": [
+      "DoT|{param1:F1P}",
+      "Additional Elemental DMG|{param2:F1P}",
+      "Duration|{param3:F1}s",
+      "CD|{param4:F1}s",
+      "Energy Cost|{param5:I}",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.4324,
+      0.2162,
+      8,
+      15,
+      60,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "3": {
+     "level": 4,
+     "icon": "Skill_E_Venti_01",
+     "desc": [
+      "DoT|{param1:F1P}",
+      "Additional Elemental DMG|{param2:F1P}",
+      "Duration|{param3:F1}s",
+      "CD|{param4:F1}s",
+      "Energy Cost|{param5:I}",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.47,
+      0.235,
+      8,
+      15,
+      60,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "4": {
+     "level": 5,
+     "icon": "Skill_E_Venti_01",
+     "desc": [
+      "DoT|{param1:F1P}",
+      "Additional Elemental DMG|{param2:F1P}",
+      "Duration|{param3:F1}s",
+      "CD|{param4:F1}s",
+      "Energy Cost|{param5:I}",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.4982,
+      0.2491,
+      8,
+      15,
+      60,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "5": {
+     "level": 6,
+     "icon": "Skill_E_Venti_01",
+     "desc": [
+      "DoT|{param1:F1P}",
+      "Additional Elemental DMG|{param2:F1P}",
+      "Duration|{param3:F1}s",
+      "CD|{param4:F1}s",
+      "Energy Cost|{param5:I}",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.5264,
+      0.2632,
+      8,
+      15,
+      60,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "6": {
+     "level": 7,
+     "icon": "Skill_E_Venti_01",
+     "desc": [
+      "DoT|{param1:F1P}",
+      "Additional Elemental DMG|{param2:F1P}",
+      "Duration|{param3:F1}s",
+      "CD|{param4:F1}s",
+      "Energy Cost|{param5:I}",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.564,
+      0.282,
+      8,
+      15,
+      60,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "7": {
+     "level": 8,
+     "icon": "Skill_E_Venti_01",
+     "desc": [
+      "DoT|{param1:F1P}",
+      "Additional Elemental DMG|{param2:F1P}",
+      "Duration|{param3:F1}s",
+      "CD|{param4:F1}s",
+      "Energy Cost|{param5:I}",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.6016,
+      0.3008,
+      8,
+      15,
+      60,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "8": {
+     "level": 9,
+     "icon": "Skill_E_Venti_01",
+     "desc": [
+      "DoT|{param1:F1P}",
+      "Additional Elemental DMG|{param2:F1P}",
+      "Duration|{param3:F1}s",
+      "CD|{param4:F1}s",
+      "Energy Cost|{param5:I}",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.6392,
+      0.3196,
+      8,
+      15,
+      60,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "9": {
+     "level": 10,
+     "icon": "Skill_E_Venti_01",
+     "desc": [
+      "DoT|{param1:F1P}",
+      "Additional Elemental DMG|{param2:F1P}",
+      "Duration|{param3:F1}s",
+      "CD|{param4:F1}s",
+      "Energy Cost|{param5:I}",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.6768,
+      0.3384,
+      8,
+      15,
+      60,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "10": {
+     "level": 11,
+     "icon": "Skill_E_Venti_01",
+     "desc": [
+      "DoT|{param1:F1P}",
+      "Additional Elemental DMG|{param2:F1P}",
+      "Duration|{param3:F1}s",
+      "CD|{param4:F1}s",
+      "Energy Cost|{param5:I}",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.7144,
+      0.3572,
+      8,
+      15,
+      60,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "11": {
+     "level": 12,
+     "icon": "Skill_E_Venti_01",
+     "desc": [
+      "DoT|{param1:F1P}",
+      "Additional Elemental DMG|{param2:F1P}",
+      "Duration|{param3:F1}s",
+      "CD|{param4:F1}s",
+      "Energy Cost|{param5:I}",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.752,
+      0.376,
+      8,
+      15,
+      60,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "12": {
+     "level": 13,
+     "icon": "Skill_E_Venti_01",
+     "desc": [
+      "DoT|{param1:F1P}",
+      "Additional Elemental DMG|{param2:F1P}",
+      "Duration|{param3:F1}s",
+      "CD|{param4:F1}s",
+      "Energy Cost|{param5:I}",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.799,
+      0.3995,
+      8,
+      15,
+      60,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "13": {
+     "level": 14,
+     "icon": "Skill_E_Venti_01",
+     "desc": [
+      "DoT|{param1:F1P}",
+      "Additional Elemental DMG|{param2:F1P}",
+      "Duration|{param3:F1}s",
+      "CD|{param4:F1}s",
+      "Energy Cost|{param5:I}",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.846,
+      0.423,
+      8,
+      15,
+      60,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "14": {
+     "level": 15,
+     "icon": "Skill_E_Venti_01",
+     "desc": [
+      "DoT|{param1:F1P}",
+      "Additional Elemental DMG|{param2:F1P}",
+      "Duration|{param3:F1}s",
+      "CD|{param4:F1}s",
+      "Energy Cost|{param5:I}",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     "param": [
+      0.893,
+      0.4465,
+      8,
+      15,
+      60,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   }
+  }
+ ],
+ "passives": [
+  {
+   "id": 222101,
+   "name": "Embrace of Winds",
+   "desc": "Holding <color=#FFD780FF>Skyward Sonnet</color> creates an upcurrent that lasts for 20s.",
+   "icon": "UI_Talent_S_Venti_05",
+   "unlock": 1,
+   "param_list": [
+    20,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "id": 222201,
+   "name": "Stormeye",
+   "desc": "Regenerates 15 Energy for Venti after the effects of <color=#FFD780FF>Wind's Grand Ode</color> end.\\nIf an Elemental Absorption occurred, this also restores 15 Energy to all characters of that corresponding element in the party.",
+   "icon": "UI_Talent_S_Venti_06",
+   "unlock": 4,
+   "param_list": [
+    15,
+    15,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "id": 222301,
+   "name": "Windrider",
+   "desc": "Decreases gliding Stamina consumption for your own party members by 20%.\\nNot stackable with Passive Talents that provide the exact same effects.",
+   "icon": "UI_Talent_Explosion_Glide",
+   "unlock": 0,
+   "param_list": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "id": 225101,
+   "name": "Witch's Eve Rite: Temporal Wind's Eulogy",
+   "desc": "After completing <color=#FFD780FF>Witch's Homework: Of the Waking of Wind</color>, Venti will become a <color=#FFD780FF>Hexerei</color> character. When the party includes at least 2 Hexerei characters, you will gain the <color=#FFD780FF>Hexerei: Secret Rite</color> effect, which enhances Hexerei characters.\\n\\n<color=#FFD780FF>Hexerei: Secret Rite</color>\\nWhile the Stormeye created by the Elemental Burst <color=#FFD780FF>Wind's Grand Ode</color> is active, for 4s after a nearby active character triggers a Swirl or Stellar Swirl reaction, that character's DMG is increased by 50%, and Venti's Stormeye deals 135% of its original DMG.",
+   "icon": "UI_Talent_S_Venti_07",
+   "param_list": [
+    0.5,
+    1.35,
+    4,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "unlock": [
+    1000707
+   ],
+   "special": true,
+   "special_passive": true,
+   "special_desc": ""
+  }
+ ],
+ "constellations": [
+  {
+   "id": 221,
+   "name": "Splitting Gales",
+   "desc": "Fires 2 additional arrows per <color=#FFD780FF>Aimed Shot</color>, each dealing 33% of the original arrow's DMG.",
+   "icon": "UI_Talent_S_Venti_01",
+   "param_list": [
+    0.2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "special": true,
+   "special_desc": "Fires 2 additional arrows per <color=#FFD780FF>Aimed Shot</color>, each dealing 33% of the original arrow's DMG.\\nAdditionally, 2 extra arrows that track opponents will be fired per <color=#FFD780FF>Windsunder Arrow</color>, each dealing 20% of the original arrow's DMG. This effect can be triggered once every 0.25s."
+  },
+  {
+   "id": 222,
+   "name": "Breeze of Reminiscence",
+   "desc": "<color=#FFD780FF>Skyward Sonnet</color> decreases opponents' <color=#80FFD7FF>Anemo RES</color> and Physical RES by 12% for 10s.\\nOpponents launched by <color=#FFD780FF>Skyward Sonnet</color> suffer an additional 12% <color=#80FFD7FF>Anemo RES</color> and Physical RES decrease while airborne.",
+   "icon": "UI_Talent_S_Venti_02",
+   "param_list": [
+    0.25,
+    3,
+    15,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "special": true,
+   "special_desc": "<color=#FFD780FF>Skyward Sonnet</color> decreases opponents' <color=#80FFD7FF>Anemo RES</color> and Physical RES by 24% for 10s.\\nAdditionally, after unleashing the Elemental Burst <color=#FFD780FF>Wind's Grand Ode</color>, Venti gains the <color=#FFD780FF>Wherever a Breeze Blows</color> effect, and the cooldown for his Elemental Skill <color=#FFD780FF>Skyward Sonnet</color> is reset. After a <color=#FFD780FF>Windsunder Arrow</color> hits an opponent, there is also a 25% chance for Venti to gain the <color=#FFD780FF>Wherever a Breeze Blows</color> effect.\\n\\n<color=#FFD780FF>Wherever a Breeze Blows</color>\\nWhen pressing to unleash the Elemental Skill <color=#FFD780FF>Skyward Sonnet</color>, 300% of the original amount of DMG is dealt. This effect lasts for 15s and is removed after Venti presses to use the Elemental Skill <color=#FFD780FF>Skyward Sonnet</color>."
+  },
+  {
+   "id": 223,
+   "name": "Ode to Thousand Winds",
+   "desc": "Increases the Level of <color=#FFD780FF>Wind's Grand Ode</color> by 3.\\nMaximum upgrade level is 15.",
+   "icon": "UI_Talent_U_Venti_02",
+   "param_list": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "id": 224,
+   "name": "Hurricane of Freedom",
+   "desc": "When Venti picks up an Elemental Orb or Particle, he receives a 25% <color=#80FFD7FF>Anemo DMG Bonus</color> for 10s.",
+   "icon": "UI_Talent_S_Venti_03",
+   "param_list": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "special": true,
+   "special_desc": "After unleashing his Elemental Skill <color=#FFD780FF>Skyward Sonnet</color> or Elemental Burst <color=#FFD780FF>Wind's Grand Ode</color>, Venti and his own active party members gain a 25% <color=#80FFD7FF>Anemo DMG Bonus</color> for 10s."
+  },
+  {
+   "id": 225,
+   "name": "Concerto dal Cielo",
+   "desc": "Increases the Level of <color=#FFD780FF>Skyward Sonnet</color> by 3.\\nMaximum upgrade level is 15.",
+   "icon": "UI_Talent_U_Venti_01",
+   "param_list": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "id": 226,
+   "name": "Storm of Defiance",
+   "desc": "Targets who take DMG from <color=#FFD780FF>Wind's Grand Ode</color> have their <color=#80FFD7FF>Anemo RES</color> decreased by 20%.\\nIf an Elemental Absorption occurred, then their RES towards the corresponding Element is also decreased by 20%.",
+   "icon": "UI_Talent_S_Venti_04",
+   "param_list": [
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "special": true,
+   "special_desc": "Targets who take DMG from <color=#FFD780FF>Wind's Grand Ode</color> have their <color=#80FFD7FF>Anemo RES</color> decreased by 20%.\\nIf an Elemental Absorption occurred, then their RES towards the corresponding Element is also decreased by 20%.\\nAdditionally, the DMG Venti deals to these opponents will gain a CRIT DMG Bonus of 100%."
+  }
+ ],
+ "materials": {
+  "ascensions": [
+   {
+    "mats": [
+     {
+      "name": "Vayuda Turquoise Sliver",
+      "id": 104151,
+      "count": 1,
+      "rank": 2
+     },
+     {
+      "name": "Cecilia",
+      "id": 100023,
+      "count": 3,
+      "rank": 0
+     },
+     {
+      "name": "Slime Condensate",
+      "id": 112002,
+      "count": 3,
+      "rank": 1
+     }
+    ],
+    "cost": 20000
+   },
+   {
+    "mats": [
+     {
+      "name": "Vayuda Turquoise Fragment",
+      "id": 104152,
+      "count": 3,
+      "rank": 3
+     },
+     {
+      "name": "Hurricane Seed",
+      "id": 113001,
+      "count": 2,
+      "rank": 4
+     },
+     {
+      "name": "Cecilia",
+      "id": 100023,
+      "count": 10,
+      "rank": 0
+     },
+     {
+      "name": "Slime Condensate",
+      "id": 112002,
+      "count": 15,
+      "rank": 1
+     }
+    ],
+    "cost": 40000
+   },
+   {
+    "mats": [
+     {
+      "name": "Vayuda Turquoise Fragment",
+      "id": 104152,
+      "count": 6,
+      "rank": 3
+     },
+     {
+      "name": "Hurricane Seed",
+      "id": 113001,
+      "count": 4,
+      "rank": 4
+     },
+     {
+      "name": "Cecilia",
+      "id": 100023,
+      "count": 20,
+      "rank": 0
+     },
+     {
+      "name": "Slime Secretions",
+      "id": 112003,
+      "count": 12,
+      "rank": 2
+     }
+    ],
+    "cost": 60000
+   },
+   {
+    "mats": [
+     {
+      "name": "Vayuda Turquoise Chunk",
+      "id": 104153,
+      "count": 3,
+      "rank": 4
+     },
+     {
+      "name": "Hurricane Seed",
+      "id": 113001,
+      "count": 8,
+      "rank": 4
+     },
+     {
+      "name": "Cecilia",
+      "id": 100023,
+      "count": 30,
+      "rank": 0
+     },
+     {
+      "name": "Slime Secretions",
+      "id": 112003,
+      "count": 18,
+      "rank": 2
+     }
+    ],
+    "cost": 80000
+   },
+   {
+    "mats": [
+     {
+      "name": "Vayuda Turquoise Chunk",
+      "id": 104153,
+      "count": 6,
+      "rank": 4
+     },
+     {
+      "name": "Hurricane Seed",
+      "id": 113001,
+      "count": 12,
+      "rank": 4
+     },
+     {
+      "name": "Cecilia",
+      "id": 100023,
+      "count": 45,
+      "rank": 0
+     },
+     {
+      "name": "Slime Concentrate",
+      "id": 112004,
+      "count": 12,
+      "rank": 3
+     }
+    ],
+    "cost": 100000
+   },
+   {
+    "mats": [
+     {
+      "name": "Vayuda Turquoise Gemstone",
+      "id": 104154,
+      "count": 6,
+      "rank": 5
+     },
+     {
+      "name": "Hurricane Seed",
+      "id": 113001,
+      "count": 20,
+      "rank": 4
+     },
+     {
+      "name": "Cecilia",
+      "id": 100023,
+      "count": 60,
+      "rank": 0
+     },
+     {
+      "name": "Slime Concentrate",
+      "id": 112004,
+      "count": 24,
+      "rank": 3
+     }
+    ],
+    "cost": 120000
+   }
+  ],
+  "talents": [
+   [
+    {
+     "mats": [
+      {
+       "name": "Teachings of Ballad",
+       "id": 104307,
+       "count": 3,
+       "rank": 2
+      },
+      {
+       "name": "Slime Condensate",
+       "id": 112002,
+       "count": 6,
+       "rank": 1
+      }
+     ],
+     "cost": 12500
+    },
+    {
+     "mats": [
+      {
+       "name": "Guide to Ballad",
+       "id": 104308,
+       "count": 2,
+       "rank": 3
+      },
+      {
+       "name": "Slime Secretions",
+       "id": 112003,
+       "count": 3,
+       "rank": 2
+      }
+     ],
+     "cost": 17500
+    },
+    {
+     "mats": [
+      {
+       "name": "Guide to Ballad",
+       "id": 104308,
+       "count": 4,
+       "rank": 3
+      },
+      {
+       "name": "Slime Secretions",
+       "id": 112003,
+       "count": 4,
+       "rank": 2
+      }
+     ],
+     "cost": 25000
+    },
+    {
+     "mats": [
+      {
+       "name": "Guide to Ballad",
+       "id": 104308,
+       "count": 6,
+       "rank": 3
+      },
+      {
+       "name": "Slime Secretions",
+       "id": 112003,
+       "count": 6,
+       "rank": 2
+      }
+     ],
+     "cost": 30000
+    },
+    {
+     "mats": [
+      {
+       "name": "Guide to Ballad",
+       "id": 104308,
+       "count": 9,
+       "rank": 3
+      },
+      {
+       "name": "Slime Secretions",
+       "id": 112003,
+       "count": 9,
+       "rank": 2
+      }
+     ],
+     "cost": 37500
+    },
+    {
+     "mats": [
+      {
+       "name": "Philosophies of Ballad",
+       "id": 104309,
+       "count": 4,
+       "rank": 4
+      },
+      {
+       "name": "Slime Concentrate",
+       "id": 112004,
+       "count": 4,
+       "rank": 3
+      },
+      {
+       "name": "Tail of Boreas",
+       "id": 113006,
+       "count": 1,
+       "rank": 5
+      }
+     ],
+     "cost": 120000
+    },
+    {
+     "mats": [
+      {
+       "name": "Philosophies of Ballad",
+       "id": 104309,
+       "count": 6,
+       "rank": 4
+      },
+      {
+       "name": "Slime Concentrate",
+       "id": 112004,
+       "count": 6,
+       "rank": 3
+      },
+      {
+       "name": "Tail of Boreas",
+       "id": 113006,
+       "count": 1,
+       "rank": 5
+      }
+     ],
+     "cost": 260000
+    },
+    {
+     "mats": [
+      {
+       "name": "Philosophies of Ballad",
+       "id": 104309,
+       "count": 12,
+       "rank": 4
+      },
+      {
+       "name": "Slime Concentrate",
+       "id": 112004,
+       "count": 9,
+       "rank": 3
+      },
+      {
+       "name": "Tail of Boreas",
+       "id": 113006,
+       "count": 2,
+       "rank": 5
+      }
+     ],
+     "cost": 450000
+    },
+    {
+     "mats": [
+      {
+       "name": "Philosophies of Ballad",
+       "id": 104309,
+       "count": 16,
+       "rank": 4
+      },
+      {
+       "name": "Slime Concentrate",
+       "id": 112004,
+       "count": 12,
+       "rank": 3
+      },
+      {
+       "name": "Tail of Boreas",
+       "id": 113006,
+       "count": 2,
+       "rank": 5
+      },
+      {
+       "name": "Crown of Insight",
+       "id": 104319,
+       "count": 1,
+       "rank": 5
+      }
+     ],
+     "cost": 700000
+    }
+   ],
+   [
+    {
+     "mats": [
+      {
+       "name": "Teachings of Ballad",
+       "id": 104307,
+       "count": 3,
+       "rank": 2
+      },
+      {
+       "name": "Slime Condensate",
+       "id": 112002,
+       "count": 6,
+       "rank": 1
+      }
+     ],
+     "cost": 12500
+    },
+    {
+     "mats": [
+      {
+       "name": "Guide to Ballad",
+       "id": 104308,
+       "count": 2,
+       "rank": 3
+      },
+      {
+       "name": "Slime Secretions",
+       "id": 112003,
+       "count": 3,
+       "rank": 2
+      }
+     ],
+     "cost": 17500
+    },
+    {
+     "mats": [
+      {
+       "name": "Guide to Ballad",
+       "id": 104308,
+       "count": 4,
+       "rank": 3
+      },
+      {
+       "name": "Slime Secretions",
+       "id": 112003,
+       "count": 4,
+       "rank": 2
+      }
+     ],
+     "cost": 25000
+    },
+    {
+     "mats": [
+      {
+       "name": "Guide to Ballad",
+       "id": 104308,
+       "count": 6,
+       "rank": 3
+      },
+      {
+       "name": "Slime Secretions",
+       "id": 112003,
+       "count": 6,
+       "rank": 2
+      }
+     ],
+     "cost": 30000
+    },
+    {
+     "mats": [
+      {
+       "name": "Guide to Ballad",
+       "id": 104308,
+       "count": 9,
+       "rank": 3
+      },
+      {
+       "name": "Slime Secretions",
+       "id": 112003,
+       "count": 9,
+       "rank": 2
+      }
+     ],
+     "cost": 37500
+    },
+    {
+     "mats": [
+      {
+       "name": "Philosophies of Ballad",
+       "id": 104309,
+       "count": 4,
+       "rank": 4
+      },
+      {
+       "name": "Slime Concentrate",
+       "id": 112004,
+       "count": 4,
+       "rank": 3
+      },
+      {
+       "name": "Tail of Boreas",
+       "id": 113006,
+       "count": 1,
+       "rank": 5
+      }
+     ],
+     "cost": 120000
+    },
+    {
+     "mats": [
+      {
+       "name": "Philosophies of Ballad",
+       "id": 104309,
+       "count": 6,
+       "rank": 4
+      },
+      {
+       "name": "Slime Concentrate",
+       "id": 112004,
+       "count": 6,
+       "rank": 3
+      },
+      {
+       "name": "Tail of Boreas",
+       "id": 113006,
+       "count": 1,
+       "rank": 5
+      }
+     ],
+     "cost": 260000
+    },
+    {
+     "mats": [
+      {
+       "name": "Philosophies of Ballad",
+       "id": 104309,
+       "count": 12,
+       "rank": 4
+      },
+      {
+       "name": "Slime Concentrate",
+       "id": 112004,
+       "count": 9,
+       "rank": 3
+      },
+      {
+       "name": "Tail of Boreas",
+       "id": 113006,
+       "count": 2,
+       "rank": 5
+      }
+     ],
+     "cost": 450000
+    },
+    {
+     "mats": [
+      {
+       "name": "Philosophies of Ballad",
+       "id": 104309,
+       "count": 16,
+       "rank": 4
+      },
+      {
+       "name": "Slime Concentrate",
+       "id": 112004,
+       "count": 12,
+       "rank": 3
+      },
+      {
+       "name": "Tail of Boreas",
+       "id": 113006,
+       "count": 2,
+       "rank": 5
+      },
+      {
+       "name": "Crown of Insight",
+       "id": 104319,
+       "count": 1,
+       "rank": 5
+      }
+     ],
+     "cost": 700000
+    }
+   ],
+   [
+    {
+     "mats": [
+      {
+       "name": "Teachings of Ballad",
+       "id": 104307,
+       "count": 3,
+       "rank": 2
+      },
+      {
+       "name": "Slime Condensate",
+       "id": 112002,
+       "count": 6,
+       "rank": 1
+      }
+     ],
+     "cost": 12500
+    },
+    {
+     "mats": [
+      {
+       "name": "Guide to Ballad",
+       "id": 104308,
+       "count": 2,
+       "rank": 3
+      },
+      {
+       "name": "Slime Secretions",
+       "id": 112003,
+       "count": 3,
+       "rank": 2
+      }
+     ],
+     "cost": 17500
+    },
+    {
+     "mats": [
+      {
+       "name": "Guide to Ballad",
+       "id": 104308,
+       "count": 4,
+       "rank": 3
+      },
+      {
+       "name": "Slime Secretions",
+       "id": 112003,
+       "count": 4,
+       "rank": 2
+      }
+     ],
+     "cost": 25000
+    },
+    {
+     "mats": [
+      {
+       "name": "Guide to Ballad",
+       "id": 104308,
+       "count": 6,
+       "rank": 3
+      },
+      {
+       "name": "Slime Secretions",
+       "id": 112003,
+       "count": 6,
+       "rank": 2
+      }
+     ],
+     "cost": 30000
+    },
+    {
+     "mats": [
+      {
+       "name": "Guide to Ballad",
+       "id": 104308,
+       "count": 9,
+       "rank": 3
+      },
+      {
+       "name": "Slime Secretions",
+       "id": 112003,
+       "count": 9,
+       "rank": 2
+      }
+     ],
+     "cost": 37500
+    },
+    {
+     "mats": [
+      {
+       "name": "Philosophies of Ballad",
+       "id": 104309,
+       "count": 4,
+       "rank": 4
+      },
+      {
+       "name": "Slime Concentrate",
+       "id": 112004,
+       "count": 4,
+       "rank": 3
+      },
+      {
+       "name": "Tail of Boreas",
+       "id": 113006,
+       "count": 1,
+       "rank": 5
+      }
+     ],
+     "cost": 120000
+    },
+    {
+     "mats": [
+      {
+       "name": "Philosophies of Ballad",
+       "id": 104309,
+       "count": 6,
+       "rank": 4
+      },
+      {
+       "name": "Slime Concentrate",
+       "id": 112004,
+       "count": 6,
+       "rank": 3
+      },
+      {
+       "name": "Tail of Boreas",
+       "id": 113006,
+       "count": 1,
+       "rank": 5
+      }
+     ],
+     "cost": 260000
+    },
+    {
+     "mats": [
+      {
+       "name": "Philosophies of Ballad",
+       "id": 104309,
+       "count": 12,
+       "rank": 4
+      },
+      {
+       "name": "Slime Concentrate",
+       "id": 112004,
+       "count": 9,
+       "rank": 3
+      },
+      {
+       "name": "Tail of Boreas",
+       "id": 113006,
+       "count": 2,
+       "rank": 5
+      }
+     ],
+     "cost": 450000
+    },
+    {
+     "mats": [
+      {
+       "name": "Philosophies of Ballad",
+       "id": 104309,
+       "count": 16,
+       "rank": 4
+      },
+      {
+       "name": "Slime Concentrate",
+       "id": 112004,
+       "count": 12,
+       "rank": 3
+      },
+      {
+       "name": "Tail of Boreas",
+       "id": 113006,
+       "count": 2,
+       "rank": 5
+      },
+      {
+       "name": "Crown of Insight",
+       "id": 104319,
+       "count": 1,
+       "rank": 5
+      }
+     ],
+     "cost": 700000
+    }
+   ]
+  ]
+ },
+ "attack": [
+  {
+   "name": "ShootArrow_Enchanted_Wind",
+   "icd": {
+    "tag": "ExtraAttack",
+    "group": "Venti"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 20.0
+   },
+   "element": "Wind",
+   "attack_type": "Default",
+   "strike_type": "Pierce",
+   "damage_param": "DamageWithWind"
+  },
+  {
+   "name": "ShootArrow_Enchanted_WithoutWind",
+   "icd": {
+    "tag": "ExtraAttack",
+    "group": "Venti"
+   },
+   "gauge": 4,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "None",
+   "attack_type": "Default",
+   "strike_type": "Pierce",
+   "damage_param": "DamageWithoutWind"
+  },
+  {
+   "name": "Venti_WindBlade_FX",
+   "icd": {
+    "tag": "Elemental_Art",
+    "group": "default"
+   },
+   "gauge": 2,
+   "poise": {
+    "level": "LV7",
+    "value": 150.0
+   },
+   "element": "Wind",
+   "attack_type": "Default",
+   "strike_type": "Pierce",
+   "damage_param": "WindBladeDamage"
+  },
+  {
+   "name": "Venti_WindBlade_FX_Land",
+   "icd": {
+    "tag": "Elemental_Art",
+    "group": "default"
+   },
+   "gauge": 2,
+   "poise": {
+    "level": "LV7",
+    "value": 150.0
+   },
+   "element": "Wind",
+   "attack_type": "Default",
+   "strike_type": "Pierce",
+   "damage_param": "WindBladeDamage_Land"
+  },
+  {
+   "name": "Venti_WindBlade_FX_Land",
+   "icd": {
+    "tag": "Elemental_Art",
+    "group": "default"
+   },
+   "gauge": 2,
+   "poise": {
+    "level": "LV7",
+    "value": 150.0
+   },
+   "element": "Wind",
+   "attack_type": "Default",
+   "strike_type": "Pierce",
+   "damage_param": [
+    "WindBladeDamage_Land",
+    "Constellation_2_Ratio",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Hurricane_FX",
+   "icd": {
+    "tag": "Elemental_Burst",
+    "group": "Venti"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 4.0
+   },
+   "element": "Wind",
+   "attack_type": "Default",
+   "strike_type": "None",
+   "damage_param": "Elemental_Burst_Damage"
+  },
+  {
+   "name": "Hurricane_FX",
+   "icd": {
+    "tag": "Elemental_Burst",
+    "group": "Venti"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 4.0
+   },
+   "element": "Wind",
+   "attack_type": "Default",
+   "strike_type": "None",
+   "damage_param": [
+    "Elemental_Burst_Damage",
+    "Hexenzirkel_BurstBuffRatio_Temp",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Hurricane_Mix",
+   "icd": {
+    "tag": "Hurricane_Mix_Detect",
+    "group": "default"
+   },
+   "gauge": 0.04,
+   "poise": null,
+   "element": "AntiFire",
+   "attack_type": "Default",
+   "strike_type": "None",
+   "damage_param": null
+  },
+  {
+   "name": "Hurricane_Mix",
+   "icd": {
+    "tag": "Elemental_Burst",
+    "group": "Venti"
+   },
+   "gauge": 1,
+   "poise": null,
+   "element": "Fire",
+   "attack_type": "Default",
+   "strike_type": "None",
+   "damage_param": "Hurricane_Mix_Damage"
+  },
+  {
+   "name": "Hurricane_Mix",
+   "icd": {
+    "tag": "Elemental_Burst",
+    "group": "Venti"
+   },
+   "gauge": 1,
+   "poise": null,
+   "element": "Fire",
+   "attack_type": "Default",
+   "strike_type": "None",
+   "damage_param": [
+    "Hurricane_Mix_Damage",
+    "Hexenzirkel_BurstBuffRatio_Temp",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Hurricane_Mix",
+   "icd": {
+    "tag": "Elemental_Burst",
+    "group": "Venti"
+   },
+   "gauge": 1,
+   "poise": null,
+   "element": "Water",
+   "attack_type": "Default",
+   "strike_type": "None",
+   "damage_param": "Hurricane_Mix_Damage"
+  },
+  {
+   "name": "Hurricane_Mix",
+   "icd": {
+    "tag": "Elemental_Burst",
+    "group": "Venti"
+   },
+   "gauge": 1,
+   "poise": null,
+   "element": "Water",
+   "attack_type": "Default",
+   "strike_type": "None",
+   "damage_param": [
+    "Hurricane_Mix_Damage",
+    "Hexenzirkel_BurstBuffRatio_Temp",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Hurricane_Mix",
+   "icd": {
+    "tag": "Elemental_Burst",
+    "group": "Venti"
+   },
+   "gauge": 1,
+   "poise": null,
+   "element": "Electric",
+   "attack_type": "Default",
+   "strike_type": "None",
+   "damage_param": "Hurricane_Mix_Damage"
+  },
+  {
+   "name": "Hurricane_Mix",
+   "icd": {
+    "tag": "Elemental_Burst",
+    "group": "Venti"
+   },
+   "gauge": 1,
+   "poise": null,
+   "element": "Electric",
+   "attack_type": "Default",
+   "strike_type": "None",
+   "damage_param": [
+    "Hurricane_Mix_Damage",
+    "Hexenzirkel_BurstBuffRatio_Temp",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Hurricane_Mix",
+   "icd": {
+    "tag": "Elemental_Burst",
+    "group": "Venti"
+   },
+   "gauge": 1,
+   "poise": null,
+   "element": "Ice",
+   "attack_type": "Default",
+   "strike_type": "None",
+   "damage_param": "Hurricane_Mix_Damage"
+  },
+  {
+   "name": "Hurricane_Mix",
+   "icd": {
+    "tag": "Elemental_Burst",
+    "group": "Venti"
+   },
+   "gauge": 1,
+   "poise": null,
+   "element": "Ice",
+   "attack_type": "Default",
+   "strike_type": "None",
+   "damage_param": [
+    "Hurricane_Mix_Damage",
+    "Hexenzirkel_BurstBuffRatio_Temp",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Talnet_ShootArrow_Enchanted_Wind",
+   "icd": {
+    "tag": "ExtraAttack",
+    "group": "Venti"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 2.0
+   },
+   "element": "Wind",
+   "attack_type": "Default",
+   "strike_type": "Pierce",
+   "damage_param": [
+    "Talent_DamageWithWind",
+    0.33,
+    "MUL"
+   ]
+  },
+  {
+   "name": "Talnet_ShootArrow_Enchanted_WithoutWind",
+   "icd": {
+    "tag": "ExtraAttack",
+    "group": "Venti"
+   },
+   "gauge": 4,
+   "poise": {
+    "level": "LV2",
+    "value": 1.0
+   },
+   "element": "None",
+   "attack_type": "Default",
+   "strike_type": "Pierce",
+   "damage_param": [
+    "Talent_DamageWithoutWind",
+    0.33,
+    "MUL"
+   ]
+  },
+  {
+   "name": "FallingAnthem",
+   "icd": {
+    "tag": "FallingAttack",
+    "group": "default"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 50.0
+   },
+   "element": "None",
+   "attack_type": "Melee",
+   "strike_type": "Pierce",
+   "damage_param": "FallingAnthem_Normal_Rank_1_Damage"
+  },
+  {
+   "name": "FallingAnthem",
+   "icd": {
+    "tag": "FallingAttack",
+    "group": "default"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV3",
+    "value": 100.0
+   },
+   "element": "None",
+   "attack_type": "Melee",
+   "strike_type": "Pierce",
+   "damage_param": "FallingAnthem_Normal_Rank_2_Damage"
+  },
+  {
+   "name": "FallingAnthem",
+   "icd": {
+    "tag": "FallingAttack",
+    "group": "default"
+   },
+   "gauge": null,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "None",
+   "attack_type": "Melee",
+   "strike_type": "Pierce",
+   "damage_param": "FallingAnthem_Normal_Loop_Damage"
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow",
+   "icd": {
+    "tag": "NormalAttack_01",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Wind",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_01_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow",
+   "icd": {
+    "tag": "NormalAttack_02",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Wind",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_02_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow",
+   "icd": {
+    "tag": "NormalAttack_03",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Wind",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_03_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow",
+   "icd": {
+    "tag": "NormalAttack_04",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Wind",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_04_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow",
+   "icd": {
+    "tag": "NormalAttack_05",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Wind",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_05_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow",
+   "icd": {
+    "tag": "NormalAttack_06",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Wind",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_06_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Fire",
+   "icd": {
+    "tag": "NormalAttack_01",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Fire",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_01_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Fire",
+   "icd": {
+    "tag": "NormalAttack_02",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Fire",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_02_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Fire",
+   "icd": {
+    "tag": "NormalAttack_03",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Fire",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_03_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Fire",
+   "icd": {
+    "tag": "NormalAttack_04",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Fire",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_04_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Fire",
+   "icd": {
+    "tag": "NormalAttack_05",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Fire",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_05_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Fire",
+   "icd": {
+    "tag": "NormalAttack_06",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Fire",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_06_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Electric",
+   "icd": {
+    "tag": "NormalAttack_01",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Electric",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_01_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Electric",
+   "icd": {
+    "tag": "NormalAttack_02",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Electric",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_02_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Electric",
+   "icd": {
+    "tag": "NormalAttack_03",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Electric",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_03_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Electric",
+   "icd": {
+    "tag": "NormalAttack_04",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Electric",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_04_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Electric",
+   "icd": {
+    "tag": "NormalAttack_05",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Electric",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_05_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Electric",
+   "icd": {
+    "tag": "NormalAttack_06",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Electric",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_06_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Water",
+   "icd": {
+    "tag": "NormalAttack_01",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Water",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_01_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Water",
+   "icd": {
+    "tag": "NormalAttack_02",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Water",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_02_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Water",
+   "icd": {
+    "tag": "NormalAttack_03",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Water",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_03_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Water",
+   "icd": {
+    "tag": "NormalAttack_04",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Water",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_04_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Water",
+   "icd": {
+    "tag": "NormalAttack_05",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Water",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_05_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Water",
+   "icd": {
+    "tag": "NormalAttack_06",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Water",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_06_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Ice",
+   "icd": {
+    "tag": "NormalAttack_01",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Ice",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_01_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Ice",
+   "icd": {
+    "tag": "NormalAttack_02",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Ice",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_02_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Ice",
+   "icd": {
+    "tag": "NormalAttack_03",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Ice",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_03_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Ice",
+   "icd": {
+    "tag": "NormalAttack_04",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Ice",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_04_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Ice",
+   "icd": {
+    "tag": "NormalAttack_05",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Ice",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_05_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "Bullet_Venti_Constellation01_Arrow_Ice",
+   "icd": {
+    "tag": "NormalAttack_06",
+    "group": "Venti_Hexenzirkel_Constellation01"
+   },
+   "gauge": 1,
+   "poise": {
+    "level": "LV2",
+    "value": 10.0
+   },
+   "element": "Ice",
+   "attack_type": "Default",
+   "strike_type": "Default",
+   "damage_param": [
+    "Constellation01_Arrow_Damge",
+    "Hexenzirkel_NormalAttack_Ratio",
+    "MUL",
+    "NormalAttack_06_Damage_Percentage",
+    "MUL"
+   ]
+  },
+  {
+   "name": "HexenzirkelSkill",
+   "icd": {
+    "tag": "Elemental_Burst",
+    "group": "Venti"
+   },
+   "gauge": 1,
+   "poise": null,
+   "element": "Fire",
+   "attack_type": "Default",
+   "strike_type": "None",
+   "damage_param": "Hurricane_Mix_Damage"
+  },
+  {
+   "name": "HexenzirkelSkill",
+   "icd": {
+    "tag": "Elemental_Burst",
+    "group": "Venti"
+   },
+   "gauge": 1,
+   "poise": null,
+   "element": "Fire",
+   "attack_type": "Default",
+   "strike_type": "None",
+   "damage_param": [
+    "Hurricane_Mix_Damage",
+    "Hexenzirkel_BurstBuffRatio_Temp",
+    "MUL"
+   ]
+  },
+  {
+   "name": "HexenzirkelSkill",
+   "icd": {
+    "tag": "Elemental_Burst",
+    "group": "Venti"
+   },
+   "gauge": 1,
+   "poise": null,
+   "element": "Water",
+   "attack_type": "Default",
+   "strike_type": "None",
+   "damage_param": "Hurricane_Mix_Damage"
+  },
+  {
+   "name": "HexenzirkelSkill",
+   "icd": {
+    "tag": "Elemental_Burst",
+    "group": "Venti"
+   },
+   "gauge": 1,
+   "poise": null,
+   "element": "Water",
+   "attack_type": "Default",
+   "strike_type": "None",
+   "damage_param": [
+    "Hurricane_Mix_Damage",
+    "Hexenzirkel_BurstBuffRatio_Temp",
+    "MUL"
+   ]
+  },
+  {
+   "name": "HexenzirkelSkill",
+   "icd": {
+    "tag": "Elemental_Burst",
+    "group": "Venti"
+   },
+   "gauge": 1,
+   "poise": null,
+   "element": "Electric",
+   "attack_type": "Default",
+   "strike_type": "None",
+   "damage_param": "Hurricane_Mix_Damage"
+  },
+  {
+   "name": "HexenzirkelSkill",
+   "icd": {
+    "tag": "Elemental_Burst",
+    "group": "Venti"
+   },
+   "gauge": 1,
+   "poise": null,
+   "element": "Electric",
+   "attack_type": "Default",
+   "strike_type": "None",
+   "damage_param": [
+    "Hurricane_Mix_Damage",
+    "Hexenzirkel_BurstBuffRatio_Temp",
+    "MUL"
+   ]
+  },
+  {
+   "name": "HexenzirkelSkill",
+   "icd": {
+    "tag": "Elemental_Burst",
+    "group": "Venti"
+   },
+   "gauge": 1,
+   "poise": null,
+   "element": "Ice",
+   "attack_type": "Default",
+   "strike_type": "None",
+   "damage_param": "Hurricane_Mix_Damage"
+  },
+  {
+   "name": "HexenzirkelSkill",
+   "icd": {
+    "tag": "Elemental_Burst",
+    "group": "Venti"
+   },
+   "gauge": 1,
+   "poise": null,
+   "element": "Ice",
+   "attack_type": "Default",
+   "strike_type": "None",
+   "damage_param": [
+    "Hurricane_Mix_Damage",
+    "Hexenzirkel_BurstBuffRatio_Temp",
+    "MUL"
+   ]
+  }
+ ],
+ "energy": [
+  {
+   "name": "WindBladeElementBall_Base",
+   "skill": "Venti_WindBlade_FX",
+   "kind": "Other",
+   "element": "Anemo",
+   "per_drop": 1.0,
+   "lifetime": 12.0,
+   "chance": 100.0,
+   "cd": null,
+   "applications": 1,
+   "drop_id": 2021
+  },
+  {
+   "name": "WindBladeLand_ElementBall_Base",
+   "skill": "Venti_WindBlade_FX_Land",
+   "kind": "Other",
+   "element": "Anemo",
+   "per_drop": 1.0,
+   "lifetime": 9.0,
+   "chance": 100.0,
+   "cd": null,
+   "applications": 1,
+   "drop_id": 2021
+  }
+ ],
+ "special": true
+}
