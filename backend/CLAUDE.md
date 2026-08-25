@@ -100,7 +100,8 @@ local gate is the CI gate (#135). Run **exactly what CI runs**:
 ```bash
 ruff check app/ tests/ scripts/seed_db.py scripts/verify_seed.py \
     scripts/capture_nanoka_fixtures.py scripts/yuanshen/ scripts/bench_optimizer.py \
-    scripts/gcsim/ scripts/kernel/
+    scripts/gcsim/ scripts/kernel/ scripts/inject.py scripts/ci_local.py \
+    scripts/download_icons.py
 ```
 
 `scripts/` as a whole is not linted — it carries ~65 pre-existing violations in unrelated
@@ -111,8 +112,13 @@ trusts. Chunk D adds the first three (D.2/D.7/D.8), Chunk E `scripts/yuanshen/`,
 fairy also named `scripts/validate_kits.py` and `scripts/refresh_kit_refs.py`; both were
 deleted in B.9 and **have no Genshin replacement coming** — the kit-validation job they
 served is retired, because gcsim implements the kits that harness existed to check. The
-scripts named here now are `scripts/inject.py` and `scripts/ci_local.py`, added with the
-verification tooling.
+scripts named here beyond fairy's are `scripts/inject.py` and `scripts/ci_local.py`, added
+with the verification tooling, and `scripts/download_icons.py` (N.1).
+
+**This block drifted from CI once already** — it was three entries short while the prose
+directly above claimed two of them were in it. Copy the `run:` line out of
+`.github/workflows/test.yml` rather than editing this by hand; `python -m scripts.ci_local`
+executes the workflow's own list, so it is the list that matters.
 
 `app/services/_ported/` is excluded in `pyproject.toml`: it is read-only ZZZ porting source
 that imports deleted modules, so linting it would be permanent noise.

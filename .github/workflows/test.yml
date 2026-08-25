@@ -59,8 +59,10 @@ jobs:
         # Chunk D adds the three that seed and verify the database.
         #
         # Retired with the kit-validation job: fairy additionally linted `scripts/validate_kits.py` and
-        # `scripts/refresh_kit_refs.py` by name. Both are deleted in B.9. Re-add their
-        # Genshin replacements here when Chunk H ports the harness.
+        # `scripts/refresh_kit_refs.py` by name. Both are deleted in B.9, and **they have no
+        # Genshin replacement coming** — the earlier note here said to re-add one "when Chunk H
+        # ports the harness", and Chunk H is closed: gcsim implements the kits that harness
+        # existed to check. Nothing is waiting on this line.
         run: >-
           ruff check app/ tests/
           scripts/seed_db.py scripts/verify_seed.py scripts/capture_nanoka_fixtures.py
