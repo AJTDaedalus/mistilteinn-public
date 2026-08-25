@@ -42,6 +42,19 @@
           <strong>{{ result.inserted }}</strong> imported<!--
           -->@if (result.deleted) {, <strong>{{ result.deleted }}</strong> replaced}.
         </p>
+        @if (result.unequipped.length) {
+          <!-- N.3: a `replace` re-equips what it can by matching stats, and names what it
+               could not. A slot that emptied silently is discovered later from a damage
+               number. -->
+          <p class="warn">
+            {{ result.unequipped.length }} build slot(s) could not be refilled:
+          </p>
+          <ul class="rejections">
+            @for (note of result.unequipped; track $index) {
+              <li>{{ note }}</li>
+            }
+          </ul>
+        }
         @if (result.rejected.length) {
           <!-- Every rejection, with its reason. The endpoint refuses individual artifacts
                rather than failing the file — someone with 800 pieces and two odd ones wants
