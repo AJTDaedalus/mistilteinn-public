@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { apiErrorMessage } from '../../api/api-error';
-import { type SearchResult, type Slot, search } from '../../sim/search';
+import { type Amplifying, type ScalingStat } from '../../sim/damage';
+import { SLOTS, type SearchResult, type Slot, search } from '../../sim/search';
 import { BuildsService, type BuildRead } from '../builds/builds.service';
 import { CHANNELS, SCOPES, talentLabel } from '../explain/explain';
 import { ExplainService, type AvailableHit } from '../explain/explain.service';
@@ -172,6 +173,22 @@ export class OptimizePage implements OnInit {
     }
   }
 
+  /**
+   * Whether the kernel has a bucket for this slot.
+   *
+   * A slot it does not know is **reported and excluded** rather than cast through: the search
+   * buckets candidates by slot, so an unknown one silently never gets considered — and the
+   * ranking would be over four slots while claiming to be over five.
+   */
+  private isKnownSlot(piece: KernelCandidate): boolean {
+    if ((SLOTS as readonly string[]).includes(piece.slot)) return true;
+    this.unreadable.update((seen) => [
+      ...seen,
+      { artifact_id: piece.id, reason: `unknown slot ${piece.slot}` },
+    ]);
+    return false;
+  }
+
   protected async run(): Promise<void> {
     const hit = this.hit();
     const id = this.buildId();
@@ -196,7 +213,7 @@ export class OptimizePage implements OnInit {
 
       this.result.set(
         search(
-          snapshot.artifacts.map((piece) => ({
+          snapshot.artifacts.filter((piece) => this.isKnownSlot(piece)).map((piece) => ({
             id: piece.id,
             slot: piece.slot as Slot,
             // The kernel counts set pieces by number. A setless piece gets a negative
@@ -209,10 +226,16 @@ export class OptimizePage implements OnInit {
             base: context.base,
             hit: {
               multiplier: context.hit.multiplier,
-              scalingStat: context.hit.scaling_stat as 'atk' | 'hp' | 'def',
+              // Typed against the kernel's own vocabularies rather than narrowed by a cast.
+              // The first draft wrote `as 'atk' | 'hp' | 'def'` and `as null`, which told the
+              // compiler two things that are not true — `elemental_mastery` is a scaling stat
+              // and `melt` is an amplifying reaction — while at runtime the value passed
+              // through regardless. A cast that lies is worse than no type: it stops the
+              // compiler noticing the day the two sides stop agreeing.
+              scalingStat: context.hit.scaling_stat as ScalingStat,
               flatDamage: 0,
               baseDamageBonus: 0,
-              amplifying: context.hit.amplifying as null,
+              amplifying: context.hit.amplifying as Amplifying | null,
               reactionBonus: 0,
             },
             target: {

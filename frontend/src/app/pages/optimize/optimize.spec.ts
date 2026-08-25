@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi } from 'vitest';
 
+import { type Slot, search } from '../../sim/search';
 import { ArtifactsService } from '../artifacts/artifacts.service';
 import { BuildsService } from '../builds/builds.service';
 import { ExplainService } from '../explain/explain.service';
@@ -277,5 +278,99 @@ describe('OptimizePage', () => {
 
     expect(page['actionError']()).toBe(detail);
     expect(page['result']()).toBeNull();
+  });
+});
+
+describe('the two vocabularies must be the same vocabulary', () => {
+  // One case per test: `TestBed` allows a single module per test, so a loop over the four
+  // would configure it twice and fail for a reason unrelated to what is being checked.
+  it.each(['atk', 'hp', 'def', 'elemental_mastery'])(
+    'accepts %s, which the backend can send',
+    async (scaling) => {
+      // `as ScalingStat` asserts an agreement nothing checked. The backend's `ScalingStat`
+      // is these four and the kernel's is the same four — but the first draft cast to three
+      // of them, which the compiler accepted and which would have been a lie the day an
+      // EM-scaling hit arrived.
+      const page = pageWith({
+        optimize: {
+          context: vi.fn().mockResolvedValue({
+            ...CONTEXT, hit: { ...CONTEXT.hit, scaling_stat: scaling },
+          }),
+        } as unknown as Partial<OptimizeService>,
+      });
+      await page['load']();
+
+      await page['run']();
+
+      expect(page['actionError']()).toBeNull();
+      expect(page['result']()).not.toBeNull();
+    },
+  );
+
+  it('passes an amplifying reaction through rather than nulling it', async () => {
+    // `as null` claimed the field is always null. It is not — melt and vaporize are the
+    // reason the kernel has `AMPLIFYING_MULTIPLIER` — and a search that dropped it would
+    // rank every build as though the reaction did not happen.
+    // Compared against the kernel called **directly** with the same inputs — a pure
+    // function, so no second TestBed. If the page dropped `amplifying`, its number would
+    // match the unamplified call instead of the amplified one, and both are computed here
+    // rather than asserted from a constant.
+    const page = pageWith({
+      optimize: {
+        context: vi.fn().mockResolvedValue({
+          ...CONTEXT, hit: { ...CONTEXT.hit, amplifying: 'melt' },
+        }),
+      } as unknown as Partial<OptimizeService>,
+    });
+    await page['load']();
+
+    await page['run']();
+
+    const fromPage = page['result']()?.builds[0].damage ?? 0;
+    const direct = (amplifying: 'melt' | null) =>
+      search(
+        inventory().map((p) => ({ id: p.id, slot: p.slot as Slot, setId: p.set_id, stats: p.stats })),
+        {
+          base: CONTEXT.base,
+          hit: {
+            multiplier: CONTEXT.hit.multiplier,
+            scalingStat: 'atk',
+            flatDamage: 0,
+            baseDamageBonus: 0,
+            amplifying,
+            reactionBonus: 0,
+          },
+          target: { level: 90, resistance: 0.1, defReduction: 0, defIgnore: 0 },
+          characterLevel: 90,
+          dmgBonusQuantity: 'cryo_dmg_bonus',
+          setBonuses: [],
+        },
+      ).builds[0].damage;
+
+    expect(fromPage).toBeCloseTo(direct('melt'), 6);
+    expect(direct('melt')).toBeGreaterThan(direct(null));
+  });
+
+  it('reports a slot the kernel does not know rather than dropping it silently', async () => {
+    // The search buckets by slot, so an unknown one is never considered — the ranking would
+    // be over four slots while claiming to be over five.
+    const page = pageWith({
+      optimize: {
+        inventory: vi.fn().mockResolvedValue({
+          version: 'v1',
+          artifacts: [
+            ...inventory(),
+            { id: 'odd', slot: 'equip_mystery', set_id: 1, stats: { flat_atk: 9999 } },
+          ],
+          total: 11, truncated: false, unreadable: [],
+        }),
+      } as unknown as Partial<OptimizeService>,
+    });
+    await page['load']();
+
+    await page['run']();
+
+    expect(page['unreadable']().map((u) => u.artifact_id)).toContain('odd');
+    expect(page['result']()).not.toBeNull();
   });
 });
