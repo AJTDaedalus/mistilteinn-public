@@ -374,3 +374,117 @@ describe('the two vocabularies must be the same vocabulary', () => {
     expect(page['result']()).not.toBeNull();
   });
 });
+
+describe('explaining the winner', () => {
+  /** What the server would return for a build whose search damage is `damage`. */
+  function explanation(damage: number) {
+    return {
+      damage,
+      stats: [{ quantity: 'atk', parts: [], sum_of_parts: 1500, sources: ['flower 100'] }],
+      set_effects: [], simulation: null, uncited: [], differences: [],
+      equipped_damage: null, unchanged: [],
+    };
+  }
+
+  it('hands the winning five back to the server', async () => {
+    // `/explain` takes `artifact_ids`, so the same combination the kernel scored is what the
+    // server accounts for. Anything else would explain a different build.
+    const explain = vi.fn().mockResolvedValue(explanation(1));
+    const page = pageWith({ explain: { explain } as unknown as Partial<ExplainService> });
+    await page['load']();
+    await page['run']();
+    const winner = page['rows']()[0];
+
+    await page['explainRow'](winner);
+
+    const [buildId, hit, , , , artifactIds] = explain.mock.calls[0];
+    expect(buildId).toBe('b1');
+    expect(hit).toEqual({ talent: 'elemental_burst', label: 'Cutting DMG', index: 0 });
+    expect([...artifactIds].sort()).toEqual([...winner.artifactIds].sort());
+  });
+
+  it('reports how far the two implementations diverge', async () => {
+    // The point of the pairing. The browser's f32 kernel and the server's f64 chain compute
+    // the same build, and C.2 measured their divergence at up to 3.4e-07 — so a difference
+    // of that order is the tolerance working, and a larger one is a real disagreement.
+    const page = pageWith({
+      explain: {
+        explain: vi.fn(async () => explanation(0)),
+      } as unknown as Partial<ExplainService>,
+    });
+    await page['load']();
+    await page['run']();
+    const winner = page['rows']()[0];
+
+    // The server "agrees" exactly: divergence is zero.
+    (page['explain'] as unknown as { explain: unknown }).explain =
+      vi.fn().mockResolvedValue(explanation(winner.damage));
+    await page['explainRow'](winner);
+    expect(page['divergence']()).toBeCloseTo(0, 12);
+
+    // And a 1% disagreement is reported as 1%, not smoothed away.
+    (page['explain'] as unknown as { explain: unknown }).explain =
+      vi.fn().mockResolvedValue(explanation(winner.damage * 1.01));
+    await page['explainRow'](winner);
+    expect(page['divergence']()).toBeCloseTo(0.01, 6);
+  });
+
+  it('shows the derivation, not just the total', async () => {
+    const page = pageWith({
+      explain: {
+        explain: vi.fn().mockResolvedValue(explanation(1234)),
+      } as unknown as Partial<ExplainService>,
+    });
+    await page['load']();
+    await page['run']();
+
+    await page['explainRow'](page['rows']()[0]);
+
+    expect(page['explained']()?.result.stats[0].sources).toEqual(['flower 100']);
+  });
+
+  it('drops a stale explanation when a new search runs', async () => {
+    // An explanation belongs to the ranking it came from. Left up, it sits under a new
+    // winner and describes a build no longer on screen.
+    const page = pageWith({
+      explain: {
+        explain: vi.fn().mockResolvedValue(explanation(1)),
+      } as unknown as Partial<ExplainService>,
+    });
+    await page['load']();
+    await page['run']();
+    await page['explainRow'](page['rows']()[0]);
+    expect(page['explained']()).not.toBeNull();
+
+    await page['run']();
+
+    expect(page['explained']()).toBeNull();
+  });
+
+  it('shows the API refusal verbatim and drops the stale explanation', async () => {
+    const detail = 'the pieces to explain must be five pieces, one per slot.';
+    const page = pageWith({
+      explain: {
+        explain: vi.fn().mockResolvedValue(explanation(1)),
+      } as unknown as Partial<ExplainService>,
+    });
+    await page['load']();
+    await page['run']();
+    await page['explainRow'](page['rows']()[0]);
+
+    (page['explain'] as unknown as { explain: unknown }).explain =
+      vi.fn().mockRejectedValue({ detail });
+    await page['explainRow'](page['rows']()[0]);
+
+    expect(page['actionError']()).toBe(detail);
+    expect(page['explained']()).toBeNull();
+  });
+
+  it('has no divergence to report before anything is explained', async () => {
+    const page = pageWith();
+    await page['load']();
+    await page['run']();
+
+    expect(page['divergence']()).toBeNull();
+  });
+});

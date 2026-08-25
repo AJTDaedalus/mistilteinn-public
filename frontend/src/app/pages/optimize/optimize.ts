@@ -1,4 +1,4 @@
-import { DecimalPipe } from '@angular/common';
+import { DecimalPipe, PercentPipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -8,7 +8,11 @@ import { type Amplifying, type ScalingStat } from '../../sim/damage';
 import { SLOTS, type SearchResult, type Slot, search } from '../../sim/search';
 import { BuildsService, type BuildRead } from '../builds/builds.service';
 import { CHANNELS, SCOPES, talentLabel } from '../explain/explain';
-import { ExplainService, type AvailableHit } from '../explain/explain.service';
+import {
+  ExplainService,
+  type AvailableHit,
+  type ExplainResponse,
+} from '../explain/explain.service';
 import { ArtifactsService } from '../artifacts/artifacts.service';
 import {
   OptimizeService,
@@ -62,7 +66,7 @@ export function describePieces(
  */
 @Component({
   selector: 'page-optimize',
-  imports: [FormsModule, RouterLink, DecimalPipe],
+  imports: [FormsModule, RouterLink, DecimalPipe, PercentPipe],
   templateUrl: './optimize.html',
   styleUrl: './optimize.scss',
 })
@@ -85,6 +89,12 @@ export class OptimizePage implements OnInit {
   protected readonly unreadable = signal<UnreadableArtifact[]>([]);
   /** True when the inventory itself was capped before the search even began. */
   protected readonly truncated = signal(false);
+
+  /** The explanation of one result row, and which row it belongs to. */
+  protected readonly explained = signal<{ rank: number; result: ExplainResponse } | null>(
+    null,
+  );
+  protected readonly explaining = signal(false);
 
   protected readonly buildId = signal('');
   protected hitIndex = 0;
@@ -189,6 +199,60 @@ export class OptimizePage implements OnInit {
     return false;
   }
 
+  /**
+   * Explain one result — the server's account of the same five pieces.
+   *
+   * O.4, and the reason M.3 came before it: **a ranking whose winner cannot be explained is
+   * a ranking nobody can verify.** `/explain` takes `artifact_ids`, so the winning five go
+   * straight back.
+   *
+   * The two numbers are computed by two different implementations of the chain — the
+   * browser's f32 kernel and the backend's f64 — which C.2 measured as diverging by up to
+   * 3.4e-07. They are shown together rather than reconciled: a difference outside that is a
+   * real disagreement and should be visible, not smoothed over by displaying only one.
+   */
+  protected async explainRow(row: ResultRow): Promise<void> {
+    const hit = this.hit();
+    const id = this.buildId();
+    if (!hit || !id) return;
+    this.actionError.set(null);
+    this.explaining.set(true);
+    try {
+      this.explained.set({
+        rank: row.rank,
+        result: await this.explain.explain(
+          id,
+          { talent: hit.talent, label: hit.label, index: hit.index },
+          this.channel,
+          this.scope,
+          this.enemyLevel,
+          row.artifactIds,
+        ),
+      });
+    } catch (err) {
+      this.explained.set(null);
+      this.actionError.set(apiErrorMessage(err));
+    } finally {
+      this.explaining.set(false);
+    }
+  }
+
+  /**
+   * How far the server's figure is from the kernel's, as a fraction.
+   *
+   * Shown rather than hidden. C.2 measured the f32/f64 divergence at up to 3.4e-07, so
+   * anything of that order is the tolerance doing its job — and anything larger is two
+   * implementations of one chain disagreeing, which is exactly what this pairing exists to
+   * expose.
+   */
+  protected divergence(): number | null {
+    const shown = this.explained();
+    if (!shown) return null;
+    const row = this.rows().find((r) => r.rank === shown.rank);
+    if (!row || row.damage === 0) return null;
+    return Math.abs(shown.result.damage - row.damage) / row.damage;
+  }
+
   protected async run(): Promise<void> {
     const hit = this.hit();
     const id = this.buildId();
@@ -207,6 +271,9 @@ export class OptimizePage implements OnInit {
         this.optimize.inventory(),
       ]);
 
+      // A stale explanation belongs to the previous ranking. Left up, it would sit under a
+      // new winner and describe a build that is no longer on screen.
+      this.explained.set(null);
       this.candidates.set(snapshot.artifacts);
       this.unreadable.set(snapshot.unreadable);
       this.truncated.set(snapshot.truncated);
