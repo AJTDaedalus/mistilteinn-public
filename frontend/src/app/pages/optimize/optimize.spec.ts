@@ -488,3 +488,65 @@ describe('explaining the winner', () => {
     expect(page['divergence']()).toBeNull();
   });
 });
+
+describe('pairing an explanation with its row', () => {
+  it('pairs by rank rather than by position', async () => {
+    // `rows()[rank - 1]` is right as rows are built and is an assumption the template should
+    // not carry: a filtered or reordered list would silently pair an explanation with a
+    // *different* build — the "number that refers to something else" this page rules out.
+    // The default inventory yields **one** row: its weak pieces are strictly dominated, so
+    // the Pareto prefilter removes them and one combination survives. Two rows need two
+    // options that trade off — flat ATK against crit rate, neither dominating the other.
+    const page = pageWith({
+      optimize: {
+        inventory: vi.fn().mockResolvedValue({
+          version: 'v1',
+          artifacts: [
+            ...SLOTS.slice(1).map((slot) => (
+              { id: `${slot}-only`, slot, set_id: 1, stats: { flat_atk: 100 } }
+            )),
+            { id: 'atk', slot: SLOTS[0], set_id: 1, stats: { flat_atk: 200 } },
+            { id: 'crit', slot: SLOTS[0], set_id: 1, stats: { crit_rate: 0.4 } },
+          ],
+          total: 6, truncated: false, unreadable: [],
+        }),
+      } as unknown as Partial<OptimizeService>,
+      explain: {
+        explain: vi.fn().mockResolvedValue({
+          damage: 99, stats: [], set_effects: [], simulation: null, uncited: [],
+          differences: [], equipped_damage: null, unchanged: [],
+        }),
+      } as unknown as Partial<ExplainService>,
+    });
+    await page['load']();
+    await page['run']();
+    expect(page['rows']().length).toBeGreaterThan(1);
+    const second = page['rows']()[1];
+
+    await page['explainRow'](second);
+
+    const paired = page['pairing']();
+    expect(paired?.shown.rank).toBe(second.rank);
+    expect(paired?.row.artifactIds).toEqual(second.artifactIds);
+  });
+
+  it('pairs with nothing when the ranking no longer holds that rank', async () => {
+    // The state a crash would come from: an explanation outliving the row it describes.
+    const page = pageWith({
+      explain: {
+        explain: vi.fn().mockResolvedValue({
+          damage: 1, stats: [], set_effects: [], simulation: null, uncited: [],
+          differences: [], equipped_damage: null, unchanged: [],
+        }),
+      } as unknown as Partial<ExplainService>,
+    });
+    await page['load']();
+    await page['run']();
+    await page['explainRow'](page['rows']()[0]);
+
+    page['explained'].set({ ...page['explained']()!, rank: 999 });
+
+    expect(page['pairing']()).toBeNull();
+    expect(page['divergence']()).toBeNull();
+  });
+});

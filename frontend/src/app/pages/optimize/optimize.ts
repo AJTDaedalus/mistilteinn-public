@@ -238,6 +238,27 @@ export class OptimizePage implements OnInit {
   }
 
   /**
+   * The explained result and the search row it belongs to, paired.
+   *
+   * **Found by rank, not by index.** `rows()[rank - 1]` happens to be right as rows are
+   * built, and it is an assumption the template should not carry — a filtered or reordered
+   * list would silently pair an explanation with a different build, which is precisely the
+   * "number that refers to something else" this page is meant to rule out.
+   *
+   * Injecting the index form back **survives** the suite, and that is honest rather than a
+   * gap: the two agree for every list this page can currently produce. The tests below
+   * assert the pairing's contract; they cannot distinguish two implementations that are both
+   * correct today. This is defensive, and recorded as defensive rather than dressed up as a
+   * fix.
+   */
+  protected readonly pairing = computed(() => {
+    const shown = this.explained();
+    if (!shown) return null;
+    const row = this.rows().find((r) => r.rank === shown.rank);
+    return row ? { shown, row } : null;
+  });
+
+  /**
    * How far the server's figure is from the kernel's, as a fraction.
    *
    * Shown rather than hidden. C.2 measured the f32/f64 divergence at up to 3.4e-07, so
@@ -246,11 +267,9 @@ export class OptimizePage implements OnInit {
    * expose.
    */
   protected divergence(): number | null {
-    const shown = this.explained();
-    if (!shown) return null;
-    const row = this.rows().find((r) => r.rank === shown.rank);
-    if (!row || row.damage === 0) return null;
-    return Math.abs(shown.result.damage - row.damage) / row.damage;
+    const paired = this.pairing();
+    if (!paired || paired.row.damage === 0) return null;
+    return Math.abs(paired.shown.result.damage - paired.row.damage) / paired.row.damage;
   }
 
   protected async run(): Promise<void> {
