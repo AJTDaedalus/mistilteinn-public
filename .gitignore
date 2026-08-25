@@ -60,3 +60,9 @@ docker-compose.override.yml
 
 # Scratch research files (agent-curation working notes)
 scratch_*.txt
+
+# Vendored catalogue art — `cd backend && python -m scripts.download_icons`.
+#
+# ~475 images, ~10 MB, reproducible from that script plus a seeded database. fairy committed
+# its 207; a repository is not a CDN, and the script is the reproduction.
+frontend/public/icons/

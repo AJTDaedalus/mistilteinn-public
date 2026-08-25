@@ -65,7 +65,7 @@ jobs:
           ruff check app/ tests/
           scripts/seed_db.py scripts/verify_seed.py scripts/capture_nanoka_fixtures.py
           scripts/yuanshen/ scripts/bench_optimizer.py scripts/gcsim/ scripts/kernel/
-          scripts/inject.py scripts/ci_local.py
+          scripts/inject.py scripts/ci_local.py scripts/download_icons.py
 
       - name: Unit tests
         # Unit only. Integration runs in its own job below so this lane stays fast

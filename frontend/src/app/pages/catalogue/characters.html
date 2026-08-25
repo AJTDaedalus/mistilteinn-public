@@ -27,6 +27,7 @@
     <ul class="grid">
       @for (character of list.items(); track character.id) {
         <li class="card">
+          <catalogue-icon [icon]="character.icon" [alt]="character.name" [size]="44" />
           <span class="name">{{ character.name }}</span>
           <span class="meta">
             {{ character.element ?? 'No vision' }} · {{ character.rarity }}
