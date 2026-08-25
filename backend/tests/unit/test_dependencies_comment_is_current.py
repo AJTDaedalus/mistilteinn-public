@@ -30,7 +30,10 @@ _ABSENT = re.compile(r"^#\s+(get_\w+_repo)\s+(?!→)\S", re.MULTILINE)
 def test_the_table_was_actually_found() -> None:
     """A regex that matches nothing would make every assertion below vacuously true."""
     assert len(_MAPPING.findall(SOURCE)) >= 9
-    assert len(_ABSENT.findall(SOURCE)) == 3
+    # `>=`, not `==`. A fourth deliberately-absent factory is a legitimate thing to add, and
+    # it is checked by its own test the moment the row exists. Pinning the count would fail
+    # that edit with a message about arithmetic rather than about anything true.
+    assert len(_ABSENT.findall(SOURCE)) >= 3
 
 
 def test_every_successor_named_in_the_comment_exists() -> None:
