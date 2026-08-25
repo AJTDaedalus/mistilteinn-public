@@ -45,6 +45,7 @@ from app.repositories.enemy import EnemyProfileRepository
 from app.repositories.sim_run import SimRunRepository
 from app.repositories.weapon import WeaponRepository
 from app.schemas.build import (
+    AvailableHitRead,
     BuildCreate,
     BuildOptions,
     BuildRead,
@@ -78,6 +79,7 @@ from app.services.gcsim_keys import pinned_commit
 from app.services.stat_calculator import StatInputError
 from app.services.talent_hits import (
     TalentHitUnavailableError,
+    available_hits,
     resolve_talent_hit,
 )
 
@@ -278,6 +280,32 @@ def _sets_of(artifacts: "Sequence[Artifact]") -> list["ArtifactSet"]:
         if artifact.artifact_set is not None:
             seen.setdefault(artifact.artifact_set.nanoka_id, artifact.artifact_set)
     return list(seen.values())
+
+
+@router.get("/{build_id}/hits", response_model=list[AvailableHitRead])
+async def build_hits(
+    build_id: str,
+    builds: Annotated[BuildRepository, Depends(get_owned_build_repo)],
+) -> list[AvailableHitRead]:
+    """Every hit this build can be asked about, at its own talent levels.
+
+    M.2. What `HitSpec.talent` will accept, from the same parse that resolves it — so a page
+    offering these cannot name one the resolver refuses.
+
+    A talent the build has no level for is **absent rather than offered**: offering it would
+    produce a refusal the moment it was picked. A build with no character returns nothing,
+    which is the truthful answer rather than a 404 about a build that exists.
+    """
+    build = await _require_full_build(builds, build_id)
+    if build.character is None:
+        return []
+    return [
+        AvailableHitRead(
+            talent=hit.talent, label=hit.label, index=hit.index,
+            multiplier=hit.multiplier, hits=hit.hits, exclusive=hit.exclusive,
+        )
+        for hit in available_hits(build.character, build.talent_levels or {})
+    ]
 
 
 @router.post("/{build_id}/explain", response_model=ExplainResponse)

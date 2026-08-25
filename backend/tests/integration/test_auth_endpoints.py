@@ -86,6 +86,7 @@ _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     ("GET", "/api/v1/builds/00000000-0000-0000-0000-000000000001", None),
     ("PATCH", "/api/v1/builds/00000000-0000-0000-0000-000000000001", {}),
     ("DELETE", "/api/v1/builds/00000000-0000-0000-0000-000000000001", None),
+    ("GET", "/api/v1/builds/00000000-0000-0000-0000-000000000001/hits", None),  # M.2
     ("POST", "/api/v1/builds/00000000-0000-0000-0000-000000000001/explain", {}),
     ("POST", "/api/v1/builds/00000000-0000-0000-0000-000000000001/compare-weapons", {}),
     # artifacts — G.6b and D.1

@@ -435,3 +435,85 @@ async def test_a_talent_the_character_does_not_have_is_refused_with_its_reason(
 
     assert response.status_code == 422
     assert "elemental_burst" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_the_hits_a_build_offers_are_the_ones_it_accepts(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """Picker matches validator, tested as one claim rather than two.
+
+    Every hit `GET /builds/{id}/hits` offers is POSTed to `/explain` and must be accepted. A
+    list that drifted from the resolver would tell a user their own selection is invalid.
+    """
+    user, _ = authed_user
+    character, weapon, sets = await _catalogue(db_session)
+    db_session.add(Talent(
+        character_id=str(character.id), nanoka_id=10024,
+        talent_type=TalentType.ELEMENTAL_BURST, name="Kamisato Art: Soumetsu", description="",
+    ))
+    await db_session.flush()
+    talent = (await db_session.execute(
+        select(Talent).where(Talent.character_id == str(character.id)),
+    )).scalars().one()
+    db_session.add(TalentScaling(
+        talent_id=str(talent.id), level=9,
+        labels=["Cutting DMG|{param1:P}", "Bloom DMG|{param2:P}", "Energy Cost|{param3:I}"],
+        params=[1.9091, 2.86365, 80],
+    ))
+    build = await _build_with_five(db_session, user, character, weapon, sets)
+    build.talent_levels = {"elemental_burst": 9}
+    await db_session.flush()
+
+    offered = await client.get(
+        f"/api/v1/builds/{build.id}/hits", headers=_auth(authed_user),
+    )
+    assert offered.status_code == 200, offered.text
+    hits = offered.json()
+    assert {h["label"] for h in hits} == {"Cutting DMG", "Bloom DMG"}, hits
+
+    for hit in hits:
+        scored = await client.post(
+            f"/api/v1/builds/{build.id}/explain", headers=_auth(authed_user),
+            json={
+                "hit": {
+                    "channel": "cryo", "scope": "burst",
+                    "talent": {
+                        "talent": hit["talent"], "label": hit["label"],
+                        "index": hit["index"],
+                    },
+                },
+                "enemy": {"level": 90},
+            },
+        )
+        assert scored.status_code == 200, f"offered but refused: {hit}\n{scored.text}"
+
+
+@pytest.mark.asyncio
+async def test_a_talent_with_no_level_set_is_not_offered(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """Offering it would produce a refusal the moment it was picked."""
+    user, _ = authed_user
+    character, weapon, sets = await _catalogue(db_session)
+    db_session.add(Talent(
+        character_id=str(character.id), nanoka_id=10024,
+        talent_type=TalentType.ELEMENTAL_BURST, name="Soumetsu", description="",
+    ))
+    await db_session.flush()
+    talent = (await db_session.execute(
+        select(Talent).where(Talent.character_id == str(character.id)),
+    )).scalars().one()
+    db_session.add(TalentScaling(
+        talent_id=str(talent.id), level=1,
+        labels=["Cutting DMG|{param1:P}"], params=[1.123],
+    ))
+    build = await _build_with_five(db_session, user, character, weapon, sets)
+    build.talent_levels = {}
+    await db_session.flush()
+
+    offered = await client.get(
+        f"/api/v1/builds/{build.id}/hits", headers=_auth(authed_user),
+    )
+
+    assert offered.json() == []

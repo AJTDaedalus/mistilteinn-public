@@ -268,6 +268,25 @@ class EnemySpec(BaseModel):
         }
 
 
+class AvailableHitRead(BaseModel):
+    """One hit a build can be asked about, in the terms `HitSpec.talent` takes.
+
+    Offered from the **same parse** `resolve_talent_hit` uses, so a page built from this
+    cannot name a hit the resolver then refuses — the picker-matches-validator guarantee this
+    repo applies wherever a user chooses from a list.
+    """
+
+    talent: TalentType
+    label: str
+    index: int
+    #: At this build's own talent level, so a page can show what it is choosing between.
+    multiplier: float
+    #: How many times it lands per use.
+    hits: int
+    #: True when it is one of several alternatives and only one of them happens.
+    exclusive: bool
+
+
 class ExplainRequest(BaseModel):
     """Body for `POST /builds/{id}/explain`.
 
