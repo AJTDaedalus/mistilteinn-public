@@ -13,10 +13,11 @@ one definition.
 
 ## What this cannot do yet
 
-**It does not know what a talent's hit is.** Deriving a `Hit` — multiplier, scaling stat,
-damage channel, scope — from a character's talent rows is the kit corpus's job (Chunk H),
-and this repo has no kit corpus. So a caller describes the hit explicitly and the API says
-so, rather than this module guessing a multiplier off a `desc` string. `TODO(chunk-H)`.
+**It does not know what a talent's hit is, and still does not.** A caller hands it a `Hit`.
+What changed in M.2 is *where the caller gets one*: `app/services/talent_hits.py` resolves a
+multiplier from the character's published rows, so the API layer no longer requires a user to
+type one. This module is deliberately not the place that happens — it assembles stats, and a
+second route into the damage chain is a second thing to keep honest.
 """
 
 from __future__ import annotations

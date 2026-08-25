@@ -3,10 +3,15 @@
 ## The hit is supplied, not derived
 
 `POST /builds/{id}/explain` takes a `hit` — multiplier, scaling stat, damage channel,
-scope. It does **not** work one out from the build's character. Deriving a talent's numbers
-from its stored rows is the kit corpus's job (Chunk H) and this repo has no kit corpus;
-parsing a multiplier out of a `desc` string and serving the result would be presenting a
-guess as though it came from the game. `TODO(chunk-H)`.
+scope — or **names a talent**, and the multiplier is resolved from the build's own character
+at its own talent level (M.2). That was the kit corpus's job and there is no kit corpus, so it
+waited: parsing a multiplier out of a `desc` string and serving the result would have been
+presenting a guess as the game's own number. It is not a guess now — `talent_scaling` parses
+the published table and M.4 checked that parse against gcsim across 105 characters and 18,611
+hits before anything read it.
+
+**The channel is still the caller's.** The table gives a multiplier and says nothing about
+which element the hit lands as.
 
 ## The search is not here any more
 
@@ -40,6 +45,7 @@ from app.repositories.enemy import EnemyProfileRepository
 from app.repositories.sim_run import SimRunRepository
 from app.repositories.weapon import WeaponRepository
 from app.schemas.build import (
+    AvailableHitRead,
     BuildCreate,
     BuildOptions,
     BuildRead,
@@ -71,6 +77,11 @@ from app.services.build_assembler import BuildAssemblyError
 from app.services.damage_calculator import BuildEvaluator, Enemy, enemy_from_profile
 from app.services.gcsim_keys import pinned_commit
 from app.services.stat_calculator import StatInputError
+from app.services.talent_hits import (
+    TalentHitUnavailableError,
+    available_hits,
+    resolve_talent_hit,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -271,6 +282,32 @@ def _sets_of(artifacts: "Sequence[Artifact]") -> list["ArtifactSet"]:
     return list(seen.values())
 
 
+@router.get("/{build_id}/hits", response_model=list[AvailableHitRead])
+async def build_hits(
+    build_id: str,
+    builds: Annotated[BuildRepository, Depends(get_owned_build_repo)],
+) -> list[AvailableHitRead]:
+    """Every hit this build can be asked about, at its own talent levels.
+
+    M.2. What `HitSpec.talent` will accept, from the same parse that resolves it — so a page
+    offering these cannot name one the resolver refuses.
+
+    A talent the build has no level for is **absent rather than offered**: offering it would
+    produce a refusal the moment it was picked. A build with no character returns nothing,
+    which is the truthful answer rather than a 404 about a build that exists.
+    """
+    build = await _require_full_build(builds, build_id)
+    if build.character is None:
+        return []
+    return [
+        AvailableHitRead(
+            talent=hit.talent, label=hit.label, index=hit.index,
+            multiplier=hit.multiplier, hits=hit.hits, exclusive=hit.exclusive,
+        )
+        for hit in available_hits(build.character, build.talent_levels or {})
+    ]
+
+
 @router.post("/{build_id}/explain", response_model=ExplainResponse)
 @limiter.limit(WRITE_LIMIT)
 async def explain_build(
@@ -296,7 +333,7 @@ async def explain_build(
     owned = await artifacts.search(limit=_FETCH_CAP)
     by_id = {str(row.id): row for row in owned}
     bonuses = build_assembler.set_bonuses(_sets_of(owned))
-    hit, enemy = _hit(body.hit), await _enemy(body.enemy, enemies)
+    hit, enemy = _hit(body.hit, build), await _enemy(body.enemy, enemies)
 
     equipped_rows = list(build.artifacts)
     if body.artifact_ids is None:
@@ -464,7 +501,7 @@ async def compare_weapons(
             candidates,
             str(build.weapon.id),
             combination,
-            _hit(body.hit),
+            _hit(body.hit, build),
             await _enemy(body.enemy, enemies),
             character_level=build.character_level,
             set_bonuses=bonuses,
@@ -669,9 +706,34 @@ def _base_contributions(build: "Build") -> "tuple[Contribution, ...]":
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
-def _hit(spec: HitSpec) -> Hit:
+def _hit(spec: HitSpec, build: "Build") -> Hit:
+    """The hit to score, with a named talent resolved against the build's own character.
+
+    M.2. `HitSpec` takes exactly one of `multiplier` or `talent`; a named talent is looked up
+    at the level *this build* has it, because a talent-9 burst reported at talent 1 is 59% of
+    its real multiplier and the result still looks like a damage figure.
+    """
+    multiplier = spec.multiplier
+    if spec.talent is not None:
+        if build.character is None:
+            raise HTTPException(
+                status_code=422,
+                detail="this build has no character, so a talent cannot be resolved.",
+            )
+        try:
+            resolved = resolve_talent_hit(
+                build.character,
+                build.talent_levels or {},
+                spec.talent.talent,
+                spec.talent.label,
+                index=spec.talent.index,
+            )
+        except TalentHitUnavailableError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        multiplier = resolved.multiplier
+
     return Hit(
-        multiplier=spec.multiplier,
+        multiplier=multiplier,
         channel=spec.channel,
         scope=spec.scope,
         scaling_stat=spec.scaling_stat,

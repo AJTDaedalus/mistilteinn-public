@@ -45,13 +45,25 @@
   author's imagination. A second test asserts the fixtures still *contain* `×N`, `A+B` and
   `A/B`, so that sweep cannot pass by exercising nothing. Seven mutations, seven caught.
 
-### [ ] M.2 — Resolve a hit from a build
+### [x] M.2 — Resolve a hit from a build — **done**
 - **Do:** `HitSpec` gains the `talent` field its own `TODO(chunk-H)` names, resolving the
   multiplier from the build's character and that talent's level.
 - **Accept:** a build at talent 9 resolves level 9's row, not level 1 — the bug this is most
   likely to have; the explicit `multiplier` still works, because asking about a hypothetical
   hit is legitimate; a character with no such talent refuses with its reason. The
   `TODO(chunk-H)` markers this closes are removed in the same commit.
+- **Done.** `app/services/talent_hits.py`, with `available_hits` alongside `resolve_talent_hit`
+  so a page cannot offer a label the resolver would refuse. `HitSpec` takes **exactly one** of
+  `multiplier` or `talent` — both would let one request state two different numbers for one
+  hit. The explain endpoint scores a named talent and a typed multiplier to the same figure,
+  which is what the test asserts rather than that the number looks plausible.
+- **The channel stays the caller's.** The table gives a multiplier and says nothing about which
+  element the hit lands as; a normal attack is physical for most characters and not for a
+  catalyst user. Deriving it would invent a rule the data does not state.
+- **Two `TODO(chunk-H)` markers closed, two deliberately left.** The multiplier ones in
+  `builds.py` and `build_assembler.py` are done. The two about **unmodelled weapon passives**
+  remain, because DESIGN §7 makes them a non-goal — nothing here changes what the damage chain
+  knows. Five mutations, five caught.
 
 ### [ ] M.3 — The explain page
 - **Do:** pick a build, pick a talent and which of its hits, see the damage **and its
