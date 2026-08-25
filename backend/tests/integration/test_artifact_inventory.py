@@ -101,14 +101,22 @@ async def test_equipping_returns_a_row_that_still_names_its_set(
     assert equipped.json()["set_name"] == "Blizzard Strayer"
 
 
-async def test_the_inventory_snapshot_names_sets_as_well(
+async def test_the_inventory_snapshot_identifies_the_set_by_catalogue_id(
     authed_client: AsyncClient, db_session: AsyncSession, piece: str,
 ):
+    """The snapshot stopped carrying `set_name` in O.2, and that is deliberate (OQ-O1).
+
+    It exists for the client-side search, whose `Candidate` needs an **id to count set pieces
+    by** — a display name is what `GET /artifacts` is for. This asserts the id is the
+    catalogue's integer `nanoka_id`, because the kernel counts numbers and the row's UUID
+    would make every piece its own set.
+    """
     db_session.expire_all()
 
     snapshot = (await authed_client.get(f"{ARTIFACTS}/inventory")).json()
 
-    assert snapshot["artifacts"][0]["set_name"] == "Blizzard Strayer"
+    assert snapshot["artifacts"][0]["set_id"] == 15025
+    assert "set_name" not in snapshot["artifacts"][0]
 
 
 async def test_a_setless_piece_says_so_rather_than_failing(

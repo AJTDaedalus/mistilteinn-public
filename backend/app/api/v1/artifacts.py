@@ -41,12 +41,15 @@ from app.schemas.artifact import (
     GoodImportResponse,
     ImportRejection,
     InventorySnapshot,
+    KernelCandidate,
     RarityVocabularyEntry,
     SlotVocabularyEntry,
     StatVocabularyEntry,
+    UnreadableArtifact,
 )
 from app.schemas.common import PaginatedResponse
 from app.services.good_import_service import ReplaceRefusedError, store_good_import
+from app.services.stat_calculator import StatInputError, _quantity_for_prop
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -133,13 +136,78 @@ async def get_inventory(
     if if_none_match is not None and etag in [t.strip() for t in if_none_match.split(",")]:
         return Response(status_code=status.HTTP_304_NOT_MODIFIED, headers={"ETag": etag})
 
+    candidates, unreadable = _kernel_candidates(rows)
+
     response.headers["ETag"] = etag
     return InventorySnapshot(
         version=version,
-        artifacts=[ArtifactRead.model_validate(row) for row in rows],
-        total=len(rows),
+        artifacts=candidates,
+        # What was **returned**, not what was read: a count describing pieces the caller did
+        # not receive is a count nobody can reconcile with the list beside it.
+        total=len(candidates),
         truncated=truncated,
+        unreadable=unreadable,
     )
+
+
+def _kernel_candidates(
+    rows: Sequence[Artifact],
+) -> tuple[list[KernelCandidate], list[UnreadableArtifact]]:
+    """Translate owned pieces into what `search.ts` reads, reporting what would not.
+
+    O.2. `set_id` is the catalogue's **integer** `nanoka_id`, not the row's UUID: the kernel
+    counts set pieces by id, and it counts numbers.
+
+    A piece whose stats do not resolve is **reported and excluded** (OQ-O2). Excluded because
+    the kernel cannot score a partial stat map and would rank the piece as weaker than it is —
+    a wrong ordering, silently. Reported because a silently omitted piece is an inventory the
+    user cannot see is incomplete.
+    """
+    candidates: list[KernelCandidate] = []
+    unreadable: list[UnreadableArtifact] = []
+
+    for row in rows:
+        try:
+            stats = _kernel_stats(row)
+        except StatInputError as exc:
+            unreadable.append(
+                UnreadableArtifact(artifact_id=str(row.id), reason=str(exc)),
+            )
+            continue
+        candidates.append(
+            KernelCandidate(
+                id=str(row.id),
+                slot=row.slot.value,
+                set_id=row.artifact_set.nanoka_id if row.artifact_set is not None else None,
+                stats=stats,
+            ),
+        )
+    return candidates, unreadable
+
+
+def _kernel_stats(artifact: Artifact) -> dict[str, float]:
+    """One piece's main stat and substats, summed per kernel quantity.
+
+    Summed rather than assigned: a CRIT DMG circlet with a CRIT DMG substat has both, and the
+    kernel takes one number per quantity — overwriting would drop whichever came second.
+
+    `allow_absent` on the substats only. A substat may genuinely be absent — `FIGHT_PROP_NONE`
+    is one of three spellings for it, and a piece with fewer than four is ordinary. A **main**
+    stat that does not resolve is not an absent stat, it is a piece this build cannot read.
+    """
+    stats: dict[str, float] = {}
+    main = _quantity_for_prop(artifact.main_stat_type)
+    if main is not None:
+        stats[main] = float(artifact.main_stat_value or 0.0)
+
+    for substat in artifact.substats or []:
+        if not isinstance(substat, dict):
+            continue
+        quantity = _quantity_for_prop(substat.get("stat"), allow_absent=True)
+        if quantity is None:
+            continue
+        stats[quantity] = stats.get(quantity, 0.0) + float(substat.get("value", 0.0))
+    return stats
 
 
 # The import route is declared **before** `/{artifact_id}`. The two do not collide today —
