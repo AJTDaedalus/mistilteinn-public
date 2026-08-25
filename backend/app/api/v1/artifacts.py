@@ -103,6 +103,13 @@ def _inventory_version(rows: Sequence[Artifact]) -> str:
     timestamp on a piece whose numbers did not move does not. A version that changed for
     bookkeeping would make every revalidation a full transfer, which is the cost this exists
     to avoid.
+
+    **Deliberately a superset of what the payload carries** (O.2). `rarity`, `level` and
+    `build_id` are hashed and no longer emitted, so equipping a piece invalidates a snapshot
+    whose bytes did not change. That is a spurious miss, and it is the safe direction: a
+    digest narrower than the payload risks serving a **stale** inventory, and a search over
+    one recommends artifacts the user no longer owns — the failure OQ-S3 chose this design to
+    avoid. Widening costs a transfer; narrowing costs correctness.
     """
     parts = [
         f"{row.id}:{row.slot}:{row.rarity}:{row.level}:{row.main_stat_type}:"

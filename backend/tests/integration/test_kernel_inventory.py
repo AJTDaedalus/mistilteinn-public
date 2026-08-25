@@ -339,3 +339,32 @@ def test_every_exemption_has_a_reason_and_is_still_needed() -> None:
         assert quantity in emitted, (
             f"{quantity} is exempt but no longer emitted — drop the exemption"
         )
+
+
+async def test_equipping_a_piece_invalidates_the_snapshot(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user, piece: str,
+):
+    """A spurious miss, and the safe direction — recorded so it is a decision, not a bug.
+
+    `build_id` is hashed into the version and no longer appears in the payload, so equipping
+    invalidates a snapshot whose bytes did not change. A digest **narrower** than the payload
+    would risk serving a stale inventory instead, and a search over one recommends artifacts
+    the user no longer owns.
+    """
+    from app.models.build import Build
+
+    user, _ = authed_user
+    owner_id = str(user.id)
+    build = Build(owner_id=owner_id, character_id=None)
+    db_session.add(build)
+    await db_session.flush()
+    build_id = str(build.id)
+    db_session.expire_all()
+
+    before = (await authed_client.get(INVENTORY)).json()
+    await authed_client.patch(f"/api/v1/artifacts/{piece}", json={"build_id": build_id})
+    db_session.expire_all()
+    after = (await authed_client.get(INVENTORY)).json()
+
+    assert after["version"] != before["version"]
+    assert after["artifacts"] == before["artifacts"], "the payload itself did not change"
