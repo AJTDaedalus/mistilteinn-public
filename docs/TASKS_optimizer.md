@@ -68,12 +68,22 @@ for itself) before O.1.
   legitimately outside a damage kernel's scope.
 - Seven mutations, seven caught.
 
-### [ ] O.3 — The optimizer page
+### [x] O.3 — The optimizer page — **done**
 - **Do:** pick a build, pick a hit, run `search()` **in the browser**, show the top N.
 - **Accept:** reachable from the shell nav — `app.routes.spec.ts` fails otherwise; the page
   runs the real kernel over a known inventory and picks the known winner; **`isExact`,
   `evaluated` and `paretoRemoved` are displayed** (DESIGN §3.2) — a search over 40
   combinations and one over 4 million look identical when only the winner is shown.
+- **Done.** `pages/optimize/`, in the nav. **This is the first thing other than a CI script
+  to import `src/app/sim/`.** The test runs the real `search()` over an inventory whose winner
+  is knowable without it — one obviously best piece per slot — because a fixture whose answer
+  needed the kernel to compute it would only prove the kernel agrees with itself.
+- **A setless piece gets `-1`, not `0`.** `0` is a real catalogue id, and five starter relics
+  would have been handed a four-piece bonus they do not have.
+- **The first draft duplicated the slot names in TypeScript** — in the chunk whose whole
+  argument is that a second copy of the server's vocabulary is how a silent divergence starts.
+  They come from `/artifacts/options` now.
+- Six mutations, six caught.
 
 ### [ ] O.4 — Explain the winner
 - **Do:** hand the winning five to `POST /builds/{id}/explain` via `artifact_ids`.

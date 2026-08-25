@@ -51,6 +51,11 @@ export const routes: Routes = [
     canMatch: [requireApproved],
   },
   {
+    path: 'optimize',
+    loadComponent: () => import('./pages/optimize/optimize').then((m) => m.OptimizePage),
+    canMatch: [requireApproved],
+  },
+  {
     path: 'explain',
     loadComponent: () => import('./pages/explain/explain').then((m) => m.ExplainPage),
     canMatch: [requireApproved],
