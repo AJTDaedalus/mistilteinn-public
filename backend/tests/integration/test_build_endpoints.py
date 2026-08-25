@@ -348,8 +348,8 @@ async def test_scoring_someone_elses_build_is_a_404(
 async def test_explain_resolves_a_named_talent_against_the_build(
     client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
 ) -> None:
-    """The `TODO(chunk-H)` this closes: `HitSpec` required a bare multiplier, so asking why a
-    build scores what it scores meant knowing that Ayaka's burst is 1.123 per cut.
+    """This closed the chunk-H marker on `HitSpec`, which required a bare multiplier — so
+    asking why a build scores what it scores meant knowing Ayaka's burst is 1.123 per cut.
 
     The multiplier now comes from the character's own published table, at **this build's**
     talent level. Both forms are scored so the comparison is against a known number rather
