@@ -47,7 +47,7 @@ for itself) before O.1.
   cannot score, so the ranking would silently prefer whatever was already equipped.
 - Five mutations, five caught.
 
-### [ ] O.2 — Kernel-ready inventory
+### [x] O.2 — Kernel-ready inventory — **done**
 - **Do:** `GET /artifacts/inventory` returns candidates — id, slot, set id, and `stats`
   already translated by `_quantity_for_prop` — rather than `ArtifactRead` (OQ-O1).
 - **Accept:** every piece's stats round-trip against the mapping; **a prop the mapping refuses
@@ -56,6 +56,17 @@ for itself) before O.1.
 - **Why not the client's job:** `_quantity_for_prop` decides what every stat *means* and
   refuses rather than guessing. A TypeScript copy would be a second definition of that, and
   the failure is silent: a mis-mapped substat optimises for a stat the character does not have.
+- **Done.** `KernelCandidate` — id, slot, catalogue `set_id`, and one summed `stats` map.
+  Smaller than `ArtifactRead`. An unreadable piece is reported *and* excluded: reported
+  because a silent omission is an inventory the user cannot see is incomplete, excluded
+  because the kernel would rank a partial stat map as weaker than it is.
+- **The vocabularies are pinned to each other now.** Writing the tests I asserted `atk` where
+  the kernel reads `flat_atk` — the *scaling stat* name, not a quantity. The tests were wrong
+  and the code was right; the same mistake in the endpoint would have made a stat contribute
+  nothing to every ranking, silently. A test now reads `search.ts` and fails on any emitted
+  quantity the kernel does not read, with a reasoned exemption table for the four that are
+  legitimately outside a damage kernel's scope.
+- Seven mutations, seven caught.
 
 ### [ ] O.3 — The optimizer page
 - **Do:** pick a build, pick a hit, run `search()` **in the browser**, show the top N.

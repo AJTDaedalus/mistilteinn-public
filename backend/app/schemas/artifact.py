@@ -152,6 +152,40 @@ class ArtifactRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class KernelCandidate(BaseModel):
+    """One artifact, as `search.ts`'s `Candidate` reads it.
+
+    O.2. Smaller than `ArtifactRead` and translated: `stats` is keyed by **kernel quantity**,
+    with the main stat and every substat summed into one map, because the kernel takes one
+    number per quantity.
+
+    The translation is `stat_calculator._quantity_for_prop`, which decides what every stat
+    means and refuses rather than guessing. Doing it in TypeScript would be a second
+    definition of the vocabulary with a silent failure mode — a mis-mapped substat produces a
+    build optimal for a stat the character does not have, presented as the answer.
+    """
+
+    id: str
+    #: The payload key: `equip_dress`. `search.ts`'s `SLOTS` are the same five strings.
+    slot: str
+    #: Null for the 32 setless starter relics. **Not zero** — the kernel counts set pieces by
+    #: id, and `0` would be a real catalogue id to it.
+    set_id: int | None = None
+    stats: dict[str, float]
+
+
+class UnreadableArtifact(BaseModel):
+    """A piece whose stats did not resolve, and why.
+
+    OQ-O2. Reported rather than dropped: a silently omitted piece is an inventory the user
+    cannot see is incomplete, and a search over it recommends the best of what it was *shown*
+    while looking like the best of what they own.
+    """
+
+    artifact_id: str
+    reason: str
+
+
 class InventorySnapshot(BaseModel):
     """Every owned artifact in one response, plus the version that identifies it.
 
@@ -176,12 +210,15 @@ class InventorySnapshot(BaseModel):
     #: In the repository's game-slot order — slot, then level descending, then id. Fully
     #: determined, which is what the version depends on: a version that flipped because
     #: Postgres returned rows in another order would make every revalidation a full transfer.
-    artifacts: list[ArtifactRead]
+    artifacts: list[KernelCandidate]
     total: int
     #: True when the account holds more pieces than one response will carry. The list is then
     #: a prefix of that order and the version covers only what was sent, so a search must
     #: treat it as "the server would not answer" rather than as a complete inventory.
     truncated: bool = False
+    #: Pieces left out because their stats did not resolve, each with its reason (OQ-O2).
+    #: Never silently omitted — see `UnreadableArtifact`.
+    unreadable: list[UnreadableArtifact] = []
 
 
 class GoodImportRequest(BaseModel):
