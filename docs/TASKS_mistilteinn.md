@@ -369,7 +369,7 @@ Each task below is **one commit**. Commit message form:
 - **[x] G.6c — builds, and the optimize/rank endpoints** (synchronous; the job runner is G.10)
 ### [x] G.7 — Re-baseline `tests/perf` for the 5-slot search space
 ### [x] G.8 — Delete the consumed files from `app/services/_ported/`
-### [~] G.9 — Artifact upgrade-potential scoring — **unblocked; the citation exists**
+### [x] G.9 — Artifact upgrade-potential scoring — **done in A.5**
 
 **The blocker is gone.** G.9 was blocked because the substat roll schedule — how many rolls a
 piece gains as it levels — was said not to be in the committed snapshot, and writing it from
@@ -415,10 +415,15 @@ for a level limit.
   known and the code had no way to express it. It now returns +4, so the range check and the
   snapshot reader refuse the same levels for the same reason instead of disagreeing by nine.
 
-**What is left of G.9 is the scoring itself, and it waits on a consumer, not a citation.**
-`artifact_ranker` was its home and C.6 deleted it. A potential score with nothing calling it
-is precisely the dead code C.6 removed, so the function lands with whatever asks for it — the
-client-side search is the natural place. The hard half is done and committed.
+**Closed in A.5** (PR #71). The consumer it waited for is the artifact inventory, by owner
+decision — a score sits beside the piece it describes. `app/services/artifact_potential.py`
+reports rolls remaining *with the parts behind it*, because a bare figure is something a
+reader has to take on trust.
+
+**Narrower than this task asked for, deliberately.** "Which substats could roll" needs the
+*placement* rule — which substat a roll enhances — and that is **not in the committed data**.
+The schedule says *when* a piece gains a substat, not where it goes. Asserting the rule from
+memory in the very task that unblocked G.9 would have been perverse.
 
 ### [x] G.10 — Move optimize/rank behind the job runner — **later deleted by C.6**
 
@@ -450,26 +455,51 @@ is its own change — but a fourth instance should not be discovered the same wa
 
 ---
 
-## Where this plan stands (2026-08-22)
+## Where this plan stands (2026-08-25)
 
-**A–G are done**, with **G.9 blocked on a citation** (see below). **Chunk S is done** and its
-finding is what inserted `TASKS_client_optimizer.md`, which is now **complete** — Chunks A–D
-of that file, PRs #31–#41.
+**Every chunk in this file is done.** A–G complete, G.9 closed in A.5, H superseded and
+closed, I closed by owner decision below, J and K delivered. Six further plans have been
+written and completed since, each in its own file:
 
-What is left in *this* file, and what each actually waits on:
+| plan | what it delivered |
+|---|---|
+| `TASKS_client_optimizer.md` | the browser kernel — CPU, GPU, run corpus, retrieval (#31–#41) |
+| `TASKS_rotation.md` | authoring rotations and compiling them to gcsim (#50–#58) |
+| `TASKS_teams_builds.md` | the build editor and team builder (#60–#65) |
+| `TASKS_artifacts.md` | inventory, GOOD import, equipping, upgrade potential (#67–#72) |
+| `TASKS_multipliers.md` | talent multipliers, crossvalidated against gcsim (#73–#77) |
+| `TASKS_optimizer.md` | the search surface — the kernel is reachable (#78–#82) |
 
-| chunk | state | waits on |
-|---|---|---|
-| **G.9** | **unblocked** | the schedule is derived and committed (`artifact_roll_schedule.json`). What remains is the scoring function, which waits on a *consumer* rather than a citation. |
-| **H** | **superseded and closed** | nothing. Its last loose end — the disabled CI kit-validation gate — is retired, with each of its levels' successors recorded. L6 became `test_gcsim_character_coverage.py`. |
-| **I** — rotation/combo model | **DESIGN written** | gcsim implements the simulation; the sketch is superseded. **Rotations are authored by users in our own syntax, compiled to gcsim's** (owner, 2026-08-22). `docs/DESIGN_rotation.md` and `docs/TASKS_rotation.md` now carry it — R.0–R.6. Whether a rotation is ever *optimized* stays out of scope: §3.5 warns it reopens the client-side cost argument. |
-| **J** — frontend rewrite + visual identity | **palette + mark done** | OQ-P1 answered: `_tokens.scss` is now sampled from the Mitya references and the ornament is the emblem. What remains of J is applying it across pages as they are built. |
-| **K** — deploy | **DONE — live** | `https://mistilteinn.aetherus.dev` serves the app and the API, alongside `fairy.aetherus.dev` on one box. Separate compose projects, separate networks, no host ports on either, own Postgres. Runner registered and online; tunnel connected on four edge connections. |
+**A user can now walk the whole path**: import a GOOD export, equip pieces to a build,
+assemble a team, author a rotation, compile it, search their own artifacts for the best five,
+and ask why the winner won.
 
-**Nothing here is merely queued, and nothing left is blocked on evidence.** G.9's citation was
-found, H is closed, and I's sketch turned out to be work gcsim had already done. Every
-remaining item now waits on **an owner decision** — what v1 does about rotations, what the
-visual identity is, and where this deploys.
+### The two chunks that closed without being built
+
+- **H — kit corpus. Superseded.** Chunk S found gcsim already implements 106 characters and
+  53 artifact sets at the pin, so there was no corpus to curate. Its CI gate is retired with
+  each validation level's successor recorded. **Two `TODO(chunk-H)` markers survive** and are
+  about something else: weapon passives the Chunk F chain does not model, which is why
+  `weapon_comparison` carries `unmodelled_passives`. Where that work lands is still open.
+- **I — rotation optimization. Closed by owner decision (2026-08-25): rotations are not
+  optimized.** Authoring landed as the rotation chunk; searching over rotations will not be
+  built. Users write rotations deliberately, and a searched rotation is not one they would
+  recognise as theirs. `DESIGN_rotation.md` §3.5's cost argument is moot rather than
+  outstanding, and the design pass that was queued for it is cancelled.
+
+### What is genuinely open
+
+Five `TODO(chunk-)` markers, and nothing else in any plan file:
+
+| marker | what it names |
+|---|---|
+| `weapon_comparison.py`, `builds.py` | weapon passives the damage chain does not model — a ranking can be *ordered* wrong, which is why `unmodelled_passives` is published |
+| `team.py` | the GOOD importer wants the wipe-and-restore guarantee teams already have |
+| `dependencies.py` | DI factories removed in B.7 |
+| `test_talent_multipliers.py` | the committed crossval covers one character; Venti and Rosaria would cover the two bugs it found. Needs network |
+
+None is blocking. None has a plan file, and none should get one before someone decides it is
+worth doing.
 
 ---
 

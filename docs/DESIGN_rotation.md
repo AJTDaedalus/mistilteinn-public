@@ -176,6 +176,12 @@ that making the rotation an output multiplies the search by the space of action 
 a gcsim run costing ~4,700× one damage-chain combination under WASI. Authoring is not
 optimizing, and this design does not open that door.
 
+**Closed by owner decision, 2026-08-25: rotations are not optimized.** The door stays shut,
+and not only for the cost reason — a user writes a rotation deliberately, and one arrived at
+by search is not a rotation they would recognise as theirs. The design pass that was queued to
+decide whether the cost was affordable is cancelled: the question is settled on other grounds,
+so measuring it would answer something nobody is asking.
+
 ## 6. Deployment work folded in
 
 Per the owner, the deploy remainder rides along here rather than as its own chunk. **K is
