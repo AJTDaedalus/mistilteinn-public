@@ -204,8 +204,11 @@ that turns out to be worth porting rather than re-deriving.
 - ~~**`backend/scripts/download_*_icons.py` write into the other repo.**~~ **Resolved in B.9:**
   all four were deleted unrun. **N.1 wrote a Genshin replacement**, `scripts/download_icons.py`
   — one script, not four, vendoring from `https://static.nanoka.cc/assets/gi/` into
-  `frontend/public/icons/`. **The icons are gitignored and not committed** (OQ-N1): 475 files
-  are reproducible from this script and a seeded database, and a repository is not a CDN.
+  `frontend/public/icons/`. **The icons are gitignored and not committed** (OQ-N1): the run
+  vendored **472 of 475**, all reproducible from this script and a seeded database, and a
+  repository is not a CDN. Take that 475 from the script's own run, not from a query over
+  `{characters,weapons,artifact_sets}.icon` — those columns hold 449 distinct basenames,
+  because Travelers share art and set icons expand per slot.
   A **404 is `absent_upstream`, not a failure** — some catalogue rows genuinely have no art,
   and exiting non-zero on those would make the script cry wolf. **Prod therefore ships with no
   icons until the script runs there**; `docs/DEPLOY.md` §5a says so, and that is deliberately
