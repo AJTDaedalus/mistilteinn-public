@@ -7,6 +7,15 @@
 
 **Status key:** ` ` todo · `~` in progress · `x` done · `!` blocked (escalation in LOG)
 
+> **Status: all six tasks done. N.5 produced an escalation, which was its deliverable —
+> `x`, not `!`: nothing here is blocked, one question was handed up.** Merged as PRs #84
+> (N.0–N.1), #85 (N.2), #87 (N.3) and #88 (N.4).
+>
+> **What this chunk was for:** `rg "TODO\(chunk-"` counted **nine** markers, seven naming a
+> closed chunk. It counts **two** now, both `TODO(chunk-H)` and both left pointing at a
+> closed chunk **on purpose** — N.5 measured that gap and escalated where it should land
+> rather than re-pointing them at a chunk that does not exist yet.
+
 **Standing rules**
 - Verify `git branch --show-current` before every commit. Never commit to `dev` or `main`.
 - **Run each gate standalone and check its exit code.** Not chained behind `&&`, not piped
@@ -22,7 +31,7 @@
 
 ---
 
-### [ ] N.0 — Branch setup **(gate)**
+### [x] N.0 — Branch setup **(gate)**
 - **Do:** per-task branches off `dev`; merge by PR.
 - **Accept:** `git log --first-parent dev` is merge commits only.
 
@@ -84,14 +93,14 @@
   `uq_builds_owner_agent` for unambiguity, and T.1a dropped this repo's equivalent by owner
   decision. Five mutations, five caught.
 
-### [ ] N.4 — Correct the stale DI marker **(closes `TODO(chunk-F/G)`)**
+### [x] N.4 — Correct the stale DI marker **(closes `TODO(chunk-F/G)`)**
 - **Do:** rewrite the comment in `app/dependencies.py`.
 - **Accept:** it no longer plans to restore ZZZ repositories. Nine of the twelve it names —
   agent, attack, w_engine, disc_set, disc, combo and their owned variants — are concepts the
   BRIEF says to **delete, not defer**, and `get_owned_build_repo` already exists. A marker
   that plans work which must not happen is worse than no marker.
 
-### [ ] N.5 — Weapon passives **[Planner] — assessment, not implementation**
+### [x] N.5 — Weapon passives **[Planner] — assessment, not implementation** — *escalated*
 - **Do:** record what modelling them requires and what it would cost. **Do not build it.**
 - **Accept:** an ESCALATION block in `docs/LOG_mistilteinn.md` stating the decision the owner
   has to make: build a conditional modifier model, or accept the gap permanently.
@@ -109,7 +118,12 @@
 - **OQ-N1 — do icons get committed?** *Answered in DESIGN §2: no.* fairy committed 207 files;
   Genshin's equivalent is 475, they are reproducible from a script and a seeded database, and
   a repository is not a CDN.
-- **OQ-N2 — build the modifier model?** **Open, and N.5's whole point.** Owner's call.
+- **OQ-N2 — build the modifier model?** **Escalated, not answered** — N.5 measured it and
+  handed it up. `docs/LOG_mistilteinn.md`, "ESCALATION — weapon passives have no home".
+  **5 of 242 passives are reachable without new machinery**, and the option N.5 did *not*
+  anticipate is the live one: weapon comparison is ≤59 candidates, which is an async-job
+  shape gcsim can actually serve — unlike the artifact search §6 ruled it out of. Owner's
+  call, and it needs Brain because every option reopens a settled argument.
 
 ## Not in this chunk
 
