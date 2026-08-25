@@ -109,6 +109,29 @@ class ArtifactRepository(BaseRepository[Artifact]):
         )
         return int(result.scalar_one())
 
+    async def owned_sets(self) -> Sequence[ArtifactSet]:
+        """Every distinct catalogue set the caller owns a piece of, with its affixes.
+
+        Asked as a set question rather than by reading every artifact and collecting the
+        distinct ones. Two reasons, and the second is the one that matters:
+
+        * there are 65 sets and a large account has thousands of pieces, so the join answers
+          in the size of the answer rather than the size of the inventory;
+        * `search`'s `_FETCH_CAP` is 20,000, and deriving sets from a capped read would
+          **silently omit a set** from a larger account — the search would then rank without
+          a bonus it should have scored, and prefer whatever it did know about. A ranking
+          missing an option looks exactly like a ranking.
+        """
+        stmt = (
+            select(ArtifactSet)
+            .join(Artifact, Artifact.artifact_set_id == ArtifactSet.id)
+            .options(selectinload(ArtifactSet.affixes))
+            .distinct()
+        )
+        if self.owner_id is not None:
+            stmt = stmt.where(Artifact.owner_id == self.owner_id)
+        return (await self.session.execute(stmt)).scalars().unique().all()
+
     async def get_with_set(self, artifact_id: str) -> Artifact | None:
         """One owned artifact with its set eager-loaded."""
         stmt = select(Artifact).where(Artifact.id == artifact_id)

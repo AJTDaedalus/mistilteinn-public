@@ -27,7 +27,7 @@ for itself) before O.1.
 - **Do:** per-task branches off `dev`; merge by PR.
 - **Accept:** `git log --first-parent dev` is merge commits only.
 
-### [ ] O.1 — The search context
+### [x] O.1 — The search context — **done**
 - **Do:** `POST /builds/{id}/search-context` — base contributions, set bonuses, target,
   character level, damage-bonus quantity, and the hit resolved from a named talent (M.2).
   Everything the kernel needs except the inventory.
@@ -35,6 +35,17 @@ for itself) before O.1.
   **the same server, asked twice, must not disagree with itself**; a build with no character
   or no talent level is refused with its reason; the route is in the 401 sweep.
 - **Why it is first:** O.3 has nothing to search without it.
+- **Done.** `POST /builds/{id}/search-context`, taking the **same body as `/explain`** — a
+  caller asking "what should I wear for this hit" and one asking "why does this score what it
+  does" are describing the same hit, and two request shapes for one description is how they
+  drift apart.
+- **Two findings from mutation.** The target's resistance is the *hit's own channel*, and
+  nothing asserted it — averaging the eight would be a resistance no enemy has, and the wrong
+  one shifts every combination in the ranking while each figure still looks reasonable. And
+  set bonuses come from **every owned set**, not the worn ones: a search may propose pieces
+  from a set this build is not wearing, and a bonus the kernel was never told about is one it
+  cannot score, so the ranking would silently prefer whatever was already equipped.
+- Five mutations, five caught.
 
 ### [ ] O.2 — Kernel-ready inventory
 - **Do:** `GET /artifacts/inventory` returns candidates — id, slot, set id, and `stats`

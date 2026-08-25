@@ -35,6 +35,7 @@ from app.dependencies import (
     get_owned_sim_run_repo,
     get_weapon_repo,
 )
+from app.formula.genshin import tags
 from app.formula.genshin.damage import Hit
 from app.middleware.rate_limit import WRITE_LIMIT, limiter
 from app.models.enums import LEVELLED_TALENTS, MAX_TALENT_LEVEL
@@ -57,6 +58,10 @@ from app.schemas.build import (
     ExplainRequest,
     ExplainResponse,
     HitSpec,
+    KernelHit,
+    KernelSetBonus,
+    KernelTarget,
+    SearchContextRead,
     SetEffectRead,
     SimulationNoteRead,
     StatAccountRead,
@@ -76,7 +81,7 @@ from app.services import (
 from app.services.build_assembler import BuildAssemblyError
 from app.services.damage_calculator import BuildEvaluator, Enemy, enemy_from_profile
 from app.services.gcsim_keys import pinned_commit
-from app.services.stat_calculator import StatInputError
+from app.services.stat_calculator import StatInputError, _quantity_for_prop
 from app.services.talent_hits import (
     TalentHitUnavailableError,
     available_hits,
@@ -306,6 +311,90 @@ async def build_hits(
         )
         for hit in available_hits(build.character, build.talent_levels or {})
     ]
+
+
+@router.post("/{build_id}/search-context", response_model=SearchContextRead)
+@limiter.limit(WRITE_LIMIT)
+async def search_context(
+    request: Request,  # slowapi reads the client address off it
+    build_id: str,
+    body: ExplainRequest,
+    builds: Annotated[BuildRepository, Depends(get_owned_build_repo)],
+    artifacts: Annotated[ArtifactRepository, Depends(get_owned_artifact_repo)],
+    enemies: Annotated[EnemyProfileRepository, Depends(get_enemy_profile_repo)],
+) -> SearchContextRead:
+    """Everything the browser kernel needs to search, except the inventory.
+
+    O.1. `frontend/src/app/sim/search.ts` has been a working optimizer that nothing could
+    reach, because `SearchContext` needs a hit and a base — and the base is keyed by **kernel
+    quantity** while the API speaks `FIGHT_PROP_*`. That mapping is
+    `stat_calculator._quantity_for_prop`; it decides what every stat means and refuses rather
+    than guessing, so a TypeScript copy of it would be a second definition of the vocabulary
+    with a silent failure mode.
+
+    Takes the same body as `/explain` deliberately: a caller asking "what should I wear for
+    this hit" and one asking "why does this score what it does" are describing the same hit,
+    and two request shapes for one description is how they drift apart.
+
+    The inventory is **not** here. `/artifacts/inventory` carries it, ETag'd, because the
+    browser holds it across searches and revalidates cheaply (OQ-S3).
+    """
+    build = await _require_full_build(builds, build_id)
+    hit = _hit(body.hit, build)
+    enemy = await _enemy(body.enemy, enemies)
+
+    base = {c.quantity: c.value for c in _base_contributions(build)}
+
+    # Every set the caller owns a piece of, not only the sets currently worn: the search is
+    # free to propose a build using pieces from a set this build is not wearing, and a bonus
+    # the kernel was never told about is one it cannot score.
+    #
+    # Asked as a set question, not by reading the inventory: `search`'s cap is 20,000, and
+    # deriving sets from a capped read would silently omit one from a larger account.
+    bonuses = build_assembler.set_bonuses(await artifacts.owned_sets())
+
+    return SearchContextRead(
+        base=base,
+        hit=KernelHit(
+            multiplier=hit.multiplier,
+            channel=hit.channel,
+            scaling_stat=str(hit.scaling_stat),
+            amplifying=str(hit.amplifying) if hit.amplifying is not None else None,
+        ),
+        target=KernelTarget(
+            level=enemy.level,
+            # One number, because the kernel scores one channel. Taken from the hit's own
+            # channel rather than averaged — an average is a resistance no enemy has.
+            resistance=enemy.resistances[hit.channel],
+        ),
+        character_level=build.character_level,
+        dmg_bonus_quantity=tags.dmg_bonus_q(hit.channel),
+        set_bonuses=[
+            KernelSetBonus(
+                set_id=tier.set_id,
+                pieces_required=tier.pieces_required,
+                stats=_bonus_stats(tier),
+            )
+            for tier in bonuses
+        ],
+    )
+
+
+def _bonus_stats(tier: "build_assembler.SetBonus") -> dict[str, float]:
+    """A set tier's static props, in kernel quantities.
+
+    A prop the mapping refuses is **skipped rather than guessed**, which is what
+    `artifact_optimizer` does with the same rows — a conditional affix's props are all
+    `FIGHT_PROP_NONE`, and inventing a quantity for one would add a bonus the game does not
+    give.
+    """
+    stats: dict[str, float] = {}
+    for prop in tier.add_props or []:
+        quantity = _quantity_for_prop(prop.get("prop_type"), allow_absent=True)
+        if quantity is None:
+            continue
+        stats[quantity] = stats.get(quantity, 0.0) + float(prop.get("value", 0.0))
+    return stats
 
 
 @router.post("/{build_id}/explain", response_model=ExplainResponse)
