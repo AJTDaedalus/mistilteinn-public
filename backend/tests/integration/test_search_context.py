@@ -333,3 +333,79 @@ async def test_a_set_the_build_does_not_wear_is_still_offered(
 
     offered = {b["set_id"] for b in bonuses}
     assert 15026 in offered, f"an owned, unworn set was not offered: {sorted(offered)}"
+
+
+async def test_owned_sets_are_asked_for_directly_not_read_out_of_the_inventory(
+    db_session: AsyncSession, authed_user: tuple[User, str], build: str,
+):
+    """Derived from a set query, so a large account cannot lose one.
+
+    `search`'s cap is 20,000 pieces. Collecting distinct sets from a capped read would
+    silently omit a set from a larger inventory, and the ranking would then prefer whatever
+    it did know about — **a ranking missing an option looks exactly like a ranking.**
+
+    Checked at the repository, because that is where the cap would have applied.
+    """
+    from app.repositories.artifact import ArtifactRepository
+
+    user, _ = authed_user
+    # Captured before expiring: `expire_all()` expires this ORM object too, and reading
+    # `user.id` afterwards is a synchronous refresh — a `MissingGreenlet` in the *test*,
+    # which reads as a failure of the code under test.
+    owner_id = str(user.id)
+    unworn = ArtifactSet(
+        nanoka_id=15027, name="Gladiator's Finale", piece_thresholds=[2, 4],
+        available_ranks=[4, 5],
+    )
+    db_session.add(unworn)
+    await db_session.flush()
+    db_session.add(ArtifactSetAffix(
+        artifact_set_id=str(unworn.id), position=0, pieces_required=2,
+        name="", description="",
+        add_props=[{"prop_type": "FIGHT_PROP_ATTACK_PERCENT", "value": 0.18}],
+    ))
+    db_session.add(Artifact(
+        owner_id=owner_id, artifact_set_id=str(unworn.id), build_id=None,
+        slot=ArtifactSlot.PLUME, rarity=Rarity.FIVE_STAR, level=20,
+        main_stat_type=StatType.ATK_FLAT, main_stat_value=311.0, substats=[],
+    ))
+    await db_session.flush()
+    db_session.expire_all()
+
+    sets = await ArtifactRepository(db_session, owner_id=owner_id).owned_sets()
+
+    ids = {s.nanoka_id for s in sets}
+    assert {15025, 15027} <= ids, sorted(ids)
+    # Affixes eager-loaded: `set_bonuses` reads them, and `lazy` is `raise_on_sql`.
+    assert all(s.affixes is not None for s in sets)
+
+
+async def test_a_strangers_sets_are_not_offered(
+    db_session: AsyncSession, authed_user: tuple[User, str], build: str,
+):
+    """Owner-scoped like every other read. An unscoped answer here would offer a bonus from
+    a set the caller owns no piece of, and the search would rank builds it cannot assemble."""
+    from app.models.user import User as UserModel
+    from app.repositories.artifact import ArtifactRepository
+
+    user, _ = authed_user
+    owner_id = str(user.id)  # before `expire_all()`; see the note above
+    stranger = UserModel(email="other@example.com", password_hash="not-a-hash")  # noqa: S106
+    db_session.add(stranger)
+    await db_session.flush()
+    theirs = ArtifactSet(
+        nanoka_id=15028, name="Theirs", piece_thresholds=[2], available_ranks=[5],
+    )
+    db_session.add(theirs)
+    await db_session.flush()
+    db_session.add(Artifact(
+        owner_id=str(stranger.id), artifact_set_id=str(theirs.id), build_id=None,
+        slot=ArtifactSlot.GOBLET, rarity=Rarity.FIVE_STAR, level=20,
+        main_stat_type=StatType.ATK_FLAT, main_stat_value=311.0, substats=[],
+    ))
+    await db_session.flush()
+    db_session.expire_all()
+
+    sets = await ArtifactRepository(db_session, owner_id=owner_id).owned_sets()
+
+    assert 15028 not in {s.nanoka_id for s in sets}

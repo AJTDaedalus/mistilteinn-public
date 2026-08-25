@@ -348,8 +348,10 @@ async def search_context(
     # Every set the caller owns a piece of, not only the sets currently worn: the search is
     # free to propose a build using pieces from a set this build is not wearing, and a bonus
     # the kernel was never told about is one it cannot score.
-    owned = await artifacts.search(limit=_FETCH_CAP)
-    bonuses = build_assembler.set_bonuses(_sets_of(owned))
+    #
+    # Asked as a set question, not by reading the inventory: `search`'s cap is 20,000, and
+    # deriving sets from a capped read would silently omit one from a larger account.
+    bonuses = build_assembler.set_bonuses(await artifacts.owned_sets())
 
     return SearchContextRead(
         base=base,
