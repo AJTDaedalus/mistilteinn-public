@@ -20,7 +20,7 @@ done, S is done, `TASKS_client_optimizer.md` is complete (PRs #31–#41), K is d
 status banner rather than this paragraph — this one is a summary and summaries go stale,
 which is why the numbers below name how to re-derive them.
 
-**Every chunk in `TASKS_mistilteinn.md` is done**, and six further plans have been written
+**Every chunk in `TASKS_mistilteinn.md` is done**, and seven further plans have been written
 and completed since. Each has its own file with its own status banner; read those rather than
 this list.
 
@@ -32,6 +32,7 @@ this list.
 | `TASKS_artifacts.md` | inventory, GOOD import, equipping, upgrade potential — closes G.9 (#67–#72) |
 | `TASKS_multipliers.md` | talent multipliers, crossvalidated against gcsim (#73–#77) |
 | `TASKS_optimizer.md` | the search surface (#78–#82) |
+| `TASKS_loose_ends.md` | icons, and the stale-marker sweep (#84–#89) |
 
 **The app is walkable end to end**: import a GOOD export, equip pieces to a build, assemble a
 team, author a rotation, compile it to gcsim, search your own artifacts for the best five, and
@@ -39,16 +40,25 @@ ask why the winner won. The earlier notes here saying there was no reachable opt
 way to make a team were true when written and are not now.
 
 **Two chunks closed without being built.** **H** was superseded — gcsim already implements the
-kits the corpus existed to curate — though its markers survive, pointing at weapon passives
+kits the corpus existed to curate — though its two markers survive, pointing at weapon passives
 the damage chain does not model. **I's rotation-optimization half is closed by owner decision
 (2026-08-25): rotations are authored, never optimized.** A user writes a rotation deliberately,
 and one arrived at by search is not one they would recognise as theirs.
 
-**What is genuinely open is five `TODO(chunk-)` markers and nothing else.** `rg "TODO\(chunk-"`
-is the inventory; none is blocking, and none has a plan file.
+**What is genuinely open is two `TODO(chunk-)` markers and one escalation.** `rg "TODO\(chunk-"`
+is the inventory. It counted **nine** before `TASKS_loose_ends.md`, seven of them naming a
+closed chunk; the sweep closed the seven and left the two that name real, unbuilt work.
 
-- **Both suites pass, with nothing skipped.** **1221 backend tests, 0 skipped**; **207
-  frontend tests**; `create_app()` serves **35 paths**; the SPA has **13 routes plus a
+**The escalation is the one thing here waiting on the owner** — `docs/LOG_mistilteinn.md`,
+"ESCALATION — weapon passives have no home". **242 of 260 weapons carry a passive and 5 are
+expressible in the damage chain as it stands.** `weapon_comparison` reports the rest as
+`unmodelled_passives` precisely so a caller cannot publish a ranking it does not claim to have
+made. Three options are recorded and each reopens something the BRIEF or a RESEARCH doc
+settled, which is why it went up rather than getting decided. **It blocks nothing that is
+currently building.**
+
+- **Both suites pass, with nothing skipped.** **1247 backend tests, 0 skipped**; **213
+  frontend tests**; `create_app()` serves **39 paths**; the SPA has **13 routes plus a
   catch-all**. Re-derive rather than trust:
   `cd backend && python -m pytest -q`, `cd frontend && npm test`. Run CI's own gates rather
   than a remembered subset: `cd backend && python -m scripts.ci_local` reads
@@ -65,7 +75,7 @@ is the inventory; none is blocking, and none has a plan file.
   every API change and guarded by `backend/tests/unit/test_openapi_contract_is_current.py`.
   Regenerate it in-process — `create_app().openapi()` — rather than by curling a running
   backend; the contract test builds the app the same way and needs no server.
-- **The catalogue is seeded.** 19 tables across 13 migrations. `cd backend && python -m
+- **The catalogue is seeded.** 19 tables across 14 migrations. `cd backend && python -m
   scripts.seed_db` fills them from nanoka GI **7.0.51** in ~10s (150 characters including all
   28 Traveler variants, 260 weapons, 65 artifact sets, 360 enemy profiles) and `python -m
   scripts.verify_seed` checks the result against the committed indexes and nine hand-read
@@ -73,6 +83,13 @@ is the inventory; none is blocking, and none has a plan file.
   imports at `/api/v1/artifacts/import/good`; `/api/v1/builds/{id}/explain` and
   `/compare-weapons` run the Chunk F damage chain over it; `/api/v1/rotations` authors and
   compiles rotations.
+- **Upstream nanoka has moved to 7.0.52 and this repo has not.** That is a deliberate pin, not
+  drift: the committed fixtures, `nanoka_transport.FIXTURE_VERSION` and
+  `verify_seed.FIXTURE_VERSION` all name **7.0.51**, and
+  `tests/unit/test_capture_pinning.py` fails if they stop agreeing. Bumping it is a chunk of
+  its own. **`capture_nanoka_fixtures.py` without `--version` follows upstream**, which is
+  what it silently did in N.2 — pulling two characters at 7.0.52 into a 7.0.51 directory and
+  rewriting three index files, one with real content changes. Pass the version.
 - **A saved rotation is authored here and compiled to gcsim, never read back.** The compiler
   emits the `while 1` loop and a `.ready` gate on every step, because gcsim's two worst
   behaviours are silent: a bare action list runs **once**, and `while 1` **deadlocks** on an
@@ -124,14 +141,21 @@ is the inventory; none is blocking, and none has a plan file.
 - **Do not "fix" ZZZ code to make it run.** Per the BRIEF: *delete* ZZZ concepts rather than
   aliasing them. Leaked ZZZ shapes in the Genshin domain model are the fork strategy's main
   long-term hazard.
-- **`rg "TODO\(chunk-"` is the inventory of what is deliberately unfinished — nine markers,
-  and seven of them name a chunk that is closed.** The `TODO(chunk-H)` markers are about
-  weapon and character passives the Chunk F chain does not model — `weapon_comparison`
-  carries `unmodelled_passives` precisely so a caller cannot publish a ranking it does not
-  claim to have made. That work is real and still undone; the chunk that would have done it
-  was closed because gcsim implements the kits. **Where it lands instead is an open
-  question, not a resolved one**, and the markers are left pointing at H rather than
-  re-pointed at a chunk that does not exist yet.
+- **`rg "TODO\(chunk-"` is the inventory of what is deliberately unfinished — two markers,
+  both `TODO(chunk-H)`.** It counted nine before `TASKS_loose_ends.md`, seven of them naming a
+  closed chunk, which is a worse failure than it sounds: **an inventory of open work that
+  counts finished work is the reason a reader looks somewhere else.** The sweep closed the
+  seven — one of which claimed a DI factory was missing forty lines above where it is defined.
+
+  The two that remain are about weapon and character passives the Chunk F chain does not
+  model. `weapon_comparison` carries `unmodelled_passives` precisely so a caller cannot
+  publish a ranking it does not claim to have made — **it is not a precision caveat, the
+  ordering itself can be wrong.** N.5 measured the gap: **242 of 260 weapons carry a passive
+  and 5 are expressible today**, because nine of the rest ask about target state
+  (`KernelTarget` is level, resistance, DEF reduction and DEF ignore — no aura, no enemy type,
+  no weak spot), which makes them *unaskable questions rather than unimplemented ones*.
+  **Where that work lands is escalated, not resolved**, so the markers stay pointed at H
+  rather than at a chunk that does not exist yet.
 - **Two verification harnesses exist because checking the check went wrong twice.**
   `python -m scripts.ci_local` runs what CI runs, parsed from the workflow files at run time.
   `python -m scripts.inject` is mutation testing with inverted exit codes — `0` caught, `1`
@@ -178,7 +202,14 @@ that turns out to be worth porting rather than re-deriving.
   palette)~~ **resolved in J:** the palette is sampled from the Mitya references and the
   emblem is his ornament (#46).
 - ~~**`backend/scripts/download_*_icons.py` write into the other repo.**~~ **Resolved in B.9:**
-  all four were deleted unrun.
+  all four were deleted unrun. **N.1 wrote a Genshin replacement**, `scripts/download_icons.py`
+  — one script, not four, vendoring from `https://static.nanoka.cc/assets/gi/` into
+  `frontend/public/icons/`. **The icons are gitignored and not committed** (OQ-N1): 475 files
+  are reproducible from this script and a seeded database, and a repository is not a CDN.
+  A **404 is `absent_upstream`, not a failure** — some catalogue rows genuinely have no art,
+  and exiting non-zero on those would make the script cry wolf. **Prod therefore ships with no
+  icons until the script runs there**; `docs/DEPLOY.md` §5a says so, and that is deliberately
+  not automated.
 
 ### Database
 
@@ -206,7 +237,10 @@ Host ports are **8001** (backend) and **4201** (frontend), so both stacks run at
   `aetherus.dev` has wildcard DNS onto Cloudflare — so "it does not resolve" is not the check;
   it answers `525` because there is no origin behind it yet.
 - `docker-compose.yml`: dropped the `./references` and `./frontend/public/icons` bind mounts
-  (both directories were stripped). ~~healthcheck now uses `${POSTGRES_USER}`~~ — **superseded
+  (both directories were stripped). The icons directory exists again as of N.1 —
+  gitignored, filled by `scripts/download_icons.py` — and needs no mount restored: the
+  frontend service bind-mounts `./frontend:/app` wholesale, so `public/icons/` arrives through
+  that. The stripped mount was always redundant with it. ~~healthcheck now uses `${POSTGRES_USER}`~~ — **superseded
   in A.4:** there is no `db` service, so no healthcheck and no `POSTGRES_*` variables; the
   three of them were removed from `.env.example` because nothing read them any more.
 
