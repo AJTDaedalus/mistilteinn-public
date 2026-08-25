@@ -310,3 +310,28 @@ async def test_a_strangers_matching_piece_is_never_re_pointed(
     assert result.unequipped == (), "a stranger's slot was reported as this owner's loss"
     still = await db_session.get(Artifact, theirs_id)
     assert str(still.build_id) == their_build_id
+
+
+async def test_a_refused_replace_leaves_equipment_exactly_as_it_was(
+    db_session: AsyncSession, scene: dict,
+):
+    """A `replace` that resolved nothing deletes nothing — and must restore nothing either.
+
+    The refusal exists because a truncated or mis-keyed export would otherwise wipe an
+    inventory. The restore added here runs *after* the delete, so if it ever moved above the
+    refusal it would re-point slots for a wipe that never happened — and the failure would
+    look like a successful import that quietly rearranged someone's builds.
+    """
+    from app.services.good_import_service import ReplaceRefusedError
+
+    equipped_before = [str(a.id) for a in await _equipped(db_session, scene["build_id"])]
+    assert equipped_before, "the fixture must start with something equipped"
+
+    # A set this database does not know: nothing resolves, so the replace is refused.
+    with pytest.raises(ReplaceRefusedError):
+        await _replace(
+            db_session, scene["owner_id"], _good(_piece("NoSuchSet", "flower", "hp", 10.9)),
+        )
+
+    after = [str(a.id) for a in await _equipped(db_session, scene["build_id"])]
+    assert after == equipped_before
