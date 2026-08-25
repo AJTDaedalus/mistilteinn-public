@@ -29,17 +29,38 @@ DBSession = Annotated[AsyncSession, Depends(get_db)]
 
 # ── Public (no auth) repo factories ──────────────────────────────────────────
 #
-# G.6 restores the four catalogue factories above. The rest are still absent:
+# G.6 restored the four catalogue factories above, and **the note that stood here was
+# stale in the direction that matters**: it read as twelve pieces of missing wiring waiting
+# on chunks F and G, and nine of the twelve had already landed under Genshin names. An
+# inventory of open work that counts finished work is worse than no inventory — it is the
+# reason to look somewhere else.
 #
-# TODO(chunk-F/G): B.7 removed the factories for every deleted repository —
-# get_agent_repo, get_attack_repo, get_w_engine_repo, get_disc_set_repo,
-# get_disc_repo, get_build_repo, get_combo_repo, get_enemy_repo, and the owned
-# variants get_owned_build_repo / get_owned_disc_repo / get_owned_combo_repo /
-# get_owned_buff_preset_repo. Each comes back with the route that needs it, not
-# before: an injectable for a repository nothing calls is dead wiring.
+# B.7 removed the factories for every deleted repository. Where each one went:
 #
-# Chunk D is done and added none of them: it seeds the catalogue but exposes nothing over
-# HTTP, so the read surface — and its factories — is G.6's.
+#   get_agent_repo             → get_character_repo
+#   get_w_engine_repo          → get_weapon_repo
+#   get_disc_set_repo          → get_artifact_set_repo
+#   get_enemy_repo             → get_enemy_profile_repo
+#   get_disc_repo              → get_owned_artifact_repo
+#   get_combo_repo             → get_owned_rotation_repo
+#   get_owned_disc_repo        → get_owned_artifact_repo
+#   get_owned_combo_repo       → get_owned_rotation_repo
+#   get_owned_build_repo       → get_owned_build_repo   (unchanged; it never left)
+#
+# Three are genuinely absent, and none of them is waiting on a chunk:
+#
+#   get_attack_repo            ZZZ. Genshin talent tables live on the character row, so
+#                              there is no Attack entity for a repository to serve.
+#   get_owned_buff_preset_repo ZZZ. No Genshin model, and the BRIEF says delete rather than
+#                              alias.
+#   get_build_repo             An *unscoped* build repository. Deliberately not offered:
+#                              every build belongs to someone, and an injectable that hands
+#                              a route an unscoped one is a tenancy bug a single missing
+#                              `Depends` away. `get_owned_build_repo` is the only way in.
+#
+# The standing rule this note was written to carry still holds: a factory comes back with the
+# route that needs it, not before — an injectable for a repository nothing calls is dead
+# wiring.
 
 
 async def get_character_repo(session: DBSession) -> CharacterRepository:
