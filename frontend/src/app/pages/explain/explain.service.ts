@@ -42,6 +42,8 @@ export class ExplainService {
     channel: string,
     scope: string,
     enemyLevel: number,
+    /** The five to explain. Omit to explain what is currently equipped. */
+    artifactIds?: readonly string[],
   ): Promise<ExplainResponse> {
     const { data, error } = await this.api.POST('/api/v1/builds/{build_id}/explain', {
       params: { path: { build_id: buildId } },
@@ -61,6 +63,10 @@ export class ExplainService {
         // different question — "is this proposed set better" — which needs artifacts to
         // propose. There are none here.
         compare_to_equipped: false,
+        // O.4: the optimizer hands back its winner's five, so the server accounts for the
+        // same combination the kernel scored. `null` means "what is equipped", which is what
+        // the explain page asks for.
+        artifact_ids: artifactIds ? [...artifactIds] : null,
         // `resistances` and `default_resistance` carry server defaults, and
         // openapi-typescript marks a field with a default as required on the way in. Sent
         // once here rather than at each call site — the same field-with-a-default trap T.3

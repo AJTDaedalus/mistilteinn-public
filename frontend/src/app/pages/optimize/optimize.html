@@ -121,10 +121,13 @@
 
       <ol class="results">
         @for (row of rows(); track row.rank) {
-          <li>
+          <li [class.chosen]="explained()?.rank === row.rank">
             <span class="rank mono">{{ row.rank }}</span>
             <span class="damage mono">{{ row.damage | number: '1.0-1' }}</span>
             <span class="pieces">{{ row.pieces.join(' · ') }}</span>
+            <button type="button" (click)="explainRow(row)" [disabled]="explaining()">
+              Why?
+            </button>
           </li>
         } @empty {
           <li class="muted">
@@ -132,6 +135,49 @@
           </li>
         }
       </ol>
+
+      @if (pairing(); as paired) {
+        <div class="explanation">
+          <h2>Why #{{ paired.shown.rank }} scores what it scores</h2>
+
+          <!-- Two implementations of one chain, shown together rather than reconciled: the
+               browser's f32 kernel and the server's f64. C.2 measured their divergence at up
+               to 3.4e-07, so a difference of that order is the tolerance doing its job — and
+               a larger one is a real disagreement that should be visible. -->
+          <p class="agreement">
+            <span class="mono">{{ paired.shown.result.damage | number: '1.0-1' }}</span>
+            from the server,
+            <span class="mono">{{ paired.row.damage | number: '1.0-1' }}</span>
+            from the search
+            @if (divergence(); as delta) {
+              <span class="muted mono">· differing by {{ delta | percent: '1.0-6' }}</span>
+            }
+          </p>
+
+          <ul class="stats">
+            @for (stat of paired.shown.result.stats; track stat.quantity) {
+              <li>
+                <span class="quantity">{{ stat.quantity }}</span>
+                <span class="figure mono">{{ stat.sum_of_parts | number: '1.0-4' }}</span>
+                <ul class="parts mono">
+                  @for (source of stat.sources; track $index) {
+                    <li>{{ source }}</li>
+                  }
+                </ul>
+              </li>
+            }
+          </ul>
+
+          @if (paired.shown.result.uncited.length) {
+            <h3>Not included</h3>
+            <ul class="uncited">
+              @for (note of paired.shown.result.uncited; track $index) {
+                <li><strong>{{ note.what }}</strong> — {{ note.why }}</li>
+              }
+            </ul>
+          }
+        </div>
+      }
     }
   }
 </section>

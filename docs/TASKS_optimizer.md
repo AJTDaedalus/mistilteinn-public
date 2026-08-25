@@ -23,10 +23,6 @@ for itself) before O.1.
 
 ---
 
-### [ ] O.0 — Branch setup **(gate)**
-- **Do:** per-task branches off `dev`; merge by PR.
-- **Accept:** `git log --first-parent dev` is merge commits only.
-
 ### [x] O.1 — The search context — **done**
 - **Do:** `POST /builds/{id}/search-context` — base contributions, set bonuses, target,
   character level, damage-bonus quantity, and the hit resolved from a named talent (M.2).
@@ -85,15 +81,40 @@ for itself) before O.1.
   They come from `/artifacts/options` now.
 - Six mutations, six caught.
 
-### [ ] O.4 — Explain the winner
+### [x] O.4 — Explain the winner — **done**
 - **Do:** hand the winning five to `POST /builds/{id}/explain` via `artifact_ids`.
 - **Accept:** the explained damage equals the search's damage for that combination, **within
   the f32/f64 divergence C.2 measured (3.4e-07)** — outside it is a real disagreement between
   two implementations of the chain, not a rounding artefact.
 - **Why it closes the chunk:** a ranking whose winner cannot be explained is a ranking nobody
   can verify. This is the reason M.3 came before it.
+- **Done**, with one correction to what the acceptance claims. These tests mock the server,
+  so they pin the **wiring** — the winner's five going back, a stale explanation dropped, the
+  divergence reported rather than smoothed. The f32/f64 *agreement itself* is pinned by
+  `scripts/verify-kernel-search.mjs`, a standing CI gate that runs the real kernel against
+  `artifact_optimizer.optimize` over committed cases. Claiming these tests prove the agreement
+  would have been the stronger-sounding and weaker statement.
+- **Both numbers are shown, not reconciled.** A difference of ~3.4e-07 is C.2's tolerance
+  doing its job; anything larger is two implementations of one chain disagreeing, and hiding
+  it behind a single figure is the one thing this pairing exists to prevent.
+- Four mutations, four caught.
+
+### [x] O.0 — Branch setup **(gate)** — **held**
+- PRs #78 through #82, and nothing beside them.
 
 ---
+
+## Status
+
+**Complete.** O.0 through O.4, merged as PRs #78–#82. **`src/app/sim/` is imported by a page**
+for the first time.
+
+| | |
+|---|---|
+| `POST /builds/{id}/search-context` | base, set bonuses, target, and the hit resolved from a talent |
+| `GET /artifacts/inventory` | kernel-ready candidates, with unreadable pieces reported |
+| `pages/optimize/` | the search, in the browser, with what it claims shown beside it |
+| "Why?" on any row | the server's account of the same five pieces |
 
 ## Open questions
 

@@ -38,6 +38,46 @@
     }
   }
 
+  .results li.chosen { background: rgb(221 174 33 / 8%); }
+
+  .explanation {
+    margin-top: 1rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid rgb(255 255 255 / 12%);
+    border-radius: 0.4rem;
+
+    h2 { margin: 0 0 0.35rem; font-size: 1rem; }
+    h3 { margin: 0.8rem 0 0.25rem; font-size: 0.9rem; }
+  }
+
+  .agreement { margin: 0 0 0.6rem; font-size: 0.9rem; }
+
+  .stats {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    > li {
+      display: grid;
+      grid-template-columns: minmax(8rem, 14rem) auto;
+      gap: 0.2rem 0.75rem;
+      padding: 0.3rem 0;
+      border-bottom: 1px solid rgb(255 255 255 / 7%);
+    }
+  }
+
+  .parts {
+    grid-column: 1 / -1;
+    margin: 0.15rem 0 0;
+    padding-left: 1rem;
+    font-size: 0.8rem;
+    opacity: 0.75;
+    list-style: none;
+  }
+
+  .uncited { margin: 0; padding-left: 1.1rem; font-size: 0.85rem; }
+  .quantity { font-weight: 600; }
+
   .rank { opacity: 0.5; }
   .damage { font-weight: 700; }
   .pieces { font-size: 0.9rem; opacity: 0.85; }
