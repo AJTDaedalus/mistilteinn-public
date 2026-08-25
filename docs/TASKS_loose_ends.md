@@ -1,0 +1,90 @@
+# TASKS: the loose ends, and icons
+
+**Companion:** `docs/DESIGN_loose_ends.md` — read §1 (what scoping found) before starting.
+**Tier:** Worker unless marked **[Planner]**.
+**Cadence:** one task at a time. After each: tick it here, append to `docs/LOG_mistilteinn.md`,
+**stop and report**.
+
+**Status key:** ` ` todo · `~` in progress · `x` done · `!` blocked (escalation in LOG)
+
+**Standing rules**
+- Verify `git branch --show-current` before every commit. Never commit to `dev` or `main`.
+- **Run each gate standalone and check its exit code.** Not chained behind `&&`, not piped
+  through `tail`. M.2 merged a lint failure because a chained commit short-circuited and the
+  next line printed something that looked like success.
+- Lint with **CI's own argument list**, not `ruff check app/ tests/`.
+- Every new authed route joins the 401 sweep in the same commit; any API change regenerates
+  `frontend/openapi.json` and leaves the contract test green.
+- Prove the negative with `python -m scripts.inject`. **A surviving mutation means the test is
+  wrong until proven otherwise.**
+- Tests that read a row through an API **expire the session first**, and every id needed after
+  `expire_all()` is captured before it.
+
+---
+
+### [ ] N.0 — Branch setup **(gate)**
+- **Do:** per-task branches off `dev`; merge by PR.
+- **Accept:** `git log --first-parent dev` is merge commits only.
+
+### [ ] N.1 — Icons
+- **Do:** a script that reads icon basenames out of the seeded database and vendors the images
+  from `https://static.nanoka.cc/assets/gi/{basename}.webp`, plus the frontend using them for
+  characters, weapons and artifact sets.
+- **Accept:**
+  - **nothing in `app/` fetches at runtime** — the same rule the YuanShen and gcsim snapshots
+    follow, and the reason the crossval harness needs no network;
+  - `seed_db` still runs offline;
+  - a missing or failed icon is **reported and the page still renders** — art is decoration
+    and a broken image must not take a row with it;
+  - images are `.gitignore`d, with the script as the reproduction: 475 build assets are not a
+    repository's job.
+- **Why the basenames are already there:** `characters.icon`, `weapons.icon` and
+  `artifact_sets.icon` were seeded by Chunk D. Nothing was missing; nothing was fetched.
+
+### [ ] N.2 — Widen the multiplier crossval **(closes `TODO(chunk-M)`)**
+- **Do:** capture the **Venti** and **Rosaria** payloads into `tests/fixtures/nanoka_gi/`, via
+  `scripts/capture_nanoka_fixtures.py`'s own `DETAILS` list with a reason per entry.
+- **Accept:** the committed crossval covers the two bugs M.4 actually found — Venti's
+  `{param1}+{param1}` (summed when it is two hits) and Rosaria's skill and burst sharing the
+  label `Skill DMG`; the coverage floor in `test_talent_multipliers.py` rises with it.
+- **Note:** I recorded this as blocked on network and **that was wrong** — I tested
+  `api.hakush.in`, which is not the host. `static.nanoka.cc` answers.
+
+### [ ] N.3 — The GOOD importer's wipe-and-restore **(closes `TODO(chunk-G, G.5)`)**
+- **Do:** snapshot team slot bindings before a `replace` import and restore them after,
+  re-keyed on `Build.character_id`.
+- **Accept:** a `replace` import leaves teams pointing at the same characters; **a slot
+  pointing at a build another owner owns is never touched** — the subtlety the marker says to
+  recover rather than re-derive, from `fairy@76909c4:backend/app/repositories/team.py`; each
+  guarantee CAUGHT under mutation.
+
+### [ ] N.4 — Correct the stale DI marker **(closes `TODO(chunk-F/G)`)**
+- **Do:** rewrite the comment in `app/dependencies.py`.
+- **Accept:** it no longer plans to restore ZZZ repositories. Nine of the twelve it names —
+  agent, attack, w_engine, disc_set, disc, combo and their owned variants — are concepts the
+  BRIEF says to **delete, not defer**, and `get_owned_build_repo` already exists. A marker
+  that plans work which must not happen is worse than no marker.
+
+### [ ] N.5 — Weapon passives **[Planner] — assessment, not implementation**
+- **Do:** record what modelling them requires and what it would cost. **Do not build it.**
+- **Accept:** an ESCALATION block in `docs/LOG_mistilteinn.md` stating the decision the owner
+  has to make: build a conditional modifier model, or accept the gap permanently.
+- **Why it cannot be done blind:** M.4's lever does not reach here. gcsim's multipliers are
+  generated data tables; its weapon passives are executable Go with frame-dependent state
+  (Amos' Bow reads arrow travel time). The stored data has the *numbers* in `param_list` and
+  the **condition** only in English prose. Writing a condition from a reading of that text is
+  the fabrication the citation rule exists to prevent — and it is the failure mode fairy
+  actually suffered.
+
+---
+
+## Open questions
+
+- **OQ-N1 — do icons get committed?** *Answered in DESIGN §2: no.* fairy committed 207 files;
+  Genshin's equivalent is 475, they are reproducible from a script and a seeded database, and
+  a repository is not a CDN.
+- **OQ-N2 — build the modifier model?** **Open, and N.5's whole point.** Owner's call.
+
+## Not in this chunk
+
+The modifier model, enemy and artifact-piece icons, and image processing. DESIGN §6.
