@@ -257,5 +257,9 @@ class GoodImportResponse(BaseModel):
     deleted: int
     rejected: list[ImportRejection] = []
     ok: bool
+    #: Builds left with an empty slot because the piece that filled it is not in the new
+    #: export (N.3). A `replace` re-equips what it can by matching stats — GOOD has no stable
+    #: per-artifact id — and names what it could not.
+    unequipped: list[str] = []
     source: str = ""
     version: int = 0

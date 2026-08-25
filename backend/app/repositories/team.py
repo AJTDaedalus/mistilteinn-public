@@ -6,13 +6,16 @@ team slots by ``Build.agent_id`` so a ``build_mode="clean"`` wipe could restore 
 afterwards) and ``delete_all_null_teams_for_owner`` (which counted cascaded ``Combo`` rows).
 All three referenced columns and models that B.4 deleted.
 
-TODO(chunk-G, G.5): the GOOD importer needs the same wipe-and-restore guarantee, re-keyed
-on ``Build.character_id``. Recover the originals from
-fairy@76909c4:backend/app/repositories/team.py rather than re-deriving them — the subtlety
-worth keeping is that only slots pointing at a build *this owner owns* were snapshotted, so
-a foreign build's slot is never clobbered. The ``_SLOT_COLUMNS`` map and the
-``_require_owner`` guard that made those methods safe went with them; both are one line and
-both are in that file.
+**The GOOD importer has its own wipe-and-restore now (N.3), and it is not this one.** The
+marker here said to re-key these methods on ``Build.character_id``; that was aimed at the
+wrong layer. A GOOD ``replace`` deletes **artifacts**, and teams point at *builds*, which the
+wipe never touches — so team slots come through intact. What it destroys is every
+``Artifact.build_id``.
+
+``good_import_service`` therefore snapshots and restores *those*, matching a re-inserted piece
+to a snapshotted one by stats rather than identity, because GOOD carries no stable
+per-artifact id. The subtlety this note said to keep did carry over: only pieces **this owner
+owns** are snapshotted, so a foreign build's slot is never re-pointed.
 """
 
 from __future__ import annotations

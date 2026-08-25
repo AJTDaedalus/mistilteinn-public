@@ -67,13 +67,22 @@
   every other file is 7.0.51, and rewrote three index files. `--version 7.0.51` fixes it. A
   version bump is a deliberate separate change, not a side effect of adding two characters.
 
-### [ ] N.3 — The GOOD importer's wipe-and-restore **(closes `TODO(chunk-G, G.5)`)**
+### [x] N.3 — The GOOD importer's wipe-and-restore — **done, closes `TODO(chunk-G, G.5)`**
 - **Do:** snapshot team slot bindings before a `replace` import and restore them after,
   re-keyed on `Build.character_id`.
 - **Accept:** a `replace` import leaves teams pointing at the same characters; **a slot
   pointing at a build another owner owns is never touched** — the subtlety the marker says to
   recover rather than re-derive, from `fairy@76909c4:backend/app/repositories/team.py`; each
   guarantee CAUGHT under mutation.
+- **The marker was aimed at the wrong layer.** A `replace` deletes *artifacts*; teams point at
+  *builds*, which it never touches, so team slots come through intact. What it destroys is
+  every `Artifact.build_id` — each build stripped of five pieces with nothing saying why.
+- **Matched on stats, not identity**, because GOOD has no stable per-artifact id — the same
+  fact that makes `mode` mandatory. A piece with no match stays unequipped and is **named**,
+  on the API and on the import page.
+- **fairy's original could not be ported directly**: `remap_slots` relies on
+  `uq_builds_owner_agent` for unambiguity, and T.1a dropped this repo's equivalent by owner
+  decision. Five mutations, five caught.
 
 ### [ ] N.4 — Correct the stale DI marker **(closes `TODO(chunk-F/G)`)**
 - **Do:** rewrite the comment in `app/dependencies.py`.

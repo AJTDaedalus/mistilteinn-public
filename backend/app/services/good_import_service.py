@@ -81,6 +81,10 @@ class StoredImport:
     #: database does not know. Both are refusals; a caller should not have to tell them
     #: apart to show a user what happened.
     rejected: tuple[tuple[int, str], ...]
+    #: Builds left with an empty slot because the piece that filled it is not in the new
+    #: export, each named. Never silent: a user who sold an artifact should be told the slot
+    #: emptied, not discover it later from a damage number.
+    unequipped: tuple[str, ...] = ()
 
     @property
     def ok(self) -> bool:
@@ -137,7 +141,11 @@ async def store_good_import(
         raise ReplaceRefusedError(msg)
 
     deleted = 0
+    equipped_before: list[tuple[str, tuple]] = []
     if mode == REPLACE:
+        # Taken **before** the delete, which is the only moment it exists: `Artifact.build_id`
+        # is on the rows about to go, and every build would otherwise come back stripped.
+        equipped_before = await _equipped_fingerprints(session, owner_id)
         result = await session.execute(
             delete(Artifact).where(Artifact.owner_id == owner_id),
         )
@@ -165,11 +173,93 @@ async def store_good_import(
     ])
     await session.flush()
 
+    unequipped = await _restore_equipment(session, owner_id, equipped_before)
+
     return StoredImport(
         inserted=len(resolved),
         deleted=deleted,
         rejected=tuple(sorted(rejected)),
+        unequipped=unequipped,
     )
+
+
+def _fingerprint(artifact: Artifact) -> tuple:
+    """What makes two artifacts interchangeable.
+
+    GOOD carries **no stable per-artifact id** — the reason `mode` has no default — so a
+    restore cannot match on identity. It matches on what a piece *is*: set, slot, rarity,
+    level, main stat and substats. Two pieces equal in all of those are interchangeable for
+    every purpose this app has, so either will do.
+
+    Substats are sorted, because the export's order is not meaningful and a re-scan may list
+    them differently. Values are rounded to six places for the same reason
+    `sim_context._canonical` rounds: `0.1 + 0.2` and `0.30000000000000004` describe one
+    artifact and must not miss each other.
+    """
+    substats = sorted(
+        (str(sub.get("stat")), round(float(sub.get("value", 0.0)), 6))
+        for sub in (artifact.substats or [])
+        if isinstance(sub, dict)
+    )
+    return (
+        str(artifact.artifact_set_id),
+        artifact.slot,
+        artifact.rarity,
+        artifact.level,
+        artifact.main_stat_type,
+        tuple(substats),
+    )
+
+
+async def _equipped_fingerprints(
+    session: AsyncSession, owner_id: str,
+) -> list[tuple[str, tuple]]:
+    """`(build_id, fingerprint)` for every piece this owner has equipped.
+
+    Owner-scoped, so a foreign build's slot is never recorded and never re-pointed — the
+    subtlety the chunk-G marker said to keep rather than re-derive.
+    """
+    rows = (await session.execute(
+        select(Artifact).where(
+            Artifact.owner_id == owner_id, Artifact.build_id.isnot(None),
+        ),
+    )).scalars().all()
+    return [(str(row.build_id), _fingerprint(row)) for row in rows]
+
+
+async def _restore_equipment(
+    session: AsyncSession, owner_id: str, snapshot: list[tuple[str, tuple]],
+) -> tuple[str, ...]:
+    """Re-equip what the wipe took, and name what could not be restored."""
+    if not snapshot:
+        return ()
+
+    fresh = (await session.execute(
+        select(Artifact).where(
+            Artifact.owner_id == owner_id, Artifact.build_id.is_(None),
+        ),
+    )).scalars().all()
+
+    by_fingerprint: dict[tuple, list[Artifact]] = {}
+    for row in fresh:
+        by_fingerprint.setdefault(_fingerprint(row), []).append(row)
+
+    unequipped: list[str] = []
+    for build_id, fingerprint in snapshot:
+        candidates = by_fingerprint.get(fingerprint)
+        if not candidates:
+            unequipped.append(
+                f"build {build_id} lost its {fingerprint[1]} — no matching piece in the "
+                f"import",
+            )
+            continue
+        # Popped, so one export piece cannot fill two builds' slots. Two builds wearing
+        # identical artifacts each had their own; handing them the same row would leave one
+        # build short and `uq_artifacts_build_slot` would reject the second write anyway.
+        candidates.pop().build_id = build_id
+
+    await session.flush()
+    return tuple(unequipped)
 
 
 async def _sets_by_lookup_key(session: AsyncSession) -> dict[str, str]:

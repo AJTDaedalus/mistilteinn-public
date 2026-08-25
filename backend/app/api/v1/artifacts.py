@@ -292,6 +292,7 @@ async def import_good(
             ImportRejection(index=index, reason=reason) for index, reason in stored.rejected
         ],
         ok=stored.ok,
+        unequipped=list(stored.unequipped),
         source=parsed.source,
         version=parsed.version,
     )

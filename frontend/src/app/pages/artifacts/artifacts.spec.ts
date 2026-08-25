@@ -179,6 +179,27 @@ describe('ArtifactsPage', () => {
     expect(page['importResult']()?.rejected).toEqual(rejected);
   });
 
+  it('keeps the list of build slots a replace could not refill', async () => {
+    // N.3. A `replace` deletes every artifact and re-inserts from the export, re-equipping
+    // what it can by matching stats — GOOD has no stable per-artifact id. A slot it cannot
+    // refill is named, because one that empties silently is discovered later from a damage
+    // number.
+    const unequipped = ['build b1 lost its equip_bracer — no matching piece in the import'];
+    const page = healthy({
+      importGood: vi.fn().mockResolvedValue({
+        inserted: 799, deleted: 800, rejected: [], ok: true, source: 'GO', version: 2,
+        unequipped,
+      }),
+    } as unknown as ArtifactsService);
+    await page['load']();
+    page['mode'] = 'replace';
+    page['payloadText'] = '{}';
+
+    await page['runImport']();
+
+    expect(page['importResult']()?.unequipped).toEqual(unequipped);
+  });
+
   it('blames the file, not the server, for malformed JSON', async () => {
     // A `SyntaxError` from `JSON.parse` never reached the API. Reporting it as an API error
     // would send someone looking in the wrong place.
