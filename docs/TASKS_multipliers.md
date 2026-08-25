@@ -65,12 +65,19 @@
   remain, because DESIGN §7 makes them a non-goal — nothing here changes what the damage chain
   knows. Five mutations, five caught.
 
-### [ ] M.3 — The explain page
+### [x] M.3 — The explain page — **done**
 - **Do:** pick a build, pick a talent and which of its hits, see the damage **and its
   derivation** — which `/builds/{id}/explain` already returns and nothing displays.
 - **Accept:** in the nav; the multipliers that produced the number are shown, not just the
   total (DESIGN §1 A6 — a number must be able to explain itself); a failed load surfaced
   rather than rendered as a zero.
+- **Done.** `pages/explain/`, in the nav. The talent is **named, never typed** — M.2 resolves
+  the multiplier from the character's own table, and a number entered on the page would be a
+  second source for something the server already knows. The derivation is the page: every
+  stat with the parts that summed to it and where each came from, plus what the figure does
+  **not** include.
+- Eight mutations, eight caught after two survived and exposed tests aimed at the page when
+  the request body is built in the service.
 
 ### [x] M.4 — Crossval the parse against gcsim — **done, and brought forward**
 - **Do:** compare parsed multipliers against gcsim's generated `zz_*.dm.go` tables, over the

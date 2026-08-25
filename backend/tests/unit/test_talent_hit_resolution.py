@@ -20,13 +20,13 @@ does not state, which is the whole failure this parser was written to avoid.
 from __future__ import annotations
 
 import pytest
+
+from app.models.enums import TalentType
 from app.services.talent_hits import (
     TalentHitUnavailableError,
     available_hits,
     resolve_talent_hit,
 )
-
-from app.models.enums import TalentType
 
 
 class _Scaling:

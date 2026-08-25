@@ -1,0 +1,78 @@
+.explain {
+  padding: 1rem;
+
+  header { margin-bottom: 1rem; h1 { margin: 0 0 0.25rem; } }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.9rem;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border: 1px solid rgb(255 255 255 / 12%);
+    border-radius: 0.4rem;
+  }
+
+  label { display: flex; gap: 0.4rem; align-items: center; }
+  input[type='number'] { width: 4.5rem; }
+
+  .result {
+    margin-top: 1rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid rgb(255 255 255 / 12%);
+    border-radius: 0.4rem;
+
+    h2 { margin: 1rem 0 0.35rem; font-size: 1rem; }
+    h2:first-of-type { margin-top: 0.5rem; }
+  }
+
+  .total {
+    display: flex;
+    gap: 0.6rem;
+    align-items: baseline;
+    margin: 0;
+
+    .label { opacity: 0.7; }
+    .figure { font-size: 1.6rem; font-weight: 700; }
+  }
+
+  .stats {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    > li {
+      display: grid;
+      grid-template-columns: minmax(8rem, 14rem) auto;
+      gap: 0.2rem 0.75rem;
+      padding: 0.3rem 0;
+      border-bottom: 1px solid rgb(255 255 255 / 7%);
+    }
+  }
+
+  .parts {
+    grid-column: 1 / -1;
+    margin: 0.15rem 0 0;
+    padding-left: 1rem;
+    font-size: 0.8rem;
+    opacity: 0.75;
+    list-style: none;
+  }
+
+  .sets, .uncited {
+    margin: 0;
+    padding-left: 1.1rem;
+    font-size: 0.9rem;
+
+    li { margin-bottom: 0.2rem; }
+  }
+
+  .sets { list-style: none; padding-left: 0; }
+
+  .quantity { font-weight: 600; }
+  .detail { opacity: 0.8; }
+  .hint { margin: 0.5rem 0 0; font-size: 0.85rem; opacity: 0.75; }
+  .muted { opacity: 0.7; }
+  .error { color: #ff8080; }
+  .sim { margin: 0; }
+}
