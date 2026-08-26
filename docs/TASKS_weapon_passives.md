@@ -8,7 +8,11 @@ measured cost) before starting. **Decision:** `docs/DECISIONS.md`, 2026-08-26.
 
 **Status key:** ` ` todo · `~` in progress · `x` done · `!` blocked (escalation in LOG)
 
-> **Status: all seven tasks done.** Merged as PRs #92 (W.0–W.5) and #93 (W.6).
+> **Status: all seven tasks done.** W.0–W.5 merged as PR #92. **W.6 was pushed straight to
+> `dev` as 49ab563 with no PR** — a standing-rule violation, kept by owner decision because
+> the content had passed every gate and reverting a shared branch costs more than it buys.
+> Recorded rather than tidied away: a plan file that quietly renumbers a mistake into a PR
+> that never existed is a worse artefact than one that says what happened.
 >
 > **`rg "TODO\(chunk-"` now counts zero**, from nine at the start of `TASKS_loose_ends.md`.
 > The two that survived that sweep were these, and they are retired because the work they
