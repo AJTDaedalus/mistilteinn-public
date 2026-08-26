@@ -128,7 +128,22 @@ describe('rank', () => {
     expect(input.map((x) => x.weaponId)).toEqual(['lo', 'hi']);
   });
 
+  it('reports the shared iteration count when every row agrees', () => {
+    expect(rank([c({ weaponId: 'a' }), c({ weaponId: 'b' })]).iterations).toBe(100);
+  });
+
+  it('reports null rather than one row’s count when the counts differ', () => {
+    // A cached run beside a fresh one is exactly how mixed counts arise. Stamping the first
+    // row's count on the whole ranking is one number describing several things.
+    const out = rank([
+      c({ weaponId: 'a', iterations: 100 }),
+      c({ weaponId: 'b', iterations: 25 }),
+    ]);
+    expect(out.iterations).toBeNull();
+    expect(out.rows.map((r) => r.iterations).sort((x, y) => x - y)).toEqual([25, 100]);
+  });
+
   it('handles an empty candidate list without inventing a ranking', () => {
-    expect(rank([])).toEqual({ rows: [], fullyOrdered: true, iterations: 0 });
+    expect(rank([])).toEqual({ rows: [], fullyOrdered: true, iterations: null });
   });
 });

@@ -44,7 +44,17 @@ export interface Ranking {
   rows: RankedRow[];
   /** True when every adjacent pair is separated — the ranking is fully ordered. */
   fullyOrdered: boolean;
-  iterations: number;
+  /**
+   * The iteration count behind every row, or **null when they differ**.
+   *
+   * Null rather than the first row's, which is what this reported at first. Mixed counts are
+   * not hypothetical — a cached run and a fresh one are exactly how they arise — and a single
+   * number stamped on a ranking assembled from several is one number describing several
+   * things. Each row carries its own `iterations` regardless, and `areSeparated` already uses
+   * the per-candidate standard error, so the comparison itself is sound either way. It is
+   * only the summary that could lie.
+   */
+  iterations: number | null;
 }
 
 /**
@@ -96,9 +106,6 @@ export function rank(candidates: readonly RankedCandidate[], z = 2): Ranking {
   const fullyOrdered = rows.every((row, i) =>
     i === 0 || areSeparated(rows[i - 1], row, z),
   );
-  return {
-    rows,
-    fullyOrdered,
-    iterations: candidates.length > 0 ? candidates[0].iterations : 0,
-  };
+  const counts = new Set(candidates.map((c) => c.iterations));
+  return { rows, fullyOrdered, iterations: counts.size === 1 ? [...counts][0] : null };
 }
