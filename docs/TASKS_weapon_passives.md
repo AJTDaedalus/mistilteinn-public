@@ -46,7 +46,7 @@ measured cost) before starting. **Decision:** `docs/DECISIONS.md`, 2026-08-26.
   needs the wasm has it. **Locally it may be absent**, and the spec must then fail loudly or
   be skipped with a reason `ci_local` can see — *a skipped check BLOCKS; it is never a pass.*
 
-### [ ] W.2 — Substituting a candidate weapon into a compiled config
+### [x] W.2 — Substituting a candidate weapon into a compiled config — **done**
 - **Do:** given a compiled rotation config and a candidate weapon, produce the config with
   that weapon in place of the worn one.
 - **Accept:** round-trip tests — the emitted config names the candidate, at the candidate's
@@ -55,7 +55,7 @@ measured cost) before starting. **Decision:** `docs/DECISIONS.md`, 2026-08-26.
   **flat ranking that reads as "these weapons are equivalent"** rather than as a bug. This is
   the single most dangerous failure in the chunk.
 
-### [ ] W.3 — Prove the substitution is not silently a no-op
+### [x] W.3 — Prove the substitution is not silently a no-op — **done**
 - **Do:** a test that two different candidates produce two different configs **and two
   different DPS**, and a mutation that makes the substitution a no-op.
 - **Accept:** `python -m scripts.inject` reports the no-op mutation **caught**. A test that

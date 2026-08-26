@@ -12,7 +12,7 @@ import types
 
 import pytest
 
-from app.services.gcsim_config import GcsimConfigError, build_config
+from app.services.gcsim_config import GcsimConfigError, SubstituteWeapon, build_config
 from app.services.gcsim_keys import GcsimKeyError
 
 
@@ -131,3 +131,92 @@ def test_an_evenly_resistant_enemy_is_emitted():
     config = build_config(_build(), actions=["burst"], enemy=enemy)
 
     assert "target lvl=100 resist=0.1 pos=0,1;" in config
+
+
+# ── W.2/W.3 — substituting a candidate weapon ────────────────────────────────
+#
+# **W.3's entire purpose is the second test below.** A substitution that silently keeps the
+# worn weapon produces a flat ranking — every candidate scoring the worn weapon's number —
+# and that reads as "these weapons are equivalent" rather than as a bug. A user would believe
+# it. So the assertion is not merely "the candidate appears": it is that two *different*
+# candidates produce two *different* configs, which a no-op cannot satisfy.
+
+
+def _candidate(name="The Stringless", level=90, refinement=1):
+    return SubstituteWeapon(
+        weapon=types.SimpleNamespace(name=name), level=level, refinement=refinement,
+    )
+
+
+def test_the_candidate_replaces_the_worn_weapon():
+    config = build_config(_build(), actions=["burst"], substitute_weapon=_candidate())
+
+    assert 'weapon="thestringless"' in config
+    assert "mistsplitterreforged" not in config
+
+
+def test_two_candidates_produce_two_different_configs():
+    """The no-op check. If substitution does nothing these are byte-identical."""
+    a = build_config(_build(), actions=["burst"], substitute_weapon=_candidate("The Stringless"))
+    b = build_config(_build(), actions=["burst"], substitute_weapon=_candidate("Rust"))
+
+    assert a != b
+    assert 'weapon="thestringless"' in a
+    assert 'weapon="rust"' in b
+
+
+def test_only_the_weapon_line_changes():
+    """Everything else must be held fixed, or the comparison is not about weapons.
+
+    A substitution that perturbed the character, artifacts or target would produce a ranking
+    of *configs* while claiming to be a ranking of weapons.
+    """
+    worn = build_config(_build(), actions=["burst"]).splitlines()
+    swapped = build_config(
+        _build(), actions=["burst"], substitute_weapon=_candidate(),
+    ).splitlines()
+
+    assert len(worn) == len(swapped)
+    differing = [i for i, (x, y) in enumerate(zip(worn, swapped, strict=True)) if x != y]
+    assert len(differing) == 1
+    assert "weapon=" in worn[differing[0]]
+
+
+def test_the_candidates_level_and_refinement_are_emitted():
+    config = build_config(
+        _build(), actions=["burst"], substitute_weapon=_candidate(level=70, refinement=5),
+    )
+
+    assert "lvl=70/90 refine=5;" in config
+
+
+def test_a_candidate_is_emitted_even_when_the_build_wears_nothing():
+    """"Compare these against nothing worn" is a coherent question.
+
+    Falling through to the no-weapon branch would answer a different one — and would do it by
+    emitting a config with no weapon line at all, which gcsim accepts.
+    """
+    config = build_config(
+        _build(weapon=None), actions=["burst"], substitute_weapon=_candidate(),
+    )
+
+    assert 'weapon="thestringless"' in config
+
+
+def test_without_a_candidate_the_worn_weapon_is_still_used():
+    """The default path must not regress: this is what every existing caller does."""
+    config = build_config(_build(), actions=["burst"])
+
+    assert 'weapon="mistsplitterreforged"' in config
+
+
+def test_a_candidate_gcsim_does_not_implement_refuses():
+    """The refusal propagates rather than the candidate being dropped.
+
+    A dropped candidate would leave a config with no weapon line — a weaker build simulated
+    successfully, ranked, and presented as that weapon's score.
+    """
+    with pytest.raises(GcsimKeyError):
+        build_config(
+            _build(), actions=["burst"], substitute_weapon=_candidate("Not A Real Weapon"),
+        )
