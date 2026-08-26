@@ -40,9 +40,11 @@ measured cost) before starting. **Decision:** `docs/DECISIONS.md`, 2026-08-26.
   `"error"` in the returned string, so a truthiness check inverts it; and `iteration=N` does
   **not** make `simulate()` run N times — `simulate()` is one iteration and the caller loops.
 - **Accept:** a spec runs the committed `ayaka_normal_1_nocrit.txt` fixture and matches
-  `108.53039935232651`, the same anchor the CI gate uses. **The wasm is gitignored**, so the
-  spec must skip-with-a-loud-reason or the lane must build it — *a skipped check BLOCKS; it is
-  never a pass.* Decide which in the PR, and say which.
+  `108.53039935232651`, the same anchor the CI gate uses.
+- **The gitignored wasm is already handled** — do not re-solve it. The frontend lane runs
+  `npm run gcsim:build` (test.yml:219) *before* `npm test` (test.yml:297), so a spec that
+  needs the wasm has it. **Locally it may be absent**, and the spec must then fail loudly or
+  be skipped with a reason `ci_local` can see — *a skipped check BLOCKS; it is never a pass.*
 
 ### [ ] W.2 — Substituting a candidate weapon into a compiled config
 - **Do:** given a compiled rotation config and a candidate weapon, produce the config with

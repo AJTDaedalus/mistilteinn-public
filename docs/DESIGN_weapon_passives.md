@@ -63,7 +63,9 @@ Almost all of it is built. This is a wiring chunk, not a from-scratch one.
 
 The missing piece is small and has a working reference: `verify-gcsim-wasm.mjs` already drives
 the full API — `validateConfig` → `initializeAggregator` → `initializeWorker` →
-`aggregate(simulate())` → `flush`. **It is 66 lines and CI runs it every build.**
+`aggregate(simulate())` → `flush`. **It is 66 lines, and CI runs it** — the frontend lane builds the wasm
+(`npm run gcsim:build`) and verifies it (`npm run gcsim:verify`) before `npm test`, so a spec
+in that lane can rely on the artifact being there.
 
 **Read it before writing the runner.** Two of its details are non-obvious and both cost time
 during planning: `validateConfig` returns the *parsed config* on success and signals failure
