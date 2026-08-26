@@ -25,7 +25,15 @@ reason anyone equips it, and it will do so with a precise-looking number.
 So `WeaponComparison` carries `unmodelled_passives`: every candidate whose refinement row has
 text, named, with the text itself. A caller that hides that list is publishing a ranking this
 module does not claim to have made. It is not a warning about precision — the ordering itself
-can be wrong. `TODO(chunk-H)`.
+can be wrong.
+
+**There is a second tier that does apply them, and this module stays as it is.** W.6 added
+`POST /builds/{id}/compare-weapons/gcsim`, which emits configs the browser runs through gcsim
+— the authority on passives, since deriving 237 conditions from refinement prose is the
+fabricated-citation failure fairy actually suffered. That tier costs minutes; this one costs
+milliseconds and is honest about what it left out, so **both are offered** (OQ-W4). Deleting
+a fast honest answer because a slow better one exists is a downgrade for anyone who wanted
+the fast one.
 
 ## And the other half of §3.5, deliberately not attempted here
 

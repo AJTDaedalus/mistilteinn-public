@@ -56,6 +56,11 @@ export const routes: Routes = [
     canMatch: [requireApproved],
   },
   {
+    path: 'compare',
+    loadComponent: () => import('./pages/compare/compare').then((m) => m.ComparePage),
+    canMatch: [requireApproved],
+  },
+  {
     path: 'explain',
     loadComponent: () => import('./pages/explain/explain').then((m) => m.ExplainPage),
     canMatch: [requireApproved],

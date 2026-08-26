@@ -459,6 +459,69 @@ class CompareWeaponsRequest(BaseModel):
     weapon_ids: list[str] = Field(..., min_length=1)
 
 
+class GcsimComparisonRequest(BaseModel):
+    """Body for `POST /builds/{id}/compare-weapons/gcsim` (W.6).
+
+    **`rotation_id` is required and has no default.** A rotation belongs to a *team*, and a
+    build can sit in several teams each with several rotations, so there is no rotation this
+    endpoint could pick on its own. Inventing one would make the ranking an answer about a
+    rotation the user never wrote — which is the same objection that closed Chunk I's
+    optimization half.
+    """
+
+    rotation_id: str
+    #: Candidate weapons by catalogue id. Unlike the fast tier this does **not** silently add
+    #: the worn weapon: it is returned separately as `equipped`, because a simulated baseline
+    #: costs a full gcsim run and a caller comparing against nothing worn should not pay for
+    #: one it did not ask for.
+    weapon_ids: list[str] = Field(..., min_length=1)
+    #: Monte Carlo iterations per candidate. The cost is linear and real — ~4.9 s per config
+    #: per 100 iterations, measured — and the standard error falls as 1/sqrt(n), so this trades
+    #: wall time for separability. See `docs/DESIGN_weapon_passives.md` §4.
+    iterations: int = Field(100, ge=1, le=1000)
+    #: Which enemy to simulate against, or null for gcsim's default target. A rotation carries
+    #: no enemy of its own — it is a team's action list, not a scenario — so this is the
+    #: caller's to state rather than something to be inferred from the rotation.
+    enemy_id: str | None = None
+
+
+class GcsimCandidateConfig(BaseModel):
+    """One candidate, and the config that simulates it."""
+
+    weapon_id: str
+    name: str
+    #: Complete gcsim config text. The browser runs this; the server never does.
+    config: str
+
+
+class RefusedCandidate(BaseModel):
+    """A candidate that could not be turned into a config, and why.
+
+    **Reported, never dropped.** A silently omitted candidate is a ranking that is missing a
+    weapon the user asked about, presented as though it had considered it — and the omission
+    is invisible precisely because the result still looks like a complete answer.
+    """
+
+    weapon_id: str
+    reason: str
+
+
+class GcsimComparisonConfigs(BaseModel):
+    """What the browser needs to run a gcsim weapon comparison.
+
+    **The server emits configs; it does not simulate.** `RESEARCH_gcsim_embed.md` §6 put gcsim
+    in the browser, and W.4 measured a full sword pool at ~96 s across four workers — that is
+    a job on the user's machine, not a request a server should hold open.
+    """
+
+    #: The worn weapon's config, or null when the build has no weapon. Rendered separately
+    #: from the candidates because it is the thing they are being compared *to*.
+    equipped: GcsimCandidateConfig | None
+    candidates: list[GcsimCandidateConfig]
+    refused: list[RefusedCandidate] = []
+    iterations: int
+
+
 class WeaponScoreRead(BaseModel):
     """One weapon's damage in this build, and what it changed."""
 

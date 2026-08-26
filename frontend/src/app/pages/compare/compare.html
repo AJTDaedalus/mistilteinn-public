@@ -1,0 +1,124 @@
+<h1>Compare weapons</h1>
+
+<p class="eyebrow">
+  Simulated with gcsim, in this browser. The fast comparison ranks on base ATK and the
+  substat and cannot apply weapon passives — for most weapons the passive is the reason to
+  equip it, so that ordering can be wrong rather than merely imprecise.
+</p>
+
+@if (loading()) {
+  <p>Loading…</p>
+} @else if (error()) {
+  <p role="alert">{{ error() }}</p>
+} @else {
+  <form (ngSubmit)="run()">
+    <label>
+      Build
+      <select [(ngModel)]="buildId" name="build">
+        @for (b of builds(); track b.id) {
+          <option [value]="b.id">{{ b.character?.name ?? b.id }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      Rotation
+      <select [(ngModel)]="rotationId" name="rotation">
+        @for (r of rotations(); track r.id) {
+          <option [value]="r.id">{{ r.name }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      Candidate weapon ids
+      <input [(ngModel)]="weaponIds" name="weapons" placeholder="comma separated" />
+    </label>
+
+    <label>
+      Iterations
+      <input type="number" [(ngModel)]="iterations" name="iterations" min="1" max="1000" />
+    </label>
+
+    <button type="submit" [disabled]="!canRun()">
+      {{ running() ? 'Simulating…' : 'Simulate' }}
+    </button>
+  </form>
+
+  @if (rotations().length === 0) {
+    <p role="note">
+      You have no rotations. A weapon comparison simulates a rotation, and there is no
+      rotation to pick on your behalf — one chosen for you would rank weapons against
+      something you never wrote.
+      <a routerLink="/rotations">Author one first.</a>
+    </p>
+  }
+
+  @if (progress(); as p) {
+    <p class="progress">
+      {{ p.done }} / {{ p.total }} simulated@if (p.current) {, running {{ p.current }}}
+    </p>
+  }
+
+  @if (actionError()) {
+    <p role="alert">{{ actionError() }}</p>
+  }
+
+  @if (ranking(); as result) {
+    @if (!result.fullyOrdered) {
+      <p role="note">
+        This run did not separate every weapon. Rows marked below are within the simulation's
+        own error of each other — their order is not a result. Raise the iteration count to
+        narrow it.
+      </p>
+    }
+
+    <table>
+      <caption>
+        @if (result.iterations !== null) {
+          {{ result.iterations }} iterations each
+        } @else {
+          mixed iteration counts — each row states its own
+        }
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Weapon</th>
+          <th scope="col">DPS</th>
+          <th scope="col">± standard error</th>
+          <th scope="col">Not separated from</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of result.rows; track row.weaponId) {
+          <tr [class.not-separated]="row.notSeparatedFrom.length > 0">
+            <td>{{ row.rank }}</td>
+            <td>{{ row.name }}</td>
+            <td class="mono">{{ row.dpsMean | number: '1.0-1' }}</td>
+            <td class="mono">
+              {{ row.standardError | number: '1.0-1' }}
+              ({{ row.standardError / row.dpsMean | percent: '1.1-1' }})
+            </td>
+            <td>{{ notSeparatedNames(row.notSeparatedFrom) || '—' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+
+  @if (configs()?.refused?.length) {
+    <section class="refused">
+      <h2>Not compared</h2>
+      <p>
+        Reported rather than dropped — a missing candidate would leave a ranking that looks
+        complete while omitting a weapon you asked about.
+      </p>
+      <ul>
+        @for (r of configs()!.refused; track r.weapon_id) {
+          <li>{{ r.weapon_id }} — {{ r.reason }}</li>
+        }
+      </ul>
+    </section>
+  }
+}

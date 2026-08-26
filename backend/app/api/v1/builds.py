@@ -32,6 +32,7 @@ from app.dependencies import (
     get_enemy_profile_repo,
     get_owned_artifact_repo,
     get_owned_build_repo,
+    get_owned_rotation_repo,
     get_owned_sim_run_repo,
     get_weapon_repo,
 )
@@ -43,6 +44,7 @@ from app.repositories.artifact import ArtifactRepository
 from app.repositories.build import BuildRepository
 from app.repositories.character import CharacterRepository
 from app.repositories.enemy import EnemyProfileRepository
+from app.repositories.rotation import RotationRepository
 from app.repositories.sim_run import SimRunRepository
 from app.repositories.weapon import WeaponRepository
 from app.schemas.build import (
@@ -57,10 +59,14 @@ from app.schemas.build import (
     EnemySpec,
     ExplainRequest,
     ExplainResponse,
+    GcsimCandidateConfig,
+    GcsimComparisonConfigs,
+    GcsimComparisonRequest,
     HitSpec,
     KernelHit,
     KernelSetBonus,
     KernelTarget,
+    RefusedCandidate,
     SearchContextRead,
     SetEffectRead,
     SimulationNoteRead,
@@ -80,7 +86,13 @@ from app.services import (
 )
 from app.services.build_assembler import BuildAssemblyError
 from app.services.damage_calculator import BuildEvaluator, Enemy, enemy_from_profile
-from app.services.gcsim_keys import pinned_commit
+from app.services.gcsim_config import (
+    GcsimConfigError,
+    SubstituteWeapon,
+    build_config,
+)
+from app.services.gcsim_keys import GcsimKeyError, pinned_commit
+from app.services.rotation_compiler import RotationCompileError, compile_rotation
 from app.services.stat_calculator import StatInputError, _quantity_for_prop
 from app.services.talent_hits import (
     TalentHitUnavailableError,
@@ -527,16 +539,17 @@ async def compare_weapons(
     **Two limits are reported rather than buried, because both can change the answer and not
     merely its precision:**
 
-    - **Weapon passives are not applied.** They are imported into `weapon_refinements` but
-      turning text into modifiers is Chunk H's job. For weapons that gap is frequently the
-      entire reason to equip one, so `unmodelled_passives` names every candidate that has a
-      passive and the response's `caveat` says the ordering may be wrong.
+    - **Weapon passives are not applied here.** They are imported into `weapon_refinements`,
+      and 242 of 260 weapons carry one while 5 are expressible in this chain — so the gap is
+      frequently the entire reason to equip a weapon. `unmodelled_passives` names every
+      candidate that has a passive and the response's `caveat` says the ordering may be wrong.
+      **`POST /compare-weapons/gcsim` is the tier that does apply them** (W.6): it costs
+      minutes rather than milliseconds, so this endpoint stays rather than being replaced.
     - **Artifacts are held fixed.** DESIGN §3.5's fuller version searches per weapon and
       compares the winners, but searches belong on the client. This answers "which weapon is
       better in the build I have", which is a cheaper and different question — a weapon
       wanting a different artifact set loses a comparison it would win with its own pieces.
 
-    `TODO(chunk-H)` for the first.
     """
     build = await _require_full_build(builds, build_id)
     if build.weapon is None:
@@ -853,3 +866,117 @@ async def _enemy(spec: EnemySpec, repo: EnemyProfileRepository) -> Enemy:
             },
         )
     return enemy_from_profile(level=spec.level, resistances=spec.resolved_resistances())
+
+
+@router.post(
+    "/{build_id}/compare-weapons/gcsim", response_model=GcsimComparisonConfigs,
+)
+@limiter.limit(WRITE_LIMIT)
+async def compare_weapons_gcsim_configs(
+    request: Request,
+    build_id: str,
+    body: GcsimComparisonRequest,
+    builds: Annotated[BuildRepository, Depends(get_owned_build_repo)],
+    rotations: Annotated[RotationRepository, Depends(get_owned_rotation_repo)],
+    weapons: Annotated[WeaponRepository, Depends(get_weapon_repo)],
+    enemies: Annotated[EnemyProfileRepository, Depends(get_enemy_profile_repo)],
+) -> GcsimComparisonConfigs:
+    """The gcsim configs for a weapon comparison — one per candidate (W.6).
+
+    **This is the tier that knows weapon passives.** `POST /compare-weapons` ranks on base ATK
+    and the substat and reports `unmodelled_passives`, which is not a precision caveat: 242 of
+    260 weapons carry a passive and 5 are expressible in the Chunk F chain, so a stat-stick can
+    outrank the weapon whose passive is the entire reason to equip it. gcsim implements them.
+
+    **The server emits configs and does not simulate.** `RESEARCH_gcsim_embed.md` §6 put gcsim
+    in the browser, and W.4 measured a full sword pool at ~96 s across four workers — a job on
+    the user's machine, not a request a server holds open. The browser runs these through
+    `sim/gcsim.ts` and ranks them with `sim/weapon-ranking.ts`, which reports which pairs the
+    run could **not** separate.
+
+    **A candidate gcsim cannot key is refused by name, never dropped.** A silently omitted
+    candidate produces a ranking missing a weapon the user asked about, and the omission is
+    invisible because the result still looks like a complete answer.
+    """
+    build = await _require_full_build(builds, build_id)
+    if build.character is None:
+        raise HTTPException(
+            status_code=422, detail="this build has no character; there is nothing to simulate",
+        )
+
+    rotation = await rotations.get_by_id(body.rotation_id)
+    if rotation is None:
+        raise HTTPException(status_code=404, detail="rotation not found")
+    roster = await rotations.character_rows(rotation.team_id)
+    if build.character.nanoka_id not in roster:
+        # The rotation never acts on this build's character, so every candidate would score
+        # the same team damage with this build standing still — a flat ranking that reads as
+        # "these weapons are equivalent".
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"rotation {body.rotation_id} is for a team that does not include "
+                f"{build.character.name}, so it never acts on this build. Comparing weapons "
+                f"against it would rank them all identically."
+            ),
+        )
+    try:
+        action_block = compile_rotation(rotation.steps or [], roster)
+    except RotationCompileError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    # A rotation carries no enemy — it is a team's action list, not a scenario — so the
+    # caller names one or gcsim's default target is used. The first draft reached for
+    # `rotation.enemy_profile_id` behind a `getattr` default, which would have been dead code
+    # silently choosing the default forever.
+    enemy = await enemies.get_by_id(body.enemy_id) if body.enemy_id else None
+    if body.enemy_id and enemy is None:
+        raise HTTPException(status_code=404, detail=f"enemy profile {body.enemy_id} not found")
+
+    def _config(substitute: SubstituteWeapon | None) -> str:
+        return build_config(
+            build,
+            substitute_weapon=substitute,
+            action_block=action_block,
+            enemy=enemy,
+            iterations=body.iterations,
+        )
+
+    equipped = None
+    if build.weapon is not None:
+        try:
+            equipped = GcsimCandidateConfig(
+                weapon_id=build.weapon.id, name=build.weapon.name, config=_config(None),
+            )
+        except (GcsimKeyError, GcsimConfigError) as exc:
+            # The worn weapon failing is not a candidate failing: there is no baseline, and a
+            # comparison with no baseline is a list of numbers.
+            raise HTTPException(
+                status_code=422,
+                detail=f"the equipped weapon cannot be simulated at the pin: {exc}",
+            ) from exc
+
+    candidates: list[GcsimCandidateConfig] = []
+    refused: list[RefusedCandidate] = []
+    for weapon_id in body.weapon_ids:
+        weapon = await weapons.get_by_id(weapon_id)
+        if weapon is None:
+            refused.append(RefusedCandidate(weapon_id=weapon_id, reason="not in the catalogue"))
+            continue
+        try:
+            config = _config(
+                SubstituteWeapon(weapon=weapon, level=build.weapon_level, refinement=1),
+            )
+        except (GcsimKeyError, GcsimConfigError) as exc:
+            refused.append(RefusedCandidate(weapon_id=weapon_id, reason=str(exc)))
+            continue
+        candidates.append(
+            GcsimCandidateConfig(weapon_id=weapon_id, name=weapon.name, config=config),
+        )
+
+    return GcsimComparisonConfigs(
+        equipped=equipped,
+        candidates=candidates,
+        refused=refused,
+        iterations=body.iterations,
+    )

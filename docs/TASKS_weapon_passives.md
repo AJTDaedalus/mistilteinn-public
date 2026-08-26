@@ -8,6 +8,16 @@ measured cost) before starting. **Decision:** `docs/DECISIONS.md`, 2026-08-26.
 
 **Status key:** ` ` todo · `~` in progress · `x` done · `!` blocked (escalation in LOG)
 
+> **Status: all seven tasks done.** Merged as PRs #92 (W.0–W.5) and #93 (W.6).
+>
+> **`rg "TODO\(chunk-"` now counts zero**, from nine at the start of `TASKS_loose_ends.md`.
+> The two that survived that sweep were these, and they are retired because the work they
+> named exists — not re-pointed, and not deleted while still open.
+>
+> **OQ-W1 (iteration count) and OQ-W2 (a worker pool) are deliberately still open.** Both
+> need measurements over real weapon runs and a real browser, and the page ships serial with
+> a user-set count rather than guessing them.
+
 **Standing rules**
 
 - Verify `git branch --show-current` before every commit. Never commit to `dev` or `main`.
@@ -76,7 +86,7 @@ measured cost) before starting. **Decision:** `docs/DECISIONS.md`, 2026-08-26.
 - **Then answer OQ-W1** — pick the iteration count from the measured stability of the ranking
   over real weapons, not from the table in DESIGN §4.
 
-### [ ] W.6 — Wire it to the page, and retire the markers
+### [x] W.6 — Wire it to the page, and retire the markers — **done**
 - **Do:** the comparison page offers the gcsim tier as an explicit second request with
   progress. Keep the existing `/compare-weapons` (OQ-W4) — it answers the cheap question
   honestly in milliseconds.
