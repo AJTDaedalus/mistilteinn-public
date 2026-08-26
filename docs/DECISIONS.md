@@ -501,3 +501,41 @@ and `verify_seed.FIXTURE_VERSION` all name the same version and
 `tests/unit/test_capture_pinning.py` fails if they stop agreeing. The trap it guards is real —
 in N.2 a capture run **without** `--version` silently followed upstream, pulling two characters
 at 7.0.52 into a 7.0.51 tree and rewriting three index files, one with real content changes.
+
+## Weapon passives are ported from gcsim's Go, not simulated (2026-08-26)
+
+**Owner decision**, superseding the delivery half of the 2026-08-26 gcsim-tier decision above.
+That one stands for the **comparison page**, which ships and works. This one is about the
+**optimizer**, which the gcsim tier was never going to reach.
+
+**The measurement that forced it** is `docs/RESEARCH_gcsim_speed.md`: **86 % of a gcsim
+iteration is the frame-by-frame combat simulation**, so the stacked ceiling on making it
+faster is about **4×** — a worker pool plus, optimistically, stripping the stats collectors.
+A gcsim config at 100 iterations is **~8,900× `SECONDS_PER_COMBINATION`**. Four orders of
+magnitude are needed and one is available, so `RESEARCH_gcsim_embed.md` §6's ruling is not
+going to be overturned by tuning.
+
+Meanwhile the optimizer has the gap the comparison page just closed, and **does not report
+it**. `weapon_refinements` is read by exactly one module, only to report. `Redhorn
+Stonethresher` makes DEF genuinely valuable and **the artifact search will never once consider
+DEF**, returning a confident five-piece answer that is wrong with nothing suggesting doubt.
+
+**So the passives are ported into the Chunk F chain — from gcsim's Go source.**
+
+**Why this is not the option N.5 rejected.** N.5 rejected a conditional modifier model on
+**fabrication risk**: deriving 237 conditions from English refinement prose is the failure
+fairy actually suffered. **Reading gcsim's Go is a primary source.** The citation rule objects
+to inventing mechanics from a tooltip, not to porting an authoritative pinned implementation —
+and unlike a tooltip reading, a port can be *proved*: `tests/crossval` recomputes a committed
+gcsim run, so each ported passive is checked numerically rather than trusted.
+
+**Why the timeline objection is smaller than N.5 argued.** N.5 said durations and cooldowns
+only mean something on a timeline, and this repo compiles rotations rather than simulating
+them. But **the rotation is authored and known**: uptime for a duration or a cooldown can be
+evaluated against a compiled action list. Monte Carlo is not required to know when a burst
+happens in a rotation the user wrote.
+
+**What is still out of reach, and stays out:** passives conditioned on **target state** —
+aura, enemy type, weak spots. `KernelTarget` is level, resistance, DEF reduction and DEF
+ignore, so those are unaskable questions rather than unported ones, and growing it is not in
+this decision.
