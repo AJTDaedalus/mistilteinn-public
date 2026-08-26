@@ -140,7 +140,18 @@ def build_config(
         f"cons={build.constellation_level} talent={_talents(build)};"
     )
     lines = [
-        f"options iteration={iterations} duration={duration} swap_delay=0;",
+        # **No `swap_delay`.** It is omitted rather than set, and never set to 0: gcsim
+        # queues the swap to land `Delays.Swap` frames later
+        # (`pkg/core/player/exec.go:151`), so at **0 the swap never lands** before the next
+        # action is requested and the run dies with *"requested next char X is not active and
+        # next action is not swap"*. This emitter hardcoded `swap_delay=0`, so **every
+        # multi-character rotation it produced was unrunnable** — natively and in the browser
+        # alike. Solo rotations never swap, which is why it went unnoticed.
+        #
+        # Omitted rather than pinned to a number, because gcsim's default is gcsim's answer
+        # (`pkg/gcs/parser/parser.go:55`, "default swap timer of 1") and a value restated here
+        # is one this repo would have to defend as game data.
+        f"options iteration={iterations} duration={duration};",
         "",
         char_line,
     ]

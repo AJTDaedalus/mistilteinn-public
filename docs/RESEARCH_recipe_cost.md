@@ -3,9 +3,12 @@
 **Owner question (2026-08-26):** measure the cost of the damage-recipe plan in detail, and say
 whether gcsim can be the base of the optimizer.
 
-**Answer: yes on cost — a full-rotation recipe costs 1.1×–2× a single-hit score, not 100×.
-The blocker is not arithmetic. It is that gcsim's *browser* build cannot run multi-character
-rotations at all**, which this investigation found while trying to measure a team recipe.
+**Answer: yes — and it stays client-side.** A full-rotation recipe costs **1.1×–1.2×** a
+single-hit score, not 100×. A real four-character team is **17 distinct sources ≈ 1.15×**.
+
+The one apparent blocker — multi-character rotations failing — turned out to be **a one-line
+bug in this repo's own config emitter** (`swap_delay=0`), not a limitation of gcsim or of the
+browser. §2 records both the fix and the wrong root cause published before it.
 
 ---
 
@@ -52,58 +55,74 @@ Tier 2 territory — and even that is **2.8×–5.3×**, not the 100× the naive
 
 ---
 
-## 2. The actual blocker: the browser build cannot swap characters
+## 2. CORRECTED — the blocker was ours, and it is one line
 
-Trying to measure a four-character team recipe produced
-`runtime error: index out of range [0] with length 0` from `flush()`. That message is a
-symptom. The real one, from `simulate()`:
+**An earlier version of this document said gcsim's browser build could not run
+multi-character rotations, and blamed the wasm entry point for discarding its parsed
+`ast.File`. That was wrong, and it was published in PR #97 before it was checked properly.**
+
+The symptom was real:
 
 > `internal error: requested next char xiangling is not active and next action is not swap`
 
-`pkg/simulation/run.go:155` raises it, under a comment that gives the game away:
+**The native binary fails identically.** Built from the pin and run against the same config, it
+produces the same error — which rules the wasm out immediately, and would have if the native
+binary had been tried before the theory was written down.
 
-```go
-// IMPORTANT: evaluator should handle adding in implicit swaps if next char is not active
-// we add a sanity check here just to guard against evaluator error
-```
+**The cause is `swap_delay=0`, which this repo's own emitter hardcoded.** gcsim queues the
+swap to land `Delays.Swap` frames later (`pkg/core/player/exec.go:151`), so at **0 the swap
+never lands** before the next action is requested, and the sanity check at
+`pkg/simulation/run.go:155` fires. gcsim's default is **1**
+(`pkg/gcs/parser/parser.go:55`, *"default swap timer of 1"*).
 
-**The wasm entry point loses the parsed file, so the evaluator cannot insert those swaps.**
-`cmd/wasm/main.go:initialize()` builds `file := ast.NewFile()`, parses into it, and then keeps
-only `cfg`, `simcfg` and `gcsl` — **`file` is discarded**. `simulate()` then constructs
-*another* empty `ast.NewFile()` for `NewEvaluator`. The native path
-(`pkg/simulator/simulator.go:93`) keeps the populated file and hands it to every worker.
+| config | native | browser |
+|---|---|---|
+| `swap_delay=0` | **fails** | **fails** |
+| `swap_delay=1` | runs | runs |
+| omitted (default 1) | runs | runs |
 
-Confirmed by bisection: a two-character config runs fine when the rotation **only acts on the
-active character** (13 sources, identical DPS to solo), and fails the moment it acts on the
-second.
+`gcsim_config.build_config` emitted `options iteration=… duration=… swap_delay=0;`
+unconditionally, so **every multi-character rotation this repo has ever produced was
+unrunnable.** Solo rotations never swap, which is why nothing caught it — and why the sample
+configs, the crossval fixtures and the W.6 page all looked healthy.
 
-### What this caps
+**Fixed by omitting the option**, rather than pinning a number: gcsim's default is gcsim's
+answer, and a frame count restated here is one this repo would have to defend as game data.
 
-- **W.6's comparison page works for solo builds only.** Any team rotation fails.
-- **`compile_rotation` emits no swap actions at all** — verified directly against the repo's
-  own compiler for a two-character rotation. So every multi-character rotation this repo
-  produces is a config the browser build refuses.
-- It is **not** a limit on the recipe idea. It is a limit on *generating* recipes in the
-  browser.
+With it removed, in the **browser build**:
 
----
+| rotation | distinct sources | hit instances | DPS |
+|---|---|---|---|
+| solo Ayaka | 7 | 221 | — |
+| solo Raiden | 13 | 252 | 2,303 |
+| 2-char Raiden + Xiangling | 14 | 251 | 3,323 |
+| **4-char Raiden National** | **17** | 233 | 9,532 |
 
-## 3. Why this argues *for* the recipe design rather than against it
+**A real four-character team recipe is 17 distinct sources**, which on the table in §1 is
+**≈1.15× the current per-combination cost.**
 
-A recipe is generated **once per rotation**, not per candidate. Nothing requires that
-generation to happen in the browser — and the native binary, which does insert implicit swaps,
-is already what `tests/crossval` uses as the oracle.
+### Why this correction matters more than the error
 
-So the shape that falls out of these measurements is:
+The wrong version concluded *"generate recipes server-side, the browser cannot do it"*. That
+would have moved the optimizer off the client to work around a bug in one line of our own
+config emitter. **The whole design premise was nearly rewritten to accommodate a typo.**
+
+## 3. The shape, entirely client-side
+
+A recipe is generated **once per rotation**, not per candidate — so even at gcsim's full price
+it is amortised across every combination in the search.
 
 | stage | where | cost | frequency |
 |---|---|---|---|
-| generate the recipe | **server or offline, native gcsim** | ~0.24 s/run × iterations | once per rotation |
+| generate the recipe | **browser**, gcsim wasm | ~4.9 s at 100 iterations | once per rotation / ER bucket |
 | evaluate it per candidate | browser kernel | **+0.051 µs per hit** | per combination |
 
-That sidesteps the wasm defect entirely, keeps `RESEARCH_gcsim_embed.md` §6's ruling intact
-(gcsim is still not in the inner loop), and gives the optimizer a **full-rotation** objective
-instead of a single-hit one — which is a better question, not just a faster answer.
+`RESEARCH_gcsim_embed.md` §6's ruling stands untouched: **gcsim never enters the inner loop.**
+It sets the loop's question once, and the loop answers it 100,000 times at 1.15× the price of
+today's single-hit objective — which is a *better question*, not merely a faster answer.
+
+Caching belongs in `sim_runs`, which already exists and is already keyed by `context_key` +
+`er_bucket` — the exact axis `RESEARCH_damage_recipe.md` showed a recipe is only valid along.
 
 ---
 

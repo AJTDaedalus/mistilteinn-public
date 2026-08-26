@@ -81,19 +81,16 @@ def compile_rotation(
 
     keys = _resolve(steps, characters)
 
-    # **A multi-character rotation compiled here does not run in gcsim's browser build.**
-    # gcsim requires an explicit swap before acting on a character that is not active, and its
-    # evaluator is meant to insert those implicitly — `pkg/simulation/run.go:155` says so, in
-    # a comment guarding the very error this produces. The **wasm entry point cannot**:
-    # `cmd/wasm/main.go:initialize()` parses into an `ast.File` and then discards it, and
-    # `simulate()` builds a fresh empty one for the evaluator, while the native path keeps the
-    # populated file and hands it to every worker.
+    # **No swap actions are emitted, and none are needed.** gcsim's parser desugars
+    # `xiangling burst;` into `execute_action(...)`, which inserts an implicit swap when the
+    # named character is not active (`pkg/gcs/eval/sysfunc.go:472`).
     #
-    # So no swaps are emitted, deliberately: adding them would be inventing a syntax to work
-    # around an upstream defect, in a compiler whose whole argument is that it emits what
-    # gcsim documents. `docs/RESEARCH_recipe_cost.md` §2, and
-    # `tests/unit/test_multi_character_rotations_have_no_swaps.py` pins it. The native binary
-    # runs these configs correctly, so `tests/crossval` is unaffected.
+    # That implicit swap is silently defeated by `swap_delay=0`, which `gcsim_config` used to
+    # emit unconditionally — gcsim queues the swap to land `Delays.Swap` frames later, so at
+    # zero it never lands and the run dies with *"requested next char X is not active and next
+    # action is not swap"*. **Every multi-character rotation this repo produced was
+    # unrunnable**, natively and in the browser alike, and solo rotations never swap so nothing
+    # caught it. See `docs/RESEARCH_recipe_cost.md` §2.
 
     # `active` is the **first step's** character, not the team's first slot. Otherwise the
     # rotation opens with an implicit swap gcsim has to pay for, before the user's first
