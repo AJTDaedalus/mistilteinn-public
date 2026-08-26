@@ -61,14 +61,14 @@ measured cost) before starting. **Decision:** `docs/DECISIONS.md`, 2026-08-26.
 - **Accept:** `python -m scripts.inject` reports the no-op mutation **caught**. A test that
   passes when substitution does nothing is worse than no test — it certifies the failure mode.
 
-### [ ] W.4 — Measure parallelism **[Planner] — measurement, not a feature**
+### [x] W.4 — Measure parallelism **[Planner] — measurement, not a feature** — **done**
 - **Do:** measure whether N Web Workers, each holding a wasm instance, is memory-viable and
   how much of the 7.84 s/run it recovers. **OQ-W2.**
 - **Accept:** numbers in `docs/LOG_mistilteinn.md`, and a recommendation. **Do not build the
   worker pool if the measurement does not support it** — single-threaded with honest progress
   beats a pool that thrashes.
 
-### [ ] W.5 — Rank with separability
+### [x] W.5 — Rank with separability — **done** (OQ-W1 still open: needs real weapons)
 - **Do:** rank candidates by dps mean; carry sd and iteration count; mark pairs whose
   intervals overlap as **not separated** rather than ordering them.
 - **Accept:** a test with two candidates inside one standard error asserts they come back
@@ -92,7 +92,10 @@ measured cost) before starting. **Decision:** `docs/DECISIONS.md`, 2026-08-26.
 ## Open questions
 
 Carried from `DESIGN_weapon_passives.md` §6, all live: **OQ-W1** iteration count (W.5),
-**OQ-W2** Web Workers (W.4), **OQ-W3** which rotation (W.6), **OQ-W4** keep the fast tier
+**OQ-W2** Web Workers — *answered in W.4:
+a persistent pool capped at **4** (3.02×; six workers is **slower** than four), never sized
+from core count, degrading to serial. Measured in Node, so the ~1 GB/worker RSS is the number
+W.6 must re-check in a browser* — **OQ-W3** which rotation (W.6), **OQ-W4** keep the fast tier
 (recommendation: yes).
 
 ## Not in this chunk
