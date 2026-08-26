@@ -451,3 +451,53 @@ to the optimizer, not an output of it.
 
 What this closes: the remainder of Chunk I in `TASKS_mistilteinn.md`, and the queued design
 pass. Nothing in the tree changes — the boundary was already where this decision puts it.
+
+## Weapon passives go to gcsim as a second tier (2026-08-26)
+
+**Owner decision**, resolving the N.5 escalation in `docs/LOG_mistilteinn.md`.
+
+`weapon_comparison` ranks candidates on base ATK and the substat alone, and reports every
+candidate with a passive as `unmodelled_passives` — not as a precision caveat but because
+**the ordering itself can be wrong**. N.5 measured the gap: **242 of 260 weapons carry a
+passive and 5 are expressible in the Chunk F chain as it stands.** The other 237 need target
+aura, enemy type, weak spots, stack counters, cooldowns, party energy or durations — none of
+which the chain models, and nine of them ask questions `KernelTarget` cannot express at all.
+
+Three options were put up. The chosen one is **route the comparison to gcsim as a second tier
+above the damage chain**, rather than building a conditional modifier model or accepting the
+gap permanently.
+
+**Why this and not the modifier model.** gcsim already implements these passives — 231
+directories of Go — and deriving 237 conditions from English refinement prose is precisely the
+fabricated-citation failure fairy actually suffered. The BRIEF's citation rule is not
+satisfied by a careful reading of a tooltip.
+
+**Why this does not contradict `RESEARCH_gcsim_embed.md` §6.** §6 ruled gcsim out of the
+**optimizer's inner loop** at ~430× a damage-chain combination, on a 9,000-combination
+artifact search. Weapon comparison is not a search: it is one evaluation per candidate, at
+most 59 (the sword pool). §6's conclusion — *"gcsim is a second tier above the chain, not a
+replacement for it"* — is the thing being applied here, not the thing being overturned.
+
+**What §6 does not settle, and what a measurement changed.** The escalation quoted §6's
+**native** figure of 0.238 s/run and inferred ~14 s for 59 candidates. That figure is gcsim
+parallelised across cores. Measured against the committed browser build at the pin, a
+100-iteration 90-second rotation costs **7.84 s single-threaded** — so 59 candidates is
+**~7.7 minutes**, not 14 seconds. The decision stands, because the run is already an
+asynchronous, user-initiated action and the `sim_runs` corpus already exists to cache it —
+but **the interaction is a job with progress, never a request that blocks**, and how far
+parallelism and iteration count close that gap is `DESIGN_weapon_passives.md`'s to settle.
+
+**What this closes:** the two surviving `TODO(chunk-H)` markers now have a destination. They
+are re-pointed at this work rather than deleted, because the gap they describe is real until
+it ships.
+
+## The nanoka pin stays at 7.0.51 (2026-08-26)
+
+**Owner decision.** Upstream is at 7.0.52; nothing here needs it, so the pin holds and is
+revisited when a wanted character or weapon is actually missing.
+
+The pin is not a stale checkout: the committed fixtures, `nanoka_transport.FIXTURE_VERSION`
+and `verify_seed.FIXTURE_VERSION` all name the same version and
+`tests/unit/test_capture_pinning.py` fails if they stop agreeing. The trap it guards is real —
+in N.2 a capture run **without** `--version` silently followed upstream, pulling two characters
+at 7.0.52 into a 7.0.51 tree and rewriting three index files, one with real content changes.
