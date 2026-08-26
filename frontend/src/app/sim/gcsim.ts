@@ -57,6 +57,18 @@ export function configError(validated: unknown): string | null {
 }
 
 /**
+ * gcsim's complaint about a *run*, or `null` if it produced a result.
+ *
+ * Separate from `configError` because they fail differently: a rejected config comes back
+ * from `validateConfig`, while a failed **run** comes back as the return value of
+ * `simulate()` — a string where a `Uint8Array` was expected.
+ */
+export function simulationError(simulated: unknown): string | null {
+  if (typeof simulated === 'string') return simulated;
+  return null;
+}
+
+/**
  * Run one config for `iterations` Monte Carlo iterations.
  *
  * **The loop is here because gcsim does not loop.** `simulate()` produces one iteration and
@@ -82,10 +94,26 @@ export function run(
   mod.initializeAggregator(config);
   mod.initializeWorker(config);
   for (let i = 0; i < iterations; i++) {
-    mod.aggregate(mod.simulate());
+    const simulated = mod.simulate();
+    // **`simulate()` reports failure by returning a string, not by throwing.** On success it
+    // returns a `Uint8Array` of MessagePack. Passing the error string to `aggregate()`
+    // instead — which the first version of this did — aggregates nothing, and `flush()` then
+    // fails with `index out of range [0] with length 0`. The real message is discarded and
+    // replaced by one that describes the empty aggregate rather than the cause.
+    //
+    // That cost real time: it hid `"requested next char X is not active and next action is
+    // not swap"`, which is the reason multi-character rotations do not run in this build.
+    const failure = simulationError(simulated);
+    if (failure !== null) throw new Error(`gcsim failed to simulate: ${failure}`);
+    mod.aggregate(simulated);
     onProgress?.(i + 1, iterations);
   }
-  return { iterations, ...readResult(JSON.parse(mod.flush())) };
+  const flushed = JSON.parse(mod.flush()) as unknown;
+  const flushFailure = (flushed as { error?: unknown })?.error;
+  if (typeof flushFailure === 'string') {
+    throw new Error(`gcsim failed to aggregate: ${flushFailure}`);
+  }
+  return { iterations, ...readResult(flushed) };
 }
 
 /**

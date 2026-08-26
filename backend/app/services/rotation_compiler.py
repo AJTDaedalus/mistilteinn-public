@@ -81,6 +81,20 @@ def compile_rotation(
 
     keys = _resolve(steps, characters)
 
+    # **A multi-character rotation compiled here does not run in gcsim's browser build.**
+    # gcsim requires an explicit swap before acting on a character that is not active, and its
+    # evaluator is meant to insert those implicitly — `pkg/simulation/run.go:155` says so, in
+    # a comment guarding the very error this produces. The **wasm entry point cannot**:
+    # `cmd/wasm/main.go:initialize()` parses into an `ast.File` and then discards it, and
+    # `simulate()` builds a fresh empty one for the evaluator, while the native path keeps the
+    # populated file and hands it to every worker.
+    #
+    # So no swaps are emitted, deliberately: adding them would be inventing a syntax to work
+    # around an upstream defect, in a compiler whose whole argument is that it emits what
+    # gcsim documents. `docs/RESEARCH_recipe_cost.md` §2, and
+    # `tests/unit/test_multi_character_rotations_have_no_swaps.py` pins it. The native binary
+    # runs these configs correctly, so `tests/crossval` is unaffected.
+
     # `active` is the **first step's** character, not the team's first slot. Otherwise the
     # rotation opens with an implicit swap gcsim has to pay for, before the user's first
     # intended action — a cost they did not write and cannot see.

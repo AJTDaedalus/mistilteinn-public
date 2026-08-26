@@ -98,6 +98,13 @@ a job with progress, never a request that blocks.
   its own. **`capture_nanoka_fixtures.py` without `--version` follows upstream**, which is
   what it silently did in N.2 — pulling two characters at 7.0.52 into a 7.0.51 directory and
   rewriting three index files, one with real content changes. Pass the version.
+- **gcsim's *browser* build cannot run a multi-character rotation.** It demands an explicit
+  swap before acting on a non-active character; its evaluator is meant to insert one, and the
+  wasm entry point **discards the parsed `ast.File`** so it cannot. The native binary is
+  unaffected, so `tests/crossval` is too — but the compare page (W.6) is solo-only, and
+  `compile_rotation` deliberately emits no swaps. `docs/RESEARCH_recipe_cost.md` §2. **The
+  symptom is misleading**: `flush()` reports `index out of range [0] with length 0` while the
+  real message is on `simulate()`'s return value, which is a *string* on failure.
 - **A saved rotation is authored here and compiled to gcsim, never read back.** The compiler
   emits the `while 1` loop and a `.ready` gate on every step, because gcsim's two worst
   behaviours are silent: a bare action list runs **once**, and `while 1` **deadlocks** on an
