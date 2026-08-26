@@ -26,11 +26,11 @@ measured cost) before starting. **Decision:** `docs/DECISIONS.md`, 2026-08-26.
 
 ---
 
-### [ ] W.0 — Branch setup **(gate)**
+### [x] W.0 — Branch setup **(gate)**
 - **Do:** branch `feat/gcsim-weapon-tier` off `dev`.
 - **Accept:** `git branch --show-current` is not `dev` or `main`.
 
-### [ ] W.1 — The browser gcsim runner
+### [x] W.1 — The browser gcsim runner — **done**
 - **Do:** `frontend/src/app/sim/gcsim.ts` — lazy-load the wasm, expose
   `run(config, iterations, onProgress)`.
 - **Read first:** `frontend/scripts/verify-gcsim-wasm.mjs`. It drives the whole API in 66
@@ -46,7 +46,7 @@ measured cost) before starting. **Decision:** `docs/DECISIONS.md`, 2026-08-26.
   needs the wasm has it. **Locally it may be absent**, and the spec must then fail loudly or
   be skipped with a reason `ci_local` can see — *a skipped check BLOCKS; it is never a pass.*
 
-### [ ] W.2 — Substituting a candidate weapon into a compiled config
+### [x] W.2 — Substituting a candidate weapon into a compiled config — **done**
 - **Do:** given a compiled rotation config and a candidate weapon, produce the config with
   that weapon in place of the worn one.
 - **Accept:** round-trip tests — the emitted config names the candidate, at the candidate's
@@ -55,20 +55,20 @@ measured cost) before starting. **Decision:** `docs/DECISIONS.md`, 2026-08-26.
   **flat ranking that reads as "these weapons are equivalent"** rather than as a bug. This is
   the single most dangerous failure in the chunk.
 
-### [ ] W.3 — Prove the substitution is not silently a no-op
+### [x] W.3 — Prove the substitution is not silently a no-op — **done**
 - **Do:** a test that two different candidates produce two different configs **and two
   different DPS**, and a mutation that makes the substitution a no-op.
 - **Accept:** `python -m scripts.inject` reports the no-op mutation **caught**. A test that
   passes when substitution does nothing is worse than no test — it certifies the failure mode.
 
-### [ ] W.4 — Measure parallelism **[Planner] — measurement, not a feature**
+### [x] W.4 — Measure parallelism **[Planner] — measurement, not a feature** — **done**
 - **Do:** measure whether N Web Workers, each holding a wasm instance, is memory-viable and
   how much of the 7.84 s/run it recovers. **OQ-W2.**
 - **Accept:** numbers in `docs/LOG_mistilteinn.md`, and a recommendation. **Do not build the
   worker pool if the measurement does not support it** — single-threaded with honest progress
   beats a pool that thrashes.
 
-### [ ] W.5 — Rank with separability
+### [x] W.5 — Rank with separability — **done** (OQ-W1 still open: needs real weapons)
 - **Do:** rank candidates by dps mean; carry sd and iteration count; mark pairs whose
   intervals overlap as **not separated** rather than ordering them.
 - **Accept:** a test with two candidates inside one standard error asserts they come back
@@ -92,7 +92,10 @@ measured cost) before starting. **Decision:** `docs/DECISIONS.md`, 2026-08-26.
 ## Open questions
 
 Carried from `DESIGN_weapon_passives.md` §6, all live: **OQ-W1** iteration count (W.5),
-**OQ-W2** Web Workers (W.4), **OQ-W3** which rotation (W.6), **OQ-W4** keep the fast tier
+**OQ-W2** Web Workers — *answered in W.4:
+a persistent pool capped at **4** (3.02×; six workers is **slower** than four), never sized
+from core count, degrading to serial. Measured in Node, so the ~1 GB/worker RSS is the number
+W.6 must re-check in a browser* — **OQ-W3** which rotation (W.6), **OQ-W4** keep the fast tier
 (recommendation: yes).
 
 ## Not in this chunk

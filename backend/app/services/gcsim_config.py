@@ -22,6 +22,7 @@ confident, wrong number.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from app.models.enums import LEVELLED_TALENTS
@@ -32,6 +33,7 @@ if TYPE_CHECKING:
 
     from app.models.artifact import Artifact
     from app.models.build import Build, EnemyProfile
+    from app.models.weapon import Weapon
 
 #: gcsim's stat names for the artifact main/substats this repo stores. Its config vocabulary,
 #: not this repo's — `pkg/core/attributes/stats.go` at the pin, the same file
@@ -63,9 +65,34 @@ class GcsimConfigError(ValueError):
     """This build cannot be expressed as a gcsim config."""
 
 
+@dataclass(frozen=True)
+class SubstituteWeapon:
+    """A candidate weapon to emit in place of the build's own (W.2).
+
+    **Substituted at the source, not by rewriting emitted text.** A regex over a finished
+    config is the direct route to the failure this whole task exists to prevent: a
+    substitution that quietly does nothing produces a *flat ranking* — every candidate scoring
+    the worn weapon's number — which reads as "these weapons are equivalent" rather than as a
+    bug, and is a conclusion a user would believe.
+
+    `level` defaults to the build's own weapon level at the call site rather than to 90, so a
+    comparison is like-for-like: ranking a level-90 worn weapon against level-1 candidates
+    measures levelling, not weapons.
+
+    `refinement` defaults to **1**, matching `WeaponCandidate.passive_refinement` and for the
+    same stated reason — a candidate the user does not own has no refinement to read, so 1 is
+    an assumption and is named as one rather than inferred from the worn weapon's.
+    """
+
+    weapon: Weapon
+    level: int
+    refinement: int = 1
+
+
 def build_config(
     build: Build,
     *,
+    substitute_weapon: SubstituteWeapon | None = None,
     actions: Sequence[str] | None = None,
     action_block: str | None = None,
     enemy: EnemyProfile | None = None,
@@ -118,12 +145,19 @@ def build_config(
         char_line,
     ]
 
-    if build.weapon is not None:
-        weapon_line = (
+    # The candidate wins when one is given, and it is emitted **even if the build has no
+    # weapon of its own** — "compare these against nothing worn" is a coherent question, and
+    # falling through to no weapon line would answer a different one.
+    if substitute_weapon is not None:
+        lines.append(
+            f'{key} add weapon="{gcsim_keys.weapon_key(substitute_weapon.weapon.name)}" '
+            f"lvl={substitute_weapon.level}/90 refine={substitute_weapon.refinement};"
+        )
+    elif build.weapon is not None:
+        lines.append(
             f'{key} add weapon="{gcsim_keys.weapon_key(build.weapon.name)}" '
             f"lvl={build.weapon_level}/90 refine={build.refinement};"
         )
-        lines.append(weapon_line)
 
     lines.extend(_artifact_lines(key, build.artifacts))
     lines.append("")

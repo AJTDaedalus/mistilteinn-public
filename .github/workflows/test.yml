@@ -228,6 +228,13 @@ jobs:
         # here rather than assumed, and it exits non-zero on any other value.
         run: npm run gcsim:verify
 
+      - name: Verify the app's runner agrees with it too
+        # W.1. The step above proves the *wasm* is right. This proves the code the app
+        # actually calls — `src/app/sim/gcsim.ts` — drives it correctly, by importing that
+        # module rather than re-hand-rolling the initialize/simulate/flush sequence beside it.
+        # A gate that re-implements what it checks can pass while the shipped path is broken.
+        run: npm run gcsim:verify-runner
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
