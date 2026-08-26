@@ -26,11 +26,11 @@ measured cost) before starting. **Decision:** `docs/DECISIONS.md`, 2026-08-26.
 
 ---
 
-### [ ] W.0 — Branch setup **(gate)**
+### [x] W.0 — Branch setup **(gate)**
 - **Do:** branch `feat/gcsim-weapon-tier` off `dev`.
 - **Accept:** `git branch --show-current` is not `dev` or `main`.
 
-### [ ] W.1 — The browser gcsim runner
+### [x] W.1 — The browser gcsim runner — **done**
 - **Do:** `frontend/src/app/sim/gcsim.ts` — lazy-load the wasm, expose
   `run(config, iterations, onProgress)`.
 - **Read first:** `frontend/scripts/verify-gcsim-wasm.mjs`. It drives the whole API in 66
