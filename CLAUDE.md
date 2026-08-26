@@ -45,17 +45,25 @@ the damage chain does not model. **I's rotation-optimization half is closed by o
 (2026-08-25): rotations are authored, never optimized.** A user writes a rotation deliberately,
 and one arrived at by search is not one they would recognise as theirs.
 
-**What is genuinely open is two `TODO(chunk-)` markers and one escalation.** `rg "TODO\(chunk-"`
-is the inventory. It counted **nine** before `TASKS_loose_ends.md`, seven of them naming a
-closed chunk; the sweep closed the seven and left the two that name real, unbuilt work.
+**What is genuinely open is one plan — `docs/TASKS_weapon_passives.md` — and the two
+`TODO(chunk-)` markers it exists to close.** `rg "TODO\(chunk-"` is the inventory. It counted
+**nine** before `TASKS_loose_ends.md`, seven of them naming a closed chunk; that sweep closed
+the seven and left the two that name real, unbuilt work. **Every other plan in this repo has
+zero open tasks.**
 
-**The escalation is the one thing here waiting on the owner** — `docs/LOG_mistilteinn.md`,
-"ESCALATION — weapon passives have no home". **242 of 260 weapons carry a passive and 5 are
-expressible in the damage chain as it stands.** `weapon_comparison` reports the rest as
-`unmodelled_passives` precisely so a caller cannot publish a ranking it does not claim to have
-made. Three options are recorded and each reopens something the BRIEF or a RESEARCH doc
-settled, which is why it went up rather than getting decided. **It blocks nothing that is
-currently building.**
+**Both markers now have a destination.** `TASKS_weapon_passives.md` is the open plan:
+**242 of 260 weapons carry a passive and 5 are expressible in the damage chain as it stands**,
+so by owner decision (2026-08-26, `docs/DECISIONS.md`) weapon comparison gets a **gcsim second
+tier** rather than a hand-derived modifier model — deriving 237 conditions from refinement
+prose is the fabricated-citation failure fairy actually suffered. `weapon_comparison` keeps
+reporting `unmodelled_passives` until that ships, precisely so a caller cannot publish a
+ranking it does not claim to have made.
+
+**The cost figure in the escalation is wrong and the DESIGN says so.** It inferred ~14 s for
+59 candidates from §6's **native, all-cores** 0.238 s/run. Measured against the committed
+browser build, a 100-iteration 90-second rotation is **7.84 s single-threaded** — 59
+candidates is **~7.7 minutes**. The decision holds; the interaction it implies does not. It is
+a job with progress, never a request that blocks.
 
 - **Both suites pass, with nothing skipped.** **1247 backend tests, 0 skipped**; **213
   frontend tests**; `create_app()` serves **39 paths**; the SPA has **13 routes plus a
