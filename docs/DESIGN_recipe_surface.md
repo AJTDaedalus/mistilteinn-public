@@ -21,7 +21,8 @@ calls `search`. A kernel nobody reaches changes no answer a user sees — the sa
 `CLAUDE.md` records from Chunk J, when there was a verified optimizer that nothing imported.
 
 **Correctness.** Measuring what a calibration must contain turned up something worse:
-**60 of 65 sets have a conditional 4-piece bonus, and the kernel scores every one as zero**
+**every 4-piece bonus in the game is conditional — 60 of 60 — and the kernel scores every one
+as zero**
 (`RESEARCH_conditional_sets.md`). A conditional affix's props are all `FIGHT_PROP_NONE`, so
 `_bonus_stats` skips them — correctly, since inventing a quantity would be worse — and the
 search then ranks four-piece sets as though their headline effect did not exist.
@@ -33,7 +34,7 @@ which makes reachability and correctness the same job.
 ## 2. The calibration set, and why it is small
 
 Naively, keying calibration by "set combination" means `S²/2 + 2S + 1` states. The measurement
-removes the square term: **56 of 65 two-piece bonuses are plain static stats**, which the
+removes the square term: **51 of 60 two-piece bonuses are plain static stats**, which the
 kernel already models correctly as stat pools. Only the 4-piece tier must be inside a
 calibration, and a five-piece combination has **at most one** 4-piece set.
 
@@ -47,7 +48,8 @@ calibration, and a five-piece combination has **at most one** 4-piece set.
 at **60 ER points wide**, so that key changes rarely.
 
 **The 9 sets with a conditional 2-piece are the exception and must be handled, not assumed
-away** — they need their own states on top.
+away** — they need their own states on top. The five `Prayers` circlets have **no multi-piece
+tier at all** and belong in no state.
 
 ## 3. Shape
 

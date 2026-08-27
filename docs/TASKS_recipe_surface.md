@@ -88,9 +88,10 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 
 ### [ ] R.7 — Prove a 4-piece bonus is now visible
 - **Do:** a test that a conditional 4-piece set changes the ranking.
-- **Accept:** it **fails against `search`** and passes against `searchRecipe`. 60 of 65 sets
-  score their 4-piece as zero today; this is the test that says they no longer do.
-- **This is also where "60 of 65" gets its real size.** That figure counts tiers the kernel
+- **Accept:** it **fails against `search`** and passes against `searchRecipe`. **Every 4-piece
+  bonus in the game scores as zero today** — 60 of 60; this is the test that says they no
+  longer do.
+- **This is also where "60 of 60" gets its real size.** That figure counts tiers the kernel
   cannot *see*, not rankings it gets *wrong* — some conditional bonuses are healing, energy or
   shield effects that would contribute nothing to a damage ranking even if modelled. **Report
   how many of the 60 actually move a ranking**, and correct
