@@ -61,7 +61,22 @@ for (const c of CASES) {
     );
     process.exit(1);
   }
-  console.log(`${c.calc}: replayed ${fixture.hits.length} hits, worst rel err ${worst.toExponential(3)}`);
+  // The element and attack tag come from the paired `damage` event, not from `calc` — which
+  // publishes `ele` as gcsim's internal enum (19, 14). If the pairing silently produced
+  // nothing, every hit would carry an empty element and G.4 would match no bonus to anything.
+  const unlabelled = fixture.hits.filter((h) => h.element === '' || h.attackTag < 0);
+  if (unlabelled.length > 0) {
+    console.error(
+      `${c.calc}: ${unlabelled.length} of ${fixture.hits.length} hits have no element or ` +
+        `attack tag. The calc/damage pairing produced nothing usable.`,
+    );
+    process.exit(1);
+  }
+  const elements = [...new Set(fixture.hits.map((h) => h.element))].sort();
+  console.log(
+    `${c.calc}: replayed ${fixture.hits.length} hits, worst rel err ${worst.toExponential(3)}` +
+      `, elements [${elements.join(', ')}]`,
+  );
 }
 
 if (!existsSync(WASM)) {

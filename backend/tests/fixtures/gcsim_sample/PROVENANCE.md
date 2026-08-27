@@ -34,10 +34,17 @@ fixture to add, not a bug to fix.
 load-bearing in **G.4**, when a candidate's stats replace that value — so its gate belongs
 there, and a surviving mutation on it here is expected rather than a hole.
 
-## Why only the `calc` events
+## Why only the `calc` and `damage` events
 
-A full payload is ~1.3 MB and **92 % of it is `hitlag`, `icd` and `debug` entries the parser
+A full payload is ~1.3 MB and **most of it is `hitlag`, `icd` and `debug` entries the parser
 never reads**.
+
+**Both kept, because neither is sufficient.** `calc` carries the decomposition; `damage`
+carries the **element by name** and the attack tag. `calc`'s own `ele` is gcsim's internal enum
+(`19`, `14`), which is meaningless outside gcsim — G.4 needs the real name to decide which of a
+candidate's element bonuses reach which hit. They are emitted as a strict pair, one per damage
+instance, ability matching on all 245 in the larger fixture; the parser **verifies** that
+rather than assuming it.
 
 ## Why they are committed at all
 

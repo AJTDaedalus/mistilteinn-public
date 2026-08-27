@@ -37,9 +37,18 @@ export type RecipeScaling = 'atk' | 'hp' | 'def' | 'em';
 export interface RecipeHit {
   /** gcsim's ability name — `Soumetsu (Cutting)`, `Normal 1`. Not a label to show a user. */
   abil: string;
-  /** gcsim's numeric attack tag, which is what a scope-gated bonus keys on. */
+  /**
+   * gcsim's attack tag — normal, charged, skill, burst. Read from the paired `damage` event,
+   * because the `calc` event does not carry it.
+   */
   attackTag: number;
-  /** `physical`, `cryo`, … as gcsim spells it. */
+  /**
+   * `physical`, `cryo`, … **as gcsim spells it**, from the paired `damage` event.
+   *
+   * The `calc` event carries `ele` as gcsim's internal *enum* (19, 14), which is meaningless
+   * outside gcsim and would silently become a key nothing matches. G.4 needs this to decide
+   * which of a candidate's element bonuses reach which hit, so it has to be the real name.
+   */
   element: string;
   /** The ability multiplier at the talent level simulated. */
   talent: number;
@@ -102,6 +111,13 @@ interface SampleEntry {
   logs?: Record<string, unknown>;
 }
 
+/** gcsim's `damage` log payload. Carries what `calc` omits. */
+interface DamageLog {
+  abil: string;
+  ele: string;
+  'attack-tag': number;
+}
+
 /**
  * Crit rate is clamped into `[0, 1]` before it multiplies crit damage.
  *
@@ -143,16 +159,31 @@ function scalingOf(c: CalcLog): RecipeScaling {
 export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unknown }): Recipe {
   const parsed = typeof payload === 'string' ? JSON.parse(payload) : payload;
   const entries: SampleEntry[] = Array.isArray(parsed?.logs) ? parsed.logs : [];
-  const hits: RecipeHit[] = [];
 
-  for (const entry of entries) {
-    if (entry.event !== 'calc') continue;
-    const c = entry.logs as unknown as CalcLog;
+  // `calc` and `damage` are emitted as a pair, in order, one per damage instance — checked
+  // across 245 hits, ability matching on every one. `calc` carries the decomposition;
+  // `damage` carries the element by name and the attack tag. Neither alone is enough.
+  const damages = entries.filter((e) => e.event === 'damage').map((e) => e.logs as unknown as DamageLog);
+  const calcs = entries.filter((e) => e.event === 'calc').map((e) => e.logs as unknown as CalcLog);
+
+  const hits: RecipeHit[] = [];
+  for (let i = 0; i < calcs.length; i++) {
+    const c = calcs[i];
     if (!c || c.damage === 0) continue;
+    // Pair by position, and **verify** rather than assume: a mismatch means the pairing
+    // premise is wrong, and silently mislabelling every hit's element is exactly the kind of
+    // wrong-but-plausible this repo keeps legislating against.
+    const d = damages[i];
+    if (d !== undefined && d.abil !== c.abil) {
+      throw new Error(
+        `sample log pairing broke at index ${i}: calc "${c.abil}" beside damage "${d.abil}". ` +
+          `The recipe cannot label elements without a reliable pairing.`,
+      );
+    }
     hits.push({
       abil: c.abil,
-      attackTag: -1,
-      element: String(c.ele),
+      attackTag: d?.['attack-tag'] ?? -1,
+      element: d?.ele ?? '',
       talent: c.talent,
       scaling: scalingOf(c),
       flatDamage: c.flat_dmg,

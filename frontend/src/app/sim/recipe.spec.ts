@@ -14,6 +14,11 @@ import { effectiveCritRate, parseSample, replayHit, type RecipeHit } from './rec
  * used as a total rather than added to `ele_per`.
  */
 
+/** A `damage` log entry — carries what `calc` omits. */
+function dmg(over: Record<string, unknown> = {}) {
+  return { event: 'damage', logs: { abil: 'Normal 1', ele: 'cryo', 'attack-tag': 1, ...over } };
+}
+
 /** A `calc` log entry, with the fields the parser reads. */
 function calc(over: Record<string, unknown> = {}) {
   return {
@@ -113,5 +118,31 @@ describe('parseSample', () => {
 
   it('returns no hits for a payload with no calc events', () => {
     expect(parseSample({ logs: [{ event: 'action', logs: {} }] }).hits).toEqual([]);
+  });
+
+  it('takes element and attack tag from the paired damage event', () => {
+    // `calc.ele` is gcsim's internal enum (19, 14) and is meaningless outside gcsim. G.4
+    // needs the real name to decide which of a candidate's element bonuses reach which hit.
+    const r = parseSample({ logs: [dmg({ ele: 'pyro', 'attack-tag': 4 }), calc()] });
+
+    expect(r.hits[0].element).toBe('pyro');
+    expect(r.hits[0].attackTag).toBe(4);
+  });
+
+  it('pairs by position across many hits', () => {
+    const r = parseSample({ logs: [
+      dmg({ abil: 'A', ele: 'cryo' }), calc({ abil: 'A' }),
+      dmg({ abil: 'B', ele: 'geo' }), calc({ abil: 'B' }),
+    ] });
+
+    expect(r.hits.map((h) => [h.abil, h.element])).toEqual([['A', 'cryo'], ['B', 'geo']]);
+  });
+
+  it('refuses a broken pairing rather than mislabelling every element', () => {
+    // Silently mislabelling is the wrong-but-plausible failure: the numbers still replay, and
+    // only the bonuses G.4 matches to them would be wrong.
+    expect(() => parseSample({ logs: [
+      dmg({ abil: 'A' }), calc({ abil: 'B' }),
+    ] })).toThrow(/pairing broke/);
   });
 });
