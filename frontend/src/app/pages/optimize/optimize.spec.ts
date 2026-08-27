@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { type Slot, search } from '../../sim/search';
 import { ArtifactsService } from '../artifacts/artifacts.service';
+import { RotationsService } from '../rotations/rotations.service';
 import { BuildsService } from '../builds/builds.service';
 import { ExplainService } from '../explain/explain.service';
 import { OptimizePage, describePieces } from './optimize';
@@ -62,6 +63,7 @@ function pageWith(overrides: {
   builds?: Partial<BuildsService>;
   explain?: Partial<ExplainService>;
   artifacts?: Partial<ArtifactsService>;
+  rotations?: Partial<RotationsService>;
 } = {}) {
   TestBed.configureTestingModule({
     providers: [
@@ -96,6 +98,15 @@ function pageWith(overrides: {
           options: vi.fn().mockResolvedValue(OPTIONS),
           ...overrides.artifacts,
         } as unknown as ArtifactsService,
+      },
+      {
+        // The page loads rotations for the rotation objective (R.8). Without a stub, `load()`
+        // never settles and every test here times out rather than failing on an assertion.
+        provide: RotationsService,
+        useValue: {
+          list: vi.fn().mockResolvedValue({ items: [], total: 0, offset: 0, limit: 50 }),
+          ...overrides.rotations,
+        } as unknown as RotationsService,
       },
     ],
   });
@@ -548,5 +559,70 @@ describe('pairing an explanation with its row', () => {
 
     expect(page['pairing']()).toBeNull();
     expect(page['divergence']()).toBeNull();
+  });
+});
+
+
+describe('OptimizePage — the rotation objective', () => {
+  /** `protected` members are reachable at runtime; the cast keeps the spec honest about that. */
+  const at = (page: unknown, key: string) => (page as Record<string, never>)[key];
+
+  it('reads rotations out of the paginated envelope', async () => {
+    // Treating it as an array leaves the picker empty, which looks exactly like having
+    // authored no rotations — the trap W.6's compare page fell into.
+    const page = pageWith({
+      rotations: {
+        list: vi.fn().mockResolvedValue({
+          items: [{ id: 'r1', name: 'Burst' }], total: 1, offset: 0, limit: 50,
+        }),
+      },
+    });
+    await (at(page, 'load') as () => Promise<void>).call(page);
+
+    expect((at(page, 'rotations') as () => unknown[])())
+      .toEqual([{ id: 'r1', name: 'Burst' }]);
+  });
+
+  it('starts on the single-hit objective, which stays reachable', () => {
+    // OQ-W4: deleting a fast honest answer because a slow better one exists is a downgrade.
+    const page = pageWith();
+
+    expect((at(page, 'objective') as () => string)()).toBe('hit');
+  });
+
+  it('does not calibrate when no rotation is chosen', async () => {
+    const page = pageWith();
+    await (at(page, 'runRotation') as () => Promise<void>).call(page);
+
+    expect((at(page, 'caveats') as () => unknown)()).toBeNull();
+  });
+
+  it('counts a four-piece set by distinct slots, not by piece count', () => {
+    // Four pieces of a set sharing a slot form no combination, and calibrating for them would
+    // spend ~3.2s on a state nothing can reach.
+    const page = pageWith();
+    const targets = (at(page, 'calibrationTargets') as (p: unknown[]) => { artifactSetId: string | null }[])
+      .call(page, [
+        { id: 'a', slot: 'equip_bracer', set_id: 1, stats: {} },
+        { id: 'b', slot: 'equip_bracer', set_id: 1, stats: {} },
+        { id: 'c', slot: 'equip_bracer', set_id: 1, stats: {} },
+        { id: 'd', slot: 'equip_bracer', set_id: 1, stats: {} },
+      ]);
+
+    // Only the no-four-piece state: four pieces, one slot, no reachable 4-piece.
+    expect(targets.map((t) => t.artifactSetId)).toEqual([null]);
+  });
+
+  it('includes a set that reaches four distinct slots', () => {
+    const page = pageWith();
+    const targets = (at(page, 'calibrationTargets') as (p: unknown[]) => { artifactSetId: string | null }[])
+      .call(page, [
+        { id: 'a', slot: 'equip_bracer', set_id: 1, stats: {} },
+        { id: 'b', slot: 'equip_necklace', set_id: 1, stats: {} },
+        { id: 'c', slot: 'equip_shoes', set_id: 1, stats: {} },
+        { id: 'd', slot: 'equip_ring', set_id: 1, stats: {} },
+      ]);
+
+    expect(targets.map((t) => t.artifactSetId).sort()).toEqual(['1', null].sort());
   });
 });

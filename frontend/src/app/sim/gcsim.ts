@@ -27,6 +27,14 @@
 /** The subset of gcsim's wasm exports this module drives. They land on `globalThis`. */
 export interface GcsimModule {
   validateConfig(config: string): unknown;
+  /**
+   * A full per-frame log for one seed, as JSON.
+   *
+   * This is what a **recipe** is built from — `calc` events carry every term of the damage
+   * calculation, which is why `docs/RESEARCH_gcsim_calibration.md` could prove the
+   * decomposition exact rather than fitting it.
+   */
+  sample(config: string, seed: string): string;
   initializeAggregator(config: string): void;
   initializeWorker(config: string): void;
   simulate(): unknown;

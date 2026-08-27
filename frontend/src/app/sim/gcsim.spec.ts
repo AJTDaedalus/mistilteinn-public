@@ -20,6 +20,8 @@ import { configError, run, simulationError, type GcsimModule } from './gcsim';
 function stub(out: unknown, validated: unknown = { parsed: true }): GcsimModule {
   return {
     validateConfig: vi.fn(() => validated),
+    // Unused by `run`, which drives simulate/aggregate. A recipe is built from `sample`.
+    sample: vi.fn(() => '{}'),
     initializeAggregator: vi.fn(),
     initializeWorker: vi.fn(),
     simulate: vi.fn(() => new Uint8Array([1, 2, 3])),
