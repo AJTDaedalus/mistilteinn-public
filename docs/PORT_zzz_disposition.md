@@ -1,4 +1,23 @@
-# `_ported/` — read-only porting source
+# Where fairy's ZZZ source went
+
+`backend/app/services/_ported/` held fairy's ZZZ implementations as **read-only porting
+source** — kept so the Genshin ports could be written *against* them rather than from memory.
+Staged in B.1/B.3, and its own rule was that **each file is deleted when its port lands**.
+
+**The directory is gone as of G.1.** Three of the five remaining files were marked *ported* in
+its own table; the other two (`modifiers.py`, `buff_resolver.py`) were staged for **Chunk H**,
+which is closed — and the plan that replaced it
+(`docs/TASKS_gcsim_optimizer.md`) transcribes from **gcsim's Go**, not from fairy's ZZZ
+modifier DSL. Nothing was left with a consumer.
+
+**Everything still exists** in `/root/fairy` and in the fairy repo, and in this repo's own git
+history. Copy anything back that turns out to be worth porting rather than re-deriving — the
+fork commit's standing instruction, unchanged.
+
+The disposition table is preserved below because it records *what became what*, which is the
+part worth keeping. It is history: the "Consumed by" column names chunks, several since closed.
+
+---
 
 These files are **not runtime code.** They are fairy's ZZZ implementations, kept only so the
 Genshin ports can be written *against* them instead of from memory. Nothing in `app/` imports

@@ -8,8 +8,9 @@ optimization, and Numba-compiled hot-loop compilation.
 This package arrived in fairy as a generic engine lifted from *the Genshin
 optimizer this project is compared to*; in mistilteinn it is a component
 returning to its native game (DESIGN §2.4). ``calculator.py`` carries no
-game vocabulary and was not touched by the port. ``translator.py`` moved to
-``app/services/_ported/`` in B.3 — it converted the ZZZ modifier DSL to DAG
-entries, so despite having no ZZZ *words* it was never game-agnostic; its
-Genshin replacement is Chunk F work.
+game vocabulary and was not touched by the port. ``translator.py`` moved out to
+the ZZZ porting source in B.3 — it converted the ZZZ modifier DSL to DAG
+entries, so despite having no ZZZ *words* it was never game-agnostic. Its
+Genshin replacement is Chunk F work, and the source it was kept for was
+deleted in G.1 (``docs/PORT_zzz_disposition.md``).
 """

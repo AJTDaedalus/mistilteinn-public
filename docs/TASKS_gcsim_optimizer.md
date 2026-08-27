@@ -28,11 +28,11 @@ re-derivation) and §4 (predict-then-verify) before starting.
 
 ## Phase 0 — clear the decks
 
-### [ ] G.0 — Branch setup **(gate)**
+### [x] G.0 — Branch setup **(gate)**
 - **Do:** branch `feat/gcsim-optimizer` off `dev`.
 - **Accept:** `git branch --show-current` is not `dev` or `main`.
 
-### [ ] G.1 — Repo cleanup **[Planner]**
+### [x] G.1 — Repo cleanup **[Planner]** — **done**
 - **Do:**
   1. **Rescope `TASKS_passive_port.md`.** P.3–P.5 were written on the premise that 237
      passives must be transcribed before a rotation can be scored.
