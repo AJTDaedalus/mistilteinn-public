@@ -42,8 +42,10 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
   distinct slots yields exactly one combination; four pieces where two share a slot yields
   none. Counting the latter as `S` inflates the calibration budget with states no combination
   can reach.
-- **Why first:** the whole design rests on `S + 1` being small. If a real account has 40 sets
-  with four pieces, two minutes becomes seven and the interaction changes.
+- **Why first:** the whole design rests on the calibration count being small. It is
+  **`(S + 1) × P`**, not `S + 1` — `P` is the number of ER plateaus the inventory spans, and
+  `RESEARCH_recipe_risks.md` §3 measured `P = 2` for the sample rotation. If a real account has
+  40 sets with four pieces, three minutes becomes twenty and the interaction changes.
 
 ### [ ] R.2 — Is a 2-piece bonus really kernel-representable? **[Planner]**
 - **Do:** for a sample of sets, calibrate with and without the set and compare. A difference
@@ -52,13 +54,28 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
   or corrected. **Do not inherit it** — *having a static prop* is not the same as *having no
   conditional part*, and a tier could carry both.
 
+### [ ] R.2a — Discover the ER plateau boundaries **[Planner]**
+- **Do:** sweep artifact-borne ER for the rotation and record where burst count steps.
+- **Accept:** the boundaries, from a measurement, in `docs/LOG_mistilteinn.md`. About ten
+  `sample()` runs, ~30 s.
+- **Why this exists:** `RESEARCH_recipe_risks.md` §3. `stabilityFrom` detects that a build sits
+  *on* a transition; it does not say *where* the transitions are, and the search needs that to
+  pick a recipe for a candidate. **This step is not in `DESIGN_recipe_surface.md` and was
+  added after measuring.**
+
 ## Phase 1 — calibration
 
 ### [ ] R.3 — Emit calibration configs
-- **Do:** an endpoint that emits, for a build and rotation: a **zero-artifact-stat** config with
-  a chosen 4-piece set equipped, and a **probe** config at a perturbed stat.
-- **Accept:** the emitted config has **no `add stats` line**, carries `add set="x" count=4`,
-  and round-trips through `validateConfig`. A build with no rotation is a 422, not a guess.
+- **Do:** an endpoint that emits, for a build and rotation: a calibration config with a chosen
+  4-piece set equipped and **an ER representative of the target plateau**, and a **probe**
+  config at a perturbed stat.
+- **Accept:** the config carries `add set="x" count=4` and `add stats er=<plateau>`, **and no
+  other stat**; it round-trips through `validateConfig`. A build with no rotation is a 422.
+- **ER is not zero, and this is the correction.** `DESIGN_gcsim_optimizer.md` §3.1 said
+  "zero artifact stats"; ER is an artifact stat, and a zero-ER calibration produced **2 burst
+  instances against a real candidate's 3** (`RESEARCH_recipe_risks.md` §1). ER is
+  **structural**: baked into the calibration, and a candidate's own ER is used only to pick a
+  plateau — **never added as a damage stat**.
 - **`_artifact_lines` currently derives both from the equipped artifacts** — the set counts and
   the stat totals come from the same loop. Splitting them is the work.
 
@@ -70,9 +87,23 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 
 ## Phase 2 — the search
 
-### [ ] R.5 — Select a recipe per 4-piece state
-- **Do:** `searchRecipe` takes a map from 4-piece set id to recipe, plus a fallback for
-  combinations reaching no 4-piece.
+### [ ] R.4a — Do not add a bonus the calibration already holds
+- **Do:** when scoring a combination against a recipe calibrated with set X, **omit X's set
+  bonuses** from the kernel's stat pools. Other sets in the combination still contribute.
+- **Accept:** a test that a 2-piece bonus is applied **exactly once**. Measured: calibrating
+  with `Blizzard Strayer` puts `cryo% 0.27` in the recipe against `0.12` without — the 0.15
+  difference is its 2-piece, and `searchRecipe` would add it again
+  (`RESEARCH_recipe_risks.md` §2).
+- **This makes `DESIGN_recipe_surface.md` §2 conditional:** "2-piece bonuses stay kernel stat
+  pools" is true only of the sets the calibration does **not** hold.
+
+### [ ] R.5 — Select a recipe per 4-piece state **and ER plateau**
+- **Do:** `searchRecipe` takes a map keyed by **(4-piece set id, ER plateau)**, plus a fallback
+  for combinations reaching no 4-piece.
+- **Candidates within one search span plateaus** — measured at **2** for the sample rotation,
+  with the boundary at only +20 % artifact ER, which a single ER sands clears
+  (`RESEARCH_recipe_risks.md` §3). Scoring both sides against one recipe overstates whichever
+  it was not calibrated for.
 - **Accept:** a combination with 4 pieces of set X scores against X's recipe; one with 2+2
   scores against the fallback. A missing recipe is **reported, never silently substituted** —
   scoring a Blizzard Strayer build against the no-set recipe is exactly the wrong answer this

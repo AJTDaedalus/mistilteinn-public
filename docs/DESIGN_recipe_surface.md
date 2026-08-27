@@ -97,6 +97,22 @@ case it was built to fix is worse than one that says it does not know.
 microseconds, and OQ-W4 settled the principle: deleting a fast honest answer because a slow
 better one exists is a downgrade.
 
+## 4a. Three corrections from measuring before building
+
+`docs/RESEARCH_recipe_risks.md`. All three were in **this design**, not in the code, and all
+three would have produced numbers that looked entirely reasonable.
+
+1. **ER is an artifact stat, so "calibrate at zero artifact stats" calibrates the wrong
+   rotation.** A zero-ER calibration produced **2 burst instances against a real candidate's
+   3**. ER is **structural**: baked into the calibration at a plateau-representative value, and
+   a candidate's own ER picks a plateau rather than being added as a damage stat.
+2. **Calibrating with a set bakes in its 2-piece**, which the kernel would then add again —
+   measured as an exact 0.15 double-count on `Blizzard Strayer`. §2's "2-piece bonuses stay
+   kernel stat pools" holds only for sets the calibration does **not** hold.
+3. **Candidates within one search span ER plateaus**, so one recipe cannot score an inventory.
+   The budget is **`(S + 1) × P`**, and the plateau boundaries must be **discovered** by
+   sweeping ER before anything is calibrated — a step this design did not have.
+
 ## 5. Open questions
 
 - **OQ-R1 — how many calibrations does a *real* inventory need?** §2 says S+1, where S is the
