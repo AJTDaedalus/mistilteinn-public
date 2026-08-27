@@ -95,7 +95,7 @@ re-derivation) and §4 (predict-then-verify) before starting.
   transcription; only this proves fidelity. **A recipe that only reproduces its own
   calibration is a very expensive identity function.**
 
-### [ ] G.6 — A recipe states its own validity
+### [x] G.6 — A recipe states its own validity — **done**
 - **Do:** carry `stable` (burst-instance `sd == 0`), `staleModifiers` (stat-conversion
   passives present and unported), `erBucket`, `gcsimPin`, `seed`, `iterations`.
 - **Accept:** a build inside an ER transition band comes back **`stable: false`**, and the
