@@ -98,6 +98,16 @@ a job with progress, never a request that blocks.
   its own. **`capture_nanoka_fixtures.py` without `--version` follows upstream**, which is
   what it silently did in N.2 — pulling two characters at 7.0.52 into a 7.0.51 directory and
   rewriting three index files, one with real content changes. Pass the version.
+- **Never emit `swap_delay=0` in a gcsim config.** gcsim queues a character swap to land
+  `Delays.Swap` frames later, so at zero it **never lands** and any rotation touching a second
+  character dies with *"requested next char X is not active and next action is not swap"*.
+  `build_config` hardcoded it, so **every multi-character rotation this repo produced was
+  unrunnable** — natively and in the browser alike — while solo rotations, which never swap,
+  looked fine. Omitted now, inheriting gcsim's default of 1;
+  `tests/unit/test_swap_delay_is_never_zero.py` pins it and
+  `docs/RESEARCH_recipe_cost.md` §2 explains it. **The symptom is misleading**: `flush()`
+  reports `index out of range [0] with length 0` while the real message is on `simulate()`'s
+  return value, which is a *string* on failure.
 - **A saved rotation is authored here and compiled to gcsim, never read back.** The compiler
   emits the `while 1` loop and a `.ready` gate on every step, because gcsim's two worst
   behaviours are silent: a bare action list runs **once**, and `while 1` **deadlocks** on an

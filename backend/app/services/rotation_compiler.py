@@ -81,6 +81,17 @@ def compile_rotation(
 
     keys = _resolve(steps, characters)
 
+    # **No swap actions are emitted, and none are needed.** gcsim's parser desugars
+    # `xiangling burst;` into `execute_action(...)`, which inserts an implicit swap when the
+    # named character is not active (`pkg/gcs/eval/sysfunc.go:472`).
+    #
+    # That implicit swap is silently defeated by `swap_delay=0`, which `gcsim_config` used to
+    # emit unconditionally — gcsim queues the swap to land `Delays.Swap` frames later, so at
+    # zero it never lands and the run dies with *"requested next char X is not active and next
+    # action is not swap"*. **Every multi-character rotation this repo produced was
+    # unrunnable**, natively and in the browser alike, and solo rotations never swap so nothing
+    # caught it. See `docs/RESEARCH_recipe_cost.md` §2.
+
     # `active` is the **first step's** character, not the team's first slot. Otherwise the
     # rotation opens with an implicit swap gcsim has to pay for, before the user's first
     # intended action — a cost they did not write and cannot see.

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { configError, run, type GcsimModule } from './gcsim';
+import { configError, run, simulationError, type GcsimModule } from './gcsim';
 
 /**
  * W.1 — the runner's logic, against a stub.
@@ -22,7 +22,7 @@ function stub(out: unknown, validated: unknown = { parsed: true }): GcsimModule 
     validateConfig: vi.fn(() => validated),
     initializeAggregator: vi.fn(),
     initializeWorker: vi.fn(),
-    simulate: vi.fn(() => ({ one: true })),
+    simulate: vi.fn(() => new Uint8Array([1, 2, 3])),
     aggregate: vi.fn(),
     flush: vi.fn(() => JSON.stringify(out)),
   };
@@ -41,6 +41,18 @@ describe('configError', () => {
 
   it('reports the complaint when gcsim embedded one', () => {
     expect(configError('{"error":"unknown character bogus"}')).toContain('bogus');
+  });
+});
+
+describe('simulationError', () => {
+  it('reports a string return as the failure it is', () => {
+    // `simulate()` signals failure by *returning* a string where a Uint8Array was expected.
+    expect(simulationError('{"error":"requested next char xiangling is not active"}'))
+      .toContain('xiangling');
+  });
+
+  it('reports null for the byte array a successful run returns', () => {
+    expect(simulationError(new Uint8Array([1, 2, 3]))).toBeNull();
   });
 });
 
@@ -99,5 +111,32 @@ describe('run', () => {
 
   it('keeps gcsim’s own result, so a caller can read what this does not model', () => {
     expect(run(stub(OK), 'cfg', 1).raw).toEqual(OK);
+  });
+
+  it('surfaces a failed simulation instead of aggregating the error string', () => {
+    // The bug this replaces: passing `simulate()`'s error string to `aggregate()` aggregates
+    // nothing, and `flush()` then fails with "index out of range [0] with length 0" — the
+    // real cause discarded and replaced by a description of the empty aggregate. It hid
+    // "requested next char X is not active and next action is not swap" for an hour.
+    const mod = stub(OK);
+    mod.simulate = vi.fn(() => '{"error":"requested next char xiangling is not active"}');
+
+    expect(() => run(mod, 'cfg', 3)).toThrow(/xiangling/);
+    expect(mod.aggregate).not.toHaveBeenCalled();
+  });
+
+  it('stops at the first failed iteration rather than running the rest', () => {
+    const mod = stub(OK);
+    let calls = 0;
+    mod.simulate = vi.fn(() => (++calls === 2 ? '{"error":"boom"}' : new Uint8Array([1])));
+
+    expect(() => run(mod, 'cfg', 10)).toThrow(/boom/);
+    expect(calls).toBe(2);
+  });
+
+  it('surfaces a failed aggregate rather than reading zeros off it', () => {
+    const mod = stub({ error: 'index out of range [0] with length 0' });
+
+    expect(() => run(mod, 'cfg', 1)).toThrow(/index out of range/);
   });
 });
