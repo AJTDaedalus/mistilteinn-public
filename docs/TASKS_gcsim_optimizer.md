@@ -103,7 +103,7 @@ re-derivation) and §4 (predict-then-verify) before starting.
 
 ## Phase 3 — the search
 
-### [ ] G.7 — Calibration cache **[Planner]**
+### [x] G.7 — Calibration cache **[Planner]** — **done**
 - **Do:** settle **OQ-G3** (where recipes live) and **OQ-G1** (which ER buckets to calibrate).
 - **Accept:** OQ-G1 answered from a **measured** step location for a real rotation, not from
   `RESEARCH_er_bucketing.md`'s Ayaka sweep — that doc's own Result 3 shows real variation at
