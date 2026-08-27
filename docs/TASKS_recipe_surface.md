@@ -73,8 +73,8 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 - **ER is not zero, and this is the correction.** `DESIGN_gcsim_optimizer.md` §3.1 said
   "zero artifact stats"; ER is an artifact stat, and a zero-ER calibration produced **2 burst
   instances against a real candidate's 3** (`RESEARCH_recipe_risks.md` §1). ER is
-  **structural**: baked into the calibration, and a candidate's own ER is used only to pick a
-  plateau — **never added as a damage stat**.
+  **structural**: baked into the calibration, and a candidate's own ER is used only to check it
+  clears the recipe's minimum — **never added as a damage stat**.
 - **`_artifact_lines` currently derives both from the equipped artifacts** — the set counts and
   the stat totals come from the same loop. Splitting them is the work.
 
