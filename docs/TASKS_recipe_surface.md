@@ -78,7 +78,7 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 - **`_artifact_lines` currently derives both from the equipped artifacts** — the set counts and
   the stat totals come from the same loop. Splitting them is the work.
 
-### [~] R.4 — Calibrate in the browser — **`calibrate()` done; caching (OQ-R2) outstanding**
+### [x] R.4 — Calibrate in the browser — **done** (OQ-R2 answered)
 - **Do:** run `sample()` for baseline and probe, `parseSample`, `resolveConversions`, cache the
   result client-side (**OQ-R2** for the key and invalidation).
 - **Accept:** a calibration survives a page reload; a gcsim pin change invalidates it. **A
@@ -150,7 +150,10 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 
 ## Open questions
 
-**OQ-R1** real calibration count (R.1) · **OQ-R2** cache key and invalidation (R.4) ·
+**OQ-R1** real calibration count (R.1, **blocked — needs a GOOD export**) ·
+~~**OQ-R2** cache key and invalidation~~ **answered in R.4**: keyed by gcsim pin, build,
+rotation, 4-piece set, ER and seed, in browser storage; a refusal evicts and retries once, and
+a cache that fails is a slow search rather than a broken page ·
 **OQ-R3** what the page shows while calibrating (R.8) · **OQ-R4** which tier is the default
 (R.8).
 
