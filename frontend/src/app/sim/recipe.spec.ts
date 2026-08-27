@@ -4,6 +4,7 @@ import {
   effectiveCritRate,
   parseSample,
   replayHit,
+  resolveConversions,
   stabilityFrom,
   type RecipeHit,
 } from './recipe';
@@ -43,7 +44,11 @@ function calc(over: Record<string, unknown> = {}) {
 
 const hit = (over: Partial<RecipeHit> = {}): RecipeHit => ({
   abil: 'x', attackTag: -1, element: '19', talent: 2, scaling: 'atk', flatDamage: 0,
-  calibratedScaling: 1000, baseStat: 1000, bonusDmg: 0.5, critRate: 0.25, critDmg: 2, defMultiplier: 0.5,
+  conversions: {},
+  calibratedBase: { atk: 1000, hp: 10000, def: 800 },
+  calibratedPercent: { atk: 0, hp: 0, def: 0 },
+  calibratedFlat: { atk: 0, hp: 0, def: 0 },
+  calibratedScaling: 1000, bonusDmg: 0.5, critRate: 0.25, critDmg: 2, defMultiplier: 0.5,
   resMultiplier: 0.9, ampMultiplier: 1, gcsimAverageDamage: 2025, ...over,
 });
 
@@ -221,5 +226,79 @@ describe('staleConversions', () => {
     ] });
 
     expect(r.meta.staleConversions[0].damageShare).toBeCloseTo(0.25, 9);
+  });
+});
+
+
+describe('resolveConversions', () => {
+  const pair = (baseFlat: number, probeFlat: number, probeDefPercent: number) => {
+    const mk = (flat: number, defPct: number) => parseSample({ logs: [
+      dmg(), calc({ flat_dmg: flat, def_per: defPct }),
+    ] });
+    return [mk(baseFlat, 0), mk(probeFlat, probeDefPercent)] as const;
+  };
+
+  it('identifies the stat a frozen term was converted from', () => {
+    // base DEF 800; probe at +50% → 1200, a ratio of 1.5. A flat term moving by the same 1.5
+    // came from DEF, and nothing else the probe moved did.
+    const [baseline, probe] = pair(100, 150, 0.5);
+    const r = resolveConversions(baseline, probe);
+
+    expect(r).toEqual({ resolved: 1, unresolved: 0 });
+    expect(baseline.hits[0].conversions.flatDamage)
+      .toEqual({ from: 'def', perUnit: 100 / 800 });
+  });
+
+  it('leaves a term unresolved when nothing the probe moved matches it', () => {
+    // A snapshotted conversion looks like this: the term moves by a factor no hit-time stat
+    // ratio equals, because it was computed at cast rather than at this hit.
+    const [baseline, probe] = pair(100, 123, 0.5);
+
+    expect(resolveConversions(baseline, probe)).toEqual({ resolved: 0, unresolved: 1 });
+    expect(baseline.hits[0].conversions.flatDamage).toBeUndefined();
+  });
+
+  it('refuses to choose when the probe moved two stats by the same factor', () => {
+    // Both ATK and DEF at +50%, and a flat term that also moved x1.5. Nothing in the data
+    // says which it came from, and picking one would put a confident wrong number in every
+    // hit that carries the term — wrong in exactly the cases where the two stats diverge.
+    const mk = (flat: number, pct: number) => parseSample({ logs: [
+      dmg(), calc({ flat_dmg: flat, atk_per: pct, def_per: pct }),
+    ] });
+    const baseline = mk(100, 0);
+    const probe = mk(150, 0.5);
+
+    expect(resolveConversions(baseline, probe)).toEqual({ resolved: 0, unresolved: 1 });
+    expect(baseline.hits[0].conversions.flatDamage).toBeUndefined();
+  });
+
+  it('leaves a term unresolved when the probe moved nothing', () => {
+    const [baseline, probe] = pair(100, 100, 0);
+
+    expect(resolveConversions(baseline, probe).resolved).toBe(0);
+  });
+
+  it('refuses a probe that changed the rotation', () => {
+    const baseline = parseSample({ logs: [dmg(), calc()] });
+    const probe = parseSample({ logs: [dmg(), calc(), dmg(), calc()] });
+
+    expect(() => resolveConversions(baseline, probe)).toThrow(/changed the rotation/);
+  });
+
+  it('drops a resolved term from the stale list', () => {
+    // A warning about something that was fixed is one everybody learns to ignore.
+    const [baseline, probe] = pair(100, 150, 0.5);
+    expect(baseline.meta.staleConversions).toHaveLength(1);
+
+    resolveConversions(baseline, probe);
+
+    expect(baseline.meta.staleConversions).toEqual([]);
+  });
+
+  it('keeps an unresolved term in the stale list', () => {
+    const [baseline, probe] = pair(100, 123, 0.5);
+    resolveConversions(baseline, probe);
+
+    expect(baseline.meta.staleConversions.map((c) => c.term)).toEqual(['flatDamage']);
   });
 });

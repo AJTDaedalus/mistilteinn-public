@@ -1,0 +1,16 @@
+options iteration=100 duration=90;
+
+noelle char lvl=90/90 cons=6 talent=9,9,9;
+noelle add weapon="redhornstonethresher" lvl=90/90 refine=1;
+noelle add set="huskofopulentdreams" count=4;
+
+noelle add stats def%=0.9 cd=0.4;
+
+target lvl=90 resist=0.1 pos=0,1;
+
+active noelle;
+while 1 {
+    if .noelle.burst.ready { noelle burst; }
+    if .noelle.skill.ready { noelle skill; }
+    if .noelle.attack.ready { noelle attack:4; }
+}

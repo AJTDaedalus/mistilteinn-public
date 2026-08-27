@@ -21,7 +21,13 @@ const hit = (over: Partial<RecipeHit> = {}): RecipeHit => ({
   // artifact stats — so a stub that makes them equal cannot tell `baseStat` from
   // `calibratedScaling`, and the mutation swapping them survives. The gate cannot catch that
   // either, for the same reason, so this is the only place it can be caught.
-  calibratedScaling: 1500, baseStat: 1000, bonusDmg: 0, critRate: 0, critDmg: 0,
+  calibratedScaling: 1500, bonusDmg: 0, critRate: 0, critDmg: 0,
+  conversions: {},
+  // **Deliberately not all equal.** These are the three parts a total is built from, and a
+  // stub that collapses them cannot tell `base × (1 + pct)` from a re-multiplied total.
+  calibratedBase: { atk: 1000, hp: 10000, def: 800 },
+  calibratedPercent: { atk: 0, hp: 0, def: 0 },
+  calibratedFlat: { atk: 0, hp: 0, def: 0 },
   defMultiplier: 0.5, resMultiplier: 0.9, ampMultiplier: 1, gcsimAverageDamage: 900, ...over,
 });
 
@@ -44,17 +50,20 @@ describe('evaluateHit', () => {
   });
 
   it.each([
-    ['hp', { hpPercent: 1 }],
-    ['def', { defPercent: 1 }],
-  ] as const)('scales off %s when the ability does', (scaling, over) => {
-    expect(evaluateHit(hit({ scaling }), stats(over))).toBeCloseTo(1800, 6);
+    // base 10000, doubled by +100% HP → 20000; talent 2 → 40000; × 0.5 × 0.9 = 18000.
+    ['hp', { hpPercent: 1 }, 18000, 9000],
+    // base 800, doubled → 1600; talent 2 → 3200; × 0.45 = 1440.
+    ['def', { defPercent: 1 }, 1440, 720],
+  ] as const)('scales off %s when the ability does', (scaling, over, moved, unmoved) => {
+    expect(evaluateHit(hit({ scaling }), stats(over))).toBeCloseTo(moved, 6);
     // …and is unmoved by a stat it does not scale off.
-    expect(evaluateHit(hit({ scaling }), stats({ atkPercent: 1 }))).toBeCloseTo(900, 6);
+    expect(evaluateHit(hit({ scaling }), stats({ atkPercent: 1 }))).toBeCloseTo(unmoved, 6);
   });
 
-  it('takes elemental mastery whole, since it has no percentage form', () => {
+  it('takes elemental mastery whole, since it has no base or percentage form', () => {
+    // scaling = 200; talent 2 → 400; × 0.45 = 180.
     expect(evaluateHit(hit({ scaling: 'em' }), stats({ elementalMastery: 200 })))
-      .toBeCloseTo(1080, 6);
+      .toBeCloseTo(180, 6);
   });
 
   it('lets a goblet reach only its own element', () => {
@@ -102,6 +111,47 @@ describe('evaluateHit', () => {
 
   it('applies the amplifying multiplier last', () => {
     expect(evaluateHit(hit({ ampMultiplier: 2 }), stats())).toBeCloseTo(1800, 9);
+  });
+});
+
+describe('conversions', () => {
+  it('rescales a resolved conversion from the candidate’s own total', () => {
+    // Redhorn: flat damage is 40% of DEF. base DEF 800 → flat 320; at +100% DEF the total is
+    // 1600 → flat 640. base = 2*1000 + 640 = 2640; x 0.45 = 1188.
+    const h = hit({
+      flatDamage: 320,
+      conversions: { flatDamage: { from: 'def', perUnit: 0.4 } },
+    });
+
+    expect(evaluateHit(h, stats({ defPercent: 1 }))).toBeCloseTo(1188, 6);
+  });
+
+  it('leaves an unresolved conversion frozen rather than guessing a source', () => {
+    // Inventing a scaling for a term whose source was never identified would put a confident
+    // wrong number in every hit that carries it.
+    const h = hit({ flatDamage: 320 });
+
+    expect(evaluateHit(h, stats({ defPercent: 1 }))).toBeCloseTo(evaluateHit(h, stats()), 9);
+  });
+
+  it('rescales a conversion that landed in flat ATK, feeding the scaling stat', () => {
+    // Noelle's burst converts DEF into flat ATK. At +100% DEF the flat ATK doubles, and it is
+    // added *after* the ATK percentage — a percentage multiplies base only.
+    const h = hit({
+      calibratedFlat: { atk: 400, hp: 0, def: 0 },
+      conversions: { flatAtk: { from: 'def', perUnit: 0.5 } },
+    });
+
+    // scaling = 1000 * 1 + (0.5 * 1600) = 1800; talent 2 → 3600; x 0.45 = 1620.
+    expect(evaluateHit(h, stats({ defPercent: 1 }))).toBeCloseTo(1620, 6);
+  });
+
+  it('adds the calibration percentage to the candidate’s rather than compounding', () => {
+    // base 1000 at a calibrated +50% and a candidate +50% is 1000*(1+0.5+0.5) = 2000, not
+    // 1000*1.5*1.5 = 2250. Compounding is invisible whenever the calibration has no buffs.
+    const h = hit({ calibratedPercent: { atk: 0.5, hp: 0, def: 0 } });
+
+    expect(evaluateHit(h, stats({ atkPercent: 0.5 }))).toBeCloseTo(2 * 2000 * 0.45, 6);
   });
 });
 
