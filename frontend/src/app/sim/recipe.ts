@@ -33,6 +33,25 @@
 /** Which stat an ability scales off. gcsim states this; it is not inferred. */
 export type RecipeScaling = 'atk' | 'hp' | 'def' | 'em';
 
+/** A stat a conversion can draw from. */
+export type ConversionSource = 'atk' | 'hp' | 'def';
+
+/** ATK, HP and DEF together — every stat that has base, percentage and flat parts. */
+export interface StatTriple {
+  atk: number;
+  hp: number;
+  def: number;
+}
+
+/** Terms a conversion can land in. Each is frozen at calibration until a probe resolves it. */
+export type ConversionTerm = 'flatDamage' | 'flatAtk' | 'flatHp' | 'flatDef';
+
+/** What a resolved conversion draws from, and how much per unit of it. */
+export interface ResolvedConversion {
+  from: ConversionSource;
+  perUnit: number;
+}
+
 /** One damage instance, decomposed. */
 export interface RecipeHit {
   /** gcsim's ability name — `Soumetsu (Cutting)`, `Normal 1`. Not a label to show a user. */
@@ -56,19 +75,36 @@ export interface RecipeHit {
   /** Flat damage added before bonuses — Redhorn's DEF conversion lands here. */
   flatDamage: number;
   /**
+   * What each frozen term was converted from, once a probe calibration has identified it.
+   *
+   * A missing entry means **unresolved**, not "no conversion": an unresolved flat term stays
+   * at the calibration's value and goes stale under any candidate whose stats differ.
+   */
+  conversions: Partial<Record<ConversionTerm, ResolvedConversion>>;
+  /**
    * The scaling stat **as the calibration computed it** — gcsim's `total_scaling`. Used by
    * `replayHit` to check the transcription against gcsim's own answer, and **not** by the
-   * evaluator, which recomputes it from `baseStat` and the candidate's own stats.
+   * evaluator, which rebuilds it from the parts below.
    */
   calibratedScaling: number;
   /**
-   * The character's **base** ATK / HP / DEF — what a candidate's percentage stats multiply.
+   * The three parts of every stat, kept apart because that is how they combine.
    *
-   * Distinct from `calibratedScaling` because a candidate replaces the calibration's artifact
-   * contribution rather than adding to it: at zero artifact stats the two are equal, and once
-   * a candidate is applied they are not.
+   * `total = base × (1 + percent) + flat` — gcsim's own formula, and the reason a candidate's
+   * percentage must be **added to** the calibration's percentage rather than applied to its
+   * total. Multiplying an already-multiplied total compounds the calibration's own buffs, and
+   * the error is invisible whenever the calibration has none.
    */
-  baseStat: number;
+  calibratedBase: StatTriple;
+  calibratedPercent: StatTriple;
+  /**
+   * The flat ATK / HP / DEF the calibration carried, from character and weapon kits.
+   *
+   * A percentage does **not** multiply it. Dropping it lost Noelle's DEF-to-ATK burst
+   * entirely — 33 hits, a **79.75 %** prediction error, and invisible against a fixture whose
+   * character has no flat conversion.
+   */
+  calibratedFlat: StatTriple;
   /** Totals from the calibration run. `RecipeBaseline` says how much was artifact-borne. */
   bonusDmg: number;
   critRate: number;
@@ -106,7 +142,7 @@ export interface RecipeHit {
  */
 export interface StaleConversion {
   /** Which term carries it. */
-  term: 'flatDamage' | 'flatAtk' | 'flatHp' | 'flatDef';
+  term: ConversionTerm;
   /** How many hits of the recipe are affected. */
   hits: number;
   /** The share of the recipe's total damage those hits account for, 0–1. */
@@ -164,6 +200,8 @@ interface CalcLog {
   flat_dmg: number;
   flat_hp: number;
   flat_def: number;
+  hp_per: number;
+  def_per: number;
   bonus_dmg: number;
   cr: number;
   cd: number;
@@ -261,8 +299,11 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
       talent: c.talent,
       scaling: scalingOf(c),
       flatDamage: c.flat_dmg,
+      conversions: {},
+      calibratedBase: { atk: c.base_atk, hp: c.base_hp, def: c.base_def },
+      calibratedPercent: { atk: c.atk_per, hp: c.hp_per, def: c.def_per },
+      calibratedFlat: { atk: c.flat_atk, hp: c.flat_hp, def: c.flat_def },
       calibratedScaling: c.total_scaling,
-      baseStat: c.use_hp ? c.base_hp : c.use_def ? c.base_def : c.base_atk,
       bonusDmg: c.bonus_dmg,
       critRate: c.cr,
       critDmg: c.cd,
@@ -285,20 +326,133 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
 function staleConversionsIn(hits: RecipeHit[], calcs: CalcLog[]): StaleConversion[] {
   const landed = calcs.filter((c) => c.damage !== 0);
   const total = hits.reduce((sum, h) => sum + h.gcsimAverageDamage, 0);
-  const terms: [StaleConversion['term'], (c: CalcLog) => number][] = [
+  const reads: [ConversionTerm, (c: CalcLog) => number][] = [
     ['flatDamage', (c) => c.flat_dmg],
     ['flatAtk', (c) => c.flat_atk],
     ['flatHp', (c) => c.flat_hp],
     ['flatDef', (c) => c.flat_def],
   ];
   const out: StaleConversion[] = [];
-  for (const [term, read] of terms) {
+  for (const [term, read] of reads) {
     let count = 0;
     let damage = 0;
     for (let i = 0; i < landed.length && i < hits.length; i++) {
       if (read(landed[i]) !== 0) {
         count++;
         damage += hits[i].gcsimAverageDamage;
+      }
+    }
+    if (count > 0) out.push({ term, hits: count, damageShare: total > 0 ? damage / total : 0 });
+  }
+  return out;
+}
+
+
+
+/**
+ * Identify what a baked-in flat-damage term converts from, by comparing two calibrations.
+ *
+ * **Measured, not transcribed.** `TASKS_passive_port.md` planned to read each conversion out
+ * of gcsim's Go and copy its coefficient. A probe calibration gets the same answer *from
+ * gcsim's own numbers*, with no coefficient to mistype and no per-weapon record to maintain —
+ * and it catches character kits, which no list of weapons would.
+ *
+ * Verified against `Redhorn Stonethresher`, whose flat damage is 40 % of DEF: probing at
+ * `def%=0.5` moved it **×1.2427** while total DEF moved **×1.2427**, and probing at
+ * `atk%=0.5` moved it **×1.0000**. Exact, and the source stat is unambiguous.
+ *
+ * Both calibrations must be the **same rotation with the same structure** — same hit count,
+ * same abilities in the same order. A probe large enough to move the rotation is not a probe.
+ */
+/** `total = base × (1 + percent) + flat`, gcsim's own formula. */
+export function totalStat(hit: RecipeHit, stat: ConversionSource): number {
+  return hit.calibratedBase[stat] * (1 + hit.calibratedPercent[stat]) + hit.calibratedFlat[stat];
+}
+
+const TERMS: { term: ConversionTerm; read: (h: RecipeHit) => number }[] = [
+  { term: 'flatDamage', read: (h) => h.flatDamage },
+  { term: 'flatAtk', read: (h) => h.calibratedFlat.atk },
+  { term: 'flatHp', read: (h) => h.calibratedFlat.hp },
+  { term: 'flatDef', read: (h) => h.calibratedFlat.def },
+];
+
+/**
+ * Identify what each frozen term converts from, by comparing two calibrations.
+ *
+ * **Measured, not transcribed.** `TASKS_passive_port.md` planned to read every conversion out
+ * of gcsim's Go and copy its coefficient. A probe gets the same answer *from gcsim's own
+ * numbers* — no coefficient to mistype, no per-weapon record to maintain, and it catches
+ * **character kits**, which no list of weapons would. Noelle's DEF-to-ATK burst is 33 hits and
+ * would not appear on any weapon list.
+ *
+ * Verified against `Redhorn Stonethresher`, whose flat damage is 40 % of DEF: probing at
+ * `def%=0.5` moved it **×1.2427** while total DEF moved **×1.2427**, and probing at
+ * `atk%=0.5` moved it **×1.0000**.
+ *
+ * Both calibrations must be the **same rotation with the same structure**. A probe large
+ * enough to move the rotation is not a probe.
+ */
+export function resolveConversions(
+  baseline: Recipe,
+  probe: Recipe,
+  tolerance = 1e-6,
+): { resolved: number; unresolved: number } {
+  if (baseline.hits.length !== probe.hits.length) {
+    throw new Error(
+      `probe changed the rotation: ${baseline.hits.length} hits against ${probe.hits.length}. ` +
+        `A probe that moves the structure cannot identify a conversion.`,
+    );
+  }
+  const sources: ConversionSource[] = ['atk', 'hp', 'def'];
+  let resolved = 0;
+  let unresolved = 0;
+
+  for (let i = 0; i < baseline.hits.length; i++) {
+    const b = baseline.hits[i];
+    const p = probe.hits[i];
+    for (const { term, read } of TERMS) {
+      const before = read(b);
+      if (before === 0) continue;
+      const ratio = read(p) / before;
+
+      // The source is the stat whose ratio matches this term's. A stat the probe did not move
+      // has ratio 1 and cannot be told from any other unmoved stat, so it is a candidate only
+      // when the probe actually moved it.
+      const matches = sources.filter((stat) => {
+        const moved = totalStat(p, stat) / totalStat(b, stat);
+        return Math.abs(moved - 1) > tolerance && Math.abs(moved - ratio) <= tolerance;
+      });
+
+      // Exactly one match, or it stays unresolved. Two mean the probe moved both by the same
+      // factor and cannot separate them; zero means it moved neither. **Guessing between them
+      // would put a confident wrong number in every hit that carries the term.**
+      if (matches.length === 1) {
+        b.conversions[term] = { from: matches[0], perUnit: before / totalStat(b, matches[0]) };
+        resolved++;
+      } else {
+        unresolved++;
+      }
+    }
+  }
+
+  // Only unresolved terms are still stale. A resolved one rescales with the candidate and is
+  // no longer frozen — leaving it in the list would warn about something that was fixed, and
+  // a warning nobody can act on is one everybody learns to ignore.
+  baseline.meta.staleConversions = staleConversionsAfter(baseline);
+  return { resolved, unresolved };
+}
+
+/** The conversions still frozen after a resolution pass, with their share of the damage. */
+function staleConversionsAfter(recipe: Recipe): StaleConversion[] {
+  const total = recipe.hits.reduce((sum, h) => sum + h.gcsimAverageDamage, 0);
+  const out: StaleConversion[] = [];
+  for (const { term, read } of TERMS) {
+    let count = 0;
+    let damage = 0;
+    for (const hit of recipe.hits) {
+      if (read(hit) !== 0 && hit.conversions[term] === undefined) {
+        count++;
+        damage += hit.gcsimAverageDamage;
       }
     }
     if (count > 0) out.push({ term, hits: count, damageShare: total > 0 ? damage / total : 0 });

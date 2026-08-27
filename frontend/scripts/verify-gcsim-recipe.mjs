@@ -16,7 +16,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { parseSample, replayHit } from '../src/app/sim/recipe.ts';
+import { parseSample, replayHit, resolveConversions } from '../src/app/sim/recipe.ts';
 import { evaluateHit, NO_STATS } from '../src/app/sim/recipe-eval.ts';
 
 const FRONTEND = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -203,5 +203,72 @@ for (const c of CASES) {
   console.log(
     `recipe predicts an uncalibrated run: ${zero.hits.length} hits, ` +
       `worst rel err ${worst.toExponential(3)}`,
+  );
+}
+
+
+// ── Conversions, measured from a probe rather than transcribed ──────────────────────────────
+//
+// `Redhorn Stonethresher` converts DEF into flat damage. Frozen at calibration, that term does
+// not move when a candidate's DEF does — and for this build it is **83 % of the damage**.
+//
+// A probe calibration at a perturbed DEF identifies the source and the coefficient from
+// gcsim's own numbers. `TASKS_passive_port.md` planned to transcribe them from Go; this needs
+// no coefficient, no per-weapon record, and catches character kits a weapon list would miss.
+{
+  const baseline = parseSample(readFileSync(join(FIXTURES, 'noelle_redhorn_calc.json'), 'utf8'));
+  const probe = parseSample(readFileSync(join(FIXTURES, 'noelle_redhorn_probe_calc.json'), 'utf8'));
+  const target = parseSample(readFileSync(join(FIXTURES, 'noelle_redhorn_target_calc.json'), 'utf8'));
+  const candidate = { ...NO_STATS, defPercent: 0.9, critDmg: 0.4 };
+
+  // Noelle's burst **snapshots** DEF at cast, so its flat-ATK term moves by a factor no
+  // hit-time stat ratio equals. A two-point probe cannot resolve that, and the recipe says so
+  // rather than guessing — these hits are excluded here and remain reported as stale.
+  const hitTime = baseline.hits
+    .map((h, i) => ({ h, i }))
+    .filter(({ h }) => h.calibratedFlat.atk === 0);
+
+  const worstOver = () => hitTime.reduce((worst, { h, i }) => {
+    const actual = target.hits[i].gcsimAverageDamage;
+    return Math.max(worst, Math.abs(evaluateHit(h, candidate) - actual) / Math.max(actual, 1e-12));
+  }, 0);
+
+  const before = worstOver();
+  const { resolved, unresolved } = resolveConversions(baseline, probe);
+  const after = worstOver();
+
+  if (resolved === 0) {
+    console.error('the probe resolved no conversions at all — detection that never fires.');
+    process.exit(1);
+  }
+  if (!(before > 0.01)) {
+    console.error(
+      `the frozen recipe was already accurate to ${(before * 100).toFixed(2)}% on these hits, ` +
+        `so this case cannot show a probe fixing anything. Pick a target further from the ` +
+        `calibration.`,
+    );
+    process.exit(1);
+  }
+  if (!(after <= TOLERANCE)) {
+    console.error(
+      `resolving conversions did not make the prediction exact.\n` +
+        `  before ${(before * 100).toFixed(2)}%   after ${after.toExponential(3)}\n` +
+        `  resolved ${resolved}, unresolved ${unresolved}`,
+    );
+    process.exit(1);
+  }
+  const stale = baseline.meta.staleConversions.map((c) => c.term);
+  if (!stale.includes('flatAtk')) {
+    console.error(
+      `the snapshotted flat-ATK conversion should still be reported stale, but stale is ` +
+        `[${stale}]. A recipe that stops warning about something it did not fix is worse ` +
+        `than one that never warned.`,
+    );
+    process.exit(1);
+  }
+  console.log(
+    `probe resolved ${resolved} conversions (${unresolved} unresolved): ` +
+      `hit-time prediction ${(before * 100).toFixed(2)}% → ${after.toExponential(3)}, ` +
+      `still stale [${stale.join(', ')}]`,
   );
 }

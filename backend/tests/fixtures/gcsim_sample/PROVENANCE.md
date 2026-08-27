@@ -6,7 +6,25 @@ browser build at the pin (`docs/CROSSVAL_gcsim.md` — never restated here). See
 | fixture | config | hits | exercises |
 |---|---|---:|---|
 | `rotation_gated_calc.json` | `rotation_gated.txt` | 221 | ATK scaling, physical + cryo, a real `while 1` gated rotation |
-| `noelle_redhorn_calc.json` | `noelle_redhorn.txt` | 94 | **`flat_dmg` on 83 hits** (Redhorn's DEF conversion) and **`use_def` on 5** |
+| `rotation_gated_nostats_calc.json` | `rotation_gated_nostats.txt` | 221 | the **zero-stat calibration** the one above is predicted from |
+| `noelle_redhorn_calc.json` | `noelle_redhorn.txt` | 94 | **`flat_dmg` on 83 hits** (Redhorn's DEF conversion), **`flat_atk` on 33** (Noelle's burst), `use_def` on 5 |
+| `noelle_redhorn_probe_calc.json` | `noelle_redhorn_probe.txt` | 94 | the same at `def%=0.5` — the **probe** that identifies those conversions |
+| `noelle_redhorn_target_calc.json` | `noelle_redhorn_target.txt` | 94 | the same at `def%=0.9 cd=0.4` — a run the recipe must **predict** |
+
+## The probe triple
+
+Three calibrations of one rotation: at zero stats, at a probe point, and at a target the
+recipe has to predict. That is what turns a frozen conversion into a measured one —
+`resolveConversions` compares the first two, and the third is the check.
+
+**`Redhorn Stonethresher`'s DEF-to-damage conversion resolves exactly**: prediction over the
+hit-time hits goes from **14.87 % to 2.376e-16**.
+
+**Noelle's burst does not, and that is correct.** It **snapshots** DEF at cast, so its flat-ATK
+term moves by a factor no hit-time stat ratio equals — its ratio is constant at 1.26596 while
+DEF's varies 1.23585–1.26596 across the rotation. A two-point probe cannot separate that, so
+the recipe **refuses to resolve it and keeps reporting it stale**. Guessing would put a
+confident wrong number in 33 hits.
 
 ## Why two
 
