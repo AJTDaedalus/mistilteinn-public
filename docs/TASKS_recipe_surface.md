@@ -96,7 +96,7 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 - **This makes `DESIGN_recipe_surface.md` §2 conditional:** "2-piece bonuses stay kernel stat
   pools" is true only of the sets the calibration does **not** hold.
 
-### [ ] R.5 — Select a recipe per 4-piece state
+### [x] R.5 — Select a recipe per 4-piece state — **done**
 - **Do:** `searchRecipe` takes a map from 4-piece set id to recipe, plus a fallback for
   combinations reaching no 4-piece.
 - **A candidate below the recipe's minimum ER is flagged, not scored.** It cannot perform the
@@ -107,7 +107,7 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
   scoring a Blizzard Strayer build against the no-set recipe is exactly the wrong answer this
   chunk exists to stop.
 
-### [ ] R.6 — The Pareto layer takes the union **(the risky one)**
+### [x] R.6 — The Pareto layer takes the union **(the risky one)** — **done**
 - **Do:** `liveQuantitiesFor` over several recipes returns the **union** of their live sets.
 - **Accept:** a test where a quantity live under only one recipe still prevents pruning.
   **Mutate it**: intersecting instead of unioning must be caught.
