@@ -94,6 +94,15 @@ export interface RecipeHit {
  *
  * A list of weapons would need maintaining and would miss character kits entirely. The
  * numbers cannot.
+ *
+ * **Sound, not complete.** This finds conversions landing in a *flat* term, because those are
+ * visibly non-zero at zero artifact stats. It does **not** find one landing in a percentage
+ * term — `Engulfing Lightning` converts ER into ATK%, and a character has base ER regardless,
+ * so a non-zero `atk_per` test would fire on every recipe. Distinguishing that needs a second
+ * calibration at a perturbed ER, which is a task rather than a tweak.
+ *
+ * So a non-empty result can be trusted; an empty one means *"no flat-term conversions"*, not
+ * *"none at all"*.
  */
 export interface StaleConversion {
   /** Which term carries it. */

@@ -126,6 +126,13 @@ re-derivation) and §4 (predict-then-verify) before starting.
 **OQ-G3** where recipes live (G.7) · **OQ-G4** whether `/compare-weapons`'s gcsim tier
 collapses into this (after G.8).
 
+**OQ-G5 — percentage-term conversions.** `staleConversions` (G.6) is **sound but not
+complete**: it finds conversions landing in a *flat* term, and misses one landing in a
+percentage term. `Engulfing Lightning` converts ER into ATK%, and a character has base ER
+regardless, so a non-zero `atk_per` test would fire on every recipe. Detecting it needs a
+second calibration at a perturbed ER and a comparison. **A non-empty result can be trusted; an
+empty one means "no flat-term conversions", not "none at all".**
+
 ## Not in this chunk
 
 - **Tier 3 target-state passives.** `KernelTarget` cannot express aura, enemy type or weak
