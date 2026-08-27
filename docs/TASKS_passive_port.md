@@ -29,11 +29,11 @@
 
 ---
 
-### [ ] P.0 — Branch setup **(gate)**
+### [x] P.0 — Branch setup **(gate)**
 - **Do:** branch `feat/passive-port` off `dev`.
 - **Accept:** `git branch --show-current` is not `dev` or `main`.
 
-### [ ] P.1 — Survey gcsim's weapons and tier them for real **[Planner]**
+### [x] P.1 — Survey gcsim's weapons and tier them for real **[Planner]** — **done**
 - **Do:** read gcsim's `internal/weapons/**` at the pin and classify every weapon by the
   primitives it needs, not by its English text.
 - **Accept:** a table in `docs/RESEARCH_passive_tiers.md` — per weapon, the gcsim source path
@@ -42,7 +42,7 @@
   **proxy**. This reads the implementation. **Expect the numbers to move**, and say by how
   much — N.5's "20 static" is the thing being checked, not the thing being assumed. (OQ-P4)
 
-### [ ] P.2 — The passive record, and one evaluator **[Planner]**
+### [x] P.2 — The passive record, and one evaluator **[Planner]** — **done** (DESIGN §6a)
 - **Do:** design the record shape — effects, conditions, refinement scaling as `base + step*r`
   — and the single evaluator that reads it. Settle **OQ-P1** (where records live).
 - **Accept:** the shape expresses `The Stringless` **and** `Redhorn Stonethresher` with no
@@ -51,7 +51,9 @@
   binds weapons the same way it binds characters.
 
 ### [ ] P.3 — The evaluator, over Tier 1
-- **Do:** implement the evaluator and the Tier 1 records.
+- **Do:** implement the evaluator and the Tier 1 records. **Tier 1c is in scope** — it holds
+  `Staff of Homa` and `Engulfing Lightning`, and its `requires` conditions default to off and
+  are named (DESIGN §6a).
 - **Accept:** `Redhorn Stonethresher` produces a DEFP stat mod **and** flat damage of
   `TotalDEF × (0.3 + 0.1r)` on normal and charged hits only, via `Hit.flat_damage`. Every
   coefficient cites `internal/weapons/claymore/redhorn/redhorn.go` at the pin.
