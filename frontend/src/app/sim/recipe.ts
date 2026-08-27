@@ -153,6 +153,24 @@ export interface RecipeMeta {
   seed: string;
   /** Every conversion baked in that a candidate's stats would have moved. Empty is good. */
   staleConversions: StaleConversion[];
+  /**
+   * The catalogue id of the 4-piece set this recipe was calibrated with, or `null` for a
+   * calibration that equipped none.
+   *
+   * **A scorer must not add this set's bonuses again.** Equipping a set to calibrate also
+   * applies its 2-piece — measured as an exact `cryo% +0.150` for `Blizzard Strayer` — and the
+   * kernel adds every matching tier from its own pool, so it would land twice
+   * (`docs/RESEARCH_recipe_risks.md` §2).
+   *
+   * Set by whoever requested the calibration; `parseSample` cannot know it, because the config
+   * carries a gcsim *key* and the kernel counts sets by catalogue id.
+   */
+  calibratedSetId: number | null;
+  /**
+   * The lowest artifact Energy Recharge at which this rotation performs as calibrated, or
+   * `null` if it was never measured. See `recipe-energy.ts`.
+   */
+  minimumEnergyRecharge: number | null;
 }
 
 export interface Recipe {
@@ -314,7 +332,18 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
     });
   }
   const seed = String(parsed?.seed ?? '');
-  return { hits, seed, meta: { seed, staleConversions: staleConversionsIn(hits, calcs) } };
+  return {
+    hits,
+    seed,
+    meta: {
+      seed,
+      staleConversions: staleConversionsIn(hits, calcs),
+      // Both are the caller's to fill in: a sample payload says nothing about which catalogue
+      // set was equipped, nor about a sweep it was not part of.
+      calibratedSetId: null,
+      minimumEnergyRecharge: null,
+    },
+  };
 }
 
 /**

@@ -23,7 +23,7 @@ const hit = (over: Partial<RecipeHit> = {}): RecipeHit => ({
 });
 
 const recipe = (hits: RecipeHit[]): Recipe =>
-  ({ hits, seed: '1', meta: { seed: '1', staleConversions: [] } });
+  ({ hits, seed: '1', meta: { seed: '1', staleConversions: [], calibratedSetId: null, minimumEnergyRecharge: null } });
 
 const SLOTS = ['equip_bracer', 'equip_necklace', 'equip_shoes', 'equip_ring', 'equip_dress'];
 
@@ -137,6 +137,49 @@ describe('searchRecipe', () => {
     const out = searchRecipe(atkOnly, { recipe: recipe([hit()]), topN: 1 });
 
     expect(out.builds[0].damage).toBeCloseTo(2250, 3);
+  });
+
+  it('does not add the bonuses of the set the recipe was calibrated with', () => {
+    // Equipping a set to calibrate also applies its 2-piece — measured as an exact
+    // cryo% +0.150 for Blizzard Strayer — so it is already in every term of the recipe.
+    // Adding the tier here would land it twice.
+    const calibrated: Recipe = {
+      hits: [hit()], seed: '1',
+      meta: { seed: '1', staleConversions: [], calibratedSetId: 1, minimumEnergyRecharge: null },
+    };
+    const uncalibrated: Recipe = {
+      hits: [hit()], seed: '1',
+      meta: { seed: '1', staleConversions: [], calibratedSetId: null, minimumEnergyRecharge: null },
+    };
+    const bonuses = [{ setId: 1, piecesRequired: 4, stats: { atk_pct: 1 } }];
+    const inv = SLOTS.map((slot, i) =>
+      ({ id: `p${i}`, slot, setId: 1, stats: {} } as Candidate));
+
+    const withSkip = searchRecipe(inv, { recipe: calibrated, setBonuses: bonuses, topN: 1 });
+    const without = searchRecipe(inv, { recipe: uncalibrated, setBonuses: bonuses, topN: 1 });
+
+    expect(withSkip.builds[0].damage).toBeLessThan(without.builds[0].damage);
+    // Precisely: the skipped run sees no ATK bonus at all — 2*1000*0.45 = 900.
+    expect(withSkip.builds[0].damage).toBeCloseTo(900, 6);
+  });
+
+  it('still adds the bonuses of a set the calibration did not hold', () => {
+    // A 2+2 split has a second set whose static bonus is genuinely not in the recipe.
+    const calibrated: Recipe = {
+      hits: [hit()], seed: '1',
+      meta: { seed: '1', staleConversions: [], calibratedSetId: 1, minimumEnergyRecharge: null },
+    };
+    const inv = SLOTS.map((slot, i) =>
+      ({ id: `p${i}`, slot, setId: 2, stats: {} } as Candidate));
+
+    const out = searchRecipe(inv, {
+      recipe: calibrated,
+      setBonuses: [{ setId: 2, piecesRequired: 4, stats: { atk_pct: 1 } }],
+      topN: 1,
+    });
+
+    // ATK doubled → 2*2000*0.45 = 1800.
+    expect(out.builds[0].damage).toBeCloseTo(1800, 6);
   });
 
   it('reports the search as exact, because there is no lossy layer', () => {

@@ -12,7 +12,12 @@ import types
 
 import pytest
 
-from app.services.gcsim_config import GcsimConfigError, SubstituteWeapon, build_config
+from app.services.gcsim_config import (
+    Calibration,
+    GcsimConfigError,
+    SubstituteWeapon,
+    build_config,
+)
 from app.services.gcsim_keys import GcsimKeyError
 
 
@@ -220,3 +225,75 @@ def test_a_candidate_gcsim_does_not_implement_refuses():
         build_config(
             _build(), actions=["burst"], substitute_weapon=_candidate("Not A Real Weapon"),
         )
+
+
+# ── R.3 — calibration configs ────────────────────────────────────────────────
+#
+# A calibration replaces the build's artifacts with **one 4-piece set and an Energy Recharge**.
+# Both halves are load-bearing and neither is obvious:
+#
+# - The **set** is equipped because all 60 sets with a 4-piece have a conditional one, and the
+#   kernel understates them by 15-25% (R.2). Only gcsim can apply it.
+# - The **ER** is not zero. It is an artifact stat, so a zero-ER calibration lands on a
+#   different burst count — measured at 2 against a real candidate's 3
+#   (`RESEARCH_recipe_risks.md` §1).
+
+
+def _calibration(set_key="blizzardstrayer", energy_recharge=0.30):
+    return Calibration(set_key=set_key, energy_recharge=energy_recharge)
+
+
+def test_a_calibration_equips_the_set_and_the_energy_recharge():
+    config = build_config(_build(), actions=["burst"], calibration=_calibration())
+
+    assert 'add set="blizzardstrayer" count=4;' in config
+    assert "add stats er=0.3;" in config
+
+
+def test_a_calibration_emits_no_other_stat():
+    """The candidate's stats are what the search varies. One baked in here is counted twice."""
+    config = build_config(_build(), actions=["burst"], calibration=_calibration())
+    stats_lines = [line for line in config.splitlines() if "add stats" in line]
+
+    assert stats_lines == ["kamisatoayaka add stats er=0.3;"]
+
+
+def test_a_calibration_replaces_the_build_s_own_artifacts():
+    """Falling through would bake the build's substats into every recipe scored against it."""
+    build = _build()
+    assert build.artifacts, "the fixture must start with artifacts, or this proves nothing"
+
+    config = build_config(build, actions=["burst"], calibration=_calibration())
+
+    assert "blizzardstrayer" in config
+    assert "add stats atk%" not in config
+
+
+def test_a_calibration_with_no_set_still_states_its_energy_recharge():
+    """A combination reaching no 4-piece still needs a recipe, and still needs an ER.
+
+    Absent would read as "unspecified" rather than "none", and a recipe's minimum ER is only
+    meaningful against a calibration that states one.
+    """
+    config = build_config(
+        _build(), actions=["burst"], calibration=_calibration(set_key=None),
+    )
+
+    assert "add set=" not in config
+    assert "add stats er=0.3;" in config
+
+
+def test_zero_energy_recharge_is_emitted_rather_than_omitted():
+    config = build_config(
+        _build(), actions=["burst"], calibration=_calibration(energy_recharge=0.0),
+    )
+
+    assert "add stats er=0;" in config
+
+
+def test_without_a_calibration_the_build_s_artifacts_are_used():
+    """The default path must not regress — this is what every existing caller does."""
+    config = build_config(_build(), actions=["burst"])
+
+    assert 'set="blizzardstrayer" count=4' in config
+    assert "add stats" in config

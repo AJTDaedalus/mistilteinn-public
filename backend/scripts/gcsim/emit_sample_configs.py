@@ -17,7 +17,7 @@ import types
 from pathlib import Path
 
 from app.services import gcsim_keys
-from app.services.gcsim_config import build_config
+from app.services.gcsim_config import Calibration, build_config
 from app.services.rotation_compiler import compile_rotation
 
 OUT = Path(__file__).resolve().parents[3] / "frontend" / "gcsim" / "emitted"
@@ -105,9 +105,26 @@ def _rotation_cases() -> dict[str, str]:
         call = f"{key} {step['action']}:{repeat};" if repeat > 1 else f"{key} {step['action']};"
         ungated_lines.append(call)
 
+    # R.3. A calibration replaces the build's artifacts with one 4-piece set and an ER, and
+    # it is emitted here so the existing `gcsim:verify-config` gate proves gcsim accepts it —
+    # rather than a second gate that would have to be kept in step with this one.
+    #
+    # **The ER is +30 %, which is a measurement.** R.2a swept this rotation and found the
+    # burst count only reaches 3 with `sd == 0` from there; a zero-ER calibration lands on 2
+    # and would describe a rotation nobody is scoring (`RESEARCH_recipe_risks.md` §1).
+    calibrated = build_config(
+        build,
+        action_block=gated,
+        calibration=Calibration(
+            set_key=gcsim_keys.artifact_set_key("Blizzard Strayer"),
+            energy_recharge=0.30,
+        ),
+    )
+
     return {
         "rotation_gated": build_config(build, action_block=gated),
         "rotation_ungated": build_config(build, action_block="\n".join(ungated_lines)),
+        "rotation_calibrated": calibrated,
     }
 
 

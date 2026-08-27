@@ -89,9 +89,37 @@ class SubstituteWeapon:
     refinement: int = 1
 
 
+@dataclass(frozen=True)
+class Calibration:
+    """What a recipe is calibrated against, replacing the build's own artifacts.
+
+    `docs/DESIGN_recipe_surface.md` §3. A calibration equips **one 4-piece set and an Energy
+    Recharge**, and nothing else — the candidate's own stats are what the search varies, and a
+    stat baked in here would be counted twice.
+
+    **`energy_recharge` is not zero, and that is the correction `RESEARCH_recipe_risks.md` §1
+    records.** ER is an artifact stat, so a zero-ER calibration runs at the character's base ER
+    and lands on a *different burst count* — measured at **2 against a real candidate's 3**.
+    ER is structural: baked in here, and a candidate's own ER is compared against the recipe's
+    minimum rather than added as a damage stat.
+
+    **The 4-piece set is equipped because it cannot be modelled any other way.** All 60 sets
+    with a 4-piece have a conditional one (`RESEARCH_conditional_sets.md`), and the kernel
+    understates them by 15–25 % (R.2). Equipping it also applies the 2-piece, so a caller must
+    not add that set's bonuses again — `docs/TASKS_recipe_surface.md` R.4a.
+    """
+
+    #: The gcsim key of the 4-piece set, or `None` to calibrate a combination that reaches no
+    #: 4-piece at all. Not a display name — take it through `gcsim_keys.artifact_set_key`.
+    set_key: str | None
+    #: Artifact-borne Energy Recharge as a fraction: `0.30` is +30 %.
+    energy_recharge: float
+
+
 def build_config(
     build: Build,
     *,
+    calibration: Calibration | None = None,
     substitute_weapon: SubstituteWeapon | None = None,
     actions: Sequence[str] | None = None,
     action_block: str | None = None,
@@ -170,7 +198,13 @@ def build_config(
             f"lvl={build.weapon_level}/90 refine={build.refinement};"
         )
 
-    lines.extend(_artifact_lines(key, build.artifacts))
+    # A calibration replaces the build's artifacts wholesale: one 4-piece set and an ER, and
+    # no other stat. Falling through to the build's own pieces would bake its substats into
+    # every recipe scored against it.
+    if calibration is not None:
+        lines.extend(_calibration_lines(key, calibration))
+    else:
+        lines.extend(_artifact_lines(key, build.artifacts))
     lines.append("")
     lines.append(_target(enemy))
     lines.append("")
@@ -195,6 +229,23 @@ def _talents(build: Build) -> str:
     """
     levels = build.talent_levels or {}
     return ",".join(str(levels.get(str(talent), 1)) for talent in LEVELLED_TALENTS)
+
+
+def _calibration_lines(key: str, calibration: Calibration) -> list[str]:
+    """The set and ER a calibration equips, and nothing else.
+
+    Deliberately **not** built from `_artifact_lines`: that derives set counts and stat totals
+    from the same loop over equipped pieces, and a calibration has neither. Sharing it would
+    mean threading "ignore the stats but keep the sets" through a function whose whole shape is
+    that they come together.
+    """
+    lines: list[str] = []
+    if calibration.set_key is not None:
+        lines.append(f'{key} add set="{calibration.set_key}" count=4;')
+    # Emitted even at zero, because "the calibration states its ER" is the property that makes
+    # a recipe's minimum meaningful — an absent line reads as "unspecified", not "none".
+    lines.append(f"{key} add stats er={calibration.energy_recharge:g};")
+    return lines
 
 
 def _artifact_lines(key: str, artifacts: Sequence[Artifact]) -> list[str]:

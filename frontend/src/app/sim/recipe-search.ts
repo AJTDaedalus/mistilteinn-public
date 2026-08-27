@@ -126,6 +126,10 @@ function score(
 
   const pools: Readonly<Record<string, number>>[] = combination.map((c) => c.stats);
   for (const [setId, count] of Object.entries(setCounts)) {
+    // **Skip the set the recipe was calibrated with.** Equipping a set to calibrate also
+    // applies its 2-piece, so it is already in every term of the recipe — adding the tier here
+    // lands it twice. Other sets in the combination are not in the calibration and do belong.
+    if (Number(setId) === context.recipe.meta.calibratedSetId) continue;
     for (const tier of bonusesBySet.get(Number(setId)) ?? []) {
       if (count >= tier.piecesRequired) pools.push(tier.stats);
     }
