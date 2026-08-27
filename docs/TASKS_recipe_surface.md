@@ -128,13 +128,13 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 
 ## Phase 3 — the page
 
-### [ ] R.8 — Wire the optimize page
+### [x] R.8 — Wire the optimize page — **done**
 - **Do:** offer the recipe objective, with calibration progress (**OQ-R3**) and the fast tier
   still reachable (**OQ-R4**).
 - **Accept:** a user can run a rotation-scored search end to end. Interrupting calibration does
   not lose what is already done.
 
-### [ ] R.9 — Surface what the recipe does not know
+### [x] R.9 — Surface what the recipe does not know — **done**
 - **Do:** show `staleConversions` and `stable` on the result.
 - **Accept:** a build with an unresolved conversion says so, and **a build that cannot reach
   the recipe's minimum ER is flagged as unable to perform the rotation** — named, with the ER
@@ -154,8 +154,12 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 ~~**OQ-R2** cache key and invalidation~~ **answered in R.4**: keyed by gcsim pin, build,
 rotation, 4-piece set, ER and seed, in browser storage; a refusal evicts and retries once, and
 a cache that fails is a slow search rather than a broken page ·
-**OQ-R3** what the page shows while calibrating (R.8) · **OQ-R4** which tier is the default
-(R.8).
+~~**OQ-R3** what the page shows while calibrating~~ **answered in R.8**: progress per
+4-piece state, with the 41 MB wasm load flagged separately because it is the slow first step
+and looks like a hang otherwise ·
+~~**OQ-R4** which tier is the default~~ **answered in R.8**: the single-hit objective, with
+the rotation one a deliberate choice. Both stay reachable — OQ-W4's principle, that deleting a
+fast honest answer because a slow better one exists is a downgrade.
 
 ## Not in this chunk
 

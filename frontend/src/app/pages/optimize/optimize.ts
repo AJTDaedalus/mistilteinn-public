@@ -14,6 +14,14 @@ import {
   type ExplainResponse,
 } from '../explain/explain.service';
 import { ArtifactsService } from '../artifacts/artifacts.service';
+import { RotationsService } from '../rotations/rotations.service';
+import { searchRecipe } from '../../sim/recipe-search';
+import {
+  RecipeOptimizeService,
+  type CalibrationCaveats,
+  type CalibrationProgress,
+  type CalibrationTarget,
+} from './recipe-optimize.service';
 import {
   OptimizeService,
   type KernelCandidate,
@@ -132,6 +140,24 @@ export class OptimizePage implements OnInit {
    */
   protected readonly slotNames = signal<Record<string, string>>({});
 
+  // ── The rotation objective (R.8/R.9) ──────────────────────────────────────────────────
+  //
+  // The single-hit search above maximises **one hit**, which is a proxy — and the Chunk F
+  // chain cannot see a conditional 4-piece bonus, which is **every 4-piece in the game**. The
+  // rotation objective scores against gcsim's own arithmetic instead, at ~1.05x the cost.
+  //
+  // **Both stay reachable.** The fast one answers a different, legitimate question in
+  // microseconds, and OQ-W4 settled the principle: deleting a fast honest answer because a
+  // slow better one exists is a downgrade for whoever wanted the fast one.
+  protected readonly objective = signal<'hit' | 'rotation'>('hit');
+  protected readonly rotations = signal<{ id: string; name: string }[]>([]);
+  protected rotationId = '';
+  protected readonly calibrating = signal<CalibrationProgress | null>(null);
+  /** What the recipes do not cover. **Shown, never swallowed** — R.9. */
+  protected readonly caveats = signal<CalibrationCaveats | null>(null);
+
+  private readonly recipeOptimize = inject(RecipeOptimizeService);
+  private readonly rotationsService = inject(RotationsService);
   private readonly optimize = inject(OptimizeService);
   private readonly artifacts = inject(ArtifactsService);
   private readonly explain = inject(ExplainService);
@@ -145,10 +171,15 @@ export class OptimizePage implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const [builds, options] = await Promise.all([
+      const [builds, options, rotations] = await Promise.all([
         this.buildsService.list(),
         this.artifacts.options(),
+        this.rotationsService.list(),
       ]);
+      // Paginated. Reading it as an array leaves the picker empty, which looks exactly like
+      // having authored no rotations — the same trap W.6's compare page fell into.
+      this.rotations.set(rotations.items.map((r) => ({ id: r.id, name: r.name })));
+      if (rotations.items.length > 0) this.rotationId = rotations.items[0].id;
       this.slotNames.set(
         Object.fromEntries(options.slots.map((slot) => [slot.key, slot.display])),
       );
@@ -347,5 +378,86 @@ export class OptimizePage implements OnInit {
       this.searching.set(false);
     }
   }
-}
 
+  /**
+   * Search against the rotation instead of a single hit.
+   *
+   * Calibrates one recipe per **4-piece state** the inventory can reach — every 4-piece bonus
+   * in the game is conditional, so only a run with the set equipped holds it — then scores
+   * every combination against the recipe for *its* set.
+   *
+   * **This is a job.** Each state is ~3.2 s of gcsim in the browser, so progress is per state
+   * and the cache means a second search over the same build pays none of it again.
+   */
+  protected async runRotation(): Promise<void> {
+    const id = this.buildId();
+    if (!id || !this.rotationId) return;
+    this.actionError.set(null);
+    this.result.set(null);
+    this.caveats.set(null);
+    this.searching.set(true);
+    try {
+      const snapshot = await this.optimize.inventory();
+      this.candidates.set(snapshot.artifacts);
+      this.unreadable.set(snapshot.unreadable);
+      this.truncated.set(snapshot.truncated);
+
+      const pieces = snapshot.artifacts.filter((piece) => this.isKnownSlot(piece));
+      const targets = this.calibrationTargets(pieces);
+      const calibrated = await this.recipeOptimize.calibrateAll(
+        id, this.rotationId, snapshot.version, targets,
+        (progress) => this.calibrating.set(progress),
+      );
+      this.caveats.set(calibrated.caveats);
+
+      if (calibrated.noFourPiece === null) {
+        this.actionError.set('No baseline recipe was calibrated, so nothing can be scored.');
+        return;
+      }
+      this.result.set(searchRecipe(
+        pieces.map((piece) => ({
+          id: piece.id,
+          slot: piece.slot as Slot,
+          setId: piece.set_id ?? -1,
+          stats: piece.stats,
+        })),
+        {
+          recipes: {
+            byFourPieceSet: calibrated.byFourPieceSet,
+            noFourPiece: calibrated.noFourPiece,
+          },
+        },
+      ));
+    } catch (err) {
+      this.result.set(null);
+      this.actionError.set(apiErrorMessage(err));
+    } finally {
+      this.searching.set(false);
+      this.calibrating.set(null);
+    }
+  }
+
+  /**
+   * The 4-piece states this inventory can reach, plus the no-four-piece one.
+   *
+   * **Counted by distinct slots, not by piece count.** Four pieces of a set that share a slot
+   * form no combination, and calibrating for them would spend ~3.2 s on a state nothing can
+   * reach.
+   */
+  private calibrationTargets(pieces: readonly KernelCandidate[]): CalibrationTarget[] {
+    const slotsBySet = new Map<number, Set<string>>();
+    for (const piece of pieces) {
+      if (piece.set_id === null || piece.set_id === undefined) continue;
+      const slots = slotsBySet.get(piece.set_id) ?? new Set<string>();
+      slots.add(piece.slot);
+      slotsBySet.set(piece.set_id, slots);
+    }
+    const targets: CalibrationTarget[] = [{ artifactSetId: null, label: 'no 4-piece set' }];
+    for (const [setId, slots] of slotsBySet) {
+      if (slots.size >= 4) {
+        targets.push({ artifactSetId: String(setId), label: `set ${setId}` });
+      }
+    }
+    return targets;
+  }
+}
