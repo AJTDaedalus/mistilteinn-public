@@ -95,6 +95,11 @@ _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
         "/api/v1/builds/00000000-0000-0000-0000-000000000001/compare-weapons/gcsim",
         {},
     ),
+    (
+        "POST",
+        "/api/v1/builds/00000000-0000-0000-0000-000000000001/calibrate",
+        {},
+    ),
     # artifacts — G.6b and D.1
     ("GET", "/api/v1/artifacts", None),
     ("GET", "/api/v1/artifacts/inventory", None),

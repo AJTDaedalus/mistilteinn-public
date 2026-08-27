@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.formula.genshin import tags
@@ -457,6 +459,52 @@ class CompareWeaponsRequest(BaseModel):
     #: baseline whether or not it is listed — a marginal-value question measures against what
     #: is worn, so omitting it would leave nothing to be better than.
     weapon_ids: list[str] = Field(..., min_length=1)
+
+
+class CalibrationRequest(BaseModel):
+    """Body for `POST /builds/{id}/calibrate` (R.3).
+
+    One calibration per **4-piece state**. `RESEARCH_conditional_sets.md`: every 4-piece bonus
+    in the game is conditional, so only a run with the set equipped can hold it — and R.2
+    measured the cost of not doing so at **15–25 % understated**.
+    """
+
+    rotation_id: str
+    #: The catalogue id of the 4-piece set to equip, or `None` for the state where a
+    #: combination reaches no 4-piece. Not the gcsim key — the caller works in catalogue ids
+    #: and this resolves them, so a client never has to know gcsim's spelling.
+    artifact_set_id: str | None = None
+    #: Artifact-borne Energy Recharge to calibrate at, as a fraction.
+    #:
+    #: **Not zero, and that is the point.** ER is an artifact stat, so a zero-ER calibration
+    #: runs at the character's base ER and lands on a different burst count — measured at 2
+    #: against a real candidate's 3 (`RESEARCH_recipe_risks.md` §1).
+    energy_recharge: float = Field(0.30, ge=0.0, le=4.0)
+    #: The stat the probe perturbs, and by how much. The probe identifies stat conversions by
+    #: comparing two calibrations, so it must move **exactly one** thing.
+    probe_stat: Literal["def%", "atk%", "hp%"] = "def%"
+    probe_delta: float = Field(0.50, gt=0.0, le=4.0)
+    enemy_id: str | None = None
+    iterations: int = Field(100, ge=1, le=1000)
+
+
+class CalibrationConfigs(BaseModel):
+    """The two configs a recipe is built from.
+
+    The browser runs both through `sample()`: the first becomes the recipe, and the difference
+    between them identifies what each frozen term was converted from.
+    """
+
+    #: The calibration itself — one 4-piece set, one ER, no other stat.
+    baseline: str
+    #: The same, with exactly one stat moved.
+    probe: str
+    #: Echoed so a caller can key its cache without re-deriving what it asked for.
+    artifact_set_id: str | None
+    energy_recharge: float
+    #: What the probe moved, so a caller can say why a conversion resolved or did not.
+    probe_stat: str
+    probe_delta: float
 
 
 class GcsimComparisonRequest(BaseModel):

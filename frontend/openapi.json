@@ -1916,6 +1916,64 @@
         }
       }
     },
+    "/api/v1/builds/{build_id}/calibrate": {
+      "post": {
+        "tags": [
+          "builds"
+        ],
+        "summary": "Calibrate Recipe",
+        "description": "The two gcsim configs a damage recipe is built from (R.3).\n\n**The server emits; the browser runs.** `RESEARCH_gcsim_embed.md` \u00a76 put gcsim in the\nbrowser, and a calibration is ~3.2 s of work per set \u2014 a job on the user's machine, not a\nrequest a server holds open.\n\n**One calibration per 4-piece state.** Every 4-piece bonus in the game is conditional\n(`RESEARCH_conditional_sets.md`), so only a run with the set equipped can hold it, and R.2\nmeasured the cost of not doing so at **15\u201325 % understated**. A five-slot combination\nreaches at most one 4-piece, which is what keeps this `S + 1` rather than a product.\n\n**The probe moves exactly one stat.** `resolveConversions` identifies what a frozen term\nconverts from by comparing the two runs; a probe that moved two stats by the same factor\ncould not separate them, and the recipe would rather report a conversion unresolved than\nguess between them.",
+        "operationId": "calibrate_recipe_api_v1_builds__build_id__calibrate_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "build_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Build Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalibrationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalibrationConfigs"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/rotations": {
       "get": {
         "tags": [
@@ -3211,6 +3269,119 @@
         "type": "object",
         "title": "BuildUpdate",
         "description": "Body for `PATCH /builds/{id}` \u2014 all fields optional.\n\n`character_id` is **not** here, and an unknown field is now a 422 rather than silently\ndropped (T.1). Those two facts go together: sending `{\"character_id\": \u2026}` used to return\n200 having changed nothing, so a caller was told their edit succeeded when it had been\ndiscarded. Changing a build's character makes it a different build \u2014 and\n`uq_builds_owner_character` would collide with the existing one anyway \u2014 so the field\nstays out, and refusing it says so instead of pretending."
+      },
+      "CalibrationConfigs": {
+        "properties": {
+          "baseline": {
+            "type": "string",
+            "title": "Baseline"
+          },
+          "probe": {
+            "type": "string",
+            "title": "Probe"
+          },
+          "artifact_set_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artifact Set Id"
+          },
+          "energy_recharge": {
+            "type": "number",
+            "title": "Energy Recharge"
+          },
+          "probe_stat": {
+            "type": "string",
+            "title": "Probe Stat"
+          },
+          "probe_delta": {
+            "type": "number",
+            "title": "Probe Delta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "baseline",
+          "probe",
+          "artifact_set_id",
+          "energy_recharge",
+          "probe_stat",
+          "probe_delta"
+        ],
+        "title": "CalibrationConfigs",
+        "description": "The two configs a recipe is built from.\n\nThe browser runs both through `sample()`: the first becomes the recipe, and the difference\nbetween them identifies what each frozen term was converted from."
+      },
+      "CalibrationRequest": {
+        "properties": {
+          "rotation_id": {
+            "type": "string",
+            "title": "Rotation Id"
+          },
+          "artifact_set_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artifact Set Id"
+          },
+          "energy_recharge": {
+            "type": "number",
+            "maximum": 4.0,
+            "minimum": 0.0,
+            "title": "Energy Recharge",
+            "default": 0.3
+          },
+          "probe_stat": {
+            "type": "string",
+            "enum": [
+              "def%",
+              "atk%",
+              "hp%"
+            ],
+            "title": "Probe Stat",
+            "default": "def%"
+          },
+          "probe_delta": {
+            "type": "number",
+            "maximum": 4.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Probe Delta",
+            "default": 0.5
+          },
+          "enemy_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enemy Id"
+          },
+          "iterations": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Iterations",
+            "default": 100
+          }
+        },
+        "type": "object",
+        "required": [
+          "rotation_id"
+        ],
+        "title": "CalibrationRequest",
+        "description": "Body for `POST /builds/{id}/calibrate` (R.3).\n\nOne calibration per **4-piece state**. `RESEARCH_conditional_sets.md`: every 4-piece bonus\nin the game is conditional, so only a run with the set equipped can hold it \u2014 and R.2\nmeasured the cost of not doing so at **15\u201325 % understated**."
       },
       "CharacterRead": {
         "properties": {

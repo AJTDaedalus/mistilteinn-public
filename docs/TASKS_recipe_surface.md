@@ -64,7 +64,7 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 
 ## Phase 1 — calibration
 
-### [x] R.3 — Emit calibration configs — **done**
+### [x] R.3 — Emit calibration configs — **done** (config emission *and* the endpoint)
 - **Do:** an endpoint that emits, for a build and rotation: a calibration config with a chosen
   4-piece set equipped and **an ER the rotation can actually be performed at**, and a **probe**
   config at a perturbed stat.

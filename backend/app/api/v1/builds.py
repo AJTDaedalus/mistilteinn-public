@@ -28,6 +28,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from app.dependencies import (
     CurrentUser,
+    get_artifact_set_repo,
     get_character_repo,
     get_enemy_profile_repo,
     get_owned_artifact_repo,
@@ -41,6 +42,7 @@ from app.formula.genshin.damage import Hit
 from app.middleware.rate_limit import WRITE_LIMIT, limiter
 from app.models.enums import LEVELLED_TALENTS, MAX_TALENT_LEVEL
 from app.repositories.artifact import ArtifactRepository
+from app.repositories.artifact_set import ArtifactSetRepository
 from app.repositories.build import BuildRepository
 from app.repositories.character import CharacterRepository
 from app.repositories.enemy import EnemyProfileRepository
@@ -53,6 +55,8 @@ from app.schemas.build import (
     BuildOptions,
     BuildRead,
     BuildUpdate,
+    CalibrationConfigs,
+    CalibrationRequest,
     CompareWeaponsRequest,
     CompareWeaponsResponse,
     ContributionRead,
@@ -81,12 +85,14 @@ from app.services import (
     artifact_optimizer,
     build_assembler,
     build_explanation,
+    gcsim_keys,
     sim_retrieval,
     weapon_comparison,
 )
 from app.services.build_assembler import BuildAssemblyError
 from app.services.damage_calculator import BuildEvaluator, Enemy, enemy_from_profile
 from app.services.gcsim_config import (
+    Calibration,
     GcsimConfigError,
     SubstituteWeapon,
     build_config,
@@ -979,4 +985,111 @@ async def compare_weapons_gcsim_configs(
         candidates=candidates,
         refused=refused,
         iterations=body.iterations,
+    )
+
+
+@router.post("/{build_id}/calibrate", response_model=CalibrationConfigs)
+@limiter.limit(WRITE_LIMIT)
+async def calibrate_recipe(
+    request: Request,
+    build_id: str,
+    body: CalibrationRequest,
+    builds: Annotated[BuildRepository, Depends(get_owned_build_repo)],
+    rotations: Annotated[RotationRepository, Depends(get_owned_rotation_repo)],
+    sets: Annotated[ArtifactSetRepository, Depends(get_artifact_set_repo)],
+    enemies: Annotated[EnemyProfileRepository, Depends(get_enemy_profile_repo)],
+) -> CalibrationConfigs:
+    """The two gcsim configs a damage recipe is built from (R.3).
+
+    **The server emits; the browser runs.** `RESEARCH_gcsim_embed.md` §6 put gcsim in the
+    browser, and a calibration is ~3.2 s of work per set — a job on the user's machine, not a
+    request a server holds open.
+
+    **One calibration per 4-piece state.** Every 4-piece bonus in the game is conditional
+    (`RESEARCH_conditional_sets.md`), so only a run with the set equipped can hold it, and R.2
+    measured the cost of not doing so at **15–25 % understated**. A five-slot combination
+    reaches at most one 4-piece, which is what keeps this `S + 1` rather than a product.
+
+    **The probe moves exactly one stat.** `resolveConversions` identifies what a frozen term
+    converts from by comparing the two runs; a probe that moved two stats by the same factor
+    could not separate them, and the recipe would rather report a conversion unresolved than
+    guess between them.
+    """
+    build = await _require_full_build(builds, build_id)
+    if build.character is None:
+        raise HTTPException(
+            status_code=422, detail="this build has no character; there is nothing to simulate",
+        )
+
+    rotation = await rotations.get_by_id(body.rotation_id)
+    if rotation is None:
+        raise HTTPException(status_code=404, detail="rotation not found")
+    roster = await rotations.character_rows(rotation.team_id)
+    if build.character.nanoka_id not in roster:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"rotation {body.rotation_id} is for a team that does not include "
+                f"{build.character.name}, so it never acts on this build. A calibration "
+                f"against it would describe a rotation this build does not perform."
+            ),
+        )
+    try:
+        action_block = compile_rotation(rotation.steps or [], roster)
+    except RotationCompileError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    set_key: str | None = None
+    if body.artifact_set_id is not None:
+        artifact_set = await sets.get_by_id(body.artifact_set_id)
+        if artifact_set is None:
+            raise HTTPException(
+                status_code=404, detail=f"artifact set {body.artifact_set_id} not found",
+            )
+        try:
+            set_key = gcsim_keys.artifact_set_key(artifact_set.name)
+        except GcsimKeyError as exc:
+            # Refused rather than dropped: calibrating without the set would produce a recipe
+            # that silently understates it by its whole 4-piece bonus.
+            raise HTTPException(
+                status_code=422,
+                detail=f"gcsim does not implement {artifact_set.name} at the pin: {exc}",
+            ) from exc
+
+    enemy = await enemies.get_by_id(body.enemy_id) if body.enemy_id else None
+    if body.enemy_id and enemy is None:
+        raise HTTPException(status_code=404, detail=f"enemy profile {body.enemy_id} not found")
+
+    def _config(calibration: Calibration, extra: str | None = None) -> str:
+        text = build_config(
+            build,
+            calibration=calibration,
+            action_block=action_block,
+            enemy=enemy,
+            iterations=body.iterations,
+        )
+        if extra is None:
+            return text
+        # The probe's stat rides on the calibration's own `add stats` line, so the two configs
+        # differ in exactly one place. A second line would also work and would make the diff
+        # harder for a human to check, which is the thing that matters when a number is wrong.
+        return text.replace(
+            f"add stats er={calibration.energy_recharge:g};",
+            f"add stats er={calibration.energy_recharge:g} {extra};",
+        )
+
+    calibration = Calibration(set_key=set_key, energy_recharge=body.energy_recharge)
+    try:
+        baseline = _config(calibration)
+        probe = _config(calibration, f"{body.probe_stat}={body.probe_delta:g}")
+    except (GcsimKeyError, GcsimConfigError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return CalibrationConfigs(
+        baseline=baseline,
+        probe=probe,
+        artifact_set_id=body.artifact_set_id,
+        energy_recharge=body.energy_recharge,
+        probe_stat=body.probe_stat,
+        probe_delta=body.probe_delta,
     )
