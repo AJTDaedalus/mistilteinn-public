@@ -64,7 +64,7 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 
 ## Phase 1 — calibration
 
-### [ ] R.3 — Emit calibration configs
+### [x] R.3 — Emit calibration configs — **done**
 - **Do:** an endpoint that emits, for a build and rotation: a calibration config with a chosen
   4-piece set equipped and **an ER the rotation can actually be performed at**, and a **probe**
   config at a perturbed stat.
@@ -86,7 +86,7 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 
 ## Phase 2 — the search
 
-### [ ] R.4a — Do not add a bonus the calibration already holds
+### [x] R.4a — Do not add a bonus the calibration already holds — **done**
 - **Do:** when scoring a combination against a recipe calibrated with set X, **omit X's set
   bonuses** from the kernel's stat pools. Other sets in the combination still contribute.
 - **Accept:** a test that a 2-piece bonus is applied **exactly once**. Measured: calibrating
