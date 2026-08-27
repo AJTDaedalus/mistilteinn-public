@@ -115,7 +115,7 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
   dominated under one recipe may win under another, and pruning it makes a layer that
   advertises itself as lossless silently lossy.
 
-### [ ] R.7 — Prove a 4-piece bonus is now visible
+### [x] R.7 — Prove a 4-piece bonus is now visible — **done**
 - **Do:** a test that a conditional 4-piece set changes the ranking.
 - **Accept:** it **fails against `search`** and passes against `searchRecipe`. **Every 4-piece
   bonus in the game scores as zero today** — 60 of 60; this is the test that says they no
