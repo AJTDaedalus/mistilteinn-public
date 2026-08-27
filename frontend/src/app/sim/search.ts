@@ -175,7 +175,14 @@ export function paretoFilter(
   return { kept, removed };
 }
 
-function bucketBySlot(candidates: readonly Candidate[]): Map<Slot, Candidate[]> {
+/**
+ * Group candidates by slot.
+ *
+ * Exported for `recipe-search.ts`, which runs the **same** exhaustive walk and the same
+ * lossless Pareto layer over a different objective. Duplicating the bucketing there would be
+ * two ways to decide what a slot is.
+ */
+export function bucketBySlot(candidates: readonly Candidate[]): Map<Slot, Candidate[]> {
   const bySlot = new Map<Slot, Candidate[]>(SLOTS.map((s) => [s, []]));
   for (const c of candidates) {
     const bucket = bySlot.get(c.slot);

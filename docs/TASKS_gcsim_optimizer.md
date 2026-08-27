@@ -9,6 +9,15 @@ re-derivation) and §4 (predict-then-verify) before starting.
 
 **Status key:** ` ` todo · `~` in progress · `x` done · `!` blocked (escalation in LOG)
 
+> **Status: G.0–G.8 done.** Merged as PRs #100 (G.0–G.3), #101 (G.4–G.5), #102 (G.6),
+> #103 (G.7), #104 (measured conversions) and the G.8 PR.
+>
+> **What is not done, and is not hidden here:** G.8 swapped the **kernel's** objective and
+> proved the contrast — a Redhorn build's DEF pieces survive the Pareto layer where the
+> single-hit search prunes all five before scoring. **The optimize page still calls
+> `search`, not `searchRecipe`.** Wiring it needs a calibration flow in the UI (run
+> `sample()`, probe, cache), which is a chunk of its own rather than a line.
+
 **Standing rules**
 
 - Verify `git branch --show-current` before every commit. **`gh pr merge --delete-branch`
@@ -109,7 +118,7 @@ re-derivation) and §4 (predict-then-verify) before starting.
   `RESEARCH_er_bucketing.md`'s Ayaka sweep — that doc's own Result 3 shows real variation at
   flat burst count, so ER is not the only mover.
 
-### [ ] G.8 — Swap the optimizer's objective
+### [x] G.8 — Swap the optimizer's objective — **done (kernel)**
 - **Do:** the search maximises recipe damage instead of one hit. Settle **OQ-G2**.
 - **Accept:** a search for a `Redhorn Stonethresher` build **considers DEF pieces** — a test
   that fails against today's chain. **This is the task the whole plan is for**; everything
