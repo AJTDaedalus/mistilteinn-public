@@ -29,11 +29,11 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 
 ## Phase 0 — measure before building
 
-### [ ] R.0 — Branch setup **(gate)**
+### [x] R.0 — Branch setup **(gate)**
 - **Do:** branch `feat/recipe-surface` off `dev`.
 - **Accept:** `git branch --show-current` is not `dev` or `main`.
 
-### [ ] R.1 — How many calibrations does a real inventory need? **[Planner]**
+### [!] R.1 — How many calibrations does a real inventory need? **[Planner]** — **blocked: needs a GOOD export**
 - **Do:** against a real GOOD import, count the sets with **≥4 pieces** — that is `S`, and the
   calibration count is `S + 1` plus any of the 9 conditional-2-piece sets present.
 - **Accept:** a number in `docs/LOG_mistilteinn.md`, with the inventory size it came from.
@@ -45,14 +45,14 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 - **Why first:** the whole design rests on `S + 1` being small. If a real account has 40 sets
   with four pieces, two minutes becomes seven and the interaction changes.
 
-### [ ] R.2 — Is a 2-piece bonus really kernel-representable? **[Planner]**
+### [x] R.2 — Is a 2-piece bonus really kernel-representable? **[Planner]** — **done**
 - **Do:** for a sample of sets, calibrate with and without the set and compare. A difference
   that is a plain stat delta means the kernel already has it.
 - **Accept:** the finding recorded, and `DESIGN_recipe_surface.md` §2's table either confirmed
   or corrected. **Do not inherit it** — *having a static prop* is not the same as *having no
   conditional part*, and a tier could carry both.
 
-### [ ] R.2a — Find each recipe's minimum ER **[Planner]**
+### [x] R.2a — Find each recipe's minimum ER **[Planner]** — **done** (+30 % measured)
 - **Do:** sweep artifact-borne ER and find the lowest value at which burst count reaches the
   calibration's own value with `sd == 0`. That is the recipe's **minimum ER**.
 - **Accept:** one number per recipe, carried on it. About ten `sample()` runs, ~30 s.
