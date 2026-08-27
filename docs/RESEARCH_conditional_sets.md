@@ -74,6 +74,17 @@ A combination has **at most one** 4-piece set. So the states are:
   rotation*, which is correct for that rotation and not transferable to another. That is
   already true of the whole recipe, and is why calibration is keyed by rotation.
 
+## 4a. What "60 of 65" is, and is not
+
+It is an **exact** count of tiers that reach the kernel as an empty stat dict — the condition
+under which `_bonus_stats` produces one is precisely the condition counted here.
+
+It is **not** a count of rankings the optimizer gets wrong. Some conditional bonuses are
+healing, energy or shield effects that would contribute nothing to a *damage* ranking even if
+they were modelled. **The two numbers are different sizes and the second is the one that
+matters.** `TASKS_recipe_surface.md` R.7 measures it, and this section should be corrected if
+the answer is much smaller.
+
 ## 5. What this does not fix
 
 **Nothing here helps the single-hit search.** It has no way to represent a conditional bonus,

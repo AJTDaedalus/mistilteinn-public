@@ -38,6 +38,10 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
   calibration count is `S + 1` plus any of the 9 conditional-2-piece sets present.
 - **Accept:** a number in `docs/LOG_mistilteinn.md`, with the inventory size it came from.
   **OQ-R1.**
+- **Count reachable 4-piece sets, not sets with ≥4 pieces.** Four pieces spread across four
+  distinct slots yields exactly one combination; four pieces where two share a slot yields
+  none. Counting the latter as `S` inflates the calibration budget with states no combination
+  can reach.
 - **Why first:** the whole design rests on `S + 1` being small. If a real account has 40 sets
   with four pieces, two minutes becomes seven and the interaction changes.
 
@@ -86,6 +90,11 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 - **Do:** a test that a conditional 4-piece set changes the ranking.
 - **Accept:** it **fails against `search`** and passes against `searchRecipe`. 60 of 65 sets
   score their 4-piece as zero today; this is the test that says they no longer do.
+- **This is also where "60 of 65" gets its real size.** That figure counts tiers the kernel
+  cannot *see*, not rankings it gets *wrong* — some conditional bonuses are healing, energy or
+  shield effects that would contribute nothing to a damage ranking even if modelled. **Report
+  how many of the 60 actually move a ranking**, and correct
+  `RESEARCH_conditional_sets.md` if the answer is much smaller.
 
 ## Phase 3 — the page
 
