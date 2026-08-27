@@ -82,10 +82,73 @@ export interface RecipeHit {
   gcsimAverageDamage: number;
 }
 
+/**
+ * A conversion baked into the calibration that goes **stale** under a different candidate.
+ *
+ * Detected from the data rather than from a list of weapons: at **zero artifact stats** a
+ * non-zero flat term means something converted a stat into it. `Redhorn Stonethresher` puts
+ * DEF into `flat_dmg`; Noelle's burst puts DEF into `flat_atk`; `Staff of Homa` puts max HP
+ * there. All of them are computed from stats the candidate is about to change, and none of
+ * them moves when the candidate does — so the recipe overstates or understates by exactly
+ * that term.
+ *
+ * A list of weapons would need maintaining and would miss character kits entirely. The
+ * numbers cannot.
+ *
+ * **Sound, not complete.** This finds conversions landing in a *flat* term, because those are
+ * visibly non-zero at zero artifact stats. It does **not** find one landing in a percentage
+ * term — `Engulfing Lightning` converts ER into ATK%, and a character has base ER regardless,
+ * so a non-zero `atk_per` test would fire on every recipe. Distinguishing that needs a second
+ * calibration at a perturbed ER, which is a task rather than a tweak.
+ *
+ * So a non-empty result can be trusted; an empty one means *"no flat-term conversions"*, not
+ * *"none at all"*.
+ */
+export interface StaleConversion {
+  /** Which term carries it. */
+  term: 'flatDamage' | 'flatAtk' | 'flatHp' | 'flatDef';
+  /** How many hits of the recipe are affected. */
+  hits: number;
+  /** The share of the recipe's total damage those hits account for, 0–1. */
+  damageShare: number;
+}
+
+export interface RecipeMeta {
+  seed: string;
+  /** Every conversion baked in that a candidate's stats would have moved. Empty is good. */
+  staleConversions: StaleConversion[];
+}
+
 export interface Recipe {
   hits: RecipeHit[];
   /** The gcsim commit the sample came from, so a stale recipe is detectable. */
   seed: string;
+  meta: RecipeMeta;
+}
+
+/**
+ * Whether a rotation's structure is reproducible, from an aggregate's instance counts.
+ *
+ * **`sd > 0` on an instance count means the rotation is not the same rotation every
+ * iteration** — the build sits in a transition band, and no single recipe describes it.
+ * `RESEARCH_damage_recipe.md` measured burst count going 2.00 → 2.75 → 4.00 across ER, with
+ * the middle point being 2 *or* 3 depending on the seed, and `RESEARCH_er_bucketing.md`
+ * measured that band at **13.3 % DPS spread, 5.9× the Monte Carlo standard error**.
+ *
+ * A little jitter is not the same thing: non-burst counts wobble by ~3 % from timing alone.
+ * `tolerance` is the share of an instance count's mean that `sd` may reach before the
+ * rotation is called unstable, and it is a **parameter** because the honest threshold depends
+ * on how much of the damage that source carries.
+ */
+export function stabilityFrom(
+  sources: Readonly<Record<string, { mean: number; sd: number }>>,
+  tolerance = 0.02,
+): { stable: boolean; unstable: string[] } {
+  const unstable = Object.entries(sources)
+    .filter(([, v]) => v.mean > 0 && v.sd / v.mean > tolerance)
+    .map(([name]) => name)
+    .sort();
+  return { stable: unstable.length === 0, unstable };
 }
 
 /** gcsim's `calc` log payload. Only the fields this module reads are named. */
@@ -99,6 +162,8 @@ interface CalcLog {
   base_hp: number;
   base_def: number;
   flat_dmg: number;
+  flat_hp: number;
+  flat_def: number;
   bonus_dmg: number;
   cr: number;
   cd: number;
@@ -207,5 +272,36 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
       gcsimAverageDamage: c.avg_crit_dmg,
     });
   }
-  return { hits, seed: String(parsed?.seed ?? '') };
+  const seed = String(parsed?.seed ?? '');
+  return { hits, seed, meta: { seed, staleConversions: staleConversionsIn(hits, calcs) } };
+}
+
+/**
+ * Which baked-in conversions this recipe carries, and how much damage they touch.
+ *
+ * `damageShare` is reported because *"83 hits are affected"* is not actionable on its own —
+ * 83 hits carrying 2 % of the damage is a footnote, and 5 hits carrying 40 % is not.
+ */
+function staleConversionsIn(hits: RecipeHit[], calcs: CalcLog[]): StaleConversion[] {
+  const landed = calcs.filter((c) => c.damage !== 0);
+  const total = hits.reduce((sum, h) => sum + h.gcsimAverageDamage, 0);
+  const terms: [StaleConversion['term'], (c: CalcLog) => number][] = [
+    ['flatDamage', (c) => c.flat_dmg],
+    ['flatAtk', (c) => c.flat_atk],
+    ['flatHp', (c) => c.flat_hp],
+    ['flatDef', (c) => c.flat_def],
+  ];
+  const out: StaleConversion[] = [];
+  for (const [term, read] of terms) {
+    let count = 0;
+    let damage = 0;
+    for (let i = 0; i < landed.length && i < hits.length; i++) {
+      if (read(landed[i]) !== 0) {
+        count++;
+        damage += hits[i].gcsimAverageDamage;
+      }
+    }
+    if (count > 0) out.push({ term, hits: count, damageShare: total > 0 ? damage / total : 0 });
+  }
+  return out;
 }

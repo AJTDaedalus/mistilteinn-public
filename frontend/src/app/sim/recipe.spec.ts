@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { effectiveCritRate, parseSample, replayHit, type RecipeHit } from './recipe';
+import {
+  effectiveCritRate,
+  parseSample,
+  replayHit,
+  stabilityFrom,
+  type RecipeHit,
+} from './recipe';
 
 /**
  * G.2 — the recipe parser's logic, against hand-built payloads.
@@ -25,7 +31,8 @@ function calc(over: Record<string, unknown> = {}) {
     event: 'calc',
     logs: {
       abil: 'Normal 1', talent: 2, total_scaling: 1000, base_atk: 1000, atk_per: 0,
-      flat_atk: 0, base_hp: 10000, base_def: 800, flat_dmg: 0, bonus_dmg: 0.5,
+      flat_atk: 0, base_hp: 10000, base_def: 800, flat_dmg: 0, flat_hp: 0, flat_def: 0,
+      bonus_dmg: 0.5,
       cr: 0.25, cd: 2, def_mod: 0.5, res_mod: 0.9, amp_mult_total: 0,
       use_hp: false, use_def: false, use_em: false,
       base_dmg: 2000, pre_crit_dmg: 1350, avg_crit_dmg: 2025, damage: 2025, ele: 19,
@@ -144,5 +151,75 @@ describe('parseSample', () => {
     expect(() => parseSample({ logs: [
       dmg({ abil: 'A' }), calc({ abil: 'B' }),
     ] })).toThrow(/pairing broke/);
+  });
+});
+
+
+describe('stabilityFrom', () => {
+  it('calls a rotation with no spread stable', () => {
+    expect(stabilityFrom({ Burst: { mean: 2, sd: 0 }, Normal: { mean: 30, sd: 0 } }))
+      .toEqual({ stable: true, unstable: [] });
+  });
+
+  it('names the source that varies', () => {
+    // The transition band: burst count 2 or 3 depending on the seed. No single recipe
+    // describes it, and RESEARCH_er_bucketing measured that band at 13.3% DPS spread.
+    expect(stabilityFrom({ Burst: { mean: 2.75, sd: 0.44 }, Normal: { mean: 30, sd: 0 } }))
+      .toEqual({ stable: false, unstable: ['Burst'] });
+  });
+
+  it('tolerates the timing jitter every rotation has', () => {
+    // Non-burst counts wobble ~3% from timing alone; treating that as instability would call
+    // every rotation unusable.
+    expect(stabilityFrom({ Normal: { mean: 30, sd: 0.3 } }, 0.05).stable).toBe(true);
+  });
+
+  it('takes the tolerance as a parameter rather than burying it', () => {
+    // sd/mean = 3/30 = 0.10 — unstable at a 5% threshold, stable at a 50% one.
+    const sources = { Normal: { mean: 30, sd: 3 } };
+
+    expect(stabilityFrom(sources, 0.05).stable).toBe(false);
+    expect(stabilityFrom(sources, 0.5).stable).toBe(true);
+  });
+
+  it('ignores a source that never landed rather than dividing by zero', () => {
+    expect(stabilityFrom({ Never: { mean: 0, sd: 0 } }).stable).toBe(true);
+  });
+});
+
+describe('staleConversions', () => {
+  const withFlat = (over: Record<string, unknown>) =>
+    parseSample({ logs: [dmg(), calc(over)] }).meta.staleConversions;
+
+  it('reports nothing when the calibration carries no conversion', () => {
+    expect(parseSample({ logs: [dmg(), calc()] }).meta.staleConversions).toEqual([]);
+  });
+
+  it('flags flat damage, which is how Redhorn Stonethresher goes stale', () => {
+    // Redhorn's flat damage is 40% of DEF, computed at calibration and frozen there. A
+    // candidate with different DEF gets a number gcsim never computed for it.
+    const found = withFlat({ flat_dmg: 500 });
+
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatchObject({ term: 'flatDamage', hits: 1, damageShare: 1 });
+  });
+
+  it('flags flat ATK, which is how Homa and a DEF-to-ATK burst go stale', () => {
+    expect(withFlat({ flat_atk: 300 }).map((c) => c.term)).toEqual(['flatAtk']);
+  });
+
+  it('reports several terms at once', () => {
+    expect(withFlat({ flat_dmg: 1, flat_atk: 2 }).map((c) => c.term))
+      .toEqual(['flatDamage', 'flatAtk']);
+  });
+
+  it('reports the damage share, because a hit count alone is not actionable', () => {
+    // 83 hits carrying 2% of the damage is a footnote; 5 hits carrying 40% is not.
+    const r = parseSample({ logs: [
+      dmg({ abil: 'A' }), calc({ abil: 'A', flat_dmg: 5, avg_crit_dmg: 100 }),
+      dmg({ abil: 'B' }), calc({ abil: 'B', avg_crit_dmg: 300 }),
+    ] });
+
+    expect(r.meta.staleConversions[0].damageShare).toBeCloseTo(0.25, 9);
   });
 });

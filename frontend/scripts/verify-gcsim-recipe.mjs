@@ -33,8 +33,16 @@ const SEED = '12345';
 // Still not covered by either: crit rate above 100 %, and amplifying reactions. Named in
 // `PROVENANCE.md` rather than left for someone to discover from a surviving mutation.
 const CASES = [
-  { config: 'rotation_gated.txt', calc: 'rotation_gated_calc.json', minHits: 200 },
-  { config: 'noelle_redhorn.txt', calc: 'noelle_redhorn_calc.json', minHits: 80 },
+  { config: 'rotation_gated.txt', calc: 'rotation_gated_calc.json', minHits: 200, stale: [] },
+  {
+    config: 'noelle_redhorn.txt',
+    calc: 'noelle_redhorn_calc.json',
+    minHits: 80,
+    // Redhorn puts DEF into flat damage; Noelle's burst puts DEF into flat ATK. Both are
+    // computed at calibration from stats a candidate is about to change, so both go stale.
+    // Asserted here because detection that never fires on real data is not detection.
+    stale: ['flatDamage', 'flatAtk'],
+  },
 ];
 
 // The decomposition is exact in float64, so this is a float-noise budget, not a tolerance for
@@ -73,10 +81,21 @@ for (const c of CASES) {
     );
     process.exit(1);
   }
+  const stale = fixture.meta.staleConversions.map((c) => c.term).sort();
+  const expected = [...c.stale].sort();
+  if (JSON.stringify(stale) !== JSON.stringify(expected)) {
+    console.error(
+      `${c.calc}: stale-conversion detection expected [${expected}] but found [${stale}].\n` +
+        `A recipe that does not know what is baked into it cannot warn a caller about it.`,
+    );
+    process.exit(1);
+  }
+
   const elements = [...new Set(fixture.hits.map((h) => h.element))].sort();
   console.log(
     `${c.calc}: replayed ${fixture.hits.length} hits, worst rel err ${worst.toExponential(3)}` +
-      `, elements [${elements.join(', ')}]`,
+      `, elements [${elements.join(', ')}]` +
+      (stale.length > 0 ? `, stale [${stale.join(', ')}]` : ', no stale conversions'),
   );
 }
 

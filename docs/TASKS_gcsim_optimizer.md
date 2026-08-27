@@ -95,7 +95,7 @@ re-derivation) and §4 (predict-then-verify) before starting.
   transcription; only this proves fidelity. **A recipe that only reproduces its own
   calibration is a very expensive identity function.**
 
-### [ ] G.6 — A recipe states its own validity
+### [x] G.6 — A recipe states its own validity — **done**
 - **Do:** carry `stable` (burst-instance `sd == 0`), `staleModifiers` (stat-conversion
   passives present and unported), `erBucket`, `gcsimPin`, `seed`, `iterations`.
 - **Accept:** a build inside an ER transition band comes back **`stable: false`**, and the
@@ -125,6 +125,13 @@ re-derivation) and §4 (predict-then-verify) before starting.
 **OQ-G1** which ER buckets (G.7) · **OQ-G2** re-rank all or re-score top N (G.8) ·
 **OQ-G3** where recipes live (G.7) · **OQ-G4** whether `/compare-weapons`'s gcsim tier
 collapses into this (after G.8).
+
+**OQ-G5 — percentage-term conversions.** `staleConversions` (G.6) is **sound but not
+complete**: it finds conversions landing in a *flat* term, and misses one landing in a
+percentage term. `Engulfing Lightning` converts ER into ATK%, and a character has base ER
+regardless, so a non-zero `atk_per` test would fire on every recipe. Detecting it needs a
+second calibration at a perturbed ER and a comparison. **A non-empty result can be trusted; an
+empty one means "no flat-term conversions", not "none at all".**
 
 ## Not in this chunk
 
