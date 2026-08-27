@@ -65,6 +65,9 @@ AQUILA_FAVONIA = 11501
 DEEPWOOD_MEMORIES = 15025
 RUIN_GUARD = 24010101
 
+#: The tier every set's headline effect lives on, and the one the kernel cannot see.
+FOUR_PIECE = 4
+
 #: Entity → the model whose rows that pass writes.
 ENTITY_MODELS: dict[str, type] = {
     "character": Character,
@@ -101,7 +104,40 @@ async def _anchor_values(session: AsyncSession) -> list[tuple[Anchor, Any]]:
         select(EnemyProfile).where(EnemyProfile.nanoka_id == RUIN_GUARD),
     )
 
+    # A catalogue-wide anchor rather than a hand-read one. `RESEARCH_conditional_sets.md`
+    # rests on it, and so does `TASKS_recipe_surface.md`: **every 4-piece set bonus is
+    # conditional**, so `builds.py:_bonus_stats` — which skips a prop it cannot map — hands
+    # the kernel an empty stat dict for all of them.
+    #
+    # A patch adding a set with a *static* 4-piece would make that plan overstate its case and
+    # nothing else would notice. It lives here rather than in the test suite because the
+    # integration database is not seeded with the catalogue, and this script is the one that
+    # runs against a database that is.
+    four_piece = (
+        await session.execute(
+            select(ArtifactSetAffix.name, ArtifactSetAffix.add_props).where(
+                ArtifactSetAffix.pieces_required == FOUR_PIECE,
+            ),
+        )
+    ).all()
+    static_four_piece = sorted(
+        name
+        for name, props in four_piece
+        if any(
+            prop.get("prop_type") not in (None, "FIGHT_PROP_NONE") for prop in (props or [])
+        )
+    )
+
     checks: list[tuple[Anchor, Any]] = [
+        (
+            Anchor(
+                "no set has a static 4-piece bonus",
+                "artifact_set_affixes: every pieces_required=4 row carries only "
+                "FIGHT_PROP_NONE props, so _bonus_stats hands the kernel an empty dict",
+                [],
+            ),
+            static_four_piece,
+        ),
         (
             Anchor(
                 "Ayaka is a 5★ Cryo sword user",
