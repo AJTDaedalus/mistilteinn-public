@@ -77,7 +77,7 @@ re-derivation) and §4 (predict-then-verify) before starting.
 
 ## Phase 2 — evaluation
 
-### [ ] G.4 — Evaluate a recipe in the kernel
+### [x] G.4 — Evaluate a recipe in the kernel — **done** (1.05× at H=17)
 - **Do:** score a candidate combination against a recipe — aggregate stats once, then
   recompute each hit.
 - **Accept:** a benchmark shows **≤1.3×** the current per-combination cost at H=17.
@@ -86,7 +86,7 @@ re-derivation) and §4 (predict-then-verify) before starting.
 - **Reuse `computeDamage`.** A second implementation of the chain is the thing DESIGN §1 A6
   forbids, and the differential gate exists because this repo already has two.
 
-### [ ] G.5 — Predict, then verify **(the real gate)**
+### [x] G.5 — Predict, then verify **(the real gate)** — **done** (1.986e-16)
 - **Do:** build a recipe at one artifact set, predict a **different** set's rotation damage,
   then run gcsim on that set and compare.
 - **Accept:** agreement inside a tolerance **argued from the measured Monte Carlo standard
