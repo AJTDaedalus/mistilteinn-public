@@ -9,6 +9,29 @@
 
 **Status key:** ` ` todo · `~` in progress · `x` done · `!` blocked (escalation in LOG)
 
+> ## ⚠ P.3–P.5 are SUPERSEDED — rescope before starting
+>
+> **P.0–P.2 stand.** The tiering in `docs/RESEARCH_passive_tiers.md` is accurate and was read
+> off implementations. The record shape in `DESIGN_passive_port.md` §6a still holds.
+>
+> **What changed:** `docs/RESEARCH_gcsim_calibration.md` found that gcsim's `sample()`
+> publishes **every term of the damage formula per hit** — `talent`, `total_scaling`,
+> `bonus_dmg`, `cr`, `cd`, `flat_dmg`, `use_hp/def/em`. A calibration run therefore captures
+> what a passive **did**, without transcribing what it **is**. The premise that 237 passives
+> must be ported before a rotation can be scored does not hold.
+>
+> **What survives, and it is the part that always mattered:** a passive whose amount is a
+> *function of the candidate's own stats* is baked in at calibration and goes **stale** when
+> artifacts change — `Staff of Homa` (ATK from max HP), `Engulfing Lightning` (ATK from ER),
+> `Redhorn Stonethresher` (flat damage from DEF), `Primordial Jade Cutter`.
+>
+> **Those are exactly the passives that change which artifacts win.** So the target narrows
+> from "44 Tier 1 + 14 Tier 1c" to that set. Rescoping is **G.1** in
+> `docs/TASKS_gcsim_optimizer.md`.
+>
+> Recorded as superseded rather than renumbered: a plan file that quietly rewrites its own
+> scope is the inventory rot `TASKS_loose_ends.md` spent a chunk cleaning up.
+
 **Standing rules**
 
 - Verify `git branch --show-current` before every commit. **`gh pr merge --delete-branch`
