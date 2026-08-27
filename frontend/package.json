@@ -21,7 +21,8 @@
     "kernel:verify": "node --import ./scripts/ts-resolve.mjs scripts/verify-kernel.mjs",
     "kernel:verify-search": "node --import ./scripts/ts-resolve.mjs scripts/verify-kernel-search.mjs",
     "kernel:verify-gpu": "node --import ./scripts/ts-resolve.mjs scripts/verify-kernel-gpu.mjs",
-    "gcsim:verify-runner": "node --import ./scripts/ts-resolve.mjs scripts/verify-gcsim-runner.mjs"
+    "gcsim:verify-runner": "node --import ./scripts/ts-resolve.mjs scripts/verify-gcsim-runner.mjs",
+    "gcsim:verify-recipe": "node --import ./scripts/ts-resolve.mjs scripts/verify-gcsim-recipe.mjs"
   },
   "private": true,
   "packageManager": "npm@11.9.0",

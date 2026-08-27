@@ -1,0 +1,15 @@
+options iteration=100 duration=90;
+
+kamisatoayaka char lvl=90/90 cons=0 talent=9,9,9;
+kamisatoayaka add weapon="mistsplitterreforged" lvl=90/90 refine=1;
+kamisatoayaka add set="blizzardstrayer" count=4;
+kamisatoayaka add stats atk%=0.464 cd=0.62;
+
+target lvl=90 resist=0.1 pos=0,1;
+
+active kamisatoayaka;
+while 1 {
+    if .kamisatoayaka.burst.ready { kamisatoayaka burst; }
+    if .kamisatoayaka.skill.ready { kamisatoayaka skill; }
+    if .kamisatoayaka.attack.ready { kamisatoayaka attack:3; }
+}

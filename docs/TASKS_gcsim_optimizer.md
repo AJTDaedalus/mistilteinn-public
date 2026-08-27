@@ -54,7 +54,7 @@ re-derivation) and §4 (predict-then-verify) before starting.
 
 ## Phase 1 — the recipe
 
-### [ ] G.2 — Extract a recipe from `sample()`
+### [x] G.2 — Extract a recipe from `sample()` — **done**
 - **Do:** `frontend/src/app/sim/recipe.ts` — parse a `sample()` payload into
   `{hits: RecipeHit[], meta}`, using `calc` events for the decomposition and `snapshot` for the
   stat vector.
@@ -67,7 +67,7 @@ re-derivation) and §4 (predict-then-verify) before starting.
   documented divergence. A recipe carrying per-hit rolls imports Monte Carlo noise into a
   deterministic evaluator.
 
-### [ ] G.3 — Commit a calibration fixture, and gate it
+### [x] G.3 — Commit a calibration fixture, and gate it — **done** (two fixtures)
 - **Do:** commit one `sample()` payload plus the config and seed that produced it. Add a CI
   step that regenerates and compares.
 - **Accept:** the gate fails if the pin moves and the payload does not. **A skipped check
