@@ -16,7 +16,8 @@ game-agnostic infrastructure:
 moved to the browser (DESIGN §3.5), so there is no long-running server work left to queue,
 cancel or sweep after a restart.
 
-`_ported/` holds read-only porting source and is not importable; see its README.
+`_ported/` held read-only ZZZ porting source and was removed in G.1 once nothing was
+waiting on it; `docs/PORT_zzz_disposition.md` records what became what.
 
 **What C.6 kept, and why.** `artifact_optimizer` and `artifact_prefilter` have no route and
 are not dead: `scripts/kernel/generate_search_cases.py` runs `optimize()` to produce the 40

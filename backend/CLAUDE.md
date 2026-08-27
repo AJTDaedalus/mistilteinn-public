@@ -120,8 +120,9 @@ directly above claimed two of them were in it. Copy the `run:` line out of
 `.github/workflows/test.yml` rather than editing this by hand; `python -m scripts.ci_local`
 executes the workflow's own list, so it is the list that matters.
 
-`app/services/_ported/` is excluded in `pyproject.toml`: it is read-only ZZZ porting source
-that imports deleted modules, so linting it would be permanent noise.
+`app/services/_ported/` used to be excluded here for the same reason — it was read-only ZZZ
+porting source that imported deleted modules. **It is gone as of G.1**; see
+`docs/PORT_zzz_disposition.md`.
 
 **Do not run `ruff format`.** The backend is not formatter-clean (75 of 372 files would
 change), and formatting it piecemeal spreads that churn through unrelated diffs instead of

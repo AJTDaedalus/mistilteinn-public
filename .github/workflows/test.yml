@@ -235,6 +235,14 @@ jobs:
         # A gate that re-implements what it checks can pass while the shipped path is broken.
         run: npm run gcsim:verify-runner
 
+      - name: Verify the damage recipe transcribes gcsim exactly
+        # G.2/G.3. Two assertions: replaying the committed sample reproduces gcsim's own
+        # per-hit numbers (the decomposition is transcribed, not approximated), and
+        # regenerating that sample at the pin reproduces the committed file. Without the
+        # second, the fixture silently becomes the oracle when the pin moves — which is how
+        # fairy shipped a stale golden fixture that sat green for months.
+        run: npm run gcsim:verify-recipe
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"

@@ -65,12 +65,12 @@ browser build, a 100-iteration 90-second rotation is **7.84 s single-threaded** 
 candidates is **~7.7 minutes**. The decision holds; the interaction it implies does not. It is
 a job with progress, never a request that blocks.
 
-- **Both suites pass, with nothing skipped.** **1247 backend tests, 0 skipped**; **213
-  frontend tests**; `create_app()` serves **39 paths**; the SPA has **13 routes plus a
+- **Both suites pass, with nothing skipped.** **1273 backend tests, 0 skipped**; **255
+  frontend tests**; `create_app()` serves **40 paths**; the SPA has **14 routes plus a
   catch-all**. Re-derive rather than trust:
   `cd backend && python -m pytest -q`, `cd frontend && npm test`. Run CI's own gates rather
   than a remembered subset: `cd backend && python -m scripts.ci_local` reads
-  `.github/workflows/*.yml` and executes them here — 19 gates, including the WGSL kernel,
+  `.github/workflows/*.yml` and executes them here — 20 gates, including the WGSL kernel,
   gcsim crossval, gitleaks and pip-audit. `--list` shows the plan; `--clean` runs from a
   fresh clone of HEAD. **A red suite is a regression, not the size of the port** — that
   excuse expired at B.13.
@@ -152,10 +152,12 @@ a job with progress, never a request that blocks.
   artifact value tables, growth curves); `cache/` is the gitignored working copy and the
   54 MB TextMap lives only there. The unit lane runs with `socket.connect` blocked and
   asserts by parsed imports that nothing in `app/` imports the toolkit (E.6).
-- **`app/services/_ported/` is read-only porting source, not runtime code.** Five ZZZ modules
-  remain of the eight staged in B.1/B.3, excluded from ruff and pytest, with no `__init__.py`
-  so they are not importable. Each is deleted when its port lands — see that directory's
-  README.
+- ~~**`app/services/_ported/` is read-only porting source.**~~ **Gone in G.1.** Three of the
+  five remaining files were marked *ported* in its own table and its own rule was to delete
+  each when its port landed; the other two were staged for **Chunk H**, which is closed, and
+  the plan that replaced it transcribes from **gcsim's Go** rather than fairy's ZZZ modifier
+  DSL. Nothing was left with a consumer. `docs/PORT_zzz_disposition.md` keeps the table, and
+  `/root/fairy` plus git history keep the code.
 - **Do not "fix" ZZZ code to make it run.** Per the BRIEF: *delete* ZZZ concepts rather than
   aliasing them. Leaked ZZZ shapes in the Genshin domain model are the fork strategy's main
   long-term hazard.
