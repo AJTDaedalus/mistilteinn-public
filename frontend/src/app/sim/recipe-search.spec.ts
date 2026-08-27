@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { candidateStatsFrom, liveQuantitiesFor, searchRecipe } from './recipe-search';
+import {
+  candidateStatsFrom,
+  fourPieceSetOf,
+  liveQuantitiesFor,
+  searchRecipe,
+} from './recipe-search';
 import { search, type Candidate } from './search';
 import type { Recipe, RecipeHit } from './recipe';
 
@@ -21,6 +26,9 @@ const hit = (over: Partial<RecipeHit> = {}): RecipeHit => ({
   bonusDmg: 0, critRate: 0, critDmg: 0, defMultiplier: 0.5, resMultiplier: 0.9,
   ampMultiplier: 1, gcsimAverageDamage: 900, ...over,
 });
+
+/** A recipe set with a single fallback — the shape most of these tests need. */
+const only = (r: Recipe) => ({ byFourPieceSet: new Map<number, Recipe>(), noFourPiece: r });
 
 const recipe = (hits: RecipeHit[]): Recipe =>
   ({ hits, seed: '1', meta: { seed: '1', staleConversions: [], calibratedSetId: null, minimumEnergyRecharge: null } });
@@ -101,7 +109,7 @@ describe('searchRecipe', () => {
       target: { level: 90, resistance: 0.1, defReduction: 0, defIgnore: 0 },
       characterLevel: 90, dmgBonusQuantity: 'geo_dmg_bonus', topN: 32,
     });
-    const viaRecipe = searchRecipe(inv, { recipe: withConversion, topN: 32 });
+    const viaRecipe = searchRecipe(inv, { recipes: only(withConversion), topN: 32 });
 
     expect(singleHit.paretoRemoved).toBe(5);
     expect(singleHit.evaluated).toBe(1);
@@ -120,8 +128,8 @@ describe('searchRecipe', () => {
       flatDamage: 320, conversions: { flatDamage: { from: 'def', perUnit: 0.4 } },
     })]);
 
-    expect(searchRecipe(inv, { recipe: frozen, topN: 32 }).paretoRemoved).toBe(5);
-    expect(searchRecipe(inv, { recipe: resolved, topN: 32 }).paretoRemoved).toBe(0);
+    expect(searchRecipe(inv, { recipes: only(frozen), topN: 32 }).paretoRemoved).toBe(5);
+    expect(searchRecipe(inv, { recipes: only(resolved), topN: 32 }).paretoRemoved).toBe(0);
   });
 
   it('scores a combination from exactly the candidate’s own stats', () => {
@@ -134,7 +142,10 @@ describe('searchRecipe', () => {
     const atkOnly = SLOTS.map((slot, i) =>
       ({ id: `p${i}`, slot, setId: 1, stats: { atk_pct: 0.3 } } as Candidate));
 
-    const out = searchRecipe(atkOnly, { recipe: recipe([hit()]), topN: 1 });
+    const base = recipe([hit()]);
+    const out = searchRecipe(atkOnly, {
+      recipes: { byFourPieceSet: new Map([[1, base]]), noFourPiece: base }, topN: 1,
+    });
 
     expect(out.builds[0].damage).toBeCloseTo(2250, 3);
   });
@@ -155,8 +166,12 @@ describe('searchRecipe', () => {
     const inv = SLOTS.map((slot, i) =>
       ({ id: `p${i}`, slot, setId: 1, stats: {} } as Candidate));
 
-    const withSkip = searchRecipe(inv, { recipe: calibrated, setBonuses: bonuses, topN: 1 });
-    const without = searchRecipe(inv, { recipe: uncalibrated, setBonuses: bonuses, topN: 1 });
+    // Five pieces of set 1 reach a 4-piece, so the recipe must be registered for that set —
+    // which is the realistic arrangement anyway: a recipe calibrated with set 1 is the one a
+    // 4-piece of set 1 is scored against.
+    const forSet1 = (r: Recipe) => ({ byFourPieceSet: new Map([[1, r]]), noFourPiece: r });
+    const withSkip = searchRecipe(inv, { recipes: forSet1(calibrated), setBonuses: bonuses, topN: 1 });
+    const without = searchRecipe(inv, { recipes: forSet1(uncalibrated), setBonuses: bonuses, topN: 1 });
 
     expect(withSkip.builds[0].damage).toBeLessThan(without.builds[0].damage);
     // Precisely: the skipped run sees no ATK bonus at all — 2*1000*0.45 = 900.
@@ -173,7 +188,7 @@ describe('searchRecipe', () => {
       ({ id: `p${i}`, slot, setId: 2, stats: {} } as Candidate));
 
     const out = searchRecipe(inv, {
-      recipe: calibrated,
+      recipes: { byFourPieceSet: new Map([[2, calibrated]]), noFourPiece: calibrated },
       setBonuses: [{ setId: 2, piecesRequired: 4, stats: { atk_pct: 1 } }],
       topN: 1,
     });
@@ -183,11 +198,108 @@ describe('searchRecipe', () => {
   });
 
   it('reports the search as exact, because there is no lossy layer', () => {
-    expect(searchRecipe(inventory(), { recipe: recipe([hit()]) }).isExact).toBe(true);
+    expect(searchRecipe(inventory(), { recipes: only(recipe([hit()])) }).isExact).toBe(true);
   });
 
   it('refuses a topN below one', () => {
-    expect(() => searchRecipe(inventory(), { recipe: recipe([hit()]), topN: 0 }))
+    expect(() => searchRecipe(inventory(), { recipes: only(recipe([hit()])), topN: 0 }))
       .toThrow(/topN/);
+  });
+});
+
+
+describe('fourPieceSetOf', () => {
+  it('names the set a combination reaches four pieces of', () => {
+    expect(fourPieceSetOf({ 1: 4, 2: 1 })).toBe(1);
+  });
+
+  it('is null when nothing reaches four', () => {
+    // A 2+2+1 split. Its 2-piece bonuses are static and the kernel already has them.
+    expect(fourPieceSetOf({ 1: 2, 2: 2, 3: 1 })).toBeNull();
+  });
+
+  it('counts five of a set as a four-piece', () => {
+    expect(fourPieceSetOf({ 1: 5 })).toBe(1);
+  });
+});
+
+describe('searchRecipe over several recipes', () => {
+  const withSets = (map: Record<number, Recipe>, fallback: Recipe) => ({
+    byFourPieceSet: new Map(Object.entries(map).map(([k, v]) => [Number(k), v])),
+    noFourPiece: fallback,
+  });
+
+  it('scores a four-piece combination against that set’s recipe', () => {
+    // The whole point: a 4-piece bonus is conditional and lives only inside a calibration
+    // that equipped the set. Scoring against the fallback would drop it entirely.
+    const strong = recipe([hit({ talent: 4 })]);
+    const weak = recipe([hit({ talent: 2 })]);
+    const inv = SLOTS.map((slot, i) =>
+      ({ id: `p${i}`, slot, setId: 7, stats: {} } as Candidate));
+
+    const out = searchRecipe(inv, { recipes: withSets({ 7: strong }, weak), topN: 1 });
+
+    // talent 4 x 1000 x 0.45 = 1800, against the fallback's 900.
+    expect(out.builds[0].damage).toBeCloseTo(1800, 6);
+  });
+
+  it('scores a combination reaching no four-piece against the fallback', () => {
+    const strong = recipe([hit({ talent: 4 })]);
+    const weak = recipe([hit({ talent: 2 })]);
+    // 2+2+1 across five slots reaches no 4-piece.
+    const inv = SLOTS.map((slot, i) =>
+      ({ id: `p${i}`, slot, setId: i < 2 ? 7 : i < 4 ? 8 : 9, stats: {} } as Candidate));
+
+    const out = searchRecipe(inv, { recipes: withSets({ 7: strong }, weak), topN: 1 });
+
+    expect(out.builds[0].damage).toBeCloseTo(900, 6);
+  });
+
+  it('reports a combination it has no recipe for rather than substituting one', () => {
+    // Scoring a Blizzard Strayer build against the no-set recipe understates it by the whole
+    // 4-piece bonus and looks like an ordinary result.
+    const inv = SLOTS.map((slot, i) =>
+      ({ id: `p${i}`, slot, setId: 99, stats: {} } as Candidate));
+
+    const out = searchRecipe(inv, {
+      recipes: withSets({ 7: recipe([hit()]) }, recipe([hit()])), topN: 1,
+    });
+
+    expect(out.builds).toHaveLength(0);
+    expect(out.unscorable).toHaveLength(1);
+    expect(out.unscorable[0].reason).toContain('99');
+  });
+
+  it('takes the UNION of every recipe’s live quantities', () => {
+    // R.6, and the one place a bug here gives a wrong answer rather than a slow one. DEF is
+    // dead weight for one recipe and decisive for another; intersecting would prune the
+    // second's winner before it was ever scored.
+    const defRecipe = recipe([hit({
+      flatDamage: 320, conversions: { flatDamage: { from: 'def', perUnit: 0.4 } },
+    })]);
+    const atkRecipe = recipe([hit()]);
+
+    const union = liveQuantitiesFor(atkRecipe, defRecipe);
+
+    expect(union).toEqual(expect.arrayContaining(['atk_pct', 'def_pct', 'flat_def']));
+    // …and neither recipe alone would have produced it.
+    expect(liveQuantitiesFor(atkRecipe)).not.toContain('def_pct');
+  });
+
+  it('does not prune a piece that only one recipe values', () => {
+    // The behavioural consequence of the union, not just its contents.
+    const defRecipe = recipe([hit({
+      flatDamage: 320, conversions: { flatDamage: { from: 'def', perUnit: 0.4 } },
+    })]);
+    const atkRecipe = recipe([hit()]);
+    const inv = inventory();
+
+    const both = searchRecipe(inv, {
+      recipes: withSets({ 1: defRecipe }, atkRecipe), topN: 32,
+    });
+    const atkOnly = searchRecipe(inv, { recipes: only(atkRecipe), topN: 32 });
+
+    expect(atkOnly.paretoRemoved).toBe(5);
+    expect(both.paretoRemoved).toBe(0);
   });
 });
