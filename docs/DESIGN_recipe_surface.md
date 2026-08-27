@@ -109,9 +109,14 @@ three would have produced numbers that looked entirely reasonable.
 2. **Calibrating with a set bakes in its 2-piece**, which the kernel would then add again —
    measured as an exact 0.15 double-count on `Blizzard Strayer`. §2's "2-piece bonuses stay
    kernel stat pools" holds only for sets the calibration does **not** hold.
-3. **Candidates within one search span ER plateaus**, so one recipe cannot score an inventory.
-   The budget is **`(S + 1) × P`**, and the plateau boundaries must be **discovered** by
-   sweeping ER before anything is calibrated — a step this design did not have.
+3. **A build that cannot execute the rotation is flagged, not scored.** Candidates within one
+   search reach different burst counts, and an earlier draft concluded recipes must be keyed
+   by ER plateau — multiplying the budget by `P`. **Owner decision: no.** Each recipe carries
+   a **minimum ER**, and a build below it is reported as unable to perform the rotation. Same
+   principle as `DECISIONS.md` (2026-08-25): *rotations are authored, never optimized* — a
+   build that cannot burst on cue is not performing that rotation, and silently scoring it
+   against a degraded variant substitutes a rotation nobody wrote. **The budget stays
+   `S + 1`.**
 
 ## 5. Open questions
 

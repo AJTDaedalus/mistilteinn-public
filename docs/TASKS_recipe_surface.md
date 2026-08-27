@@ -42,10 +42,8 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
   distinct slots yields exactly one combination; four pieces where two share a slot yields
   none. Counting the latter as `S` inflates the calibration budget with states no combination
   can reach.
-- **Why first:** the whole design rests on the calibration count being small. It is
-  **`(S + 1) × P`**, not `S + 1` — `P` is the number of ER plateaus the inventory spans, and
-  `RESEARCH_recipe_risks.md` §3 measured `P = 2` for the sample rotation. If a real account has
-  40 sets with four pieces, three minutes becomes twenty and the interaction changes.
+- **Why first:** the whole design rests on `S + 1` being small. If a real account has 40 sets
+  with four pieces, two minutes becomes seven and the interaction changes.
 
 ### [ ] R.2 — Is a 2-piece bonus really kernel-representable? **[Planner]**
 - **Do:** for a sample of sets, calibrate with and without the set and compare. A difference
@@ -54,22 +52,23 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
   or corrected. **Do not inherit it** — *having a static prop* is not the same as *having no
   conditional part*, and a tier could carry both.
 
-### [ ] R.2a — Discover the ER plateau boundaries **[Planner]**
-- **Do:** sweep artifact-borne ER for the rotation and record where burst count steps.
-- **Accept:** the boundaries, from a measurement, in `docs/LOG_mistilteinn.md`. About ten
-  `sample()` runs, ~30 s.
-- **Why this exists:** `RESEARCH_recipe_risks.md` §3. `stabilityFrom` detects that a build sits
-  *on* a transition; it does not say *where* the transitions are, and the search needs that to
-  pick a recipe for a candidate. **This step is not in `DESIGN_recipe_surface.md` and was
-  added after measuring.**
+### [ ] R.2a — Find each recipe's minimum ER **[Planner]**
+- **Do:** sweep artifact-borne ER and find the lowest value at which burst count reaches the
+  calibration's own value with `sd == 0`. That is the recipe's **minimum ER**.
+- **Accept:** one number per recipe, carried on it. About ten `sample()` runs, ~30 s.
+- **A number, not a dimension.** An earlier draft made this "discover the plateau boundaries"
+  and keyed recipes by plateau, multiplying the budget by `P`. **Owner decision: a build below
+  the minimum is flagged, not scored against a degraded recipe** — the same principle as
+  `DECISIONS.md` (2026-08-25), *rotations are authored, never optimized*. The budget stays
+  `S + 1`.
 
 ## Phase 1 — calibration
 
 ### [ ] R.3 — Emit calibration configs
 - **Do:** an endpoint that emits, for a build and rotation: a calibration config with a chosen
-  4-piece set equipped and **an ER representative of the target plateau**, and a **probe**
+  4-piece set equipped and **an ER the rotation can actually be performed at**, and a **probe**
   config at a perturbed stat.
-- **Accept:** the config carries `add set="x" count=4` and `add stats er=<plateau>`, **and no
+- **Accept:** the config carries `add set="x" count=4` and `add stats er=<value>`, **and no
   other stat**; it round-trips through `validateConfig`. A build with no rotation is a 422.
 - **ER is not zero, and this is the correction.** `DESIGN_gcsim_optimizer.md` §3.1 said
   "zero artifact stats"; ER is an artifact stat, and a zero-ER calibration produced **2 burst
@@ -97,13 +96,12 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 - **This makes `DESIGN_recipe_surface.md` §2 conditional:** "2-piece bonuses stay kernel stat
   pools" is true only of the sets the calibration does **not** hold.
 
-### [ ] R.5 — Select a recipe per 4-piece state **and ER plateau**
-- **Do:** `searchRecipe` takes a map keyed by **(4-piece set id, ER plateau)**, plus a fallback
-  for combinations reaching no 4-piece.
-- **Candidates within one search span plateaus** — measured at **2** for the sample rotation,
-  with the boundary at only +20 % artifact ER, which a single ER sands clears
-  (`RESEARCH_recipe_risks.md` §3). Scoring both sides against one recipe overstates whichever
-  it was not calibrated for.
+### [ ] R.5 — Select a recipe per 4-piece state
+- **Do:** `searchRecipe` takes a map from 4-piece set id to recipe, plus a fallback for
+  combinations reaching no 4-piece.
+- **A candidate below the recipe's minimum ER is flagged, not scored.** It cannot perform the
+  rotation that was calibrated, and scoring it against a degraded variant would answer a
+  question nobody asked. `RESEARCH_recipe_risks.md` §3.
 - **Accept:** a combination with 4 pieces of set X scores against X's recipe; one with 2+2
   scores against the fallback. A missing recipe is **reported, never silently substituted** —
   scoring a Blizzard Strayer build against the no-set recipe is exactly the wrong answer this
@@ -138,8 +136,12 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 
 ### [ ] R.9 — Surface what the recipe does not know
 - **Do:** show `staleConversions` and `stable` on the result.
-- **Accept:** a build with an unresolved conversion says so, and a build off an ER plateau says
-  **its ranking is not a result**. Same rule as `isExact` and W.5's separability.
+- **Accept:** a build with an unresolved conversion says so, and **a build that cannot reach
+  the recipe's minimum ER is flagged as unable to perform the rotation** — named, with the ER
+  it has and the ER it needs, so the user can add ER or change the rotation. Same rule as
+  `isExact` and W.5's separability.
+- **The optimizer says which; it does not choose.** Silently ranking a build that cannot burst
+  on cue is the optimizer substituting a rotation nobody wrote.
 - **Non-negotiable:** the snapshotted-conversion gap is ~21 % on the Noelle/Redhorn fixture.
   **An optimizer confidently wrong in the case it was built to fix is worse than one that says
   it does not know.**

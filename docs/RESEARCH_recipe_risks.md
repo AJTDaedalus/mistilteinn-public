@@ -4,7 +4,8 @@
 
 **Answer: three things, all measured, all of which would have produced confidently wrong
 numbers rather than obvious failures.** Two invalidate `DESIGN_gcsim_optimizer.md` §3.1's
-"calibrate at zero artifact stats" as written.
+"calibrate at zero artifact stats" as written. The third turned out to need a **number**, not
+a new dimension — see §3.
 
 ---
 
@@ -65,34 +66,37 @@ kernel stat pools" is true only of the sets the calibration does **not** hold.
 
 ---
 
-## 3. One recipe cannot score a whole inventory
+## 3. A build that cannot execute the rotation is not a build to score
 
-ER comes from artifacts, so **candidates within a single search span plateaus**. Sweeping the
-artifact-borne ER a real inventory can produce:
+ER comes from artifacts, so candidates *within one search* reach different burst counts:
 
 | artifact ER | burst count |
 |---|---|
 | +0 % to +10 % | **2** |
 | +20 % to +90 % | **3** |
 
-Two plateaus, and the boundary is **low** — an ER sands alone clears it. So ER-poor and ER-rich
-candidates genuinely have **different rotations**, and scoring both against one recipe
-overstates whichever side it was not calibrated for.
+An earlier draft of this section concluded that recipes must therefore be keyed by **ER
+plateau**, multiplying the calibration budget by `P`. **Owner decision: no.**
 
-### The fix, and what it costs
+**Each recipe has a minimum ER — the threshold at which the rotation executes as authored —
+and a build below it is flagged, not scored.**
 
-Calibrate per **(4-piece set × ER plateau)**, and let the search select by the candidate's own
-total ER.
+That is the same principle `docs/DECISIONS.md` already records (2026-08-25): *rotations are
+authored, never optimized*. A build that cannot burst when the rotation says to burst is not
+performing that rotation. Scoring it against a degraded variant would be answering a question
+the user did not ask, and doing it silently — the optimizer quietly substituting a rotation
+nobody wrote.
 
-That multiplies the budget: `(S + 1) × P`. With `S ≈ 12` and `P = 2` that is ~26 calibrations,
-~3 minutes — still a one-time job, but **three times** `DESIGN_recipe_surface.md` §2's estimate.
+**So the fix is a number, not a dimension.** One recipe per 4-piece set, calibrated at or above
+its minimum ER, carrying that minimum. The search compares each candidate's total ER against it
+and **flags** the ones that fall short. The budget stays **`S + 1`**.
 
-It also adds a step the plan does not have: **boundary discovery**. The plateau edges are a
-property of the rotation and must be found by sweeping ER before any recipe is calibrated —
-about ten `sample()` runs, ~30 s. `stabilityFrom` detects that a build is *on* a transition; it
-does not say *where* the transitions are.
+**The minimum is discoverable from the sweep already needed**: the lowest ER at which the burst
+count reaches the calibration's own value with `sd == 0`. Below it the count drops or wobbles,
+and both mean the rotation is not the one that was calibrated.
 
----
+**What the user does about a flagged build is theirs**: add ER, or change the rotation. The
+optimizer's job is to say which, not to choose.
 
 ## 4. What this does not change
 
