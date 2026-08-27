@@ -17,6 +17,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { parseSample, replayHit } from '../src/app/sim/recipe.ts';
+import { evaluateHit, NO_STATS } from '../src/app/sim/recipe-eval.ts';
 
 const FRONTEND = join(dirname(fileURLToPath(import.meta.url)), '..');
 const FIXTURES = join(FRONTEND, '..', 'backend', 'tests', 'fixtures', 'gcsim_sample');
@@ -128,4 +129,60 @@ for (const c of CASES) {
     process.exit(1);
   }
   console.log(`${c.calc}: matches the pin, worst drift ${worstDrift.toExponential(3)}`);
+}
+
+
+// ── The gate that decides whether any of this is worth having ────────────────────────────
+//
+// The checks above prove **transcription**: a recipe replays the run it came from. That is
+// necessary and it is not the point — a recipe that only reproduces its own calibration is a
+// very expensive identity function.
+//
+// This proves **prediction**. Take the calibration captured at *zero artifact stats*, apply
+// the stats a different run actually used, and check the result against that run's own
+// numbers. gcsim is the oracle; the recipe is the claim.
+//
+// Scope, stated: this predicts across **substats**, not across set combinations. A different
+// artifact set changes the buffs baked into the calibration, so it needs its own — which is
+// why calibration is keyed by set combination in DESIGN §3.
+{
+  const zero = parseSample(readFileSync(join(FIXTURES, 'rotation_gated_nostats_calc.json'), 'utf8'));
+  const real = parseSample(readFileSync(join(FIXTURES, 'rotation_gated_calc.json'), 'utf8'));
+
+  // Exactly what `rotation_gated.txt` adds and `rotation_gated_nostats.txt` omits.
+  const candidate = { ...NO_STATS, atkPercent: 0.464, critDmg: 0.62 };
+
+  if (zero.hits.length !== real.hits.length) {
+    console.error(
+      `the zero-stat and with-stats calibrations disagree on hit count ` +
+        `(${zero.hits.length} vs ${real.hits.length}). Adding stats must not change the ` +
+        `rotation's structure — if it did, a recipe is not reusable across candidates at all.`,
+    );
+    process.exit(1);
+  }
+
+  let worst = 0;
+  let worstAbil = '';
+  for (let i = 0; i < zero.hits.length; i++) {
+    const predicted = evaluateHit(zero.hits[i], candidate);
+    const actual = real.hits[i].gcsimAverageDamage;
+    const rel = Math.abs(predicted - actual) / Math.max(Math.abs(actual), 1e-12);
+    if (rel > worst) {
+      worst = rel;
+      worstAbil = zero.hits[i].abil;
+    }
+  }
+  if (!(worst <= TOLERANCE)) {
+    console.error(
+      `the recipe mispredicts a run it was not calibrated on.\n` +
+        `  worst relative error ${worst.toExponential(3)} on "${worstAbil}"\n` +
+        `  tolerance ${TOLERANCE.toExponential(0)}\n` +
+        `Transcription passing while this fails means the *evaluator* is wrong, not the parser.`,
+    );
+    process.exit(1);
+  }
+  console.log(
+    `recipe predicts an uncalibrated run: ${zero.hits.length} hits, ` +
+      `worst rel err ${worst.toExponential(3)}`,
+  );
 }

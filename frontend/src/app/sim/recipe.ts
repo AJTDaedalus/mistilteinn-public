@@ -56,10 +56,19 @@ export interface RecipeHit {
   /** Flat damage added before bonuses — Redhorn's DEF conversion lands here. */
   flatDamage: number;
   /**
-   * The scaling stat's **base**, before percentage and flat additions. A candidate's artifacts
-   * modify the percentage and flat parts; this is what they modify.
+   * The scaling stat **as the calibration computed it** — gcsim's `total_scaling`. Used by
+   * `replayHit` to check the transcription against gcsim's own answer, and **not** by the
+   * evaluator, which recomputes it from `baseStat` and the candidate's own stats.
    */
-  scalingBase: number;
+  calibratedScaling: number;
+  /**
+   * The character's **base** ATK / HP / DEF — what a candidate's percentage stats multiply.
+   *
+   * Distinct from `calibratedScaling` because a candidate replaces the calibration's artifact
+   * contribution rather than adding to it: at zero artifact stats the two are equal, and once
+   * a candidate is applied they are not.
+   */
+  baseStat: number;
   /** Totals from the calibration run. `RecipeBaseline` says how much was artifact-borne. */
   bonusDmg: number;
   critRate: number;
@@ -136,7 +145,7 @@ export function effectiveCritRate(critRate: number): number {
  * what proves the transcription rather than assuming it.
  */
 export function replayHit(hit: RecipeHit): number {
-  const base = hit.talent * hit.scalingBase + hit.flatDamage;
+  const base = hit.talent * hit.calibratedScaling + hit.flatDamage;
   const preCrit = base * (1 + hit.bonusDmg) * hit.defMultiplier * hit.resMultiplier;
   return preCrit * (1 + effectiveCritRate(hit.critRate) * hit.critDmg) * hit.ampMultiplier;
 }
@@ -187,7 +196,8 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
       talent: c.talent,
       scaling: scalingOf(c),
       flatDamage: c.flat_dmg,
-      scalingBase: c.total_scaling,
+      calibratedScaling: c.total_scaling,
+      baseStat: c.use_hp ? c.base_hp : c.use_def ? c.base_def : c.base_atk,
       bonusDmg: c.bonus_dmg,
       critRate: c.cr,
       critDmg: c.cd,

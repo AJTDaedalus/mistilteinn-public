@@ -36,7 +36,7 @@ function calc(over: Record<string, unknown> = {}) {
 
 const hit = (over: Partial<RecipeHit> = {}): RecipeHit => ({
   abil: 'x', attackTag: -1, element: '19', talent: 2, scaling: 'atk', flatDamage: 0,
-  scalingBase: 1000, bonusDmg: 0.5, critRate: 0.25, critDmg: 2, defMultiplier: 0.5,
+  calibratedScaling: 1000, baseStat: 1000, bonusDmg: 0.5, critRate: 0.25, critDmg: 2, defMultiplier: 0.5,
   resMultiplier: 0.9, ampMultiplier: 1, gcsimAverageDamage: 2025, ...over,
 });
 
