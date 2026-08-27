@@ -78,7 +78,7 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 - **`_artifact_lines` currently derives both from the equipped artifacts** — the set counts and
   the stat totals come from the same loop. Splitting them is the work.
 
-### [ ] R.4 — Calibrate in the browser
+### [~] R.4 — Calibrate in the browser — **`calibrate()` done; caching (OQ-R2) outstanding**
 - **Do:** run `sample()` for baseline and probe, `parseSample`, `resolveConversions`, cache the
   result client-side (**OQ-R2** for the key and invalidation).
 - **Accept:** a calibration survives a page reload; a gcsim pin change invalidates it. **A
