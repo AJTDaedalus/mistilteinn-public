@@ -52,13 +52,29 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
   or corrected. **Do not inherit it** — *having a static prop* is not the same as *having no
   conditional part*, and a tier could carry both.
 
+### [ ] R.2a — Find each recipe's minimum ER **[Planner]**
+- **Do:** sweep artifact-borne ER and find the lowest value at which burst count reaches the
+  calibration's own value with `sd == 0`. That is the recipe's **minimum ER**.
+- **Accept:** one number per recipe, carried on it. About ten `sample()` runs, ~30 s.
+- **A number, not a dimension.** An earlier draft made this "discover the plateau boundaries"
+  and keyed recipes by plateau, multiplying the budget by `P`. **Owner decision: a build below
+  the minimum is flagged, not scored against a degraded recipe** — the same principle as
+  `DECISIONS.md` (2026-08-25), *rotations are authored, never optimized*. The budget stays
+  `S + 1`.
+
 ## Phase 1 — calibration
 
 ### [ ] R.3 — Emit calibration configs
-- **Do:** an endpoint that emits, for a build and rotation: a **zero-artifact-stat** config with
-  a chosen 4-piece set equipped, and a **probe** config at a perturbed stat.
-- **Accept:** the emitted config has **no `add stats` line**, carries `add set="x" count=4`,
-  and round-trips through `validateConfig`. A build with no rotation is a 422, not a guess.
+- **Do:** an endpoint that emits, for a build and rotation: a calibration config with a chosen
+  4-piece set equipped and **an ER the rotation can actually be performed at**, and a **probe**
+  config at a perturbed stat.
+- **Accept:** the config carries `add set="x" count=4` and `add stats er=<value>`, **and no
+  other stat**; it round-trips through `validateConfig`. A build with no rotation is a 422.
+- **ER is not zero, and this is the correction.** `DESIGN_gcsim_optimizer.md` §3.1 said
+  "zero artifact stats"; ER is an artifact stat, and a zero-ER calibration produced **2 burst
+  instances against a real candidate's 3** (`RESEARCH_recipe_risks.md` §1). ER is
+  **structural**: baked into the calibration, and a candidate's own ER is used only to check it
+  clears the recipe's minimum — **never added as a damage stat**.
 - **`_artifact_lines` currently derives both from the equipped artifacts** — the set counts and
   the stat totals come from the same loop. Splitting them is the work.
 
@@ -70,9 +86,22 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 
 ## Phase 2 — the search
 
+### [ ] R.4a — Do not add a bonus the calibration already holds
+- **Do:** when scoring a combination against a recipe calibrated with set X, **omit X's set
+  bonuses** from the kernel's stat pools. Other sets in the combination still contribute.
+- **Accept:** a test that a 2-piece bonus is applied **exactly once**. Measured: calibrating
+  with `Blizzard Strayer` puts `cryo% 0.27` in the recipe against `0.12` without — the 0.15
+  difference is its 2-piece, and `searchRecipe` would add it again
+  (`RESEARCH_recipe_risks.md` §2).
+- **This makes `DESIGN_recipe_surface.md` §2 conditional:** "2-piece bonuses stay kernel stat
+  pools" is true only of the sets the calibration does **not** hold.
+
 ### [ ] R.5 — Select a recipe per 4-piece state
 - **Do:** `searchRecipe` takes a map from 4-piece set id to recipe, plus a fallback for
   combinations reaching no 4-piece.
+- **A candidate below the recipe's minimum ER is flagged, not scored.** It cannot perform the
+  rotation that was calibrated, and scoring it against a degraded variant would answer a
+  question nobody asked. `RESEARCH_recipe_risks.md` §3.
 - **Accept:** a combination with 4 pieces of set X scores against X's recipe; one with 2+2
   scores against the fallback. A missing recipe is **reported, never silently substituted** —
   scoring a Blizzard Strayer build against the no-set recipe is exactly the wrong answer this
@@ -107,8 +136,12 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 
 ### [ ] R.9 — Surface what the recipe does not know
 - **Do:** show `staleConversions` and `stable` on the result.
-- **Accept:** a build with an unresolved conversion says so, and a build off an ER plateau says
-  **its ranking is not a result**. Same rule as `isExact` and W.5's separability.
+- **Accept:** a build with an unresolved conversion says so, and **a build that cannot reach
+  the recipe's minimum ER is flagged as unable to perform the rotation** — named, with the ER
+  it has and the ER it needs, so the user can add ER or change the rotation. Same rule as
+  `isExact` and W.5's separability.
+- **The optimizer says which; it does not choose.** Silently ranking a build that cannot burst
+  on cue is the optimizer substituting a rotation nobody wrote.
 - **Non-negotiable:** the snapshotted-conversion gap is ~21 % on the Noelle/Redhorn fixture.
   **An optimizer confidently wrong in the case it was built to fix is worse than one that says
   it does not know.**
