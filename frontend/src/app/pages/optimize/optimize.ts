@@ -452,12 +452,21 @@ export class OptimizePage implements OnInit {
       slots.add(piece.slot);
       slotsBySet.set(piece.set_id, slots);
     }
-    const targets: CalibrationTarget[] = [{ artifactSetId: null, label: 'no 4-piece set' }];
-    for (const [setId, slots] of slotsBySet) {
-      if (slots.size >= 4) {
-        targets.push({ artifactSetId: String(setId), label: `set ${setId}` });
-      }
-    }
-    return targets;
+    // **Ordered by how much of the set the user actually owns.** R.1 measured a real account
+    // at **S = 35**, so 36 calibrations and ~3.8 minutes — three times the plan's estimate,
+    // and filtering by rarity or level barely helps (35 → 28 at 5-star +20), because a large
+    // account genuinely holds four distinct slots of nearly every set.
+    //
+    // Ordering does not make it shorter. It makes **stopping early** useful: the sets a user
+    // has farmed come first, so an interrupted run has calibrated the ones most likely to
+    // matter rather than an arbitrary third.
+    const reachable = [...slotsBySet.entries()]
+      .filter(([, slots]) => slots.size >= 4)
+      .sort((a, b) => b[1].size - a[1].size || a[0] - b[0]);
+
+    return [
+      { artifactSetId: null, label: 'no 4-piece set' },
+      ...reachable.map(([setId]) => ({ artifactSetId: String(setId), label: `set ${setId}` })),
+    ];
   }
 }

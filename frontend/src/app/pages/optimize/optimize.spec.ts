@@ -613,6 +613,28 @@ describe('OptimizePage — the rotation objective', () => {
     expect(targets.map((t) => t.artifactSetId)).toEqual([null]);
   });
 
+  it('orders sets by how many distinct slots the user owns', () => {
+    // R.1 measured a real account at S = 35 — 36 calibrations, ~3.8 minutes. Ordering does
+    // not make that shorter; it makes stopping early useful, because the sets a user has
+    // farmed most come first.
+    const page = pageWith();
+    const targets = (at(page, 'calibrationTargets') as (p: unknown[]) => { artifactSetId: string | null }[])
+      .call(page, [
+        // Set 2 reaches all five slots; set 1 reaches four.
+        { id: 'a', slot: 'equip_bracer', set_id: 1, stats: {} },
+        { id: 'b', slot: 'equip_necklace', set_id: 1, stats: {} },
+        { id: 'c', slot: 'equip_shoes', set_id: 1, stats: {} },
+        { id: 'd', slot: 'equip_ring', set_id: 1, stats: {} },
+        { id: 'e', slot: 'equip_bracer', set_id: 2, stats: {} },
+        { id: 'f', slot: 'equip_necklace', set_id: 2, stats: {} },
+        { id: 'g', slot: 'equip_shoes', set_id: 2, stats: {} },
+        { id: 'h', slot: 'equip_ring', set_id: 2, stats: {} },
+        { id: 'i', slot: 'equip_dress', set_id: 2, stats: {} },
+      ]);
+
+    expect(targets.map((t) => t.artifactSetId)).toEqual([null, '2', '1']);
+  });
+
   it('includes a set that reaches four distinct slots', () => {
     const page = pageWith();
     const targets = (at(page, 'calibrationTargets') as (p: unknown[]) => { artifactSetId: string | null }[])
