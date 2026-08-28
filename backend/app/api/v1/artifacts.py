@@ -47,7 +47,9 @@ from app.schemas.artifact import (
     StatVocabularyEntry,
     UnreadableArtifact,
 )
+from app.schemas.build import KernelSetBonus
 from app.schemas.common import PaginatedResponse
+from app.services import build_assembler
 from app.services.good_import_service import ReplaceRefusedError, store_good_import
 from app.services.stat_calculator import StatInputError, _quantity_for_prop
 
@@ -220,6 +222,43 @@ def _kernel_stats(artifact: Artifact) -> dict[str, float]:
 # The import route is declared **before** `/{artifact_id}`. The two do not collide today —
 # one is a POST and the other a GET — but a future `GET /artifacts/import/...` would be
 # swallowed by the path parameter, and finding that out from a 404 is a bad afternoon.
+@router.get("/set-bonuses", response_model=list[KernelSetBonus])
+async def get_set_bonuses(
+    repo: Annotated[ArtifactRepository, Depends(get_owned_artifact_repo)],
+) -> list[KernelSetBonus]:
+    """Every tier of every set the caller owns a piece of, in kernel terms.
+
+    **Why this exists rather than reusing `/builds/{id}/search-context`.** That endpoint
+    already returns these, but it requires a *hit* — and the rotation objective has none: it
+    scores a whole gcsim run, not one Cutting DMG. Passing a hit purely to reach the bonuses
+    would couple the rotation path to the single-hit path's requirements.
+
+    **Why not derived in the browser.** `/artifact-sets` already publishes each affix's
+    `add_props`, so a client could translate them itself — and would then own a second copy of
+    the `FIGHT_PROP_*` → kernel-quantity mapping. `OptimizeService` says why that is refused:
+    the mapping decides what every stat means, and O.1/O.2 exist so it happens once, here.
+
+    **Only static `add_props` become stats**, the same rule `artifact_optimizer` documents: a
+    conditional bonus has `FIGHT_PROP_NONE` for every prop and its numbers live in
+    `param_list`. Nine of the sixty 2-piece affixes at 7.0.51 are conditional, six of them
+    ability-scoped DMG bonuses a flat stat pool cannot express. They arrive here with empty
+    `stats`, and a caller that means to score them has to say so — `TASKS_optimizer_reach.md`
+    B.2 and B.3.
+
+    Asked as a set question rather than by reading the inventory, for the reason
+    `owned_sets` gives: `search`'s cap would silently omit a set from a large account, and a
+    ranking missing an option looks exactly like a ranking.
+    """
+    return [
+        KernelSetBonus(
+            set_id=bonus.set_id,
+            pieces_required=bonus.pieces_required,
+            stats=build_assembler.bonus_stats(bonus),
+        )
+        for bonus in build_assembler.set_bonuses(await repo.owned_sets())
+    ]
+
+
 @router.get("/options", response_model=ArtifactOptions)
 async def artifact_options(_: CurrentUser) -> ArtifactOptions:
     """The vocabulary an inventory needs to draw a row.

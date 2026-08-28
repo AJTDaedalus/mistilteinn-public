@@ -60,6 +60,23 @@ export class OptimizeService {
   }
 
   /**
+   * Every tier of every set the caller owns a piece of, in kernel terms.
+   *
+   * **Its own endpoint, not `search-context`.** That one returns these too but requires a
+   * *hit*, and the rotation objective has none — it scores a whole gcsim run rather than one
+   * Cutting DMG. Passing a hit purely to reach the bonuses would couple the two paths.
+   *
+   * A conditional tier arrives with **empty** `stats`: nine of the sixty 2-piece affixes have
+   * no static props, six of them ability-scoped DMG bonuses a flat stat pool cannot express.
+   * They are not omitted, so a caller can see that a bonus exists and is not being scored.
+   */
+  async setBonuses(): Promise<components['schemas']['KernelSetBonus'][]> {
+    const { data, error } = await this.api.GET('/api/v1/artifacts/set-bonuses');
+    if (error) throw new Error('Could not load artifact set bonuses');
+    return data;
+  }
+
+  /**
    * The set catalogue, keyed by the id an artifact carries.
    *
    * **Two ids, and the difference is load-bearing.** An inventory snapshot's `set_id` is the

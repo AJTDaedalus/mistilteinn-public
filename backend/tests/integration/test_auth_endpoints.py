@@ -103,6 +103,7 @@ _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     # artifacts — G.6b and D.1
     ("GET", "/api/v1/artifacts", None),
     ("GET", "/api/v1/artifacts/inventory", None),
+    ("GET", "/api/v1/artifacts/set-bonuses", None),
     ("GET", "/api/v1/artifacts/options", None),  # A.3
     ("GET", "/api/v1/artifacts/00000000-0000-0000-0000-000000000001", None),
     ("PATCH", "/api/v1/artifacts/00000000-0000-0000-0000-000000000001", {}),  # A.1

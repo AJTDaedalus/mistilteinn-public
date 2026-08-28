@@ -29,6 +29,7 @@ from app.services.artifact_optimizer import ArtifactCandidate, SetBonus
 from app.services.stat_calculator import (
     CharacterStats,
     WeaponStats,
+    _quantity_for_prop,
     add_character,
     add_weapon,
     build_log,
@@ -200,3 +201,25 @@ def set_bonuses(artifact_sets: Sequence[ArtifactSet]) -> list[SetBonus]:
         for row in artifact_sets
         for affix in row.affixes
     ]
+
+
+def bonus_stats(tier: SetBonus) -> dict[str, float]:
+    """A set tier's static props, in kernel quantities.
+
+    A prop the mapping refuses is **skipped rather than guessed**, which is what
+    `artifact_optimizer` does with the same rows — a conditional affix's props are all
+    `FIGHT_PROP_NONE`, and inventing a quantity for one would add a bonus the game does not
+    give.
+
+    Lives here rather than in a route module because two routes now need it —
+    `/builds/{id}/search-context` and `/artifacts/set-bonuses` — and DESIGN §1 A6 asks that
+    each mechanic have **one** implementation everything reuses. Two copies of a mapping that
+    decides what every stat means is the drift nobody notices until a ranking is wrong.
+    """
+    stats: dict[str, float] = {}
+    for prop in tier.add_props or ():
+        quantity = _quantity_for_prop(prop.get("prop_type"), allow_absent=True)
+        if quantity is None:
+            continue
+        stats[quantity] = stats.get(quantity, 0.0) + float(prop.get("value", 0.0))
+    return stats

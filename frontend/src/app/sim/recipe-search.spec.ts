@@ -263,6 +263,52 @@ describe('searchRecipe over several recipes', () => {
     expect(out.builds[0].damage).toBeCloseTo(900, 6);
   });
 
+  it('scores a 2+2 with its two-piece bonuses, and differently without them', () => {
+    // **B.1.** `runRotation` passed no `setBonuses` at all. Harmless while only 4-piece
+    // states are searched — those leave one spare piece, and a lone piece grants nothing —
+    // but a 2+2 combination holds two live 2-piece bonuses, and omitting them understates it
+    // by exactly the thing the user picked the pair for.
+    //
+    // The assertion is that the two scores **differ**. A test that passed with the wiring
+    // dead would be decorative.
+    const r = recipe([hit()]);
+    const inv = SLOTS.map((slot, i) =>
+      ({ id: `p${i}`, slot, setId: i < 2 ? 7 : i < 4 ? 8 : 9, stats: {} } as Candidate));
+    const recipes = { byFourPieceSet: new Map<number, Recipe>(), noFourPiece: r };
+
+    const without = searchRecipe(inv, { recipes, topN: 1, fourPieceSets: [null] });
+    const with_ = searchRecipe(inv, {
+      recipes, topN: 1, fourPieceSets: [null],
+      setBonuses: [
+        { setId: 7, piecesRequired: 2, stats: { atk_pct: 0.18 } },
+        { setId: 8, piecesRequired: 2, stats: { crit_rate: 0.12 } },
+        // Not reached: only one piece of set 9 is in the combination.
+        { setId: 9, piecesRequired: 2, stats: { atk_pct: 9 } },
+      ],
+    });
+
+    expect(without.builds).toHaveLength(1);
+    expect(with_.builds).toHaveLength(1);
+    expect(with_.builds[0].damage).toBeGreaterThan(without.builds[0].damage);
+  });
+
+  it('does not pay a set bonus the combination has too few pieces for', () => {
+    // The 1-piece leftover of a 2+2+1 must contribute nothing, or every scattered build gets
+    // a bonus the game does not give.
+    const r = recipe([hit()]);
+    const inv = SLOTS.map((slot, i) =>
+      ({ id: `p${i}`, slot, setId: i < 2 ? 7 : i < 4 ? 8 : 9, stats: {} } as Candidate));
+    const recipes = { byFourPieceSet: new Map<number, Recipe>(), noFourPiece: r };
+
+    const base = searchRecipe(inv, { recipes, topN: 1, fourPieceSets: [null] });
+    const withLoner = searchRecipe(inv, {
+      recipes, topN: 1, fourPieceSets: [null],
+      setBonuses: [{ setId: 9, piecesRequired: 2, stats: { atk_pct: 5 } }],
+    });
+
+    expect(withLoner.builds[0].damage).toBeCloseTo(base.builds[0].damage, 6);
+  });
+
   it('reports a set it has no recipe for rather than substituting one', () => {
     // Scoring a Blizzard Strayer build against the no-set recipe understates it by the whole
     // 4-piece bonus and looks like an ordinary result.

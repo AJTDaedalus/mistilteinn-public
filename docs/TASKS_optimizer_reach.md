@@ -113,6 +113,11 @@ reporting is unaffected — progress is not a result.
 
 ### B.1 — pass `setBonuses` into the recipe search
 
+> **Done.** Needed a new endpoint: `search-context` carries these but requires a *hit*, and
+> the rotation objective has none. `GET /artifacts/set-bonuses` publishes them for owned sets,
+> and the `add_props` → kernel-quantity conversion moved to `build_assembler.bonus_stats` so
+> two routes share one implementation. Mutation-checked.
+
 `runRotation()` builds `{ recipes, fourPieceSets }` and no `setBonuses`. Wire it from the same
 search context the single-hit path already reads.
 

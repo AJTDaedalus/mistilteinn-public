@@ -77,6 +77,11 @@ function pageWith(overrides: {
             version: 'v1', artifacts: inventory(), total: 10,
             truncated: false, unreadable: [],
           }),
+          // `loadFilterData` calls both. Without stubs it throws, is caught, and leaves the
+          // catalogue empty — which then trips the unresolved-set guard and silently stops
+          // every rotation run before it calibrates anything.
+          artifactSets: vi.fn().mockResolvedValue(new Map()),
+          setBonuses: vi.fn().mockResolvedValue([]),
           ...overrides.optimize,
         } as unknown as OptimizeService,
       },

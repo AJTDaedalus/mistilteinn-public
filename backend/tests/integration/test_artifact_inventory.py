@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from app.models.artifact import Artifact, ArtifactSet
+from app.models.artifact import Artifact, ArtifactSet, ArtifactSetAffix
 from app.models.build import Build
 from app.models.enums import ArtifactSlot, Rarity, StatType
 
@@ -44,6 +44,53 @@ async def piece(db_session: AsyncSession, authed_user: tuple[User, str]) -> str:
     )
     db_session.add(artifact_set)
     await db_session.flush()
+    artifact = Artifact(
+        owner_id=str(user.id), artifact_set_id=str(artifact_set.id),
+        slot=ArtifactSlot.CIRCLET, rarity=Rarity.FIVE_STAR, level=20,
+        main_stat_type=StatType.CRIT_DMG, main_stat_value=0.622,
+        substats=[{"stat": "FIGHT_PROP_CRITICAL", "value": 0.109, "rolls": 3}],
+    )
+    db_session.add(artifact)
+    await db_session.flush()
+    return str(artifact.id)
+
+
+@pytest.fixture
+async def piece_with_bonuses(
+    db_session: AsyncSession, authed_user: tuple[User, str],
+) -> str:
+    """A piece whose set actually carries its affix rows.
+
+    The shared `piece` fixture creates a set with **no** affixes, which is right for the tests
+    that use it and useless here: `set_bonuses` iterates `row.affixes`, so it would return an
+    empty list and a passing assertion would mean nothing.
+
+    The two affixes are the real shapes — a static 2-piece with a live `add_props`, and a
+    conditional 4-piece whose props are all `FIGHT_PROP_NONE` with the numbers in
+    `param_list`.
+    """
+    user, _ = authed_user
+    artifact_set = ArtifactSet(
+        nanoka_id=15025, name="Blizzard Strayer", piece_thresholds=[2, 4],
+        available_ranks=[4, 5],
+    )
+    db_session.add(artifact_set)
+    await db_session.flush()
+    db_session.add_all([
+        ArtifactSetAffix(
+            artifact_set_id=str(artifact_set.id), position=0, pieces_required=2,
+            name="Blizzard Strayer", description="Cryo DMG Bonus +15%.",
+            add_props=[{"prop_type": "FIGHT_PROP_ICE_ADD_HURT", "value": 0.15}],
+            param_list=[0, 0],
+        ),
+        ArtifactSetAffix(
+            artifact_set_id=str(artifact_set.id), position=1, pieces_required=4,
+            name="Blizzard Strayer",
+            description="Attacks on Cryo-affected opponents increase CRIT Rate by 20%.",
+            add_props=[{"prop_type": "FIGHT_PROP_NONE", "value": 0}],
+            param_list=[0.2, 0.2],
+        ),
+    ])
     artifact = Artifact(
         owner_id=str(user.id), artifact_set_id=str(artifact_set.id),
         slot=ArtifactSlot.CIRCLET, rarity=Rarity.FIVE_STAR, level=20,
@@ -310,3 +357,54 @@ async def test_an_impossible_piece_reports_no_potential_rather_than_zero(
     assert single.json()["potential"] is None
     assert listed.status_code == 200, "one impossible row must not fail the list"
     assert any(row["id"] == impossible_id for row in listed.json()["items"])
+
+
+async def test_set_bonuses_are_published_in_kernel_terms_for_owned_sets(
+    authed_client: AsyncClient, db_session: AsyncSession, piece_with_bonuses: str,
+):
+    """B.1 — the rotation objective's source for set bonuses.
+
+    `/builds/{id}/search-context` already returns these, but it requires a **hit**, and the
+    rotation objective has none: it scores a whole gcsim run rather than one Cutting DMG.
+    This is that half on its own.
+
+    The stats are keyed by **kernel quantity**, not `FIGHT_PROP_*`. A client could translate
+    `/artifact-sets`'s `add_props` itself and would then own a second copy of a mapping that
+    decides what every stat means — which `OptimizeService` refuses on purpose.
+    """
+    db_session.expire_all()
+
+    response = await authed_client.get(f"{ARTIFACTS}/set-bonuses")
+
+    assert response.status_code == 200, response.text
+    bonuses = response.json()
+    assert bonuses, "the caller owns a Blizzard Strayer piece; its tiers should be published"
+
+    # Keyed by the same integer the inventory's `set_id` carries, so a caller can count set
+    # pieces and look up their bonus without a second vocabulary.
+    assert {b["set_id"] for b in bonuses} == {15025}
+    assert {b["pieces_required"] for b in bonuses} == {2, 4}
+
+    two_piece = next((b for b in bonuses if b["pieces_required"] == 2), None)
+    assert two_piece is not None, bonuses
+    assert two_piece["stats"], "Blizzard Strayer's 2-piece is a static Cryo DMG bonus"
+    assert all(not key.startswith("FIGHT_PROP") for key in two_piece["stats"])
+
+
+async def test_a_conditional_bonus_arrives_with_no_stats_rather_than_a_guess(
+    authed_client: AsyncClient, db_session: AsyncSession, piece_with_bonuses: str,
+):
+    """Every 4-piece bonus in the game is conditional (`RESEARCH_conditional_sets.md`), and
+    nine of the sixty 2-piece affixes are too.
+
+    A conditional affix has `FIGHT_PROP_NONE` for every prop and its numbers in `param_list`.
+    It arrives with **empty** `stats` — not omitted, and not filled with a guess. A caller
+    that means to score it has to say so, which is what B.2/B.3 are for.
+    """
+    db_session.expire_all()
+
+    bonuses = (await authed_client.get(f"{ARTIFACTS}/set-bonuses")).json()
+
+    four_piece = next((b for b in bonuses if b["pieces_required"] == 4), None)
+    assert four_piece is not None, bonuses
+    assert four_piece["stats"] == {}

@@ -99,7 +99,7 @@ from app.services.gcsim_config import (
 )
 from app.services.gcsim_keys import GcsimKeyError, pinned_commit
 from app.services.rotation_compiler import RotationCompileError, compile_rotation
-from app.services.stat_calculator import StatInputError, _quantity_for_prop
+from app.services.stat_calculator import StatInputError
 from app.services.talent_hits import (
     TalentHitUnavailableError,
     available_hits,
@@ -391,28 +391,11 @@ async def search_context(
             KernelSetBonus(
                 set_id=tier.set_id,
                 pieces_required=tier.pieces_required,
-                stats=_bonus_stats(tier),
+                stats=build_assembler.bonus_stats(tier),
             )
             for tier in bonuses
         ],
     )
-
-
-def _bonus_stats(tier: "build_assembler.SetBonus") -> dict[str, float]:
-    """A set tier's static props, in kernel quantities.
-
-    A prop the mapping refuses is **skipped rather than guessed**, which is what
-    `artifact_optimizer` does with the same rows — a conditional affix's props are all
-    `FIGHT_PROP_NONE`, and inventing a quantity for one would add a bonus the game does not
-    give.
-    """
-    stats: dict[str, float] = {}
-    for prop in tier.add_props or []:
-        quantity = _quantity_for_prop(prop.get("prop_type"), allow_absent=True)
-        if quantity is None:
-            continue
-        stats[quantity] = stats.get(quantity, 0.0) + float(prop.get("value", 0.0))
-    return stats
 
 
 @router.post("/{build_id}/explain", response_model=ExplainResponse)

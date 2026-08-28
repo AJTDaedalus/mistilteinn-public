@@ -108,6 +108,17 @@ export class OptimizePage implements OnInit {
     ReadonlyMap<number, { id: string; name: string }>
   >(new Map());
   /**
+   * Set bonuses for the rotation search.
+   *
+   * **Unused until 2+2 exists, and correct to wire now.** A 4-piece state leaves at most one
+   * other piece and a lone piece grants no bonus, so these change nothing today — but the
+   * moment a combination holds 2+2, omitting them would understate it by both 2-piece
+   * bonuses, which is the thing the user selected the pair for.
+   */
+  protected readonly setBonuses = signal<
+    { setId: number; piecesRequired: number; stats: Record<string, number> }[]
+  >([]);
+  /**
    * Which 4-piece sets to search. **Empty by default — a run requires an explicit pick.**
    *
    * Narrowing this is not a convenience. Unrestricted, a real inventory is 4.26e10
@@ -289,11 +300,17 @@ export class OptimizePage implements OnInit {
    */
   private async loadFilterData(): Promise<void> {
     try {
-      const [catalogue, snapshot] = await Promise.all([
+      const [catalogue, snapshot, bonuses] = await Promise.all([
         this.optimize.artifactSets(),
         this.optimize.inventory(),
+        this.optimize.setBonuses(),
       ]);
       this.artifactSets.set(catalogue);
+      this.setBonuses.set(bonuses.map((bonus) => ({
+        setId: bonus.set_id,
+        piecesRequired: bonus.pieces_required,
+        stats: bonus.stats,
+      })));
       this.candidates.set(snapshot.artifacts);
     } catch {
       // Left empty on purpose — see the docstring.
@@ -574,6 +591,7 @@ export class OptimizePage implements OnInit {
             byFourPieceSet: calibrated.byFourPieceSet,
             noFourPiece: calibrated.noFourPiece,
           },
+          setBonuses: this.setBonuses(),
           // The baseline is always calibrated — it is the reference — but the no-4-piece
           // *state* is only searched when asked for. See `includeNoFourPiece`.
           fourPieceSets: [...(this.includeNoFourPiece() ? [null] : []), ...chosen],
