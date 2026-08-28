@@ -58,4 +58,21 @@ export class OptimizeService {
     if (error) throw new Error('Could not load your artifacts');
     return data;
   }
+
+  /**
+   * Set names, keyed by the id an artifact carries.
+   *
+   * The inventory publishes `set_id` and no name, so a set filter built from it alone would
+   * offer the user "set 15003". Joined on `nanoka_id`, which is what `set_id` holds — the
+   * catalogue's own `id` is a uuid and matches nothing in an inventory snapshot.
+   *
+   * One request: there are 65 sets and the page cap is 200.
+   */
+  async artifactSetNames(): Promise<Map<number, string>> {
+    const { data, error } = await this.api.GET('/api/v1/artifact-sets', {
+      params: { query: { limit: 200 } },
+    });
+    if (error) throw new Error('Could not load artifact set names');
+    return new Map(data.items.map((set) => [set.nanoka_id, set.name]));
+  }
 }

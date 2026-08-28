@@ -109,12 +109,20 @@ describe('searchRecipe', () => {
       target: { level: 90, resistance: 0.1, defReduction: 0, defIgnore: 0 },
       characterLevel: 90, dmgBonusQuantity: 'geo_dmg_bonus', topN: 32,
     });
-    const viaRecipe = searchRecipe(inv, { recipes: only(withConversion), topN: 32 });
+    // Covering set 1 matters: every piece `inventory()` makes is set 1, so a recipe set that
+    // covers only the no-4-piece state scores **nothing** — the earlier fixture walked all 32
+    // combinations and rejected each, then asserted the walk count of a search that returned
+    // no builds at all.
+    const viaRecipe = searchRecipe(inv, {
+      recipes: { byFourPieceSet: new Map([[1, withConversion]]), noFourPiece: withConversion },
+      topN: 32,
+    });
 
     expect(singleHit.paretoRemoved).toBe(5);
     expect(singleHit.evaluated).toBe(1);
     expect(viaRecipe.paretoRemoved).toBe(0);
     expect(viaRecipe.evaluated).toBe(32);
+    expect(viaRecipe.builds).toHaveLength(32);
   });
 
   it('prunes DEF while the conversion is frozen, and keeps it once resolved', () => {
@@ -255,7 +263,7 @@ describe('searchRecipe over several recipes', () => {
     expect(out.builds[0].damage).toBeCloseTo(900, 6);
   });
 
-  it('reports a combination it has no recipe for rather than substituting one', () => {
+  it('reports a set it has no recipe for rather than substituting one', () => {
     // Scoring a Blizzard Strayer build against the no-set recipe understates it by the whole
     // 4-piece bonus and looks like an ordinary result.
     const inv = SLOTS.map((slot, i) =>
@@ -266,8 +274,9 @@ describe('searchRecipe over several recipes', () => {
     });
 
     expect(out.builds).toHaveLength(0);
-    expect(out.unscorable).toHaveLength(1);
-    expect(out.unscorable[0].reason).toContain('99');
+    // Named per set, not per combination: for a real inventory the old shape was thousands
+    // of rows all saying the one thing a reader needs — *calibrate this set*.
+    expect(out.uncoveredSets).toEqual([99]);
   });
 
   it('takes the UNION of every recipe’s live quantities', () => {
@@ -301,5 +310,95 @@ describe('searchRecipe over several recipes', () => {
 
     expect(atkOnly.paretoRemoved).toBe(5);
     expect(both.paretoRemoved).toBe(0);
+  });
+});
+
+describe('the branch-and-bound layer', () => {
+  /**
+   * Three pieces per slot, all one set, so 3^5 = 243 combinations.
+   *
+   * **Each piece is best at exactly one thing**, so none dominates another and all three
+   * survive the Pareto layer. The first draft gave every piece a bit of everything; one piece
+   * per slot then dominated the rest and the "exhaustive" walk was 8 combinations, not 243 —
+   * a fixture that would have measured the Pareto layer while claiming to measure the bound.
+   */
+  const spread = (): Candidate[] =>
+    SLOTS.flatMap((slot, s) =>
+      ([
+        { atk_pct: 0.5 + 0.01 * s },
+        { crit_rate: 0.3 + 0.01 * s },
+        { crit_dmg: 0.6 + 0.01 * s },
+      ] as Record<string, number>[])
+        .map((stats, k) => ({ id: `${slot}-${k}`, slot, setId: 1, stats } as Candidate)),
+    );
+
+  const covering = () => {
+    const r = recipe([hit({ critRate: 0.05, critDmg: 0.5 })]);
+    return { byFourPieceSet: new Map([[1, r]]), noFourPiece: r };
+  };
+
+  it('returns exactly what an exhaustive walk returns', () => {
+    // **The property the whole layer rests on.** `isExact: true` is a claim that pruning
+    // discarded only combinations it had *proved* could not place. A bound that is slightly
+    // too tight still returns a plausible ranking — with the winner quietly missing — so the
+    // guard has to be the answer itself, not the speed.
+    const inv = spread();
+    const recipes = covering();
+
+    // topN above the combination count means the heap never fills, so the bound never fires.
+    const exhaustive = searchRecipe(inv, { recipes, topN: 100000, fourPieceSets: [1] });
+    const bounded = searchRecipe(inv, { recipes, topN: 3, fourPieceSets: [1] });
+
+    expect(exhaustive.evaluated).toBe(243);
+    expect(exhaustive.boundPruned).toBe(0);
+
+    // **Non-vacuous or the assertion below proves nothing.** If the bound never fired, this
+    // test would be comparing an exhaustive walk against itself and would pass on a bound
+    // that was wired up backwards.
+    expect(bounded.boundPruned).toBeGreaterThan(0);
+    expect(bounded.evaluated).toBeLessThan(exhaustive.evaluated);
+
+    expect(bounded.builds).toEqual(exhaustive.builds.slice(0, 3));
+    expect(bounded.isExact).toBe(true);
+  });
+
+  it('searches only the 4-piece states it was asked for', () => {
+    // The filter is what makes a real inventory finish at all: unrestricted it is 4.26e10
+    // combinations. `docs/FINDINGS_shakedown.md` F2.
+    const strong = recipe([hit({ talent: 4 })]);
+    const weak = recipe([hit({ talent: 2 })]);
+    const inv = SLOTS.map((slot, i) =>
+      ({ id: `p${i}`, slot, setId: 1, stats: {} } as Candidate));
+
+    const recipes = { byFourPieceSet: new Map([[1, strong]]), noFourPiece: weak };
+
+    // Pinned to set 1: the five-piece combination is found and scored against set 1's recipe.
+    const pinned = searchRecipe(inv, { recipes, topN: 1, fourPieceSets: [1] });
+    expect(pinned.builds).toHaveLength(1);
+    expect(pinned.builds[0].setCounts).toEqual({ 1: 5 });
+
+    // Restricted to the no-4-piece state, the same inventory yields nothing — every
+    // combination it can form reaches a 4-piece, which belongs to set 1's state.
+    const none = searchRecipe(inv, { recipes, topN: 1, fourPieceSets: [null] });
+    expect(none.builds).toHaveLength(0);
+  });
+
+  it('names a set it never searched rather than leaving it out silently', () => {
+    // A user who pins one set should still be told the other sets exist and were not looked
+    // at — otherwise "the best build" means "the best build among choices you did not know
+    // you had made".
+    const r = recipe([hit()]);
+    const inv = [
+      ...SLOTS.map((slot, i) => ({ id: `a${i}`, slot, setId: 1, stats: {} } as Candidate)),
+      ...SLOTS.map((slot, i) => ({ id: `b${i}`, slot, setId: 2, stats: {} } as Candidate)),
+    ];
+
+    const out = searchRecipe(inv, {
+      recipes: { byFourPieceSet: new Map([[1, r], [2, r]]), noFourPiece: r },
+      topN: 1,
+      fourPieceSets: [1],
+    });
+
+    expect(out.uncoveredSets).toEqual([2]);
   });
 });

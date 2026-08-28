@@ -601,7 +601,7 @@ describe('OptimizePage — the rotation objective', () => {
     // Four pieces of a set sharing a slot form no combination, and calibrating for them would
     // spend ~3.2s on a state nothing can reach.
     const page = pageWith();
-    const targets = (at(page, 'calibrationTargets') as (p: unknown[]) => { artifactSetId: string | null }[])
+    const reachable = (at(page, 'reachableSets') as (p: unknown[]) => number[])
       .call(page, [
         { id: 'a', slot: 'equip_bracer', set_id: 1, stats: {} },
         { id: 'b', slot: 'equip_bracer', set_id: 1, stats: {} },
@@ -609,16 +609,15 @@ describe('OptimizePage — the rotation objective', () => {
         { id: 'd', slot: 'equip_bracer', set_id: 1, stats: {} },
       ]);
 
-    // Only the no-four-piece state: four pieces, one slot, no reachable 4-piece.
-    expect(targets.map((t) => t.artifactSetId)).toEqual([null]);
+    expect(reachable).toEqual([]);
   });
 
   it('orders sets by how many distinct slots the user owns', () => {
     // R.1 measured a real account at S = 35 — 36 calibrations, ~3.8 minutes. Ordering does
     // not make that shorter; it makes stopping early useful, because the sets a user has
-    // farmed most come first.
+    // farmed most come first. It also decides the order of the 4-piece filter.
     const page = pageWith();
-    const targets = (at(page, 'calibrationTargets') as (p: unknown[]) => { artifactSetId: string | null }[])
+    const reachable = (at(page, 'reachableSets') as (p: unknown[]) => number[])
       .call(page, [
         // Set 2 reaches all five slots; set 1 reaches four.
         { id: 'a', slot: 'equip_bracer', set_id: 1, stats: {} },
@@ -632,12 +631,12 @@ describe('OptimizePage — the rotation objective', () => {
         { id: 'i', slot: 'equip_dress', set_id: 2, stats: {} },
       ]);
 
-    expect(targets.map((t) => t.artifactSetId)).toEqual([null, '2', '1']);
+    expect(reachable).toEqual([2, 1]);
   });
 
   it('includes a set that reaches four distinct slots', () => {
     const page = pageWith();
-    const targets = (at(page, 'calibrationTargets') as (p: unknown[]) => { artifactSetId: string | null }[])
+    const reachable = (at(page, 'reachableSets') as (p: unknown[]) => number[])
       .call(page, [
         { id: 'a', slot: 'equip_bracer', set_id: 1, stats: {} },
         { id: 'b', slot: 'equip_necklace', set_id: 1, stats: {} },
@@ -645,6 +644,27 @@ describe('OptimizePage — the rotation objective', () => {
         { id: 'd', slot: 'equip_ring', set_id: 1, stats: {} },
       ]);
 
-    expect(targets.map((t) => t.artifactSetId).sort()).toEqual(['1', null].sort());
+    expect(reachable).toEqual([1]);
+  });
+
+  it('calibrates the baseline plus one recipe per selected set, named', () => {
+    // `CalibrationTarget.label` has always documented itself as "for progress a user can read
+    // — 'Blizzard Strayer', not a uuid", and it read `set 15003`. The filter needs the name
+    // anyway, so the progress line gets it too.
+    const page = pageWith();
+    (at(page, 'setNames') as { set: (m: Map<number, string>) => void })
+      .set(new Map([[15003, 'Blizzard Strayer']]));
+
+    const targets = (at(page, 'calibrationTargets') as (c: number[]) => {
+      artifactSetId: string | null; label: string;
+    }[]).call(page, [15003, 15020]);
+
+    expect(targets.map((t) => t.artifactSetId)).toEqual([null, '15003', '15020']);
+    expect(targets.map((t) => t.label)).toEqual([
+      'no 4-piece set',
+      'Blizzard Strayer',
+      // Unknown ids still render something rather than `undefined`.
+      'set 15020',
+    ]);
   });
 });

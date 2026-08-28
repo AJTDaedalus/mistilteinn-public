@@ -201,3 +201,89 @@ a user hand-driving the API will make it too.
 5. **F4**, **F7**, **F8** — small, and none of them block a user.
 
 F1 is not in this list because it is not a separate fix: it is what F2 and F3 together resolve.
+
+---
+
+# Update — what implementing F2 and F3 found
+
+Written after the fixes landed. Three things changed the picture.
+
+## F9 — the rotation objective had no UI at all — **the most important finding here**
+
+`optimize.ts` has carried `objective`, `rotations`, `rotationId`, `calibrating`, `caveats` and
+`runRotation()` since R.9, along with the whole `RecipeOptimizeService`. **No template
+referenced any of them.** `grep -rn "runRotation\|objective" --include=*.html src` returned
+nothing, and the page's only search button called `run()` — the single-hit search.
+
+So the entire gcsim recipe optimizer — nine tasks, a calibration service, a recipe parser
+verified exact to 2e-16, a bounded search — **was unreachable from the application**. Every
+measurement in this document was taken by driving it from Node, which is why the gap survived
+the shakedown's first pass: the engine answers correctly when you call it, and nothing calls
+it.
+
+This reframes F1. The search never terminating at real scale was not costing users anything
+yet, because no user could start one.
+
+## F3 — the bound is exact, and does not rescue the no-4-piece state
+
+The bound works, and it is genuinely admissible — verified against the real inventory, a
+1,248-combination exhaustive reference against the bounded walk's 446, **identical top 10 and
+identical best damage**. Pinning the largest set in the inventory went from ~45 s to **1.8 s**,
+with 61,243 subtrees pruned.
+
+**It does not tame the no-4-piece state.** A search of that state alone was still running
+after an hour and was killed. The reason is structural: at shallow depths the optimistic
+completion takes the maximum of each quantity *independently* across every remaining slot, so
+near the root the bound sits far above anything achievable and prunes nothing — while the tree
+below it holds 4.26e10 leaves.
+
+So the no-4-piece option ships **off by default**, with the page saying why. Making it
+tractable needs the same trick that worked for 4-piece states — enumerate by set
+configuration, here the 2+2 pairs — and that is its own chunk, not a tuning of this one.
+
+## F2 — the filter cuts calibration too, which is the larger cost
+
+Worth stating because the first design missed it: a set nobody selected is a set nobody has to
+**calibrate**. Calibration is ~6 s per state and dominates a narrow search — 36 states is the
+~3.8 minutes R.1 measured. The filter now gates both, so picking three sets is four
+calibrations rather than thirty-six.
+
+The baseline is calibrated either way. It is the reference every other recipe is measured
+against, and `liveQuantitiesFor` needs it.
+
+## A smaller one, fixed in passing
+
+`CalibrationTarget.label` documents itself as *"for progress a user can read — 'Blizzard
+Strayer', not a uuid"*, and it read `set 15003`. The inventory publishes `set_id` and no name;
+names come from `/api/v1/artifact-sets`, joined on `nanoka_id` — the catalogue's own `id` is a
+uuid and matches nothing in an inventory snapshot.
+
+## F10 — the frontend container cannot start after `--renew-anon-volumes`
+
+Found by trying to confirm the new UI in the running stack rather than only in a local build.
+The container was **down**, crash-looping on:
+
+```
+Error: EACCES: permission denied, mkdir '/app/.angular/cache/21.2.20/mistilteinn/vite/deps_temp_...'
+```
+
+`docker-compose.yml` mounts anonymous volumes at `/app/node_modules` and `/app/.angular`.
+Docker seeds a new anonymous volume from the image's copy of that path **and inherits its
+ownership** — and when the path does not exist in the image, creates it root-owned. The image
+runs as `USER node`. `node_modules` survives only by accident of `npm ci` creating it in the
+image as `node`; `.angular` existed nowhere.
+
+So `--renew-anon-volumes` — the exact recovery `frontend/CLAUDE.md` prescribes after a
+dependency change — produced a cache directory `ng serve` could not write. Fixed with a
+`RUN mkdir -p /app/.angular` after the `USER node` line.
+
+A second, self-inflicted half worth recording: running `npm test` on the **host** regenerates
+`src/app/api/api.types.ts` as root through the bind mount, and the container then cannot
+overwrite it on its next `prestart`. Anything run on the host against this bind mount wants
+`chown 1000:1000` afterwards.
+
+## Still open
+
+- **The no-4-piece state** — needs 2+2 configuration enumeration (above).
+- **F5** the first-user approval path, **F6** the rotation grammar, **F7** the `.ready` gates,
+  **F8** silently ignored query params. Untouched.

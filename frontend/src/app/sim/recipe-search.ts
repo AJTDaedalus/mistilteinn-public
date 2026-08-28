@@ -45,22 +45,22 @@ export interface RecipeSet {
   noFourPiece: Recipe;
 }
 
-/** Why a combination could not be scored. Reported, never silently substituted. */
-export interface UnscorableCombination {
-  artifactIds: string[];
-  reason: string;
-}
-
-/** A recipe search's result — a `SearchResult` plus what it could not score. */
+/** A recipe search's result — a `SearchResult` plus what it did not cover, and why. */
 export interface RecipeSearchResult extends SearchResult {
   /**
-   * Combinations no recipe covered.
+   * Sets the inventory could field a 4-piece of that no searched recipe covers.
    *
    * **Reported rather than substituted.** Scoring a `Blizzard Strayer` build against the
    * no-set recipe would understate it by the whole 4-piece bonus and look like an ordinary
-   * result — the exact failure this chunk exists to remove.
+   * result — the exact failure this reporting exists to remove.
+   *
+   * Named per **set** rather than per combination. The earlier shape listed every unscorable
+   * five-piece combination, which for a real inventory is thousands of rows all saying the one
+   * thing a reader needs: *calibrate this set*.
    */
-  unscorable: UnscorableCombination[];
+  uncoveredSets: number[];
+  /** Combinations the bound proved could not reach the top N, so were never scored. */
+  boundPruned: number;
 }
 
 export interface RecipeSearchContext {
@@ -76,6 +76,15 @@ export interface RecipeSearchContext {
    */
   setBonuses?: readonly SetBonus[];
   topN?: number;
+  /**
+   * Which 4-piece states to search. `null` means "no 4-piece at all".
+   *
+   * Defaults to every calibrated set plus `null`, which is the whole space. Narrowing it is
+   * what makes the search finish: against a real 2,370-piece inventory the unrestricted space
+   * is **4.26e10** combinations after Pareto, and pinning one set is **1e5**.
+   * `docs/FINDINGS_shakedown.md` F2.
+   */
+  fourPieceSets?: readonly (number | null)[];
 }
 
 /** Sum one quantity across every stat pool, in f32 to match the GPU kernel. */
@@ -190,9 +199,32 @@ function score(
 /**
  * The best `topN` combinations by the rotation's total damage.
  *
- * The same exhaustive walk and lossless Pareto layer as the single-hit search; only the
- * objective differs. `isExact` stays true for the same reason it does there — there is no
- * lossy layer here.
+ * ## One 4-piece state at a time
+ *
+ * The search runs **per 4-piece state** — once per selected set, once for "no 4-piece" — and
+ * merges the results. That is not only how a user thinks about artifacts; it is what makes the
+ * bound below sound. Within a state the recipe is **fixed**, so an optimistic completion can
+ * be scored with the same function that scores a real one.
+ *
+ * It also collapses the space. A five-slot combination holding four pieces of set S leaves at
+ * most **one** other piece, and a lone piece grants no set bonus — so a state's walk is
+ * *S's own pieces* in four slots and anything in the fifth, partitioned by which slot is free
+ * so nothing is counted twice.
+ *
+ * ## The bound
+ *
+ * Every live quantity is a **benefit**: more ATK, crit, EM or elemental bonus never lowers a
+ * hit. So completing a partial combination with, per remaining slot, the largest value of each
+ * quantity still available yields a stat vector that **dominates every real completion**, and
+ * scoring it is an upper bound on anything in that subtree. When it cannot beat the current
+ * N-th best, the whole subtree is discarded.
+ *
+ * The bound is **admissible**, so this stays an exact search — `isExact` is still `true`, and
+ * it is not a "pruned subset" in the sense the UI warns about. A combination it skips is one
+ * it has *proved* cannot place, which is a different act from sampling.
+ *
+ * Buckets are walked best-first by a single-piece score so the threshold rises early; the
+ * bound is worthless while the heap is short, and this is what fills it fast.
  */
 export function searchRecipe(
   candidates: readonly Candidate[],
@@ -208,61 +240,194 @@ export function searchRecipe(
     else bonusesBySet.set(bonus.setId, [bonus]);
   }
 
-  const { kept, removed } = paretoFilter(
-    bucketBySlot(candidates),
-    liveQuantitiesFor(context.recipes.noFourPiece, ...context.recipes.byFourPieceSet.values()),
+  const live = liveQuantitiesFor(
+    context.recipes.noFourPiece,
+    ...context.recipes.byFourPieceSet.values(),
   );
-  const buckets = SLOTS.map((s) => kept.get(s) ?? []);
+  const { kept, removed } = paretoFilter(bucketBySlot(candidates), live);
+  const slotBuckets = SLOTS.map((s) => kept.get(s) ?? []);
+
+  const states: readonly (number | null)[] =
+    context.fourPieceSets ?? [null, ...context.recipes.byFourPieceSet.keys()];
 
   const best: ScoredBuild[] = [];
-  const unscorable: UnscorableCombination[] = [];
   let evaluated = 0;
-  const combination: Candidate[] = new Array(SLOTS.length);
+  let boundPruned = 0;
 
-  const walk = (depth: number): void => {
-    if (depth === SLOTS.length) {
-      evaluated += 1;
-      const setCounts: Record<number, number> = {};
-      for (const c of combination) setCounts[c.setId] = (setCounts[c.setId] ?? 0) + 1;
+  /** Insertion into a short sorted array beats a heap at these sizes. */
+  const offer = (
+    damage: number,
+    combination: readonly Candidate[],
+    setCounts: Record<number, number>,
+  ): void => {
+    if (best.length < topN || damage > best[best.length - 1].damage) {
+      const build: ScoredBuild = {
+        damage,
+        artifactIds: combination.map((c) => c.id),
+        setCounts: { ...setCounts },
+      };
+      let i = best.length;
+      while (i > 0 && best[i - 1].damage < damage) i -= 1;
+      best.splice(i, 0, build);
+      if (best.length > topN) best.pop();
+    }
+  };
 
-      // A combination reaching 4 pieces of a set must be scored against *that set's* recipe:
-      // its 4-piece bonus is conditional and lives only inside a calibration that equipped it.
-      const fourPiece = fourPieceSetOf(setCounts);
-      const recipe = fourPiece === null
-        ? context.recipes.noFourPiece
-        : context.recipes.byFourPieceSet.get(fourPiece);
+  /** The stats a set contributes at `count` pieces — the bound's optimistic set term. */
+  const setPool = (setId: number, count: number): Record<string, number> => {
+    const pool: Record<string, number> = {};
+    for (const tier of bonusesBySet.get(setId) ?? []) {
+      if (count < tier.piecesRequired) continue;
+      for (const [q, v] of Object.entries(tier.stats)) pool[q] = (pool[q] ?? 0) + v;
+    }
+    return pool;
+  };
 
-      // **Reported, never substituted.** Scoring a Blizzard Strayer build against the no-set
-      // recipe is precisely the wrong answer this chunk exists to stop — and it would look
-      // like a perfectly ordinary result.
-      if (recipe === undefined) {
-        unscorable.push({
-          artifactIds: combination.map((c) => c.id),
-          reason: `no recipe calibrated for the 4-piece set ${fourPiece}`,
-        });
+  /**
+   * One bounded exhaustive walk over fixed per-slot buckets against one fixed recipe.
+   *
+   * `optimistic` is whatever set-bonus stats `score` may add that the bound cannot see. It is
+   * added to the upper bound only — over-stating it costs speed, **under**-stating it would
+   * prune a build that could have won, so it errs high by construction.
+   */
+  const walkBounded = (
+    buckets: readonly (readonly Candidate[])[],
+    recipe: Recipe,
+    optimistic: Record<string, number>,
+    excludeFourPiece: boolean,
+  ): void => {
+    if (buckets.some((b) => b.length === 0)) return;
+
+    // Per remaining slot, the largest value of each live quantity, summed as a suffix so a
+    // bound at depth d is one lookup rather than a scan.
+    const suffix: Record<string, number>[] = new Array(buckets.length + 1);
+    suffix[buckets.length] = optimistic;
+    for (let d = buckets.length - 1; d >= 0; d -= 1) {
+      const acc: Record<string, number> = { ...suffix[d + 1] };
+      for (const q of live) {
+        let most = 0;
+        for (const c of buckets[d]) most = Math.max(most, c.stats[q] ?? 0);
+        acc[q] = (acc[q] ?? 0) + most;
+      }
+      suffix[d] = acc;
+    }
+
+    const combination: Candidate[] = new Array(buckets.length);
+    const counts = new Map<number, number>();
+
+    const walk = (depth: number): void => {
+      if (depth === buckets.length) {
+        evaluated += 1;
+        const setCounts: Record<number, number> = {};
+        for (const [setId, n] of counts) if (n > 0) setCounts[setId] = n;
+        offer(score(recipe, combination, setCounts, bonusesBySet), combination, setCounts);
         return;
       }
 
-      const damage = score(recipe, combination, setCounts, bonusesBySet);
-      if (best.length < topN || damage > best[best.length - 1].damage) {
-        const build: ScoredBuild = {
-          damage,
-          artifactIds: combination.map((c) => c.id),
-          setCounts: { ...setCounts },
-        };
-        let i = best.length;
-        while (i > 0 && best[i - 1].damage < damage) i -= 1;
-        best.splice(i, 0, build);
-        if (best.length > topN) best.pop();
+      // Worthless while the heap is short — there is no threshold to beat yet.
+      if (best.length === topN) {
+        const pools = combination.slice(0, depth).map((c) => c.stats);
+        pools.push(suffix[depth]);
+        if (evaluateRecipe(recipe, candidateStatsFrom(pools)) <= best[best.length - 1].damage) {
+          boundPruned += 1;
+          return;
+        }
       }
-      return;
-    }
-    for (const candidate of buckets[depth]) {
-      combination[depth] = candidate;
-      walk(depth + 1);
-    }
-  };
-  walk(0);
 
-  return { builds: best, evaluated, paretoRemoved: removed, isExact: true, unscorable };
+      for (const candidate of buckets[depth]) {
+        const now = (counts.get(candidate.setId) ?? 0) + 1;
+        // A combination reaching a 4-piece belongs to that set's state, not to this one.
+        if (excludeFourPiece && now >= 4) continue;
+        counts.set(candidate.setId, now);
+        combination[depth] = candidate;
+        walk(depth + 1);
+        counts.set(candidate.setId, now - 1);
+      }
+    };
+    walk(0);
+  };
+
+  /**
+   * Best-first, so the bound has a real threshold as early as possible.
+   *
+   * Each piece is scored **once** and sorted on the cached value. Scoring inside the
+   * comparator instead costs O(n log n) evaluations per slot — across 35 states and a real
+   * inventory that is ~378,000 recipe evaluations spent only on deciding an order.
+   */
+  const ordered = (recipe: Recipe): Candidate[][] =>
+    slotBuckets.map((bucket) => {
+      const solo = new Map(
+        bucket.map((c) => [c.id, evaluateRecipe(recipe, candidateStatsFrom([c.stats]))]),
+      );
+      return [...bucket].sort((a, b) => solo.get(b.id)! - solo.get(a.id)!);
+    });
+
+  const searched = new Set<number>();
+  for (const state of states) {
+    if (state === null) {
+      walkBounded(ordered(context.recipes.noFourPiece), context.recipes.noFourPiece,
+        // Without a 4-piece, at most two sets can reach a bonus tier (2+2+1, or 3+2), so
+        // twice the richest set's sub-4-piece stats cannot be beaten by any real combination.
+        twiceRichest(bonusesBySet, live), true);
+      continue;
+    }
+    const recipe = context.recipes.byFourPieceSet.get(state);
+    if (recipe === undefined) continue;
+    searched.add(state);
+
+    const buckets = ordered(recipe);
+    const mine = buckets.map((b) => b.filter((c) => c.setId === state));
+    const other = buckets.map((b) => b.filter((c) => c.setId !== state));
+    // Already inside the recipe when it was calibrated with this set; otherwise the bound has
+    // to allow for `score` adding it.
+    const optimistic = recipe.meta.calibratedSetId === state ? {} : setPool(state, 5);
+
+    walkBounded(mine, recipe, optimistic, false);                       // five of the set
+    for (let free = 0; free < SLOTS.length; free += 1) {                // four, one slot free
+      walkBounded(mine.map((b, i) => (i === free ? other[i] : b)), recipe, optimistic, false);
+    }
+  }
+
+  // A set the inventory could field a 4-piece of, that nothing searched covers. Computed from
+  // the buckets rather than from combinations, so it is one row per set.
+  const slotsPerSet = new Map<number, Set<number>>();
+  slotBuckets.forEach((bucket, i) => {
+    for (const c of bucket) {
+      const seen = slotsPerSet.get(c.setId) ?? new Set<number>();
+      seen.add(i);
+      slotsPerSet.set(c.setId, seen);
+    }
+  });
+  const uncoveredSets = [...slotsPerSet]
+    .filter(([setId, slots]) => slots.size >= 4 && !searched.has(setId))
+    .map(([setId]) => setId)
+    .sort((a, b) => a - b);
+
+  return {
+    builds: best,
+    evaluated,
+    paretoRemoved: removed,
+    // The bound is admissible — it discards only what it has proved cannot place — so the
+    // answer is still exact. A lossy layer would be the thing that makes this false.
+    isExact: true,
+    uncoveredSets,
+    boundPruned,
+  };
+}
+
+/** Twice the richest set's sub-4-piece stats: the loosest bonus a no-4-piece build can hold. */
+function twiceRichest(
+  bonusesBySet: Map<number, SetBonus[]>,
+  live: readonly string[],
+): Record<string, number> {
+  const most: Record<string, number> = {};
+  for (const tiers of bonusesBySet.values()) {
+    for (const q of live) {
+      let mine = 0;
+      for (const tier of tiers) if (tier.piecesRequired <= 3) mine += tier.stats[q] ?? 0;
+      most[q] = Math.max(most[q] ?? 0, mine);
+    }
+  }
+  for (const q of Object.keys(most)) most[q] *= 2;
+  return most;
 }

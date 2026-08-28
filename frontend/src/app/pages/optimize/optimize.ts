@@ -98,6 +98,26 @@ export class OptimizePage implements OnInit {
   /** True when the inventory itself was capped before the search even began. */
   protected readonly truncated = signal(false);
 
+  /** Set names, so the filter offers "Blizzard Strayer" rather than "set 15003". */
+  protected readonly setNames = signal<ReadonlyMap<number, string>>(new Map());
+  /**
+   * Which 4-piece sets to search. `null` means "untouched", which is every reachable set.
+   *
+   * Narrowing this is not a convenience. Unrestricted, a real inventory is 4.26e10
+   * combinations and 36 calibrations; the filter cuts **both** costs, because a set nobody
+   * selected is a set nobody has to calibrate. `docs/FINDINGS_shakedown.md` F2.
+   */
+  protected readonly selectedSets = signal<ReadonlySet<number> | null>(null);
+  /**
+   * Whether to also search builds holding no 4-piece at all.
+   *
+   * **Off by default, and that is a measurement rather than a taste.** It is 99.97 % of the
+   * combination space and the bound does not tame it — an hour in, a search of that state
+   * alone had not finished. The baseline is still calibrated either way: it is the reference
+   * every other recipe is measured against.
+   */
+  protected readonly includeNoFourPiece = signal(false);
+
   /** The explanation of one result row, and which row it belongs to. */
   protected readonly explained = signal<{ rank: number; result: ExplainResponse } | null>(
     null,
@@ -117,6 +137,63 @@ export class OptimizePage implements OnInit {
   protected readonly canSearch = computed(
     () => this.hit() !== null && !this.searching(),
   );
+
+  /** Every set the inventory could field a 4-piece of, most-owned first. */
+  protected readonly fourPieceChoices = computed(() => {
+    const names = this.setNames();
+    return [...this.slotsBySet(this.candidates())]
+      .filter(([, slots]) => slots.size >= 4)
+      .map(([setId, slots]) => ({
+        setId,
+        name: names.get(setId) ?? `set ${setId}`,
+        slots: slots.size,
+      }))
+      .sort((a, b) => b.slots - a.slots || a.name.localeCompare(b.name));
+  });
+
+  /** How many recipes the current selection implies — the baseline, plus one per set. */
+  protected readonly calibrationCount = computed(
+    () => 1 + this.fourPieceChoices().filter((c) => this.isSelected(c.setId)).length,
+  );
+
+  protected isSelected(setId: number): boolean {
+    const picked = this.selectedSets();
+    return picked === null || picked.has(setId);
+  }
+
+  protected toggleSet(setId: number): void {
+    const picked = new Set(
+      this.selectedSets() ?? this.fourPieceChoices().map((c) => c.setId),
+    );
+    if (picked.has(setId)) picked.delete(setId);
+    else picked.add(setId);
+    this.selectedSets.set(picked);
+  }
+
+  /** An uncovered set, named. Ids are what the search returns; names are what a user reads. */
+  protected setLabel(setId: number): string {
+    return this.setNames().get(setId) ?? `set ${setId}`;
+  }
+
+  protected selectAllSets(): void {
+    this.selectedSets.set(null);
+  }
+
+  protected selectNoSets(): void {
+    this.selectedSets.set(new Set());
+  }
+
+  /** Distinct slots each set can fill — four is what a 4-piece needs. */
+  private slotsBySet(pieces: readonly KernelCandidate[]): Map<number, Set<string>> {
+    const bySet = new Map<number, Set<string>>();
+    for (const piece of pieces) {
+      if (piece.set_id === null || piece.set_id === undefined) continue;
+      const slots = bySet.get(piece.set_id) ?? new Set<string>();
+      slots.add(piece.slot);
+      bySet.set(piece.set_id, slots);
+    }
+    return bySet;
+  }
 
   protected readonly rows = computed<ResultRow[]>(() => {
     const found = this.result();
@@ -155,6 +232,15 @@ export class OptimizePage implements OnInit {
   protected readonly calibrating = signal<CalibrationProgress | null>(null);
   /** What the recipes do not cover. **Shown, never swallowed** — R.9. */
   protected readonly caveats = signal<CalibrationCaveats | null>(null);
+  /**
+   * The recipe search's own reporting, which `SearchResult` has no room for.
+   *
+   * Kept beside `result` rather than widening it: the single-hit search fills the same signal
+   * and has no notion of a set it did not cover.
+   */
+  protected readonly recipeNotes = signal<
+    { uncoveredSets: number[]; boundPruned: number } | null
+  >(null);
 
   private readonly recipeOptimize = inject(RecipeOptimizeService);
   private readonly rotationsService = inject(RotationsService);
@@ -165,6 +251,28 @@ export class OptimizePage implements OnInit {
 
   ngOnInit(): void {
     void this.load();
+    void this.loadFilterData();
+  }
+
+  /**
+   * The set filter's data — names, and the inventory it filters.
+   *
+   * Deliberately **not** in `load()`'s `Promise.all`: a user with no artifacts yet should
+   * still get a page, and a filter that cannot populate is a missing control rather than a
+   * broken route. On failure `fourPieceChoices()` stays empty and a run falls back to every
+   * reachable set, which is what the page did before the filter existed.
+   */
+  private async loadFilterData(): Promise<void> {
+    try {
+      const [names, snapshot] = await Promise.all([
+        this.optimize.artifactSetNames(),
+        this.optimize.inventory(),
+      ]);
+      this.setNames.set(names);
+      this.candidates.set(snapshot.artifacts);
+    } catch {
+      // Left empty on purpose — see the docstring.
+    }
   }
 
   protected async load(): Promise<void> {
@@ -395,6 +503,7 @@ export class OptimizePage implements OnInit {
     this.actionError.set(null);
     this.result.set(null);
     this.caveats.set(null);
+    this.recipeNotes.set(null);
     this.searching.set(true);
     try {
       const snapshot = await this.optimize.inventory();
@@ -403,7 +512,10 @@ export class OptimizePage implements OnInit {
       this.truncated.set(snapshot.truncated);
 
       const pieces = snapshot.artifacts.filter((piece) => this.isKnownSlot(piece));
-      const targets = this.calibrationTargets(pieces);
+      // Re-derived from the snapshot just fetched, so a set imported since the page loaded is
+      // offered rather than silently dropped — then narrowed to what the user picked.
+      const chosen = this.reachableSets(pieces).filter((setId) => this.isSelected(setId));
+      const targets = this.calibrationTargets(chosen);
       const calibrated = await this.recipeOptimize.calibrateAll(
         id, this.rotationId, snapshot.version, targets,
         (progress) => this.calibrating.set(progress),
@@ -414,7 +526,7 @@ export class OptimizePage implements OnInit {
         this.actionError.set('No baseline recipe was calibrated, so nothing can be scored.');
         return;
       }
-      this.result.set(searchRecipe(
+      const found = searchRecipe(
         pieces.map((piece) => ({
           id: piece.id,
           slot: piece.slot as Slot,
@@ -426,8 +538,16 @@ export class OptimizePage implements OnInit {
             byFourPieceSet: calibrated.byFourPieceSet,
             noFourPiece: calibrated.noFourPiece,
           },
+          // The baseline is always calibrated — it is the reference — but the no-4-piece
+          // *state* is only searched when asked for. See `includeNoFourPiece`.
+          fourPieceSets: [...(this.includeNoFourPiece() ? [null] : []), ...chosen],
         },
-      ));
+      );
+      this.result.set(found);
+      this.recipeNotes.set({
+        uncoveredSets: found.uncoveredSets,
+        boundPruned: found.boundPruned,
+      });
     } catch (err) {
       this.result.set(null);
       this.actionError.set(apiErrorMessage(err));
@@ -444,14 +564,7 @@ export class OptimizePage implements OnInit {
    * form no combination, and calibrating for them would spend ~3.2 s on a state nothing can
    * reach.
    */
-  private calibrationTargets(pieces: readonly KernelCandidate[]): CalibrationTarget[] {
-    const slotsBySet = new Map<number, Set<string>>();
-    for (const piece of pieces) {
-      if (piece.set_id === null || piece.set_id === undefined) continue;
-      const slots = slotsBySet.get(piece.set_id) ?? new Set<string>();
-      slots.add(piece.slot);
-      slotsBySet.set(piece.set_id, slots);
-    }
+  private reachableSets(pieces: readonly KernelCandidate[]): number[] {
     // **Ordered by how much of the set the user actually owns.** R.1 measured a real account
     // at **S = 35**, so 36 calibrations and ~3.8 minutes — three times the plan's estimate,
     // and filtering by rarity or level barely helps (35 → 28 at 5-star +20), because a large
@@ -460,13 +573,26 @@ export class OptimizePage implements OnInit {
     // Ordering does not make it shorter. It makes **stopping early** useful: the sets a user
     // has farmed come first, so an interrupted run has calibrated the ones most likely to
     // matter rather than an arbitrary third.
-    const reachable = [...slotsBySet.entries()]
+    return [...this.slotsBySet(pieces)]
       .filter(([, slots]) => slots.size >= 4)
-      .sort((a, b) => b[1].size - a[1].size || a[0] - b[0]);
+      .sort((a, b) => b[1].size - a[1].size || a[0] - b[0])
+      .map(([setId]) => setId);
+  }
 
+  /**
+   * One calibration per selected set, plus the baseline.
+   *
+   * The label is the set's **name**: `CalibrationTarget.label` has always said it is "for
+   * progress a user can read — 'Blizzard Strayer', not a uuid", and it read `set 15003`.
+   */
+  private calibrationTargets(chosen: readonly number[]): CalibrationTarget[] {
+    const names = this.setNames();
     return [
       { artifactSetId: null, label: 'no 4-piece set' },
-      ...reachable.map(([setId]) => ({ artifactSetId: String(setId), label: `set ${setId}` })),
+      ...chosen.map((setId) => ({
+        artifactSetId: String(setId),
+        label: names.get(setId) ?? `set ${setId}`,
+      })),
     ];
   }
 }

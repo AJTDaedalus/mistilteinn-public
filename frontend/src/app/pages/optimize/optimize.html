@@ -79,6 +79,142 @@
       </p>
     }
 
+    <!-- The rotation objective (R.8/R.9).
+         Built and tested since R.9, and until now **unreachable**: the component has carried
+         `objective`, `rotationId`, `runRotation()` and the whole calibration service while no
+         template referenced any of them. A feature with no surface is not a feature.
+         `docs/FINDINGS_shakedown.md` F9. -->
+    <div class="objective">
+      <label>
+        Objective
+        <select
+          [ngModel]="objective()"
+          (ngModelChange)="objective.set($event)"
+          aria-label="Objective"
+        >
+          <option value="hit">Best single hit — fast</option>
+          <option value="rotation">Best over a rotation — runs gcsim</option>
+        </select>
+      </label>
+
+      @if (objective() === 'rotation') {
+        <label>
+          Rotation
+          <select [(ngModel)]="rotationId" aria-label="Rotation">
+            @for (option of rotations(); track option.id) {
+              <option [value]="option.id">{{ option.name }}</option>
+            }
+          </select>
+        </label>
+
+        <button
+          type="button"
+          (click)="runRotation()"
+          [disabled]="searching() || !rotationId"
+        >
+          {{ searching() ? 'Searching…' : 'Search rotation' }}
+        </button>
+      }
+    </div>
+
+    @if (objective() === 'rotation') {
+      @if (!rotations().length) {
+        <p class="hint">No rotations authored yet — write one before searching against it.</p>
+      }
+
+      @if (fourPieceChoices().length) {
+        <fieldset class="set-filter">
+          <legend>4-piece sets to search</legend>
+          <p class="hint">
+            Every 4-piece bonus in the game is conditional, so a set can only be scored by a
+            gcsim run that equipped it. Narrowing this cuts the wait twice over — a set nobody
+            selected is a set nobody has to calibrate.
+          </p>
+
+          <div class="filter-actions">
+            <button type="button" (click)="selectAllSets()">All</button>
+            <button type="button" (click)="selectNoSets()">None</button>
+            <span class="muted mono">{{ calibrationCount() }} calibration(s)</span>
+          </div>
+
+          <ul class="sets">
+            @for (choice of fourPieceChoices(); track choice.setId) {
+              <li>
+                <label>
+                  <input
+                    type="checkbox"
+                    [checked]="isSelected(choice.setId)"
+                    (change)="toggleSet(choice.setId)"
+                  />
+                  {{ choice.name }}
+                  <span class="muted mono">{{ choice.slots }} slots</span>
+                </label>
+              </li>
+            }
+          </ul>
+
+          <label class="no-four-piece">
+            <input
+              type="checkbox"
+              [checked]="includeNoFourPiece()"
+              (change)="includeNoFourPiece.set(!includeNoFourPiece())"
+            />
+            Also search builds holding no 4-piece set
+          </label>
+          <p class="hint">
+            Off by default because it is <strong>99.97 %</strong> of the combination space and
+            the bound does not tame it. The baseline is calibrated either way — it is the
+            reference every other recipe is measured against.
+          </p>
+        </fieldset>
+      }
+    }
+
+    @if (calibrating(); as progress) {
+      <p class="hint" role="status">
+        @if (progress.loading) {
+          Loading gcsim (41 MB)…
+        } @else {
+          Calibrating {{ progress.current }} — {{ progress.done }} of {{ progress.total }}
+        }
+      </p>
+    }
+
+    <!-- R.9: what the recipes do not cover, shown rather than swallowed. -->
+    @if (caveats(); as notes) {
+      @if (notes.unstable.length) {
+        <p class="warn" role="alert">
+          No recipe describes {{ notes.unstable.join(', ') }} — the rotation did not run the
+          same way every iteration, so there is nothing stable to replay.
+        </p>
+      }
+      @if (notes.staleConversions.length) {
+        <ul class="warn">
+          @for (stale of notes.staleConversions; track stale.label + stale.term) {
+            <li>
+              {{ stale.label }}: <span class="mono">{{ stale.term }}</span> carries a
+              conversion no probe could resolve, affecting
+              {{ stale.damageShare * 100 | number: '1.0-1' }}% of the damage.
+            </li>
+          }
+        </ul>
+      }
+      @if (notes.fromCache.length) {
+        <p class="hint">Served from cache: {{ notes.fromCache.join(', ') }}.</p>
+      }
+    }
+
+    @if (recipeNotes(); as notes) {
+      @if (notes.uncoveredSets.length) {
+        <p class="warn" role="alert">
+          Not searched, because no recipe covers them:
+          @for (setId of notes.uncoveredSets; track setId) {
+            <span class="mono">{{ setLabel(setId) }}</span>
+          }
+        </p>
+      }
+    }
+
     @if (actionError(); as message) {
       <p class="error" role="alert">{{ message }}</p>
     }

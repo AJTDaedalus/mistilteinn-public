@@ -17,6 +17,15 @@ USER node
 
 RUN npm ci
 
+# The compose file mounts an anonymous volume at /app/.angular. Docker seeds a new anonymous
+# volume from the image's copy of that path and inherits its ownership -- and when the path
+# does not exist in the image, creates it **root-owned**. `node_modules` survives only by
+# accident of `npm ci` creating it here as `node`; `.angular` existed nowhere, so every
+# `--renew-anon-volumes` -- the recovery frontend/CLAUDE.md prescribes for dependency changes
+# -- produced a cache directory `ng serve` could not write, and the container crash-looped on
+# `EACCES: permission denied, mkdir '/app/.angular/cache/...'`.
+RUN mkdir -p /app/.angular
+
 EXPOSE 4200
 
 # --host 0.0.0.0  : bind to all interfaces so the host port mapping works.
