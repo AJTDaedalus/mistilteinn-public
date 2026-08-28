@@ -60,19 +60,23 @@ export class OptimizeService {
   }
 
   /**
-   * Set names, keyed by the id an artifact carries.
+   * The set catalogue, keyed by the id an artifact carries.
    *
-   * The inventory publishes `set_id` and no name, so a set filter built from it alone would
-   * offer the user "set 15003". Joined on `nanoka_id`, which is what `set_id` holds — the
-   * catalogue's own `id` is a uuid and matches nothing in an inventory snapshot.
+   * **Two ids, and the difference is load-bearing.** An inventory snapshot's `set_id` is the
+   * *nanoka* id (15003); `POST /builds/{id}/calibrate` resolves `artifact_set_id` with
+   * `get_by_id`, which wants the catalogue **uuid**. Passing the nanoka id through 404s on
+   * every 4-piece calibration — which is what the page did until this map carried both.
+   *
+   * The name is here for the same round trip, because the inventory publishes no name and a
+   * filter built from `set_id` alone would offer the user "set 15003".
    *
    * One request: there are 65 sets and the page cap is 200.
    */
-  async artifactSetNames(): Promise<Map<number, string>> {
+  async artifactSets(): Promise<Map<number, { id: string; name: string }>> {
     const { data, error } = await this.api.GET('/api/v1/artifact-sets', {
       params: { query: { limit: 200 } },
     });
-    if (error) throw new Error('Could not load artifact set names');
-    return new Map(data.items.map((set) => [set.nanoka_id, set.name]));
+    if (error) throw new Error('Could not load artifact sets');
+    return new Map(data.items.map((set) => [set.nanoka_id, { id: set.id, name: set.name }]));
   }
 }

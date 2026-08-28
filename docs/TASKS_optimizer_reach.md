@@ -1,7 +1,17 @@
 # TASKS — optimizer reach
 
-**Status: none started.** Plan is `docs/DESIGN_optimizer_reach.md`; the three owner rulings it
-was revised for are in `docs/DECISIONS.md` (2026-08-28).
+**Status: Task 0, Task 1 and A.1 are done** (2026-08-28). Plan is
+`docs/DESIGN_optimizer_reach.md`; the three owner rulings it was revised for are in
+`docs/DECISIONS.md`.
+
+**A.1's measurement moved two tasks.** `docs/RESEARCH_calibration_cost.md`: the probe is
+**49.8 %** of a calibration, so **A.4 is promoted**; a state costs **1.67 s**, so a typical run
+under ruling 3 is ~7 s and **A.3 is demoted and should probably not be built**. A.1 also found
+the ~3.8 min figure does not reproduce — 36 states is 60 s here — and could not fully account
+for the gap, so a **browser** measurement of `sample()` is now the open question in A.3's place.
+
+**One bug fell out of A.1** and is fixed: every 4-piece calibration from the page 404'd, because
+the inventory's `set_id` is the nanoka id and `/calibrate` resolves the catalogue uuid.
 
 Track **A** is throughput. Track **B** is optional 2+2 coverage. Do Task 1 first regardless —
 it shrinks the default scope of every run, which makes the rest cheaper to measure.
@@ -10,11 +20,15 @@ it shrinks the default scope of every run, which makes the rest cheaper to measu
 
 ## Task 0 — branch setup gate
 
+> **Done.** 385 tests green at the baseline.
+
 Branch `feat/optimizer-reach` off `dev`. No commits to `dev`/`main`.
 **Acceptance:** `git branch --show-current` is `feat/optimizer-reach`; `npm test` green before
 anything changes, so a later red suite is attributable.
 
 ## Task 1 — the set filter defaults to nothing selected
+
+> **Done.** Mutation-checked: an all-selected default, a gate ignoring the selection, and an add-only toggle are each caught.
 
 Owner ruling 3. Today `selectedSets = null` means "untouched, therefore all"; invert it so a run
 requires an explicit pick. `Search rotation` is disabled until at least one set is chosen, and
@@ -31,6 +45,8 @@ enables it; the calibration count shown before the run matches what the run perf
 
 ### A.1 — measure the cost, per state, split baseline vs probe
 
+> **Done** — `docs/RESEARCH_calibration_cost.md`, 13 real states.
+
 Instrument `calibrateAll` for per-state wall time and the baseline/probe split; run it against
 the real 2,370-artifact export; write the table into `docs/RESEARCH_calibration_cost.md`.
 
@@ -46,7 +62,12 @@ thin wrapper.
 **Acceptance:** one-at-a-time plus merge returns **exactly** what the batch call returns over
 the real inventory. `recipe-search.spec.ts` stays green untouched.
 
-### A.3 — parallel calibration in Web Workers
+### A.3 — parallel calibration in Web Workers *(demoted by A.1 — measure a browser first)*
+
+**Do not start this until `sample()` has been timed in a real browser tab.** A.1 makes a typical
+run ~7 s in Node, which four workers would take to ~4 s for 41 MB × 4 of memory and a pool to
+maintain. If a browser is several times slower the calculus flips; if it is not, this task's
+right outcome is "not worth it, written down".
 
 N workers, gcsim instance each, **reused across states**, starting at 4.
 
@@ -134,3 +155,37 @@ is agreeing to.
 A.3 and A.4 are independent of each other and of Track B; either may be deferred without
 blocking anything, and A.3 is explicitly allowed to conclude "not worth it". **B.3 gates B.4**
 by ruling 1 — that is the one ordering here that is not a preference.
+
+---
+
+## Later — not scheduled
+
+### L.1 — per-character set recommendations as the default selection
+
+**Owner idea, 2026-08-28: scrape keqingmains' per-character guides for the sets they list, and
+preselect all of them.**
+
+This aims squarely at the cost ruling 3 accepts — *"a user with no set in mind has no default to
+lean on"*. A recommended shortlist is a better answer than either of the defaults that ruling
+rejected: it is not all 35 (which is the 3.8-minute wait) and not nothing (which is the blank
+page), and it is per character rather than one global guess.
+
+**Why the citation rule does not block this, and where it would.** This repo's hardest lesson is
+fabricated citations — deriving mechanics from community prose. A set *recommendation* is not a
+mechanic: it preselects checkboxes and changes **which** states get calibrated, never what a
+number means. gcsim still computes every score, and a bad recommendation costs a user one
+unnecessary calibration, not a wrong ranking.
+
+**That distinction is the whole safety argument, so it is also the boundary.** The moment
+scraped text is used for what a bonus *does* rather than which set to try, it is the failure
+`docs/DECISIONS.md` rejected for weapon passives. Recommendations select; they never score.
+
+Open before this could be scheduled:
+
+- **A committed snapshot, never a live fetch** — the convention every other external source in
+  this repo follows, with a pinned capture date beside the patch it describes.
+- **Staleness**: recommendations shift per patch, and a stale default is a silently worse
+  starting point rather than an error anything can detect.
+- **Attribution and terms** for redistributing a community site's curation.
+- **Coverage**: what a character with no guide gets. Falling back to "nothing selected" is
+  fine; falling back to "everything" would reintroduce the wait ruling 3 removed.

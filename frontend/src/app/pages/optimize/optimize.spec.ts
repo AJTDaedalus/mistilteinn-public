@@ -583,6 +583,69 @@ describe('OptimizePage — the rotation objective', () => {
       .toEqual([{ id: 'r1', name: 'Burst' }]);
   });
 
+  /** Pieces forming a 4-piece of each named set, four distinct slots apiece. */
+  const piecesFor = (...setIds: number[]) =>
+    setIds.flatMap((setId) =>
+      ['equip_bracer', 'equip_necklace', 'equip_shoes', 'equip_ring'].map((slot, i) => ({
+        id: `${setId}-${i}`, slot, set_id: setId, stats: {},
+      })),
+    );
+
+  it('starts with nothing selected, and will not search until a set is picked', () => {
+    // Owner ruling 3 (docs/DECISIONS.md, 2026-08-28). It defaulted to every reachable set,
+    // which cost ~3.8 min before any output — affordable only while a streaming leaderboard
+    // was planned to cover it, and ruling 2 removed streaming.
+    //
+    // **This is the test that was missing when the default flipped**: the change passed 385
+    // green tests, because nothing pinned what the default was.
+    const page = pageWith();
+    (page as unknown as Record<string, unknown>)['rotationId'] = 'r1';
+
+    expect((at(page, 'selectedSets') as () => ReadonlySet<number>)().size).toBe(0);
+    expect((at(page, 'canSearchRotation') as () => boolean)()).toBe(false);
+
+    (at(page, 'toggleSet') as (id: number) => void).call(page, 15003);
+
+    expect((at(page, 'canSearchRotation') as () => boolean)()).toBe(true);
+  });
+
+  it('will not start a run whose only work is the baseline', () => {
+    // Six seconds to answer a question the user did not ask.
+    const page = pageWith();
+    expect((at(page, 'canSearchRotation') as () => boolean)()).toBe(false);
+  });
+
+  it('costs one calibration per selected set, plus the baseline', () => {
+    // The count is shown before the run because it is what the user is agreeing to.
+    const page = pageWith();
+    (at(page, 'candidates') as { set: (v: unknown) => void })
+      .set(piecesFor(15003, 15020));
+
+    const count = at(page, 'calibrationCount') as () => number;
+    const toggle = at(page, 'toggleSet') as (id: number) => void;
+
+    expect(count()).toBe(1);
+    toggle.call(page, 15003);
+    expect(count()).toBe(2);
+    toggle.call(page, 15020);
+    expect(count()).toBe(3);
+    // Toggling off is a real toggle, not an add-only set.
+    toggle.call(page, 15003);
+    expect(count()).toBe(2);
+  });
+
+  it('offers every reachable set when All is pressed, and none when None is', () => {
+    const page = pageWith();
+    (at(page, 'candidates') as { set: (v: unknown) => void })
+      .set(piecesFor(15003, 15020));
+
+    (at(page, 'selectAllSets') as () => void).call(page);
+    expect((at(page, 'selectedSets') as () => ReadonlySet<number>)().size).toBe(2);
+
+    (at(page, 'selectNoSets') as () => void).call(page);
+    expect((at(page, 'selectedSets') as () => ReadonlySet<number>)().size).toBe(0);
+  });
+
   it('starts on the single-hit objective, which stays reachable', () => {
     // OQ-W4: deleting a fast honest answer because a slow better one exists is a downgrade.
     const page = pageWith();
@@ -647,24 +710,53 @@ describe('OptimizePage — the rotation objective', () => {
     expect(reachable).toEqual([1]);
   });
 
+  it('calibrates with the catalogue uuid, not the id an artifact carries', () => {
+    // **The bug this pins.** An inventory snapshot's `set_id` is the nanoka id (15003);
+    // `/calibrate` resolves `artifact_set_id` with `get_by_id`, which wants the catalogue
+    // uuid. The page passed the nanoka id straight through, so every 4-piece calibration
+    // 404'd — verified live against the real backend. Nothing caught it because no UI called
+    // the endpoint until #119, and #119's tests mock `fetch`.
+    const page = pageWith();
+    (at(page, 'artifactSets') as { set: (m: Map<number, unknown>) => void }).set(
+      new Map([[15003, { id: 'uuid-bs', name: 'Blizzard Strayer' }]]),
+    );
+
+    const targets = (at(page, 'calibrationTargets') as (c: number[]) => {
+      artifactSetId: string | null;
+    }[]).call(page, [15003]);
+
+    expect(targets.map((t) => t.artifactSetId)).toEqual([null, 'uuid-bs']);
+  });
+
+  it('refuses to calibrate a set it cannot resolve rather than falling back to null', () => {
+    // `null` is the id for "no 4-piece". Falling back to it would calibrate the baseline and
+    // label it with the set's name — a recipe understating itself by the whole 4-piece bonus,
+    // looking like an ordinary result.
+    const page = pageWith();
+
+    expect(() => (at(page, 'calibrationTargets') as (c: number[]) => unknown).call(page, [999]))
+      .toThrow(/999/);
+  });
+
   it('calibrates the baseline plus one recipe per selected set, named', () => {
     // `CalibrationTarget.label` has always documented itself as "for progress a user can read
     // — 'Blizzard Strayer', not a uuid", and it read `set 15003`. The filter needs the name
     // anyway, so the progress line gets it too.
     const page = pageWith();
-    (at(page, 'setNames') as { set: (m: Map<number, string>) => void })
-      .set(new Map([[15003, 'Blizzard Strayer']]));
+    (at(page, 'artifactSets') as { set: (m: Map<number, unknown>) => void }).set(
+      new Map<number, unknown>([
+        [15003, { id: 'uuid-bs', name: 'Blizzard Strayer' }],
+        [15020, { id: 'uuid-wt', name: "Wanderer's Troupe" }],
+      ]),
+    );
 
     const targets = (at(page, 'calibrationTargets') as (c: number[]) => {
       artifactSetId: string | null; label: string;
     }[]).call(page, [15003, 15020]);
 
-    expect(targets.map((t) => t.artifactSetId)).toEqual([null, '15003', '15020']);
+    expect(targets.map((t) => t.artifactSetId)).toEqual([null, 'uuid-bs', 'uuid-wt']);
     expect(targets.map((t) => t.label)).toEqual([
-      'no 4-piece set',
-      'Blizzard Strayer',
-      // Unknown ids still render something rather than `undefined`.
-      'set 15020',
+      'no 4-piece set', 'Blizzard Strayer', "Wanderer's Troupe",
     ]);
   });
 });

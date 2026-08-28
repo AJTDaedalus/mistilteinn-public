@@ -98,16 +98,31 @@ export class OptimizePage implements OnInit {
   /** True when the inventory itself was capped before the search even began. */
   protected readonly truncated = signal(false);
 
-  /** Set names, so the filter offers "Blizzard Strayer" rather than "set 15003". */
-  protected readonly setNames = signal<ReadonlyMap<number, string>>(new Map());
   /**
-   * Which 4-piece sets to search. `null` means "untouched", which is every reachable set.
+   * The set catalogue by nanoka id — the id an artifact carries.
+   *
+   * Holds the **uuid** as well as the name, because `/calibrate` resolves `artifact_set_id`
+   * with `get_by_id` and 404s on a nanoka id. See `OptimizeService.artifactSets`.
+   */
+  protected readonly artifactSets = signal<
+    ReadonlyMap<number, { id: string; name: string }>
+  >(new Map());
+  /**
+   * Which 4-piece sets to search. **Empty by default — a run requires an explicit pick.**
    *
    * Narrowing this is not a convenience. Unrestricted, a real inventory is 4.26e10
    * combinations and 36 calibrations; the filter cuts **both** costs, because a set nobody
    * selected is a set nobody has to calibrate. `docs/FINDINGS_shakedown.md` F2.
+   *
+   * It defaulted to "everything" until owner ruling 3 (2026-08-28, `docs/DECISIONS.md`).
+   * That default cost ~3.8 min before any output, which was tolerable only while a streaming
+   * leaderboard was planned to cover it; ruling 2 removed streaming, so the scope is narrowed
+   * by the person who knows what they want instead. Three sets is four calibrations.
+   *
+   * **The accepted cost:** a user with no set in mind has no default to lean on. The picker
+   * mitigates it by showing what they own, most-owned first — it does not solve it.
    */
-  protected readonly selectedSets = signal<ReadonlySet<number> | null>(null);
+  protected readonly selectedSets = signal<ReadonlySet<number>>(new Set());
   /**
    * Whether to also search builds holding no 4-piece at all.
    *
@@ -140,16 +155,29 @@ export class OptimizePage implements OnInit {
 
   /** Every set the inventory could field a 4-piece of, most-owned first. */
   protected readonly fourPieceChoices = computed(() => {
-    const names = this.setNames();
+    const catalogue = this.artifactSets();
     return [...this.slotsBySet(this.candidates())]
       .filter(([, slots]) => slots.size >= 4)
       .map(([setId, slots]) => ({
         setId,
-        name: names.get(setId) ?? `set ${setId}`,
+        name: catalogue.get(setId)?.name ?? `set ${setId}`,
         slots: slots.size,
       }))
       .sort((a, b) => b.slots - a.slots || a.name.localeCompare(b.name));
   });
+
+  /**
+   * A rotation search needs a rotation and something to search.
+   *
+   * Nothing is selected by default (ruling 3), so this is the gate that stops a run whose
+   * only work would be the baseline calibration — six seconds to answer a question the user
+   * did not ask.
+   */
+  protected readonly canSearchRotation = computed(
+    () => !this.searching()
+      && this.rotationId !== ''
+      && (this.selectedSets().size > 0 || this.includeNoFourPiece()),
+  );
 
   /** How many recipes the current selection implies — the baseline, plus one per set. */
   protected readonly calibrationCount = computed(
@@ -157,14 +185,11 @@ export class OptimizePage implements OnInit {
   );
 
   protected isSelected(setId: number): boolean {
-    const picked = this.selectedSets();
-    return picked === null || picked.has(setId);
+    return this.selectedSets().has(setId);
   }
 
   protected toggleSet(setId: number): void {
-    const picked = new Set(
-      this.selectedSets() ?? this.fourPieceChoices().map((c) => c.setId),
-    );
+    const picked = new Set(this.selectedSets());
     if (picked.has(setId)) picked.delete(setId);
     else picked.add(setId);
     this.selectedSets.set(picked);
@@ -172,11 +197,11 @@ export class OptimizePage implements OnInit {
 
   /** An uncovered set, named. Ids are what the search returns; names are what a user reads. */
   protected setLabel(setId: number): string {
-    return this.setNames().get(setId) ?? `set ${setId}`;
+    return this.artifactSets().get(setId)?.name ?? `set ${setId}`;
   }
 
   protected selectAllSets(): void {
-    this.selectedSets.set(null);
+    this.selectedSets.set(new Set(this.fourPieceChoices().map((c) => c.setId)));
   }
 
   protected selectNoSets(): void {
@@ -264,11 +289,11 @@ export class OptimizePage implements OnInit {
    */
   private async loadFilterData(): Promise<void> {
     try {
-      const [names, snapshot] = await Promise.all([
-        this.optimize.artifactSetNames(),
+      const [catalogue, snapshot] = await Promise.all([
+        this.optimize.artifactSets(),
         this.optimize.inventory(),
       ]);
-      this.setNames.set(names);
+      this.artifactSets.set(catalogue);
       this.candidates.set(snapshot.artifacts);
     } catch {
       // Left empty on purpose — see the docstring.
@@ -515,6 +540,17 @@ export class OptimizePage implements OnInit {
       // Re-derived from the snapshot just fetched, so a set imported since the page loaded is
       // offered rather than silently dropped — then narrowed to what the user picked.
       const chosen = this.reachableSets(pieces).filter((setId) => this.isSelected(setId));
+
+      // Refused, not silently narrowed: a set the catalogue cannot resolve has no uuid to
+      // calibrate with, and dropping it would quietly answer a different question.
+      const unresolved = chosen.filter((setId) => !this.artifactSets().has(setId));
+      if (unresolved.length) {
+        this.actionError.set(
+          `Could not resolve ${unresolved.length} selected set(s) in the catalogue, so the `
+          + 'search was not run. Reload the page to fetch it again.',
+        );
+        return;
+      }
       const targets = this.calibrationTargets(chosen);
       const calibrated = await this.recipeOptimize.calibrateAll(
         id, this.rotationId, snapshot.version, targets,
@@ -586,13 +622,18 @@ export class OptimizePage implements OnInit {
    * progress a user can read — 'Blizzard Strayer', not a uuid", and it read `set 15003`.
    */
   private calibrationTargets(chosen: readonly number[]): CalibrationTarget[] {
-    const names = this.setNames();
+    const catalogue = this.artifactSets();
     return [
       { artifactSetId: null, label: 'no 4-piece set' },
-      ...chosen.map((setId) => ({
-        artifactSetId: String(setId),
-        label: names.get(setId) ?? `set ${setId}`,
-      })),
+      ...chosen.map((setId) => {
+        const entry = catalogue.get(setId);
+        // **Never fall back to `null`.** That is the id for "no 4-piece", so an unresolved set
+        // would calibrate the baseline and label it with the set's name — a recipe understating
+        // itself by the whole 4-piece bonus, looking like an ordinary result. `runRotation`
+        // refuses the run before it gets here.
+        if (entry === undefined) throw new Error(`no catalogue entry for set ${setId}`);
+        return { artifactSetId: entry.id, label: entry.name };
+      }),
     ];
   }
 }

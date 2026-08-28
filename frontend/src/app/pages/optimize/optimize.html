@@ -110,7 +110,7 @@
         <button
           type="button"
           (click)="runRotation()"
-          [disabled]="searching() || !rotationId"
+          [disabled]="!canSearchRotation()"
         >
           {{ searching() ? 'Searching…' : 'Search rotation' }}
         </button>
@@ -136,6 +136,15 @@
             <button type="button" (click)="selectNoSets()">None</button>
             <span class="muted mono">{{ calibrationCount() }} calibration(s)</span>
           </div>
+
+          @if (!selectedSets().size && !includeNoFourPiece()) {
+            <!-- Ruling 3: nothing is preselected, so the empty state has to say what to do
+                 rather than leave a disabled button unexplained. -->
+            <p class="hint">
+              Pick at least one set to search. Each one is a separate gcsim calibration of
+              about six seconds, so choosing three costs four — the baseline plus one each.
+            </p>
+          }
 
           <ul class="sets">
             @for (choice of fourPieceChoices(); track choice.setId) {
