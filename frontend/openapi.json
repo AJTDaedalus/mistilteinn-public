@@ -5182,6 +5182,17 @@
           "element": {
             "type": "string",
             "title": "Element"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon"
           }
         },
         "type": "object",

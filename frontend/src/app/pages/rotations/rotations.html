@@ -62,12 +62,32 @@
 
         @if (roster().length === 0) {
           <p class="hint">That team has no builds yet, so there is nobody to act.</p>
+        } @else {
+          <!-- Who is available to act, once, rather than re-read from every step's
+               dropdown. -->
+          <ul class="roster">
+            @for (member of roster(); track member.nanoka_id) {
+              <li>
+                <entity-token [icon]="member.icon" [name]="member.name" [size]="34" />
+                <element-chip [element]="member.element" />
+              </li>
+            }
+          </ul>
         }
 
         <ol class="steps">
           @for (step of steps(); track $index) {
             <li class="step">
               <span class="ordinal mono">{{ $index + 1 }}</span>
+
+              <!-- The acting character, beside the `<select>` an `<option>` cannot
+                   illustrate. A ten-step rotation is otherwise ten identical dropdowns. -->
+              <catalogue-icon
+                class="step-art"
+                [icon]="rosterIcon(step.character)"
+                [alt]="''"
+                [size]="32"
+              />
 
               <select
                 [attr.aria-label]="'Character for step ' + ($index + 1)"

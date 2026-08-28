@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { apiErrorMessage } from '../../api/api-error';
+import { CatalogueIcon } from '../../shared/icon/icon';
 import { BuildsService, type BuildRead } from '../builds/builds.service';
 import { TEAM_SLOTS, TeamsService, type TeamRead, type TeamSlot } from './teams.service';
 
@@ -31,7 +32,7 @@ function emptySlots(): Record<TeamSlot, string | null> {
  */
 @Component({
   selector: 'page-teams',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, CatalogueIcon],
   templateUrl: './teams.html',
   styleUrl: './teams.scss',
 })
@@ -195,5 +196,30 @@ export class TeamsPage implements OnInit {
     return TEAM_SLOTS.map((slot) => this.build(team[slot])?.character?.name).filter(
       (name): name is string => !!name,
     );
+  }
+
+  /**
+   * The party as drawable members, or **null** when there are none.
+   *
+   * Null rather than `[]` deliberately: `@if` treats an empty array as truthy, so returning
+   * one would render an empty `.party` strip and skip the "nobody" branch entirely — a team
+   * whose builds have all been deleted would show as a blank space rather than as empty.
+   */
+  protected party(team: TeamRead): { buildId: string; name: string; icon: string | null }[] | null {
+    const roster = TEAM_SLOTS.map((slot) => ({ slot, build: this.build(team[slot]) }))
+      .filter((entry): entry is { slot: TeamSlot; build: BuildRead } => !!entry.build)
+      .map(({ slot, build }) => ({
+        // The slot, not the build id: a team cannot hold one build twice, but keying on the
+        // build would still be keying on a value the row does not own.
+        buildId: slot,
+        name: build.character?.name ?? 'No character',
+        icon: build.character?.icon ?? null,
+      }));
+    return roster.length ? roster : null;
+  }
+
+  /** The art for whoever is in `slot`, for the adornment beside its `<select>`. */
+  protected slotIcon(slot: TeamSlot): string | null {
+    return this.build(this.picked()[slot])?.character?.icon ?? null;
   }
 }

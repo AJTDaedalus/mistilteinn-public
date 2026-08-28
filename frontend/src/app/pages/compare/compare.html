@@ -1,39 +1,112 @@
-<h1>Compare weapons</h1>
-
-<p class="eyebrow">
-  Simulated with gcsim, in this browser. The fast comparison ranks on base ATK and the
-  substat and cannot apply weapon passives — for most weapons the passive is the reason to
-  equip it, so that ordering can be wrong rather than merely imprecise.
-</p>
+<section class="compare">
+  <header>
+    <h1>Compare weapons</h1>
+    <p class="muted">
+      Simulated with gcsim, in this browser. The fast comparison ranks on base ATK and the
+      substat and cannot apply weapon passives — for most weapons the passive is the reason
+      to equip it, so that ordering can be wrong rather than merely imprecise.
+    </p>
+  </header>
 
 @if (loading()) {
   <p>Loading…</p>
 } @else if (error()) {
-  <p role="alert">{{ error() }}</p>
+  <p class="error" role="alert">{{ error() }}</p>
+} @else if (builds().length === 0) {
+  <!-- Gated up front, like every other page that needs a build. The form used to render in
+       full with two empty dropdowns and explain the problem underneath it, after the reader
+       had already tried to use it. -->
+  <p class="muted">
+    You have no builds yet — <a routerLink="/builds">make one first</a>.
+  </p>
+} @else if (rotations().length === 0) {
+  <p class="muted">
+    A weapon comparison simulates a rotation, and there is no rotation to pick on your
+    behalf — one chosen for you would rank weapons against something you never wrote.
+    <a routerLink="/rotations">Author one first.</a>
+  </p>
 } @else {
   <form (ngSubmit)="run()">
     <label>
       Build
-      <select [(ngModel)]="buildId" name="build">
+      <select
+        name="build"
+        [value]="buildId()"
+        (change)="selectBuild($any($event.target).value)"
+      >
         @for (b of builds(); track b.id) {
-          <option [value]="b.id">{{ b.character?.name ?? b.id }}</option>
+          <option [value]="b.id">
+            {{ b.character?.name ?? b.id }} · C{{ b.constellation_level }}
+          </option>
         }
       </select>
     </label>
 
+    @if (build(); as chosenBuild) {
+      <p class="subject">
+        <entity-token
+          [icon]="chosenBuild.character?.icon"
+          [name]="chosenBuild.character?.name || 'No character'"
+          [meta]="'currently holding ' + (chosenBuild.weapon?.name || 'nothing')"
+          [size]="44"
+        />
+      </p>
+    }
+
     <label>
       Rotation
-      <select [(ngModel)]="rotationId" name="rotation">
+      <select
+        name="rotation"
+        [ngModel]="rotationId()"
+        (ngModelChange)="rotationId.set($event)"
+      >
         @for (r of rotations(); track r.id) {
           <option [value]="r.id">{{ r.name }}</option>
         }
       </select>
     </label>
 
-    <label>
-      Candidate weapon ids
-      <input [(ngModel)]="weaponIds" name="weapons" placeholder="comma separated" />
-    </label>
+    <!-- Picked, never typed. This was a comma-separated list of catalogue ids — the one
+         place in the app that asked for an opaque identifier, on the page whose entire job
+         is telling weapons apart. The pool is what this build's character can hold. -->
+    <!-- A `<span>`, not a `<label>`: a label wrapping a component associates with nothing,
+         and the accessible name has to reach the inner `<input>`. `ariaLabel` does that. -->
+    <div class="field">
+      <span class="field__label">Add a candidate</span>
+      <mist-combobox
+        [options]="weaponOptions()"
+        [value]="null"
+        [disabled]="weaponOptions().length === 0"
+        ariaLabel="Add a candidate weapon"
+        placeholder="Search weapons…"
+        (valueChange)="add($event)"
+      />
+    </div>
+
+    @if (chosen().length) {
+      <ul class="candidates">
+        @for (weapon of chosen(); track weapon.id) {
+          <li>
+            <entity-token
+              [icon]="weapon.icon"
+              [name]="weapon.name"
+              [meta]="weapon.rarity + '★'"
+              [size]="28"
+            />
+            <button
+              type="button"
+              class="drop"
+              [attr.aria-label]="'Remove ' + weapon.name"
+              (click)="drop(weapon.id)"
+            >×</button>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="hint">
+        No candidates yet. A comparison needs at least one weapon to rank.
+      </p>
+    }
 
     <label>
       Iterations
@@ -44,15 +117,6 @@
       {{ running() ? 'Simulating…' : 'Simulate' }}
     </button>
   </form>
-
-  @if (rotations().length === 0) {
-    <p role="note">
-      You have no rotations. A weapon comparison simulates a rotation, and there is no
-      rotation to pick on your behalf — one chosen for you would rank weapons against
-      something you never wrote.
-      <a routerLink="/rotations">Author one first.</a>
-    </p>
-  }
 
   @if (progress(); as p) {
     <p class="progress">
@@ -94,7 +158,9 @@
         @for (row of result.rows; track row.weaponId) {
           <tr [class.not-separated]="row.notSeparatedFrom.length > 0">
             <td>{{ row.rank }}</td>
-            <td>{{ row.name }}</td>
+            <td>
+              <entity-token [icon]="weaponIcon(row.weaponId)" [name]="row.name" [size]="28" />
+            </td>
             <td class="mono">{{ row.dpsMean | number: '1.0-1' }}</td>
             <td class="mono">
               {{ row.standardError | number: '1.0-1' }}
@@ -122,3 +188,4 @@
     </section>
   }
 }
+</section>

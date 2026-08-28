@@ -26,12 +26,8 @@
 
   &:hover {
     text-decoration: none;
-    .brand__emblem {
-  grid-row: 1 / span 2;
-  align-self: center;
-}
 
-.brand__wordmark {
+    .brand__wordmark {
       text-shadow: var(--text-glow);
     }
   }
@@ -127,4 +123,34 @@
   font-size: var(--text-xs);
   color: var(--ink-faint);
   text-align: right;
+}
+
+// Two nav groups: the caller's own work, then the game's reference data. Eleven peers in
+// one row is a list rather than a menu, and it read as one.
+.shell__group {
+  display: flex;
+  gap: var(--space-5, var(--space-4));
+}
+
+.shell__group--reference {
+  padding-left: var(--space-6);
+  border-left: 1px solid var(--surface-rule);
+
+  a {
+    color: var(--ink-faint);
+
+    &:hover, &.active {
+      color: var(--mint);
+    }
+
+    &.active {
+      border-bottom-color: var(--mint);
+      text-shadow: none;
+    }
+  }
+}
+
+.shell__nav {
+  flex-wrap: wrap;
+  row-gap: var(--space-3);
 }

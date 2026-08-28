@@ -78,38 +78,35 @@
     }
   }
 
-  .saved {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-
-    li {
-      display: flex;
-      gap: 0.35rem;
-      align-items: center;
-    }
-
-    li.active .name { font-weight: 700; }
-
-    .pick {
-      flex: 1;
-      display: flex;
-      justify-content: space-between;
-      gap: 0.5rem;
-      text-align: left;
-    }
-  }
-
-  .name { font-weight: 600; }
-  .meta { font-size: 0.85rem; opacity: 0.8; }
-  .hint { margin: 0; font-size: 0.85rem; opacity: 0.7; }
-  .muted { opacity: 0.7; }
-  .error { color: #ff8080; }
 }
 
 @media (width <= 60rem) {
   .rotations .editor { grid-template-columns: minmax(0, 1fr); }
+}
+
+// ── Art ──────────────────────────────────────────────────────────────────────
+
+// Who is available to act, shown once rather than re-read from each step's dropdown.
+.roster {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-2);
+    background: var(--surface);
+    border: 1px solid var(--surface-rule);
+    border-radius: var(--radius-pill);
+  }
+}
+
+.step-art {
+  flex: 0 0 auto;
+  width: 32px;
 }

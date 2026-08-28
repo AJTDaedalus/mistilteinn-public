@@ -2,6 +2,9 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { apiErrorMessage } from '../../api/api-error';
+import { ElementChip } from '../../shared/element/element';
+import { CatalogueIcon } from '../../shared/icon/icon';
+import { EntityToken } from '../../shared/token/token';
 import { allPages } from '../../api/all-pages';
 import { ArtifactPanel } from './artifact-panel';
 import { CatalogueService } from '../catalogue/catalogue.service';
@@ -42,7 +45,7 @@ function blank(talents: string[]): BuildFields {
  */
 @Component({
   selector: 'page-builds',
-  imports: [FormsModule, ArtifactPanel],
+  imports: [FormsModule, ArtifactPanel, CatalogueIcon, ElementChip, EntityToken],
   templateUrl: './builds.html',
   styleUrl: './builds.scss',
 })

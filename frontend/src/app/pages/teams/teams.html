@@ -35,6 +35,14 @@
           @for (slot of slots; track slot; let i = $index) {
             <li>
               <span class="ordinal mono">{{ i + 1 }}</span>
+              <!-- An `<option>` cannot hold an `<img>`, so the chosen build's art sits
+                   beside the control rather than inside it. -->
+              <catalogue-icon
+                class="slot-art"
+                [icon]="slotIcon(slot)"
+                [alt]="''"
+                [size]="34"
+              />
               <select
                 [attr.aria-label]="'Slot ' + (i + 1)"
                 [value]="picked()[slot] ?? ''"
@@ -82,7 +90,21 @@
             <li [class.active]="team.id === editing()?.id">
               <button type="button" class="pick" (click)="edit(team)">
                 <span class="name">{{ team.name || 'Unnamed' }}</span>
-                <span class="meta">{{ members(team).join(' · ') || 'nobody' }}</span>
+                <!-- The party, as faces. `members()` still backs the empty case and the
+                     delete label; this is the same list drawn rather than joined. -->
+                @if (party(team); as roster) {
+                  <span class="party">
+                    @for (member of roster; track member.buildId) {
+                      <catalogue-icon
+                        [icon]="member.icon"
+                        [alt]="member.name"
+                        [size]="34"
+                      />
+                    }
+                  </span>
+                } @else {
+                  <span class="meta">nobody</span>
+                }
               </button>
               <button
                 type="button"

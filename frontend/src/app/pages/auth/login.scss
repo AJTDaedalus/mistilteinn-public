@@ -3,8 +3,13 @@
 .login-wrap {
   display: flex;
   justify-content: center;
-  align-items: flex-start;
-  padding-top: var(--space-12);
+  // Centred, not pinned to the top. `.shell` is a `100vh` grid whose main row takes the
+  // `1fr`, so a card anchored at `flex-start` sat under the header with the rest of the
+  // viewport empty below it — on a 1200px-tall window, roughly 700px of nothing. This is
+  // the first screen anybody sees.
+  align-items: center;
+  min-height: 60vh;
+  padding: var(--space-8) 0;
 }
 
 .login-card {

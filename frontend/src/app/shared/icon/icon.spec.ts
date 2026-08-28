@@ -40,6 +40,37 @@ describe('CatalogueIcon', () => {
     expect(fixture.nativeElement.querySelector('img')).toBeNull();
   });
 
+  it('tries again when the basename changes', () => {
+    // `failed` used to latch for the component's lifetime. That was invisible while every
+    // instance sat in a `@for` keyed to a fixed row, and became a real bug once long-lived
+    // instances arrived whose `[icon]` changes — rotations' step art follows a `<select>`.
+    // One step set to a character with no published art poisoned every character after it.
+    const fixture = render('UI_RelicIcon_15012_3');
+    fixture.nativeElement.querySelector('img').dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('img')).toBeNull();
+
+    fixture.componentRef.setInput('icon', 'UI_AvatarIcon_Ayaka');
+    fixture.detectChanges();
+
+    const img = fixture.nativeElement.querySelector('img');
+    expect(img).not.toBeNull();
+    expect(img.getAttribute('src')).toBe('/icons/UI_AvatarIcon_Ayaka.webp');
+  });
+
+  it('stays hidden while the same failed basename is re-set', () => {
+    // The reset keys on the value, not on every write: re-rendering with the same missing
+    // icon must not re-request it on each change detection pass.
+    const fixture = render('UI_RelicIcon_15012_3');
+    fixture.nativeElement.querySelector('img').dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+
+    fixture.componentRef.setInput('icon', 'UI_RelicIcon_15012_3');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('img')).toBeNull();
+  });
+
   it('is lazy, so a page of hundreds does not fetch hundreds at once', () => {
     const img = render('UI_AvatarIcon_Ayaka').nativeElement.querySelector('img');
 

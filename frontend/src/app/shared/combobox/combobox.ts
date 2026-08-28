@@ -11,11 +11,20 @@ import {
   signal,
 } from '@angular/core';
 
+import { CatalogueIcon } from '../icon/icon';
+
 export interface ComboboxOption {
   /** Stable identifier emitted via valueChange. */
   value: string;
   /** Primary visible label, also used for filtering. */
   label: string;
+  /**
+   * Catalogue basename for the option's art — `UI_EquipIcon_Sword_Blunt`.
+   *
+   * Optional, and deliberately not part of the filter: a user types a weapon's name, never
+   * its icon's. Absent or unloadable art leaves the label where it was.
+   */
+  icon?: string | null;
   /** Optional secondary text rendered after the label and included in filter. */
   detail?: string;
   /** Optional group bucket label (used to render <optgroup>-style sections). */
@@ -24,6 +33,12 @@ export interface ComboboxOption {
   disabled?: boolean;
 }
 
+/**
+ * Per-instance id counter, so `aria-controls` and `aria-activedescendant` can point at this
+ * combobox's own listbox. Two on one page would otherwise both claim the same element.
+ */
+let nextId = 0;
+
 interface OptionGroup {
   label: string;
   items: ComboboxOption[];
@@ -31,7 +46,7 @@ interface OptionGroup {
 
 @Component({
   selector: 'mist-combobox',
-  imports: [],
+  imports: [CatalogueIcon],
   templateUrl: './combobox.html',
   styleUrl: './combobox.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,19 +59,61 @@ export class Combobox {
   placeholder = input<string>('');
   disabled = input<boolean>(false);
 
+  /**
+   * The accessible name for the field.
+   *
+   * Required in practice, and it did not exist before: the inner `<input>` had no name at
+   * all, so a screen reader announced an unlabelled text box. A caller cannot supply one
+   * from outside either — wrapping the component in a `<label>` associates it with nothing,
+   * which is what `label-has-associated-control` was reporting.
+   */
+  ariaLabel = input<string>('');
+
   valueChange = output<string | null>();
 
   protected open = signal(false);
   protected query = signal('');
   protected highlight = signal(0);
 
+  /** Stable for this instance's lifetime — the listbox and its options hang off it. */
+  protected readonly id = `mist-combobox-${nextId++}`;
+  protected readonly listId = `${this.id}-list`;
+
+  protected optionId(option: ComboboxOption): string {
+    return `${this.id}-opt-${option.value}`;
+  }
+
+  /**
+   * The option the arrow keys are on, for `aria-activedescendant`.
+   *
+   * Null while closed: pointing at an element that is not rendered would announce a
+   * selection the user cannot see.
+   */
+  protected readonly activeId = computed<string | null>(() => {
+    if (!this.open()) return null;
+    const option = this.flat()[this.highlight()];
+    return option ? this.optionId(option) : null;
+  });
+
   // ---- derived state ----------------------------------------------------
 
-  protected selectedLabel = computed<string>(() => {
-    const opts = this.options();
+  protected selected = computed<ComboboxOption | null>(() => {
     const v = this.value();
-    return opts.find((o) => o.value === v)?.label ?? '';
+    return this.options().find((o) => o.value === v) ?? null;
   });
+
+  protected selectedLabel = computed<string>(() => this.selected()?.label ?? '');
+
+  /**
+   * The chosen option's art, shown to the left of the field.
+   *
+   * Only while closed. An `<input>` cannot contain an `<img>`, so this sits beside it — and
+   * leaving it up while the user is typing a *different* name would label the field with
+   * the thing they are replacing.
+   */
+  protected selectedIcon = computed<string | null>(() =>
+    this.open() ? null : (this.selected()?.icon ?? null),
+  );
 
   /** Visible-input value: shows the selected label when closed, the
    *  user's query when open. */

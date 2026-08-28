@@ -58,39 +58,34 @@
     flex-wrap: wrap;
   }
 
-  .saved {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-
-    li {
-      display: flex;
-      gap: 0.35rem;
-      align-items: center;
-    }
-
-    li.active .name { font-weight: 700; }
-
-    .pick {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.1rem;
-      text-align: left;
-    }
-  }
-
-  .drop { padding: 0.1rem 0.45rem; line-height: 1.2; }
-  .name { font-weight: 600; }
-  .meta { font-size: 0.85rem; opacity: 0.8; }
-  .muted { opacity: 0.7; }
-  .error { color: #ff8080; }
 }
 
 @media (width <= 60rem) {
   .teams .layout { grid-template-columns: minmax(0, 1fr); }
+}
+
+// ── Art ──────────────────────────────────────────────────────────────────────
+
+// The slot's occupant, beside the `<select>` that cannot contain them.
+.slot-art {
+  flex: 0 0 auto;
+  width: 34px;
+}
+
+.party {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+
+  // The **host**, not the `<img>` inside it. `CatalogueIcon` uses Angular's default emulated
+  // encapsulation, so its template's `<img>` carries the component's own `_ngcontent`
+  // attribute and not this page's — a `.party img` selector compiles to one that cannot
+  // match, and the rule silently did nothing. A host element is a child of this template
+  // and is reachable.
+  catalogue-icon {
+    background: var(--bg-deep);
+    border: 1px solid var(--surface-rule);
+    border-radius: var(--radius-1);
+    overflow: hidden;
+  }
 }

@@ -64,16 +64,45 @@ src/
 
 ## Design System
 
-Aesthetic: **inherited from fairy and not yet re-decided for mistilteinn.** The tokens
-and effects below are fairy's VHS / video-store / CRT look, derived from an NPC art reference
-that did not come along in the fork. Treat the palette and mixins as a working scaffold, not a
-brand — mistilteinn's visual identity is an open decision.
+Aesthetic: **the Mitya palette, decided in Chunk J (#46).** The paragraph that stood here
+called the look "inherited from fairy and not yet re-decided" long after it had been —
+`_tokens.scss` is sampled from `references/mitya.png` and `references/mitya_ornament.png`,
+and the emblem is his ornament. The character himself is deliberately absent: his colours
+and his patterns are the brand, he is not, and there is no portrait anywhere in the app.
 
-Tokens live in `_tokens.scss` — never hardcode colors, type families,
-spacing, or radii. Effects (scanlines, halo glow, vhs beam) are
-mixins in `_effects.scss`; use sparingly so the chrome stays distinct
-rather than noisy. Tabular numerics (damage, stats, percentiles)
+The structure is **two-accent**, which is the part worth knowing before adding anything:
+warm brass for identity and action, cool mint/azure for data and state. Keeping them apart
+is what stops the palette reading as generic fantasy-purple, and it maps onto something
+real — a damage number and a button are different kinds of thing.
+
+Tokens live in `_tokens.scss` — never hardcode colors, type families, spacing, or radii.
+That rule was broken in nine stylesheets at once: `.muted`, `.hint`, `.error` and `.warn`
+were each redefined per page with `#ff8080` and `#ffc966` written out by hand, so the two
+colours the app uses to say *something is wrong* were the only ones nobody could restyle.
+They are global now, on `--danger` and `--warning`. The **element** colours
+(`--element-pyro` and friends) are the one place a colour is chosen rather than sampled —
+they are a design decision, not game data, and the token block says so at length.
+
+Effects (scanlines, halo glow, vhs beam) are mixins in `_effects.scss`; use sparingly so the
+chrome stays distinct rather than noisy. Tabular numerics (damage, stats, percentiles)
 should use `class="mono"` or `.stat-value` so they line up.
+
+### Catalogue art
+
+`frontend/public/icons/` is **committed** (see `docs/DECISIONS.md`, 2026-08-28) and filled by
+`cd backend && python -m scripts.download_icons`. Three components consume it, and a new
+surface should reach for one rather than writing an `<img>`:
+
+- `shared/icon` — `<catalogue-icon [icon] [alt] [size]>`, the raw image. Renders nothing for
+  a null basename and hides itself on a failed load.
+- `shared/token` — `<entity-token [icon] [name] [meta]>`, art beside a name. What most
+  surfaces want.
+- `shared/element` — `<element-chip [element]>`, a vision as a coloured pill. Colour is a
+  second channel on a label that still says "Electro"; it is never the only one.
+
+An `<option>` cannot contain an `<img>`, so a `<select>` gets its art as an adornment beside
+the control (`teams`, `rotations`) or is replaced by `shared/combobox`, which takes an
+optional `icon` per option (`compare`).
 
 ## Conventions
 

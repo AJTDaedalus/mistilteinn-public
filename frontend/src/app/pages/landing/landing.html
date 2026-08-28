@@ -6,13 +6,96 @@
     show its working.
   </p>
   <div class="hero__actions">
-    <a class="btn btn-primary" routerLink="/characters">Browse characters</a>
+    <a class="btn btn-primary" routerLink="/inventory">Import your artifacts</a>
+    <a class="btn" routerLink="/characters">Browse the catalogue</a>
   </div>
 </section>
 
-<section class="rail">
-  <a class="card" routerLink="/characters">
-    <h2>Catalogue</h2>
-    <p>150 characters, 260 weapons and 65 artifact sets, seeded from the game's own data.</p>
-  </a>
+<!--
+  The app has a dependency chain — a rotation needs a team, a team needs builds, a build
+  needs a character — and each page enforced it only on arrival, with a "make one first"
+  that a user reads after clicking. This says the order up front. It is numbered because it
+  *is* ordered: the steps are not four equivalent entry points.
+-->
+<section class="path">
+  <h2 class="eyebrow">The way through</h2>
+  <ol class="rail">
+    <li>
+      <a class="card" routerLink="/inventory">
+        <span class="card__step mono">1</span>
+        <h3>Inventory</h3>
+        <p>
+          Paste a GOOD export — the format Genshin Optimizer, Amenoma and Adachi all
+          produce. Everything downstream searches these pieces.
+        </p>
+      </a>
+    </li>
+    <li>
+      <a class="card" routerLink="/builds">
+        <span class="card__step mono">2</span>
+        <h3>Builds</h3>
+        <p>A character, a weapon they can hold, and the levels. Equip artifacts here.</p>
+      </a>
+    </li>
+    <li>
+      <a class="card" routerLink="/teams">
+        <span class="card__step mono">3</span>
+        <h3>Teams</h3>
+        <p>Up to four builds. Four different characters — the simulator refuses a duplicate.</p>
+      </a>
+    </li>
+    <li>
+      <a class="card" routerLink="/rotations">
+        <span class="card__step mono">4</span>
+        <h3>Rotations</h3>
+        <p>
+          What each character does, in order. The gating and the loop are emitted for you,
+          and you can read the gcsim config before it runs.
+        </p>
+      </a>
+    </li>
+    <li>
+      <a class="card" routerLink="/optimize">
+        <span class="card__step mono">5</span>
+        <h3>Optimize</h3>
+        <p>
+          Search your own artifacts, in your own browser, for the five that hit hardest —
+          against one hit, or across a whole rotation.
+        </p>
+      </a>
+    </li>
+  </ol>
+</section>
+
+<section class="path">
+  <h2 class="eyebrow">Once a build exists</h2>
+  <ul class="rail">
+    <li>
+      <a class="card" routerLink="/explain">
+        <h3>Explain</h3>
+        <p>
+          Where every number in a hit came from — each multiplier, in order, with its source.
+          And what the chain does <em>not</em> model, stated rather than omitted.
+        </p>
+      </a>
+    </li>
+    <li>
+      <a class="card" routerLink="/compare">
+        <h3>Compare weapons</h3>
+        <p>
+          Ranked by simulating them, because 242 of 260 weapons carry a passive and a
+          stat-stick comparison can order them wrongly rather than merely imprecisely.
+        </p>
+      </a>
+    </li>
+    <li>
+      <a class="card" routerLink="/characters">
+        <h3>Catalogue</h3>
+        <p>
+          150 characters, 260 weapons, 65 artifact sets and 360 enemies, seeded from the
+          game's own data.
+        </p>
+      </a>
+    </li>
+  </ul>
 </section>

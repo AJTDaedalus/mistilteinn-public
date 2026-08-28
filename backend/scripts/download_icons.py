@@ -16,9 +16,17 @@ third-party CDN being up is a page that breaks for a reason its owner cannot fix
 crossval harness seeds from committed fixtures precisely so it needs no network, and folding a
 download into it would take that away.
 
-**Not committed.** fairy vendored 207 files and committed them. Genshin's equivalent is ~475.
-They are build assets, reproducible from this script plus a seeded database, and a repository
-is not a CDN. `frontend/public/icons/` is gitignored.
+**Committed** — reversed 2026-08-28, `docs/DECISIONS.md` §4. This paragraph used to say the
+opposite, on the reasoning that fairy committed 207 files and this is ~475, so a repository is
+not a CDN. Measured, the comparison inverts: **446 distinct files at 9.6 MB here against
+fairy's 207 at 27 MB**, about a third the weight of the set already committed one repository
+over. And the cost of not committing them was a production site that served no art at all —
+nothing ever ran this script there, `Dockerfile.prod` copied a tree without the directory, and
+nginx's SPA fallback answered every `/icons/*.webp` with `200 text/html`, so every image
+failed silently.
+
+This script is still how the directory is *filled*; `--check` is still how it is audited.
+Nothing about obtaining the art changed.
 
 ## What it refuses to do
 

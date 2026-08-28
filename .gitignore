@@ -61,11 +61,16 @@ docker-compose.override.yml
 # Scratch research files (agent-curation working notes)
 scratch_*.txt
 
-# Vendored catalogue art — `cd backend && python -m scripts.download_icons`.
+# Vendored catalogue art is **committed**, not ignored — see docs/DECISIONS.md
+# (2026-08-28). The rule that once stood here compared 475 images against fairy's 207 and
+# concluded this set was the heavier one. It is not: 446 distinct files at 9.6 MB, against
+# fairy's 207 at 27 MB. Weighing the file count rather than the bytes reversed the
+# comparison, and the cost of ignoring them was a production site that served no art at all
+# — `/icons/*.webp` fell through to the SPA catch-all and answered `text/html` with a 200,
+# so every image failed and `CatalogueIcon` hid it exactly as designed.
 #
-# ~475 images, ~10 MB, reproducible from that script plus a seeded database. fairy committed
-# its 207; a repository is not a CDN, and the script is the reproduction.
-frontend/public/icons/
+# `cd backend && python -m scripts.download_icons` remains the reproduction, and
+# `--check` remains the audit.
 
 # A user's own GOOD export — their account data, and derivable from the game.
 # Kept out of the repo for the same reason icons are: a repository is not a data store,

@@ -65,8 +65,8 @@ browser build, a 100-iteration 90-second rotation is **7.84 s single-threaded** 
 candidates is **~7.7 minutes**. The decision holds; the interaction it implies does not. It is
 a job with progress, never a request that blocks.
 
-- **Both suites pass, with nothing skipped.** **1294 backend tests, 0 skipped**; **394
-  frontend tests**; `create_app()` serves **38 paths**; the SPA has **14 routes plus a
+- **Both suites pass, with nothing skipped.** **1307 backend tests, 0 skipped**; **428
+  frontend tests**; `create_app()` serves **38 paths**; the SPA has **15 routes plus a
   catch-all**. (The previous figures here — 1273 / 255 / 40 paths — were stale; the path
   count had never been 40. Re-derive rather than trust, which is what the commands below
   are for.) Re-derive rather than trust:
@@ -184,6 +184,20 @@ a job with progress, never a request that blocks.
   survived, `2` cannot vouch — and it **refuses** rather than reports when the target is
   missing or ambiguous. Both are documented in `backend/CLAUDE.md`.
 
+**The frontend was validated end to end on 2026-08-28** —
+`docs/FINDINGS_frontend_validation.md`. Two findings are worth carrying: the art reached only
+the three read-only catalogue pages and none of the six people actually work in, though
+`BuildRead.character` had carried `icon` the whole time; and `.muted`/`.hint`/`.error`/`.warn`
+were defined in **nine** stylesheets with their colours written out by hand, so the two
+colours the app uses to say *something is wrong* were the only ones not in the palette. Both
+are fixed, and both are the same shape: **a pattern nothing owned, so every page decided
+separately.** Reach for `shared/{icon,token,element,combobox}` rather than deciding again.
+
+**A clean build and a green suite did not see any of it.** 418 frontend tests passed at every
+point in that pass, including while the login card sat above 700px of empty viewport and the
+delete button rendered outside its own row. Rendering a page and looking at it is a check this
+repo did not have and still does not automate.
+
 `docs/LOG_mistilteinn.md` records every task, including the findings that contradicted the
 plan. Read it before assuming DESIGN is describing the current tree.
 
@@ -232,9 +246,18 @@ that turns out to be worth porting rather than re-deriving.
   `{characters,weapons,artifact_sets}.icon` — those columns hold 449 distinct basenames,
   because Travelers share art and set icons expand per slot.
   A **404 is `absent_upstream`, not a failure** — some catalogue rows genuinely have no art,
-  and exiting non-zero on those would make the script cry wolf. **Prod therefore ships with no
-  icons until the script runs there**; `docs/DEPLOY.md` §5a says so, and that is deliberately
-  not automated.
+  and exiting non-zero on those would make the script cry wolf.
+  ~~**Prod therefore ships with no icons until the script runs there.**~~ **It did, for the
+  whole of K onward, and nothing could tell.** `/icons/*.webp` fell through nginx's SPA
+  fallback and answered **`200 text/html`**, so every image failed and `CatalogueIcon` hid it
+  exactly as designed — four layers each behaving correctly, adding up to a site with no art
+  and no symptom. **The status code could not have caught it**: a basename that exists and one
+  that does not both return 200, and only the `content-type` differs. Reversed 2026-08-28
+  (`docs/DECISIONS.md` §4): the icons are **committed**, because the measurement the original
+  decision rested on was inverted — **446 files at 9.6 MB here against fairy's 207 at 27 MB**,
+  so this set is about a third the weight of the one fairy already ships. The script stays the
+  reproduction; `tests/unit/test_catalogue_art_is_committed.py` asks git whether the files are
+  tracked and so needs no database.
 
 ### Database
 
@@ -275,7 +298,7 @@ Unchanged from fairy (a deliberate BRIEF decision):
 
 - **Backend**: FastAPI + SQLAlchemy 2.0 async + PostgreSQL + Alembic
 - **Frontend**: Angular 21, standalone components, signals — see `frontend/CLAUDE.md`.
-  No longer deferred: it compiles, it is tested in CI, and it serves thirteen routes plus a
+  No longer deferred: it compiles, it is tested in CI, and it serves fifteen routes plus a
   catch-all.
 - **Infrastructure**: Docker Compose (backend + frontend here; **no `db` service** — see
   §Database)

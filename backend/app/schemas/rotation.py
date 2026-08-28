@@ -73,6 +73,13 @@ class RosterCharacter(BaseModel):
     nanoka_id: str
     name: str
     element: str
+    #: The catalogue art's basename, so an editor can draw the roster rather than list it.
+    #:
+    #: Published here rather than looked up client-side for the reason `/options` exists at
+    #: all: the walk from team to build to character is one the client has no business
+    #: performing, and joining a second endpoint to decorate this one would be that walk
+    #: wearing a different name. Nullable — a row with no art is a seeding gap, not an error.
+    icon: str | None = None
 
 
 class TeamRoster(BaseModel):

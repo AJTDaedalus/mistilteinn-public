@@ -113,8 +113,43 @@
   --text-glow: 0 0 8px var(--halo-brass-strong),
                0 0 24px rgba(221, 174, 33, 0.25);
 
+  // -- Status. These were `#ff8080` and `#ffc966`, written out in nine stylesheets and in
+  //    the palette in none of them — so the two colours the app uses to say *something is
+  //    wrong* were the only ones nobody could restyle. Warm-shifted toward the brass so an
+  //    error still reads as part of this app rather than as a browser default.
+  --danger: #f08a86;
+  --warning: #e8b95c;
+
   // -- Motion
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --t-fast: 120ms;
   --t-mid: 220ms;
+}
+
+// ── Element colours ──────────────────────────────────────────────────────────
+//
+// **These are a design decision, not game data, and the distinction matters here.**
+// Everything numeric in this repo is sourced and cited because a fabricated multiplier is a
+// wrong answer wearing a right one's clothes. A hue is not that kind of claim: no damage
+// number reads these, nothing is derived from them, and being a shade off is a taste
+// disagreement rather than an error. So they are *chosen* — recognisably the seven visions,
+// then pulled toward the Mitya palette so a row of them does not read as a different app.
+//
+// Seven, not eight. Physical is a damage type and not a vision (`models/enums.py:Element`
+// says so at length); giving it a swatch beside these would draw the ZZZ-shaped equivalence
+// the domain model exists to refuse. A hit with no element uses `--element-none`.
+//
+// Each is bright enough on `--surface` to clear WCAG AA for the chip's small-bold text,
+// which is why none of them is the saturated in-game hue — Geo and Dendro especially go
+// muddy against a navy ground at full chroma.
+:root {
+  --element-anemo: #74c2a8;
+  --element-cryo: #8fd4e8;
+  --element-dendro: #92c84f;
+  --element-electro: #b78fe0;
+  --element-geo: #e0b04a;
+  --element-hydro: #5aa9e6;
+  --element-pyro: #ef7a56;
+  //: The Traveler before a vision is chosen, and any hit the chain does not colour.
+  --element-none: var(--ink-faint);
 }

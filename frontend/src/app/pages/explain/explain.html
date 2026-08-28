@@ -18,6 +18,22 @@
       You have no builds yet — <a routerLink="/builds">make one first</a>.
     </p>
   } @else {
+
+    <!-- Who the page is answering for. Both pages ran their whole computation against a
+         build named only inside a `<select>` the reader has already looked away from. -->
+    @if (build(); as subject) {
+      <p class="subject">
+        <entity-token
+          [icon]="subject.character?.icon"
+          [name]="subject.character?.name || 'No character'"
+          [meta]="'C' + subject.constellation_level + ' · ' + (subject.weapon?.name || 'no weapon')"
+          [size]="48"
+        />
+        <element-chip [element]="subject.character?.element ?? null" />
+        <catalogue-icon [icon]="subject.weapon?.icon" [alt]="''" [size]="36" />
+      </p>
+    }
+
     <div class="controls">
       <label>
         Build

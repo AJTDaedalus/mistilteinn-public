@@ -4,6 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { apiErrorMessage } from '../../api/api-error';
+import { ElementChip } from '../../shared/element/element';
+import { CatalogueIcon } from '../../shared/icon/icon';
+import { EntityToken } from '../../shared/token/token';
 import { BuildsService, type BuildRead } from '../builds/builds.service';
 import {
   ExplainService,
@@ -42,7 +45,7 @@ export function talentLabel(talent: string): string {
  */
 @Component({
   selector: 'page-explain',
-  imports: [FormsModule, RouterLink, DecimalPipe],
+  imports: [FormsModule, RouterLink, DecimalPipe, CatalogueIcon, ElementChip, EntityToken],
   templateUrl: './explain.html',
   styleUrl: './explain.scss',
 })

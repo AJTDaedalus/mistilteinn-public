@@ -7,17 +7,25 @@
     </a>
     @if (auth.status() === 'approved') {
       <nav class="shell__nav">
-        <a routerLink="/characters" routerLinkActive="active">Characters</a>
-        <a routerLink="/weapons" routerLinkActive="active">Weapons</a>
-        <a routerLink="/artifact-sets" routerLinkActive="active">Artifacts</a>
-        <a routerLink="/enemies" routerLinkActive="active">Enemies</a>
-        <a routerLink="/artifacts" routerLinkActive="active">Artifacts</a>
-        <a routerLink="/builds" routerLinkActive="active">Builds</a>
-        <a routerLink="/teams" routerLinkActive="active">Teams</a>
-        <a routerLink="/optimize" routerLinkActive="active">Optimize</a>
-        <a routerLink="/compare" routerLinkActive="active">Compare</a>
-        <a routerLink="/explain" routerLinkActive="active">Explain</a>
-        <a routerLink="/rotations" routerLinkActive="active">Rotations</a>
+        <!-- Two groups, because eleven peers in one row is a list rather than a menu — and
+             because two of them were both labelled "Artifacts": the game's set catalogue and
+             the caller's own inventory. Distinguishable only by clicking. -->
+        <span class="shell__group" role="group" aria-label="Your work">
+          <a routerLink="/inventory" routerLinkActive="active">Inventory</a>
+          <a routerLink="/builds" routerLinkActive="active">Builds</a>
+          <a routerLink="/teams" routerLinkActive="active">Teams</a>
+          <a routerLink="/rotations" routerLinkActive="active">Rotations</a>
+          <a routerLink="/optimize" routerLinkActive="active">Optimize</a>
+          <a routerLink="/compare" routerLinkActive="active">Compare</a>
+          <a routerLink="/explain" routerLinkActive="active">Explain</a>
+        </span>
+        <span class="shell__group shell__group--reference" role="group"
+              aria-label="Game data">
+          <a routerLink="/characters" routerLinkActive="active">Characters</a>
+          <a routerLink="/weapons" routerLinkActive="active">Weapons</a>
+          <a routerLink="/artifact-sets" routerLinkActive="active">Sets</a>
+          <a routerLink="/enemies" routerLinkActive="active">Enemies</a>
+        </span>
         <span class="identity-chip">
           <span class="identity-chip__name mono">{{ auth.me()?.label || auth.me()?.email }}</span>
           <button class="identity-chip__signout" (click)="signOut()">Sign out</button>

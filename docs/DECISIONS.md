@@ -593,3 +593,46 @@ who knows what they want, rather than the wait being hidden by streaming.
 has no default to lean on. The picker mitigates this rather than solving it — it already shows
 how many distinct slots of each set the user owns, most-owned first — but this is a real
 trade and is recorded as one, not smoothed over.
+
+---
+
+## Frontend validation (2026-08-28)
+
+### 4. The catalogue art is committed
+
+**Ruling: `frontend/public/icons/` goes into the repository.** This reverses OQ-N1, which
+gitignored it on the reasoning that "~475 images, ~10 MB … fairy committed its 207; a
+repository is not a CDN, and the script is the reproduction."
+
+**What that decision cost.** Production served no art at all, and had done since K. Nothing
+on the prod box had ever run `download_icons.py`; `Dockerfile.prod` copies a tree where the
+directory did not exist; nginx's SPA fallback answered every `/icons/*.webp` with
+`200 text/html`; and `CatalogueIcon` hid each failed `<img>` exactly as designed. Four layers
+each behaved correctly and the compound result was a silently art-free site. It was found by
+asking for the `content-type`, not the status code — `curl -I` on a basename that does not
+exist returns the same `200 text/html` as one that does, so *the status code could never have
+detected it.*
+
+**Why the original comparison inverted.** It weighed 475 files against fairy's 207 and
+concluded this set was the larger. Measured: **446 distinct files at 9.6 MB**, against
+fairy's **207 at 27 MB**. Genshin's icons are small; ZZZ's are not. The set we declined to
+commit is about a third the weight of the one already committed one repository over.
+
+**What stays.** `scripts/download_icons.py` is still the reproduction and `--check` is still
+the audit — nothing about how the art is *obtained* changes. `tests/unit/test_catalogue_art_is_committed.py`
+is the executable version of this ruling, and deliberately needs no database: it asks git
+whether the files are tracked, which is the question CI can always answer.
+
+**The known cost, accepted:** every future patch adds files to the repository rather than to
+a build step, and a patch that retires art leaves it behind until someone prunes. That is the
+trade for a deploy that cannot silently ship an empty directory.
+
+### 5. Art belongs on the working pages, not only the catalogue
+
+**Ruling: anywhere the app names a character, weapon or artifact set, it shows the icon.**
+
+The art existed and reached only `/characters`, `/weapons` and `/artifact-sets` — the three
+read-only pages. Builds, teams, rotations, optimize, compare and explain, which is where the
+time is actually spent, rendered everything as bare text. `BuildRead.character` is a
+`CharacterSummary` and has carried `icon` the whole time, so this was never a data problem;
+nothing drew it.

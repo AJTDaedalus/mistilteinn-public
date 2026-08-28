@@ -144,6 +144,7 @@ async def rotation_options(repo: _Repo) -> RotationOptions:
                         nanoka_id=nanoka_id,
                         name=character.name,
                         element=str(character.element.value),
+                        icon=character.icon,
                     )
                     for nanoka_id, character in sorted(roster.items())
                 ],

@@ -4,6 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { apiErrorMessage } from '../../api/api-error';
+import { ElementChip } from '../../shared/element/element';
+import { CatalogueIcon } from '../../shared/icon/icon';
+import { EntityToken } from '../../shared/token/token';
 import { type Amplifying, type ScalingStat } from '../../sim/damage';
 import { SLOTS, type SearchResult, type Slot, search } from '../../sim/search';
 import { BuildsService, type BuildRead } from '../builds/builds.service';
@@ -74,7 +77,7 @@ export function describePieces(
  */
 @Component({
   selector: 'page-optimize',
-  imports: [FormsModule, RouterLink, DecimalPipe, PercentPipe],
+  imports: [FormsModule, RouterLink, DecimalPipe, PercentPipe, CatalogueIcon, ElementChip, EntityToken],
   templateUrl: './optimize.html',
   styleUrl: './optimize.scss',
 })

@@ -2,6 +2,8 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { apiErrorMessage } from '../../api/api-error';
+import { CatalogueIcon } from '../../shared/icon/icon';
+import { CatalogueService } from '../catalogue/catalogue.service';
 import {
   ArtifactsService,
   type ArtifactOptions,
@@ -15,6 +17,7 @@ import {
 export interface ArtifactRow {
   id: string;
   setName: string;
+  setIcon: string | null;
   slot: string;
   stars: number;
   level: number;
@@ -67,7 +70,7 @@ export function formatStat(value: unknown, percentage: boolean): string {
  */
 @Component({
   selector: 'page-artifacts',
-  imports: [FormsModule],
+  imports: [FormsModule, CatalogueIcon],
   templateUrl: './artifacts.html',
   styleUrl: './artifacts.scss',
 })
@@ -92,15 +95,29 @@ export class ArtifactsPage implements OnInit {
 
   protected readonly slots = computed(() => this.options()?.slots ?? []);
 
+  /**
+   * Set id → art, joined here rather than added to `ArtifactRead`.
+   *
+   * `/artifact-sets` already publishes the basename and there are 65 of them, so this is one
+   * extra request against a list the app can hold entirely. Widening the artifact schema
+   * would put the same value on every one of a user's several hundred pieces.
+   *
+   * Empty until it loads, and a miss yields null — which `CatalogueIcon` renders as nothing.
+   * Art arriving late must never hold up the inventory.
+   */
+  protected readonly setIcons = signal<Map<string, string | null>>(new Map());
+
   protected readonly rows = computed<ArtifactRow[]>(() => {
     const opts = this.options();
     if (!opts) return [];
     const stats = new Map(opts.stats.map((s) => [s.key, s]));
     const slots = new Map(opts.slots.map((s) => [s.key, s.display]));
     const stars = new Map(opts.rarities.map((r) => [r.key, r.stars]));
+    const setArt = this.setIcons();
     return this.artifacts().map((piece) => ({
       id: piece.id,
       setName: piece.set_name ?? 'No set',
+      setIcon: setArt.get(piece.artifact_set_id ?? '') ?? null,
       slot: slots.get(piece.slot) ?? piece.slot,
       stars: stars.get(piece.rarity) ?? 0,
       level: piece.level,
@@ -114,6 +131,7 @@ export class ArtifactsPage implements OnInit {
   });
 
   private readonly service = inject(ArtifactsService);
+  private readonly catalogue = inject(CatalogueService);
 
   ngOnInit(): void {
     void this.load();
@@ -131,6 +149,10 @@ export class ArtifactsPage implements OnInit {
       this.artifacts.set(page.items);
       this.total.set(page.total);
       this.truncated.set(page.truncated);
+      // Deliberately not awaited and deliberately not in the `Promise.all` above: art is
+      // decoration, and an inventory that will not render until the set catalogue arrives
+      // is an inventory held hostage by a picture.
+      void this.loadSetArt();
     } catch {
       // Surfaced, not swallowed: an empty inventory and a failed request look identical, and
       // only one of them means the account has nothing in it.
@@ -139,6 +161,24 @@ export class ArtifactsPage implements OnInit {
       this.total.set(0);
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  /**
+   * Fill {@link setIcons}. Failure is silent — the pieces render without art.
+   *
+   * Once per session. `load()` re-runs on every slot filter and every page change, and the
+   * 65 artifact sets do not change between them; without this guard, filtering to Circlets
+   * refetched the whole set catalogue to rebuild an identical map.
+   */
+  private async loadSetArt(): Promise<void> {
+    if (this.setIcons().size > 0) return;
+    try {
+      const page = await this.catalogue.listArtifactSets({ limit: 200 });
+      this.setIcons.set(new Map(page.items.map((set) => [set.id, set.icon ?? null])));
+    } catch {
+      // No `error` signal: this failing means the cards have no pictures, which is not a
+      // state worth telling somebody about while their inventory is on screen.
     }
   }
 

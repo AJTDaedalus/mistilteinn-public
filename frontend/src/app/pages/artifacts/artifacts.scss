@@ -65,6 +65,14 @@
 
   .card.equipped { border-color: rgb(221 174 33 / 55%); }
 
+  // The set's art beside its name. Flex rather than a leading float so a two-line set name
+  // ("Golden Troupe", "Marechaussee Hunter") wraps beside the icon instead of under it.
+  .card .name {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
   .subs {
     margin: 0.3rem 0 0;
     padding: 0;
@@ -93,7 +101,10 @@
     .working { opacity: 0.65; margin-left: 0.35rem; }
     &.unknown { opacity: 0.55; font-style: italic; }
   }
-  .muted { opacity: 0.7; }
-  .warn { color: #ffc966; margin-top: 0.4rem; }
-  .error { color: #ff8080; }
+}
+
+// The empty state spans the grid rather than sitting in the first cell, where it wrapped
+// into a 200px column and read as a broken card.
+.grid > .muted {
+  grid-column: 1 / -1;
 }

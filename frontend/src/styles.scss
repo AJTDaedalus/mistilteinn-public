@@ -107,3 +107,150 @@ select, input, textarea {
   background: var(--violet);
   color: var(--ink);
 }
+
+
+// ── Status and emphasis utilities ────────────────────────────────────────────
+//
+// `.muted`, `.hint`, `.error` and `.warn` were defined nine times across the page
+// stylesheets — the same four rules, with `#ff8080` and `#ffc966` written out by hand each
+// time. Every page therefore agreed by coincidence, and any page that drifted drifted
+// silently. One definition, tokens for the colours.
+//
+// They are element-agnostic on purpose: pages apply them to `<p>`, `<span>` and `<li>`
+// alike, and scoping them to a tag would quietly drop the ones that do not match.
+
+.muted {
+  color: var(--ink-dim);
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--ink-dim);
+}
+
+.error {
+  color: var(--danger);
+}
+
+.warn {
+  color: var(--warning);
+}
+
+
+// ── The saved-items list ─────────────────────────────────────────────────────
+//
+// Builds, teams and rotations each keep a "Saved" column, and each had its own near-identical
+// copy of these rules. One definition, and the row is now the card.
+//
+// **The delete button used to sit outside it.** `.pick` and `.drop` are both `<button>`, so
+// both took the global button surface and border, and a flex `li` put them side by side as
+// two separate boxes with a gap between — the × floating in the margin beside the panel,
+// looking like a rendering fault rather than part of the row. The `li` carries the surface
+// now and both buttons are transparent within it.
+
+.saved {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: stretch;
+    gap: var(--space-2);
+    background: var(--surface);
+    border: 1px solid var(--surface-rule);
+    border-radius: var(--radius-2);
+    transition: border-color var(--t-fast) var(--ease);
+
+    &:hover {
+      border-color: var(--halo-brass);
+    }
+
+    // The chosen row, marked by a border edge as well as by weight — `--accent-border-width`
+    // exists so emphasis never rests on colour alone (issue #57).
+    &.active {
+      border-left: var(--accent-border-width) solid var(--brass);
+
+      .name {
+        font-weight: 700;
+      }
+    }
+  }
+
+  // Both buttons give up the global surface: the row is the card, they are regions of it.
+  .pick, .drop {
+    background: none;
+    border: none;
+    border-radius: inherit;
+
+    &:hover, &:focus-visible {
+      box-shadow: none;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--brass);
+      outline-offset: -2px;
+    }
+  }
+
+  .pick {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-3);
+    text-align: left;
+    text-transform: none;
+    font-family: var(--font-body);
+    letter-spacing: normal;
+  }
+
+  .drop {
+    flex: 0 0 auto;
+    padding: 0 var(--space-3);
+    color: var(--ink-faint);
+    font-size: var(--text-md);
+
+    &:hover {
+      color: var(--danger);
+    }
+  }
+
+  .name {
+    font-family: var(--font-display);
+    font-size: var(--text-md);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .meta {
+    font-size: var(--text-sm);
+    color: var(--ink-dim);
+  }
+}
+
+
+// ── The subject of a page ────────────────────────────────────────────────────
+//
+// Who a page is answering for: the build whose damage is being explained, optimised or
+// compared. Global because it was written into three page stylesheets and left out of the
+// fourth — `/builds` used the markup and got a bare paragraph with no surface, which is the
+// same "each page decided separately" failure the art components exist to end.
+
+.subject {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--surface-rule);
+  border-left: var(--accent-border-width) solid var(--brass);
+  border-radius: var(--radius-2);
+}

@@ -4,8 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { apiErrorMessage } from '../../api/api-error';
+import { Combobox, type ComboboxOption } from '../../shared/combobox/combobox';
+import { EntityToken } from '../../shared/token/token';
 import type { Ranking } from '../../sim/weapon-ranking';
 import { BuildsService, type BuildRead } from '../builds/builds.service';
+import {
+  CatalogueService,
+  type WeaponSummary,
+} from '../catalogue/catalogue.service';
 import { RotationsService } from '../rotations/rotations.service';
 import { CompareService, type ComparisonConfigs, type Progress } from './compare.service';
 
@@ -25,10 +31,16 @@ import { CompareService, type ComparisonConfigs, type Progress } from './compare
  * ~1.2 %, so two weapons three percent apart are indistinguishable; presenting them as first
  * and second would answer a question the run did not resolve. Same rule as `isExact` on the
  * optimizer.
+ *
+ * **Candidates are picked, not typed.** This page used to take them as a comma-separated
+ * string of catalogue ids — the only place in the app that asked for an opaque identifier,
+ * on a page whose whole job is comparing things by name. The picker is filtered to what the
+ * chosen build's character can actually hold, which is the server's rule (T.1 refuses a
+ * mismatched class) and is applied here only to avoid offering what the API will refuse.
  */
 @Component({
   selector: 'page-compare',
-  imports: [FormsModule, RouterLink, DecimalPipe, PercentPipe],
+  imports: [FormsModule, RouterLink, DecimalPipe, PercentPipe, Combobox, EntityToken],
   templateUrl: './compare.html',
   styleUrl: './compare.scss',
 })
@@ -44,19 +56,44 @@ export class ComparePage implements OnInit {
   protected readonly ranking = signal<Ranking | null>(null);
   protected readonly progress = signal<Progress | null>(null);
 
-  protected buildId = '';
-  protected rotationId = '';
+  /**
+   * A signal, like `buildId`. It was a plain field read inside the `canRun` computed, which
+   * Angular cannot invalidate on — so `canRun` only re-evaluated when something else in it
+   * changed. Harmless today because the template gates on `rotations().length === 0`, and a
+   * stale-disabled button the moment that gate is relaxed.
+   */
+  protected readonly rotationId = signal('');
   protected iterations = 100;
-  /** Comma-separated catalogue ids. Deliberately plain until a picker exists. */
-  protected weaponIds = '';
+
+  /** Every weapon the chosen build's character can hold. Reloaded when the build changes. */
+  protected readonly weapons = signal<WeaponSummary[]>([]);
+  /** The candidates, in the order they were added. */
+  protected readonly chosen = signal<WeaponSummary[]>([]);
 
   private readonly compare = inject(CompareService);
   private readonly buildsService = inject(BuildsService);
   private readonly rotationsService = inject(RotationsService);
+  private readonly catalogue = inject(CatalogueService);
+
+  /** A signal, so changing the build can reload the weapon pool it constrains. */
+  protected readonly buildId = signal('');
 
   protected readonly build = computed(
-    () => this.builds().find((b) => b.id === this.buildId) ?? null,
+    () => this.builds().find((b) => b.id === this.buildId()) ?? null,
   );
+
+  /** What the picker offers: holdable weapons, minus the ones already chosen. */
+  protected readonly weaponOptions = computed<ComboboxOption[]>(() => {
+    const taken = new Set(this.chosen().map((w) => w.id));
+    return this.weapons()
+      .filter((w) => !taken.has(w.id))
+      .map((w) => ({
+        value: w.id,
+        label: w.name,
+        detail: `${w.rarity}★`,
+        icon: w.icon,
+      }));
+  });
 
   /** Ids by weapon, so a row can name what it was not separated from rather than list uuids. */
   protected readonly nameById = computed(() => {
@@ -69,12 +106,74 @@ export class ComparePage implements OnInit {
     return ids.map((id) => names.get(id) ?? id).join(', ');
   }
 
-  /** The candidate ids as typed, cleaned of blanks. */
-  protected parsedWeaponIds(): string[] {
-    return this.weaponIds.split(',').map((s) => s.trim()).filter(Boolean);
+  /** Art by weapon id, so a result row can show the weapon rather than only name it. */
+  protected readonly iconById = computed(
+    () => new Map(this.weapons().map((w) => [w.id, w.icon ?? null])),
+  );
+
+  protected weaponIcon(id: string): string | null {
+    return this.iconById().get(id) ?? null;
   }
 
-  protected readonly canRun = computed(() => !this.running());
+  protected add(id: string | null): void {
+    if (!id) return;
+    const weapon = this.weapons().find((w) => w.id === id);
+    // Already-chosen weapons are filtered out of the options, so this only fires on a stale
+    // pick — but a duplicate candidate would be simulated twice and ranked against itself.
+    if (!weapon || this.chosen().some((w) => w.id === id)) return;
+    this.chosen.update((current) => [...current, weapon]);
+  }
+
+  protected drop(id: string): void {
+    this.chosen.update((current) => current.filter((w) => w.id !== id));
+  }
+
+  /**
+   * A run needs a build, a rotation and at least one candidate.
+   *
+   * The old button was enabled whenever a run was not in flight, so pressing it with an
+   * empty id list did nothing at all and said nothing about why.
+   */
+  protected readonly canRun = computed(
+    () =>
+      !this.running() &&
+      this.buildId() !== '' &&
+      this.rotationId() !== '' &&
+      this.chosen().length > 0,
+  );
+
+  /**
+   * Load the weapons the chosen build's character can hold.
+   *
+   * `weapon_type` is passed through verbatim — the source's own spelling — rather than
+   * translated here, and the filter narrows the *offer* only. The server is still the
+   * authority on what a character may equip.
+   */
+  protected async selectBuild(id: string): Promise<void> {
+    this.buildId.set(id);
+    // Candidates belong to the character they were picked for. Carrying them across would
+    // hand the API a sword for a claymore user and collect a row of refusals.
+    this.chosen.set([]);
+    this.weapons.set([]);
+    // And so does the result. `run()` clears these for the stated reason that "a stale
+    // ranking left up sits under a new build's name and describes weapons from the previous
+    // run" — changing the build is the *other* way into exactly that, and the one where it
+    // is worse: the `.subject` token at the top re-renders as the new character while the
+    // table below still ranks the old one, and its icons vanish as `iconById` rebuilds from
+    // a weapon pool that no longer contains them.
+    this.ranking.set(null);
+    this.configs.set(null);
+    this.progress.set(null);
+    this.actionError.set(null);
+    const type = this.build()?.character?.weapon_type;
+    if (!type) return;
+    try {
+      const page = await this.catalogue.listWeapons({ weapon_type: type, limit: 200 });
+      this.weapons.set(page.items);
+    } catch {
+      this.actionError.set('Could not load the weapons for that character.');
+    }
+  }
 
   ngOnInit(): void {
     void this.load();
@@ -94,8 +193,8 @@ export class ComparePage implements OnInit {
       // which looks exactly like "you have no rotations".
       const items = rotations.items;
       this.rotations.set(items.map((r) => ({ id: r.id, name: r.name })));
-      if (builds.length > 0) this.buildId = builds[0].id;
-      if (items.length > 0) this.rotationId = items[0].id;
+      if (items.length > 0) this.rotationId.set(items[0].id);
+      if (builds.length > 0) await this.selectBuild(builds[0].id);
     } catch {
       this.error.set('Could not load your builds and rotations.');
     } finally {
@@ -104,8 +203,8 @@ export class ComparePage implements OnInit {
   }
 
   protected async run(): Promise<void> {
-    const ids = this.parsedWeaponIds();
-    if (!this.buildId || !this.rotationId || ids.length === 0) return;
+    const ids = this.chosen().map((w) => w.id);
+    if (!this.canRun()) return;
     this.actionError.set(null);
     // A stale ranking belongs to the previous run. Left up while a new one computes, it would
     // sit under a different build's name and describe weapons nobody asked about this time.
@@ -115,7 +214,7 @@ export class ComparePage implements OnInit {
     this.progress.set(null);
     try {
       const configs = await this.compare.configs(
-        this.buildId, this.rotationId, ids, this.iterations, null,
+        this.buildId(), this.rotationId(), ids, this.iterations, null,
       );
       this.configs.set(configs);
       this.ranking.set(

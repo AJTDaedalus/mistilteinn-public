@@ -1,8 +1,22 @@
-<div class="cb" [class.cb--open]="open()" [class.cb--disabled]="disabled()">
+<div
+  class="cb"
+  [class.cb--open]="open()"
+  [class.cb--disabled]="disabled()"
+  [class.cb--illustrated]="selectedIcon()"
+>
+  @if (selectedIcon(); as art) {
+    <catalogue-icon class="cb__art" [icon]="art" [alt]="''" [size]="22" />
+  }
   <input
     class="cb__input mono"
     type="text"
+    role="combobox"
     autocomplete="off"
+    [attr.aria-label]="ariaLabel() || null"
+    [attr.aria-expanded]="open()"
+    [attr.aria-controls]="listId"
+    [attr.aria-activedescendant]="activeId()"
+    aria-autocomplete="list"
     [value]="displayValue()"
     [placeholder]="placeholder()"
     [disabled]="disabled()"
@@ -13,22 +27,29 @@
   <span class="cb__caret" aria-hidden="true">▾</span>
 
   @if (open()) {
-    <ul class="cb__list" role="listbox">
+    <ul class="cb__list" role="listbox" [id]="listId">
       @if (filtered().length === 0) {
-        <li class="cb__empty">No matches</li>
+        <li class="cb__empty" role="presentation">No matches</li>
       }
       @for (group of groups(); track group.label) {
         @if (group.label) {
-          <li class="cb__group">{{ group.label }}</li>
+          <li class="cb__group" role="presentation">{{ group.label }}</li>
         }
         @for (o of group.items; track o.value) {
           <li
             class="cb__item"
+            role="option"
+            [id]="optionId(o)"
+            [attr.aria-selected]="isHighlighted(o)"
+            [attr.aria-disabled]="o.disabled || null"
             [class.cb__item--active]="isHighlighted(o)"
             [class.cb__item--disabled]="o.disabled"
             (mouseenter)="setHighlight(o)"
             (mousedown)="$event.preventDefault(); pick(o)"
           >
+            @if (o.icon) {
+              <catalogue-icon class="cb__icon" [icon]="o.icon" [alt]="''" [size]="24" />
+            }
             <span class="cb__label">{{ o.label }}</span>
             @if (o.detail) {
               <span class="cb__detail mono">{{ o.detail }}</span>

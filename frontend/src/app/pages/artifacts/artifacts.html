@@ -1,9 +1,11 @@
 <section class="artifacts">
   <header>
-    <h1>Artifacts</h1>
+    <!-- "Inventory", matching the nav link that leads here. The heading said "Artifacts"
+         and so did the link to the *set catalogue*, which is the ambiguity being removed. -->
+    <h1>Inventory</h1>
     <p class="muted">
-      Imported from a GOOD export — the format Genshin Optimizer, Amenoma and Adachi all
-      produce.
+      Your artifacts, imported from a GOOD export — the format Genshin Optimizer, Amenoma
+      and Adachi all produce.
     </p>
   </header>
 
@@ -108,7 +110,10 @@
     <ul class="grid">
       @for (row of rows(); track row.id) {
         <li class="card" [class.equipped]="row.equipped">
-          <span class="name">{{ row.setName }}</span>
+          <span class="name">
+            <catalogue-icon [icon]="row.setIcon" [alt]="''" [size]="32" />
+            <span>{{ row.setName }}</span>
+          </span>
           <span class="meta">
             {{ row.slot }} · {{ row.stars }}★ · +{{ row.level }}
             @if (row.equipped) { · equipped }

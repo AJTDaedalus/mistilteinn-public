@@ -154,4 +154,103 @@ describe('Combobox', () => {
     cmp.clear();
     expect(events).toEqual([null]);
   });
+  // ── The ARIA contract ──────────────────────────────────────────────────────
+  //
+  // Pinned because none of it is visible on screen: the component rendered and behaved
+  // correctly for months while announcing itself to a screen reader as an unlabelled text
+  // box, and `ng lint` only noticed once a caller tried to wrap it in a `<label>` — which
+  // associates with nothing across a component boundary.
+
+  it('carries the accessible name it was given', async () => {
+    const f = setup();
+    (f.componentRef as ComponentRef<Combobox>).setInput('ariaLabel', 'Add a candidate weapon');
+    await settle(f);
+    const input = f.nativeElement.querySelector('input') as HTMLInputElement;
+
+    expect(input.getAttribute('aria-label')).toBe('Add a candidate weapon');
+    expect(input.getAttribute('role')).toBe('combobox');
+  });
+
+  it('omits aria-label rather than setting it empty when unnamed', async () => {
+    // An empty `aria-label` is worse than none: it overrides whatever the browser would
+    // otherwise infer and announces nothing at all.
+    const f = setup();
+    await settle(f);
+
+    expect(f.nativeElement.querySelector('input').hasAttribute('aria-label')).toBe(false);
+  });
+
+  it('points aria-controls at its own listbox', async () => {
+    const f = setup();
+    const cmp = f.componentInstance as unknown as { open: { set: (v: boolean) => void } };
+    cmp.open.set(true);
+    await settle(f);
+
+    const input = f.nativeElement.querySelector('input') as HTMLInputElement;
+    const list = f.nativeElement.querySelector('[role="listbox"]') as HTMLElement;
+
+    expect(list).toBeTruthy();
+    expect(input.getAttribute('aria-controls')).toBe(list.id);
+    expect(input.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('gives two instances on one page distinct listbox ids', async () => {
+    // A shared id would have both inputs' `aria-controls` resolve to whichever list the
+    // document happened to contain first. The second fixture is built from the *same*
+    // TestBed — `setup()` reconfigures it, which an already-instantiated bed refuses.
+    const a = setup();
+    const b = TestBed.createComponent(Combobox);
+    (b.componentRef as ComponentRef<Combobox>).setInput('options', OPTIONS);
+    const openIt = (f: typeof a) =>
+      (f.componentInstance as unknown as { open: { set: (v: boolean) => void } }).open.set(true);
+    openIt(a);
+    openIt(b as typeof a);
+    await settle(a);
+    await settle(b);
+
+    const idA = a.nativeElement.querySelector('[role="listbox"]').id;
+    const idB = b.nativeElement.querySelector('[role="listbox"]').id;
+    expect(idA).toBeTruthy();
+    expect(idA).not.toBe(idB);
+  });
+
+  it('tracks the highlighted option with aria-activedescendant', async () => {
+    const f = setup();
+    const cmp = f.componentInstance as unknown as {
+      open: { set: (v: boolean) => void };
+      highlight: { set: (v: number) => void };
+    };
+    cmp.open.set(true);
+    cmp.highlight.set(2);
+    await settle(f);
+
+    const input = f.nativeElement.querySelector('input') as HTMLInputElement;
+    const options = f.nativeElement.querySelectorAll('[role="option"]');
+
+    expect(options).toHaveLength(4);
+    expect(input.getAttribute('aria-activedescendant')).toBe(options[2].id);
+    expect(options[2].getAttribute('aria-selected')).toBe('true');
+    expect(options[0].getAttribute('aria-selected')).toBe('false');
+  });
+
+  it('drops aria-activedescendant while closed', async () => {
+    // It would otherwise name an element that is not in the document.
+    const f = setup();
+    await settle(f);
+
+    expect(
+      f.nativeElement.querySelector('input').hasAttribute('aria-activedescendant'),
+    ).toBe(false);
+  });
+
+  it('keeps group headers out of the option list', async () => {
+    // A header announced as a selectable option is a row the user can arrow onto and not
+    // choose. `role="presentation"` leaves it as the visual divider it is.
+    const f = setup(GROUPED);
+    (f.componentInstance as unknown as { open: { set: (v: boolean) => void } }).open.set(true);
+    await settle(f);
+
+    expect(f.nativeElement.querySelectorAll('[role="option"]')).toHaveLength(3);
+    expect(f.nativeElement.querySelectorAll('.cb__group[role="presentation"]')).toHaveLength(2);
+  });
 });

@@ -83,9 +83,10 @@
 }
 
 .cb__item {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: baseline;
+  // Flex, not a two-column grid: an option may or may not carry art, and a fixed
+  // `auto 1fr` puts the detail column in a different place depending on whether it does.
+  display: flex;
+  align-items: center;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-1);
@@ -104,6 +105,8 @@
 }
 
 .cb__label {
+  flex: 1 1 auto;
+  min-width: 0;
   color: inherit;
 }
 
@@ -122,4 +125,26 @@
   color: var(--ink-faint);
   font-size: var(--text-sm);
   text-align: center;
+}
+
+// ── Art ──────────────────────────────────────────────────────────────────────
+//
+// The selected option's icon sits *beside* the input rather than inside it, because an
+// `<input>` cannot contain an `<img>`. The field is padded to make room for it only when
+// there is one, so an option list with no art keeps its original alignment.
+
+.cb__art {
+  position: absolute;
+  left: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.cb--illustrated .cb__input {
+  padding-left: calc(22px + var(--space-4));
+}
+
+.cb__icon {
+  flex: 0 0 auto;
 }

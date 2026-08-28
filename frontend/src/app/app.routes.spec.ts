@@ -45,6 +45,8 @@ const NOT_IN_NAV: Record<string, string> = {
   login: 'reached by being signed out, not by clicking',
   pending: 'reached by having a pending account',
   '**': 'the catch-all redirect',
+  artifacts: 'a redirect to /inventory, kept so old bookmarks resolve — the nav links the '
+    + 'canonical path, and linking both would put the same page in the bar twice',
 };
 
 describe('app routes', () => {

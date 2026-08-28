@@ -3,6 +3,9 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { apiErrorMessage } from '../../api/api-error';
+import { ElementChip } from '../../shared/element/element';
+import { CatalogueIcon } from '../../shared/icon/icon';
+import { EntityToken } from '../../shared/token/token';
 import {
   RotationsService,
   type RotationAction,
@@ -28,7 +31,7 @@ import {
  */
 @Component({
   selector: 'page-rotations',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, CatalogueIcon, ElementChip, EntityToken],
   templateUrl: './rotations.html',
   styleUrl: './rotations.scss',
 })
@@ -68,6 +71,22 @@ export class RotationsPage implements OnInit {
   protected readonly roster = computed(
     () => this.teams().find((team) => team.id === this.teamId())?.characters ?? [],
   );
+
+  /** Art by the id a step names, so a step can show who is acting. */
+  private readonly rosterArt = computed(
+    () => new Map(this.roster().map((m) => [m.nanoka_id, m.icon ?? null])),
+  );
+
+  /**
+   * The acting character's art for one step.
+   *
+   * A step can name somebody the roster no longer holds — a build removed from the team
+   * after the rotation was saved — so a miss returns null rather than throwing, and
+   * `CatalogueIcon` renders nothing.
+   */
+  protected rosterIcon(nanokaId: string): string | null {
+    return this.rosterArt().get(nanokaId) ?? null;
+  }
 
   protected readonly canSave = computed(
     () => this.name.trim().length > 0 && this.teamId() !== '' && this.steps().length > 0,

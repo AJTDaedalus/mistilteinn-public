@@ -58,6 +58,10 @@
           </select>
         </label>
         @if (character(); as chosen) {
+          <p class="subject">
+            <entity-token [icon]="chosen.icon" [name]="chosen.name" [size]="48" />
+            <element-chip [element]="chosen.element ?? null" />
+          </p>
           <p class="hint">
             Only {{ chosen.weapon_type_display }}s are listed — {{ chosen.name }} cannot hold
             anything else.
@@ -136,10 +140,16 @@
           @for (build of builds(); track build.id) {
             <li [class.active]="build.id === editing()?.id">
               <button type="button" class="pick" (click)="edit(build)">
-                <span class="name">{{ build.character?.name || 'No character' }}</span>
-                <span class="meta">
-                  C{{ build.constellation_level }} ·
-                  {{ build.weapon?.name || 'no weapon' }}
+                <entity-token
+                  [icon]="build.character?.icon"
+                  [name]="build.character?.name || 'No character'"
+                  [meta]="'C' + build.constellation_level"
+                  [size]="40"
+                />
+                <element-chip [element]="build.character?.element ?? null" />
+                <span class="weapon">
+                  <catalogue-icon [icon]="build.weapon?.icon" [alt]="''" [size]="24" />
+                  <span>{{ build.weapon?.name || 'no weapon' }}</span>
                 </span>
               </button>
               <button
