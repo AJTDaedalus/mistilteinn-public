@@ -10,6 +10,7 @@ browser build at the pin (`docs/CROSSVAL_gcsim.md` — never restated here). See
 | `noelle_redhorn_calc.json` | `noelle_redhorn.txt` | 94 | **`flat_dmg` on 83 hits** (Redhorn's DEF conversion), **`flat_atk` on 33** (Noelle's burst), `use_def` on 5 |
 | `noelle_redhorn_probe_calc.json` | `noelle_redhorn_probe.txt` | 94 | the same at `def%=0.5` — the **probe** that identifies those conversions |
 | `noelle_redhorn_target_calc.json` | `noelle_redhorn_target.txt` | 94 | the same at `def%=0.9 cd=0.4` — a run the recipe must **predict** |
+| `skirk_team_calc.json` | `skirk_team.txt` | 219 | **four characters**, three elements, `+params`, a `for` loop, `energy every`, a custom target, and a real conversion on 18 % of the damage |
 
 ## The probe triple
 
@@ -34,9 +35,29 @@ every number still matches. Adding Noelle + `Redhorn Stonethresher` moved that m
 *caught by the spec only* to *caught by the gate* — and Redhorn is the weapon this whole plan
 exists to stop the optimizer getting wrong.
 
-## What neither covers, stated
+## The multi-character fixture
 
-- **Crit rate above 100 %.** Both sit under the cap, so the clamp in `effectiveCritRate` is
+`skirk_team.txt` is a rotation the owner actually runs — Skirk, Furina, Yelan, Escoffier —
+supplied to test this work against something real rather than a fixture built to pass it.
+
+**It closed a gap this file named.** The two solo fixtures could not have caught a character
+swap, an off-field hit, or three elements in one rotation. It also exercises DSL this repo had
+never emitted: `+params`, a `for` loop, `energy every`, and a target with `radius`, `hp` and
+`freeze_resist`.
+
+**Its `for` loop is cut from four iterations to one.** A fixture needs *coverage*, not
+*duration*: at one iteration it still carries **all 24 distinct sources** and all three
+elements, at **0.64 MB** instead of 1.82 MB.
+
+**Its stats are stripped to ER**, which is what a calibration is. Run as the owner's full build
+config it reports `flatAtk`, `flatHp` and `flatDef` stale on **100 %** of hits — not a bug: a
+build config carries flat artifact stats (`atk=311`, `hp=4780`), and the detection's premise is
+*"at zero artifact stats a non-zero flat term means a conversion"*. Stripped to a calibration,
+only the genuine one remains: **`flatDamage` on 91 hits, 18 % of the damage**.
+
+## What none of them covers, stated
+
+- **Crit rate above 100 %.** All sit under the cap, so the clamp in `effectiveCritRate` is
   gated by the spec's stubs alone.
 - **Amplifying reactions.** No melt or vaporize, so `amp_mult_total` is 0 throughout and only
   the "absent means 1, not 0" case is exercised against real data.
