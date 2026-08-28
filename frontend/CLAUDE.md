@@ -123,9 +123,20 @@ docker compose up -d                     # full stack incl. frontend
 # Direct npm (when iterating without docker):
 cd frontend && npm install && npm start  # → http://localhost:4200 (no docker)
 
-npm test                                  # vitest in jsdom
+npm run verify                            # typecheck + lint + test — what CI runs
+npm test                                  # vitest in jsdom (the inner loop)
 npm run build                             # production bundle
 ```
+
+**`npm test` is not the gate; `npm run verify` is.** CI runs typecheck, lint and tests as
+three separate steps, and only the third is what a dev loop usually invokes — so `ng lint`
+was routinely skipped locally. It is not cosmetic: it caught a real accessibility bug on
+#131 (a `<label>` wrapping a component associates with nothing, and the combobox inside had
+no accessible name at all), and it caught it in `ci_local` rather than during development,
+which is the wrong end of the loop.
+
+`cd backend && python -m scripts.ci_local --job frontend` is still the authority — it reads
+the workflow file, so it cannot drift. `verify` is the fast approximation.
 
 ### After changing dependencies
 
