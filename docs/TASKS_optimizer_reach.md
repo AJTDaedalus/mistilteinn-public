@@ -149,6 +149,10 @@ the +20 %, verified against a gcsim run that equipped it. **Not derived from `pa
 
 ### B.4 — enumerate a 2+2 pair as a set configuration
 
+> **Search done** (UI is B.6). Measured against the real inventory: **44,487 scored, 155,500
+> subtrees pruned, 2.7 s** — better than the plan's ~15 s estimate, because the bound applies
+> unchanged. Winner was a real 2+2+1.
+
 User names a pair (A, B). Walk 2 slots of A, 2 of B, one free, partitioned by slot assignment.
 The existing bound applies unchanged.
 

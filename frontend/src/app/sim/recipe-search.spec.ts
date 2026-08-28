@@ -4,6 +4,7 @@ import {
   candidateStatsFrom,
   fourPieceSetOf,
   liveQuantitiesFor,
+  pairKey,
   searchRecipe,
 } from './recipe-search';
 import { search, type Candidate } from './search';
@@ -446,5 +447,102 @@ describe('the branch-and-bound layer', () => {
     });
 
     expect(out.uncoveredSets).toEqual([2]);
+  });
+});
+
+describe('2+2 pair search', () => {
+  const pairRecipe = (talent: number, ids: number[]): Recipe => ({
+    hits: [hit({ talent })],
+    seed: '1',
+    meta: {
+      seed: '1', staleConversions: [], calibratedSetIds: ids, minimumEnergyRecharge: null,
+    },
+  });
+
+  /** Two pieces of set 7 and 8 in every slot, plus one of set 9, so a spare exists. */
+  const pairInventory = (): Candidate[] =>
+    SLOTS.flatMap((slot) => [
+      { id: `${slot}-7`, slot, setId: 7, stats: { atk_pct: 0.1 } },
+      { id: `${slot}-8`, slot, setId: 8, stats: { atk_pct: 0.1 } },
+      { id: `${slot}-9`, slot, setId: 9, stats: { atk_pct: 0.1 } },
+    ] as Candidate[]);
+
+  it('enumerates thirty slot assignments, and no combination twice', () => {
+    // C(5,2) x C(3,2) = 30. The count is worth pinning, but the **distinctness** is the part
+    // that bites: allowing the spare piece to belong to A or B makes the same five pieces
+    // reachable from two assignments, and a duplicate build silently occupies two of the
+    // top N.
+    const r = pairRecipe(2, [7, 8]);
+    const out = searchRecipe(pairInventory(), {
+      recipes: {
+        byFourPieceSet: new Map(), noFourPiece: r,
+        byPair: new Map([[pairKey(7, 8), r]]),
+      },
+      topN: 100000,
+      fourPieceSets: [],
+      twoPiecePairs: [[7, 8]],
+    });
+
+    const seen = out.builds.map((b) => [...b.artifactIds].sort().join(','));
+    expect(new Set(seen).size).toBe(seen.length);
+    expect(out.evaluated).toBe(seen.length);
+  });
+
+  it('scores every combination it returns as a real 2+2', () => {
+    const r = pairRecipe(2, [7, 8]);
+    const out = searchRecipe(pairInventory(), {
+      recipes: {
+        byFourPieceSet: new Map(), noFourPiece: r,
+        byPair: new Map([[pairKey(7, 8), r]]),
+      },
+      topN: 100000, fourPieceSets: [], twoPiecePairs: [[7, 8]],
+    });
+
+    expect(out.builds.length).toBeGreaterThan(0);
+    for (const build of out.builds) {
+      expect(build.setCounts[7]).toBeGreaterThanOrEqual(2);
+      expect(build.setCounts[8]).toBeGreaterThanOrEqual(2);
+      // Never a 4-piece: that is a different state with a different recipe.
+      expect(Math.max(...Object.values(build.setCounts))).toBeLessThan(4);
+    }
+  });
+
+  it('keys a pair the same however it is named', () => {
+    // (7, 8) and (8, 7) are the same five slots. Keying them apart would calibrate the state
+    // twice and let the two recipes disagree.
+    expect(pairKey(7, 8)).toBe(pairKey(8, 7));
+  });
+
+  it('reports a pair it has no recipe for rather than scoring it against something else', () => {
+    const r = pairRecipe(2, []);
+    const out = searchRecipe(pairInventory(), {
+      recipes: { byFourPieceSet: new Map(), noFourPiece: r, byPair: new Map() },
+      topN: 1, fourPieceSets: [], twoPiecePairs: [[7, 8]],
+    });
+
+    expect(out.builds).toHaveLength(0);
+    expect(out.uncoveredPairs).toEqual([pairKey(7, 8)]);
+  });
+
+  it('does not pay the pair’s own bonuses twice', () => {
+    // Both sets are inside the calibration, so `score` must skip both. Skipping only one is
+    // the bug the plural `calibratedSetIds` exists to prevent.
+    const r = pairRecipe(2, [7, 8]);
+    const recipes = {
+      byFourPieceSet: new Map(), noFourPiece: r, byPair: new Map([[pairKey(7, 8), r]]),
+    };
+    const args = { topN: 1, fourPieceSets: [] as (number | null)[],
+      twoPiecePairs: [[7, 8]] as [number, number][] };
+
+    const plain = searchRecipe(pairInventory(), { recipes, ...args });
+    const withBonuses = searchRecipe(pairInventory(), {
+      recipes, ...args,
+      setBonuses: [
+        { setId: 7, piecesRequired: 2, stats: { atk_pct: 9 } },
+        { setId: 8, piecesRequired: 2, stats: { atk_pct: 9 } },
+      ],
+    });
+
+    expect(withBonuses.builds[0].damage).toBeCloseTo(plain.builds[0].damage, 6);
   });
 });

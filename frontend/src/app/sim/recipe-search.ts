@@ -43,6 +43,24 @@ export interface RecipeSet {
   byFourPieceSet: ReadonlyMap<number, Recipe>;
   /** For a combination that reaches no 4-piece at all. */
   noFourPiece: Recipe;
+  /**
+   * Keyed by `pairKey(a, b)` — a recipe calibrated with **both** sets at two pieces.
+   *
+   * Separate from `byFourPieceSet` because a 2+2 is a different state, not a weaker 4-piece:
+   * nine of the sixty 2-piece bonuses are conditional and six are ability-scoped, so only a
+   * run holding both can score them (owner ruling 1, `docs/DECISIONS.md`).
+   */
+  byPair?: ReadonlyMap<string, Recipe>;
+}
+
+/**
+ * The key a pair recipe is stored under — order-independent.
+ *
+ * `(7, 8)` and `(8, 7)` are the same five slots, and keying them apart would calibrate the
+ * same state twice and let the two disagree.
+ */
+export function pairKey(a: number, b: number): string {
+  return a < b ? `${a}+${b}` : `${b}+${a}`;
 }
 
 /** A recipe search's result — a `SearchResult` plus what it did not cover, and why. */
@@ -59,6 +77,8 @@ export interface RecipeSearchResult extends SearchResult {
    * thing a reader needs: *calibrate this set*.
    */
   uncoveredSets: number[];
+  /** Pairs that were asked for and had no calibrated recipe. Reported, never substituted. */
+  uncoveredPairs: string[];
   /** Combinations the bound proved could not reach the top N, so were never scored. */
   boundPruned: number;
 }
@@ -85,6 +105,13 @@ export interface RecipeSearchContext {
    * `docs/FINDINGS_shakedown.md` F2.
    */
   fourPieceSets?: readonly (number | null)[];
+  /**
+   * 2+2 states to search, as `[setA, setB]`.
+   *
+   * **Opt-in, and rare by owner ruling** — a pair is ~1e6 combinations and all
+   * `C(35, 2) = 595` of them are not searchable. Empty by default.
+   */
+  twoPiecePairs?: readonly (readonly [number, number])[];
 }
 
 /** Sum one quantity across every stat pool, in f32 to match the GPU kernel. */
@@ -240,9 +267,12 @@ export function searchRecipe(
     else bonusesBySet.set(bonus.setId, [bonus]);
   }
 
+  // The **union**, pair recipes included: a piece dominated under one recipe can be the
+  // winner under another, and intersecting would make a lossless layer silently lossy.
   const live = liveQuantitiesFor(
     context.recipes.noFourPiece,
     ...context.recipes.byFourPieceSet.values(),
+    ...(context.recipes.byPair?.values() ?? []),
   );
   const { kept, removed } = paretoFilter(bucketBySlot(candidates), live);
   const slotBuckets = SLOTS.map((s) => kept.get(s) ?? []);
@@ -363,6 +393,47 @@ export function searchRecipe(
     });
 
   const searched = new Set<number>();
+  const uncoveredPairs: string[] = [];
+
+  // ── 2+2 states ───────────────────────────────────────────────────────────────────────
+  //
+  // Two slots of A, two of B, one free, partitioned by which slots hold what. A pair is
+  // ~1e6 combinations against a real inventory; all 595 pairs are not searchable, which is
+  // why this is opt-in.
+  for (const [a, b] of context.twoPiecePairs ?? []) {
+    const key = pairKey(a, b);
+    const recipe = context.recipes.byPair?.get(key);
+    if (recipe === undefined) {
+      uncoveredPairs.push(key);
+      continue;
+    }
+    const buckets = ordered(recipe);
+    const ofSet = (setId: number) => buckets.map((bucket) =>
+      bucket.filter((c) => c.setId === setId));
+    const aPieces = ofSet(a);
+    const bPieces = ofSet(b);
+    // Both sets are inside the calibration, so `score` skips them; nothing else can reach a
+    // bonus tier off one spare piece.
+    const optimistic = {};
+
+    for (const [aSlots, bSlots, free] of TWO_PLUS_TWO_ASSIGNMENTS) {
+      // **The fifth piece may belong to A or B** — three of a 2-piece set is a legal build
+      // and its bonuses are the pair's. Left unguarded it would also be reached by a second
+      // assignment (the same five pieces with a different slot called "free"), so one
+      // representative is chosen: the free slot must out-rank that set's own two.
+      const spare = buckets[free].filter((c) => {
+        if (c.setId === a) return free > aSlots[1];
+        if (c.setId === b) return free > bSlots[1];
+        return true;
+      });
+      walkBounded(
+        SLOTS.map((_, i) =>
+          (i === free ? spare : aSlots.includes(i) ? aPieces[i] : bPieces[i])),
+        recipe, optimistic, false,
+      );
+    }
+  }
+
   for (const state of states) {
     if (state === null) {
       walkBounded(ordered(context.recipes.noFourPiece), context.recipes.noFourPiece,
@@ -413,9 +484,36 @@ export function searchRecipe(
     // answer is still exact. A lossy layer would be the thing that makes this false.
     isExact: true,
     uncoveredSets,
+    uncoveredPairs,
     boundPruned,
   };
 }
+
+/**
+ * Every way five slots split into 2 of A, 2 of B and one free — `C(5,2) x C(3,2) = 30`.
+ *
+ * Built once rather than nested loops at the call site, so the partition can be *read* and
+ * checked against 30. Each slot pair is sorted, which the canonical-representative rule for
+ * the spare piece relies on.
+ */
+const TWO_PLUS_TWO_ASSIGNMENTS: readonly (readonly [
+  readonly [number, number], readonly [number, number], number,
+])[] = (() => {
+  const out: [readonly [number, number], readonly [number, number], number][] = [];
+  const n = SLOTS.length;
+  for (let a1 = 0; a1 < n; a1 += 1) {
+    for (let a2 = a1 + 1; a2 < n; a2 += 1) {
+      const rest = [...Array(n).keys()].filter((i) => i !== a1 && i !== a2);
+      for (let i = 0; i < rest.length; i += 1) {
+        for (let j = i + 1; j < rest.length; j += 1) {
+          const free = rest.find((slot) => slot !== rest[i] && slot !== rest[j])!;
+          out.push([[a1, a2], [rest[i], rest[j]], free]);
+        }
+      }
+    }
+  }
+  return out;
+})();
 
 /** Twice the richest set's sub-4-piece stats: the loosest bonus a no-4-piece build can hold. */
 function twiceRichest(
