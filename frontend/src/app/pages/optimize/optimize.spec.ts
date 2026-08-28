@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { type Slot, search } from '../../sim/search';
 import { ArtifactsService } from '../artifacts/artifacts.service';
+import { RecipeOptimizeService } from './recipe-optimize.service';
 import { RotationsService } from '../rotations/rotations.service';
 import { BuildsService } from '../builds/builds.service';
 import { ExplainService } from '../explain/explain.service';
@@ -64,6 +65,7 @@ function pageWith(overrides: {
   explain?: Partial<ExplainService>;
   artifacts?: Partial<ArtifactsService>;
   rotations?: Partial<RotationsService>;
+  recipeOptimize?: Partial<RecipeOptimizeService>;
 } = {}) {
   TestBed.configureTestingModule({
     providers: [
@@ -99,6 +101,12 @@ function pageWith(overrides: {
           ...overrides.artifacts,
         } as unknown as ArtifactsService,
       },
+      ...(overrides.recipeOptimize
+        ? [{
+            provide: RecipeOptimizeService,
+            useValue: overrides.recipeOptimize as unknown as RecipeOptimizeService,
+          }]
+        : []),
       {
         // The page loads rotations for the rotation objective (R.8). Without a stub, `load()`
         // never settles and every test here times out rather than failing on an assertion.
@@ -644,6 +652,61 @@ describe('OptimizePage — the rotation objective', () => {
 
     (at(page, 'selectNoSets') as () => void).call(page);
     expect((at(page, 'selectedSets') as () => ReadonlySet<number>)().size).toBe(0);
+  });
+
+  it('renders no ranking while a state is still calibrating', async () => {
+    // **Owner ruling 2 (docs/DECISIONS.md, 2026-08-28): only complete calculations are
+    // offered.** A leaderboard that reorders while you read it is the hazard `isExact`,
+    // `uncoveredSets` and `unmodelled_passives` all exist to prevent, wearing a progress bar.
+    //
+    // The code already satisfies this — `result` is set once, after every state finishes — so
+    // this pins a property rather than building one. It is one edit from being lost in a way
+    // that would look like a feature.
+    const seenMidRun: unknown[] = [];
+    let page: unknown;
+
+    const calibrateAll = vi.fn(async (
+      _b: string, _r: string, _v: string,
+      targets: { label: string }[],
+      onProgress: (p: unknown) => void,
+    ) => {
+      for (const [i, target] of targets.entries()) {
+        onProgress({ done: i, total: targets.length, current: target.label, loading: false });
+        // What a user could see at this instant.
+        seenMidRun.push((page as Record<string, () => unknown>)['result']());
+      }
+      return {
+        byFourPieceSet: new Map(), noFourPiece: null,
+        caveats: { unstable: [], staleConversions: [], fromCache: [] },
+      };
+    });
+
+    page = pageWith({
+      recipeOptimize: { calibrateAll } as unknown as Partial<RecipeOptimizeService>,
+      optimize: {
+        // Without this the run stops at the unresolved-set guard and never calibrates —
+        // which is itself correct behaviour, and would have made this test vacuous.
+        artifactSets: vi.fn().mockResolvedValue(
+          new Map([[1, { id: 'uuid-1', name: 'Set One' }]]),
+        ),
+      } as unknown as Partial<OptimizeService>,
+      rotations: {
+        list: vi.fn().mockResolvedValue({
+          items: [{ id: 'r1', name: 'Burst' }], total: 1, offset: 0, limit: 50,
+        }),
+      },
+    });
+    await (at(page, 'load') as () => Promise<void>).call(page);
+    await (at(page, 'loadFilterData') as () => Promise<void>).call(page);
+    (at(page, 'toggleSet') as (id: number) => void).call(page, 1);
+    (at(page, 'buildId') as { set: (v: string) => void }).set(AYAKA_BUILD.id);
+
+    await (at(page, 'runRotation') as () => Promise<void>).call(page);
+
+    expect(calibrateAll).toHaveBeenCalled();
+    expect(seenMidRun.length).toBeGreaterThan(0);
+    // Not one partial ranking was visible at any point during the run.
+    expect(seenMidRun.every((r) => r === null)).toBe(true);
   });
 
   it('starts on the single-hit objective, which stays reachable', () => {

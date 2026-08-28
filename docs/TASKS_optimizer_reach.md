@@ -1,6 +1,8 @@
 # TASKS — optimizer reach
 
-**Status: Task 0, Task 1 and A.1 are done** (2026-08-28). Plan is
+**Status: Track A is closed as far as it can go** (2026-08-28). Task 0, Task 1, A.1 and A.5
+are **done**; **A.4 is refused** on measurement; **A.3 is blocked** on a browser measurement and
+**A.2 is moot until A.3 is decided**. Track B is next. Plan is
 `docs/DESIGN_optimizer_reach.md`; the three owner rulings it was revised for are in
 `docs/DECISIONS.md`.
 
@@ -56,6 +58,9 @@ doing if the probe is genuinely half.
 
 ### A.2 — drive calibration one state at a time
 
+> **Blocked, and possibly moot.** Its only surviving motivation is A.3, which is itself blocked
+> on a browser measurement and demoted by A.1. Do not build this until A.3 is decided.
+
 Lift the per-state loop so states can be calibrated individually; keep the all-states call as a
 thin wrapper.
 
@@ -78,6 +83,13 @@ be written down rather than quietly abandoned.
 
 ### A.4 — probe once, only if provably invariant
 
+> **Closed: REFUSED** (2026-08-28). Tested across 54 states with a build that actually has
+> conversions (Noelle + Redhorn). **Four states differ** — Husk of Opulent Dreams, Ocean-Hued
+> Clam, Echoes of an Offering, Song of Days Past. No *rate* ever disagreed; what varies is
+> whether a conversion resolves, and it fails exactly where the set perturbs the term. Probing
+> once would assert a stable conversion in the states that break it.
+> `docs/RESEARCH_calibration_cost.md`.
+
 Probe every state, assert resolved conversions are equal, collapse only then.
 
 **Acceptance:** the assertion runs over real states in CI-able form. **If conversions differ
@@ -85,6 +97,9 @@ anywhere, stop and report it** — a conditional set bonus feeding a conversion 
 more than the speedup.
 
 ### A.5 — pin that no partial ranking can render
+
+> **Done.** Mutation-checked: publishing a ranking from the progress callback — a streaming
+> leaderboard, exactly what ruling 2 forbids — is caught.
 
 Owner ruling 2. The current code already sets `result` only after every state finishes; this
 task makes that a property rather than an accident.
