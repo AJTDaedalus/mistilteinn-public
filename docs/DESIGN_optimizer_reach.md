@@ -30,49 +30,61 @@ of builds.
 
 ## Track A — calibration throughput
 
+**Owner rulings 2 and 3 (2026-08-28, `docs/DECISIONS.md`) reshape this track.** Only complete
+calculations are offered — no partial leaderboard, no early stop — and the set filter defaults
+to nothing selected. Those two go together: scope is narrowed by the person who knows what they
+want, instead of the wait being hidden behind streaming output.
+
+The consequence is direct. **Throughput is the only lever left.** Parallel calibration and
+probe-once were nice-to-haves in the first draft, when a streaming leaderboard would have
+covered the wait; they are now the whole of the track.
+
 ### The shape of the cost
 
-Each state is **two gcsim samples** (baseline + probe), and the states are already ordered by
-how much of each set the user owns — R.1 chose that ordering *"so an interrupted run has
-calibrated the ones most likely to matter"*. Nothing yet takes advantage of it.
+Each state is **two gcsim samples** (baseline + probe). With nothing preselected, a typical run
+is a handful of states rather than 36 — three sets is four calibrations — so the absolute wait
+is already far smaller than the ~3.8 min a full run costs. The work below is about the run that
+is still large: a user comparing many sets deliberately.
 
-### A1. Stream results per state (first, and cheapest)
+### A1. Measure the baseline/probe split first
 
-Search each state **as its calibration lands** rather than after all 36. The leaderboard fills
-progressively, the user can stop when they have seen enough, and the existing ordering finally
-pays off.
+"~6 s per state" is R.1's total divided out, not a measurement of the split. **A3 is only worth
+doing if the probe is genuinely half.**
 
-This does not reduce total work. It removes the blocking wait, which is the thing the root
-`CLAUDE.md` already says the design implies: *"a job with progress, never a request that
-blocks."* It is also the prerequisite for Track B being tolerable, since a 2+2 pair search is
-additive on top.
+### A2. Drive calibration one state at a time
 
-**Correctness note:** the top-N must merge across states rather than reset, and a state landing
-later must be able to displace an earlier winner. That is exactly what `searchRecipe`'s `best`
-array already does across its state loop — streaming moves the loop outward, into the caller,
-so the merge has to move with it.
+Lift the per-state loop so a caller can calibrate states individually, with the current
+all-states call preserved as a thin wrapper. This is the prerequisite for parallelism.
 
-### A2. Parallel calibration in Web Workers
+It was originally motivated by streaming; that motivation is gone and the task survives on the
+other one. Worth stating so a later reader does not delete it as streaming's leftover.
 
-N workers, each with its own gcsim instance. The wasm is 41 MB, so memory is `41 MB × N` and
-the ceiling is real; 4 workers is the starting point, not 16.
+### A3. Parallel calibration in Web Workers
 
-**Measure before committing.** Two risks: the wasm load may dominate per worker (it is the
-slow first step the R.8 progress reporting already calls out separately), and browsers throttle
-background workers. If load cost dominates, workers must be **reused across states**, not
-spawned per state.
+N workers, a gcsim instance each, **reused across states**. The wasm is 41 MB, so memory is
+`41 MB × N`; four workers is the starting point, not sixteen.
 
-### A3. Probe once, if it is provably invariant
+**Measure before committing.** If the wasm load dominates per worker, workers must be pooled
+rather than spawned per state — and if pooling does not pay, say so and keep serial. A slower
+correct answer beats a faster one nobody measured.
 
-Half of all calibration is the probe, which exists to measure conversions. If a build's
-conversions do not depend on which artifact set is equipped, the probe is being paid 36 times
-for one answer.
+### A4. Probe once, if it is provably invariant
 
-**This is a question, not a plan.** A conditional 4-piece bonus that converts a stat into
-damage would make the probe state-dependent, and the whole point of the 4-piece work is that
-those bonuses are opaque. The gate: probe every state once, assert the resolved conversions are
-equal across states, and only then collapse it. If they differ anywhere, the finding is worth
-more than the speedup.
+Half of all calibration is the probe, which measures conversions. If conversions do not depend
+on the equipped set, that answer is being bought 36 times.
+
+**A question, not a plan.** A conditional 4-piece that converts a stat into damage would make
+the probe state-dependent, and the opacity of those bonuses is the entire premise of the
+4-piece work. Gate: probe every state, assert the resolved conversions are equal, collapse only
+then. **If they differ anywhere, stop and report** — that finding outranks the speedup, because
+it means a conditional bonus feeds a conversion the recipe model does not know about.
+
+### A5. Progress is reported; a result is not
+
+Ruling 2 permits progress reporting — progress is not a result — and forbids showing a ranking
+that a still-calibrating state could displace. The current code already sets `result` only
+after every state completes, so this is a property to **pin**, not to build: it is one edit away
+from being lost, and losing it would look like a feature.
 
 ---
 
@@ -128,39 +140,48 @@ elemental RES and irrelevant to damage; the last two are genuinely state-conditi
 skipped conditional affixes** so *"why is my 4pc not showing up"* has an answer. The recipe path
 has no equivalent, and needs one before 2+2 ships.
 
-### B4. Two ways to handle those nine, and the cheap one is wrong
+### B4. Those nine are calibrated, by ruling
 
-**Derive them from `param_list` and the description.** This is the fabricated-citation failure
-fairy actually suffered, and `docs/DECISIONS.md` already rejected exactly this reasoning for
-weapon passives (2026-08-26). Not doing it.
+**Deriving them from `param_list` and the description is rejected.** That is the
+fabricated-citation failure fairy actually suffered, and `docs/DECISIONS.md` turned down exactly
+this reasoning for weapon passives on 2026-08-26.
 
-**Calibrate them, like a 4-piece.** A "2-piece of set X" calibration state lets **gcsim** apply
-the real bonus, reusing every piece of machinery that already exists. Costs one extra
-calibration per conditional set the user selects — at most nine, and only when opted in.
+**Owner ruling 1 (2026-08-28): they are calibrated from the first version of 2+2** — not
+offered-but-flagged, not excluded. A "2-piece of set X" calibration state lets gcsim apply the
+real bonus, reusing machinery that already exists, at one extra calibration per conditional set
+selected.
 
-This is the same answer the 4-piece work arrived at, for the same reason: the authority on what
-a conditional bonus does is the simulator, not our reading of the tooltip.
-
----
+This moves what the first draft had as an optional last task into a **prerequisite**: 2+2 does
+not ship offering a set whose bonus it silently scores as zero. The interim the draft proposed
+never exists.
 
 ## Testing strategy
 
-- **A1** — a state landing later displaces an earlier winner; stopping early yields the best of
-  what was searched, labelled as such, never presented as the best overall.
-- **A2** — identical results to serial calibration; worker count is configuration, not
+- **A2** — calibrating states one at a time and merging returns **exactly** what the batch call
+  returns, over the real inventory.
+- **A3** — identical results to serial calibration. Worker count is configuration, not
   correctness.
-- **A3** — the invariance assertion **is** the test; it must run over real states, not a fixture.
-- **B1** — the same equivalence discipline the bound got: a 2+2 search against an exhaustive
-  reference over a capped inventory, asserting the prune fired (`boundPruned > 0`) so the
-  comparison cannot be vacuous. That check caught a bound comparing two empty lists once already.
-- **B2** — a 2+2 build scored with and without `setBonuses` must differ, or the wiring is dead.
-- **B3** — the nine conditional 2-piece sets are **named** in the result when selected, with the
-  count, and never silently contribute zero.
+- **A4** — the invariance assertion **is** the test, over real states rather than a fixture.
+- **A5** — no ranking renders while a state is still calibrating.
+- **B1** — a 2+2 build scored with and without `setBonuses` must **differ**, or the wiring is
+  dead and the test is decorative.
+- **B3** — a Noblesse Oblige 2+2 scores its burst bonus, checked against a gcsim run that
+  equipped it.
+- **B4** — the same equivalence discipline the bound got: a 2+2 search against an exhaustive
+  reference over a capped inventory, asserting `boundPruned > 0` so the comparison cannot be
+  vacuous. That check caught a bound comparing two empty lists once already.
+- **Set list** — the conditional nine are derived from the data (`add_props` all
+  `FIGHT_PROP_NONE`), never hardcoded; a hardcoded list goes stale at the next patch.
 
-## Open questions for the owner
+## Resolved
 
-- **OQ-R1** Should a 2+2 pair search offer the 9 conditional sets at all before B4 lands? The
-  honest interim is to list them as selectable but flagged, the way `weapon_comparison` reports
-  `unmodelled_passives` rather than publishing a ranking it cannot stand behind.
-- **OQ-R2** Is "stop early and take the best so far" a button, or does closing the page do it?
-  The first needs a partial-result contract; the second does not.
+All three open questions were settled by the owner on 2026-08-28 and are recorded in
+`docs/DECISIONS.md`:
+
+1. **The conditional 2-piece sets are calibrated from the start**, so no flagged-but-wrong
+   interim exists.
+2. **Only complete calculations are offered** — no partial leaderboard, no early stop. Throughput
+   becomes the whole of Track A.
+3. **The set filter defaults to nothing selected**, which is what makes (2) affordable. The
+   accepted cost: a user without a set in mind has no default to lean on, mitigated only by the
+   picker showing what they own, most-owned first.

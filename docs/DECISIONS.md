@@ -539,3 +539,57 @@ happens in a rotation the user wrote.
 aura, enemy type, weak spots. `KernelTarget` is level, resistance, DEF reduction and DEF
 ignore, so those are unaskable questions rather than unported ones, and growing it is not in
 this decision.
+
+---
+
+## 2026-08-28 — Three rulings on optimizer reach (owner)
+
+Answers to the open questions in `docs/DESIGN_optimizer_reach.md`. Two of them reshape Track A
+rather than settling a detail inside it, so the plan is revised, not annotated.
+
+### 1. The conditional 2-piece sets are calibrated from the start
+
+Nine of sixty 2-piece bonuses carry no static `add_props`; six are ability-scoped — Noblesse
+burst +20 %, Marechaussee normal/charged +15 %, Golden Troupe skill +20 %, Long Night's Oath
+plunging +25 %. A flat stat pool cannot say "only on burst hits".
+
+**Ruling: calibrate them, from the first version of 2+2.** Not offered-but-flagged, and not
+excluded. gcsim applies the real bonus; the cost is one extra calibration per conditional set
+the user selects, at most nine.
+
+This is the same answer the 4-piece work reached, for the same reason: the authority on a
+conditional bonus is the simulator, not our reading of the tooltip. It also means the interim
+state the plan proposed — selectable, flagged `unmodelled` — never exists, so no user ever
+sees a 2+2 score that silently omits the bonus they picked the set for.
+
+### 2. Only complete calculations are offered
+
+**Ruling: no partial results, and no early stop.** A ranking is shown when it is complete for
+what was asked, or it is not shown.
+
+This **removes** the plan's streaming leaderboard and its stop-early contract. Progress
+reporting stays — progress is not a result — but there is no point at which a user is handed a
+top-10 that might be displaced by a state still calibrating.
+
+**What it costs, stated plainly:** the wait can no longer be papered over with early output, so
+throughput is the only lever left. Parallel calibration and probe-once stop being nice-to-haves
+and become the whole of Track A.
+
+**Why it is right anyway:** a partial ranking is the failure mode this repo keeps legislating
+against. `isExact`, `uncoveredSets`, `unmodelled_passives` all exist because *a confident answer
+to a question nobody asked* is worse than a slower one. A leaderboard that reorders while you
+read it is that same hazard wearing a progress bar.
+
+### 3. The set filter defaults to nothing selected
+
+**Ruling: no sets preselected.** The user picks before a search runs.
+
+This is what makes ruling 2 affordable. Defaulting to all 35 sets means ~3.8 min before any
+output, which is intolerable once partial results are gone; a user picking three sets pays four
+calibrations and gets a complete answer in well under a minute. Scope is narrowed by the person
+who knows what they want, rather than the wait being hidden by streaming.
+
+**The known cost, accepted:** a user who does not already know which set suits their character
+has no default to lean on. The picker mitigates this rather than solving it — it already shows
+how many distinct slots of each set the user owns, most-owned first — but this is a real
+trade and is recorded as one, not smoothed over.

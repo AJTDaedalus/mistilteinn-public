@@ -1,11 +1,10 @@
 # TASKS — optimizer reach
 
-**Status: none started.** Plan is `docs/DESIGN_optimizer_reach.md`. Read it first; the two
-tracks are sequenced, not parallel.
+**Status: none started.** Plan is `docs/DESIGN_optimizer_reach.md`; the three owner rulings it
+was revised for are in `docs/DECISIONS.md` (2026-08-28).
 
-Track **A** is what every user feels on every first run. Track **B** is a coverage gap for a
-minority of builds and is **opt-in by owner ruling**. Do A first — B's search is additive on
-top of A's streaming surface and is unpleasant without it.
+Track **A** is throughput. Track **B** is optional 2+2 coverage. Do Task 1 first regardless —
+it shrinks the default scope of every run, which makes the rest cheaper to measure.
 
 ---
 
@@ -15,63 +14,62 @@ Branch `feat/optimizer-reach` off `dev`. No commits to `dev`/`main`.
 **Acceptance:** `git branch --show-current` is `feat/optimizer-reach`; `npm test` green before
 anything changes, so a later red suite is attributable.
 
+## Task 1 — the set filter defaults to nothing selected
+
+Owner ruling 3. Today `selectedSets = null` means "untouched, therefore all"; invert it so a run
+requires an explicit pick. `Search rotation` is disabled until at least one set is chosen, and
+says why.
+
+**Why first:** it is the change that makes "only complete calculations" affordable, and it is
+small. Every measurement below is taken against the scope a real run will actually have.
+**Acceptance:** a fresh page has nothing selected and cannot start a search; picking one set
+enables it; the calibration count shown before the run matches what the run performs.
+
 ---
 
-## Track A — calibration throughput
+## Track A — throughput
 
 ### A.1 — measure the cost, per state, split baseline vs probe
 
-Instrument `calibrateAll` to record per-state wall time and the baseline/probe split; run it
-against the real 2,370-artifact export and write the table into
-`docs/RESEARCH_calibration_cost.md`.
+Instrument `calibrateAll` for per-state wall time and the baseline/probe split; run it against
+the real 2,370-artifact export; write the table into `docs/RESEARCH_calibration_cost.md`.
 
-**Why first:** every task below is judged against this. "~6 s per state" is R.1's figure
-divided out of a total, not a measurement of the split, and A.3 is only worth doing if the
-probe is genuinely half.
-**Acceptance:** a committed table with per-state times over ≥10 real states; the total matches
-the ~3.8 min already measured, or the discrepancy is explained.
+**Acceptance:** a committed table over ≥10 real states. The total reconciles with the ~3.8 min
+already measured, or the discrepancy is explained. **A.4 is gated on this** — it is only worth
+doing if the probe is genuinely half.
 
-### A.2 — merge the top-N across states in the caller
+### A.2 — drive calibration one state at a time
 
-Lift the per-state loop out of `searchRecipe` so a caller can drive one state at a time and
-merge results, keeping the current all-states call working as a thin wrapper.
+Lift the per-state loop so states can be calibrated individually; keep the all-states call as a
+thin wrapper.
 
-**Acceptance:** driving states one-by-one and merging returns **exactly** what the current
-single call returns, over the real inventory. Existing `recipe-search.spec.ts` stays green
-untouched.
+**Acceptance:** one-at-a-time plus merge returns **exactly** what the batch call returns over
+the real inventory. `recipe-search.spec.ts` stays green untouched.
 
-### A.3 — stream results as each state lands
+### A.3 — parallel calibration in Web Workers
 
-Search each state as its calibration completes; the leaderboard updates progressively.
+N workers, gcsim instance each, **reused across states**, starting at 4.
 
-**Acceptance:** a state landing later can displace an earlier winner (test it explicitly); the
-UI labels a partial run as partial; the final result equals the batch result.
+**Acceptance:** identical results to serial over the real inventory; measured speedup and peak
+memory recorded in `RESEARCH_calibration_cost.md`. **If the wasm load dominates per worker, keep
+serial and say so** — this task is allowed to conclude "not worth it", and that conclusion must
+be written down rather than quietly abandoned.
 
-### A.4 — stop early, and say what was searched
+### A.4 — probe once, only if provably invariant
 
-A run stopped after *k* of *n* states reports the best of those *k*, labelled, and lists the
-states not searched — the `uncoveredSets` discipline.
-
-**Acceptance:** a stopped run never presents itself as the best overall; the unsearched states
-are named.
-
-### A.5 — parallel calibration in Web Workers
-
-N workers, gcsim instance each, **reused across states**. Start at 4 and measure; 41 MB of wasm
-per worker is the ceiling.
-
-**Acceptance:** identical results to serial calibration over the real inventory; measured
-speedup and peak memory recorded in `RESEARCH_calibration_cost.md`. If the wasm load dominates
-per worker, say so and keep serial — a slower correct answer beats a faster one nobody measured.
-
-### A.6 — probe once, only if provably invariant
-
-Probe every state, assert the resolved conversions are equal across all of them, and collapse to
-one probe **only** if they are.
+Probe every state, assert resolved conversions are equal, collapse only then.
 
 **Acceptance:** the assertion runs over real states in CI-able form. **If conversions differ
-anywhere, stop and report it** — that finding outranks the speedup, because it means a
-conditional set bonus is feeding a conversion and the recipe model needs to know.
+anywhere, stop and report it** — a conditional set bonus feeding a conversion is a finding worth
+more than the speedup.
+
+### A.5 — pin that no partial ranking can render
+
+Owner ruling 2. The current code already sets `result` only after every state finishes; this
+task makes that a property rather than an accident.
+
+**Acceptance:** a test fails if a ranking renders while a state is still calibrating. Progress
+reporting is unaffected — progress is not a result.
 
 ---
 
@@ -83,55 +81,56 @@ conditional set bonus is feeding a conversion and the recipe model needs to know
 search context the single-hit path already reads.
 
 **Acceptance:** a 2+2 build scores **differently** with and without the bonuses — a test that
-passes when the wiring is dead is not a test. Existing 4-piece results are unchanged (a
-4-piece state has one spare piece, which grants nothing).
+passes when the wiring is dead is not a test. 4-piece results unchanged (a 4-piece state leaves
+one spare piece, which grants nothing).
 
-### B.2 — report 2-piece bonuses that are not stat pools
+### B.2 — derive the conditional 2-piece sets from the data
 
-Nine of sixty. Carry them out of the search the way `uncoveredSets` is carried, named.
+The nine with no static `add_props`. Computed, never hardcoded.
 
-**Acceptance:** selecting Noblesse Oblige surfaces it as unmodelled; nothing silently
-contributes zero. The list is derived from the data (`add_props` all `FIGHT_PROP_NONE`), not
-hardcoded — a hardcoded list goes stale on the next patch.
+**Acceptance:** the list is derived at runtime and matches the nine known at 7.0.51 — Gambler,
+Golden Troupe, Long Night's Oath, Marechaussee Hunter, Martial Artist, Noblesse Oblige, Obsidian
+Codex, Scroll of the Hero of Cinder City, Tiny Miracle — without naming them in source.
 
-### B.3 — enumerate a 2+2 pair as a set configuration
+### B.3 — calibrate a 2-piece state
 
-User names a pair (A, B). Walk 2 slots of A, 2 of B, one free, partitioned by slot assignment
-so nothing is double-counted. The existing bound applies unchanged.
+Owner ruling 1, and a **prerequisite** for B.4 rather than a follow-up: 2+2 must not ship
+offering a set whose bonus it scores as zero. Extend the calibration request to equip two pieces
+of a named set.
 
-**Acceptance:** an exhaustive reference over a capped inventory matches the bounded walk's
-top-10 **and** `boundPruned > 0`, so the comparison cannot be vacuous. No combination appears
-twice — assert on distinct artifact-id sets, not on the count.
+**Acceptance:** a Noblesse Oblige 2-piece calibration produces a recipe whose burst hits carry
+the +20 %, verified against a gcsim run that equipped it. **Not derived from `param_list`.**
 
-### B.4 — retire `includeNoFourPiece`'s unbounded walk
+### B.4 — enumerate a 2+2 pair as a set configuration
 
-Once B.3 lands, the "search every no-4-piece build" option has no reason to exist: it is 99.97 %
-of the space, it does not finish, and the pair picker covers what it was for.
+User names a pair (A, B). Walk 2 slots of A, 2 of B, one free, partitioned by slot assignment.
+The existing bound applies unchanged.
 
-**Acceptance:** removed, with the findings doc updated to say why rather than leaving a reader
-to wonder where it went.
+**Acceptance:** an exhaustive reference over a capped inventory matches the bounded walk's top
+10 **and** `boundPruned > 0`, so the comparison cannot be vacuous. No combination appears twice
+— assert on distinct artifact-id sets, not on a count.
 
-### B.5 — the pair picker, behind a toggle
+### B.5 — retire `includeNoFourPiece`'s unbounded walk
+
+It is 99.97 % of the space, it does not finish, and B.4 covers what it was for.
+
+**Acceptance:** removed, with `docs/FINDINGS_shakedown.md` updated to say why rather than
+leaving a reader to wonder where it went.
+
+### B.6 — the pair picker, behind a toggle
 
 Rare, so opt-in: a collapsed control, not a third of the page.
 
 **Acceptance:** hidden by default; selecting a pair shows the added calibration count **before**
-the run starts, since that is the cost the user is agreeing to.
-
-### B.6 — calibrate a 2-piece state for the conditional nine *(optional, owner call)*
-
-Let gcsim apply what we will not derive. One extra calibration per conditional set selected.
-
-**Acceptance:** a Noblesse Oblige 2+2 scores its burst bonus, verified against a gcsim run that
-equipped it. **Do not derive it from `param_list`** — `docs/DECISIONS.md` rejected exactly that
-reasoning for weapon passives, and it is the failure fairy actually shipped.
+the run starts — including the extra state a conditional set costs — since that is what the user
+is agreeing to.
 
 ---
 
 ## Sequencing
 
-`0 → A.1 → A.2 → A.3 → A.4 → A.5 → A.6` then `B.1 → B.2 → B.3 → B.4 → B.5 → (B.6)`.
+`0 → 1 → A.1 → A.2 → A.3 → A.4 → A.5` then `B.1 → B.2 → B.3 → B.4 → B.5 → B.6`.
 
-A.5 and A.6 are independent of each other and of Track B; either can be deferred without
-blocking anything. **B.6 is gated on an owner decision (OQ-R1)** and is the only task here that
-changes what a number *means* rather than how fast it arrives.
+A.3 and A.4 are independent of each other and of Track B; either may be deferred without
+blocking anything, and A.3 is explicitly allowed to conclude "not worth it". **B.3 gates B.4**
+by ruling 1 — that is the one ordering here that is not a preference.
