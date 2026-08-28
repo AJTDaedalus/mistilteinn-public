@@ -252,3 +252,87 @@ async def test_the_config_carries_the_compiled_rotation(
 
     assert "while 1" in body["baseline"]
     assert ".ready" in body["baseline"]
+
+
+async def _named_set(db_session: AsyncSession, nanoka_id: int, name: str) -> str:
+    """A catalogue set, returned by the id `/calibrate` resolves."""
+    from app.models.artifact import ArtifactSet
+
+    row = ArtifactSet(
+        nanoka_id=nanoka_id, name=name, piece_thresholds=[2, 4], available_ranks=[4, 5],
+    )
+    db_session.add(row)
+    await db_session.flush()
+    return str(row.id)
+
+
+async def test_a_two_plus_two_equips_both_sets_at_two_pieces(
+    authed_client: AsyncClient, scene: Scene, db_session: AsyncSession,
+):
+    """B.3, owner ruling 1.
+
+    Nine of the sixty 2-piece bonuses are conditional and six are ability-scoped — Noblesse
+    Oblige's burst +20 %. A flat stat pool cannot say *only on burst hits*, so the set is
+    equipped and gcsim applies the real bonus. The alternative was deriving it from
+    `param_list`, which `docs/DECISIONS.md` rejected for weapon passives on the same grounds.
+    """
+    noblesse = await _named_set(db_session, 15007, "Noblesse Oblige")
+    gladiator = await _named_set(db_session, 15001, "Gladiator's Finale")
+    db_session.expire_all()
+
+    body = (await _calibrate(
+        authed_client, scene, two_piece_set_ids=[noblesse, gladiator],
+    )).json()
+
+    assert 'add set="noblesseoblige" count=2;' in body["baseline"]
+    assert 'add set="gladiatorsfinale" count=2;' in body["baseline"]
+    assert "count=4" not in body["baseline"]
+    # Echoed for the cache key: a pair keyed by only its first set would serve one pair's
+    # recipe for another's.
+    assert body["two_piece_set_ids"] == [noblesse, gladiator]
+
+
+async def test_a_four_piece_and_a_two_plus_two_together_are_refused(
+    authed_client: AsyncClient, scene: Scene, db_session: AsyncSession,
+):
+    """Five slots cannot hold both, and emitting it would describe a build that cannot exist."""
+    four = await _named_set(db_session, 15014, "Blizzard Strayer")
+    two = await _named_set(db_session, 15007, "Noblesse Oblige")
+    db_session.expire_all()
+
+    response = await _calibrate(
+        authed_client, scene, artifact_set_id=four, two_piece_set_ids=[two],
+    )
+
+    assert response.status_code == 422
+    assert "4-piece" in response.json()["detail"]
+
+
+async def test_more_than_two_two_piece_sets_is_refused_by_the_schema(
+    authed_client: AsyncClient, scene: Scene, db_session: AsyncSession,
+):
+    """Three 2-piece sets need six slots. Refused at the schema, before any set is resolved."""
+    ids = [
+        await _named_set(db_session, 15001, "Gladiator's Finale"),
+        await _named_set(db_session, 15007, "Noblesse Oblige"),
+        await _named_set(db_session, 15014, "Blizzard Strayer"),
+    ]
+    db_session.expire_all()
+
+    response = await _calibrate(authed_client, scene, two_piece_set_ids=ids)
+
+    assert response.status_code == 422
+
+
+async def test_a_two_piece_set_gcsim_does_not_implement_is_refused(
+    authed_client: AsyncClient, scene: Scene, db_session: AsyncSession,
+):
+    """Same rule as the 4-piece: refused rather than dropped, because a recipe missing the
+    bonus the caller asked for understates itself and looks ordinary."""
+    unknown = await _named_set(db_session, 99998, "Also Not A Real Set")
+    db_session.expire_all()
+
+    response = await _calibrate(authed_client, scene, two_piece_set_ids=[unknown])
+
+    assert response.status_code == 422
+    assert "gcsim does not implement" in response.json()["detail"]

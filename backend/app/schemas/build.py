@@ -474,6 +474,17 @@ class CalibrationRequest(BaseModel):
     #: combination reaches no 4-piece. Not the gcsim key — the caller works in catalogue ids
     #: and this resolves them, so a client never has to know gcsim's spelling.
     artifact_set_id: str | None = None
+    #: Catalogue ids of sets to equip at **two** pieces, for a 2+2 combination. At most two.
+    #:
+    #: Equipped rather than left to the caller's stat pool because **nine of the sixty**
+    #: 2-piece bonuses are conditional, six of them ability-scoped — Noblesse Oblige's burst
+    #: +20 %, Marechaussee Hunter's normal/charged +15 % — which no flat stat pool can express.
+    #: Owner ruling 1 (2026-08-28, `docs/DECISIONS.md`) calibrates them rather than deriving
+    #: them from `param_list`, which is the fabricated-citation failure this repo legislates
+    #: against.
+    #:
+    #: Mutually exclusive with `artifact_set_id`: five slots cannot hold both.
+    two_piece_set_ids: list[str] = Field(default_factory=list, max_length=2)
     #: Artifact-borne Energy Recharge to calibrate at, as a fraction.
     #:
     #: **Not zero, and that is the point.** ER is an artifact stat, so a zero-ER calibration
@@ -501,6 +512,9 @@ class CalibrationConfigs(BaseModel):
     probe: str
     #: Echoed so a caller can key its cache without re-deriving what it asked for.
     artifact_set_id: str | None
+    #: Echoed for the same reason. A 2+2 state is keyed by **both** sets, and a cache that
+    #: keyed only the first would serve one pair's recipe for another's.
+    two_piece_set_ids: list[str] = Field(default_factory=list)
     energy_recharge: float
     #: What the probe moved, so a caller can say why a conversion resolved or did not.
     probe_stat: str

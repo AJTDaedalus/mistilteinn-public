@@ -89,6 +89,10 @@ class SubstituteWeapon:
     refinement: int = 1
 
 
+#: Five slots hold at most two 2-piece sets; a third would need six.
+_MAX_TWO_PIECE_SETS = 2
+
+
 @dataclass(frozen=True)
 class Calibration:
     """What a recipe is calibrated against, replacing the build's own artifacts.
@@ -114,6 +118,27 @@ class Calibration:
     set_key: str | None
     #: Artifact-borne Energy Recharge as a fraction: `0.30` is +30 %.
     energy_recharge: float
+    #: Sets equipped at **two** pieces, for a 2+2 combination. At most two.
+    #:
+    #: **Why a 2-piece needs equipping at all**, when 51 of the 60 two-piece bonuses are static
+    #: stat grants a caller can add itself: the other **nine** are not. Six are ability-scoped
+    #: DMG bonuses — Noblesse Oblige's burst +20 %, Marechaussee Hunter's normal/charged
+    #: +15 % — which a flat stat pool cannot express, because it cannot say *only on burst
+    #: hits*. Owner ruling 1 (2026-08-28, `docs/DECISIONS.md`) is that those are calibrated
+    #: rather than derived from `param_list`, so gcsim applies the real bonus.
+    #:
+    #: Mutually exclusive with `set_key`: a five-slot combination cannot hold a 4-piece and a
+    #: 2+2 at once, and emitting both would describe a build that cannot exist.
+    two_piece_set_keys: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        """Refuse a combination no five slots can hold, rather than emitting it."""
+        if self.set_key is not None and self.two_piece_set_keys:
+            msg = "a calibration is either a 4-piece or a 2+2, never both"
+            raise ValueError(msg)
+        if len(self.two_piece_set_keys) > _MAX_TWO_PIECE_SETS:
+            msg = f"at most two 2-piece sets fit in five slots; got {len(self.two_piece_set_keys)}"
+            raise ValueError(msg)
 
 
 def build_config(
@@ -242,6 +267,9 @@ def _calibration_lines(key: str, calibration: Calibration) -> list[str]:
     lines: list[str] = []
     if calibration.set_key is not None:
         lines.append(f'{key} add set="{calibration.set_key}" count=4;')
+    lines.extend(
+        f'{key} add set="{set_key}" count=2;' for set_key in calibration.two_piece_set_keys
+    )
     # Emitted even at zero, because "the calibration states its ER" is the property that makes
     # a recipe's minimum meaningful — an absent line reads as "unspecified", not "none".
     lines.append(f"{key} add stats er={calibration.energy_recharge:g};")

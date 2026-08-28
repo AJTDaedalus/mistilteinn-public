@@ -135,6 +135,11 @@ Codex, Scroll of the Hero of Cinder City, Tiny Miracle — without naming them i
 
 ### B.3 — calibrate a 2-piece state
 
+> **Backend done.** `Calibration.two_piece_set_keys` (at most two, mutually exclusive with a
+> 4-piece) and `CalibrationRequest.two_piece_set_ids`. The frontend half needs
+> `Recipe.meta.calibratedSetId` to become plural: a pair calibration bakes in **two** sets'
+> bonuses, and `score` skipping only one would double-count the other.
+
 Owner ruling 1, and a **prerequisite** for B.4 rather than a follow-up: 2+2 must not ship
 offering a set whose bonus it scores as zero. Extend the calibration request to equip two pieces
 of a named set.

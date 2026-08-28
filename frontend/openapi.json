@@ -3322,6 +3322,13 @@
             ],
             "title": "Artifact Set Id"
           },
+          "two_piece_set_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Two Piece Set Ids"
+          },
           "energy_recharge": {
             "type": "number",
             "title": "Energy Recharge"
@@ -3363,6 +3370,14 @@
               }
             ],
             "title": "Artifact Set Id"
+          },
+          "two_piece_set_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "title": "Two Piece Set Ids"
           },
           "energy_recharge": {
             "type": "number",

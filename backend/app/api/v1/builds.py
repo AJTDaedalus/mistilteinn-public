@@ -1022,22 +1022,30 @@ async def calibrate_recipe(
     except RotationCompileError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    set_key: str | None = None
-    if body.artifact_set_id is not None:
-        artifact_set = await sets.get_by_id(body.artifact_set_id)
+    async def _key_for(set_id: str) -> str:
+        """The gcsim key for a catalogue set id, refusing rather than dropping.
+
+        Calibrating without the set would produce a recipe that silently understates it by
+        the whole bonus the caller asked to have scored.
+        """
+        artifact_set = await sets.get_by_id(set_id)
         if artifact_set is None:
-            raise HTTPException(
-                status_code=404, detail=f"artifact set {body.artifact_set_id} not found",
-            )
+            raise HTTPException(status_code=404, detail=f"artifact set {set_id} not found")
         try:
-            set_key = gcsim_keys.artifact_set_key(artifact_set.name)
+            return gcsim_keys.artifact_set_key(artifact_set.name)
         except GcsimKeyError as exc:
-            # Refused rather than dropped: calibrating without the set would produce a recipe
-            # that silently understates it by its whole 4-piece bonus.
             raise HTTPException(
                 status_code=422,
                 detail=f"gcsim does not implement {artifact_set.name} at the pin: {exc}",
             ) from exc
+
+    set_key = (
+        await _key_for(body.artifact_set_id) if body.artifact_set_id is not None else None
+    )
+    # B.3 — a 2+2 state. Equipped rather than added as stats because nine of the sixty
+    # 2-piece bonuses are conditional, six of them ability-scoped in a way no flat stat pool
+    # can express (owner ruling 1, `docs/DECISIONS.md`).
+    two_piece_keys = tuple([await _key_for(set_id) for set_id in body.two_piece_set_ids])
 
     enemy = await enemies.get_by_id(body.enemy_id) if body.enemy_id else None
     if body.enemy_id and enemy is None:
@@ -1061,7 +1069,15 @@ async def calibrate_recipe(
             f"add stats er={calibration.energy_recharge:g} {extra};",
         )
 
-    calibration = Calibration(set_key=set_key, energy_recharge=body.energy_recharge)
+    try:
+        calibration = Calibration(
+            set_key=set_key,
+            energy_recharge=body.energy_recharge,
+            two_piece_set_keys=two_piece_keys,
+        )
+    except ValueError as exc:
+        # Five slots cannot hold a 4-piece and a 2+2 at once.
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     try:
         baseline = _config(calibration)
         probe = _config(calibration, f"{body.probe_stat}={body.probe_delta:g}")
@@ -1072,6 +1088,7 @@ async def calibrate_recipe(
         baseline=baseline,
         probe=probe,
         artifact_set_id=body.artifact_set_id,
+        two_piece_set_ids=body.two_piece_set_ids,
         energy_recharge=body.energy_recharge,
         probe_stat=body.probe_stat,
         probe_delta=body.probe_delta,

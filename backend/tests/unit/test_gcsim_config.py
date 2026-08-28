@@ -297,3 +297,42 @@ def test_without_a_calibration_the_build_s_artifacts_are_used():
 
     assert 'set="blizzardstrayer" count=4' in config
     assert "add stats" in config
+
+
+def test_a_two_piece_calibration_equips_both_sets_at_two():
+    """B.3 — a 2+2 state, so gcsim applies a conditional 2-piece rather than us deriving it.
+
+    Six of the nine conditional 2-piece bonuses are ability-scoped (Noblesse Oblige's burst
+    +20 %, Marechaussee Hunter's normal/charged +15 %). A flat stat pool cannot say *only on
+    burst hits*, so owner ruling 1 calibrates them.
+    """
+    config = build_config(
+        _build(),
+        actions=["burst"],
+        calibration=Calibration(
+            set_key=None, energy_recharge=0.30,
+            two_piece_set_keys=("noblesseoblige", "gladiatorsfinale"),
+        ),
+    )
+
+    assert 'add set="noblesseoblige" count=2;' in config
+    assert 'add set="gladiatorsfinale" count=2;' in config
+    assert "count=4" not in config
+
+
+def test_a_calibration_refuses_to_be_both_a_four_piece_and_a_two_plus_two():
+    """Five slots cannot hold both, and emitting it would describe a build that cannot exist."""
+    with pytest.raises(ValueError, match="either a 4-piece or a 2\\+2"):
+        Calibration(
+            set_key="blizzardstrayer", energy_recharge=0.30,
+            two_piece_set_keys=("noblesseoblige",),
+        )
+
+
+def test_a_calibration_refuses_more_two_piece_sets_than_slots_allow():
+    """Three 2-piece sets need six slots."""
+    with pytest.raises(ValueError, match="at most two"):
+        Calibration(
+            set_key=None, energy_recharge=0.30,
+            two_piece_set_keys=("a", "b", "c"),
+        )
