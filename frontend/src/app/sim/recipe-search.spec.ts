@@ -31,7 +31,7 @@ const hit = (over: Partial<RecipeHit> = {}): RecipeHit => ({
 const only = (r: Recipe) => ({ byFourPieceSet: new Map<number, Recipe>(), noFourPiece: r });
 
 const recipe = (hits: RecipeHit[]): Recipe =>
-  ({ hits, seed: '1', meta: { seed: '1', staleConversions: [], calibratedSetId: null, minimumEnergyRecharge: null } });
+  ({ hits, seed: '1', meta: { seed: '1', staleConversions: [], calibratedSetIds: [], minimumEnergyRecharge: null } });
 
 const SLOTS = ['equip_bracer', 'equip_necklace', 'equip_shoes', 'equip_ring', 'equip_dress'];
 
@@ -164,11 +164,11 @@ describe('searchRecipe', () => {
     // Adding the tier here would land it twice.
     const calibrated: Recipe = {
       hits: [hit()], seed: '1',
-      meta: { seed: '1', staleConversions: [], calibratedSetId: 1, minimumEnergyRecharge: null },
+      meta: { seed: '1', staleConversions: [], calibratedSetIds: [1], minimumEnergyRecharge: null },
     };
     const uncalibrated: Recipe = {
       hits: [hit()], seed: '1',
-      meta: { seed: '1', staleConversions: [], calibratedSetId: null, minimumEnergyRecharge: null },
+      meta: { seed: '1', staleConversions: [], calibratedSetIds: [], minimumEnergyRecharge: null },
     };
     const bonuses = [{ setId: 1, piecesRequired: 4, stats: { atk_pct: 1 } }];
     const inv = SLOTS.map((slot, i) =>
@@ -190,7 +190,7 @@ describe('searchRecipe', () => {
     // A 2+2 split has a second set whose static bonus is genuinely not in the recipe.
     const calibrated: Recipe = {
       hits: [hit()], seed: '1',
-      meta: { seed: '1', staleConversions: [], calibratedSetId: 1, minimumEnergyRecharge: null },
+      meta: { seed: '1', staleConversions: [], calibratedSetIds: [1], minimumEnergyRecharge: null },
     };
     const inv = SLOTS.map((slot, i) =>
       ({ id: `p${i}`, slot, setId: 2, stats: {} } as Candidate));

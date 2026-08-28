@@ -5,7 +5,7 @@ import { calibrate, type CalibrationRuns } from './calibrate';
 /**
  * R.4 — the only place a recipe is born.
  *
- * The load-bearing test is `sets calibratedSetId`. A recipe without it silently double-counts
+ * The load-bearing test is `sets calibratedSetIds`. A recipe without it silently double-counts
  * the calibrated set's 2-piece — 15–25 % on the set the user most likely cares about — and a
  * `null` id is indistinguishable from a genuine no-set calibration, so **nothing can detect
  * the omission afterwards**. Building it here is what removes the window.
@@ -39,18 +39,18 @@ describe('calibrate', () => {
   it('records which set the recipe was calibrated with', () => {
     // Without this the search cannot know to skip that set's bonuses, and a null id looks
     // exactly like a calibration that equipped no set at all.
-    expect(calibrate(runs(), { setId: 15025 }).recipe.meta.calibratedSetId).toBe(15025);
+    expect(calibrate(runs(), { setIds: [15025] }).recipe.meta.calibratedSetIds).toEqual([15025]);
   });
 
   it('records a genuine no-set calibration as null', () => {
-    expect(calibrate(runs(), { setId: null }).recipe.meta.calibratedSetId).toBeNull();
+    expect(calibrate(runs(), { setIds: [] }).recipe.meta.calibratedSetIds).toEqual([]);
   });
 
   it('reports an unstable rotation rather than refusing to build a recipe', () => {
     // Refusing would leave a caller unable to say *why* it has no answer. The flag and the
     // offending ability names are more useful than an exception.
     const out = calibrate(
-      runs({ instances: { Burst: { mean: 2.75, sd: 0.44 } } }), { setId: null },
+      runs({ instances: { Burst: { mean: 2.75, sd: 0.44 } } }), { setIds: [] },
     );
 
     expect(out.stable).toBe(false);
@@ -59,7 +59,7 @@ describe('calibrate', () => {
   });
 
   it('reports a stable rotation', () => {
-    const out = calibrate(runs(), { setId: null });
+    const out = calibrate(runs(), { setIds: [] });
 
     expect(out.stable).toBe(true);
     expect(out.unstable).toEqual([]);
@@ -75,7 +75,7 @@ describe('calibrate', () => {
       seed: '1', logs: [dmg(), calc({ flat_dmg: 480, def_per: 0.5 })],
     });
 
-    const out = calibrate(runs({ baseline, probe }), { setId: null });
+    const out = calibrate(runs({ baseline, probe }), { setIds: [] });
 
     expect(out.resolved).toBe(1);
     expect(out.unresolved).toBe(0);
@@ -89,7 +89,7 @@ describe('calibrate', () => {
       seed: '1', logs: [dmg(), calc({ flat_dmg: 400, def_per: 0.5 })],
     });
 
-    const out = calibrate(runs({ baseline, probe }), { setId: null });
+    const out = calibrate(runs({ baseline, probe }), { setIds: [] });
 
     expect(out.unresolved).toBe(1);
     expect(out.recipe.meta.staleConversions.map((c) => c.term)).toEqual(['flatDamage']);
@@ -103,7 +103,7 @@ describe('calibrate', () => {
           { energyRecharge: 0.3, burstInstances: 1, standardDeviation: 0 },
         ],
       }),
-      { setId: null, burstAbility: 'Burst' },
+      { setIds: [], burstAbility: 'Burst' },
     );
 
     expect(out.recipe.meta.minimumEnergyRecharge).toBeCloseTo(0.3, 9);
@@ -112,7 +112,7 @@ describe('calibrate', () => {
   it('leaves the minimum null when no sweep was run', () => {
     // An unmeasured threshold is not a passed one — but it is the caller who skipped the
     // sweep, so it is the caller that has to say so.
-    expect(calibrate(runs(), { setId: null, burstAbility: 'Burst' })
+    expect(calibrate(runs(), { setIds: [], burstAbility: 'Burst' })
       .recipe.meta.minimumEnergyRecharge).toBeNull();
   });
 
@@ -120,7 +120,7 @@ describe('calibrate', () => {
     // "Performs as calibrated" is meaningless without knowing which ability defines it.
     const out = calibrate(
       runs({ energySweep: [{ energyRecharge: 0.3, burstInstances: 1, standardDeviation: 0 }] }),
-      { setId: null },
+      { setIds: [] },
     );
 
     expect(out.recipe.meta.minimumEnergyRecharge).toBeNull();
@@ -139,7 +139,7 @@ describe('calibrate', () => {
           { energyRecharge: 0.6, burstInstances: 3, standardDeviation: 0 },
         ],
       }),
-      { setId: null, burstAbility: 'Burst' },
+      { setIds: [], burstAbility: 'Burst' },
     );
 
     expect(out.recipe.meta.minimumEnergyRecharge).toBeCloseTo(0.6, 9);

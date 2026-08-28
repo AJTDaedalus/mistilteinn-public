@@ -26,7 +26,7 @@ const KEY: RecipeCacheKey = {
 
 const RECIPE = {
   hits: [], seed: '12345',
-  meta: { seed: '12345', staleConversions: [], calibratedSetId: 1, minimumEnergyRecharge: 0.3 },
+  meta: { seed: '12345', staleConversions: [], calibratedSetIds: [1], minimumEnergyRecharge: 0.3 },
 } as unknown as Recipe;
 
 /** An in-memory store, so a test needs no browser. */

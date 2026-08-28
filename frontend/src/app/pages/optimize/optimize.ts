@@ -642,7 +642,7 @@ export class OptimizePage implements OnInit {
   private calibrationTargets(chosen: readonly number[]): CalibrationTarget[] {
     const catalogue = this.artifactSets();
     return [
-      { artifactSetId: null, label: 'no 4-piece set' },
+      { artifactSetId: null, setId: null, label: 'no 4-piece set' },
       ...chosen.map((setId) => {
         const entry = catalogue.get(setId);
         // **Never fall back to `null`.** That is the id for "no 4-piece", so an unresolved set
@@ -650,7 +650,7 @@ export class OptimizePage implements OnInit {
         // itself by the whole 4-piece bonus, looking like an ordinary result. `runRotation`
         // refuses the run before it gets here.
         if (entry === undefined) throw new Error(`no catalogue entry for set ${setId}`);
-        return { artifactSetId: entry.id, label: entry.name };
+        return { artifactSetId: entry.id, setId, label: entry.name };
       }),
     ];
   }

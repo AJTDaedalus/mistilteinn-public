@@ -7,7 +7,7 @@
  *
  * ## Why this exists rather than callers doing it themselves
  *
- * `Recipe.meta.calibratedSetId` decides whether the search skips a set's bonuses. A recipe
+ * `Recipe.meta.calibratedSetIds` decides whether the search skips a set's bonuses. A recipe
  * built without it silently double-counts the 2-piece — **15–25 % on the set the user most
  * likely cares about** — and a `null` id is indistinguishable from a genuine no-set
  * calibration, so nothing can detect the omission after the fact.
@@ -43,8 +43,11 @@ export interface CalibrationRuns {
 }
 
 export interface CalibrationRequest {
-  /** The catalogue id of the 4-piece set equipped, or `null` if none was. */
-  setId: number | null;
+  /**
+   * Catalogue ids of the sets equipped: one for a 4-piece, two for a 2+2, none for the
+   * baseline. A caller passing `null` means "no set", which is the empty list here.
+   */
+  setIds: readonly number[];
   /** Which ability's instance count defines "performs as calibrated". */
   burstAbility?: string;
 }
@@ -71,7 +74,7 @@ export function calibrate(runs: CalibrationRuns, request: CalibrationRequest): C
   const recipe = parseSample(runs.baseline);
   const { resolved, unresolved } = resolveConversions(recipe, parseSample(runs.probe));
 
-  recipe.meta.calibratedSetId = request.setId;
+  recipe.meta.calibratedSetIds = request.setIds;
 
   const burst = request.burstAbility;
   const calibratedBursts = burst === undefined

@@ -164,8 +164,14 @@ export interface RecipeMeta {
    *
    * Set by whoever requested the calibration; `parseSample` cannot know it, because the config
    * carries a gcsim *key* and the kernel counts sets by catalogue id.
+   *
+   * **Plural, because a 2+2 calibration equips two sets.** It was a single id while only
+   * 4-piece states existed — a 4-piece leaves one spare piece, which grants nothing — and a
+   * pair recipe bakes in *both* 2-piece bonuses. Skipping only one would add the other a
+   * second time, which is the double-count this field exists to prevent, arriving by the door
+   * it was built to close. Empty means no set was equipped.
    */
-  calibratedSetId: number | null;
+  calibratedSetIds: readonly number[];
   /**
    * The lowest artifact Energy Recharge at which this rotation performs as calibrated, or
    * `null` if it was never measured. See `recipe-energy.ts`.
@@ -340,7 +346,7 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
       staleConversions: staleConversionsIn(hits, calcs),
       // Both are the caller's to fill in: a sample payload says nothing about which catalogue
       // set was equipped, nor about a sweep it was not part of.
-      calibratedSetId: null,
+      calibratedSetIds: [],
       minimumEnergyRecharge: null,
     },
   };

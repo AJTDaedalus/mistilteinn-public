@@ -33,6 +33,14 @@ export const RECIPE_STORE = new InjectionToken<RecipeStore | null>('RECIPE_STORE
 /** One 4-piece state to calibrate: a set, or `null` for the state that reaches none. */
 export interface CalibrationTarget {
   artifactSetId: string | null;
+  /**
+   * The **catalogue (nanoka) id** of the same set, or `null`.
+   *
+   * Beside `artifactSetId` rather than instead of it, because the two are different numbers
+   * for different jobs: `/calibrate` resolves the uuid, and the search counts set pieces by
+   * this one. A recipe that recorded the uuid would match no combination.
+   */
+  setId: number | null;
   /** For progress a user can read — "Blizzard Strayer", not a uuid. */
   label: string;
 }
@@ -127,7 +135,12 @@ export class RecipeOptimizeService {
             // second pass, so until it does, stability is unmeasured rather than assumed true.
             instances: {},
           },
-          { setId: null },
+          // **Not `[]` for a 4-piece target.** Equipping a set to calibrate also applies its
+          // 2-piece, so a recipe that does not name it lets the search add that tier again —
+          // the exact double-count `RESEARCH_recipe_risks.md` §2 records. This passed `null`
+          // unconditionally and was harmless only while no set bonuses reached the search at
+          // all; B.1 made them reach it.
+          { setIds: target.setId === null ? [] : [target.setId] },
         );
         recipe = calibrated.recipe;
         if (!calibrated.stable) caveats.unstable.push(target.label);
@@ -140,7 +153,11 @@ export class RecipeOptimizeService {
         });
       }
       if (target.artifactSetId === null) noFourPiece = recipe;
-      else byFourPieceSet.set(Number(target.artifactSetId), recipe);
+      // **Keyed by the catalogue id the search counts pieces with**, not by parsing
+      // `artifactSetId` — that is a uuid, so `Number()` of it is `NaN` and every 4-piece
+      // recipe would land under one key. It read as an integer only while the page was
+      // sending nanoka ids to an endpoint that wanted uuids, which is the bug #122 fixed.
+      else if (target.setId !== null) byFourPieceSet.set(target.setId, recipe);
     }
 
     onProgress({ done: targets.length, total: targets.length, current: '', loading: false });

@@ -188,7 +188,7 @@ function score(
     // **Skip the set the recipe was calibrated with.** Equipping a set to calibrate also
     // applies its 2-piece, so it is already in every term of the recipe — adding the tier here
     // lands it twice. Other sets in the combination are not in the calibration and do belong.
-    if (Number(setId) === recipe.meta.calibratedSetId) continue;
+    if (recipe.meta.calibratedSetIds.includes(Number(setId))) continue;
     for (const tier of bonusesBySet.get(Number(setId)) ?? []) {
       if (count >= tier.piecesRequired) pools.push(tier.stats);
     }
@@ -380,7 +380,9 @@ export function searchRecipe(
     const other = buckets.map((b) => b.filter((c) => c.setId !== state));
     // Already inside the recipe when it was calibrated with this set; otherwise the bound has
     // to allow for `score` adding it.
-    const optimistic = recipe.meta.calibratedSetId === state ? {} : setPool(state, 5);
+    const optimistic = recipe.meta.calibratedSetIds.includes(state)
+      ? {}
+      : setPool(state, 5);
 
     walkBounded(mine, recipe, optimistic, false);                       // five of the set
     for (let free = 0; free < SLOTS.length; free += 1) {                // four, one slot free

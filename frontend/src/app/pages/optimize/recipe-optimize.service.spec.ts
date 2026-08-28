@@ -104,12 +104,42 @@ describe('RecipeOptimizeService', () => {
   it('calibrates one recipe per target and keys them by set', async () => {
     const service = setup();
     const out = await service.calibrateAll('b1', 'r1', 'pin', [
-      { artifactSetId: null, label: 'no 4-piece' },
-      { artifactSetId: '7', label: 'Blizzard Strayer' },
+      { artifactSetId: null, setId: null, label: 'no 4-piece' },
+      { artifactSetId: 'uuid-7', setId: 7, label: 'Blizzard Strayer' },
     ], () => undefined);
 
     expect(out.noFourPiece).not.toBeNull();
     expect(out.byFourPieceSet.get(7)).toBeDefined();
+  });
+
+  it('records the set a recipe was calibrated with, so its bonus is not paid twice', async () => {
+    // **The double-count `RESEARCH_recipe_risks.md` §2 records.** Equipping a set to
+    // calibrate also applies its 2-piece, so a recipe that does not name the set lets the
+    // search add that tier a second time.
+    //
+    // This passed `null` unconditionally and was harmless only while no set bonuses reached
+    // the search at all. B.1 made them reach it.
+    const service = setup();
+
+    const out = await service.calibrateAll('b1', 'r1', 'pin', [
+      { artifactSetId: 'uuid-7', setId: 7, label: 'Blizzard Strayer' },
+    ], () => undefined);
+
+    expect(out.byFourPieceSet.get(7)?.meta.calibratedSetIds).toEqual([7]);
+  });
+
+  it('keys recipes by the catalogue id, not by parsing the uuid', async () => {
+    // `artifactSetId` is what `/calibrate` resolves — a uuid — so `Number()` of it is NaN and
+    // every 4-piece recipe would land under one key. It read as an integer only while the
+    // page was sending nanoka ids to an endpoint that wanted uuids (#122).
+    const service = setup();
+
+    const out = await service.calibrateAll('b1', 'r1', 'pin', [
+      { artifactSetId: '01a025dd-eef7-7da0-9a65-533415ee1053', setId: 15003, label: 'A' },
+      { artifactSetId: '01a025dd-f02a-7122-aeba-b9b6b0459c49', setId: 15044, label: 'B' },
+    ], () => undefined);
+
+    expect([...out.byFourPieceSet.keys()].sort()).toEqual([15003, 15044]);
   });
 
   it('reports progress per state, and flags the wasm load separately', async () => {
@@ -117,7 +147,7 @@ describe('RecipeOptimizeService', () => {
     const service = setup();
     const seen: { current: string; loading: boolean }[] = [];
     await service.calibrateAll('b1', 'r1', 'pin',
-      [{ artifactSetId: null, label: 'no 4-piece' }],
+      [{ artifactSetId: null, setId: null, label: 'no 4-piece' }],
       (p) => seen.push({ current: p.current, loading: p.loading }));
 
     expect(seen[0].loading).toBe(true);
@@ -127,12 +157,12 @@ describe('RecipeOptimizeService', () => {
   it('names a recipe served from cache rather than passing it off as fresh', async () => {
     const cached = {
       hits: [], seed: '12345',
-      meta: { seed: '12345', staleConversions: [], calibratedSetId: null, minimumEnergyRecharge: null },
+      meta: { seed: '12345', staleConversions: [], calibratedSetIds: [], minimumEnergyRecharge: null },
     };
     const service = setup({ cached });
 
     const out = await service.calibrateAll('b1', 'r1', 'pin',
-      [{ artifactSetId: null, label: 'no 4-piece' }], () => undefined);
+      [{ artifactSetId: null, setId: null, label: 'no 4-piece' }], () => undefined);
 
     expect(out.caveats.fromCache).toEqual(['no 4-piece']);
   });
@@ -147,7 +177,7 @@ describe('RecipeOptimizeService', () => {
     });
 
     const out = await service.calibrateAll('b1', 'r1', 'pin',
-      [{ artifactSetId: null, label: 'no 4-piece' }], () => undefined);
+      [{ artifactSetId: null, setId: null, label: 'no 4-piece' }], () => undefined);
 
     expect(out.caveats.staleConversions).toHaveLength(1);
     expect(out.caveats.staleConversions[0]).toMatchObject({
@@ -160,7 +190,7 @@ describe('RecipeOptimizeService', () => {
     const service = setup();
     const recipe = {
       hits: [], seed: '1',
-      meta: { seed: '1', staleConversions: [], calibratedSetId: null, minimumEnergyRecharge: 0.3 },
+      meta: { seed: '1', staleConversions: [], calibratedSetIds: [], minimumEnergyRecharge: 0.3 },
     } as never;
 
     expect(service.shortfall(recipe, 0.45)).toBeNull();

@@ -37,7 +37,14 @@ const hit = (over: Partial<RecipeHit> = {}): RecipeHit => ({
 const recipe = (hits: RecipeHit[], calibratedSetId: number | null = null): Recipe => ({
   hits,
   seed: '1',
-  meta: { seed: '1', staleConversions: [], calibratedSetId, minimumEnergyRecharge: null },
+  meta: {
+    seed: '1',
+    staleConversions: [],
+    // Plural since B.3: a 2+2 calibration equips two sets. This helper still takes one,
+    // because every case here is a 4-piece or none.
+    calibratedSetIds: calibratedSetId === null ? [] : [calibratedSetId],
+    minimumEnergyRecharge: null,
+  },
 });
 
 /** Five pieces of one set, identical stats, so only the set bonus can separate them. */
