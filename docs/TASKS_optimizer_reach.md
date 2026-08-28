@@ -1,7 +1,14 @@
 # TASKS — optimizer reach
 
-**Status: Track B is complete; Track A is closed as far as it can go** (2026-08-28).
-B.1–B.6 are done or superseded, and a 2+2 pair is reachable from the page. Task 0, Task 1, A.1 and A.5
+**Status: the plan is complete** (2026-08-28). Every task is done, refused on measurement, or
+superseded — none is merely abandoned, and each carries the evidence for its outcome.
+
+| | |
+|---|---|
+| **done** | 0, 1, A.1, A.5, B.1, B.3, B.4, B.5, B.6 |
+| **refused on measurement** | A.4 (the probe is state-dependent), A.3 (no browser penalty to compensate for) |
+| **closed with A.3** | A.2 |
+| **superseded by ruling 1** | B.2 | Task 0, Task 1, A.1 and A.5
 are **done**; **A.4 is refused** on measurement; **A.3 is blocked** on a browser measurement and
 **A.2 is moot until A.3 is decided**. Track B is next. Plan is
 `docs/DESIGN_optimizer_reach.md`; the three owner rulings it was revised for are in
@@ -59,8 +66,8 @@ doing if the probe is genuinely half.
 
 ### A.2 — drive calibration one state at a time
 
-> **Blocked, and possibly moot.** Its only surviving motivation is A.3, which is itself blocked
-> on a browser measurement and demoted by A.1. Do not build this until A.3 is decided.
+> **Closed with A.3.** Its only surviving motivation was A.3 — streaming, its original one,
+> was removed by ruling 2 — so with A.3 written off there is nothing left for it to enable.
 
 Lift the per-state loop so states can be calibrated individually; keep the all-states call as a
 thin wrapper.
@@ -68,9 +75,15 @@ thin wrapper.
 **Acceptance:** one-at-a-time plus merge returns **exactly** what the batch call returns over
 the real inventory. `recipe-search.spec.ts` stays green untouched.
 
-### A.3 — parallel calibration in Web Workers *(demoted by A.1 — measure a browser first)*
+### A.3 — parallel calibration in Web Workers
 
-**Do not start this until `sample()` has been timed in a real browser tab.** A.1 makes a typical
+> **Closed: NOT WORTH BUILDING** (2026-08-28). The browser measurement it was blocked on is
+> in: Chrome 145 matches Node within noise (1660 ms vs 1671 ms per calibration), so there is
+> no penalty to compensate for. A typical run under ruling 3 is ~6.6 s; four workers might
+> save ~4 s for 164 MB of wasm and a pool to maintain. The acceptance criterion allowed this
+> conclusion and required it be written down — `docs/RESEARCH_calibration_cost.md`.
+
+~~**Do not start this until `sample()` has been timed in a real browser tab.**~~ A.1 makes a typical
 run ~7 s in Node, which four workers would take to ~4 s for 41 MB × 4 of memory and a pool to
 maintain. If a browser is several times slower the calculus flips; if it is not, this task's
 right outcome is "not worth it, written down".

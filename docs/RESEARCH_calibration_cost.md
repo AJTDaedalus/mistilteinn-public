@@ -166,3 +166,55 @@ mid-run aborts the whole calibration. The endpoint only *emits configs* (the sim
 browser's work), so the limit is conservative for what it guards. Worth either a client-side
 retry with backoff or its own limit; recorded rather than fixed, because changing a rate limit
 is the owner's call.
+
+---
+
+# The browser measurement A.3 was blocked on
+
+A.1 left one question open: its numbers were Node, and users are in a browser. If `sample()`
+in a tab were several times slower, a full run returns to minutes and parallel workers matter.
+A.3 was blocked on exactly this, and it is now measured.
+
+**Headless Chrome 145, same machine, same 41 MB `gcsim.wasm`, same live calibration configs.**
+One warm-up then five timed pairs, driven over CDP. `frontend/scripts/bench-sample-browser.mjs`
+re-runs it.
+
+| | Node | Chrome 145 |
+|---|---|---|
+| wasm load (once) | 583 ms | **586 ms** |
+| baseline sample | 839 ms | **842 ms** |
+| probe sample | 832 ms | **818 ms** |
+| **a calibration** | **1671 ms** | **1660 ms** |
+
+**There is no browser penalty on `sample()`.** Within noise — a second run of the committed
+script gave 1586 ms.
+
+## What this settles
+
+**The 60 s figure holds where users are.** A.1 offered 60 s as a floor and the inherited
+~3.8 min as an unrefuted ceiling, on the grounds that it had only measured Node. That
+reservation is now discharged: 36 states is about a minute in a browser too, and the 3.8 min
+figure does not describe this rotation on this machine in either runtime.
+
+**It does not contradict `RESEARCH_gcsim_embed.md`.** That measured a browser penalty on
+`simulate` at 100 iterations; this measures `sample` at one. They are different calls doing
+different amounts of work — `sample` is heavier per call because it publishes every damage
+term — so no earlier finding is overturned. This is simply the first time `sample` has been
+timed in a browser.
+
+## A.3 — closed as not worth building
+
+Owner ruling 3 means a run is the states a user picked, not 36. Three sets is four
+calibrations: **~6.6 s**. Four workers might take that to ~2 s, and the price is 41 MB of wasm
+per worker — **164 MB** — plus a pool to keep alive across states.
+
+A.3's acceptance criterion allowed this outcome explicitly: *"this task is allowed to conclude
+'not worth it', and that conclusion must be written down rather than quietly abandoned."*
+Three seconds is not worth 164 MB.
+
+**A.2 closes with it.** Its only surviving motivation was A.3 — streaming, its original one,
+was removed by ruling 2 — so with A.3 written off there is nothing left for it to enable.
+
+**What would reopen A.3:** a machine where a calibration is much slower than 1.6 s, or a
+default that goes back to calibrating every set. Neither is true today, and the script above
+is how to check rather than assume.
