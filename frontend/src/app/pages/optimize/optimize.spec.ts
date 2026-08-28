@@ -723,7 +723,6 @@ describe('OptimizePage — the rotation objective', () => {
     // this pins a property rather than building one. It is one edit from being lost in a way
     // that would look like a feature.
     const seenMidRun: unknown[] = [];
-    let page: unknown;
 
     const calibrateAll = vi.fn(async (
       _b: string, _r: string, _v: string,
@@ -741,7 +740,9 @@ describe('OptimizePage — the rotation objective', () => {
       };
     });
 
-    page = pageWith({
+    // Declared after `calibrateAll`, which closes over it: the closure only runs once the
+    // page exists, so the reference resolves.
+    const page: unknown = pageWith({
       recipeOptimize: { calibrateAll } as unknown as Partial<RecipeOptimizeService>,
       optimize: {
         // Without this the run stops at the unresolved-set guard and never calibrates —
