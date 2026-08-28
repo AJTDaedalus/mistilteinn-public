@@ -132,7 +132,19 @@
       .mono { font-size: 0.75rem; opacity: 0.6; }
     }
 
-    .no-four-piece { margin-top: 0.6rem; font-size: 0.9rem; }
+    .pair-picker {
+      margin-top: 0.6rem;
+      font-size: 0.9rem;
+
+      summary { cursor: pointer; }
+
+      .pair-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem 0.9rem;
+        margin: 0.5rem 0;
+      }
+    }
   }
 
   .hint { margin: 0.5rem 0 0; font-size: 0.85rem; opacity: 0.75; }

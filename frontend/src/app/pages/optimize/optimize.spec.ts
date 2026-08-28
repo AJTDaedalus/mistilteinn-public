@@ -659,6 +659,61 @@ describe('OptimizePage — the rotation objective', () => {
     expect((at(page, 'selectedSets') as () => ReadonlySet<number>)().size).toBe(0);
   });
 
+  it('treats a pair as chosen only when both halves are set and differ', () => {
+    // Two of the same set is a 4-piece, not a 2+2, and belongs to the other control.
+    const page = pageWith();
+    const first = at(page, 'pairFirst') as { set: (v: number | null) => void };
+    const second = at(page, 'pairSecond') as { set: (v: number | null) => void };
+    const chosen = at(page, 'chosenPair') as () => unknown;
+
+    expect(chosen()).toBeNull();
+    first.set(7);
+    expect(chosen()).toBeNull();
+    second.set(7);
+    expect(chosen()).toBeNull();
+    second.set(8);
+    expect(chosen()).toEqual([7, 8]);
+  });
+
+  it('lets a pair alone justify a search, and costs one more calibration', () => {
+    // B.5 retired `includeNoFourPiece`, so a pair is now the only way to reach a build with
+    // no 4-piece — and it is a state that is actually calibrated rather than scored from
+    // stat pools that nine of the sixty 2-piece bonuses have nothing to put in.
+    const page = pageWith();
+    (page as unknown as Record<string, unknown>)['rotationId'] = 'r1';
+    (at(page, 'candidates') as { set: (v: unknown) => void }).set(piecesFor(15003, 15020));
+
+    expect((at(page, 'canSearchRotation') as () => boolean)()).toBe(false);
+    expect((at(page, 'calibrationCount') as () => number)()).toBe(1);
+
+    (at(page, 'pairFirst') as { set: (v: number) => void }).set(15003);
+    (at(page, 'pairSecond') as { set: (v: number) => void }).set(15020);
+
+    expect((at(page, 'canSearchRotation') as () => boolean)()).toBe(true);
+    expect((at(page, 'calibrationCount') as () => number)()).toBe(2);
+  });
+
+  it('calibrates a pair as one state holding both sets', () => {
+    const page = pageWith();
+    (at(page, 'artifactSets') as { set: (m: Map<number, unknown>) => void }).set(
+      new Map<number, unknown>([
+        [15003, { id: 'uuid-bs', name: 'Blizzard Strayer' }],
+        [15020, { id: 'uuid-wt', name: "Wanderer's Troupe" }],
+      ]),
+    );
+    (at(page, 'pairFirst') as { set: (v: number) => void }).set(15003);
+    (at(page, 'pairSecond') as { set: (v: number) => void }).set(15020);
+
+    const targets = (at(page, 'calibrationTargets') as (c: number[]) => {
+      artifactSetIds: string[]; setIds: number[]; label: string;
+    }[]).call(page, []);
+
+    expect(targets).toHaveLength(2);
+    expect(targets[1].setIds).toEqual([15003, 15020]);
+    expect(targets[1].artifactSetIds).toEqual(['uuid-bs', 'uuid-wt']);
+    expect(targets[1].label).toContain('2+2');
+  });
+
   it('renders no ranking while a state is still calibrating', async () => {
     // **Owner ruling 2 (docs/DECISIONS.md, 2026-08-28): only complete calculations are
     // offered.** A leaderboard that reorders while you read it is the hazard `isExact`,
@@ -790,10 +845,10 @@ describe('OptimizePage — the rotation objective', () => {
     );
 
     const targets = (at(page, 'calibrationTargets') as (c: number[]) => {
-      artifactSetId: string | null;
+      artifactSetIds: string[];
     }[]).call(page, [15003]);
 
-    expect(targets.map((t) => t.artifactSetId)).toEqual([null, 'uuid-bs']);
+    expect(targets.map((t) => t.artifactSetIds)).toEqual([[], ['uuid-bs']]);
   });
 
   it('refuses to calibrate a set it cannot resolve rather than falling back to null', () => {
@@ -819,10 +874,13 @@ describe('OptimizePage — the rotation objective', () => {
     );
 
     const targets = (at(page, 'calibrationTargets') as (c: number[]) => {
-      artifactSetId: string | null; label: string;
+      artifactSetIds: string[]; setIds: number[]; label: string;
     }[]).call(page, [15003, 15020]);
 
-    expect(targets.map((t) => t.artifactSetId)).toEqual([null, 'uuid-bs', 'uuid-wt']);
+    // Uuids for `/calibrate`, catalogue ids for the search. Length is the state: 0 baseline,
+    // 1 four-piece, 2 a pair.
+    expect(targets.map((t) => t.artifactSetIds)).toEqual([[], ['uuid-bs'], ['uuid-wt']]);
+    expect(targets.map((t) => t.setIds)).toEqual([[], [15003], [15020]]);
     expect(targets.map((t) => t.label)).toEqual([
       'no 4-piece set', 'Blizzard Strayer', "Wanderer's Troupe",
     ]);

@@ -104,8 +104,8 @@ describe('RecipeOptimizeService', () => {
   it('calibrates one recipe per target and keys them by set', async () => {
     const service = setup();
     const out = await service.calibrateAll('b1', 'r1', 'pin', [
-      { artifactSetId: null, setId: null, label: 'no 4-piece' },
-      { artifactSetId: 'uuid-7', setId: 7, label: 'Blizzard Strayer' },
+      { artifactSetIds: [], setIds: [], label: 'no 4-piece' },
+      { artifactSetIds: ['uuid-7'], setIds: [7], label: 'Blizzard Strayer' },
     ], () => undefined);
 
     expect(out.noFourPiece).not.toBeNull();
@@ -122,7 +122,7 @@ describe('RecipeOptimizeService', () => {
     const service = setup();
 
     const out = await service.calibrateAll('b1', 'r1', 'pin', [
-      { artifactSetId: 'uuid-7', setId: 7, label: 'Blizzard Strayer' },
+      { artifactSetIds: ['uuid-7'], setIds: [7], label: 'Blizzard Strayer' },
     ], () => undefined);
 
     expect(out.byFourPieceSet.get(7)?.meta.calibratedSetIds).toEqual([7]);
@@ -135,8 +135,8 @@ describe('RecipeOptimizeService', () => {
     const service = setup();
 
     const out = await service.calibrateAll('b1', 'r1', 'pin', [
-      { artifactSetId: '01a025dd-eef7-7da0-9a65-533415ee1053', setId: 15003, label: 'A' },
-      { artifactSetId: '01a025dd-f02a-7122-aeba-b9b6b0459c49', setId: 15044, label: 'B' },
+      { artifactSetIds: ['01a025dd-eef7-7da0-9a65-533415ee1053'], setIds: [15003], label: 'A' },
+      { artifactSetIds: ['01a025dd-f02a-7122-aeba-b9b6b0459c49'], setIds: [15044], label: 'B' },
     ], () => undefined);
 
     expect([...out.byFourPieceSet.keys()].sort()).toEqual([15003, 15044]);
@@ -147,7 +147,7 @@ describe('RecipeOptimizeService', () => {
     const service = setup();
     const seen: { current: string; loading: boolean }[] = [];
     await service.calibrateAll('b1', 'r1', 'pin',
-      [{ artifactSetId: null, setId: null, label: 'no 4-piece' }],
+      [{ artifactSetIds: [], setIds: [], label: 'no 4-piece' }],
       (p) => seen.push({ current: p.current, loading: p.loading }));
 
     expect(seen[0].loading).toBe(true);
@@ -162,7 +162,7 @@ describe('RecipeOptimizeService', () => {
     const service = setup({ cached });
 
     const out = await service.calibrateAll('b1', 'r1', 'pin',
-      [{ artifactSetId: null, setId: null, label: 'no 4-piece' }], () => undefined);
+      [{ artifactSetIds: [], setIds: [], label: 'no 4-piece' }], () => undefined);
 
     expect(out.caveats.fromCache).toEqual(['no 4-piece']);
   });
@@ -177,7 +177,7 @@ describe('RecipeOptimizeService', () => {
     });
 
     const out = await service.calibrateAll('b1', 'r1', 'pin',
-      [{ artifactSetId: null, setId: null, label: 'no 4-piece' }], () => undefined);
+      [{ artifactSetIds: [], setIds: [], label: 'no 4-piece' }], () => undefined);
 
     expect(out.caveats.staleConversions).toHaveLength(1);
     expect(out.caveats.staleConversions[0]).toMatchObject({

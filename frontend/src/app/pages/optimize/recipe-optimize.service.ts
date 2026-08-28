@@ -5,6 +5,7 @@ import { calibrate } from '../../sim/calibrate';
 import { run as runConfig, type GcsimModule } from '../../sim/gcsim';
 import { loadGcsim } from '../../sim/gcsim-loader';
 import type { Recipe } from '../../sim/recipe';
+import { pairKey } from '../../sim/recipe-search';
 import {
   browserStore,
   readRecipe,
@@ -32,15 +33,22 @@ export const RECIPE_STORE = new InjectionToken<RecipeStore | null>('RECIPE_STORE
 
 /** One 4-piece state to calibrate: a set, or `null` for the state that reaches none. */
 export interface CalibrationTarget {
-  artifactSetId: string | null;
   /**
-   * The **catalogue (nanoka) id** of the same set, or `null`.
+   * The sets to equip, as catalogue **uuids** — what `/calibrate` resolves.
    *
-   * Beside `artifactSetId` rather than instead of it, because the two are different numbers
-   * for different jobs: `/calibrate` resolves the uuid, and the search counts set pieces by
-   * this one. A recipe that recorded the uuid would match no combination.
+   * Length is the state: **0** the baseline, **1** a 4-piece, **2** a 2+2 pair. One list
+   * rather than a field per shape, so adding the pair did not add a third way to say which
+   * sets a calibration holds.
    */
-  setId: number | null;
+  artifactSetIds: readonly string[];
+  /**
+   * The same sets as **catalogue (nanoka) ids**.
+   *
+   * Beside the uuids rather than instead of them, because the two are different numbers for
+   * different jobs: `/calibrate` resolves the uuid, and the search counts set pieces by this
+   * one. A recipe that recorded the uuid would match no combination.
+   */
+  setIds: readonly number[];
   /** For progress a user can read — "Blizzard Strayer", not a uuid. */
   label: string;
 }
@@ -65,6 +73,8 @@ export interface CalibrationCaveats {
 
 export interface CalibrationResult {
   byFourPieceSet: Map<number, Recipe>;
+  /** Pair recipes, keyed by `pairKey`. */
+  byPair: Map<string, Recipe>;
   noFourPiece: Recipe | null;
   caveats: CalibrationCaveats;
 }
@@ -104,6 +114,7 @@ export class RecipeOptimizeService {
     onProgress: (progress: CalibrationProgress) => void,
   ): Promise<CalibrationResult> {
     const byFourPieceSet = new Map<number, Recipe>();
+    const byPair = new Map<string, Recipe>();
     let noFourPiece: Recipe | null = null;
     const caveats: CalibrationCaveats = {
       unstable: [], staleConversions: [], fromCache: [],
@@ -115,10 +126,12 @@ export class RecipeOptimizeService {
     for (const [index, target] of targets.entries()) {
       onProgress({ done: index, total: targets.length, current: target.label, loading: false });
 
-      const configs = await this.configs(buildId, rotationId, target.artifactSetId);
+      const configs = await this.configs(buildId, rotationId, target.artifactSetIds);
       const key = {
         gcsimPin, buildId, rotationId,
-        artifactSetId: target.artifactSetId,
+        // **Both sets, joined.** A pair keyed by only its first set would serve one pair's
+        // recipe for every pair starting with it.
+        artifactSetId: target.artifactSetIds.join('+') || null,
         energyRecharge: configs.energy_recharge,
         seed: SEED,
       };
@@ -140,7 +153,7 @@ export class RecipeOptimizeService {
           // the exact double-count `RESEARCH_recipe_risks.md` §2 records. This passed `null`
           // unconditionally and was harmless only while no set bonuses reached the search at
           // all; B.1 made them reach it.
-          { setIds: target.setId === null ? [] : [target.setId] },
+          { setIds: target.setIds },
         );
         recipe = calibrated.recipe;
         if (!calibrated.stable) caveats.unstable.push(target.label);
@@ -152,16 +165,15 @@ export class RecipeOptimizeService {
           label: target.label, term: stale.term, damageShare: stale.damageShare,
         });
       }
-      if (target.artifactSetId === null) noFourPiece = recipe;
-      // **Keyed by the catalogue id the search counts pieces with**, not by parsing
-      // `artifactSetId` — that is a uuid, so `Number()` of it is `NaN` and every 4-piece
-      // recipe would land under one key. It read as an integer only while the page was
-      // sending nanoka ids to an endpoint that wanted uuids, which is the bug #122 fixed.
-      else if (target.setId !== null) byFourPieceSet.set(target.setId, recipe);
+      // **Keyed by the catalogue id the search counts pieces with**, not by parsing a uuid:
+      // `Number()` of one is `NaN`, and every recipe would land under a single key.
+      if (target.setIds.length === 0) noFourPiece = recipe;
+      else if (target.setIds.length === 1) byFourPieceSet.set(target.setIds[0], recipe);
+      else byPair.set(pairKey(target.setIds[0], target.setIds[1]), recipe);
     }
 
     onProgress({ done: targets.length, total: targets.length, current: '', loading: false });
-    return { byFourPieceSet, noFourPiece, caveats };
+    return { byFourPieceSet, byPair, noFourPiece, caveats };
   }
 
   /** Whether this build can perform the rotation these recipes describe. */
@@ -169,12 +181,17 @@ export class RecipeOptimizeService {
     return energyShortfall(buildEnergyRecharge, recipe.meta.minimumEnergyRecharge);
   }
 
-  private async configs(buildId: string, rotationId: string, artifactSetId: string | null) {
+  private async configs(
+    buildId: string, rotationId: string, artifactSetIds: readonly string[],
+  ) {
     const { data, error } = await this.api.POST('/api/v1/builds/{build_id}/calibrate', {
       params: { path: { build_id: buildId } },
       body: {
         rotation_id: rotationId,
-        artifact_set_id: artifactSetId,
+        // One set is a 4-piece; two are a 2+2, which the endpoint refuses to combine with a
+        // 4-piece because five slots cannot hold both.
+        artifact_set_id: artifactSetIds.length === 1 ? artifactSetIds[0] : null,
+        two_piece_set_ids: artifactSetIds.length === 2 ? [...artifactSetIds] : [],
         // Stated rather than defaulted. **+30 % is R.2a's measurement** — the lowest ER at
         // which the sample rotation reaches its calibrated burst count with `sd == 0`; a
         // zero-ER calibration lands one burst short. The probe moves exactly one stat,

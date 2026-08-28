@@ -137,7 +137,7 @@
             <span class="muted mono">{{ calibrationCount() }} calibration(s)</span>
           </div>
 
-          @if (!selectedSets().size && !includeNoFourPiece()) {
+          @if (!selectedSets().size && chosenPair() === null) {
             <!-- Ruling 3: nothing is preselected, so the empty state has to say what to do
                  rather than leave a disabled button unexplained. -->
             <p class="hint">
@@ -162,19 +162,45 @@
             }
           </ul>
 
-          <label class="no-four-piece">
-            <input
-              type="checkbox"
-              [checked]="includeNoFourPiece()"
-              (change)="includeNoFourPiece.set(!includeNoFourPiece())"
-            />
-            Also search builds holding no 4-piece set
-          </label>
-          <p class="hint">
-            Off by default because it is <strong>99.97 %</strong> of the combination space and
-            the bound does not tame it. The baseline is calibrated either way — it is the
-            reference every other recipe is measured against.
-          </p>
+          <details class="pair-picker">
+            <summary>Also search a 2+2 pair (optional)</summary>
+            <p class="hint">
+              Valid for some characters and rare, so it is off unless you ask. One pair is a
+              separate calibration and about three seconds of searching; every pair at once is
+              not searchable, which is why you name one.
+            </p>
+            <div class="pair-controls">
+              <label>
+                First
+                <select
+                  [ngModel]="pairFirst()"
+                  (ngModelChange)="pairFirst.set($event)"
+                  aria-label="First 2-piece set"
+                >
+                  <option [ngValue]="null">—</option>
+                  @for (choice of fourPieceChoices(); track choice.setId) {
+                    <option [ngValue]="choice.setId">{{ choice.name }}</option>
+                  }
+                </select>
+              </label>
+              <label>
+                Second
+                <select
+                  [ngModel]="pairSecond()"
+                  (ngModelChange)="pairSecond.set($event)"
+                  aria-label="Second 2-piece set"
+                >
+                  <option [ngValue]="null">—</option>
+                  @for (choice of fourPieceChoices(); track choice.setId) {
+                    <option [ngValue]="choice.setId">{{ choice.name }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+            @if (pairFirst() !== null && pairFirst() === pairSecond()) {
+              <p class="hint">Two of the same set is a 4-piece — pick it above instead.</p>
+            }
+          </details>
         </fieldset>
       }
     }

@@ -1,6 +1,7 @@
 # TASKS — optimizer reach
 
-**Status: Track A is closed as far as it can go** (2026-08-28). Task 0, Task 1, A.1 and A.5
+**Status: Track B is complete; Track A is closed as far as it can go** (2026-08-28).
+B.1–B.6 are done or superseded, and a 2+2 pair is reachable from the page. Task 0, Task 1, A.1 and A.5
 are **done**; **A.4 is refused** on measurement; **A.3 is blocked** on a browser measurement and
 **A.2 is moot until A.3 is decided**. Track B is next. Plan is
 `docs/DESIGN_optimizer_reach.md`; the three owner rulings it was revised for are in
@@ -127,6 +128,13 @@ one spare piece, which grants nothing).
 
 ### B.2 — derive the conditional 2-piece sets from the data
 
+> **Superseded by ruling 1, not skipped.** B.2 was to surface a conditional 2-piece as
+> *unmodelled*. Under ruling 1 it is **calibrated**, so that warning would be false — the
+> bonus is scored by gcsim. The one place a conditional 2-piece could still be dropped
+> silently was the unbounded no-4-piece walk, which scored 2+2 builds from stat pools that
+> nine of the sixty bonuses have nothing to put in; **B.5 removed it**. Nothing is left to
+> report.
+
 The nine with no static `add_props`. Computed, never hardcoded.
 
 **Acceptance:** the list is derived at runtime and matches the nine known at 7.0.51 — Gambler,
@@ -134,6 +142,8 @@ Golden Troupe, Long Night's Oath, Marechaussee Hunter, Martial Artist, Noblesse 
 Codex, Scroll of the Hero of Cinder City, Tiny Miracle — without naming them in source.
 
 ### B.3 — calibrate a 2-piece state
+
+> **Done**, both halves.
 
 > **Backend done.** `Calibration.two_piece_set_keys` (at most two, mutually exclusive with a
 > 4-piece) and `CalibrationRequest.two_piece_set_ids`. The frontend half needs
@@ -162,12 +172,17 @@ The existing bound applies unchanged.
 
 ### B.5 — retire `includeNoFourPiece`'s unbounded walk
 
+> **Done.** Replaced by the pair picker. It also closed the last place a conditional 2-piece
+> bonus was silently scored as zero, which is what supersedes B.2.
+
 It is 99.97 % of the space, it does not finish, and B.4 covers what it was for.
 
 **Acceptance:** removed, with `docs/FINDINGS_shakedown.md` updated to say why rather than
 leaving a reader to wonder where it went.
 
 ### B.6 — the pair picker, behind a toggle
+
+> **Done.** A collapsed `<details>`; the added calibration is shown before the run.
 
 Rare, so opt-in: a collapsed control, not a third of the page.
 

@@ -135,14 +135,19 @@ export class OptimizePage implements OnInit {
    */
   protected readonly selectedSets = signal<ReadonlySet<number>>(new Set());
   /**
-   * Whether to also search builds holding no 4-piece at all.
+   * A 2+2 pair to search, as catalogue ids. Both or neither.
    *
-   * **Off by default, and that is a measurement rather than a taste.** It is 99.97 % of the
-   * combination space and the bound does not tame it — an hour in, a search of that state
-   * alone had not finished. The baseline is still calibrated either way: it is the reference
-   * every other recipe is measured against.
+   * **Opt-in and rare, by owner ruling.** One pair is ~44k combinations and 2.7 s; all
+   * `C(35, 2) = 595` of them are not searchable, which is why the user names one rather
+   * than the page offering "all 2+2 builds".
+   *
+   * This replaced `includeNoFourPiece`, which walked *every* combination without a 4-piece —
+   * 99.97 % of the space, and it did not finish (B.5). It also closes the one place a
+   * conditional 2-piece bonus could be silently dropped: that walk scored 2+2 builds from
+   * stat pools, and nine of the sixty 2-piece bonuses have no static stats to pool.
    */
-  protected readonly includeNoFourPiece = signal(false);
+  protected readonly pairFirst = signal<number | null>(null);
+  protected readonly pairSecond = signal<number | null>(null);
 
   /** The explanation of one result row, and which row it belongs to. */
   protected readonly explained = signal<{ rank: number; result: ExplainResponse } | null>(
@@ -187,12 +192,25 @@ export class OptimizePage implements OnInit {
   protected readonly canSearchRotation = computed(
     () => !this.searching()
       && this.rotationId !== ''
-      && (this.selectedSets().size > 0 || this.includeNoFourPiece()),
+      && (this.selectedSets().size > 0 || this.chosenPair() !== null),
   );
 
-  /** How many recipes the current selection implies — the baseline, plus one per set. */
+  /**
+   * The pair, if both halves are chosen and distinct.
+   *
+   * Two of the same set is a 4-piece, not a 2+2, and belongs to the other control.
+   */
+  protected readonly chosenPair = computed<readonly [number, number] | null>(() => {
+    const a = this.pairFirst();
+    const b = this.pairSecond();
+    return a !== null && b !== null && a !== b ? [a, b] : null;
+  });
+
+  /** How many recipes the selection implies — the baseline, one per set, one for the pair. */
   protected readonly calibrationCount = computed(
-    () => 1 + this.fourPieceChoices().filter((c) => this.isSelected(c.setId)).length,
+    () => 1
+      + this.fourPieceChoices().filter((c) => this.isSelected(c.setId)).length
+      + (this.chosenPair() === null ? 0 : 1),
   );
 
   protected isSelected(setId: number): boolean {
@@ -560,7 +578,9 @@ export class OptimizePage implements OnInit {
 
       // Refused, not silently narrowed: a set the catalogue cannot resolve has no uuid to
       // calibrate with, and dropping it would quietly answer a different question.
-      const unresolved = chosen.filter((setId) => !this.artifactSets().has(setId));
+      const pair = this.chosenPair();
+      const unresolved = [...chosen, ...(pair ?? [])]
+        .filter((setId) => !this.artifactSets().has(setId));
       if (unresolved.length) {
         this.actionError.set(
           `Could not resolve ${unresolved.length} selected set(s) in the catalogue, so the `
@@ -589,12 +609,15 @@ export class OptimizePage implements OnInit {
         {
           recipes: {
             byFourPieceSet: calibrated.byFourPieceSet,
+            byPair: calibrated.byPair,
             noFourPiece: calibrated.noFourPiece,
           },
           setBonuses: this.setBonuses(),
-          // The baseline is always calibrated — it is the reference — but the no-4-piece
-          // *state* is only searched when asked for. See `includeNoFourPiece`.
-          fourPieceSets: [...(this.includeNoFourPiece() ? [null] : []), ...chosen],
+          // The baseline is always calibrated — it is the reference every other recipe is
+          // measured against — but it is never *searched* as a state: an unrestricted
+          // no-4-piece walk is 99.97 % of the space and does not finish (B.5).
+          fourPieceSets: chosen,
+          twoPiecePairs: pair === null ? [] : [pair],
         },
       );
       this.result.set(found);
@@ -641,17 +664,27 @@ export class OptimizePage implements OnInit {
    */
   private calibrationTargets(chosen: readonly number[]): CalibrationTarget[] {
     const catalogue = this.artifactSets();
+    // **Never falls back to an empty list.** That is the baseline state, so an unresolved set
+    // would calibrate no set at all and label it with the set's name — a recipe understating
+    // itself by the whole bonus, looking like an ordinary result. `runRotation` refuses the
+    // run before it gets here.
+    const entry = (setId: number) => {
+      const found = catalogue.get(setId);
+      if (found === undefined) throw new Error(`no catalogue entry for set ${setId}`);
+      return found;
+    };
+    const pair = this.chosenPair();
+
     return [
-      { artifactSetId: null, setId: null, label: 'no 4-piece set' },
-      ...chosen.map((setId) => {
-        const entry = catalogue.get(setId);
-        // **Never fall back to `null`.** That is the id for "no 4-piece", so an unresolved set
-        // would calibrate the baseline and label it with the set's name — a recipe understating
-        // itself by the whole 4-piece bonus, looking like an ordinary result. `runRotation`
-        // refuses the run before it gets here.
-        if (entry === undefined) throw new Error(`no catalogue entry for set ${setId}`);
-        return { artifactSetId: entry.id, setId, label: entry.name };
-      }),
+      { artifactSetIds: [], setIds: [], label: 'no 4-piece set' },
+      ...chosen.map((setId) => ({
+        artifactSetIds: [entry(setId).id], setIds: [setId], label: entry(setId).name,
+      })),
+      ...(pair === null ? [] : [{
+        artifactSetIds: [entry(pair[0]).id, entry(pair[1]).id],
+        setIds: [pair[0], pair[1]],
+        label: `${entry(pair[0]).name} + ${entry(pair[1]).name} (2+2)`,
+      }]),
     ];
   }
 }
