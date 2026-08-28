@@ -33,7 +33,7 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 - **Do:** branch `feat/recipe-surface` off `dev`.
 - **Accept:** `git branch --show-current` is not `dev` or `main`.
 
-### [!] R.1 — How many calibrations does a real inventory need? **[Planner]** — **blocked: needs a GOOD export**
+### [x] R.1 — How many calibrations does a real inventory need? **[Planner]** — **done: S = 35, 36 calibrations, ~3.8 min**
 - **Do:** against a real GOOD import, count the sets with **≥4 pieces** — that is `S`, and the
   calibration count is `S + 1` plus any of the 9 conditional-2-piece sets present.
 - **Accept:** a number in `docs/LOG_mistilteinn.md`, with the inventory size it came from.
@@ -150,7 +150,7 @@ one job) and §3.1 (the Pareto layer is the risk) before starting.
 
 ## Open questions
 
-**OQ-R1** real calibration count (R.1, **blocked — needs a GOOD export**) ·
+~~**OQ-R1** real calibration count~~ **answered in R.1**: `S = 35` against a 2,370-artifact account, so **36 calibrations and ~3.8 minutes**. Filtering by rarity or level barely helps (35 → 28). ·
 ~~**OQ-R2** cache key and invalidation~~ **answered in R.4**: keyed by gcsim pin, build,
 rotation, 4-piece set, ER and seed, in browser storage; a refusal evicts and retries once, and
 a cache that fails is a slow search rather than a broken page ·

@@ -43,6 +43,16 @@ const CASES = [
     // Asserted here because detection that never fires on real data is not detection.
     stale: ['flatDamage', 'flatAtk'],
   },
+  {
+    // The first **multi-character** fixture, from a rotation the owner actually runs: Skirk,
+    // Furina, Yelan and Escoffier, with `+params`, a `for` loop, `energy every` and a custom
+    // target. `PROVENANCE.md` named multi-character as untested, and the two solo fixtures
+    // could not have caught a swap, an off-field hit, or three elements in one rotation.
+    config: 'skirk_team.txt',
+    calc: 'skirk_team_calc.json',
+    minHits: 200,
+    stale: ['flatDamage'],
+  },
 ];
 
 // The decomposition is exact in float64, so this is a float-noise budget, not a tolerance for
