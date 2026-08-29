@@ -133,8 +133,40 @@
 
       <div class="pane">
         <h2>Saved</h2>
+
+        <!-- 75 builds from a GOOD import, about nine visible at a time. A name match and a
+             vision filter are what a player actually has in mind. -->
+        <div class="saved-find">
+          <input
+            type="search"
+            name="build-search"
+            placeholder="Find a character or weapon…"
+            aria-label="Find a saved build"
+            [value]="search()"
+            (input)="search.set($any($event.target).value)"
+          />
+          <div class="saved-find__visions" role="group" aria-label="Filter by vision">
+            @for (e of elementsPresent(); track e.element) {
+              <button
+                type="button"
+                class="vision"
+                [class.vision--on]="elementFilter() === e.element"
+                [attr.aria-pressed]="elementFilter() === e.element"
+                [attr.title]="e.element"
+                (click)="elementFilter.set(elementFilter() === e.element ? '' : e.element)"
+              >
+                <catalogue-icon [icon]="e.icon" [alt]="e.element" [size]="18" />
+              </button>
+            }
+          </div>
+        </div>
+
+        <p class="muted saved-count">
+          {{ shownBuilds().length }} of {{ builds().length }}
+        </p>
+
         <ul class="saved">
-          @for (build of builds(); track build.id) {
+          @for (build of shownBuilds(); track build.id) {
             <li [class.active]="build.id === editing()?.id">
               <button type="button" class="pick" (click)="edit(build)">
                 <entity-token
@@ -157,7 +189,11 @@
               >×</button>
             </li>
           } @empty {
-            <li class="muted">No builds yet.</li>
+            @if (builds().length) {
+              <li class="muted">Nothing matches.</li>
+            } @else {
+              <li class="muted">No builds yet.</li>
+            }
           }
         </ul>
       </div>

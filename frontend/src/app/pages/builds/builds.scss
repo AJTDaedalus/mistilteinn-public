@@ -75,3 +75,50 @@
 @media (width <= 60rem) {
   .builds .layout { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ── Finding a build among seventy-five ─────────────────────────────────────
+   A GOOD import makes one build per equipped character — 75 on the owner's account — and the
+   column shows about nine. A name box and the visions actually present, as their emblems. */
+.saved-find {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+
+  /* Full width, on its own line. The saved column is narrow and sharing the row with seven
+     emblems left the placeholder clipped mid-word — seen in a screenshot. */
+  input[type='search'] { flex: 1 1 100%; min-width: 0; }
+}
+
+.saved-find__visions {
+  display: flex;
+  gap: 0.15rem;
+}
+
+/* Emblem-only toggles. The `title` carries the vision's name for a pointer and the icon's
+   `alt` carries it for assistive tech — a coloured glyph is never the only label, which is
+   the argument `element-chip` makes at length. */
+.vision {
+  display: inline-flex;
+  padding: 0.2rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-1);
+  background: none;
+  line-height: 0;
+  opacity: 0.5;
+  transition: opacity var(--t-fast) var(--ease);
+
+  &:hover { opacity: 0.85; }
+
+  &.vision--on {
+    opacity: 1;
+    border-color: var(--brass);
+    box-shadow: var(--glow-brass);
+  }
+}
+
+.saved-count {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-xs);
+}

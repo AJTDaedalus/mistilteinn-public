@@ -30,6 +30,32 @@ function blank(talents: string[]): BuildFields {
 }
 
 /**
+ * The saved-column predicate, as a function rather than a closure inside a `computed`.
+ *
+ * Exported so it can be tested without standing up a TestBed for a page that had no spec
+ * file at all — the same reason `comparator` on the artifacts page is exported.
+ *
+ * The **weapon** is searched as well as the character: *"who has Freedom-Sworn"* is as
+ * ordinary a question as *"where's Nahida"*, and a search that silently covered only names
+ * would look broken rather than limited.
+ */
+export function matchesBuild(
+  search: string,
+  element: string,
+): (build: {
+  character?: { name?: string | null; element?: string | null } | null;
+  weapon?: { name?: string | null } | null;
+}) => boolean {
+  const q = search.trim().toLowerCase();
+  return (build) => {
+    if (element && build.character?.element !== element) return false;
+    if (!q) return true;
+    const haystack = `${build.character?.name ?? ''} ${build.weapon?.name ?? ''}`;
+    return haystack.toLowerCase().includes(q);
+  };
+}
+
+/**
  * The build editor.
  *
  * A build is a character, a weapon that character can hold, and the levels. The page's job is
@@ -63,6 +89,35 @@ export class BuildsPage implements OnInit {
   protected readonly maxTalent = signal(15);
 
   /** The build being edited, or null while composing a new one. */
+  /**
+   * Narrowing for the saved column.
+   *
+   * The owner's GOOD export makes **75 builds**, and the column shows about nine at a time
+   * with no way to reach a tenth but scrolling. A name match and an element filter are what
+   * a player actually has in mind — "where's my Nahida" — and both are one pass over a list
+   * the page already holds.
+   *
+   * Client-side, because the list is already loaded in full and a round trip per keystroke
+   * would be slower and no more correct.
+   */
+  protected readonly search = signal('');
+  protected readonly elementFilter = signal('');
+
+  protected readonly elementsPresent = computed(() => {
+    const seen = new Map<string, string>();
+    for (const b of this.builds()) {
+      const el = b.character?.element;
+      const icon = b.character?.element_icon ?? null;
+      if (el && !seen.has(el)) seen.set(el, icon ?? '');
+    }
+    return [...seen].map(([element, icon]) => ({ element, icon: icon || null }))
+      .sort((a, b) => a.element.localeCompare(b.element));
+  });
+
+  protected readonly shownBuilds = computed(() =>
+    this.builds().filter(matchesBuild(this.search(), this.elementFilter())),
+  );
+
   protected readonly editing = signal<BuildRead | null>(null);
   protected readonly characterId = signal('');
   protected readonly weaponId = signal<string | null>(null);

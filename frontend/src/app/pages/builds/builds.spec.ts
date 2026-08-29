@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { MAX_PAGE_LIMIT } from '../../api/page-size';
 import { CatalogueService } from '../catalogue/catalogue.service';
-import { BuildsPage } from './builds';
+import { BuildsPage, matchesBuild } from './builds';
 import { BuildsService } from './builds.service';
 
 const AYAKA = {
@@ -264,5 +264,63 @@ describe('BuildsPage', () => {
     expect(page['actionError']()).not.toBeNull();
     expect(page['error']()).toBeNull();
     expect(page['characters']()).toHaveLength(2);
+  });
+});
+
+
+/**
+ * The saved column's filter. A GOOD import makes one build per equipped character — 75 on the
+ * owner's account — against a column that shows about nine at a time, so this is the
+ * difference between a list and a scroll.
+ */
+describe('matchesBuild', () => {
+  const build = (name: string, element: string | null, weapon: string | null) => ({
+    character: { name, element },
+    weapon: weapon === null ? null : { name: weapon },
+  });
+
+  const roster = [
+    build('Nahida', 'Dendro', 'Mappa Mare'),
+    build('Kaedehara Kazuha', 'Anemo', 'Freedom-Sworn'),
+    build('Beidou', 'Electro', null),
+  ];
+
+  const kept = (search: string, element = '') =>
+    roster.filter(matchesBuild(search, element)).map((b) => b.character.name);
+
+  it('keeps everything when nothing is asked', () => {
+    expect(kept('')).toEqual(['Nahida', 'Kaedehara Kazuha', 'Beidou']);
+  });
+
+  it('matches a character by part of their name, in any case', () => {
+    expect(kept('nahi')).toEqual(['Nahida']);
+    expect(kept('KAZUHA')).toEqual(['Kaedehara Kazuha']);
+  });
+
+  it('matches a weapon too', () => {
+    // "Who has Freedom-Sworn" is as ordinary a question as "where's Nahida", and a search
+    // that silently covered only names would look broken rather than limited.
+    expect(kept('freedom')).toEqual(['Kaedehara Kazuha']);
+  });
+
+  it('does not fall over on a build with no weapon', () => {
+    // "Beidou C5 · no weapon" is a real row in the owner's account.
+    expect(kept('beidou')).toEqual(['Beidou']);
+    expect(kept('sworn')).toEqual(['Kaedehara Kazuha']);
+  });
+
+  it('filters by vision', () => {
+    expect(kept('', 'Dendro')).toEqual(['Nahida']);
+  });
+
+  it('applies the vision and the text together, not either', () => {
+    // Both narrow. Treating them as alternatives would *widen* the result as the user adds a
+    // filter, which is the opposite of what pressing one means.
+    expect(kept('nahida', 'Anemo')).toEqual([]);
+    expect(kept('nahida', 'Dendro')).toEqual(['Nahida']);
+  });
+
+  it('ignores surrounding whitespace so a stray space does not empty the list', () => {
+    expect(kept('  nahida  ')).toEqual(['Nahida']);
   });
 });
