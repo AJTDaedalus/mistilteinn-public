@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 
 import { apiErrorMessage } from '../../api/api-error';
 import { CardPicker, type CardOption } from '../../shared/card-picker/card-picker';
+import { isFilterableMainStat, sortMainStats } from '../../shared/stat-order';
 import { CatalogueIcon } from '../../shared/icon/icon';
 import { CatalogueService } from '../catalogue/catalogue.service';
 import {
@@ -284,13 +285,22 @@ export class ArtifactsPage implements OnInit {
       .sort((a, b) => a.label.localeCompare(b.label));
   });
 
+  /**
+   * Main stats present in the inventory, in the owner's order and without the flat ones.
+   *
+   * Ordered by `shared/stat-order`, which the optimizer's per-slot constraint uses too — the
+   * audit asks for the same order in both places, and two sorts would eventually disagree.
+   */
   protected readonly mainStatOptions = computed(() => {
     const stats = new Map(
       (this.options()?.stats ?? []).map((s) => [s.key, s.display ?? s.key]),
     );
     const keys = new Set(this.rows().map((r) => r.mainStatKey));
-    return [...keys].map((key) => ({ key, display: stats.get(key) ?? key }))
-      .sort((a, b) => a.display.localeCompare(b.display));
+    return sortMainStats(
+      [...keys]
+        .filter(isFilterableMainStat)
+        .map((key) => ({ key, display: stats.get(key) ?? key })),
+    );
   });
 
   /** Every row that passes the filters, in sort order — before the render cap. */

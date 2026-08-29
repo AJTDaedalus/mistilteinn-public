@@ -38,13 +38,15 @@ in a card grid with filters, and "New X" is a button opening a pop-up.
 
 ## 2. Inventory
 
-- Drop the "Your artifacts…" subtitle.
-- "IMPORT A GOOD EXPORT" → **"IMPORT FROM GOOD FILE"**.
-- "Also rebuild builds" → **"Reimport builds"**; drop both lines of subtext.
+- ~~Drop the "Your artifacts…" subtitle.~~ **Done (#163)**
+- ~~"IMPORT A GOOD EXPORT" → "IMPORT FROM GOOD FILE".~~ **Done (#163)**
+- ~~"Also rebuild builds" → "Reimport builds"; drop both lines of subtext.~~ **Done (#163)** —
+  the destructive confirm still says "Deletes all N artifacts", which is where the warning has
+  to be.
 - ~~Set filter becomes a card grid (§1).~~ **Done (#162)** — 38 owned sets, art-first, with
   how many of each you own on the card.
-- **Main-stat selector should be ordered, and flat stats excluded**: elemental damage together
-  and alphabetical, then stat percentages together, with EM and ER between them.
+- ~~**Main-stat selector should be ordered, and flat stats excluded.**~~ **Done (#163)**, in
+  `shared/stat-order` so the optimizer uses the same order.
 
 ## 3. Builds
 
@@ -99,10 +101,10 @@ show that a suggested piece is *owned*. Drag-and-drop for the ranking.
 - Drop "The rotation objective adds…" — redundant once the objectives are named properly.
 - Objectives become **"Best single hit"** and **"Best across rotation"**. Users know the
   trade-off.
-- Remove **flower and plume** from the main-stat filters — not relevant. (Note this reverses the
-  reasoning in `#146`, which offered them so a game rule was not stated by an absence. The
-  owner's call stands; record the reversal rather than quietly dropping the argument.)
-- Order the main stats as in §2, with icons.
+- ~~Remove **flower and plume** from the main-stat filters.~~ **Done (#163)** — a slot with one
+  possible value gets no control. This reverses #146's reasoning, which is recorded in
+  `stat-order` rather than dropped.
+- ~~Order the main stats as in §2~~ **Done (#163)**; icons still to do.
 - **Set filters, from Fairy.** 4-piece and 2-piece mutually exclusive; selecting one 2-piece
   **requires** a second, because a lone 2-piece never constrains anything. 4-piece gets the
   first selector, being far the commoner. Card grid, not a drop-down.

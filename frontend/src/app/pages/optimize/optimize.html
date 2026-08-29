@@ -148,7 +148,11 @@
           Leave a slot on Any to search all of it. Only stats you actually own are listed.
         </p>
         <div class="main-stats__row">
+          <!-- Slots with nothing to choose between are dropped, not disabled: a flower is
+               always flat HP and a plume always flat ATK, so a control there offers the only
+               option there is. -->
           @for (slot of slotKeys(); track slot) {
+            @if (mainStatsFor(slot).length > 1) {
             <label>
               <span>{{ slotNames()[slot] || slot }}</span>
               <select
@@ -162,6 +166,7 @@
                 }
               </select>
             </label>
+            }
           }
         </div>
         @if (impossibleSlots().length) {

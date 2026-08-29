@@ -18,6 +18,7 @@ import {
 } from '../explain/explain.service';
 import { ArtifactsService } from '../artifacts/artifacts.service';
 import { RotationsService } from '../rotations/rotations.service';
+import { isFilterableMainStat, sortMainStats } from '../../shared/stat-order';
 import { scoreForSlot } from '../../sim/artifact-score';
 import type { Recipe } from '../../sim/recipe';
 import { evaluateRecipe } from '../../sim/recipe-eval';
@@ -333,13 +334,26 @@ export class OptimizePage implements OnInit {
   protected readonly mainStatBySlot = signal<Record<string, string>>({});
 
   /** The main stats actually present in the inventory for one slot, with their labels. */
+  /**
+   * The main stats this inventory holds for one slot, in the owner's order.
+   *
+   * **Flat stats are filtered out, which removes flower and plume entirely** — the audit asks
+   * for exactly that (`BACKLOG_frontend.md` §6), and it reverses the argument #146 made for
+   * offering them. That argument was that hiding a control states a game rule by an absence.
+   * It is still true; the owner has weighed it against five controls where two can only ever
+   * hold one value, and chosen. `stat-order` carries the reasoning so the trade is visible
+   * rather than lost.
+   */
   protected mainStatsFor(slot: string): { key: string; display: string }[] {
     const names = this.statNames();
     const keys = new Set(
       this.candidates().filter((c) => c.slot === slot).map((c) => c.main_stat),
     );
-    return [...keys].map((key) => ({ key, display: names[key] ?? key }))
-      .sort((a, b) => a.display.localeCompare(b.display));
+    return sortMainStats(
+      [...keys]
+        .filter(isFilterableMainStat)
+        .map((key) => ({ key, display: names[key] ?? key })),
+    );
   }
 
   protected setMainStat(slot: string, key: string): void {

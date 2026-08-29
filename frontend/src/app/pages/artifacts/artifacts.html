@@ -3,11 +3,10 @@
     <!-- "Inventory", matching the nav link that leads here. The heading said "Artifacts"
          and so did the link to the *set catalogue*, which is the ambiguity being removed. -->
     <h1>Inventory</h1>
-    <p class="muted">Your artifacts, imported from a GOOD export.</p>
   </header>
 
   <details class="import">
-    <summary>Import a GOOD export</summary>
+    <summary>Import from GOOD file</summary>
 
     <div class="import__body">
       <div class="import__row">
@@ -35,15 +34,12 @@
 
       <label class="field field--check">
         <input type="checkbox" [(ngModel)]="rebuildBuilds" />
-        <span>
-          Also rebuild builds
-          <span class="hint">Equipped characters only. Existing builds are kept.</span>
-        </span>
+        <!-- The two explanatory lines are gone by owner ruling: "Less is more with text,
+             generally", and anyone using this tool knows what a re-import does. What each
+             option *means* is still enforced — an existing build is still kept, and replace
+             still deletes — the page simply stops narrating it. -->
+        <span>Reimport builds</span>
       </label>
-
-      @if (mode === 'replace') {
-        <p class="hint hint--warn">Replacing deletes what you have now.</p>
-      }
 
       <label class="field">
         <span class="field__label eyebrow">
