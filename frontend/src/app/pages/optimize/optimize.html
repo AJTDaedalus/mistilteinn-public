@@ -292,9 +292,14 @@
     @if (recipeNotes(); as notes) {
       @if (notes.uncoveredSets.length) {
         <p class="warn" role="alert">
+          <!-- Comma-separated. Angular collapses the whitespace between adjacent elements,
+               so thirty `<span>`s ran together into one unreadable wall — "Brave
+               HeartInstructorThe Exile…" — which is how it looked against a real inventory. A
+               separator inside the element is the fix; relying on inter-element whitespace is
+               not. -->
           Not searched, because no recipe covers them:
-          @for (setId of notes.uncoveredSets; track setId) {
-            <span class="mono">{{ setLabel(setId) }}</span>
+          @for (setId of notes.uncoveredSets; track setId; let last = $last) {
+            <span class="mono">{{ setLabel(setId) }}{{ last ? '' : ', ' }}</span>
           }
         </p>
       }

@@ -199,3 +199,83 @@ The owner has asked for the inventory, with the holder's portrait on each row an
 pieces sorted to the top. **That is a chunk, not a tweak**: a table, a migration, an import
 path, an API and a page — the shape `TASKS_artifacts.md` had. Worth knowing before it is
 estimated.
+
+---
+
+## 9. Running the optimizer end to end — two defects and a separator
+
+**Found 2026-08-29**, closing the last gap in the owner's task #4. `/optimize` had never been
+run to completion in this session; the earlier pass only confirmed its controls existed. Running
+it is what found these, and nothing in either suite says a word about them.
+
+### 9a. A rotation search returns ten results, all scoring zero
+
+Build: Nahida C2, Mappa Mare R5 Lv90. Team: Hyperbloom. Rotation: the authored eight-step
+cycle. One 4-piece set selected, two calibrations completed, and the search finished:
+
+> **Exact** — the best five over this inventory.  `10 combinations scored · 2,061 pieces pruned first`
+>
+> 1  **0**  Flower · Plume · Sands · Goblet · Circlet
+> 2  **0**  …
+
+Every rank scores **0**.
+
+**Reproduced twice**, and the obvious explanation is ruled out: the first run used the
+alphabetically first set, which gcsim does not implement; the second used **Deepwood Memories**,
+which it certainly does — the caveat list confirms it was covered — and the result was
+identical.
+
+**Not a formatting artifact.** The template is `{{ row.damage | number: '1.0-1' }}`, so a real
+figure would render as `12,345.6`. The damage genuinely is zero.
+
+**This is the worst shape a result can have here**, and by this repo's own standard: a confident
+`isExact` — *"the best five over this inventory"* — attached to ten identical non-answers. The
+page reports its own precision correctly and its number not at all.
+
+**It blocks `DESIGN_artifact_ranking.md` entirely.** That plan's engine, by owner ruling
+(`DECISIONS.md` §22), is this evaluator. Scoring an artifact through something that returns zero
+would produce a ranking of zeros. **Fix this first.**
+
+#### Where the next session should start
+
+Two facts narrow it a long way, both established rather than guessed:
+
+- **`sim_runs` holds zero rows** — across the whole database, for every user. No calibration
+  has ever been persisted. And the *"2 calibration(s)"* the page shows is a **planned** count
+  rendered beside All/None *before* the search, not a completed one, so it is not evidence that
+  any calibration ran.
+- **`calibrateAll` drives `mod.sample(config, SEED)` twice per target** — a baseline and a
+  probe — and hands both to `calibrate()`.
+
+That points squarely at a trap this repo has already documented once. `sample()` **returns a
+string on failure**, and `CLAUDE.md` records the symptom as misleading: *"flush() reports `index
+out of range [0] with length 0` while the real message is on simulate()'s return value, which is
+a string on failure."* A failed sample that is parsed rather than checked would yield a recipe
+of zeros, and a search over zero-valued recipes returns exactly what was seen — ten
+combinations, all scoring 0, reported as `isExact`.
+
+**Unconfirmed.** The next step is to capture what `mod.sample()` actually returns for the
+page's own baseline config, which is one instrumented run rather than an investigation.
+
+### 9b. The single-hit search blocks the page for minutes
+
+The other objective, on the same 2,370-piece inventory, left the main thread unresponsive
+past a 120-second wait *and* a 300-second read timeout — the harness could not so much as read
+`document.body`. **Indicated rather than fully characterised**: it is possible something else
+hung, and this deserves its own measurement before it is described as a hang. But an
+in-browser search with no worker and no yielding is exactly the shape that produces it, and
+`AUDIT_fribbels_parity.md` §1 already found this page's sibling putting 30,000 nodes on one
+paint.
+
+### 9c. Thirty set names with no separator
+
+`uncoveredSets` rendered each name in its own `<span>`, and Angular collapses the whitespace
+between adjacent elements — so the caveat read *"Brave HeartInstructorThe ExileBlizzard
+Strayer…"*. **Fixed** in the same commit: the separator goes inside the element rather than
+relying on inter-element whitespace.
+
+### One thing that looked like a bug and is not
+
+Result rows name pieces as `Flower · Plume · Sands · Goblet · Circlet` rather than by artifact.
+That is `describePieces` behaving **as designed** — it maps a slot key to its display name, and
+`WHY?` opens the full account. Checked before reporting.
