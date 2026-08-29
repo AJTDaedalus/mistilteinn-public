@@ -31,7 +31,8 @@ copying that shape per surface is how the fourth one ends up subtly different.
 
 Adopted so far: **inventory set filter** (#162), **build character** and **build weapon**
 (#170), **optimize team** and **optimize build** (#171), **optimize 4-piece and 2+2** (#172),
-**compare team and build** (#176). Remaining: rotation team, rotation database search.
+**compare team and build** (#176), **rotation team** and the **rotation database search**
+(#178, #179). **The adoption list is complete.**
 
 `CardOption.icons` was added for the team card (#171): a team's identity is the four characters
 in it, and electing one of them to stand for the whole thing is a card that lies about what it
@@ -131,7 +132,9 @@ show that a suggested piece is *owned*. Drag-and-drop for the ranking.
 
 ## 5. Rotations
 
-- "New Rotation" pop-up like the others.
+- ~~"New Rotation" pop-up like the others.~~ **Done (#179)** — and the same inversion Builds
+  got: the saved teams are the page, the editor is a `<dialog>` opened by the button or by
+  picking a rotation. The team `<select>` is a card picker with the party's four faces.
 - ~~**"I don't know what 'Compile' is so users won't either."**~~ **Done (#166)** — the
   button says "Show gcsim config", which is what it does.
 - ~~**Two levels**, search over teams.~~ **Done (#166)** — team cards with their party's

@@ -12,7 +12,16 @@
       <span class="picker__chosen">
         @for (option of chosen(); track option.value) {
           <span class="picker__pill">
-            <catalogue-icon [icon]="option.icon" [alt]="''" [size]="20" />
+            <!-- The same art the card carries. An option with `icons` has no single `icon`,
+                 and drawing the absent one left a gap in the pill where a face should be —
+                 seen in a screenshot of the rotation editor's team picker. -->
+            @if (option.icons?.length) {
+              @for (art of option.icons; track $index) {
+                <catalogue-icon [icon]="art" [alt]="''" [size]="18" />
+              }
+            } @else {
+              <catalogue-icon [icon]="option.icon" [alt]="''" [size]="20" />
+            }
             <span>{{ option.label }}</span>
           </span>
         }

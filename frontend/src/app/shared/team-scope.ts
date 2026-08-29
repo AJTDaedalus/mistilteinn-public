@@ -59,3 +59,28 @@ export function buildOptions(builds: readonly BuildRead[]): CardOption[] {
     detail: `C${b.constellation_level} · ${b.weapon_display || b.weapon?.name || 'no weapon'}`,
   }));
 }
+
+
+/**
+ * A team card from a **roster**, the shape `/rotations/options` publishes.
+ *
+ * The same three decisions as `teamOptions` — four faces, slot order, the party searchable —
+ * against a different input. `TeamRead` carries build ids that need the build list to resolve;
+ * a roster already carries its characters, and converting one into the other so a single
+ * function could take both would be work in service of a signature rather than of a reader.
+ *
+ * What matters is that the *decisions* live here once. If a third shape appears, this is the
+ * file it joins.
+ */
+export function rosterOptions(
+  rosters: readonly { id: string; name: string; characters: readonly {
+    nanoka_id: string; name: string; icon?: string | null;
+  }[] }[],
+): CardOption[] {
+  return rosters.map((roster) => ({
+    value: roster.id,
+    label: roster.name,
+    icons: roster.characters.map((c) => c.icon),
+    detail: roster.characters.map((c) => c.name).join(' · '),
+  }));
+}

@@ -6,6 +6,8 @@ import { apiErrorMessage } from '../../api/api-error';
 import { ElementChip } from '../../shared/element/element';
 import { CatalogueIcon } from '../../shared/icon/icon';
 import { EntityToken } from '../../shared/token/token';
+import { CardPicker } from '../../shared/card-picker/card-picker';
+import { rosterOptions } from '../../shared/team-scope';
 import {
   RotationsService,
   type LibraryRotationRead,
@@ -32,7 +34,9 @@ import {
  */
 @Component({
   selector: 'page-rotations',
-  imports: [FormsModule, RouterLink, CatalogueIcon, ElementChip, EntityToken],
+  imports: [
+    FormsModule, RouterLink, CardPicker, CatalogueIcon, ElementChip, EntityToken,
+  ],
   templateUrl: './rotations.html',
   styleUrl: './rotations.scss',
 })
@@ -299,6 +303,32 @@ export class RotationsPage implements OnInit {
     }
   }
 
+  /** Team cards, built by the shared projection so all four faces are on every one. */
+  protected readonly teamOptions = computed(() => rosterOptions(this.teams()));
+
+  protected pickTeam(ids: readonly string[]): void {
+    this.selectTeam(ids[0] ?? '');
+  }
+
+  // ── the editor, as a pop-up (BACKLOG_frontend §1's second pattern) ────────
+  //
+  // "New rotation" is a button that opens one, and the saved teams are the page. The editor
+  // used to hold two thirds of the width permanently, which is why the list beside it was a
+  // narrow column — the same inversion Builds got in #170.
+
+  protected readonly editorDialog = viewChild<ElementRef<HTMLDialogElement>>('editorDialog');
+
+  protected startNew(): void {
+    this.newRotation();
+    // `showModal?.()`: absent in jsdom, and a bare call is a TypeError thrown from a click
+    // handler — which takes the page out rather than failing the one control.
+    this.editorDialog()?.nativeElement.showModal?.();
+  }
+
+  protected closeEditor(): void {
+    this.editorDialog()?.nativeElement.close?.();
+  }
+
   protected selectTeam(id: string): void {
     if (id === this.teamId()) return;
     // Steps name characters on the old team, so keeping them would build a rotation the API
@@ -369,6 +399,7 @@ export class RotationsPage implements OnInit {
   }
 
   protected edit(rotation: RotationRead): void {
+    this.editorDialog()?.nativeElement.showModal?.();
     this.editing.set(rotation.id);
     this.name.set(rotation.name);
     this.teamId.set(rotation.team_id);

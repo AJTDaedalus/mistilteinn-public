@@ -1,6 +1,9 @@
 <section class="rotations">
   <header>
     <h1>Rotations</h1>
+    <!-- §1's second pattern: the saved things are the page, and "New rotation" is a button
+         that opens one. The editor used to hold two thirds of the width permanently. -->
+    <button type="button" class="new" (click)="startNew()">New rotation</button>
   </header>
 
   @if (error(); as message) {
@@ -17,171 +20,6 @@
       No teams yet — <a routerLink="/teams">build one first</a>.
     </p>
   } @else {
-    <div class="editor">
-      <div class="pane">
-        <h2>{{ editing() ? 'Editing' : 'New rotation' }}</h2>
-
-        <label>
-          Name
-          <input
-            type="text"
-            name="name"
-            [ngModel]="name()" (ngModelChange)="name.set($event)"
-            placeholder="Melt opener"
-            aria-label="Rotation name"
-          />
-        </label>
-
-        <label>
-          Team
-          <select
-            name="team"
-            aria-label="Team"
-            [value]="teamId()"
-            (change)="selectTeam($any($event.target).value)"
-            [disabled]="editing() !== null"
-          >
-            @for (team of teams(); track team.id) {
-              <option [value]="team.id">{{ team.name }}</option>
-            }
-          </select>
-        </label>
-        @if (editing()) {
-          <!-- The API has no `team_id` on PATCH: moving a rotation would reinterpret every
-               step against a different party, and the steps that stopped resolving would be
-               found later, at compile time, far from the edit that caused it. -->
-          <p class="hint">
-            A saved rotation stays on its team. Build a new one for another team.
-          </p>
-        }
-
-        @if (roster().length === 0) {
-          <p class="hint">That team has no builds yet, so there is nobody to act.</p>
-        } @else {
-          <!-- Who is available to act, once, rather than re-read from every step's
-               dropdown. -->
-          <ul class="roster">
-            @for (member of roster(); track member.nanoka_id) {
-              <li>
-                <entity-token [icon]="member.icon" [name]="member.name" [size]="34" />
-                <element-chip [element]="member.element" />
-              </li>
-            }
-          </ul>
-        }
-
-        <ol class="steps">
-          @for (step of steps(); track $index) {
-            <li class="step">
-              <span class="ordinal mono">{{ $index + 1 }}</span>
-
-              <!-- The acting character, beside the `<select>` an `<option>` cannot
-                   illustrate. A ten-step rotation is otherwise ten identical dropdowns. -->
-              <catalogue-icon
-                class="step-art"
-                [icon]="rosterIcon(step.character)"
-                [alt]="''"
-                [size]="32"
-              />
-
-              <select
-                [attr.aria-label]="'Character for step ' + ($index + 1)"
-                [value]="step.character"
-                (change)="setStep($index, { character: $any($event.target).value })"
-              >
-                @for (member of roster(); track member.nanoka_id) {
-                  <option [value]="member.nanoka_id">
-                    {{ member.name }} · {{ member.element }}
-                  </option>
-                }
-              </select>
-
-              <select
-                [attr.aria-label]="'Action for step ' + ($index + 1)"
-                [value]="step.action"
-                (change)="setStep($index, { action: $any($event.target).value })"
-              >
-                @for (action of actions(); track action) {
-                  <option [value]="action">{{ action }}</option>
-                }
-              </select>
-
-              <label class="repeat">
-                ×
-                <input
-                  type="number"
-                  min="1"
-                  max="20"
-                  [attr.aria-label]="'Repeat for step ' + ($index + 1)"
-                  [value]="step.repeat"
-                  (change)="setStep($index, { repeat: +$any($event.target).value })"
-                />
-              </label>
-
-              <span class="reorder">
-                <button
-                  type="button"
-                  [attr.aria-label]="'Move step ' + ($index + 1) + ' up'"
-                  [disabled]="$first"
-                  (click)="move($index, -1)"
-                >↑</button>
-                <button
-                  type="button"
-                  [attr.aria-label]="'Move step ' + ($index + 1) + ' down'"
-                  [disabled]="$last"
-                  (click)="move($index, 1)"
-                >↓</button>
-              </span>
-
-              <button
-                type="button"
-                class="drop"
-                [attr.aria-label]="'Remove step ' + ($index + 1)"
-                (click)="removeStep($index)"
-              >×</button>
-            </li>
-          } @empty {
-            <li class="muted">No steps yet.</li>
-          }
-        </ol>
-
-        <div class="controls">
-          <button type="button" (click)="addStep()" [disabled]="roster().length === 0">
-            Add step
-          </button>
-          <button type="button" (click)="save()" [disabled]="!canSave()">
-            {{ editing() ? 'Save changes' : 'Save rotation' }}
-          </button>
-          <button
-            type="button"
-            (click)="compile()"
-            [disabled]="editing() === null || dirty()"
-            [attr.title]="
-              dirty() ? 'Save first — compiling reads the stored rotation, not the screen.' : null
-            "
-          >
-            Show gcsim config
-          </button>
-          @if (editing()) {
-            <button type="button" (click)="newRotation()">New</button>
-          }
-        </div>
-
-        @if (actionError(); as message) {
-          <p class="error" role="alert">{{ message }}</p>
-        }
-
-        @if (compiled(); as config) {
-          <!-- Shown because a compiler nobody can inspect is a compiler nobody can check. -->
-          <figure class="compiled">
-            <figcaption class="eyebrow">What gcsim receives</figcaption>
-            <pre class="mono">{{ config }}</pre>
-          </figure>
-        }
-      </div>
-
-      <div class="pane">
-        <h2>Saved</h2>
 
         <!-- Two levels: teams, then their rotations. A flat list mixes rotations for teams
              that share no characters, and the first thing anyone does with it is look for the
@@ -255,8 +93,170 @@
             <li class="muted">No team matches that search.</li>
           }
         </ul>
+
+    <dialog #editorDialog class="editor-dialog" (close)="actionError.set(null)">
+      <header class="editor-dialog__head">
+        <h2>{{ editing() ? 'Editing' : 'New rotation' }}</h2>
+        <button
+          type="button"
+          class="editor-dialog__close"
+          aria-label="Close"
+          (click)="closeEditor()"
+        >×</button>
+      </header>
+
+      <label>
+        Name
+        <input
+          type="text"
+          name="name"
+          [ngModel]="name()" (ngModelChange)="name.set($event)"
+          placeholder="Melt opener"
+          aria-label="Rotation name"
+        />
+      </label>
+
+      <mist-card-picker
+        label="Team"
+        placeholder="Choose a team…"
+        [options]="teamOptions()"
+        [selected]="teamId() ? [teamId()] : []"
+        [disabled]="editing() !== null"
+        (selectedChange)="pickTeam($event)"
+      />
+      @if (editing()) {
+        <!-- The API has no `team_id` on PATCH: moving a rotation would reinterpret every
+             step against a different party, and the steps that stopped resolving would be
+             found later, at compile time, far from the edit that caused it. -->
+        <p class="hint">
+          A saved rotation stays on its team. Build a new one for another team.
+        </p>
+      }
+
+      @if (roster().length === 0) {
+        <p class="hint">That team has no builds yet, so there is nobody to act.</p>
+      } @else {
+        <!-- Who is available to act, once, rather than re-read from every step's
+             dropdown. -->
+        <ul class="roster">
+          @for (member of roster(); track member.nanoka_id) {
+            <li>
+              <entity-token [icon]="member.icon" [name]="member.name" [size]="34" />
+              <element-chip [element]="member.element" />
+            </li>
+          }
+        </ul>
+      }
+
+      <ol class="steps">
+        @for (step of steps(); track $index) {
+          <li class="step">
+            <span class="ordinal mono">{{ $index + 1 }}</span>
+
+            <!-- The acting character, beside the `<select>` an `<option>` cannot
+                 illustrate. A ten-step rotation is otherwise ten identical dropdowns. -->
+            <catalogue-icon
+              class="step-art"
+              [icon]="rosterIcon(step.character)"
+              [alt]="''"
+              [size]="32"
+            />
+
+            <select
+              [attr.aria-label]="'Character for step ' + ($index + 1)"
+              [value]="step.character"
+              (change)="setStep($index, { character: $any($event.target).value })"
+            >
+              @for (member of roster(); track member.nanoka_id) {
+                <option [value]="member.nanoka_id">
+                  {{ member.name }} · {{ member.element }}
+                </option>
+              }
+            </select>
+
+            <select
+              [attr.aria-label]="'Action for step ' + ($index + 1)"
+              [value]="step.action"
+              (change)="setStep($index, { action: $any($event.target).value })"
+            >
+              @for (action of actions(); track action) {
+                <option [value]="action">{{ action }}</option>
+              }
+            </select>
+
+            <label class="repeat">
+              ×
+              <input
+                type="number"
+                min="1"
+                max="20"
+                [attr.aria-label]="'Repeat for step ' + ($index + 1)"
+                [value]="step.repeat"
+                (change)="setStep($index, { repeat: +$any($event.target).value })"
+              />
+            </label>
+
+            <span class="reorder">
+              <button
+                type="button"
+                [attr.aria-label]="'Move step ' + ($index + 1) + ' up'"
+                [disabled]="$first"
+                (click)="move($index, -1)"
+              >↑</button>
+              <button
+                type="button"
+                [attr.aria-label]="'Move step ' + ($index + 1) + ' down'"
+                [disabled]="$last"
+                (click)="move($index, 1)"
+              >↓</button>
+            </span>
+
+            <button
+              type="button"
+              class="drop"
+              [attr.aria-label]="'Remove step ' + ($index + 1)"
+              (click)="removeStep($index)"
+            >×</button>
+          </li>
+        } @empty {
+          <li class="muted">No steps yet.</li>
+        }
+      </ol>
+
+      <div class="controls">
+        <button type="button" (click)="addStep()" [disabled]="roster().length === 0">
+          Add step
+        </button>
+        <button type="button" (click)="save()" [disabled]="!canSave()">
+          {{ editing() ? 'Save changes' : 'Save rotation' }}
+        </button>
+        <button
+          type="button"
+          (click)="compile()"
+          [disabled]="editing() === null || dirty()"
+          [attr.title]="
+            dirty() ? 'Save first — compiling reads the stored rotation, not the screen.' : null
+          "
+        >
+          Show gcsim config
+        </button>
+        @if (editing()) {
+          <button type="button" (click)="newRotation()">New</button>
+        }
       </div>
-    </div>
+
+      @if (actionError(); as message) {
+        <p class="error" role="alert">{{ message }}</p>
+      }
+
+      @if (compiled(); as config) {
+        <!-- Shown because a compiler nobody can inspect is a compiler nobody can check. -->
+        <figure class="compiled">
+          <figcaption class="eyebrow">What gcsim receives</figcaption>
+          <pre class="mono">{{ config }}</pre>
+        </figure>
+      }
+    </dialog>
   }
 
   <!-- A native `<dialog>`: focus trapping, Escape and a backdrop, none of which a hand-rolled
