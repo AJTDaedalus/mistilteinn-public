@@ -89,3 +89,7 @@ references/*.png
 
 # Screenshots from `cd backend && python -m scripts.shoot`. Working output, not artefacts.
 screenshots/
+
+# Cached dev-only session token for `python -m scripts.shoot`. Never a real credential —
+# the account exists only on a local backend — but a token is a token.
+.shoot-token

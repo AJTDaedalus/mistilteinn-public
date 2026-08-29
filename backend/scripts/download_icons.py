@@ -65,6 +65,24 @@ CONCURRENCY = 8
 #: The tables that carry an icon basename, in the order a reader would look for them.
 SOURCES = ((Character, "character"), (Weapon, "weapon"), (ArtifactSet, "artifact set"))
 
+#: Characters have a second image: the half-body gacha portrait, ~118 KB against the 22 KB
+#: avatar icon. `UI_AvatarIcon_Ayaka` -> `UI_Gacha_AvatarIcon_Ayaka`, which is the same
+#: substitution nanoka's own paths use.
+#:
+#: Fetched because a character card wants a face, not a thumbnail — the avatar icon is a
+#: 64-pixel circle and reads as a bullet point at card size. 124 distinct portraits is about
+#: 15 MB, against fairy's committed 27 MB of ZZZ art.
+#:
+#: **Not every character has one**, and that is `absent_upstream` like any other 404 rather
+#: than a failure: the catalogue carries unreleased entries whose art is not published.
+PORTRAIT_OF = ("UI_AvatarIcon_", "UI_Gacha_AvatarIcon_")
+
+
+def portrait_name(icon: str) -> str | None:
+    """The gacha portrait for an avatar icon basename, or None if it is not one."""
+    prefix, replacement = PORTRAIT_OF
+    return icon.replace(prefix, replacement, 1) if icon.startswith(prefix) else None
+
 
 @dataclass
 class Report:
@@ -109,9 +127,13 @@ async def wanted() -> list[tuple[str, str]]:
     async with async_session_factory() as session:
         for model, label in SOURCES:
             rows = (await session.execute(select(model))).scalars().all()
-            found.extend(
-                (row.icon, f"{label} {row.name}") for row in rows if row.icon
-            )
+            for row in rows:
+                if not row.icon:
+                    continue
+                found.append((row.icon, f"{label} {row.name}"))
+                portrait = portrait_name(row.icon) if model is Character else None
+                if portrait:
+                    found.append((portrait, f"{label} {row.name} portrait"))
     return found
 
 
@@ -140,6 +162,17 @@ async def _fetch(
         return
     if response.is_error:
         report.failed.append(f"{basename} ({what}): HTTP {response.status_code}")
+        return
+    # **Not the status code.** Portrait basenames are *derived* by substitution rather than
+    # read from a payload, and this CDN answers `200 text/html` for a name it does not have —
+    # the same shape as the SPA fallback that hid production's missing art for months. Without
+    # this, a bad guess is written as `<name>.webp`, counted as downloaded, committed by the
+    # art guard, and reported as vendored by `--check` forever after.
+    content_type = response.headers.get("content-type", "")
+    if not content_type.startswith("image/"):
+        report.failed.append(
+            f"{basename} ({what}): served {content_type or 'no content-type'}, not an image"
+        )
         return
     # Written only after a successful, complete response: a half-written file is a broken
     # image that looks like a present one, and the next run would skip it.

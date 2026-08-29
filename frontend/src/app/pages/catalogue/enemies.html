@@ -1,6 +1,10 @@
 <section class="catalogue">
+  <!-- Search above the results, not beside the title: it acts on what is below it. -->
   <header>
     <h1>Enemies</h1>
+  </header>
+
+  <div class="toolbar">
     <input
       type="search"
       name="search"
@@ -10,20 +14,22 @@
       aria-label="Search enemies by name"
     />
     <button type="button" (click)="load()">Search</button>
-  </header>
+    @if (!list.loading() && !list.error()) {
+      <span class="count muted">
+        @if (list.truncated()) {
+          {{ list.items().length }} of {{ list.total() }}
+        } @else {
+          {{ list.total() }}
+        }
+      </span>
+    }
+  </div>
 
   @if (list.error(); as message) {
     <p class="error" role="alert">{{ message }}</p>
   } @else if (list.loading()) {
     <p class="muted">Loading…</p>
   } @else {
-    <p class="muted">
-      @if (list.truncated()) {
-        Showing {{ list.items().length }} of {{ list.total() }} — the rest was not loaded.
-      } @else {
-        {{ list.total() }} matching
-      }
-    </p>
     <ul class="grid wide">
       @for (enemy of list.items(); track enemy.id) {
         <li class="card">

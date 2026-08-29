@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from scripts.download_icons import Report
+from scripts.download_icons import Report, portrait_name
 
 
 def test_a_run_that_saw_nothing_is_not_success() -> None:
@@ -62,7 +62,9 @@ def test_the_summary_names_every_bucket() -> None:
 # ── how a response is classified ─────────────────────────────────────────────
 
 
-async def _classify(status: int, *, body: bytes = b"webp") -> Report:
+async def _classify(
+    status: int, *, body: bytes = b"webp", content_type: str = "image/webp",
+) -> Report:
     """Run one fetch against a stub transport and return what it recorded.
 
     Stubbed rather than mocked at the function boundary: the classification lives in `_fetch`,
@@ -79,7 +81,11 @@ async def _classify(status: int, *, body: bytes = b"webp") -> Report:
     from scripts import download_icons
 
     report = Report()
-    transport = httpx.MockTransport(lambda _request: httpx.Response(status, content=body))
+    transport = httpx.MockTransport(
+        lambda _request: httpx.Response(
+            status, content=body, headers={"content-type": content_type},
+        ),
+    )
     with tempfile.TemporaryDirectory() as tmp:
         original = download_icons.OUT
         download_icons.OUT = _Path(tmp)
@@ -123,3 +129,45 @@ async def test_a_success_is_written_and_counted() -> None:
 
     assert report.downloaded == 1
     assert report.failed == []
+
+
+@pytest.mark.asyncio
+async def test_a_200_that_is_not_an_image_is_a_failure_not_a_download() -> None:
+    """**The check the status code cannot make.**
+
+    Portrait basenames are derived by substitution rather than read from a payload, and this
+    CDN answers `200 text/html` for a name it does not carry — the same shape as the SPA
+    fallback that hid production's missing art for months. Without this, a wrong guess is
+    written as `<name>.webp` holding an HTML body, counted as downloaded, committed by the
+    art guard, and reported as vendored by `--check` forever after.
+    """
+    report = await _classify(200, body=b"<!doctype html>", content_type="text/html")
+
+    assert report.downloaded == 0
+    assert report.failed == ["UI_Test (weapon Test): served text/html, not an image"]
+
+
+# ── portrait basenames ───────────────────────────────────────────────────────
+#
+# The portrait name is **derived by substitution**, not read from a payload — so unlike every
+# other basename here it can be wrong in a way the catalogue cannot reveal. That is why
+# `_fetch` checks the response's content type rather than its status: this CDN answers
+# `200 text/html` for a name it does not have, the same shape as the SPA fallback that hid
+# production's missing art for months.
+
+
+def test_a_portrait_is_the_avatar_icon_with_the_gacha_prefix() -> None:
+    assert portrait_name("UI_AvatarIcon_Ayaka") == "UI_Gacha_AvatarIcon_Ayaka"
+
+
+def test_a_basename_in_another_shape_has_no_portrait() -> None:
+    """Weapons and artifact sets have no gacha art, and guessing one would fetch nothing."""
+    assert portrait_name("UI_EquipIcon_Sword_Blunt") is None
+    assert portrait_name("UI_RelicIcon_15008_4") is None
+
+
+def test_only_the_leading_prefix_is_replaced() -> None:
+    """A basename that repeats the prefix must not be rewritten twice."""
+    assert portrait_name("UI_AvatarIcon_UI_AvatarIcon_Odd") == (
+        "UI_Gacha_AvatarIcon_UI_AvatarIcon_Odd"
+    )

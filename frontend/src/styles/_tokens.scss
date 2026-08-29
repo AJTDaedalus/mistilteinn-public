@@ -120,6 +120,9 @@
   --danger: #f08a86;
   --warning: #e8b95c;
 
+  // -- Layout. The widest a page's content grows, however wide the window is.
+  --measure: 90rem;
+
   // -- Motion
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --t-fast: 120ms;

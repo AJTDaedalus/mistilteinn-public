@@ -1,6 +1,10 @@
 <section class="catalogue">
+  <!-- Search above the results, not beside the title: it acts on what is below it. -->
   <header>
     <h1>Weapons</h1>
+  </header>
+
+  <div class="toolbar">
     <input
       type="search"
       name="search"
@@ -10,37 +14,59 @@
       aria-label="Search weapons by name"
     />
     <button type="button" (click)="load()">Search</button>
-  </header>
+    @if (!list.loading() && !list.error()) {
+      <span class="count muted">
+        @if (list.truncated()) {
+          {{ list.items().length }} of {{ list.total() }}
+        } @else {
+          {{ list.total() }}
+        }
+      </span>
+    }
+  </div>
+
+  <div class="filters" role="group" aria-label="Filter weapons">
+    @for (t of types; track t[0]) {
+      <button
+        type="button"
+        class="chip"
+        [class.chip--on]="weaponType() === t[0]"
+        [attr.aria-pressed]="weaponType() === t[0]"
+        (click)="pickType($any(t[0]))"
+      >{{ t[1] }}</button>
+    }
+    <span class="filters__gap"></span>
+    @for (r of [['five_star', '5★'], ['four_star', '4★'], ['three_star', '3★']]; track r[0]) {
+      <button
+        type="button"
+        class="chip"
+        [class.chip--on]="rarity() === r[0]"
+        [attr.aria-pressed]="rarity() === r[0]"
+        (click)="pickRarity($any(r[0]))"
+      >{{ r[1] }}</button>
+    }
+  </div>
 
   @if (list.error(); as message) {
     <p class="error" role="alert">{{ message }}</p>
   } @else if (list.loading()) {
     <p class="muted">Loading…</p>
   } @else {
-    <p class="muted">
-      @if (list.truncated()) {
-        Showing {{ list.items().length }} of {{ list.total() }} — the rest was not loaded.
-      } @else {
-        {{ list.total() }} matching
-      }
-    </p>
     <ul class="grid">
       @for (weapon of list.items(); track weapon.id) {
-        <li class="card">
-          <catalogue-icon [icon]="weapon.icon" [alt]="weapon.name" [size]="44" />
+        <!-- Every field here was the source's internal spelling — `WEAPON_POLE`,
+             `four_star`, `FIGHT_PROP_CHARGE_EFFICIENCY` — printed because nothing readable
+             was published. The API carries the display forms now. -->
+        <li class="card" [attr.data-stars]="weapon.stars">
+          <catalogue-icon [icon]="weapon.icon" [alt]="''" [size]="52" />
           <span class="name">{{ weapon.name }}</span>
-          <span class="meta">{{ weapon.weapon_type }} · {{ weapon.rarity }}</span>
-          <!-- Labelled a curve base, not "ATK": it is the value at the bottom of a growth
-               curve, and printing it bare would read as the weapon's actual attack. -->
-          <span class="meta">
-            @if (weapon.base_atk !== null && weapon.base_atk !== undefined) {
-              base ATK curve from {{ weapon.base_atk }}
-            } @else {
-              no ATK curve
-            }
+          <span class="card__stars">
+            @for (s of starList(weapon.stars); track $index) {<span>★</span>}
           </span>
-          <span class="meta">{{ weapon.sub_stat_type ?? 'no substat' }}</span>
-          <span class="key">{{ weapon.nanoka_id }}</span>
+          <span class="meta">
+            {{ weapon.weapon_type_display }}
+            @if (weapon.sub_stat_display) { · {{ weapon.sub_stat_display }} }
+          </span>
         </li>
       } @empty {
         <li class="muted">No weapons match that search.</li>

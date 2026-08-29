@@ -31,6 +31,8 @@ const ICON_BASE = '/icons';
         [alt]="alt()"
         [attr.width]="size()"
         [attr.height]="size()"
+        [style.object-fit]="fit()"
+        [style.object-position]="fit() === 'cover' ? 'center 8%' : null"
         loading="lazy"
         (error)="hide()"
       />
@@ -38,7 +40,21 @@ const ICON_BASE = '/icons';
   `,
   styles: `
     :host { display: inline-flex; }
-    img { border-radius: 0.25rem; object-fit: contain; }
+    img { border-radius: 0.25rem; }
+
+    /* A "fill" host class makes the image fill its box, and this rule has to live *here*.
+
+       A page writing ".card__art img { width: 100% }" compiles to a selector carrying the
+       page's _ngcontent attribute, which this element does not have — so the img kept the
+       width/height attributes and rendered as a fixed square: measured 180x180 inside a
+       176x235 card, overflowing sideways and short at the bottom. Third unreachable-selector
+       bug in three PRs.
+
+       The class is set by the caller rather than derived from the "fit" input: a host binding
+       on the input silently applied nothing (measured: the host carried no classes), and the
+       page is the thing that knows whether this icon is decorating a row or filling a card. */
+    :host(.fill) { display: block; width: 100%; height: 100%; }
+    :host(.fill) img { width: 100%; height: 100%; border-radius: 0; }
   `,
 })
 export class CatalogueIcon {
@@ -47,6 +63,22 @@ export class CatalogueIcon {
   /** What the image is of, for a screen reader. */
   readonly alt = input('');
   readonly size = input(40);
+  /**
+   * How the image fills its box. `contain` for an icon, `cover` for a portrait filling a card.
+   *
+   * An input rather than a page-level CSS rule, because this component uses Angular's default
+   * emulated encapsulation: `.card__art img { object-fit: cover }` written on the page
+   * compiles to a selector carrying the *page's* `_ngcontent` attribute, which this `<img>`
+   * does not have, so it silently does nothing — the portraits letterboxed inside their
+   * cards and nothing in the stylesheet looked wrong.
+   *
+   * `cover` also sets the crop, for the same unreachable-selector reason. The number is
+   * measured, not guessed: the portraits are **320x1024** with the face between roughly 10%
+   * and 40% of the height. A 3:4 frame shows 41.7% of that, so `center` (rows 29-71%) lands
+   * on the torso and `top` (rows 0-42%) clips at the hairline. `8%` opens the window at
+   * about row 5% and closes it near 47% — head and shoulders, which is what a card wants.
+   */
+  readonly fit = input<'contain' | 'cover'>('contain');
 
   /**
    * Reset whenever the basename changes: a new image deserves its own attempt.

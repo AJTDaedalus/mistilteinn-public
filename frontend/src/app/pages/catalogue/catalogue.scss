@@ -61,3 +61,141 @@
      glance rather than reading off a minus sign. */
   .negative { color: #ff9b6b; }
 }
+
+/* ── The toolbar ────────────────────────────────────────────────────────────
+   Search sits above the results rather than inside the heading row: it acts on what is
+   below it, and a control in a title row reads as decoration. */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+
+  input[type='search'] { flex: 0 1 22rem; }
+  .count { margin-left: auto; font-size: var(--text-sm); }
+}
+
+/* ── Portrait cards ─────────────────────────────────────────────────────────
+   Square-ish, and mostly picture. A character row carried a name and two facts, which is
+   not enough to justify a row — the face is what anyone is actually scanning for. */
+.catalogue--portraits .grid {
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: var(--space-3);
+}
+
+.catalogue--portraits .card {
+  --rarity: var(--rarity-4);
+  position: relative;
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+  border-color: var(--surface-rule);
+  background:
+    linear-gradient(180deg, transparent 40%, color-mix(in srgb, var(--rarity) 22%, transparent)),
+    var(--surface);
+  transition: border-color var(--t-fast) var(--ease),
+              transform var(--t-fast) var(--ease);
+
+  &[data-stars='5'] { --rarity: var(--rarity-5); }
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--rarity) 65%, transparent);
+    transform: translateY(-2px);
+  }
+}
+
+.card__art {
+  position: relative;
+  display: block;
+  /* 3:4. The source art is 320x1024 — a square crop throws most of it away, and the full
+     ratio makes a card taller than the screen. Still far squarer than the row it replaced. */
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  /* A stacking context, so the fallback's negative z-index stays *inside the card art*.
+     Without it the fallback joined the page's stacking context and painted beneath `.card`'s
+     opaque background — invisible, on all 28 Traveler rows and the mannequins, whose
+     portraits upstream does not publish. */
+  isolation: isolate;
+  background: radial-gradient(circle at 50% 35%,
+              color-mix(in srgb, var(--rarity) 26%, transparent), transparent 68%);
+
+  /* **Taken out of flow**, so the image cannot drive the box's height. `aspect-ratio` states
+     a *preferred* size, and an in-flow child at `height: 100%` is a cyclic dependency the
+     browser resolves by falling back to content height — the 3:4 frame grew to the art's
+     natural 176x571. Sizing, fit and crop all live inside `CatalogueIcon`; none of them are
+     reachable from this file. */
+  > catalogue-icon { position: absolute; inset: 0; }
+}
+
+/* Shown only when the portrait is absent — `catalogue-icon` removes its own `<img>` on a
+   failed load, so the small icon underneath becomes visible without any coordination.
+   Centred by flex on the host, not `place-items` on a grid: `.card__art catalogue-icon` has
+   higher specificity than `.card__fallback` and was setting `display: block`, so the grid
+   never applied and the icon sat top-left. */
+.catalogue--portraits .card__art .card__fallback {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card__body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3) var(--space-3);
+
+  .name {
+    font-family: var(--font-display);
+    font-size: var(--text-md);
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+  }
+}
+
+/* Rarity, as stars rather than `four_star`. */
+.catalogue .card__stars {
+  --rarity: var(--rarity-3);
+  color: var(--rarity);
+  font-size: var(--text-xs);
+  letter-spacing: 0.1em;
+}
+
+.catalogue .card[data-stars='1'] .card__stars { --rarity: var(--rarity-1); }
+.catalogue .card[data-stars='2'] .card__stars { --rarity: var(--rarity-2); }
+.catalogue .card[data-stars='4'] .card__stars { --rarity: var(--rarity-4); }
+.catalogue .card[data-stars='5'] .card__stars { --rarity: var(--rarity-5); }
+
+/* ── Filter chips ───────────────────────────────────────────────────────────
+   Toggles, not a radio set: clicking the active chip clears it. That removes the "All"
+   option, which is the one that drifts out of step with the real selection. */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.filters__gap {
+  width: var(--space-4);
+}
+
+.chip {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+  background: none;
+
+  &:hover { color: var(--ink); }
+
+  &.chip--on {
+    color: var(--brass);
+    border-color: var(--brass);
+    box-shadow: var(--glow-brass);
+  }
+}

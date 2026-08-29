@@ -39,7 +39,7 @@ from typing import Any
 
 from pydantic import BaseModel, computed_field
 
-from app.models.enums import Element, Rarity, WeaponType
+from app.models.enums import Element, Rarity, StatType, WeaponType
 
 _FROM_ORM = {"from_attributes": True}
 
@@ -139,6 +139,18 @@ class CharacterSummary(WeaponClassed):
 
     model_config = _FROM_ORM
 
+    @computed_field
+    @property
+    def stars(self) -> int:
+        """`5` for `five_star`, from `Rarity.stars`.
+
+        Published for the same reason `WeaponSummary.stars` is: the characters page was
+        deriving it with `rarity === 'five_star' ? 5 : 4`, which silently calls anything else
+        — a lower rarity, a null — a four-star. A second copy of a rule that already exists
+        server-side, and the copy is the one that guesses.
+        """
+        return Rarity(self.rarity).stars
+
 
 class CharacterRead(CharacterSummary):
     """A character in full: base stats, curves, ascension table, and the kit rows."""
@@ -195,6 +207,36 @@ class WeaponSummary(WeaponClassed):
     icon: str | None = None
 
     model_config = _FROM_ORM
+
+    @computed_field
+    @property
+    def sub_stat_display(self) -> str | None:
+        """`CRIT DMG` for `FIGHT_PROP_CRITICAL_HURT`, from `StatType.display`.
+
+        Published rather than left to the client, for the reason `weapon_type_display`
+        already is: a page translating `FIGHT_PROP_*` itself would be a second copy of a
+        rule that lives in `models/enums.py`, free to drift. The catalogue was printing the
+        raw key on screen because there was nothing else to print.
+
+        Null for the **18** weapons whose payload substat is absent — a weapon with no
+        substat, not one whose substat is unknown. (Counted, not copied: two comments in
+        `services/stat_calculator.py` say "ten" and "the eight TPS entries" for related but
+        differently-scoped sets, and repeating either here would have made a third number.)
+        """
+        if not self.sub_stat_type:
+            return None
+        try:
+            return StatType(self.sub_stat_type).display
+        except ValueError:
+            # A key this enum does not cover is shown verbatim rather than blanked: a
+            # visible oddity is findable, and a blank is a weapon that looks substat-less.
+            return self.sub_stat_type
+
+    @computed_field
+    @property
+    def stars(self) -> int:
+        """`5` for `five_star`. The card draws these; nobody reads `four_star`."""
+        return Rarity(self.rarity).stars
 
 
 class WeaponRead(WeaponSummary):

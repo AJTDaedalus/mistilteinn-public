@@ -5,6 +5,20 @@
   padding: 0 var(--space-6);
 }
 
+/* Content stops widening past a comfortable measure. Unbounded, a card grid on a wide
+   monitor stretched to nine columns and every page read as a spreadsheet.
+
+   On the regions themselves, **not** on `> *`: the header is a flex row (brand left, nav
+   right) and bounding its children turned each into a centred block, stacking the nav under
+   a centred wordmark. */
+.shell__header,
+.shell__main,
+.shell__footer {
+  width: 100%;
+  max-width: var(--measure);
+  margin-inline: auto;
+}
+
 .shell__header {
   display: flex;
   align-items: flex-end;

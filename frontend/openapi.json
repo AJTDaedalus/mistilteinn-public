@@ -3641,6 +3641,12 @@
             "title": "Weapon Type Display",
             "description": "`Sword`, beside the raw `WEAPON_SWORD_ONE_HAND`.\n\nThe value is the game's internal spelling \u2014 the reason `Element` reads well in this\noutput and `WeaponType` does not. Published rather than left to each client, because\na page deriving it would be a second copy of `WeaponType.display`.",
             "readOnly": true
+          },
+          "stars": {
+            "type": "integer",
+            "title": "Stars",
+            "description": "`5` for `five_star`, from `Rarity.stars`.\n\nPublished for the same reason `WeaponSummary.stars` is: the characters page was\nderiving it with `rarity === 'five_star' ? 5 : 4`, which silently calls anything else\n\u2014 a lower rarity, a null \u2014 a four-star. A second copy of a rule that already exists\nserver-side, and the copy is the one that guesses.",
+            "readOnly": true
           }
         },
         "type": "object",
@@ -3656,7 +3662,8 @@
           "base_elemental_mastery",
           "base_crit_rate",
           "base_crit_dmg",
-          "weapon_type_display"
+          "weapon_type_display",
+          "stars"
         ],
         "title": "CharacterRead",
         "description": "A character in full: base stats, curves, ascension table, and the kit rows."
@@ -3718,6 +3725,12 @@
             "title": "Weapon Type Display",
             "description": "`Sword`, beside the raw `WEAPON_SWORD_ONE_HAND`.\n\nThe value is the game's internal spelling \u2014 the reason `Element` reads well in this\noutput and `WeaponType` does not. Published rather than left to each client, because\na page deriving it would be a second copy of `WeaponType.display`.",
             "readOnly": true
+          },
+          "stars": {
+            "type": "integer",
+            "title": "Stars",
+            "description": "`5` for `five_star`, from `Rarity.stars`.\n\nPublished for the same reason `WeaponSummary.stars` is: the characters page was\nderiving it with `rarity === 'five_star' ? 5 : 4`, which silently calls anything else\n\u2014 a lower rarity, a null \u2014 a four-star. A second copy of a rule that already exists\nserver-side, and the copy is the one that guesses.",
+            "readOnly": true
           }
         },
         "type": "object",
@@ -3727,7 +3740,8 @@
           "nanoka_id",
           "name",
           "rarity",
-          "weapon_type_display"
+          "weapon_type_display",
+          "stars"
         ],
         "title": "CharacterSummary",
         "description": "A character as a list entry."
@@ -6531,6 +6545,25 @@
             "title": "Weapon Type Display",
             "description": "`Sword`, beside the raw `WEAPON_SWORD_ONE_HAND`.\n\nThe value is the game's internal spelling \u2014 the reason `Element` reads well in this\noutput and `WeaponType` does not. Published rather than left to each client, because\na page deriving it would be a second copy of `WeaponType.display`.",
             "readOnly": true
+          },
+          "sub_stat_display": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sub Stat Display",
+            "description": "`CRIT DMG` for `FIGHT_PROP_CRITICAL_HURT`, from `StatType.display`.\n\nPublished rather than left to the client, for the reason `weapon_type_display`\nalready is: a page translating `FIGHT_PROP_*` itself would be a second copy of a\nrule that lives in `models/enums.py`, free to drift. The catalogue was printing the\nraw key on screen because there was nothing else to print.\n\nNull for the **18** weapons whose payload substat is absent \u2014 a weapon with no\nsubstat, not one whose substat is unknown. (Counted, not copied: two comments in\n`services/stat_calculator.py` say \"ten\" and \"the eight TPS entries\" for related but\ndifferently-scoped sets, and repeating either here would have made a third number.)",
+            "readOnly": true
+          },
+          "stars": {
+            "type": "integer",
+            "title": "Stars",
+            "description": "`5` for `five_star`. The card draws these; nobody reads `four_star`.",
+            "readOnly": true
           }
         },
         "type": "object",
@@ -6540,7 +6573,9 @@
           "nanoka_id",
           "name",
           "rarity",
-          "weapon_type_display"
+          "weapon_type_display",
+          "sub_stat_display",
+          "stars"
         ],
         "title": "WeaponRead",
         "description": "A weapon in full, with its growth curves and refinement rows."
@@ -6680,6 +6715,25 @@
             "title": "Weapon Type Display",
             "description": "`Sword`, beside the raw `WEAPON_SWORD_ONE_HAND`.\n\nThe value is the game's internal spelling \u2014 the reason `Element` reads well in this\noutput and `WeaponType` does not. Published rather than left to each client, because\na page deriving it would be a second copy of `WeaponType.display`.",
             "readOnly": true
+          },
+          "sub_stat_display": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sub Stat Display",
+            "description": "`CRIT DMG` for `FIGHT_PROP_CRITICAL_HURT`, from `StatType.display`.\n\nPublished rather than left to the client, for the reason `weapon_type_display`\nalready is: a page translating `FIGHT_PROP_*` itself would be a second copy of a\nrule that lives in `models/enums.py`, free to drift. The catalogue was printing the\nraw key on screen because there was nothing else to print.\n\nNull for the **18** weapons whose payload substat is absent \u2014 a weapon with no\nsubstat, not one whose substat is unknown. (Counted, not copied: two comments in\n`services/stat_calculator.py` say \"ten\" and \"the eight TPS entries\" for related but\ndifferently-scoped sets, and repeating either here would have made a third number.)",
+            "readOnly": true
+          },
+          "stars": {
+            "type": "integer",
+            "title": "Stars",
+            "description": "`5` for `five_star`. The card draws these; nobody reads `four_star`.",
+            "readOnly": true
           }
         },
         "type": "object",
@@ -6689,7 +6743,9 @@
           "nanoka_id",
           "name",
           "rarity",
-          "weapon_type_display"
+          "weapon_type_display",
+          "sub_stat_display",
+          "stars"
         ],
         "title": "WeaponSummary",
         "description": "A weapon as a list entry.\n\n`base_atk` and `sub_stat_type` are nullable because eight rows (the `ITEM_TPS_WEAPON`\nfamily, ids 224001-224008) publish `atk: null` and `sub: null`. They are imported\nvisibly rather than dropped; a client should expect to see them."

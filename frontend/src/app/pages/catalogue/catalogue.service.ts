@@ -25,6 +25,10 @@ export class CatalogueService {
   async listCharacters(params: {
     name?: string;
     element?: CharacterSummary['element'];
+    // `rarity` and `weapon_type` were taken by the endpoint from the start and missing here,
+    // so a page could not offer a filter the server already implemented.
+    rarity?: CharacterSummary['rarity'];
+    weapon_type?: CharacterSummary['weapon_type'];
     offset?: number;
     limit?: number;
   } = {}) {
@@ -63,6 +67,7 @@ export class CatalogueService {
     params: {
       name?: string;
       weapon_type?: WeaponSummary['weapon_type'];
+      rarity?: WeaponSummary['rarity'];
       offset?: number;
       limit?: number;
     } = {},

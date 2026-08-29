@@ -87,12 +87,51 @@ def _refuse_remote() -> None:
             raise SystemExit(msg)
 
 
+#: Where the last good token is kept between runs.
+#:
+#: `/auth/login` is rate limited, and a harness whose whole purpose is being run repeatedly
+#: hits that limit on its own — which then reads as the app being broken. The cached token is
+#: tried first and the file is discarded the moment it stops working.
+_TOKEN_CACHE = REPO / ".shoot-token"
+
+
+async def _cached_token(client: httpx.AsyncClient) -> str | None:
+    """The stored token, if it still authenticates."""
+    if not _TOKEN_CACHE.exists():
+        return None
+    token = _TOKEN_CACHE.read_text().strip()
+    me = await client.get(
+        f"{BACKEND}/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"},
+    )
+    if me.status_code == httpx.codes.OK:
+        return token
+    _TOKEN_CACHE.unlink(missing_ok=True)
+    return None
+
+
 async def _token(client: httpx.AsyncClient) -> str:
     """Sign the service account in, creating and approving it the first time."""
+    cached = await _cached_token(client)
+    if cached:
+        return cached
+
     body = {"email": SERVICE_EMAIL, "password": SERVICE_PASSWORD}
     signed_in = await client.post(f"{BACKEND}/api/v1/auth/login", json=body)
     if signed_in.status_code == httpx.codes.OK:
-        return str(signed_in.json()["token"])
+        return _remember(str(signed_in.json()["token"]))
+
+    # **Only a rejected sign-in means "no such account".** Treating *any* failure as one sent
+    # a rate-limited run (429, easy to hit when shooting repeatedly) down the register path,
+    # where it re-approved an existing account and then failed on a second login — reporting
+    # the retry's error rather than the real one.
+    if signed_in.status_code not in {httpx.codes.UNAUTHORIZED, httpx.codes.FORBIDDEN}:
+        detail = (
+            "Rate limited — wait a minute and re-run."
+            if signed_in.status_code == httpx.codes.TOO_MANY_REQUESTS
+            else signed_in.text[:200]
+        )
+        msg = f"could not sign in as {SERVICE_EMAIL}: HTTP {signed_in.status_code}. {detail}"
+        raise SystemExit(msg)
 
     await client.post(
         f"{BACKEND}/api/v1/auth/register", json={**body, "label": SERVICE_LABEL},
@@ -104,7 +143,14 @@ async def _token(client: httpx.AsyncClient) -> str:
     await approve_user(SERVICE_EMAIL)
     signed_in = await client.post(f"{BACKEND}/api/v1/auth/login", json=body)
     signed_in.raise_for_status()
-    return str(signed_in.json()["token"])
+    return _remember(str(signed_in.json()["token"]))
+
+
+def _remember(token: str) -> str:
+    """Store the token for the next run, and hand it back."""
+    _TOKEN_CACHE.write_text(token)
+    _TOKEN_CACHE.chmod(0o600)
+    return token
 
 
 async def _seed(client: httpx.AsyncClient, token: str) -> None:
@@ -178,6 +224,11 @@ async def shoot(routes: tuple[str, ...], *, seed: bool, full_page: bool) -> int:
             await page.screenshot(path=str(OUT / f"{name}.png"), full_page=full_page)
             # A console error is not a failed screenshot, but it is the thing a picture
             # cannot show, so it is reported beside the file rather than swallowed.
+            # A count, not a verdict. `/characters` reports two 404s every run — the two
+            # portraits nanoka does not publish (Lumine, and the mannequins) — and those are
+            # `CatalogueIcon`'s fallback working, not a fault. Filtering them out here would
+            # mean deciding in advance which 404s are fine, which is how a real one gets
+            # hidden; the flag exists to prompt a look, and a look settles it.
             flag = f"  [{len(errors)} console error(s)]" if errors else ""
             if errors:
                 broken += 1
