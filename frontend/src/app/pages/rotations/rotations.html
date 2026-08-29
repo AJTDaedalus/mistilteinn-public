@@ -1,10 +1,6 @@
 <section class="rotations">
   <header>
     <h1>Rotations</h1>
-    <p class="muted">
-      Pick a team, list what each character does, and save. The gating and the loop are
-      emitted for you.
-    </p>
   </header>
 
   @if (error(); as message) {
@@ -18,8 +14,7 @@
     <!-- A team is what a rotation's steps are validated against, so there is nothing to
          author until one exists. Saying so beats an editor whose every control is inert. -->
     <p class="muted">
-      You have no teams yet. A rotation's steps are checked against a team's characters, so
-      <a routerLink="/teams">build a team first</a>.
+      No teams yet — <a routerLink="/teams">build one first</a>.
     </p>
   } @else {
     <div class="editor">
@@ -31,7 +26,7 @@
           <input
             type="text"
             name="name"
-            [(ngModel)]="name"
+            [ngModel]="name()" (ngModelChange)="name.set($event)"
             placeholder="Melt opener"
             aria-label="Rotation name"
           />

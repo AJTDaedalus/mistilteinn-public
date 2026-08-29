@@ -159,7 +159,13 @@ export class OptimizePage implements OnInit {
   protected readonly explaining = signal(false);
 
   protected readonly buildId = signal('');
-  protected hitIndex = 0;
+  /**
+   * A **signal**, because the `hit` computed reads it.
+   *
+   * A plain field is invisible to a computed — Angular tracks signal reads — so changing the
+   * hit left `hit()` on whatever it had cached, and the page scored the previous selection.
+   */
+  protected readonly hitIndex = signal(0);
   protected channel = 'physical';
   protected scope = 'normal';
   protected enemyLevel = 90;
@@ -167,7 +173,7 @@ export class OptimizePage implements OnInit {
   protected readonly build = computed(
     () => this.builds().find((b) => b.id === this.buildId()) ?? null,
   );
-  protected readonly hit = computed(() => this.hits()[this.hitIndex] ?? null);
+  protected readonly hit = computed(() => this.hits()[this.hitIndex()] ?? null);
   protected readonly canSearch = computed(
     () => this.hit() !== null && !this.searching(),
   );
@@ -194,7 +200,7 @@ export class OptimizePage implements OnInit {
    */
   protected readonly canSearchRotation = computed(
     () => !this.searching()
-      && this.rotationId !== ''
+      && this.rotationId() !== ''
       && (this.selectedSets().size > 0 || this.chosenPair() !== null),
   );
 
@@ -285,7 +291,8 @@ export class OptimizePage implements OnInit {
   // slow better one exists is a downgrade for whoever wanted the fast one.
   protected readonly objective = signal<'hit' | 'rotation'>('hit');
   protected readonly rotations = signal<{ id: string; name: string }[]>([]);
-  protected rotationId = '';
+  /** A signal, because `canSearchRotation` reads it. Same reason as `hitIndex`. */
+  protected readonly rotationId = signal('');
   protected readonly calibrating = signal<CalibrationProgress | null>(null);
   /** What the recipes do not cover. **Shown, never swallowed** — R.9. */
   protected readonly caveats = signal<CalibrationCaveats | null>(null);
@@ -350,7 +357,7 @@ export class OptimizePage implements OnInit {
       // Paginated. Reading it as an array leaves the picker empty, which looks exactly like
       // having authored no rotations — the same trap W.6's compare page fell into.
       this.rotations.set(rotations.items.map((r) => ({ id: r.id, name: r.name })));
-      if (rotations.items.length > 0) this.rotationId = rotations.items[0].id;
+      if (rotations.items.length > 0) this.rotationId.set(rotations.items[0].id);
       this.slotNames.set(
         Object.fromEntries(options.slots.map((slot) => [slot.key, slot.display])),
       );
@@ -367,7 +374,7 @@ export class OptimizePage implements OnInit {
   protected async selectBuild(id: string): Promise<void> {
     this.buildId.set(id);
     this.hits.set([]);
-    this.hitIndex = 0;
+    this.hitIndex.set(0);
     // A result belongs to the build it was searched for. Left up, it would sit under a
     // different character's name — a number that looks right and refers to something else.
     this.result.set(null);
@@ -562,7 +569,7 @@ export class OptimizePage implements OnInit {
    */
   protected async runRotation(): Promise<void> {
     const id = this.buildId();
-    if (!id || !this.rotationId) return;
+    if (!id || !this.rotationId()) return;
     this.actionError.set(null);
     this.result.set(null);
     this.caveats.set(null);
@@ -593,7 +600,7 @@ export class OptimizePage implements OnInit {
       }
       const targets = this.calibrationTargets(chosen);
       const calibrated = await this.recipeOptimize.calibrateAll(
-        id, this.rotationId, snapshot.version, targets,
+        id, this.rotationId(), snapshot.version, targets,
         (progress) => this.calibrating.set(progress),
       );
       this.caveats.set(calibrated.caveats);

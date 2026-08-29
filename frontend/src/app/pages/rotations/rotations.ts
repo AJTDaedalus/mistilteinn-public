@@ -47,7 +47,15 @@ export class RotationsPage implements OnInit {
   protected readonly saved = signal<RotationRead[]>([]);
 
   protected readonly teamId = signal('');
-  protected name = '';
+  /**
+   * A **signal**, because `canSave` reads it.
+   *
+   * As a plain field it was invisible to the computed: Angular tracks signal reads, so
+   * typing a name never invalidated `canSave` and the button stayed disabled until something
+   * *else* in it changed. Picking a slot after typing worked; typing after picking did not,
+   * which is why it reads as "the button does not work".
+   */
+  protected readonly name = signal('');
   protected readonly steps = signal<RotationStep[]>([]);
   /** The rotation being edited, or null while composing a new one. */
   protected readonly editing = signal<string | null>(null);
@@ -89,14 +97,14 @@ export class RotationsPage implements OnInit {
   }
 
   protected readonly canSave = computed(
-    () => this.name.trim().length > 0 && this.teamId() !== '' && this.steps().length > 0,
+    () => this.name().trim().length > 0 && this.teamId() !== '' && this.steps().length > 0,
   );
 
   private readonly rotations = inject(RotationsService);
 
   /** Name and steps as one comparable string. Order is part of it — order *is* the rotation. */
   private snapshot(): string {
-    return JSON.stringify({ name: this.name.trim(), steps: this.steps() });
+    return JSON.stringify({ name: this.name().trim(), steps: this.steps() });
   }
 
   ngOnInit(): void {
@@ -182,9 +190,9 @@ export class RotationsPage implements OnInit {
     try {
       const id = this.editing();
       const rotation = id
-        ? await this.rotations.update(id, { name: this.name.trim(), steps: this.steps() })
+        ? await this.rotations.update(id, { name: this.name().trim(), steps: this.steps() })
         : await this.rotations.create({
-            name: this.name.trim(),
+            name: this.name().trim(),
             team_id: this.teamId(),
             steps: this.steps(),
           });
@@ -200,7 +208,7 @@ export class RotationsPage implements OnInit {
 
   protected edit(rotation: RotationRead): void {
     this.editing.set(rotation.id);
-    this.name = rotation.name;
+    this.name.set(rotation.name);
     this.teamId.set(rotation.team_id);
     // Copied defensively. Nothing here mutates a step in place today — `setStep`, `move`
     // and `removeStep` all rebuild — so **removing this copy changes nothing observable**,
@@ -214,7 +222,7 @@ export class RotationsPage implements OnInit {
 
   protected newRotation(): void {
     this.editing.set(null);
-    this.name = '';
+    this.name.set('');
     this.steps.set([]);
     this.stored.set('');
     this.compiled.set(null);

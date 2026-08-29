@@ -3,10 +3,7 @@
     <!-- "Inventory", matching the nav link that leads here. The heading said "Artifacts"
          and so did the link to the *set catalogue*, which is the ambiguity being removed. -->
     <h1>Inventory</h1>
-    <p class="muted">
-      Your artifacts, imported from a GOOD export — the format Genshin Optimizer, Amenoma
-      and Adachi all produce.
-    </p>
+    <p class="muted">Your artifacts, imported from a GOOD export.</p>
   </header>
 
   <details class="import">
@@ -20,8 +17,8 @@
                no stable per-artifact id, so appending a second scan of the same account
                duplicates every piece. -->
           <select [(ngModel)]="mode" aria-label="Import mode">
-            <option value="replace">Replace — this scan becomes your inventory</option>
-            <option value="append">Append — keep what is already here</option>
+            <option value="replace">Replace</option>
+            <option value="append">Append</option>
           </select>
         </label>
 
@@ -40,19 +37,12 @@
         <input type="checkbox" [(ngModel)]="rebuildBuilds" />
         <span>
           Also rebuild builds
-          <span class="hint">
-            A build for each character the export shows holding a weapon or artifacts, with
-            their levels, constellation and talents. Existing builds are kept, never
-            overwritten. Teams are not imported — a GOOD export has no concept of one.
-          </span>
+          <span class="hint">Equipped characters only. Existing builds are kept.</span>
         </span>
       </label>
 
       @if (mode === 'replace') {
-        <p class="hint hint--warn">
-          Replacing deletes the artifacts you have now. Equipped slots are refilled by
-          matching stats, and anything that could not be refilled is named below.
-        </p>
+        <p class="hint hint--warn">Replacing deletes what you have now.</p>
       }
 
       <label class="field">
@@ -89,9 +79,7 @@
 
       @if (confirmingReplace()) {
         <p class="error" role="alert">
-          This deletes all {{ total() }} artifacts you have now and cannot be undone. A scan
-          that stopped early is a valid file holding only part of your inventory — check the
-          count looks right before confirming.
+          Deletes all {{ total() }} artifacts. Check the count looks right.
         </p>
       }
 
@@ -105,9 +93,7 @@
             <!-- N.3: a `replace` re-equips what it can by matching stats, and names what it
                  could not. A slot that emptied silently is discovered later from a damage
                  number. -->
-            <p class="warn">
-              {{ result.unequipped.length }} build slot(s) could not be refilled:
-            </p>
+            <p class="warn">{{ result.unequipped.length }} slot(s) not refilled:</p>
             <ul class="rejections">
               @for (note of result.unequipped; track $index) {
                 <li>{{ note }}</li>
@@ -118,13 +104,10 @@
             <p>
               <strong>{{ builds.created }}</strong> build(s) rebuilt<!--
               -->@if (builds.skipped_existing.length) {,
-                {{ builds.skipped_existing.length }} kept as you had them}.
+                {{ builds.skipped_existing.length }} kept}.
             </p>
             @if (builds.unresolved.length) {
-              <p class="warn">
-                {{ builds.unresolved.length }} character(s) this catalogue does not know —
-                usually an export newer than the seeded patch:
-              </p>
+              <p class="warn">{{ builds.unresolved.length }} character(s) not recognised:</p>
               <ul class="rejections">
                 @for (key of builds.unresolved; track key) {
                   <li class="mono">{{ key }}</li>
@@ -134,9 +117,7 @@
             @if (builds.unresolved_weapons.length) {
               <!-- Named because a build with no weapon is a legitimate state, so an
                    unresolved one is otherwise completely silent. -->
-              <p class="warn">
-                {{ builds.unresolved_weapons.length }} weapon(s) this catalogue does not know:
-              </p>
+              <p class="warn">{{ builds.unresolved_weapons.length }} weapon(s) not recognised:</p>
               <ul class="rejections">
                 @for (note of builds.unresolved_weapons; track $index) {
                   <li class="mono">{{ note }}</li>
@@ -146,10 +127,7 @@
             @if (builds.reassigned.length) {
               <!-- Moving a piece in-game and re-scanning is legitimate, but it leaves the
                    build that had it a slot short, and nothing else would mention that. -->
-              <p class="warn">
-                {{ builds.reassigned.length }} piece(s) moved off a build that was wearing
-                them:
-              </p>
+              <p class="warn">{{ builds.reassigned.length }} piece(s) moved off another build:</p>
               <ul class="rejections">
                 @for (note of builds.reassigned; track $index) { <li>{{ note }}</li> }
               </ul>
@@ -164,9 +142,7 @@
             <!-- Every rejection, with its reason. The endpoint refuses individual artifacts
                  rather than failing the file — someone with 800 pieces and two odd ones wants
                  the 798 — so showing only the count throws away the only record of the two. -->
-            <p class="warn">
-              {{ result.rejected.length }} could not be imported:
-            </p>
+            <p class="warn">{{ result.rejected.length }} not imported:</p>
             <ul class="rejections">
               @for (rejection of result.rejected; track rejection.index) {
                 <li><span class="mono">#{{ rejection.index }}</span> {{ rejection.reason }}</li>
@@ -245,10 +221,7 @@
                 <!-- One bar per roll, coloured by that roll's tier. A bar of unknown tier
                      (`-1`) renders neutral: "worst roll" and "we do not know which roll"
                      are different claims. Nothing at all when even the count is unsettled. -->
-                <span
-                  class="card__bars"
-                  [attr.title]="sub.rolls ? sub.rolls + (sub.rolls === 1 ? ' roll' : ' rolls') : null"
-                >
+                <span class="card__bars" [attr.title]="barsTitle(sub)">
                   @for (tier of rollBars(sub); track $index) {
                     <i class="bar" [attr.data-tier]="tier"></i>
                   }
@@ -261,9 +234,11 @@
           </ul>
 
           @if (totalRollValue(row); as total) {
-            <p class="card__total">
+            <p class="card__total" title="What this artifact rolled, against the best it could">
               <span class="eyebrow">Roll value</span>
-              <span class="mono">{{ total }}%</span>
+              <span class="mono">
+                {{ total.got }}%@if (total.max !== null) { / {{ total.max }}%}
+              </span>
             </p>
           }
 
@@ -275,9 +250,7 @@
           >×</button>
         </li>
       } @empty {
-        <li class="muted">
-          No artifacts yet. Import a GOOD export above to fill your inventory.
-        </li>
+        <li class="muted">No artifacts yet — import a GOOD export above.</li>
       }
     </ul>
   }

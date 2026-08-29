@@ -47,7 +47,15 @@ export class TeamsPage implements OnInit {
   protected readonly builds = signal<BuildRead[]>([]);
 
   protected readonly editing = signal<TeamRead | null>(null);
-  protected name = '';
+  /**
+   * A **signal**, because `canSave` reads it.
+   *
+   * As a plain field it was invisible to the computed: Angular tracks signal reads, so
+   * typing a name never invalidated `canSave` and the button stayed disabled until something
+   * *else* in it changed. Picking a slot after typing worked; typing after picking did not,
+   * which is why it reads as "the button does not work".
+   */
+  protected readonly name = signal('');
   protected readonly picked = signal<Record<TeamSlot, string | null>>(emptySlots());
 
   /**
@@ -59,7 +67,7 @@ export class TeamsPage implements OnInit {
    * the page never showed them. Found in the T.4 self-review.
    */
   protected readonly canSave = computed(
-    () => this.name.trim().length > 0 && this.picked().build1_id !== null,
+    () => this.name().trim().length > 0 && this.picked().build1_id !== null,
   );
 
   private readonly teamsService = inject(TeamsService);
@@ -138,7 +146,7 @@ export class TeamsPage implements OnInit {
       const picked = this.picked();
       const existing = this.editing();
       if (existing) {
-        const body = { name: this.name.trim(), ...picked };
+        const body = { name: this.name().trim(), ...picked };
         const saved = await this.teamsService.update(existing.id, body);
         await this.load();
         // Stay in what was just saved, as the build editor does — being thrown out of an
@@ -149,7 +157,7 @@ export class TeamsPage implements OnInit {
         // cast: the cast was hiding the mismatch this self-review found.
         await this.teamsService.create({
           ...picked,
-          name: this.name.trim(),
+          name: this.name().trim(),
           build1_id: picked.build1_id!,
         });
         await this.load();
@@ -163,7 +171,7 @@ export class TeamsPage implements OnInit {
 
   protected edit(team: TeamRead): void {
     this.editing.set(team);
-    this.name = team.name;
+    this.name.set(team.name);
     this.picked.set(
       Object.fromEntries(TEAM_SLOTS.map((slot) => [slot, team[slot] ?? null])) as Record<
         TeamSlot,
@@ -175,7 +183,7 @@ export class TeamsPage implements OnInit {
 
   protected newTeam(): void {
     this.editing.set(null);
-    this.name = '';
+    this.name.set('');
     this.picked.set(emptySlots());
     this.actionError.set(null);
   }

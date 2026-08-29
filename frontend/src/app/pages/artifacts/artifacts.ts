@@ -33,6 +33,8 @@ export interface ArtifactSubstat {
   tiers: number[] | null;
   /** The line as a multiple of one best-case roll. `3.2` reads as "3.2 max rolls". */
   rollValue: number | null;
+  /** True when the count is the likeliest reading rather than the only one. */
+  estimated: boolean;
 }
 
 /** One piece, with everything the row needs already resolved. */
@@ -159,6 +161,7 @@ export class ArtifactsPage implements OnInit {
             rolls: found?.rolls ?? null,
             tiers: found?.roll_tiers ?? null,
             rollValue: found?.roll_value ?? null,
+            estimated: found?.estimated ?? false,
           };
         },
       ),
@@ -237,25 +240,48 @@ export class ArtifactsPage implements OnInit {
     return Array.from({ length: Math.min(sub.rolls, 6) }, () => -1);
   }
 
+  /** What the bars are claiming, for the `title`. Unlabelled grey bars mean nothing. */
+  protected barsTitle(sub: ArtifactSubstat): string | null {
+    if (!sub.rolls) return null;
+    const rolls = `${sub.rolls} roll${sub.rolls === 1 ? '' : 's'}`;
+    // **Estimated first.** Checking `tiers` first returned the confident wording for a
+    // guessed count, so the one case that most needs the caveat was the one that lost it.
+    if (sub.estimated) return `${rolls} — the likeliest reading, not the only one`;
+    if (sub.tiers) return `${rolls}, shaded by how high each rolled`;
+    return `${rolls}; which of them rolled high cannot be told apart`;
+  }
+
   /** `3.2` → `320`, for the roll-value column. */
   protected rollValuePercent(sub: ArtifactSubstat): number | null {
     return sub.rollValue === null ? null : Math.round(sub.rollValue * 100);
   }
 
   /**
-   * The piece's total roll value, as a percentage — GO's "Current Roll Value".
+   * The piece's roll value as **what it got out of what those rolls could have been**.
    *
-   * Null unless *every* substat contributed one, because a total silently missing a line
-   * reads as a worse artifact rather than as an incomplete sum.
+   * A bare `789%` is a number with no scale — it means nothing without knowing the piece had
+   * nine rolls to spend. Against the maximum those nine could have produced (`900%`) it says
+   * the thing a reader actually wants: how well this artifact rolled.
+   *
+   * Null unless every substat contributed both a value and a count, because a total silently
+   * short one line reads as a worse artifact rather than as an incomplete sum.
    */
-  protected totalRollValue(row: ArtifactRow): number | null {
+  protected totalRollValue(row: ArtifactRow): { got: number; max: number | null } | null {
     if (!row.substats.length) return null;
     let sum = 0;
+    let rolls = 0;
+    let counted = true;
     for (const sub of row.substats) {
+      // The numerator needs no roll count — `roll_value` is value over the best single roll.
+      // Only the denominator does, so a line without a count costs the *scale*, not the
+      // number. Returning null for the whole thing took the headline off 11% of pieces that
+      // had shown one, which is the opposite of the point.
       if (sub.rollValue === null) return null;
       sum += sub.rollValue;
+      if (sub.rolls === null) counted = false;
+      else rolls += sub.rolls;
     }
-    return Math.round(sum * 100);
+    return { got: Math.round(sum * 100), max: counted ? rolls * 100 : null };
   }
 
   protected canImport(): boolean {

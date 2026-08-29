@@ -10,7 +10,7 @@ from app.data.snapshot import SnapshotUnavailableError
 from app.models.enums import Rarity
 from app.services.artifact_potential import upgrade_potential
 from app.services.good_import_service import APPEND, REPLACE
-from app.services.substat_rolls import analyse as analyse_substat
+from app.services.substat_rolls import resolve_artifact
 
 
 class StatVocabularyEntry(BaseModel):
@@ -109,6 +109,10 @@ class SubstatAnalysisRead(BaseModel):
     #: The total as a multiple of one best-case roll — `3.2` for 24.9% CRIT DMG against a
     #: 7.77% maximum. Needs no decomposition, so it survives the ambiguity above.
     roll_value: float | None = None
+    #: True when `rolls` is the likeliest count rather than the only possible one. Genshin
+    #: Optimizer takes the same fallback and does not say so; a client can draw the bars
+    #: differently instead of implying certainty it does not have.
+    estimated: bool = False
 
 
 class ArtifactRead(BaseModel):
@@ -161,22 +165,34 @@ class ArtifactRead(BaseModel):
             # null rather than failing the response. Two computed fields on one model must
             # not make opposite promises about the same input.
             return [SubstatAnalysisRead() for _ in self.substats]
-        out: list[SubstatAnalysisRead] = []
-        for sub in self.substats:
+        # Readable lines only, but their **positions kept**: the result is aligned with
+        # `substats` by index, so a row the tables cannot read must not shift the rest.
+        readable: list[tuple[int, str, float]] = []
+        for index, sub in enumerate(self.substats):
             stat = sub.get("stat") if isinstance(sub, dict) else None
             value = sub.get("value") if isinstance(sub, dict) else None
-            if not isinstance(stat, str) or not isinstance(value, (int, float)):
-                out.append(SubstatAnalysisRead())
-                continue
-            found = analyse_substat(
-                stars=stars, stat=stat, value=float(value), level=self.level,
-            )
-            out.append(
-                SubstatAnalysisRead(
-                    rolls=found.rolls,
-                    roll_tiers=list(found.roll_tiers) if found.roll_tiers else None,
-                    roll_value=found.roll_value,
-                )
+            if isinstance(stat, str) and isinstance(value, (int, float)):
+                readable.append((index, stat, float(value)))
+
+        # The whole piece at once. A substat's roll count is constrained by its neighbours,
+        # because every roll the artifact received landed on one of them.
+        # An unreadable row is *dropped from the solve but not from the piece*: it still
+        # holds rolls. The budget comes from rarity and level alone, so this is already true
+        # — noted because an earlier version derived it from the substat count, where losing
+        # one row shrank the budget by exactly 1 while removing a line worth 1 to 3, and the
+        # survivors were then confidently narrowed against a budget describing no artifact.
+        found = resolve_artifact(
+            stars=stars,
+            level=self.level,
+            substats=[(stat, value) for _, stat, value in readable],
+        )
+        out = [SubstatAnalysisRead() for _ in self.substats]
+        for (index, _stat, _value), analysis in zip(readable, found, strict=True):
+            out[index] = SubstatAnalysisRead(
+                rolls=analysis.rolls,
+                roll_tiers=list(analysis.roll_tiers) if analysis.roll_tiers else None,
+                roll_value=analysis.roll_value,
+                estimated=analysis.estimated,
             )
         return out
 

@@ -2,9 +2,7 @@
   <header>
     <h1>Compare weapons</h1>
     <p class="muted">
-      Simulated with gcsim, in this browser. The fast comparison ranks on base ATK and the
-      substat and cannot apply weapon passives — for most weapons the passive is the reason
-      to equip it, so that ordering can be wrong rather than merely imprecise.
+      Simulated with gcsim, in your browser — so weapon passives count.
     </p>
   </header>
 
@@ -21,9 +19,7 @@
   </p>
 } @else if (rotations().length === 0) {
   <p class="muted">
-    A weapon comparison simulates a rotation, and there is no rotation to pick on your
-    behalf — one chosen for you would rank weapons against something you never wrote.
-    <a routerLink="/rotations">Author one first.</a>
+    A comparison simulates a rotation. <a routerLink="/rotations">Author one first.</a>
   </p>
 } @else {
   <form (ngSubmit)="run()">
@@ -131,9 +127,8 @@
   @if (ranking(); as result) {
     @if (!result.fullyOrdered) {
       <p role="note">
-        This run did not separate every weapon. Rows marked below are within the simulation's
-        own error of each other — their order is not a result. Raise the iteration count to
-        narrow it.
+        Marked rows are within the simulation's error of each other — their order is not a
+        result. Raise the iterations to separate them.
       </p>
     }
 
@@ -176,10 +171,7 @@
   @if (configs()?.refused?.length) {
     <section class="refused">
       <h2>Not compared</h2>
-      <p>
-        Reported rather than dropped — a missing candidate would leave a ranking that looks
-        complete while omitting a weapon you asked about.
-      </p>
+
       <ul>
         @for (r of configs()!.refused; track r.weapon_id) {
           <li>{{ r.weapon_id }} — {{ r.reason }}</li>

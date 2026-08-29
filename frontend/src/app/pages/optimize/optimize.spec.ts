@@ -612,7 +612,7 @@ describe('OptimizePage — the rotation objective', () => {
     // **This is the test that was missing when the default flipped**: the change passed 385
     // green tests, because nothing pinned what the default was.
     const page = pageWith();
-    (page as unknown as Record<string, unknown>)['rotationId'] = 'r1';
+    page['rotationId'].set('r1');
 
     expect((at(page, 'selectedSets') as () => ReadonlySet<number>)().size).toBe(0);
     expect((at(page, 'canSearchRotation') as () => boolean)()).toBe(false);
@@ -680,7 +680,7 @@ describe('OptimizePage — the rotation objective', () => {
     // no 4-piece — and it is a state that is actually calibrated rather than scored from
     // stat pools that nine of the sixty 2-piece bonuses have nothing to put in.
     const page = pageWith();
-    (page as unknown as Record<string, unknown>)['rotationId'] = 'r1';
+    page['rotationId'].set('r1');
     (at(page, 'candidates') as { set: (v: unknown) => void }).set(piecesFor(15003, 15020));
 
     expect((at(page, 'canSearchRotation') as () => boolean)()).toBe(false);

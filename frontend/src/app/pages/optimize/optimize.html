@@ -1,9 +1,7 @@
 <section class="optimize">
   <header>
     <h1>Optimize</h1>
-    <p class="muted">
-      Search your own artifacts, in your own browser, for the five that hit hardest.
-    </p>
+    <p class="muted">Searched in your browser, over your own artifacts.</p>
   </header>
 
   @if (error(); as message) {
@@ -52,7 +50,7 @@
 
       <label>
         Hit
-        <select aria-label="Hit" [(ngModel)]="hitIndex">
+        <select aria-label="Hit" [ngModel]="hitIndex()" (ngModelChange)="hitIndex.set(+$event)">
           @for (option of hits(); track $index) {
             <option [value]="$index">
               {{ talentLabel(option.talent) }} · {{ option.label }}
@@ -90,9 +88,7 @@
     </div>
 
     @if (!hit()) {
-      <p class="hint">
-        This build has no talent levels set, so there is no hit to optimise for.
-      </p>
+      <p class="hint">This build has no talent levels set.</p>
     }
 
     <!-- The rotation objective (R.8/R.9).
@@ -116,7 +112,7 @@
       @if (objective() === 'rotation') {
         <label>
           Rotation
-          <select [(ngModel)]="rotationId" aria-label="Rotation">
+          <select [ngModel]="rotationId()" (ngModelChange)="rotationId.set($event)" aria-label="Rotation">
             @for (option of rotations(); track option.id) {
               <option [value]="option.id">{{ option.name }}</option>
             }
@@ -142,9 +138,7 @@
         <fieldset class="set-filter">
           <legend>4-piece sets to search</legend>
           <p class="hint">
-            Every 4-piece bonus in the game is conditional, so a set can only be scored by a
-            gcsim run that equipped it. Narrowing this cuts the wait twice over — a set nobody
-            selected is a set nobody has to calibrate.
+            Each set costs a gcsim calibration, so pick only the ones you care about.
           </p>
 
           <div class="filter-actions">
@@ -156,10 +150,7 @@
           @if (!selectedSets().size && chosenPair() === null) {
             <!-- Ruling 3: nothing is preselected, so the empty state has to say what to do
                  rather than leave a disabled button unexplained. -->
-            <p class="hint">
-              Pick at least one set to search. Each one is a separate gcsim calibration of
-              about six seconds, so choosing three costs four — the baseline plus one each.
-            </p>
+            <p class="hint">Pick at least one set. Roughly six seconds each.</p>
           }
 
           <ul class="sets">
@@ -180,11 +171,7 @@
 
           <details class="pair-picker">
             <summary>Also search a 2+2 pair (optional)</summary>
-            <p class="hint">
-              Valid for some characters and rare, so it is off unless you ask. One pair is a
-              separate calibration and about three seconds of searching; every pair at once is
-              not searchable, which is why you name one.
-            </p>
+            <p class="hint">Rare, so it is off unless you ask. One pair at a time.</p>
             <div class="pair-controls">
               <label>
                 First

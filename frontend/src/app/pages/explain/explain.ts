@@ -65,7 +65,13 @@ export class ExplainPage implements OnInit {
   protected readonly result = signal<ExplainResponse | null>(null);
 
   protected readonly buildId = signal('');
-  protected hitIndex = 0;
+  /**
+   * A **signal**, because the `hit` computed reads it.
+   *
+   * A plain field is invisible to a computed — Angular tracks signal reads — so changing the
+   * hit left `hit()` on whatever it had cached, and the page scored the previous selection.
+   */
+  protected readonly hitIndex = signal(0);
   protected channel = 'physical';
   protected scope = 'normal';
   protected enemyLevel = 90;
@@ -73,7 +79,7 @@ export class ExplainPage implements OnInit {
   protected readonly build = computed(
     () => this.builds().find((b) => b.id === this.buildId()) ?? null,
   );
-  protected readonly hit = computed(() => this.hits()[this.hitIndex] ?? null);
+  protected readonly hit = computed(() => this.hits()[this.hitIndex()] ?? null);
   protected readonly canScore = computed(
     () => this.hit() !== null && !this.scoring(),
   );
@@ -106,7 +112,7 @@ export class ExplainPage implements OnInit {
   protected async selectBuild(id: string): Promise<void> {
     this.buildId.set(id);
     this.hits.set([]);
-    this.hitIndex = 0;
+    this.hitIndex.set(0);
     this.result.set(null);
     this.actionError.set(null);
     if (!id) return;

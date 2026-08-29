@@ -77,5 +77,15 @@ scratch_*.txt
 # and this one is personal.
 references/*.json
 
+# Screenshots passed in during review. Ignored for the same reason as the export above and
+# then some: two of the first three showed the owner's own inventory, and a screenshot is
+# permanent history for a conversation that is not. The *design* references this repo cites
+# — `mitya*.png`, and GO's card in `docs/DECISIONS.md` — are committed deliberately and
+# named here so the rule cannot swallow them.
+references/*.png
+!references/mitya.png
+!references/mitya_ornament.png
+!references/genshin_optimizer_artifact_info.png
+
 # Screenshots from `cd backend && python -m scripts.shoot`. Working output, not artefacts.
 screenshots/

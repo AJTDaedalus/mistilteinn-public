@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.services.substat_rolls import analyse
+from app.services.substat_rolls import _budget, analyse, resolve_artifact
 
 #: 5★ CRIT DMG: 5.44 / 6.22 / 6.99 / 7.77 percent.
 CRIT_DMG_MAX = 0.0777
@@ -129,3 +129,102 @@ def test_roll_tiers_index_the_ladder_lowest_first() -> None:
     found = analyse(stars=5, stat="FIGHT_PROP_CRITICAL_HURT", value=CRIT_DMG_MAX)
 
     assert found.roll_tiers == (3,)
+
+
+# ── the artifact-level solve ─────────────────────────────────────────────────
+#
+# **These were missing when `resolve_artifact` shipped**, and the review found three bugs in
+# it that a single table-driven budget test would have caught. That is the second time in two
+# PRs that new logic arrived with tests pointed somewhere else.
+
+
+@pytest.mark.parametrize(
+    ("stars", "level", "expected"),
+    [
+        (5, 20, {8, 9}),   # 3 or 4 initial + 5 upgrades
+        (5, 8, {5, 6}),    # only two upgrades have happened
+        (4, 16, {6, 7}),   # 2 or 3 initial + 4 upgrades
+        (3, 12, {4, 5}),   # 1 or 2 initial + 3 upgrades
+        (4, 0, {2, 3}),    # unupgraded
+    ],
+)
+def test_the_budget_is_rarity_derived_not_substat_derived(
+    stars: int, level: int, expected: set[int],
+) -> None:
+    """**The bug this is named for.** The first version inferred the initial substat count
+    from how many the piece has *now*, minus one — right only at 5-star, where four-now
+    equals the high bound by coincidence. A 4-star drops with two or three lines, so its
+    `+16` budget was computed as `{7, 8}` against a truth of `{6, 7}`: the real answer
+    excluded half the time, and a total the rarity cannot reach admitted.
+
+    The bounds are Genshin Optimizer's `artSubstatRollData` (MIT), used rather than derived —
+    1-star and 2-star do not follow the pattern at all.
+    """
+    assert _budget(stars=stars, level=level) == expected
+
+
+def test_an_unknown_rarity_has_no_budget_rather_than_a_guessed_one() -> None:
+    assert _budget(stars=99, level=20) == set()
+
+
+def test_the_budget_resolves_lines_the_value_alone_cannot() -> None:
+    """The reported case: a +20 5-star flower whose CRIT lines had no bars.
+
+    Alone, 27.2% CRIT DMG is four rolls or five and 10.9% CRIT rate is three or four. Only
+    one combination of the four lines sums to a legal total, which settles both.
+    """
+    found = resolve_artifact(stars=5, level=20, substats=[
+        ("FIGHT_PROP_DEFENSE", 16.0),
+        ("FIGHT_PROP_CHARGE_EFFICIENCY", 0.065),
+        ("FIGHT_PROP_CRITICAL_HURT", 0.272),
+        ("FIGHT_PROP_CRITICAL", 0.109),
+    ])
+
+    assert [f.rolls for f in found] == [1, 1, 4, 3]
+    assert sum(f.rolls for f in found) in _budget(stars=5, level=20)
+
+
+def test_a_line_settled_on_its_own_is_never_marked_estimated() -> None:
+    """The solve may guess elsewhere on the piece; that cannot unsettle a line that was sure."""
+    found = resolve_artifact(stars=5, level=20, substats=[
+        ("FIGHT_PROP_DEFENSE", 16.0),
+        ("FIGHT_PROP_CHARGE_EFFICIENCY", 0.065),
+        ("FIGHT_PROP_CRITICAL_HURT", 0.272),
+        ("FIGHT_PROP_CRITICAL", 0.109),
+    ])
+
+    assert found[0].estimated is False
+    assert found[0].roll_tiers is not None
+
+
+def test_an_estimated_count_never_carries_per_roll_tiers() -> None:
+    """A guessed count can still have exactly one decomposition. Publishing its tiers painted
+    bars *as fact* on a number nothing established — `roll_tiers` promises otherwise.
+    """
+    for f in resolve_artifact(stars=5, level=20, substats=[
+        ("FIGHT_PROP_ATTACK_PERCENT", 0.169),
+        ("FIGHT_PROP_CRITICAL", 0.109),
+        ("FIGHT_PROP_CRITICAL_HURT", 0.272),
+        ("FIGHT_PROP_HP_PERCENT", 0.099),
+    ]):
+        if f.estimated:
+            assert f.roll_tiers is None, "coloured a guess"
+
+
+def test_a_piece_whose_lines_do_not_decompose_is_left_alone() -> None:
+    """No budget arithmetic can rescue a line the table cannot read; it must not invent one."""
+    found = resolve_artifact(stars=5, level=20, substats=[
+        ("FIGHT_PROP_NOT_A_STAT", 1.0),
+        ("FIGHT_PROP_CRITICAL", 0.109),
+    ])
+
+    assert found[0].rolls is None
+
+
+def test_roll_value_survives_a_line_with_no_count() -> None:
+    """`roll_value` is value over the best single roll and needs no decomposition, so it is
+    the number that stays available when the count is not."""
+    found = resolve_artifact(stars=5, level=20, substats=[("FIGHT_PROP_CRITICAL_HURT", 5.0)])
+
+    assert found[0].rolls is None
+    assert found[0].roll_value is not None

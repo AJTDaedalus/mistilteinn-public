@@ -119,7 +119,7 @@ describe('RotationsPage', () => {
     } as unknown as RotationsService);
     await page['load']();
     page['addStep']();
-    page['name'] = 'Melt opener';
+    page['name'].set('Melt opener');
 
     await page['save']();
 
@@ -131,7 +131,7 @@ describe('RotationsPage', () => {
     const page = healthy({ create } as unknown as RotationsService);
     await page['load']();
 
-    page['name'] = 'Named but empty';
+    page['name'].set('Named but empty');
     expect(page['canSave']()).toBe(false);
     await page['save']();
     expect(create).not.toHaveBeenCalled();
@@ -149,7 +149,7 @@ describe('RotationsPage', () => {
       id: 'rot-1', name: 'Saved', team_id: 'team-1', description: '',
       steps: [{ character: '10000002', action: 'burst', repeat: 1, note: '' }],
     });
-    page['name'] = 'Renamed';
+    page['name'].set('Renamed');
 
     await page['save']();
 
@@ -205,7 +205,7 @@ describe('RotationsPage', () => {
       id: 'rot-1', name: 'Saved', team_id: 'team-1', description: '', steps: [],
     });
 
-    page['name'] = 'Renamed';
+    page['name'].set('Renamed');
 
     expect(page['dirty']()).toBe(true);
   });

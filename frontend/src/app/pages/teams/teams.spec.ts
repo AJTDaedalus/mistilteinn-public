@@ -43,6 +43,25 @@ function healthy(teams: Partial<TeamsService> = {}, builds: Partial<BuildsServic
 }
 
 describe('TEAM_SLOTS', () => {
+  it('enables Save once a name is typed, whatever order the form is filled in', async () => {
+    // **The bug this is named for.** `canSave` is a `computed()`, and `name` was a plain
+    // field — Angular tracks *signal* reads, so typing a name invalidated nothing and the
+    // computed kept whatever it had cached. Filling a slot after typing worked, because the
+    // slot *is* a signal; typing after filling did not, and the button simply never enabled.
+    //
+    // Reading `canSave()` between the two steps is what makes this fail against the old code:
+    // it forces the computed to cache before the name is set.
+    const page = healthy();
+    await page['load']();
+
+    page['pick']('build1_id', AYAKA_C0.id);
+    expect(page['canSave']()).toBe(false);
+
+    page['name'].set('Freeze');
+
+    expect(page['canSave']()).toBe(true);
+  });
+
   it('is the slot list the API publishes', () => {
     // Mirrored from the server's own `TEAM_SLOTS`, which is itself one definition replacing
     // four hand-written lists — the fork carried ZZZ's three-agent squad into a game with
@@ -129,7 +148,7 @@ describe('TeamsPage', () => {
     const page = healthy({ create });
     await page['load']();
 
-    page['name'] = 'Freeze';
+    page['name'].set('Freeze');
     expect(page['canSave']()).toBe(false);
     await page['save']();
     expect(create).not.toHaveBeenCalled();
@@ -145,7 +164,7 @@ describe('TeamsPage', () => {
     const create = vi.fn();
     const page = healthy({ create });
     await page['load']();
-    page['name'] = 'Freeze';
+    page['name'].set('Freeze');
 
     page['pick']('build2_id', 'b-ayaka-c0');
 
@@ -161,7 +180,7 @@ describe('TeamsPage', () => {
     const create = vi.fn().mockResolvedValue({ id: 't1' });
     const page = healthy({ create });
     await page['load']();
-    page['name'] = 'Freeze';
+    page['name'].set('Freeze');
     page['pick']('build1_id', 'b-ayaka-c0');
 
     await page['save']();
@@ -180,7 +199,7 @@ describe('TeamsPage', () => {
     const detail = 'this team holds Kamisato Ayaka twice (b-ayaka-c0 and b-ayaka-c6).';
     const page = healthy({ create: vi.fn().mockRejectedValue({ detail }) });
     await page['load']();
-    page['name'] = 'Two Ayakas';
+    page['name'].set('Two Ayakas');
     page['pick']('build1_id', 'b-ayaka-c0');
 
     await page['save']();
@@ -196,7 +215,7 @@ describe('TeamsPage', () => {
     });
     await page['load']();
     page['edit'](saved as never);
-    page['name'] = 'Renamed';
+    page['name'].set('Renamed');
 
     await page['save']();
 

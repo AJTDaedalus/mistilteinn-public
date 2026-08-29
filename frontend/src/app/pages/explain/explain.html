@@ -1,9 +1,7 @@
 <section class="explain">
   <header>
     <h1>Explain</h1>
-    <p class="muted">
-      What a hit does, and where every number in it came from.
-    </p>
+    <p class="muted">Where every number in a hit came from.</p>
   </header>
 
   @if (error(); as message) {
@@ -55,7 +53,7 @@
         <!-- Named, never typed. M.2 resolves the multiplier from the character's own
              published table at this build's talent level; a number entered here would be a
              second source for something the server already knows. -->
-        <select aria-label="Hit" [(ngModel)]="hitIndex">
+        <select aria-label="Hit" [ngModel]="hitIndex()" (ngModelChange)="hitIndex.set(+$event)">
           @for (option of hits(); track $index) {
             <option [value]="$index">
               {{ talentLabel(option.talent) }} · {{ option.label }}

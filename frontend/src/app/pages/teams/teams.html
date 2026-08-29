@@ -1,10 +1,6 @@
 <section class="teams">
   <header>
     <h1>Teams</h1>
-    <p class="muted">
-      Up to four of your builds. A rotation's steps are checked against the team they belong
-      to.
-    </p>
   </header>
 
   @if (error(); as message) {
@@ -18,8 +14,7 @@
     <!-- A team is assembled from builds, so there is nothing to assemble until one exists.
          Saying so beats a builder whose every slot is empty for an unstated reason. -->
     <p class="muted">
-      You have no builds yet. A team is assembled from your builds, so
-      <a routerLink="/builds">make one first</a>.
+      No builds yet — <a routerLink="/builds">make one first</a>.
     </p>
   } @else {
     <div class="layout">
@@ -28,7 +23,7 @@
 
         <label>
           Name
-          <input type="text" [(ngModel)]="name" placeholder="Freeze" aria-label="Team name" />
+          <input type="text" [ngModel]="name()" (ngModelChange)="name.set($event)" placeholder="Freeze" aria-label="Team name" />
         </label>
 
         <ol class="slots">

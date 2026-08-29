@@ -5935,6 +5935,11 @@
               }
             ],
             "title": "Roll Value"
+          },
+          "estimated": {
+            "type": "boolean",
+            "title": "Estimated",
+            "default": false
           }
         },
         "type": "object",
