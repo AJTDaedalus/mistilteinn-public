@@ -183,74 +183,53 @@
 
       @if (fourPieceChoices().length) {
         <fieldset class="set-filter">
-          <legend>4-piece sets to search</legend>
+          <legend>Sets to search</legend>
           <p class="hint">
-            Each set costs a gcsim calibration, so pick only the ones you care about.
+            Each costs a gcsim calibration, so pick only the ones you care about. A set can be
+            a 4-piece or half a 2+2, never both — they are two shapes of the same five slots.
           </p>
 
-          <div class="filter-actions">
-            <button type="button" (click)="selectAllSets()">All</button>
-            <button type="button" (click)="selectNoSets()">None</button>
-            <span class="muted mono">{{ calibrationCount() }} calibration(s)</span>
+          <div class="set-filter__controls">
+            <!-- The 4-piece comes first, being far the commoner build. -->
+            <mist-card-picker
+              label="4-piece"
+              placeholder="None yet"
+              multi
+              [options]="fourPieceOptions()"
+              [selected]="fourPieceSelected()"
+              (selectedChange)="setFourPiece($event)"
+            />
+
+            <mist-card-picker
+              label="2+2 pair"
+              placeholder="None yet"
+              multi
+              [options]="pairOptions()"
+              [selected]="pairSelected()"
+              (selectedChange)="setPair($event)"
+            />
+
+            <div class="filter-actions">
+              <button type="button" (click)="selectAllSets()">All 4-piece</button>
+              <button type="button" (click)="selectNoSets()">None</button>
+              <span class="muted mono">{{ calibrationCount() }} calibration(s)</span>
+            </div>
           </div>
+
+          @if (pairSelected().length === 1) {
+            <!-- Said rather than searched. This page enumerates a 4-piece or a 2+2; "two of
+                 this and three of anything" is neither, so a half-filled pair constrains
+                 nothing and would quietly contribute no recipe at all. -->
+            <p class="hint">
+              A 2-piece needs a partner — pick a second set, or clear this one.
+            </p>
+          }
 
           @if (!selectedSets().size && chosenPair() === null) {
             <!-- Ruling 3: nothing is preselected, so the empty state has to say what to do
                  rather than leave a disabled button unexplained. -->
             <p class="hint">Pick at least one set. Roughly six seconds each.</p>
           }
-
-          <ul class="sets">
-            @for (choice of fourPieceChoices(); track choice.setId) {
-              <li>
-                <label>
-                  <input
-                    type="checkbox"
-                    [checked]="isSelected(choice.setId)"
-                    (change)="toggleSet(choice.setId)"
-                  />
-                  {{ choice.name }}
-                  <span class="muted mono">{{ choice.slots }} slots</span>
-                </label>
-              </li>
-            }
-          </ul>
-
-          <details class="pair-picker">
-            <summary>Also search a 2+2 pair (optional)</summary>
-            <p class="hint">Rare, so it is off unless you ask. One pair at a time.</p>
-            <div class="pair-controls">
-              <label>
-                First
-                <select
-                  [ngModel]="pairFirst()"
-                  (ngModelChange)="pairFirst.set($event)"
-                  aria-label="First 2-piece set"
-                >
-                  <option [ngValue]="null">—</option>
-                  @for (choice of fourPieceChoices(); track choice.setId) {
-                    <option [ngValue]="choice.setId">{{ choice.name }}</option>
-                  }
-                </select>
-              </label>
-              <label>
-                Second
-                <select
-                  [ngModel]="pairSecond()"
-                  (ngModelChange)="pairSecond.set($event)"
-                  aria-label="Second 2-piece set"
-                >
-                  <option [ngValue]="null">—</option>
-                  @for (choice of fourPieceChoices(); track choice.setId) {
-                    <option [ngValue]="choice.setId">{{ choice.name }}</option>
-                  }
-                </select>
-              </label>
-            </div>
-            @if (pairFirst() !== null && pairFirst() === pairSecond()) {
-              <p class="hint">Two of the same set is a 4-piece — pick it above instead.</p>
-            }
-          </details>
         </fieldset>
       }
     }

@@ -30,8 +30,8 @@ reference the owner keeps naming; read it before designing.
 copying that shape per surface is how the fourth one ends up subtly different.
 
 Adopted so far: **inventory set filter** (#162), **build character** and **build weapon**
-(#170), **optimize team** and **optimize build** (#171). Remaining: optimize sets, rotation
-team, rotation database search.
+(#170), **optimize team** and **optimize build** (#171), **optimize 4-piece and 2+2** (#172).
+Remaining: rotation team, rotation database search.
 
 `CardOption.icons` was added for the team card (#171): a team's identity is the four characters
 in it, and electing one of them to stand for the whole thing is a card that lies about what it
@@ -171,9 +171,22 @@ show that a suggested piece is *owned*. Drag-and-drop for the ranking.
 - **An "Equip" button on the results** (owner, 2026-08-29): put the winning five onto the build
   that was searched for. `ScoredBuild` already carries `artifactIds`, so this is an equip call
   and a confirmation rather than a search problem. Worth doing when this page is next opened.
-- **Set filters, from Fairy.** 4-piece and 2-piece mutually exclusive; selecting one 2-piece
+- ~~**Set filters, from Fairy.** 4-piece and 2-piece mutually exclusive; selecting one 2-piece
   **requires** a second, because a lone 2-piece never constrains anything. 4-piece gets the
-  first selector, being far the commoner. Card grid, not a drop-down.
+  first selector, being far the commoner. Card grid, not a drop-down.~~ **Done (#172)** — two
+  card grids where there was a scrolling checkbox list and a `<details>` holding two
+  drop-downs.
+
+  **One reading was made explicit rather than guessed at.** Fairy's rule is about ZZZ's six
+  disc slots, where a 4-piece and a 2-piece coexist in one build; Genshin has five, where a
+  4-piece and a 2+2 are two *shapes* of the same five slots. So "mutually exclusive" was taken
+  per set: a set chosen as a 4-piece is not offered as half of a pair, and the reverse —
+  because a set can only be one of them in any build the search returns. Both panels remain
+  usable in one search, which is what the engine already did. If the owner meant the stronger
+  reading — one panel or the other per search — that is a one-line change to these computeds.
+
+  The pair keeps the **last two** picked rather than refusing a third: a capped multi-select
+  that ignores a click looks broken, and someone clicking a third set is swapping, not adding.
 
 ## 7. Compare
 

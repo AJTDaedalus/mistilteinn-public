@@ -18,6 +18,7 @@ import {
   type ExplainResponse,
 } from '../explain/explain.service';
 import { ArtifactsService } from '../artifacts/artifacts.service';
+import type { ArtifactSetChoice } from './optimize.service';
 import { RotationsService } from '../rotations/rotations.service';
 import { TEAM_SLOTS, TeamsService, type TeamRead } from '../teams/teams.service';
 import { isFilterableMainStat, sortMainStats } from '../../shared/stat-order';
@@ -142,9 +143,7 @@ export class OptimizePage implements OnInit {
    * Holds the **uuid** as well as the name, because `/calibrate` resolves `artifact_set_id`
    * with `get_by_id` and 404s on a nanoka id. See `OptimizeService.artifactSets`.
    */
-  protected readonly artifactSets = signal<
-    ReadonlyMap<number, { id: string; name: string }>
-  >(new Map());
+  protected readonly artifactSets = signal<ReadonlyMap<number, ArtifactSetChoice>>(new Map());
   /**
    * Set bonuses for the rotation search.
    *
@@ -318,6 +317,74 @@ export class OptimizePage implements OnInit {
     if (picked.has(setId)) picked.delete(setId);
     else picked.add(setId);
     this.selectedSets.set(picked);
+  }
+
+  /**
+   * The two set controls, as card grids (owner's audit, §6).
+   *
+   * ## The two are mutually exclusive, per set
+   *
+   * A set chosen as a 4-piece is not offered as half of a 2+2 pair, and the reverse. Both are
+   * *configurations of the same five slots*, so a set can only be one of them in any build the
+   * search actually returns — offering it in both is offering a choice the answer cannot honour.
+   *
+   * ## A lone 2-piece is not a filter
+   *
+   * `chosenPair` already required two distinct sets, and the pair control is capped at two for
+   * the same reason: this search enumerates a 4-piece or a 2+2, and "two of X plus three of
+   * anything" is neither. One set selected is an unfinished pair, said out loud rather than
+   * silently searching nothing.
+   */
+  private cardFor(setId: number, slots: number): CardOption {
+    const known = this.artifactSets().get(setId);
+    return {
+      value: String(setId),
+      label: known?.name ?? `set ${setId}`,
+      icon: known?.icon,
+      detail: `${slots} slots`,
+      // The 4-piece bonus in the set's own words — what anyone is actually choosing between,
+      // and too long for a card.
+      tooltip: known?.fourPieceText ?? undefined,
+    };
+  }
+
+  protected readonly fourPieceOptions = computed<CardOption[]>(() => {
+    const inPair = new Set([this.pairFirst(), this.pairSecond()]);
+    return this.fourPieceChoices()
+      .filter((choice) => !inPair.has(choice.setId))
+      .map((choice) => this.cardFor(choice.setId, choice.slots));
+  });
+
+  protected readonly pairOptions = computed<CardOption[]>(() =>
+    this.fourPieceChoices()
+      .filter((choice) => !this.selectedSets().has(choice.setId))
+      .map((choice) => this.cardFor(choice.setId, choice.slots)),
+  );
+
+  protected readonly fourPieceSelected = computed(() =>
+    [...this.selectedSets()].map(String),
+  );
+
+  protected readonly pairSelected = computed(() =>
+    [this.pairFirst(), this.pairSecond()]
+      .filter((id): id is number => id !== null)
+      .map(String),
+  );
+
+  protected setFourPiece(ids: readonly string[]): void {
+    this.selectedSets.set(new Set(ids.map(Number)));
+  }
+
+  /**
+   * Keep the **last two** picked rather than refusing the third.
+   *
+   * A capped multi-select that ignores a click is a control that looks broken; one that drops
+   * the oldest choice does what the user plainly meant — they are swapping, not adding.
+   */
+  protected setPair(ids: readonly string[]): void {
+    const kept = ids.slice(-2).map(Number);
+    this.pairFirst.set(kept[0] ?? null);
+    this.pairSecond.set(kept[1] ?? null);
   }
 
   /** An uncovered set, named. Ids are what the search returns; names are what a user reads. */

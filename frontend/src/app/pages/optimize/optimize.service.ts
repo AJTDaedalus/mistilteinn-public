@@ -17,6 +17,14 @@ export type { AvailableHit };
  * `FIGHT_PROP_*`; and the mapping between them decides what every stat means. O.1 and O.2
  * exist so that translation happens once, on the server, rather than twice.
  */
+/** What the set filter needs to draw one set: its name, its art, and what its 4-piece does. */
+export interface ArtifactSetChoice {
+  id: string;
+  name: string;
+  icon: string | null | undefined;
+  fourPieceText: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class OptimizeService {
   private api = injectApi();
@@ -89,11 +97,18 @@ export class OptimizeService {
    *
    * One request: there are 65 sets and the page cap is 200.
    */
-  async artifactSets(): Promise<Map<number, { id: string; name: string }>> {
+  async artifactSets(): Promise<Map<number, ArtifactSetChoice>> {
     const { data, error } = await this.api.GET('/api/v1/artifact-sets', {
       params: { query: { limit: 200 } },
     });
     if (error) throw new Error('Could not load artifact sets');
-    return new Map(data.items.map((set) => [set.nanoka_id, { id: set.id, name: set.name }]));
+    return new Map(data.items.map((set) => [set.nanoka_id, {
+      id: set.id,
+      name: set.name,
+      icon: set.icon,
+      // The 4-piece bonus in the set's own words. It is what anyone is choosing between, and
+      // the card is too small to print it — so it is the card's tooltip.
+      fourPieceText: set.affixes?.find((a) => a.pieces_required === 4)?.description ?? null,
+    }]));
   }
 }

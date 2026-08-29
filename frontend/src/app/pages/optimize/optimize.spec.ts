@@ -1049,3 +1049,105 @@ describe('OptimizePage teams', () => {
     expect(page['buildId']()).toBe('b1');
   });
 });
+
+
+/**
+ * The set filter, as two card grids (owner's audit, §6).
+ *
+ * Fairy's model, translated: the 4-piece selector comes first because it is far the commoner
+ * build, the 2-piece one takes a *pair*, and a set cannot be in both. In ZZZ that last rule is
+ * about six disc slots; here it is about five artifact slots, where a 4-piece and a 2+2 are
+ * two shapes of the same five and a set can only be one of them in any build the search
+ * returns.
+ */
+describe('OptimizePage set filter', () => {
+  const CATALOGUE = new Map([
+    [1, { id: 'u1', name: 'Gladiator', icon: 'set_glad', fourPieceText: '+35% Normal Attack' }],
+    [2, { id: 'u2', name: 'Emblem', icon: 'set_emblem', fourPieceText: 'Bonus from ER' }],
+    [3, { id: 'u3', name: 'Noblesse', icon: 'set_noblesse', fourPieceText: '+20% party ATK' }],
+  ]);
+
+  /** Three sets, each reaching all five slots, so all three are 4-piece candidates. */
+  function withThreeSets() {
+    const page = pageWith({
+      optimize: {
+        artifactSets: vi.fn().mockResolvedValue(CATALOGUE),
+      } as unknown as Partial<OptimizeService>,
+    }) as unknown as Record<string, never>;
+    const slots = ['equip_bracer', 'equip_necklace', 'equip_shoes', 'equip_ring', 'equip_dress'];
+    (page['candidates'] as unknown as { set: (v: unknown) => void }).set(
+      [1, 2, 3].flatMap((set_id) => slots.map((slot) => ({
+        id: `${set_id}-${slot}`, slot, set_id, stats: {}, main_stat: 'FIGHT_PROP_HP',
+      }))),
+    );
+    (page['artifactSets'] as unknown as { set: (v: unknown) => void }).set(CATALOGUE);
+    return page;
+  }
+
+  const labels = (options: readonly { label: string }[]) => options.map((o) => o.label);
+
+  it('draws a set as a card with its art and its 4-piece bonus', () => {
+    const page = withThreeSets();
+
+    const [card] = (page['fourPieceOptions'] as unknown as () => readonly {
+      value: string; label: string; icon?: string | null; tooltip?: string;
+    }[])();
+
+    // Alphabetical among sets reaching the same number of slots, which is `fourPieceChoices`'
+    // own tie-break — the cards keep that order rather than imposing a second one.
+    expect(card.label).toBe('Emblem');
+    expect(card.icon).toBe('set_emblem');
+    // Too long for a card, and it is what anyone is choosing between — so, the tooltip.
+    expect(card.tooltip).toBe('Bonus from ER');
+  });
+
+  it('does not offer a 4-piece set as half of a pair', () => {
+    // Both are configurations of the same five slots, so a set can only be one of them in any
+    // build the search returns. Offering it in both offers a choice the answer cannot honour.
+    const page = withThreeSets();
+
+    (page['setFourPiece'] as unknown as (ids: string[]) => void)(['1']);
+
+    expect(labels((page['pairOptions'] as unknown as () => never[])()))
+      .toEqual(['Emblem', 'Noblesse']);
+  });
+
+  it('does not offer a paired set as a 4-piece', () => {
+    const page = withThreeSets();
+
+    (page['setPair'] as unknown as (ids: string[]) => void)(['2', '3']);
+
+    expect(labels((page['fourPieceOptions'] as unknown as () => never[])()))
+      .toEqual(['Gladiator']);
+  });
+
+  it('keeps the last two picked rather than refusing the third', () => {
+    // A capped multi-select that ignores a click looks broken; one that drops the oldest does
+    // what the user plainly meant — they are swapping, not adding.
+    const page = withThreeSets();
+
+    (page['setPair'] as unknown as (ids: string[]) => void)(['1', '2', '3']);
+
+    expect((page['pairSelected'] as unknown as () => string[])()).toEqual(['2', '3']);
+  });
+
+  it('treats one set as an unfinished pair, not as a filter', () => {
+    // This search enumerates a 4-piece or a 2+2. "Two of this and three of anything" is
+    // neither, so a lone 2-piece would contribute no recipe at all — said, not searched.
+    const page = withThreeSets();
+
+    (page['setPair'] as unknown as (ids: string[]) => void)(['1']);
+
+    expect((page['chosenPair'] as unknown as () => unknown)()).toBeNull();
+    expect((page['calibrationCount'] as unknown as () => number)()).toBe(1);
+  });
+
+  it('counts one calibration per 4-piece set, one for a whole pair, and one baseline', () => {
+    const page = withThreeSets();
+
+    (page['setFourPiece'] as unknown as (ids: string[]) => void)(['1']);
+    (page['setPair'] as unknown as (ids: string[]) => void)(['2', '3']);
+
+    expect((page['calibrationCount'] as unknown as () => number)()).toBe(3);
+  });
+});
