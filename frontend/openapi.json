@@ -1035,6 +1035,32 @@
         }
       }
     },
+    "/api/v1/reactions": {
+      "get": {
+        "tags": [
+          "catalogue"
+        ],
+        "summary": "List Reactions",
+        "description": "Every elemental reaction a team filter can offer.\n\n**Static, committed and cited** \u2014 `docs/RESEARCH_elemental_reactions.md` records the source\nURL, the retrieval date and the wiki's own wording per reaction. No database, because this\nis not seeded game data: the catalogue importer has no notion of a reaction, and\n`app/formula/genshin/damage.py` carries only the four *amplifying* ones by design.\n\nUnauthenticated like the rest of the catalogue: it describes the game, not the caller.",
+        "operationId": "list_reactions_api_v1_reactions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReactionRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Reactions Api V1 Reactions Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/artifacts": {
       "get": {
         "tags": [
@@ -5430,6 +5456,41 @@
         ],
         "title": "RarityVocabularyEntry",
         "description": "One rarity, as a page needs to render it."
+      },
+      "ReactionRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "required": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required"
+          },
+          "one_of": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "One Of",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "required"
+        ],
+        "title": "ReactionRead",
+        "description": "One elemental reaction, and what a party must field to produce it.\n\nPublished so the client filters on the **same committed table** the backend reads, rather\nthan a second copy that would drift \u2014 the reason every vocabulary here is served rather\nthan restated.\n\nOnly reactions the source settles are listed: five carry an uncertainty in\n`docs/RESEARCH_elemental_reactions.md` and `app/services/reactions.py` explains each. A\nfilter that quietly mis-classified a team is worse than one that offers less."
       },
       "RefusedCandidate": {
         "properties": {

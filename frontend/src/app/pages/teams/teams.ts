@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 
 import { apiErrorMessage } from '../../api/api-error';
 import { Combobox, type ComboboxOption } from '../../shared/combobox/combobox';
+import { CatalogueService, type ReactionRead } from '../catalogue/catalogue.service';
 import { CatalogueIcon } from '../../shared/icon/icon';
 import { BuildsService, type BuildRead } from '../builds/builds.service';
 import { TEAM_SLOTS, TeamsService, type TeamRead, type TeamSlot } from './teams.service';
@@ -84,6 +85,7 @@ export class TeamsPage implements OnInit {
 
   private readonly teamsService = inject(TeamsService);
   private readonly buildsService = inject(BuildsService);
+  private readonly catalogue = inject(CatalogueService);
 
   ngOnInit(): void {
     void this.load();
@@ -93,12 +95,16 @@ export class TeamsPage implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const [teams, builds] = await Promise.all([
+      const [teams, builds, reactions] = await Promise.all([
         this.teamsService.list(),
         this.buildsService.list(),
+        // Never fatal: the reaction filter is an extra way to narrow a list that is already on
+        // screen, and losing it should not take the page's error state with it.
+        this.catalogue.listReactions().catch(() => []),
       ]);
       this.teams.set(teams);
       this.builds.set(builds);
+      this.reactions.set(reactions);
     } catch {
       // Surfaced, not swallowed: an empty list and a failed request look identical on screen,
       // and only one of them means the account has no teams.
@@ -226,21 +232,40 @@ export class TeamsPage implements OnInit {
    * whose builds have all been deleted would show as a blank space rather than as empty.
    */
   /**
-   * Filter the saved teams by the visions they field.
+   * Filter the saved teams by the visions they field, or by a reaction they could produce.
    *
-   * **Elements only, not reactions — and that is a blocker, not an omission.** The audit asks
-   * for reaction filters too, with Hyperbloom named because it is three elements rather than
-   * two. This repo has **no reaction-to-element data**: `formula/genshin/damage.py` carries the
-   * four *amplifying* reactions and says in its own docstring that transformative and additive
-   * ones are deliberately absent, because gcsim computes them on a different path.
+   * **The reaction table is the server's**, from `GET /reactions` — committed and cited in
+   * `docs/RESEARCH_elemental_reactions.md`, which records the source URL, the retrieval date
+   * and the wiki's own wording per reaction. Reading it here rather than restating it is the
+   * same rule every other vocabulary on this page follows.
    *
-   * Writing the other eleven from memory is precisely the fabricated-citation failure
-   * `CLAUDE.md` names as fairy's worst. They are derivable — `pkg/reactable/*.go` at the pin
-   * has each one — but that is a snapshot script like `build_key_snapshot.py`, and a subtly
-   * wrong table would mis-classify teams silently. Recorded in `BACKLOG_frontend.md` §4 as its
-   * own task rather than guessed at here.
+   * **Could produce, not will.** Four elements can field Hyperbloom; whether a rotation
+   * actually triggers it is the simulator's question, and a filter claiming otherwise would be
+   * answering something it cannot see.
    */
   protected readonly elementFilter = signal('');
+  /** Reactions the saved teams could produce, from the server's committed table. */
+  protected readonly reactions = signal<ReactionRead[]>([]);
+  protected readonly reactionFilter = signal('');
+
+  /** A reaction is possible when the party has everything it needs. */
+  private canReact(elements: Set<string>, reaction: ReactionRead): boolean {
+    if (!reaction.required.every((element) => elements.has(element))) return false;
+    // Swirl and Crystallize need one *more* element from a fixed four — and the two Lunar
+    // variants that look similar do not, which is why this is data on the row rather than a
+    // rule about the name.
+    return !reaction.one_of.length || reaction.one_of.some((e) => elements.has(e));
+  }
+
+  /** Reactions at least one saved team could produce. Offering the rest is offering nothing. */
+  protected readonly reactionsPresent = computed(() => {
+    const parties = this.teams().map(
+      (team) => new Set((this.party(team) ?? []).map((m) => m.element ?? '')),
+    );
+    return this.reactions().filter(
+      (reaction) => parties.some((elements) => this.canReact(elements, reaction)),
+    );
+  });
 
   protected readonly elementsPresent = computed(() => {
     const seen = new Map<string, string | null>();
@@ -257,10 +282,16 @@ export class TeamsPage implements OnInit {
 
   protected readonly shownTeams = computed(() => {
     const element = this.elementFilter();
-    if (!element) return this.teams();
-    return this.teams().filter((team) =>
-      (this.party(team) ?? []).some((member) => member.element === element),
-    );
+    const reactionId = this.reactionFilter();
+    const reaction = this.reactions().find((r) => r.id === reactionId) ?? null;
+    if (!element && !reaction) return this.teams();
+
+    return this.teams().filter((team) => {
+      const members = this.party(team) ?? [];
+      if (element && !members.some((m) => m.element === element)) return false;
+      if (!reaction) return true;
+      return this.canReact(new Set(members.map((m) => m.element ?? '')), reaction);
+    });
   });
 
   protected party(team: TeamRead): TeamMember[] | null {

@@ -136,3 +136,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* The reaction filter sits above the vision chips: a reaction is the coarser question, and
+   picking one usually settles which visions are on screen anyway. */
+.team-reactions {
+  margin-bottom: var(--space-2);
+
+  select { width: 100%; }
+}

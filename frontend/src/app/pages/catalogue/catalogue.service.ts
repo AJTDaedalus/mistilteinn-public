@@ -8,6 +8,7 @@ export type CharacterRead = components['schemas']['CharacterRead'];
 export type WeaponSummary = components['schemas']['WeaponSummary'];
 export type ArtifactSetRead = components['schemas']['ArtifactSetRead'];
 export type EnemyProfileRead = components['schemas']['EnemyProfileRead'];
+export type ReactionRead = components['schemas']['ReactionRead'];
 
 /**
  * Reads of the seeded catalogue — G.6a's endpoints.
@@ -84,6 +85,19 @@ export class CatalogueService {
       params: { query: params },
     });
     if (error) throw new Error('Could not load artifact sets');
+    return data;
+  }
+
+  /**
+   * Every elemental reaction a team filter can offer.
+   *
+   * Read rather than restated: the table is committed and cited in
+   * `docs/RESEARCH_elemental_reactions.md`, and a client-side copy would be the second
+   * definition that drifts.
+   */
+  async listReactions() {
+    const { data, error } = await this.api.GET('/api/v1/reactions');
+    if (error) throw new Error('Could not load reactions');
     return data;
   }
 

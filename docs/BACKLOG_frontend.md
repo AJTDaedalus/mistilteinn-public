@@ -80,20 +80,20 @@ show that a suggested piece is *owned*. Drag-and-drop for the ranking.
   (#165)** — character level plus weapon **without** the weapon's level. Together they read as
   one number repeated; the owner's ruling was to keep the character's and drop the weapon's.
 - ~~Filters by element~~ **Done (#165)** — the visions actually fielded, as emblems.
-- **By reaction — BLOCKED, and this is the blocker.** This repo has **no reaction-to-element
-  data**. `app/formula/genshin/damage.py` carries the four *amplifying* reactions and states in
-  its own docstring that transformative and additive ones are deliberately absent, because
-  gcsim computes them on a different path. Bloom, Hyperbloom, Overload, Quicken and the rest
-  simply do not exist here.
+- ~~**By reaction.**~~ **Done (#167) — the blocker was resolved by the owner supplying a
+  source.** It had been blocked because this repo has no reaction-to-element data at all:
+  `formula/genshin/damage.py` carries the four *amplifying* reactions and states that
+  transformative and additive ones are deliberately absent.
 
-  Writing the eleven-odd mappings from memory is the fabricated-citation failure `CLAUDE.md`
-  calls fairy's worst. **They are derivable**: `pkg/reactable/*.go` at the pinned commit has a
-  file per reaction, and `bloom.go` names `attributes.Hydro` and `attributes.Dendro` in its
-  trigger switch. But it is tangled with aura-durability logic — `Quicken` and `BurningFuel`
-  appear in the same switch — so a naive regex over-collects, and a subtly wrong table
-  mis-classifies teams **silently**.
+  The owner pointed at the Genshin Impact Wiki. `WebFetch` returns **HTTP 402** on that host and
+  plain `curl` hits a challenge, but the wiki's own **MediaWiki API** answers 200 with page
+  wikitext — so 21 reactions were derived from the source's own wording rather than from
+  memory, and committed with their provenance (`docs/RESEARCH_elemental_reactions.md`).
 
-  So it is a snapshot script like `build_key_snapshot.py`, and its own task. Not attempted.
+  **Sixteen are offered; five are not.** Shattered is not an element pair at all — the source
+  says *"a Blunt or Geo attack"*, and Blunt is Physical — and four Lunar/Stellar reactions may
+  require a party talent the source gates the *effect* on rather than the reaction. A filter
+  that mis-classified a team silently is worse than one that offers less.
 
 ## 5. Rotations
 

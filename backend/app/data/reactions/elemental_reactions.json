@@ -1,0 +1,343 @@
+{
+  "schema": "mistilteinn.reaction_elements/v1",
+  "retrieved": "2026-08-29",
+  "source": {
+    "name": "Genshin Impact Wiki (Fandom)",
+    "primary_url": "https://genshin-impact.fandom.com/wiki/Elemental_Reaction",
+    "method": "MediaWiki API action=parse&prop=wikitext via curl (WebFetch returns HTTP 402 on this host)",
+    "corroboration_names_only": "gcsim pkg/core/info/reaction.go @ 3647a07a7cc3004bc1e79d9bb5f7444de20dceaa"
+  },
+  "elements": [
+    "Pyro",
+    "Hydro",
+    "Dendro",
+    "Electro",
+    "Cryo",
+    "Geo",
+    "Anemo"
+  ],
+  "swirl_crystallize_wildcard_domain": [
+    "Pyro",
+    "Hydro",
+    "Electro",
+    "Cryo"
+  ],
+  "reactions": [
+    {
+      "id": "vaporize",
+      "name": "Vaporize",
+      "elements_required": [
+        "Pyro",
+        "Hydro"
+      ],
+      "wildcard": null,
+      "category": "amplifying",
+      "party_gate": null,
+      "uncertain": false
+    },
+    {
+      "id": "melt",
+      "name": "Melt",
+      "elements_required": [
+        "Pyro",
+        "Cryo"
+      ],
+      "wildcard": null,
+      "category": "amplifying",
+      "party_gate": null,
+      "uncertain": false
+    },
+    {
+      "id": "overloaded",
+      "name": "Overloaded",
+      "elements_required": [
+        "Pyro",
+        "Electro"
+      ],
+      "wildcard": null,
+      "category": "transformative",
+      "party_gate": null,
+      "uncertain": false
+    },
+    {
+      "id": "superconduct",
+      "name": "Superconduct",
+      "elements_required": [
+        "Electro",
+        "Cryo"
+      ],
+      "wildcard": null,
+      "category": "transformative",
+      "party_gate": null,
+      "uncertain": false
+    },
+    {
+      "id": "electro_charged",
+      "name": "Electro-Charged",
+      "elements_required": [
+        "Electro",
+        "Hydro"
+      ],
+      "wildcard": null,
+      "category": "transformative",
+      "party_gate": null,
+      "uncertain": false
+    },
+    {
+      "id": "frozen",
+      "name": "Frozen",
+      "elements_required": [
+        "Cryo",
+        "Hydro"
+      ],
+      "wildcard": null,
+      "category": null,
+      "party_gate": null,
+      "uncertain": false,
+      "note": "Deals no damage; applies a Freeze Aura. Source lists no damage category for it."
+    },
+    {
+      "id": "shattered",
+      "name": "Shattered",
+      "elements_required": [
+        "Cryo",
+        "Hydro"
+      ],
+      "wildcard": null,
+      "category": "transformative",
+      "party_gate": null,
+      "uncertain": true,
+      "additional_trigger": {
+        "any_of": [
+          "Geo",
+          "blunt_attack"
+        ],
+        "note": "Source: 'Shatter is triggered when a Frozen target is hit by a Blunt or Geo attack.' A Blunt Attack is Physical, not an element, so Shatter does NOT require Geo. Modelling this as a pure element set is wrong in both directions - see Uncertain #1."
+      }
+    },
+    {
+      "id": "swirl",
+      "name": "Swirl",
+      "elements_required": [
+        "Anemo",
+        "__WILDCARD__"
+      ],
+      "wildcard": {
+        "count": 1,
+        "one_of": [
+          "Pyro",
+          "Hydro",
+          "Electro",
+          "Cryo"
+        ],
+        "excluded": [
+          "Dendro",
+          "Geo"
+        ]
+      },
+      "category": "transformative",
+      "party_gate": null,
+      "uncertain": false
+    },
+    {
+      "id": "crystallize",
+      "name": "Crystallize",
+      "elements_required": [
+        "Geo",
+        "__WILDCARD__"
+      ],
+      "wildcard": {
+        "count": 1,
+        "one_of": [
+          "Pyro",
+          "Hydro",
+          "Electro",
+          "Cryo"
+        ],
+        "excluded": [
+          "Dendro",
+          "Anemo"
+        ]
+      },
+      "category": null,
+      "party_gate": null,
+      "uncertain": false,
+      "directional": "Geo must be the applied element; Geo can never be the existing aura.",
+      "note": "Deals no damage; generates an Elemental Shard. Source lists no damage category for it."
+    },
+    {
+      "id": "burning",
+      "name": "Burning",
+      "elements_required": [
+        "Pyro",
+        "Dendro"
+      ],
+      "wildcard": null,
+      "category": "transformative",
+      "party_gate": null,
+      "uncertain": false
+    },
+    {
+      "id": "bloom",
+      "name": "Bloom",
+      "elements_required": [
+        "Dendro",
+        "Hydro"
+      ],
+      "wildcard": null,
+      "category": "transformative",
+      "party_gate": null,
+      "uncertain": false
+    },
+    {
+      "id": "hyperbloom",
+      "name": "Hyperbloom",
+      "elements_required": [
+        "Dendro",
+        "Hydro",
+        "Electro"
+      ],
+      "wildcard": null,
+      "category": "transformative",
+      "party_gate": null,
+      "uncertain": false,
+      "note": "Three elements: Dendro + Hydro produce the Dendro Core, Electro is applied to it."
+    },
+    {
+      "id": "burgeon",
+      "name": "Burgeon",
+      "elements_required": [
+        "Dendro",
+        "Hydro",
+        "Pyro"
+      ],
+      "wildcard": null,
+      "category": "transformative",
+      "party_gate": null,
+      "uncertain": false,
+      "note": "Three elements: Dendro + Hydro produce the Dendro Core, Pyro is applied to it."
+    },
+    {
+      "id": "quicken",
+      "name": "Quicken",
+      "elements_required": [
+        "Dendro",
+        "Electro"
+      ],
+      "wildcard": null,
+      "category": null,
+      "party_gate": null,
+      "uncertain": false,
+      "note": "Deals no damage; applies a Quicken Aura. Source lists no damage category for it."
+    },
+    {
+      "id": "aggravate",
+      "name": "Aggravate",
+      "elements_required": [
+        "Dendro",
+        "Electro"
+      ],
+      "wildcard": null,
+      "category": "additive",
+      "party_gate": null,
+      "uncertain": false,
+      "note": "Electro applied to a Quicken Aura (which is itself Dendro + Electro)."
+    },
+    {
+      "id": "spread",
+      "name": "Spread",
+      "elements_required": [
+        "Dendro",
+        "Electro"
+      ],
+      "wildcard": null,
+      "category": "additive",
+      "party_gate": null,
+      "uncertain": false,
+      "note": "Dendro applied to a Quicken Aura (which is itself Dendro + Electro)."
+    },
+    {
+      "id": "lunar_charged",
+      "name": "Lunar-Charged",
+      "elements_required": [
+        "Electro",
+        "Hydro"
+      ],
+      "wildcard": null,
+      "category": "lunar",
+      "party_gate": "Moonsign Benediction",
+      "party_gate_certain": false,
+      "uncertain": true
+    },
+    {
+      "id": "lunar_bloom",
+      "name": "Lunar-Bloom",
+      "elements_required": [
+        "Dendro",
+        "Hydro"
+      ],
+      "wildcard": null,
+      "category": "lunar",
+      "party_gate": "Moonsign Benediction",
+      "party_gate_certain": true,
+      "uncertain": false,
+      "note": "Source is explicit: replaces Bloom when a character with the corresponding Moonsign Benediction talent is in the party."
+    },
+    {
+      "id": "lunar_crystallize",
+      "name": "Lunar-Crystallize",
+      "elements_required": [
+        "Geo",
+        "Hydro"
+      ],
+      "wildcard": null,
+      "category": "lunar",
+      "party_gate": "Moonsign Benediction",
+      "party_gate_certain": false,
+      "uncertain": true,
+      "directional": "Geo applied to an existing Hydro aura; the source omits 'or vice versa'.",
+      "note": "Hydro only - this does NOT inherit Crystallize's four-element wildcard."
+    },
+    {
+      "id": "stellar_conduct",
+      "name": "Stellar-Conduct",
+      "elements_required": [
+        "Cryo",
+        "Electro"
+      ],
+      "wildcard": null,
+      "category": "stellar_glimmer",
+      "party_gate": "Stellar Linchpin",
+      "party_gate_certain": false,
+      "uncertain": true
+    },
+    {
+      "id": "stellar_swirl",
+      "name": "Stellar Swirl",
+      "elements_required": [
+        "Anemo",
+        "Cryo"
+      ],
+      "wildcard": null,
+      "category": "stellar_glimmer",
+      "party_gate": null,
+      "party_gate_certain": false,
+      "uncertain": true,
+      "note": "Cryo only - this does NOT inherit Swirl's four-element wildcard. Source page is a stub; gcsim @ 3647a07a has no Stellar Swirl implementation. Unlike the other four new reactions the source names NO party talent for Stellar Swirl - it says only that Stellar Glimmer Reaction damage is multiplied by a bonus from 'Stellar Jubilee Passives', which is a damage source, not a stated gate. party_gate is null because the source does not say."
+    }
+  ],
+  "explicit_non_reactions": [
+    [
+      "Dendro",
+      "Cryo"
+    ],
+    [
+      "Dendro",
+      "Anemo"
+    ],
+    [
+      "Dendro",
+      "Geo"
+    ]
+  ]
+}

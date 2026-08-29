@@ -38,10 +38,12 @@ from app.schemas.catalogue import (
     CharacterSummary,
     EnemyProfileRead,
     OwnedWeaponRead,
+    ReactionRead,
     WeaponRead,
     WeaponSummary,
 )
 from app.schemas.common import PaginatedResponse
+from app.services.reactions import offered
 
 router = APIRouter(tags=["catalogue"])
 
@@ -214,3 +216,25 @@ async def get_enemy(
     if profile is None:
         raise HTTPException(status_code=404, detail=f"No enemy profile {profile_id!r}")
     return EnemyProfileRead.model_validate(profile)
+
+
+@router.get("/reactions", response_model=list[ReactionRead])
+async def list_reactions() -> list[ReactionRead]:
+    """Every elemental reaction a team filter can offer.
+
+    **Static, committed and cited** — `docs/RESEARCH_elemental_reactions.md` records the source
+    URL, the retrieval date and the wiki's own wording per reaction. No database, because this
+    is not seeded game data: the catalogue importer has no notion of a reaction, and
+    `app/formula/genshin/damage.py` carries only the four *amplifying* ones by design.
+
+    Unauthenticated like the rest of the catalogue: it describes the game, not the caller.
+    """
+    return [
+        ReactionRead(
+            id=reaction.id,
+            name=reaction.name,
+            required=list(reaction.required),
+            one_of=list(reaction.one_of),
+        )
+        for reaction in offered()
+    ]

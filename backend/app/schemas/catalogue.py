@@ -408,3 +408,23 @@ class OwnedWeaponRead(BaseModel):
             holder_name=getattr(character, "name", None),
             holder_icon=getattr(character, "icon", None),
         )
+
+
+class ReactionRead(BaseModel):
+    """One elemental reaction, and what a party must field to produce it.
+
+    Published so the client filters on the **same committed table** the backend reads, rather
+    than a second copy that would drift — the reason every vocabulary here is served rather
+    than restated.
+
+    Only reactions the source settles are listed: five carry an uncertainty in
+    `docs/RESEARCH_elemental_reactions.md` and `app/services/reactions.py` explains each. A
+    filter that quietly mis-classified a team is worse than one that offers less.
+    """
+
+    id: str
+    name: str
+    #: Elements every party must have.
+    required: list[str]
+    #: Swirl and Crystallize only: one of these, *in addition* to `required`. Empty otherwise.
+    one_of: list[str] = []

@@ -66,9 +66,25 @@
 
       <div class="pane">
         <h2>Saved</h2>
+        @if (reactionsPresent().length) {
+          <!-- Reactions at least one saved team could produce. The table is the server's,
+               committed and cited in `docs/RESEARCH_elemental_reactions.md`. "Could", not
+               "will": whether a rotation triggers one is the simulator's question. -->
+          <div class="team-reactions">
+            <select
+              aria-label="Filter by reaction"
+              [value]="reactionFilter()"
+              (change)="reactionFilter.set($any($event.target).value)"
+            >
+              <option value="">Any reaction</option>
+              @for (r of reactionsPresent(); track r.id) {
+                <option [value]="r.id">{{ r.name }}</option>
+              }
+            </select>
+          </div>
+        }
+
         @if (elementsPresent().length) {
-          <!-- Elements only. A reaction filter needs reaction-to-element data this repo does
-               not have — see `elementFilter`'s comment and `BACKLOG_frontend.md` §4. -->
           <div class="team-visions" role="group" aria-label="Filter by vision">
             @for (e of elementsPresent(); track e.element) {
               <button
@@ -117,7 +133,7 @@
             </li>
           } @empty {
             @if (teams().length) {
-              <li class="muted">No team fields that vision.</li>
+              <li class="muted">No team matches that filter.</li>
             } @else {
               <li class="muted">No teams yet.</li>
             }
