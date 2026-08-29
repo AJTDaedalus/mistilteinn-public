@@ -23,7 +23,7 @@ import { CatalogueIcon } from '../icon/icon';
   selector: 'weapon-mark',
   imports: [CatalogueIcon],
   template: `
-    <span class="mark" [attr.title]="compact() ? label() : null">
+    <span class="mark" [class.mark--chip]="chip()" [attr.title]="compact() ? label() : null">
       @if (icon()) {
         <catalogue-icon [icon]="icon()" [alt]="''" [size]="size()" />
       }
@@ -45,6 +45,21 @@ import { CatalogueIcon } from '../icon/icon';
       color: var(--ink-dim);
       font-size: var(--text-xs);
       letter-spacing: 0.04em;
+    }
+
+    /* A bubble, matching the element chip's shape (owner's audit §9). The two things a
+       character card says about a character then say it the same way — where before one was a
+       pill and the other a bare glyph in a corner. Neutral rather than coloured: a weapon
+       class has no colour of its own, and inventing one would imply a meaning it lacks. */
+    .mark--chip {
+      /* Tighter than the element chip's, and no letter-spacing: this sits beside one on a
+         narrow card, and the pair has to fit on a single line. */
+      padding: 0 var(--space-1);
+      letter-spacing: 0;
+      border: 1px solid var(--surface-rule);
+      border-radius: var(--radius-pill);
+      background: var(--surface-hi);
+      line-height: 1.6;
     }
 
     /* The marks are white-on-transparent line art, which reads as a highlight rather than a
@@ -88,5 +103,7 @@ export class WeaponMark {
   readonly label = input('');
   /** Glyph only, with the word for assistive tech and as a tooltip. */
   readonly compact = input(false, { transform: booleanAttribute });
+  /** Draw it as a bubble, to sit beside an `element-chip` as an equal. */
+  readonly chip = input(false, { transform: booleanAttribute });
   readonly size = input(16);
 }

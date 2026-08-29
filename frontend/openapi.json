@@ -1035,6 +1035,58 @@
         }
       }
     },
+    "/api/v1/elements": {
+      "get": {
+        "tags": [
+          "catalogue"
+        ],
+        "summary": "List Elements",
+        "description": "The seven visions and their emblems, in the order the game lists them.\n\nA filter bar needs both. Served rather than restated so the client never builds an icon\nbasename out of an element name \u2014 `app/services/element_symbols.py` explains at length why\nthat string is an allowlist and not an f-string.\n\nUnauthenticated like the rest of the catalogue: it describes the game, not the caller.",
+        "operationId": "list_elements_api_v1_elements_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ElementRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Elements Api V1 Elements Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/weapon-classes": {
+      "get": {
+        "tags": [
+          "catalogue"
+        ],
+        "summary": "List Weapon Classes",
+        "description": "The five weapon classes that have a mark, for a filter bar.\n\nThe crossbow class is absent and `app/services/weapon_symbols.py` says why: no mark exists\nto draw, and the two characters carrying it are unreleased Traveler variants with no\ntalents seeded.\n\nUnauthenticated like the rest of the catalogue: it describes the game, not the caller.",
+        "operationId": "list_weapon_classes_api_v1_weapon_classes_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WeaponClassRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Weapon Classes Api V1 Weapon Classes Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/reactions": {
       "get": {
         "tags": [
@@ -4272,6 +4324,25 @@
         "title": "Element",
         "description": "The seven visions.\n\nSource: distinct `element` values in `gi/7.0.51/character.json` \u2014 `Anemo`, `Cryo`,\n`Dendro`, `Electro`, `Geo`, `Hydro`, `Pyro`, plus a literal `\"None\"` carried by two\ncharacters (the Traveler entries), which is **handled by `parse`, not mapped**.\n\n**Physical is deliberately absent.** It is a damage type, not a vision; modelling it as\na peer of the seven is the ZZZ-shaped trap DESIGN \u00a72.6 calls out by name. See\n`DamageType`."
       },
+      "ElementRead": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "icon": {
+            "type": "string",
+            "title": "Icon"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value",
+          "icon"
+        ],
+        "title": "ElementRead",
+        "description": "One vision, and the emblem that stands for it.\n\nPublished rather than derived client-side, for exactly the reason `element_icon` is: a\nfilter bar building `f\"{element}.webp\"` would request art nobody vendored the moment a\npatch adds an eighth vision, and would render a broken mark instead of nothing. The\nallowlist lives in `app/services/element_symbols.py` and this is its only other reader.\n\n**Physical is not a vision** and is absent, which is the ZZZ-shaped trap DESIGN \u00a72.6 names."
+      },
       "EnemyProfileRead": {
         "properties": {
           "id": {
@@ -5558,7 +5629,7 @@
           "required"
         ],
         "title": "ReactionRead",
-        "description": "One elemental reaction, and what a party must field to produce it.\n\nPublished so the client filters on the **same committed table** the backend reads, rather\nthan a second copy that would drift \u2014 the reason every vocabulary here is served rather\nthan restated.\n\nOnly reactions the source settles are listed: five carry an uncertainty in\n`docs/RESEARCH_elemental_reactions.md` and `app/services/reactions.py` explains each. A\nfilter that quietly mis-classified a team is worse than one that offers less."
+        "description": "One elemental reaction, and what a party must field to produce it.\n\nPublished so the client filters on the **same committed table** the backend reads, rather\nthan a second copy that would drift \u2014 the reason every vocabulary here is served rather\nthan restated.\n\n**Fifteen are listed and six are not** \u2014 Shattered, which is not an element pair, and the\nfive Lunar/Stellar variants by owner ruling (`DECISIONS.md` \u00a723).\n`app/services/reactions.py` explains each, and every excluded row stays in the committed\nJSON with its citation. A filter that quietly mis-classified a team is worse than one that\noffers less."
       },
       "RefusedCandidate": {
         "properties": {
@@ -6955,6 +7026,30 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "WeaponClassRead": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "display": {
+            "type": "string",
+            "title": "Display"
+          },
+          "icon": {
+            "type": "string",
+            "title": "Icon"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value",
+          "display",
+          "icon"
+        ],
+        "title": "WeaponClassRead",
+        "description": "One weapon class, its readable name, and its mark.\n\nPublished for the same reason `ElementRead` is: a filter bar otherwise carries its own\ncopy of the class list *and* builds an icon basename, and both are allowlists server-side\non purpose. `app/services/weapon_symbols.py` explains why the crossbow class is not here."
       },
       "WeaponRead": {
         "properties": {

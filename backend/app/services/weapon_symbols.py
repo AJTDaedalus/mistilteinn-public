@@ -65,3 +65,20 @@ def symbol_for(weapon_type: WeaponType | str | None) -> str | None:
 def all_symbols() -> tuple[str, ...]:
     """Every symbol basename, for the icon downloader to vendor."""
     return tuple(_SYMBOLS.values())
+
+
+def all_classes() -> tuple[tuple[str, str, str], ...]:
+    """Every weapon class with a mark, as `(value, display, icon)`, for a filter bar.
+
+    **The five with art, not all six.** `WeaponType.CROSSBOW` is deliberately absent for the
+    reason the module docstring gives: it has no mark to draw, so it would render as a wide
+    word among five glyphs — and the only two characters carrying it are unreleased Traveler
+    variants with no talents seeded. A filter offering it would be a control that finds
+    nothing anyone is looking for, wearing the odd one out's shape.
+
+    Published rather than restated so a page never builds a class list *or* an icon basename.
+    """
+    return tuple(
+        (weapon_type.value, weapon_type.display, symbol)
+        for weapon_type, symbol in _SYMBOLS.items()
+    )

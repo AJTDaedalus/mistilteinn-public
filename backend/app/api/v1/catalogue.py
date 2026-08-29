@@ -36,14 +36,18 @@ from app.schemas.catalogue import (
     ArtifactSetRead,
     CharacterRead,
     CharacterSummary,
+    ElementRead,
     EnemyProfileRead,
     OwnedWeaponRead,
     ReactionRead,
+    WeaponClassRead,
     WeaponRead,
     WeaponSummary,
 )
 from app.schemas.common import PaginatedResponse
+from app.services.element_symbols import all_visions
 from app.services.reactions import offered
+from app.services.weapon_symbols import all_classes
 
 router = APIRouter(tags=["catalogue"])
 
@@ -216,6 +220,35 @@ async def get_enemy(
     if profile is None:
         raise HTTPException(status_code=404, detail=f"No enemy profile {profile_id!r}")
     return EnemyProfileRead.model_validate(profile)
+
+
+@router.get("/elements", response_model=list[ElementRead])
+async def list_elements() -> list[ElementRead]:
+    """The seven visions and their emblems, in the order the game lists them.
+
+    A filter bar needs both. Served rather than restated so the client never builds an icon
+    basename out of an element name — `app/services/element_symbols.py` explains at length why
+    that string is an allowlist and not an f-string.
+
+    Unauthenticated like the rest of the catalogue: it describes the game, not the caller.
+    """
+    return [ElementRead(value=value, icon=icon) for value, icon in all_visions()]
+
+
+@router.get("/weapon-classes", response_model=list[WeaponClassRead])
+async def list_weapon_classes() -> list[WeaponClassRead]:
+    """The five weapon classes that have a mark, for a filter bar.
+
+    The crossbow class is absent and `app/services/weapon_symbols.py` says why: no mark exists
+    to draw, and the two characters carrying it are unreleased Traveler variants with no
+    talents seeded.
+
+    Unauthenticated like the rest of the catalogue: it describes the game, not the caller.
+    """
+    return [
+        WeaponClassRead(value=value, display=display, icon=icon)
+        for value, display, icon in all_classes()
+    ]
 
 
 @router.get("/reactions", response_model=list[ReactionRead])

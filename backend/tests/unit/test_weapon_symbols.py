@@ -18,7 +18,7 @@ from __future__ import annotations
 import pytest
 
 from app.models.enums import WeaponType
-from app.services.weapon_symbols import all_symbols, symbol_for
+from app.services.weapon_symbols import all_classes, all_symbols, symbol_for
 
 
 def test_the_class_with_no_symbol_gets_none_rather_than_a_substitute() -> None:
@@ -62,3 +62,25 @@ def test_the_downloader_is_offered_every_symbol_exactly_once() -> None:
     assert set(symbols) == {
         symbol_for(w) for w in WeaponType if symbol_for(w) is not None
     }
+
+
+def test_the_filter_bar_is_offered_only_the_classes_that_have_a_mark() -> None:
+    """**The crossbow class is deliberately not here.**
+
+    It has no mark, so a chip for it would render as a wide word among five glyphs — and the
+    only two characters carrying it are unreleased Traveler variants with no talents seeded.
+    A control that finds nothing anyone is looking for, wearing the odd one out's shape.
+    """
+    classes = all_classes()
+
+    assert len(classes) == len(all_symbols())
+    assert WeaponType.CROSSBOW.value not in {value for value, _, _ in classes}
+
+
+def test_each_offered_class_carries_the_name_and_the_mark_the_rest_of_the_api_uses() -> None:
+    """A second copy of either would be a second thing to drift. `weapon_type_display` and
+    `weapon_type_icon` on a summary must agree with what the filter bar was handed."""
+    for value, display, icon in all_classes():
+        weapon_type = WeaponType(value)
+        assert display == weapon_type.display
+        assert icon == symbol_for(weapon_type)

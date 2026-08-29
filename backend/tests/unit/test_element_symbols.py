@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from app.models.enums import Element
-from app.services.element_symbols import all_symbols, symbol_for
+from app.services.element_symbols import all_symbols, all_visions, symbol_for
 
 
 @pytest.mark.parametrize("element", list(Element))
@@ -47,3 +47,23 @@ def test_the_names_are_case_sensitive_as_the_cdn_serves_them() -> None:
     show no emblem anywhere — a whole-feature failure that no test of the mapping's *shape*
     would catch."""
     assert symbol_for(Element.PYRO) == "Pyro"
+
+
+def test_the_filter_bar_is_offered_each_vision_with_its_emblem() -> None:
+    """`GET /elements` publishes this so a filter bar never builds `f"{element}.webp"`.
+
+    That string is an allowlist rather than an f-string one level down, and constructing it in
+    the client would put the eighth vision's broken mark on screen the day a patch adds one.
+    """
+    visions = all_visions()
+
+    assert len(visions) == len(list(Element))
+    assert all(symbol_for(value) == icon for value, icon in visions)
+
+
+def test_the_vision_list_is_ordered_the_way_the_game_lists_them() -> None:
+    """The chips read left to right, so the order is part of what is published rather than
+    something each page sorts for itself."""
+    assert [value for value, _ in all_visions()] == [
+        "Anemo", "Cryo", "Dendro", "Electro", "Geo", "Hydro", "Pyro",
+    ]

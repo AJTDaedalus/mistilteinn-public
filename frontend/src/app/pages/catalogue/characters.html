@@ -30,14 +30,22 @@
        toggle: clicking the active one clears it, so there is no separate "All" to get out of
        step with the selection. -->
   <div class="filters" role="group" aria-label="Filter characters">
-    @for (name of elements; track name) {
+    <!-- The emblem *and* the name. A coloured glyph alone is fast for someone who knows the
+         icons and useless to everyone else — the argument `element-chip` makes at length, and
+         the accessibility bug `ng lint` caught on #131. -->
+    @for (vision of elements(); track vision.value) {
       <button
         type="button"
         class="chip"
-        [class.chip--on]="element() === name"
-        [attr.aria-pressed]="element() === name"
-        (click)="pickElement(name)"
-      >{{ name }}</button>
+        [class.chip--on]="element() === vision.value"
+        [attr.aria-pressed]="element() === vision.value"
+        (click)="pickElement($any(vision.value))"
+      >
+        @if (vision.icon) {
+          <catalogue-icon [icon]="vision.icon" [alt]="''" [size]="16" />
+        }
+        {{ vision.value }}
+      </button>
     }
     <span class="filters__gap"></span>
     @for (r of [['five_star', '5★'], ['four_star', '4★']]; track r[0]) {
@@ -76,21 +84,26 @@
               [alt]="''"
               [size]="72"
             />
-            <!-- The class mark sits *on* the art, not under the name. Inline beside the
-                 vision chip it was a faint grey glyph reading as a stray artifact — measured
-                 in a screenshot, not guessed. A corner badge is legible, is where Genshin
-                 Optimizer and Fribbels put it, and costs the body no room. -->
-            <weapon-mark
-              class="card__mark"
-              [icon]="character.weapon_type_icon"
-              [label]="character.weapon_type_display"
-              [size]="22"
-              compact
-            />
           </span>
           <span class="card__body">
             <span class="name">{{ character.name }}</span>
-            <element-chip [element]="character.element ?? null" [icon]="character.element_icon" />
+            <!-- Owner's audit §9: the class mark moves down beside the vision and takes the
+                 chip's shape. It used to be a corner badge on the art, because *inline* it had
+                 been a faint grey glyph reading as a stray artifact — but that was a bare
+                 icon, not a bubble. In a chip it is legible, and the two things a card says
+                 about a character now say it the same way. -->
+            <span class="card__marks">
+              <element-chip
+                [element]="character.element ?? null"
+                [icon]="character.element_icon"
+              />
+              <weapon-mark
+                chip
+                [icon]="character.weapon_type_icon"
+                [label]="character.weapon_type_display"
+                [size]="16"
+              />
+            </span>
           </span>
         </li>
       } @empty {

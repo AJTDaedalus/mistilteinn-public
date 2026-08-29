@@ -65,3 +65,17 @@ def symbol_for(element: Element | str | None) -> str | None:
 def all_symbols() -> tuple[str, ...]:
     """Every emblem basename, for the icon downloader to vendor."""
     return tuple(_SYMBOLS.values())
+
+
+def all_visions() -> tuple[tuple[str, str], ...]:
+    """Every vision and its emblem, in the order the game lists them.
+
+    For a filter bar: a page offering vision chips needs the seven **and** their art, and
+    building `f"{element}.webp"` client-side is the thing the module docstring argues against
+    one level down. The allowlist is here; publishing it costs one endpoint and means the
+    client never constructs a basename.
+
+    Physical and the literal `"None"` are absent for the reasons above — they are not visions
+    and have no emblem in this family.
+    """
+    return tuple((element.value, symbol) for element, symbol in _SYMBOLS.items())

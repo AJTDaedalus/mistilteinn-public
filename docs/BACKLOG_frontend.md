@@ -219,8 +219,18 @@ ability and element. On the owner's Hyperbloom team: **31,782,037** — Furina 3
 
 ## 9. Catalogue pages
 
-- **Character**: move the weapon icon down beside the element, and match the element chip's
-  style — icon plus the weapon class name in a bubble. Element filters get icons.
+- ~~**Character**: move the weapon icon down beside the element, and match the element chip's
+  style — icon plus the weapon class name in a bubble. Element filters get icons.~~ **Done
+  (#174).**
+
+  The class mark had been a corner badge on the art, with a comment saying that *inline beside
+  the vision chip it was a faint grey glyph reading as a stray artifact — measured in a
+  screenshot, not guessed*. That observation was about a **bare glyph**, and the owner is
+  asking for a bubble; `weapon-mark` gained a `chip` mode and the two facts a card states now
+  state themselves the same way.
+
+  The portrait grid went from 11rem to 12rem columns, because at 11rem the two chips wrapped
+  on some cards and not others and the row heights went ragged.
 - ~~**Nation filter**, if the data and icons exist. Not a priority if they do not — *check
   before building.*~~ **Checked, 2026-08-29: the data is not what the filter would need, and
   there are no icons.**
@@ -235,7 +245,12 @@ ability and element. On the owner's Hyperbloom team: **31,782,037** — Furina 3
   exact failure `CLAUDE.md` names as fairy's worst — unless a source is found that publishes
   it. There are no nation emblems in `frontend/public/icons/` either. **Not a priority, and
   now with a reason rather than a guess.**
-- **Weapon**: icons on the filter.
+- ~~**Weapon**: icons on the filter.~~ **Done (#174)** — and the class list is now the
+  server's. It had been written out in `weapons.ts`, which would have needed the mark's
+  basename built client-side beside it; `GET /weapon-classes` publishes both. The crossbow
+  class is absent by the server's decision rather than the page's: it has no mark, so a chip
+  for it would be a wide word among five glyphs, finding only two unreleased Traveler
+  variants.
 - **"Sets and enemies are currently broken, I can't click them."** See §11.
 
 ## 10. Answered immediately, because they were questions

@@ -9,6 +9,8 @@ export type WeaponSummary = components['schemas']['WeaponSummary'];
 export type ArtifactSetRead = components['schemas']['ArtifactSetRead'];
 export type EnemyProfileRead = components['schemas']['EnemyProfileRead'];
 export type ReactionRead = components['schemas']['ReactionRead'];
+export type ElementRead = components['schemas']['ElementRead'];
+export type WeaponClassRead = components['schemas']['WeaponClassRead'];
 
 /**
  * Reads of the seeded catalogue — G.6a's endpoints.
@@ -98,6 +100,32 @@ export class CatalogueService {
   async listReactions() {
     const { data, error } = await this.api.GET('/api/v1/reactions');
     if (error) throw new Error('Could not load reactions');
+    return data;
+  }
+
+  /**
+   * The seven visions and their emblems.
+   *
+   * Read rather than restated, for the same reason as the reaction table and one more: the
+   * emblem's basename is an **allowlist** server-side, not `f"{element}.webp"`, precisely so
+   * an eighth vision does not put a broken mark on screen. Building it here would undo that.
+   */
+  async listElements() {
+    const { data, error } = await this.api.GET('/api/v1/elements');
+    if (error) throw new Error('Could not load elements');
+    return data;
+  }
+
+  /**
+   * The weapon classes that have a mark.
+   *
+   * Read rather than restated, like the visions: this replaced a five-entry list written out
+   * here *and* would otherwise need the mark's basename built client-side. The crossbow class
+   * is absent by the server's decision, which the page does not need to know about.
+   */
+  async listWeaponClasses() {
+    const { data, error } = await this.api.GET('/api/v1/weapon-classes');
+    if (error) throw new Error('Could not load weapon classes');
     return data;
   }
 

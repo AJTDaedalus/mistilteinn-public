@@ -410,6 +410,39 @@ class OwnedWeaponRead(BaseModel):
         )
 
 
+class ElementRead(BaseModel):
+    """One vision, and the emblem that stands for it.
+
+    Published rather than derived client-side, for exactly the reason `element_icon` is: a
+    filter bar building `f"{element}.webp"` would request art nobody vendored the moment a
+    patch adds an eighth vision, and would render a broken mark instead of nothing. The
+    allowlist lives in `app/services/element_symbols.py` and this is its only other reader.
+
+    **Physical is not a vision** and is absent, which is the ZZZ-shaped trap DESIGN §2.6 names.
+    """
+
+    #: The element's own name — `Pyro`, `Anemo`. Both the value a filter sends and its label.
+    value: str
+    #: Basename of the vision emblem, for `CatalogueIcon`.
+    icon: str
+
+
+class WeaponClassRead(BaseModel):
+    """One weapon class, its readable name, and its mark.
+
+    Published for the same reason `ElementRead` is: a filter bar otherwise carries its own
+    copy of the class list *and* builds an icon basename, and both are allowlists server-side
+    on purpose. `app/services/weapon_symbols.py` explains why the crossbow class is not here.
+    """
+
+    #: The source's own spelling — `WEAPON_SWORD_ONE_HAND`. What a filter sends.
+    value: str
+    #: What a person reads — `Sword`, `Polearm`.
+    display: str
+    #: Basename of the class mark, for `CatalogueIcon`.
+    icon: str
+
+
 class ReactionRead(BaseModel):
     """One elemental reaction, and what a party must field to produce it.
 
@@ -417,9 +450,11 @@ class ReactionRead(BaseModel):
     than a second copy that would drift — the reason every vocabulary here is served rather
     than restated.
 
-    Only reactions the source settles are listed: five carry an uncertainty in
-    `docs/RESEARCH_elemental_reactions.md` and `app/services/reactions.py` explains each. A
-    filter that quietly mis-classified a team is worse than one that offers less.
+    **Fifteen are listed and six are not** — Shattered, which is not an element pair, and the
+    five Lunar/Stellar variants by owner ruling (`DECISIONS.md` §23).
+    `app/services/reactions.py` explains each, and every excluded row stays in the committed
+    JSON with its citation. A filter that quietly mis-classified a team is worse than one that
+    offers less.
     """
 
     id: str

@@ -78,8 +78,11 @@
 /* ── Portrait cards ─────────────────────────────────────────────────────────
    Square-ish, and mostly picture. A character row carried a name and two facts, which is
    not enough to justify a row — the face is what anyone is actually scanning for. */
+/* 12rem, not 11: the card carries two chips under the name now (owner's audit §9) and at
+   11rem "Cryo" and "Claymore" wrapped onto separate lines on some cards and not others, so
+   the row heights went ragged. A card wide enough for what is on it. */
 .catalogue--portraits .grid {
-  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
   gap: var(--space-3);
 }
 
@@ -187,6 +190,9 @@
 .chip {
   padding: var(--space-1) var(--space-3);
   font-size: var(--text-xs);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   letter-spacing: 0.08em;
   color: var(--ink-dim);
   background: none;
@@ -252,10 +258,21 @@
   > catalogue-icon { inset: var(--space-2); }
 }
 
-/* The weapon class, as a badge on the art rather than a word under the name.
-   Inline beside the vision chip it was a faint grey glyph that read as a stray artifact —
-   seen in a screenshot, which is the only way this kind of thing gets caught. Here it has a
-   dark plate behind it, so a white line drawing stays legible over pale art as well as dark. */
+/* The vision and the weapon class, side by side under the name (owner's audit §9).
+   The class used to be a badge on the art, because *inline* it had been a faint grey glyph
+   reading as a stray artifact — seen in a screenshot, which is the only way this kind of thing
+   gets caught. That was a bare glyph, though, not a bubble: as a chip it carries its own name
+   and its own edge, and the two facts a card states now state themselves the same way. */
+.card__marks {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+/* Still used by the weapons page, whose subject *is* the weapon — there the class on the art
+   is the identifier, not a second-order fact under a name. */
 .card__mark {
   position: absolute;
   top: var(--space-2);

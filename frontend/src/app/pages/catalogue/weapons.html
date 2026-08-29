@@ -26,14 +26,21 @@
   </div>
 
   <div class="filters" role="group" aria-label="Filter weapons">
-    @for (t of types; track t[0]) {
+    <!-- The mark *and* the word, for the reason `weapon-mark` gives at length: a monochrome
+         silhouette is a label only for someone who has already memorised five of them. -->
+    @for (t of types(); track t.value) {
       <button
         type="button"
         class="chip"
-        [class.chip--on]="weaponType() === t[0]"
-        [attr.aria-pressed]="weaponType() === t[0]"
-        (click)="pickType($any(t[0]))"
-      >{{ t[1] }}</button>
+        [class.chip--on]="weaponType() === t.value"
+        [attr.aria-pressed]="weaponType() === t.value"
+        (click)="pickType($any(t.value))"
+      >
+        @if (t.icon) {
+          <catalogue-icon [icon]="t.icon" [alt]="''" [size]="16" />
+        }
+        {{ t.display }}
+      </button>
     }
     <span class="filters__gap"></span>
     @for (r of [['five_star', '5★'], ['four_star', '4★'], ['three_star', '3★']]; track r[0]) {

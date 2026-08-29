@@ -9,10 +9,17 @@ import { catalogueList } from './catalogue-list';
 import { CatalogueService, type CharacterSummary } from './catalogue.service';
 import { allPages } from '../../api/all-pages';
 
-/** The seven visions, in the order the game lists them. */
-const ELEMENTS = [
+/**
+ * The seven visions, in the order the game lists them.
+ *
+ * A fallback, not the source. `GET /elements` publishes the same seven **with their emblems**,
+ * and the emblem's basename is an allowlist server-side rather than `f"{element}.webp"` — so
+ * building it here would undo the thing that stops an eighth vision rendering a broken mark.
+ * This list is what the chips show if that call fails: the filter still works, without art.
+ */
+const ELEMENTS: readonly { value: string; icon: string | null }[] = [
   'Anemo', 'Cryo', 'Dendro', 'Electro', 'Geo', 'Hydro', 'Pyro',
-] as const;
+].map((value) => ({ value, icon: null }));
 
 /**
  * The seeded character catalogue — 150 entries including all 28 Traveler variants.
@@ -41,7 +48,7 @@ export class CharactersPage implements OnInit {
    */
   protected readonly element = signal<CharacterSummary['element'] | null>(null);
   protected readonly rarity = signal<CharacterSummary['rarity'] | null>(null);
-  protected readonly elements = ELEMENTS;
+  protected readonly elements = signal(ELEMENTS);
 
   /** Set a filter and reload. Clicking the active one clears it — a chip is a toggle. */
   protected pickElement(value: CharacterSummary['element']): void {
@@ -82,6 +89,11 @@ export class CharactersPage implements OnInit {
 
   ngOnInit(): void {
     void this.load();
+    // Never fatal: the chips are already usable as words, so a failure here costs the art and
+    // nothing else. Failing the page over a decoration would be the worse trade.
+    void this.catalogue.listElements()
+      .then((visions) => this.elements.set(visions))
+      .catch(() => undefined);
   }
 
   protected load(): Promise<void> {

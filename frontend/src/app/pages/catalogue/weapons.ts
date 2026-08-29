@@ -16,15 +16,23 @@ import { allPages } from '../../api/all-pages';
  * `GROW_CURVE_*` name"). The template says so rather than printing a bare figure a reader
  * would take for a stat — a number labelled wrong is worse than a number omitted.
  */
-/** The six weapon classes, with the label a person reads. The key is the source's own
- *  spelling, passed to the endpoint verbatim. */
-const WEAPON_TYPES = [
+/**
+ * The weapon classes, as a fallback.
+ *
+ * `GET /weapon-classes` publishes these **with their marks**, and the mark's basename is an
+ * allowlist server-side rather than a string built from the class name. This list is what the
+ * chips show if that call fails: the filter still works, without art.
+ *
+ * The crossbow class is in neither, and the server decides that rather than this page —
+ * `app/services/weapon_symbols.py` explains why a class with no mark gets no chip.
+ */
+const WEAPON_TYPES: readonly { value: string; display: string; icon: string | null }[] = [
   ['WEAPON_SWORD_ONE_HAND', 'Sword'],
   ['WEAPON_CLAYMORE', 'Claymore'],
   ['WEAPON_POLE', 'Polearm'],
   ['WEAPON_BOW', 'Bow'],
   ['WEAPON_CATALYST', 'Catalyst'],
-] as const;
+].map(([value, display]) => ({ value, display, icon: null }));
 
 @Component({
   selector: 'page-weapons',
@@ -38,7 +46,7 @@ export class WeaponsPage implements OnInit {
   /** Server-side filters the endpoint already took and this page never offered. */
   protected readonly weaponType = signal<WeaponSummary['weapon_type'] | null>(null);
   protected readonly rarity = signal<WeaponSummary['rarity'] | null>(null);
-  protected readonly types = WEAPON_TYPES;
+  protected readonly types = signal(WEAPON_TYPES);
 
   protected pickType(value: WeaponSummary['weapon_type']): void {
     this.weaponType.set(this.weaponType() === value ? null : value);
@@ -70,6 +78,11 @@ export class WeaponsPage implements OnInit {
 
   ngOnInit(): void {
     void this.load();
+    // Never fatal: the chips read as words already, so a failure costs the art and nothing
+    // else. Failing the page over a decoration would be the worse trade.
+    void this.catalogue.listWeaponClasses()
+      .then((classes) => this.types.set(classes))
+      .catch(() => undefined);
   }
 
   protected load(): Promise<void> {
