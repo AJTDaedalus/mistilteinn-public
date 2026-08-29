@@ -49,6 +49,11 @@ def _piece(set_key: str, slot: str, main: str, percent: float, level: int = 20) 
     stores `0.109`. Passing the fraction here instead produced a piece a hundred times
     weaker, which fingerprinted differently and made the restore look broken when the
     fixture was.
+
+    **The values have to be ones the game can roll.** These were invented, and `5.0` CRIT Rate
+    is not reachable at any roll count — the import refuses such a piece now, as a scanner
+    error, so an invented fixture value fails as loudly as a real bad one. `3.9` is a single
+    top-tier roll and `10.9` is three or four; both are real.
     """
     return {
         "setKey": set_key, "slotKey": slot, "level": level, "rarity": 5,
@@ -125,7 +130,7 @@ async def test_a_piece_no_longer_in_the_export_is_reported_not_silently_dropped(
 ):
     """A user who sold the artifact should be told the slot is empty, not discover it later
     from a damage number."""
-    payload = _good(_piece("BlizzardStrayer", "plume", "atk", 5.0))
+    payload = _good(_piece("BlizzardStrayer", "plume", "atk", 3.9))
 
     result = await _replace(db_session, scene["owner_id"], payload)
 
@@ -154,7 +159,7 @@ async def test_an_append_import_leaves_equipment_alone(
     from app.data.importers.good_importer import parse_good
     from app.services.good_import_service import APPEND
 
-    payload = _good(_piece("BlizzardStrayer", "plume", "atk", 5.0))
+    payload = _good(_piece("BlizzardStrayer", "plume", "atk", 3.9))
 
     result = await store_good_import(
         db_session, scene["owner_id"], parse_good(payload), APPEND,

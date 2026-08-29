@@ -45,6 +45,7 @@ from sqlalchemy import delete, select
 
 from app.data.snapshot import artifact_main_stat_value
 from app.models.artifact import Artifact, ArtifactSet
+from app.services.substat_rolls import analyse
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -126,6 +127,10 @@ async def store_good_import(
             # however many records the parser already refused, so enumerating here would
             # point a user at the wrong line of their own export.
             rejected.append((artifact.source_index, reason))
+            continue
+        impossible = _impossible_substats(artifact)
+        if impossible:
+            rejected.append((artifact.source_index, _impossible_reason(impossible)))
             continue
         resolved.append((artifact, set_id))
 
@@ -273,6 +278,50 @@ async def _restore_equipment(
 
     await session.flush()
     return tuple(unequipped)
+
+
+def _impossible_substats(artifact: ParsedArtifact) -> list[tuple[str, float]]:
+    """Substats whose value no combination of rolls can produce, at any legal count.
+
+    **Not a rounding complaint.** `substat_rolls` compares the *displayed* value, the way the
+    game rounds it, so a legitimate roll matches even on a boundary — that fix took the
+    undetermined share of a real 2,370-piece inventory from 3.5% to 0.04%. What is left is a
+    value the game could not have produced.
+
+    Exactly one piece in that inventory has one: a CRIT DMG substat of **25.7%**, where the
+    nearest reachable four-roll sums are 25.6 and 26.4. It is present verbatim in the GOOD
+    file, so it came from the scanner rather than from us — a one-digit slip is the likely
+    story, and `elixerCrafted` is false, so no game mechanic explains it.
+    """
+    # `rarity` is a `Rarity` enum and `substats` is a tuple of dicts — not an int and not
+    # pairs. Getting that wrong flagged all 2,370 pieces as impossible, which is why this ran
+    # against the real export before it shipped rather than after.
+    stars = artifact.rarity.stars
+    found: list[tuple[str, float]] = []
+    for sub in artifact.substats:
+        stat = str(sub.get("stat", ""))
+        value = sub.get("value")
+        if not stat or not isinstance(value, (int, float)):
+            continue
+        analysis = analyse(stars=stars, stat=stat, value=float(value), level=artifact.level)
+        # `rolls is None` covers two cases and only one is a bad value: a line the *piece-level*
+        # solve left ambiguous is legitimate and common. `candidates` is empty only when no
+        # roll count at all could produce this number, which is the one worth refusing.
+        if analysis.rolls is None and not analysis.candidates:
+            found.append((stat, float(value)))
+    return found
+
+
+def _impossible_reason(impossible: list[tuple[str, float]]) -> str:
+    """Why the piece was refused, naming the values so a user can find them in-game."""
+    lines = ", ".join(f"{stat}={value}" for stat, value in impossible)
+    return (
+        f"substat value(s) no combination of rolls can produce: {lines}. This is a scanner "
+        f"error rather than a rarity or level this build does not know — the piece is left out "
+        f"rather than imported, because every number computed from it would inherit the fault. "
+        f"Re-scan the piece, or edit the value to what the game shows."
+    )
+
 
 
 async def _sets_by_lookup_key(session: AsyncSession) -> dict[str, str]:
