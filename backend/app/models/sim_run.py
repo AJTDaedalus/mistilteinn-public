@@ -74,5 +74,34 @@ class SimRun(TimestampMixin, Base):
     #: JSONB traversal is a cache that gets bypassed.
     dps_mean: Mapped[float | None] = mapped_column(Float, nullable=True)
 
+    # ---- labels, never key material -------------------------------------------------------
+    #
+    # `context_key` is a hash, and the docstring above says storing its parts "would invite
+    # querying by them and then disagreeing with the hash". These two columns do not reopen
+    # that: **neither is in the unique constraint, and no cache lookup reads either.** They
+    # exist so the rotation library can find *this caller's* runs for a rotation, which a hash
+    # cannot be asked.
+
+    #: Which rotation this run simulated, when it was one. `SET NULL`, not `CASCADE`: the run
+    #: is still a valid cached simulation after the rotation is deleted — it simply stops being
+    #: attributable to one, which is exactly what null means here.
+    rotation_id: Mapped[str | None] = mapped_column(
+        ForeignKey("rotations.id", ondelete="SET NULL"), nullable=True, index=True,
+    )
+
+    #: The rotation **as it was** when this ran — `rotation_compiler.rotation_signature`,
+    #: hashed.
+    #:
+    #: This is the column that stops a real bug rather than enabling a feature. A rotation is
+    #: editable. Edit it and `context_key` changes, so the next run writes a new row — while
+    #: the old row keeps its `rotation_id` and its DPS. Ordering a library by `rotation_id`
+    #: alone would sort a rotation by a number computed for a **previous version of itself**:
+    #: a confident figure describing something the user can no longer see.
+    #:
+    #: Matching on this as well means your number appears where you have one for the rotation
+    #: as it stands, and nothing where you do not — which is what the design's "unsorted rather
+    #: than ranked by somebody else's gear" already argues for.
+    rotation_signature: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
     def __repr__(self) -> str:
         return f"<SimRun {self.context_key[:8]}… er={self.er_bucket} @{self.gcsim_pin[:7]}>"

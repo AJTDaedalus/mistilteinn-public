@@ -13,7 +13,7 @@ what it is doing.
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
@@ -22,6 +22,7 @@ from app.dependencies import (
     get_enemy_profile_repo,
     get_owned_build_repo,
     get_owned_rotation_repo,
+    get_owned_sim_run_repo,
     get_owned_team_repo,
     get_rotation_library_repo,
 )
@@ -31,6 +32,7 @@ from app.models.rotation import Rotation
 from app.repositories.build import BuildRepository
 from app.repositories.enemy import EnemyProfileRepository
 from app.repositories.rotation import RotationLibraryRepository, RotationRepository
+from app.repositories.sim_run import SimRunRepository
 from app.repositories.team import TeamRepository
 from app.schemas.common import PaginatedResponse
 from app.schemas.rotation import (
@@ -56,10 +58,14 @@ from app.services.rotation_compiler import (
     RotationCompileError,
     compile_rotation,
     rotation_signature,
+    signature_digest,
 )
 from app.services.rotation_converter import convert
 from app.services.rotation_parser import RotationParseError, parse_action_block
 from app.services.sim_context import context_key
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 router = APIRouter(prefix="/rotations", tags=["rotations"])
 
@@ -68,6 +74,7 @@ _Teams = Annotated[TeamRepository, Depends(get_owned_team_repo)]
 _Builds = Annotated[BuildRepository, Depends(get_owned_build_repo)]
 _Enemies = Annotated[EnemyProfileRepository, Depends(get_enemy_profile_repo)]
 _Library = Annotated[RotationLibraryRepository, Depends(get_rotation_library_repo)]
+_Runs = Annotated[SimRunRepository, Depends(get_owned_sim_run_repo)]
 _Offset = Annotated[int, Query(ge=0)]
 _Limit = Annotated[int, Query(ge=1, le=200)]
 
@@ -240,8 +247,11 @@ async def import_from_gcsim(
 async def browse_library(
     repo: _Library,
     user: CurrentUser,
+    runs: _Runs,
+    owned: _Repo,
     characters: Annotated[list[str] | None, Query()] = None,
     q: str = "",
+    sort: Annotated[Literal["recent", "likes", "dps"], Query()] = "dps",
     offset: _Offset = 0,
     limit: _Limit = 50,
 ) -> PaginatedResponse[LibraryRotationRead]:
@@ -266,23 +276,83 @@ async def browse_library(
     by_rotation = await repo.characters_for(ids)
     counts = await repo.like_counts(ids)
     mine = await repo.liked_by(str(user.id), ids)
+    yours = await _your_dps(rows, runs, owned)
+
+    items = [
+        LibraryRotationRead(
+            id=r.id,
+            name=r.name,
+            description=r.description,
+            steps=[RotationStep.model_validate(step) for step in r.steps],
+            characters=by_rotation.get(r.id, []),
+            like_count=counts.get(r.id, 0),
+            liked_by_me=r.id in mine,
+            your_dps=yours.get(r.id),
+        )
+        for r in rows
+    ]
+
+    # Ordered **after** assembly, because two of the three keys are facts about the caller
+    # rather than columns. `search` returns newest-first and says so; sorting there by a
+    # subquery the caller may have no row for would be a ranking dressed as a query.
+    if sort == "dps":
+        # DESIGN §3: "DPS where this user has run it, then likes, then anything else."
+        # A rotation you have not run sorts **below** every one you have — not as zero, which
+        # would rank it against numbers rather than admitting there is none.
+        items.sort(key=lambda i: (i.your_dps is None, -(i.your_dps or 0.0), -i.like_count))
+    elif sort == "likes":
+        items.sort(key=lambda i: -i.like_count)
+
     return PaginatedResponse(
-        items=[
-            LibraryRotationRead(
-                id=r.id,
-                name=r.name,
-                description=r.description,
-                steps=[RotationStep.model_validate(step) for step in r.steps],
-                characters=by_rotation.get(r.id, []),
-                like_count=counts.get(r.id, 0),
-                liked_by_me=r.id in mine,
-            )
-            for r in rows
-        ],
+        items=items,
         total=await repo.count(characters=wanted, query=q),
         offset=offset,
         limit=limit,
     )
+
+
+async def _your_dps(
+    rows: Sequence[Rotation],
+    runs: SimRunRepository,
+    owned: RotationRepository,
+) -> dict[str, float]:
+    """The caller's own DPS per listed rotation. `DESIGN_rotation_library.md` §3.
+
+    The signature is recomputed from the rotation **as it stands** and matched against what
+    each cached run recorded. A run whose signature no longer matches described a previous
+    version of that rotation, and is dropped rather than shown — the whole reason
+    `sim_runs.rotation_signature` exists.
+
+    ## In practice this answers for **your own** published rotations, and that is a real limit
+
+    `character_rows` is owner-scoped, so a rotation on somebody else's team resolves to no
+    roster, gets no signature, and reports `None`. **That is correct rather than a bug**: you
+    cannot simulate a rotation on a team you do not own, so you have no run for it to report.
+
+    What it means is that §3's ordering is live for rotations you published — you ran them,
+    the number is yours — and silent for everyone else's until you copy one. **A copy is a
+    different row**, so the DPS you then earn does not appear under the original's card. Making
+    it appear needs the copy to remember where it came from, which is a column and a decision
+    nobody has made. Recorded in `TASKS_rotation_library.md` rather than invented here.
+
+    The owner scope doing this work is deliberate and worth not "fixing": widening it to read
+    other users' teams would leak roster composition to answer a question that has no answer.
+
+    A rotation whose characters no longer resolve is skipped rather than raising. It cannot
+    have a current run either, and failing a whole listing because one shared rotation went
+    stale would be the wrong trade.
+    """
+    signatures: dict[str, str] = {}
+    for rotation in rows:
+        try:
+            roster = await owned.character_rows(rotation.team_id)
+            if not roster:
+                continue
+            signature = rotation_signature(rotation.steps or [], roster)
+        except (RotationCompileError, GcsimKeyError):
+            continue
+        signatures[rotation.id] = signature_digest(signature)
+    return await runs.dps_by_rotation(signatures)
 
 
 @router.post("/{rotation_id}/like", status_code=204)
@@ -523,6 +593,6 @@ async def rotation_context_key(
     except (RotationCompileError, GcsimConfigError, GcsimKeyError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return ContextKeyRead(
-        context_key=key, rotation=signature, team=members,
-        target=target, gcsim_pin=pinned_commit(),
+        context_key=key, rotation=signature, rotation_signature=signature_digest(signature),
+        team=members, target=target, gcsim_pin=pinned_commit(),
     )

@@ -131,6 +131,13 @@ class ContextKeyRead(BaseModel):
 
     context_key: str
     rotation: list[str]
+    #: `rotation`, hashed — the value `sim_runs.rotation_signature` stores.
+    #:
+    #: Published so a client labelling a cached run never computes this itself. Two
+    #: implementations of one digest would not disagree loudly; they would make every
+    #: `your_dps` `None`, which is a library that quietly never sorts and leaves nothing in a
+    #: log to find. `rotation_compiler.signature_digest` is the one definition.
+    rotation_signature: str
     team: list[str]
     target: dict[str, object]
     gcsim_pin: str
@@ -202,6 +209,14 @@ class LibraryRotationRead(BaseModel):
     #: Whether *this* caller has liked it. A count alone cannot answer that, which is why
     #: likes are a table (`DECISIONS.md` §21, OQ-3).
     liked_by_me: bool
+    #: **Your** DPS for this rotation, on your gear, or `None` if you have not run it.
+    #:
+    #: Never the author's. `DESIGN_rotation_library.md` §3: DPS depends on the searcher's
+    #: artifacts, not the publisher's, so a number computed on somebody else's roster would
+    #: answer a question nobody asked. `None` is the honest state for a rotation you have not
+    #: run — and for one you ran *before editing it*, since a run whose signature no longer
+    #: matches describes a previous version.
+    your_dps: float | None = None
 
 
 class RotationCopyRequest(BaseModel):

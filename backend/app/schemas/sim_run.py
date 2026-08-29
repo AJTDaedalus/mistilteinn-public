@@ -12,7 +12,7 @@ import json
 import re
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.services.sim_context import ER_BUCKET_PERCENT
 
@@ -41,6 +41,36 @@ class SimRunSubmit(BaseModel):
     #: failure this project keeps meeting. Two fields that can disagree are worse than one
     #: field that can be absent.
     result: dict[str, Any]
+    #: Which rotation this run simulated, when the client knows. **Optional and unverified**,
+    #: which is safe because it is a label and not key material: a client that lies about it
+    #: mislabels its *own* rows, in its own owner-scoped cache, and the worst outcome is a
+    #: number sorted under the wrong rotation for the person who sent it.
+    #:
+    #: The server does not derive it, because it cannot: `context_key` is a hash and the
+    #: rotation is the client's to name.
+    rotation_id: str | None = None
+    #: The rotation as it was, hashed. Sent with `rotation_id` or not at all — a label saying
+    #: *which* rotation without saying *which version* is the one that would let a stale
+    #: number be shown as current.
+    rotation_signature: str | None = Field(default=None, max_length=64)
+
+    @model_validator(mode="after")
+    def _labels_travel_together(self) -> SimRunSubmit:
+        """Both or neither.
+
+        A `rotation_id` with no signature is precisely the state that lets an edited
+        rotation be sorted by a number computed for its previous version — the failure the
+        second column exists to prevent. Refusing the pair is cheaper than teaching every
+        reader to check for it.
+        """
+        if (self.rotation_id is None) != (self.rotation_signature is None):
+            msg = (
+                "rotation_id and rotation_signature travel together. One without the other "
+                "labels a run with a rotation but not with which version of it, which is how "
+                "a stale number gets shown as current."
+            )
+            raise ValueError(msg)
+        return self
 
     @field_validator("context_key")
     @classmethod

@@ -81,6 +81,22 @@ the thing that looked most likely to break and did not.
   `CLAUDE.md` names as fairy's worst.
 - **"Why do we need to save a build before attaching artifacts?"** — a real question about the
   flow, not a styling note. Worth answering before redesigning around it.
+
+  **Answered, 2026-08-29.** Because equipping is a property of the *artifact*, not of the
+  build: it is `PATCH /artifacts/{id}` with `build_id`, and a build that has not been saved has
+  no id to point at. `ArtifactPanel` takes `buildId` and is inert while it is null; that is not
+  a rule someone chose, it is the shape of the write.
+
+  **So it can be removed, and here is the cost.** The panel could hold the choices client-side
+  and the page could equip them after `create` returns. What that buys is one fewer step. What
+  it costs is a new partial-failure state — build created, some pieces equipped, one refused —
+  which is exactly the hazard #173's equip pre-flight exists to avoid on the optimizer, and it
+  cannot be pre-flighted here because the build does not exist until the moment before.
+
+  **Not built, and this is a judgement rather than a blocker.** The flow is two steps and both
+  are visible; the alternative is one step that can end half-done. If the owner wants it
+  anyway, the shape is a `pending` signal on the panel and a loop in `save()` — an afternoon,
+  not a chunk.
 - ~~Builds list becomes a card grid below the menu, with filters on element, weapon and rarity
   plus the existing search. **Search should cover characters only, not weapons.**~~ **Done
   (#170)** — 75 cards, art first. The chips are drawn from the builds on screen rather than

@@ -46,6 +46,7 @@ reintroduces the deadlock silently. A redundant `if` is the cheaper mistake.
 
 from __future__ import annotations
 
+from hashlib import sha256
 from typing import TYPE_CHECKING
 
 from app.services import gcsim_keys
@@ -165,3 +166,14 @@ def _statement(key: str, step: Mapping[str, object]) -> str:
     repeat = int(step.get("repeat", 1) or 1)
     call = f"{key} {action}:{repeat};" if repeat > 1 else f"{key} {action};"
     return f"if .{key}.{action}.ready {{ {call} }}"
+
+
+def signature_digest(signature: Sequence[str]) -> str:
+    """`rotation_signature`'s output, as the 64 characters `sim_runs` stores.
+
+    **One definition, because two would be a silent mismatch.** The library computes this
+    digest to ask "does the caller have a run for this rotation *as it stands*", and a
+    submitter computes it to label the run. If those two ever hashed differently, every answer
+    would be `None` — a library that quietly never sorts, with nothing to see in a log.
+    """
+    return sha256("\n".join(signature).encode()).hexdigest()

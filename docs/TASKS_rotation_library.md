@@ -56,12 +56,28 @@ backfill.
 
 ## What is not in #177
 
-**The DPS ordering.** *The one design decision this file adds*, above, still stands as written
-and is still unbuilt: `sim_runs` has no `rotation_id`, so a user's own DPS for a rotation cannot
-be found. The library therefore sorts **newest first** and says nothing about performance, which
-is honest and is not what §3 promises. That is the next backend task, and its two columns —
-`rotation_id` **and** the rotation signature — are the difference between "your number" and "a
-number computed for a previous version of this rotation".
+**~~The DPS ordering.~~ Built (#179)** — `sim_runs` gains `rotation_id` and
+`rotation_signature` as labels that are never key material, the library sorts by your own DPS,
+and a run whose signature no longer matches is dropped rather than shown.
+
+**And it cannot produce a number yet**, which is the finding that matters more than the
+feature. Two gaps sit under it, and both were found by building this rather than by reading:
+
+1. **Nothing in the frontend writes the run corpus at all.** `POST /api/v1/sim-runs` has zero
+   callers in `frontend/src/app`. The endpoint, the repository, the ER bucketing and the
+   divergence measurement are all built, tested and CI-gated; no client submits to them. So
+   every `your_dps` is `None` in practice, not because the ordering is wrong but because there
+   is nothing to order. This is the same shape as `createGpuKernel` having no callers
+   (`BACKLOG_frontend.md` §12) and deserves its own chunk: *who submits a run, and from where*.
+2. **A copy is a different row.** You cannot run a rotation on a team you do not own, so a
+   stranger's published rotation reports `None` **correctly** — you have no run for it. The
+   number you earn after copying lands on the copy, not on the original's card. Making it
+   appear needs the copy to remember where it came from, which is a column and a decision
+   nobody has made.
+
+So §3's ordering is live for **your own** published rotations and silent for everyone else's.
+`/rotations/{id}/context-key` now publishes `rotation_signature` so that whoever builds the
+producer never has to compute the digest a second way.
 
 **L.7's query-count harness.** The listing does its work in a fixed four queries — the page, the
 character sets, the like counts, and the caller's own likes — by construction rather than by

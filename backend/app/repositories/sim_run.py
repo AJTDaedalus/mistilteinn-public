@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import literal_column, select
+from sqlalchemy import func, literal_column, or_, select
 from sqlalchemy.dialects.postgresql import insert
 
 from app.models.sim_run import SimRun
 from app.repositories.base import BaseRepository
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
 
 class SimRunRepository(BaseRepository[SimRun]):
@@ -57,6 +57,8 @@ class SimRunRepository(BaseRepository[SimRun]):
         gcsim_pin: str,
         result: dict[str, Any],
         dps_mean: float | None,
+        rotation_id: str | None = None,
+        rotation_signature: str | None = None,
     ) -> tuple[SimRun, bool]:
         """Insert, or replace what is there for the same key. Returns `(run, created)`.
 
@@ -78,12 +80,61 @@ class SimRunRepository(BaseRepository[SimRun]):
                 gcsim_pin=gcsim_pin,
                 result=result,
                 dps_mean=dps_mean,
+                rotation_id=rotation_id,
+                rotation_signature=rotation_signature,
             )
             .on_conflict_do_update(
                 constraint="uq_sim_runs_owner_context_bucket_pin",
-                set_={"result": result, "dps_mean": dps_mean},
+                # The labels are updated too. A row can be written before the client knows
+                # which rotation it belongs to and again after; keeping the older, emptier
+                # label would leave a run permanently unattributable for no reason.
+                set_={
+                    "result": result,
+                    "dps_mean": dps_mean,
+                    "rotation_id": rotation_id,
+                    "rotation_signature": rotation_signature,
+                },
             )
             .returning(SimRun, (literal_column("xmax") == 0).label("created"))
         )
         row = (await self.session.execute(stmt)).one()
         return row[0], bool(row.created)
+
+    async def dps_by_rotation(
+        self, pairs: Mapping[str, str],
+    ) -> dict[str, float]:
+        """This caller's best DPS per rotation, for the rotations they have actually run.
+
+        `pairs` is `{rotation_id: signature}` — **both**, because a run whose signature no
+        longer matches is a number computed for a previous version of that rotation, and
+        showing it would be worse than showing nothing. A rotation absent from the result is
+        one this user has no current run for, which the library renders as unsorted rather
+        than as zero.
+
+        `max`, because a user may have run the same rotation at several ER buckets and the
+        question the library answers is *what does this do on my gear*, not *what did the
+        worst-cased bucket do*.
+
+        One query for the whole page. A lookup per row is the shape that turns twenty rows
+        into twenty-one round trips.
+        """
+        if not pairs:
+            return {}
+        stmt = (
+            select(SimRun.rotation_id, func.max(SimRun.dps_mean))
+            .where(SimRun.rotation_id.in_(list(pairs)))
+            .where(SimRun.dps_mean.is_not(None))
+            .group_by(SimRun.rotation_id)
+        )
+        if self.owner_id is not None:
+            stmt = stmt.where(SimRun.owner_id == self.owner_id)
+        # The signature is matched per rotation, so a row for rotation A cannot satisfy the
+        # signature of rotation B. `or_` over pairs rather than `IN` over signatures.
+        stmt = stmt.where(
+            or_(*[
+                (SimRun.rotation_id == rotation_id) & (SimRun.rotation_signature == signature)
+                for rotation_id, signature in pairs.items()
+            ]),
+        )
+        rows = (await self.session.execute(stmt)).all()
+        return {rotation_id: float(dps) for rotation_id, dps in rows if dps is not None}

@@ -235,6 +235,8 @@ async def store_run(
         gcsim_pin=pin,
         result=body.result,
         dps_mean=dps_mean_of(body.result),
+        rotation_id=body.rotation_id,
+        rotation_signature=body.rotation_signature,
     )
     response.status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
     return SimRunStored(run=SimRunRead.model_validate(run), created=created)

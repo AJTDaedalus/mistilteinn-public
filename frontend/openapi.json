@@ -2450,6 +2450,21 @@
             }
           },
           {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "recent",
+                "likes",
+                "dps"
+              ],
+              "type": "string",
+              "default": "dps",
+              "title": "Sort"
+            }
+          },
+          {
             "name": "offset",
             "in": "query",
             "required": false,
@@ -4423,6 +4438,10 @@
             "type": "array",
             "title": "Rotation"
           },
+          "rotation_signature": {
+            "type": "string",
+            "title": "Rotation Signature"
+          },
           "team": {
             "items": {
               "type": "string"
@@ -4444,6 +4463,7 @@
         "required": [
           "context_key",
           "rotation",
+          "rotation_signature",
           "team",
           "target",
           "gcsim_pin"
@@ -5412,6 +5432,17 @@
           "liked_by_me": {
             "type": "boolean",
             "title": "Liked By Me"
+          },
+          "your_dps": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Your Dps"
           }
         },
         "type": "object",
@@ -6615,6 +6646,29 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Result"
+          },
+          "rotation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rotation Id"
+          },
+          "rotation_signature": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rotation Signature"
           }
         },
         "type": "object",

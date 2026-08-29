@@ -25,7 +25,10 @@ from app.models.character import Character
 from app.models.enums import Element, Rarity, UserStatus, WeaponType
 from app.models.team import Team
 from app.models.user import User
+from app.repositories.rotation import RotationRepository
+from app.services.gcsim_keys import pinned_commit
 from app.services.password import hash_password
+from app.services.rotation_compiler import rotation_signature, signature_digest
 from tests.conftest import make_session_for
 
 if TYPE_CHECKING:
@@ -342,3 +345,120 @@ async def test_an_unpublished_rotation_cannot_be_copied(alice: Party, bob: Party
     )
 
     assert refused.status_code == 404
+
+
+# ── your DPS, and the version it belongs to ──────────────────────────────────
+
+
+async def _store_run(
+    party: Party, rotation_id: str, signature: str, dps: float, *, key: str = "a" * 64,
+) -> int:
+    """Submit a cached run labelled with a rotation and the version of it that ran."""
+    posted = await party.client.post(
+        "/api/v1/sim-runs",
+        params={"gcsim_pin": pinned_commit()},
+        json={
+            "context_key": key,
+            "er_bucket": 100,
+            "result": {"statistics": {"dps": {"mean": dps}}},
+            "rotation_id": rotation_id,
+            "rotation_signature": signature,
+        },
+    )
+    return posted.status_code
+
+
+async def _signature(db_session: AsyncSession, rotation_id: str) -> str:
+    """The digest the library will compute for this rotation, from the app's own functions.
+
+    Not reimplemented here: `signature_digest` is the one definition, and a test hashing its
+    own way would pass while the feature silently returned `None` for everything.
+    """
+    repo = RotationRepository(db_session)
+    rotation = await repo.get_by_id(rotation_id)
+    roster = await repo.character_rows(rotation.team_id)
+    return signature_digest(rotation_signature(rotation.steps or [], roster))
+
+
+async def test_a_run_labels_the_rotation_and_the_version_it_simulated(
+    db_session: AsyncSession, alice: Party,
+):
+    rotation_id = await _rotation(alice, "Mine", AYAKA, publish=True)
+    signature = await _signature(db_session, rotation_id)
+
+    assert await _store_run(alice, rotation_id, signature, 12_345.0) in (200, 201)
+
+    listed = await alice.client.get(LIBRARY)
+    assert listed.json()["items"][0]["your_dps"] == 12_345.0
+
+
+async def test_editing_the_rotation_drops_the_number_that_described_its_old_version(
+    db_session: AsyncSession, alice: Party,
+):
+    """**The whole reason `rotation_signature` exists.**
+
+    Edit a rotation and `context_key` changes, so the next run writes a new row — while the
+    old row keeps its `rotation_id` and its DPS. Matching on `rotation_id` alone would sort
+    this rotation by a number computed for a version the user can no longer see.
+    """
+    rotation_id = await _rotation(alice, "Mine", AYAKA, publish=True)
+    signature = await _signature(db_session, rotation_id)
+    await _store_run(alice, rotation_id, signature, 12_345.0)
+
+    await alice.client.patch(
+        f"{ROTATIONS}/{rotation_id}", json={"steps": [_step(AYAKA, "skill")]},
+    )
+
+    listed = await alice.client.get(LIBRARY)
+    assert listed.json()["items"][0]["your_dps"] is None
+
+
+async def test_another_users_rotation_reports_no_dps_of_yours(
+    db_session: AsyncSession, alice: Party, bob: Party,
+):
+    """And this is correct, not missing.
+
+    You cannot simulate a rotation on a team you do not own, so you have no run for it. The
+    number under a stranger's rotation would have to be *theirs*, on their gear, which is the
+    ranking `DESIGN_rotation_library.md` §3 refuses.
+    """
+    rotation_id = await _rotation(alice, "Shared", AYAKA, publish=True)
+    await _store_run(alice, rotation_id, await _signature(db_session, rotation_id), 12_345.0)
+
+    listed = await bob.client.get(LIBRARY)
+
+    assert listed.json()["items"][0]["your_dps"] is None
+
+
+async def test_a_run_labelled_with_a_rotation_but_no_version_is_refused(alice: Party):
+    """One without the other labels a run with a rotation but not with *which* version, which
+    is exactly how a stale number gets shown as current."""
+    rotation_id = await _rotation(alice, "Mine", AYAKA, publish=True)
+
+    refused = await alice.client.post(
+        "/api/v1/sim-runs",
+        params={"gcsim_pin": pinned_commit()},
+        json={
+            "context_key": "b" * 64, "er_bucket": 100,
+            "result": {"statistics": {"dps": {"mean": 1.0}}},
+            "rotation_id": rotation_id,
+        },
+    )
+
+    assert refused.status_code == 422
+    assert "travel together" in refused.text
+
+
+async def test_sorting_puts_a_rotation_you_have_run_above_one_you_have_not(
+    db_session: AsyncSession, alice: Party,
+):
+    """A rotation with no run sorts **below** every one that has a number — not as zero, which
+    would rank it against figures rather than admitting there is none."""
+    unrun = await _rotation(alice, "Never run", BARBARA, publish=True)
+    run = await _rotation(alice, "Ran it", AYAKA, publish=True)
+    await _store_run(alice, run, await _signature(db_session, run), 999.0)
+
+    listed = await alice.client.get(LIBRARY, params={"sort": "dps"})
+
+    assert [r["name"] for r in listed.json()["items"]] == ["Ran it", "Never run"]
+    assert unrun  # the unrun rotation is present, just last
