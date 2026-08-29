@@ -133,8 +133,8 @@ describe('describePieces', () => {
     const named = describePieces(
       ['a', 'b'],
       [
-        { id: 'a', slot: 'equip_bracer', set_id: 1, stats: {} },
-        { id: 'b', slot: 'equip_dress', set_id: 1, stats: {} },
+        { id: 'a', slot: 'equip_bracer', set_id: 1, stats: {}, main_stat: 'FIGHT_PROP_HP' },
+        { id: 'b', slot: 'equip_dress', set_id: 1, stats: {}, main_stat: 'FIGHT_PROP_CRITICAL' },
       ],
       (slot) => ({ equip_bracer: 'Flower', equip_dress: 'Circlet' })[slot] ?? slot,
     );
@@ -384,7 +384,7 @@ describe('the two vocabularies must be the same vocabulary', () => {
           version: 'v1',
           artifacts: [
             ...inventory(),
-            { id: 'odd', slot: 'equip_mystery', set_id: 1, stats: { flat_atk: 9999 } },
+            { id: 'odd', slot: 'equip_mystery', set_id: 1, stats: { flat_atk: 9999 }, main_stat: 'FIGHT_PROP_HP' },
           ],
           total: 11, truncated: false, unreadable: [],
         }),
@@ -790,10 +790,10 @@ describe('OptimizePage — the rotation objective', () => {
     const page = pageWith();
     const reachable = (at(page, 'reachableSets') as (p: unknown[]) => number[])
       .call(page, [
-        { id: 'a', slot: 'equip_bracer', set_id: 1, stats: {} },
-        { id: 'b', slot: 'equip_bracer', set_id: 1, stats: {} },
-        { id: 'c', slot: 'equip_bracer', set_id: 1, stats: {} },
-        { id: 'd', slot: 'equip_bracer', set_id: 1, stats: {} },
+        { id: 'a', slot: 'equip_bracer', set_id: 1, stats: {}, main_stat: 'FIGHT_PROP_HP' },
+        { id: 'b', slot: 'equip_bracer', set_id: 1, stats: {}, main_stat: 'FIGHT_PROP_HP' },
+        { id: 'c', slot: 'equip_bracer', set_id: 1, stats: {}, main_stat: 'FIGHT_PROP_HP' },
+        { id: 'd', slot: 'equip_bracer', set_id: 1, stats: {}, main_stat: 'FIGHT_PROP_HP' },
       ]);
 
     expect(reachable).toEqual([]);
@@ -807,15 +807,15 @@ describe('OptimizePage — the rotation objective', () => {
     const reachable = (at(page, 'reachableSets') as (p: unknown[]) => number[])
       .call(page, [
         // Set 2 reaches all five slots; set 1 reaches four.
-        { id: 'a', slot: 'equip_bracer', set_id: 1, stats: {} },
-        { id: 'b', slot: 'equip_necklace', set_id: 1, stats: {} },
-        { id: 'c', slot: 'equip_shoes', set_id: 1, stats: {} },
-        { id: 'd', slot: 'equip_ring', set_id: 1, stats: {} },
-        { id: 'e', slot: 'equip_bracer', set_id: 2, stats: {} },
-        { id: 'f', slot: 'equip_necklace', set_id: 2, stats: {} },
-        { id: 'g', slot: 'equip_shoes', set_id: 2, stats: {} },
-        { id: 'h', slot: 'equip_ring', set_id: 2, stats: {} },
-        { id: 'i', slot: 'equip_dress', set_id: 2, stats: {} },
+        { id: 'a', slot: 'equip_bracer', set_id: 1, stats: {}, main_stat: 'FIGHT_PROP_HP' },
+        { id: 'b', slot: 'equip_necklace', set_id: 1, stats: {}, main_stat: 'FIGHT_PROP_ATTACK' },
+        { id: 'c', slot: 'equip_shoes', set_id: 1, stats: {}, main_stat: 'FIGHT_PROP_ATTACK_PERCENT' },
+        { id: 'd', slot: 'equip_ring', set_id: 1, stats: {}, main_stat: 'FIGHT_PROP_ATTACK_PERCENT' },
+        { id: 'e', slot: 'equip_bracer', set_id: 2, stats: {}, main_stat: 'FIGHT_PROP_HP' },
+        { id: 'f', slot: 'equip_necklace', set_id: 2, stats: {}, main_stat: 'FIGHT_PROP_ATTACK' },
+        { id: 'g', slot: 'equip_shoes', set_id: 2, stats: {}, main_stat: 'FIGHT_PROP_ATTACK_PERCENT' },
+        { id: 'h', slot: 'equip_ring', set_id: 2, stats: {}, main_stat: 'FIGHT_PROP_ATTACK_PERCENT' },
+        { id: 'i', slot: 'equip_dress', set_id: 2, stats: {}, main_stat: 'FIGHT_PROP_CRITICAL' },
       ]);
 
     expect(reachable).toEqual([2, 1]);
@@ -825,10 +825,10 @@ describe('OptimizePage — the rotation objective', () => {
     const page = pageWith();
     const reachable = (at(page, 'reachableSets') as (p: unknown[]) => number[])
       .call(page, [
-        { id: 'a', slot: 'equip_bracer', set_id: 1, stats: {} },
-        { id: 'b', slot: 'equip_necklace', set_id: 1, stats: {} },
-        { id: 'c', slot: 'equip_shoes', set_id: 1, stats: {} },
-        { id: 'd', slot: 'equip_ring', set_id: 1, stats: {} },
+        { id: 'a', slot: 'equip_bracer', set_id: 1, stats: {}, main_stat: 'FIGHT_PROP_HP' },
+        { id: 'b', slot: 'equip_necklace', set_id: 1, stats: {}, main_stat: 'FIGHT_PROP_ATTACK' },
+        { id: 'c', slot: 'equip_shoes', set_id: 1, stats: {}, main_stat: 'FIGHT_PROP_ATTACK_PERCENT' },
+        { id: 'd', slot: 'equip_ring', set_id: 1, stats: {}, main_stat: 'FIGHT_PROP_ATTACK_PERCENT' },
       ]);
 
     expect(reachable).toEqual([1]);
@@ -885,5 +885,49 @@ describe('OptimizePage — the rotation objective', () => {
     expect(targets.map((t) => t.label)).toEqual([
       'no 4-piece set', 'Blizzard Strayer', "Wanderer's Troupe",
     ]);
+  });
+});
+
+// ── the required main stat ──────────────────────────────────────────────────
+//
+// "The goblet must be Hydro DMG" is the first thing anyone decides about a Genshin build, and
+// the search had no way to say it. It is also the largest single cut to a search space this
+// page already fights to make finish.
+
+describe('the main-stat constraint', () => {
+  const piece = (id: string, slot: string, main: string) => ({
+    id, slot, set_id: 1, stats: {}, main_stat: main,
+  });
+
+  const inventory = [
+    piece('f', 'equip_bracer', 'FIGHT_PROP_HP'),
+    piece('g1', 'equip_ring', 'FIGHT_PROP_FIRE_ADD_HURT'),
+    piece('g2', 'equip_ring', 'FIGHT_PROP_ATTACK_PERCENT'),
+    piece('c', 'equip_dress', 'FIGHT_PROP_CRITICAL'),
+  ];
+
+  /** The predicate the page applies, stated once here so the test is about the rule. */
+  const keep = (wanted: Record<string, string>) =>
+    inventory.filter((p) => !wanted[p.slot] || p.main_stat === wanted[p.slot]).map((p) => p.id);
+
+  it('keeps everything when no slot is constrained', () => {
+    expect(keep({})).toEqual(['f', 'g1', 'g2', 'c']);
+  });
+
+  it('narrows only the constrained slot', () => {
+    // The flower and circlet survive untouched: a constraint on the goblet says nothing about
+    // any other slot, and narrowing them too would silently shrink the search.
+    expect(keep({ equip_ring: 'FIGHT_PROP_FIRE_ADD_HURT' })).toEqual(['f', 'g1', 'c']);
+  });
+
+  it('treats an empty string as no constraint rather than as a stat', () => {
+    // The "Any" option's value. Compared as a stat it would match nothing and empty the slot.
+    expect(keep({ equip_ring: '' })).toEqual(['f', 'g1', 'g2', 'c']);
+  });
+
+  it('can empty a slot, which is exactly what has to be caught before searching', () => {
+    // An empty result is indistinguishable from "your artifacts are bad", and the user would
+    // not know which. The page says so before the search rather than after it returns nothing.
+    expect(keep({ equip_ring: 'FIGHT_PROP_ELEC_ADD_HURT' })).toEqual(['f', 'c']);
   });
 });

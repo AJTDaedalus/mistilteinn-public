@@ -156,3 +156,45 @@
   margin: 0;
   align-self: center;
 }
+
+/* ── Required main stats ────────────────────────────────────────────────────
+   One select per slot, on one row. Flower and plume are offered even though their main stat
+   is fixed by the game: hiding them would state a rule by an absence, which is the kind of
+   rule nobody can check. Their lists simply hold one option each. */
+.main-stats {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+
+  legend {
+    padding: 0 var(--space-2);
+    font-size: var(--text-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+
+  .hint { margin: 0 0 var(--space-2); }
+}
+
+.main-stats__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+
+    span {
+      font-size: var(--text-xs);
+      letter-spacing: 0.06em;
+      color: var(--ink-dim);
+    }
+  }
+
+  select { min-width: 9rem; }
+}

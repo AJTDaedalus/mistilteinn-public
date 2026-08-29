@@ -191,6 +191,7 @@ def _kernel_candidates(
                 slot=row.slot.value,
                 set_id=row.artifact_set.nanoka_id if row.artifact_set is not None else None,
                 stats=stats,
+                main_stat=row.main_stat_type.value,
             ),
         )
     return candidates, unreadable

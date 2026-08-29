@@ -248,6 +248,17 @@ class KernelCandidate(BaseModel):
     #: id, and `0` would be a real catalogue id to it.
     set_id: int | None = None
     stats: dict[str, float]
+    #: The main stat's raw property key — `FIGHT_PROP_CRITICAL_HURT`.
+    #:
+    #: **Carried separately even though it is already inside `stats`.** The kernel wants one
+    #: number per quantity and does not care which of them was the main stat; a *user* cares
+    #: enormously, because "the goblet must be Hydro DMG" is the first thing anyone decides
+    #: about a Genshin build and it cannot be recovered from a summed pool — a CRIT DMG
+    #: circlet with a CRIT DMG substat looks the same either way.
+    #:
+    #: The raw key rather than a display string: the client filters by identity and asks
+    #: `/artifacts/options` for the label, which is the one place stat names are spelled.
+    main_stat: str
 
 
 class UnreadableArtifact(BaseModel):

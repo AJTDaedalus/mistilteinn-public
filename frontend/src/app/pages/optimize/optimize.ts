@@ -279,6 +279,68 @@ export class OptimizePage implements OnInit {
    * copy of the server's vocabulary is how a silent divergence starts.
    */
   protected readonly slotNames = signal<Record<string, string>>({});
+  /**
+   * The five slots, in the order `/artifacts/options` gives them.
+   *
+   * From the payload rather than written out here: the slot vocabulary is the server's, and a
+   * list restated in a template is the copy that goes stale.
+   */
+  protected readonly slotKeys = signal<string[]>([]);
+  /** Raw main-stat key → display, from `/artifacts/options` — the one place stats are named. */
+  protected readonly statNames = signal<Record<string, string>>({});
+
+  /**
+   * A required main stat per slot — `{ equip_ring: 'FIGHT_PROP_FIRE_ADD_HURT' }`.
+   *
+   * **The first thing anyone decides about a Genshin build**, and the search had no way to
+   * say it. A goblet is the clearest case: a DPS wants one elemental damage bonus and every
+   * other goblet in the inventory is noise, so the constraint is not only a preference, it is
+   * the largest single cut to a search space this page already fights to make finish.
+   *
+   * Empty means "any", per slot. Flower and plume are deliberately still offered even though
+   * their main stat is fixed — hiding them would encode a game rule in a control's presence,
+   * and a rule stated by an absence is one nobody can check.
+   */
+  protected readonly mainStatBySlot = signal<Record<string, string>>({});
+
+  /** The main stats actually present in the inventory for one slot, with their labels. */
+  protected mainStatsFor(slot: string): { key: string; display: string }[] {
+    const names = this.statNames();
+    const keys = new Set(
+      this.candidates().filter((c) => c.slot === slot).map((c) => c.main_stat),
+    );
+    return [...keys].map((key) => ({ key, display: names[key] ?? key }))
+      .sort((a, b) => a.display.localeCompare(b.display));
+  }
+
+  protected setMainStat(slot: string, key: string): void {
+    this.mainStatBySlot.update((current) => ({ ...current, [slot]: key }));
+  }
+
+  /**
+   * Candidates after the per-slot main-stat constraint.
+   *
+   * Applied to the **candidate list**, not inside the kernel: a piece the user has ruled out
+   * should not be scored, calibrated against, or counted in a progress total. Filtering later
+   * would make the search slower and the numbers it reports wrong.
+   */
+  protected constrained(pieces: readonly KernelCandidate[]): KernelCandidate[] {
+    const wanted = this.mainStatBySlot();
+    return pieces.filter((piece) => {
+      const required = wanted[piece.slot];
+      return !required || piece.main_stat === required;
+    });
+  }
+
+  /** Slots whose constraint no piece satisfies — a search that would return nothing. */
+  protected impossibleSlots(): string[] {
+    const names = this.slotNames();
+    const wanted = this.mainStatBySlot();
+    const kept = this.constrained(this.candidates());
+    return Object.keys(wanted)
+      .filter((slot) => wanted[slot] && !kept.some((p) => p.slot === slot))
+      .map((slot) => names[slot] ?? slot);
+  }
 
   // ── The rotation objective (R.8/R.9) ──────────────────────────────────────────────────
   //
@@ -360,6 +422,10 @@ export class OptimizePage implements OnInit {
       if (rotations.items.length > 0) this.rotationId.set(rotations.items[0].id);
       this.slotNames.set(
         Object.fromEntries(options.slots.map((slot) => [slot.key, slot.display])),
+      );
+      this.slotKeys.set(options.slots.map((slot) => slot.key));
+      this.statNames.set(
+        Object.fromEntries(options.stats.map((stat) => [stat.key, stat.display ?? stat.key])),
       );
       this.builds.set(builds);
       if (builds.length > 0) await this.selectBuild(builds[0].id);
@@ -508,7 +574,9 @@ export class OptimizePage implements OnInit {
 
       this.result.set(
         search(
-          snapshot.artifacts.filter((piece) => this.isKnownSlot(piece)).map((piece) => ({
+          this.constrained(
+            snapshot.artifacts.filter((piece) => this.isKnownSlot(piece)),
+          ).map((piece) => ({
             id: piece.id,
             slot: piece.slot as Slot,
             // The kernel counts set pieces by number. A setless piece gets a negative
@@ -581,7 +649,12 @@ export class OptimizePage implements OnInit {
       this.unreadable.set(snapshot.unreadable);
       this.truncated.set(snapshot.truncated);
 
-      const pieces = snapshot.artifacts.filter((piece) => this.isKnownSlot(piece));
+      // Constrained **once, here**, so everything downstream sees the same list. Applying it
+      // only at the search would leave `reachableSets` offering — and `calibrateAll` paying
+      // six seconds for — a set no surviving piece belongs to.
+      const pieces = this.constrained(
+        snapshot.artifacts.filter((piece) => this.isKnownSlot(piece)),
+      );
       // Re-derived from the snapshot just fetched, so a set imported since the page loaded is
       // offered rather than silently dropped — then narrowed to what the user picked.
       const chosen = this.reachableSets(pieces).filter((setId) => this.isSelected(setId));

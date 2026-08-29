@@ -81,15 +81,26 @@ async def piece(db_session: AsyncSession, authed_user: tuple[User, str]) -> str:
 async def test_a_candidate_is_what_the_kernel_reads(
     authed_client: AsyncClient, db_session: AsyncSession, piece: str,
 ):
-    """`search.ts`'s `Candidate` is exactly `{ id, slot, setId, stats }`."""
+    """`search.ts`'s `Candidate`, plus the one field the *user* needs.
+
+    Deliberately an exact set rather than a subset check: this payload is fetched per search
+    over a whole inventory, so a field added without thinking about it is paid for 2,370
+    times. Growing it is a decision, and this test is where the decision gets made.
+    """
     db_session.expire_all()
 
     snapshot = (await authed_client.get(INVENTORY)).json()
 
     assert len(snapshot["artifacts"]) == 1
     candidate = snapshot["artifacts"][0]
-    assert set(candidate) == {"id", "slot", "set_id", "stats"}
+    assert set(candidate) == {"id", "slot", "set_id", "stats", "main_stat"}
     assert candidate["slot"] == "equip_dress"
+    # **Carried even though it is already summed into `stats`.** The kernel wants one number
+    # per quantity and does not care which was the main stat; a user cares enormously, and it
+    # cannot be recovered from the pool — a CRIT DMG circlet with a CRIT DMG substat looks
+    # identical either way.
+    assert candidate["main_stat"] == candidate["main_stat"].upper()
+    assert candidate["main_stat"].startswith("FIGHT_PROP_")
     # The catalogue's integer id, not the row's UUID: the kernel counts set pieces by id and
     # it counts numbers, so a UUID would make every piece its own set and no bonus would
     # ever reach two pieces.

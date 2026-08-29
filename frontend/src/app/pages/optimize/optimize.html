@@ -138,6 +138,44 @@
       }
     </div>
 
+    <!-- Applies to **both** objectives, so it sits outside the rotation block. "The goblet
+         must be Hydro DMG" is the first thing anyone decides about a Genshin build, and it is
+         also the largest single cut to a search space this page fights to make finish. -->
+    @if (candidates().length) {
+      <fieldset class="main-stats">
+        <legend>Required main stats</legend>
+        <p class="hint">
+          Leave a slot on Any to search all of it. Only stats you actually own are listed.
+        </p>
+        <div class="main-stats__row">
+          @for (slot of slotKeys(); track slot) {
+            <label>
+              <span>{{ slotNames()[slot] || slot }}</span>
+              <select
+                [value]="mainStatBySlot()[slot] || ''"
+                (change)="setMainStat(slot, $any($event.target).value)"
+                [attr.aria-label]="'Required main stat for ' + (slotNames()[slot] || slot)"
+              >
+                <option value="">Any</option>
+                @for (stat of mainStatsFor(slot); track stat.key) {
+                  <option [value]="stat.key">{{ stat.display }}</option>
+                }
+              </select>
+            </label>
+          }
+        </div>
+        @if (impossibleSlots().length) {
+          <!-- Said before the search rather than after it returns nothing. An empty result is
+               indistinguishable from "your artifacts are bad", and the user would not know
+               which. -->
+          <p class="error" role="alert">
+            No artifact you own matches the required main stat for
+            {{ impossibleSlots().join(', ') }} — the search would return nothing.
+          </p>
+        }
+      </fieldset>
+    }
+
     @if (objective() === 'rotation') {
       @if (!rotations().length) {
         <p class="hint">No rotations authored yet — write one before searching against it.</p>

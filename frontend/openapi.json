@@ -4763,13 +4763,18 @@
             },
             "type": "object",
             "title": "Stats"
+          },
+          "main_stat": {
+            "type": "string",
+            "title": "Main Stat"
           }
         },
         "type": "object",
         "required": [
           "id",
           "slot",
-          "stats"
+          "stats",
+          "main_stat"
         ],
         "title": "KernelCandidate",
         "description": "One artifact, as `search.ts`'s `Candidate` reads it.\n\nO.2. Smaller than `ArtifactRead` and translated: `stats` is keyed by **kernel quantity**,\nwith the main stat and every substat summed into one map, because the kernel takes one\nnumber per quantity.\n\nThe translation is `stat_calculator._quantity_for_prop`, which decides what every stat\nmeans and refuses rather than guessing. Doing it in TypeScript would be a second\ndefinition of the vocabulary with a silent failure mode \u2014 a mis-mapped substat produces a\nbuild optimal for a stat the character does not have, presented as the answer."
