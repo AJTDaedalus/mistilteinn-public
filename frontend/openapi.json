@@ -2155,6 +2155,53 @@
         ]
       }
     },
+    "/api/v1/rotations/import": {
+      "post": {
+        "tags": [
+          "rotations"
+        ],
+        "summary": "Import From Gcsim",
+        "description": "Read a gcsim config back into rotation steps, or refuse and say why.\n\n**This creates nothing.** The steps come back as a preview and are saved, if at all,\nthrough the ordinary create endpoint \u2014 see `RotationImportRead` on why.\n\nA config this app emitted round-trips exactly. Anything else is refused with **422 naming\nevery line** it could not express, rather than imported without them. gcsim's language is\nfar larger than a list of `(character, action, repeat)`: conditional guards on energy or\nstatus, `wait` for buff alignment, loops that are not `while 1`. Dropping an\n`if .noelle.energy > 40` would leave a rotation that looks like the author's, carries\ntheir name, and simulates to a number they never published \u2014 and the user would have no\nway to see the difference. `rotation_parser` is written at length about this.",
+        "operationId": "import_from_gcsim_api_v1_rotations_import_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RotationImportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RotationImportRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/rotations/{rotation_id}": {
       "get": {
         "tags": [
@@ -5340,6 +5387,44 @@
         ],
         "title": "RotationCreate",
         "description": "Body for `POST /rotations`."
+      },
+      "RotationImportRead": {
+        "properties": {
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/RotationStep"
+            },
+            "type": "array",
+            "title": "Steps"
+          }
+        },
+        "type": "object",
+        "required": [
+          "steps"
+        ],
+        "title": "RotationImportRead",
+        "description": "The steps a config was read as \u2014 a **preview**, not a saved rotation.\n\nImporting does not create anything. The steps come back for the user to look at and then\nsave through the ordinary create endpoint, because a config that parses is not\nautomatically a rotation someone wants: it may name a team member they meant to swap, or\nbe the third variant of something they already have. Writing it for them would make\n\"import\" a verb with a side effect nobody asked for, and the undo is a delete."
+      },
+      "RotationImportRequest": {
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "title": "Team Id"
+          },
+          "config": {
+            "type": "string",
+            "maxLength": 100000,
+            "minLength": 1,
+            "title": "Config"
+          }
+        },
+        "type": "object",
+        "required": [
+          "team_id",
+          "config"
+        ],
+        "title": "RotationImportRequest",
+        "description": "Body for `POST /rotations/import` \u2014 a gcsim config to read back into steps."
       },
       "RotationOptions": {
         "properties": {

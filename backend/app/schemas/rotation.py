@@ -168,3 +168,30 @@ class RotationRead(BaseModel):
     steps: list[RotationStep]
 
     model_config = {"from_attributes": True}
+
+
+class RotationImportRequest(BaseModel):
+    """Body for `POST /rotations/import` — a gcsim config to read back into steps."""
+
+    #: The team the rotation's characters must be on. Imported steps are only meaningful
+    #: against a roster: gcsim names characters by *its* key, and mapping one back needs the
+    #: team's rows. It is also what makes the refusal specific — "no character on this team
+    #: is gcsim's `bennett`" is actionable in a way "unknown key" is not.
+    team_id: str
+    #: The config text. A whole `.txt` file is expected, not a hand-cut action block:
+    #: `build_config` wraps the loop in options, character stanzas and a target, and asking a
+    #: user to find the block is asking them to do the parser's job.
+    config: str = Field(..., min_length=1, max_length=100_000)
+
+
+class RotationImportRead(BaseModel):
+    """The steps a config was read as — a **preview**, not a saved rotation.
+
+    Importing does not create anything. The steps come back for the user to look at and then
+    save through the ordinary create endpoint, because a config that parses is not
+    automatically a rotation someone wants: it may name a team member they meant to swap, or
+    be the third variant of something they already have. Writing it for them would make
+    "import" a verb with a side effect nobody asked for, and the undo is a delete.
+    """
+
+    steps: list[RotationStep]

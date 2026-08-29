@@ -35,8 +35,11 @@ from app.schemas.rotation import (
     ContextKeyRequest,
     RosterCharacter,
     RotationCreate,
+    RotationImportRead,
+    RotationImportRequest,
     RotationOptions,
     RotationRead,
+    RotationStep,
     RotationUpdate,
     TeamRoster,
 )
@@ -49,6 +52,7 @@ from app.services.rotation_compiler import (
     compile_rotation,
     rotation_signature,
 )
+from app.services.rotation_parser import RotationParseError, parse_action_block
 from app.services.sim_context import context_key
 
 router = APIRouter(prefix="/rotations", tags=["rotations"])
@@ -174,6 +178,43 @@ async def create_rotation(
         "steps": [step.model_dump() for step in body.steps],
     })
     return RotationRead.model_validate(created)
+
+
+@router.post("/import", response_model=RotationImportRead)
+@limiter.limit(WRITE_LIMIT)
+async def import_from_gcsim(
+    request: Request,  # slowapi reads the client address off it
+    body: RotationImportRequest,
+    repo: _Repo,
+) -> RotationImportRead:
+    """Read a gcsim config back into rotation steps, or refuse and say why.
+
+    **This creates nothing.** The steps come back as a preview and are saved, if at all,
+    through the ordinary create endpoint — see `RotationImportRead` on why.
+
+    A config this app emitted round-trips exactly. Anything else is refused with **422 naming
+    every line** it could not express, rather than imported without them. gcsim's language is
+    far larger than a list of `(character, action, repeat)`: conditional guards on energy or
+    status, `wait` for buff alignment, loops that are not `while 1`. Dropping an
+    `if .noelle.energy > 40` would leave a rotation that looks like the author's, carries
+    their name, and simulates to a number they never published — and the user would have no
+    way to see the difference. `rotation_parser` is written at length about this.
+    """
+    roster = await repo.character_rows(body.team_id)
+    if not roster:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"team {body.team_id!r} has no builds, so there is no roster to map gcsim's "
+                f"character keys onto. A config names characters in gcsim's vocabulary; "
+                f"turning `noelle` back into a catalogue row needs the team."
+            ),
+        )
+    try:
+        steps = parse_action_block(body.config, roster.values())
+    except RotationParseError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return RotationImportRead(steps=[RotationStep(**step) for step in steps])
 
 
 @router.get("/{rotation_id}", response_model=RotationRead)

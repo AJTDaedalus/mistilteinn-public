@@ -674,3 +674,95 @@ async def test_a_character_gcsim_does_not_implement_is_refused_with_its_reason(
 
     assert response.status_code == 422, response.text
     assert "gcsim has no character key" in response.json()["detail"]
+
+
+# ── importing a gcsim config ─────────────────────────────────────────────────
+
+
+async def test_a_config_this_app_emitted_imports_back_to_its_steps(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """Tier 1 of the import, end to end: compile a rotation, import the text, get the steps.
+
+    Round-tripping through the real endpoints rather than the two functions is the point —
+    it proves the roster the importer maps keys against is the same one the compiler used.
+    """
+    created = (await authed_client.post(ROTATIONS, json={
+        "name": "Round trip", "team_id": scene.team_id,
+        "steps": [_step(scene.barbara, "skill"), _step(scene.ayaka, "attack", 3)],
+    })).json()
+    config = (await authed_client.post(f"{ROTATIONS}/{created['id']}/compile")).json()["config"]
+
+    imported = await authed_client.post(
+        f"{ROTATIONS}/import", json={"team_id": scene.team_id, "config": config},
+    )
+
+    assert imported.status_code == 200
+    assert [(s["character"], s["action"], s["repeat"]) for s in imported.json()["steps"]] == [
+        (scene.barbara, "skill", 1),
+        (scene.ayaka, "attack", 3),
+    ]
+
+
+async def test_importing_creates_nothing(authed_client: AsyncClient, scene: Scene):
+    """`import` is a preview. Saving it is a separate, deliberate act — a config that parses
+    is not automatically a rotation someone wants, and the undo for an unasked-for write is a
+    delete."""
+    before = (await authed_client.get(ROTATIONS, params={"team_id": scene.team_id})).json()
+    config = (
+        "active barbara;\n"
+        "while 1 {\n"
+        "    if .barbara.skill.ready { barbara skill; }\n"
+        "}\n"
+    )
+
+    await authed_client.post(
+        f"{ROTATIONS}/import", json={"team_id": scene.team_id, "config": config},
+    )
+
+    after = (await authed_client.get(ROTATIONS, params={"team_id": scene.team_id})).json()
+    assert after["total"] == before["total"]
+
+
+async def test_a_config_using_gcsim_features_we_cannot_express_is_refused(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """**The refusal that is the whole feature.** Importing this without the energy guard
+    would produce a rotation that looks like the author's and bursts on a different schedule
+    — same name, different number, no way for the user to tell."""
+    config = (
+        "active barbara;\n"
+        "while 1 {\n"
+        "    if .barbara.energy > 40 { barbara burst; }\n"
+        "    wait 30;\n"
+        "}\n"
+    )
+
+    response = await authed_client.post(
+        f"{ROTATIONS}/import", json={"team_id": scene.team_id, "config": config},
+    )
+
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert "energy" in detail
+    assert "wait" in detail
+
+
+async def test_a_config_naming_someone_off_the_team_is_refused_by_name(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """A rotation written for another team is the ordinary case for a shared config, and the
+    message has to be specific enough to act on."""
+    config = (
+        "active barbara;\n"
+        "while 1 {\n"
+        "    if .bennett.burst.ready { bennett burst; }\n"
+        "}\n"
+    )
+
+    response = await authed_client.post(
+        f"{ROTATIONS}/import", json={"team_id": scene.team_id, "config": config},
+    )
+
+    assert response.status_code == 422
+    assert "bennett" in response.json()["detail"]
