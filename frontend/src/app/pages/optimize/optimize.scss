@@ -101,6 +101,12 @@
     border-radius: 0.4rem;
   }
 
+  /* Beside "Why?", not instead of it: one explains the row and the other acts on it, and a
+     result you cannot act on was the gap the owner named. */
+  .results .equip {
+    white-space: nowrap;
+  }
+
   .set-filter {
     margin: 0.75rem 0 0;
     padding: 0.75rem 1rem;

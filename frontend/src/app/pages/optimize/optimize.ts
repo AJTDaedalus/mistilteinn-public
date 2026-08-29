@@ -426,6 +426,87 @@ export class OptimizePage implements OnInit {
   });
 
   /**
+   * Put a result's five pieces onto the build that was searched for (owner, 2026-08-29).
+   *
+   * ## It checks before it moves anything
+   *
+   * A piece held by *another* build is refused by the API, naming the holder (A.1) — and by
+   * then this would already have taken the build's own pieces off, leaving it half equipped
+   * because of a refusal it could have seen coming. So every winning piece is read first, and
+   * a single one held elsewhere aborts the whole thing with nothing changed.
+   *
+   * That refusal is the honest one until **build priority** exists (backlog §3, *later*):
+   * "steal it from the lower-ranked character" needs a ranking to know which character that
+   * is, and silently unequipping someone else's piece without one is the same operation with
+   * the accountability removed.
+   *
+   * ## What it reports
+   *
+   * How many moved, and how many were already there — because "equipped 5 pieces" after a
+   * search that changed nothing reads as a change that did not happen.
+   */
+  protected async equipRow(row: ResultRow): Promise<void> {
+    const buildId = this.buildId();
+    if (!buildId || this.equipping()) return;
+    let moving = false;
+    this.equipping.set(true);
+    this.equipped.set(null);
+    this.actionError.set(null);
+    try {
+      const pieces = await Promise.all(row.artifactIds.map((id) => this.artifacts.get(id)));
+      const heldElsewhere = pieces.filter(
+        // `!= null` catches undefined as well: the generated type makes `build_id` optional,
+        // and an absent field means the same thing as an explicit null — nobody holds it.
+        (piece) => piece.build_id != null && piece.build_id !== buildId,
+      );
+      if (heldElsewhere.length) {
+        this.actionError.set(
+          `${heldElsewhere.length} of these pieces are equipped to another build `
+          + `(${heldElsewhere.map((p) => p.set_name || p.slot).join(', ')}). `
+          + 'Nothing was changed — take them off that build first.',
+        );
+        return;
+      }
+
+      const already = new Set(pieces.filter((p) => p.build_id === buildId).map((p) => p.id));
+      const winners = new Set(row.artifactIds);
+      // Past this line the build is being changed, so a failure is no longer "nothing
+      // happened" — it is a build wearing some of two sets. Said plainly rather than left to
+      // a bare API message that describes one request and not the state it left behind.
+      moving = true;
+      // Off first, then on. Equipping into a filled slot is refused rather than swapped (A.1),
+      // so the order is not a preference — it is the only one that works.
+      const current = await this.artifacts.list({ build_id: buildId });
+      for (const piece of current.items) {
+        if (!winners.has(piece.id)) await this.artifacts.equip(piece.id, null);
+      }
+      for (const id of row.artifactIds) {
+        if (!already.has(id)) await this.artifacts.equip(id, buildId);
+      }
+      const moved = row.artifactIds.length - already.size;
+      this.equipped.set(
+        already.size === row.artifactIds.length
+          ? 'Already equipped — this build is wearing #' + row.rank + ' already.'
+          : `Equipped ${moved} piece(s) from #${row.rank}`
+            + (already.size ? `; ${already.size} were already on this build.` : '.'),
+      );
+    } catch (err) {
+      // Verbatim: the API's refusal names the holding build, which is more useful than
+      // anything this page could invent.
+      this.actionError.set(
+        apiErrorMessage(err)
+        + (moving ? ' — pieces were already being moved, so check the build.' : ''),
+      );
+    } finally {
+      this.equipping.set(false);
+    }
+  }
+
+  protected readonly equipping = signal(false);
+  /** Non-null after an equip that succeeded, saying what actually moved. */
+  protected readonly equipped = signal<string | null>(null);
+
+  /**
    * `equip_bracer` → `Flower`, from `/artifacts/options`.
    *
    * **Not a map written here.** `ArtifactSlot.display` already publishes these, and the first
@@ -740,6 +821,8 @@ export class OptimizePage implements OnInit {
     // A result belongs to the build it was searched for. Left up, it would sit under a
     // different character's name — a number that looks right and refers to something else.
     this.result.set(null);
+    // And so does the note saying what was equipped from it.
+    this.equipped.set(null);
     this.actionError.set(null);
     if (!id) return;
     try {
@@ -848,6 +931,9 @@ export class OptimizePage implements OnInit {
     const id = this.buildId();
     if (!hit || !id) return;
     this.actionError.set(null);
+    // The equip note belongs to the result it was equipped from. A new search replaces that
+    // result, and a note left over it would describe a ranking nobody can see any more.
+    this.equipped.set(null);
     this.searching.set(true);
     try {
       const [context, snapshot] = await Promise.all([
@@ -935,6 +1021,7 @@ export class OptimizePage implements OnInit {
     const id = this.buildId();
     if (!id || !this.rotationId()) return;
     this.actionError.set(null);
+    this.equipped.set(null);
     this.result.set(null);
     this.caveats.set(null);
     this.recipeNotes.set(null);

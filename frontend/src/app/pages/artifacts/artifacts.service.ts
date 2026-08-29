@@ -82,6 +82,15 @@ export class ArtifactsService {
     return data;
   }
 
+  /** One piece, by id. Used to learn who currently holds it before moving it. */
+  async get(id: string): Promise<ArtifactRead> {
+    const { data, error } = await this.api.GET('/api/v1/artifacts/{artifact_id}', {
+      params: { path: { artifact_id: id } },
+    });
+    if (error) throw error;
+    return data;
+  }
+
   /**
    * Attach a piece to a build, or take it off with `null`.
    *

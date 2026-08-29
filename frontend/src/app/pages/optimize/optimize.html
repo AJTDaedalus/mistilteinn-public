@@ -372,6 +372,10 @@
         </span>
       </p>
 
+      @if (equipped(); as note) {
+        <p class="hint" role="status">{{ note }}</p>
+      }
+
       <ol class="results">
         @for (row of rows(); track row.rank) {
           <li [class.chosen]="explained()?.rank === row.rank">
@@ -380,6 +384,18 @@
             <span class="pieces">{{ row.pieces.join(' · ') }}</span>
             <button type="button" (click)="explainRow(row)" [disabled]="explaining()">
               Why?
+            </button>
+            <!-- Owner, 2026-08-29: put the winning five onto the build that was searched for.
+                 It reads every piece before moving any, so one held by another build aborts
+                 the whole thing rather than leaving this one half equipped. -->
+            <button
+              type="button"
+              class="equip"
+              (click)="equipRow(row)"
+              [disabled]="equipping()"
+              [attr.aria-label]="'Equip the pieces from result ' + row.rank"
+            >
+              {{ equipping() ? 'Equipping…' : 'Equip' }}
             </button>
           </li>
         } @empty {

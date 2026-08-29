@@ -1151,3 +1151,113 @@ describe('OptimizePage set filter', () => {
     expect((page['calibrationCount'] as unknown as () => number)()).toBe(3);
   });
 });
+
+
+/**
+ * Equipping a result onto the build it was searched for (owner, 2026-08-29).
+ *
+ * The whole risk is order. Equipping into a filled slot is refused rather than swapped (A.1),
+ * so pieces must come off before they go on — and a piece held by a *different* build is
+ * refused too, which would land after this had already stripped the build being equipped.
+ */
+describe('OptimizePage equip', () => {
+  const ROW = { rank: 1, damage: 100, artifactIds: ['a1', 'a2'], pieces: ['Flower', 'Plume'] };
+
+  function pageForEquip(pieces: Record<string, string | null>, equipped: string[] = []) {
+    const get = vi.fn(async (id: string) => ({
+      id, build_id: pieces[id] ?? null, slot: 'equip_bracer', set_name: 'Gladiator',
+    }));
+    const equip = vi.fn().mockResolvedValue({});
+    const list = vi.fn().mockResolvedValue({
+      items: equipped.map((id) => ({ id })), total: equipped.length, offset: 0, limit: 50,
+    });
+    const page = pageWith({
+      artifacts: {
+        options: vi.fn().mockResolvedValue(OPTIONS), get, equip, list,
+      } as unknown as Partial<ArtifactsService>,
+    }) as unknown as Record<string, never>;
+    (page['buildId'] as unknown as { set: (v: string) => void }).set('b1');
+    return { page, get, equip, list };
+  }
+
+  const run = (page: Record<string, never>) =>
+    (page['equipRow'] as unknown as (r: unknown) => Promise<void>).call(page, ROW);
+
+  it('changes nothing when a piece is on another build', async () => {
+    // The refusal would otherwise land *after* this build had been stripped, leaving it half
+    // equipped because of something readable up front.
+    const { page, equip } = pageForEquip({ a1: null, a2: 'b2' });
+
+    await run(page);
+
+    expect(equip).not.toHaveBeenCalled();
+    expect((page['actionError'] as unknown as () => string)()).toContain('another build');
+    expect((page['equipped'] as unknown as () => unknown)()).toBeNull();
+  });
+
+  it('takes the build\'s other pieces off before putting the winners on', async () => {
+    // Equipping into a filled slot is refused rather than swapped (A.1), so this order is not
+    // a preference — it is the only one that works.
+    const { page, equip } = pageForEquip({ a1: null, a2: null }, ['old1']);
+
+    await run(page);
+
+    expect(equip.mock.calls).toEqual([
+      ['old1', null],
+      ['a1', 'b1'],
+      ['a2', 'b1'],
+    ]);
+  });
+
+  it('leaves a piece already on this build where it is', async () => {
+    const { page, equip } = pageForEquip({ a1: 'b1', a2: null }, ['a1']);
+
+    await run(page);
+
+    // a1 is neither taken off nor re-equipped: it is already exactly where it belongs.
+    expect(equip.mock.calls).toEqual([['a2', 'b1']]);
+    expect((page['equipped'] as unknown as () => string)()).toContain('1 were already');
+  });
+
+  it('says so rather than claiming a change when the build already wears the result', async () => {
+    // "Equipped 5 pieces" after a search that moved nothing reads as a change that did not
+    // happen.
+    const { page, equip } = pageForEquip({ a1: 'b1', a2: 'b1' }, ['a1', 'a2']);
+
+    await run(page);
+
+    expect(equip).not.toHaveBeenCalled();
+    expect((page['equipped'] as unknown as () => string)()).toContain('Already equipped');
+  });
+
+  it('says the build was left mid-move when a failure lands after the first change', async () => {
+    // Before the first PATCH, a failure means nothing happened. After it, the build is wearing
+    // some of two sets — and a bare API message describes one request, not the state it left.
+    const { page, equip } = pageForEquip({ a1: null, a2: null }, ['old1']);
+    equip.mockRejectedValueOnce(new Error('network'));
+
+    await run(page);
+
+    expect((page['actionError'] as unknown as () => string)())
+      .toContain('already being moved');
+  });
+
+  it('drops the equip note when a new search replaces the result it described', async () => {
+    const { page } = pageForEquip({ a1: null, a2: null });
+    await run(page);
+    expect((page['equipped'] as unknown as () => unknown)()).not.toBeNull();
+
+    await (page['selectBuild'] as unknown as (id: string) => Promise<void>).call(page, 'b1');
+
+    expect((page['equipped'] as unknown as () => unknown)()).toBeNull();
+  });
+
+  it('does nothing at all without a build', async () => {
+    const { page, get } = pageForEquip({ a1: null, a2: null });
+    (page['buildId'] as unknown as { set: (v: string) => void }).set('');
+
+    await run(page);
+
+    expect(get).not.toHaveBeenCalled();
+  });
+});

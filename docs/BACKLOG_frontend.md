@@ -168,9 +168,16 @@ show that a suggested piece is *owned*. Drag-and-drop for the ranking.
   possible value gets no control. This reverses #146's reasoning, which is recorded in
   `stat-order` rather than dropped.
 - ~~Order the main stats as in §2~~ **Done (#163)**; icons still to do.
-- **An "Equip" button on the results** (owner, 2026-08-29): put the winning five onto the build
-  that was searched for. `ScoredBuild` already carries `artifactIds`, so this is an equip call
-  and a confirmation rather than a search problem. Worth doing when this page is next opened.
+- ~~**An "Equip" button on the results** (owner, 2026-08-29): put the winning five onto the
+  build that was searched for.~~ **Done (#173).** It was not quite "an equip call": equipping
+  into a filled slot is *refused* rather than swapped (A.1), and so is moving a piece another
+  build holds — so the order is forced (off, then on) and one piece held elsewhere would
+  otherwise land its refusal *after* this build had been stripped.
+
+  It reads all five first and aborts with nothing changed. That refusal is the honest one
+  until **build priority** exists: "steal it from the lower-ranked character" needs a ranking
+  to know which character that is, and doing it without one is the same operation with the
+  accountability removed.
 - ~~**Set filters, from Fairy.** 4-piece and 2-piece mutually exclusive; selecting one 2-piece
   **requires** a second, because a lone 2-piece never constrains anything. 4-piece gets the
   first selector, being far the commoner. Card grid, not a drop-down.~~ **Done (#172)** — two
@@ -214,8 +221,20 @@ ability and element. On the owner's Hyperbloom team: **31,782,037** — Furina 3
 
 - **Character**: move the weapon icon down beside the element, and match the element chip's
   style — icon plus the weapon class name in a bubble. Element filters get icons.
-- **Nation filter**, if the data and icons exist. Not a priority if they do not — *check before
-  building.*
+- ~~**Nation filter**, if the data and icons exist. Not a priority if they do not — *check
+  before building.*~~ **Checked, 2026-08-29: the data is not what the filter would need, and
+  there are no icons.**
+
+  `CharacterSummary.region` exists and is populated for 148 of 150 characters, but it is
+  nanoka's **association type**, not a nation. Fifteen values, and seven of them are not
+  nations at all: `ASSOC_TYPE_FATUI`, `HVISION`, `MAINACTOR` (the Traveler), `RANGER`,
+  `OMNI_SCOURGE`, `NODKRAI_ZIBAI`, `SNEZHNAYA_STAR`. A "Nation" chip built on it would file
+  Childe under Fatui rather than Snezhnaya and the Traveler under nothing recognisable.
+
+  Deriving the real nation means a mapping this repo would be **writing from memory** — the
+  exact failure `CLAUDE.md` names as fairy's worst — unless a source is found that publishes
+  it. There are no nation emblems in `frontend/public/icons/` either. **Not a priority, and
+  now with a reason rather than a guess.**
 - **Weapon**: icons on the filter.
 - **"Sets and enemies are currently broken, I can't click them."** See §11.
 
@@ -247,6 +266,33 @@ stays unknown, which is the honest answer.
 A second, smaller fix went in alongside: the roll budget now uses the **visible substat count**
 to constrain the initial count. A `+0` five-star showing three lines must have started with
 three, so its budget is `{3}` and not `{3, 4}`.
+
+## 12. Found while verifying #173: the single-hit search freezes the page
+
+**Not in the owner's audit, and not caused by any of #170–#173** — `frontend/src/app/sim/search.ts`
+has not changed since `68b7f90`, the kernel work. Found while trying to click the new Equip
+button, which needs a result to click on.
+
+**Measured, on the owner's 2,370-piece inventory, default settings, no main-stat filters.** From
+the moment "Search" is clicked the main thread is blocked solid: a headless browser could not
+read the button's own text, count a DOM node, or take a screenshot — **for 227 seconds
+continuously**, at which point the run was stopped. No result row ever appeared.
+
+Three things are worth separating:
+
+1. **How long the search takes** is unknown; it did not finish. `isExact` implies pruning
+   bounds it, so it should terminate — that it did not inside four minutes is the thing to
+   measure first, with `scripts/bench_optimizer.py` as the precedent for how.
+2. **That it is synchronous** is the part the user feels. The button reads "Searching…" and
+   nothing else happens, because nothing else *can* — no progress, no cancel, no repaint. The
+   rotation objective has a progress line; this path has none, and could not show one anyway.
+3. **#130 concluded workers were not worth building** — *"no browser penalty on `sample()`"*.
+   That measured gcsim's own call, not this enumeration, so it is not evidence about this path
+   and should not be cited as though it were.
+
+**This is the one thing on this page a user cannot work around**, and it outranks the rest of
+what is left in §6. Recorded here rather than fixed in #173, which is about equipping a result
+and has no business changing the search.
 
 ## 11. Not reproduced: "sets and enemies are broken"
 
