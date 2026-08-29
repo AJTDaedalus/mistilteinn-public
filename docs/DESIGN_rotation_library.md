@@ -51,6 +51,17 @@ changes what the rotation *does* while leaving something that looks like it — 
 discarded would simulate to a different number than the one its author published, and the
 user would have no way to know.
 
+**Built (#155), and measured against the four.** One of gcsim's real database configs imports
+— the Neuvillette mono-Hydro one, as **16 steps**. A second (Arlecchino) converts completely and
+is blocked *only* by gcsim's short aliases: it writes `arle` and `esco`, and
+`app/data/gcsim/keys.json` carries `arlecchino` and `escoffier` with no alias table. **That is
+the next thing worth building** — it is a snapshot job like `build_key_snapshot.py`, not a
+parser question.
+
+The other two are refused and should stay refused: `if !is_even(i)` runs a branch on alternate
+cycles and this model has no cycle index, and `clorinde_combo()` / `mav_dc_cancel(6)` are named
+sequences with their own bodies. Those are **different rotations, not different spellings**.
+
 **OQ-1 — answered: refuse, and add a converter.** Not a lossy import. Rewrite what is
 mechanically translatable first — `for … { }` → `while 1 { }`, and comma-separated action
 sequences into one step each — then refuse whatever is still unexpressible, by line.

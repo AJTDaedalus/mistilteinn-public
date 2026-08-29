@@ -52,6 +52,7 @@ from app.services.rotation_compiler import (
     compile_rotation,
     rotation_signature,
 )
+from app.services.rotation_converter import convert
 from app.services.rotation_parser import RotationParseError, parse_action_block
 from app.services.sim_context import context_key
 
@@ -210,11 +211,23 @@ async def import_from_gcsim(
                 f"turning `noelle` back into a catalogue row needs the team."
             ),
         )
+    # **Converted first, then parsed.** The converter rewrites what is mechanically
+    # translatable — `for`→`while 1`, comma sequences into one step each, comments away, and
+    # the `.ready` gates our own compiler adds to everything — and the parser refuses whatever
+    # is left, by line. Owner ruling, `DECISIONS.md` §21.
+    #
+    # Measured against the four real database configs in `references/gcsim_db/`: one imports,
+    # one is blocked only by gcsim's short aliases (`arle`, `esco`), and two use user-defined
+    # functions and cycle-index conditionals that are different rotations rather than different
+    # spellings.
+    converted, notes = convert(body.config)
     try:
-        steps = parse_action_block(body.config, roster.values())
+        steps = parse_action_block(converted, roster.values())
     except RotationParseError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    return RotationImportRead(steps=[RotationStep(**step) for step in steps])
+    return RotationImportRead(
+        steps=[RotationStep(**step) for step in steps], rewrites=notes,
+    )
 
 
 @router.get("/{rotation_id}", response_model=RotationRead)

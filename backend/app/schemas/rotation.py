@@ -195,3 +195,7 @@ class RotationImportRead(BaseModel):
     """
 
     steps: list[RotationStep]
+    #: What the converter rewrote, in words. **Never silent**: a `for` becoming a `while 1` is
+    #: a real change to the author's config, and a user should meet it here rather than in a
+    #: damage number.
+    rewrites: list[str] = []

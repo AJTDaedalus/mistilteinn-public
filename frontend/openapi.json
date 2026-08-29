@@ -5673,6 +5673,14 @@
             },
             "type": "array",
             "title": "Steps"
+          },
+          "rewrites": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Rewrites",
+            "default": []
           }
         },
         "type": "object",
