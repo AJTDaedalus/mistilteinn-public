@@ -38,7 +38,7 @@ reached by omission.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from sqlalchemy import delete, select
@@ -85,6 +85,9 @@ class StoredImport:
     #: export, each named. Never silent: a user who sold an artifact should be told the slot
     #: emptied, not discover it later from a damage number.
     unequipped: tuple[str, ...] = ()
+    #: `{source_index: row}` for everything written, so build reconstitution can equip the
+    #: exact piece the export named. Not part of what a client sees.
+    rows_by_source: dict[int, Artifact] = field(default_factory=dict)
 
     @property
     def ok(self) -> bool:
@@ -151,7 +154,8 @@ async def store_good_import(
         )
         deleted = int(result.rowcount or 0)
 
-    session.add_all([
+    rows_by_source: dict[int, Artifact] = {}
+    rows = [
         Artifact(
             owner_id=owner_id,
             artifact_set_id=set_id,
@@ -170,7 +174,15 @@ async def store_good_import(
             substats=list(artifact.substats),
         )
         for artifact, set_id in resolved
-    ])
+    ]
+    session.add_all(rows)
+    # Keyed by where the record sat in the export, so a caller that also wants to rebuild
+    # builds can bind the piece the user actually owns rather than re-matching on stats —
+    # which is what `_restore_equipment` has to do, and only because it has nothing better.
+    rows_by_source = {
+        artifact.source_index: row
+        for (artifact, _), row in zip(resolved, rows, strict=True)
+    }
     await session.flush()
 
     unequipped = await _restore_equipment(session, owner_id, equipped_before)
@@ -180,6 +192,7 @@ async def store_good_import(
         deleted=deleted,
         rejected=tuple(sorted(rejected)),
         unequipped=unequipped,
+        rows_by_source=rows_by_source,
     )
 
 

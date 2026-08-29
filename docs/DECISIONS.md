@@ -636,3 +636,72 @@ read-only pages. Builds, teams, rotations, optimize, compare and explain, which 
 time is actually spent, rendered everything as bare text. `BuildRead.character` is a
 `CharacterSummary` and has carried `icon` the whole time, so this was never a data problem;
 nothing drew it.
+
+---
+
+## Inventory and GOOD import (2026-08-28)
+
+### 6. Roll counts are derived, and refused where the arithmetic is ambiguous
+
+**Ruling: show a roll indicator only where one count fits; show nothing otherwise.**
+
+Genshin publishes no roll count — a substat is a *sum* — so it is reconstructed by
+decomposing the total over the values the stat can roll. The approach is Genshin Optimizer's
+(MIT, `libs/gi/util/src/artifact/artifact.ts:getSubstatRolls`), reimplemented against this
+repo's committed tables: **match on the value as the export displays it, not within a float
+tolerance.** Over the owner's real 2,370-artifact export, 85.0% of substats decompose exactly
+one way, 10.2% more agree on the count, 4.8% match nothing.
+
+**Where several decompositions disagree on the count, nothing is drawn.** A roll count is the
+number people judge an artifact by; a confident wrong one is worse than an absent one. A bar
+of *unknown* tier renders neutral rather than as tier 0, because "the worst roll" and "we do
+not know which roll" are different claims.
+
+**The known cost:** a heavily-rolled substat is exactly the one most likely to be ambiguous,
+so the indicator is least available where interest is highest. `roll_value` — the line as a
+multiple of one best roll — needs no decomposition and covers that gap.
+
+### 7. GOOD import defaults to `replace`, and asks before deleting
+
+**Ruling: `replace` is the default** (owner, 2026-08-28), reversing the earlier "chosen, never
+defaulted". GOOD carries no stable per-artifact id, so `append` on a re-scan of one account
+duplicates every piece — which is what an empty default was steering people into.
+
+**With a confirmation when the inventory is non-empty.** A scanner that dies half way writes a
+*valid* GOOD file holding a fraction of an inventory, so the destructive reading being right
+for the common case does not make a one-click irreversible path right.
+
+### 8. Builds are reconstituted from GOOD; teams are not
+
+**Ruling: import builds, never teams** (owner, 2026-08-28). GOOD has no concept of a team, so
+one would have to be invented; a team is assembled from builds on `/teams`.
+
+**A build for each character actually holding a weapon or an artifact.** An export lists every
+character an account owns — 89 in the reference file, including GO's practice mannequins,
+which are out of scope by owner ruling. Equipping is the signal that separates the six a user
+plays from the eighty they do not, and it excludes the mannequins without naming them.
+
+**Existing builds are never overwritten.** A re-import refreshes the inventory; a build carries
+decisions no scanner knows about.
+
+### 9. OPEN — the Traveler wears one artifact set across seven elements
+
+**Owner's model, and it is the right one:** a build per elemental Traveler, each keeping its
+own level, constellation and talents, all *sharing* one set of artifacts. The game works that
+way and the export agrees — talents arrive per elemental entry (`TravelerCryo` has its own
+`talent` block) while artifacts carry only `location: "Traveler"`, with no element and no
+gender.
+
+**It cannot be expressed yet, and this is why.** `artifacts.build_id` is single-valued and
+`uq_artifacts_build_slot` enforces one piece per slot per build, so seven builds cannot wear
+the same five pieces. The options:
+
+| | cost |
+|---|---|
+| duplicate the artifact rows | inflates the inventory and lets the optimizer award one physical piece to two characters — the failure `_restore_equips` already guards against |
+| a nullable `artifacts_from_build_id` on `Build` | a migration, plus every reader of a build's artifacts (damage chain, optimizer, explain, the build editor) learning to follow the link |
+| a build↔artifact join table | the general fix, and the largest — it changes what "equipped" means everywhere |
+
+**Not chosen.** Until it is, the import creates the one Traveler the export actually describes,
+picking the lowest `nanoka_id` for the gender the export cannot record and saying so in the
+build's notes.

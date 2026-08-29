@@ -37,6 +37,7 @@ from app.schemas.artifact import (
     ArtifactEquip,
     ArtifactOptions,
     ArtifactRead,
+    BuildImportSummary,
     GoodImportRequest,
     GoodImportResponse,
     ImportRejection,
@@ -50,6 +51,7 @@ from app.schemas.artifact import (
 from app.schemas.build import KernelSetBonus
 from app.schemas.common import PaginatedResponse
 from app.services import build_assembler
+from app.services.good_build_service import rebuild_builds as rebuild_from_export
 from app.services.good_import_service import ReplaceRefusedError, store_good_import
 from app.services.stat_calculator import StatInputError, _quantity_for_prop
 
@@ -324,9 +326,27 @@ async def import_good(
         # 409, not 400: the request is well-formed and the refusal is about the state it
         # would leave behind.
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    builds = None
+    if body.rebuild_builds:
+        report = await rebuild_from_export(
+            session,
+            owner_id=str(current_user.id),
+            parsed=parsed,
+            stored=stored.rows_by_source,
+        )
+        builds = BuildImportSummary(
+            created=report.created,
+            skipped_existing=sorted(report.skipped_existing),
+            unresolved=sorted(report.unresolved),
+            unplaced=sorted(report.unplaced),
+            unresolved_weapons=sorted(report.unresolved_weapons),
+            reassigned=sorted(report.reassigned),
+        )
+
     return GoodImportResponse(
         inserted=stored.inserted,
         deleted=stored.deleted,
+        builds=builds,
         rejected=[
             ImportRejection(index=index, reason=reason) for index, reason in stored.rejected
         ],

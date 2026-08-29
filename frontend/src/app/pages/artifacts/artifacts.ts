@@ -109,6 +109,15 @@ export class ArtifactsPage implements OnInit {
   /** `replace` by default — see the class docstring. */
   protected mode: ImportMode | '' = 'replace';
   protected payloadText = '';
+  /**
+   * Also rebuild builds from the export's `characters`, `weapons` and each artifact's
+   * `location`.
+   *
+   * **On by default, and safe to be.** It never overwrites a build that already exists, so
+   * the worst case for a returning user is a report saying nothing changed — while for a
+   * first import it removes the whole manual setup the inventory otherwise leads into.
+   */
+  protected rebuildBuilds = true;
   /** The name of a file chosen through the picker, shown so a paste and a file cannot be
    *  confused for one another. */
   protected readonly fileName = signal<string | null>(null);
@@ -323,7 +332,11 @@ export class ArtifactsPage implements OnInit {
     this.importing.set(true);
     try {
       const parsed: unknown = JSON.parse(this.payloadText);
-      this.importResult.set(await this.service.importGood(this.mode as ImportMode, parsed));
+      this.importResult.set(
+        await this.service.importGood(
+          this.mode as ImportMode, parsed, this.rebuildBuilds,
+        ),
+      );
       await this.load();
     } catch (err) {
       // A `SyntaxError` from `JSON.parse` is the user's file, not the server's fault — said

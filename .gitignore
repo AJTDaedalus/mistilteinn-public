@@ -76,3 +76,6 @@ scratch_*.txt
 # Kept out of the repo for the same reason icons are: a repository is not a data store,
 # and this one is personal.
 references/*.json
+
+# Screenshots from `cd backend && python -m scripts.shoot`. Working output, not artefacts.
+screenshots/

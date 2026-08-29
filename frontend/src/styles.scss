@@ -170,6 +170,17 @@ select, input, textarea {
       border-color: var(--halo-brass);
     }
 
+    // The empty state is a sentence, not a row. Given the card treatment it rendered as a
+    // bordered panel containing "No teams yet." — which reads as an empty *item* in the list
+    // rather than as the list being empty.
+    &.muted {
+      background: none;
+      border: none;
+      padding: var(--space-2) 0;
+
+      &:hover { border: none; }
+    }
+
     // The chosen row, marked by a border edge as well as by weight — `--accent-border-width`
     // exists so emphasis never rests on colour alone (issue #57).
     &.active {

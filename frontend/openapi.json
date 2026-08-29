@@ -3084,6 +3084,58 @@
         "title": "BuildCreate",
         "description": "Body for `POST /builds`.\n\nUnknown fields are refused rather than dropped, for the reason `BuildUpdate` records: a\ntypo'd field name silently becomes \"you did not set that\", and the caller is told the\nwrite succeeded."
       },
+      "BuildImportSummary": {
+        "properties": {
+          "created": {
+            "type": "integer",
+            "title": "Created",
+            "default": 0
+          },
+          "skipped_existing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Skipped Existing",
+            "default": []
+          },
+          "unresolved": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unresolved",
+            "default": []
+          },
+          "unplaced": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unplaced",
+            "default": []
+          },
+          "unresolved_weapons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unresolved Weapons",
+            "default": []
+          },
+          "reassigned": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reassigned",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "BuildImportSummary",
+        "description": "What reconstituting builds from the export did, and did not do."
+      },
       "BuildOptions": {
         "properties": {
           "talents": {
@@ -4349,6 +4401,11 @@
             "type": "object",
             "title": "Payload",
             "description": "A GOOD export, as exported."
+          },
+          "rebuild_builds": {
+            "type": "boolean",
+            "title": "Rebuild Builds",
+            "default": false
           }
         },
         "type": "object",
@@ -4388,6 +4445,16 @@
             "type": "array",
             "title": "Unequipped",
             "default": []
+          },
+          "builds": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BuildImportSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "source": {
             "type": "string",

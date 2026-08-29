@@ -205,7 +205,8 @@ describe('ArtifactsPage', () => {
 
     await importPastConfirmation(page);
 
-    expect(importGood).toHaveBeenCalledWith('replace', { format: 'GOOD' });
+    // The third argument is the rebuild-builds flag, on by default — see the page.
+    expect(importGood).toHaveBeenCalledWith('replace', { format: 'GOOD' }, true);
   });
 
   it('keeps every rejection, not just the count', async () => {

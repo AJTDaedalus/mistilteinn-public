@@ -36,6 +36,18 @@
         </label>
       </div>
 
+      <label class="field field--check">
+        <input type="checkbox" [(ngModel)]="rebuildBuilds" />
+        <span>
+          Also rebuild builds
+          <span class="hint">
+            A build for each character the export shows holding a weapon or artifacts, with
+            their levels, constellation and talents. Existing builds are kept, never
+            overwritten. Teams are not imported — a GOOD export has no concept of one.
+          </span>
+        </span>
+      </label>
+
       @if (mode === 'replace') {
         <p class="hint hint--warn">
           Replacing deletes the artifacts you have now. Equipped slots are refilled by
@@ -101,6 +113,52 @@
                 <li>{{ note }}</li>
               }
             </ul>
+          }
+          @if (result.builds; as builds) {
+            <p>
+              <strong>{{ builds.created }}</strong> build(s) rebuilt<!--
+              -->@if (builds.skipped_existing.length) {,
+                {{ builds.skipped_existing.length }} kept as you had them}.
+            </p>
+            @if (builds.unresolved.length) {
+              <p class="warn">
+                {{ builds.unresolved.length }} character(s) this catalogue does not know —
+                usually an export newer than the seeded patch:
+              </p>
+              <ul class="rejections">
+                @for (key of builds.unresolved; track key) {
+                  <li class="mono">{{ key }}</li>
+                }
+              </ul>
+            }
+            @if (builds.unresolved_weapons.length) {
+              <!-- Named because a build with no weapon is a legitimate state, so an
+                   unresolved one is otherwise completely silent. -->
+              <p class="warn">
+                {{ builds.unresolved_weapons.length }} weapon(s) this catalogue does not know:
+              </p>
+              <ul class="rejections">
+                @for (note of builds.unresolved_weapons; track $index) {
+                  <li class="mono">{{ note }}</li>
+                }
+              </ul>
+            }
+            @if (builds.reassigned.length) {
+              <!-- Moving a piece in-game and re-scanning is legitimate, but it leaves the
+                   build that had it a slot short, and nothing else would mention that. -->
+              <p class="warn">
+                {{ builds.reassigned.length }} piece(s) moved off a build that was wearing
+                them:
+              </p>
+              <ul class="rejections">
+                @for (note of builds.reassigned; track $index) { <li>{{ note }}</li> }
+              </ul>
+            }
+            @if (builds.unplaced.length) {
+              <ul class="rejections">
+                @for (note of builds.unplaced; track $index) { <li>{{ note }}</li> }
+              </ul>
+            }
           }
           @if (result.rejected.length) {
             <!-- Every rejection, with its reason. The endpoint refuses individual artifacts

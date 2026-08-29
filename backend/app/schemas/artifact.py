@@ -295,6 +295,13 @@ class GoodImportRequest(BaseModel):
     #: which refuses rather than coerces — see its docstring for why that differs from
     #: Genshin Optimizer's own reader.
     payload: dict[str, Any] = Field(..., description="A GOOD export, as exported.")
+    #: Also reconstitute builds from `characters`, `weapons` and each artifact's `location`.
+    #:
+    #: **Off by default**, because it writes rows outside the inventory the caller asked to
+    #: import. Never destructive: existing builds are kept and reported, so a re-import can
+    #: refresh the artifacts without touching decisions a user made about a build. Teams are
+    #: not imported at all — GOOD has no concept of one.
+    rebuild_builds: bool = False
 
 
 class ImportRejection(BaseModel):
@@ -302,6 +309,25 @@ class ImportRejection(BaseModel):
 
     index: int
     reason: str
+
+
+class BuildImportSummary(BaseModel):
+    """What reconstituting builds from the export did, and did not do."""
+
+    created: int = 0
+    #: Characters that already had a build, named. "Nothing happened" and "your edits were
+    #: kept" are indistinguishable otherwise.
+    skipped_existing: list[str] = []
+    #: Character keys the catalogue could not identify — usually an export newer than the
+    #: seeded patch.
+    unresolved: list[str] = []
+    #: Equipped pieces that could not be placed, with the reason.
+    unplaced: list[str] = []
+    #: Weapons the catalogue could not identify, `"character: weapon"`. Reported because a
+    #: build with no weapon is a legitimate state, so an unresolved one is otherwise silent.
+    unresolved_weapons: list[str] = []
+    #: Pieces taken from a build that was already wearing them.
+    reassigned: list[str] = []
 
 
 class GoodImportResponse(BaseModel):
@@ -321,5 +347,9 @@ class GoodImportResponse(BaseModel):
     #: export (N.3). A `replace` re-equips what it can by matching stats — GOOD has no stable
     #: per-artifact id — and names what it could not.
     unequipped: list[str] = []
+    #: Null unless the caller asked for builds. A summary rather than the builds themselves:
+    #: `/builds` already publishes those, and duplicating them here would be a second shape
+    #: for one thing.
+    builds: BuildImportSummary | None = None
     source: str = ""
     version: int = 0

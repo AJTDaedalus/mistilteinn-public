@@ -64,9 +64,19 @@ export class ArtifactsService {
    * stable per-artifact id to merge on — so defaulting it in the client would be this layer
    * quietly deciding whether to delete someone's inventory.
    */
-  async importGood(mode: ImportMode, payload: unknown): Promise<GoodImportResponse> {
+  async importGood(
+    mode: ImportMode,
+    payload: unknown,
+    rebuildBuilds = false,
+  ): Promise<GoodImportResponse> {
     const { data, error } = await this.api.POST('/api/v1/artifacts/import/good', {
-      body: { mode, payload: payload as Record<string, never> },
+      body: {
+        mode,
+        payload: payload as Record<string, never>,
+        // Off unless asked. The export can reconstitute a build per equipped character, but
+        // that writes rows outside the inventory the caller came here for.
+        rebuild_builds: rebuildBuilds,
+      },
     });
     if (error) throw error;
     return data;
