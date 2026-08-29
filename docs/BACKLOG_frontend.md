@@ -282,7 +282,7 @@ A second, smaller fix went in alongside: the roll budget now uses the **visible 
 to constrain the initial count. A `+0` five-star showing three lines must have started with
 three, so its budget is `{3}` and not `{3, 4}`.
 
-## 12. Found while verifying #173: the single-hit search freezes the page
+## 12. ~~Found while verifying #173: the single-hit search freezes the page~~ — fixed (#175)
 
 **Not in the owner's audit, and not caused by any of #170–#173** — `frontend/src/app/sim/search.ts`
 has not changed since `68b7f90`, the kernel work. Found while trying to click the new Equip
@@ -305,9 +305,20 @@ Three things are worth separating:
    That measured gcsim's own call, not this enumeration, so it is not evidence about this path
    and should not be cited as though it were.
 
-**This is the one thing on this page a user cannot work around**, and it outranks the rest of
-what is left in §6. Recorded here rather than fixed in #173, which is about equipping a result
-and has no business changing the search.
+**This was the one thing on this page a user could not work around.** Fixed in **#175** by
+porting budget-K, the lossy layer `artifact_prefilter.py` already had and that `isExact` was
+already written to report.
+
+The numbers behind the fix: the raw space is **2.35e13** combinations, the lossless layer
+leaves **3.99e10**, and one scored combination costs **3.5 µs** (measured by the committed
+`frontend/scripts/bench-search.mjs`, not borrowed from the server's 5.5e-4). That is 39 hours.
+With a five-second budget the layer keeps **K = 17** per slot, and the same search that froze
+the page for 227 seconds now returns in **4.1 s** — saying, in the result, that it scored
+1,419,857 of 23,542,492,548,960 and is therefore not proven optimal.
+
+**The docstring's reasoning for leaving budget-K out was checkable and wrong**: it rests on
+DESIGN §2 expecting the GPU to search exhaustively, and `createGpuKernel` has no callers. That
+is the sentence to revisit if the GPU is ever wired up.
 
 ## 11. Not reproduced: "sets and enemies are broken"
 

@@ -28,14 +28,21 @@
     padding: 0;
     list-style: none;
 
+    /* Five columns, because a row now carries five things: rank, damage, the pieces, "Why?"
+       and "Equip". At three the two buttons wrapped onto a second grid track and painted over
+       each other — "WH" under "EQUIP", seen in a screenshot. The actions are pushed right by
+       the `1fr` on the pieces rather than by a margin, so they line up down the list. */
     li {
       display: grid;
-      grid-template-columns: 2rem minmax(6rem, 9rem) auto;
+      grid-template-columns: 2rem minmax(6rem, 9rem) 1fr auto auto;
       gap: 0.75rem;
       align-items: baseline;
       padding: 0.35rem 0;
       border-bottom: 1px solid rgb(255 255 255 / 7%);
     }
+
+    /* The two empty states are sentences, not rows. */
+    li.muted { display: block; }
   }
 
   .results li.chosen { background: rgb(221 174 33 / 8%); }

@@ -364,11 +364,18 @@
         @if (found.isExact) {
           <strong>Exact</strong> — the best five over this inventory.
         } @else {
-          <strong>Not exact</strong> — pruning bounded this search, so a better set may exist.
+          <!-- The numbers, not just the adjective. "Not exact" alone invites a reader to
+               assume a rounding; 1.4 million of 23 trillion is a different claim, and it is
+               the true one. -->
+          <strong>Not exact</strong> — your inventory holds
+          {{ found.totalSpace | number }} combinations, which is hours of arithmetic, so this
+          searched the best {{ found.effectiveK }} pieces per slot. Very likely the best five,
+          not proven to be.
         }
         <span class="muted mono">
           {{ found.evaluated | number }} combinations scored ·
-          {{ found.paretoRemoved | number }} pieces pruned first
+          {{ found.paretoRemoved | number }} pieces pruned losslessly@if (found.prefiltered) {,
+          {{ found.prefiltered | number }} by rank}
         </span>
       </p>
 

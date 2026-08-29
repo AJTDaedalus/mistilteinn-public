@@ -481,8 +481,13 @@ export function searchRecipe(
     evaluated,
     paretoRemoved: removed,
     // The bound is admissible — it discards only what it has proved cannot place — so the
-    // answer is still exact. A lossy layer would be the thing that makes this false.
+    // answer is still exact. A lossy layer would be the thing that makes this false, and
+    // **this search has none**: the branch-and-bound is what lets it stay exhaustive where the
+    // single-hit walk had to take budget-K. Hence zero, null, and the honest space below.
     isExact: true,
+    prefiltered: 0,
+    effectiveK: null,
+    totalSpace: slotBuckets.reduce((total, bucket) => total * bucket.length, 1),
     uncoveredSets,
     uncoveredPairs,
     boundPruned,

@@ -14,10 +14,25 @@
  *   an answer approximate, and saying it did would train a reader to ignore the flag on the
  *   runs where it means something.
  *
- * Budget-K is deliberately **not** here. It exists in the Python optimizer because a server
- * is slow; DESIGN §2 expects the GPU to search exhaustively, so a lossy layer would give up
- * exactness to save time that is not being spent. `isExact` is kept anyway — a flag that is
- * always true today is still the flag that tells you about the day it is not.
+ * ## Budget-K is here now, and the reasoning that left it out was wrong
+ *
+ * This block used to read: *"Budget-K is deliberately not here. It exists in the Python
+ * optimizer because a server is slow; DESIGN §2 expects the GPU to search exhaustively, so a
+ * lossy layer would give up exactness to save time that is not being spent."*
+ *
+ * **The GPU searches nothing.** `sim/gpu.ts` exports `createGpuKernel` and, as of 2026-08-29,
+ * **nothing in the app calls it** — every search runs this walk, on the main thread. So the
+ * time was being spent after all.
+ *
+ * How much was measured rather than argued. On the owner's 2,370-piece inventory the lossless
+ * layer removes 1,705 pieces and leaves buckets of **130 × 103 × 136 × 149 × 147**, which is
+ * **3.99e10 combinations** — about **39 hours** at the cost measured below. The page did not
+ * feel slow; it froze, for 227 seconds continuously before the measurement was abandoned,
+ * because a synchronous walk cannot repaint.
+ *
+ * So the lossy layer ports, and `isExact` finally means something: it is the flag that tells
+ * you the answer was bounded, and the day it is always true again will be the day the GPU is
+ * wired up.
  */
 
 import { type DamageInputs, type Hit, type Target, computeDamage, resolveStat } from './damage';
@@ -58,6 +73,15 @@ export interface SearchContext {
   dmgBonusQuantity: string;
   setBonuses?: readonly SetBonus[];
   topN?: number;
+  /**
+   * How many candidates per slot the lossy layer may keep.
+   *
+   * `undefined` or `null` means *decide* — search exactly if the inventory already fits the
+   * wall-clock budget, otherwise keep the largest K that does. `EXACT` forces the full walk,
+   * which on a real inventory is measured in hours; it exists so "prove it" is available, not
+   * because anything should reach for it by default.
+   */
+  prefilterTopK?: number | null;
 }
 
 export interface ScoredBuild {
@@ -70,8 +94,93 @@ export interface SearchResult {
   builds: ScoredBuild[];
   evaluated: number;
   paretoRemoved: number;
-  /** True when these builds are the true optimum over the inventory as given. */
+  /**
+   * True when these builds are the true optimum over the inventory as given.
+   *
+   * **Only the lossy layer can make this false.** `paretoRemoved` deliberately does not feed
+   * it: calling a Pareto-pruned search inexact would train a reader to ignore the flag on the
+   * runs where it means something — `artifact_prefilter.PrefilterReport.is_exact` says the
+   * same thing in the same words.
+   */
   isExact: boolean;
+  /** Candidates the lossy layer dropped. Removing them **can** change the answer. */
+  prefiltered: number;
+  /** The K budget-K used, or null when the search was exhaustive. */
+  effectiveK: number | null;
+  /** Combinations the buckets held before either layer ran. */
+  totalSpace: number;
+}
+
+/** `prefilterTopK: EXACT` forces the exhaustive walk however long it will take. */
+export const EXACT = -1;
+
+/**
+ * Wall-clock the automatic budget aims to keep a search under.
+ *
+ * **A policy choice, not a measurement** — the measurement is `SECONDS_PER_COMBINATION`.
+ *
+ * Five seconds, where the Python optimizer allows 300. The difference is not timidity: this
+ * walk is synchronous on the main thread, so the budget is not "how long until an answer" but
+ * *how long the page is dead* — no repaint, no progress, no cancel. A server can spend five
+ * minutes in the background; a tab cannot spend five seconds of it lightly.
+ */
+export const COMBINATION_BUDGET_SECONDS = 5;
+
+/**
+ * Measured cost of one scored combination, in seconds.
+ *
+ * Produced by `scripts/bench-search.mjs` against the owner's real 2,370-piece inventory,
+ * 2026-08-29: **3.301e-6** over 292,032 combinations and **3.493e-6** over 1,156,680. The
+ * higher is taken, because the budget is a promise about wall-clock and a search that prunes
+ * slightly early says so in its result while one that runs twice as long as promised does not.
+ *
+ * **Not borrowed from the server's 5.5e-4.** That is a different evaluator in a different
+ * language, and `artifact_prefilter.py` states the rule this obeys: a borrowed timing is a
+ * fabricated measurement.
+ */
+export const SECONDS_PER_COMBINATION = 3.5e-6;
+
+/** How many combinations fit in the wall-clock target, from the measured per-combination cost. */
+export function automaticBudget(): number {
+  return Math.max(1, Math.floor(COMBINATION_BUDGET_SECONDS / SECONDS_PER_COMBINATION));
+}
+
+/** Size of the Cartesian product over the buckets. */
+export function combinationCount(buckets: Iterable<readonly unknown[]>): number {
+  let total = 1;
+  for (const bucket of buckets) total *= bucket.length;
+  return total;
+}
+
+/**
+ * The K budget-K should use, or null to search exhaustively.
+ *
+ * A caller's explicit K wins, `EXACT` forces the full search, and `null` means *decide* — in
+ * which case an inventory that already fits inside the budget is searched exactly, and one
+ * that does not gets the **largest** K that fits, found by bisection rather than a fixed step
+ * so the search gives up as little as the budget allows. Ported from
+ * `artifact_prefilter.budget_k`, reasoning included.
+ */
+export function budgetK(
+  buckets: readonly (readonly unknown[])[],
+  requested: number | null | undefined,
+  budget: number,
+): number | null {
+  if (requested === EXACT) return null;
+  if (requested !== null && requested !== undefined) return requested;
+  if (combinationCount(buckets) <= budget) return null;
+
+  const sizes = buckets.map((b) => b.length);
+  let low = 1;
+  let high = Math.max(...sizes, 1);
+  while (low < high) {
+    const mid = Math.floor((low + high + 1) / 2);
+    let product = 1;
+    for (const size of sizes) product *= Math.min(size, mid);
+    if (product <= budget) low = mid;
+    else high = mid - 1;
+  }
+  return low;
 }
 
 /** Quantities that feed the resolved stats the chain reads. */
@@ -198,16 +307,23 @@ export function bucketBySlot(candidates: readonly Candidate[]): Map<Slot, Candid
   return bySlot;
 }
 
-/** Score one combination through the same chain a single build's figure uses. */
+/**
+ * Score one combination through the same chain a single build's figure uses.
+ *
+ * `extra` is a stat pool that is not any piece's — the solo-scoring filler, and nothing else.
+ * The walk never passes it, so the hot loop is unchanged.
+ */
 function score(
   context: SearchContext,
   combination: readonly Candidate[],
   bonusesBySet: Map<number, SetBonus[]>,
+  extra?: Readonly<Record<string, number>>,
 ): { damage: number; setCounts: Record<number, number> } {
   const setCounts: Record<number, number> = {};
   for (const c of combination) setCounts[c.setId] = (setCounts[c.setId] ?? 0) + 1;
 
   const pools: Readonly<Record<string, number>>[] = [context.base, ...combination.map((c) => c.stats)];
+  if (extra) pools.push(extra);
   for (const [setId, count] of Object.entries(setCounts)) {
     for (const tier of bonusesBySet.get(Number(setId)) ?? []) {
       if (count >= tier.piecesRequired) pools.push(tier.stats);
@@ -237,6 +353,105 @@ function score(
 }
 
 /**
+ * The average inventory piece, scaled to the **four** slots a candidate does not fill.
+ *
+ * Solo scores are only ever compared with each other, so what matters is that every candidate
+ * is valued at a realistic operating point rather than against a bare character. CRIT DMG on a
+ * build with no CRIT Rate is worth nothing, and ranking pieces in that context would put every
+ * CRIT DMG goblet at the bottom of the list.
+ *
+ * Four, not five: the candidate being scored fills the fifth slot itself, and scaling to five
+ * would count it twice. `artifact_prefilter._reference_filler` makes the same argument, and
+ * names the ZZZ version's factor of five as the thing it is not doing.
+ */
+function referenceFiller(
+  buckets: readonly (readonly Candidate[])[],
+  quantities: readonly string[],
+): Record<string, number> {
+  const totals: Record<string, number> = {};
+  let count = 0;
+  for (const bucket of buckets) {
+    for (const candidate of bucket) {
+      count += 1;
+      for (const quantity of quantities) {
+        totals[quantity] = (totals[quantity] ?? 0) + (candidate.stats[quantity] ?? 0);
+      }
+    }
+  }
+  if (!count) return {};
+  const scale = 4 / count;
+  const filler: Record<string, number> = {};
+  for (const [quantity, total] of Object.entries(totals)) {
+    if (total) filler[quantity] = total * scale;
+  }
+  return filler;
+}
+
+/**
+ * Rank each candidate by what it is worth on an average build. O(inventory).
+ *
+ * **This is the heuristic, and it is why the result is disclosed rather than assumed.** It
+ * cannot see set bonuses — they need four other pieces this scoring does not have — so a piece
+ * that is only good because it completes a 4-piece ranks on its stats alone.
+ */
+export function soloScores(
+  buckets: readonly (readonly Candidate[])[],
+  context: SearchContext,
+  quantities: readonly string[],
+): Map<string, number> {
+  const filler = referenceFiller(buckets, quantities);
+  const scores = new Map<string, number>();
+  for (const bucket of buckets) {
+    for (const candidate of bucket) {
+      // The real evaluator, not a proxy for it. The Python version probes because its chain
+      // can carry scope-gated contributions; here the base is already resolved, so scoring a
+      // candidate is the same call the walk makes.
+      const { damage } = score(context, [candidate], new Map(), filler);
+      scores.set(candidate.id, damage);
+    }
+  }
+  return scores;
+}
+
+/**
+ * Keep each slot's best K by solo score.
+ *
+ * Original bucket order is preserved, so a run is reproducible and a diff of two runs is
+ * readable — `artifact_prefilter.apply_budget_k` does the same and for the same reason.
+ *
+ * **No floor-stat exception here, because this search has no floors.** The Python version
+ * keeps the best piece for each floor quantity regardless of its damage rank, since a piece
+ * can rank last on damage and still be the only one that gets a build over an Energy Recharge
+ * floor. `SearchContext` carries no such constraint, so there is nothing to protect — and
+ * adding the machinery for a constraint that cannot be expressed would be dead code claiming
+ * to guard something.
+ */
+export function applyBudgetK(
+  buckets: readonly (readonly Candidate[])[],
+  k: number,
+  scores: ReadonlyMap<string, number>,
+): { kept: Candidate[][]; removed: number } {
+  const kept: Candidate[][] = [];
+  let removed = 0;
+  for (const bucket of buckets) {
+    if (bucket.length <= k) {
+      kept.push([...bucket]);
+      continue;
+    }
+    const survivors = new Set(
+      [...bucket]
+        .sort((a, b) => (scores.get(b.id) ?? 0) - (scores.get(a.id) ?? 0))
+        .slice(0, k)
+        .map((c) => c.id),
+    );
+    const ordered = bucket.filter((c) => survivors.has(c.id));
+    removed += bucket.length - ordered.length;
+    kept.push(ordered);
+  }
+  return { kept, removed };
+}
+
+/**
  * Search every allowed five-piece combination and return the best.
  *
  * The bounded top-N is a **memory** property, not a pruning heuristic: a search over a large
@@ -254,8 +469,22 @@ export function search(candidates: readonly Candidate[], context: SearchContext)
     else bonusesBySet.set(bonus.setId, [bonus]);
   }
 
-  const { kept, removed } = paretoFilter(bucketBySlot(candidates), liveQuantities(context));
-  const buckets = SLOTS.map((s) => kept.get(s)!);
+  const bySlot = bucketBySlot(candidates);
+  const totalSpace = combinationCount(SLOTS.map((s) => bySlot.get(s)!));
+  const { kept, removed } = paretoFilter(bySlot, liveQuantities(context));
+  // Lossless first: it shrinks the buckets the budget estimator then sizes K against. Running
+  // the lossy layer first would spend the budget on candidates Pareto was about to remove for
+  // free — `artifact_prefilter` opens with the same sentence.
+  let buckets = SLOTS.map((s) => kept.get(s)!);
+
+  const k = budgetK(buckets, context.prefilterTopK, automaticBudget());
+  let prefiltered = 0;
+  if (k !== null) {
+    const scores = soloScores(buckets, context, liveQuantities(context));
+    const applied = applyBudgetK(buckets, k, scores);
+    buckets = applied.kept;
+    prefiltered = applied.removed;
+  }
 
   const best: ScoredBuild[] = [];
   let evaluated = 0;
@@ -291,8 +520,10 @@ export function search(candidates: readonly Candidate[], context: SearchContext)
     builds: best,
     evaluated,
     paretoRemoved: removed,
-    // Only a lossy layer can make this false, and there is none here — see the module
-    // docstring on why budget-K did not port.
-    isExact: true,
+    // Only the lossy layer can make this false. Pareto pruning does not.
+    isExact: prefiltered === 0,
+    prefiltered,
+    effectiveK: prefiltered === 0 ? null : k,
+    totalSpace,
   };
 }
