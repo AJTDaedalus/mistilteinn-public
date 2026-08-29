@@ -1,0 +1,28 @@
+@use '../catalogue/catalogue.scss';
+
+/* The holder's face, bottom-right of the art — opposite corner from the class mark so the two
+   never collide on a narrow card. A ring rather than a plate: a portrait is already opaque, and
+   a plate behind it would read as a second card. */
+.card__holder {
+  position: absolute;
+  right: var(--space-2);
+  bottom: var(--space-2);
+  z-index: 1;
+  display: inline-flex;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in srgb, var(--brass) 55%, transparent);
+  background: rgb(10 10 16 / 65%);
+  overflow: hidden;
+  line-height: 0;
+}
+
+.weapons-inv .refine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-2);
+
+  input[type='search'] { flex: 0 1 20rem; min-width: 0; }
+  .filters { margin: 0; }
+}

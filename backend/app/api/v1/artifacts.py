@@ -53,6 +53,7 @@ from app.schemas.common import PaginatedResponse
 from app.services import build_assembler
 from app.services.good_build_service import rebuild_builds as rebuild_from_export
 from app.services.good_import_service import ReplaceRefusedError, store_good_import
+from app.services.good_weapon_service import store_owned_weapons
 from app.services.stat_calculator import StatInputError, _quantity_for_prop
 
 if TYPE_CHECKING:
@@ -345,7 +346,16 @@ async def import_good(
             reassigned=sorted(report.reassigned),
         )
 
+    # **After the builds**, because the equip link is made through them — and unconditionally,
+    # because owning a weapon is not contingent on wanting builds rebuilt. Before this, 252 of
+    # the owner's 320 weapons were parsed and discarded (`good_weapon_service`).
+    weapons_stored, weapons_unresolved = await store_owned_weapons(
+        session, owner_id=str(current_user.id), parsed=parsed,
+    )
+
     return GoodImportResponse(
+        weapons_stored=weapons_stored,
+        weapons_unresolved=weapons_unresolved,
         inserted=stored.inserted,
         deleted=stored.deleted,
         builds=builds,

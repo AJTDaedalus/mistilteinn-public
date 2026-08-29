@@ -120,6 +120,9 @@ _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     # Importing reads a team's roster to map gcsim's character keys, so it is owned
     # for the same reason `compile` is: it would otherwise report whether a team exists.
     ("POST", "/api/v1/rotations/import", {}),
+    # The weapon *inventory* — owner-scoped, unlike `/weapons`, which is the public
+    # catalogue of all 260.
+    ("GET", "/api/v1/weapons/owned", None),
     ("POST", "/api/v1/rotations/00000000-0000-0000-0000-000000000001/context-key", {}),  # R.6
     # the run corpus — D.1 and D.3
     ("GET", "/api/v1/sim-runs", None),

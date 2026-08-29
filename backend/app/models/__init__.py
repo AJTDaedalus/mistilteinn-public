@@ -34,7 +34,7 @@ from app.models.session import Session
 from app.models.sim_run import SimRun
 from app.models.team import Team
 from app.models.user import User
-from app.models.weapon import Weapon, WeaponRefinement
+from app.models.weapon import OwnedWeapon, Weapon, WeaponRefinement
 
 __all__ = [
     "MAIN_STAT_POOL",
@@ -52,6 +52,7 @@ __all__ = [
     "DamageType",
     "Element",
     "EnemyProfile",
+    "OwnedWeapon",
     "Rarity",
     "Rotation",
     "SeedRun",

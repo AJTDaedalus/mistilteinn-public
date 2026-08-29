@@ -30,6 +30,14 @@ export const routes: Routes = [
     canMatch: [requireApproved],
   },
   {
+    // **Your** weapons, not the catalogue's. `/weapons` lists all 260 in the game; this lists
+    // what the export says you own, with the holder's face on each and equipped ones first.
+    path: 'my-weapons',
+    loadComponent: () =>
+      import('./pages/weapons-inventory/weapons-inventory').then((m) => m.WeaponsInventoryPage),
+    canMatch: [requireApproved],
+  },
+  {
     path: 'artifact-sets',
     loadComponent: () =>
       import('./pages/catalogue/artifact-sets').then((m) => m.ArtifactSetsPage),

@@ -361,3 +361,50 @@ class EnemyProfileRead(BaseModel):
     variant_count: int = 0
 
     model_config = _FROM_ORM
+
+
+class OwnedWeaponRead(BaseModel):
+    """One weapon a user owns, with who is holding it.
+
+    **The holder is a portrait, not a name**, which is what the owner asked for — so this
+    publishes `holder_icon` beside `holder_name`. Both: an icon alone is a label only for
+    someone who already recognises the art, which is the argument `ElementChip` and
+    `WeaponMark` both make.
+    """
+
+    id: str
+    #: Null when the catalogue no longer has the row — a re-pin that retires a weapon leaves
+    #: the user's copy visible and unresolved rather than deleting their inventory.
+    weapon: WeaponSummary | None = None
+    level: int
+    ascension: int
+    refinement: int
+    #: The build holding this copy, or null when it is spare.
+    build_id: str | None = None
+    holder_name: str | None = None
+    #: The holder's avatar basename, for `CatalogueIcon`.
+    holder_icon: str | None = None
+
+    model_config = _FROM_ORM
+
+    @classmethod
+    def of(cls, row: object) -> OwnedWeaponRead:
+        """Build one from an `OwnedWeapon` with its relationships loaded.
+
+        A classmethod rather than a validator so the holder is resolved in **one** place: the
+        character hangs off the build, which hangs off the row, and three call sites walking
+        that chain themselves is three chances to render a weapon on the wrong face.
+        """
+        build = getattr(row, "build", None)
+        character = getattr(build, "character", None) if build is not None else None
+        weapon = getattr(row, "weapon", None)
+        return cls(
+            id=str(row.id),
+            weapon=WeaponSummary.model_validate(weapon) if weapon is not None else None,
+            level=row.level,
+            ascension=row.ascension,
+            refinement=row.refinement,
+            build_id=str(build.id) if build is not None else None,
+            holder_name=getattr(character, "name", None),
+            holder_icon=getattr(character, "icon", None),
+        )

@@ -682,6 +682,84 @@
         }
       }
     },
+    "/api/v1/weapons/owned": {
+      "get": {
+        "tags": [
+          "catalogue"
+        ],
+        "summary": "List Owned Weapons",
+        "description": "The caller's own weapons \u2014 **equipped first**, then by refinement and level.\n\nDistinct from `/weapons`, which is the 260-row catalogue of every weapon in the game. This\nis what you have, and until now nothing published it: a GOOD export lists 320 weapons and\nthe importer used 68 of them to set `builds.weapon_id`, discarding the rest.\n\nEquipped-first is the **default order rather than a sort option**, because it answers\n\"what am I actually using\" without the user having to ask.",
+        "operationId": "list_owned_weapons_api_v1_weapons_owned_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipped",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Equipped"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_OwnedWeaponRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/weapons/{nanoka_id}": {
       "get": {
         "tags": [
@@ -4576,6 +4654,19 @@
             "type": "integer",
             "title": "Deleted"
           },
+          "weapons_stored": {
+            "type": "integer",
+            "title": "Weapons Stored",
+            "default": 0
+          },
+          "weapons_unresolved": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Weapons Unresolved",
+            "default": []
+          },
           "rejected": {
             "items": {
               "$ref": "#/components/schemas/ImportRejection"
@@ -4958,6 +5049,78 @@
         "title": "MeResponse",
         "description": "Response for `GET /auth/me` \u2014 the current user's identity and account status."
       },
+      "OwnedWeaponRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "weapon": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WeaponSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "level": {
+            "type": "integer",
+            "title": "Level"
+          },
+          "ascension": {
+            "type": "integer",
+            "title": "Ascension"
+          },
+          "refinement": {
+            "type": "integer",
+            "title": "Refinement"
+          },
+          "build_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Build Id"
+          },
+          "holder_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Name"
+          },
+          "holder_icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Icon"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "level",
+          "ascension",
+          "refinement"
+        ],
+        "title": "OwnedWeaponRead",
+        "description": "One weapon a user owns, with who is holding it.\n\n**The holder is a portrait, not a name**, which is what the owner asked for \u2014 so this\npublishes `holder_icon` beside `holder_name`. Both: an icon alone is a label only for\nsomeone who already recognises the art, which is the argument `ElementChip` and\n`WeaponMark` both make."
+      },
       "PaginatedResponse_ArtifactRead_": {
         "properties": {
           "items": {
@@ -5112,6 +5275,37 @@
           "limit"
         ],
         "title": "PaginatedResponse[EnemyProfileRead]"
+      },
+      "PaginatedResponse_OwnedWeaponRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OwnedWeaponRead"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "offset",
+          "limit"
+        ],
+        "title": "PaginatedResponse[OwnedWeaponRead]"
       },
       "PaginatedResponse_RotationRead_": {
         "properties": {

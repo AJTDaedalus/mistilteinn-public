@@ -1,0 +1,96 @@
+<section class="weapons-inv catalogue catalogue--portraits catalogue--weapons">
+  <header>
+    <h1>Weapons</h1>
+  </header>
+  <p class="muted">The weapons you own, imported from a GOOD export.</p>
+
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  } @else if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else {
+    <div class="refine">
+      <input
+        type="search"
+        name="weapon-search"
+        placeholder="Find a weapon or holder…"
+        aria-label="Find a weapon"
+        [value]="search()"
+        (input)="search.set($any($event.target).value)"
+      />
+      <div class="filters" role="group" aria-label="Filter by equipped">
+        @for (f of [['', 'All'], ['yes', 'Equipped'], ['no', 'Spare']]; track f[0]) {
+          <button
+            type="button"
+            class="chip"
+            [class.chip--on]="filter() === f[0]"
+            [attr.aria-pressed]="filter() === f[0]"
+            (click)="pick($any(f[0]))"
+          >{{ f[1] }}</button>
+        }
+      </div>
+    </div>
+
+    <p class="muted count">Showing {{ visible().length }} of {{ total() }}.</p>
+
+    <ul class="grid">
+      @for (owned of visible(); track owned.id) {
+        <li class="card" [attr.data-stars]="owned.weapon?.stars">
+          <span class="card__art">
+            <catalogue-icon class="fill" [icon]="owned.weapon?.icon" [alt]="''" [size]="140" />
+            <weapon-mark
+              class="card__mark"
+              [icon]="owned.weapon?.weapon_type_icon"
+              [label]="owned.weapon?.weapon_type_display || ''"
+              [size]="22"
+              compact
+            />
+            <!-- The holder's face, on the art. This is the whole ask: a weapon says who has
+                 it, and a portrait says it faster than a name. The name is kept as the icon's
+                 `alt` and in the body, because a face is a label only for someone who already
+                 recognises it. -->
+            @if (owned.holder_icon || owned.holder_name) {
+              <span class="card__holder" [attr.title]="owned.holder_name">
+                <catalogue-icon
+                  [icon]="owned.holder_icon"
+                  [alt]="owned.holder_name || ''"
+                  [size]="30"
+                />
+              </span>
+            }
+          </span>
+          <span class="card__body">
+            <span class="name">{{ owned.weapon?.name || 'Not in the catalogue' }}</span>
+            <span class="card__stars">
+              @for (s of [].constructor(owned.weapon?.stars || 0); track $index) {<span>★</span>}
+            </span>
+            <span class="card__facts">
+              <span class="meta mono">R{{ owned.refinement }} · Lv{{ owned.level }}</span>
+              @if (owned.holder_name) {
+                <span class="meta">{{ owned.holder_name }}</span>
+              } @else {
+                <span class="meta muted">Spare</span>
+              }
+            </span>
+          </span>
+        </li>
+      } @empty {
+        @if (total()) {
+          <li class="muted">Nothing matches.</li>
+        } @else {
+          <li class="muted">
+            No weapons yet — import a GOOD export from the Inventory page.
+          </li>
+        }
+      }
+    </ul>
+
+    @if (hasMore()) {
+      <div class="more">
+        <button type="button" (click)="showMore()">
+          Show more ({{ matching().length - visible().length }} left)
+        </button>
+      </div>
+    }
+  }
+</section>

@@ -378,6 +378,14 @@ class GoodImportResponse(BaseModel):
 
     inserted: int
     deleted: int
+    #: Owned weapons written. The export lists every weapon a user has, not only the equipped
+    #: ones — 320 against 68 on a real file — and before `good_weapon_service` the other 252
+    #: were parsed and thrown away.
+    weapons_stored: int = 0
+    #: Export weapon keys the catalogue could not identify. Reported rather than stored: a row
+    #: with no catalogue match has no name, rarity or icon, so it would appear in the inventory
+    #: as a blank the user could neither identify nor act on.
+    weapons_unresolved: list[str] = []
     rejected: list[ImportRejection] = []
     ok: bool
     #: Builds left with an empty slot because the piece that filled it is not in the new

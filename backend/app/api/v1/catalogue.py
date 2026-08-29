@@ -23,18 +23,21 @@ from app.dependencies import (
     get_artifact_set_repo,
     get_character_repo,
     get_enemy_profile_repo,
+    get_owned_weapon_repo,
     get_weapon_repo,
 )
 from app.models.enums import Element, Rarity, WeaponType
 from app.repositories.artifact_set import ArtifactSetRepository
 from app.repositories.character import CharacterRepository
 from app.repositories.enemy import EnemyProfileRepository
+from app.repositories.owned_weapon import OwnedWeaponRepository
 from app.repositories.weapon import WeaponRepository
 from app.schemas.catalogue import (
     ArtifactSetRead,
     CharacterRead,
     CharacterSummary,
     EnemyProfileRead,
+    OwnedWeaponRead,
     WeaponRead,
     WeaponSummary,
 )
@@ -100,6 +103,35 @@ async def list_weapons(
     return PaginatedResponse(
         items=[WeaponSummary.model_validate(row) for row in rows],
         total=await repo.count_filtered(**filters),
+        offset=offset,
+        limit=limit,
+    )
+
+
+# **Declared before `/weapons/{nanoka_id}`, and it has to be.** FastAPI matches in declaration
+# order, so with this below the parameterised route, `owned` was parsed as a nanoka id and the
+# endpoint answered `422 int_parsing` — a route that exists and is unreachable. Found by calling
+# it rather than by reading it.
+@router.get("/weapons/owned", response_model=PaginatedResponse[OwnedWeaponRead])
+async def list_owned_weapons(
+    repo: Annotated[OwnedWeaponRepository, Depends(get_owned_weapon_repo)],
+    equipped: bool | None = None,
+    offset: _Offset = 0,
+    limit: _Limit = 50,
+) -> PaginatedResponse[OwnedWeaponRead]:
+    """The caller's own weapons — **equipped first**, then by refinement and level.
+
+    Distinct from `/weapons`, which is the 260-row catalogue of every weapon in the game. This
+    is what you have, and until now nothing published it: a GOOD export lists 320 weapons and
+    the importer used 68 of them to set `builds.weapon_id`, discarding the rest.
+
+    Equipped-first is the **default order rather than a sort option**, because it answers
+    "what am I actually using" without the user having to ask.
+    """
+    rows = await repo.search(equipped=equipped, offset=offset, limit=limit)
+    return PaginatedResponse(
+        items=[OwnedWeaponRead.of(row) for row in rows],
+        total=await repo.count_filtered(equipped=equipped),
         offset=offset,
         limit=limit,
     )

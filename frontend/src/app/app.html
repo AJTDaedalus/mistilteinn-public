@@ -12,6 +12,9 @@
              the caller's own inventory. Distinguishable only by clicking. -->
         <span class="shell__group" role="group" aria-label="Your work">
           <a routerLink="/inventory" routerLinkActive="active">Inventory</a>
+          <!-- Beside Inventory, not beside the catalogue's Weapons link: this is what you own.
+               The comment above is about exactly this confusion. -->
+          <a routerLink="/my-weapons" routerLinkActive="active">My weapons</a>
           <a routerLink="/builds" routerLinkActive="active">Builds</a>
           <a routerLink="/teams" routerLinkActive="active">Teams</a>
           <a routerLink="/rotations" routerLinkActive="active">Rotations</a>

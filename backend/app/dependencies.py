@@ -18,6 +18,7 @@ from app.repositories.artifact_set import ArtifactSetRepository
 from app.repositories.build import BuildRepository
 from app.repositories.character import CharacterRepository
 from app.repositories.enemy import EnemyProfileRepository
+from app.repositories.owned_weapon import OwnedWeaponRepository
 from app.repositories.rotation import RotationRepository
 from app.repositories.session import SessionRepository
 from app.repositories.sim_run import SimRunRepository
@@ -188,6 +189,13 @@ async def get_owned_artifact_repo(
 ) -> ArtifactRepository:
     """FastAPI DI factory for an `ArtifactRepository` scoped to the current user's pieces."""
     return ArtifactRepository(session, owner_id=str(current_user.id))
+
+
+async def get_owned_weapon_repo(
+    session: DBSession, current_user: CurrentUser
+) -> OwnedWeaponRepository:
+    """FastAPI DI factory for an `OwnedWeaponRepository` scoped to the caller's inventory."""
+    return OwnedWeaponRepository(session, owner_id=str(current_user.id))
 
 
 async def get_owned_build_repo(

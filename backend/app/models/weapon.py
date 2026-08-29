@@ -10,12 +10,26 @@ Field provenance: `tests/fixtures/nanoka_gi/weapon.json` (index) and
 
 from __future__ import annotations
 
-from sqlalchemy import Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from typing import TYPE_CHECKING
+
+from sqlalchemy import (
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import GUARDED_LAZY, Base, TimestampMixin, enum_column, uuid_pk
 from app.models.enums import Rarity, StatType, WeaponType
+
+if TYPE_CHECKING:
+    from app.models.build import Build
 
 
 class Weapon(TimestampMixin, Base):
@@ -111,3 +125,68 @@ class WeaponRefinement(TimestampMixin, Base):
 
     def __repr__(self) -> str:
         return f"<WeaponRefinement R{self.level} of {self.weapon_id}>"
+
+
+class OwnedWeapon(TimestampMixin, Base):
+    """One weapon a user owns, as opposed to one the catalogue describes.
+
+    **This did not exist, and its absence was invisible.** `ParsedWeapon`'s own docstring said
+    *"Unheld weapons are parsed and simply unused"* — a real Irminsul export carries 320
+    weapons, of which the importer read 68 (the ones naming a holder) purely to set
+    `builds.weapon_id`, and discarded the rest. So there was a 260-row weapon *catalogue* and
+    no weapon *inventory*: no page could show what you own, and "who is holding this" could
+    not be asked of a weapon at all.
+
+    Modelled on `Artifact`, deliberately, because it is the same kind of thing: an owned
+    instance of a catalogue row, optionally bound to a build.
+
+    ## Why `build_id` here as well as `builds.weapon_id`
+
+    They answer different questions and both are needed. `builds.weapon_id` says *which
+    catalogue weapon this build uses* — it is what the damage chain reads, and it works for a
+    build assembled by hand from a weapon the user does not own. `OwnedWeapon.build_id` says
+    *which physical copy is on that build*, which is what stops one Aquila Favonia being
+    equipped twice and what lets the inventory show a holder.
+
+    They must agree, and `tests/integration/test_weapon_inventory.py` asserts they do after an
+    import. A single field could not: dropping `builds.weapon_id` would break every hypothetical
+    build, and dropping this one would take the inventory with it.
+    """
+
+    __tablename__ = "owned_weapons"
+    __table_args__ = (
+        Index("ix_owned_weapons_owner_build", "owner_id", "build_id"),
+        # One physical weapon per build. Partial, so unequipped copies are unaffected — the
+        # same shape `uq_artifacts_build_slot` uses, and for the same reason: a build holding
+        # two weapons is not a state the game has.
+        Index(
+            "uq_owned_weapons_build",
+            "build_id",
+            unique=True,
+            postgresql_where=text("build_id IS NOT NULL"),
+        ),
+    )
+
+    id: Mapped[uuid_pk]
+    owner_id: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True,
+    )
+    #: The catalogue row. `SET NULL` rather than cascade: a re-pin that retires a weapon should
+    #: leave the user's copy visible and unresolved, not delete their inventory.
+    weapon_id: Mapped[str | None] = mapped_column(
+        ForeignKey("weapons.id", ondelete="SET NULL"), nullable=True, index=True,
+    )
+    build_id: Mapped[str | None] = mapped_column(
+        ForeignKey("builds.id", ondelete="SET NULL"), nullable=True, index=True,
+    )
+
+    level: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    ascension: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    refinement: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+    weapon: Mapped[Weapon | None] = relationship(lazy=GUARDED_LAZY)
+    #: The build holding this copy. Loaded so the inventory can show whose face is on it.
+    build: Mapped[Build | None] = relationship(lazy=GUARDED_LAZY)
+
+    def __repr__(self) -> str:
+        return f"<OwnedWeapon {self.weapon_id} R{self.refinement} Lv{self.level}>"
