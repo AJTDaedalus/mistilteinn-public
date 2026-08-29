@@ -15,6 +15,17 @@ function emptySlots(): Record<TeamSlot, string | null> {
   >;
 }
 
+/** One member as a saved-team card draws them. */
+interface TeamMember {
+  buildId: string;
+  name: string;
+  icon: string | null;
+  element: string | null;
+  elementIcon: string | null;
+  level: number;
+  weapon: string;
+}
+
 /**
  * The team builder.
  *
@@ -214,7 +225,45 @@ export class TeamsPage implements OnInit {
    * one would render an empty `.party` strip and skip the "nobody" branch entirely — a team
    * whose builds have all been deleted would show as a blank space rather than as empty.
    */
-  protected party(team: TeamRead): { buildId: string; name: string; icon: string | null }[] | null {
+  /**
+   * Filter the saved teams by the visions they field.
+   *
+   * **Elements only, not reactions — and that is a blocker, not an omission.** The audit asks
+   * for reaction filters too, with Hyperbloom named because it is three elements rather than
+   * two. This repo has **no reaction-to-element data**: `formula/genshin/damage.py` carries the
+   * four *amplifying* reactions and says in its own docstring that transformative and additive
+   * ones are deliberately absent, because gcsim computes them on a different path.
+   *
+   * Writing the other eleven from memory is precisely the fabricated-citation failure
+   * `CLAUDE.md` names as fairy's worst. They are derivable — `pkg/reactable/*.go` at the pin
+   * has each one — but that is a snapshot script like `build_key_snapshot.py`, and a subtly
+   * wrong table would mis-classify teams silently. Recorded in `BACKLOG_frontend.md` §4 as its
+   * own task rather than guessed at here.
+   */
+  protected readonly elementFilter = signal('');
+
+  protected readonly elementsPresent = computed(() => {
+    const seen = new Map<string, string | null>();
+    for (const team of this.teams()) {
+      for (const member of this.party(team) ?? []) {
+        if (member.element && !seen.has(member.element)) {
+          seen.set(member.element, member.elementIcon);
+        }
+      }
+    }
+    return [...seen].map(([element, icon]) => ({ element, icon }))
+      .sort((a, b) => a.element.localeCompare(b.element));
+  });
+
+  protected readonly shownTeams = computed(() => {
+    const element = this.elementFilter();
+    if (!element) return this.teams();
+    return this.teams().filter((team) =>
+      (this.party(team) ?? []).some((member) => member.element === element),
+    );
+  });
+
+  protected party(team: TeamRead): TeamMember[] | null {
     const roster = TEAM_SLOTS.map((slot) => ({ slot, build: this.build(team[slot]) }))
       .filter((entry): entry is { slot: TeamSlot; build: BuildRead } => !!entry.build)
       .map(({ slot, build }) => ({
@@ -223,6 +272,20 @@ export class TeamsPage implements OnInit {
         buildId: slot,
         name: build.character?.name ?? 'No character',
         icon: build.character?.icon ?? null,
+        // **The character's level, and the weapon without its own.** Together they rendered
+        // "Lv90 · Mappa Mare · R5 · Lv90" — two different levels reading as one repeated — and
+        // the character's is the one worth the space (owner ruling).
+        //
+        // So this is the one place that does *not* use `weapon_display`, which exists so three
+        // surfaces cannot disagree about a build's gear and deliberately ends in the weapon's
+        // level. Composed from the same two fields it is built from, and only because the
+        // omission is the point.
+        element: build.character?.element ?? null,
+        elementIcon: build.character?.element_icon ?? null,
+        level: build.character_level,
+        weapon: build.weapon
+          ? `${build.weapon.name} · R${build.refinement}`
+          : 'no weapon',
       }));
     return roster.length ? roster : null;
   }

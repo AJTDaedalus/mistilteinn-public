@@ -23,7 +23,7 @@
 
         <label>
           Name
-          <input type="text" [ngModel]="name()" (ngModelChange)="name.set($event)" placeholder="Freeze" aria-label="Team name" />
+          <input type="text" [ngModel]="name()" (ngModelChange)="name.set($event)" placeholder="Name this team" aria-label="Team name" />
         </label>
 
         <ol class="slots">
@@ -40,19 +40,16 @@
                 [options]="optionsFor(slot)"
                 [value]="picked()[slot]"
                 [ariaLabel]="'Slot ' + (i + 1)"
-                placeholder="Empty — search your builds…"
+                placeholder="Select"
                 (valueChange)="pick(slot, $event ?? '')"
               />
             </li>
           }
         </ol>
 
-        @if (picked().build1_id === null) {
-          <!-- `build1_id` is the one required slot in `TeamCreate`. Said here rather than
-               discovered as a schema error naming a field the page never showed. -->
-          <p class="hint">The first slot must be filled.</p>
-        }
-
+        <!-- The "first slot must be filled" line is gone: `canSave()` already greys the
+             button out until there is a name and a first member, which says the same thing
+             without a sentence. -->
         <div class="controls">
           <button type="button" (click)="save()" [disabled]="!canSave()">
             {{ editing() ? 'Save changes' : 'Save team' }}
@@ -69,21 +66,42 @@
 
       <div class="pane">
         <h2>Saved</h2>
+        @if (elementsPresent().length) {
+          <!-- Elements only. A reaction filter needs reaction-to-element data this repo does
+               not have — see `elementFilter`'s comment and `BACKLOG_frontend.md` §4. -->
+          <div class="team-visions" role="group" aria-label="Filter by vision">
+            @for (e of elementsPresent(); track e.element) {
+              <button
+                type="button"
+                class="vision"
+                [class.vision--on]="elementFilter() === e.element"
+                [attr.aria-pressed]="elementFilter() === e.element"
+                [attr.title]="e.element"
+                (click)="elementFilter.set(elementFilter() === e.element ? '' : e.element)"
+              >
+                <catalogue-icon [icon]="e.icon" [alt]="e.element" [size]="18" />
+              </button>
+            }
+          </div>
+        }
+
         <ul class="saved">
-          @for (team of teams(); track team.id) {
+          @for (team of shownTeams(); track team.id) {
             <li [class.active]="team.id === editing()?.id">
               <button type="button" class="pick" (click)="edit(team)">
                 <span class="name">{{ team.name || 'Unnamed' }}</span>
-                <!-- The party, as faces. `members()` still backs the empty case and the
-                     delete label; this is the same list drawn rather than joined. -->
+                <!-- A wider card, with each member's level and weapon beside their face —
+                     the summary the audit asks for, all of it already on the row. -->
                 @if (party(team); as roster) {
-                  <span class="party">
+                  <span class="party party--detailed">
                     @for (member of roster; track member.buildId) {
-                      <catalogue-icon
-                        [icon]="member.icon"
-                        [alt]="member.name"
-                        [size]="34"
-                      />
+                      <span class="party__member">
+                        <catalogue-icon [icon]="member.icon" [alt]="member.name" [size]="34" />
+                        <span class="party__who">
+                          <span class="party__name">{{ member.name }}</span>
+                          <span class="party__meta">Lv{{ member.level }} · {{ member.weapon }}</span>
+                        </span>
+                      </span>
                     }
                   </span>
                 } @else {
@@ -98,7 +116,11 @@
               >×</button>
             </li>
           } @empty {
-            <li class="muted">No teams yet.</li>
+            @if (teams().length) {
+              <li class="muted">No team fields that vision.</li>
+            } @else {
+              <li class="muted">No teams yet.</li>
+            }
           }
         </ul>
       </div>

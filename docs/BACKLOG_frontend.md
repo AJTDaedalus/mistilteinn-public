@@ -71,14 +71,29 @@ show that a suggested piece is *owned*. Drag-and-drop for the ranking.
 
 ## 4. Teams
 
-- No default name.
-- Slot placeholder: drop "Empty — search your builds"; show a blank slot with a slightly larger
-  arrow, or the word "Select".
-- Drop "The first slot must be filled" — grey out **Save Team** until a slot is filled.
+- ~~No default name.~~ **Done (#165)**
+- ~~Slot placeholder → "Select".~~ **Done (#165)**
+- ~~Drop "The first slot must be filled".~~ **Done (#165)** — `canSave()` already greyed the
+  button out, so the sentence was saying what the control already said.
 - "New Team" becomes a button with a pop-up builder.
-- Saved teams become **wide cards in rows**, four characters each with level and weapon.
-- Filters by element, and **by reaction** — with element icons, and a reaction shown as its two
-  elements. **Hyperbloom is three elements; the filter has to support that.**
+- ~~Saved teams become wide cards, four characters each with level and weapon.~~ **Done
+  (#165)** — character level plus weapon **without** the weapon's level. Together they read as
+  one number repeated; the owner's ruling was to keep the character's and drop the weapon's.
+- ~~Filters by element~~ **Done (#165)** — the visions actually fielded, as emblems.
+- **By reaction — BLOCKED, and this is the blocker.** This repo has **no reaction-to-element
+  data**. `app/formula/genshin/damage.py` carries the four *amplifying* reactions and states in
+  its own docstring that transformative and additive ones are deliberately absent, because
+  gcsim computes them on a different path. Bloom, Hyperbloom, Overload, Quicken and the rest
+  simply do not exist here.
+
+  Writing the eleven-odd mappings from memory is the fabricated-citation failure `CLAUDE.md`
+  calls fairy's worst. **They are derivable**: `pkg/reactable/*.go` at the pinned commit has a
+  file per reaction, and `bloom.go` names `attributes.Hydro` and `attributes.Dendro` in its
+  trigger switch. But it is tangled with aura-durability logic — `Quicken` and `BurningFuel`
+  appear in the same switch — so a naive regex over-collects, and a subtly wrong table
+  mis-classifies teams **silently**.
+
+  So it is a snapshot script like `build_key_snapshot.py`, and its own task. Not attempted.
 
 ## 5. Rotations
 
