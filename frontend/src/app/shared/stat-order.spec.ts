@@ -5,15 +5,15 @@ import { isFilterableMainStat, sortMainStats } from './stat-order';
 /**
  * The order main stats are offered in.
  *
- * Owner audit: *"Elemental damage all together and alphabetical, stat% together, EM and ER in
- * between."* Shared between the inventory filter and the optimizer's per-slot constraint, so a
- * user meets the same order twice.
+ * Owner audit, as revised on seeing it rendered: *"swap stat % to the beginning, elemental
+ * damage to the end."* Shared between the inventory filter and the optimizer's per-slot
+ * constraint, so a user meets the same order twice.
  */
 
 const stat = (key: string, display: string) => ({ key, display });
 
 describe('sortMainStats', () => {
-  it('puts elemental damage first, alphabetically by display', () => {
+  it('puts elemental damage last, alphabetically by display', () => {
     // **By display, not by key.** `FIGHT_PROP_ELEC_ADD_HURT` sorts before
     // `FIGHT_PROP_FIRE_ADD_HURT`, but "Electro" and "Pyro" do not — and the user reads the
     // display.
@@ -28,34 +28,48 @@ describe('sortMainStats', () => {
     ]);
   });
 
-  it('puts EM and ER between the damage bonuses and the percentages', () => {
+  it('puts EM and ER between the percentages and the damage bonuses', () => {
     // The one thing that is *not* alphabetical across groups — Elemental Mastery sits there
     // because that is where a player looks for it, not because "E" falls there.
     const found = sortMainStats([
-      stat('FIGHT_PROP_ATTACK_PERCENT', 'ATK%'),
-      stat('FIGHT_PROP_ELEMENT_MASTERY', 'Elemental Mastery'),
       stat('FIGHT_PROP_FIRE_ADD_HURT', 'Pyro DMG Bonus'),
+      stat('FIGHT_PROP_ELEMENT_MASTERY', 'Elemental Mastery'),
+      stat('FIGHT_PROP_ATTACK_PERCENT', 'ATK%'),
       stat('FIGHT_PROP_CHARGE_EFFICIENCY', 'Energy Recharge'),
     ]);
 
     expect(found.map((s) => s.display)).toEqual([
-      'Pyro DMG Bonus', 'Elemental Mastery', 'Energy Recharge', 'ATK%',
+      'ATK%', 'Elemental Mastery', 'Energy Recharge', 'Pyro DMG Bonus',
     ]);
   });
 
-  it('keeps the percentages together', () => {
+  it('counts CRIT and Healing as percentages, which their keys do not say', () => {
+    // **Grouping by key alone stranded CRIT DMG after the damage bonuses**, which is nowhere a
+    // player looks for it. They are percentages by meaning, and there is no pattern to match:
+    // `FIGHT_PROP_CRITICAL` and `FIGHT_PROP_HEAL_ADD` share nothing but that.
     const found = sortMainStats([
+      stat('FIGHT_PROP_FIRE_ADD_HURT', 'Pyro DMG Bonus'),
+      stat('FIGHT_PROP_CRITICAL_HURT', 'CRIT DMG'),
+      stat('FIGHT_PROP_HEAL_ADD', 'Healing Bonus'),
+      stat('FIGHT_PROP_ELEMENT_MASTERY', 'Elemental Mastery'),
+    ]);
+
+    expect(found.map((s) => s.display)).toEqual([
+      'CRIT DMG', 'Healing Bonus', 'Elemental Mastery', 'Pyro DMG Bonus',
+    ]);
+  });
+
+  it('keeps the percentages together and leading', () => {
+    const found = sortMainStats([
+      stat('FIGHT_PROP_FIRE_ADD_HURT', 'Pyro DMG Bonus'),
       stat('FIGHT_PROP_HP_PERCENT', 'HP%'),
       stat('FIGHT_PROP_CRITICAL', 'CRIT Rate'),
       stat('FIGHT_PROP_ATTACK_PERCENT', 'ATK%'),
-      stat('FIGHT_PROP_DEFENSE_PERCENT', 'DEF%'),
     ]);
-    const keys = found.map((s) => s.key);
 
-    // The three `_PERCENT` stats are contiguous; CRIT is neither a percentage key nor a
-    // damage bonus, so it lands after them rather than between them.
-    expect(keys.slice(0, 3).every((k) => k.endsWith('_PERCENT'))).toBe(true);
-    expect(keys[3]).toBe('FIGHT_PROP_CRITICAL');
+    expect(found.map((s) => s.display)).toEqual([
+      'ATK%', 'CRIT Rate', 'HP%', 'Pyro DMG Bonus',
+    ]);
   });
 
   it('does not mutate the caller’s array', () => {

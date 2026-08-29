@@ -1,9 +1,11 @@
 /**
  * The order main stats are offered in, and which are worth offering at all.
  *
- * Owner audit (`BACKLOG_frontend.md` §2, §6): *"Main stat selector should be ordered, flat stats
- * can be excluded. Elemental damage all together and alphabetical, stat% together, EM and ER in
- * between."*
+ * Owner audit (`BACKLOG_frontend.md` §2, §6), as revised on seeing it rendered: *"swap stat % to
+ * the beginning, elemental damage to the end."* EM and ER stay between them.
+ *
+ * So: **percentages → Elemental Mastery and Energy Recharge → elemental damage bonuses**, the
+ * last group alphabetical among itself.
  *
  * Shared because two surfaces need the same order — the inventory's filter and the optimizer's
  * per-slot constraint — and the audit asks for it in both. Two orderings would eventually
@@ -12,17 +14,16 @@
  * ## Why this is a rank and not a sorted list of names
  *
  * The groups are not alphabetical with respect to each other: Elemental Mastery sits between
- * the damage bonuses and the percentages because that is where a player looks for it, not
- * because "E" falls there. So the order is stated, and only *within* the damage bonuses is it
- * alphabetical — which is the audit's own wording.
+ * the percentages and the damage bonuses because that is where a player looks for it, not
+ * because "E" falls there. So the order is stated, and it is alphabetical only *within* a
+ * group.
  */
 
 /** Group ranks, low first. Anything unlisted sorts last, in name order. */
 const GROUP = {
-  elementalDamage: 0,
+  percentage: 0,
   mastery: 1,
-  percentage: 2,
-  other: 3,
+  elementalDamage: 2,
 } as const;
 
 const ELEMENTAL_DAMAGE = /^FIGHT_PROP_(FIRE|WATER|GRASS|ELEC|WIND|ICE|ROCK|PHYSICAL)_ADD_HURT$/;
@@ -36,13 +37,29 @@ const ELEMENTAL_DAMAGE = /^FIGHT_PROP_(FIRE|WATER|GRASS|ELEC|WIND|ICE|ROCK|PHYSI
  */
 const FLAT = new Set(['FIGHT_PROP_HP', 'FIGHT_PROP_ATTACK', 'FIGHT_PROP_DEFENSE']);
 
+/**
+ * CRIT Rate, CRIT DMG and Healing Bonus are percentages too — their keys simply do not say so.
+ *
+ * Grouping them by key alone would have stranded CRIT DMG after the damage bonuses, which is
+ * nowhere a player looks for it. Listed rather than pattern-matched, because there is no
+ * pattern: `FIGHT_PROP_CRITICAL` and `FIGHT_PROP_HEAL_ADD` share nothing but their meaning.
+ */
+const PERCENTAGE_BY_MEANING = new Set([
+  'FIGHT_PROP_CRITICAL',
+  'FIGHT_PROP_CRITICAL_HURT',
+  'FIGHT_PROP_HEAL_ADD',
+]);
+
 function group(key: string): number {
   if (ELEMENTAL_DAMAGE.test(key)) return GROUP.elementalDamage;
   if (key === 'FIGHT_PROP_ELEMENT_MASTERY' || key === 'FIGHT_PROP_CHARGE_EFFICIENCY') {
     return GROUP.mastery;
   }
-  if (key.endsWith('_PERCENT')) return GROUP.percentage;
-  return GROUP.other;
+  if (key.endsWith('_PERCENT') || PERCENTAGE_BY_MEANING.has(key)) return GROUP.percentage;
+  // Anything unlisted sorts with the damage bonuses rather than ahead of the percentages: a
+  // stat this file has never seen is more likely to be a new element than a new percentage,
+  // and either way it should not lead the list.
+  return GROUP.elementalDamage;
 }
 
 /** Whether a main stat is worth offering as a filter. */
