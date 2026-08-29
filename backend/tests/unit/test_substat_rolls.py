@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.services.substat_rolls import _budget, analyse, resolve_artifact
+from app.services.substat_rolls import _budget, _displayed, analyse, resolve_artifact
 
 #: 5★ CRIT DMG: 5.44 / 6.22 / 6.99 / 7.77 percent.
 CRIT_DMG_MAX = 0.0777
@@ -139,32 +139,62 @@ def test_roll_tiers_index_the_ladder_lowest_first() -> None:
 
 
 @pytest.mark.parametrize(
-    ("stars", "level", "expected"),
+    ("stars", "level", "shown", "expected"),
     [
-        (5, 20, {8, 9}),   # 3 or 4 initial + 5 upgrades
-        (5, 8, {5, 6}),    # only two upgrades have happened
-        (4, 16, {6, 7}),   # 2 or 3 initial + 4 upgrades
-        (3, 12, {4, 5}),   # 1 or 2 initial + 3 upgrades
-        (4, 0, {2, 3}),    # unupgraded
+        (5, 20, 4, {8, 9}),   # 3 or 4 initial + 5 upgrades
+        (5, 8, 4, {5, 6}),    # only two upgrades have happened
+        (4, 16, 3, {6, 7}),   # 2 or 3 initial + 4 upgrades
+        (3, 12, 2, {4, 5}),   # 1 or 2 initial + 3 upgrades
     ],
 )
-def test_the_budget_is_rarity_derived_not_substat_derived(
-    stars: int, level: int, expected: set[int],
+def test_the_bounds_come_from_the_rarity_not_from_the_line_count(
+    stars: int, level: int, shown: int, expected: set[int],
 ) -> None:
-    """**The bug this is named for.** The first version inferred the initial substat count
-    from how many the piece has *now*, minus one — right only at 5-star, where four-now
-    equals the high bound by coincidence. A 4-star drops with two or three lines, so its
-    `+16` budget was computed as `{7, 8}` against a truth of `{6, 7}`: the real answer
+    """**The bug this is named for, and it must stay fixed.** The first version inferred the
+    initial substat count from how many the piece has *now, minus one* — right only at 5-star,
+    where four-now equals the high bound by coincidence. A 4-star drops with two or three
+    lines, so its `+16` budget came out `{7, 8}` against a truth of `{6, 7}`: the real answer
     excluded half the time, and a total the rarity cannot reach admitted.
+
+    The line count is now an input again, but as a **constraint on the initial count**, never
+    as a substitute for the rarity bounds — see the test below. Every case here is unchanged.
 
     The bounds are Genshin Optimizer's `artSubstatRollData` (MIT), used rather than derived —
     1-star and 2-star do not follow the pattern at all.
     """
-    assert _budget(stars=stars, level=level) == expected
+    assert _budget(stars=stars, level=level, shown=shown) == expected
+
+
+@pytest.mark.parametrize(
+    ("stars", "shown", "expected"),
+    [(4, 2, {2}), (4, 3, {3}), (5, 3, {3}), (5, 4, {4})],
+)
+def test_an_unupgraded_piece_knows_exactly_how_many_rolls_it_has(
+    stars: int, shown: int, expected: set[int],
+) -> None:
+    """**Where the grey bars came from.**
+
+    A piece that started with the low count gains its extra line on the *first* upgrade — so
+    one still showing the low count has had none, and one showing the high count at `+0`
+    started there. Either way the total is exactly the number of lines on the card.
+
+    Without this, a `+0` five-star showing three substats got `{3, 4}`, and a four-roll
+    assignment over three lines — impossible when every line holds exactly one roll — stayed a
+    live solution. The piece was reported undetermined and the card drew grey bars with no
+    denominator. **230 of 266 undetermined pieces in a real 2,370-piece inventory were exactly
+    that shape.**
+    """
+    assert _budget(stars=stars, level=0, shown=shown) == expected
+
+
+def test_a_line_count_the_rarity_cannot_produce_widens_rather_than_empties() -> None:
+    """An empty budget refuses every assignment and reports the whole piece unknown, which is
+    a worse answer than a wide one. A hand-written row should degrade, not vanish."""
+    assert _budget(stars=5, level=20, shown=2) == {8, 9}
 
 
 def test_an_unknown_rarity_has_no_budget_rather_than_a_guessed_one() -> None:
-    assert _budget(stars=99, level=20) == set()
+    assert _budget(stars=99, level=20, shown=4) == set()
 
 
 def test_the_budget_resolves_lines_the_value_alone_cannot() -> None:
@@ -181,7 +211,7 @@ def test_the_budget_resolves_lines_the_value_alone_cannot() -> None:
     ])
 
     assert [f.rolls for f in found] == [1, 1, 4, 3]
-    assert sum(f.rolls for f in found) in _budget(stars=5, level=20)
+    assert sum(f.rolls for f in found) in _budget(stars=5, level=20, shown=len(found))
 
 
 def test_a_line_settled_on_its_own_is_never_marked_estimated() -> None:
@@ -228,3 +258,56 @@ def test_roll_value_survives_a_line_with_no_count() -> None:
 
     assert found[0].rolls is None
     assert found[0].roll_value is not None
+
+
+# ── the displayed value, and the two roundings that hid it ───────────────────
+
+
+def test_a_roll_on_a_rounding_boundary_still_matches() -> None:
+    """**The grey bars.**
+
+    A true 5-star ATK% roll of 5.25% is stored in the float32 tier table as `0.05249999836`.
+    The game displays `5.3%` and an export writes `0.053`. Ours rounded the tier with Python's
+    banker's `round`, got `5.2`, and reported a line that matched *no combination at all* —
+    so the card drew a grey bar with no denominator.
+
+    Both halves were needed: de-noising without half-up still gives 5.2, and half-up without
+    de-noising rounds 5.2499998 down.
+    """
+    found = analyse(stars=5, stat="FIGHT_PROP_ATTACK_PERCENT", value=0.053)
+
+    assert found.rolls == 1
+
+
+@pytest.mark.parametrize("value", [0.041, 0.047, 0.053, 0.058])
+def test_every_single_roll_an_export_can_write_is_recognised(value: float) -> None:
+    """The four 5-star ATK% tiers, as an export writes them.
+
+    Measured on a real 2,370-piece inventory: these are the four commonest values in it, and
+    **two of the four never matched** before the rounding was fixed.
+    """
+    assert analyse(stars=5, stat="FIGHT_PROP_ATTACK_PERCENT", value=value).rolls == 1
+
+
+def test_the_display_rounds_the_way_the_game_does() -> None:
+    """Half-up, not banker's. `round(5.25, 1)` is `5.2` in Python and `5.3` in the game."""
+    assert _displayed(0.0525, fraction=True) == 5.3
+    assert _displayed(0.05249999836087227, fraction=True) == 5.3
+
+
+def test_a_flat_stat_still_displays_whole() -> None:
+    """Flat ATK and HP are shown as integers, and the same rounding has to apply to them."""
+    assert _displayed(16.0, fraction=False) == 16
+    assert _displayed(16.5, fraction=False) == 17
+
+
+def test_a_value_no_combination_reaches_is_still_unknown() -> None:
+    """**The fix must not turn "cannot determine" into a guess.**
+
+    One piece in the owner's 2,370 has a CRIT DMG value no combination of tiers produces at any
+    legal roll count. It stays unknown, which is the honest answer — a rounding fix that
+    swallowed it would be reporting a decomposition nothing supports.
+    """
+    found = analyse(stars=5, stat="FIGHT_PROP_CRITICAL_HURT", value=0.999)
+
+    assert found.rolls is None

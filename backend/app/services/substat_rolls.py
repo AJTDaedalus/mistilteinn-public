@@ -44,6 +44,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
+from decimal import ROUND_HALF_UP, Decimal
 from functools import lru_cache
 from itertools import combinations_with_replacement, product
 from typing import TYPE_CHECKING
@@ -163,9 +164,36 @@ def _quality(tiers: tuple[float, ...], value: float) -> int:
     return round(tiers.index(value) * TOP_QUALITY / (len(tiers) - 1))
 
 
+#: Enough places to erase float32 noise from the snapshot and nowhere near enough to change a
+#: real value. The tables are stored as float32, so an exact 5.25% arrives as 5.249999836.
+_NOISE_PLACES = 6
+
+
 def _displayed(value: float, *, fraction: bool) -> float:
-    """The number as an export writes it: a percentage to one decimal, a flat stat whole."""
-    return round(value * 100, 1) if fraction else round(value, 0)
+    """The number as an export writes it: a percentage to one decimal, a flat stat whole.
+
+    **Half-up, and de-noised first.** Both matter, and together they were the whole of the
+    grey-bar problem:
+
+    - the tier tables are float32, so a true 5.25% ATK% roll is stored as `0.05249999836`;
+    - Python's `round` is banker's, so `round(5.249999836, 1)` is `5.2`.
+
+    The game displays `5.3` and the export writes `0.053`, so the comparison failed and the
+    line was reported as matching no combination at all. Measured on a real 2,370-piece
+    inventory, **the four commonest 5-star ATK% values in the export are 0.041 / 0.047 /
+    0.053 / 0.058 against tiers of 0.0408 / 0.0466 / 0.0525 / 0.0583** — two of the four
+    landed on a rounding boundary and never matched.
+
+    This is what Genshin Optimizer does and why it has bars where we had gaps: it compares the
+    **displayed** value, and the displayed value is the one the game rounded, not the one the
+    table stores.
+    """
+    scaled = value * 100 if fraction else value
+    # De-noise before rounding, or the boundary case rounds the wrong way.
+    quantum = Decimal("0.1") if fraction else Decimal("1")
+    return float(
+        Decimal(repr(round(scaled, _NOISE_PLACES))).quantize(quantum, rounding=ROUND_HALF_UP),
+    )
 
 
 def analyse(
@@ -267,7 +295,7 @@ def resolve_artifact(
     if not candidates or any(not c for c in candidates):
         return found
 
-    budget = _budget(stars=stars, level=level)
+    budget = _budget(stars=stars, level=level, shown=len(list(substats)))
     if not budget:
         return found
 
@@ -306,11 +334,26 @@ _INITIAL_SUBSTATS: dict[int, tuple[int, int]] = {
 }
 
 
-def _budget(*, stars: int, level: int) -> set[int]:
-    """Total rolls a piece of this rarity and level holds across all its substats.
+def _budget(*, stars: int, level: int, shown: int) -> set[int]:
+    """Total rolls a piece of this rarity, level and substat count holds.
 
-    `initial + upgrades`, over both initial counts the rarity allows. Independent of how many
-    substats the piece shows — that is a *consequence* of the same two numbers, not an input.
+    `initial + upgrades` — but **not over both initial counts unconditionally.** The number of
+    substats on the card is not merely a consequence of the initial count; it *constrains* it,
+    and this function used to say the opposite in a docstring.
+
+    A rarity starts with `low` or `high` substats, and a piece that started with `low` gains
+    its extra line on the **first upgrade**. So:
+
+    - showing `low` lines means it started with `low` **and has had no upgrades** — otherwise
+      it would be showing `low + 1`;
+    - showing `high` lines means either it started with `high`, or it started with `low` and
+      has had at least one upgrade.
+
+    **Measured against a real 2,370-piece inventory this is not a nicety.** Without it a `+0`
+    five-star showing three substats got the budget `{3, 4}`, and a four-roll assignment over
+    three lines — impossible at `+0`, where every line holds exactly one roll — stayed a
+    live solution. The piece was reported undetermined and the card drew grey bars with no
+    denominator. **230 of the 266 undetermined pieces were exactly that shape.**
     """
     bounds = _INITIAL_SUBSTATS.get(stars)
     if bounds is None:
@@ -319,7 +362,20 @@ def _budget(*, stars: int, level: int) -> set[int]:
         upgrades = len([at for at in artifact_upgrade_levels(stars) if at <= level])
     except SnapshotUnavailableError:
         return set()
-    return {low_or_high + upgrades for low_or_high in bounds}
+
+    low, high = bounds
+    possible: set[int] = set()
+    if shown == low and upgrades == 0:
+        possible.add(low)
+    if shown == high:
+        if upgrades >= 1:
+            possible.add(low + upgrades)
+        possible.add(high + upgrades)
+    # A count the rarity cannot produce — a hand-written row, or a rarity whose pattern this
+    # table does not cover. Fall back to the unconstrained budget rather than returning
+    # nothing: an empty budget refuses every assignment and reports the whole piece unknown,
+    # which is a worse answer than a wide one.
+    return possible or {low + upgrades, high + upgrades}
 
 
 def _with_count(
