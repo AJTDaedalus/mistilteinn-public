@@ -207,3 +207,63 @@
   align-items: center;
   gap: var(--space-2);
 }
+
+/* The row under a card's name: a vision, a weapon class, a substat. Wraps rather than
+   clipping, because a 5-star weapon name plus a long substat does not fit one line at
+   11rem and a card that hides half its facts is worse than one a line taller. */
+.card__facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  min-width: 0;
+
+  .meta { font-size: var(--text-xs); }
+}
+
+/* ── Weapon cards ───────────────────────────────────────────────────────────
+   Weapons get the portrait treatment characters got, with two differences that come from
+   the art rather than from taste.
+
+   **The frame is 4:5, not 3:4.** Weapon art is 256x256 and the weapon inside it occupies a
+   median 199x246 — measured across sixty files, not assumed from the canvas. A 3:4 frame
+   built for a 320x1024 half-body portrait leaves a catalyst floating in space.
+
+   **The fit is `contain`, not `cover`.** These are line drawings on transparency. `cover`
+   crops to fill, which on a portrait trims a shoulder and on a polearm cuts the blade off —
+   the part that identifies it. */
+.catalogue--weapons .grid {
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+}
+
+.catalogue--weapons .card__art {
+  aspect-ratio: 4 / 5;
+  /* Weapon art has no background of its own, so the card supplies one. Angled rather than
+     radial: it reads as a rack the weapon leans against, and it keeps a pale catalyst from
+     dissolving into the surface. */
+  background:
+    linear-gradient(155deg,
+      color-mix(in srgb, var(--rarity) 20%, transparent),
+      transparent 62%),
+    radial-gradient(ellipse at 50% 78%,
+      color-mix(in srgb, var(--rarity) 22%, transparent), transparent 60%);
+
+  /* `contain` inside a padded box, so the silhouette is never flush with the rule. */
+  > catalogue-icon { inset: var(--space-2); }
+}
+
+/* The weapon class, as a badge on the art rather than a word under the name.
+   Inline beside the vision chip it was a faint grey glyph that read as a stray artifact —
+   seen in a screenshot, which is the only way this kind of thing gets caught. Here it has a
+   dark plate behind it, so a white line drawing stays legible over pale art as well as dark. */
+.card__mark {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 1;
+  padding: 0.15rem;
+  border-radius: var(--radius-sm);
+  background: rgb(10 10 16 / 55%);
+  backdrop-filter: blur(2px);
+  line-height: 0;
+}

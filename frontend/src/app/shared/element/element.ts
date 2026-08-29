@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, booleanAttribute, computed, input } from '@angular/core';
+
+import { CatalogueIcon } from '../icon/icon';
 
 /** The seven visions, lowercased. Anything else — including `"None"` — is unknown. */
 const KNOWN = new Set([
@@ -26,9 +28,18 @@ const KNOWN = new Set([
  */
 @Component({
   selector: 'element-chip',
-  imports: [],
+  imports: [CatalogueIcon],
   template: `
-    <span class="chip" [style.--element]="colour()">{{ label() }}</span>
+    <span class="chip" [style.--element]="colour()" [attr.title]="compact() ? label() : null">
+      @if (icon()) {
+        <catalogue-icon [icon]="icon()" [alt]="''" [size]="size()" />
+      }
+      @if (compact() && icon()) {
+        <span class="sr-only">{{ label() }}</span>
+      } @else {
+        <span>{{ label() }}</span>
+      }
+    </span>
   `,
   styles: `
     :host { display: inline-flex; }
@@ -48,6 +59,23 @@ const KNOWN = new Set([
       line-height: 1.7;
       white-space: nowrap;
     }
+
+    /* The emblems arrive already in their element's colour, so they need no tinting — and
+       must not be given any: a Pyro flame recoloured to sit with the chip's border would
+       stop being the mark players recognise. */
+    catalogue-icon { margin-left: -0.1em; }
+
+    /* compact with no emblem falls back to the word, so this never hides the only label. */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -56,6 +84,23 @@ export class ElementChip {
   readonly element = input<string | null | undefined>(null);
   /** What to show when there is no vision. Overridable: "No vision" reads oddly on a hit. */
   readonly fallback = input('No vision');
+  /**
+   * The emblem's basename, from the API's `element_icon`. Null keeps the chip as a word.
+   *
+   * An input rather than derived from `element()`: building `f"{element}.webp"` here would
+   * be a second copy of the mapping, and would request art nobody vendored the moment a
+   * patch adds a vision. `app/services/element_symbols.py` is the one place that decides.
+   */
+  readonly icon = input<string | null | undefined>(null);
+  /**
+   * Emblem only, with the word kept for assistive tech and as a tooltip.
+   *
+   * **Falls back to the word when there is no emblem**, so this can never leave a chip with
+   * no visible label at all — which is the failure the whole "colour is a second channel"
+   * argument above exists to prevent, arrived at from the other direction.
+   */
+  readonly compact = input(false, { transform: booleanAttribute });
+  readonly size = input(16);
 
   private readonly key = computed(() => (this.element() ?? '').trim().toLowerCase());
 

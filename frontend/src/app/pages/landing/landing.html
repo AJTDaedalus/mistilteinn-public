@@ -78,7 +78,12 @@
     <li>
       <a class="card" routerLink="/characters">
         <h3>Catalogue</h3>
-        <p>150 characters, 260 weapons, 65 sets and 360 enemies.</p>
+        @if (counts(); as n) {
+          <p>{{ n['characters'] }} characters, {{ n['weapons'] }} weapons,
+             {{ n['sets'] }} sets and {{ n['enemies'] }} enemies.</p>
+        } @else {
+          <p>Characters, weapons, artifact sets and enemies.</p>
+        }
       </a>
     </li>
   </ul>

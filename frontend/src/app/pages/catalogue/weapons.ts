@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { CatalogueIcon } from '../../shared/icon/icon';
+import { WeaponMark } from '../../shared/weapon-mark/weapon-mark';
 
 import { catalogueList } from './catalogue-list';
 import { CatalogueService, type WeaponSummary } from './catalogue.service';
@@ -27,7 +28,7 @@ const WEAPON_TYPES = [
 
 @Component({
   selector: 'page-weapons',
-  imports: [FormsModule, CatalogueIcon],
+  imports: [FormsModule, CatalogueIcon, WeaponMark],
   templateUrl: './weapons.html',
   styleUrl: './catalogue.scss',
 })

@@ -51,6 +51,10 @@ FRONTEND = "http://localhost:4201"
 BACKEND = "http://localhost:8001"
 
 SERVICE_EMAIL = "screenshots@example.com"
+
+#: The first status code that is a failure. Named because ruff refuses the bare literal,
+#: and because "400 and up" is the actual rule rather than an arbitrary threshold.
+_HTTP_ERROR = 400
 SERVICE_PASSWORD = "ScreenshotsAreLocal123!"  # noqa: S105 — local-only, see the docstring
 SERVICE_LABEL = "Screenshots"
 
@@ -178,6 +182,7 @@ async def shoot(routes: tuple[str, ...], *, seed: bool, full_page: bool) -> int:
     """Screenshot each route. Returns the number of pages that logged a console error."""
     _refuse_remote()
     try:
+        from playwright.async_api import TimeoutError as PlaywrightTimeout  # noqa: PLC0415
         from playwright.async_api import async_playwright  # noqa: PLC0415 — optional
     except ImportError as exc:  # pragma: no cover — an environment thing, not a code path
         # Named rather than raised bare: the docstring advertises this command, and a bare
@@ -212,6 +217,15 @@ async def shoot(routes: tuple[str, ...], *, seed: bool, full_page: bool) -> int:
         # Playwright matches listeners by identity. Route three reported route one's errors.
         errors: list[str] = []
         page.on("pageerror", lambda exc: errors.append(str(exc)))
+        # A bare "Failed to load resource: 404" names nothing, and on a 150-card grid the
+        # question is always *which* one. The console message genuinely does not carry the
+        # URL, so it is taken from the response instead.
+        page.on(
+            "response",
+            lambda r: errors.append(f"HTTP {r.status} {r.url}")
+            if r.status >= _HTTP_ERROR
+            else None,
+        )
         page.on(
             "console",
             lambda msg: errors.append(msg.text) if msg.type == "error" else None,
@@ -221,7 +235,26 @@ async def shoot(routes: tuple[str, ...], *, seed: bool, full_page: bool) -> int:
             errors.clear()
             await page.goto(f"{FRONTEND}{route}", wait_until="networkidle")
             name = (route.strip("/") or "landing").replace("/", "-")
-            await page.screenshot(path=str(OUT / f"{name}.png"), full_page=full_page)
+            # **One slow page must not end the run.** A full-page shot of `/artifacts` — 2,370
+            # rows, tens of thousands of pixels tall — exceeds Playwright's 30s default, and
+            # the raised `TimeoutError` took the whole walk down with it, losing the routes
+            # after it as well as the one that failed. A harness whose job is "look at every
+            # page" cannot stop at the first page too big to look at.
+            #
+            # So: a longer budget, then a viewport-sized fallback, then a reported failure.
+            # A viewport shot of a huge page is worth far more than no shot, and the line
+            # says which it got so nothing reads a cropped image as the whole page.
+            shot = OUT / f"{name}.png"
+            note = ""
+            try:
+                await page.screenshot(path=str(shot), full_page=full_page, timeout=90_000)
+            except PlaywrightTimeout:
+                try:
+                    await page.screenshot(path=str(shot), full_page=False, timeout=30_000)
+                    note = "  [too tall for a full-page shot; viewport only]"
+                except PlaywrightTimeout:
+                    note = "  [SCREENSHOT FAILED]"
+                    broken += 1
             # A console error is not a failed screenshot, but it is the thing a picture
             # cannot show, so it is reported beside the file rather than swallowed.
             # A count, not a verdict. `/characters` reports two 404s every run — the two
@@ -232,7 +265,16 @@ async def shoot(routes: tuple[str, ...], *, seed: bool, full_page: bool) -> int:
             flag = f"  [{len(errors)} console error(s)]" if errors else ""
             if errors:
                 broken += 1
-            print(f"{route:16} -> screenshots/{name}.png{flag}")
+            print(f"{route:16} -> screenshots/{name}.png{flag}{note}")
+            # **Print the text, not just the count.** The comment above says the flag exists
+            # to prompt a look and that a look settles it — which was not true while the only
+            # output was a number. Settling it meant re-running by hand with a patched script,
+            # so in practice the flag was noise and got skipped. Deduplicated because one
+            # broken image in a 150-card grid logs 150 identical lines and would bury a
+            # second, different error underneath it.
+            for message in dict.fromkeys(errors):
+                first = message.strip().splitlines()[0]
+                print(f"{'':16}    ! {first[:160]}")
 
         await browser.close()
     return broken

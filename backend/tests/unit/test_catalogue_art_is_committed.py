@@ -11,7 +11,7 @@ The site served no art at all and every layer reported success.
 The measurement that settled it (2026-08-28, `docs/DECISIONS.md`): **446 distinct files,
 9.6 MB** — against fairy's committed **207 files at 27 MB**.
 
-That was the set as first committed; it is **907 files at 33 MB** now, with the character
+That was the set as first committed; it is **957 files at 33 MB** now, with the character
 portraits and the enemy art since. The decision is the same and the number is not, which is
 why the assertions below are a floor and a git query rather than a count.
 
@@ -31,6 +31,8 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
+from app.services import element_symbols, weapon_symbols
 
 REPO = Path(__file__).resolve().parents[3]
 ICONS = REPO / "frontend" / "public" / "icons"
@@ -113,6 +115,7 @@ def test_the_icon_directory_is_not_gitignored() -> None:
         "UI_EquipIcon_",
         "UI_RelicIcon_",
         "UI_MonsterIcon_",
+        "Skill_A_",
     ],
 )
 def test_every_catalogue_family_is_present(name: str) -> None:
@@ -124,6 +127,28 @@ def test_every_catalogue_family_is_present(name: str) -> None:
     family this test knew about still resolving. Green, and no art on the codex page.
 
     The list grows with `download_icons.SOURCES`; the character portraits are a second family
-    from the same source and are named separately for the same reason.
+    from the same source and are named separately for the same reason. `Skill_A_` is a third
+    kind again — the five weapon-class marks are per *class*, not per catalogue row, so no
+    source loop reaches them and only this test would notice them going missing.
     """
     assert list(ICONS.glob(f"{name}*.webp")), f"no {name}* icons vendored"
+
+
+@pytest.mark.parametrize(
+    "basename", [*weapon_symbols.all_symbols(), *element_symbols.all_symbols()],
+)
+def test_every_symbol_the_app_asks_for_is_vendored(basename: str) -> None:
+    """The class marks and the vision emblems, by exact name rather than by prefix.
+
+    A prefix test cannot see the emblems at all: nanoka serves them as `Pyro.webp`,
+    `Anemo.webp` — seven unrelated names with nothing in common — so losing all seven leaves
+    every family above still resolving, which is the shape that let the enemy icons go
+    missing under a check written to catch exactly that.
+
+    Parametrised over the services rather than over a list here, so a symbol added there is
+    checked here without an edit, and one removed stops being demanded.
+    """
+    assert (ICONS / f"{basename}.webp").is_file(), (
+        f"{basename}.webp is named by the app but not vendored — run "
+        f"`cd backend && python -m scripts.download_icons`"
+    )

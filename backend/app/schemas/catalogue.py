@@ -40,6 +40,7 @@ from typing import Any
 from pydantic import BaseModel, computed_field
 
 from app.models.enums import Element, Rarity, StatType, WeaponType
+from app.services import element_symbols, weapon_symbols
 
 _FROM_ORM = {"from_attributes": True}
 
@@ -122,6 +123,23 @@ class WeaponClassed(BaseModel):
         """
         return self.weapon_type.display
 
+    @computed_field
+    @property
+    def weapon_type_icon(self) -> str | None:
+        """The class mark's basename — Genshin's own sword/bow/polearm/claymore/catalyst glyph.
+
+        On the **mixin**, so a character card and a weapon card cannot show different marks
+        for the same class. They spell the class differently in the source
+        (`WEAPON_CROSSBOW` against `ITEM_TPS_WEAPON`) and this is the second thing after
+        `weapon_type_display` that would otherwise be derived twice.
+
+        `None` for the crossbow class, which has no mark at this pin — two unreleased Traveler
+        variants with no talents seeded, so there is nothing to derive.
+        `app/services/weapon_symbols.py` on why the mapping is a query and not five lines
+        written from memory.
+        """
+        return weapon_symbols.symbol_for(self.weapon_type)
+
 
 class CharacterSummary(WeaponClassed):
     """A character as a list entry."""
@@ -138,6 +156,19 @@ class CharacterSummary(WeaponClassed):
     icon: str | None = None
 
     model_config = _FROM_ORM
+
+    @computed_field
+    @property
+    def element_icon(self) -> str | None:
+        """The vision emblem's basename — the flame, the droplet, the snowflake.
+
+        Published rather than derived client-side, for the same reason `weapon_type_icon` is:
+        a page building `f"{element}.webp"` would request art nobody vendored the moment a
+        patch adds a vision, and would render a broken mark instead of nothing.
+
+        `None` for the two rows whose element is the literal `"None"`.
+        """
+        return element_symbols.symbol_for(self.element)
 
     @computed_field
     @property

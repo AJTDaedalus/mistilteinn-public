@@ -76,10 +76,21 @@
               [alt]="''"
               [size]="72"
             />
+            <!-- The class mark sits *on* the art, not under the name. Inline beside the
+                 vision chip it was a faint grey glyph reading as a stray artifact — measured
+                 in a screenshot, not guessed. A corner badge is legible, is where Genshin
+                 Optimizer and Fribbels put it, and costs the body no room. -->
+            <weapon-mark
+              class="card__mark"
+              [icon]="character.weapon_type_icon"
+              [label]="character.weapon_type_display"
+              [size]="22"
+              compact
+            />
           </span>
           <span class="card__body">
             <span class="name">{{ character.name }}</span>
-            <element-chip [element]="character.element ?? null" />
+            <element-chip [element]="character.element ?? null" [icon]="character.element_icon" />
           </span>
         </li>
       } @empty {

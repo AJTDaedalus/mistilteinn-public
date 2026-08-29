@@ -36,7 +36,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
 from app.data.importers.nanoka_gi_importer import ENTITIES, HttpNanokaTransport
 from app.database import async_session_factory
@@ -46,6 +46,7 @@ from app.models.character import Character, Talent
 from app.models.enums import Element, Rarity, StatType, TalentType, WeaponType
 from app.models.seed_provenance import SeedRun
 from app.models.weapon import Weapon, WeaponRefinement
+from app.services import weapon_symbols
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -351,6 +352,7 @@ async def verify(
             )
 
     failures.extend(await _art_coverage(session))
+    failures.extend(await _weapon_symbols(session))
 
     for anchor, actual in await _anchor_values(session):
         if actual != anchor.expected:
@@ -379,6 +381,65 @@ _ART_COVERAGE: tuple[tuple[str, int], ...] = (
     ("artifact", 0),
     ("monster", 0),
 )
+
+
+
+_SKILL_A = text(r"""
+    SELECT c.weapon_type::text AS weapon_type, t.icon, count(*) AS n
+    FROM talents t JOIN characters c ON c.id = t.character_id
+    WHERE t.icon LIKE 'Skill\_A\_%'
+    GROUP BY 1, 2
+""")
+
+
+async def _weapon_symbols(session: AsyncSession) -> list[str]:
+    """`weapon_symbols._SYMBOLS` against the talents table it was derived from.
+
+    **Checked here rather than only in the test suite**, because CI's offline fixtures carry
+    four characters — sword, bow and polearm — and can therefore prove three of the five. A
+    unit test that verified three and said nothing about the other two would be the
+    green-by-absence shape this repo refuses. This runs against a full catalogue, which is
+    the only place the claim can actually be settled.
+
+    Genshin names these sprites after the normal-attack talent they illustrate, so a class's
+    symbol is the `Skill_A_*` icon its characters share.
+    """
+    rows = (await session.execute(_SKILL_A)).all()
+    if not rows:
+        msg = (
+            "no character carries a Skill_A_* talent icon, so the weapon class symbols "
+            "cannot be checked. That is a seeding gap, not a clean result."
+        )
+        return [msg]
+
+    out: list[str] = []
+    per_class: dict[str, set[str]] = {}
+    for weapon_type, icon, _count in rows:
+        per_class.setdefault(weapon_type, set()).add(icon)
+
+    for weapon_type, icons in sorted(per_class.items()):
+        if len(icons) > 1:
+            out.append(
+                f"{weapon_type} characters carry more than one class symbol "
+                f"({sorted(icons)}); weapon_symbols answers a question the data no longer "
+                f"has one answer to.",
+            )
+            continue
+        found = next(iter(icons))
+        claimed = weapon_symbols.symbol_for(weapon_type)
+        if claimed != found:
+            out.append(
+                f"{weapon_type}: talents say {found!r}, weapon_symbols says {claimed!r}. "
+                f"Re-derive rather than edit by hand.",
+            )
+
+    unclaimed = set(weapon_symbols.all_symbols()) - {r[1] for r in rows}
+    if unclaimed:
+        out.append(
+            f"weapon_symbols names {sorted(unclaimed)}, which no character carries. A symbol "
+            f"nothing in the catalogue uses is one nobody will notice going wrong.",
+        )
+    return out
 
 
 async def _art_coverage(session: AsyncSession) -> list[str]:

@@ -3689,6 +3689,32 @@
             "description": "`Sword`, beside the raw `WEAPON_SWORD_ONE_HAND`.\n\nThe value is the game's internal spelling \u2014 the reason `Element` reads well in this\noutput and `WeaponType` does not. Published rather than left to each client, because\na page deriving it would be a second copy of `WeaponType.display`.",
             "readOnly": true
           },
+          "weapon_type_icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weapon Type Icon",
+            "description": "The class mark's basename \u2014 Genshin's own sword/bow/polearm/claymore/catalyst glyph.\n\nOn the **mixin**, so a character card and a weapon card cannot show different marks\nfor the same class. They spell the class differently in the source\n(`WEAPON_CROSSBOW` against `ITEM_TPS_WEAPON`) and this is the second thing after\n`weapon_type_display` that would otherwise be derived twice.\n\n`None` for the crossbow class, which has no mark at this pin \u2014 two unreleased Traveler\nvariants with no talents seeded, so there is nothing to derive.\n`app/services/weapon_symbols.py` on why the mapping is a query and not five lines\nwritten from memory.",
+            "readOnly": true
+          },
+          "element_icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Element Icon",
+            "description": "The vision emblem's basename \u2014 the flame, the droplet, the snowflake.\n\nPublished rather than derived client-side, for the same reason `weapon_type_icon` is:\na page building `f\"{element}.webp\"` would request art nobody vendored the moment a\npatch adds a vision, and would render a broken mark instead of nothing.\n\n`None` for the two rows whose element is the literal `\"None\"`.",
+            "readOnly": true
+          },
           "stars": {
             "type": "integer",
             "title": "Stars",
@@ -3710,6 +3736,8 @@
           "base_crit_rate",
           "base_crit_dmg",
           "weapon_type_display",
+          "weapon_type_icon",
+          "element_icon",
           "stars"
         ],
         "title": "CharacterRead",
@@ -3773,6 +3801,32 @@
             "description": "`Sword`, beside the raw `WEAPON_SWORD_ONE_HAND`.\n\nThe value is the game's internal spelling \u2014 the reason `Element` reads well in this\noutput and `WeaponType` does not. Published rather than left to each client, because\na page deriving it would be a second copy of `WeaponType.display`.",
             "readOnly": true
           },
+          "weapon_type_icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weapon Type Icon",
+            "description": "The class mark's basename \u2014 Genshin's own sword/bow/polearm/claymore/catalyst glyph.\n\nOn the **mixin**, so a character card and a weapon card cannot show different marks\nfor the same class. They spell the class differently in the source\n(`WEAPON_CROSSBOW` against `ITEM_TPS_WEAPON`) and this is the second thing after\n`weapon_type_display` that would otherwise be derived twice.\n\n`None` for the crossbow class, which has no mark at this pin \u2014 two unreleased Traveler\nvariants with no talents seeded, so there is nothing to derive.\n`app/services/weapon_symbols.py` on why the mapping is a query and not five lines\nwritten from memory.",
+            "readOnly": true
+          },
+          "element_icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Element Icon",
+            "description": "The vision emblem's basename \u2014 the flame, the droplet, the snowflake.\n\nPublished rather than derived client-side, for the same reason `weapon_type_icon` is:\na page building `f\"{element}.webp\"` would request art nobody vendored the moment a\npatch adds a vision, and would render a broken mark instead of nothing.\n\n`None` for the two rows whose element is the literal `\"None\"`.",
+            "readOnly": true
+          },
           "stars": {
             "type": "integer",
             "title": "Stars",
@@ -3788,6 +3842,8 @@
           "name",
           "rarity",
           "weapon_type_display",
+          "weapon_type_icon",
+          "element_icon",
           "stars"
         ],
         "title": "CharacterSummary",
@@ -6642,6 +6698,19 @@
             "description": "`Sword`, beside the raw `WEAPON_SWORD_ONE_HAND`.\n\nThe value is the game's internal spelling \u2014 the reason `Element` reads well in this\noutput and `WeaponType` does not. Published rather than left to each client, because\na page deriving it would be a second copy of `WeaponType.display`.",
             "readOnly": true
           },
+          "weapon_type_icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weapon Type Icon",
+            "description": "The class mark's basename \u2014 Genshin's own sword/bow/polearm/claymore/catalyst glyph.\n\nOn the **mixin**, so a character card and a weapon card cannot show different marks\nfor the same class. They spell the class differently in the source\n(`WEAPON_CROSSBOW` against `ITEM_TPS_WEAPON`) and this is the second thing after\n`weapon_type_display` that would otherwise be derived twice.\n\n`None` for the crossbow class, which has no mark at this pin \u2014 two unreleased Traveler\nvariants with no talents seeded, so there is nothing to derive.\n`app/services/weapon_symbols.py` on why the mapping is a query and not five lines\nwritten from memory.",
+            "readOnly": true
+          },
           "sub_stat_display": {
             "anyOf": [
               {
@@ -6670,6 +6739,7 @@
           "name",
           "rarity",
           "weapon_type_display",
+          "weapon_type_icon",
           "sub_stat_display",
           "stars"
         ],
@@ -6812,6 +6882,19 @@
             "description": "`Sword`, beside the raw `WEAPON_SWORD_ONE_HAND`.\n\nThe value is the game's internal spelling \u2014 the reason `Element` reads well in this\noutput and `WeaponType` does not. Published rather than left to each client, because\na page deriving it would be a second copy of `WeaponType.display`.",
             "readOnly": true
           },
+          "weapon_type_icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weapon Type Icon",
+            "description": "The class mark's basename \u2014 Genshin's own sword/bow/polearm/claymore/catalyst glyph.\n\nOn the **mixin**, so a character card and a weapon card cannot show different marks\nfor the same class. They spell the class differently in the source\n(`WEAPON_CROSSBOW` against `ITEM_TPS_WEAPON`) and this is the second thing after\n`weapon_type_display` that would otherwise be derived twice.\n\n`None` for the crossbow class, which has no mark at this pin \u2014 two unreleased Traveler\nvariants with no talents seeded, so there is nothing to derive.\n`app/services/weapon_symbols.py` on why the mapping is a query and not five lines\nwritten from memory.",
+            "readOnly": true
+          },
           "sub_stat_display": {
             "anyOf": [
               {
@@ -6840,6 +6923,7 @@
           "name",
           "rarity",
           "weapon_type_display",
+          "weapon_type_icon",
           "sub_stat_display",
           "stars"
         ],

@@ -1,4 +1,4 @@
-<section class="catalogue">
+<section class="catalogue catalogue--portraits catalogue--weapons">
   <!-- Search above the results, not beside the title: it acts on what is below it. -->
   <header>
     <h1>Weapons</h1>
@@ -58,14 +58,28 @@
              `four_star`, `FIGHT_PROP_CHARGE_EFFICIENCY` — printed because nothing readable
              was published. The API carries the display forms now. -->
         <li class="card" [attr.data-stars]="weapon.stars">
-          <catalogue-icon [icon]="weapon.icon" [alt]="''" [size]="52" />
-          <span class="name">{{ weapon.name }}</span>
-          <span class="card__stars">
-            @for (s of starList(weapon.stars); track $index) {<span>★</span>}
+          <!-- Weapon art is 256x256 with the weapon itself filling roughly 199x246 of it —
+               measured, not assumed. So the frame is 4:5 and the fit is `contain`: these are
+               line drawings on transparency, and cropping one the way a portrait is cropped
+               cuts the blade off. -->
+          <span class="card__art">
+            <catalogue-icon class="fill" [icon]="weapon.icon" [alt]="''" [size]="140" />
+            <weapon-mark
+              class="card__mark"
+              [icon]="weapon.weapon_type_icon"
+              [label]="weapon.weapon_type_display"
+              [size]="22"
+              compact
+            />
           </span>
-          <span class="meta">
-            {{ weapon.weapon_type_display }}
-            @if (weapon.sub_stat_display) { · {{ weapon.sub_stat_display }} }
+          <span class="card__body">
+            <span class="name">{{ weapon.name }}</span>
+            <span class="card__stars">
+              @for (s of starList(weapon.stars); track $index) {<span>★</span>}
+            </span>
+            @if (weapon.sub_stat_display) {
+              <span class="meta">{{ weapon.sub_stat_display }}</span>
+            }
           </span>
         </li>
       } @empty {

@@ -53,6 +53,7 @@ from app.models.artifact import ArtifactSet
 from app.models.build import EnemyProfile
 from app.models.character import Character
 from app.models.weapon import Weapon
+from app.services import element_symbols, weapon_symbols
 
 #: Where nanoka publishes them. `gi`, not `genshin` — checked, not guessed.
 CDN = "https://static.nanoka.cc/assets/gi"
@@ -140,6 +141,20 @@ async def wanted() -> list[tuple[str, str]]:
                 portrait = portrait_name(row.icon) if model is Character else None
                 if portrait:
                     found.append((portrait, f"{label} {row.name} portrait"))
+    # The five weapon-class marks. Not a catalogue row's `icon` — they are per *class*, not
+    # per entity, so nothing in the loop above would ever reach them. Derived from the
+    # talents table rather than named here; `app/services/weapon_symbols.py` explains why the
+    # catalyst's `Skill_A_Catalyst_MD` is the reason that matters.
+    found.extend(
+        (symbol, f"weapon class symbol {symbol}") for symbol in weapon_symbols.all_symbols()
+    )
+    # The seven vision emblems, for the same reason: per *element*, not per row. nanoka serves
+    # these under the element's plain name with no prefix — `Pyro.webp` — which is why no
+    # sweep of `UI_*` shapes finds them. `app/services/element_symbols.py` and
+    # `docs/RESEARCH_element_symbols.md`.
+    found.extend(
+        (symbol, f"vision emblem {symbol}") for symbol in element_symbols.all_symbols()
+    )
     return found
 
 

@@ -14,6 +14,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.character import Character, Talent
 from app.repositories.base import BaseRepository, ilike_contains
+from app.services.practice_dummies import DUMMY_BODIES
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -37,6 +38,14 @@ class CharacterRepository(BaseRepository[Character]):
         name: str | None,
     ) -> Select[tuple[Character]]:
         stmt = select(Character)
+        # The practice mannequins are 14 of the 150 rows and are never used in combat, so
+        # they are hidden from every list and count rather than left to pad the grid (owner
+        # ruling, 2026-08-28). Matched on the **body id**: their rows are `10000117-2` …
+        # `10000118-8`, one per element, and `name` is a localised display string.
+        # `app/services/practice_dummies.py` on why they are hidden rather than unseeded.
+        stmt = stmt.where(
+            func.split_part(Character.nanoka_id, "-", 1).notin_(DUMMY_BODIES),
+        )
         if element is not None:
             stmt = stmt.where(Character.element == element)
         if weapon_type is not None:
