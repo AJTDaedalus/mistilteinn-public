@@ -65,11 +65,16 @@ browser build, a 100-iteration 90-second rotation is **7.84 s single-threaded** 
 candidates is **~7.7 minutes**. The decision holds; the interaction it implies does not. It is
 a job with progress, never a request that blocks.
 
-- **Both suites pass, with nothing skipped.** **1307 backend tests, 0 skipped**; **428
+- **Both suites pass, with nothing skipped.** **1337 backend tests, 0 skipped**; **428
   frontend tests**; `create_app()` serves **38 paths**; the SPA has **15 routes plus a
   catch-all**. (The previous figures here — 1273 / 255 / 40 paths — were stale; the path
   count had never been 40. Re-derive rather than trust, which is what the commands below
-  are for.) Re-derive rather than trust:
+  are for.) **One integration test has been seen to fail once and pass on re-run** —
+  `test_a_talent_with_no_level_set_is_not_offered`, once in four full-suite runs, passing in
+  isolation and on the two runs after. Recorded rather than chased on a single observation,
+  and recorded rather than ignored: in a repo whose rule is that a check which could not run
+  is never a pass, a check that answers differently on identical input is the same problem
+  wearing a different face. Re-derive rather than trust:
   `cd backend && python -m pytest -q`, `cd frontend && npm test`. Run CI's own gates rather
   than a remembered subset: `cd backend && python -m scripts.ci_local` reads
   `.github/workflows/*.yml` and executes them here — 20 gates, including the WGSL kernel,

@@ -101,7 +101,7 @@ local gate is the CI gate (#135). Run **exactly what CI runs**:
 ruff check app/ tests/ scripts/seed_db.py scripts/verify_seed.py \
     scripts/capture_nanoka_fixtures.py scripts/yuanshen/ scripts/bench_optimizer.py \
     scripts/gcsim/ scripts/kernel/ scripts/inject.py scripts/ci_local.py \
-    scripts/download_icons.py
+    scripts/download_icons.py scripts/shoot.py
 ```
 
 `scripts/` as a whole is not linted — it carries ~65 pre-existing violations in unrelated
@@ -170,6 +170,30 @@ is not green there, and the summary line says so every run.
 `pip-audit` is the sharpest example: `--local` audits the *environment*, and this box has 212
 packages against the project's 20, so it reports 84 vulnerabilities in things the project does
 not depend on. The adaptation audits `backend/` instead.
+
+### `python -m scripts.shoot` — walk the app and screenshot it
+
+```bash
+cd backend && python -m scripts.shoot --seed        # every route, seeded from references/
+cd backend && python -m scripts.shoot --route /builds --viewport
+```
+
+Signs in a dev-only service account, optionally imports a GOOD export from `references/`, and
+writes a PNG per route into the gitignored `screenshots/`. Console errors are reported beside
+each shot, because a picture cannot show them. **It refuses to run against a non-local host**
+— it creates accounts and imports data.
+
+**It exists because a green suite has never once caught a visual defect here.** Production
+served no art for months, a delete button rendered outside its own card, the login form sat
+above 700 pixels of nothing, and every one of those passed 1300 backend and 400 frontend
+tests. It does not judge a page — nothing automated decides whether a layout is good — it
+removes the friction from looking, which was the part actually stopping anyone.
+
+It has already found three: `MAX_ROWS` truncating a real 2,370-artifact inventory, every
+reconstituted build coming back silently weaponless, and a stale empty state on `/teams`.
+
+`playwright` is deliberately **not** a dependency of the backend — it does not need a browser.
+The script names the install line rather than dying on the import.
 
 ### `python -m scripts.inject` — mutation testing that refuses to guess
 
