@@ -45,7 +45,13 @@ the damage chain does not model. **I's rotation-optimization half is closed by o
 (2026-08-25): rotations are authored, never optimized.** A user writes a rotation deliberately,
 and one arrived at by search is not one they would recognise as theirs.
 
-**What is genuinely open is one plan — `docs/TASKS_weapon_passives.md` — and the two
+**Two further plans are open and unbuilt**, both written 2026-08-29 and both waiting on owner
+answers rather than on effort: `docs/DESIGN_rotation_library.md` (sharing and searching
+rotations; tier-1 gcsim import is **built**, OQ-1..OQ-4 open) and
+`docs/DESIGN_artifact_ranking.md` (scoring one artifact, and a +0's potential; OQ-A1..OQ-A4
+open). `docs/AUDIT_fribbels_parity.md` is the standing list of what the UI still lacks.
+
+**And one older plan — `docs/TASKS_weapon_passives.md` — with the two
 `TODO(chunk-)` markers it exists to close.** `rg "TODO\(chunk-"` is the inventory. It counted
 **nine** before `TASKS_loose_ends.md`, seven of them naming a closed chunk; that sweep closed
 the seven and left the two that name real, unbuilt work. **Every other plan in this repo has
@@ -65,7 +71,7 @@ browser build, a 100-iteration 90-second rotation is **7.84 s single-threaded** 
 candidates is **~7.7 minutes**. The decision holds; the interaction it implies does not. It is
 a job with progress, never a request that blocks.
 
-- **Both suites pass, with nothing skipped.** **1386 backend tests, 0 skipped**; **428
+- **Both suites pass, with nothing skipped.** **1439 backend tests, 0 skipped**; **450
   frontend tests**; `create_app()` serves **39 paths**; the SPA has **15 routes plus a
   catch-all**. (The previous figures here — 1273 / 255 / 40 paths — were stale; the path
   count had never been 40. Re-derive rather than trust, which is what the commands below
