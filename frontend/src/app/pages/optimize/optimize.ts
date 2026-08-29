@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 
 import { apiErrorMessage } from '../../api/api-error';
 import { CardPicker, type CardOption } from '../../shared/card-picker/card-picker';
+import { buildOptions, buildsInTeam, teamOptions } from '../../shared/team-scope';
 import { ElementChip } from '../../shared/element/element';
 import { CatalogueIcon } from '../../shared/icon/icon';
 import { EntityToken } from '../../shared/token/token';
@@ -20,7 +21,7 @@ import {
 import { ArtifactsService } from '../artifacts/artifacts.service';
 import type { ArtifactSetChoice } from './optimize.service';
 import { RotationsService } from '../rotations/rotations.service';
-import { TEAM_SLOTS, TeamsService, type TeamRead } from '../teams/teams.service';
+import { TeamsService, type TeamRead } from '../teams/teams.service';
 import { isFilterableMainStat, sortMainStats } from '../../shared/stat-order';
 import { scoreForSlot } from '../../sim/artifact-score';
 import type { Recipe } from '../../sim/recipe';
@@ -209,42 +210,13 @@ export class OptimizePage implements OnInit {
   );
 
   /** The builds the chosen team fields, in slot order, or every build when none is chosen. */
-  protected readonly buildsInScope = computed(() => {
-    const chosen = this.team();
-    if (!chosen) return this.builds();
-    const byId = new Map(this.builds().map((b) => [b.id, b]));
-    return TEAM_SLOTS
-      .map((slot) => chosen[slot])
-      .map((id) => (id ? byId.get(id) : undefined))
-      .filter((b): b is BuildRead => b !== undefined);
-  });
-
-  protected readonly teamOptions = computed<CardOption[]>(() => {
-    const byId = new Map(this.builds().map((b) => [b.id, b]));
-    return this.teams().map((team) => {
-      const party = TEAM_SLOTS
-        .map((slot) => team[slot])
-        .map((id) => (id ? byId.get(id) : undefined))
-        .filter((b): b is BuildRead => b !== undefined);
-      return {
-        value: team.id,
-        label: team.name,
-        // A team's identity is the four characters in it, so the card carries all four rather
-        // than electing one to stand for the rest.
-        icons: party.map((b) => b.character?.icon),
-        detail: party.map((b) => b.character?.name).filter(Boolean).join(' · '),
-      };
-    });
-  });
-
-  protected readonly buildOptions = computed<CardOption[]>(() =>
-    this.buildsInScope().map((b) => ({
-      value: b.id,
-      label: b.character?.name || 'No character',
-      icon: b.character?.icon,
-      detail: `C${b.constellation_level} · ${b.weapon_display || 'no weapon'}`,
-    })),
+  protected readonly buildsInScope = computed(
+    () => buildsInTeam(this.team(), this.builds()),
   );
+
+  protected readonly teamOptions = computed(() => teamOptions(this.teams(), this.builds()));
+
+  protected readonly buildOptions = computed(() => buildOptions(this.buildsInScope()));
   /**
    * A **signal**, because the `hit` computed reads it.
    *

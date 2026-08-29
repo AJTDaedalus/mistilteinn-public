@@ -1,3 +1,12 @@
+/* The team and build pickers on one row. Compare's form is a column of labelled controls;
+   these two belong together as one question — who is this comparison for. */
+.subject-pickers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2) var(--space-4);
+}
+
 .compare {
   display: flex;
   flex-direction: column;

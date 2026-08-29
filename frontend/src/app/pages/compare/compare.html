@@ -1,9 +1,6 @@
 <section class="compare">
   <header>
     <h1>Compare weapons</h1>
-    <p class="muted">
-      Simulated with gcsim, in your browser — so weapon passives count.
-    </p>
   </header>
 
 @if (loading()) {
@@ -23,20 +20,26 @@
   </p>
 } @else {
   <form (ngSubmit)="run()">
-    <label>
-      Build
-      <select
-        name="build"
-        [value]="buildId()"
-        (change)="selectBuild($any($event.target).value)"
-      >
-        @for (b of builds(); track b.id) {
-          <option [value]="b.id">
-            {{ b.character?.name ?? b.id }} · C{{ b.constellation_level }}
-          </option>
-        }
-      </select>
-    </label>
+    <!-- A team first, then who in it — the same entry point as Optimize (#171). Optional, so
+         a build in no team stays reachable. -->
+    <div class="subject-pickers">
+      <mist-card-picker
+        label="Team"
+        placeholder="Any team"
+        clearable
+        [options]="teamOptions()"
+        [selected]="teamId() ? [teamId()] : []"
+        (selectedChange)="selectTeam($event)"
+      />
+
+      <mist-card-picker
+        label="Build"
+        placeholder="Choose a build…"
+        [options]="buildOptions()"
+        [selected]="buildId() ? [buildId()] : []"
+        (selectedChange)="pickBuild($event)"
+      />
+    </div>
 
     @if (build(); as chosenBuild) {
       <p class="subject">

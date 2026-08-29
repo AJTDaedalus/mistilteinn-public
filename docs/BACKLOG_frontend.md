@@ -30,8 +30,8 @@ reference the owner keeps naming; read it before designing.
 copying that shape per surface is how the fourth one ends up subtly different.
 
 Adopted so far: **inventory set filter** (#162), **build character** and **build weapon**
-(#170), **optimize team** and **optimize build** (#171), **optimize 4-piece and 2+2** (#172).
-Remaining: rotation team, rotation database search.
+(#170), **optimize team** and **optimize build** (#171), **optimize 4-piece and 2+2** (#172),
+**compare team and build** (#176). Remaining: rotation team, rotation database search.
 
 `CardOption.icons` was added for the team card (#171): a team's identity is the four characters
 in it, and electing one of them to stand for the whole thing is a card that lies about what it
@@ -198,8 +198,18 @@ show that a suggested piece is *owned*. Drag-and-drop for the ranking.
 ## 7. Compare
 
 The owner is unsure it deserves a tab — possibly **Optimize split into artifact and weapon
-tabs** — and unsure of its value, but wants to see it through. Untestable for them right now
-without a rotation. Apply whatever from the other tabs fits, and drop "Simulated with gcsim…".
+tabs** — and unsure of its value, but wants to see it through. ~~Untestable for them right now
+without a rotation.~~ ~~Apply whatever from the other tabs fits, and drop "Simulated with
+gcsim…".~~ **Done (#176)** — the subtitle is gone and the build `<select>` is the team-then-who
+pair from Optimize. A rotation now exists, so it is testable.
+
+**Whether it deserves a tab is still open**, and nothing here decides it. What #176 did make
+cheaper is the alternative: if Compare becomes a second tab *inside* Optimize, the entry point
+is already the same two controls on both.
+
+`shared/team-scope` came out of this — the team card, the slot-ordered party and the build card
+were about to exist three times. Extracted at the second use rather than the fourth, which is
+the mistake `shared/card-picker` exists to record.
 
 ## 8. Explain → **Calculate** — done (#168)
 

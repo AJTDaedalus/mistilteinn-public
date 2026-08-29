@@ -5,6 +5,8 @@ import { RouterLink } from '@angular/router';
 
 import { apiErrorMessage } from '../../api/api-error';
 import { Combobox, type ComboboxOption } from '../../shared/combobox/combobox';
+import { CardPicker } from '../../shared/card-picker/card-picker';
+import { buildOptions, buildsInTeam, teamOptions } from '../../shared/team-scope';
 import { EntityToken } from '../../shared/token/token';
 import type { Ranking } from '../../sim/weapon-ranking';
 import { BuildsService, type BuildRead } from '../builds/builds.service';
@@ -13,6 +15,7 @@ import {
   type WeaponSummary,
 } from '../catalogue/catalogue.service';
 import { RotationsService } from '../rotations/rotations.service';
+import { TeamsService, type TeamRead } from '../teams/teams.service';
 import { CompareService, type ComparisonConfigs, type Progress } from './compare.service';
 
 /**
@@ -40,7 +43,9 @@ import { CompareService, type ComparisonConfigs, type Progress } from './compare
  */
 @Component({
   selector: 'page-compare',
-  imports: [FormsModule, RouterLink, DecimalPipe, PercentPipe, Combobox, EntityToken],
+  imports: [
+    FormsModule, RouterLink, DecimalPipe, PercentPipe, CardPicker, Combobox, EntityToken,
+  ],
   templateUrl: './compare.html',
   styleUrl: './compare.scss',
 })
@@ -74,6 +79,42 @@ export class ComparePage implements OnInit {
   private readonly buildsService = inject(BuildsService);
   private readonly rotationsService = inject(RotationsService);
   private readonly catalogue = inject(CatalogueService);
+  private readonly teamsService = inject(TeamsService);
+
+  /**
+   * Start from a team, then who in it — the same entry point as Optimize (#171).
+   *
+   * Copied rather than shared, and that is worth naming: three pages now build a team card and
+   * narrow a build grid by it, and the fourth is the rotation library. If a fifth appears
+   * before then, this belongs in `shared/` rather than in a fourth page.
+   */
+  protected readonly teams = signal<TeamRead[]>([]);
+  protected readonly teamId = signal('');
+
+  protected readonly team = computed(
+    () => this.teams().find((t) => t.id === this.teamId()) ?? null,
+  );
+
+  protected readonly buildsInScope = computed(
+    () => buildsInTeam(this.team(), this.builds()),
+  );
+
+  protected readonly teamOptions = computed(() => teamOptions(this.teams(), this.builds()));
+
+  protected readonly buildOptions = computed(() => buildOptions(this.buildsInScope()));
+
+  /** Narrowing the grid without narrowing the selection would keep answering for a character
+   *  the user has just filtered away. */
+  protected async selectTeam(ids: readonly string[]): Promise<void> {
+    this.teamId.set(ids[0] ?? '');
+    const inScope = this.buildsInScope();
+    if (inScope.some((b) => b.id === this.buildId())) return;
+    await this.selectBuild(inScope[0]?.id ?? '');
+  }
+
+  protected async pickBuild(ids: readonly string[]): Promise<void> {
+    await this.selectBuild(ids[0] ?? '');
+  }
 
   /** A signal, so changing the build can reload the weapon pool it constrains. */
   protected readonly buildId = signal('');
@@ -183,11 +224,15 @@ export class ComparePage implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const [builds, rotations] = await Promise.all([
+      const [builds, rotations, teams] = await Promise.all([
         this.buildsService.list(),
         this.rotationsService.list(),
+        // Never fatal: a team narrows a grid, and a page that refused to open because that
+        // convenience failed would be worse than one without it.
+        this.teamsService.list().catch(() => []),
       ]);
       this.builds.set(builds);
+      this.teams.set(teams);
       // `list()` is paginated, so the rotations live under `items`. Reading the response
       // as an array yields `undefined` for `.length` and silently renders an empty picker,
       // which looks exactly like "you have no rotations".
