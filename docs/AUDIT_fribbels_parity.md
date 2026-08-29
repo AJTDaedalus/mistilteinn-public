@@ -52,6 +52,11 @@ Absent, and each is ordinary in this class of tool:
 | **multi-select / bulk delete** | a scanner import brings in junk that stays forever |
 | **a per-piece score** | see §5; this is the owner's task #3 |
 
+**Closed since this was written** (#144): sorting by roll value / level / rarity / set / slot,
+and set, main-stat and equipped filters. The render cap is the same change — the page held all
+2,370 in the DOM, and now holds 120 with an explicit "show more". Still open from that table:
+multi-select and bulk delete, equipped-*by-whom*, and the per-piece score.
+
 ## 3. `/optimize` — the controls exist and are invisible
 
 **Corrected 2026-08-29, after this section was first written and merged.** The first version
@@ -71,11 +76,20 @@ Hit, Element, Scope, Enemy level, Objective and a button — and concludes the t
 constrain a search. I concluded exactly that, with the source open. Everything that makes this
 page powerful is behind a dropdown whose default hides it.
 
-What is genuinely missing:
+What was genuinely missing, and what is left:
 
-- **no main-stat constraint per slot** — the standard first move, "Goblet must be Hydro DMG";
-- **no minimum-stat constraint** — an ER floor is how every real Genshin build is chosen;
+- ~~**no main-stat constraint per slot**~~ — **built** (#146). One select per slot, offering
+  only the stats the user owns, applied where `pieces` is defined so the set list and the
+  calibrations see the same inventory, and reporting an impossible constraint *before* the
+  search rather than returning nothing.
+- **no minimum-stat constraint** — an ER floor is how every real Genshin build is chosen.
 - **no way to pin a piece** the user wants kept.
+
+**Both remaining ones exist in `artifact_optimizer.OptimizerConstraints` already** —
+`min_stats` and `locked_slots`, with tests. That module is deliberately *not* the app's search
+path: `app/services/__init__.py` records it as the oracle the browser kernel is verified
+against. So these are not new algorithms; they are the same rules restated in
+`sim/recipe-search.ts` and wired to a control. Worth knowing before either is estimated.
 
 The controls are bare `<select>` elements; `shared/combobox` exists and is used on `/compare`.
 And below the form is roughly **500 px of empty page** before the footer — a results region
