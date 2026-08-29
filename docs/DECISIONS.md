@@ -843,3 +843,50 @@ The fix is two nullable label columns — `rotation_id` **and** the rotation's s
 the second one is the point: a rotation is editable, so `rotation_id` alone would sort it by a
 number computed for a previous version of itself. That work is named in the TASKS file rather
 than done here.
+
+## 25. OPEN — the run corpus has no producer, and the two candidates disagree (2026-08-29)
+
+Found while building #179's DPS ordering, which needs a `sim_run` to exist before it can sort
+by one. **`POST /api/v1/sim-runs` has zero callers in `frontend/src/app`.** The endpoint, the
+repository, the ER bucketing, the divergence measurement and the coverage query are all built,
+tested and CI-gated. Nothing writes to them.
+
+### The design named a producer, and it cannot submit what the corpus stores
+
+`DESIGN_client_optimizer.md` §"What the server-side corpus is actually for" says it
+*"accumulates from real searches"* — the context runs the rotation objective performs before
+searching artifacts. That is the right shape and it does not fit:
+
+| | |
+|---|---|
+| what the search calls | `mod.sample(config, SEED)` — a **per-frame log**, one seed |
+| what the corpus stores | `result` with `statistics.dps.mean`, read by `dps_mean_of` |
+
+`sample()` is what a **recipe** is built from, and the reason
+`RESEARCH_gcsim_calibration.md` could prove the decomposition exact. It is not an aggregate and
+carries no `statistics` block. A search therefore has nothing to submit that the schema means.
+
+### The question, and why it is not mine to answer
+
+**Either** the search performs an *additional* aggregate `run()` per context purely to fill the
+corpus — measured at ~3.13 s per run in DESIGN's own table, six ER buckets per context, so
+seconds added to every rotation search for a benefit the searcher does not receive —
+
+**or** the corpus stores what calibration actually produces, which changes what a `sim_run`
+*is*: no longer "what gcsim reported for this context" but "the sample a recipe was built
+from". `dps_mean_of`, `SimRunCoverage.dps_means` and the divergence measurement all read the
+aggregate, so this is a schema change and not a widening.
+
+Both are defensible. They cost different things and they mean different things, and picking one
+by implementation convenience is how a cache ends up holding numbers that do not answer the
+question its column names claim.
+
+### What is true meanwhile
+
+`your_dps` in the rotation library is correct and returns `None` for everyone, because there is
+nothing to order. That is the honest state and it is recorded in `TASKS_rotation_library.md`
+rather than hidden by a placeholder.
+
+**Nothing is blocked on this but the ordering being visible.** The labels, the signature
+matching and the refusal of a half-labelled run are all live and will attribute the first run
+anything ever submits.

@@ -63,7 +63,11 @@ and a run whose signature no longer matches is dropped rather than shown.
 **And it cannot produce a number yet**, which is the finding that matters more than the
 feature. Two gaps sit under it, and both were found by building this rather than by reading:
 
-1. **Nothing in the frontend writes the run corpus at all.** `POST /api/v1/sim-runs` has zero
+1. **Nothing in the frontend writes the run corpus at all — and the intended producer cannot.**
+   Escalated as `DECISIONS.md` §25: the design says the corpus *"accumulates from real
+   searches"*, and the search calls `sample()` (a per-frame log) where the corpus stores an
+   aggregate with `statistics.dps.mean`. Either the search adds a run it does not need, or a
+   `sim_run` becomes a different thing. **An owner decision, not an implementation detail.** `POST /api/v1/sim-runs` has zero
    callers in `frontend/src/app`. The endpoint, the repository, the ER bucketing and the
    divergence measurement are all built, tested and CI-gated; no client submits to them. So
    every `your_dps` is `None` in practice, not because the ordering is wrong but because there
@@ -79,10 +83,24 @@ So §3's ordering is live for **your own** published rotations and silent for ev
 `/rotations/{id}/context-key` now publishes `rotation_signature` so that whoever builds the
 producer never has to compute the digest a second way.
 
-**L.7's query-count harness.** The listing does its work in a fixed four queries — the page, the
-character sets, the like counts, and the caller's own likes — by construction rather than by
-assertion. Building the `before_cursor_execute` harness to *prove* that is still owed, and until
-it exists the guarantee rests on reading the code, which L.7 itself says is not asserting it.
+**~~L.7's query-count harness.~~ Built, and it found an N+1 in the listing on its first honest
+run.** `tests/integration/test_rotation_library_query_count.py`.
+
+L.7 said *"'constant' asserted by reading the code is not asserted at all"*, and that turned
+out to be exactly right twice over:
+
+1. **The first version passed while counting nothing.** It listened on `app.database.engine`;
+   `conftest` builds its own `test_engine`, so it compared zero with zero. `python -m
+   scripts.inject` put a real N+1 into the handler and watched the test not notice — the
+   mutation harness doing precisely the job it exists for, on a test written to prove
+   something.
+2. **Once it counted, it failed on real code.** `_your_dps` called `character_rows` in a loop
+   over the page — 19 queries for 2 rotations, 41 for 8. `rosters_for` batches it, and both
+   mutations are caught now.
+
+The listing costs **14** queries, most of them per-*request* rather than per-listing: the
+bearer token, the session lookup and its touch, the user row. The ceiling test allows 16 and
+says why; the load-bearing test does not care what the constant is, only that it stays one.
 
 ## L.0 — the branch
 

@@ -342,12 +342,18 @@ async def _your_dps(
     have a current run either, and failing a whole listing because one shared rotation went
     stale would be the wrong trade.
     """
+    # One query for every roster on the page, not one per rotation. The single-team form in a
+    # loop was an N+1 that shipped in the first draft of this function and was caught by
+    # `test_rotation_library_query_count` — the harness L.7 exists for, on its first run that
+    # counted anything.
+    rosters = await owned.rosters_for([r.team_id for r in rows])
+
     signatures: dict[str, str] = {}
     for rotation in rows:
+        roster = rosters.get(rotation.team_id)
+        if not roster:
+            continue
         try:
-            roster = await owned.character_rows(rotation.team_id)
-            if not roster:
-                continue
             signature = rotation_signature(rotation.steps or [], roster)
         except (RotationCompileError, GcsimKeyError):
             continue

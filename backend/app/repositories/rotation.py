@@ -186,6 +186,24 @@ class RotationRepository(BaseRepository[Rotation]):
         ).scalar_one_or_none()
         return {} if team is None else self._roster(team)
 
+    async def rosters_for(self, team_ids: Sequence[str]) -> dict[str, dict[str, Character]]:
+        """`team_id -> {nanoka_id: Character}` for several teams, in **one** query.
+
+        The batched form of `character_rows`, and it exists because the single form was called
+        in a loop over a page of rotations — a genuine N+1 that
+        `tests/integration/test_rotation_library_query_count.py` caught on its first honest
+        run, having passed while it was silently counting the wrong engine.
+
+        Owner-scoped through `_teams()`, so a team the caller does not own is simply absent
+        rather than raising. That is what makes a shared rotation report no DPS of yours.
+        """
+        if not team_ids:
+            return {}
+        teams = (
+            await self.session.execute(self._teams().where(Team.id.in_(list(team_ids))))
+        ).scalars().all()
+        return {str(team.id): self._roster(team) for team in teams}
+
     async def team_build_ids(self, team_id: str) -> list[str]:
         """Every build id on a team, in slot order.
 
