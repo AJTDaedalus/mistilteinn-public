@@ -14,6 +14,10 @@ an inference about Fribbels sit beside a measurement of ours in the same voice.
 **Every finding below was seen in a screenshot.** None of them failed a test, and the suites
 were green — 1,419 backend and 432 frontend — through all of it.
 
+**§3 has been corrected since this was first merged**, and the correction is left visible rather
+than edited away: seeing a page in one state and describing it as the page is the exact error
+this document exists to catch, and it is worth one worked example of getting it wrong.
+
 ---
 
 ## 1. The finding that dominates the others: nothing is virtualised
@@ -48,23 +52,33 @@ Absent, and each is ordinary in this class of tool:
 | **multi-select / bulk delete** | a scanner import brings in junk that stays forever |
 | **a per-piece score** | see §5; this is the owner's task #3 |
 
-## 3. `/optimize` — a form, then a large blank
+## 3. `/optimize` — the controls exist and are invisible
 
-The controls are Build, Hit, Element, Scope, Enemy level, Objective, and a Search button. What
-is missing is anything that shapes the *search space*:
+**Corrected 2026-08-29, after this section was first written and merged.** The first version
+said `/optimize` had no set filter, no 2-piece/4-piece constraint and no cost estimate. **All
+three exist.** That was a screenshot of the default objective read as a screenshot of the page,
+and it is the same mistake this audit warns about everywhere else — an absence taken for a
+fact without checking.
 
-- no set filter or two-piece/four-piece constraint;
-- no way to pin a piece the user wants kept;
-- no main-stat constraint per slot (the standard first move: "Goblet must be Hydro DMG");
-- no minimum-stat constraint (an ER floor is how every real Genshin build is chosen);
-- no estimate of how many combinations this will be, or how long, **before** committing —
-  `docs/RESEARCH_recipe_cost.md` measured 7.84 s per candidate rotation in-browser, so this
-  is a number the user needs in advance rather than a surprise.
+Switch the objective to *"Best over a rotation"* and the page grows: a **set filter over 35
+sets**, each annotated with how many pieces the user owns of it; All / None; a **live
+calibration count**; a cost hint (*"Roughly six seconds each"*); a rotation picker; and a
+collapsible **2+2 pair** picker. That is more search shaping than the first draft credited, and
+the cost estimate the draft asked for is already there.
 
-The controls are also bare `<select>` elements. `shared/combobox` exists and is used on
-`/compare`; this page predates it and looks it.
+**The real finding is better than the wrong one.** A user landing on `/optimize` sees Build,
+Hit, Element, Scope, Enemy level, Objective and a button — and concludes the tool cannot
+constrain a search. I concluded exactly that, with the source open. Everything that makes this
+page powerful is behind a dropdown whose default hides it.
 
-Below the form is roughly **500 px of empty page** before the footer. A results region that is
+What is genuinely missing:
+
+- **no main-stat constraint per slot** — the standard first move, "Goblet must be Hydro DMG";
+- **no minimum-stat constraint** — an ER floor is how every real Genshin build is chosen;
+- **no way to pin a piece** the user wants kept.
+
+The controls are bare `<select>` elements; `shared/combobox` exists and is used on `/compare`.
+And below the form is roughly **500 px of empty page** before the footer — a results region
 absent rather than empty-stated reads as a page that has not finished loading.
 
 ## 4. `/builds` — a list that stops being a list at seventy-five

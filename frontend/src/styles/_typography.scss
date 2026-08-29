@@ -20,6 +20,48 @@ h1 {
   text-shadow: var(--text-glow);
 }
 
+/* ── The orbit rule ─────────────────────────────────────────────────────────
+   One ornamental element, on every page heading, taken from the emblem rather than invented.
+
+   `references/mitya_ornament.png` is brass orbital rings around an amber cabochon with two
+   azure gems riding the orbits, and that is the whole vocabulary: a brass arc, a warm centre,
+   a cool node. So the rule under a page title is a brass line that **fades out to the right**
+   — the near edge of an orbit passing behind the title — with one small azure node where a
+   gem sits on it.
+
+   Deliberately one thing, and deliberately structural. The palette's argument is that brass
+   is identity and azure is data; a title is identity, so the line is brass and the gem is the
+   single cool note. Repeating this per section, or adding a second flourish, is how a motif
+   becomes wallpaper — the audit's own warning about not overdoing it.
+
+   Attached to `h1` globally rather than to a page class: every page already has exactly one,
+   and a `.page-title` convention would be a rule each new page could forget. */
+h1 {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: calc(var(--space-3) * -1);
+    width: min(22rem, 60%);
+    height: 1px;
+    /* Brass at the title, gone by the far end — an arc leaving the frame, not a underline
+       that stops. The azure node sits at 38%, where the ornament's lower-left gem does. */
+    background:
+      radial-gradient(circle at 38% 50%, var(--azure) 0 1.5px, transparent 1.6px),
+      linear-gradient(90deg,
+        color-mix(in srgb, var(--brass) 78%, transparent),
+        color-mix(in srgb, var(--brass) 22%, transparent) 55%,
+        transparent);
+  }
+}
+
+/* A heading inside a panel is a label, not the page's identity, so it gets no rule. Without
+   this, every card header in the app would grow one. */
+.card h1::after,
+.panel h1::after { content: none; }
+
 h2 {
   font-size: var(--text-2xl);
   letter-spacing: 0.05em;

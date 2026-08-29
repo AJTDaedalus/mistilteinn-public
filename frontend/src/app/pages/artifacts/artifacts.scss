@@ -356,3 +356,42 @@
   input { margin-top: 0.2rem; }
   .hint { display: block; margin-top: var(--space-1); }
 }
+
+/* ── Narrowing and ordering ─────────────────────────────────────────────────
+   A row of selects above the results. Separate from `.filters` above it, which is the slot
+   toggle row: slots are five mutually-exclusive chips and read as chips; a set is one of 65
+   and reads as a list. */
+.refine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-3);
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+
+    span {
+      font-size: var(--text-xs);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+    }
+  }
+
+  select { min-width: 9rem; max-width: 14rem; }
+
+  /* Sort is an ordering, not a narrowing, so it sits apart from the three filters. */
+  .refine__sort { margin-left: auto; }
+}
+
+.count { margin-bottom: var(--space-3); }
+
+.more {
+  display: flex;
+  justify-content: center;
+  margin: var(--space-5) 0 var(--space-3);
+}

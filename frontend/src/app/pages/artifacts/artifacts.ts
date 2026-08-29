@@ -48,6 +48,62 @@ export interface ArtifactRow {
   mainStat: string;
   substats: ArtifactSubstat[];
   equipped: boolean;
+  /** Sort keys, kept beside the display strings so a comparator never re-parses one. */
+  setId: string;
+  mainStatKey: string;
+  slotKey: string;
+  /** The piece's total roll value, or null when its rolls could not be decomposed.
+   *  Null sorts last rather than as zero — "unknown" is not "worst". */
+  rollValue: number | null;
+}
+
+/** How many cards are rendered before "show more", and how many each press adds. */
+const INITIAL_ROWS = 120;
+const MORE_ROWS = 120;
+
+export type SortKey = 'rollValue' | 'level' | 'set' | 'slot' | 'stars';
+
+/**
+ * A piece's total roll value, or null when any substat could not be decomposed.
+ *
+ * **Null rather than a partial sum.** 3.5% of the owner's real export cannot be decomposed,
+ * and adding up the three substats that could be would rank a piece by less than it has —
+ * quietly, and always downward. Sorting puts null last, because "unknown" is not "worst".
+ */
+export function totalRollValue(
+  analysis: readonly { roll_value?: number | null }[] | null | undefined,
+): number | null {
+  if (!analysis?.length) return null;
+  let total = 0;
+  for (const sub of analysis) {
+    if (typeof sub.roll_value !== 'number') return null;
+    total += sub.roll_value;
+  }
+  return total;
+}
+
+/** Orderings, each descending in the direction a player cares about. */
+export function comparator(key: SortKey): (a: ArtifactRow, b: ArtifactRow) => number {
+  switch (key) {
+    case 'level':
+      return (a, b) => b.level - a.level || a.setName.localeCompare(b.setName);
+    case 'set':
+      return (a, b) => a.setName.localeCompare(b.setName) || a.slotKey.localeCompare(b.slotKey);
+    case 'slot':
+      return (a, b) => a.slotKey.localeCompare(b.slotKey) || b.level - a.level;
+    case 'stars':
+      return (a, b) => b.stars - a.stars || b.level - a.level;
+    case 'rollValue':
+    default:
+      // Undecomposed pieces sink to the bottom whichever way the list is read, rather than
+      // sorting as zero and looking like the worst artifacts the user owns.
+      return (a, b) => {
+        if (a.rollValue === null && b.rollValue === null) return b.level - a.level;
+        if (a.rollValue === null) return 1;
+        if (b.rollValue === null) return -1;
+        return b.rollValue - a.rollValue;
+      };
+  }
 }
 
 /**
@@ -166,8 +222,84 @@ export class ArtifactsPage implements OnInit {
         },
       ),
       equipped: piece.build_id !== null,
+      setId: piece.artifact_set_id ?? '',
+      mainStatKey: piece.main_stat_type,
+      slotKey: piece.slot,
+      rollValue: totalRollValue(piece.substat_analysis),
     }));
   });
+
+  // ── narrowing and ordering ────────────────────────────────────────────────
+  //
+  // All client-side, over an array the page already holds in full. The API's own `set_id`
+  // filter exists, but re-fetching on every dropdown change would trade one cheap array pass
+  // for a round trip, and the slot filter already goes to the server for `total`.
+
+  protected readonly setFilter = signal('');
+  protected readonly mainStatFilter = signal('');
+  protected readonly equippedFilter = signal<'' | 'yes' | 'no'>('');
+  protected readonly sortBy = signal<SortKey>('rollValue');
+
+  /**
+   * How many cards are actually put in the DOM.
+   *
+   * **This is the fix for the audit's largest finding.** The page rendered all 2,370 pieces at
+   * once — roughly 30,000 nodes, and a full-page screenshot of 313 megapixels. It renders,
+   * which is why it survived; it should not have to.
+   *
+   * A cap with an explicit "show more" rather than a virtual scroller: `@angular/cdk` is a
+   * dependency this app does not otherwise carry, and the anonymous-volume dance in
+   * `frontend/CLAUDE.md` makes adding one a heavier change than the problem needs. The count
+   * line always says how many of how many, so a capped view can never be mistaken for the
+   * whole inventory.
+   */
+  protected readonly shown = signal(INITIAL_ROWS);
+
+  protected readonly setOptions = computed(() => {
+    const names = new Map<string, string>();
+    for (const row of this.rows()) {
+      if (row.setId) names.set(row.setId, row.setName);
+    }
+    return [...names].map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  });
+
+  protected readonly mainStatOptions = computed(() => {
+    const stats = new Map(
+      (this.options()?.stats ?? []).map((s) => [s.key, s.display ?? s.key]),
+    );
+    const keys = new Set(this.rows().map((r) => r.mainStatKey));
+    return [...keys].map((key) => ({ key, display: stats.get(key) ?? key }))
+      .sort((a, b) => a.display.localeCompare(b.display));
+  });
+
+  /** Every row that passes the filters, in sort order — before the render cap. */
+  protected readonly matching = computed<ArtifactRow[]>(() => {
+    const set = this.setFilter();
+    const main = this.mainStatFilter();
+    const equipped = this.equippedFilter();
+    const kept = this.rows().filter((row) =>
+      (!set || row.setId === set)
+      && (!main || row.mainStatKey === main)
+      && (!equipped || (equipped === 'yes') === row.equipped),
+    );
+    return [...kept].sort(comparator(this.sortBy()));
+  });
+
+  /** What the template draws. */
+  protected readonly visible = computed(() => this.matching().slice(0, this.shown()));
+
+  protected readonly hasMore = computed(() => this.matching().length > this.shown());
+
+  protected showMore(): void {
+    this.shown.update((n) => n + MORE_ROWS);
+  }
+
+  /** Any narrowing at all resets the cap: page 3 of the old filter is not page 1 of the new. */
+  protected narrow(apply: () => void): void {
+    apply();
+    this.shown.set(INITIAL_ROWS);
+  }
 
   private readonly service = inject(ArtifactsService);
   private readonly catalogue = inject(CatalogueService);

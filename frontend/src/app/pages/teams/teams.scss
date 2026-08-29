@@ -66,10 +66,13 @@
 
 // ── Art ──────────────────────────────────────────────────────────────────────
 
-// The slot's occupant, beside the `<select>` that cannot contain them.
-.slot-art {
-  flex: 0 0 auto;
-  width: 34px;
+// The slot picker. `mist-combobox` sizes to its content by default, which on a placeholder of
+// "Empty — search your builds…" clipped mid-word — seen in a screenshot, not reasoned about.
+// It fills the row the `<select>` it replaced used to fill.
+.slot-picker {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 32rem;
 }
 
 .party {

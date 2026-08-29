@@ -179,16 +179,73 @@
       }
     </div>
 
-    <p class="muted">
+    <!-- Narrowing and ordering, on one row above the results. At 2,370 pieces a slot filter
+         alone leaves ~470, which is still not a list anyone reads. -->
+    <div class="refine">
+      <label>
+        <span>Set</span>
+        <select
+          [value]="setFilter()"
+          (change)="narrow(() => setFilter.set($any($event.target).value))"
+        >
+          <option value="">Any</option>
+          @for (s of setOptions(); track s.id) {
+            <option [value]="s.id">{{ s.name }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        <span>Main stat</span>
+        <select
+          [value]="mainStatFilter()"
+          (change)="narrow(() => mainStatFilter.set($any($event.target).value))"
+        >
+          <option value="">Any</option>
+          @for (m of mainStatOptions(); track m.key) {
+            <option [value]="m.key">{{ m.display }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        <span>Equipped</span>
+        <select
+          [value]="equippedFilter()"
+          (change)="narrow(() => equippedFilter.set($any($event.target).value))"
+        >
+          <option value="">Either</option>
+          <option value="yes">Equipped</option>
+          <option value="no">Spare</option>
+        </select>
+      </label>
+
+      <label class="refine__sort">
+        <span>Sort</span>
+        <select [value]="sortBy()" (change)="narrow(() => sortBy.set($any($event.target).value))">
+          <option value="rollValue">Roll value</option>
+          <option value="level">Level</option>
+          <option value="stars">Rarity</option>
+          <option value="set">Set</option>
+          <option value="slot">Slot</option>
+        </select>
+      </label>
+    </div>
+
+    <p class="muted count">
       @if (truncated()) {
-        Showing {{ rows().length }} of {{ total() }} — the rest was not loaded.
+        Showing {{ visible().length }} of {{ matching().length }} loaded, of {{ total() }} —
+        the rest was not loaded.
+      } @else if (matching().length !== total()) {
+        Showing {{ visible().length }} of {{ matching().length }} matching, of
+        {{ total() }} pieces.
       } @else {
-        {{ total() }} pieces
+        Showing {{ visible().length }} of {{ total() }} pieces.
       }
     </p>
 
     <ul class="grid">
-      @for (row of rows(); track row.id) {
+      @for (row of visible(); track row.id) {
         <li class="card" [class.equipped]="row.equipped" [attr.data-stars]="row.stars">
           <!-- Header carries the rarity: the tint, the stars and the level pill all key off
                it, the way GO's card does, so rarity is read before anything is parsed. -->
@@ -250,8 +307,22 @@
           >×</button>
         </li>
       } @empty {
-        <li class="muted">No artifacts yet — import a GOOD export above.</li>
+        @if (total() > 0) {
+          <li class="muted">Nothing matches those filters.</li>
+        } @else {
+          <li class="muted">No artifacts yet — import a GOOD export above.</li>
+        }
       }
     </ul>
+
+    @if (hasMore()) {
+      <!-- A cap with an explicit control, not an infinite scroll: the count above says how
+           many of how many, so a partial view can never be read as the whole inventory. -->
+      <div class="more">
+        <button type="button" (click)="showMore()">
+          Show more ({{ matching().length - visible().length }} left)
+        </button>
+      </div>
+    }
   }
 </section>

@@ -30,30 +30,19 @@
           @for (slot of slots; track slot; let i = $index) {
             <li>
               <span class="ordinal mono">{{ i + 1 }}</span>
-              <!-- An `<option>` cannot hold an `<img>`, so the chosen build's art sits
-                   beside the control rather than inside it. -->
-              <catalogue-icon
-                class="slot-art"
-                [icon]="slotIcon(slot)"
-                [alt]="''"
-                [size]="34"
+              <!-- The art sits **inside** the control now. An `<option>` cannot hold an
+                   `<img>`, which is why a `<select>` needed an icon parked beside it; the
+                   combobox takes an icon per option, so the workaround goes away and the list
+                   shows faces while you are choosing rather than only after. `/compare` has
+                   used it since #131; this page predated it. -->
+              <mist-combobox
+                class="slot-picker"
+                [options]="optionsFor(slot)"
+                [value]="picked()[slot]"
+                [ariaLabel]="'Slot ' + (i + 1)"
+                placeholder="Empty — search your builds…"
+                (valueChange)="pick(slot, $event ?? '')"
               />
-              <select
-                [attr.aria-label]="'Slot ' + (i + 1)"
-                [value]="picked()[slot] ?? ''"
-                (change)="pick(slot, $any($event.target).value)"
-              >
-                <option value="">Empty</option>
-                <!-- Only builds that break neither server rule: not already in another slot,
-                     and not a second build of a character already on the team. -->
-                @for (option of availableFor(slot); track option.id) {
-                  <option [value]="option.id">
-                    {{ option.character?.name || 'No character' }} ·
-                    C{{ option.constellation_level }} ·
-                    {{ option.weapon?.name || 'no weapon' }}
-                  </option>
-                }
-              </select>
             </li>
           }
         </ol>

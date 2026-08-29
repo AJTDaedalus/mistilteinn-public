@@ -1,7 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ArtifactsPage, formatStat } from './artifacts';
+import type { ArtifactRow } from './artifacts';
+import { ArtifactsPage, comparator, formatStat, totalRollValue } from './artifacts';
 import { ArtifactsService } from './artifacts.service';
 
 const OPTIONS = {
@@ -439,5 +440,75 @@ describe('ArtifactsPage potential', () => {
     await page['load']();
 
     expect(page['totalRollValue'](page['rows']()[0])).toBeNull();
+  });
+});
+
+// ── narrowing, ordering, and the render cap ─────────────────────────────────
+//
+// The cap is the fix for the audit's largest finding: the page put all 2,370 pieces in the
+// DOM at once, roughly 30,000 nodes. It rendered, which is why it survived.
+
+describe('totalRollValue', () => {
+  it('adds up a fully decomposed piece', () => {
+    expect(totalRollValue([{ roll_value: 1.7 }, { roll_value: 2.6 }])).toBeCloseTo(4.3);
+  });
+
+  it('is null when any substat could not be decomposed', () => {
+    // **Not a partial sum.** 3.5% of the owner's real export cannot be decomposed, and adding
+    // the three that could would rank a piece by less than it has — quietly, and always
+    // downward.
+    expect(totalRollValue([{ roll_value: 1.7 }, { roll_value: null }])).toBeNull();
+    expect(totalRollValue([{ roll_value: 1.7 }, {}])).toBeNull();
+  });
+
+  it('is null for a piece with no analysis at all', () => {
+    expect(totalRollValue([])).toBeNull();
+    expect(totalRollValue(null)).toBeNull();
+    expect(totalRollValue(undefined)).toBeNull();
+  });
+});
+
+describe('comparator', () => {
+  const row = (over: Partial<ArtifactRow>): ArtifactRow => ({
+    id: 'x', setName: 'Set', setIcon: null, slot: 'Flower', stars: 5, level: 20,
+    mainStat: 'HP', substats: [], equipped: false, setId: 's', mainStatKey: 'hp',
+    slotKey: 'flower', rollValue: 1, ...over,
+  });
+
+  it('orders by roll value, best first', () => {
+    const sorted = [row({ id: 'a', rollValue: 3 }), row({ id: 'b', rollValue: 9 })]
+      .sort(comparator('rollValue'));
+
+    expect(sorted.map((r) => r.id)).toEqual(['b', 'a']);
+  });
+
+  it('sinks an undecomposed piece rather than sorting it as zero', () => {
+    // **The one that matters.** As zero it would sit among the worst artifacts the user owns,
+    // which is a claim about it that nothing established — "unknown" is not "worst".
+    const sorted = [
+      row({ id: 'unknown', rollValue: null }),
+      row({ id: 'poor', rollValue: 0.1 }),
+      row({ id: 'good', rollValue: 8 }),
+    ].sort(comparator('rollValue'));
+
+    expect(sorted.map((r) => r.id)).toEqual(['good', 'poor', 'unknown']);
+  });
+
+  it('keeps a stable second key so equal rows do not shuffle between renders', () => {
+    const sorted = [
+      row({ id: 'low', rollValue: null, level: 0 }),
+      row({ id: 'high', rollValue: null, level: 20 }),
+    ].sort(comparator('rollValue'));
+
+    expect(sorted.map((r) => r.id)).toEqual(['high', 'low']);
+  });
+
+  it('orders by level, rarity and set on their own keys', () => {
+    expect([row({ id: 'a', level: 0 }), row({ id: 'b', level: 20 })]
+      .sort(comparator('level')).map((r) => r.id)).toEqual(['b', 'a']);
+    expect([row({ id: 'a', stars: 4 }), row({ id: 'b', stars: 5 })]
+      .sort(comparator('stars')).map((r) => r.id)).toEqual(['b', 'a']);
+    expect([row({ id: 'a', setName: 'Zed' }), row({ id: 'b', setName: 'Ace' })]
+      .sort(comparator('set')).map((r) => r.id)).toEqual(['b', 'a']);
   });
 });

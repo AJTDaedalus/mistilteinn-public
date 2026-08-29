@@ -126,6 +126,15 @@
         >
           {{ searching() ? 'Searching…' : 'Search rotation' }}
         </button>
+      } @else {
+        <!-- Everything that shapes a search — the 35-set filter, the 2+2 pair picker, the
+             calibration count — lives under the other objective. Without this line the page
+             looks like a tool that cannot constrain a search at all, which is what the
+             parity audit concluded from a screenshot of this exact state. A feature behind a
+             default is not much better than a feature with no surface. -->
+        <p class="hint objective__more">
+          The rotation objective adds set filtering and runs your actual rotation in gcsim.
+        </p>
       }
     </div>
 

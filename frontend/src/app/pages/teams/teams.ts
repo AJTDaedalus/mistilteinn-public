@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { apiErrorMessage } from '../../api/api-error';
+import { Combobox, type ComboboxOption } from '../../shared/combobox/combobox';
 import { CatalogueIcon } from '../../shared/icon/icon';
 import { BuildsService, type BuildRead } from '../builds/builds.service';
 import { TEAM_SLOTS, TeamsService, type TeamRead, type TeamSlot } from './teams.service';
@@ -32,7 +33,7 @@ function emptySlots(): Record<TeamSlot, string | null> {
  */
 @Component({
   selector: 'page-teams',
-  imports: [FormsModule, RouterLink, CatalogueIcon],
+  imports: [FormsModule, RouterLink, CatalogueIcon, Combobox],
   templateUrl: './teams.html',
   styleUrl: './teams.scss',
 })
@@ -227,7 +228,20 @@ export class TeamsPage implements OnInit {
   }
 
   /** The art for whoever is in `slot`, for the adornment beside its `<select>`. */
-  protected slotIcon(slot: TeamSlot): string | null {
-    return this.build(this.picked()[slot])?.character?.icon ?? null;
+  /**
+   * The builds this slot may take, as combobox options with the character's face.
+   *
+   * Wraps `availableFor` rather than replacing it: that method holds the two server rules —
+   * no build in two slots, no two builds of the same character — and duplicating them here to
+   * shape an option list is how a client-side filter starts offering what the API refuses.
+   */
+  protected optionsFor(slot: TeamSlot): ComboboxOption[] {
+    return this.availableFor(slot).map((b) => ({
+      value: b.id,
+      label: b.character?.name || 'No character',
+      icon: b.character?.icon ?? null,
+      detail: `C${b.constellation_level} · ${b.weapon?.name || 'no weapon'}`,
+    }));
   }
+
 }
