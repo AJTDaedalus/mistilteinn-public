@@ -1,7 +1,8 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { apiErrorMessage } from '../../api/api-error';
+import { CardPicker, type CardFilter, type CardOption } from '../../shared/card-picker/card-picker';
 import { ElementChip } from '../../shared/element/element';
 import { CatalogueIcon } from '../../shared/icon/icon';
 import { EntityToken } from '../../shared/token/token';
@@ -35,23 +36,30 @@ function blank(talents: string[]): BuildFields {
  * Exported so it can be tested without standing up a TestBed for a page that had no spec
  * file at all — the same reason `comparator` on the artifacts page is exported.
  *
- * The **weapon** is searched as well as the character: *"who has Freedom-Sworn"* is as
- * ordinary a question as *"where's Nahida"*, and a search that silently covered only names
- * would look broken rather than limited.
+ * **Characters only, by owner ruling.** It used to search the weapon's name too, on the
+ * argument that *"who has Freedom-Sworn"* is as ordinary a question as *"where's Nahida"*. The
+ * owner's audit says otherwise, and the reason is visible once the filters are chips: typing
+ * "sword" matched every build holding one, so a search for a *character* returned a wall of
+ * weapons. The weapon question is a filter, not a search.
  */
 export function matchesBuild(
   search: string,
   element: string,
+  weaponType = '',
+  stars = '',
 ): (build: {
-  character?: { name?: string | null; element?: string | null } | null;
-  weapon?: { name?: string | null } | null;
+  character?: {
+    name?: string | null; element?: string | null;
+    weapon_type?: string | null; stars?: number | null;
+  } | null;
 }) => boolean {
   const q = search.trim().toLowerCase();
   return (build) => {
     if (element && build.character?.element !== element) return false;
+    if (weaponType && build.character?.weapon_type !== weaponType) return false;
+    if (stars && String(build.character?.stars ?? '') !== stars) return false;
     if (!q) return true;
-    const haystack = `${build.character?.name ?? ''} ${build.weapon?.name ?? ''}`;
-    return haystack.toLowerCase().includes(q);
+    return (build.character?.name ?? '').toLowerCase().includes(q);
   };
 }
 
@@ -71,7 +79,7 @@ export function matchesBuild(
  */
 @Component({
   selector: 'page-builds',
-  imports: [FormsModule, ArtifactPanel, CatalogueIcon, ElementChip, EntityToken],
+  imports: [FormsModule, ArtifactPanel, CardPicker, CatalogueIcon, ElementChip, EntityToken],
   templateUrl: './builds.html',
   styleUrl: './builds.scss',
 })
@@ -102,21 +110,122 @@ export class BuildsPage implements OnInit {
    */
   protected readonly search = signal('');
   protected readonly elementFilter = signal('');
+  protected readonly weaponFilter = signal('');
+  protected readonly starsFilter = signal('');
 
-  protected readonly elementsPresent = computed(() => {
-    const seen = new Map<string, string>();
+  /**
+   * The chips are drawn from the builds on screen, never from the catalogue.
+   *
+   * A vision nobody has built for is a chip that filters to nothing — a control whose only
+   * possible outcome is an empty list. Same for a weapon class and a rarity.
+   */
+  private facet<T>(
+    read: (build: BuildRead) => T | null | undefined,
+    icon: (build: BuildRead) => string | null | undefined,
+  ): { value: string; icon: string | null }[] {
+    const seen = new Map<string, string | null>();
     for (const b of this.builds()) {
-      const el = b.character?.element;
-      const icon = b.character?.element_icon ?? null;
-      if (el && !seen.has(el)) seen.set(el, icon ?? '');
+      const key = read(b);
+      if (key === null || key === undefined || key === '') continue;
+      if (!seen.has(String(key))) seen.set(String(key), icon(b) ?? null);
     }
-    return [...seen].map(([element, icon]) => ({ element, icon: icon || null }))
-      .sort((a, b) => a.element.localeCompare(b.element));
-  });
+    return [...seen].map(([value, art]) => ({ value, icon: art }))
+      .sort((a, b) => a.value.localeCompare(b.value));
+  }
+
+  protected readonly elementsPresent = computed(() =>
+    this.facet((b) => b.character?.element, (b) => b.character?.element_icon)
+      .map(({ value, icon }) => ({ element: value, icon })),
+  );
+
+  protected readonly weaponTypesPresent = computed(() =>
+    this.facet((b) => b.character?.weapon_type, (b) => b.character?.weapon_type_icon)
+      .map(({ value, icon }) => ({
+        value,
+        icon,
+        label: this.builds().find((b) => b.character?.weapon_type === value)
+          ?.character?.weapon_type_display ?? value,
+      })),
+  );
+
+  /** Character rarity, not the weapon's — these cards are character-first. */
+  protected readonly starsPresent = computed(() =>
+    this.facet((b) => b.character?.stars, () => null)
+      .map(({ value }) => value)
+      .sort((a, b) => Number(b) - Number(a)),
+  );
 
   protected readonly shownBuilds = computed(() =>
-    this.builds().filter(matchesBuild(this.search(), this.elementFilter())),
+    this.builds().filter(matchesBuild(
+      this.search(), this.elementFilter(), this.weaponFilter(), this.starsFilter(),
+    )),
   );
+
+  /**
+   * The character grid.
+   *
+   * Filters are the two axes a player narrows by — vision and weapon class — and both are the
+   * chips the picker draws from `tags`. Rarity is deliberately not one: a 4★ character is not
+   * a worse build subject, and offering it as a filter implies it is.
+   */
+  protected readonly characterOptions = computed<CardOption[]>(() =>
+    this.characters().map((c) => ({
+      value: c.id,
+      label: c.name,
+      icon: c.icon,
+      detail: c.weapon_type_display,
+      tags: { element: c.element ?? '', weapon: c.weapon_type ?? '' },
+    })),
+  );
+
+  protected readonly characterFilters = computed<CardFilter[]>(() => {
+    const elements = new Map<string, string | null>();
+    const weapons = new Map<string, { label: string; icon: string | null }>();
+    for (const c of this.characters()) {
+      if (c.element && !elements.has(c.element)) elements.set(c.element, c.element_icon ?? null);
+      if (c.weapon_type && !weapons.has(c.weapon_type)) {
+        weapons.set(c.weapon_type, {
+          label: c.weapon_type_display, icon: c.weapon_type_icon ?? null,
+        });
+      }
+    }
+    return [
+      {
+        group: 'element',
+        label: 'Vision',
+        options: [...elements].sort().map(([value, icon]) => ({ value, label: value, icon })),
+      },
+      {
+        group: 'weapon',
+        label: 'Weapon',
+        options: [...weapons].sort().map(([value, { label, icon }]) => ({ value, label, icon })),
+      },
+    ];
+  });
+
+  /**
+   * The weapon grid.
+   *
+   * **No weapon-class filter here**, because the list is already one class: the server filtered
+   * it by the chosen character's, so a chip offering "Bow" on a Sword character would filter to
+   * nothing. Rarity is the axis that remains, and it is the one a player narrows by.
+   */
+  protected readonly weaponOptions = computed<CardOption[]>(() =>
+    this.weapons().map((w) => ({
+      value: w.id,
+      label: w.name,
+      icon: w.icon,
+      detail: `${w.stars}★ · ${w.sub_stat_display || 'no substat'}`,
+      tags: { stars: String(w.stars) },
+    })),
+  );
+
+  protected readonly weaponFilters = computed<CardFilter[]>(() => {
+    const stars = [...new Set(this.weapons().map((w) => w.stars))]
+      .sort((a, b) => b - a)
+      .map((s) => ({ value: String(s), label: `${s}★` }));
+    return stars.length > 1 ? [{ group: 'stars', label: 'Rarity', options: stars }] : [];
+  });
 
   protected readonly editing = signal<BuildRead | null>(null);
   protected readonly characterId = signal('');
@@ -128,6 +237,35 @@ export class BuildsPage implements OnInit {
   );
 
   protected readonly canSave = computed(() => this.characterId() !== '');
+
+  protected readonly editor = viewChild<ElementRef<HTMLDialogElement>>('editor');
+
+  /**
+   * Open the editor on a blank build.
+   *
+   * **`showModal?.()`, deliberately.** `HTMLDialogElement` is absent in jsdom, so a bare call
+   * is a `TypeError` thrown from inside a click handler — which takes the page out rather than
+   * failing the one control. `CardPicker` learned this from a test and the reasoning is the
+   * same here: any browser without `<dialog>` behaves as jsdom does.
+   */
+  protected startNew(): void {
+    this.newBuild();
+    this.editor()?.nativeElement.showModal?.();
+  }
+
+  protected closeEditor(): void {
+    this.editor()?.nativeElement.close?.();
+  }
+
+  /**
+   * Escape and the backdrop close a native dialog without going through `closeEditor`, so the
+   * page's own state is reconciled on the `close` event rather than in the button handler.
+   * Nothing is discarded — an edit in progress is kept, and reopening the same build resumes
+   * it, which is what closing a panel means everywhere else in this app.
+   */
+  protected onEditorClosed(): void {
+    this.actionError.set(null);
+  }
 
   private readonly service = inject(BuildsService);
   private readonly catalogue = inject(CatalogueService);
@@ -173,6 +311,23 @@ export class BuildsPage implements OnInit {
    * full list client-side, the two could disagree — and the one that drifted would be the one
    * offering a weapon the API then refuses.
    */
+  /**
+   * The picker's two handlers.
+   *
+   * They take the whole array rather than `$event[0] ?? ''` in the template, because a picker
+   * that has just been cleared emits `[]` — and Angular's own NG8102 diagnostic calls that
+   * `??` redundant, since `string[]` indexing is typed as `string` without
+   * `noUncheckedIndexedAccess`. The type is wrong and the guard is not, so the guard moves
+   * where the compiler will not argue with it.
+   */
+  protected pickCharacter(ids: readonly string[]): void {
+    void this.selectCharacter(ids[0] ?? '');
+  }
+
+  protected pickWeapon(ids: readonly string[]): void {
+    this.weaponId.set(ids[0] ?? null);
+  }
+
   protected async selectCharacter(id: string): Promise<void> {
     this.characterId.set(id);
     this.weaponId.set(null);
@@ -223,7 +378,11 @@ export class BuildsPage implements OnInit {
           weapon_id: this.weaponId(),
         });
         await this.load();
+        // Closed, not reset. The form used to sit permanently on the page, so blanking it was
+        // the only way to say "saved"; in a dialog, closing says it, and leaving an empty
+        // editor open would read as though the save had not taken.
         this.newBuild();
+        this.closeEditor();
       }
     } catch (err) {
       // Verbatim. The API's refusal names both weapon classes, or the talent keys it accepts,
@@ -235,6 +394,7 @@ export class BuildsPage implements OnInit {
   protected async edit(build: BuildRead): Promise<void> {
     this.editing.set(build);
     this.actionError.set(null);
+    this.editor()?.nativeElement.showModal?.();
     this.fields = {
       character_level: build.character_level,
       ascension_phase: build.ascension_phase,

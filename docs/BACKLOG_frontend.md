@@ -29,12 +29,24 @@ reference the owner keeps naming; read it before designing.
 (`set-picker`, `agent-picker`, `wengine-picker`); this is one, generic over `CardOption`, and
 copying that shape per surface is how the fourth one ends up subtly different.
 
-Adopted so far: **inventory set filter**. Remaining, in the order above: build character, build
-weapon, optimize team, optimize sets, rotation team, rotation database search.
+Adopted so far: **inventory set filter** (#162), **build character** and **build weapon**
+(#170). Remaining, in the order above: optimize team, optimize sets, rotation team, rotation
+database search.
+
+`clearable` was added to the picker for the build weapon and is worth knowing about before the
+next adoption: multi-select always offers "Clear", single-select does not, because you replace
+one choice by making another. A build's weapon is the exception — `weapon_id` is nullable by
+design, and a picker that could only ever *add* a weapon would quietly delete that state.
 
 **A second recurring pattern:** several tabs put "new X" in a left panel and the saved items in
 a narrow right column. The owner wants that inverted everywhere — the saved things are the page,
 in a card grid with filters, and "New X" is a button opening a pop-up.
+
+**Done for Builds (#170)**, and the inversion is what makes the rest of §3 possible: the editor
+used to hold the left two thirds permanently, so the list beside it could never be a grid. It
+is a `<dialog>` now, opened by "New build" or by picking a card. The pickers inside it open
+their own dialogs on top, which the top layer stacks correctly — worth knowing, because it is
+the thing that looked most likely to break and did not.
 
 ## 2. Inventory
 
@@ -50,17 +62,32 @@ in a card grid with filters, and "New X" is a button opening a pop-up.
 
 ## 3. Builds
 
-- Character picker: card grid, not a list.
-- Weapon picker: card grid with filters in the pop-up.
+- ~~Character picker: card grid, not a list.~~ **Done (#170)** — filtered by vision and by
+  weapon class, and by nothing else: a 4★ character is not a worse build subject, and offering
+  rarity as a filter implies it is.
+- ~~Weapon picker: card grid with filters in the pop-up.~~ **Done (#170)** — rarity only, and
+  only when the list holds more than one. There is deliberately **no weapon-class chip**: the
+  server already filtered the list to the character's class, so a "Bow" chip on a Sword
+  character would be a control whose only possible outcome is an empty grid.
 - **Curate recommended weapons per character from KeqingMains quick guides**, with rankings,
   where they exist. The owner notes this is a lot of scraping and expects agents to manage it.
   *Treat the citation rule as binding here* — this is exactly the shape of the failure
   `CLAUDE.md` names as fairy's worst.
 - **"Why do we need to save a build before attaching artifacts?"** — a real question about the
   flow, not a styling note. Worth answering before redesigning around it.
-- Builds list becomes a card grid below the menu, with filters on element, weapon and rarity
-  plus the existing search. **Search should cover characters only, not weapons.**
-- "New Build" and "Build Priority" become tabs opening card-based pop-ups.
+- ~~Builds list becomes a card grid below the menu, with filters on element, weapon and rarity
+  plus the existing search. **Search should cover characters only, not weapons.**~~ **Done
+  (#170)** — 75 cards, art first. The chips are drawn from the builds on screen rather than
+  from the catalogue, so a chip can never filter to nothing. Rarity is the **character's**,
+  not the weapon's: these cards are character-first, and a rarity beside the name that meant
+  the weapon's would be reading the wrong number off the same card.
+
+  Dropping the weapon from the search cost a test that asserted the opposite, and its reason
+  is worth keeping: *"who has Freedom-Sworn"* is an ordinary question. It is a filter question,
+  not a search one — typing "sword" used to return every build holding one.
+- ~~"New Build"~~ **Done (#170)** — a button in the header opening the editor pop-up.
+  **"Build Priority" is still to do**, and belongs with the *later* section below rather than
+  here, since the ranking is what the tab would open.
 
 ### One build per character, and a priority order — *later*
 

@@ -1,124 +1,290 @@
+/* The builds page.
+   The saved builds are the page — a grid of character cards — and the editor is a pop-up
+   opened by "New build" or by picking a card. It used to be the other way round: a permanent
+   two-thirds editor beside a narrow scrolling column, which is why that column could never be
+   the grid the owner's audit asks for. */
 .builds {
-  padding: 1rem;
+  padding: var(--space-4);
 
   header {
-    margin-bottom: 1rem;
-
-    h1 { margin: 0 0 0.25rem; }
-  }
-
-  .layout {
-    display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(14rem, 1fr);
-    gap: 1rem;
-    align-items: start;
-  }
-
-  .pane {
     display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    padding: 0.9rem 1rem;
-    border: 1px solid rgb(255 255 255 / 12%);
-    border-radius: 0.4rem;
+    align-items: baseline;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
 
-    h2 { margin: 0; font-size: 1.1rem; }
+    h1 { margin: 0; }
+  }
+
+  .new {
+    margin-left: auto;
   }
 
   label {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--space-2);
     align-items: center;
   }
 
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-    gap: 0.4rem 0.75rem;
+    gap: var(--space-1) var(--space-3);
 
     input { width: 4.5rem; }
+  }
+
+  .talents,
+  .artifacts {
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--surface-rule);
+    border-radius: var(--radius-1);
+
+    legend { padding: 0 var(--space-1); font-size: var(--text-sm); color: var(--ink-dim); }
   }
 
   .talents {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem 1rem;
-    margin: 0;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid rgb(255 255 255 / 12%);
-    border-radius: 0.3rem;
+    gap: var(--space-1) var(--space-4);
 
-    legend { padding: 0 0.35rem; font-size: 0.85rem; opacity: 0.8; }
     input { width: 3.5rem; }
     label { text-transform: capitalize; }
-  }
-
-  .artifacts {
-    margin: 0;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid rgb(255 255 255 / 12%);
-    border-radius: 0.3rem;
-
-    legend { padding: 0 0.35rem; font-size: 0.85rem; opacity: 0.8; }
   }
 
   .notes input { flex: 1; }
 
   .controls {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--space-2);
     flex-wrap: wrap;
   }
-
 }
 
-@media (width <= 60rem) {
-  .builds .layout { grid-template-columns: minmax(0, 1fr); }
+/* ── The editor, as a pop-up ─────────────────────────────────────────────────
+   A native `<dialog>`, for the same reason `card-picker` uses one: focus trapping, Escape and
+   a backdrop, none of which a hand-rolled panel gets for free. The card pickers inside it open
+   their own dialogs on top, which the top layer stacks correctly. */
+.editor {
+  width: min(46rem, 92vw);
+  max-height: 88vh;
+  padding: 0 var(--space-4) var(--space-4);
+  border: 1px solid var(--brass-deep);
+  border-radius: var(--radius-2);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-card);
+
+  &::backdrop { background: rgb(0 0 0 / 55%); }
 }
 
-/* ── Finding a build among seventy-five ─────────────────────────────────────
-   A GOOD import makes one build per equipped character — 75 on the owner's account — and the
-   column shows about nine. A name box and the visions actually present, as their emblems. */
-.saved-find {
+.editor__head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  margin-bottom: var(--space-2);
+  margin: 0 calc(var(--space-4) * -1) var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--surface-rule);
+  background: var(--surface);
 
-  /* Full width, on its own line. The saved column is narrow and sharing the row with seven
-     emblems left the placeholder clipped mid-word — seen in a screenshot. */
-  input[type='search'] { flex: 1 1 100%; min-width: 0; }
+  h2 { margin: 0; font-size: var(--text-lg); }
 }
 
-.saved-find__visions {
+.editor__close {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--ink-dim);
+  font-size: var(--text-lg);
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover { color: var(--ink); }
+}
+
+/* The dialog's own children need the column the pane used to give them. */
+.editor > *:not(.editor__head) { margin-bottom: var(--space-2); }
+
+/* ── Finding a build among seventy-five ─────────────────────────────────────
+   A GOOD import makes one build per equipped character — 75 on the owner's account. The search
+   matches characters only; vision, weapon class and rarity are chips. */
+.saved-find {
+  margin-bottom: var(--space-2);
+
+  input[type='search'] { width: min(24rem, 100%); }
+}
+
+.saved-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.chips {
   display: flex;
   gap: 0.15rem;
 }
 
-/* Emblem-only toggles. The `title` carries the vision's name for a pointer and the icon's
-   `alt` carries it for assistive tech — a coloured glyph is never the only label, which is
-   the argument `element-chip` makes at length. */
-.vision {
+/* Emblem-only toggles. `title` carries the name for a pointer and the icon's `alt` carries it
+   for assistive tech — a coloured glyph is never the only label, which is the argument
+   `element-chip` makes at length. `.chip--text` is for rarity, which has no emblem. */
+.chip {
   display: inline-flex;
+  align-items: center;
   padding: 0.2rem;
   border: 1px solid transparent;
   border-radius: var(--radius-1);
   background: none;
+  color: var(--ink-dim);
   line-height: 0;
   opacity: 0.5;
   transition: opacity var(--t-fast) var(--ease);
+  cursor: pointer;
 
   &:hover { opacity: 0.85; }
 
-  &.vision--on {
+  &.chip--on {
     opacity: 1;
     border-color: var(--brass);
     box-shadow: var(--glow-brass);
+    color: var(--ink);
   }
+}
+
+.chip--text {
+  padding: 0.15rem var(--space-2);
+  font-size: var(--text-xs);
+  line-height: 1.4;
 }
 
 .saved-count {
   margin: 0 0 var(--space-2);
   font-size: var(--text-xs);
+}
+
+/* ── The grid ────────────────────────────────────────────────────────────────
+   Art first and the name under it, the shape the audit asks for everywhere. The delete button
+   sits inside the card's own bounds — it rendered outside its row in an earlier pass, which is
+   the class of defect only looking at the page catches. */
+.saved {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    position: relative;
+    /* Clipped at the card's own rounded edge. A long weapon name — "Ultimate Overlord's
+       Mechanical Spike" — ran past the border and over its neighbour before this; the
+       ellipsis below needs something to ellipsise *into*. */
+    overflow: hidden;
+    border: 1px solid var(--surface-rule);
+    border-radius: var(--radius-1);
+    background: var(--surface);
+    transition: border-color var(--t-fast) var(--ease);
+
+    &:hover { border-color: var(--brass-deep); }
+
+    &.active {
+      border-color: var(--brass);
+      box-shadow: var(--glow-brass);
+    }
+
+    /* The two empty states are sentences, not cards. */
+    &.muted {
+      grid-column: 1 / -1;
+      padding: var(--space-2);
+      border-color: transparent;
+      background: none;
+    }
+  }
+
+  .pick {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    width: 100%;
+    min-width: 0;
+    padding: var(--space-2);
+    border: none;
+    background: none;
+    color: inherit;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .name {
+    max-width: 100%;
+    overflow: hidden;
+    font-family: var(--font-display);
+    font-size: var(--text-sm);
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .marks {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+
+  .lvl {
+    color: var(--ink-dim);
+    font-size: var(--text-xs);
+  }
+
+  .weapon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    max-width: 100%;
+    min-width: 0;
+    color: var(--ink-dim);
+    font-size: var(--text-xs);
+
+    span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .drop {
+    position: absolute;
+    top: 0.15rem;
+    right: 0.15rem;
+    padding: 0 0.3rem;
+    border: none;
+    border-radius: var(--radius-1);
+    background: none;
+    color: var(--ink-faint);
+    line-height: 1.2;
+    cursor: pointer;
+    transition: opacity var(--t-fast) var(--ease);
+
+    &:hover,
+    &:focus-visible { color: var(--danger); }
+  }
+
+  /* Revealed on hover — but **only where hovering exists**. Ungated, this hides the only way
+     to delete a build on any touch device: no hover, no button, and the keyboard route needs
+     a keyboard. The card is quieter for a pointer and complete for everyone else. */
+  @media (hover: hover) and (pointer: fine) {
+    .drop { opacity: 0; }
+
+    li:hover .drop,
+    .drop:focus-visible { opacity: 1; }
+  }
 }

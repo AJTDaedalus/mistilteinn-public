@@ -69,6 +69,16 @@ export class CardPicker {
   /** Several at once. Single-select closes the dialog on pick, which is what one choice means. */
   readonly multi = input(false, { transform: booleanAttribute });
   readonly disabled = input(false, { transform: booleanAttribute });
+  /**
+   * Offer "Clear" in single-select too.
+   *
+   * Multi-select always has it, because a set of chosen things needs a way back to none. A
+   * *single* choice usually does not — you replace it by picking another. A build's weapon is
+   * the exception the flag exists for: `weapon_id` is nullable by design (OQ-T3), a build
+   * being assembled without one is a real state, and the old `<select>` said so with a "None
+   * yet" option. A picker that can only ever add a weapon would quietly remove that state.
+   */
+  readonly clearable = input(false, { transform: booleanAttribute });
 
   readonly selectedChange = output<string[]>();
 

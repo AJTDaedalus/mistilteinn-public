@@ -8,15 +8,18 @@ import { BuildsService } from './builds.service';
 
 const AYAKA = {
   id: 'char-ayaka', nanoka_id: '10000002', name: 'Kamisato Ayaka', element: 'Cryo',
-  weapon_type: 'WEAPON_SWORD_ONE_HAND', weapon_type_display: 'Sword', rarity: 5,
+  weapon_type: 'WEAPON_SWORD_ONE_HAND', weapon_type_display: 'Sword', rarity: 5, stars: 5,
+  icon: 'UI_AvatarIcon_Ayaka', element_icon: 'Cryo', weapon_type_icon: 'Skill_A_01',
 };
 const GANYU = {
   id: 'char-ganyu', nanoka_id: '10000037', name: 'Ganyu', element: 'Cryo',
-  weapon_type: 'WEAPON_BOW', weapon_type_display: 'Bow', rarity: 5,
+  weapon_type: 'WEAPON_BOW', weapon_type_display: 'Bow', rarity: 5, stars: 5,
+  icon: 'UI_AvatarIcon_Ganyu', element_icon: 'Cryo', weapon_type_icon: 'Skill_A_02',
 };
 const SWORD = {
   id: 'w-mistsplitter', nanoka_id: 11509, name: 'Mistsplitter Reforged',
-  weapon_type: 'WEAPON_SWORD_ONE_HAND', weapon_type_display: 'Sword', rarity: 5,
+  weapon_type: 'WEAPON_SWORD_ONE_HAND', weapon_type_display: 'Sword', rarity: 5, stars: 5,
+  icon: 'UI_EquipIcon_Sword_Narukami', sub_stat_display: 'CRIT DMG',
 };
 
 const OPTIONS = {
@@ -274,19 +277,23 @@ describe('BuildsPage', () => {
  * difference between a list and a scroll.
  */
 describe('matchesBuild', () => {
-  const build = (name: string, element: string | null, weapon: string | null) => ({
-    character: { name, element },
+  const build = (
+    name: string, element: string | null, weapon: string | null,
+    weapon_type = 'WEAPON_SWORD_ONE_HAND', stars = 5,
+  ) => ({
+    character: { name, element, weapon_type, stars },
     weapon: weapon === null ? null : { name: weapon },
   });
 
   const roster = [
-    build('Nahida', 'Dendro', 'Mappa Mare'),
-    build('Kaedehara Kazuha', 'Anemo', 'Freedom-Sworn'),
-    build('Beidou', 'Electro', null),
+    build('Nahida', 'Dendro', 'Mappa Mare', 'WEAPON_CATALYST', 5),
+    build('Kaedehara Kazuha', 'Anemo', 'Freedom-Sworn', 'WEAPON_SWORD_ONE_HAND', 5),
+    build('Beidou', 'Electro', null, 'WEAPON_CLAYMORE', 4),
   ];
 
-  const kept = (search: string, element = '') =>
-    roster.filter(matchesBuild(search, element)).map((b) => b.character.name);
+  const kept = (search: string, element = '', weaponType = '', stars = '') =>
+    roster.filter(matchesBuild(search, element, weaponType, stars))
+      .map((b) => b.character.name);
 
   it('keeps everything when nothing is asked', () => {
     expect(kept('')).toEqual(['Nahida', 'Kaedehara Kazuha', 'Beidou']);
@@ -297,16 +304,33 @@ describe('matchesBuild', () => {
     expect(kept('KAZUHA')).toEqual(['Kaedehara Kazuha']);
   });
 
-  it('matches a weapon too', () => {
-    // "Who has Freedom-Sworn" is as ordinary a question as "where's Nahida", and a search
-    // that silently covered only names would look broken rather than limited.
-    expect(kept('freedom')).toEqual(['Kaedehara Kazuha']);
+  it('does not match a weapon, by owner ruling', () => {
+    // It used to, on the argument that "who has Freedom-Sworn" is as ordinary a question as
+    // "where's Nahida". The owner's audit reverses it, and the reason shows once the filters
+    // are chips: typing "sword" matched every build holding one, so a search for a *character*
+    // returned a wall of weapons. The weapon question is a filter, and now it is one.
+    expect(kept('freedom')).toEqual([]);
   });
 
   it('does not fall over on a build with no weapon', () => {
     // "Beidou C5 · no weapon" is a real row in the owner's account.
     expect(kept('beidou')).toEqual(['Beidou']);
-    expect(kept('sworn')).toEqual(['Kaedehara Kazuha']);
+  });
+
+  it('filters by weapon class', () => {
+    expect(kept('', '', 'WEAPON_CLAYMORE')).toEqual(['Beidou']);
+  });
+
+  it('filters by the character\'s rarity, not the weapon\'s', () => {
+    // These cards are character-first: the art, the name and the vision are all theirs, so a
+    // rarity chip beside them that meant the weapon's would be reading the wrong number off
+    // the same card.
+    expect(kept('', '', '', '4')).toEqual(['Beidou']);
+  });
+
+  it('narrows across filters rather than widening', () => {
+    // Two chips are an AND, which is what a filter bar means everywhere else in this app.
+    expect(kept('', 'Electro', 'WEAPON_CATALYST')).toEqual([]);
   });
 
   it('filters by vision', () => {
@@ -322,5 +346,108 @@ describe('matchesBuild', () => {
 
   it('ignores surrounding whitespace so a stray space does not empty the list', () => {
     expect(kept('  nahida  ')).toEqual(['Nahida']);
+  });
+});
+
+
+/**
+ * The two pickers and the grid's own chips.
+ *
+ * The owner's audit asks for card grids *everywhere* a drop-down offers things with pictures,
+ * and the risk in adopting one page at a time is that each surface decides the filters
+ * separately. These tests pin the decisions this page made, so the next adoption can copy them
+ * deliberately rather than by eye.
+ */
+describe('BuildsPage pickers', () => {
+  it('offers every character as a card, with the art and the class', async () => {
+    const page = healthy();
+
+    await page['load']();
+
+    expect(page['characterOptions']()).toEqual([
+      {
+        value: 'char-ayaka', label: 'Kamisato Ayaka', icon: 'UI_AvatarIcon_Ayaka',
+        detail: 'Sword', tags: { element: 'Cryo', weapon: 'WEAPON_SWORD_ONE_HAND' },
+      },
+      {
+        value: 'char-ganyu', label: 'Ganyu', icon: 'UI_AvatarIcon_Ganyu',
+        detail: 'Bow', tags: { element: 'Cryo', weapon: 'WEAPON_BOW' },
+      },
+    ]);
+  });
+
+  it('filters the character grid by vision and class, and by nothing else', async () => {
+    // Not by rarity: a 4★ character is not a worse build subject, and offering the filter
+    // implies it is.
+    const page = healthy();
+
+    await page['load']();
+
+    expect(page['characterFilters']().map((f) => f.group)).toEqual(['element', 'weapon']);
+    // One vision between them, so one chip — the two Cryo characters do not make two.
+    expect(page['characterFilters']()[0].options.map((o) => o.value)).toEqual(['Cryo']);
+    expect(page['characterFilters']()[1].options.map((o) => o.label)).toEqual(['Bow', 'Sword']);
+  });
+
+  it('offers no weapon-class chip, because the list is already one class', async () => {
+    // The server filtered it by the chosen character's class, so a "Bow" chip on a Sword
+    // character would filter to nothing — a control whose only outcome is an empty grid.
+    const page = healthy();
+    await page['load']();
+
+    await page['selectCharacter']('char-ayaka');
+
+    expect(page['weaponFilters']()).toEqual([]);
+    expect(page['weaponOptions']()).toEqual([{
+      value: 'w-mistsplitter', label: 'Mistsplitter Reforged',
+      icon: 'UI_EquipIcon_Sword_Narukami', detail: '5★ · CRIT DMG', tags: { stars: '5' },
+    }]);
+  });
+
+  it('offers a rarity chip once the list has more than one rarity', async () => {
+    const page = healthy({}, {
+      listCharacters: vi.fn().mockResolvedValue({ items: [AYAKA], total: 1 }),
+      listWeapons: vi.fn().mockResolvedValue({
+        items: [SWORD, { ...SWORD, id: 'w-favonius', name: 'Favonius Sword', stars: 4 }],
+        total: 2,
+      }),
+    } as unknown as CatalogueService);
+    await page['load']();
+
+    await page['selectCharacter']('char-ayaka');
+
+    expect(page['weaponFilters']()[0].options.map((o) => o.label)).toEqual(['5★', '4★']);
+  });
+
+  it('draws the grid chips from the saved builds, never from the catalogue', async () => {
+    // A vision nobody has built for is a chip whose only possible outcome is an empty grid.
+    const build = {
+      id: 'b1', character_id: 'char-ganyu', weapon_id: null,
+      character_level: 90, ascension_phase: 6, weapon_level: 90, refinement: 1,
+      constellation_level: 0, talent_levels: {}, notes: '', weapon_display: null,
+      character: GANYU, weapon: null,
+    };
+    const page = healthy({
+      list: vi.fn().mockResolvedValue([build]),
+    } as unknown as BuildsService);
+
+    await page['load']();
+
+    expect(page['elementsPresent']()).toEqual([{ element: 'Cryo', icon: 'Cryo' }]);
+    // Ayaka is in the catalogue and holds a sword; no build does, so there is no sword chip.
+    expect(page['weaponTypesPresent']().map((w) => w.label)).toEqual(['Bow']);
+    expect(page['starsPresent']()).toEqual(['5']);
+  });
+
+  it('survives an environment with no <dialog>', async () => {
+    // `HTMLDialogElement` is absent in jsdom, so `showModal` is undefined and a bare call is a
+    // TypeError thrown from inside a click handler — which takes the page out rather than
+    // failing the one control. The same is true of any browser without <dialog>.
+    const page = healthy();
+    await page['load']();
+
+    expect(() => page['startNew']()).not.toThrow();
+    expect(() => page['closeEditor']()).not.toThrow();
+    expect(page['editing']()).toBeNull();
   });
 });

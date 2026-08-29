@@ -41,7 +41,7 @@
       [value]="search()"
       (input)="search.set($any($event.target).value)"
     />
-    @if (multi() && chosen().length) {
+    @if ((multi() || clearable()) && chosen().length) {
       <button type="button" class="picker__clear" (click)="clear()">Clear</button>
     }
   </div>
