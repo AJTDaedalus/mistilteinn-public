@@ -786,3 +786,29 @@ arithmetic at **0.051 µs per hit**, with crit computed rather than rolled. It i
 cheap, and smooth but for the `effectiveCritRate` clamp — which is the same kink GO's own
 objective has. **The engine A1 chose is the objective A4's method requires.** Anything that
 reaches for gcsim itself inside the ranking loop has left the design.
+
+## 23. The team reaction filter offers the base reactions only (2026-08-29)
+
+**Owner ruling:** *"You can leave out lunar and stellar variants, just the base reactions
+(minus shatter) is fine."*
+
+`docs/RESEARCH_elemental_reactions.md` transcribed **21** reactions from the wiki's own wording.
+The filter offers **fifteen** of them — every reaction a Genshin player would name — and
+excludes six:
+
+- **Shattered**, because it is not an element pair. The source says *"a Blunt or Geo attack"*
+  and Blunt is Physical, so `{Cryo, Hydro}` over-counts teams and adding Geo under-counts them.
+  There is no element set that is right, which is a different problem from a missing one.
+- **The five Lunar/Stellar rows**, by this ruling.
+
+**Four of those five were already excluded as uncertain, so the ruling really decides one
+row: Lunar-Bloom.** That is the only Lunar/Stellar reaction whose party gate the source states
+outright, so it would otherwise have been offered on certainty alone. Excluding it is a
+judgement about what a *team filter* is for — narrowing a list of saved teams — and not a claim
+that the reaction does not exist.
+
+**Everything excluded stays in the committed JSON with its citation.** An exclusion that
+deletes its own evidence reads as an oversight to the next person, and cannot be reversed
+without redoing the research. The code matches on the `lunar_`/`stellar_` id prefix rather than
+on a `category`, because the research's categories describe how a reaction *works* —
+amplifying, transformative — and this is a decision about which ones a player names.

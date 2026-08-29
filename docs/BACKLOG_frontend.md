@@ -90,10 +90,12 @@ show that a suggested piece is *owned*. Drag-and-drop for the ranking.
   wikitext — so 21 reactions were derived from the source's own wording rather than from
   memory, and committed with their provenance (`docs/RESEARCH_elemental_reactions.md`).
 
-  **Sixteen are offered; five are not.** Shattered is not an element pair at all — the source
-  says *"a Blunt or Geo attack"*, and Blunt is Physical — and four Lunar/Stellar reactions may
-  require a party talent the source gates the *effect* on rather than the reaction. A filter
-  that mis-classified a team silently is worse than one that offers less.
+  **Fifteen are offered; six are not.** Shattered is not an element pair at all — the source
+  says *"a Blunt or Geo attack"*, and Blunt is Physical — and the five Lunar/Stellar reactions
+  are out by owner ruling (2026-08-29): *"just the base reactions (minus shatter) is fine."*
+  Four of those were uncertain anyway; **Lunar-Bloom was not**, and is the one the ruling
+  actually decides. A filter that mis-classified a team silently is worse than one that offers
+  less.
 
 ## 5. Rotations
 

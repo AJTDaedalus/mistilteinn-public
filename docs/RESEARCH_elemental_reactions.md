@@ -117,6 +117,22 @@ their own, so the source has no damage category for them. The JSON below marks t
 
 ---
 
+## What the filter offers — decided 2026-08-29
+
+This file transcribes the source; it does not decide what a filter shows. That decision has
+since been made and belongs beside the research it rests on.
+
+**Fifteen reactions are offered**, and six are not: **Shattered** for the reason in #1 below,
+and the **five Lunar/Stellar rows** by owner ruling — *"You can leave out lunar and stellar
+variants, just the base reactions (minus shatter) is fine."*
+
+Four of those five were `uncertain` anyway, so the ruling only changes **Lunar-Bloom**, which
+is the one row #2 says the source *does* settle. Excluding it is a product judgement about a
+team filter, not a claim about the game — and every excluded row stays in the JSON with its
+citation, so the exclusion is legible and reversible.
+
+---
+
 ## Uncertain or contested
 
 1. **Shatter is not a pure element pair, and a filter that treats it as one will be wrong.**

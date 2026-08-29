@@ -5,25 +5,31 @@
 `docs/RESEARCH_elemental_reactions.md`, which records the source URL, the retrieval date and the
 wiki's own wording for each reaction. This module only reads it.
 
-## Uncertain rows are not offered
+## Only the base reactions are offered
 
-Five reactions carry `uncertain: true` in the research, and each for a reason the source could
-not settle:
+Owner ruling (2026-08-29): *"You can leave out lunar and stellar variants, just the base
+reactions (minus shatter) is fine."*
 
-- **Shattered** is not an element pair at all — the source says *"a Blunt or Geo attack"*, and
-  Blunt is Physical. Listing it as Cryo+Hydro over-counts teams; adding Geo under-counts them.
-- **Lunar-Charged, Lunar-Crystallize, Stellar-Conduct, Stellar Swirl** may require a party
-  talent, which the source gates the *effect* on rather than clearly the reaction.
+So the five Lunar/Stellar rows are excluded whatever their certainty, and Shattered stays out
+for the reason below. That leaves the **fifteen** reactions a Genshin player would name.
 
-A filter that quietly mis-classified a team would be worse than one that offers less, so these
-are excluded from what is offered and kept in the file so the exclusion is visible.
+## Uncertain rows are not offered either
+
+Five carry `uncertain: true` in the research, and the exclusions overlap: four of them are the
+Lunar/Stellar rows the owner has ruled out anyway. The fifth stands on its own —
+
+- **Shattered** is not an element pair at all. The source says *"a Blunt or Geo attack"*, and
+  Blunt is Physical: listing it as Cryo+Hydro over-counts teams, adding Geo under-counts them.
+
+Everything excluded stays **in the file**, so an exclusion is visible rather than looking like
+an oversight. A filter that quietly mis-classified a team is worse than one that offers less.
 
 ## Two traps the wildcard makes easy to miss
 
 **Lunar-Crystallize is Hydro only and Stellar Swirl is Cryo only** — they do *not* inherit the
-four-element wildcard that ordinary Crystallize and Swirl carry. Both are uncertain and so
-unoffered today, but the shape is the reason the wildcard is data on a row rather than a rule
-about "reactions whose name contains Swirl".
+four-element wildcard their namesakes carry. Neither is offered now, but the shape is why the
+wildcard is data on a row rather than a rule about "reactions whose name contains Swirl", and it
+is exactly what a later pass would get wrong from the names alone.
 """
 
 from __future__ import annotations
@@ -37,6 +43,11 @@ _DATA = Path(__file__).resolve().parents[1] / "data" / "reactions" / "elemental_
 
 #: The placeholder a wildcard row uses in `elements_required`.
 _WILDCARD = "__WILDCARD__"
+
+#: Id prefixes for the reactions the owner has ruled out of the filter. Matched on the id
+#: rather than a `category`, because the research's categories describe how a reaction *works*
+#: — amplifying, transformative — and this is a decision about which ones a player names.
+_NOT_BASE = ("lunar_", "stellar_")
 
 
 @dataclass(frozen=True, slots=True)
@@ -73,7 +84,7 @@ def offered() -> tuple[Reaction, ...]:
     rows = _loaded()["reactions"]
     out: list[Reaction] = []
     for row in rows:  # type: ignore[union-attr]
-        if row.get("uncertain"):
+        if row.get("uncertain") or str(row["id"]).startswith(_NOT_BASE):
             continue
         wildcard = row.get("wildcard") or {}
         out.append(
