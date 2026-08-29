@@ -156,7 +156,23 @@ def test_an_action_list_with_no_loop_is_refused() -> None:
     behaviours the compiler exists to prevent."""
     config = "active noelle;\nnoelle skill;\nnoelle burst;\n"
 
-    with pytest.raises(RotationParseError, match="while 1"):
+    with pytest.raises(RotationParseError, match="no loop at all"):
+        parse_action_block(config, ROSTER)
+
+
+def test_a_for_loop_is_told_apart_from_no_loop_at_all() -> None:
+    """**The message has to be true.** A real community config (`skirk_team.txt`) wraps its
+    second cycle in `for let i=0; i<1; i=i+1 { … }`, and the first version of this parser told
+    it that it had no loop — sending a reader to look for a bug in a file that plainly has
+    one. A `for` is a loop; it is the *wrong* loop, and that is a different sentence."""
+    config = (
+        "active noelle;\n"
+        "for let i=0; i<1; i=i+1 {\n"
+        "    noelle skill;\n"
+        "}\n"
+    )
+
+    with pytest.raises(RotationParseError, match="`for`, not `while 1`"):
         parse_action_block(config, ROSTER)
 
 

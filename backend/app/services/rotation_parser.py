@@ -142,8 +142,20 @@ def _loop_body(lines: list[str]) -> list[str]:
     """
     opens = [i for i, line in enumerate(lines) if line.startswith("while")]
     if not opens:
+        # **Say which it is.** A `for` loop is a loop, and reporting "no loop" for a config
+        # that plainly has one sends the reader looking for a bug in their file. Measured
+        # against a real community config (`skirk_team.txt`), which uses
+        # `for let i=0; i<1; i=i+1 { … }` and got told it had no loop at all.
+        if any(line.startswith(("for ", "for(")) for line in lines):
+            msg = (
+                "the loop is a `for`, not `while 1`. A bounded loop runs a rotation a fixed "
+                "number of times, which is a property of the *simulation* — how long to run "
+                "for — rather than of the rotation itself, and this model has no field for "
+                "it. The steps inside are very likely importable once the loop is `while 1`."
+            )
+            raise RotationParseError(msg)
         msg = (
-            "no `while 1 {` loop. A rotation is a cycle, and gcsim runs a bare action list "
+            "no loop at all. A rotation is a cycle, and gcsim runs a bare action list "
             "**once** — over a 90-second duration that is one burst, reported without "
             "complaint. If this config is meant to run its actions a single time it is not a "
             "rotation this app can hold."
