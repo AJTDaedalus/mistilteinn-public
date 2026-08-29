@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from scripts.download_icons import Report, portrait_name
+from scripts.download_icons import ABSENT_UPSTREAM, Report, portrait_name
 
 
 def test_a_run_that_saw_nothing_is_not_success() -> None:
@@ -171,3 +171,42 @@ def test_only_the_leading_prefix_is_replaced() -> None:
     assert portrait_name("UI_AvatarIcon_UI_AvatarIcon_Odd") == (
         "UI_Gacha_AvatarIcon_UI_AvatarIcon_Odd"
     )
+
+
+# ── what upstream does not have ──────────────────────────────────────────────
+
+
+def test_check_can_actually_pass() -> None:
+    """**The point of `ABSENT_UPSTREAM`.**
+
+    `--check` cannot ask the network — that would make a check do the thing it is checking for
+    — so it could not tell "never fetched" from "upstream has none", and reported six genuinely
+    unpublished basenames as failures. A complete directory therefore failed the check,
+    forever: the cry-wolf shape this script already refuses for a 404 during a download,
+    arriving one function later.
+    """
+    assert Report(already_present=950, absent_upstream=list(ABSENT_UPSTREAM)).ok
+
+
+def test_the_absent_list_names_only_what_was_measured() -> None:
+    """A name here is a **claim that upstream does not have it**, and it silences that basename
+    permanently — so the list is small, and each entry answered a real 404.
+
+    Pinned so that growing it is a deliberate act rather than a way to quiet a failing check.
+    Re-verify with
+    `curl -o /dev/null -w '%{http_code}' https://static.nanoka.cc/assets/gi/<name>.webp`.
+    """
+    assert frozenset({
+        "UI_Gacha_AvatarIcon_PlayerBoy",
+        "UI_Gacha_AvatarIcon_PlayerGirl",
+        "UI_Gacha_AvatarIcon_MannequinBoy",
+        "Sword_Template",
+        "UI_RelicIcon_15004_4",
+        "UI_RelicIcon_15012_3",
+    }) == ABSENT_UPSTREAM
+
+
+def test_a_name_not_on_the_list_is_still_a_failure() -> None:
+    """The list must not become a blanket. Anything else missing is a real gap in the vendored
+    directory, which is what the exit code is for."""
+    assert not Report(already_present=949, failed=["UI_EquipIcon_Sword_Blunt: not vendored"]).ok

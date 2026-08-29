@@ -54,9 +54,34 @@ from app.models.build import EnemyProfile
 from app.models.character import Character
 from app.models.weapon import Weapon
 from app.services import element_symbols, weapon_symbols
+from app.services.practice_dummies import is_practice_dummy
 
 #: Where nanoka publishes them. `gi`, not `genshin` — checked, not guessed.
 CDN = "https://static.nanoka.cc/assets/gi"
+
+#: Basenames the catalogue names and nanoka does not publish. **Measured, not assumed** — each
+#: answered a real 404 during a download run, and re-checking one is
+#: `curl -o /dev/null -w '%{http_code}' https://static.nanoka.cc/assets/gi/<name>.webp`.
+#:
+#: Both Travelers and the male mannequin have an avatar icon upstream but no *gacha portrait*,
+#: which is why their cards fall back to the small icon rather than showing nothing.
+#:
+#: This exists so `--check` can pass. Without it a complete directory still reported these as
+#: missing, forever — the cry-wolf shape this script already refuses for a 404 during a
+#: download. Adding a name here is a claim that upstream does not have it; verify before
+#: adding, because a name added to silence a real failure silences it permanently.
+ABSENT_UPSTREAM: frozenset[str] = frozenset({
+    # Both Travelers have an avatar icon but no gacha portrait, which is why their cards fall
+    # back to the small icon rather than showing nothing.
+    "UI_Gacha_AvatarIcon_PlayerBoy",
+    "UI_Gacha_AvatarIcon_PlayerGirl",
+    "UI_Gacha_AvatarIcon_MannequinBoy",
+    # An unreleased weapon's placeholder and two artifact sets — the three CLAUDE.md already
+    # names. All four above and these were re-checked against the CDN on 2026-08-29.
+    "Sword_Template",
+    "UI_RelicIcon_15004_4",
+    "UI_RelicIcon_15012_3",
+})
 
 OUT = Path(__file__).resolve().parents[2] / "frontend" / "public" / "icons"
 
@@ -135,6 +160,12 @@ async def wanted() -> list[tuple[str, str]]:
         for model, label in SOURCES:
             rows = (await session.execute(select(model))).scalars().all()
             for row in rows:
+                # The practice mannequins are hidden from the catalogue entirely (owner
+                # ruling), so fetching their art vendors 14 rows' worth of pictures nothing
+                # will ever draw — and their portraits are not published upstream, so
+                # `--check` reported them as missing forever.
+                if model is Character and is_practice_dummy(row.nanoka_id):
+                    continue
                 if not row.icon:
                     continue
                 found.append((row.icon, f"{label} {row.name}"))
@@ -217,15 +248,22 @@ async def download(*, force: bool = False, check: bool = False) -> Report:
         report.already_present = sum(
             1 for basename, _ in icons if (OUT / f"{basename}.webp").exists()
         )
-        # `--check` cannot tell "never fetched" from "upstream has none" without asking the
-        # network, and asking would make a *check* do the thing it is checking for. So it
-        # reports them as missing and says so; the exit code is about whether the vendored
-        # directory is complete, which is what a build wants to know.
-        report.failed = [
-            f"{basename} ({what}): not vendored"
-            for basename, what in icons
-            if not (OUT / f"{basename}.webp").exists()
-        ]
+        # `--check` cannot ask the network — that would make a *check* do the thing it is
+        # checking for — so it cannot tell "never fetched" from "upstream has none" by
+        # itself. It reads `ABSENT_UPSTREAM` instead, which is the answer a real run already
+        # obtained.
+        #
+        # Without that list this check **could never pass**: three basenames are genuinely
+        # unpublished, so a complete directory still reported three failures, forever. That
+        # is the cry-wolf shape this script's own docstring rejects for 404s during a
+        # download, arriving one function later.
+        for basename, what in icons:
+            if (OUT / f"{basename}.webp").exists():
+                continue
+            if basename in ABSENT_UPSTREAM:
+                report.absent_upstream.append(f"{basename} ({what})")
+            else:
+                report.failed.append(f"{basename} ({what}): not vendored")
         return report
 
     OUT.mkdir(parents=True, exist_ok=True)
