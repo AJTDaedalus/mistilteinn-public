@@ -6753,6 +6753,17 @@
           "levels_to_max": {
             "type": "integer",
             "title": "Levels To Max"
+          },
+          "gains_a_substat": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gains A Substat"
           }
         },
         "type": "object",

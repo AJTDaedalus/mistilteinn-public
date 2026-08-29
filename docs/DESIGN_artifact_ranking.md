@@ -187,9 +187,23 @@ Three failure modes, each with a required behaviour:
 ## 7. Suggested task order
 
 0. Branch setup.
-1. **Measure what a full inventory costs off one calibration.** Not "is the chain fast enough"
-   — the engine is decided — but how many recipe evaluations 2,370 pieces need, and whether the
-   result caches per `context_key`. No code until this number exists.
+1. ~~**Measure what a full inventory costs off one calibration.**~~ **Done — and the answer
+   removes a whole layer from this plan.**
+
+   Measured against the shipped `evaluateRecipe`, warmed, five runs, 2,370 candidates:
+
+   | recipe size | whole inventory | per piece | per hit |
+   |---|---:|---:|---:|
+   | 50 hits | 5.8 ms | 2.43 µs | 0.049 µs |
+   | 245 hits | **28.1 ms** | 11.85 µs | 0.048 µs |
+
+   245 hits is the size of a real decomposed rotation (`RESEARCH_gcsim_calibration.md` §2), and
+   **0.048 µs/hit independently reproduces the 0.051 µs/hit** that `sim/recipe.ts` documents —
+   so this is the same evaluator at the same cost, not a stub.
+
+   **So scoring an entire inventory costs about 28 ms**, and the four potential figures about
+   112 ms. There is nothing here to cache and no `context_key` invalidation to design: it is
+   cheaper to recompute than to store. That was the open question and it is closed.
 2. **`remaining_rolls`** — pure, from the committed schedule. Small and fully testable offline.
 3. **Score one piece through the recipe evaluator**, at its current stats. The smallest thing
    that proves the engine choice.

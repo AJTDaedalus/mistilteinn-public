@@ -30,6 +30,10 @@ from app.data.snapshot import (
     artifact_upgrade_levels,
 )
 
+#: Genshin gives an artifact four substats at most. Stated rather than derived: the committed
+#: schedule describes *levels*, not line counts, and this is the shape of the game.
+MAX_SUBSTATS = 4
+
 
 @dataclass(frozen=True)
 class UpgradePotential:
@@ -47,6 +51,14 @@ class UpgradePotential:
     rolls_total: int
     level: int
     max_level: int
+    #: True when one of those rolls will **create the fourth substat** rather than deepen an
+    #: existing one.
+    #:
+    #: Most of why a three-line piece is a lottery ticket and a four-line one is a known
+    #: quantity: one of its upgrades is spent making a line rather than improving the ones its
+    #: owner is hoping for. `None` when the substat count was not supplied, which is honest —
+    #: this cannot be inferred from rarity and level alone.
+    gains_a_substat: bool | None = None
 
     @property
     def levels_to_max(self) -> int:
@@ -54,7 +66,9 @@ class UpgradePotential:
         return self.max_level - self.level
 
 
-def upgrade_potential(*, stars: int, level: int) -> UpgradePotential:
+def upgrade_potential(
+    *, stars: int, level: int, substats: int | None = None,
+) -> UpgradePotential:
     """The upgrade potential of one piece.
 
     Three values rather than a row: this is arithmetic over a committed table, and taking an
@@ -67,8 +81,15 @@ def upgrade_potential(*, stars: int, level: int) -> UpgradePotential:
     """
     stars = int(stars)
     level = int(level)
+    remaining = artifact_rolls_remaining(stars, level)
     return UpgradePotential(
-        rolls_remaining=artifact_rolls_remaining(stars, level),
+        rolls_remaining=remaining,
+        # `None`, not `False`, when the caller did not say how many lines the piece has. A
+        # piece with four already cannot gain one; a piece with three will. Defaulting to
+        # `False` would answer a question nobody asked, for every caller that predates this.
+        gains_a_substat=(
+            None if substats is None else remaining > 0 and substats < MAX_SUBSTATS
+        ),
         rolls_total=len(artifact_upgrade_levels(stars)),
         level=level,
         max_level=artifact_max_level(stars),

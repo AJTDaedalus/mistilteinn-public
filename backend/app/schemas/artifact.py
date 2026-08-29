@@ -96,6 +96,13 @@ class UpgradePotentialRead(BaseModel):
     level: int
     max_level: int
     levels_to_max: int
+    #: True when one of the remaining rolls will **create the fourth substat** rather than
+    #: deepen an existing one — most of why a three-line piece is a lottery ticket and a
+    #: four-line one is a known quantity.
+    #:
+    #: `None` only if the substat count was unavailable; every row here carries its lines, so
+    #: in practice this is always answered.
+    gains_a_substat: bool | None = None
 
 
 class SubstatAnalysisRead(BaseModel):
@@ -213,7 +220,12 @@ class ArtifactRead(BaseModel):
         """
         try:
             found = upgrade_potential(
-                stars=Rarity(self.rarity).stars, level=self.level,
+                stars=Rarity(self.rarity).stars,
+                level=self.level,
+                # The row already carries its lines, so the count is free here — and without
+                # it `gains_a_substat` would be `None` on every piece in the inventory, which
+                # is a field nothing could ever read.
+                substats=len(self.substats or []),
             )
         except (SnapshotUnavailableError, ValueError):
             return None
@@ -223,6 +235,7 @@ class ArtifactRead(BaseModel):
             level=found.level,
             max_level=found.max_level,
             levels_to_max=found.levels_to_max,
+            gains_a_substat=found.gains_a_substat,
         )
 
     model_config = {"from_attributes": True}

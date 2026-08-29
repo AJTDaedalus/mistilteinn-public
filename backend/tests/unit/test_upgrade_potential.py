@@ -111,3 +111,42 @@ def test_the_schedule_is_read_not_restated() -> None:
     finally:
         snapshot._load = original
         snapshot._load.cache_clear()
+
+
+# ── the roll that makes a line rather than deepening one ─────────────────────
+
+
+def test_a_three_line_piece_will_spend_an_upgrade_creating_the_fourth() -> None:
+    """**Most of why a three-liner is a lottery ticket and a four-liner is a known quantity.**
+
+    One of its upgrades is spent making a line rather than improving the ones its owner is
+    hoping for, so fewer of them land where it matters. `DESIGN_artifact_ranking.md` §3.
+    """
+    assert upgrade_potential(stars=5, level=0, substats=3).gains_a_substat is True
+    assert upgrade_potential(stars=5, level=0, substats=4).gains_a_substat is False
+
+
+def test_a_finished_piece_gains_nothing_more() -> None:
+    """`gains_a_substat` is about the future. A 4-star at +16 with three lines is finished, and
+    a piece with no upgrades left cannot grow one."""
+    assert upgrade_potential(stars=4, level=16, substats=3).gains_a_substat is False
+
+
+def test_an_unstated_substat_count_answers_none_rather_than_false() -> None:
+    """**Honest rather than convenient.**
+
+    Whether a piece will gain a line cannot be inferred from rarity and level alone. `False`
+    would be an answer to a question nobody asked — and every caller predating this one passes
+    no count, so `False` would have quietly claimed "no new line" for all of them.
+    """
+    assert upgrade_potential(stars=5, level=0).gains_a_substat is None
+
+
+def test_the_existing_fields_are_untouched_by_the_new_one() -> None:
+    """The count is additional information, not a change of subject."""
+    without = upgrade_potential(stars=5, level=8)
+    with_count = upgrade_potential(stars=5, level=8, substats=4)
+
+    assert without.rolls_remaining == with_count.rolls_remaining
+    assert without.rolls_total == with_count.rolls_total
+    assert without.levels_to_max == with_count.levels_to_max

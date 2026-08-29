@@ -286,6 +286,9 @@ async def test_a_piece_reports_its_upgrade_potential(
         "level": 20,
         "max_level": 20,
         "levels_to_max": 0,
+        # False, not null: the row carries its own lines, so the count is always available
+        # here. A maxed piece gains nothing more — `gains_a_substat` is about the future.
+        "gains_a_substat": False,
     }
     # The piece's substats are on the row itself, in full — not repeated inside the report.
     assert body["substats"][0]["stat"] == "FIGHT_PROP_CRITICAL"
