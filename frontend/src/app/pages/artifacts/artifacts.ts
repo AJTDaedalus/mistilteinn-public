@@ -2,6 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { apiErrorMessage } from '../../api/api-error';
+import { CardPicker, type CardOption } from '../../shared/card-picker/card-picker';
 import { CatalogueIcon } from '../../shared/icon/icon';
 import { CatalogueService } from '../catalogue/catalogue.service';
 import {
@@ -145,7 +146,7 @@ export function formatStat(value: unknown, percentage: boolean): string {
  */
 @Component({
   selector: 'page-artifacts',
-  imports: [FormsModule, CatalogueIcon],
+  imports: [FormsModule, CatalogueIcon, CardPicker],
   templateUrl: './artifacts.html',
   styleUrl: './artifacts.scss',
 })
@@ -255,13 +256,32 @@ export class ArtifactsPage implements OnInit {
    */
   protected readonly shown = signal(INITIAL_ROWS);
 
-  protected readonly setOptions = computed(() => {
-    const names = new Map<string, string>();
+  /**
+   * The sets this inventory actually contains, as picker cards.
+   *
+   * Cards rather than a `<select>` — the owner's audit asks for this in four places and calls
+   * it out as a pattern: *"pop-up square icon grids with cards for things with images. This
+   * applies everywhere."* An artifact set is the clearest case, because sixty-five names in a
+   * drop-down is a list nobody reads and the art is how anyone actually recognises them.
+   */
+  protected readonly setOptions = computed<CardOption[]>(() => {
+    const seen = new Map<string, { name: string; icon: string | null; count: number }>();
     for (const row of this.rows()) {
-      if (row.setId) names.set(row.setId, row.setName);
+      if (!row.setId) continue;
+      const found = seen.get(row.setId);
+      if (found) found.count += 1;
+      else seen.set(row.setId, { name: row.setName, icon: row.setIcon, count: 1 });
     }
-    return [...names].map(([id, name]) => ({ id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+    return [...seen]
+      .map(([value, { name, icon, count }]) => ({
+        value,
+        label: name,
+        icon,
+        // How many you own of it. The number a person uses to decide whether a set is worth
+        // opening at all, and it is free here.
+        detail: `${count}`,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   });
 
   protected readonly mainStatOptions = computed(() => {

@@ -1,0 +1,93 @@
+<div class="picker">
+  @if (label()) { <span class="picker__label">{{ label() }}</span> }
+
+  <button
+    type="button"
+    class="picker__trigger"
+    [disabled]="disabled()"
+    [attr.aria-label]="label() ? label() + ' — choose' : 'Choose'"
+    (click)="open()"
+  >
+    @if (chosen().length) {
+      <span class="picker__chosen">
+        @for (option of chosen(); track option.value) {
+          <span class="picker__pill">
+            <catalogue-icon [icon]="option.icon" [alt]="''" [size]="20" />
+            <span>{{ option.label }}</span>
+          </span>
+        }
+      </span>
+    } @else {
+      <span class="muted">{{ placeholder() }}</span>
+    }
+    <span class="picker__caret" aria-hidden="true">▾</span>
+  </button>
+</div>
+
+<!-- A native `<dialog>`: it gives focus trapping, Escape, and the backdrop for free, and every
+     hand-rolled modal in this repo would otherwise have to reimplement all three. -->
+<dialog #dialog class="picker__dialog" (close)="search.set('')">
+  <header class="picker__head">
+    <h2>{{ label() || 'Choose' }}</h2>
+    <button type="button" class="picker__close" aria-label="Close" (click)="close()">×</button>
+  </header>
+
+  <div class="picker__controls">
+    <input
+      type="search"
+      name="picker-search"
+      placeholder="Search…"
+      [attr.aria-label]="'Search ' + (label() || 'options')"
+      [value]="search()"
+      (input)="search.set($any($event.target).value)"
+    />
+    @if (multi() && chosen().length) {
+      <button type="button" class="picker__clear" (click)="clear()">Clear</button>
+    }
+  </div>
+
+  @for (filter of filters(); track filter.group) {
+    <div class="picker__filters" role="group" [attr.aria-label]="filter.label">
+      @for (chip of filter.options; track chip.value) {
+        <button
+          type="button"
+          class="chip"
+          [class.chip--on]="isActive(filter.group, chip.value)"
+          [attr.aria-pressed]="isActive(filter.group, chip.value)"
+          [attr.title]="chip.label"
+          (click)="toggleFilter(filter.group, chip.value)"
+        >
+          @if (chip.icon) {
+            <catalogue-icon [icon]="chip.icon" [alt]="chip.label" [size]="16" />
+          } @else {
+            {{ chip.label }}
+          }
+        </button>
+      }
+    </div>
+  }
+
+  <ul class="picker__grid">
+    @for (option of visible(); track option.value) {
+      <li>
+        <button
+          type="button"
+          class="picker__card"
+          [class.picker__card--on]="isSelected(option.value)"
+          [attr.aria-pressed]="isSelected(option.value)"
+          [attr.title]="option.tooltip"
+          (click)="pick(option.value)"
+        >
+          <catalogue-icon class="fill" [icon]="option.icon" [alt]="''" [size]="64" />
+          <!-- The name is always here. A grid of pictures is fast for someone who knows the
+               icons and useless to everyone else — the argument `ElementChip` makes about
+               colour, and the accessibility bug `ng lint` caught on #131. -->
+          <span class="picker__name">{{ option.label }}</span>
+          @if (option.detail) { <span class="picker__detail">{{ option.detail }}</span> }
+        </button>
+      </li>
+    } @empty {
+      <li class="muted picker__empty">Nothing matches.</li>
+    }
+  </ul>
+</dialog>

@@ -25,6 +25,13 @@ optimize team, optimize sets, rotation team, rotation database search.
 `shared/combobox` is the nearest thing that exists and is a *list*, not a grid. Fairy is the
 reference the owner keeps naming; read it before designing.
 
+**Built — `shared/card-picker` (#162).** Fairy has *three* near-identical pickers
+(`set-picker`, `agent-picker`, `wengine-picker`); this is one, generic over `CardOption`, and
+copying that shape per surface is how the fourth one ends up subtly different.
+
+Adopted so far: **inventory set filter**. Remaining, in the order above: build character, build
+weapon, optimize team, optimize sets, rotation team, rotation database search.
+
 **A second recurring pattern:** several tabs put "new X" in a left panel and the saved items in
 a narrow right column. The owner wants that inverted everywhere — the saved things are the page,
 in a card grid with filters, and "New X" is a button opening a pop-up.
@@ -34,7 +41,8 @@ in a card grid with filters, and "New X" is a button opening a pop-up.
 - Drop the "Your artifacts…" subtitle.
 - "IMPORT A GOOD EXPORT" → **"IMPORT FROM GOOD FILE"**.
 - "Also rebuild builds" → **"Reimport builds"**; drop both lines of subtext.
-- Set filter becomes a card grid (§1).
+- ~~Set filter becomes a card grid (§1).~~ **Done (#162)** — 38 owned sets, art-first, with
+  how many of each you own on the card.
 - **Main-stat selector should be ordered, and flat stats excluded**: elemental damage together
   and alphabetical, then stat percentages together, with EM and ER between them.
 

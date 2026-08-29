@@ -395,3 +395,7 @@
   justify-content: center;
   margin: var(--space-5) 0 var(--space-3);
 }
+
+/* The set picker replaced a `<select>` and needs its width back — a card trigger sizes to its
+   content, and an empty one would otherwise be narrower than the label above it. */
+.refine__set { flex: 0 1 16rem; min-width: 10rem; }

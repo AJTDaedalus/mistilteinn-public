@@ -1,0 +1,131 @@
+:host { display: block; min-width: 0; }
+
+.picker { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+
+.picker__label {
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.picker__trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.picker__chosen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.picker__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--brass) 12%, transparent);
+  font-size: var(--text-xs);
+}
+
+.picker__caret { margin-left: auto; color: var(--ink-dim); }
+
+/* ── The pop-up ─────────────────────────────────────────────────────────────
+   A native `<dialog>`, which brings focus trapping, Escape and the backdrop with it. */
+.picker__dialog {
+  width: min(64rem, 92vw);
+  max-height: 82vh;
+  padding: var(--space-4);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  background: var(--surface);
+  color: var(--ink);
+
+  &::backdrop { background: rgb(4 4 8 / 62%); }
+}
+
+.picker__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+
+  h2 { margin: 0; font-size: var(--text-lg); }
+}
+
+.picker__close {
+  margin-left: auto;
+  padding: 0 var(--space-2);
+  background: none;
+  font-size: var(--text-lg);
+  line-height: 1;
+}
+
+.picker__controls {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+
+  input[type='search'] { flex: 1 1 auto; min-width: 0; }
+}
+
+.picker__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.picker__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  /* The grid scrolls, not the dialog: the search and filters stay reachable while you look. */
+  max-height: 58vh;
+}
+
+.picker__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  width: 100%;
+  padding: var(--space-2);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  background: var(--bg-deep);
+  transition: border-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+
+  &:hover { transform: translateY(-2px); }
+
+  &--on {
+    border-color: var(--brass);
+    box-shadow: var(--glow-brass);
+  }
+}
+
+.picker__name {
+  font-size: var(--text-xs);
+  line-height: 1.2;
+  text-align: center;
+}
+
+.picker__detail {
+  font-size: var(--text-xs);
+  color: var(--ink-dim);
+}
+
+.picker__empty { grid-column: 1 / -1; padding: var(--space-4); text-align: center; }

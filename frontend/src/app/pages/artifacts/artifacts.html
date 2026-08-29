@@ -205,18 +205,16 @@
     <!-- Narrowing and ordering, on one row above the results. At 2,370 pieces a slot filter
          alone leaves ~470, which is still not a list anyone reads. -->
     <div class="refine">
-      <label>
-        <span>Set</span>
-        <select
-          [value]="setFilter()"
-          (change)="narrow(() => setFilter.set($any($event.target).value))"
-        >
-          <option value="">Any</option>
-          @for (s of setOptions(); track s.id) {
-            <option [value]="s.id">{{ s.name }}</option>
-          }
-        </select>
-      </label>
+      <!-- A card grid, not a drop-down. Sixty-five set names in a `<select>` is a list nobody
+           reads, and the art is how anyone actually recognises a set. -->
+      <mist-card-picker
+        class="refine__set"
+        label="Set"
+        placeholder="Any set"
+        [options]="setOptions()"
+        [selected]="setFilter() ? [setFilter()] : []"
+        (selectedChange)="narrow(() => setFilter.set($event[0] ?? ''))"
+      />
 
       <label>
         <span>Main stat</span>
