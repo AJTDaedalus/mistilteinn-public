@@ -13,7 +13,7 @@ from app.data.importers.good_importer import (
     ParsedWeapon,
 )
 from app.models.enums import ArtifactSlot, Rarity
-from app.services.good_build_service import lookup_key
+from app.services.good_build_service import BuildImportReport, lookup_key
 
 
 def _artifact(location: str, slot: ArtifactSlot, index: int) -> ParsedArtifact:
@@ -74,3 +74,34 @@ def test_a_weapon_records_who_holds_it() -> None:
 def test_an_unheld_artifact_names_nobody() -> None:
     """Most of an inventory is unequipped, and those pieces belong to no build."""
     assert _artifact("", ArtifactSlot.FLOWER, 0).location == ""
+
+
+def test_a_character_the_export_gave_no_weapon_is_named() -> None:
+    """**The complaint that produced this field.**
+
+    A real Irminsul export carried 2,370 artifacts and 320 weapons but named a holder for only
+    68 of them, so seven fully-equipped characters got weaponless builds — and the import said
+    nothing, because a weaponless build is a legitimate state. The user reported it as
+    "weapons aren't attributed to my builds"; the import was correct and the export was short.
+
+    Naming them is what lets a user tell those apart. They can re-scan; nothing here can.
+    """
+    report = BuildImportReport()
+    report.no_weapon_in_export.append("Beidou")
+
+    assert report.no_weapon_in_export == ["Beidou"]
+
+
+def test_an_absent_weapon_is_not_an_unresolvable_one() -> None:
+    """Two different failures that look identical on a card.
+
+    `unresolved_weapons` means the export named a weapon this catalogue does not know — usually
+    an export newer than the seeded patch, and re-scanning will not help. `no_weapon_in_export`
+    means the export named none at all, and re-scanning is exactly the fix. Collapsing them
+    would give a user one message for two problems with opposite remedies.
+    """
+    report = BuildImportReport()
+    report.unresolved_weapons.append("Nahida: SomeUnseeded")
+    report.no_weapon_in_export.append("Beidou")
+
+    assert report.unresolved_weapons != report.no_weapon_in_export

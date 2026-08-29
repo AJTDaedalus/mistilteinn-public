@@ -3170,6 +3170,14 @@
             "title": "Unresolved Weapons",
             "default": []
           },
+          "no_weapon_in_export": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "No Weapon In Export",
+            "default": []
+          },
           "reassigned": {
             "items": {
               "type": "string"

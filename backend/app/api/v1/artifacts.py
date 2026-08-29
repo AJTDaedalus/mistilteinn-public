@@ -341,6 +341,7 @@ async def import_good(
             unresolved=sorted(report.unresolved),
             unplaced=sorted(report.unplaced),
             unresolved_weapons=sorted(report.unresolved_weapons),
+            no_weapon_in_export=sorted(report.no_weapon_in_export),
             reassigned=sorted(report.reassigned),
         )
 

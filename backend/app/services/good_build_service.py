@@ -111,6 +111,18 @@ class BuildImportReport:
     #: build with no weapon is a legitimate state** — so an unresolved one is invisible
     #: otherwise, which is exactly how the key-normalisation bug survived its first outing.
     unresolved_weapons: list[str] = field(default_factory=list)
+    #: Characters the export gave artifacts but **no weapon at all** — not an unresolvable
+    #: weapon, an absent one.
+    #:
+    #: Reported for exactly the reason `unresolved_weapons` is: a build with no weapon is a
+    #: legitimate state, so a missing one is invisible, and the user reads it as the importer
+    #: having lost something. It was: an Irminsul export carrying 2,370 artifacts and 320
+    #: weapons named a weapon's holder for only 68 of them, so 7 characters with a full set of
+    #: artifacts got weaponless builds and the import said nothing.
+    #:
+    #: **This is a gap in the export, not in the import**, and naming it is what lets a user
+    #: tell those apart — they can re-scan, and nothing here can.
+    no_weapon_in_export: list[str] = field(default_factory=list)
     #: Equipped pieces that could not be placed, with the reason.
     unplaced: list[str] = field(default_factory=list)
     #: Pieces taken from a build that was already wearing them — see `_equip`.
@@ -237,6 +249,11 @@ async def rebuild_builds(
         weapon = weapon_by_key.get(lookup_key(wielded.key)) if wielded else None
         if wielded is not None and weapon is None:
             report.unresolved_weapons.append(f"{character.name}: {wielded.key}")
+        elif wielded is None:
+            # Distinct from an unresolvable weapon: the export never named one. In Genshin a
+            # character on the field always holds something, so this is a scan that missed it
+            # rather than a character who owns nothing — and only the user can fix it.
+            report.no_weapon_in_export.append(character.name)
         build = _new_build(
             owner_id=owner_id,
             character=character,

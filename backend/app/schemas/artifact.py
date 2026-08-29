@@ -353,6 +353,16 @@ class BuildImportSummary(BaseModel):
     #: Weapons the catalogue could not identify, `"character: weapon"`. Reported because a
     #: build with no weapon is a legitimate state, so an unresolved one is otherwise silent.
     unresolved_weapons: list[str] = []
+    #: Characters given artifacts but **no weapon at all** by the export — absent, not
+    #: unresolvable. Reported for the same reason `unresolved_weapons` is: a weaponless build
+    #: is a legitimate state, so a missing weapon is silent, and a user reads that silence as
+    #: the importer having lost something.
+    #:
+    #: **The gap is in the export.** A real Irminsul file carrying 2,370 artifacts and 320
+    #: weapons named a holder for only 68 of them, leaving 7 fully-equipped characters
+    #: weaponless. Naming them is what lets a user tell an export problem from an import one
+    #: — they can re-scan, and nothing here can.
+    no_weapon_in_export: list[str] = []
     #: Pieces taken from a build that was already wearing them.
     reassigned: list[str] = []
 

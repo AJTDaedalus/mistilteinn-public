@@ -108,9 +108,22 @@ depends on the searcher's artifacts, not the author's. `docs/RESEARCH_recipe_cos
 is minutes. That is a job with progress, not a search box — the same conclusion the optimizer
 reached.
 
-**Recommendation: ship the filter and the likes; leave DPS ranking as an explicit per-rotation
-"try this on my team" action** rather than something a search does to twenty rotations
-speculatively.
+**Answered: the filter and the likes, plus a cached DPS** (owner, 2026-08-29).
+
+No speculative simulation — a search never triggers twenty calibrations. But **once a rotation
+has been run here, store its DPS and sort by it**, which the owner points out is both valuable
+and nearly free:
+
+> *"Most rotations that get imported should be ran shortly, so sorting by DPS is valuable and
+> should be easy to do."*
+
+Correct, and `sim_runs` already exists for exactly this — a run is keyed by `context_key`, which
+hashes the rotation *and* the builds it ran against. So the stored number is **the searcher's
+own**, computed on their artifacts, which dissolves the objection to ranking by an author's
+figure: you see your number where you have one and nothing where you do not. A rotation nobody
+has run here is simply unsorted rather than ranked by somebody else's gear.
+
+Ordering is therefore: DPS where this user has run it, then likes, then anything else.
 
 ## 4. Likes
 
@@ -137,7 +150,12 @@ necessarily *this* person. Nothing here searches for a rotation by generating on
 2. **Sharing + browse + character-set filter** — one column, one join table, one page.
 3. **Likes** — one table.
 4. **The converter, then parse-or-refuse** for foreign configs. Largest, and now the one
-   with measured evidence behind its shape.
+   with measured evidence behind its shape — **four real database configs are committed under
+   `references/gcsim_db/`**, retrieved from gcsim's own API and byte-verified against a second
+   endpoint. The owner's ruling is *"whatever the four need"*: convert until those import,
+   refusing only what is genuinely inexpressible. They use user-defined functions with `let`
+   bindings, `if`/`else`, `charge[final=1]` params and both comment styles, so the target is a
+   good deal wider than `for`→`while 1`.
 5. ~~**gcsim corpus**~~ — **dropped**, OQ-2.
 
 ## Answered (2026-08-29, `DECISIONS.md` §21)

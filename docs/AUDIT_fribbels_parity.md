@@ -166,3 +166,36 @@ Worth recording so a parity sweep does not flatten it:
 (2,370 artifacts, 75 builds), then `--viewport` walks of `/inventory`, `/artifacts`, `/builds`,
 `/teams`, `/optimize`, `/rotations`, `/compare`, `/explain`. No console errors on any of the
 eight after the mannequin 404s were fixed.
+
+---
+
+## 8. Owned weapons are not stored at all
+
+**Found 2026-08-29**, chasing an owner report that *"weapons aren't attributed to my builds
+despite the Irminsul import."*
+
+**The import was correct.** The export named a holder for exactly 68 of its 320 weapons, and
+exactly 68 of the 75 builds got one. The seven weaponless builds — Beidou, Jahoda, Keqing,
+Kujou Sara, Lynette, Sayu, Xinyan — are characters the file gave artifacts and no weapon.
+
+**The cause is now known and measured.** The export contains **no 1★ or 2★ weapons at all** —
+24 three-star, 67 four-star, 18 five-star, against ten one- and two-star rows in the catalogue —
+and the owner confirms those seven are on default grey weapons. Irminsul omits them. So this is
+a scanner omission on characters nobody has built, not a lost weapon, and the import reports it
+as information rather than as a warning.
+
+The import now says so, and says it separately from *"weapon not recognised"* — those two have
+opposite remedies, and one message for both would send half of readers the wrong way.
+
+**But the larger finding is that the other 252 weapons are discarded.** `ParsedWeapon` is read
+only to attach a catalogue row to a build; nothing persists an owned weapon. There is a
+260-row weapon *catalogue* and no weapon *inventory*, so:
+
+- there is no page that shows the weapons you own;
+- "who has this equipped" cannot be answered for a weapon, only for a build;
+- a weapon's level and refinement exist only where a build happens to reference it.
+
+The owner has asked for the inventory, with the holder's portrait on each row and equipped
+pieces sorted to the top. **That is a chunk, not a tweak**: a table, a migration, an import
+path, an API and a page — the shape `TASKS_artifacts.md` had. Worth knowing before it is
+estimated.

@@ -124,6 +124,29 @@
                 }
               </ul>
             }
+            @if (builds.no_weapon_in_export.length) {
+              <!-- **A different failure from the one above, with the opposite remedy.**
+                   `unresolved_weapons` means the export named a weapon this catalogue does not
+                   know — usually an export newer than the seeded patch, and re-scanning will
+                   not help. This means the export named no weapon at all, and re-scanning is
+                   exactly the fix. One message for both would send half the readers the wrong
+                   way.
+
+                   Measured, and the cause is known: an Irminsul file with 2,370 artifacts
+                   and 320 weapons named a holder for only 68, leaving 7 characters weaponless.
+                   That export contains **zero 1★ and 2★ weapons** against ten in the
+                   catalogue, and those seven are on default weapons — so this is a scanner
+                   omission, not a lost weapon. `hint` rather than `warn` for that reason:
+                   it is information, not a problem. -->
+              <p class="hint">
+                {{ builds.no_weapon_in_export.length }} character(s) had artifacts but no weapon
+                in this export. Usually they are holding a 1★ or 2★ default weapon, which
+                scanners leave out — equip something and re-scan if you want them here.
+              </p>
+              <ul class="rejections">
+                @for (note of builds.no_weapon_in_export; track $index) { <li>{{ note }}</li> }
+              </ul>
+            }
             @if (builds.reassigned.length) {
               <!-- Moving a piece in-game and re-scanning is legitimate, but it leaves the
                    build that had it a slot short, and nothing else would mention that. -->
