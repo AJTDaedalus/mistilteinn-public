@@ -1,0 +1,95 @@
+<section class="calculate">
+  <header>
+    <h1>Calculate</h1>
+  </header>
+
+  @if (error(); as message) {
+    <p class="error" role="alert">
+      {{ message }}
+      <button type="button" (click)="load()">Retry</button>
+    </p>
+  }
+
+  @if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else if (!teams().length) {
+    <p class="muted">No teams yet — <a routerLink="/teams">build one first</a>.</p>
+  } @else {
+    <!-- Team, then rotation. Unlike Optimize there is no build to pick: the rotation already
+         says which character does what. -->
+    <div class="pickers">
+      <mist-card-picker
+        label="Team"
+        placeholder="Choose a team"
+        [options]="teamOptions()"
+        [selected]="teamId() ? [teamId()] : []"
+        (selectedChange)="pickTeam($event[0] ?? '')"
+      />
+
+      @if (teamId()) {
+        @if (rotationOptions().length) {
+          <mist-card-picker
+            label="Rotation"
+            placeholder="Choose a rotation"
+            [options]="rotationOptions()"
+            [selected]="rotationId() ? [rotationId()] : []"
+            (selectedChange)="rotationId.set($event[0] ?? '')"
+          />
+        } @else {
+          <p class="hint">
+            No rotations for this team — <a routerLink="/rotations">write one</a>.
+          </p>
+        }
+      }
+
+      <button type="button" class="btn-primary" [disabled]="!canRun()" (click)="run()">
+        {{ running() ? 'Calculating…' : 'Calculate' }}
+      </button>
+    </div>
+
+    @if (progress(); as note) {
+      <!-- Calibration is ~6 s a character and evaluation is microseconds, so the wait is
+           entirely the former. Naming who is being calibrated makes it a queue rather than
+           a hang. -->
+      <p class="muted" role="status">{{ note }}</p>
+    }
+
+    @if (result(); as rows) {
+      @if (rows.length) {
+        <p class="total">
+          <span class="total__label">Rotation damage</span>
+          <span class="total__value mono">{{ total() | number: '1.0-0' }}</span>
+        </p>
+
+        @for (row of rows; track row.buildId) {
+          <details class="who">
+            <summary>
+              <catalogue-icon [icon]="row.icon" [alt]="''" [size]="32" />
+              <span class="who__name">{{ row.name }}</span>
+              <span class="who__total mono">{{ row.total | number: '1.0-0' }}</span>
+              <span class="who__share muted">
+                {{ total() ? (row.total / total() * 100 | number: '1.0-1') : '0' }}%
+              </span>
+            </summary>
+
+            <!-- Every damage point, which is what makes the total checkable rather than
+                 something to take on trust. -->
+            <ul class="hits">
+              @for (hit of row.hits; track $index) {
+                <li>
+                  <span class="hits__abil">{{ hit.ability }}</span>
+                  <span class="hits__element muted">{{ hit.element }}</span>
+                  <span class="mono">{{ hit.damage | number: '1.0-0' }}</span>
+                </li>
+              }
+            </ul>
+          </details>
+        }
+      } @else {
+        <p class="muted">
+          Nothing to calculate — none of that team's characters could be simulated at this pin.
+        </p>
+      }
+    }
+  }
+</section>

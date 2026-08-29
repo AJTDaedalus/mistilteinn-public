@@ -517,3 +517,61 @@ async def test_a_talent_with_no_level_set_is_not_offered(
     )
 
     assert offered.json() == []
+
+
+# ---- A build's equipped stats, in the kernel's own quantities ---------------
+
+
+@pytest.mark.asyncio
+async def test_a_build_reports_its_equipped_stats_summed(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+):
+    """What `/calculate` evaluates a calibrated recipe at.
+
+    A recipe is calibrated at a reference set of stats; this is what replaces them with the
+    build's real gear. **Summed**, because every consumer wants the total — `evaluateRecipe`
+    takes one number per quantity, and a caller re-summing five pools is a second place for
+    the vocabulary to be got wrong.
+    """
+    user, _ = authed_user
+    character, weapon, sets = await _catalogue(db_session)
+    build = await _build_with_five(db_session, user, character, weapon, sets)
+
+    body = (await client.get(
+        f"/api/v1/builds/{build.id}/equipped-stats", headers=_auth(authed_user),
+    )).json()
+
+    assert body["pieces"] == 5
+    assert body["stats"]
+    # Kernel quantities, not `FIGHT_PROP_*`. The translation is the server's precisely so a
+    # client-side one cannot become a second definition of what every stat means.
+    assert not any(key.startswith("FIGHT_PROP") for key in body["stats"])
+
+
+@pytest.mark.asyncio
+async def test_a_build_wearing_nothing_reports_no_stats_rather_than_failing(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+):
+    """**A real state, not an error.** A build exists before it is geared, and `pieces` is
+    published so a caller can tell "no artifacts" from "five artifacts that sum to nothing"."""
+    user, _ = authed_user
+    character, weapon, _ = await _catalogue(db_session)
+    build = Build(
+        owner_id=str(user.id), character_id=str(character.id), weapon_id=str(weapon.id),
+    )
+    db_session.add(build)
+    await db_session.flush()
+
+    body = (await client.get(
+        f"/api/v1/builds/{build.id}/equipped-stats", headers=_auth(authed_user),
+    )).json()
+
+    assert body == {"stats": {}, "pieces": 0}
+
+
+@pytest.mark.asyncio
+async def test_equipped_stats_needs_a_bearer_token(client: AsyncClient):
+    """Owner-scoped: it describes the caller's gear, not the game."""
+    response = await client.get("/api/v1/builds/whatever/equipped-stats")
+
+    assert response.status_code == 401

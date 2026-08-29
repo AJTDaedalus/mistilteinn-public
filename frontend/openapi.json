@@ -2109,6 +2109,54 @@
         }
       }
     },
+    "/api/v1/builds/{build_id}/equipped-stats": {
+      "get": {
+        "tags": [
+          "builds"
+        ],
+        "summary": "Equipped Stats",
+        "description": "The build's equipped artifacts, summed in the kernel's quantities.\n\nWhat `/calculate` needs to evaluate a calibrated recipe at a build's *real* gear \u2014 the\nrecipe is calibrated at a reference set of stats, and this is what replaces them.\n\nDeliberately not part of `/artifacts/inventory`: that payload is fetched across a whole\ninventory, and a field added to it is paid for once per artifact. This answers a question\nabout five.",
+        "operationId": "equipped_stats_api_v1_builds__build_id__equipped_stats_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "build_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Build Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquippedStatsRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/rotations": {
       "get": {
         "tags": [
@@ -4388,6 +4436,26 @@
         "type": "object",
         "title": "EnemySpec",
         "description": "The target.\n\n`Enemy` requires **all eight** damage channels, because treating a missing one as 0%\noverstates every hit against it. Listing eight numbers on every request is not something\nto ask of a caller, so any channel `resistances` does not mention takes\n`default_resistance` \u2014 a **stated** default that appears in the schema and can be\nchanged, rather than a silent zero.\n\nThat distinction is the whole point: the first version of this documented a 10% default\nand passed `{}` straight through, so every request without an explicit eight-channel map\nwas a 500 from inside the damage chain."
+      },
+      "EquippedStatsRead": {
+        "properties": {
+          "stats": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Stats",
+            "default": {}
+          },
+          "pieces": {
+            "type": "integer",
+            "title": "Pieces",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "EquippedStatsRead",
+        "description": "One build's equipped artifacts, summed into the kernel's own quantities.\n\n**Narrow on purpose.** The browser already has a translation-free path to *every* artifact\nvia `/artifacts/inventory`, and widening that payload with a build binding would be paid\nfor across a 2,370-piece inventory to answer a question about five pieces. This is the five.\n\nSummed rather than listed, because every consumer wants the total: `evaluateRecipe` takes\none number per quantity, and a caller re-summing five pools is a second place for the\nvocabulary to be got wrong.\n\nThe translation is `stat_calculator._quantity_for_prop`, the same one `/artifacts/inventory`\nuses \u2014 which is the reason this is computed here rather than in TypeScript. A client-side\nmapping would be a second definition of what every stat means, with a silent failure mode: a\nmis-mapped substat produces a build optimal for a stat the character does not have."
       },
       "ExplainRequest": {
         "properties": {

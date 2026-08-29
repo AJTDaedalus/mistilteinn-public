@@ -47,6 +47,9 @@ const NOT_IN_NAV: Record<string, string> = {
   '**': 'the catch-all redirect',
   artifacts: 'a redirect to /inventory, kept so old bookmarks resolve — the nav links the '
     + 'canonical path, and linking both would put the same page in the bar twice',
+  explain: 'a redirect to /calculate, for the same reason: the page was renamed when it grew '
+    + 'from explaining one hit to calculating a whole rotation, and a rename that breaks '
+    + 'links is a rename that loses readers',
 };
 
 describe('app routes', () => {

@@ -126,6 +126,9 @@ show that a suggested piece is *owned*. Drag-and-drop for the ranking.
   possible value gets no control. This reverses #146's reasoning, which is recorded in
   `stat-order` rather than dropped.
 - ~~Order the main stats as in §2~~ **Done (#163)**; icons still to do.
+- **An "Equip" button on the results** (owner, 2026-08-29): put the winning five onto the build
+  that was searched for. `ScoredBuild` already carries `artifactIds`, so this is an equip call
+  and a confirmation rather than a search problem. Worth doing when this page is next opened.
 - **Set filters, from Fairy.** 4-piece and 2-piece mutually exclusive; selecting one 2-piece
   **requires** a second, because a lone 2-piece never constrains anything. 4-piece gets the
   first selector, being far the commoner. Card grid, not a drop-down.
@@ -136,11 +139,21 @@ The owner is unsure it deserves a tab — possibly **Optimize split into artifac
 tabs** — and unsure of its value, but wants to see it through. Untestable for them right now
 without a rotation. Apply whatever from the other tabs fits, and drop "Simulated with gcsim…".
 
-## 8. Explain → **Calculate**
+## 8. Explain → **Calculate** — done (#168)
 
-Rename. Calculate damage for a rotation, every point explainable. Drop the subtitle. Start from
-a **team**, then a **rotation** — and unlike Optimize there is no build to pick, because the
-rotation already says who does what.
+~~Rename. Calculate damage for a rotation, every point explainable. Drop the subtitle. Start
+from a **team**, then a **rotation** — and unlike Optimize there is no build to pick.~~
+
+**Not a rename — a different page.** The old one explained *one hit* for one build; this runs a
+whole rotation for a whole team, so calling it "Calculate" without the restructure would have
+promised the second and delivered the first.
+
+gcsim calibrates once per character against the team's rotation, each recipe is evaluated at
+that build's **real equipped gear**, and every recipe hit is one damage point with its own
+ability and element. On the owner's Hyperbloom team: **31,782,037** — Furina 31.5%, Nahida
+28.8%, Kazuha 21.1%, Kuki 18.6%.
+
+`/explain` redirects rather than 404s.
 
 ## 9. Catalogue pages
 

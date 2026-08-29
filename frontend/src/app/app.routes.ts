@@ -81,14 +81,22 @@ export const routes: Routes = [
     canMatch: [requireApproved],
   },
   {
-    path: 'explain',
-    loadComponent: () => import('./pages/explain/explain').then((m) => m.ExplainPage),
+    // Renamed from `explain` (owner ruling): this page runs a whole rotation for a whole team,
+    // where the old one explained one hit for one build. `/explain` still resolves so a
+    // bookmark does not 404 — a rename that breaks links is a rename that loses readers.
+    path: 'calculate',
+    loadComponent: () => import('./pages/calculate/calculate').then((m) => m.CalculatePage),
     canMatch: [requireApproved],
   },
   {
     path: 'rotations',
     loadComponent: () => import('./pages/rotations/rotations').then((m) => m.RotationsPage),
     canMatch: [requireApproved],
+  },
+  {
+    path: 'explain',
+    redirectTo: 'calculate',
+    pathMatch: 'full',
   },
   {
     path: 'enemies',

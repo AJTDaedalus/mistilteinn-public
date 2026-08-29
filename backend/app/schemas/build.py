@@ -648,3 +648,28 @@ class CompareWeaponsResponse(BaseModel):
     caveat: str
 
 
+
+
+class EquippedStatsRead(BaseModel):
+    """One build's equipped artifacts, summed into the kernel's own quantities.
+
+    **Narrow on purpose.** The browser already has a translation-free path to *every* artifact
+    via `/artifacts/inventory`, and widening that payload with a build binding would be paid
+    for across a 2,370-piece inventory to answer a question about five pieces. This is the five.
+
+    Summed rather than listed, because every consumer wants the total: `evaluateRecipe` takes
+    one number per quantity, and a caller re-summing five pools is a second place for the
+    vocabulary to be got wrong.
+
+    The translation is `stat_calculator._quantity_for_prop`, the same one `/artifacts/inventory`
+    uses — which is the reason this is computed here rather than in TypeScript. A client-side
+    mapping would be a second definition of what every stat means, with a silent failure mode: a
+    mis-mapped substat produces a build optimal for a stat the character does not have.
+    """
+
+    #: Kernel quantity → summed value across the build's equipped pieces. Empty when nothing
+    #: is equipped, which is a real state and not an error.
+    stats: dict[str, float] = {}
+    #: How many pieces contributed. Published so a caller can tell "no artifacts" from "five
+    #: artifacts that happen to sum to nothing".
+    pieces: int = 0

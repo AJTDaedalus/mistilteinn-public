@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
+from app.api.v1.artifacts import _kernel_stats
 from app.dependencies import (
     CurrentUser,
     get_artifact_set_repo,
@@ -61,6 +62,7 @@ from app.schemas.build import (
     CompareWeaponsResponse,
     ContributionRead,
     EnemySpec,
+    EquippedStatsRead,
     ExplainRequest,
     ExplainResponse,
     GcsimCandidateConfig,
@@ -1117,3 +1119,27 @@ async def calibrate_recipe(
         probe_stat=body.probe_stat,
         probe_delta=body.probe_delta,
     )
+
+
+@router.get("/{build_id}/equipped-stats", response_model=EquippedStatsRead)
+async def equipped_stats(
+    build_id: str,
+    builds: Annotated[BuildRepository, Depends(get_owned_build_repo)],
+) -> EquippedStatsRead:
+    """The build's equipped artifacts, summed in the kernel's quantities.
+
+    What `/calculate` needs to evaluate a calibrated recipe at a build's *real* gear — the
+    recipe is calibrated at a reference set of stats, and this is what replaces them.
+
+    Deliberately not part of `/artifacts/inventory`: that payload is fetched across a whole
+    inventory, and a field added to it is paid for once per artifact. This answers a question
+    about five.
+    """
+    build = await _require_full_build(builds, build_id)
+    totals: dict[str, float] = {}
+    pieces = 0
+    for artifact in build.artifacts:
+        pieces += 1
+        for quantity, value in _kernel_stats(artifact).items():
+            totals[quantity] = totals.get(quantity, 0.0) + value
+    return EquippedStatsRead(stats=totals, pieces=pieces)
