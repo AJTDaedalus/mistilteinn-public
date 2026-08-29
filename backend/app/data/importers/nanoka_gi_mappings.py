@@ -575,6 +575,9 @@ def enemy_profile_fields(key: str, payload: dict[str, Any]) -> dict[str, Any]:
     fields: dict[str, Any] = {
         "nanoka_id": int(key),
         "name": payload.get("name", ""),
+        # Read from the family payload, not the variant: `child` entries carry no art of
+        # their own, and the codex shows one picture per family.
+        "icon": payload.get("icon") or None,
         "tags": payload.get("codex", "") or "",
         "base_hp": base.get("hp", 0.0),
         "base_atk": base.get("atk", 0.0),

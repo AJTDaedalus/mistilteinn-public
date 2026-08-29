@@ -615,8 +615,14 @@ detected it.*
 
 **Why the original comparison inverted.** It weighed 475 files against fairy's 207 and
 concluded this set was the larger. Measured: **446 distinct files at 9.6 MB**, against
-fairy's **207 at 27 MB**. Genshin's icons are small; ZZZ's are not. The set we declined to
-commit is about a third the weight of the one already committed one repository over.
+fairy's **207 at 27 MB**. Genshin's icons are small; ZZZ's are not.
+
+**907 files at 33 MB as of the enemy art** — character portraits and monster icons were added
+after this ruling and did not reopen it. The decision was about whether the art belongs in the
+repository, not about a byte count, which is why the guard is a floor and a git query.
+
+The set we declined to commit was about a third the weight of the one already committed one
+repository over.
 
 **What stays.** `scripts/download_icons.py` is still the reproduction and `--check` is still
 the audit — nothing about how the art is *obtained* changes. `tests/unit/test_catalogue_art_is_committed.py`

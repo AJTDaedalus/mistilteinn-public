@@ -38,6 +38,10 @@ def test_profile_fields_map_the_scalar_columns(hilichurl):
 
     assert fields["nanoka_id"] == 21010101
     assert fields["name"] == "Hilichurl"
+    # From the **family** payload. `canonical_variant()` returns a `child` dict
+    # with no `icon` key at all, so a "consistency" edit to `variant.get("icon")`
+    # would write NULL to all 360 rows with the whole suite still green.
+    assert fields["icon"] == "UI_MonsterIcon_Hili_None_01"
     assert fields["tags"] == "HILICHURL"
     assert fields["base_hp"] == pytest.approx(13.584)
     assert fields["base_def"] == pytest.approx(500)

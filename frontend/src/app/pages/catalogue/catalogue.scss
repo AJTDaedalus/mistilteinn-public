@@ -199,3 +199,11 @@
     box-shadow: var(--glow-brass);
   }
 }
+
+/* Enemies carry a name and a resistance table, so the art is an identifier beside the name
+   rather than the subject of the card. */
+.card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}

@@ -71,6 +71,10 @@ scratch_*.txt
 #
 # `cd backend && python -m scripts.download_icons` remains the reproduction, and
 # `--check` remains the audit.
+#
+# **907 files at 33 MB now**, with the character portraits and the enemy art added since. The
+# decision is unchanged; the number is not, which is why the guard is a floor and a git query
+# rather than a count.
 
 # A user's own GOOD export — their account data, and derivable from the game.
 # Kept out of the repo for the same reason icons are: a repository is not a data store,

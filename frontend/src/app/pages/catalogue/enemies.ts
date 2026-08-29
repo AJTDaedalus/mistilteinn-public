@@ -2,6 +2,8 @@ import { DecimalPipe } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { CatalogueIcon } from '../../shared/icon/icon';
+
 import { catalogueList } from './catalogue-list';
 import { CatalogueService, type EnemyProfileRead } from './catalogue.service';
 import { allPages } from '../../api/all-pages';
@@ -35,7 +37,7 @@ type EnemyRow = EnemyProfileRead & {
  */
 @Component({
   selector: 'page-enemies',
-  imports: [FormsModule, DecimalPipe],
+  imports: [FormsModule, DecimalPipe, CatalogueIcon],
   templateUrl: './enemies.html',
   styleUrl: './catalogue.scss',
 })

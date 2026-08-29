@@ -304,6 +304,9 @@ class EnemyProfileRead(BaseModel):
     id: str
     nanoka_id: int | None = None
     name: str
+    #: The monster's art basename, e.g. `UI_MonsterIcon_Hili_None_01`. Read from the family
+    #: payload — `child` variants carry none, and the codex shows one picture per family.
+    icon: str | None = None
     level: int
     base_hp: float
     base_atk: float

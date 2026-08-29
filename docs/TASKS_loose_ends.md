@@ -115,7 +115,11 @@
 
 ## Open questions
 
-- **OQ-N1 — do icons get committed?** *Answered in DESIGN §2: no.* fairy committed 207 files;
+- **OQ-N1 — do icons get committed?** ~~*Answered in DESIGN §2: no.*~~ **Reversed 2026-08-28**
+  (`docs/DECISIONS.md` §4): they are committed. The reasoning below compared file counts and
+  missed that fairy's 207 are 27 MB against this set's 9.6 — and the cost of the original
+  answer was a production site that served no art at all, for months, with every layer green.
+  *Superseded, not deleted: the reasoning is why the reversal is worth reading.* fairy committed 207 files;
   Genshin's equivalent is 475, they are reproducible from a script and a seeded database, and
   a repository is not a CDN.
 - **OQ-N2 — build the modifier model?** **Escalated, not answered** — N.5 measured it and
@@ -127,4 +131,5 @@
 
 ## Not in this chunk
 
-The modifier model, enemy and artifact-piece icons, and image processing. DESIGN §6.
+The modifier model and image processing. DESIGN §6. (**Enemy icons shipped 2026-08-29** —
+the monster payload carried `icon` all along; artifact-piece icons remain out.)

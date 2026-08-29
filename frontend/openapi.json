@@ -4016,6 +4016,17 @@
             "type": "string",
             "title": "Name"
           },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon"
+          },
           "level": {
             "type": "integer",
             "title": "Level"

@@ -181,6 +181,9 @@ class EnemyProfile(TimestampMixin, Base):
         Integer, unique=True, nullable=True, index=True,
     )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
+    #: The monster's art basename, e.g. `UI_MonsterIcon_Hili_None_01`. Same shape and same
+    #: `String(128)` as `characters.icon` and `weapons.icon`, and vendored by the same script.
+    icon: Mapped[str | None] = mapped_column(String(128), nullable=True)
     level: Mapped[int] = mapped_column(Integer, nullable=False, default=90)
 
     base_hp: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)

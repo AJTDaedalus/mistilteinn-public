@@ -33,7 +33,10 @@
     <ul class="grid wide">
       @for (enemy of list.items(); track enemy.id) {
         <li class="card">
-          <span class="name">{{ enemy.name }}</span>
+          <span class="card__head">
+            <catalogue-icon [icon]="enemy.icon" [alt]="''" [size]="48" />
+            <span class="name">{{ enemy.name }}</span>
+          </span>
           <!-- Resistances only. HP/ATK/DEF are curve bases, not stats, and nothing applies
                the curve yet — showing them next to those labels would be a number that means
                something other than what it says. -->

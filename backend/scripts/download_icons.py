@@ -50,6 +50,7 @@ from sqlalchemy import select
 
 from app.database import async_session_factory
 from app.models.artifact import ArtifactSet
+from app.models.build import EnemyProfile
 from app.models.character import Character
 from app.models.weapon import Weapon
 
@@ -63,7 +64,12 @@ OUT = Path(__file__).resolve().parents[2] / "frontend" / "public" / "icons"
 CONCURRENCY = 8
 
 #: The tables that carry an icon basename, in the order a reader would look for them.
-SOURCES = ((Character, "character"), (Weapon, "weapon"), (ArtifactSet, "artifact set"))
+SOURCES = (
+    (Character, "character"),
+    (Weapon, "weapon"),
+    (ArtifactSet, "artifact set"),
+    (EnemyProfile, "enemy"),
+)
 
 #: Characters have a second image: the half-body gacha portrait, ~118 KB against the 22 KB
 #: avatar icon. `UI_AvatarIcon_Ayaka` -> `UI_Gacha_AvatarIcon_Ayaka`, which is the same

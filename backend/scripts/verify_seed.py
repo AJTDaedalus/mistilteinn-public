@@ -350,6 +350,8 @@ async def verify(
                 f"{entity}: the run refused to prune — {recorded['prune_blocked']}",
             )
 
+    failures.extend(await _art_coverage(session))
+
     for anchor, actual in await _anchor_values(session):
         if actual != anchor.expected:
             failures.append(
@@ -357,6 +359,46 @@ async def verify(
                 f"(source: {anchor.source})",
             )
     return failures
+
+
+#: Tables whose rows should all name their art, and how many may legitimately not.
+#:
+#: **This exists because a migration is not a re-seed.** `enemy_profiles.icon` was added
+#: nullable and filled by re-seeding; a production deploy runs `alembic upgrade head` and
+#: *not* `seed_db`, so the column would have stayed NULL on every row, the codex page would
+#: have rendered no art, and every gate — migrations, health check, this verifier — would
+#: have reported green. That is the shape `docs/DECISIONS.md` §4 is about, one column over.
+#:
+#: Zero is the measured answer, not an aspiration: every importer-owned row in all four
+#: tables names an icon at 7.0.51. **This is about the basename, not the file** — three of
+#: those basenames are not published upstream, which `download_icons.py` reports separately
+#: and is not this check's business. A row with no *name* is a seeding gap.
+_ART_COVERAGE: tuple[tuple[str, int], ...] = (
+    ("character", 0),
+    ("weapon", 0),
+    ("artifact", 0),
+    ("monster", 0),
+)
+
+
+async def _art_coverage(session: AsyncSession) -> list[str]:
+    """Rows whose `icon` is NULL, against what each table is allowed."""
+    out: list[str] = []
+    for entity, allowed in _ART_COVERAGE:
+        model = ENTITY_MODELS.get(entity)
+        if model is None or not hasattr(model, "icon"):
+            continue
+        missing = await session.scalar(
+            select(func.count())
+            .select_from(model)
+            .where(model.nanoka_id.isnot(None), model.icon.is_(None)),
+        )
+        if (missing or 0) > allowed:
+            out.append(
+                f"{entity}: {missing} row(s) name no icon, {allowed} allowed — the table "
+                f"was migrated but not re-seeded (python -m scripts.seed_db)",
+            )
+    return out
 
 
 async def main_async(*, live: bool) -> int:

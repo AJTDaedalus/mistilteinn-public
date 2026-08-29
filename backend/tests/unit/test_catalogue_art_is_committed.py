@@ -9,9 +9,14 @@ where the directory did not exist, nginx's SPA fallback answered every `/icons/*
 The site served no art at all and every layer reported success.
 
 The measurement that settled it (2026-08-28, `docs/DECISIONS.md`): **446 distinct files,
-9.6 MB** — against fairy's committed **207 files at 27 MB**. The rule that ignored them
-compared *file counts* and concluded this set was the heavier of the two. It is roughly a
-third of it.
+9.6 MB** — against fairy's committed **207 files at 27 MB**.
+
+That was the set as first committed; it is **907 files at 33 MB** now, with the character
+portraits and the enemy art since. The decision is the same and the number is not, which is
+why the assertions below are a floor and a git query rather than a count.
+
+The rule that ignored them compared *file counts* and concluded this set was the heavier of
+the two. It is roughly a third of it.
 
 So the art is committed, and these tests are the thing that would have caught the silence.
 They are deliberately DB-free — `download_icons.py --check` is the audit that knows what the
@@ -100,11 +105,25 @@ def test_the_icon_directory_is_not_gitignored() -> None:
     )
 
 
-@pytest.mark.parametrize("name", ["UI_AvatarIcon_", "UI_EquipIcon_", "UI_RelicIcon_"])
-def test_all_three_catalogue_families_are_present(name: str) -> None:
-    """Characters, weapons and artifact sets each draw from their own basename family.
+@pytest.mark.parametrize(
+    "name",
+    [
+        "UI_AvatarIcon_",
+        "UI_Gacha_AvatarIcon_",
+        "UI_EquipIcon_",
+        "UI_RelicIcon_",
+        "UI_MonsterIcon_",
+    ],
+)
+def test_every_catalogue_family_is_present(name: str) -> None:
+    """Each source draws from its own basename family, and each is checked.
 
-    A run that fetched only one of them leaves a UI that looks half-finished rather than
-    broken, so the count floor above would not catch it.
+    A run that fetched only some of them leaves a UI that looks half-finished rather than
+    broken, so the count floor above would not catch it — **and did not**: the enemy icons
+    are 341 files, so losing all of them leaves 566, comfortably above `MINIMUM`, with every
+    family this test knew about still resolving. Green, and no art on the codex page.
+
+    The list grows with `download_icons.SOURCES`; the character portraits are a second family
+    from the same source and are named separately for the same reason.
     """
     assert list(ICONS.glob(f"{name}*.webp")), f"no {name}* icons vendored"
