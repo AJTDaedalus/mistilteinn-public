@@ -50,8 +50,10 @@ bugs here that no local run would have:
 `--clean` recovers most of that by running from a fresh `git clone` of HEAD into a temporary
 directory, which restores the untracked-and-stale-artifact property. It does **not** restore
 "a different machine", so a dependency that happens to be installed here and nowhere else
-will still pass. That residue is a known, accepted risk while there is no deploy target — not
-something this script has solved.
+will still pass. That residue is a known, accepted risk — not something this script has
+solved. It used to read "while there is no deploy target", which stopped being true when K
+put the stack behind `mistilteinn.aetherus.dev`; the risk is unchanged, so the sentence is
+kept and its expiry date removed.
 
 ## Usage
 

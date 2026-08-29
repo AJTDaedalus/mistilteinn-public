@@ -18,7 +18,7 @@ name: Deploy to prod
 # file targeted exactly that and would have redeployed fairy's production directory from
 # this repo's `dev`.
 #
-# **No seed-verification job.** fairy's second job runs its kit-validation harness against
+# **A seed-verification job of a different kind.** fairy's second job runs its kit-validation harness against
 # the live database, because fairy's correctness depends on curated data a human had to
 # remember to re-seed. mistilteinn's game data is *derived*: seeded by
 # `scripts.seed_db` from a pinned nanoka snapshot, with `seed_runs` recording which patch
@@ -30,6 +30,24 @@ name: Deploy to prod
 on:
   push:
     branches: [dev]
+  # Manual re-run, with the option to re-seed first.
+  #
+  # `verify-seed`'s failure message names a command, and until this existed the command
+  # needed a shell on the prod box — so the documented remedy for a *routine* state was
+  # reachable only by the one person with SSH. It is routine because every column the
+  # catalogue grows puts prod into it: `alembic upgrade head` adds the column, nothing
+  # re-runs the importer, and the rows are NULL until someone notices. That is how prod
+  # got 360 enemies with no icon.
+  #
+  # Off by default, and deliberately not automatic on every deploy. A seed is a ten-second
+  # write across 19 tables, and running it unasked on each push would make the one command
+  # that rewrites the catalogue the one nobody was watching.
+  workflow_dispatch:
+    inputs:
+      reseed:
+        description: "Re-seed the catalogue from the pinned nanoka snapshot before verifying"
+        type: boolean
+        default: false
 
 # Never let two deploys overlap; queue them rather than cancelling a half-done one.
 concurrency:
@@ -110,6 +128,30 @@ jobs:
           $COMPOSE up -d --build
           $COMPOSE run --rm backend alembic upgrade head || true
 
+  reseed:
+    # Only ever on an explicit dispatch. `if` on the job rather than the step so that a
+    # normal deploy shows this as *skipped* instead of green — a green box beside "reseed"
+    # on a run that seeded nothing is the kind of thing a reader remembers wrongly later.
+    name: Re-seed the catalogue from the pinned snapshot
+    if: ${{ inputs.reseed }}
+    needs: deploy
+    runs-on: [self-hosted, mistilteinn-prod]
+    env:
+      REPO_DIR: /home/ubuntu/mistilteinn
+      COMPOSE: docker compose -f docker-compose.yml -f docker-compose.prod.yml
+    steps:
+      - name: seed_db against the live database
+        run: |
+          set -euo pipefail
+          cd "$REPO_DIR"
+          # No `--force-prune`, and that is the point. If an index comes back empty or
+          # truncated — a valid 200 that no retry can detect — the pass reports
+          # `PRUNE REFUSED`, exits non-zero and deletes nothing, because deleting the
+          # catalogue takes every user's builds with it through ON DELETE CASCADE.
+          # Overriding that is a decision someone makes after reading the numbers, not a
+          # flag a workflow carries permanently.
+          $COMPOSE run --rm -T backend python -m scripts.seed_db
+
   verify-seed:
     # SEPARATE JOB, deliberately — the same reasoning fairy wrote down. `deploy` ends with a
     # `Rollback on failure` step, so a verification step inside it would roll **working
@@ -117,7 +159,12 @@ jobs:
     # job cannot trigger that rollback: its failure leaves the deployment in place and says
     # loudly that prod needs a re-seed.
     name: Verify the prod seed against the real database
-    needs: deploy
+    # `needs` both, but `reseed` is skipped on every push — and a skipped dependency would
+    # skip this job too under the default rule, silently retiring the check on exactly the
+    # runs it exists for. The condition re-states what "skipped is fine, failed is not"
+    # means, which is the same distinction this job draws about its own subject.
+    needs: [deploy, reseed]
+    if: ${{ !cancelled() && needs.deploy.result == 'success' && needs.reseed.result != 'failure' }}
     runs-on: [self-hosted, mistilteinn-prod]
     env:
       REPO_DIR: /home/ubuntu/mistilteinn
