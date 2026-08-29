@@ -24,7 +24,7 @@
         <entity-token
           [icon]="subject.character?.icon"
           [name]="subject.character?.name || 'No character'"
-          [meta]="'C' + subject.constellation_level + ' · ' + (subject.weapon?.name || 'no weapon')"
+          [meta]="'C' + subject.constellation_level + ' · ' + (subject.weapon_display || 'no weapon')"
           [size]="48"
         />
         <element-chip [element]="subject.character?.element ?? null" />

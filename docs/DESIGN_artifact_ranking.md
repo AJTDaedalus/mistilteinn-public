@@ -1,6 +1,6 @@
 # DESIGN: ranking one artifact
 
-**Status: proposed, nothing built.** Owner request (2026-08-29): *"make a plan for implementing
+**Status: open questions answered 2026-08-29 (`DECISIONS.md` §22); nothing built.** Owner request (2026-08-29): *"make a plan for implementing
 artifact ranking like they do for relics. It's similar to optimization, but has more to do with
 [artifact] potential for a rotation than picking the best set of 5 artifacts, and applies to
 lower level artifacts too (like the probability a lvl 0 artifact will be an upgrade if
@@ -72,32 +72,40 @@ failure `CLAUDE.md` names as fairy's worst, and `TASKS_weapon_passives.md` alrea
 same shape for weapon passives — deriving 237 conditions from refinement prose — in favour of
 letting gcsim answer.
 
-We have a damage chain that can explain itself. So:
+### OQ-A1, answered — and this section's own proposal was overruled
 
-> **A substat's weight is the measured derivative of the build's own damage with respect to
-> that substat.**
+This document first proposed finite differences over the **Chunk F single-hit chain**: add one
+roll of CRIT DMG, re-run the chain, take the difference. Measured rather than asserted, which
+was the right instinct. The owner's ruling goes further, and asks the better question:
 
-Add one roll of CRIT DMG to the build, re-run the chain, take the difference. That is a finite
-difference on a function we already have, it is *specific to this character with this weapon at
-this constellation against this enemy*, and it is **derived, not asserted**. A weight that is
-wrong is then a bug in the damage chain — which is crossvalidated to 1.3e-8 — rather than a
-citation nobody can check.
+> *"Calculated via our gcsim-like optimizer. It should be the engine beneath ranking too. 'How
+> much potential does this artifact have given this character in this team with this rotation?'
+> With the same efficiency tweaks we did for optimize."*
 
-It also composes with `/explain`: the same machinery that says *why the winner won* can say
-*why this substat is worth more than that one on this build*, in the same units.
+**A single-hit derivative cannot see a team buff or a rotation's shape**, and those are most of
+what decides whether Energy Recharge or CRIT DMG is worth more on a given piece. A Furina in the
+party changes the answer; so does whether the rotation gets the burst off. Scoring against one
+hit would produce a confident number for a question nobody asked — the failure this repo names
+most often.
 
-**Cost, honestly.** One evaluation per substat type, per build — six or seven — and the result
-is a vector reusable for every artifact in the inventory. `docs/RESEARCH_recipe_cost.md`'s 7.84 s
-figure is for a **gcsim rotation**, not for the Chunk F chain; the chain is the cheap path and
-this is why it should be the one used. **This needs measuring in Task 1 before anything is built
-on it** — if a chain evaluation turns out to be milliseconds, the weight vector can be computed
-on demand; if not, it is cached per build and invalidated with `context_key`.
+**And the performance shape already exists.** `sim/recipe-eval.ts` calibrates a recipe *once per
+4-piece state*, after which evaluating one candidate's stats is cheap. That is exactly the
+amortisation ranking needs: the expensive part is paid per *search*, not per artifact, so a whole
+inventory can be scored off one calibration. `RESEARCH_recipe_cost.md`'s **7.84 s** is the cost of
+a calibration, not of an evaluation, and conflating the two is what made the first draft reach for
+the cheaper, wronger engine.
 
-**Diminishing returns are real and are not modelled by a single derivative.** CRIT Rate above
-100% is worth nothing, and the derivative at the current stat is not the average over five more
-rolls. Task 3 addresses this by evaluating at the *midpoint* of the projected gain rather than at
-the current value, which is the cheapest honest correction; a full curve is a later refinement
-and should not gate the first version.
+So **ranking is not a new engine.** It is the optimizer's evaluator asked a different question:
+instead of *"which five pieces score highest"*, *"what does this one piece score, and what could
+it score once levelled"*.
+
+**What still needs measuring in Task 1** is not "is the chain fast enough" but *how many
+evaluations a full inventory costs at one calibration*, and whether the result is cached per
+`context_key` or recomputed. That is a number, and nothing gets built on an assumed one.
+
+**Diminishing returns fall out of this for free**, which the derivative approach could not manage:
+evaluating the recipe at the piece's *projected* stats already accounts for CRIT Rate passing
+100%, because the evaluator is the real damage function rather than a local slope.
 
 ## 5. What to report — four numbers, and none of them a single grade
 
@@ -106,22 +114,60 @@ Following Fribbels' shape, which is the right shape:
 | number | meaning |
 |---|---|
 | **current** | the piece as it stands |
-| **average** | deterministic expected value of the remaining rolls |
+| **average** | expected value of the remaining rolls |
 | **best** | every remaining roll on the highest-weighted substat, at the top tier |
 | **worst** | every remaining roll on the lowest-weighted substat, at the bottom tier |
 
-*Average* follows Fribbels in being a **deterministic expected value**, not a simulation:
-remaining rolls spread evenly across the eligible substats at the mid tier. Fribbels runs no
-Monte Carlo here and neither should we — a distribution implies a precision the substat pool
-does not support, and the honest spread is already carried by `best` and `worst`.
+*Average* starts as Fribbels' deterministic expected value — remaining rolls spread evenly
+across the eligible substats at the mid tier — because it is cheap and is enough to sort a list
+by. **It is superseded by the distribution once that lands** (OQ-A4 below), at which point the
+average becomes that distribution's mean rather than a separate rule, and the two cannot
+disagree.
 
-**The owner asked for "the probability a lvl 0 artifact will be an upgrade if levelled", which
-is a fifth number and a genuinely different computation.** It needs the substat draw
-distribution — which lines can appear, without replacement, weighted by the pool — and a
-threshold to beat. It is the most valuable number here and the most likely to be wrong. **Task 5,
-separately, and only after 1–4 are landed and checked.** Fribbels puts its probability model in
-one place (its time-to-beat estimate) rather than sprinkling it, and that separation is worth
-copying.
+### OQ-A4, answered — a distribution, following Genshin Optimizer
+
+**Fribbels' deterministic average is not enough.** The owner's ruling:
+
+> *"Check Genshin Optimizer… It shows a distribution per artifact. That's a little better,
+> yeah."*
+
+So the fifth number is a **distribution over outcomes**, not a point estimate — which is a
+genuinely different computation from the four above. It needs the substat draw model: which
+lines can appear, drawn without replacement, weighted by the pool, across the remaining
+upgrades. `docs/RESEARCH_genshin_optimizer_scoring.md` is the audit of how GO does it.
+
+**Still last, and still separately.** It remains the largest new piece and the one with no
+crossvalidation oracle behind it — everything else in this plan is the optimizer's evaluator,
+which is checked against gcsim. GO keeps its probability model in one place rather than
+sprinkling it, and that separation is worth copying whatever the model turns out to be.
+
+### The apparent conflict between A1 and A4, and why there isn't one
+
+The audit of GO ends with a warning: its method — a **delta method** at the coarse tree levels
+(symbolic Jacobian, `f_cov = df·cov·dfᵀ`) and **exact enumeration** at the leaves, with no Monte
+Carlo anywhere — needs an objective that is *differentiable and microsecond-cheap*. And it
+observes that **gcsim is neither**.
+
+That is true of gcsim and **not true of what A1 actually names.** A "recipe" in this repo is not
+gcsim. `sim/recipe.ts` is a **transcription** of gcsim's own published per-hit decomposition —
+`talent`, `total_scaling`, `bonus_dmg`, `cr`, `cd`, `def_mod`, `res_mod` — recomposed and
+verified exact to **0.000e+00** across all 245 hits of a committed sample. gcsim runs once, to
+calibrate; the loop then replays closed-form arithmetic at a measured **0.051 µs per hit**.
+
+So the objective A1 selects is:
+
+- **closed-form**, not a simulation;
+- **deterministic** — crit is computed rather than rolled, a divergence taken deliberately in
+  `CROSSVAL_gcsim.md` precisely so no Monte Carlo noise enters a deterministic evaluator;
+- **microsecond-cheap**, comfortably inside what GO's method assumes;
+- **smooth except for one clamp** — `effectiveCritRate` is `min(max(cr, 0), 1)`, so the function
+  is piecewise-smooth in exactly the way a crit-rate cap makes GO's own objective
+  piecewise-smooth. Not a new problem, and it has a known kink location rather than an unknown
+  one.
+
+**The two rulings therefore compose**, and this is the enabling fact for the whole plan: the
+engine A1 chose is the differentiable cheap objective A4's method requires. Anything that later
+reaches for *gcsim itself* inside the ranking loop has left the design.
 
 ## 6. What must never be silent
 
@@ -141,24 +187,25 @@ Three failure modes, each with a required behaviour:
 ## 7. Suggested task order
 
 0. Branch setup.
-1. **Measure a Chunk F evaluation.** Everything downstream depends on whether a weight vector
-   costs milliseconds or seconds. No code until this number exists.
+1. **Measure what a full inventory costs off one calibration.** Not "is the chain fast enough"
+   — the engine is decided — but how many recipe evaluations 2,370 pieces need, and whether the
+   result caches per `context_key`. No code until this number exists.
 2. **`remaining_rolls`** — pure, from the committed schedule. Small and fully testable offline.
-3. **The weight vector** — finite differences over the damage chain, evaluated at the midpoint.
-4. **current / average / best / worst**, with the three refusals of §6.
+3. **Score one piece through the recipe evaluator**, at its current stats. The smallest thing
+   that proves the engine choice.
+4. **current / average / best / worst**, with the three refusals of §6, plus grades (OQ-A3).
 5. **`GET /artifacts/{id}/score?build_id=`**, then the inventory column and sort — which is also
    the fix for `AUDIT_fribbels_parity.md` §2, so the two land together.
-6. **Upgrade probability**, separately, or not at all.
+6. **The distribution** (OQ-A4), last, with its own verification.
 
-## Open questions for the owner
+## Answered (2026-08-29, `DECISIONS.md` §22)
 
-- **OQ-A1** Derived weights (§4) or user-editable ones? This document argues derived, and
-  recommends *showing* the derived vector so a user can see the tool's reasoning — but not
-  offering an override in the first version, because an override is a second source of truth.
-- **OQ-A2** Score against a **build** (its real weapon and constellation) or against a
-  **character** at some assumed baseline? Build is more honest and means an unbuilt character
-  cannot be scored for.
-- **OQ-A3** Grades (F→AEON) as well as numbers? Fribbels has them and they compress well, but
-  a letter invites comparison across characters where none is meaningful.
-- **OQ-A4** Is §5's probability number wanted enough to justify a substat-pool distribution
-  model, which is the single largest new thing in this plan?
+| | ruling |
+|---|---|
+| **OQ-A1** | The **rotation engine**, not a weights table and not the single-hit chain. "Given this character, in this team, with this rotation." |
+| **OQ-A2** | Score against a **build** — its real weapon, constellation and talents |
+| **OQ-A3** | **Numbers and grades.** The caveat that an "A" is per-character belongs in how they are labelled, not in refusing to have them |
+| **OQ-A4** | A **distribution**, following Genshin Optimizer rather than Fribbels' point estimate |
+
+Nothing is blocked on a decision. What remains unknown is a **measurement** — Task 1 — not a
+choice.

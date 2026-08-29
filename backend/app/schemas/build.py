@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 
 from app.formula.genshin import tags
 from app.formula.genshin.damage import Amplifying, ScalingStat
@@ -143,6 +143,27 @@ class BuildRead(BaseModel):
     weapon: WeaponSummary | None = None
 
     model_config = {"from_attributes": True}
+
+    @computed_field
+    @property
+    def weapon_display(self) -> str | None:
+        """`Freedom-Sworn · R1 · Lv90` — the weapon as a build actually holds it.
+
+        Published rather than left to each client for the same reason `weapon_type_display`
+        is. Three surfaces named a build's weapon — the saved list, the team slot picker and
+        the optimize header — and all three printed the bare name, so a character showed
+        `C6` while the weapon beside it showed nothing about how far it had been taken. Three
+        format strings would have been three chances to disagree about a build's own gear.
+
+        `None` when there is no weapon: `weapon_id` is nullable by design (OQ-T3), and a
+        caller should render "no weapon" rather than a level for a weapon that is not there.
+
+        Refinement before level because refinement is the scarcer fact — a Lv90 R1 and a Lv90
+        R5 are different weapons in practice, and the R is what a reader is scanning for.
+        """
+        if self.weapon is None:
+            return None
+        return f"{self.weapon.name} · R{self.refinement} · Lv{self.weapon_level}"
 
 
 class TalentRef(BaseModel):

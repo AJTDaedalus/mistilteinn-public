@@ -711,3 +711,78 @@ the same five pieces. The options:
 **Not chosen.** Until it is, the import creates the one Traveler the export actually describes,
 picking the lowest `nanoka_id` for the gender the export cannot record and saying so in the
 build's notes.
+
+---
+
+## 21. The rotation library: four rulings
+
+**Owner, 2026-08-29**, answering `docs/DESIGN_rotation_library.md`'s open questions.
+
+**OQ-1 — importing a gcsim config we cannot fully express: refuse, and add a converter.**
+Keep refusing anything still unexpressible, but first rewrite what is mechanically
+translatable: `for … { }` → `while 1 { }`, and comma-separated action sequences into one step
+each. The evidence for this is measured rather than assumed — putting the real community
+config `skirk_team.txt` through the importer showed the blockers were the *loop keyword and
+the sequence syntax*, not the conditional guards the design worried about. A converter is a
+much smaller idea than "lossy import" and would have carried that file most of the way.
+**Nothing is silently dropped either way**: whatever the converter cannot express is still
+refused, by line.
+
+**OQ-2 — mirroring gcsim's own rotation database: out of scope.** Those rotations are
+submitted by other people under terms this repo has not established, and republishing them is
+not obviously ours to do. Users import the individual configs they choose.
+
+**OQ-3 — likes are a count.** A number, plus whether *you* liked it. No social graph and
+nothing to moderate.
+
+**OQ-4 — sharing requires explicit publishing.** Private by default. A private rotation
+becoming visible by default is not a mistake that can be taken back, and instance-wide
+visibility would retroactively publish everything already saved.
+
+---
+
+## 22. Artifact ranking runs on the rotation engine, not on a weights table
+
+**Owner, 2026-08-29**, answering `docs/DESIGN_artifact_ranking.md`'s open questions — and
+**overruling the plan's own proposal**, correctly.
+
+**OQ-A1.** The plan proposed deriving substat weights as finite differences over the Chunk F
+damage chain: better than Fribbels' curated per-character weights, because it is measured
+rather than asserted. The owner's answer goes further and is the right question:
+
+> *"Calculated via our gcsim-like optimizer. It should be the engine beneath ranking too. 'How
+> much potential does this artifact have given this character in this team with this rotation?'
+> With the same efficiency tweaks we did for optimize."*
+
+A single-hit derivative cannot see a team buff or a rotation's shape, and those are most of
+what decides whether Energy Recharge or CRIT DMG is worth more on a given piece. The recipe
+engine already answers the real question — and **already has the performance shape this needs**:
+a recipe is calibrated once per 4-piece state, after which evaluating one candidate's stats is
+cheap. That cost is amortised across the whole inventory rather than paid per artifact.
+
+So ranking is not a new engine. It is the optimizer's evaluator asked a different question:
+instead of *"which five pieces score highest"*, *"what does this one piece score, and what
+could it score once levelled"*.
+
+**OQ-A2 — score against a build**, not a character at an assumed baseline. Its real weapon,
+constellation and talents. A character with no build cannot be scored for, which is honest.
+
+**OQ-A3 — numbers and grades.** Both. Grades are what make Fribbels scannable at thousands of
+items; the caveat that an "A" for one character is not an "A" for another is real and belongs
+in how they are labelled, not in refusing to have them.
+
+**OQ-A4 — a distribution, following Genshin Optimizer rather than Fribbels.** Fribbels reports
+a deterministic average/best/worst; GO shows a distribution per artifact, and the owner judged
+that better. `docs/RESEARCH_genshin_optimizer_scoring.md` is the audit of how — a lazily
+expanded tree, delta method at the coarse levels and exact enumeration at the leaves, **no
+Monte Carlo anywhere**. This remains the largest new piece and the one with no crossvalidation
+oracle behind it.
+
+**A1 and A4 look incompatible and are not**, which is worth recording because the audit itself
+flags it: GO's method needs a differentiable, microsecond-cheap objective, and *gcsim is
+neither*. But A1 does not name gcsim. A recipe is a **transcription** of gcsim's own per-hit
+decomposition, verified exact to 0.000e+00 across 245 hits and replayed as closed-form
+arithmetic at **0.051 µs per hit**, with crit computed rather than rolled. It is deterministic,
+cheap, and smooth but for the `effectiveCritRate` clamp — which is the same kink GO's own
+objective has. **The engine A1 chose is the objective A4's method requires.** Anything that
+reaches for gcsim itself inside the ranking loop has left the design.

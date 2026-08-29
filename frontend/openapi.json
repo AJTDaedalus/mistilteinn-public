@@ -3285,6 +3285,19 @@
                 "type": "null"
               }
             ]
+          },
+          "weapon_display": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weapon Display",
+            "description": "`Freedom-Sworn \u00b7 R1 \u00b7 Lv90` \u2014 the weapon as a build actually holds it.\n\nPublished rather than left to each client for the same reason `weapon_type_display`\nis. Three surfaces named a build's weapon \u2014 the saved list, the team slot picker and\nthe optimize header \u2014 and all three printed the bare name, so a character showed\n`C6` while the weapon beside it showed nothing about how far it had been taken. Three\nformat strings would have been three chances to disagree about a build's own gear.\n\n`None` when there is no weapon: `weapon_id` is nullable by design (OQ-T3), and a\ncaller should render \"no weapon\" rather than a level for a weapon that is not there.\n\nRefinement before level because refinement is the scarcer fact \u2014 a Lv90 R1 and a Lv90\nR5 are different weapons in practice, and the R is what a reader is scanning for.",
+            "readOnly": true
           }
         },
         "type": "object",
@@ -3296,7 +3309,8 @@
           "ascension_phase",
           "weapon_level",
           "refinement",
-          "constellation_level"
+          "constellation_level",
+          "weapon_display"
         ],
         "title": "BuildRead",
         "description": "One saved build."

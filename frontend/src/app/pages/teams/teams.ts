@@ -240,7 +240,7 @@ export class TeamsPage implements OnInit {
       value: b.id,
       label: b.character?.name || 'No character',
       icon: b.character?.icon ?? null,
-      detail: `C${b.constellation_level} · ${b.weapon?.name || 'no weapon'}`,
+      detail: `C${b.constellation_level} · ${b.weapon_display || 'no weapon'}`,
     }));
   }
 

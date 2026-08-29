@@ -178,7 +178,7 @@
                 <element-chip [element]="build.character?.element ?? null" />
                 <span class="weapon">
                   <catalogue-icon [icon]="build.weapon?.icon" [alt]="''" [size]="24" />
-                  <span>{{ build.weapon?.name || 'no weapon' }}</span>
+                  <span>{{ build.weapon_display || 'no weapon' }}</span>
                 </span>
               </button>
               <button
