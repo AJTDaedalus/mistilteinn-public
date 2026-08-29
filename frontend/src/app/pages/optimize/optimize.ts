@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { apiErrorMessage } from '../../api/api-error';
+import { CardPicker, type CardOption } from '../../shared/card-picker/card-picker';
 import { ElementChip } from '../../shared/element/element';
 import { CatalogueIcon } from '../../shared/icon/icon';
 import { EntityToken } from '../../shared/token/token';
@@ -18,6 +19,7 @@ import {
 } from '../explain/explain.service';
 import { ArtifactsService } from '../artifacts/artifacts.service';
 import { RotationsService } from '../rotations/rotations.service';
+import { TEAM_SLOTS, TeamsService, type TeamRead } from '../teams/teams.service';
 import { isFilterableMainStat, sortMainStats } from '../../shared/stat-order';
 import { scoreForSlot } from '../../sim/artifact-score';
 import type { Recipe } from '../../sim/recipe';
@@ -107,7 +109,10 @@ const UPGRADES_PER_SLOT = 3;
  */
 @Component({
   selector: 'page-optimize',
-  imports: [FormsModule, RouterLink, DecimalPipe, PercentPipe, CatalogueIcon, ElementChip, EntityToken],
+  imports: [
+    FormsModule, RouterLink, DecimalPipe, PercentPipe,
+    CardPicker, CatalogueIcon, ElementChip, EntityToken,
+  ],
   templateUrl: './optimize.html',
   styleUrl: './optimize.scss',
 })
@@ -189,6 +194,58 @@ export class OptimizePage implements OnInit {
   protected readonly explaining = signal(false);
 
   protected readonly buildId = signal('');
+
+  /**
+   * Start from a team, then pick who in it (owner's audit, §6).
+   *
+   * **Optional, deliberately.** A build in no team would otherwise be unreachable from this
+   * page — 75 builds and eight teams on the owner's account, so most of them. Clearing the
+   * team widens the build grid back to everything rather than emptying it.
+   */
+  protected readonly teams = signal<TeamRead[]>([]);
+  protected readonly teamId = signal('');
+
+  protected readonly team = computed(
+    () => this.teams().find((t) => t.id === this.teamId()) ?? null,
+  );
+
+  /** The builds the chosen team fields, in slot order, or every build when none is chosen. */
+  protected readonly buildsInScope = computed(() => {
+    const chosen = this.team();
+    if (!chosen) return this.builds();
+    const byId = new Map(this.builds().map((b) => [b.id, b]));
+    return TEAM_SLOTS
+      .map((slot) => chosen[slot])
+      .map((id) => (id ? byId.get(id) : undefined))
+      .filter((b): b is BuildRead => b !== undefined);
+  });
+
+  protected readonly teamOptions = computed<CardOption[]>(() => {
+    const byId = new Map(this.builds().map((b) => [b.id, b]));
+    return this.teams().map((team) => {
+      const party = TEAM_SLOTS
+        .map((slot) => team[slot])
+        .map((id) => (id ? byId.get(id) : undefined))
+        .filter((b): b is BuildRead => b !== undefined);
+      return {
+        value: team.id,
+        label: team.name,
+        // A team's identity is the four characters in it, so the card carries all four rather
+        // than electing one to stand for the rest.
+        icons: party.map((b) => b.character?.icon),
+        detail: party.map((b) => b.character?.name).filter(Boolean).join(' · '),
+      };
+    });
+  });
+
+  protected readonly buildOptions = computed<CardOption[]>(() =>
+    this.buildsInScope().map((b) => ({
+      value: b.id,
+      label: b.character?.name || 'No character',
+      icon: b.character?.icon,
+      detail: `C${b.constellation_level} · ${b.weapon_display || 'no weapon'}`,
+    })),
+  );
   /**
    * A **signal**, because the `hit` computed reads it.
    *
@@ -520,6 +577,7 @@ export class OptimizePage implements OnInit {
 
   private readonly recipeOptimize = inject(RecipeOptimizeService);
   private readonly rotationsService = inject(RotationsService);
+  private readonly teamsService = inject(TeamsService);
   private readonly optimize = inject(OptimizeService);
   private readonly artifacts = inject(ArtifactsService);
   private readonly explain = inject(ExplainService);
@@ -561,11 +619,15 @@ export class OptimizePage implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const [builds, options, rotations] = await Promise.all([
+      const [builds, options, rotations, teams] = await Promise.all([
         this.buildsService.list(),
         this.artifacts.options(),
         this.rotationsService.list(),
+        // Never fatal: a team is a way to narrow the build grid, and a page that refused to
+        // open because that convenience failed would be worse than one without it.
+        this.teamsService.list().catch(() => []),
       ]);
+      this.teams.set(teams);
       // Paginated. Reading it as an array leaves the picker empty, which looks exactly like
       // having authored no rotations — the same trap W.6's compare page fell into.
       this.rotations.set(rotations.items.map((r) => ({ id: r.id, name: r.name })));
@@ -585,6 +647,23 @@ export class OptimizePage implements OnInit {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  /**
+   * Choosing a team narrows the build grid, and keeps the chosen build only if it is in there.
+   *
+   * Silently leaving a build selected that the team does not field would put this page's whole
+   * answer under a character the user just filtered away.
+   */
+  protected async selectTeam(ids: readonly string[]): Promise<void> {
+    this.teamId.set(ids[0] ?? '');
+    const inScope = this.buildsInScope();
+    if (inScope.some((b) => b.id === this.buildId())) return;
+    await this.selectBuild(inScope[0]?.id ?? '');
+  }
+
+  protected async pickBuild(ids: readonly string[]): Promise<void> {
+    await this.selectBuild(ids[0] ?? '');
   }
 
   protected async selectBuild(id: string): Promise<void> {

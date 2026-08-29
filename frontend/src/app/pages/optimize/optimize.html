@@ -1,7 +1,6 @@
 <section class="optimize">
   <header>
     <h1>Optimize</h1>
-    <p class="muted">Searched in your browser, over your own artifacts.</p>
   </header>
 
   @if (error(); as message) {
@@ -33,20 +32,25 @@
     }
 
     <div class="controls">
-      <label>
-        Build
-        <select
-          aria-label="Build"
-          [value]="buildId()"
-          (change)="selectBuild($any($event.target).value)"
-        >
-          @for (entry of builds(); track entry.id) {
-            <option [value]="entry.id">
-              {{ entry.character?.name || 'No character' }} · C{{ entry.constellation_level }}
-            </option>
-          }
-        </select>
-      </label>
+      <!-- A team first, then who in it. Optional: 75 builds against eight teams on the
+           owner's account, so requiring one would strand most builds. Clearing it widens the
+           grid back to everything rather than emptying it. -->
+      <mist-card-picker
+        label="Team"
+        placeholder="Any team"
+        clearable
+        [options]="teamOptions()"
+        [selected]="teamId() ? [teamId()] : []"
+        (selectedChange)="selectTeam($event)"
+      />
+
+      <mist-card-picker
+        label="Build"
+        placeholder="Choose a build…"
+        [options]="buildOptions()"
+        [selected]="buildId() ? [buildId()] : []"
+        (selectedChange)="pickBuild($event)"
+      />
 
       <label>
         Hit
@@ -104,8 +108,8 @@
           (ngModelChange)="objective.set($event)"
           aria-label="Objective"
         >
-          <option value="hit">Best single hit — fast</option>
-          <option value="rotation">Best over a rotation — runs gcsim</option>
+          <option value="hit">Best single hit</option>
+          <option value="rotation">Best across rotation</option>
         </select>
       </label>
 
@@ -126,15 +130,6 @@
         >
           {{ searching() ? 'Searching…' : 'Search rotation' }}
         </button>
-      } @else {
-        <!-- Everything that shapes a search — the 35-set filter, the 2+2 pair picker, the
-             calibration count — lives under the other objective. Without this line the page
-             looks like a tool that cannot constrain a search at all, which is what the
-             parity audit concluded from a screenshot of this exact state. A feature behind a
-             default is not much better than a feature with no surface. -->
-        <p class="hint objective__more">
-          The rotation objective adds set filtering and runs your actual rotation in gcsim.
-        </p>
       }
     </div>
 

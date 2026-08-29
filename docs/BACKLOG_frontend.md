@@ -30,8 +30,13 @@ reference the owner keeps naming; read it before designing.
 copying that shape per surface is how the fourth one ends up subtly different.
 
 Adopted so far: **inventory set filter** (#162), **build character** and **build weapon**
-(#170). Remaining, in the order above: optimize team, optimize sets, rotation team, rotation
-database search.
+(#170), **optimize team** and **optimize build** (#171). Remaining: optimize sets, rotation
+team, rotation database search.
+
+`CardOption.icons` was added for the team card (#171): a team's identity is the four characters
+in it, and electing one of them to stand for the whole thing is a card that lies about what it
+is. The rotation-team adoption wants the same thing, so reach for it rather than adding a
+second way.
 
 `clearable` was added to the picker for the build weapon and is worth knowing about before the
 next adoption: multi-select always offers "Clear", single-select does not, because you replace
@@ -146,11 +151,19 @@ show that a suggested piece is *owned*. Drag-and-drop for the ranking.
 
 ## 6. Optimize
 
-- Drop "Searched in your browser…".
-- **Start from a team** (card search), then pick the build within it.
-- Drop "The rotation objective adds…" — redundant once the objectives are named properly.
-- Objectives become **"Best single hit"** and **"Best across rotation"**. Users know the
-  trade-off.
+- ~~Drop "Searched in your browser…".~~ **Done (#171)**
+- ~~**Start from a team** (card search), then pick the build within it.~~ **Done (#171)** —
+  and **optional**: 75 builds against three teams on the owner's account, so requiring one
+  would strand most of them. Clearing the team widens the build grid back to everything.
+
+  The trap it walks into is narrowing the *list* without narrowing the *selection*: the page
+  would keep answering for a character the user had just filtered away. It moves the selection
+  onto the team's first member, and leaves it alone when the team does field it.
+- ~~Drop "The rotation objective adds…"~~ **Done (#171)**. The line existed because everything
+  that shapes a search lived behind the other objective, and the page looked like a tool that
+  could not constrain one. Naming the objectives properly is what makes it redundant, so the
+  two changes had to land together.
+- ~~Objectives become **"Best single hit"** and **"Best across rotation"**.~~ **Done (#171)**
 - ~~Remove **flower and plume** from the main-stat filters.~~ **Done (#163)** — a slot with one
   possible value gets no control. This reverses #146's reasoning, which is recorded in
   `stat-order` rather than dropped.

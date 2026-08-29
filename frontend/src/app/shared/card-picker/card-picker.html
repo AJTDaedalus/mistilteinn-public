@@ -78,7 +78,15 @@
           [attr.title]="option.tooltip"
           (click)="pick(option.value)"
         >
-          <catalogue-icon class="fill" [icon]="option.icon" [alt]="''" [size]="64" />
+          @if (option.icons?.length) {
+            <span class="picker__faces">
+              @for (art of option.icons; track $index) {
+                <catalogue-icon [icon]="art" [alt]="''" [size]="34" />
+              }
+            </span>
+          } @else {
+            <catalogue-icon class="fill" [icon]="option.icon" [alt]="''" [size]="64" />
+          }
           <!-- The name is always here. A grid of pictures is fast for someone who knows the
                icons and useless to everyone else — the argument `ElementChip` makes about
                colour, and the accessibility bug `ng lint` caught on #131. -->

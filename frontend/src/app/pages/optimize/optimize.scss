@@ -150,13 +150,6 @@
 }
 
 
-/* The note pointing at what the other objective unlocks. Sits on the objective row rather
-   than under it, so it reads as belonging to that control and not to the results below. */
-.objective__more {
-  margin: 0;
-  align-self: center;
-}
-
 /* ── Required main stats ────────────────────────────────────────────────────
    One select per slot, on one row. Flower and plume are offered even though their main stat
    is fixed by the game: hiding them would state a rule by an absence, which is the kind of

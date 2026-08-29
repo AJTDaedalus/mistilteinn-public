@@ -5,6 +5,7 @@ import { type Slot, search } from '../../sim/search';
 import { ArtifactsService } from '../artifacts/artifacts.service';
 import { RecipeOptimizeService } from './recipe-optimize.service';
 import { RotationsService } from '../rotations/rotations.service';
+import { TeamsService } from '../teams/teams.service';
 import { BuildsService } from '../builds/builds.service';
 import { ExplainService } from '../explain/explain.service';
 import { OptimizePage, describePieces } from './optimize';
@@ -66,6 +67,7 @@ function pageWith(overrides: {
   artifacts?: Partial<ArtifactsService>;
   rotations?: Partial<RotationsService>;
   recipeOptimize?: Partial<RecipeOptimizeService>;
+  teams?: Partial<TeamsService>;
 } = {}) {
   TestBed.configureTestingModule({
     providers: [
@@ -112,6 +114,16 @@ function pageWith(overrides: {
             useValue: overrides.recipeOptimize as unknown as RecipeOptimizeService,
           }]
         : []),
+      {
+        // Teams narrow the build grid (§6). `load()` catches a failure here rather than
+        // failing the page, so an unstubbed service would leave the team picker silently
+        // empty instead of erroring — which is exactly the shape of bug worth a stub.
+        provide: TeamsService,
+        useValue: {
+          list: vi.fn().mockResolvedValue([]),
+          ...overrides.teams,
+        } as unknown as TeamsService,
+      },
       {
         // The page loads rotations for the rotation objective (R.8). Without a stub, `load()`
         // never settles and every test here times out rather than failing on an assertion.
@@ -929,5 +941,111 @@ describe('the main-stat constraint', () => {
     // An empty result is indistinguishable from "your artifacts are bad", and the user would
     // not know which. The page says so before the search rather than after it returns nothing.
     expect(keep({ equip_ring: 'FIGHT_PROP_ELEC_ADD_HURT' })).toEqual(['f', 'c']);
+  });
+});
+
+
+/**
+ * Starting from a team, then picking who in it.
+ *
+ * The owner's audit asks for this on Optimize and on Rotations. The trap it walks into is
+ * narrowing the list without narrowing the *selection* — a page that keeps answering for a
+ * character the user has just filtered away.
+ */
+describe('OptimizePage teams', () => {
+  const GANYU_BUILD = {
+    ...AYAKA_BUILD, id: 'b2', character_id: 'c2',
+    character: { id: 'c2', name: 'Ganyu', element: 'Cryo' },
+  };
+  const XINGQIU_BUILD = {
+    ...AYAKA_BUILD, id: 'b3', character_id: 'c3',
+    character: { id: 'c3', name: 'Xingqiu', element: 'Hydro' },
+  };
+  const FREEZE = {
+    id: 't1', name: 'Freeze',
+    build1_id: 'b2', build2_id: 'b3', build3_id: null, build4_id: null,
+  };
+
+  const withTeam = () => pageWith({
+    builds: {
+      list: vi.fn().mockResolvedValue([AYAKA_BUILD, GANYU_BUILD, XINGQIU_BUILD]),
+    } as unknown as BuildsService,
+    teams: { list: vi.fn().mockResolvedValue([FREEZE]) } as unknown as TeamsService,
+  });
+
+  it('offers every build until a team is chosen', async () => {
+    const page = withTeam();
+
+    await page['load']();
+
+    expect(page['buildOptions']().map((o) => o.label))
+      .toEqual(['Kamisato Ayaka', 'Ganyu', 'Xingqiu']);
+  });
+
+  it('narrows the build grid to the team, in slot order', async () => {
+    const page = withTeam();
+    await page['load']();
+
+    await page['selectTeam'](['t1']);
+
+    expect(page['buildOptions']().map((o) => o.label)).toEqual(['Ganyu', 'Xingqiu']);
+  });
+
+  it('moves the selection off a build the team does not field', async () => {
+    // The page was answering for Ayaka. Leaving her selected would put the whole result under
+    // a character the user has just filtered away.
+    const page = withTeam();
+    await page['load']();
+    expect(page['buildId']()).toBe('b1');
+
+    await page['selectTeam'](['t1']);
+
+    expect(page['buildId']()).toBe('b2');
+  });
+
+  it('keeps the selection when the team does field it', async () => {
+    const page = withTeam();
+    await page['load']();
+    await page['selectBuild']('b3');
+
+    await page['selectTeam'](['t1']);
+
+    expect(page['buildId']()).toBe('b3');
+  });
+
+  it('widens back to every build when the team is cleared', async () => {
+    const page = withTeam();
+    await page['load']();
+    await page['selectTeam'](['t1']);
+
+    await page['selectTeam']([]);
+
+    expect(page['buildOptions']().map((o) => o.label))
+      .toEqual(['Kamisato Ayaka', 'Ganyu', 'Xingqiu']);
+  });
+
+  it('draws a team card with its whole party, not one character standing for it', async () => {
+    const page = withTeam();
+
+    await page['load']();
+
+    const [card] = page['teamOptions']();
+    expect(card.label).toBe('Freeze');
+    expect(card.detail).toBe('Ganyu · Xingqiu');
+    expect(card.icons).toHaveLength(2);
+  });
+
+  it('opens without a team picker rather than failing when teams cannot be loaded', async () => {
+    // A team narrows a grid. A page that refused to open because that convenience failed
+    // would be worse than one without it.
+    const page = pageWith({
+      teams: { list: vi.fn().mockRejectedValue(new Error('boom')) } as unknown as TeamsService,
+    });
+
+    await page['load']();
+
+    expect(page['error']()).toBeNull();
+    expect(page['teamOptions']()).toEqual([]);
+    expect(page['buildId']()).toBe('b1');
   });
 });

@@ -10,6 +10,14 @@ export interface CardOption {
   label: string;
   /** Catalogue basename for the card's art. Absent art leaves the label where it is. */
   icon?: string | null;
+  /**
+   * Several pieces of art instead of one, drawn as a row.
+   *
+   * A team is the case this exists for: its identity is the four characters in it, and picking
+   * one of them to stand for the whole thing is a card that lies about what it is. Takes
+   * precedence over `icon` when present and non-empty.
+   */
+  icons?: readonly (string | null | undefined)[];
   /** Secondary line — a weapon's rarity, a build's constellation. Also searched. */
   detail?: string;
   /**

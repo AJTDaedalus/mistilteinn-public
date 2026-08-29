@@ -129,3 +129,16 @@
 }
 
 .picker__empty { grid-column: 1 / -1; padding: var(--space-4); text-align: center; }
+
+/* A row of faces for an option whose identity is several things — a team's party. Wrapping,
+   because four 34px faces do not fit a narrow card at every width and clipping one would drop
+   a character from a team silently. */
+.picker__faces {
+  /* Two columns, so a four-character party reads as a 2x2 block rather than the ragged 3+1 a
+     wrapping flex row gives it at this card width. */
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  justify-content: center;
+  gap: 0.15rem;
+  line-height: 0;
+}
