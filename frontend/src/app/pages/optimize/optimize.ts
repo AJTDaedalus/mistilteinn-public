@@ -18,7 +18,10 @@ import {
 } from '../explain/explain.service';
 import { ArtifactsService } from '../artifacts/artifacts.service';
 import { RotationsService } from '../rotations/rotations.service';
-import { searchRecipe } from '../../sim/recipe-search';
+import { scoreForSlot } from '../../sim/artifact-score';
+import type { Recipe } from '../../sim/recipe';
+import { evaluateRecipe } from '../../sim/recipe-eval';
+import { candidateStatsFrom, liveQuantitiesFor, searchRecipe } from '../../sim/recipe-search';
 import {
   RecipeOptimizeService,
   type CalibrationCaveats,
@@ -57,6 +60,32 @@ export function describePieces(
     return piece ? slotName(piece.slot) : id;
   });
 }
+
+/**
+ * One maximum 5-star roll of each substat, as a stat delta.
+ *
+ * The comparison a player makes is "one good roll of each", so these are the top tier. Stated
+ * rather than fetched because this table is a *ratio between stats*: mixing rarities would
+ * compare a 4-star's CRIT DMG against a 5-star's ATK% and read as a difference in worth.
+ *
+ * Values are the top-tier rolls in `app/data/yuanshen/snapshot/` that `substat_rolls._tiers_for`
+ * reads — flat ATK/HP/DEF omitted deliberately, because their worth depends on a base this
+ * table does not carry and showing them beside percentages invites the wrong comparison.
+ */
+const ONE_ROLL: Readonly<Record<string, { roll: number; quantity: string }>> = {
+  atkPercent: { roll: 0.0583, quantity: 'atk_pct' },
+  hpPercent: { roll: 0.0583, quantity: 'hp_pct' },
+  defPercent: { roll: 0.0729, quantity: 'def_pct' },
+  elementalMastery: { roll: 23.31, quantity: 'elemental_mastery' },
+  critRate: { roll: 0.0389, quantity: 'crit_rate' },
+  critDmg: { roll: 0.0777, quantity: 'crit_dmg' },
+};
+
+/** Slots in the order `searchRecipe` returns a build's pieces. */
+const SLOT_ORDER = ['equip_bracer', 'equip_necklace', 'equip_shoes', 'equip_ring', 'equip_dress'];
+
+/** How many alternatives to name per slot. Enough to choose from, few enough to read. */
+const UPGRADES_PER_SLOT = 3;
 
 /**
  * Search a user's own artifacts, in their own browser.
@@ -364,6 +393,113 @@ export class OptimizePage implements OnInit {
    * Kept beside `result` rather than widening it: the single-hit search fills the same signal
    * and has no notion of a set it did not cover.
    */
+  /**
+   * The recipe the last rotation search scored against, kept so the page can answer more than
+   * one question with it.
+   *
+   * Calibration is the expensive part — roughly six seconds per set — and evaluating a
+   * candidate afterwards is 0.048 µs per hit (#159). Throwing the recipe away at the end of a
+   * search meant paying that six seconds again to ask anything else about the same build.
+   */
+  protected readonly scoredRecipe = signal<Recipe | null>(null);
+  /** The five slot pools of the winning build, in `SLOTS` order — what a swap is measured against. */
+  protected readonly winningPools = signal<Record<string, number>[] | null>(null);
+
+  /**
+   * What one more roll of each substat is worth, in damage, on the winning build.
+   *
+   * **The Fribbels audit's third recommendation**, and the cheapest thing this page can now
+   * answer: it already holds a calibrated recipe, and a roll is a stat delta. Fribbels shows
+   * the same table as `+1x Substat → Δ Combo DMG`.
+   *
+   * It is also the honest form of what `DESIGN_artifact_ranking.md` first proposed as a
+   * "weight vector" — measured against the real rotation rather than derived from a single
+   * hit, which is the owner's ruling (`DECISIONS.md` §22).
+   *
+   * The roll sizes are the **maximum** roll for a 5-star, which is the comparison a player
+   * makes: one good roll of each. They are stated here rather than fetched because this is a
+   * ratio between stats, and a table that varied by rarity would compare a 4-star's CRIT DMG
+   * against a 5-star's ATK%.
+   */
+  protected readonly marginalPerRoll = computed<{ quantity: string; delta: number }[]>(() => {
+    const recipe = this.scoredRecipe();
+    const pools = this.winningPools();
+    if (!recipe || !pools) return [];
+
+    // **Only stats the recipe can respond to.** A recipe is calibrated at one set of stats, so
+    // anything it does not read is frozen into its coefficients — Elemental Mastery most of
+    // all, whose contribution to a reaction lands in `ampMultiplier` and to Nahida's own bonus
+    // in `bonusDmg`. Evaluating a bump in one of those returns exactly zero, and printing that
+    // beside real numbers claims the stat is worthless rather than unmodelled.
+    //
+    // `liveQuantitiesFor` already answers this — it is what the Pareto filter uses to decide
+    // which quantities can matter — so the same definition serves both.
+    const live = new Set(liveQuantitiesFor(recipe));
+    const base = evaluateRecipe(recipe, candidateStatsFrom(pools));
+    return Object.entries(ONE_ROLL)
+      .filter(([, spec]) => live.has(spec.quantity))
+      .map(([quantity, spec]) => {
+        const size = spec.roll;
+        const stats = { ...candidateStatsFrom(pools) };
+        // Applied to the resolved stats rather than to a pool, so a quantity the pools do not
+        // already contain still moves — a build with no EM must still be able to ask what EM
+        // would be worth.
+        const bumped = {
+          ...stats, [quantity]: (stats[quantity as keyof typeof stats] as number) + size,
+        };
+        return { quantity, delta: evaluateRecipe(recipe, bumped as typeof stats) - base };
+      })
+      .filter((row) => Number.isFinite(row.delta))
+      .sort((a, b) => b.delta - a.delta);
+  });
+
+  /** Pieces in the inventory that would beat what the winning build wears, per slot. */
+  /**
+   * A piece, named the way a player would recognise it: set and main stat.
+   *
+   * **Not the id.** These are uuid7 and therefore *time-ordered*, so every artifact imported in
+   * the same second shares a prefix — a truncated id rendered `01a04dfd` for all fifteen
+   * upgrades on screen, an identifier that identifies nothing. Seen in a screenshot.
+   */
+  protected describe(id: string): string {
+    const piece = this.candidates().find((c) => c.id === id);
+    if (!piece) return id.slice(0, 8);
+    // `.name`, not the row: `artifactSets()` maps to `{ id, name }`, and interpolating the
+    // object rendered `[object Object]` on every upgrade. Seen in a screenshot.
+    const set = piece.set_id != null ? this.artifactSets().get(piece.set_id)?.name : null;
+    const stat = this.statNames()[piece.main_stat] ?? piece.main_stat;
+    return set ? `${set} · ${stat}` : stat;
+  }
+
+  protected readonly upgrades = computed<
+    { slot: string; rows: { id: string; label: string; delta: number }[] }[]
+  >(() => {
+    const recipe = this.scoredRecipe();
+    const pools = this.winningPools();
+    if (!recipe || !pools) return [];
+
+    const names = this.slotNames();
+    const bySlot = new Map<string, { id: string; stats: Record<string, number> }[]>();
+    for (const piece of this.constrained(this.candidates())) {
+      const list = bySlot.get(piece.slot) ?? [];
+      list.push({ id: piece.id, stats: piece.stats });
+      bySlot.set(piece.slot, list);
+    }
+
+    return SLOT_ORDER.flatMap((slot, index) => {
+      const candidates = bySlot.get(slot) ?? [];
+      if (!candidates.length) return [];
+      const scored = scoreForSlot(recipe, pools, candidates, index)
+        // **Strictly better only.** A zero delta is the piece already worn, or one identical
+        // to it; listing those as "upgrades" would pad the answer with non-answers.
+        .filter(({ score }) => score.delta > 0)
+        .sort((a, b) => b.score.delta - a.score.delta)
+        .slice(0, UPGRADES_PER_SLOT)
+        .map(({ id, score }) => ({ id, label: this.describe(id), delta: score.delta }));
+      return scored.length ? [{ slot: names[slot] ?? slot, rows: scored }] : [];
+    });
+  });
+
   protected readonly recipeNotes = signal<
     { uncoveredSets: number[]; boundPruned: number } | null
   >(null);
@@ -704,6 +840,16 @@ export class OptimizePage implements OnInit {
         },
       );
       this.result.set(found);
+      // Keep what the search used, so the marginal table and the per-slot upgrades below can
+      // be computed without a second calibration.
+      const winner = found.builds[0];
+      const byId = new Map(pieces.map((piece) => [piece.id, piece.stats]));
+      this.scoredRecipe.set(
+        calibrated.byFourPieceSet.get(chosen[0]) ?? calibrated.noFourPiece,
+      );
+      this.winningPools.set(
+        winner ? winner.artifactIds.map((id) => byId.get(id) ?? {}) : null,
+      );
       this.recipeNotes.set({
         uncoveredSets: found.uncoveredSets,
         boundPruned: found.boundPruned,

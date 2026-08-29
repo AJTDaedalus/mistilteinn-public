@@ -289,6 +289,54 @@
       }
     }
 
+    <!-- Both of these are free once a rotation search has run: the page still holds the
+         calibrated recipe, and an evaluation is 0.048 µs per hit. Calibration was the
+         expensive part and it is already paid for. -->
+    @if (marginalPerRoll().length) {
+      <section class="marginal">
+        <h2>What one more roll is worth</h2>
+        <p class="hint">
+          Damage added by a single maximum 5★ roll of each substat, on the winning build over
+          this rotation. Flat ATK, HP and DEF are left out — their worth depends on a base this
+          table does not carry. Stats the recipe cannot respond to are left out too, rather
+          than shown as zero: a calibration freezes what it does not read, and Elemental
+          Mastery is usually one of them.
+        </p>
+        <ul class="marginal__rows">
+          @for (row of marginalPerRoll(); track row.quantity) {
+            <li>
+              <span class="marginal__stat">{{ row.quantity }}</span>
+              <span class="mono">{{ row.delta | number: '1.0-0' }}</span>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    @if (upgrades().length) {
+      <section class="upgrades">
+        <h2>Pieces that would beat the winner</h2>
+        <p class="hint">
+          Scored one slot at a time against the winning build, within this recipe. A piece from
+          a different 4-piece set is understated here, because changing the set changes which
+          recipe applies.
+        </p>
+        @for (group of upgrades(); track group.slot) {
+          <div class="upgrades__slot">
+            <h3>{{ group.slot }}</h3>
+            <ul>
+              @for (row of group.rows; track row.id) {
+                <li>
+                  <span class="mono">+{{ row.delta | number: '1.0-0' }}</span>
+                  <span class="muted">{{ row.label }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </section>
+    }
+
     @if (recipeNotes(); as notes) {
       @if (notes.uncoveredSets.length) {
         <p class="warn" role="alert">
