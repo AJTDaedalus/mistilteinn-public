@@ -98,10 +98,16 @@ show that a suggested piece is *owned*. Drag-and-drop for the ranking.
 ## 5. Rotations
 
 - "New Rotation" pop-up like the others.
-- **"I don't know what 'Compile' is so users won't either."**
-- **Two levels.** The page lists *teams* as cards, each showing how many rotations it has.
-  Expanding one lists that team's rotations with a card and high-level stats — *"x hits, y
-  seconds"* — beside the user's own name for it. **Search is over teams, not rotations.**
+- ~~**"I don't know what 'Compile' is so users won't either."**~~ **Done (#166)** — the
+  button says "Show gcsim config", which is what it does.
+- ~~**Two levels**, search over teams.~~ **Done (#166)** — team cards with their party's
+  faces and a rotation count; expanding lists that team's rotations. Search matches a team's
+  name *or its characters*, since "which of my teams has Nahida" is how anyone looks for a team
+  they named "Bloom 2".
+
+  The summary reads **"8 steps · 11 actions"** rather than the audit's *"x hits, y seconds"*:
+  hits and seconds are gcsim's answer and need a run, while a step's `repeat` is the closest
+  thing this model holds. Naming it "steps" is the difference between a summary and a claim.
 - **The rotation library is missing from the UI entirely**: there is no way to search for
   rotations for a team. It belongs as the last option inside an expanded team, opening a
   card-and-filter pop-up.

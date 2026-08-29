@@ -160,7 +160,7 @@
               dirty() ? 'Save first — compiling reads the stored rotation, not the screen.' : null
             "
           >
-            Compile
+            Show gcsim config
           </button>
           @if (editing()) {
             <button type="button" (click)="newRotation()">New</button>
@@ -182,22 +182,69 @@
 
       <div class="pane">
         <h2>Saved</h2>
-        <ul class="saved">
-          @for (rotation of saved(); track rotation.id) {
-            <li [class.active]="rotation.id === editing()">
-              <button type="button" class="pick" (click)="edit(rotation)">
-                <span class="name">{{ rotation.name }}</span>
-                <span class="meta">{{ rotation.steps.length }} steps</span>
-              </button>
+
+        <!-- Two levels: teams, then their rotations. A flat list mixes rotations for teams
+             that share no characters, and the first thing anyone does with it is look for the
+             ones belonging to a team. Search is over **teams** for the same reason. -->
+        <input
+          type="search"
+          name="team-search"
+          class="team-search"
+          placeholder="Find a team or character…"
+          aria-label="Find a team"
+          [value]="teamSearch()"
+          (input)="teamSearch.set($any($event.target).value)"
+        />
+
+        <ul class="by-team">
+          @for (group of byTeam(); track group.team.id) {
+            <li class="by-team__team">
               <button
                 type="button"
-                class="drop"
-                [attr.aria-label]="'Delete ' + rotation.name"
-                (click)="remove(rotation)"
-              >×</button>
+                class="by-team__head"
+                [attr.aria-expanded]="openTeam() === group.team.id"
+                (click)="toggleTeam(group.team.id)"
+              >
+                <span class="party">
+                  @for (member of group.team.characters; track member.nanoka_id) {
+                    <catalogue-icon [icon]="member.icon" [alt]="member.name" [size]="28" />
+                  }
+                </span>
+                <span class="by-team__who">
+                  <span class="name">{{ group.team.name }}</span>
+                  <span class="meta">
+                    {{ group.rotations.length }}
+                    rotation{{ group.rotations.length === 1 ? '' : 's' }}
+                  </span>
+                </span>
+                <span class="by-team__caret" aria-hidden="true">
+                  {{ openTeam() === group.team.id ? '▾' : '▸' }}
+                </span>
+              </button>
+
+              @if (openTeam() === group.team.id) {
+                <ul class="saved">
+                  @for (rotation of group.rotations; track rotation.id) {
+                    <li [class.active]="rotation.id === editing()">
+                      <button type="button" class="pick" (click)="edit(rotation)">
+                        <span class="name">{{ rotation.name }}</span>
+                        <span class="meta">{{ summarise(rotation) }}</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="drop"
+                        [attr.aria-label]="'Delete ' + rotation.name"
+                        (click)="remove(rotation)"
+                      >×</button>
+                    </li>
+                  } @empty {
+                    <li class="muted">No rotations for this team yet.</li>
+                  }
+                </ul>
+              }
             </li>
           } @empty {
-            <li class="muted">Nothing saved yet.</li>
+            <li class="muted">No team matches that search.</li>
           }
         </ul>
       </div>

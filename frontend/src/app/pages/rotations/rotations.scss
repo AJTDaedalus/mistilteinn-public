@@ -110,3 +110,53 @@
   flex: 0 0 auto;
   width: 32px;
 }
+
+/* ── Saved rotations, by team ───────────────────────────────────────────────
+   Two levels, because a flat list mixes rotations for teams that share no characters — and
+   the first thing anyone does with such a list is look for the ones belonging to a team. */
+.team-search {
+  width: 100%;
+  margin-bottom: var(--space-2);
+}
+
+.by-team {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.by-team__team {
+  margin-bottom: var(--space-2);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  overflow: hidden;
+}
+
+.by-team__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2);
+  text-align: left;
+  background: none;
+  border: 0;
+
+  .party { display: flex; gap: 0.15rem; }
+}
+
+.by-team__who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  .meta { font-size: var(--text-xs); color: var(--ink-dim); }
+}
+
+.by-team__caret { margin-left: auto; color: var(--ink-dim); }
+
+/* Nested under its team, so the indent says which rotations belong to what. */
+.by-team__team .saved {
+  margin: 0;
+  padding: 0 var(--space-2) var(--space-2) var(--space-5);
+}

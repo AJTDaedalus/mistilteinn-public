@@ -71,6 +71,58 @@ export class RotationsPage implements OnInit {
    * right but refers to something else", which is the failure mode this project has met
    * most often. So Compile is offered only when the two agree.
    */
+  // ── the saved list, by team ────────────────────────────────────────────────
+
+  /**
+   * Which team's rotations are open. Empty means none.
+   *
+   * The audit asks for two levels: *"The cards should be teams, with the number of rotations
+   * saved for them listed. Clicking on one should expand a list of rotations."* A flat list
+   * mixes rotations for teams that share no characters, and the first thing anyone does with
+   * it is look for the ones that belong to a team.
+   */
+  protected readonly openTeam = signal('');
+
+  /** **Search is over teams, not rotations** — the audit says so, and it is the outer level. */
+  protected readonly teamSearch = signal('');
+
+  protected readonly byTeam = computed(() => {
+    const query = this.teamSearch().trim().toLowerCase();
+    const counts = new Map<string, RotationRead[]>();
+    for (const rotation of this.saved()) {
+      const list = counts.get(rotation.team_id) ?? [];
+      list.push(rotation);
+      counts.set(rotation.team_id, list);
+    }
+    return this.teams()
+      .filter((team) => {
+        if (!query) return true;
+        // The characters too: "which of my teams has Nahida" is how someone looks for a team
+        // they named "Bloom 2".
+        const who = team.characters.map((c) => c.name).join(' ');
+        return `${team.name} ${who}`.toLowerCase().includes(query);
+      })
+      .map((team) => ({ team, rotations: counts.get(team.id) ?? [] }));
+  });
+
+  protected toggleTeam(id: string): void {
+    this.openTeam.update((current) => (current === id ? '' : id));
+  }
+
+  /**
+   * A rotation's shape at a glance: how many hits it lands, and how long a cycle it is.
+   *
+   * **Steps, not hits, and it says so.** The audit asks for *"x hits, y seconds"*; a step's
+   * `repeat` is how many times an action is taken, which is the closest thing this model
+   * holds — actual hits and seconds are gcsim's answer and need a run. Naming it "steps"
+   * rather than "hits" is the difference between a summary and a claim.
+   */
+  protected summarise(rotation: RotationRead): string {
+    const steps = rotation.steps.length;
+    const actions = rotation.steps.reduce((total, step) => total + (step.repeat ?? 1), 0);
+    return `${steps} step${steps === 1 ? '' : 's'} · ${actions} actions`;
+  }
+
   protected readonly dirty = computed(
     () => this.editing() !== null && this.snapshot() !== this.stored(),
   );
