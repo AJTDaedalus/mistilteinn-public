@@ -45,7 +45,7 @@ on:
   workflow_dispatch:
     inputs:
       reseed:
-        description: "Re-seed the catalogue from the pinned nanoka snapshot before verifying"
+        description: "Re-seed the catalogue at the pinned nanoka version before verifying"
         type: boolean
         default: false
 
@@ -140,17 +140,38 @@ jobs:
       REPO_DIR: /home/ubuntu/mistilteinn
       COMPOSE: docker compose -f docker-compose.yml -f docker-compose.prod.yml
     steps:
-      - name: seed_db against the live database
+      - name: seed_db against the live database, at the pinned version
         run: |
           set -euo pipefail
           cd "$REPO_DIR"
+          # PASS THE VERSION. `seed_db` without `--version` pins whatever
+          # `manifest.json -> gi.latest` says *now*, which is upstream's latest and not this
+          # repo's. The first run of this job did exactly that and moved prod to 7.0.52 while
+          # every committed fixture said 7.0.51 — the same trap `capture_nanoka_fixtures.py`
+          # sprang in N.2, one script over. Following upstream is the default because a
+          # human at a terminal usually wants today's patch; an automated re-seed never does.
+          #
+          # Read from `verify_seed.FIXTURE_VERSION` rather than written here. That is the
+          # constant the *next job* compares the database against, so the seed and the check
+          # cannot disagree: a hardcoded version in this YAML would be a third copy of the
+          # pin, and the one no test covers. `test_capture_pinning.py` already ties the other
+          # two together.
+          VERSION="$($COMPOSE run --rm -T backend \
+                       python -c 'from scripts.verify_seed import FIXTURE_VERSION; print(FIXTURE_VERSION)')"
+          VERSION="$(echo "$VERSION" | tr -d '[:space:]')"
+          # An empty read would fall through to `--version ''` and, worse, could be taken for
+          # a successful pin. Bumping the pin is a chunk of its own; discovering it silently
+          # is not.
+          test -n "$VERSION"
+          echo "Seeding prod at the pinned nanoka $VERSION."
+
           # No `--force-prune`, and that is the point. If an index comes back empty or
           # truncated — a valid 200 that no retry can detect — the pass reports
           # `PRUNE REFUSED`, exits non-zero and deletes nothing, because deleting the
           # catalogue takes every user's builds with it through ON DELETE CASCADE.
           # Overriding that is a decision someone makes after reading the numbers, not a
           # flag a workflow carries permanently.
-          $COMPOSE run --rm -T backend python -m scripts.seed_db
+          $COMPOSE run --rm -T backend python -m scripts.seed_db --version "$VERSION"
 
   verify-seed:
     # SEPARATE JOB, deliberately — the same reasoning fairy wrote down. `deploy` ends with a
