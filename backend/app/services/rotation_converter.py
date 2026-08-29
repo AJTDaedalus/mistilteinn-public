@@ -71,7 +71,7 @@ def convert(config: str) -> tuple[str, list[str]]:
     notes: list[str] = []
     out: list[str] = []
 
-    for raw in config.splitlines():
+    for raw in _joined(config.splitlines()):
         line = _COMMENT.sub("", raw).strip()
         if not line:
             continue
@@ -93,6 +93,43 @@ def convert(config: str) -> tuple[str, list[str]]:
         out.extend(expanded)
 
     return "\n".join(out) + "\n", notes
+
+
+def _joined(lines: list[str]) -> list[str]:
+    """Rejoin a statement that was written across several lines.
+
+    **A statement ends at `;`, not at a newline**, and the real configs use that — Arlecchino's
+    is written
+
+        arle charge,
+             attack:6,
+             attack:6,
+             attack:3;
+
+    for readability. Line-by-line, the converter saw `arle charge,` and then three orphans, and
+    refused all four as *"not a statement this model can express"* — a refusal that was true of
+    the lines and false of the config.
+
+    Joined on a **trailing comma only**. That is unambiguous: a comma at the end of a line means
+    the list continues. Joining on "no semicolon yet" would swallow `for let i=0; i<4; …` and
+    every brace line with it.
+    """
+    out: list[str] = []
+    pending = ""
+    for raw in lines:
+        stripped = _COMMENT.sub("", raw).strip()
+        if not stripped:
+            if not pending:
+                out.append(raw)
+            continue
+        pending = f"{pending} {stripped}".strip() if pending else stripped
+        if pending.endswith(","):
+            continue
+        out.append(pending)
+        pending = ""
+    if pending:
+        out.append(pending)
+    return out
 
 
 def _split_sequence(line: str) -> list[str] | None:

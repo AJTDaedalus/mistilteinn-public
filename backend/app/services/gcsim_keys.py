@@ -106,6 +106,24 @@ def normalise(name: str) -> str:
     return _NOT_ALNUM.sub("", name.lower())
 
 
+@cache
+def character_alias(spelling: str) -> str | None:
+    """The canonical key for one of gcsim's accepted spellings, or `None`.
+
+    **gcsim accepts short names and this repo did not know it.** `pkg/shortcut/*.dm.go` maps
+    `arle`→`arlecchino`, `esco`→`escoffier`, `chev`→`chevreuse`, and 57 more — a table generated
+    by gcsim's own pipeline exactly like the key files. Reading a real community config refused
+    it with *"no character on this team is gcsim's `arle`"*, about a character who was on the
+    team (`references/gcsim_db/arlecchino-citlali-escoffier-bennett.txt`).
+
+    Resolution is **one direction only**: an alias resolves to a key, and nothing here ever
+    emits an alias. What this repo writes stays canonical, so a config it produced reads the
+    same as one it produced yesterday.
+    """
+    aliases = _snapshot().get("character_aliases", {})
+    return aliases.get(normalise(spelling))  # type: ignore[union-attr]
+
+
 def _resolve(kind: str, name: str, *, what: str) -> str:
     keys = set(_snapshot()[kind])  # type: ignore[arg-type]
     key = normalise(name)

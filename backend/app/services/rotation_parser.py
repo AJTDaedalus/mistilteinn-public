@@ -132,6 +132,20 @@ def _roster_keys(characters: Iterable[Any]) -> dict[str, str]:
     return keys
 
 
+def _canonical(key: str, by_key: dict[str, str]) -> str:
+    """`arle` → `arlecchino`, when the roster has them under the canonical spelling.
+
+    gcsim accepts 60 short names for characters and this repo emits none of them, so an alias
+    only ever arrives from **somebody else's config** — which is exactly the case import
+    exists for. Resolved against the roster rather than blindly: an alias for a character who
+    is not on the team is still a refusal, and should still say so by the name the config used.
+    """
+    if key in by_key:
+        return key
+    alias = gcsim_keys.character_alias(key)
+    return alias if alias is not None and alias in by_key else key
+
+
 def _loop_body(lines: list[str]) -> list[str]:
     """The statements inside `while 1 { … }`, refusing every other shape.
 
@@ -200,6 +214,10 @@ def _statement(line: str, by_key: dict[str, str]) -> tuple[dict[str, Any] | None
         return None, _why_not(line)
 
     gate_key, gate_action, key, action, repeat_text = match.groups()
+    # Both sides, and **before** they are compared: a config writing `if .arle.skill.ready
+    # { arle skill; }` must still be checked for the gate matching its own action.
+    gate_key = _canonical(gate_key, by_key)
+    key = _canonical(key, by_key)
 
     # `if .noelle.skill.ready { noelle burst; }` is legal gcsim and is not what the compiler
     # emits. Reading it as a burst step discards the condition; reading it as a skill step

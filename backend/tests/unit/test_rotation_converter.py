@@ -45,6 +45,19 @@ def test_a_bounded_loop_becomes_the_cycle_it_describes() -> None:
     assert any("while 1" in note for note in notes)
 
 
+def test_a_sequence_written_across_several_lines_is_rejoined() -> None:
+    """**A statement ends at `;`, not at a newline.** Arlecchino's config lays its combo out
+    over four lines for readability; line-by-line the converter saw one statement and three
+    orphans, and refused all four as "not a statement this model can express" — a refusal true
+    of the lines and false of the config."""
+    text, _ = convert(
+        "active a;\nwhile 1 {\n    a charge,\n         attack:6,\n         attack:3;\n}\n",
+    )
+
+    assert text.count("if .a.") == 3
+    assert "a attack:6;" in text
+
+
 def test_a_comma_sequence_becomes_one_step_each() -> None:
     text, notes = convert("active a;\nwhile 1 {\n    a burst, skill, attack:3;\n}\n")
 
@@ -107,24 +120,44 @@ def test_an_inexpressible_line_is_passed_through_not_converted(line: str) -> Non
 # ── the four, as published ───────────────────────────────────────────────────
 
 
-def test_a_real_community_config_imports() -> None:
-    """The Neuvillette mono-Hydro config from gcsim's own database, byte-for-byte as published.
+@pytest.mark.parametrize(
+    ("name", "roster", "expected"),
+    [
+        (
+            "neuvillette-furina-citlali-escoffier.txt",
+            [
+                ("10000087", "Neuvillette", "Hydro"), ("10000089", "Furina", "Hydro"),
+                ("10000107", "Citlali", "Cryo"), ("10000112", "Escoffier", "Cryo"),
+            ],
+            16,
+        ),
+        (
+            # **Aliases and a multi-line sequence.** This config writes `arle` and `esco`,
+            # which gcsim accepts and the key snapshot did not carry, and it lays out
+            # `arle charge,\n attack:6,\n …;` across four lines for readability.
+            "arlecchino-citlali-escoffier-bennett.txt",
+            [
+                ("10000096", "Arlecchino", "Pyro"), ("10000107", "Citlali", "Cryo"),
+                ("10000112", "Escoffier", "Cryo"), ("10000032", "Bennett", "Pyro"),
+            ],
+            12,
+        ),
+    ],
+)
+def test_a_real_community_config_imports(
+    name: str, roster: list[tuple[str, str, str]], expected: int,
+) -> None:
+    """Two of gcsim's own database configs, byte-for-byte as published.
 
-    It converts to **16 steps**. This is the evidence behind the ruling: the blockers on a real
-    config were the loop keyword and the sequence syntax, not the conditional guards the design
-    originally worried about.
+    This is the evidence behind the ruling: the blockers on a real config were the loop
+    keyword, the sequence syntax and gcsim's short aliases — **not** the conditional guards the
+    design originally worried about.
     """
-    roster = [
-        _Character("10000087", "Neuvillette", "Hydro"),
-        _Character("10000089", "Furina", "Hydro"),
-        _Character("10000107", "Citlali", "Cryo"),
-        _Character("10000112", "Escoffier", "Cryo"),
-    ]
-    text, _ = convert((DB / "neuvillette-furina-citlali-escoffier.txt").read_text())
+    text, _ = convert((DB / name).read_text())
 
-    steps = parse_action_block(text, roster)
+    steps = parse_action_block(text, [_Character(*row) for row in roster])
 
-    assert len(steps) == 16
+    assert len(steps) == expected
 
 
 @pytest.mark.parametrize(
