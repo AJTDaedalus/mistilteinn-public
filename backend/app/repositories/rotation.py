@@ -129,6 +129,25 @@ class RotationRepository(BaseRepository[Rotation]):
         ).scalar_one_or_none()
         return {} if team is None else self._roster(team)
 
+    async def team_build_ids(self, team_id: str) -> list[str]:
+        """Every build id on a team, in slot order.
+
+        Ids rather than rows: a calibration needs each teammate's **weapon and artifacts**,
+        which `_teams()` does not eager-load, so the caller re-reads them through
+        `BuildRepository`. Returning half-loaded rows here would be the `MissingGreenlet`
+        shape the eager-loading comment above is about.
+        """
+        team = (
+            await self.session.execute(self._teams().where(Team.id == team_id))
+        ).scalar_one_or_none()
+        if team is None:
+            return []
+        return [
+            str(getattr(team, name))
+            for name in TEAM_SLOTS
+            if getattr(team, name) is not None
+        ]
+
     async def rosters(self) -> list[tuple[Team, dict[str, Character]]]:
         """Every team the caller owns, with who is on it.
 

@@ -914,6 +914,20 @@ async def compare_weapons_gcsim_configs(
     except RotationCompileError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+    # **The whole team, not just this build.** The action block is the *team's* rotation, so a
+    # config declaring one character names three it never introduces — and gcsim does not
+    # reject that. It simulates nobody: empty log, zero damage, returned as valid JSON. Every
+    # recipe calibrated to zeros and `/optimize` ranked ten builds at 0 while reporting
+    # `isExact` (`AUDIT_fribbels_parity.md` §9a).
+    #
+    # Loaded fully, because a teammate's buffs depend on their own gear — a Furina at her real
+    # HP is a different Furina — which is also the point of calibrating "in this team" at all.
+    teammates = [
+        await _require_full_build(builds, other_id)
+        for other_id in await rotations.team_build_ids(rotation.team_id)
+        if other_id != str(build.id)
+    ]
+
     # A rotation carries no enemy — it is a team's action list, not a scenario — so the
     # caller names one or gcsim's default target is used. The first draft reached for
     # `rotation.enemy_profile_id` behind a `getattr` default, which would have been dead code
@@ -925,6 +939,7 @@ async def compare_weapons_gcsim_configs(
     def _config(substitute: SubstituteWeapon | None) -> str:
         return build_config(
             build,
+            teammates=teammates,
             substitute_weapon=substitute,
             action_block=action_block,
             enemy=enemy,
@@ -1022,6 +1037,14 @@ async def calibrate_recipe(
     except RotationCompileError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+    # The whole team — see the identical note on the weapon-comparison endpoint above. This is
+    # the one where it caused the zero-damage bug.
+    teammates = [
+        await _require_full_build(builds, other_id)
+        for other_id in await rotations.team_build_ids(rotation.team_id)
+        if other_id != str(build.id)
+    ]
+
     async def _key_for(set_id: str) -> str:
         """The gcsim key for a catalogue set id, refusing rather than dropping.
 
@@ -1054,6 +1077,7 @@ async def calibrate_recipe(
     def _config(calibration: Calibration, extra: str | None = None) -> str:
         text = build_config(
             build,
+            teammates=teammates,
             calibration=calibration,
             action_block=action_block,
             enemy=enemy,

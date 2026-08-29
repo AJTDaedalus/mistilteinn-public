@@ -336,3 +336,87 @@ def test_a_calibration_refuses_more_two_piece_sets_than_slots_allow():
             set_key=None, energy_recharge=0.30,
             two_piece_set_keys=("a", "b", "c"),
         )
+
+
+# ── everyone the rotation names has to be declared ───────────────────────────
+#
+# **The zero-damage bug.** `/builds/{id}/calibrate` emitted one character's stanza beside a
+# four-character action block. gcsim does not reject that: it accepts the config and simulates
+# *nobody* — `character_details` comes back `[]`, the log is two bytes, every damage is zero —
+# while `sample()` returns perfectly valid JSON throughout. So a caller checking "did it parse"
+# saw a clean result describing an empty simulation, calibrated a recipe of zeros from it, and
+# `/optimize` ranked ten builds at 0 damage while labelling them `isExact`.
+#
+# Measured against the real config: 2 bytes of log before, 3,069,118 after.
+# `AUDIT_fribbels_parity.md` §9a.
+
+
+def _mate(key_name: str, nanoka_id: str, element: str, **overrides):
+    return _build(
+        id=f"b-{nanoka_id}",
+        character=types.SimpleNamespace(
+            nanoka_id=nanoka_id, name=key_name, element=element,
+        ),
+        **overrides,
+    )
+
+
+_TEAM_BLOCK = (
+    "active furina;\n"
+    "while 1 {\n"
+    "    if .furina.burst.ready { furina burst; }\n"
+    "    if .kamisatoayaka.attack.ready { kamisatoayaka attack:3; }\n"
+    "}\n"
+)
+
+
+def test_a_rotation_naming_an_undeclared_character_is_refused():
+    """The guard. Without it this config is accepted by gcsim and simulates nobody."""
+    with pytest.raises(GcsimConfigError, match="furina"):
+        build_config(_build(), action_block=_TEAM_BLOCK)
+
+
+def test_declaring_the_teammate_makes_the_same_rotation_emit():
+    config = build_config(
+        _build(),
+        teammates=[_mate("Furina", "10000089", "Hydro")],
+        action_block=_TEAM_BLOCK,
+    )
+
+    assert "furina char" in config
+    assert "kamisatoayaka char" in config
+
+
+def test_a_teammate_carries_their_own_gear_not_the_calibration():
+    """A Furina at calibration stats is a different Furina.
+
+    Her buffs are what the subject's damage is being measured *inside*, which is the whole of
+    the owner's ruling that ranking asks "given this character in this team"
+    (`DECISIONS.md` §22). Calibration replaces only the subject's artifacts.
+    """
+    config = build_config(
+        _build(),
+        teammates=[_mate("Furina", "10000089", "Hydro")],
+        calibration=_calibration(set_key=None),
+        action_block=_TEAM_BLOCK,
+    )
+
+    assert 'furina add set="blizzardstrayer" count=4' in config
+    assert "kamisatoayaka add stats er=0.3" in config
+
+
+def test_the_subject_is_never_emitted_twice():
+    """A team includes the build being calibrated. Declaring them again would give gcsim two
+    stanzas for one character."""
+    subject = _build()
+    config = build_config(subject, teammates=[subject], action_block=None, actions=["burst"])
+
+    assert config.count("kamisatoayaka char") == 1
+
+
+def test_a_solo_rotation_still_needs_no_teammates():
+    """The guard must not turn every single-character config into a refusal — which is most of
+    what this module emits."""
+    config = build_config(_build(), actions=["burst"])
+
+    assert "kamisatoayaka char" in config

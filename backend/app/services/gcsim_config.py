@@ -22,6 +22,7 @@ confident, wrong number.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -144,6 +145,7 @@ class Calibration:
 def build_config(
     build: Build,
     *,
+    teammates: Sequence[Build] = (),
     calibration: Calibration | None = None,
     substitute_weapon: SubstituteWeapon | None = None,
     actions: Sequence[str] | None = None,
@@ -230,6 +232,23 @@ def build_config(
         lines.extend(_calibration_lines(key, calibration))
     else:
         lines.extend(_artifact_lines(key, build.artifacts))
+    # **Everyone the rotation names has to be declared.** A multi-character action block over
+    # a config declaring one character is not a config that fails — gcsim accepts it and
+    # simulates *nobody*: `character_details` comes back `[]`, the log is empty, and every
+    # damage figure is zero. `sample()` returns valid JSON throughout, so a caller checking
+    # only that it parsed sees a clean result describing an empty simulation.
+    #
+    # That is what `/builds/{id}/calibrate` did. It validated that the build's character was
+    # on the rotation's team, compiled the *team's* rotation, and then emitted one character
+    # — so every recipe calibrated to zeros and `/optimize` ranked ten builds at 0 damage
+    # while reporting `isExact`. See `AUDIT_fribbels_parity.md` §9a.
+    #
+    # Teammates carry **their own gear**, never the calibration: their buffs are what the
+    # subject's damage is being measured inside, and a Furina at calibration stats is a
+    # different Furina. This is also the whole of the owner's ruling that ranking asks "given
+    # this character *in this team*" (`DECISIONS.md` §22).
+    lines.extend(_teammate_lines(teammates, subject_key=key, subject_id=build.id))
+
     lines.append("")
     lines.append(_target(enemy))
     lines.append("")
@@ -241,7 +260,82 @@ def build_config(
     else:
         lines.append(f"active {key};")
         lines.extend(f"{key} {action};" for action in actions or ())
-    return "\n".join(lines) + "\n"
+    text = "\n".join(lines) + "\n"
+    _refuse_undeclared_characters(text)
+    return text
+
+
+#: `active noelle;` and `noelle burst;` — the two shapes that name a character in an action
+#: block. Deliberately not a general parser: this is a guard over text *this module emits*.
+_NAMES_A_CHARACTER = re.compile(
+    r"^(?:active\s+([a-z0-9]+)\s*;|(?:if\s+\.[a-z0-9]+\.[a-z_]+\.ready\s*\{\s*)?"
+    r"([a-z0-9]+)\s+[a-z_]+(?::\d+)?\s*;)",
+    re.M,
+)
+
+
+def _refuse_undeclared_characters(text: str) -> None:
+    """Refuse a config whose rotation names somebody it never declared.
+
+    **This is the guard the zero-damage bug needed and did not have.** gcsim does not reject
+    such a config: it accepts it and simulates *nobody* — `character_details` comes back `[]`,
+    the log is empty, every damage is zero — while `sample()` returns perfectly valid JSON. So
+    a caller that checks only "did it parse" sees a clean result describing an empty
+    simulation, and calibrates a recipe of zeros from it.
+
+    That is not a hypothetical. `/builds/{id}/calibrate` emitted one character's stanza beside
+    a four-character action block for months; `/optimize` then ranked ten builds at 0 damage
+    and labelled them `isExact`. `AUDIT_fribbels_parity.md` §9a.
+
+    Refusing here rather than checking the *result* is deliberate: a bad config is knowable
+    from the text, at the moment it is written, without a simulator and without a browser.
+    """
+    declared = set(re.findall(r"^([a-z0-9]+) char ", text, re.M))
+    named: set[str] = set()
+    for line in text.splitlines():
+        stripped = line.strip()
+        match = _NAMES_A_CHARACTER.match(stripped)
+        if match:
+            named.add(match.group(1) or match.group(2))
+    missing = sorted(named - declared)
+    if missing:
+        msg = (
+            f"this config's rotation names {missing}, which it never declares. gcsim would "
+            f"accept it and simulate nobody — an empty log and zero damage, returned as valid "
+            f"JSON — so the failure would arrive as a confident zero rather than as an error."
+        )
+        raise GcsimConfigError(msg)
+
+
+def _teammate_lines(
+    teammates: Sequence[Build], *, subject_key: str, subject_id: object,
+) -> list[str]:
+    """Every teammate's own stanza — character, weapon and their real artifacts.
+
+    Split out so `build_config` stays inside its branch budget, and because this is one idea:
+    *the rest of the party, as they actually are*.
+    """
+    out: list[str] = []
+    for mate in teammates:
+        if mate.character is None or mate.id == subject_id:
+            continue
+        mate_key = gcsim_keys.character_key(
+            mate.character.nanoka_id, mate.character.name, mate.character.element,
+        )
+        if mate_key == subject_key:
+            continue
+        out.append("")
+        out.append(
+            f"{mate_key} char lvl={mate.character_level}/90 "
+            f"cons={mate.constellation_level} talent={_talents(mate)};",
+        )
+        if mate.weapon is not None:
+            out.append(
+                f'{mate_key} add weapon="{gcsim_keys.weapon_key(mate.weapon.name)}" '
+                f"lvl={mate.weapon_level}/90 refine={mate.refinement};",
+            )
+        out.extend(_artifact_lines(mate_key, mate.artifacts))
+    return out
 
 
 def _talents(build: Build) -> str:

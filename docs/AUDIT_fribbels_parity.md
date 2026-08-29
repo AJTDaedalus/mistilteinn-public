@@ -208,7 +208,7 @@ estimated.
 run to completion in this session; the earlier pass only confirmed its controls existed. Running
 it is what found these, and nothing in either suite says a word about them.
 
-### 9a. A rotation search returns ten results, all scoring zero
+### 9a. A rotation search returns ten results, all scoring zero — **fixed**
 
 Build: Nahida C2, Mappa Mare R5 Lv90. Team: Hyperbloom. Rotation: the authored eight-step
 cycle. One 4-piece set selected, two calibrations completed, and the search finished:
@@ -254,8 +254,52 @@ a string on failure."* A failed sample that is parsed rather than checked would 
 of zeros, and a search over zero-valued recipes returns exactly what was seen — ten
 combinations, all scoring 0, reported as `isExact`.
 
-**Unconfirmed.** The next step is to capture what `mod.sample()` actually returns for the
-page's own baseline config, which is one instrumented run rather than an investigation.
+#### Confirmed, and fixed
+
+The instrumented run settled it, and the cause was not the documented trap. `sample()` returned
+**valid JSON** — it did not fail. It reported `character_details: []`, a **two-byte log**, and
+zero damage: a successful simulation of *nobody*.
+
+The config explains why. `/builds/{id}/calibrate` validated that the build's character was on
+the rotation's team, compiled the **team's** rotation, and then emitted **one character's
+stanza**:
+
+    nahida char lvl=90/90 cons=2 talent=10,10,10;
+    ...
+    active kaedeharakazuha;          <- never declared
+    while 1 {
+        if .kaedeharakazuha.skill.ready { ... }   <- nor these two
+        if .furina.skill.ready { ... }
+        if .kukishinobu.skill.ready { ... }
+    }
+
+gcsim does not reject that. It runs, simulates nobody, and returns a clean result — so the
+recipe calibrated to zeros and the search ranked ten builds at 0 while reporting `isExact`.
+
+**This is a worse variant of the trap `CLAUDE.md` records.** That one is a failure *string*
+where JSON was expected, which a caller can catch. This is well-formed JSON describing an empty
+run, which only a caller checking *what was simulated* can catch — and nothing did.
+
+**Two fixes.** `build_config` now takes the whole team and emits a stanza each, carrying their
+**own gear** rather than the calibration, because a teammate's buffs are what the subject's
+damage is measured inside — the point of calibrating "in this team" at all. And it **refuses**
+any config whose action block names a character it never declared, so the class of bug cannot
+recur; that guard is checkable from the text, without a simulator or a browser.
+
+The same single-character emission was live on `/builds/{id}/compare-weapons/gcsim`, which is
+fixed in the same change.
+
+Measured before and after, on the page's own config:
+
+| | before | after |
+|---|---|---|
+| characters simulated | `[]` | all four |
+| log | 2 bytes | 3,069,118 bytes |
+| combinations scored | 10 | **7,293** |
+| rank 1 damage | **0** | **11,237,434.9** |
+
+And the calibration now reports real diagnostics — *"flatDamage carries a conversion no probe
+could resolve, affecting 96.3% of the damage"* — where it previously had nothing to say.
 
 ### 9b. The single-hit search blocks the page for minutes
 
