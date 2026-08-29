@@ -812,3 +812,34 @@ deletes its own evidence reads as an oversight to the next person, and cannot be
 without redoing the research. The code matches on the `lunar_`/`stellar_` id prefix rather than
 on a `category`, because the research's categories describe how a reaction *works* —
 amplifying, transformative — and this is a decision about which ones a player names.
+
+## 24. The rotation library shares by publishing, and does not yet rank (2026-08-29)
+
+`TASKS_rotation_library.md` Tracks A and B, built in #177. Three things were decided while
+building rather than before, and each is the kind that would otherwise be re-litigated by
+whoever reads the code next.
+
+**A second repository, not a mode on the first.** `RotationRepository` is owner-scoped, and
+that scope is what stops one user reading another's work. Adding a "sometimes ignore the owner"
+flag to it would put the check and its exception in the same object, where the exception
+eventually wins an argument it should not be in. `RotationLibraryRepository` is scoped to
+`visibility == published` instead, in one `_published()` method for the same reason `_for_team`
+exists — two hand-written filters are two chances to forget one, and the half that forgot would
+be the one reporting `total`.
+
+**The character index is rebuilt whole on every write, never diffed.** A diff would be a second
+implementation of "what characters does this rotation name", and the two would eventually
+disagree — at which point the library offers a rotation for a team it cannot run on, which
+reads as a bug in the search rather than in a stale index. The cost is one delete and a handful
+of inserts on a rename, which buys a guarantee rather than an optimisation.
+
+**The listing sorts newest first and says nothing about DPS**, which is *not* what
+`DESIGN_rotation_library.md` §3 promises. The design says "DPS where this user has run it, then
+likes"; `sim_runs.context_key` is a hash whose own docstring forbids querying by its parts, so
+there is currently no way to find a user's runs for a rotation. Shipping an ordering that
+claimed to be by DPS while being by date would be worse than shipping neither.
+
+The fix is two nullable label columns — `rotation_id` **and** the rotation's signature — and
+the second one is the point: a rotation is editable, so `rotation_id` alone would sort it by a
+number computed for a previous version of itself. That work is named in the TASKS file rather
+than done here.

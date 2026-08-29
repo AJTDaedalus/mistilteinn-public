@@ -1,8 +1,17 @@
 # TASKS: the rotation library
 
-**Status: open. Steps 1 of `DESIGN_rotation_library.md` §6 is done (#141, #155, #156); steps
-2–4 are what follows.** Nothing here is blocked on a decision — `DECISIONS.md` §21 answered
-all four open questions on 2026-08-29.
+**Status: Tracks A, B and C are built (#177, #178), and L.10 is done — which changed what
+Track D is.** The measurement says two of the four configs already import (12 and 16 steps) and
+the other two are blocked by a *user-defined function*, which `DESIGN_rotation_library.md` §6
+already rules should stay refused. So L.11 has nothing left to rewrite and L.12 is the work:
+refusing accurately, which #178 corrects. See `LOG_rotation_library.md`. Step 1 of `DESIGN_rotation_library.md` §6 was already done (#141, #155, #156).
+Nothing here is blocked on a decision — `DECISIONS.md` §21 answered all four open questions on
+2026-08-29.
+
+**Two corrections this file owes its own reader.** L.1 said "a Postgres enum"; the repo's
+convention is `enum_column`, a `VARCHAR` with `native_enum=False`, and `app/models/base.py`
+argues for it at length. And the DPS ordering L.4 was written around is **not built** — see
+*What is not in #177* below.
 
 Read `docs/DESIGN_rotation_library.md` first. It is the authority; this file only decomposes
 it. Where the two disagree, the DESIGN wins and this file is wrong.
@@ -44,6 +53,20 @@ rotation was deleted. Both are "no DPS to show", which is the honest answer and 
 backfill.
 
 ---
+
+## What is not in #177
+
+**The DPS ordering.** *The one design decision this file adds*, above, still stands as written
+and is still unbuilt: `sim_runs` has no `rotation_id`, so a user's own DPS for a rotation cannot
+be found. The library therefore sorts **newest first** and says nothing about performance, which
+is honest and is not what §3 promises. That is the next backend task, and its two columns —
+`rotation_id` **and** the rotation signature — are the difference between "your number" and "a
+number computed for a previous version of this rotation".
+
+**L.7's query-count harness.** The listing does its work in a fixed four queries — the page, the
+character sets, the like counts, and the caller's own likes — by construction rather than by
+assertion. Building the `before_cursor_execute` harness to *prove* that is still owed, and until
+it exists the guarantee rests on reading the code, which L.7 itself says is not asserting it.
 
 ## L.0 — the branch
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -8,6 +8,7 @@ import { CatalogueIcon } from '../../shared/icon/icon';
 import { EntityToken } from '../../shared/token/token';
 import {
   RotationsService,
+  type LibraryRotationRead,
   type RotationAction,
   type RotationRead,
   type RotationStep,
@@ -107,6 +108,115 @@ export class RotationsPage implements OnInit {
 
   protected toggleTeam(id: string): void {
     this.openTeam.update((current) => (current === id ? '' : id));
+  }
+
+  // ── the library (BACKLOG_frontend §5, TASKS_rotation_library L.8) ─────────
+  //
+  // The owner's audit: *"It belongs as the last option inside an expanded team, opening a
+  // card-and-filter pop-up."* So it is not a page, and not a tab — it is the answer to a
+  // question you are already asking when you have a team open in front of you.
+
+  protected readonly libraryTeam = signal<TeamRoster | null>(null);
+  protected readonly libraryRows = signal<LibraryRotationRead[]>([]);
+  protected readonly libraryLoading = signal(false);
+  protected readonly libraryError = signal<string | null>(null);
+  protected readonly libraryNote = signal<string | null>(null);
+  /**
+   * Whether the search is narrowed to the open team's characters.
+   *
+   * **Starts narrowed**, because that is the question being asked — a library reached from
+   * inside a team is asking "what do people run on *this*". Widening has to be possible or
+   * the control is a list rather than a search.
+   */
+  protected readonly libraryForThisTeam = signal(true);
+
+  protected readonly libraryDialog =
+    viewChild<ElementRef<HTMLDialogElement>>('libraryDialog');
+
+  protected async openLibrary(team: TeamRoster): Promise<void> {
+    this.libraryTeam.set(team);
+    this.libraryForThisTeam.set(true);
+    this.libraryNote.set(null);
+    // `showModal?.()`: `HTMLDialogElement` is absent in jsdom, so a bare call is a TypeError
+    // thrown from a click handler — which takes the page out rather than failing one control.
+    this.libraryDialog()?.nativeElement.showModal?.();
+    await this.loadLibrary();
+  }
+
+  protected closeLibrary(): void {
+    this.libraryDialog()?.nativeElement.close?.();
+  }
+
+  protected async setLibraryScope(forThisTeam: boolean): Promise<void> {
+    this.libraryForThisTeam.set(forThisTeam);
+    await this.loadLibrary();
+  }
+
+  protected async loadLibrary(): Promise<void> {
+    const team = this.libraryTeam();
+    if (!team) return;
+    this.libraryLoading.set(true);
+    this.libraryError.set(null);
+    try {
+      const page = await this.rotations.library({
+        characters: this.libraryForThisTeam()
+          ? team.characters.map((c) => c.nanoka_id)
+          : undefined,
+      });
+      this.libraryRows.set(page.items);
+    } catch {
+      // Surfaced, not swallowed: an empty library and a failed request look identical on
+      // screen, and only one of them means nobody has published anything.
+      this.libraryError.set('Could not load the rotation library.');
+      this.libraryRows.set([]);
+    } finally {
+      this.libraryLoading.set(false);
+    }
+  }
+
+  /**
+   * Toggle a like, updating the row in place.
+   *
+   * Optimistic, and reverted on failure. A like is a one-bit opinion; making the user wait a
+   * round trip to see it register is the wrong trade, and re-fetching the whole page to show
+   * one number changing is the other wrong one.
+   */
+  protected async toggleLike(row: LibraryRotationRead): Promise<void> {
+    const liked = !row.liked_by_me;
+    const apply = (value: boolean) => this.libraryRows.update((rows) =>
+      rows.map((r) => (r.id === row.id
+        ? { ...r, liked_by_me: value, like_count: r.like_count + (value ? 1 : -1) }
+        : r)),
+    );
+    apply(liked);
+    try {
+      await this.rotations.setLiked(row.id, liked);
+    } catch {
+      apply(!liked);
+      this.libraryError.set('Could not save that.');
+    }
+  }
+
+  /**
+   * Copy a shared rotation onto the team the library was opened from.
+   *
+   * The server re-resolves every step against that team and **refuses, naming the character**,
+   * when it does not field one. That message is shown verbatim: it names what is missing,
+   * which is more useful than anything this page could invent — and it is the reason the
+   * "all teams" scope is safe to offer at all.
+   */
+  protected async copyFromLibrary(row: LibraryRotationRead): Promise<void> {
+    const team = this.libraryTeam();
+    if (!team) return;
+    this.libraryError.set(null);
+    this.libraryNote.set(null);
+    try {
+      const copied = await this.rotations.copy(row.id, team.id);
+      this.libraryNote.set(`Copied as "${copied.name}".`);
+      await this.load();
+    } catch (err) {
+      this.libraryError.set(apiErrorMessage(err));
+    }
   }
 
   /**

@@ -36,11 +36,12 @@ system discarding input to avoid saying no.
 
 from __future__ import annotations
 
-from sqlalchemy import ForeignKey, Index, String, Text
+from sqlalchemy import ForeignKey, Index, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, uuid_pk
+from app.models.base import Base, TimestampMixin, enum_column, uuid_pk
+from app.models.enums import Visibility
 
 
 class Rotation(TimestampMixin, Base):
@@ -62,6 +63,16 @@ class Rotation(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
 
+    #: Private unless the author says otherwise (`DECISIONS.md` §21, OQ-4).
+    #:
+    #: **The default is the whole decision.** Every rotation already saved becomes `private`,
+    #: which is what its author expects; a migration defaulting to `published` would
+    #: retroactively share work nobody offered, and that is not a mistake anyone can take back.
+    visibility: Mapped[Visibility] = mapped_column(
+        enum_column(Visibility, 16), nullable=False, default=Visibility.PRIVATE,
+        server_default=Visibility.PRIVATE.value, index=True,
+    )
+
     #: `[{"character": "10000002", "action": "burst", "repeat": 1, "note": ""}, …]`
     #:
     #: JSONB rather than a `rotation_steps` table. A step has no identity of its own — it is
@@ -74,3 +85,61 @@ class Rotation(TimestampMixin, Base):
 
     def __repr__(self) -> str:
         return f"<Rotation {self.name!r} {len(self.steps or [])} steps>"
+
+
+class RotationCharacter(Base):
+    """One character a rotation names, so "rotations for this team" is a query.
+
+    The set is **derivable** from `Rotation.steps` — every step carries a `character` — and
+    derivable is not queryable. Answering "which shared rotations field exactly these four"
+    from JSONB means reading every published rotation and unpacking it in Python.
+
+    ## Rebuilt whole on every write, never diffed
+
+    The steps are already read and written whole, for the reason the JSONB column gives. A diff
+    would be a **second** implementation of "what characters does this rotation name", and the
+    two would eventually disagree — at which point the library would offer a rotation for a team
+    it cannot actually run on, which reads as a bug in the search rather than in a stale index.
+
+    No `id`: a row is its pair, and nothing references one.
+    """
+
+    __tablename__ = "rotation_characters"
+
+    rotation_id: Mapped[str] = mapped_column(
+        ForeignKey("rotations.id", ondelete="CASCADE"), primary_key=True,
+    )
+    #: nanoka id, the same spelling `Rotation.steps` uses — stable across teams and builds.
+    nanoka_id: Mapped[str] = mapped_column(String(32), primary_key=True, index=True)
+
+    def __repr__(self) -> str:
+        return f"<RotationCharacter {self.rotation_id[:8]}… {self.nanoka_id}>"
+
+
+class RotationLike(TimestampMixin, Base):
+    """One user finding one rotation useful.
+
+    **A table, not a counter column** (`DECISIONS.md` §21, OQ-3). A count alone cannot answer
+    *have I liked this*, which the button needs to know, and cannot be un-liked without going
+    negative under a race — two users toggling at once on a bare `UPDATE … SET n = n - 1`.
+
+    Deliberately **not a rating**: a five-star scale invites a judgement nobody has the evidence
+    to make — *is this a 3 or a 4 for my roster?* — and the question actually asked is binary.
+    """
+
+    __tablename__ = "rotation_likes"
+    __table_args__ = (
+        UniqueConstraint("rotation_id", "user_id", name="uq_rotation_likes_pair"),
+    )
+
+    id: Mapped[uuid_pk]
+    rotation_id: Mapped[str] = mapped_column(
+        ForeignKey("rotations.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+    #: CASCADE: a deleted account's likes are not evidence about anything.
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+
+    def __repr__(self) -> str:
+        return f"<RotationLike {self.rotation_id[:8]}… by {self.user_id[:8]}…>"

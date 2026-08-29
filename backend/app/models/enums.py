@@ -101,6 +101,23 @@ class SourceSpelled(enum.StrEnum):
         return self.name.title()
 
 
+class Visibility(enum.StrEnum):
+    """Whether a rotation is the author's alone, or offered to everyone on this instance.
+
+    **Private is the default, and that is the decision** (`DECISIONS.md` §21, OQ-4). A private
+    rotation becoming visible by default is not a mistake that can be taken back — the author
+    cannot un-share what someone has already read — so sharing is something a user does, never
+    something that happens to them.
+
+    Two values, deliberately. A middle tier (unlisted, link-only, friends) is a permission
+    model, and this repo has no notion of one; adding a value here would be inventing the
+    smallest possible version of it and then owing the rest.
+    """
+
+    PRIVATE = "private"
+    PUBLISHED = "published"
+
+
 class WeaponType(SourceSpelled):
     """The six weapon classes.
 

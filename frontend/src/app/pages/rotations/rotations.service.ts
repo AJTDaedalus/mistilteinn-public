@@ -4,6 +4,8 @@ import { injectApi } from '../../api/api.client';
 import type { components } from '../../api/api.types';
 
 export type RotationRead = components['schemas']['RotationRead'];
+export type LibraryRotationRead = components['schemas']['LibraryRotationRead'];
+export type Visibility = RotationRead['visibility'];
 export type RotationStep = components['schemas']['RotationStep'];
 export type RotationOptions = components['schemas']['RotationOptions'];
 export type TeamRoster = components['schemas']['TeamRoster'];
@@ -73,7 +75,10 @@ export class RotationsService {
    * The API replaces them wholesale for the reason R.4 records: "change step 3" and "insert
    * before step 3" are the same edit from here and different ones to a per-index API.
    */
-  async update(id: string, body: { name?: string; steps?: RotationStep[] }) {
+  async update(
+    id: string,
+    body: { name?: string; steps?: RotationStep[]; visibility?: Visibility },
+  ) {
     const { data, error } = await this.api.PATCH('/api/v1/rotations/{rotation_id}', {
       params: { path: { rotation_id: id } },
       body,
@@ -87,6 +92,47 @@ export class RotationsService {
       params: { path: { rotation_id: id } },
     });
     if (error) throw error;
+  }
+
+  /**
+   * Published rotations, from every user on this instance.
+   *
+   * `characters` matches a rotation whose character set is **exactly** those ids. The server
+   * says so at length; repeating the reasoning here would be a second place to get it wrong,
+   * but the shape is worth knowing at the call site: passing a team's four characters finds
+   * rotations *for that team*, not rotations that happen to include them.
+   */
+  async library(params: { characters?: string[]; q?: string; limit?: number } = {}) {
+    const { data, error } = await this.api.GET('/api/v1/rotations/library', {
+      params: { query: { ...params, limit: params.limit ?? 50 } },
+    });
+    if (error) throw new Error('Could not load the rotation library');
+    return data;
+  }
+
+  /** Like or un-like. Both are idempotent server-side, so a double click is not an error. */
+  async setLiked(id: string, liked: boolean): Promise<void> {
+    const call = liked ? this.api.POST : this.api.DELETE;
+    const { error } = await call('/api/v1/rotations/{rotation_id}/like', {
+      params: { path: { rotation_id: id } },
+    });
+    if (error) throw error;
+  }
+
+  /**
+   * Copy a published rotation onto one of your own teams.
+   *
+   * Refuses, naming the character, when the team does not field one of them. The refusal is
+   * surfaced verbatim — it names what is missing, which is more useful than anything a page
+   * could invent.
+   */
+  async copy(id: string, teamId: string): Promise<RotationRead> {
+    const { data, error } = await this.api.POST('/api/v1/rotations/{rotation_id}/copy', {
+      params: { path: { rotation_id: id } },
+      body: { team_id: teamId },
+    });
+    if (error) throw error;
+    return data;
   }
 
   /** The gcsim config this rotation becomes — so a user can see what they authored. */

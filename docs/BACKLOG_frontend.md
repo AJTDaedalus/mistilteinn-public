@@ -142,9 +142,19 @@ show that a suggested piece is *owned*. Drag-and-drop for the ranking.
   The summary reads **"8 steps · 11 actions"** rather than the audit's *"x hits, y seconds"*:
   hits and seconds are gcsim's answer and need a run, while a step's `repeat` is the closest
   thing this model holds. Naming it "steps" is the difference between a summary and a claim.
-- **The rotation library is missing from the UI entirely**: there is no way to search for
+- ~~**The rotation library is missing from the UI entirely**: there is no way to search for
   rotations for a team. It belongs as the last option inside an expanded team, opening a
-  card-and-filter pop-up.
+  card-and-filter pop-up.~~ **Done (#177, #178)** — it was missing from the *backend* too, so
+  #177 built publishing, the character index, likes and copying, and #178 is the pop-up.
+
+  It opens **pre-filtered to the team it was opened from**, because a library reached from
+  inside a team is asking "what do people run on *this*" — and widens to everything published,
+  or the control is a list rather than a search. The two silences are said differently: nobody
+  has published for this party, or nobody has published at all.
+
+  The like is optimistic and reverts on failure: a like is a one-bit opinion, and waiting a
+  round trip to see it register is the wrong trade, while a count that stayed after a failure
+  would be a number the server does not agree with.
 - **The rotation builder gets its own design pass**, after the smaller items. The owner: *"I
   want a very extensive and easy to use rotation builder, it's one of our key distinctions from
   gcsim."*

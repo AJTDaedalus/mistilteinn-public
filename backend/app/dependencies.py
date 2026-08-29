@@ -19,7 +19,7 @@ from app.repositories.build import BuildRepository
 from app.repositories.character import CharacterRepository
 from app.repositories.enemy import EnemyProfileRepository
 from app.repositories.owned_weapon import OwnedWeaponRepository
-from app.repositories.rotation import RotationRepository
+from app.repositories.rotation import RotationLibraryRepository, RotationRepository
 from app.repositories.session import SessionRepository
 from app.repositories.sim_run import SimRunRepository
 from app.repositories.team import TeamRepository
@@ -210,6 +210,23 @@ async def get_owned_rotation_repo(
 ) -> RotationRepository:
     """FastAPI DI factory for a `RotationRepository` scoped to the caller's own rotations."""
     return RotationRepository(session, owner_id=str(current_user.id))
+
+
+async def get_rotation_library_repo(
+    session: DBSession, current_user: CurrentUser
+) -> RotationLibraryRepository:
+    """FastAPI DI factory for the cross-user view of **published** rotations.
+
+    Deliberately a different repository from `get_owned_rotation_repo` rather than a mode on
+    it. That one's owner scope is what stops a user reading another's work, and a "sometimes
+    ignore the owner" flag would put the check and its exception in the same object — where the
+    exception eventually wins an argument it should not be in.
+
+    Still requires a signed-in caller: `liked_by_me` is a fact about *someone*, and the library
+    is a feature of an account rather than a public page.
+    """
+    del current_user  # required for authentication, not for scoping — see the docstring
+    return RotationLibraryRepository(session)
 
 
 async def get_owned_sim_run_repo(

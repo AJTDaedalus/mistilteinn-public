@@ -209,6 +209,49 @@ def test_every_unreadable_line_is_named_not_just_the_first() -> None:
     assert "wait" in str(caught.value)
 
 
+def test_a_helper_function_is_told_apart_from_two_rotations() -> None:
+    """**The message has to be true**, the same lesson as the `for` one above.
+
+    Two of the four community configs under `references/gcsim_db/` refuse here, and both have
+    exactly one top-level cycle plus a `while` **inside a user-defined function** — a helper
+    that waits on a cooldown, not a second rotation. Telling their author "2 loops, which of
+    these is it?" sends them looking for an ambiguity their file does not have.
+
+    Measured rather than assumed: the two that refuse are exactly the two carrying an `fn`.
+    """
+    config = (
+        "fn wait_for_dash() {\n"
+        "    while !.mavuika.dash.ready {\n"
+        "        wait(1);\n"
+        "    }\n"
+        "}\n"
+        "active noelle;\n"
+        "while 1 {\n"
+        "    noelle skill;\n"
+        "}\n"
+    )
+
+    with pytest.raises(RotationParseError, match="defines its own functions"):
+        parse_action_block(config, ROSTER)
+
+
+def test_two_top_level_cycles_are_still_refused_as_two_cycles() -> None:
+    """The other message stays, for the case it was written about: no helper, two cycles, and
+    a genuine question about which one the rotation is."""
+    config = (
+        "active noelle;\n"
+        "while 1 {\n"
+        "    noelle skill;\n"
+        "}\n"
+        "while 1 {\n"
+        "    noelle burst;\n"
+        "}\n"
+    )
+
+    with pytest.raises(RotationParseError, match="2 loops"):
+        parse_action_block(config, ROSTER)
+
+
 def test_an_empty_loop_is_refused() -> None:
     """A rotation with no steps compiles to nothing to do, and the compiler already refuses
     to emit one. Importing one would create by the back door what authoring cannot."""

@@ -2406,6 +2406,235 @@
         ]
       }
     },
+    "/api/v1/rotations/library": {
+      "get": {
+        "tags": [
+          "rotations"
+        ],
+        "summary": "Browse Library",
+        "description": "Published rotations, from every user on this instance.\n\nDeclared **above** `/{rotation_id}` for the reason `/options` is: FastAPI matches in\ndeclaration order, and below it this path would be swallowed as a rotation whose id is the\nword \"library\".\n\n`characters` matches a rotation whose character set is **exactly** these ids \u2014 not a\nsuperset. `DESIGN_rotation_library.md` \u00a73 calls this filter one that \"claims nothing\", and\nthat is only true if it means what it says: a four-character rotation surfacing for a\nthree-character query would be a recommendation wearing a filter's clothes.\n\nThree queries for the page, not three per row: the rotations, their character sets, and\ntheir like counts. A per-row lookup is the shape that turns a twenty-row page into\nsixty-one round trips and looks fine until the page grows.",
+        "operationId": "browse_library_api_v1_rotations_library_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "characters",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Characters"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Q"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_LibraryRotationRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rotations/{rotation_id}/like": {
+      "post": {
+        "tags": [
+          "rotations"
+        ],
+        "summary": "Like Rotation",
+        "description": "Mark a published rotation useful. Idempotent \u2014 liking twice is a no-op.\n\n**Liking your own is allowed.** It costs nothing to permit, and a rule against it is a rule\nto explain, enforce and test for no benefit anyone asked for.",
+        "operationId": "like_rotation_api_v1_rotations__rotation_id__like_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "rotation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Rotation Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "rotations"
+        ],
+        "summary": "Unlike Rotation",
+        "description": "Take a like back. Also idempotent: un-liking what you never liked is not an error.",
+        "operationId": "unlike_rotation_api_v1_rotations__rotation_id__like_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "rotation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Rotation Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rotations/{rotation_id}/copy": {
+      "post": {
+        "tags": [
+          "rotations"
+        ],
+        "summary": "Copy Rotation",
+        "description": "Copy a published rotation onto one of the caller's own teams.\n\nA shared rotation belongs to its author's team, so copying it means **re-resolving every\nstep against the caller's**. A step naming a character their team does not field is\n**refused, naming the character** \u2014 never dropped and never substituted, which is the rule\n`app/models/rotation.py` (OQ-R2) already applies to a rotation gone stale.\n\nThe copy is private, whatever the original was: publishing is something a user does.",
+        "operationId": "copy_rotation_api_v1_rotations__rotation_id__copy_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "rotation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Rotation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RotationCopyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RotationRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/rotations/{rotation_id}": {
       "get": {
         "tags": [
@@ -2458,7 +2687,7 @@
           "rotations"
         ],
         "summary": "Update Rotation",
-        "description": "Rename a rotation, or replace its steps.\n\nSteps are replaced wholesale rather than patched per index. A rotation is an ordered\nlist, so \"change step 3\" and \"insert before step 3\" are the same edit to the client and\na different one to a per-index API \u2014 and the ambiguity would land on whoever wrote the UI.",
+        "description": "Rename a rotation, replace its steps, or publish it.\n\nSteps are replaced wholesale rather than patched per index. A rotation is an ordered\nlist, so \"change step 3\" and \"insert before step 3\" are the same edit to the client and\na different one to a per-index API \u2014 and the ambiguity would land on whoever wrote the UI.\n\n**Publishing is `visibility`, not a `/publish` route** (L.2). A separate endpoint would be\na second way to write one column, needing the same ownership check written twice \u2014 and this\none is already here, in `_require` against the owner-scoped repository, which answers 404\nrather than 403 to a stranger and so does not confirm the row exists.",
         "operationId": "update_rotation_api_v1_rotations__rotation_id__patch",
         "security": [
           {
@@ -5148,6 +5377,56 @@
         "title": "KernelTarget",
         "description": "What the search scores against. `search.ts`'s `Target`."
       },
+      "LibraryRotationRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/RotationStep"
+            },
+            "type": "array",
+            "title": "Steps"
+          },
+          "characters": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Characters"
+          },
+          "like_count": {
+            "type": "integer",
+            "title": "Like Count"
+          },
+          "liked_by_me": {
+            "type": "boolean",
+            "title": "Liked By Me"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "steps",
+          "characters",
+          "like_count",
+          "liked_by_me"
+        ],
+        "title": "LibraryRotationRead",
+        "description": "One published rotation, as the library lists it.\n\n**Not `RotationRead` with fields added.** That schema is what an author sees of their own\nrotation; this is what a stranger sees of someone else's, and the difference is the point:\n`like_count` and `liked_by_me` are facts about the *caller*, and `characters` is the\nderived index rather than the steps.\n\nThe steps are here too, because a rotation nobody can read before copying is one nobody\nshould copy \u2014 the whole argument for `POST /{id}/compile` applies to a shared rotation with\nmore force."
+      },
       "LoginRequest": {
         "properties": {
           "email": {
@@ -5440,6 +5719,37 @@
           "limit"
         ],
         "title": "PaginatedResponse[EnemyProfileRead]"
+      },
+      "PaginatedResponse_LibraryRotationRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LibraryRotationRead"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "offset",
+          "limit"
+        ],
+        "title": "PaginatedResponse[LibraryRotationRead]"
       },
       "PaginatedResponse_OwnedWeaponRead_": {
         "properties": {
@@ -5830,6 +6140,20 @@
         "title": "RosterCharacter",
         "description": "One character an editor may name in a step."
       },
+      "RotationCopyRequest": {
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "title": "Team Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "team_id"
+        ],
+        "title": "RotationCopyRequest",
+        "description": "Body for `POST /rotations/{id}/copy` \u2014 which of the caller's teams to copy it onto."
+      },
       "RotationCreate": {
         "properties": {
           "name": {
@@ -5960,6 +6284,10 @@
             },
             "type": "array",
             "title": "Steps"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/Visibility",
+            "default": "private"
           }
         },
         "type": "object",
@@ -6060,6 +6388,16 @@
               }
             ],
             "title": "Description"
+          },
+          "visibility": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Visibility"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -7026,6 +7364,15 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "Visibility": {
+        "type": "string",
+        "enum": [
+          "private",
+          "published"
+        ],
+        "title": "Visibility",
+        "description": "Whether a rotation is the author's alone, or offered to everyone on this instance.\n\n**Private is the default, and that is the decision** (`DECISIONS.md` \u00a721, OQ-4). A private\nrotation becoming visible by default is not a mistake that can be taken back \u2014 the author\ncannot un-share what someone has already read \u2014 so sharing is something a user does, never\nsomething that happens to them.\n\nTwo values, deliberately. A middle tier (unlisted, link-only, friends) is a permission\nmodel, and this repo has no notion of one; adding a value here would be inventing the\nsmallest possible version of it and then owing the rest."
       },
       "WeaponClassRead": {
         "properties": {

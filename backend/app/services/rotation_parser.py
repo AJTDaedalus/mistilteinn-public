@@ -176,6 +176,23 @@ def _loop_body(lines: list[str]) -> list[str]:
         )
         raise RotationParseError(msg)
     if len(opens) > 1:
+        # **Say which it is, again.** Both community configs that reach this branch have one
+        # top-level cycle and one `while` *inside a user-defined function* — a helper that
+        # waits for a cooldown, not a second rotation. Reporting "2 loops. Which of these is
+        # it?" sends a reader looking for an ambiguity their file does not have.
+        #
+        # Measured, not assumed: of the four configs under `references/gcsim_db/`, the two
+        # that refuse here are exactly the two carrying an `fn`.
+        if any(line.startswith("fn ") for line in lines):
+            msg = (
+                "the config defines its own functions, and one of them loops. A named "
+                "sequence with a body of its own is a *different rotation*, not a different "
+                "spelling of one — this model holds an ordered list of "
+                "`(character, action, repeat)` and has nowhere to put a helper that waits on "
+                "a cooldown or branches on Nightsoul points. Inline what the function does, "
+                "or author the rotation here."
+            )
+            raise RotationParseError(msg)
         msg = (
             f"{len(opens)} loops. A rotation is one cycle; which of these is it, and what "
             f"decides when the others run? That is a question this model has no field for."

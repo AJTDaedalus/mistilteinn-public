@@ -18,22 +18,27 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from app.dependencies import (
+    CurrentUser,
     get_enemy_profile_repo,
     get_owned_build_repo,
     get_owned_rotation_repo,
     get_owned_team_repo,
+    get_rotation_library_repo,
 )
 from app.middleware.rate_limit import WRITE_LIMIT, limiter
+from app.models.enums import Visibility
 from app.models.rotation import Rotation
 from app.repositories.build import BuildRepository
 from app.repositories.enemy import EnemyProfileRepository
-from app.repositories.rotation import RotationRepository
+from app.repositories.rotation import RotationLibraryRepository, RotationRepository
 from app.repositories.team import TeamRepository
 from app.schemas.common import PaginatedResponse
 from app.schemas.rotation import (
     ContextKeyRead,
     ContextKeyRequest,
+    LibraryRotationRead,
     RosterCharacter,
+    RotationCopyRequest,
     RotationCreate,
     RotationImportRead,
     RotationImportRequest,
@@ -62,6 +67,7 @@ _Repo = Annotated[RotationRepository, Depends(get_owned_rotation_repo)]
 _Teams = Annotated[TeamRepository, Depends(get_owned_team_repo)]
 _Builds = Annotated[BuildRepository, Depends(get_owned_build_repo)]
 _Enemies = Annotated[EnemyProfileRepository, Depends(get_enemy_profile_repo)]
+_Library = Annotated[RotationLibraryRepository, Depends(get_rotation_library_repo)]
 _Offset = Annotated[int, Query(ge=0)]
 _Limit = Annotated[int, Query(ge=1, le=200)]
 
@@ -230,6 +236,134 @@ async def import_from_gcsim(
     )
 
 
+@router.get("/library", response_model=PaginatedResponse[LibraryRotationRead])
+async def browse_library(
+    repo: _Library,
+    user: CurrentUser,
+    characters: Annotated[list[str] | None, Query()] = None,
+    q: str = "",
+    offset: _Offset = 0,
+    limit: _Limit = 50,
+) -> PaginatedResponse[LibraryRotationRead]:
+    """Published rotations, from every user on this instance.
+
+    Declared **above** `/{rotation_id}` for the reason `/options` is: FastAPI matches in
+    declaration order, and below it this path would be swallowed as a rotation whose id is the
+    word "library".
+
+    `characters` matches a rotation whose character set is **exactly** these ids — not a
+    superset. `DESIGN_rotation_library.md` §3 calls this filter one that "claims nothing", and
+    that is only true if it means what it says: a four-character rotation surfacing for a
+    three-character query would be a recommendation wearing a filter's clothes.
+
+    Three queries for the page, not three per row: the rotations, their character sets, and
+    their like counts. A per-row lookup is the shape that turns a twenty-row page into
+    sixty-one round trips and looks fine until the page grows.
+    """
+    wanted = characters or []
+    rows = await repo.search(characters=wanted, query=q, offset=offset, limit=limit)
+    ids = [r.id for r in rows]
+    by_rotation = await repo.characters_for(ids)
+    counts = await repo.like_counts(ids)
+    mine = await repo.liked_by(str(user.id), ids)
+    return PaginatedResponse(
+        items=[
+            LibraryRotationRead(
+                id=r.id,
+                name=r.name,
+                description=r.description,
+                steps=[RotationStep.model_validate(step) for step in r.steps],
+                characters=by_rotation.get(r.id, []),
+                like_count=counts.get(r.id, 0),
+                liked_by_me=r.id in mine,
+            )
+            for r in rows
+        ],
+        total=await repo.count(characters=wanted, query=q),
+        offset=offset,
+        limit=limit,
+    )
+
+
+@router.post("/{rotation_id}/like", status_code=204)
+@limiter.limit(WRITE_LIMIT)
+async def like_rotation(
+    request: Request, repo: _Library, user: CurrentUser, rotation_id: str,
+) -> None:
+    """Mark a published rotation useful. Idempotent — liking twice is a no-op.
+
+    **Liking your own is allowed.** It costs nothing to permit, and a rule against it is a rule
+    to explain, enforce and test for no benefit anyone asked for.
+    """
+    if await repo.published(rotation_id) is None:
+        raise HTTPException(status_code=404, detail=f"No published rotation {rotation_id!r}")
+    await repo.like(rotation_id, str(user.id))
+
+
+@router.delete("/{rotation_id}/like", status_code=204)
+@limiter.limit(WRITE_LIMIT)
+async def unlike_rotation(
+    request: Request, repo: _Library, user: CurrentUser, rotation_id: str,
+) -> None:
+    """Take a like back. Also idempotent: un-liking what you never liked is not an error."""
+    if await repo.published(rotation_id) is None:
+        raise HTTPException(status_code=404, detail=f"No published rotation {rotation_id!r}")
+    await repo.unlike(rotation_id, str(user.id))
+
+
+@router.post("/{rotation_id}/copy", response_model=RotationRead, status_code=201)
+@limiter.limit(WRITE_LIMIT)
+async def copy_rotation(
+    request: Request,
+    library: _Library,
+    repo: _Repo,
+    teams: _Teams,
+    body: RotationCopyRequest,
+    rotation_id: str,
+) -> RotationRead:
+    """Copy a published rotation onto one of the caller's own teams.
+
+    A shared rotation belongs to its author's team, so copying it means **re-resolving every
+    step against the caller's**. A step naming a character their team does not field is
+    **refused, naming the character** — never dropped and never substituted, which is the rule
+    `app/models/rotation.py` (OQ-R2) already applies to a rotation gone stale.
+
+    The copy is private, whatever the original was: publishing is something a user does.
+    """
+    original = await library.published(rotation_id)
+    if original is None:
+        raise HTTPException(status_code=404, detail=f"No published rotation {rotation_id!r}")
+    if await teams.get_by_id(body.team_id) is None:
+        raise HTTPException(status_code=404, detail=f"No team {body.team_id!r}")
+
+    roster = await repo.team_characters(body.team_id)
+    missing = sorted(
+        {
+            step.get("character")
+            for step in original.steps
+            if isinstance(step, dict) and step.get("character") not in roster
+        }
+        - {None},
+    )
+    if missing:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"That team does not field {', '.join(missing)}, "
+                "so those steps have nobody to run them. Nothing was copied."
+            ),
+        )
+
+    created = await repo.create({
+        "team_id": body.team_id,
+        "name": f"{original.name} (copy)",
+        "description": original.description,
+        "steps": original.steps,
+        "visibility": Visibility.PRIVATE,
+    })
+    return RotationRead.model_validate(created)
+
+
 @router.get("/{rotation_id}", response_model=RotationRead)
 async def get_rotation(repo: _Repo, rotation_id: str) -> RotationRead:
     """One rotation."""
@@ -244,11 +378,16 @@ async def update_rotation(
     body: RotationUpdate,
     repo: _Repo,
 ) -> RotationRead:
-    """Rename a rotation, or replace its steps.
+    """Rename a rotation, replace its steps, or publish it.
 
     Steps are replaced wholesale rather than patched per index. A rotation is an ordered
     list, so "change step 3" and "insert before step 3" are the same edit to the client and
     a different one to a per-index API — and the ambiguity would land on whoever wrote the UI.
+
+    **Publishing is `visibility`, not a `/publish` route** (L.2). A separate endpoint would be
+    a second way to write one column, needing the same ownership check written twice — and this
+    one is already here, in `_require` against the owner-scoped repository, which answers 404
+    rather than 403 to a stranger and so does not confirm the row exists.
     """
     rotation = await _require(repo, rotation_id)
     patch = body.model_dump(exclude_unset=True)

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.models.enums import Visibility
 from app.services.gcsim_keys import authorable_actions
 
 #: How many steps one rotation may hold.
@@ -156,6 +157,11 @@ class RotationUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     steps: list[RotationStep] | None = Field(default=None, max_length=MAX_STEPS)
     description: str | None = Field(default=None, max_length=2000)
+    #: Publish or unpublish. A field of the rotation, not a `/publish` endpoint — a separate
+    #: route would be a second way to write one column, and the two would need the same
+    #: ownership check written twice. **Unpublishing is allowed and immediate**: a user who
+    #: shared something by mistake needs the door to open both ways.
+    visibility: Visibility | None = None
 
 
 class RotationRead(BaseModel):
@@ -166,8 +172,42 @@ class RotationRead(BaseModel):
     team_id: str
     description: str
     steps: list[RotationStep]
+    #: Published rotations are readable by everyone on this instance. Private is the default
+    #: and the decision (`DECISIONS.md` §21).
+    visibility: Visibility = Visibility.PRIVATE
 
     model_config = {"from_attributes": True}
+
+
+class LibraryRotationRead(BaseModel):
+    """One published rotation, as the library lists it.
+
+    **Not `RotationRead` with fields added.** That schema is what an author sees of their own
+    rotation; this is what a stranger sees of someone else's, and the difference is the point:
+    `like_count` and `liked_by_me` are facts about the *caller*, and `characters` is the
+    derived index rather than the steps.
+
+    The steps are here too, because a rotation nobody can read before copying is one nobody
+    should copy — the whole argument for `POST /{id}/compile` applies to a shared rotation with
+    more force.
+    """
+
+    id: str
+    name: str
+    description: str
+    steps: list[RotationStep]
+    #: The nanoka ids this rotation names, from `rotation_characters`.
+    characters: list[str]
+    like_count: int
+    #: Whether *this* caller has liked it. A count alone cannot answer that, which is why
+    #: likes are a table (`DECISIONS.md` §21, OQ-3).
+    liked_by_me: bool
+
+
+class RotationCopyRequest(BaseModel):
+    """Body for `POST /rotations/{id}/copy` — which of the caller's teams to copy it onto."""
+
+    team_id: str
 
 
 class RotationImportRequest(BaseModel):

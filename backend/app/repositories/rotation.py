@@ -4,11 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, delete, func, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
+from app.models.base import generate_uuid7
 from app.models.build import Build
-from app.models.rotation import Rotation
+from app.models.enums import Visibility
+from app.models.rotation import Rotation, RotationCharacter, RotationLike
 from app.models.team import Team
 from app.repositories.base import BaseRepository
 from app.schemas.team import TEAM_SLOTS
@@ -50,6 +53,60 @@ class RotationRepository(BaseRepository[Rotation]):
         if self.owner_id is not None:
             stmt = stmt.where(Rotation.owner_id == self.owner_id)
         return stmt
+
+    # ---- the character index (L.3) --------------------------------------
+
+    @staticmethod
+    def _characters_in(steps: object) -> set[str]:
+        """The nanoka ids a step list names, deduplicated.
+
+        Tolerant of a malformed step rather than raising: the write path validates steps
+        against the team before this runs, and an index that refused to build would turn a
+        validation bug into a failed save. A step with no `character` simply indexes nothing.
+        """
+        found: set[str] = set()
+        for step in steps if isinstance(steps, list) else []:
+            if isinstance(step, dict):
+                character = step.get("character")
+                if isinstance(character, str) and character:
+                    found.add(character)
+        return found
+
+    async def _reindex(self, rotation: Rotation) -> None:
+        """Rebuild `rotation_characters` for one rotation, wholesale.
+
+        **Never diffed.** The steps are read and written whole for the reason the JSONB column
+        gives, and a diff would be a second implementation of "what characters does this
+        rotation name". The two would eventually disagree, and the library would then offer a
+        rotation for a team it cannot run on — which reads as a bug in the search rather than
+        in a stale index.
+        """
+        await self.session.execute(
+            delete(RotationCharacter).where(RotationCharacter.rotation_id == rotation.id),
+        )
+        for nanoka_id in sorted(self._characters_in(rotation.steps)):
+            self.session.add(
+                RotationCharacter(rotation_id=rotation.id, nanoka_id=nanoka_id),
+            )
+        await self.session.flush()
+
+    async def create(self, data: dict[str, object]) -> Rotation:
+        """Insert, then index. Overridden so no caller can save without indexing."""
+        rotation = await super().create(data)
+        await self._reindex(rotation)
+        return rotation
+
+    async def update(self, entity_id: str, data: dict[str, object]) -> Rotation | None:
+        """Patch, then re-index — including when `steps` was not among the fields patched.
+
+        Re-indexing unconditionally costs one delete and a handful of inserts on a rename, and
+        buys the guarantee that the index cannot be stale. A conditional would be correct until
+        someone adds a second way to change the steps.
+        """
+        rotation = await super().update(entity_id, data)
+        if rotation is not None:
+            await self._reindex(rotation)
+        return rotation
 
     async def list_for_team(
         self, team_id: str, *, offset: int = 0, limit: int = 50,
@@ -163,3 +220,154 @@ class RotationRepository(BaseRepository[Rotation]):
             .all()
         )
         return [(team, self._roster(team)) for team in teams]
+
+
+class RotationLibraryRepository(BaseRepository[Rotation]):
+    """Reads across **every** user's published rotations, and only those.
+
+    ## Why this is a second repository
+
+    `RotationRepository` is owner-scoped, and that scope is load-bearing: it is what stops one
+    user reading another's rotations. Adding a "sometimes ignore the owner" mode to it would
+    put the check and its exception in the same object, and the exception would eventually win
+    an argument it should not be in.
+
+    So the scope here is `visibility == published` instead, applied in **one** place for the
+    same reason `_for_team` exists — two hand-written filters are two chances to forget one,
+    and the half that forgot would be the one reporting `total`.
+    """
+
+    model = Rotation
+
+    def _published(self) -> Select[tuple[Rotation]]:
+        """The only WHERE in this class. Everything else narrows this."""
+        return select(Rotation).where(Rotation.visibility == Visibility.PUBLISHED)
+
+    def _filtered(
+        self, *, characters: Sequence[str] = (), query: str = "",
+    ) -> Select[tuple[Rotation]]:
+        stmt = self._published()
+        if query:
+            stmt = stmt.where(Rotation.name.ilike(f"%{query}%"))
+        if characters:
+            wanted = sorted(set(characters))
+            # **Exactly this set**, not a superset. `DESIGN_rotation_library.md` §3 calls the
+            # character filter "a filter that claims nothing", and that is only true if it
+            # means what it says: a four-character rotation surfacing for a three-character
+            # query would be a recommendation wearing a filter's clothes.
+            #
+            # Two conditions, because either alone is wrong: the first says every wanted
+            # character is present, the second that nothing else is.
+            has_all = (
+                select(func.count(func.distinct(RotationCharacter.nanoka_id)))
+                .where(RotationCharacter.rotation_id == Rotation.id)
+                .where(RotationCharacter.nanoka_id.in_(wanted))
+                .scalar_subquery()
+            )
+            has_total = (
+                select(func.count(func.distinct(RotationCharacter.nanoka_id)))
+                .where(RotationCharacter.rotation_id == Rotation.id)
+                .scalar_subquery()
+            )
+            stmt = stmt.where(has_all == len(wanted), has_total == len(wanted))
+        return stmt
+
+    async def search(
+        self,
+        *,
+        characters: Sequence[str] = (),
+        query: str = "",
+        offset: int = 0,
+        limit: int = 50,
+    ) -> Sequence[Rotation]:
+        """One page of published rotations, newest first.
+
+        **Not sorted by DPS or likes here.** Both are per-caller facts assembled above this
+        layer, and ordering by a subquery the caller may not even have a row for would be a
+        ranking dressed as a query.
+        """
+        stmt = (
+            self._filtered(characters=characters, query=query)
+            .order_by(Rotation.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        return (await self.session.execute(stmt)).scalars().all()
+
+    async def count(
+        self, *, characters: Sequence[str] = (), query: str = "",
+    ) -> int:  # type: ignore[override]
+        """How many match — from the same WHERE the page is built from."""
+        stmt = select(func.count()).select_from(
+            self._filtered(characters=characters, query=query).subquery(),
+        )
+        return int((await self.session.execute(stmt)).scalar_one())
+
+    async def characters_for(self, rotation_ids: Sequence[str]) -> dict[str, list[str]]:
+        """The character set of each rotation, in **one** query.
+
+        A query per row is the shape that turns a twenty-row page into twenty-one round trips
+        and looks fine until the page grows.
+        """
+        if not rotation_ids:
+            return {}
+        rows = await self.session.execute(
+            select(RotationCharacter.rotation_id, RotationCharacter.nanoka_id)
+            .where(RotationCharacter.rotation_id.in_(list(rotation_ids)))
+            .order_by(RotationCharacter.nanoka_id),
+        )
+        found: dict[str, list[str]] = {rid: [] for rid in rotation_ids}
+        for rotation_id, nanoka_id in rows.all():
+            found[rotation_id].append(nanoka_id)
+        return found
+
+    async def like_counts(self, rotation_ids: Sequence[str]) -> dict[str, int]:
+        """Likes per rotation, in one aggregate rather than one query per row (L.7)."""
+        if not rotation_ids:
+            return {}
+        rows = await self.session.execute(
+            select(RotationLike.rotation_id, func.count())
+            .where(RotationLike.rotation_id.in_(list(rotation_ids)))
+            .group_by(RotationLike.rotation_id),
+        )
+        counts = dict(rows.all())
+        return {rid: int(counts.get(rid, 0)) for rid in rotation_ids}
+
+    async def liked_by(self, user_id: str, rotation_ids: Sequence[str]) -> set[str]:
+        """Which of these the caller has liked. One query, not one per row."""
+        if not rotation_ids:
+            return set()
+        rows = await self.session.execute(
+            select(RotationLike.rotation_id)
+            .where(RotationLike.user_id == user_id)
+            .where(RotationLike.rotation_id.in_(list(rotation_ids))),
+        )
+        return {row[0] for row in rows.all()}
+
+    async def like(self, rotation_id: str, user_id: str) -> None:
+        """Record a like. **Idempotent**: liking twice is a no-op, not a 500.
+
+        `ON CONFLICT DO NOTHING` rather than a read-then-write, because the read-then-write
+        loses the race it exists to handle — two tabs, one unique constraint, one 500.
+        """
+        await self.session.execute(
+            insert(RotationLike)
+            .values(id=generate_uuid7(), rotation_id=rotation_id, user_id=user_id)
+            .on_conflict_do_nothing(constraint="uq_rotation_likes_pair"),
+        )
+        await self.session.flush()
+
+    async def unlike(self, rotation_id: str, user_id: str) -> None:
+        """Remove a like. Also idempotent — un-liking what you never liked is not an error."""
+        await self.session.execute(
+            delete(RotationLike)
+            .where(RotationLike.rotation_id == rotation_id)
+            .where(RotationLike.user_id == user_id),
+        )
+        await self.session.flush()
+
+    async def published(self, rotation_id: str) -> Rotation | None:
+        """One published rotation, by id. `None` covers both "no such row" and "private",
+        which is the same 404 to a caller who is not its author."""
+        stmt = self._published().where(Rotation.id == rotation_id)
+        return (await self.session.execute(stmt)).scalars().first()
