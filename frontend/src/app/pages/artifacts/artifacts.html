@@ -12,70 +12,116 @@
   <details class="import">
     <summary>Import a GOOD export</summary>
 
-    <label>
-      Mode
-      <!-- No default. `replace` and `append` are different intentions, and GOOD carries no
-           stable per-artifact id to merge on — so a default here would be this page deciding
-           whether to delete someone's inventory. -->
-      <select [(ngModel)]="mode" aria-label="Import mode">
-        <option value="">Choose…</option>
-        <option value="append">Append — keep what is already here</option>
-        <option value="replace">Replace — delete the current inventory first</option>
-      </select>
-    </label>
+    <div class="import__body">
+      <div class="import__row">
+        <label class="field">
+          <span class="field__label eyebrow">Mode</span>
+          <!-- `replace` by default (owner ruling). A re-scan *is* the inventory: GOOD carries
+               no stable per-artifact id, so appending a second scan of the same account
+               duplicates every piece. -->
+          <select [(ngModel)]="mode" aria-label="Import mode">
+            <option value="replace">Replace — this scan becomes your inventory</option>
+            <option value="append">Append — keep what is already here</option>
+          </select>
+        </label>
 
-    <label class="payload">
-      Export
-      <textarea
-        rows="6"
-        [(ngModel)]="payloadText"
-        aria-label="GOOD export JSON"
-        placeholder='Paste the contents of your .json export'
-      ></textarea>
-    </label>
+        <label class="field field--file">
+          <span class="field__label eyebrow">File</span>
+          <input
+            type="file"
+            accept="application/json,.json"
+            aria-label="GOOD export file"
+            (change)="chooseFile($event)"
+          />
+        </label>
+      </div>
 
-    <button type="button" (click)="runImport()" [disabled]="!canImport()">
-      {{ importing() ? 'Importing…' : 'Import' }}
-    </button>
-
-    @if (importResult(); as result) {
-      <div class="result" role="status">
-        <p>
-          <strong>{{ result.inserted }}</strong> imported<!--
-          -->@if (result.deleted) {, <strong>{{ result.deleted }}</strong> replaced}.
+      @if (mode === 'replace') {
+        <p class="hint hint--warn">
+          Replacing deletes the artifacts you have now. Equipped slots are refilled by
+          matching stats, and anything that could not be refilled is named below.
         </p>
-        @if (result.unequipped.length) {
-          <!-- N.3: a `replace` re-equips what it can by matching stats, and names what it
-               could not. A slot that emptied silently is discovered later from a damage
-               number. -->
-          <p class="warn">
-            {{ result.unequipped.length }} build slot(s) could not be refilled:
-          </p>
-          <ul class="rejections">
-            @for (note of result.unequipped; track $index) {
-              <li>{{ note }}</li>
-            }
-          </ul>
-        }
-        @if (result.rejected.length) {
-          <!-- Every rejection, with its reason. The endpoint refuses individual artifacts
-               rather than failing the file — someone with 800 pieces and two odd ones wants
-               the 798 — so showing only the count throws away the only record of the two. -->
-          <p class="warn">
-            {{ result.rejected.length }} could not be imported:
-          </p>
-          <ul class="rejections">
-            @for (rejection of result.rejected; track rejection.index) {
-              <li><span class="mono">#{{ rejection.index }}</span> {{ rejection.reason }}</li>
-            }
-          </ul>
+      }
+
+      <label class="field">
+        <span class="field__label eyebrow">
+          Or paste
+          @if (fileName(); as name) {
+            <span class="field__file mono">{{ name }}</span>
+          }
+        </span>
+        <textarea
+          rows="4"
+          [(ngModel)]="payloadText"
+          aria-label="GOOD export JSON"
+          placeholder='{"format":"GOOD","version":2,…}'
+        ></textarea>
+      </label>
+
+      <div class="import__actions">
+        <button type="button" class="btn-primary" (click)="runImport()" [disabled]="!canImport()">
+          @if (importing()) {
+            Importing…
+          } @else if (confirmingReplace()) {
+            Yes — delete {{ total() }} and import
+          } @else {
+            Import
+          }
+        </button>
+        @if (confirmingReplace()) {
+          <button type="button" (click)="cancelReplace()">Cancel</button>
+        } @else if (payloadText) {
+          <button type="button" (click)="clearPayload()">Clear</button>
         }
       </div>
-    }
 
-    @if (actionError(); as message) {
-      <p class="error" role="alert">{{ message }}</p>
-    }
+      @if (confirmingReplace()) {
+        <p class="error" role="alert">
+          This deletes all {{ total() }} artifacts you have now and cannot be undone. A scan
+          that stopped early is a valid file holding only part of your inventory — check the
+          count looks right before confirming.
+        </p>
+      }
+
+      @if (importResult(); as result) {
+        <div class="result" role="status">
+          <p>
+            <strong>{{ result.inserted }}</strong> imported<!--
+            -->@if (result.deleted) {, <strong>{{ result.deleted }}</strong> replaced}.
+          </p>
+          @if (result.unequipped.length) {
+            <!-- N.3: a `replace` re-equips what it can by matching stats, and names what it
+                 could not. A slot that emptied silently is discovered later from a damage
+                 number. -->
+            <p class="warn">
+              {{ result.unequipped.length }} build slot(s) could not be refilled:
+            </p>
+            <ul class="rejections">
+              @for (note of result.unequipped; track $index) {
+                <li>{{ note }}</li>
+              }
+            </ul>
+          }
+          @if (result.rejected.length) {
+            <!-- Every rejection, with its reason. The endpoint refuses individual artifacts
+                 rather than failing the file — someone with 800 pieces and two odd ones wants
+                 the 798 — so showing only the count throws away the only record of the two. -->
+            <p class="warn">
+              {{ result.rejected.length }} could not be imported:
+            </p>
+            <ul class="rejections">
+              @for (rejection of result.rejected; track rejection.index) {
+                <li><span class="mono">#{{ rejection.index }}</span> {{ rejection.reason }}</li>
+              }
+            </ul>
+          }
+        </div>
+      }
+
+      @if (actionError(); as message) {
+        <p class="error" role="alert">{{ message }}</p>
+      }
+    </div>
   </details>
 
   @if (error(); as message) {
@@ -109,33 +155,60 @@
 
     <ul class="grid">
       @for (row of rows(); track row.id) {
-        <li class="card" [class.equipped]="row.equipped">
-          <span class="name">
-            <catalogue-icon [icon]="row.setIcon" [alt]="''" [size]="32" />
-            <span>{{ row.setName }}</span>
+        <li class="card" [class.equipped]="row.equipped" [attr.data-stars]="row.stars">
+          <!-- Header carries the rarity: the tint, the stars and the level pill all key off
+               it, the way GO's card does, so rarity is read before anything is parsed. -->
+          <header class="card__head">
+            <span class="card__level mono">+{{ row.level }}</span>
+            <div class="card__ident">
+              <span class="card__set">{{ row.setName }}</span>
+              <span class="card__slot">
+                {{ row.slot }}
+                <!-- In text, not only as a halo. The border and glow that mark an equipped
+                     piece are brass — the same brass a 5-star card is already tinted with —
+                     so on the rarity that matters most the one state worth a halo was
+                     conveyed by colour alone, and by a colour it shares with its neighbour. -->
+                @if (row.equipped) { <span class="card__worn">· equipped</span> }
+              </span>
+            </div>
+            <catalogue-icon class="card__art" [icon]="row.setIcon" [alt]="''" [size]="72" />
+          </header>
+
+          <p class="card__main mono">{{ row.mainStat }}</p>
+
+          <span class="card__stars" [attr.aria-label]="row.stars + ' star'">
+            @for (s of starList(row.stars); track $index) {<span class="star">★</span>}
           </span>
-          <span class="meta">
-            {{ row.slot }} · {{ row.stars }}★ · +{{ row.level }}
-            @if (row.equipped) { · equipped }
-          </span>
-          <span class="main mono">{{ row.mainStat }}</span>
-          @if (row.potential; as potential) {
-            <!-- Headline and working. "3 rolls left" alone is taken on trust; "of 5 · +9 of
-                 +20" can be checked. -->
-            <span class="potential">
-              {{ potential.headline }}
-              <span class="working mono">{{ potential.detail }}</span>
-            </span>
-          } @else {
-            <!-- Null, not zero: this piece is at a level its rarity cannot reach, and
-                 "0 rolls left" would hide that behind a plausible number. -->
-            <span class="potential unknown">Upgrade potential unknown</span>
-          }
-          <ul class="subs mono">
-            @for (sub of row.substats; track sub) {
-              <li>{{ sub }}</li>
+
+          <ul class="card__subs">
+            @for (sub of row.substats; track $index) {
+              <li class="card__sub">
+                <span class="card__sub-label mono">{{ sub.label }}</span>
+                <!-- One bar per roll, coloured by that roll's tier. A bar of unknown tier
+                     (`-1`) renders neutral: "worst roll" and "we do not know which roll"
+                     are different claims. Nothing at all when even the count is unsettled. -->
+                <span
+                  class="card__bars"
+                  [attr.title]="sub.rolls ? sub.rolls + (sub.rolls === 1 ? ' roll' : ' rolls') : null"
+                >
+                  @for (tier of rollBars(sub); track $index) {
+                    <i class="bar" [attr.data-tier]="tier"></i>
+                  }
+                </span>
+                <span class="card__rv mono">
+                  @if (rollValuePercent(sub); as rv) { {{ rv }}% } @else { — }
+                </span>
+              </li>
             }
           </ul>
+
+          @if (totalRollValue(row); as total) {
+            <p class="card__total">
+              <span class="eyebrow">Roll value</span>
+              <span class="mono">{{ total }}%</span>
+            </p>
+          }
+
           <button
             type="button"
             class="drop"

@@ -134,6 +134,40 @@ class ParsedArtifact:
 
 
 @dataclass(frozen=True, slots=True)
+class ParsedCharacter:
+    """One character as the export records them: how far they are levelled.
+
+    Parsed so a build can be reconstituted rather than retyped. GOOD carries everything a
+    build needs — levels, ascension, constellation and the three levelled talents — and
+    `location` on the weapons and artifacts says who holds what.
+    """
+
+    #: GOOD's own key, e.g. `KamisatoAyaka`. Resolved against the catalogue by the service,
+    #: which is where an unknown or ambiguous name is refused.
+    key: str
+    level: int
+    ascension: int
+    constellation: int
+    #: `{normal_attack, elemental_skill, elemental_burst}` — GOOD's `auto`/`skill`/`burst`
+    #: renamed to this repo's `TalentType` spellings at the boundary, so nothing downstream
+    #: carries GO's vocabulary.
+    talents: dict[str, int]
+
+
+@dataclass(frozen=True, slots=True)
+class ParsedWeapon:
+    """One weapon, and who is holding it. Unheld weapons are parsed and simply unused."""
+
+    key: str
+    level: int
+    ascension: int
+    refinement: int
+    #: The character key holding it, or `""`. This is the only link between a build and its
+    #: weapon that GOOD provides.
+    location: str = ""
+
+
+@dataclass(frozen=True, slots=True)
 class GoodImportResult:
     """What an import produced, including everything it refused."""
 
@@ -141,6 +175,10 @@ class GoodImportResult:
     rejected: tuple[RejectedArtifact, ...]
     source: str
     version: int
+    #: Empty when the export carries no `characters`/`weapons` array — older scanners write
+    #: artifacts only, and that is a valid GOOD file rather than a broken one.
+    characters: tuple[ParsedCharacter, ...] = ()
+    weapons: tuple[ParsedWeapon, ...] = ()
 
     @property
     def ok(self) -> bool:
@@ -168,6 +206,8 @@ def parse_good(payload: dict[str, Any]) -> GoodImportResult:
         rejected=tuple(rejected),
         source=str(payload.get("source", "")),
         version=int(payload["version"]),
+        characters=tuple(_parse_characters(payload.get("characters") or [])),
+        weapons=tuple(_parse_weapons(payload.get("weapons") or [])),
     )
 
 
@@ -252,6 +292,82 @@ def _check_slot_can_roll(slot: ArtifactSlot, main_stat: str, given: Any) -> None
             f"(it rolls {sorted(allowed)}). A scanner misread is the usual cause."
         )
         raise GoodImportError(msg)
+
+
+#: GOOD's talent names against this repo's. Kept here, at the boundary, so `TalentType`
+#: spellings never have to know GO's.
+_TALENTS = {
+    "auto": "normal_attack",
+    "skill": "elemental_skill",
+    "burst": "elemental_burst",
+}
+
+
+def _parse_characters(records: Iterable[Any]) -> list[ParsedCharacter]:
+    """Every character the export records, skipping any record it cannot read.
+
+    **Skipped rather than rejected.** An unreadable *artifact* is reported because the user
+    owns it and would otherwise silently lose a piece from a search. A malformed character
+    entry costs a build that can be made by hand in a minute, and failing the whole import
+    over one would be a worse trade — the artifacts are the irreplaceable part.
+    """
+    parsed: list[ParsedCharacter] = []
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        key = record.get("key")
+        if not isinstance(key, str) or not key:
+            continue
+        talents = record.get("talent")
+        talents = talents if isinstance(talents, dict) else {}
+        parsed.append(
+            ParsedCharacter(
+                key=key,
+                level=_bounded(record.get("level"), 1, 90, 1),
+                ascension=_bounded(record.get("ascension"), 0, 6, 0),
+                constellation=_bounded(record.get("constellation"), 0, 6, 0),
+                talents={
+                    ours: _bounded(talents.get(theirs), 1, 15, 1)
+                    for theirs, ours in _TALENTS.items()
+                },
+            )
+        )
+    return parsed
+
+
+def _parse_weapons(records: Iterable[Any]) -> list[ParsedWeapon]:
+    """Every weapon the export records. Skipped-not-rejected, as for characters."""
+    parsed: list[ParsedWeapon] = []
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        key = record.get("key")
+        if not isinstance(key, str) or not key:
+            continue
+        parsed.append(
+            ParsedWeapon(
+                key=key,
+                level=_bounded(record.get("level"), 1, 90, 1),
+                ascension=_bounded(record.get("ascension"), 0, 6, 0),
+                refinement=_bounded(record.get("refinement"), 1, 5, 1),
+                location=str(record.get("location") or ""),
+            )
+        )
+    return parsed
+
+
+def _bounded(value: Any, low: int, high: int, fallback: int) -> int:
+    """An int inside `[low, high]`, or `fallback`.
+
+    Clamped rather than refused: these are levels, and a scanner that read `999` off a
+    screen has misread a number rather than described a character this importer should
+    refuse to place. The build's own validators bound the same fields on write, so an
+    out-of-range value could not reach the database anyway — clamping here just means the
+    rest of the character survives it.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return fallback
+    return max(low, min(high, int(value)))
 
 
 def _parse_substats(substats: Iterable[Any]) -> list[dict[str, Any]]:

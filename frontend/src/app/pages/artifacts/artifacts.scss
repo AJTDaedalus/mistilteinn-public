@@ -1,110 +1,349 @@
 .artifacts {
-  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 
-  header { margin-bottom: 1rem; h1 { margin: 0 0 0.25rem; } }
+  header h1 { margin: 0 0 var(--space-1); }
+}
 
-  .import {
-    margin-bottom: 1rem;
-    padding: 0.75rem 1rem;
-    border: 1px solid rgb(255 255 255 / 12%);
-    border-radius: 0.4rem;
+// ── Import ───────────────────────────────────────────────────────────────────
 
-    summary { cursor: pointer; font-weight: 600; }
+.import {
+  background: var(--surface);
+  border: 1px solid var(--surface-rule);
+  border-left: var(--accent-border-width) solid var(--violet-hi);
+  border-radius: var(--radius-2);
+  padding: var(--space-3) var(--space-4);
 
-    label {
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-      margin-top: 0.6rem;
-    }
+  summary {
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-size: var(--text-md);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
 
-    .payload { align-items: flex-start; }
-    textarea { flex: 1; font-family: monospace; font-size: 0.8rem; }
-    button { margin-top: 0.6rem; }
+    &:hover { color: var(--brass); }
   }
 
-  .result {
-    margin-top: 0.6rem;
-    p { margin: 0.25rem 0; }
+  &[open] summary { margin-bottom: var(--space-3); }
+}
+
+.import__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  // The paste box used to stretch the full page width, which made a JSON blob the largest
+  // thing on the screen. The import is a side door, not the subject.
+  max-width: 34rem;
+}
+
+.import__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+
+  .field { flex: 1 1 14rem; }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.field__label {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  color: var(--ink-dim);
+}
+
+.field__file {
+  color: var(--mint);
+  font-size: var(--text-xs);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.field--file input[type='file'] {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  padding: var(--space-2);
+
+  &::file-selector-button {
+    font-family: var(--font-display);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: var(--violet);
+    border: 1px solid var(--violet-hi);
+    border-radius: var(--radius-1);
+    padding: var(--space-1) var(--space-3);
+    margin-right: var(--space-3);
+    cursor: pointer;
   }
 
-  .rejections {
-    margin: 0.25rem 0 0;
-    padding-left: 1.1rem;
-    font-size: 0.85rem;
-    max-height: 12rem;
-    overflow-y: auto;
-  }
-
-  .filters {
-    display: flex;
-    gap: 0.35rem;
-    flex-wrap: wrap;
-    margin-bottom: 0.6rem;
-
-    .active { font-weight: 700; text-decoration: underline; }
-  }
-
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-    gap: 0.5rem;
-    list-style: none;
-    padding: 0;
-  }
-
-  .card {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    padding: 0.6rem 0.75rem;
-    border: 1px solid rgb(255 255 255 / 12%);
-    border-radius: 0.4rem;
-  }
-
-  .card.equipped { border-color: rgb(221 174 33 / 55%); }
-
-  // The set's art beside its name. Flex rather than a leading float so a two-line set name
-  // ("Golden Troupe", "Marechaussee Hunter") wraps beside the icon instead of under it.
-  .card .name {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-  }
-
-  .subs {
-    margin: 0.3rem 0 0;
-    padding: 0;
-    list-style: none;
-    font-size: 0.8rem;
-    opacity: 0.85;
-  }
-
-  .drop {
-    position: absolute;
-    top: 0.35rem;
-    right: 0.4rem;
-    padding: 0 0.35rem;
-    line-height: 1.2;
-  }
-
-  .name { font-weight: 600; }
-  .meta { font-size: 0.85rem; opacity: 0.8; }
-  .main { margin-top: 0.2rem; }
-
-  .potential {
-    margin-top: 0.3rem;
-    font-size: 0.8rem;
-    opacity: 0.9;
-
-    .working { opacity: 0.65; margin-left: 0.35rem; }
-    &.unknown { opacity: 0.55; font-style: italic; }
+  &::file-selector-button:hover {
+    border-color: var(--brass);
   }
 }
 
+.import__body textarea {
+  width: 100%;
+  resize: vertical;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+.import__actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.hint--warn {
+  color: var(--warning);
+}
+
+.result p { margin: var(--space-1) 0; }
+
+.rejections {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-4);
+  font-size: var(--text-sm);
+  max-height: 12rem;
+  overflow-y: auto;
+}
+
+// ── Filters ──────────────────────────────────────────────────────────────────
+
+.filters {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+
+  button {
+    padding: var(--space-1) var(--space-4);
+    font-size: var(--text-sm);
+  }
+
+  .active {
+    border-color: var(--brass);
+    color: var(--brass);
+    box-shadow: var(--glow-brass);
+  }
+}
+
+// ── Cards ────────────────────────────────────────────────────────────────────
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: var(--space-3);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  // Equal heights across a row. Without it a three-substat piece sits shorter than a
+  // four-substat one and the grid reads as broken rather than as varied.
+  grid-auto-rows: 1fr;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--rarity) 12%, transparent), transparent 60%),
+    var(--surface);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-2);
+  transition: border-color var(--t-fast) var(--ease),
+              box-shadow var(--t-fast) var(--ease);
+
+  // Rarity tints the card rather than being a number in the corner.
+  --rarity: var(--rarity-3);
+  &[data-stars='1'] { --rarity: var(--rarity-1); }
+  &[data-stars='2'] { --rarity: var(--rarity-2); }
+  &[data-stars='3'] { --rarity: var(--rarity-3); }
+  &[data-stars='4'] { --rarity: var(--rarity-4); }
+  &[data-stars='5'] { --rarity: var(--rarity-5); }
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--rarity) 60%, transparent);
+  }
+
+  // Equipped is the one state worth a halo — it means the piece is doing something.
+  &.equipped {
+    border-color: var(--halo-brass);
+    box-shadow: var(--glow-brass);
+  }
+}
+
+// Substats sit at the bottom whatever the header did, so the dot columns line up across the
+// grid instead of floating at four different heights.
+.card__subs { margin-top: auto; }
+
+.card__head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: var(--space-2);
+  margin: calc(-1 * var(--space-3)) calc(-1 * var(--space-3)) 0;
+  padding: var(--space-2) var(--space-3) var(--space-2);
+  border-radius: var(--radius-2) var(--radius-2) 0 0;
+  // The rarity band GO's card leads with, in this palette rather than the game's.
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--rarity) 62%, var(--violet-deep)),
+    color-mix(in srgb, var(--rarity) 18%, var(--violet-deep)) 75%
+  );
+}
+
+.card__level {
+  justify-self: start;
+  padding: 0 var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--bg-deep);
+  background: var(--rarity);
+  border-radius: var(--radius-pill);
+}
+
+.card__ident {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.card__set {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  color: var(--ink);
+  // Two lines reserved so the star row and main stat align across the grid whether a name
+  // wraps ("Emblem Of Severed Fate") or not ("Golden Troupe").
+  // Clamped at two lines so a long name cannot grow the header, but *not* min-heighted: the
+  // reserved second line was dead space in every card whose name fits on one, which is most.
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card__slot {
+  font-size: var(--text-xs);
+  color: var(--ink-dim);
+  text-transform: capitalize;
+}
+
+.card__worn {
+  color: var(--brass-hi);
+  font-weight: 600;
+}
+
+.card__art {
+  // 72px against the old 32. The art is the fastest way to recognise a set; small it read as
+  // a bullet point.
+  width: 72px;
+  margin-top: calc(-1 * var(--space-1));
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+}
+
+.card__main {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-lg);
+  line-height: 1.1;
+  color: var(--mint-hi);
+}
+
+.card__stars {
+  color: var(--rarity);
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+}
+
+.card__subs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: auto 0 0;
+  padding: var(--space-2) 0 0;
+  list-style: none;
+  border-top: 1px solid var(--surface-rule);
+}
+
+.card__sub {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--ink-dim);
+}
+
+.card__sub-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// One bar per roll, coloured by tier — GO's idea, this palette. Tier 3 is a max roll and
+// gets the brass; `-1` is "count known, tier not" and stays deliberately neutral.
+.card__bars {
+  display: flex;
+  gap: 2px;
+  align-items: flex-end;
+  height: 12px;
+}
+
+.bar {
+  width: 4px;
+  height: 12px;
+  border-radius: 1px;
+  background: var(--ink-faint);
+
+  &[data-tier='0'] { background: var(--periwinkle); height: 6px; }
+  &[data-tier='1'] { background: var(--azure); height: 8px; }
+  &[data-tier='2'] { background: var(--mint); height: 10px; }
+  &[data-tier='3'] { background: var(--brass); height: 12px; }
+}
+
+.card__rv {
+  min-width: 3.5rem;
+  text-align: right;
+  font-size: var(--text-xs);
+  color: var(--ink-dim);
+}
+
+.card__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--surface-rule);
+  color: var(--mint);
+}
+
+.card .drop {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-2);
+  padding: 0 var(--space-2);
+  line-height: 1.2;
+  color: var(--ink-faint);
+  background: none;
+  border: none;
+
+  &:hover { color: var(--danger); box-shadow: none; }
+}
+
 // The empty state spans the grid rather than sitting in the first cell, where it wrapped
-// into a 200px column and read as a broken card.
+// into a narrow column and read as a broken card.
 .grid > .muted {
   grid-column: 1 / -1;
 }

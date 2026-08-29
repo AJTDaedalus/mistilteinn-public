@@ -13,6 +13,28 @@ import {
   type ImportMode,
 } from './artifacts.service';
 
+/** One substat, with whatever could be established about the rolls behind it. */
+export interface ArtifactSubstat {
+  label: string;
+  /**
+   * Rolls behind this line, or **null** when the decompositions disagree on how many.
+   *
+   * 95% of a real inventory has a count. The rest draws no bars rather than a plausible
+   * number of them.
+   */
+  rolls: number | null;
+  /**
+   * One entry per roll, `0` (worst tier) to `3` (best) — null unless exactly one
+   * decomposition fits, so a bar is never coloured by a guess.
+   *
+   * When `rolls` is known but this is not, the card draws that many *undifferentiated*
+   * bars: the count is established, the individual qualities are not.
+   */
+  tiers: number[] | null;
+  /** The line as a multiple of one best-case roll. `3.2` reads as "3.2 max rolls". */
+  rollValue: number | null;
+}
+
 /** One piece, with everything the row needs already resolved. */
 export interface ArtifactRow {
   id: string;
@@ -22,17 +44,8 @@ export interface ArtifactRow {
   stars: number;
   level: number;
   mainStat: string;
-  substats: string[];
+  substats: ArtifactSubstat[];
   equipped: boolean;
-  /**
-   * How much upgrading is left, with the parts behind it — or null when the schedule could
-   * not answer for this piece.
-   *
-   * Null is not zero. Zero is the honest answer for a maxed piece; null means the row is at a
-   * level its rarity cannot reach, and showing "0 rolls left" for that would hide a broken
-   * piece behind a plausible number.
-   */
-  potential: { headline: string; detail: string } | null;
 }
 
 /**
@@ -59,9 +72,13 @@ export function formatStat(value: unknown, percentage: boolean): string {
  * showing only "imported 798" has thrown away the only record of the two. Every rejection is
  * listed with its reason.
  *
- * **`mode` is chosen, never defaulted.** `replace` and `append` are different intentions and
- * GOOD carries no stable per-artifact id to merge on, so a default would be this page
- * deciding whether to delete someone's inventory.
+ * **`mode` defaults to `replace`** (owner ruling, 2026-08-28). It was deliberately empty
+ * before, on the reasoning that a default would be this page deciding whether to delete
+ * someone's inventory. In practice a re-scan *is* the inventory — GOOD carries no stable
+ * per-artifact id, so `append` on a second scan of the same account duplicates every piece,
+ * which is the outcome the empty default was steering people into. `replace` is what the
+ * common case wants, `append` stays one click away, and N.3 already re-equips what it can
+ * and names what it could not.
  *
  * Rows are drawn from the vocabulary at `/artifacts/options`: `slot` and `main_stat_type`
  * carry the source's internal spellings, and the stored values are units-dependent — `4780`
@@ -89,9 +106,12 @@ export class ArtifactsPage implements OnInit {
   /** Non-null after an import, so the result stays on screen to be read. */
   protected readonly importResult = signal<GoodImportResponse | null>(null);
   protected readonly importing = signal(false);
-  /** Deliberately empty: the user picks. See the class docstring. */
-  protected mode: ImportMode | '' = '';
+  /** `replace` by default — see the class docstring. */
+  protected mode: ImportMode | '' = 'replace';
   protected payloadText = '';
+  /** The name of a file chosen through the picker, shown so a paste and a file cannot be
+   *  confused for one another. */
+  protected readonly fileName = signal<string | null>(null);
 
   protected readonly slots = computed(() => this.options()?.slots ?? []);
 
@@ -122,11 +142,18 @@ export class ArtifactsPage implements OnInit {
       stars: stars.get(piece.rarity) ?? 0,
       level: piece.level,
       mainStat: describe(piece.main_stat_type, piece.main_stat_value, stats),
-      substats: (piece.substats as { stat?: string; value?: unknown }[]).map((sub) =>
-        describe(sub?.stat ?? 'unknown', sub?.value, stats),
+      substats: (piece.substats as { stat?: string; value?: unknown }[]).map(
+        (sub, index) => {
+          const found = piece.substat_analysis?.[index];
+          return {
+            label: describe(sub?.stat ?? 'unknown', sub?.value, stats),
+            rolls: found?.rolls ?? null,
+            tiers: found?.roll_tiers ?? null,
+            rollValue: found?.roll_value ?? null,
+          };
+        },
       ),
       equipped: piece.build_id !== null,
-      potential: describePotential(piece.potential),
     }));
   });
 
@@ -182,12 +209,115 @@ export class ArtifactsPage implements OnInit {
     }
   }
 
+  /** `[1..stars]`, so the template can draw one ★ per rarity point. */
+  protected starList(stars: number): number[] {
+    return Array.from({ length: Math.max(0, stars) }, (_, i) => i + 1);
+  }
+
+  /**
+   * The bars to draw for one substat: the tier of each roll, or `-1` per roll when only the
+   * count is known.
+   *
+   * `-1` renders undifferentiated rather than as tier 0 — the worst tier and "we do not know
+   * which tier" are different claims, and colouring the second as the first would tell the
+   * reader a line is bad on no evidence.
+   */
+  protected rollBars(sub: ArtifactSubstat): number[] {
+    if (sub.tiers) return sub.tiers;
+    if (!sub.rolls) return [];
+    return Array.from({ length: Math.min(sub.rolls, 6) }, () => -1);
+  }
+
+  /** `3.2` → `320`, for the roll-value column. */
+  protected rollValuePercent(sub: ArtifactSubstat): number | null {
+    return sub.rollValue === null ? null : Math.round(sub.rollValue * 100);
+  }
+
+  /**
+   * The piece's total roll value, as a percentage — GO's "Current Roll Value".
+   *
+   * Null unless *every* substat contributed one, because a total silently missing a line
+   * reads as a worse artifact rather than as an incomplete sum.
+   */
+  protected totalRollValue(row: ArtifactRow): number | null {
+    if (!row.substats.length) return null;
+    let sum = 0;
+    for (const sub of row.substats) {
+      if (sub.rollValue === null) return null;
+      sum += sub.rollValue;
+    }
+    return Math.round(sum * 100);
+  }
+
   protected canImport(): boolean {
     return this.mode !== '' && this.payloadText.trim().length > 0 && !this.importing();
   }
 
+  /**
+   * Read a chosen `.json` into the same buffer a paste fills.
+   *
+   * One path through the importer, not two: the file becomes text and everything downstream
+   * — the `JSON.parse` that distinguishes a bad file from a server error, the rejection
+   * list, the re-equip report — is unchanged. A separate upload endpoint would be a second
+   * implementation of a flow that already reports carefully.
+   *
+   * A 2,370-artifact export is a couple of megabytes, which `text()` handles without a
+   * streaming reader.
+   */
+  protected async chooseFile(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    this.actionError.set(null);
+    this.importResult.set(null);
+    try {
+      this.payloadText = await file.text();
+      this.fileName.set(file.name);
+    } catch {
+      // A file the browser cannot read — removed mid-pick, or a permissions failure. Said
+      // plainly rather than left as an empty box the Import button silently refuses.
+      this.fileName.set(null);
+      this.actionError.set(`Could not read ${file.name}.`);
+    } finally {
+      // Cleared so re-picking the *same* file fires `change` again. Without this, a user who
+      // edits their export and re-selects it sees nothing happen.
+      input.value = '';
+    }
+  }
+
+  /** Drop a loaded file, so the box is visibly empty rather than holding a stale export. */
+  protected clearPayload(): void {
+    this.payloadText = '';
+    this.fileName.set(null);
+    this.importResult.set(null);
+    this.actionError.set(null);
+  }
+
+  /**
+   * True while a `replace` would delete pieces that already exist.
+   *
+   * The default is `replace` by owner ruling, which is right for a re-scan — but paste-then-
+   * Import would then permanently delete an inventory in one click, and a scanner that died
+   * half way through 2,370 pieces writes a *valid* GOOD file holding a fraction of them.
+   * The default stays; the irreversible one-click path does not.
+   */
+  protected readonly confirmingReplace = signal(false);
+
+  protected needsConfirmation(): boolean {
+    return this.mode === 'replace' && this.total() > 0;
+  }
+
+  protected cancelReplace(): void {
+    this.confirmingReplace.set(false);
+  }
+
   protected async runImport(): Promise<void> {
     if (!this.canImport()) return;
+    if (this.needsConfirmation() && !this.confirmingReplace()) {
+      this.confirmingReplace.set(true);
+      return;
+    }
+    this.confirmingReplace.set(false);
     this.actionError.set(null);
     this.importResult.set(null);
     this.importing.set(true);
@@ -242,20 +372,3 @@ function describe(
 }
 
 
-/**
- * Upgrade potential as a headline and the working behind it.
- *
- * Both, because **a score is a claim**: "3 rolls left" alone is something a reader takes on
- * trust, and "of a possible 5 · +9 of +20" is something they can check. This repo's rule that
- * a number must explain itself applies to a two-digit figure as much as to a damage total.
- */
-export function describePotential(
-  potential: ArtifactRead['potential'],
-): { headline: string; detail: string } | null {
-  if (!potential) return null;
-  const rolls = potential.rolls_remaining;
-  return {
-    headline: rolls === 0 ? 'Fully upgraded' : `${rolls} roll${rolls === 1 ? '' : 's'} left`,
-    detail: `of ${potential.rolls_total} · +${potential.level} of +${potential.max_level}`,
-  };
-}

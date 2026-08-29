@@ -12,8 +12,18 @@ export interface Page<T> {
  * Well above the catalogue's largest table (360 enemies) and well below anything that would
  * make a page unusable. It exists so the loop cannot run away against a table that grows, not
  * because any current view needs bounding.
+ *
+ * **Raised from 2,000 to match the server's own `INVENTORY_CAP`.** The two disagreed, and a
+ * real account fell in the gap: the owner's export holds 2,370 artifacts, so `/inventory`
+ * loaded 2,000 and said "the rest was not loaded" while the API would happily have served
+ * all of them. Two caps for one limit means the tighter one is enforced somewhere nobody is
+ * looking — here, in a shared paginator, for every page that uses it.
+ *
+ * At 200 rows a request this is 100 requests in the worst case. That is slow and it is
+ * bounded, which is the right trade against silently answering with a prefix — the
+ * `truncated` flag still exists for anyone past even this.
  */
-export const MAX_ROWS = 2000;
+export const MAX_ROWS = 20_000;
 
 /**
  * Every row, gathered a page at a time — and honest when it stops early.

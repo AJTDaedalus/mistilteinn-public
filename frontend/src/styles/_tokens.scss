@@ -153,3 +153,19 @@
   //: The Traveler before a vision is chosen, and any hit the chain does not colour.
   --element-none: var(--ink-faint);
 }
+
+
+// ── Rarity ───────────────────────────────────────────────────────────────────
+//
+// Genshin's rarity ladder, pulled toward the Mitya palette rather than lifted from the game
+// UI: five-star lands on the ornament's own brass, which is already this app's identity
+// colour, so a legendary piece reads as *ours* rather than as a screenshot.
+//
+// Like the element tokens these are chosen, not sourced — nothing computes from them.
+:root {
+  --rarity-1: #8a8f9e;
+  --rarity-2: #6ea88b;
+  --rarity-3: #5f92c4;
+  --rarity-4: #a884d6;
+  --rarity-5: var(--brass);
+}

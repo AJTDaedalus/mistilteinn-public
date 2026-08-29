@@ -2776,6 +2776,15 @@
             ],
             "title": "Build Id"
           },
+          "substat_analysis": {
+            "items": {
+              "$ref": "#/components/schemas/SubstatAnalysisRead"
+            },
+            "type": "array",
+            "title": "Substat Analysis",
+            "description": "What each substat is made of, positionally aligned with `substats`.\n\nGenshin publishes no roll count \u2014 a substat is a *sum* \u2014 so it is reconstructed by\ndecomposing the total over the values the stat can roll. Over a real 2,370-artifact\nexport, 85.0% of substats decompose exactly one way (every roll value known), 10.2%\nmore admit several decompositions that agree on the count, and 4.8% match nothing.\n\n**Ambiguity is reported, never smoothed.** `rolls` is null where the decompositions\ndisagree on how many there were, and `roll_tiers` is null unless exactly one fits.\n`roll_value` needs no decomposition and is therefore present on almost every line \u2014\nit is the total as a multiple of one best-case roll, and the number that actually\nanswers \"is this line any good\".\n\nA parallel list rather than keys inside `substats`, because `substats` is a JSONB\ncolumn with no schema behind it: rows written by an older importer are still valid\nand must not be rewritten to carry fields they never had.",
+            "readOnly": true
+          },
           "potential": {
             "anyOf": [
               {
@@ -2797,6 +2806,7 @@
           "level",
           "main_stat_type",
           "main_stat_value",
+          "substat_analysis",
           "potential"
         ],
         "title": "ArtifactRead",
@@ -5820,6 +5830,49 @@
         ],
         "title": "StatVocabularyEntry",
         "description": "One stat, as a page needs to render it."
+      },
+      "SubstatAnalysisRead": {
+        "properties": {
+          "rolls": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rolls"
+          },
+          "roll_tiers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roll Tiers"
+          },
+          "roll_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roll Value"
+          }
+        },
+        "type": "object",
+        "title": "SubstatAnalysisRead",
+        "description": "One substat's reconstruction. Every field is nullable, and the nulls are the point."
       },
       "TalentRead": {
         "properties": {

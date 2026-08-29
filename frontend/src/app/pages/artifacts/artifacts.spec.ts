@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ArtifactsPage, describePotential, formatStat } from './artifacts';
+import { ArtifactsPage, formatStat } from './artifacts';
 import { ArtifactsService } from './artifacts.service';
 
 const OPTIONS = {
@@ -55,6 +55,18 @@ describe('formatStat', () => {
   });
 });
 
+/**
+ * Import, stepping through the replace confirmation when the page raises one.
+ *
+ * `replace` is the default and it now asks before deleting a non-empty inventory, so a test
+ * about *what the import sends* would otherwise assert against a press that deliberately did
+ * nothing. The two tests that are about the confirmation itself call `runImport` directly.
+ */
+async function importPastConfirmation(page: ArtifactsPage): Promise<void> {
+  await page['runImport']();
+  if (page['confirmingReplace']()) await page['runImport']();
+}
+
 describe('ArtifactsPage', () => {
   it('reports a failed load instead of rendering it as "you have no artifacts"', async () => {
     const page = healthy({ options: vi.fn().mockRejectedValue(new Error('boom')) });
@@ -79,7 +91,7 @@ describe('ArtifactsPage', () => {
     expect(row.slot).toBe('Circlet');
     expect(row.stars).toBe(5);
     expect(row.mainStat).toBe('CRIT DMG 62.2%');
-    expect(row.substats).toEqual(['CRIT Rate 10.9%']);
+    expect(row.substats.map((x) => x.label)).toEqual(['CRIT Rate 10.9%']);
   });
 
   it('reads each piece\'s rarity from the vocabulary rather than assuming', async () => {
@@ -128,19 +140,58 @@ describe('ArtifactsPage', () => {
 
   // ── the import ─────────────────────────────────────────────────────────────
 
-  it('will not import without a mode being chosen', async () => {
-    // `replace` and `append` are different intentions and GOOD has no stable per-artifact id
-    // to merge on, so a default would be this page deciding whether to delete an inventory.
-    const importGood = vi.fn();
+  it('asks before a replace that would delete an existing inventory', async () => {
+    // The default is `replace` by owner ruling, which is right for a re-scan. But a scanner
+    // that died half way through 2,370 pieces writes a **valid** GOOD file holding a
+    // fraction of them, and paste-then-Import would delete the rest in one click.
+    const importGood = vi.fn().mockResolvedValue({
+      inserted: 1, deleted: 0, rejected: [], unequipped: [], ok: true,
+    });
     const page = healthy({ importGood } as unknown as ArtifactsService);
     await page['load']();
-    page['payloadText'] = '{"format":"GOOD"}';
+    page['payloadText'] = '{"format":"GOOD","version":2,"artifacts":[]}';
 
-    expect(page['mode']).toBe('');
-    expect(page['canImport']()).toBe(false);
+    // Directly, not via the helper: this test is *about* the two presses.
     await page['runImport']();
 
+    // First press arms, and imports nothing.
     expect(importGood).not.toHaveBeenCalled();
+    expect(page['confirmingReplace']()).toBe(true);
+
+    await page['runImport']();
+
+    expect(importGood).toHaveBeenCalledTimes(1);
+    expect(page['confirmingReplace']()).toBe(false);
+  });
+
+  it('does not ask when there is nothing to delete', async () => {
+    // An empty inventory has nothing to lose, and a confirmation there is a click that
+    // teaches people to dismiss confirmations.
+    const importGood = vi.fn().mockResolvedValue({
+      inserted: 1, deleted: 0, rejected: [], unequipped: [], ok: true,
+    });
+    const page = healthy({
+      importGood,
+      list: vi.fn().mockResolvedValue({ items: [], total: 0, truncated: false }),
+    } as unknown as ArtifactsService);
+    await page['load']();
+    page['payloadText'] = '{"format":"GOOD","version":2,"artifacts":[]}';
+
+    await importPastConfirmation(page);
+
+    expect(importGood).toHaveBeenCalledTimes(1);
+  });
+
+  it('defaults the import mode to replace', () => {
+    // Owner ruling, 2026-08-28. It was deliberately empty before, so that a default could
+    // not decide whether to delete someone's inventory — but GOOD carries no stable
+    // per-artifact id, so appending a second scan of the same account duplicates every
+    // piece, which is what the empty default was steering people into. The destructive
+    // reading is the *correct* one for a re-scan, and the page says so in a warning.
+    const page = healthy();
+
+    expect(page['mode']).toBe('replace');
+    expect(page['canImport']()).toBe(false);
   });
 
   it('sends the mode the user chose', async () => {
@@ -152,7 +203,7 @@ describe('ArtifactsPage', () => {
     page['mode'] = 'replace';
     page['payloadText'] = '{"format":"GOOD"}';
 
-    await page['runImport']();
+    await importPastConfirmation(page);
 
     expect(importGood).toHaveBeenCalledWith('replace', { format: 'GOOD' });
   });
@@ -174,7 +225,7 @@ describe('ArtifactsPage', () => {
     page['mode'] = 'append';
     page['payloadText'] = '{}';
 
-    await page['runImport']();
+    await importPastConfirmation(page);
 
     expect(page['importResult']()?.rejected).toEqual(rejected);
   });
@@ -195,7 +246,7 @@ describe('ArtifactsPage', () => {
     page['mode'] = 'replace';
     page['payloadText'] = '{}';
 
-    await page['runImport']();
+    await importPastConfirmation(page);
 
     expect(page['importResult']()?.unequipped).toEqual(unequipped);
   });
@@ -209,7 +260,7 @@ describe('ArtifactsPage', () => {
     page['mode'] = 'append';
     page['payloadText'] = 'not json';
 
-    await page['runImport']();
+    await importPastConfirmation(page);
 
     expect(importGood).not.toHaveBeenCalled();
     expect(page['actionError']()).toContain('not valid JSON');
@@ -226,7 +277,7 @@ describe('ArtifactsPage', () => {
     page['mode'] = 'replace';
     page['payloadText'] = '{}';
 
-    await page['runImport']();
+    await importPastConfirmation(page);
 
     expect(page['actionError']()).toBe(detail);
   });
@@ -287,8 +338,11 @@ describe('a row the data does not fit', () => {
 
     const rows = page['rows']();
     expect(rows).toHaveLength(2);
-    expect(rows[1].substats).toEqual(['CRIT Rate 10.9%']);
-    expect(rows[0].substats[0]).toContain('CRIT Rate');
+    expect(rows[1].substats.map((x) => x.label)).toEqual(['CRIT Rate 10.9%']);
+    // The label survives; the analysis is simply absent for a row the tables cannot read.
+    expect(rows[0].substats[0].label).toContain('CRIT Rate');
+    expect(rows[0].substats[0].rolls).toBeNull();
+    expect(page['rollBars'](rows[0].substats[0])).toEqual([]);
   });
 
   it('does not throw on a non-numeric value', () => {
@@ -298,48 +352,40 @@ describe('a row the data does not fit', () => {
   });
 });
 
-describe('describePotential', () => {
-  const full = {
-    rolls_remaining: 3, rolls_total: 5, level: 9, max_level: 20,
-    levels_to_max: 11,
-  };
-
-  it('shows the working, not just the headline', () => {
-    // "3 rolls left" alone is something a reader takes on trust. "of 5 · +9 of +20" is
-    // something they can check — the repo's rule that a number must explain itself applies
-    // to a two-digit figure as much as to a damage total.
-    expect(describePotential(full)).toEqual({
-      headline: '3 rolls left',
-      detail: 'of 5 · +9 of +20',
-    });
-  });
-
-  it('says a maxed piece is finished rather than "0 rolls left"', () => {
-    const maxed = describePotential({ ...full, rolls_remaining: 0, level: 20, levels_to_max: 0 });
-    expect(maxed?.headline).toBe('Fully upgraded');
-  });
-
-  it('reads as singular for one roll', () => {
-    expect(describePotential({ ...full, rolls_remaining: 1 })?.headline).toBe('1 roll left');
-  });
-
-  it('returns null when the schedule could not answer', () => {
-    // Not zero. Zero is the honest answer for a maxed piece; null means the row is at a level
-    // its rarity cannot reach, and "0 rolls left" would hide that behind a plausible number.
-    expect(describePotential(null)).toBeNull();
-  });
-});
 
 describe('ArtifactsPage potential', () => {
-  it('carries potential onto the row', async () => {
+  it('carries the roll analysis onto each substat', async () => {
+    // 5-star CRIT rate of 7.4% is 3.50 + 3.89 and nothing else, so both the count and each
+    // roll's tier are established and the card can colour per roll.
     const page = healthy({
       list: vi.fn().mockResolvedValue({
         items: [{
           ...CIRCLET,
-          potential: {
-            rolls_remaining: 2, rolls_total: 5, level: 12, max_level: 20,
-    levels_to_max: 8,
-          },
+          substats: [{ stat: 'FIGHT_PROP_CRITICAL', value: 0.074 }],
+          substat_analysis: [{ rolls: 2, roll_tiers: [2, 3], roll_value: 1.9 }],
+        }],
+        total: 1, truncated: false,
+      }),
+    } as unknown as ArtifactsService);
+
+    await page['load']();
+    const sub = page['rows']()[0].substats[0];
+
+    expect(sub.rolls).toBe(2);
+    expect(sub.tiers).toEqual([2, 3]);
+    expect(page['rollBars'](sub)).toEqual([2, 3]);
+    expect(page['rollValuePercent'](sub)).toBe(190);
+  });
+
+  it('draws undifferentiated bars when only the count is known', async () => {
+    // **`-1`, not tier 0.** "The worst roll" and "we do not know which roll" are different
+    // claims, and colouring the second as the first calls a line bad on no evidence.
+    const page = healthy({
+      list: vi.fn().mockResolvedValue({
+        items: [{
+          ...CIRCLET,
+          substats: [{ stat: 'FIGHT_PROP_CHARGE_EFFICIENCY', value: 0.11 }],
+          substat_analysis: [{ rolls: 2, roll_tiers: null, roll_value: 1.7 }],
         }],
         total: 1, truncated: false,
       }),
@@ -347,18 +393,50 @@ describe('ArtifactsPage potential', () => {
 
     await page['load']();
 
-    expect(page['rows']()[0].potential?.headline).toBe('2 rolls left');
+    expect(page['rollBars'](page['rows']()[0].substats[0])).toEqual([-1, -1]);
   });
 
-  it('leaves an unanswerable piece null rather than inventing a zero', async () => {
+  it('draws no bars at all when the count itself is unsettled', async () => {
     const page = healthy({
       list: vi.fn().mockResolvedValue({
-        items: [{ ...CIRCLET, potential: null }], total: 1, truncated: false,
+        items: [{
+          ...CIRCLET,
+          substats: [{ stat: 'FIGHT_PROP_ATTACK_PERCENT', value: 0.169 }],
+          substat_analysis: [{ rolls: null, roll_tiers: null, roll_value: 2.9 }],
+        }],
+        total: 1, truncated: false,
+      }),
+    } as unknown as ArtifactsService);
+
+    await page['load']();
+    const sub = page['rows']()[0].substats[0];
+
+    expect(page['rollBars'](sub)).toEqual([]);
+    // The ratio needs no decomposition, so it survives the ambiguity.
+    expect(page['rollValuePercent'](sub)).toBe(290);
+  });
+
+  it('withholds the total roll value when any line is missing one', async () => {
+    // A total silently short one substat reads as a worse artifact, not an incomplete sum.
+    const page = healthy({
+      list: vi.fn().mockResolvedValue({
+        items: [{
+          ...CIRCLET,
+          substats: [
+            { stat: 'FIGHT_PROP_CRITICAL', value: 0.074 },
+            { stat: 'FIGHT_PROP_NOT_A_STAT', value: 1 },
+          ],
+          substat_analysis: [
+            { rolls: 2, roll_tiers: [2, 3], roll_value: 1.9 },
+            { rolls: null, roll_tiers: null, roll_value: null },
+          ],
+        }],
+        total: 1, truncated: false,
       }),
     } as unknown as ArtifactsService);
 
     await page['load']();
 
-    expect(page['rows']()[0].potential).toBeNull();
+    expect(page['totalRollValue'](page['rows']()[0])).toBeNull();
   });
 });
