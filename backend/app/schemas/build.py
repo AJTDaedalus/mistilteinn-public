@@ -540,6 +540,14 @@ class CalibrationConfigs(BaseModel):
     #: What the probe moved, so a caller can say why a conversion resolved or did not.
     probe_stat: str
     probe_delta: float
+    #: The gcsim keys this config declares, **in the order it declares them**.
+    #:
+    #: gcsim's aggregate reports `character_actions` as a positional list with no names in it,
+    #: so a caller reading per-character instance counts has nothing to label them with. Read
+    #: off the emitted config by `gcsim_config.character_order` rather than rebuilt, because a
+    #: parallel construction that drifted would attribute one character's instability to
+    #: another — a warning naming the wrong person, which is worse than no warning.
+    characters: list[str] = Field(default_factory=list)
 
 
 class GcsimComparisonRequest(BaseModel):

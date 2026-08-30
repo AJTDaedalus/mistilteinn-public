@@ -153,6 +153,11 @@ class ContextKeyRead(BaseModel):
     team: list[str]
     target: dict[str, object]
     gcsim_pin: str
+    #: The width of an ER bucket, in whole percent. Published so a client submitting a run
+    #: never restates it: `sim_context.er_bucket` rounds **down** on purpose, and a client
+    #: rounding any other way would write rows keyed to a bucket no reader ever generates —
+    #: filling a cache it could not hit, with the miss looking like a cold context.
+    er_bucket_percent: int
 
 
 class RotationCreate(BaseModel):

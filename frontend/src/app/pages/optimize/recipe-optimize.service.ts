@@ -3,6 +3,8 @@ import { InjectionToken, Injectable, inject } from '@angular/core';
 import { injectApi } from '../../api/api.client';
 import { calibrate } from '../../sim/calibrate';
 import { run as runConfig, type GcsimModule } from '../../sim/gcsim';
+import { SimRunsService } from '../../sim/sim-runs.service';
+import { RotationsService } from '../rotations/rotations.service';
 import { loadGcsim } from '../../sim/gcsim-loader';
 import type { Recipe } from '../../sim/recipe';
 import { pairKey } from '../../sim/recipe-search';
@@ -83,6 +85,54 @@ export interface CalibrationResult {
 const SEED = '12345';
 
 /**
+ * Iterations for the aggregate run that measures stability and fills the corpus.
+ *
+ * **Measured against the owner's real four-character 90-second rotation** on the committed
+ * browser build, 2026-08-29: `sample()` 4.13 s (and a calibration does two), `run(10)` 1.40 s,
+ * `run(25)` 3.36 s, `run(100)` 11.56 s. The mean moved 49,069 → 49,214 between 25 and 100 —
+ * 0.3 % — so the extra 8 s buys precision rather than a different answer.
+ *
+ * 100 anyway, because this runs **once per search** rather than once per calibration target,
+ * and because the config's own `iteration=100` line then describes what actually happened.
+ * A cached number is read many times and computed once; the cheap version would be the one
+ * this repo regrets.
+ */
+const AGGREGATE_RUNS = 100;
+
+/**
+ * Per-character action counts from gcsim's aggregate, keyed `"<character> <action>"`.
+ *
+ * gcsim reports `character_actions` as a **positional list with no names in it**, which is why
+ * `/calibrate` publishes the config's character order — two characters both have a `skill`,
+ * and collapsing them would attribute one's instability to the other.
+ *
+ * `stats`, not `statistics`: the wasm build's `flush()` returns exactly one top-level key and
+ * it is not the one the native CLI writes. Read off the committed `gcsim.wasm`, not assumed.
+ */
+export function instancesFrom(
+  raw: unknown,
+  characters: readonly string[],
+): Record<string, { mean: number; sd: number }> {
+  const perCharacter = (raw as {
+    stats?: { character_actions?: { sources?: Record<string, { mean?: number; sd?: number }> }[] };
+  })?.stats?.character_actions;
+  if (!Array.isArray(perCharacter)) return {};
+
+  const out: Record<string, { mean: number; sd: number }> = {};
+  perCharacter.forEach((entry, index) => {
+    // Falls back to the position when the order is short or absent. A number is a poor label
+    // and an honest one; inventing a name would be worse.
+    const who = characters[index] ?? `character ${index + 1}`;
+    for (const [action, stat] of Object.entries(entry?.sources ?? {})) {
+      if (typeof stat?.mean === 'number' && typeof stat?.sd === 'number') {
+        out[`${who} ${action}`] = { mean: stat.mean, sd: stat.sd };
+      }
+    }
+  });
+  return out;
+}
+
+/**
  * Calibrating a build's recipes, and reporting what they do not cover.
  *
  * `docs/TASKS_recipe_surface.md` R.8/R.9. One calibration per **4-piece state** — every
@@ -98,6 +148,8 @@ export class RecipeOptimizeService {
   private api = injectApi();
   private loadModule = inject(GCSIM_LOADER);
   private store = inject(RECIPE_STORE);
+  private rotations = inject(RotationsService);
+  private simRuns = inject(SimRunsService);
 
   /**
    * Calibrate one recipe per target, reusing cached ones.
@@ -106,10 +158,18 @@ export class RecipeOptimizeService {
    * cost the user every other recipe in a run that took minutes — and a search that silently
    * dropped it would score that set's builds against the wrong recipe.
    */
+  /**
+   * `cacheEpoch` is any string that should invalidate cached recipes when it changes.
+   *
+   * **Not a gcsim pin, despite what it was called.** Calculate passes the real pin; the
+   * optimizer passes the artifact inventory's snapshot version. Both are correct for a cache
+   * key and neither is interchangeable with the other, which is exactly why the name mattered
+   * the moment something tried to submit it as a pin.
+   */
   async calibrateAll(
     buildId: string,
     rotationId: string,
-    gcsimPin: string,
+    cacheEpoch: string,
     targets: readonly CalibrationTarget[],
     onProgress: (progress: CalibrationProgress) => void,
   ): Promise<CalibrationResult> {
@@ -128,7 +188,10 @@ export class RecipeOptimizeService {
 
       const configs = await this.configs(buildId, rotationId, target.artifactSetIds);
       const key = {
-        gcsimPin, buildId, rotationId,
+        // `RecipeCacheKey` still spells this field `gcsimPin`. Renaming it there would
+        // change every persisted key and re-calibrate every cached recipe for a word, so
+        // the honest name stops at this boundary and the mapping is explicit.
+        gcsimPin: cacheEpoch, buildId, rotationId,
         // **Both sets, joined.** A pair keyed by only its first set would serve one pair's
         // recipe for every pair starting with it.
         artifactSetId: target.artifactSetIds.join('+') || null,
@@ -140,13 +203,29 @@ export class RecipeOptimizeService {
       if (recipe !== null) {
         caveats.fromCache.push(target.label);
       } else {
+        // **The aggregate, once per search.** `stabilityFrom({})` returns `stable: true`, so
+        // the "did not run the same way every iteration" warning was unreachable — the page
+        // rendered a caveat nothing could produce. On the owner's real rotation it fires:
+        // `skill`, `burst` and `swap` all vary by more than the 2 % tolerance.
+        //
+        // Only on the **set-free** target, because a `sim_run` is keyed by context — character,
+        // weapon, team, rotation, target — and *not* by artifacts. One aggregate answers for
+        // every target in the search; running one each would store a set-specific number under
+        // a set-independent key.
+        const wantsAggregate = target.artifactSetIds.length === 0;
+        const aggregate = wantsAggregate ? runConfig(mod, configs.baseline, AGGREGATE_RUNS) : null;
+        if (aggregate !== null) {
+          // Offered to the cache, never awaited for correctness. `DECISIONS.md` §25: the
+          // corpus accumulates from real searches, and a user whose search finished must not
+          // be told otherwise because a cache write was refused.
+          void this.cache(buildId, rotationId, configs.energy_recharge, aggregate.raw);
+        }
+
         const calibrated = calibrate(
           {
             baseline: mod.sample(configs.baseline, SEED),
             probe: mod.sample(configs.probe, SEED),
-            // The aggregate is what says whether the rotation is stable. Running it needs a
-            // second pass, so until it does, stability is unmeasured rather than assumed true.
-            instances: {},
+            instances: aggregate ? instancesFrom(aggregate.raw, configs.characters) : {},
           },
           // **Not `[]` for a 4-piece target.** Equipping a set to calibrate also applies its
           // 2-piece, so a recipe that does not name it lets the search add that tier again —
@@ -181,6 +260,45 @@ export class RecipeOptimizeService {
     return energyShortfall(buildEnergyRecharge, recipe.meta.minimumEnergyRecharge);
   }
 
+  /**
+   * Offer one finished aggregate to the run corpus.
+   *
+   * **Everything it needs comes from the server**, deliberately: the context key is a hash the
+   * client has no business computing, the rotation signature comes back pre-hashed so no
+   * second implementation of that digest exists, and the ER bucket width is published rather
+   * than restated because `er_bucket` rounds *down* and a client rounding differently would
+   * write rows nothing ever looks up.
+   *
+   * Swallows every failure. A cache that could not be written is the next search being slower,
+   * not this one being wrong.
+   */
+  private async cache(
+    buildId: string,
+    rotationId: string,
+    energyRecharge: number,
+    raw: unknown,
+  ): Promise<void> {
+    try {
+      const key = await this.rotations.contextKey(rotationId, buildId);
+      const percent = Math.round(energyRecharge * 100);
+      await this.simRuns.store({
+        contextKey: key.context_key,
+        erBucket: percent - (percent % key.er_bucket_percent),
+        // **The server's pin, not the caller's.** `calibrateAll`'s third argument is a cache
+        // epoch, and the optimizer passes the *inventory snapshot version* through it — a
+        // perfectly good discriminator for the recipe cache and not a gcsim commit at all.
+        // Submitting it produced a 422 on a field validated as 40 hex characters, which is
+        // the endpoint doing its job. The pin comes back with the context key it belongs to.
+        gcsimPin: key.gcsim_pin,
+        result: raw,
+        rotationId,
+        rotationSignature: key.rotation_signature,
+      });
+    } catch {
+      // See the docstring: not being cached is not a failed search.
+    }
+  }
+
   private async configs(
     buildId: string, rotationId: string, artifactSetIds: readonly string[],
   ) {
@@ -203,7 +321,9 @@ export class RecipeOptimizeService {
       },
     });
     if (error) throw error;
-    return data as { baseline: string; probe: string; energy_recharge: number };
+    return data as {
+      baseline: string; probe: string; energy_recharge: number; characters: string[];
+    };
   }
 }
 

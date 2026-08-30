@@ -3919,6 +3919,13 @@
           "probe_delta": {
             "type": "number",
             "title": "Probe Delta"
+          },
+          "characters": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Characters"
           }
         },
         "type": "object",
@@ -4457,6 +4464,10 @@
           "gcsim_pin": {
             "type": "string",
             "title": "Gcsim Pin"
+          },
+          "er_bucket_percent": {
+            "type": "integer",
+            "title": "Er Bucket Percent"
           }
         },
         "type": "object",
@@ -4466,7 +4477,8 @@
           "rotation_signature",
           "team",
           "target",
-          "gcsim_pin"
+          "gcsim_pin",
+          "er_bucket_percent"
         ],
         "title": "ContextKeyRead",
         "description": "The cache key for a rotation, and the parts it was computed from.\n\nThe parts are returned because a key is a hash: opaque by design, and impossible to\ncheck by eye. A caller that gets an unexpected cache miss can see *what was hashed*\nrather than guess, which is the difference between a debuggable key and a magic one."

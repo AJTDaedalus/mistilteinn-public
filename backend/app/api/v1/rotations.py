@@ -62,7 +62,7 @@ from app.services.rotation_compiler import (
 )
 from app.services.rotation_converter import convert
 from app.services.rotation_parser import RotationParseError, parse_action_block
-from app.services.sim_context import context_key
+from app.services.sim_context import ER_BUCKET_PERCENT, context_key
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -605,4 +605,5 @@ async def rotation_context_key(
     return ContextKeyRead(
         context_key=key, rotation=signature, rotation_signature=signature_digest(signature),
         team=members, target=target, gcsim_pin=pinned_commit(),
+        er_bucket_percent=ER_BUCKET_PERCENT,
     )

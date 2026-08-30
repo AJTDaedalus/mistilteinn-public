@@ -844,7 +844,7 @@ the second one is the point: a rotation is editable, so `rotation_id` alone woul
 number computed for a previous version of itself. That work is named in the TASKS file rather
 than done here.
 
-## 25. OPEN — the run corpus has no producer, and the two candidates disagree (2026-08-29)
+## 25. ~~OPEN~~ ANSWERED — the run corpus has no producer, and the two candidates disagree (2026-08-29)
 
 Found while building #179's DPS ordering, which needs a `sim_run` to exist before it can sort
 by one. **`POST /api/v1/sim-runs` has zero callers in `frontend/src/app`.** The endpoint, the
@@ -887,6 +887,62 @@ question its column names claim.
 nothing to order. That is the honest state and it is recorded in `TASKS_rotation_library.md`
 rather than hidden by a placeholder.
 
-**Nothing is blocked on this but the ordering being visible.** The labels, the signature
-matching and the refusal of a half-labelled run are all live and will attribute the first run
-anything ever submits.
+### Answered the same day: **searches fill it** (owner)
+
+> Make searches fill it.
+
+So the rotation search now performs one aggregate `run()` and submits it. Three things fell
+out of building it that the question above did not anticipate, each recorded because each was
+invisible until something used the path:
+
+**It is one run per *search*, not per calibration target.** A `sim_run` is keyed by context —
+character, weapon, team, rotation, target — and **not** by artifacts, while calibration targets
+differ only by artifact set. So the set-free baseline target is the one that answers for the
+context; running one per target would store a set-specific number under a set-independent key.
+Measured on the owner's real four-character 90-second rotation: `sample()` 4.13 s and a
+calibration does two, against `run(100)` at 11.56 s **once**.
+
+**The stored number was going to be null on every row.** `dps_mean_of` read
+`statistics.dps.mean`, taken from a native-CLI fixture. The browser's wasm returns `{"stats":
+…}` and nothing else at the top level, so every submission would have been accepted and stored
+without its headline figure — a corpus that filled up and still sorted nothing. There were no
+tests for that function at all; there are now, one per shape, each with its evidence.
+
+**The pin being submitted was not a pin.** `calibrateAll`'s third argument was called
+`gcsimPin` and the optimizer passes the *artifact inventory snapshot version* through it — fine
+as a cache discriminator, and rejected with a 422 by a field validated as 40 hex characters.
+The submission now takes the pin from the context key it belongs to, and the parameter is
+called `cacheEpoch`.
+
+**And the stability warning was unreachable.** `stabilityFrom({})` returns `stable: true`, so
+the optimize page rendered *"the rotation did not run the same way every iteration"* for a
+condition nothing could produce. The aggregate that fills the corpus also measures it — and on
+the owner's real rotation it **fires**: `skill`, `burst` and `swap` all vary beyond the 2 %
+tolerance. One run, two answers.
+
+
+## 26. A gcsim re-pin no longer empties the run corpus (2026-08-29)
+
+Owner ruling:
+
+> a prior version of gcsim likely doesn't mean much for a rotation. It is rare for existing
+> characters to change behavior, especially in game. If a rotation did change performance,
+> it'd likely be because of a bug found in gcsim.
+
+`SimRunRepository.get` required all three of `(context_key, er_bucket, gcsim_pin)`, on the
+argument that *"a lookup that omitted the pin would happily return a result from a different
+simulator, which is the failure this cache is keyed to prevent."*
+
+**That argument defeats silence, not reuse.** The objection was to serving another build's
+number without saying so — and the pin is stored, returned, and visible on every row. What it
+should not do is discard the whole corpus on a re-pin: for a demand-driven cache that means
+every user re-simulating everything they had, to avoid a difference that is usually zero and,
+when it is not, is usually a gcsim bug fix rather than a change in the game.
+
+So the exact pin still wins, and `any_pin=True` will settle for the newest older one rather
+than nothing. Ordered by `created_at`, because a pin is a commit hash and carries no order of
+its own.
+
+**What is deliberately not done:** the pin is still part of the *uniqueness* constraint, so a
+re-pin writes a new row rather than overwriting. Two builds' answers for one context coexist,
+which is what makes "served from an older pin" a statement anyone can check.

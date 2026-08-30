@@ -19,20 +19,45 @@ class SimRunRepository(BaseRepository[SimRun]):
 
     model = SimRun
 
-    async def get(self, *, context_key: str, er_bucket: int, gcsim_pin: str) -> SimRun | None:
-        """One cached run, or None.
+    async def get(
+        self, *, context_key: str, er_bucket: int, gcsim_pin: str, any_pin: bool = False,
+    ) -> SimRun | None:
+        """One cached run, or None. Prefers this pin; `any_pin` will settle for an older one.
 
-        All three parts of the key, always. A lookup that omitted the pin would happily
-        return a result from a different simulator, which is the failure this cache is
-        keyed to prevent.
+        ## Why a re-pin no longer empties the cache
+
+        This used to require all three parts, on the argument that *"a lookup that omitted the
+        pin would happily return a result from a different simulator, which is the failure this
+        cache is keyed to prevent."* Owner ruling, 2026-08-29:
+
+        > a prior version of gcsim likely doesn't mean much for a rotation. It is rare for
+        > existing characters to change behavior, especially in game. If a rotation did change
+        > performance, it'd likely be because of a bug found in gcsim.
+
+        That defeats *invalidation*, not *disclosure*. The original objection was to serving
+        another simulator's number **silently** — so the pin is still stored, still returned,
+        and a caller can see that what it got was computed by an older build. What it no longer
+        does is throw the whole corpus away on a re-pin, which for a demand-driven cache means
+        every user re-simulating everything they had.
+
+        **The current pin still wins.** `any_pin` is a fallback, ordered newest-first, not a
+        licence to ignore which build produced a number.
         """
         stmt = select(SimRun).where(
             SimRun.owner_id == self.owner_id,
             SimRun.context_key == context_key,
             SimRun.er_bucket == er_bucket,
-            SimRun.gcsim_pin == gcsim_pin,
         )
-        return (await self.session.execute(stmt)).scalar_one_or_none()
+        exact = (
+            await self.session.execute(stmt.where(SimRun.gcsim_pin == gcsim_pin))
+        ).scalar_one_or_none()
+        if exact is not None or not any_pin:
+            return exact
+        # Newest first, so a fallback is the closest build rather than the oldest one lying
+        # around. `created_at` is the only ordering available: a pin is a commit hash and
+        # carries no order of its own.
+        older = stmt.order_by(SimRun.created_at.desc()).limit(1)
+        return (await self.session.execute(older)).scalars().first()
 
     async def get_buckets(
         self, *, context_key: str, gcsim_pin: str,

@@ -98,6 +98,7 @@ from app.services.gcsim_config import (
     GcsimConfigError,
     SubstituteWeapon,
     build_config,
+    character_order,
 )
 from app.services.gcsim_keys import GcsimKeyError, pinned_commit
 from app.services.rotation_compiler import RotationCompileError, compile_rotation
@@ -1113,6 +1114,7 @@ async def calibrate_recipe(
     return CalibrationConfigs(
         baseline=baseline,
         probe=probe,
+        characters=character_order(baseline),
         artifact_set_id=body.artifact_set_id,
         two_piece_set_ids=body.two_piece_set_ids,
         energy_recharge=body.energy_recharge,

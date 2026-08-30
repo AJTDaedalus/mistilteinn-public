@@ -6,6 +6,7 @@ import type { components } from '../../api/api.types';
 export type RotationRead = components['schemas']['RotationRead'];
 export type LibraryRotationRead = components['schemas']['LibraryRotationRead'];
 export type Visibility = RotationRead['visibility'];
+export type ContextKeyRead = components['schemas']['ContextKeyRead'];
 export type RotationStep = components['schemas']['RotationStep'];
 export type RotationOptions = components['schemas']['RotationOptions'];
 export type TeamRoster = components['schemas']['TeamRoster'];
@@ -131,6 +132,22 @@ export class RotationsService {
       params: { path: { rotation_id: id } },
       body: { team_id: teamId },
     });
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * The cache key for this rotation on one build, and the parts it was hashed from.
+   *
+   * `rotation_signature` comes back pre-hashed so no client computes that digest a second
+   * way — two implementations of it would not disagree loudly, they would make every cached
+   * run unattributable and leave nothing in a log to find.
+   */
+  async contextKey(id: string, buildId: string): Promise<ContextKeyRead> {
+    const { data, error } = await this.api.POST(
+      '/api/v1/rotations/{rotation_id}/context-key',
+      { params: { path: { rotation_id: id } }, body: { build_id: buildId } },
+    );
     if (error) throw error;
     return data;
   }

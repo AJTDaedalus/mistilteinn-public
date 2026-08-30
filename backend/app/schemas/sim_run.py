@@ -116,9 +116,20 @@ class SimRunSubmit(BaseModel):
         return value
 
 
-#: Where gcsim's own summary puts the mean DPS. Read off a committed run at the pin —
-#: `tests/fixtures/crossval/ayaka_normal_1.json` — not from memory.
-_DPS_MEAN_PATH = ("statistics", "dps", "mean")
+#: Where gcsim's summary puts the mean DPS — **under either of two different top-level keys.**
+#:
+#: The native CLI writes `statistics`; the browser's wasm build writes `stats`, and nothing
+#: else at the top level. That is not a guess: `tests/fixtures/crossval/ayaka_normal_1.json` is
+#: a native run and carries `statistics`, and driving the committed `gcsim.wasm` through
+#: `flush()` returns `{"stats": {…}}` with the identical `dps` block inside.
+#:
+#: **This mattered, and it was found by building the producer rather than by reading.** The
+#: only client that will ever write to this cache is the browser, so a path that reads only
+#: `statistics` would have accepted every submission and stored `dps_mean = NULL` on all of
+#: them — a corpus that filled up and still sorted nothing, failing in the one direction
+#: nobody would look.
+_DPS_MEAN_ROOTS = ("statistics", "stats")
+_DPS_MEAN_TAIL = ("dps", "mean")
 
 
 def dps_mean_of(result: dict[str, Any]) -> float | None:
@@ -127,13 +138,21 @@ def dps_mean_of(result: dict[str, Any]) -> float | None:
     None rather than zero. A context run is wanted for its uptimes and energy, and one that
     reports no DPS is still worth caching — but "no DPS reported" and "a DPS of zero" are
     different claims and a cache should not merge them.
+
+    Both roots are read rather than one being normalised on the way in, because the payload is
+    stored **verbatim** — §3's error measurement reads it, and rewriting a client's submission
+    to fit a reader would make the stored artifact something gcsim never produced.
     """
-    node: Any = result
-    for step in _DPS_MEAN_PATH:
-        if not isinstance(node, dict) or step not in node:
-            return None
-        node = node[step]
-    return float(node) if isinstance(node, (int, float)) and not isinstance(node, bool) else None
+    for root in _DPS_MEAN_ROOTS:
+        node: Any = result.get(root)
+        for step in _DPS_MEAN_TAIL:
+            if not isinstance(node, dict) or step not in node:
+                node = None
+                break
+            node = node[step]
+        if isinstance(node, (int, float)) and not isinstance(node, bool):
+            return float(node)
+    return None
 
 
 class SimRunRead(BaseModel):

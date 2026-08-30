@@ -142,6 +142,25 @@ class Calibration:
             raise ValueError(msg)
 
 
+#: A character declaration in an emitted config: `nahida char lvl=90/90 …;`
+_CHAR_LINE = re.compile(r"^([a-z0-9]+) char lvl=", re.M)
+
+
+def character_order(config: str) -> list[str]:
+    """The gcsim keys a config declares, in the order it declares them.
+
+    **Read off the emitted text rather than rebuilt from the build and its teammates.** The two
+    would be one refactor away from disagreeing, and the consequence is quiet: gcsim's
+    aggregate reports `character_actions` as a positional list, so a mismatched order would
+    attribute one character's instability to another — a warning naming the wrong person, which
+    is worse than no warning.
+
+    Order matters because the emitter puts the build's own character first and teammates after
+    (`_teammate_lines`), which is also the order gcsim indexes them in.
+    """
+    return _CHAR_LINE.findall(config)
+
+
 def build_config(
     build: Build,
     *,
