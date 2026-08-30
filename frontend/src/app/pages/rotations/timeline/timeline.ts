@@ -107,11 +107,14 @@ export interface MeasuredRun {
           }
         </div>
       } @else {
+        <!-- Labelled in both states, because they are one component in two conditions and the
+             difference matters: one is what you wrote, the other is what happened. -->
+        <p class="timeline__eyebrow">As written · {{ steps().length }} steps</p>
         <ol class="runs" role="list">
           @for (run of runs(); track $index) {
             <li class="run" [style.--element]="elementVar(run.element)">
               <span class="run__who">
-                <catalogue-icon [icon]="run.icon" [alt]="''" [size]="22" />
+                <catalogue-icon [icon]="run.icon" [alt]="''" [size]="26" />
                 <span class="run__name">{{ run.name }}</span>
                 @if (run.group) {
                   <!-- The terseness a group buys, drawn. DECISIONS.md §27. -->
@@ -135,7 +138,7 @@ export interface MeasuredRun {
                     (keydown)="onKey($event, tile.index)"
                   >
                     @if (tile.icon) {
-                      <catalogue-icon [icon]="tile.icon" [alt]="''" [size]="26" />
+                      <catalogue-icon [icon]="tile.icon" [alt]="''" [size]="38" />
                     } @else {
                       <span class="tile__word">{{ tile.ability }}</span>
                     }
@@ -177,16 +180,16 @@ export interface MeasuredRun {
     .run {
       display: flex;
       flex-direction: column;
-      gap: var(--space-1);
+      gap: var(--space-2);
       flex: 0 0 auto;
-      padding: var(--space-1) var(--space-2);
+      padding: var(--space-2) var(--space-3);
       border: 1px solid color-mix(in srgb, var(--element) 45%, transparent);
       border-radius: var(--radius-2);
       background: color-mix(in srgb, var(--element) 10%, transparent);
     }
 
     .run__who { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
-    .run__name { color: var(--ink-dim); font-size: var(--text-xs); white-space: nowrap; }
+    .run__name { color: var(--ink); font-size: var(--text-sm); white-space: nowrap; }
     .run__group {
       padding: 0 var(--space-1);
       border-radius: var(--radius-1);
@@ -201,16 +204,22 @@ export interface MeasuredRun {
       position: relative;
       display: grid;
       place-items: center;
-      min-width: 38px;
-      min-height: 38px;
-      padding: 2px;
+      min-width: 52px;
+      min-height: 52px;
+      padding: 3px;
       border: 1px solid var(--surface-rule);
       border-radius: var(--radius-1);
       background: var(--surface);
       cursor: grab;
     }
     .tile--selected { outline: 2px solid var(--brass); outline-offset: 1px; }
-    .tile__word { font-size: var(--text-xs); color: var(--ink-dim); padding: 0 2px; }
+    .tile__word {
+      font-size: var(--text-xs);
+      color: var(--ink-dim);
+      padding: 0 3px;
+      text-align: center;
+      line-height: 1.2;
+    }
     /* **Inside the tile, not hanging off it.** .runs scrolls horizontally, and
        overflow-x: auto makes the block axis a scroll container too — so a badge at
        inset: -4px was clipped away and rendered nowhere. The DOM had it, the spec asserted

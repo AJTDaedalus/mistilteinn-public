@@ -202,8 +202,9 @@ already written `var(--space-5, var(--space-4))`, so somebody had met it once an
 their own file. That is `FINDINGS_frontend_validation.md`'s finding again: a pattern nothing
 owned, so every page decided separately.
 
-## What is left, and is taste rather than defect
+## The sizing pass
 
-The timeline is the smallest thing in a tall dialog, which is an odd place for the feature the
-chunk is named after. Making it bigger is the owner's call to make with their own eyes on it,
-so it ships as built rather than resized on a guess.
+~~The timeline is the smallest thing in a tall dialog.~~ **Done** — owner asked for it to be
+reviewed directly. `DESIGN_rotation_builder_gui.md` §7.1 has the measurements: the timeline
+went 76px → 132px and the step list 522px → 286px, because a row was carrying a note input it
+did not need and four controls the detail pane already offered. Level 2 reads; level 3 edits.

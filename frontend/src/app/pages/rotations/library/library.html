@@ -1,0 +1,76 @@
+<dialog #dialog class="library" (close)="note.set(null)">
+  <header class="library__head">
+    <h2>Rotations for {{ team()?.name }}</h2>
+    <button type="button" class="library__close" aria-label="Close" (click)="close()">
+      ×
+    </button>
+  </header>
+
+  <div class="library__filters" role="group" aria-label="Scope">
+    <button
+      type="button"
+      class="chip"
+      [class.chip--on]="forThisTeam()"
+      (click)="setScope(true)"
+    >This team</button>
+    <button
+      type="button"
+      class="chip"
+      [class.chip--on]="!forThisTeam()"
+      (click)="setScope(false)"
+    >Everything published</button>
+  </div>
+
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+  @if (note(); as note) {
+    <p class="hint" role="status">{{ note }}</p>
+  }
+
+  @if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else {
+    <ul class="library__grid">
+      @for (row of rows(); track row.id) {
+        <li>
+          <span class="library__name">{{ row.name }}</span>
+          @if (row.description) {
+            <span class="library__desc">{{ row.description }}</span>
+          }
+          <span class="library__meta mono">
+            {{ row.steps.length }} step{{ row.steps.length === 1 ? '' : 's' }} ·
+            {{ row.characters.length }} character{{ row.characters.length === 1 ? '' : 's' }}
+          </span>
+          <span class="library__actions">
+            <button
+              type="button"
+              class="like"
+              [class.like--on]="row.liked_by_me"
+              [attr.aria-pressed]="row.liked_by_me"
+              [attr.aria-label]="(row.liked_by_me ? 'Unlike ' : 'Like ') + row.name"
+              (click)="toggleLike(row)"
+            >♥ {{ row.like_count }}</button>
+            <button type="button" (click)="copy(row)">Copy</button>
+          </span>
+        </li>
+      } @empty {
+        <!-- Two different silences, said differently: nobody has published for this team, or
+             nobody has published at all. -->
+        @if (forThisTeam()) {
+          <!-- The widening is a **button under the sentence**, not a link inside it. Inline,
+               the trailing full stop wrapped onto a line of its own — an inline-block with an
+               underline breaks where prose does not. Seen in a screenshot. -->
+          <li class="muted">
+            <p>Nobody has published a rotation for exactly this party yet.</p>
+            <button type="button" (click)="setScope(false)">
+              Show everything published
+            </button>
+          </li>
+        } @else {
+          <li class="muted">Nobody has published a rotation yet.</li>
+        }
+      }
+    </ul>
+  }
+</dialog>

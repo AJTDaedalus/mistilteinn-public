@@ -1,4 +1,4 @@
-import type { RotationStep } from './rotations.service';
+import type { RotationStep } from '../rotations.service';
 
 /**
  * Repair any group a reorder split apart.

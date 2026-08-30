@@ -271,6 +271,36 @@ has been there since #184 and it is what makes the timeline checkable at a glanc
 
 ---
 
+## 7.1 The sizing pass, measured
+
+**The timeline was the smallest thing in a tall dialog** — the odd place for the feature the
+chunk is named after. Measured in a real browser rather than argued about:
+
+| band | before | after |
+|---|---:|---:|
+| the timeline | 76px | **132px** |
+| one step row | 82px | **43px** |
+| the step list (6 steps) | 522px | **286px** |
+| the whole dialog | 1037px | 977px |
+
+Two things were paying for it. Every row carried a **full-width note input whether or not the
+step had a note** — six controls saying nothing, 48px each. And every row carried **two
+`<select>`s, a number and that note**: the same four fields the detail pane offers for the
+selected step, so level 2 and level 3 were editing the same thing side by side.
+
+So **level 2 reads and level 3 edits.** A row is now the one thing only it can say — which
+step, who, what, how many, and its note — as text, with reorder, duplicate and delete beside
+it. The acting character moved into the detail pane with everything else about one move.
+
+Two defects fell out of looking at it: the row wrapped its buttons onto a second line as soon
+as a step had a note (so the list looked broken on exactly the rows carrying the most
+information), and the app's `button` styling rendered a row as an uppercased headline —
+*"SHORT-RANGE RAPID INTERDICTION FIRE (HOLD)"*. Neither is visible to a test.
+
+The editor also **opens with the first step selected**, because the detail pane renders only
+for a selection: opening on an empty one hid level three and made the dialog jump the first
+time anything was clicked.
+
 ## 8. Open questions — all four answered 2026-08-30
 
 | | |

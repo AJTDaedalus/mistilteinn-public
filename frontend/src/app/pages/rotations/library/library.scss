@@ -1,0 +1,106 @@
+// The rotation library, as a pop-up over the team you are looking at.
+
+.library {
+  width: min(46rem, 92vw);
+  max-height: 88vh;
+  padding: 0 var(--space-4) var(--space-4);
+  border: 1px solid var(--brass-deep);
+  border-radius: var(--radius-2);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-card);
+
+  &::backdrop { background: rgb(0 0 0 / 55%); }
+}
+
+.library__head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 calc(var(--space-4) * -1) var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--surface-rule);
+  background: var(--surface);
+
+  h2 { margin: 0; font-size: var(--text-lg); }
+}
+
+.library__close {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--ink-dim);
+  font-size: var(--text-lg);
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover { color: var(--ink); }
+}
+
+.library__filters {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.library__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--surface-rule);
+    border-radius: var(--radius-1);
+    background: var(--surface-hi);
+  }
+
+  li.muted {
+    grid-column: 1 / -1;
+    border-color: transparent;
+    background: none;
+  }
+}
+
+.library__name {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+}
+
+.library__desc,
+.library__meta {
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+}
+
+.library__actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+/* The heart carries its count, so the control and the number a user is reading are one thing
+   rather than two that could disagree mid-request. */
+.like {
+  color: var(--ink-dim);
+
+  &.like--on { color: var(--danger); border-color: var(--danger); }
+}
+
+/* The empty state's own widening control. Deliberately a button, not a link: a link would
+   navigate, and this widens a filter — an <a> would be a lie about what happens. */
+.library__grid li.muted {
+  align-items: flex-start;
+  gap: var(--space-2);
+
+  p { margin: 0; }
+}
