@@ -33,6 +33,11 @@ this list.
 | `TASKS_multipliers.md` | talent multipliers, crossvalidated against gcsim (#73–#77) |
 | `TASKS_optimizer.md` | the search surface (#78–#82) |
 | `TASKS_loose_ends.md` | icons, and the stale-marker sweep (#84–#89) |
+| `TASKS_weapon_passives.md` | weapon comparison's gcsim second tier (#92, and one push straight to `dev` its own banner refuses to tidy away) |
+| `DESIGN_artifact_ranking.md` | scoring one artifact against a build, on the rotation engine |
+| `BACKLOG_frontend.md` | the owner's manual audit, §§1–12 (#162–#181) |
+| `TASKS_rotation_library.md` | publishing, finding, liking and copying a rotation (#177–#180) |
+| `DESIGN_rotation_builder.md` | the builder's design pass, and the half needing no answer (#181) |
 
 **The app is walkable end to end**: import a GOOD export, equip pieces to a build, assemble a
 team, author a rotation, compile it to gcsim, search your own artifacts for the best five, and
@@ -40,30 +45,31 @@ ask why the winner won. The earlier notes here saying there was no reachable opt
 way to make a team were true when written and are not now.
 
 **Two chunks closed without being built.** **H** was superseded — gcsim already implements the
-kits the corpus existed to curate — though its two markers survive, pointing at weapon passives
-the damage chain does not model. **I's rotation-optimization half is closed by owner decision
+kits the corpus existed to curate. Its two `TODO(chunk-H)` markers are gone too:
+`TASKS_weapon_passives.md` is complete and retired them. **I's rotation-optimization half is closed by owner decision
 (2026-08-25): rotations are authored, never optimized.** A user writes a rotation deliberately,
 and one arrived at by search is not one they would recognise as theirs.
 
-**Two further plans are open and unbuilt**, both written 2026-08-29 and both waiting on owner
-answers rather than on effort: `docs/DESIGN_rotation_library.md` (sharing and searching
-rotations; tier-1 gcsim import is **built**, OQ-1..OQ-4 open) and
-`docs/DESIGN_artifact_ranking.md` (scoring one artifact, and a +0's potential; OQ-A1..OQ-A4
-open). `docs/AUDIT_fribbels_parity.md` is the standing list of what the UI still lacks.
+**Every plan in this repo now has zero open tasks.** `docs/DESIGN_rotation_library.md` and
+`docs/DESIGN_artifact_ranking.md` were the last two open on 2026-08-29 and both shipped that
+day; `docs/TASKS_weapon_passives.md` closed before them. `docs/AUDIT_fribbels_parity.md` is
+the standing list of what the UI still lacks.
 
-**And one older plan — `docs/TASKS_weapon_passives.md` — with the two
-`TODO(chunk-)` markers it exists to close.** `rg "TODO\(chunk-"` is the inventory. It counted
-**nine** before `TASKS_loose_ends.md`, seven of them naming a closed chunk; that sweep closed
-the seven and left the two that name real, unbuilt work. **Every other plan in this repo has
-zero open tasks.**
+**What is left is waiting on the owner, not on effort.** Four questions, each recorded where
+someone will find it:
 
-**Both markers now have a destination.** `TASKS_weapon_passives.md` is the open plan:
-**242 of 260 weapons carry a passive and 5 are expressible in the damage chain as it stands**,
-so by owner decision (2026-08-26, `docs/DECISIONS.md`) weapon comparison gets a **gcsim second
-tier** rather than a hand-derived modifier model — deriving 237 conditions from refinement
-prose is the fabricated-citation failure fairy actually suffered. `weapon_comparison` keeps
-reporting `unmodelled_passives` until that ships, precisely so a caller cannot publish a
-ranking it does not claim to have made.
+| | |
+|---|---|
+| `DECISIONS.md` §25 | **The run corpus has no producer**, and the design's intended one cannot be it — the search calls `sample()` where the corpus stores an aggregate. Either a search pays for a run it does not need, or a `sim_run` means something else. |
+| `DESIGN_rotation_builder.md` §6 | OQ-B1..B4 — whether "extensive" means the surface or the grammar, whether a quick-add line is wanted, whether authoring should run gcsim (which would answer §25), and whether the library is the builder's starting point. |
+| `BACKLOG_frontend.md` §3 | **KeqingMains weapon recommendations.** The owner flagged it as the shape of fairy's worst failure; nothing should be scraped before the sourcing is agreed. |
+| `BACKLOG_frontend.md` §3 | One build per character and a build priority — the owner marked it *later*. |
+
+**Two subsystems are built, gated, and wired to nothing.** Worth knowing before trusting that a
+feature works because its tests pass: `createGpuKernel` has no callers, which is why the
+single-hit search ran on the main thread until #175 gave it a budget; and `POST /sim-runs` has
+no callers, which is why the rotation library's `your_dps` is always null. Both were found by
+building something that needed them, not by reading.
 
 **The cost figure in the escalation is wrong and the DESIGN says so.** It inferred ~14 s for
 59 candidates from §6's **native, all-cores** 0.238 s/run. Measured against the committed
@@ -71,11 +77,10 @@ browser build, a 100-iteration 90-second rotation is **7.84 s single-threaded** 
 candidates is **~7.7 minutes**. The decision holds; the interaction it implies does not. It is
 a job with progress, never a request that blocks.
 
-- **Both suites pass, with nothing skipped.** **1439 backend tests, 0 skipped**; **450
-  frontend tests**; `create_app()` serves **39 paths**; the SPA has **15 routes plus a
-  catch-all**. (The previous figures here — 1273 / 255 / 40 paths — were stale; the path
-  count had never been 40. Re-derive rather than trust, which is what the commands below
-  are for.) **One integration test has been seen to fail once and pass on re-run** —
+- **Both suites pass, with nothing skipped.** **1549 backend tests, 0 skipped**; **544
+  frontend tests**; `create_app()` serves **51 paths**; the SPA has **17 routes plus a
+  catch-all**. (Every figure here has been stale at least once — 1273 / 255 / 40, then
+  1439 / 450 / 39. **The number is not the point; the command underneath it is.**) **One integration test has been seen to fail once and pass on re-run** —
   `test_a_talent_with_no_level_set_is_not_offered`, once in four full-suite runs, passing in
   isolation and on the two runs after. Recorded rather than chased on a single observation,
   and recorded rather than ignored: in a repo whose rule is that a check which could not run
@@ -174,21 +179,19 @@ a job with progress, never a request that blocks.
 - **Do not "fix" ZZZ code to make it run.** Per the BRIEF: *delete* ZZZ concepts rather than
   aliasing them. Leaked ZZZ shapes in the Genshin domain model are the fork strategy's main
   long-term hazard.
-- **`rg "TODO\(chunk-"` is the inventory of what is deliberately unfinished — two markers,
-  both `TODO(chunk-H)`.** It counted nine before `TASKS_loose_ends.md`, seven of them naming a
-  closed chunk, which is a worse failure than it sounds: **an inventory of open work that
-  counts finished work is the reason a reader looks somewhere else.** The sweep closed the
-  seven — one of which claimed a DI factory was missing forty lines above where it is defined.
+- **`rg "TODO\(chunk-"` counts zero, and this entry is the reason it is still here.** It
+  counted nine before `TASKS_loose_ends.md` and **two** after it, and this file went on saying
+  two after `TASKS_weapon_passives.md` retired both — **an inventory of open work that counts
+  finished work is the reason a reader looks somewhere else**, which is the sentence this entry
+  has carried the whole time. It was wrong about itself for a while. Re-derive:
+  `rg "TODO\(chunk-" backend/app backend/tests frontend/src`.
 
-  The two that remain are about weapon and character passives the Chunk F chain does not
-  model. `weapon_comparison` carries `unmodelled_passives` precisely so a caller cannot
-  publish a ranking it does not claim to have made — **it is not a precision caveat, the
-  ordering itself can be wrong.** N.5 measured the gap: **242 of 260 weapons carry a passive
-  and 5 are expressible today**, because nine of the rest ask about target state
+  What the two named is **built**: `weapon_comparison` still carries `unmodelled_passives`, and
+  it is still not a precision caveat — **the ordering itself can be wrong** where a passive is
+  unmodelled. N.5's measurement stands: **242 of 260 weapons carry a passive and 5 are
+  expressible in the Chunk F chain**, because nine of the rest ask about target state
   (`KernelTarget` is level, resistance, DEF reduction and DEF ignore — no aura, no enemy type,
   no weak spot), which makes them *unaskable questions rather than unimplemented ones*.
-  **Where that work lands is escalated, not resolved**, so the markers stay pointed at H
-  rather than at a chunk that does not exist yet.
 - **Two verification harnesses exist because checking the check went wrong twice.**
   `python -m scripts.ci_local` runs what CI runs, parsed from the workflow files at run time.
   `python -m scripts.inject` is mutation testing with inverted exit codes — `0` caught, `1`
