@@ -240,3 +240,57 @@
     font-size: var(--text-sm);
   }
 }
+
+/* ── One Optimize button, after everything it reads ─────────────────────────
+   Two buttons both saying "search", one of them above the controls it ignored, is how a
+   4-piece filter looks like it did nothing. */
+
+.optimize-actions {
+  display: flex;
+  margin-block: var(--space-4);
+}
+
+.optimize-actions__go {
+  padding: var(--space-2) var(--space-6);
+  font-size: var(--text-md);
+}
+
+/* Main stats: several per slot, as chips. A `<select multiple>` needs a modifier key nobody
+   discovers and cannot say "any" without an option meaning "clear the others". */
+.slot-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-1) var(--space-2) var(--space-2);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-2);
+}
+
+.slot-stats legend {
+  padding-inline: var(--space-1);
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+  /* `.main-stats legend` is a *descendant* selector, so these two reached the per-slot legends
+     as well and rendered "SANDS" at the same weight as the section's own "MAIN STATS". Equal
+     specificity means the properties above win and these two do not — they have to be said. */
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.slot-stats .chip {
+  padding: 2px var(--space-2);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.slot-stats .chip--on {
+  border-color: var(--brass);
+  background: color-mix(in srgb, var(--brass) 18%, transparent);
+  color: var(--ink);
+}

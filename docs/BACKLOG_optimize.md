@@ -1,5 +1,9 @@
 # BACKLOG — the optimize page
 
+> **Code is named, not numbered.** The first draft of this file cited `optimize.ts:547` and
+> `optimize.ts:930`, and the very PR that answered §1 pushed both by thirty lines — so an
+> argument whose whole basis is "read against the code" pointed at the wrong code within a day.
+
 **Owner feedback, 2026-08-30**, with a screenshot: `references/optimizer_screenshot.png`.
 Recorded verbatim before it is interpreted, because the interpretation is the part that goes
 wrong. Nothing here is designed yet.
@@ -45,22 +49,30 @@ The screenshot has **Finale of the Deep Galleries** selected and still reports
 **70,429,936,500 combinations**. Read against the code, the cause is structural rather than
 arithmetic:
 
-- `optimize.ts:547` — `constrained()` filters candidates by **main stat only**.
-- `optimize.ts:930` — the single-hit `search()` is handed `constrained(...)`, so every artifact
-  in the inventory is in its space. `search.ts:473` then multiplies the per-slot buckets, which
+- `optimize.ts`, `constrained()` — filters candidates by **main stat only**.
+- `optimize.ts`, `run()` — the single-hit `search()` is handed `constrained(...)`, so every artifact
+  in the inventory is in its space. `search.ts` then multiplies the per-slot buckets, which
   is where 70,429,936,500 comes from. The number is *correct for what that search did*.
-- `selectedSets` (`optimize.ts:174`) feeds the **rotation** search and nothing else.
+- `selectedSets` feeds the **rotation** search and nothing else.
 
 **So the two buttons do not merely differ in cost — they differ in which of the controls on the
-page apply to them.** "Sets to search" sits above the results looking like part of the form,
-and applies to one of the two buttons. The owner picked a 4-piece and pressed the other one.
+page apply to them.**
 
-That makes §1 and §4 one problem: *"what is the button to optimize"* is the same question as
-*"why did my filter do nothing"*. Collapsing to a single **Optimize** button forces the honest
-answer — **the set filter has to apply to both modes** — and applying it to the single-hit
-search is also what makes the quoted number describe what was actually searched.
+The set picker is already inside `@if (objective() === 'rotation')`, so it appears only in the
+mode that uses it. What it is *not* inside is a guard on the other button: **the top `Search`
+is rendered unconditionally**, so with "Best across rotation" chosen and a 4-piece picked,
+there are two buttons on screen and the top one runs the single-hit search and ignores the
+whole block above it. That is the sequence in the screenshot.
 
-Do not fix the message. Fix which pieces the search is given.
+So §1 and §4 are one problem and it is **§1's fix that closes both**: with a single Optimize
+button there is no way to press the search that ignores the mode you chose. No kernel change is
+needed for this, and the earlier note here saying "the set filter has to apply to both modes"
+was wrong — in rotation mode it already applies, and in single-hit mode it is not offered.
+
+**What is still open** is whether single-hit *should* offer it, as a filter — "rank only builds
+with a 4-piece Finale". The single-hit walk (`search.ts`, the `walk` inside `search()`) has no set constraint, so that is
+a kernel change with its own pruning and its own honest counting, and it is a chunk of its own.
+Not needed to answer the owner's question; worth doing on its own merits.
 
 ## 5. Every result row reads the same
 

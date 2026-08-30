@@ -497,7 +497,7 @@ export class OptimizePage implements OnInit {
   protected readonly statNames = signal<Record<string, string>>({});
 
   /**
-   * A required main stat per slot — `{ equip_ring: 'FIGHT_PROP_FIRE_ADD_HURT' }`.
+   * The main stats wanted per slot — `{ equip_ring: ['FIGHT_PROP_FIRE_ADD_HURT'] }`.
    *
    * **The first thing anyone decides about a Genshin build**, and the search had no way to
    * say it. A goblet is the clearest case: a DPS wants one elemental damage bonus and every
@@ -508,7 +508,7 @@ export class OptimizePage implements OnInit {
    * their main stat is fixed — hiding them would encode a game rule in a control's presence,
    * and a rule stated by an absence is one nobody can check.
    */
-  protected readonly mainStatBySlot = signal<Record<string, string>>({});
+  protected readonly mainStatBySlot = signal<Record<string, readonly string[]>>({});
 
   /** The main stats actually present in the inventory for one slot, with their labels. */
   /**
@@ -533,8 +533,36 @@ export class OptimizePage implements OnInit {
     );
   }
 
-  protected setMainStat(slot: string, key: string): void {
-    this.mainStatBySlot.update((current) => ({ ...current, [slot]: key }));
+  /**
+   * Toggle one main stat for one slot. **Several may be wanted at once** (owner, 2026-08-30).
+   *
+   * A user who will take ATK% *or* Elemental Mastery on the sands had to run the search twice
+   * and compare two rankings by eye — which is the search doing less than it could, since both
+   * are one walk over a slightly larger bucket.
+   *
+   * An empty list still means "any", so clearing the last one restores the whole slot rather
+   * than leaving a constraint nothing satisfies.
+   */
+  protected toggleMainStat(slot: string, key: string): void {
+    this.mainStatBySlot.update((current) => {
+      const wanted = new Set(current[slot] ?? []);
+      if (wanted.has(key)) wanted.delete(key);
+      else wanted.add(key);
+      return { ...current, [slot]: [...wanted] };
+    });
+  }
+
+  /** Clear a slot back to "any". */
+  protected clearMainStat(slot: string): void {
+    this.mainStatBySlot.update((current) => ({ ...current, [slot]: [] }));
+  }
+
+  protected wantsMainStat(slot: string, key: string): boolean {
+    return (this.mainStatBySlot()[slot] ?? []).includes(key);
+  }
+
+  protected anyMainStat(slot: string): boolean {
+    return (this.mainStatBySlot()[slot] ?? []).length === 0;
   }
 
   /**
@@ -547,8 +575,9 @@ export class OptimizePage implements OnInit {
   protected constrained(pieces: readonly KernelCandidate[]): KernelCandidate[] {
     const wanted = this.mainStatBySlot();
     return pieces.filter((piece) => {
-      const required = wanted[piece.slot];
-      return !required || piece.main_stat === required;
+      const required = wanted[piece.slot] ?? [];
+      // Empty is "any". A slot wanting several keeps a piece matching **one** of them.
+      return required.length === 0 || required.includes(piece.main_stat);
     });
   }
 
@@ -558,7 +587,7 @@ export class OptimizePage implements OnInit {
     const wanted = this.mainStatBySlot();
     const kept = this.constrained(this.candidates());
     return Object.keys(wanted)
-      .filter((slot) => wanted[slot] && !kept.some((p) => p.slot === slot))
+      .filter((slot) => (wanted[slot] ?? []).length > 0 && !kept.some((p) => p.slot === slot))
       .map((slot) => names[slot] ?? slot);
   }
 
@@ -571,6 +600,16 @@ export class OptimizePage implements OnInit {
   // **Both stay reachable.** The fast one answers a different, legitimate question in
   // microseconds, and OQ-W4 settled the principle: deleting a fast honest answer because a
   // slow better one exists is a downgrade for whoever wanted the fast one.
+  /**
+   * Which question Optimize answers.
+   *
+   * **One button, not two** (owner, 2026-08-30). The page used to render `Search` in the top
+   * row unconditionally *and* `Search rotation` beside this control, so choosing "best across
+   * rotation" and then pressing the top button ran the single-hit search and silently ignored
+   * everything the rotation block had been set to — the set filter included. The owner picked
+   * a 4-piece, pressed the wrong one of two buttons that both said "search", and got a message
+   * about their whole inventory. One button cannot be pressed by mistake.
+   */
   protected readonly objective = signal<'hit' | 'rotation'>('hit');
   protected readonly rotations = signal<{ id: string; name: string }[]>([]);
   /** A signal, because `canSearchRotation` reads it. Same reason as `hitIndex`. */
@@ -795,6 +834,8 @@ export class OptimizePage implements OnInit {
     this.result.set(null);
     // And so does the note saying what was equipped from it.
     this.equipped.set(null);
+    // …and everything the rotation search found about the *previous* build's winner.
+    this.clearRotationFindings();
     this.actionError.set(null);
     if (!id) return;
     try {
@@ -896,6 +937,40 @@ export class OptimizePage implements OnInit {
     const paired = this.pairing();
     if (!paired || paired.row.damage === 0) return null;
     return Math.abs(paired.shown.result.damage - paired.row.damage) / paired.row.damage;
+  }
+
+  /** Whether Optimize can run at all, in whichever mode is chosen. */
+  protected canOptimize(): boolean {
+    // **Including the check the page already made.** With a main-stat combination no owned
+    // piece satisfies, the page says so directly above this button — and then let you press
+    // it, which in rotation mode spends a six-second gcsim calibration to return the empty
+    // list it had just predicted.
+    if (this.impossibleSlots().length > 0) return false;
+    return this.objective() === 'rotation' ? this.canSearchRotation() : this.canSearch();
+  }
+
+  /** The one button. It runs the mode that is chosen, which is the whole point of there being one. */
+  protected optimizeNow(): Promise<void> {
+    this.clearRotationFindings();
+    return this.objective() === 'rotation' ? this.runRotation() : this.run();
+  }
+
+  /**
+   * Drop everything that describes a *rotation* ranking.
+   *
+   * `run()` replaced `result` but left `scoredRecipe`, `winningPools`, `caveats` and
+   * `recipeNotes` standing — so switching to single hit and pressing Optimize left "Pieces
+   * that would beat the winner" on screen, computed from the previous rotation's recipe, under
+   * a heading naming a winner that is now a different build.
+   *
+   * **The mode select is the natural way to compare the two now that there is one button**, so
+   * this is the sequence the change invites rather than an unlikely one.
+   */
+  private clearRotationFindings(): void {
+    this.scoredRecipe.set(null);
+    this.winningPools.set(null);
+    this.caveats.set(null);
+    this.recipeNotes.set(null);
   }
 
   protected async run(): Promise<void> {

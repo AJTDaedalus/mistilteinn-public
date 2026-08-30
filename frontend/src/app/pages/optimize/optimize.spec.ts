@@ -915,32 +915,125 @@ describe('the main-stat constraint', () => {
     piece('f', 'equip_bracer', 'FIGHT_PROP_HP'),
     piece('g1', 'equip_ring', 'FIGHT_PROP_FIRE_ADD_HURT'),
     piece('g2', 'equip_ring', 'FIGHT_PROP_ATTACK_PERCENT'),
+    piece('g3', 'equip_ring', 'FIGHT_PROP_ELEMENT_MASTERY'),
     piece('c', 'equip_dress', 'FIGHT_PROP_CRITICAL'),
   ];
 
-  /** The predicate the page applies, stated once here so the test is about the rule. */
-  const keep = (wanted: Record<string, string>) =>
-    inventory.filter((p) => !wanted[p.slot] || p.main_stat === wanted[p.slot]).map((p) => p.id);
+  /**
+   * The page's own `constrained`, not a restatement of it.
+   *
+   * **The previous version of this block declared its own `keep` predicate inline** and
+   * asserted against that — so it was a test about a rule rather than about the code, and it
+   * stayed green through a change from one main stat per slot to several. A test that cannot
+   * fail when the thing it names changes is not holding it.
+   */
+  function keep(wanted: Record<string, readonly string[]>) {
+    const page = pageWith();
+    page['mainStatBySlot'].set(wanted);
+    return page['constrained'](inventory as never).map((p) => p.id);
+  }
 
   it('keeps everything when no slot is constrained', () => {
-    expect(keep({})).toEqual(['f', 'g1', 'g2', 'c']);
+    expect(keep({})).toEqual(['f', 'g1', 'g2', 'g3', 'c']);
   });
 
   it('narrows only the constrained slot', () => {
     // The flower and circlet survive untouched: a constraint on the goblet says nothing about
     // any other slot, and narrowing them too would silently shrink the search.
-    expect(keep({ equip_ring: 'FIGHT_PROP_FIRE_ADD_HURT' })).toEqual(['f', 'g1', 'c']);
+    expect(keep({ equip_ring: ['FIGHT_PROP_FIRE_ADD_HURT'] })).toEqual(['f', 'g1', 'c']);
   });
 
-  it('treats an empty string as no constraint rather than as a stat', () => {
-    // The "Any" option's value. Compared as a stat it would match nothing and empty the slot.
-    expect(keep({ equip_ring: '' })).toEqual(['f', 'g1', 'g2', 'c']);
+  it('keeps a piece matching any of several wanted stats', () => {
+    // Owner, 2026-08-30. Somebody who will take ATK% *or* EM on the sands had to run the
+    // search twice and compare two rankings by eye — which is the search doing less than it
+    // could, since both are one walk over a slightly larger bucket.
+    expect(keep({
+      equip_ring: ['FIGHT_PROP_ATTACK_PERCENT', 'FIGHT_PROP_ELEMENT_MASTERY'],
+    })).toEqual(['f', 'g2', 'g3', 'c']);
+  });
+
+  it('treats an empty list as no constraint rather than as a stat nothing has', () => {
+    // What "Any" leaves behind. Compared as a value it would match nothing and empty the slot.
+    expect(keep({ equip_ring: [] })).toEqual(['f', 'g1', 'g2', 'g3', 'c']);
   });
 
   it('can empty a slot, which is exactly what has to be caught before searching', () => {
     // An empty result is indistinguishable from "your artifacts are bad", and the user would
     // not know which. The page says so before the search rather than after it returns nothing.
-    expect(keep({ equip_ring: 'FIGHT_PROP_ELEC_ADD_HURT' })).toEqual(['f', 'c']);
+    expect(keep({ equip_ring: ['FIGHT_PROP_ELEC_ADD_HURT'] })).toEqual(['f', 'c']);
+  });
+});
+
+describe('choosing main stats', () => {
+  it('adds and removes one at a time, leaving the others alone', () => {
+    const page = pageWith();
+
+    page['toggleMainStat']('equip_ring', 'FIGHT_PROP_ATTACK_PERCENT');
+    page['toggleMainStat']('equip_ring', 'FIGHT_PROP_ELEMENT_MASTERY');
+
+    expect(page['mainStatBySlot']()['equip_ring'])
+      .toEqual(['FIGHT_PROP_ATTACK_PERCENT', 'FIGHT_PROP_ELEMENT_MASTERY']);
+
+    page['toggleMainStat']('equip_ring', 'FIGHT_PROP_ATTACK_PERCENT');
+
+    expect(page['mainStatBySlot']()['equip_ring']).toEqual(['FIGHT_PROP_ELEMENT_MASTERY']);
+  });
+
+  it('is "any" again once the last one is removed', () => {
+    // Rather than a constraint nothing satisfies, which would empty the slot and stop the
+    // search returning anything at all.
+    const page = pageWith();
+    page['toggleMainStat']('equip_ring', 'FIGHT_PROP_ATTACK_PERCENT');
+
+    page['toggleMainStat']('equip_ring', 'FIGHT_PROP_ATTACK_PERCENT');
+
+    expect(page['anyMainStat']('equip_ring')).toBe(true);
+  });
+
+  it('clears a slot back to any in one move', () => {
+    const page = pageWith();
+    page['toggleMainStat']('equip_ring', 'FIGHT_PROP_ATTACK_PERCENT');
+    page['toggleMainStat']('equip_ring', 'FIGHT_PROP_ELEMENT_MASTERY');
+
+    page['clearMainStat']('equip_ring');
+
+    expect(page['anyMainStat']('equip_ring')).toBe(true);
+  });
+});
+
+describe('one Optimize button', () => {
+  it('runs the single-hit search when that is the mode', async () => {
+    // The page used to render `Search` in the top row unconditionally *and* `Search rotation`
+    // beside the mode control. Choosing "with rotation" and pressing the top one ran the
+    // single-hit search and ignored the whole block below it — including the set filter, which
+    // is how a 4-piece choice looked like it did nothing.
+    const page = pageWith();
+    // Spied rather than run: `optimizeNow` is a router, and what it routes to is the claim.
+    const single = vi.fn().mockResolvedValue(undefined);
+    const rotation = vi.fn().mockResolvedValue(undefined);
+    (page as unknown as Record<string, unknown>)['run'] = single;
+    (page as unknown as Record<string, unknown>)['runRotation'] = rotation;
+    page['objective'].set('hit');
+
+    await page['optimizeNow']();
+
+    expect(single).toHaveBeenCalled();
+    expect(rotation).not.toHaveBeenCalled();
+  });
+
+  it('runs the rotation search when that is the mode', async () => {
+    const page = pageWith();
+    // Spied rather than run: `optimizeNow` is a router, and what it routes to is the claim.
+    const single = vi.fn().mockResolvedValue(undefined);
+    const rotation = vi.fn().mockResolvedValue(undefined);
+    (page as unknown as Record<string, unknown>)['run'] = single;
+    (page as unknown as Record<string, unknown>)['runRotation'] = rotation;
+    page['objective'].set('rotation');
+
+    await page['optimizeNow']();
+
+    expect(rotation).toHaveBeenCalled();
+    expect(single).not.toHaveBeenCalled();
   });
 });
 
@@ -1259,5 +1352,57 @@ describe('OptimizePage equip', () => {
     await run(page);
 
     expect(get).not.toHaveBeenCalled();
+  });
+});
+
+describe('switching mode does not leave the other mode findings up', () => {
+  it('drops the rotation findings when Optimize runs', async () => {
+    // `run()` replaced `result` and left `scoredRecipe`, `winningPools`, `caveats` and
+    // `recipeNotes` standing — so switching to single hit and pressing Optimize left "Pieces
+    // that would beat the winner" on screen, computed from the previous rotation's recipe,
+    // under a heading naming a winner that is now a different build. The mode select is the
+    // natural way to compare the two now that there is one button, so this is the sequence the
+    // change invites.
+    const page = pageWith();
+    (page as unknown as Record<string, unknown>)['run'] = vi.fn().mockResolvedValue(undefined);
+    page['objective'].set('hit');
+    page['scoredRecipe'].set({ terms: [] } as never);
+    page['winningPools'].set([{}] as never);
+    page['caveats'].set({ unstable: ['x'], staleConversions: [] } as never);
+
+    await page['optimizeNow']();
+
+    expect(page['scoredRecipe']()).toBeNull();
+    expect(page['winningPools']()).toBeNull();
+    expect(page['caveats']()).toBeNull();
+  });
+
+  it('drops them when a different build is chosen', async () => {
+    // Same hole, same reason: a finding about one character's winner has no meaning under
+    // another character's name.
+    const page = pageWith();
+    page['scoredRecipe'].set({ terms: [] } as never);
+    page['winningPools'].set([{}] as never);
+
+    await page['selectBuild']('');
+
+    expect(page['scoredRecipe']()).toBeNull();
+    expect(page['winningPools']()).toBeNull();
+  });
+});
+
+describe('Optimize refuses a search the page has already predicted is empty', () => {
+  it('is disabled when a slot constraint no piece satisfies is set', () => {
+    // The page says "No artifact you own matches the main stats chosen for …" directly above
+    // the button. Letting it be pressed anyway spends a six-second gcsim calibration in
+    // rotation mode to return the empty list it had just predicted.
+    const page = pageWith();
+    page['candidates'].set([
+      { id: 'g', slot: 'equip_ring', set_id: 1, stats: {}, main_stat: 'FIGHT_PROP_HP' },
+    ] as never);
+    page['mainStatBySlot'].set({ equip_ring: ['FIGHT_PROP_ELEC_ADD_HURT'] });
+
+    expect(page['impossibleSlots']().length).toBeGreaterThan(0);
+    expect(page['canOptimize']()).toBe(false);
   });
 });

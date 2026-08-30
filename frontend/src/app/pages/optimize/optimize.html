@@ -86,9 +86,6 @@
         <input type="number" min="1" max="120" [(ngModel)]="enemyLevel" aria-label="Enemy level" />
       </label>
 
-      <button type="button" (click)="run()" [disabled]="!canSearch()">
-        {{ searching() ? 'Searching…' : 'Search' }}
-      </button>
     </div>
 
     @if (!hit()) {
@@ -100,16 +97,20 @@
          `objective`, `rotationId`, `runRotation()` and the whole calibration service while no
          template referenced any of them. A feature with no surface is not a feature.
          `docs/FINDINGS_shakedown.md` F9. -->
+    <!-- **The mode, not an "objective".** And no button here: the page used to render one in
+         the row above *and* one beside this control, both saying "search", and the top one ran
+         the single-hit search while ignoring everything set below it. Choosing a rotation and
+         a 4-piece and then pressing the wrong button is how a filter looks like it did
+         nothing. One button, at the end, after everything it reads. -->
     <div class="objective">
       <label>
-        Objective
         <select
           [ngModel]="objective()"
           (ngModelChange)="objective.set($event)"
-          aria-label="Objective"
+          aria-label="What to optimize"
         >
-          <option value="hit">Best single hit</option>
-          <option value="rotation">Best across rotation</option>
+          <option value="hit">Optimize for single hit</option>
+          <option value="rotation">Optimize with rotation</option>
         </select>
       </label>
 
@@ -122,14 +123,6 @@
             }
           </select>
         </label>
-
-        <button
-          type="button"
-          (click)="runRotation()"
-          [disabled]="!canSearchRotation()"
-        >
-          {{ searching() ? 'Searching…' : 'Search rotation' }}
-        </button>
       }
     </div>
 
@@ -138,9 +131,10 @@
          also the largest single cut to a search space this page fights to make finish. -->
     @if (candidates().length) {
       <fieldset class="main-stats">
-        <legend>Required main stats</legend>
+        <legend>Main stats</legend>
         <p class="hint">
-          Leave a slot on Any to search all of it. Only stats you actually own are listed.
+          Pick as many as you would take. Leave a slot on Any to search all of it — only stats
+          you actually own are listed.
         </p>
         <div class="main-stats__row">
           <!-- Slots with nothing to choose between are dropped, not disabled: a flower is
@@ -148,19 +142,31 @@
                option there is. -->
           @for (slot of slotKeys(); track slot) {
             @if (mainStatsFor(slot).length > 1) {
-            <label>
-              <span>{{ slotNames()[slot] || slot }}</span>
-              <select
-                [value]="mainStatBySlot()[slot] || ''"
-                (change)="setMainStat(slot, $any($event.target).value)"
-                [attr.aria-label]="'Required main stat for ' + (slotNames()[slot] || slot)"
-              >
-                <option value="">Any</option>
-                @for (stat of mainStatsFor(slot); track stat.key) {
-                  <option [value]="stat.key">{{ stat.display }}</option>
-                }
-              </select>
-            </label>
+            <!-- Chips rather than a `<select multiple>`: a multiple select needs a modifier
+                 key nobody discovers, shows two rows of a five-row list, and cannot say "any"
+                 without an option that means "clear the others". -->
+            <fieldset
+              class="slot-stats"
+              [attr.aria-label]="'Main stats for ' + (slotNames()[slot] || slot)"
+            >
+              <legend>{{ slotNames()[slot] || slot }}</legend>
+              <button
+                type="button"
+                class="chip"
+                [class.chip--on]="anyMainStat(slot)"
+                [attr.aria-pressed]="anyMainStat(slot)"
+                (click)="clearMainStat(slot)"
+              >Any</button>
+              @for (stat of mainStatsFor(slot); track stat.key) {
+                <button
+                  type="button"
+                  class="chip"
+                  [class.chip--on]="wantsMainStat(slot, stat.key)"
+                  [attr.aria-pressed]="wantsMainStat(slot, stat.key)"
+                  (click)="toggleMainStat(slot, stat.key)"
+                >{{ stat.display }}</button>
+              }
+            </fieldset>
             }
           }
         </div>
@@ -169,7 +175,7 @@
                indistinguishable from "your artifacts are bad", and the user would not know
                which. -->
           <p class="error" role="alert">
-            No artifact you own matches the required main stat for
+            No artifact you own matches the main stats chosen for
             {{ impossibleSlots().join(', ') }} — the search would return nothing.
           </p>
         }
@@ -179,6 +185,17 @@
     @if (objective() === 'rotation') {
       @if (!rotations().length) {
         <p class="hint">No rotations authored yet — write one before searching against it.</p>
+      }
+
+      @if (!fourPieceChoices().length && candidates().length) {
+        <!-- **Why Optimize is off, said where the control would have been.** The gate is
+             "pick at least one set", and the hint explaining it lives inside the picker — so
+             an inventory that can field no 4-piece, or a filter load that failed, left a
+             disabled button and nothing on screen accounting for it. -->
+        <p class="hint">
+          None of your artifacts can field four of one set yet, so there is nothing to
+          calibrate against — optimize for a single hit instead, or import more pieces.
+        </p>
       }
 
       @if (fourPieceChoices().length) {
@@ -233,6 +250,20 @@
         </fieldset>
       }
     }
+
+    <!-- **The one button, after everything it reads.** Two buttons both saying "search", one
+         of them above the controls it ignored, is how a 4-piece filter looks like it did
+         nothing. This runs whichever mode is chosen, so there is no wrong one to press. -->
+    <div class="optimize-actions">
+      <button
+        type="button"
+        class="optimize-actions__go"
+        (click)="optimizeNow()"
+        [disabled]="!canOptimize()"
+      >
+        {{ searching() ? 'Optimizing…' : 'Optimize' }}
+      </button>
+    </div>
 
     @if (calibrating(); as progress) {
       <p class="hint" role="status">
@@ -390,7 +421,7 @@
             <span class="damage mono">{{ row.damage | number: '1.0-1' }}</span>
             <span class="pieces">{{ row.pieces.join(' · ') }}</span>
             <button type="button" (click)="explainRow(row)" [disabled]="explaining()">
-              Why?
+              Details
             </button>
             <!-- Owner, 2026-08-29: put the winning five onto the build that was searched for.
                  It reads every piece before moving any, so one held by another build aborts
