@@ -86,13 +86,19 @@
                     draggable="true"
                     [attr.aria-label]="offerLabel(offer)"
                     [attr.title]="offerLabel(offer)"
-                    (dragstart)="onOfferDragStart(member.nanoka_id, offer.action)"
+                    (dragstart)="onOfferDragStart($event, member.nanoka_id, offer)"
+                    (dragend)="endDrag()"
                     (click)="addOffer(offer.action)"
                   >
                     @if (offer.icon) {
-                      <catalogue-icon [icon]="offer.icon" [alt]="''" [size]="20" />
+                      <catalogue-icon [icon]="offer.icon" [alt]="''" [size]="26" />
                     }
-                    <span class="offer__name">{{ offer.name }}</span>
+                    <!-- `offerLabel`, not `offer.name`. The palette was the one surface left
+                         showing the raw value: a literal `high_plunge` on the button while the
+                         row and the tile said "High plunge", and while this button's own
+                         `aria-label` already said "High plunge" — visible text disagreeing
+                         with its own accessible name. -->
+                    <span class="offer__name">{{ offerLabel(offer) }}</span>
                     @if (offer.variant) {
                       <span class="offer__badge" aria-hidden="true">
                         {{ variantBadge(offer.variant) }}
@@ -127,6 +133,7 @@
     [measured]="measured()"
     (pick)="onPick($event)"
     (dragFrom)="onDragStart($event)"
+    (dragEnd)="endDrag()"
     (dropOn)="onTimelineDrop($event)"
   />
 
@@ -224,7 +231,20 @@
   <!-- Level 2. -->
   <ol class="steps">
     @for (step of steps(); track $index) {
-      <li class="step" [class.step--selected]="isSelected($index)">
+      <!-- Draggable, like the timeline's tiles. The list stopped being a drag surface when the
+           timeline took it over, and a rotation you can reorder in one place and not the other
+           is a rule nobody can see. A drag moves the **whole selection** when the dragged step
+           is part of it. -->
+      <li
+        class="step"
+        draggable="true"
+        [class.step--selected]="isSelected($index)"
+        [class.step--dragging]="isDragging($index)"
+        (dragstart)="onStepDragStart($event, $index)"
+        (dragend)="endDrag()"
+        (dragover)="$event.preventDefault()"
+        (drop)="onTimelineDrop($index); $event.preventDefault()"
+      >
         <!-- **Level 2 reads; level 3 edits.** Every row used to carry two `<select>`s, a
              number and a note input — the same four controls the detail pane above already
              offers for the selected step. Two levels editing the same fields is one of them
@@ -243,7 +263,7 @@
             class="step-art"
             [icon]="rosterIcon(step.character)"
             [alt]="''"
-            [size]="26"
+            [size]="30"
           />
           <span class="step__who">{{ characterName(step.character) }}</span>
           <span class="step__what">{{ actionLabel(step) }}</span>

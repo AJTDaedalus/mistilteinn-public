@@ -244,9 +244,11 @@ label {
 
 /* A row being dragged. Dimmed rather than hidden: a gap where the row was makes the list jump
    under the pointer, and the thing being moved should stay visible while it moves. */
-/* `.step--dragging` and `.step[draggable]` stood here. The step list has not been the drag
-   surface since the timeline took that over — a tile is what you drag now — and `.step .note`
-   went with the note input the detail pane replaced. Three rules matching nothing. */
+/* The list is a drag surface again. `.step .note` is still gone with the input the detail
+   pane replaced. */
+.step[draggable='true'] { cursor: grab; }
+
+.step--dragging { opacity: 0.45; }
 
 /* ── the timeline's controls, the move detail, and the palette's offers ────── */
 
@@ -285,8 +287,12 @@ label {
    real name — "Short-Range Rapid Interdiction Fire (hold)". As a flex item with the default
    `min-width: auto` it will not shrink, so on a narrow viewport it overflowed its own
    fieldset. This guarded the selects when they were on every row; they are in the detail pane
-   now, and the rule had been left behind pointing at nothing. */
-.detail select { min-width: 0; max-width: 16rem; }
+   now, and the rule had been left behind pointing at nothing.
+
+   22rem rather than 16: the letter notation made every name three characters longer, and at
+   16rem the detail pane truncated the move mid-word while the row directly beneath it showed
+   the whole thing. The pane has the dialog width to spend. */
+.detail select { min-width: 0; max-width: 22rem; }
 
 .detail legend { padding-inline: var(--space-1); color: var(--ink-dim); font-size: var(--text-xs); }
 .detail .note { flex: 1 1 12rem; min-width: 0; }

@@ -972,3 +972,198 @@ describe('RotationEditor — opening a new rotation', () => {
     expect(page['teamId']()).toBe('team-2');
   });
 });
+
+describe('RotationEditor — dragging a selection', () => {
+  async function five() {
+    const page = editorWith();
+    for (const a of ['skill', 'burst', 'attack', 'charge', 'dash']) {
+      page['appendStep']('10000002', a as 'skill');
+    }
+    return page;
+  }
+  const order = (page: ReturnType<typeof editorWith>) =>
+    page['steps']().map((s) => s.action);
+
+  it('moves one step when the dragged one is not in the selection', async () => {
+    // A drag on something you did not select is a different intent from a drag on something
+    // you did, so it moves alone — and becomes the selection, which is where you are now.
+    const page = await five();
+    page['onPick']({ index: 3, extend: false });
+
+    page['onDragStart'](0);
+    page['onDrop'](2);
+
+    expect(order(page)).toEqual(['burst', 'attack', 'skill', 'charge', 'dash']);
+    expect(page['selection']()).toEqual({ start: 2, end: 2 });
+  });
+
+  it('moves the whole selection when the dragged step is part of it', async () => {
+    // Selecting four steps, dragging one of them and watching the other three stay put is the
+    // selection being ignored.
+    const page = await five();
+    page['onPick']({ index: 0, extend: false });
+    page['onPick']({ index: 1, extend: true });
+
+    page['onDragStart'](1);
+    page['onDrop'](3);
+
+    expect(order(page)).toEqual(['attack', 'charge', 'skill', 'burst', 'dash']);
+  });
+
+  it('keeps the moved chunk selected, so it can be moved again', async () => {
+    const page = await five();
+    page['onPick']({ index: 0, extend: false });
+    page['onPick']({ index: 1, extend: true });
+
+    page['onDragStart'](0);
+    page['onDrop'](3);
+
+    expect(page['selection']()).toEqual({ start: 2, end: 3 });
+  });
+
+  it('moves a selection backwards as well as forwards', async () => {
+    const page = await five();
+    page['onPick']({ index: 3, extend: false });
+    page['onPick']({ index: 4, extend: true });
+
+    page['onDragStart'](4);
+    page['onDrop'](1);
+
+    expect(order(page)).toEqual(['skill', 'charge', 'dash', 'burst', 'attack']);
+    expect(page['selection']()).toEqual({ start: 1, end: 2 });
+  });
+
+  it('does nothing when a selection is dropped inside itself', async () => {
+    // Otherwise the chunk is lifted out and put back at an index computed from a list it is
+    // no longer in — which reorders it against itself.
+    const page = await five();
+    page['onPick']({ index: 1, extend: false });
+    page['onPick']({ index: 3, extend: true });
+    const before = order(page);
+
+    page['onDragStart'](2);
+    page['onDrop'](2);
+
+    expect(order(page)).toEqual(before);
+  });
+
+  it('repairs a group the move split', async () => {
+    // The same `regroup` a single-step drag runs: a group is a contiguous chunk, and the API
+    // refuses one that appears in two places.
+    const page = await five();
+    page['onPick']({ index: 0, extend: false });
+    page['onPick']({ index: 1, extend: true });
+    page['groupSelection'](2);
+    page['onPick']({ index: 3, extend: false });
+
+    // **Between** the group's two members. Dropping at 0 pushes the whole group down and
+    // splits nothing — which is what the first version of this test did, and it passed for
+    // the wrong reason.
+    page['onDragStart'](3);
+    page['onDrop'](1);
+
+    const groups = page['steps']().map((s) => s.group);
+    expect(groups.filter((g) => g === 'g1').length).toBeLessThan(2);
+  });
+
+  it('marks every step of the dragged selection as in flight, not just one', async () => {
+    const page = await five();
+    page['onPick']({ index: 1, extend: false });
+    page['onPick']({ index: 3, extend: true });
+
+    page['onDragStart'](2);
+
+    expect([0, 1, 2, 3, 4].map((i) => page['isDragging'](i)))
+      .toEqual([false, true, true, true, false]);
+  });
+
+  it('marks only the dragged step when it is outside the selection', async () => {
+    const page = await five();
+    page['onPick']({ index: 1, extend: false });
+
+    page['onDragStart'](4);
+
+    expect([0, 1, 2, 3, 4].map((i) => page['isDragging'](i)))
+      .toEqual([false, false, false, false, true]);
+  });
+});
+
+describe('RotationEditor — a drag that goes nowhere', () => {
+  async function three() {
+    const page = editorWith();
+    for (const a of ['skill', 'burst', 'attack']) page['appendStep']('10000002', a as 'skill');
+    return page;
+  }
+
+  it('clears both drag signals when a drag is abandoned', async () => {
+    // `dragOffer` was cleared inside `onTimelineDrop` and `dragging` inside `onDrop`, so a
+    // drag released over empty space left one of them set for the next drag to find.
+    const page = await three();
+    page['onDragStart'](1);
+    page['dragOffer'].set({ character: '10000002', action: 'burst' });
+
+    page['endDrag']();
+
+    expect(page['dragging']()).toBeNull();
+    expect(page['dragOffer']()).toBeNull();
+  });
+
+  it('does not insert a step because an earlier palette drag was abandoned', async () => {
+    // The failure this closes: drop a palette offer on nothing, then drag a tile to reorder.
+    // `onTimelineDrop` found the stale `dragOffer`, took the insert branch, and added a brand
+    // new step at the drop index instead of moving the tile — an edit nobody asked for and
+    // nobody could trace back.
+    const page = await three();
+    page['onOfferDragStart'](
+      { dataTransfer: null } as unknown as DragEvent,
+      '10000002',
+      { action: 'burst', base: 'burst', variant: null, name: 'burst', icon: null } as never,
+    );
+    page['endDrag']();
+
+    page['onDragStart'](0);
+    page['onTimelineDrop'](2);
+
+    expect(page['steps']()).toHaveLength(3);
+    expect(page['steps']().map((s) => s.action)).toEqual(['burst', 'attack', 'skill']);
+  });
+
+  it('reorders rather than swallowing a step dropped on another row', async () => {
+    // The row's `(drop)` went straight to `onDrop`, bypassing the handler that knows which of
+    // the two drag sources is in flight. A palette drag released on a row then reordered an
+    // existing step instead of inserting the move that was asked for.
+    const page = await three();
+    page['onDragStart'](0);
+
+    page['onTimelineDrop'](2);
+
+    expect(page['steps']().map((s) => s.action)).toEqual(['burst', 'attack', 'skill']);
+  });
+
+  it('inserts when a palette drag lands on a row', async () => {
+    const page = await three();
+    page['onOfferDragStart'](
+      { dataTransfer: null } as unknown as DragEvent,
+      '10000002',
+      { action: 'charge', base: 'charge', variant: null, name: 'charge', icon: null } as never,
+    );
+
+    page['onTimelineDrop'](1);
+
+    expect(page['steps']().map((s) => s.action)).toEqual(['skill', 'charge', 'burst', 'attack']);
+  });
+
+  it('gives the drag something to carry, because Firefox cancels one that does not', async () => {
+    // Not a warning and not a degraded drag — Firefox cancels a `dragstart` that calls no
+    // `setData` outright. Chrome does not care, which is why three drag sources shipped
+    // without it and a browser check in Chrome could not see it.
+    const page = await three();
+    const setData = vi.fn();
+
+    page['onStepDragStart'](
+      { dataTransfer: { setData } } as unknown as DragEvent, 0,
+    );
+
+    expect(setData).toHaveBeenCalledWith('text/plain', expect.stringContaining('Ayaka'));
+  });
+});

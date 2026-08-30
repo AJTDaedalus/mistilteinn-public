@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 
 import { CatalogueIcon } from '../../../shared/icon/icon';
 import type { OnFieldInterval } from '../../../sim/sample-timeline';
+import { beginDrag, humanise, moveLabel } from '../notation';
 import type { RosterCharacter, RotationStep } from '../rotations.service';
 
 /** One step, with everything a tile needs to draw it, and its index in the rotation. */
@@ -114,7 +115,7 @@ export interface MeasuredRun {
           @for (run of runs(); track $index) {
             <li class="run" [style.--element]="elementVar(run.element)">
               <span class="run__who">
-                <catalogue-icon [icon]="run.icon" [alt]="''" [size]="26" />
+                <catalogue-icon [icon]="run.icon" [alt]="''" [size]="30" />
                 <span class="run__name">{{ run.name }}</span>
                 @if (run.group) {
                   <!-- The terseness a group buys, drawn. DECISIONS.md §27. -->
@@ -131,14 +132,15 @@ export interface MeasuredRun {
                     [attr.aria-label]="tileLabel(tile)"
                     [attr.title]="tileLabel(tile)"
                     draggable="true"
-                    (dragstart)="dragFrom.emit(tile.index)"
+                    (dragend)="dragEnd.emit()"
+                    (dragstart)="onTileDragStart($event, tile)"
                     (dragover)="$event.preventDefault()"
                     (drop)="onDrop($event, tile.index)"
                     (click)="onPick($event, tile.index)"
                     (keydown)="onKey($event, tile.index)"
                   >
                     @if (tile.icon) {
-                      <catalogue-icon [icon]="tile.icon" [alt]="''" [size]="38" />
+                      <catalogue-icon [icon]="tile.icon" [alt]="''" [size]="44" />
                     } @else {
                       <span class="tile__word">{{ tile.ability }}</span>
                     }
@@ -204,8 +206,8 @@ export interface MeasuredRun {
       position: relative;
       display: grid;
       place-items: center;
-      min-width: 52px;
-      min-height: 52px;
+      min-width: 60px;
+      min-height: 60px;
       padding: 3px;
       border: 1px solid var(--surface-rule);
       border-radius: var(--radius-1);
@@ -275,6 +277,8 @@ export class RotationTimeline {
 
   readonly pick = output<{ index: number; extend: boolean }>();
   readonly dragFrom = output<number>();
+  /** The drag ended — dropped anywhere, or abandoned. Both must clear the drag state. */
+  readonly dragEnd = output<void>();
   readonly dropOn = output<number>();
 
   protected readonly runs = computed<Run[]>(() => {
@@ -288,7 +292,10 @@ export class RotationTimeline {
         index,
         step,
         name: member?.name ?? step.character,
-        ability: offer?.name ?? step.action,
+        // The same words the palette and the list use — `Q - Illusory Heart`.
+        // `humanise` for the same reason the row does it: a step naming somebody the team
+        // no longer fields has no offer to ask, and the key is the honest answer — formatted.
+        ability: offer ? moveLabel(offer) : humanise(step.action),
         icon: offer?.icon ?? null,
         variant: offer?.variant ?? null,
         selected: selected !== null && index >= selected.start && index <= selected.end,
@@ -353,9 +360,10 @@ export class RotationTimeline {
 
   /** The tile's whole meaning as words — the channel the badge and the colour are not. */
   protected tileLabel(tile: Tile): string {
-    const variant = tile.variant ? ` (${tile.variant.replace('_', ' ')})` : '';
+    // `ability` already carries the letter and the variant — `E - All Schemes to Know (hold)`
+    // — so appending the variant again would say it twice.
     const repeat = tile.step.repeat > 1 ? ` ×${tile.step.repeat}` : '';
-    return `Step ${tile.index + 1}: ${tile.name} — ${tile.ability}${variant}${repeat}`;
+    return `Step ${tile.index + 1}: ${tile.name} — ${tile.ability}${repeat}`;
   }
 
   /** `hold` → `h`, `short_hold` → `s`, `recast` → `r`; a tap has none. */
@@ -381,6 +389,11 @@ export class RotationTimeline {
     const next = index + (event.key === 'ArrowRight' ? 1 : -1);
     if (next < 0 || next >= this.steps().length) return;
     this.pick.emit({ index: next, extend: event.shiftKey });
+  }
+
+  protected onTileDragStart(event: DragEvent, tile: Tile): void {
+    beginDrag(event, tile.ability);
+    this.dragFrom.emit(tile.index);
   }
 
   protected onDrop(event: DragEvent, index: number): void {

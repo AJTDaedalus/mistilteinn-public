@@ -23,6 +23,7 @@ import {
   type RotationStep,
   type TeamRoster,
 } from '../rotations.service';
+import { beginDrag, humanise, moveLabel } from '../notation';
 import { regroup } from './regroup';
 
 /**
@@ -402,8 +403,31 @@ export class RotationEditor {
   /** The ability being dragged out of the palette, or null. */
   protected readonly dragOffer = signal<{ character: string; action: RotationAction } | null>(null);
 
-  protected onOfferDragStart(character: string, action: RotationAction): void {
-    this.dragOffer.set({ character, action });
+  protected onOfferDragStart(
+    event: DragEvent, character: string, offer: ActionOffer,
+  ): void {
+    beginDrag(event, offer.name);
+    this.dragOffer.set({ character, action: offer.action as RotationAction });
+  }
+
+  protected onStepDragStart(event: DragEvent, index: number): void {
+    beginDrag(event, this.stepLabel(this.steps()[index]));
+    this.onDragStart(index);
+  }
+
+  /**
+   * A drag finished — dropped anywhere at all, or abandoned.
+   *
+   * **Both signals cleared, and this is the only place that reliably runs.** `dragOffer` was
+   * cleared inside `onTimelineDrop` and `dragging` inside `onDrop`, so a drag released over
+   * empty space left one of them set for the *next* drag to find: dropping a palette offer on
+   * nothing and then dragging a tile inserted a brand-new step instead of moving the tile,
+   * and the user could not trace the edit back to anything they did. `dragend` fires on both
+   * outcomes, which is what makes it the right home.
+   */
+  protected endDrag(): void {
+    this.dragging.set(null);
+    this.dragOffer.set(null);
   }
 
   /**
@@ -599,9 +623,14 @@ export class RotationEditor {
     return (member.actions?.[0]?.action ?? 'attack') as RotationAction;
   }
 
-  /** The move in words — the channel the badge and the colour are not. */
+  /**
+   * The move in words — the channel the badge and the colour are not.
+   *
+   * One function for the palette, the step list and the detail pane, so a move reads the same
+   * way everywhere on the screen. `notation.ts` explains the letters.
+   */
   protected offerLabel(offer: ActionOffer): string {
-    return offer.variant ? `${offer.name} (${offer.variant.replace('_', ' ')})` : offer.name;
+    return moveLabel(offer);
   }
 
   /** `hold` → `h`, `short_hold` → `s`, `recast` → `r`. */
@@ -617,7 +646,9 @@ export class RotationEditor {
   /** What this step does, named the way the player knows it — with the variant spelled out. */
   protected actionLabel(step: RotationStep): string {
     const offer = this.offersForId(step.character).find((o) => o.action === step.action);
-    return offer ? this.offerLabel(offer) : step.action;
+    // No offer means the team no longer fields this character, so there is no vocabulary to
+    // ask. The key is the honest answer; it is only formatted.
+    return offer ? this.offerLabel(offer) : humanise(step.action);
   }
 
   /** The whole row as one sentence, for the accessible name on the select button. */
@@ -681,7 +712,7 @@ export class RotationEditor {
     this.touched();
   }
 
-  /** The step being dragged, or null. A signal so the row can show it is in flight. */
+  /** The step being dragged, or null. A signal so the row and the tile can show it in flight. */
   protected readonly dragging = signal<number | null>(null);
 
   protected onDragStart(index: number): void {
@@ -691,7 +722,48 @@ export class RotationEditor {
   protected onDrop(index: number): void {
     const from = this.dragging();
     this.dragging.set(null);
-    if (from !== null) this.reorder(from, index);
+    if (from !== null) this.moveDragged(from, index);
+  }
+
+  /** Whether a step is inside the current selection — what makes a drag move a whole chunk. */
+  protected isDragging(index: number): boolean {
+    const from = this.dragging();
+    if (from === null) return false;
+    return this.inSelection(from) ? this.isSelected(index) : index === from;
+  }
+
+  private inSelection(index: number): boolean {
+    const span = this.selection();
+    return span !== null && index >= span.start && index <= span.end;
+  }
+
+  /**
+   * Move what was dragged: **the whole selection if the dragged step is part of it**, and that
+   * one step otherwise.
+   *
+   * Which is how a file manager behaves, and the only reading of a drag that does not
+   * surprise: having selected four steps, dragging one of them somewhere and watching the
+   * other three stay put is the selection being ignored. Dragging a step *outside* the
+   * selection is a different intent, so it moves alone and becomes the selection.
+   */
+  protected moveDragged(from: number, to: number): void {
+    if (!this.inSelection(from)) {
+      this.reorder(from, to);
+      this.selection.set({ start: to, end: to });
+      return;
+    }
+    const span = this.selection()!;
+    const steps = this.steps();
+    if (to >= span.start && to <= span.end) return;   // dropped inside itself
+    const chunk = steps.slice(span.start, span.end + 1);
+    const rest = [...steps.slice(0, span.start), ...steps.slice(span.end + 1)];
+    // Where the chunk lands in the list it was lifted out of: a drop *after* the selection
+    // has to account for the steps that are no longer in front of it.
+    const at = to > span.end ? to - chunk.length + 1 : to;
+    const landed = Math.max(0, Math.min(at, rest.length));
+    this.steps.set(regroup([...rest.slice(0, landed), ...chunk, ...rest.slice(landed)]));
+    this.selection.set({ start: landed, end: landed + chunk.length - 1 });
+    this.touched();
   }
 
   protected setStep(index: number, patch: Partial<RotationStep>): void {

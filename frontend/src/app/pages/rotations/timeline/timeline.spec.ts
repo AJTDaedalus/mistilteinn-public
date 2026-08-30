@@ -107,13 +107,14 @@ describe('RotationTimeline — authored', () => {
   });
 
   it('draws the ability sprite, and the word where there is none', () => {
-    // Owner ruling: the seven actions that are not talents are words, not glyphs — and they
-    // keep their key rather than borrowing the normal attack's name.
+    // Owner ruling: the actions that are not talents are words, not glyphs — and they keep
+    // their key rather than borrowing the normal attack's name. The key is *formatted*
+    // though: the letter a rotation is written with, and no underscores.
     const el = render([step('10000073', 'skill'), step('10000073', 'charge')]);
 
     const tiles = el.querySelectorAll('.tile');
     expect(tiles[0].querySelector('img')).not.toBeNull();
-    expect(tiles[1].querySelector('.tile__word')?.textContent?.trim()).toBe('charge');
+    expect(tiles[1].querySelector('.tile__word')?.textContent?.trim()).toBe('C - Charge');
   });
 
   it('badges a variant and still says the word in the label', () => {
