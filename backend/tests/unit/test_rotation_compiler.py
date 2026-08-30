@@ -16,7 +16,12 @@ from types import SimpleNamespace
 import pytest
 
 from app.models.enums import Element
-from app.services.rotation_compiler import RotationCompileError, compile_rotation
+from app.services.rotation_compiler import (
+    RotationCompileError,
+    compile_rotation,
+    rotation_signature,
+    unroll,
+)
 
 AYAKA = SimpleNamespace(nanoka_id="10000002", name="Kamisato Ayaka", element=Element.CRYO)
 BARBARA = SimpleNamespace(nanoka_id="10000014", name="Barbara", element=Element.HYDRO)
@@ -148,3 +153,147 @@ def test_the_refusal_says_where_the_bad_step_is():
     """Position, because that is how a user finds it in their own list."""
     with pytest.raises(RotationCompileError, match=r"step 2"):
         compile_rotation([_step(), _step(character="10000030")], ROSTER)
+
+
+# ── Kit variants: the parameter exists here and nowhere else ─────────────────
+
+
+def test_a_variant_action_becomes_a_gcsim_parameter():
+    """`skill_hold` is a *move* in this model and `skill[hold=1]` in gcsim's syntax.
+
+    The form is not invented: `references/gcsim_db/clorinde-chevreuse-nicole-durin.txt:48`
+    carries `chev burst, skill[hold=1]:2;` — a real community config.
+    """
+    out = compile_rotation([_step(action="skill_hold")], ROSTER)
+
+    assert "kamisatoayaka skill[hold=1];" in out
+
+
+def test_the_gate_names_the_base_action_not_the_variant():
+    """There is no `.skill_hold.ready` in gcsim, and a hold shares the tap's cooldown.
+
+    Gating on the variant would emit a condition gcsim's parser does not know — which fails
+    loudly, but only once someone simulates. This keeps it impossible.
+    """
+    out = compile_rotation([_step(action="skill_hold")], ROSTER)
+
+    assert "if .kamisatoayaka.skill.ready {" in out
+    assert "skill_hold.ready" not in out
+
+
+def test_a_variant_still_takes_gcsims_repetition():
+    out = compile_rotation([_step(action="skill_hold", repeat=2)], ROSTER)
+
+    assert "kamisatoayaka skill[hold=1]:2;" in out
+
+
+def test_short_hold_renders_its_own_parameter():
+    """Not `hold=1`. Dahlia's press is a different parameter and gcsim would refuse `hold`."""
+    out = compile_rotation([_step(action="skill_short_hold")], ROSTER)
+
+    assert "skill[short_hold=1]" in out
+
+
+# ── Groups: unrolled before anything downstream sees them ────────────────────
+
+
+def test_a_group_repeats_its_steps_in_place():
+    """`DECISIONS.md` §27. The chunk repeats where it stands, in order."""
+    steps = [
+        {"character": "10000002", "action": "skill", "group": "g", "group_repeat": 3},
+        {"character": "10000002", "action": "burst", "group": "g", "group_repeat": 3},
+    ]
+
+    out = compile_rotation(steps, ROSTER)
+
+    assert out.count("kamisatoayaka skill;") == 3
+    assert out.count("kamisatoayaka burst;") == 3
+
+
+def test_a_grouped_rotation_compiles_identically_to_its_unrolled_equal():
+    """The acceptance criterion for T.7b, and the reason a group costs no grammar.
+
+    gcsim receives character-for-character what it received before groups existed — so nothing
+    downstream of the compiler has to know groups exist at all.
+    """
+    grouped = [
+        {"character": "10000002", "action": "skill", "group": "g", "group_repeat": 2},
+        {"character": "10000014", "action": "burst", "group": "g", "group_repeat": 2},
+        {"character": "10000002", "action": "attack", "repeat": 3},
+    ]
+    flat = [
+        {"character": "10000002", "action": "skill"},
+        {"character": "10000014", "action": "burst"},
+        {"character": "10000002", "action": "skill"},
+        {"character": "10000014", "action": "burst"},
+        {"character": "10000002", "action": "attack", "repeat": 3},
+    ]
+
+    assert compile_rotation(grouped, ROSTER) == compile_rotation(flat, ROSTER)
+
+
+def test_a_grouped_rotation_signs_identically_to_its_unrolled_equal():
+    """Same rotation, same `context_key`, one cached run.
+
+    The unroll sits in front of **both** `compile_rotation` and `rotation_signature` for
+    exactly this: the key describes what gcsim ran, and two keys for one config would mean a
+    rotation missing a cache entry computed from itself.
+    """
+    grouped = [
+        {"character": "10000002", "action": "skill", "group": "g", "group_repeat": 2},
+    ]
+    flat = [
+        {"character": "10000002", "action": "skill"},
+        {"character": "10000002", "action": "skill"},
+    ]
+
+    assert rotation_signature(grouped, ROSTER) == rotation_signature(flat, ROSTER)
+
+
+def test_an_ungrouped_rotation_unrolls_to_itself():
+    """Every rotation authored before groups existed still compiles to what it always did."""
+    steps = [_step(), _step(action="skill"), _step(character="10000014", action="attack")]
+
+    assert unroll(steps) == steps
+
+
+def test_the_first_actor_is_read_after_unrolling():
+    """`active` names step one, and step one of a grouped rotation is inside the group.
+
+    Reading it before the unroll would work by accident here and break the moment a group
+    started the rotation with a different character than the flat list did.
+    """
+    steps = [
+        {"character": "10000014", "action": "skill", "group": "g", "group_repeat": 2},
+        {"character": "10000002", "action": "burst"},
+    ]
+
+    assert compile_rotation(steps, ROSTER).startswith("active barbara;")
+
+
+def test_a_group_cannot_route_around_the_repeat_cap():
+    """`MAX_STEPS` and `MAX_REPEAT` are checked on the authored list; `unroll` runs after.
+
+    200 steps each in a group repeating 20 times is 4,000 gated statements, every one of which
+    may itself carry `:20`. `MAX_REPEAT` exists "so a typo cannot compile to a config that runs
+    for an hour", and groups walked straight around it.
+    """
+    steps = [
+        {"character": "10000002", "action": "attack", "group": "g", "group_repeat": 20}
+        for _ in range(200)
+    ]
+
+    with pytest.raises(RotationCompileError) as raised:
+        compile_rotation(steps, ROSTER)
+
+    assert "4000" in str(raised.value)
+
+
+def test_a_rotation_inside_the_cap_still_compiles():
+    """The bound is generous on purpose: no rotation anyone writes should meet it."""
+    steps = [
+        {"character": "10000002", "action": "attack", "group": "g", "group_repeat": 20}
+        for _ in range(10)
+    ]
+
+    assert compile_rotation(steps, ROSTER).count("kamisatoayaka attack;") == 200

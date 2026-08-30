@@ -36,6 +36,13 @@
 
   .ordinal { opacity: 0.5; min-width: 1.4rem; }
 
+  /* A `<select>` sizes itself to its longest option, and the longest option is now an
+     ability's real name — "Short-Range Rapid Interdiction Fire (hold)". That pushed the
+     duplicate and delete buttons onto a second line for Chevreuse's rows and not for
+     anyone else's, so the list looked broken on exactly the rows the kit variants are on.
+     Seen in a screenshot; no test could have caught it. */
+  .step select { min-width: 0; max-width: 16rem; }
+
   .repeat input { width: 3.5rem; }
 
   .reorder button,
@@ -141,7 +148,7 @@
 /* Nested under its team, so the indent says which rotations belong to what. */
 .by-team__team .saved {
   margin: 0;
-  padding: 0 var(--space-2) var(--space-2) var(--space-5);
+  padding: 0 var(--space-2) var(--space-2) var(--space-4);
 }
 
 /* ── The library, as a pop-up ────────────────────────────────────────────────
@@ -371,4 +378,80 @@
 
 .step[draggable='true'] {
   cursor: grab;
+}
+
+/* ── the timeline's controls, the move detail, and the palette's offers ────── */
+
+.timeline-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block: var(--space-2);
+}
+
+.timeline-controls .repeat {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+}
+
+.timeline-controls .repeat input { width: 4rem; }
+
+/* Level 3. It sits between the timeline and the list, so a selection made above is edited
+   without the eye leaving the place it was made. */
+.detail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-2);
+}
+
+.detail legend { padding-inline: var(--space-1); color: var(--ink-dim); font-size: var(--text-xs); }
+.detail .note { flex: 1 1 12rem; min-width: 0; }
+
+/* The ordinal became a button so the list shares the timeline's selection. It must not look
+   like one: it is a handle on the row, not an action. */
+.step .ordinal {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.step--selected {
+  outline: 2px solid var(--brass);
+  outline-offset: 1px;
+  border-radius: var(--radius-1);
+}
+
+.offer {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  position: relative;
+  cursor: grab;
+}
+
+.offer__name { min-width: 0; }
+
+/* The owner's `t`/`h`. Never the only channel — `offerLabel` puts the word in the button's
+   accessible name and the detail pane spells it out. */
+.offer__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--brass);
+  color: var(--bg-deep);
+  font-size: 10px;
 }

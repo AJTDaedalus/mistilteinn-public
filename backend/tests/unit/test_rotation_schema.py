@@ -135,3 +135,23 @@ def test_a_rotation_cannot_be_moved_between_teams():
     from app.schemas.rotation import RotationUpdate
 
     assert "team_id" not in RotationUpdate.model_fields
+
+
+def test_a_preview_refuses_a_split_group_exactly_as_a_save_does():
+    """`RotationCreate` and `RotationUpdate` both ran `check_groups`; the preview did not.
+
+    So the live preview — and "Run once", which goes through the same endpoint — compiled a
+    rotation the save refuses, expanding a scattered group into the chunk repeated in two
+    places. The schema's own docstring says a preview that accepted more than the save would is
+    a preview of something that cannot exist.
+    """
+    from app.schemas.rotation import RotationPreviewRequest
+
+    scattered = [
+        {"character": "a", "action": "skill", "group": "g1", "group_repeat": 3},
+        {"character": "a", "action": "attack"},
+        {"character": "a", "action": "burst", "group": "g1", "group_repeat": 3},
+    ]
+
+    with pytest.raises(ValidationError):
+        RotationPreviewRequest(team_id="t", steps=scattered)

@@ -51,7 +51,7 @@ from sqlalchemy import select
 from app.database import async_session_factory
 from app.models.artifact import ArtifactSet
 from app.models.build import EnemyProfile
-from app.models.character import Character
+from app.models.character import Character, Talent
 from app.models.weapon import Weapon
 from app.services import element_symbols, weapon_symbols
 from app.services.practice_dummies import is_practice_dummy
@@ -172,6 +172,31 @@ async def wanted() -> list[tuple[str, str]]:
                 portrait = portrait_name(row.icon) if model is Character else None
                 if portrait:
                     found.append((portrait, f"{label} {row.name} portrait"))
+        # The talents' own sprites — the game's picture of each character's normal attack,
+        # elemental skill and burst. The rotation builder draws these on its move buttons and
+        # on the timeline (`DESIGN_rotation_builder_gui.md`), and nothing fetched them before:
+        # only the five class marks below reached the disk, because they are the only talent
+        # icons `weapon_symbols` had a reason to name.
+        #
+        # **The basename is read, never constructed.** `Skill_E_Ayaka` carries no `_01` and
+        # `Skill_E_Varesa_01` does; `Skill_E_Mavuika` 404s while `Skill_E_Flins_01` is served.
+        # No rule predicts which, so anything that builds the name from a character key would
+        # 404 on an unpredictable subset and leave gaps nobody could explain.
+        #
+        # Joined to `characters` rather than read alone, so a practice mannequin's talents are
+        # skipped with its portrait and the label can say whose talent it is.
+        talents = (
+            await session.execute(
+                select(Talent, Character.name, Character.nanoka_id)
+                .join(Character, Character.id == Talent.character_id)
+                .where(Talent.icon.is_not(None)),
+            )
+        ).all()
+        for talent, character_name, character_nanoka_id in talents:
+            if is_practice_dummy(character_nanoka_id):
+                continue
+            found.append((talent.icon, f"talent {character_name} — {talent.name}"))
+
     # The five weapon-class marks. Not a catalogue row's `icon` — they are per *class*, not
     # per entity, so nothing in the loop above would ever reach them. Derived from the
     # talents table rather than named here; `app/services/weapon_symbols.py` explains why the

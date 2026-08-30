@@ -6,6 +6,12 @@ OQ-B3 and OQ-B4 remain.** Owner request
 (`BACKLOG_frontend.md` §5): *"I want a very extensive and easy to use rotation builder, it's
 one of our key distinctions from gcsim."*
 
+**A GUI pass was researched 2026-08-30 — `docs/RESEARCH_rotation_builder_gui.md`.** It answers
+the owner's icon question (the sprites are already in `talents.icon`; 256 are unvendored), shows
+that tap/hold is a gcsim *parameter* and so a grammar change rather than a surface one, and
+refuses per-variant ult buttons because gcsim picks Varesa's and Flins' burst form from sim
+state. Three further open questions for the owner live there as OQ-G1…OQ-G3.
+
 Read `docs/DESIGN_rotation.md` first. It decided what a rotation **is**, and this document is
 constrained by it rather than free to revisit it.
 

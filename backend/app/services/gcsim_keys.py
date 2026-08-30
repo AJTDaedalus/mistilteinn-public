@@ -105,6 +105,145 @@ def authorable_actions() -> tuple[str, ...]:
     return tuple(a for a in gcsim_actions() if a not in _NOT_AUTHORED)
 
 
+#: The parameters that become an **action a user can author**, and the suffix each one takes.
+#:
+#: A hold-E is a different move to a tap-E from the player's side; gcsim calls it a parameter
+#: only because its syntax has parameters. The owner's ruling (2026-08-30) is that this model
+#: stays **parameterless** and expresses the difference in the action vocabulary instead — so
+#: `skill_hold` is an action here and becomes `skill[hold=1]` in the compiler, which is the
+#: only place the parameter exists.
+#:
+#: **Three, and each earns its place.** `hold` covers 37 skills, 19 aimed shots and one charged
+#: attack. `short_hold` is not redundant with it: Dahlia and both Geo Travelers declare
+#: `short_hold` and no `hold`, so offering `hold` alone would leave exactly the characters the
+#: owner said not to leave out. `recast` is Fischl's and Mavuika's second press.
+VARIANT_PARAMS: dict[str, str] = {
+    "hold": "hold",
+    "short_hold": "short_hold",
+    "recast": "recast",
+}
+
+#: Every other parameter gcsim's generated tables declare at the pin, listed rather than
+#: inferred.
+#:
+#: **This exists so that a re-pin cannot introduce a variant silently.**
+#: `tests/unit/test_variant_params_are_classified.py` asserts every parameter in the snapshot
+#: appears in exactly one of these two collections, so a new one fails a test rather than
+#: quietly not being offered. That is the same discipline `authorable_actions()` follows by
+#: deriving from `astr` instead of restating it.
+#:
+#: They fall into three groups, and none of them names a different move:
+#:
+#: - **hit geometry** — `collision`, `travel`, `weakspot`, `c2_travel`, and their kin. Whether
+#:   a plunge connects on the way down, how long a projectile flies. The owner scoped this
+#:   chunk to kit variants only, so these keep gcsim's defaults.
+#: - **quantities and delays** — `hold_ticks`, `hits`, `ticks`, `max_amulets`, everything
+#:   `*_delay`. These are numbers, and a number per step is the parameter field by another
+#:   name. Every character declaring `hold_ticks` also declares `hold`, so none is left out.
+#: - **kit minutiae** — `glide_cancel`, `prestack`, `bunny`, `jade`. Execution detail for one
+#:   character each, which a rotation builder that fits on a screen does not ask about.
+NOT_OFFERED_PARAMS: frozenset[str] = frozenset({
+    "a4_delay", "amulet_delay", "bomb_delay", "bomblets", "bounce", "buffered", "bullets",
+    "bunny", "c2_travel", "c6_travel", "charge_cancel", "collision", "construct_limit",
+    "counter", "direction", "early_cancel", "enter", "enter_delay", "extend", "f", "final",
+    "glide_cancel", "hits", "hold_c4", "hold_nostele", "hold_ticks", "illusion_delay",
+    "jade", "kindling_travel", "man_chai_delay", "marked", "max_amulets", "mine",
+    "mine_delay", "no_limit", "no_meteorite", "nobehind", "noscreen", "perfect",
+    "pickup_droplets", "prestack", "release", "screen", "short", "ticks", "travel",
+    "ushihit", "vivid_travel", "weakspot", "wreath"
+})
+
+
+def character_action_params(key: str) -> dict[str, tuple[str, ...]]:
+    """`{action: (param, …)}` for one gcsim character key, or `{}` if it declares none.
+
+    Read from gcsim's own generated per-character validation table
+    (`internal/characters/<pkg>/zz_<key>.dm.go`), captured verbatim by
+    `scripts/gcsim/build_key_snapshot.py`. It is the **contract**, not the implementation:
+    grepping each character's hand-written Go for `p["hold"]` finds the same thing by reading
+    what the code does rather than what gcsim says it accepts, and the two would disagree the
+    first time a parameter was read without being declared.
+    """
+    table = _snapshot().get("character_action_params", {})
+    per_action = table.get(key, {})  # type: ignore[union-attr]
+    return {action: tuple(params) for action, params in per_action.items()}
+
+
+def characters_with_action_params() -> tuple[str, ...]:
+    """Every character key the generated tables cover, for tests and tooling to sweep."""
+    table = _snapshot().get("character_action_params", {})
+    return tuple(table)  # type: ignore[arg-type]
+
+
+def declared_params() -> frozenset[str]:
+    """Every parameter any character declares at the pin. For the classification test."""
+    table = _snapshot().get("character_action_params", {})
+    return frozenset(
+        param
+        for per_action in table.values()  # type: ignore[union-attr]
+        for params in per_action.values()
+        for param in params
+    )
+
+
+def variant_action(action: str, param: str) -> str:
+    """The action key for a variant: `("skill", "hold")` -> `"skill_hold"`."""
+    return f"{action}_{VARIANT_PARAMS[param]}"
+
+
+def split_variant(action: str) -> tuple[str, str | None]:
+    """`"skill_hold"` -> `("skill", "hold")`; a plain action -> `(action, None)`.
+
+    Longest suffix first, so `skill_short_hold` resolves to `short_hold` rather than to `hold`
+    with a base of `skill_short` — which is not an action and would compile to nothing.
+    """
+    for param in sorted(VARIANT_PARAMS, key=len, reverse=True):
+        suffix = f"_{VARIANT_PARAMS[param]}"
+        if action.endswith(suffix):
+            base = action[: -len(suffix)]
+            if base in gcsim_actions():
+                return base, param
+    return action, None
+
+
+def offerable_actions(key: str | None) -> tuple[str, ...]:
+    """The actions **this character** may be given, base ten first then their variants.
+
+    `None` — a character gcsim does not implement at this pin — gets the base ten. They cannot
+    be simulated at all, so a rotation naming them fails for that reason and not for want of a
+    hold button; offering fewer actions would report the wrong problem.
+    """
+    base = authorable_actions()
+    if key is None:
+        return base
+    declared = character_action_params(key)
+    variants = [
+        variant_action(action, param)
+        for action in base
+        for param in declared.get(action, ())
+        if param in VARIANT_PARAMS
+    ]
+    return (*base, *variants)
+
+
+def all_offerable_actions() -> tuple[str, ...]:
+    """Every action any character can be given — the base ten plus every variant in use.
+
+    The superset the *schema* validates against. Per-character refusal happens where the team
+    is known, because that is the only place a character's key is in hand.
+    """
+    table = _snapshot().get("character_action_params", {})
+    variants = {
+        variant_action(action, param)
+        for per_action in table.values()  # type: ignore[union-attr]
+        for action, params in per_action.items()
+        if action in authorable_actions()
+        for param in params
+        if param in VARIANT_PARAMS
+    }
+    return (*authorable_actions(), *sorted(variants))
+
+
 #: Which of gcsim's actions **is** a levelled talent, and which one.
 #:
 #: The two vocabularies are not the same and looked like they were: gcsim writes `skill`, the
@@ -133,6 +272,28 @@ def ability_names(talents: Iterable[Any]) -> dict[str, str]:
     """
     by_type = {
         getattr(talent, "talent_type", None): getattr(talent, "name", "")
+        for talent in talents
+    }
+    return {
+        action: by_type[talent_type]
+        for action, talent_type in _ACTION_TALENTS.items()
+        if by_type.get(talent_type)
+    }
+
+
+def ability_icons(talents: Iterable[Any]) -> dict[str, str]:
+    """`action -> the game's sprite basename for it`, for the three actions that are talents.
+
+    The mirror of `ability_names`, and keyed the same way and for the same reason: gcsim writes
+    `skill`, the catalogue stores `TalentType.ELEMENTAL_SKILL`, and a client that performed
+    that mapping itself would be the second place it lived.
+
+    A talent with no icon is skipped rather than published as an empty string — `CatalogueIcon`
+    renders nothing for a null basename, and "absent" is the honest answer for a row the
+    catalogue has no art for.
+    """
+    by_type = {
+        getattr(talent, "talent_type", None): getattr(talent, "icon", None)
         for talent in talents
     }
     return {

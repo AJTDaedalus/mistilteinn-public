@@ -946,3 +946,34 @@ its own.
 **What is deliberately not done:** the pin is still part of the *uniqueness* constraint, so a
 re-pin writes a new row rather than overwriting. Two builds' answers for one context coexist,
 which is what makes "served from an older pin" a statement anyone can check.
+
+
+## 27. Rotations may repeat a chunk, because unrolling costs no grammar (2026-08-30)
+
+**`DESIGN_rotation.md` §2 refused nesting and gave its reason: *"Nesting buys terseness and
+costs a grammar."* The owner reopened it during the GUI design pass and amended it rather than
+routing around it** — which is the whole point of the ruling, since the alternative on offer was
+to argue that an unrolling group had never been nesting in the first place.
+
+**What changed is the evidence, not the appetite.** The reason §2 gave is a claim about cost,
+and the cost turns out not to be paid. A group carries a repeat count; the compiler emits its
+steps `n` times into the flat `while 1 { … }` body it already emits. gcsim receives
+character-for-character what it receives today, so the grammar §2 was protecting — **gcsim's
+parser, and this repo's ability to reason about what it hands over** — is untouched.
+
+**Two limits are part of the ruling, not implementation detail.** A group holds a count and
+nothing else: no condition, no group inside a group. And unrolling happens **before**
+`rotation_signature` and `compile_rotation`, so a grouped rotation and its unrolled equal
+produce the same `context_key` and share one cached run. Those two functions already share
+`_resolve` precisely so that a signature and a config cannot describe different things; the
+unroll goes in front of both for the same reason.
+
+**Copy/paste is not the alternative to this and never was.** §2 offered "a UI can duplicate a
+selection" *in place of* nesting, and it is built alongside groups instead (owner, same day):
+a group says *this chunk repeats*, copy/paste says *this fragment is reusable somewhere else*.
+Separate uses, and §2's promise is kept either way — it had gone unkept for six months.
+
+**What this does not license.** §2's other two refusals stand exactly as written. Branches are
+still refused, and the argument made here is available to anyone who wants one: they would have
+to show that the cost §2 names is not paid, and for a conditional it plainly is — gcsim would
+have to parse it, or this repo would have to evaluate it.

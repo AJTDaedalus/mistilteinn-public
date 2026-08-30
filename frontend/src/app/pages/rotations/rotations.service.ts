@@ -11,6 +11,8 @@ export type RotationStep = components['schemas']['RotationStep'];
 export type RotationOptions = components['schemas']['RotationOptions'];
 export type TeamRoster = components['schemas']['TeamRoster'];
 export type RosterCharacter = components['schemas']['RosterCharacter'];
+/** One move a particular character can be given — the per-character vocabulary (T.3). */
+export type ActionOffer = components['schemas']['ActionOffer'];
 
 /** The action a step may name — the ten the backend publishes, not a list restated here. */
 export type RotationAction = RotationStep['action'];
@@ -159,9 +161,18 @@ export class RotationsService {
    * the alternative is a second compiler in TypeScript, and the readiness gates it would have
    * to reimplement are exactly what stop gcsim's two silent failures.
    */
-  async preview(teamId: string, steps: RotationStep[]): Promise<string> {
+  /**
+   * `runnable` asks for a config gcsim can actually run, rather than the action block.
+   *
+   * The block is what an author reads — the loop and the gates — and it is **not** a config:
+   * no `options`, no character, no weapon, no target. "Run once" needs the whole thing, and
+   * the server assembles it with the same `build_config` the weapon comparison uses.
+   */
+  async preview(
+    teamId: string, steps: RotationStep[], runnable = false,
+  ): Promise<string> {
     const { data, error } = await this.api.POST('/api/v1/rotations/preview', {
-      body: { team_id: teamId, steps },
+      body: { team_id: teamId, steps, runnable },
     });
     if (error) throw error;
     return (data as { config: string }).config;

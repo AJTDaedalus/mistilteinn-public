@@ -77,6 +77,29 @@ export function simulationError(simulated: unknown): string | null {
 }
 
 /**
+ * gcsim's complaint about a **sample** run, or `null` if it produced a log.
+ *
+ * A third failure shape, and it looks like success: `doSample` marshals its error like any
+ * other result, so a failed sample comes back as a *parseable JSON string* carrying `error`
+ * where a full run's log was expected. `JSON.parse` succeeds and the object simply has no
+ * `logs` — which reads to a caller as "the run executed nothing", a sentence that is true of
+ * some real rotations and false of every failure.
+ *
+ * Checked on the raw string before parsing, the same way `configError` checks
+ * `validateConfig`'s.
+ */
+export function sampleError(sampled: string): string | null {
+  if (!sampled.includes('"error"')) return null;
+  try {
+    const parsed = JSON.parse(sampled) as { error?: unknown };
+    return typeof parsed.error === 'string' ? parsed.error : null;
+  } catch {
+    // Not JSON at all is itself a failure, and the text is the most useful thing to show.
+    return sampled;
+  }
+}
+
+/**
  * Run one config for `iterations` Monte Carlo iterations.
  *
  * **The loop is here because gcsim does not loop.** `simulate()` produces one iteration and

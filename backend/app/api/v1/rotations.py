@@ -36,6 +36,7 @@ from app.repositories.sim_run import SimRunRepository
 from app.repositories.team import TeamRepository
 from app.schemas.common import PaginatedResponse
 from app.schemas.rotation import (
+    ActionOffer,
     ContextKeyRead,
     ContextKeyRequest,
     LibraryRotationRead,
@@ -53,7 +54,7 @@ from app.schemas.rotation import (
 )
 from app.schemas.team import TEAM_SLOTS
 from app.services import gcsim_keys
-from app.services.gcsim_config import GcsimConfigError, target_fields
+from app.services.gcsim_config import GcsimConfigError, build_config, target_fields
 from app.services.gcsim_keys import GcsimKeyError, authorable_actions, pinned_commit
 from app.services.rotation_compiler import (
     RotationCompileError,
@@ -67,6 +68,9 @@ from app.services.sim_context import ER_BUCKET_PERCENT, context_key
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+    from app.models.build import Build
+    from app.models.character import Character
 
 router = APIRouter(prefix="/rotations", tags=["rotations"])
 
@@ -98,7 +102,11 @@ async def _check_steps_against_team(
     """
     if not steps:
         return
-    on_team = await repo.team_characters(team_id)
+    # One query, read twice. `team_characters` derives its set from `character_rows`, so asking
+    # for both would fetch the same team twice per write — and the variant check below needs
+    # the rows themselves, not the ids.
+    rows = await repo.character_rows(team_id)
+    on_team = set(rows)
     if not on_team:
         # Reachable only for a team that exists and holds no builds — both callers have
         # already established the team is there — so this is 422, not 404.
@@ -121,6 +129,57 @@ async def _check_steps_against_team(
                 f"simulated, so it is refused now rather than at compile time."
             ),
         )
+    _check_actions_against_characters(rows, steps)
+
+
+def _check_actions_against_characters(rows: dict[str, Character], steps: list) -> None:
+    """Refuse a kit variant the named character does not have.
+
+    The step schema checks the action against the **superset** — every variant any character
+    offers — because that is all it can see. Only here is a character's gcsim key in hand, and
+    only gcsim's own generated validation table knows that Chevreuse has a hold-E and Xingqiu
+    does not.
+
+    **Measured, and it is worse than a parser error.** gcsim does not refuse an undeclared
+    parameter — it ignores it. Driven through the committed wasm build, `xingqiu skill[hold=1]`
+    and `xingqiu skill` produce **byte-identical damage** over a 30-second run, while the same
+    pair for Chevreuse differs. So a user who authored a hold for a character with none gets a
+    run that silently performed a tap, and a number that is perfectly plausible for a rotation
+    they did not write.
+
+    That is this repo's recurring failure shape — the bare action list that runs once, the
+    query-count test that counted zero — and it is the argument for refusing here rather than
+    trusting the simulator to complain.
+    """
+    wrong: list[str] = []
+    for index, step in enumerate(steps):
+        base, variant = gcsim_keys.split_variant(str(step.action))
+        if variant is None:
+            continue
+        character = rows.get(str(step.character))
+        if character is None:
+            continue  # already reported above
+        try:
+            key = gcsim_keys.character_key(
+                character.nanoka_id, character.name, character.element,
+            )
+        except gcsim_keys.GcsimKeyError:
+            continue  # unsimulable for a different reason, reported at compile time
+        if str(step.action) not in gcsim_keys.offerable_actions(key):
+            wrong.append(
+                f"step {index + 1}: {character.name} has no {variant.replace('_', ' ')} "
+                f"{base}",
+            )
+    if wrong:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"{'; '.join(wrong)}. gcsim declares which characters accept which parameters, "
+                f"and it **ignores** one that is not declared rather than refusing it — so a "
+                f"run would quietly perform the plain move and hand back a number that looks "
+                f"right for a rotation you did not write."
+            ),
+        )
 
 
 @router.get("", response_model=PaginatedResponse[RotationRead])
@@ -139,6 +198,42 @@ async def list_rotations(
         items=[RotationRead.model_validate(r) for r in rows],
         total=await repo.count(), offset=offset, limit=limit,
     )
+
+
+def _offers_for(character: Character) -> list[ActionOffer]:
+    """Every move this character can be given, named and illustrated.
+
+    The per-character half of *the picker offers exactly what the validator accepts*: this list
+    and `_check_steps_against_team`'s refusal both come from
+    `gcsim_keys.offerable_actions(key)`, so a button cannot exist for a step that would then be
+    rejected on save.
+
+    **A character gcsim does not implement gets the base ten.** They cannot be simulated at all,
+    so a rotation naming them fails for that reason; offering fewer moves would report the
+    wrong problem, and offering none would suggest the character was the wrong kind of thing
+    rather than one this pin has no implementation for.
+    """
+    try:
+        key: str | None = gcsim_keys.character_key(
+            character.nanoka_id, character.name, character.element,
+        )
+    except gcsim_keys.GcsimKeyError:
+        key = None
+    names = gcsim_keys.ability_names(character.talents)
+    icons = gcsim_keys.ability_icons(character.talents)
+    offers = []
+    for action in gcsim_keys.offerable_actions(key):
+        base, variant = gcsim_keys.split_variant(action)
+        offers.append(
+            ActionOffer(
+                action=action,
+                base=base,
+                variant=variant,
+                name=names.get(base, base),
+                icon=icons.get(base),
+            ),
+        )
+    return offers
 
 
 @router.get("/options", response_model=RotationOptions)
@@ -168,6 +263,7 @@ async def rotation_options(repo: _Repo) -> RotationOptions:
                         # vocabularies and they look like one. `gcsim_keys.ability_names`
                         # owns the correspondence so no client performs it.
                         abilities=gcsim_keys.ability_names(character.talents),
+                        actions=_offers_for(character),
                     )
                     for nanoka_id, character in sorted(roster.items())
                 ],
@@ -253,6 +349,7 @@ async def import_from_gcsim(
 async def preview_compile(
     request: Request,  # slowapi reads the client address off it
     repo: _Repo,
+    builds: _Builds,
     body: RotationPreviewRequest,
 ) -> dict[str, str]:
     """Compile steps that have not been saved, so an editor can show what it is building.
@@ -271,9 +368,78 @@ async def preview_compile(
     await _check_steps_against_team(repo, body.team_id, body.steps)
     roster = await repo.character_rows(body.team_id)
     try:
-        return {"config": compile_rotation([s.model_dump() for s in body.steps], roster)}
+        block = compile_rotation([s.model_dump() for s in body.steps], roster)
     except RotationCompileError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if not body.runnable:
+        return {"config": block}
+    return {"config": await _runnable_config(builds, repo, body.team_id, block)}
+
+
+async def _runnable_config(
+    builds: BuildRepository, repo: RotationRepository, team_id: str, block: str,
+) -> str:
+    """The action block, wrapped in everything gcsim needs to run it.
+
+    **The block alone is not a config.** It carries the loop and the readiness gates — which is
+    what an author reads and what `/{id}/compile` has always returned — and it has no
+    `options`, no character lines, no weapon, no artifacts and no target. Handing it to
+    `sample()` would fail, and the builder's "Run once" was doing exactly that.
+
+    `build_config` is the one assembler, the same one the weapon comparison uses. The subject
+    is the team's **first** build and the rest are teammates; which one is nominally the
+    subject does not change the simulation, because every character's gear is emitted either
+    way — it changes only whose stat block `build_config` treats as the anchor.
+
+    **No enemy is named, deliberately.** `build_config` falls back to gcsim's default target,
+    and a rotation carries no enemy — it is a team's action list, not a scenario, which is the
+    same reasoning `/compare-weapons` states before letting its caller name one. A half-wired
+    enemy parameter here would be a default chosen silently; this is one stated.
+
+    One iteration is the caller's business, not this function's: `sample()` runs once by
+    construction and ignores `options iteration`.
+    """
+    build_ids = await repo.team_build_ids(team_id)
+    if not build_ids:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"team {team_id!r} has no builds, so there is nothing to simulate. A rotation "
+                f"names who acts; a build says what they are wearing."
+            ),
+        )
+    rows = [await _require_build(builds, build_id) for build_id in build_ids]
+    # **Refused here, not by gcsim.** `build_config` will happily emit a character with no
+    # weapon line, and gcsim answers `unrecognized weapon  for character chevreuse` — true,
+    # unhelpful, and arriving from a simulator the user did not know they had started. Naming
+    # the build is the difference between "something went wrong" and "go and equip Chevreuse".
+    unarmed = sorted(
+        row.character.name if row.character else str(row.id)
+        for row in rows
+        if row.weapon is None
+    )
+    if unarmed:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"these builds have no weapon, and gcsim cannot simulate a character holding "
+                f"nothing: {unarmed}. Equip one on the Builds page and run this again."
+            ),
+        )
+    try:
+        return build_config(rows[0], teammates=rows[1:], action_block=block, iterations=1)
+    except (GcsimKeyError, GcsimConfigError) as exc:
+        # Named, not swallowed. A team whose build has no weapon cannot be simulated, and
+        # "Could not run this rotation" without the reason is the shape this repo refuses.
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+async def _require_build(repo: BuildRepository, build_id: str) -> Build:
+    """A build with its weapon and artifacts, or a 404 naming it."""
+    build = await repo.get_full(build_id)
+    if build is None:
+        raise HTTPException(status_code=404, detail=f"No build {build_id!r}")
+    return build
 
 
 @router.get("/library", response_model=PaginatedResponse[LibraryRotationRead])

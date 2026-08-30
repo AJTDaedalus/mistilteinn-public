@@ -6,9 +6,9 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: var(--color-surface-raised, rgba(30, 40, 60, 0.95));
-  border: 1px solid var(--color-accent);
-  border-radius: var(--radius-sm);
+  background: var(--surface-hi);
+  border: 1px solid var(--brass);
+  border-radius: var(--radius-2);
   padding: 0.6rem 1rem;
   font-size: 0.9rem;
   z-index: 1000;
@@ -24,7 +24,7 @@
     cursor: pointer;
     font-weight: 700;
     text-decoration: underline;
-    color: var(--color-accent);
+    color: var(--brass);
     padding: 0;
     font-size: inherit;
   }

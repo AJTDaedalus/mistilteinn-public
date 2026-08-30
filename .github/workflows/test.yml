@@ -304,6 +304,16 @@ jobs:
         # eslint does not full-type-check, which is why the step above exists separately.
         run: npm run lint
 
+      - name: Check every CSS token exists
+        # Neither the typecheck nor the linter sees a stylesheet's variables, and CSS custom
+        # properties fail **silently by design**: an undefined one invalidates the whole
+        # declaration and the element keeps what it had. The rotation timeline's tap/hold badge
+        # shipped `background: var(--accent)` — no such token — and rendered as dark text on a
+        # dark tile, with the DOM correct, a unit test asserting its content, and a clean build.
+        # It was found by taking a screenshot. The same sweep found the toast's border and
+        # `--space-5` in four stylesheets.
+        run: npm run check:tokens
+
       - name: Unit tests
         # Re-enabled in A.2 (client-optimizer plan). It was disabled with a
         # `TODO(chunk-J)` because `npm test` and `npm run build` both failed to compile:

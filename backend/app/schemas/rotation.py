@@ -15,7 +15,7 @@ from __future__ import annotations
 from pydantic import BaseModel, Field, field_validator
 
 from app.models.enums import Visibility
-from app.services.gcsim_keys import authorable_actions
+from app.services.gcsim_keys import all_offerable_actions, authorable_actions
 
 #: How many steps one rotation may hold.
 #:
@@ -39,11 +39,30 @@ class RotationStep(BaseModel):
     character: str = Field(..., min_length=1, max_length=32)
     #: Published to OpenAPI as an enum from the **same** call the validator below checks
     #: against, so a generated client cannot offer an action this would then refuse.
-    action: str = Field(..., json_schema_extra={"enum": list(authorable_actions())})
+    #:
+    #: **The superset**, not the base ten. Kit variants are actions here
+    #: (`DESIGN_rotation_builder_gui.md` §3), and publishing the ten while accepting fifteen
+    #: gave a generated TypeScript client a union that refused `skill_hold` — caught by the
+    #: frontend failing to compile, which is the drift this line exists to prevent and had
+    #: stopped preventing the moment the validator moved and this did not.
+    action: str = Field(..., json_schema_extra={"enum": list(all_offerable_actions())})
     #: `attack ×3` compiles to gcsim's own `attack:3`.
     repeat: int = Field(default=1, ge=1, le=MAX_REPEAT)
     #: The user's own label for this step. Never interpreted.
     note: str = Field(default="", max_length=200)
+    #: The chunk this step belongs to, or `""` for a step standing on its own.
+    #:
+    #: `DECISIONS.md` §27. A group repeats; the compiler **unrolls** it before anything else
+    #: sees it, so gcsim receives character-for-character what it received before groups
+    #: existed. An id rather than a nesting structure because the model stays a flat ordered
+    #: list — which is what makes `unroll` a function over a list rather than a tree walk.
+    group: str = Field(default="", max_length=64)
+    #: How many times this step's group repeats. Carried on every member and required to
+    #: agree, so `unroll` cannot silently pick one of two answers.
+    #:
+    #: Meaningless without `group`, and refused there rather than ignored — a repeat count on
+    #: an ungrouped step is a user believing something is happening that is not.
+    group_repeat: int = Field(default=1, ge=1, le=MAX_REPEAT)
 
     @field_validator("action")
     @classmethod
@@ -56,16 +75,47 @@ class RotationStep(BaseModel):
         the config fails at simulation time with a parser error rather than at authoring time
         with a sentence.
         """
-        allowed = authorable_actions()
+        allowed = all_offerable_actions()
         if value not in allowed:
             msg = (
-                f"{value!r} is not an action a rotation step can name. The ten are "
-                f"{list(allowed)}. `swap` is implicit — gcsim inserts one when the next "
-                f"character is not active — and `wait`/`delay` are timing controls this "
-                f"model deliberately does not expose."
+                f"{value!r} is not an action a rotation step can name. The base ten are "
+                f"{list(authorable_actions())}, plus the kit variants some characters have: "
+                f"{[a for a in allowed if a not in authorable_actions()]}. `swap` is implicit "
+                f"— gcsim inserts one when the next character is not active — and "
+                f"`wait`/`delay` are timing controls this model deliberately does not expose."
             )
             raise ValueError(msg)
         return value
+
+
+class ActionOffer(BaseModel):
+    """One move a particular character can be given, as a button can draw it.
+
+    **Composed here rather than assembled by the client**, for the reason `/options` exists at
+    all: the correspondence between gcsim's actions and the catalogue's talents is one thing
+    (`gcsim_keys`) and it should have one owner.
+    """
+
+    #: What a step stores. `"skill"`, or `"skill_hold"` for a variant.
+    #:
+    #: Published as the **same enum** `RotationStep.action` carries, so a generated client
+    #: types an offer and a step alike. Without it the offer is a bare `string` and the
+    #: TypeScript that feeds one into the other does not compile — which is how this was
+    #: found, and is the type system making the same guarantee the validator does.
+    action: str = Field(..., json_schema_extra={"enum": list(all_offerable_actions())})
+    #: The move without its variant — `"skill"` for both of the above. What the readiness gate
+    #: names, and what the sprite belongs to. Always one of the base ten.
+    base: str = Field(..., json_schema_extra={"enum": list(authorable_actions())})
+    #: `"hold"`, `"short_hold"`, `"recast"`, or `None` for the plain form. Drives the badge and
+    #: nothing else: the compiler reads `action`, never this.
+    variant: str | None = None
+    #: The character's own name for it — "All Schemes to Know". Falls back to `base` for the
+    #: seven actions that are not talents, because calling a charged attack "Akara" would be a
+    #: wrong name rather than a missing one (`gcsim_keys._ACTION_TALENTS`).
+    name: str
+    #: The game's sprite for the talent, or `None` where there is none. Only the three talents
+    #: have one; the other seven are drawn as words (owner, 2026-08-30).
+    icon: str | None = None
 
 
 class RosterCharacter(BaseModel):
@@ -93,6 +143,14 @@ class RosterCharacter(BaseModel):
     #: `elemental_skill`. `gcsim_keys.ability_names` owns the correspondence, and only three
     #: of the ten actions have one; see its comment on why a charged attack keeps its key.
     abilities: dict[str, str] = {}
+    #: Every move **this character** can be given, in the order a palette should draw them.
+    #:
+    #: Per character, not one list for everyone, because a hold-E is a different move from a
+    #: tap-E and only 55 of gcsim's 117 characters have one. The guarantee `RotationOptions`
+    #: has always made — *the picker offers exactly what the validator accepts* — is now made
+    #: per character, which is a stronger claim and an easier one to break, so it has a test
+    #: per character rather than one assertion over the whole list.
+    actions: list[ActionOffer] = []
 
 
 class TeamRoster(BaseModel):
@@ -160,6 +218,58 @@ class ContextKeyRead(BaseModel):
     er_bucket_percent: int
 
 
+def check_groups(steps: list[RotationStep]) -> list[RotationStep]:
+    """Refuse a group that is split apart or disagrees with itself.
+
+    Two rules, and each closes a way `unroll` could otherwise produce something nobody wrote:
+
+    - **Contiguous.** A group is a *chunk* of the rotation. If its members were scattered,
+      unrolling would either reorder the user's steps or repeat them in several places, and
+      both are the editor inventing a rotation.
+    - **One repeat count.** Every member carries `group_repeat` and they must agree. `unroll`
+      reads the first member's; without this it would be picking one of two answers silently.
+
+    A `group_repeat` above 1 on a step with no group is refused for the same reason: it is a
+    number the user set that nothing would read.
+    """
+    seen: set[str] = set()
+    previous = ""
+    for index, step in enumerate(steps):
+        if not step.group:
+            if step.group_repeat != 1:
+                msg = (
+                    f"step {index + 1} sets a group repeat of {step.group_repeat} but belongs "
+                    f"to no group, so nothing would repeat it. Put it in a group, or leave "
+                    f"the repeat at 1."
+                )
+                raise ValueError(msg)
+            previous = ""
+            continue
+        if step.group != previous and step.group in seen:
+            msg = (
+                f"group {step.group!r} appears in more than one place (step {index + 1}). A "
+                f"group is a chunk of the rotation and repeats where it stands; scattered "
+                f"members would have to be gathered or repeated somewhere the user did not "
+                f"write."
+            )
+            raise ValueError(msg)
+        seen.add(step.group)
+        previous = step.group
+    by_group: dict[str, set[int]] = {}
+    for step in steps:
+        if step.group:
+            by_group.setdefault(step.group, set()).add(step.group_repeat)
+    disagreeing = sorted(g for g, repeats in by_group.items() if len(repeats) > 1)
+    if disagreeing:
+        msg = (
+            f"these groups disagree about how many times they repeat: {disagreeing}. Every "
+            f"step in a group carries the count and they must match, because the compiler "
+            f"reads one of them."
+        )
+        raise ValueError(msg)
+    return steps
+
+
 class RotationCreate(BaseModel):
     """Body for `POST /rotations`."""
 
@@ -167,6 +277,8 @@ class RotationCreate(BaseModel):
     team_id: str
     steps: list[RotationStep] = Field(default_factory=list, max_length=MAX_STEPS)
     description: str = Field(default="", max_length=2000)
+
+    _groups = field_validator("steps")(check_groups)
 
 
 class RotationUpdate(BaseModel):
@@ -181,6 +293,11 @@ class RotationUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     steps: list[RotationStep] | None = Field(default=None, max_length=MAX_STEPS)
     description: str | None = Field(default=None, max_length=2000)
+
+    @field_validator("steps")
+    @classmethod
+    def _groups(cls, value: list[RotationStep] | None) -> list[RotationStep] | None:
+        return None if value is None else check_groups(value)
     #: Publish or unpublish. A field of the rotation, not a `/publish` endpoint — a separate
     #: route would be a second way to write one column, and the two would need the same
     #: ownership check written twice. **Unpublishing is allowed and immediate**: a user who
@@ -249,6 +366,16 @@ class RotationPreviewRequest(BaseModel):
     So the steps come here and the **same** `compile_rotation` answers.
     """
 
+    _groups = field_validator("steps")(check_groups)
+
+    #: Ask for a **runnable** config rather than the action block alone.
+    #:
+    #: The block is what an author reads — it is the gates and the loop, and it is what
+    #: `/{id}/compile` has always returned. It is *not* something gcsim can run: there is no
+    #: `options`, no character, no weapon, no target. The builder's "Run once" needs the whole
+    #: thing, and assembling it here rather than in TypeScript is the same argument this schema
+    #: already makes about the compiler — one implementation, not two that drift.
+    runnable: bool = False
     #: The team the steps are validated against. A step naming someone not on it is refused,
     #: exactly as it is on save — a preview that accepted more than the save would is a
     #: preview of something that cannot exist.

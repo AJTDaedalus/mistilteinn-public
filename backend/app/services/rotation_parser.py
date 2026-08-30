@@ -59,11 +59,23 @@ class RotationParseError(ValueError):
 #: `active <key>;` — the compiler emits the *first step's* character, not a team slot.
 _ACTIVE = re.compile(r"^active\s+([a-z0-9]+)\s*;$")
 
-#: `if .<key>.<action>.ready { <key> <action>[:n]; }` — the only statement shape emitted.
+#: `if .<key>.<action>.ready { <key> <action>[param=1][:n]; }` — the only statement shape
+#: emitted.
+#:
+#: **The parameter group is here because the compiler emits one.** A kit variant is an action
+#: in this model and `skill[hold=1]` in gcsim's syntax, so without it a config *this repo
+#: produced* could not be read back by *this repo's* importer — and the refusal blamed the
+#: condition, which was not what was wrong. Real community configs use the same form:
+#: `references/gcsim_db/clorinde-chevreuse-nicole-durin.txt:48`.
 _GATED = re.compile(
     r"^if\s+\.([a-z0-9]+)\.([a-z_]+)\.ready\s*\{\s*"
-    r"([a-z0-9]+)\s+([a-z_]+)(?::([^\s;]+))?\s*;\s*\}$",
+    r"([a-z0-9]+)\s+([a-z_]+)(?:\[([^\]]*)\])?(?::([^\s;]+))?\s*;\s*\}$",
 )
+
+#: `hold=1`, and nothing cleverer. gcsim accepts arbitrary integers and several parameters at
+#: once; this model expresses exactly one boolean variant per action, so anything else is
+#: refused by name rather than approximated.
+_PARAM = re.compile(r"^([a-z_0-9]+)=1$")
 
 
 def parse_action_block(config: str, characters: Iterable[Any]) -> list[dict[str, Any]]:
@@ -230,7 +242,7 @@ def _statement(line: str, by_key: dict[str, str]) -> tuple[dict[str, Any] | None
     if match is None:
         return None, _why_not(line)
 
-    gate_key, gate_action, key, action, repeat_text = match.groups()
+    gate_key, gate_action, key, action, param_text, repeat_text = match.groups()
     # Both sides, and **before** they are compared: a config writing `if .arle.skill.ready
     # { arle skill; }` must still be checked for the gate matching its own action.
     gate_key = _canonical(gate_key, by_key)
@@ -245,28 +257,73 @@ def _statement(line: str, by_key: dict[str, str]) -> tuple[dict[str, Any] | None
             f"`{key} {action}`. A step carries one condition, on itself."
         )
 
+    unnameable = _unnameable(line, key, action, by_key)
+    if unnameable is not None:
+        return None, unnameable
+
+    if param_text is not None:
+        action, problem = _variant(line, action, param_text)
+        if action is None:
+            return None, problem
+
+    repeat, problem = _repeat(line, repeat_text)
+    if repeat is None:
+        return None, problem
+
+    return {"character": by_key[key], "action": action, "repeat": repeat, "note": ""}, ""
+
+
+def _unnameable(line: str, key: str, action: str, by_key: dict[str, str]) -> str | None:
+    """Why this line names something a step cannot, or `None` if it names nothing wrong."""
     if key not in by_key:
-        return None, (
+        return (
             f"{line!r} — no character on this team is gcsim's {key!r}. Add them to the team, "
             f"or import this rotation against the team it was written for."
         )
-
     if action not in gcsim_keys.authorable_actions():
-        return None, (
+        return (
             f"{line!r} — {action!r} is not an action a rotation step can name. The ten are "
             f"{list(gcsim_keys.authorable_actions())}."
         )
+    return None
 
-    repeat = 1
-    if repeat_text is not None:
-        if not repeat_text.isdigit() or int(repeat_text) < 1:
-            return None, (
-                f"{line!r} — {repeat_text!r} is not a repeat count. `attack:0` is not an "
-                f"attack, and reading it as one would import a step this config does not have."
-            )
-        repeat = int(repeat_text)
 
-    return {"character": by_key[key], "action": action, "repeat": repeat, "note": ""}, ""
+def _repeat(line: str, repeat_text: str | None) -> tuple[int | None, str]:
+    """The `:n` repetition gcsim writes, or the reason it is not a count."""
+    if repeat_text is None:
+        return 1, ""
+    if not repeat_text.isdigit() or int(repeat_text) < 1:
+        return None, (
+            f"{line!r} — {repeat_text!r} is not a repeat count. `attack:0` is not an attack, "
+            f"and reading it as one would import a step this config does not have."
+        )
+    return int(repeat_text), ""
+
+
+def _variant(line: str, action: str, param_text: str) -> tuple[str | None, str]:
+    """The action a `[param=1]` group names, or the reason it names none.
+
+    **Refused rather than dropped.** gcsim *ignores* a parameter a character does not declare —
+    measured: `xingqiu skill[hold=1]` and `xingqiu skill` produce byte-identical damage — so
+    importing `skill[glide_cancel=1]` as a plain `skill` would produce a rotation that looks
+    like the author's and simulates to a different number. That is the exact failure this
+    parser exists to make impossible.
+    """
+    parsed = _PARAM.match(param_text.strip())
+    if parsed is None or parsed.group(1) not in gcsim_keys.VARIANT_PARAMS:
+        return None, (
+            f"{line!r} — `[{param_text}]` is not a kit variant this model can hold. It "
+            f"expresses one of {sorted(gcsim_keys.VARIANT_PARAMS)} as its own action, and "
+            f"importing this without the parameter would be a different rotation that looks "
+            f"like the author's."
+        )
+    variant = gcsim_keys.variant_action(action, parsed.group(1))
+    if variant not in gcsim_keys.all_offerable_actions():
+        return None, (
+            f"{line!r} — no character declares `{parsed.group(1)}` on `{action}` at this gcsim "
+            f"pin, so there is no such move to import."
+        )
+    return variant, ""
 
 
 def _why_not(line: str) -> str:

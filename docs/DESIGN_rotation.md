@@ -77,8 +77,25 @@ one is a way to write a rotation that deadlocks.
 - **"Burst if you have energy, else skill."** A branch. The compiler already gates every
   action on readiness (§3.4), so the common case is covered; a genuine either/or is a
   different rotation and should be authored as one.
-- **"Repeat this section 3 times."** Nesting. Write the steps three times; the list is short
-  and a UI can duplicate a selection. Nesting buys terseness and costs a grammar.
+- ~~**"Repeat this section 3 times."** Nesting. Write the steps three times; the list is short
+  and a UI can duplicate a selection. Nesting buys terseness and costs a grammar.~~
+  **Amended by the owner, 2026-08-30 (`DECISIONS.md` §27), before anything was built on it.**
+  A **group** repeats a chunk and the compiler **unrolls** it, so the emitted config is
+  character-for-character what the flat form emits. The grammar this bullet refused is the one
+  **gcsim would have to parse**, and an unrolled group never reaches gcsim — the `while 1 { … }`
+  body it produces is identical either way. Terseness is bought and no grammar is sold.
+
+  **The two limits that keep the rest of this section true.** A group carries a repeat count
+  and nothing else: no condition, no nested group. And unrolling happens **before**
+  `rotation_signature` and `compile_rotation`, which already share `_resolve` so that *a
+  signature and a config cannot disagree about who a step names* — so a grouped rotation and
+  its unrolled equal hash to the same `context_key` and share one cached run, which is correct
+  because the key describes what gcsim ran.
+
+  **The promise this bullet made is also finally kept**: "a UI can duplicate a selection" is
+  `DESIGN_rotation_builder_gui.md` §4, and it ships alongside groups rather than instead of
+  them. They do different jobs — a group says *this chunk repeats*, copy/paste says *this
+  fragment is reusable somewhere else*.
 - **Timing, delays, `wait`.** gcsim has `wait` and `delay` actions, and they are how a human
   hand-tunes a config. Exposing them invites the user back into frame counting, which is the
   thing being removed. If a rotation needs them, that is a finding to bring back here, not a

@@ -3234,6 +3234,81 @@
   },
   "components": {
     "schemas": {
+      "ActionOffer": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "skill",
+              "burst",
+              "attack",
+              "charge",
+              "high_plunge",
+              "low_plunge",
+              "aim",
+              "dash",
+              "jump",
+              "walk",
+              "aim_hold",
+              "charge_hold",
+              "skill_hold",
+              "skill_recast",
+              "skill_short_hold"
+            ],
+            "title": "Action"
+          },
+          "base": {
+            "type": "string",
+            "enum": [
+              "skill",
+              "burst",
+              "attack",
+              "charge",
+              "high_plunge",
+              "low_plunge",
+              "aim",
+              "dash",
+              "jump",
+              "walk"
+            ],
+            "title": "Base"
+          },
+          "variant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon"
+          }
+        },
+        "type": "object",
+        "required": [
+          "action",
+          "base",
+          "name"
+        ],
+        "title": "ActionOffer",
+        "description": "One move a particular character can be given, as a button can draw it.\n\n**Composed here rather than assembled by the client**, for the reason `/options` exists at\nall: the correspondence between gcsim's actions and the catalogue's talents is one thing\n(`gcsim_keys`) and it should have one owner."
+      },
       "Amplifying": {
         "type": "string",
         "enum": [
@@ -6306,6 +6381,14 @@
             "type": "object",
             "title": "Abilities",
             "default": {}
+          },
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/ActionOffer"
+            },
+            "type": "array",
+            "title": "Actions",
+            "default": []
           }
         },
         "type": "object",
@@ -6439,6 +6522,11 @@
       },
       "RotationPreviewRequest": {
         "properties": {
+          "runnable": {
+            "type": "boolean",
+            "title": "Runnable",
+            "default": false
+          },
           "team_id": {
             "type": "string",
             "title": "Team Id"
@@ -6520,7 +6608,12 @@
               "aim",
               "dash",
               "jump",
-              "walk"
+              "walk",
+              "aim_hold",
+              "charge_hold",
+              "skill_hold",
+              "skill_recast",
+              "skill_short_hold"
             ],
             "title": "Action"
           },
@@ -6536,6 +6629,19 @@
             "maxLength": 200,
             "title": "Note",
             "default": ""
+          },
+          "group": {
+            "type": "string",
+            "maxLength": 64,
+            "title": "Group",
+            "default": ""
+          },
+          "group_repeat": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Group Repeat",
+            "default": 1
           }
         },
         "type": "object",

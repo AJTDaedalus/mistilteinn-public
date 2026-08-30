@@ -420,3 +420,29 @@ def test_a_solo_rotation_still_needs_no_teammates():
     config = build_config(_build(), actions=["burst"])
 
     assert "kamisatoayaka char" in config
+
+
+def test_the_undeclared_character_guard_sees_a_variant_statement():
+    """`skill[hold=1]` names a character exactly as `skill` does.
+
+    The guard exists because gcsim **accepts** a config naming somebody it never declared and
+    simulates nobody — `character_details` comes back empty and the damage is zero, in valid
+    JSON. Before the parameter group was added to its pattern it matched nothing on a variant
+    line, so a config whose only mention of a character was a hold would have walked past it.
+    """
+    from app.services.gcsim_config import _NAMES_A_CHARACTER
+
+    variant = "if .chevreuse.skill.ready { chevreuse skill[hold=1]; }"
+    plain = "if .chevreuse.skill.ready { chevreuse skill; }"
+
+    assert _NAMES_A_CHARACTER.search(variant) is not None
+    assert _NAMES_A_CHARACTER.search(variant).group(2) == "chevreuse"
+    assert _NAMES_A_CHARACTER.search(plain).group(2) == "chevreuse"
+
+
+def test_the_guard_sees_a_variant_that_also_repeats():
+    from app.services.gcsim_config import _NAMES_A_CHARACTER
+
+    line = "if .chevreuse.skill.ready { chevreuse skill[hold=1]:2; }"
+
+    assert _NAMES_A_CHARACTER.search(line).group(2) == "chevreuse"

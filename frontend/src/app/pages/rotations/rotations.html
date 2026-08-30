@@ -94,7 +94,19 @@
           }
         </ul>
 
-    <dialog #editorDialog class="editor-dialog" (close)="actionError.set(null)">
+    <!-- `tabindex="-1"`: the chord handler lives on the dialog, so the dialog has to be able
+         to hold focus. A native `<dialog>` moves focus to its first focusable child on
+         `showModal()`, and keydown bubbles up to here from wherever focus lands — but a
+         handler on an element that can never be focused is a handler that might never fire,
+         which is what `interactive-supports-focus` is about. The buttons beside the timeline
+         do the same job for anyone not using a chord. -->
+    <dialog
+      #editorDialog
+      class="editor-dialog"
+      tabindex="-1"
+      (keydown)="onEditorKey($event)"
+      (close)="actionError.set(null)"
+    >
       <header class="editor-dialog__head">
         <h2>{{ editing() ? 'Editing' : 'New rotation' }}</h2>
         <button
@@ -158,26 +170,146 @@
 
               @if (addingFor() === member.nanoka_id) {
                 <ul class="roster__actions">
-                  @for (action of actions(); track action) {
-                    <!-- B.1: the character's own name for it — "All Schemes to Know", not
-                         `skill`. The key still governs what compiles; this is a label. -->
+                  <!-- **Per character, not one list for everyone.** A hold-E is a different
+                       move to a tap-E and only 55 of gcsim's 117 characters have one, so the
+                       palette asks the server what *this* character can do
+                       (`DESIGN_rotation_builder_gui.md` §3). The badge is the owner's `t`/`h`;
+                       the word is in the button's label, because a corner glyph is never the
+                       only channel. -->
+                  @for (offer of offersFor(member); track offer.action) {
                     <li>
-                      <button type="button" (click)="quickAdd(action)">
-                        {{ abilityName(member.nanoka_id, action) }}
+                      <button
+                        type="button"
+                        class="offer"
+                        draggable="true"
+                        [attr.aria-label]="offerLabel(offer)"
+                        [attr.title]="offerLabel(offer)"
+                        (dragstart)="onOfferDragStart(member.nanoka_id, offer.action)"
+                        (click)="addOffer(offer.action)"
+                      >
+                        @if (offer.icon) {
+                          <catalogue-icon [icon]="offer.icon" [alt]="''" [size]="20" />
+                        }
+                        <span class="offer__name">{{ offer.name }}</span>
+                        @if (offer.variant) {
+                          <span class="offer__badge" aria-hidden="true">
+                            {{ variantBadge(offer.variant) }}
+                          </span>
+                        }
                       </button>
                     </li>
                   }
                 </ul>
+                <!-- The keyboard half of T.6, and it is the buttons above rather than a
+                     button of its own: with a step selected they **insert there**, and with
+                     nothing selected they append. A single "Insert before step N" control
+                     could only ever insert one action — the first offer, which is always
+                     `skill` — so a burst or a hold could not be placed mid-rotation without a
+                     mouse. -->
+                @if (selection(); as span) {
+                  <p class="hint">
+                    Adding will insert before step {{ span.start + 1 }}.
+                  </p>
+                }
               }
             </li>
           }
         </ul>
       }
 
+      <!-- Level 1 of the owner's hierarchy: timeline → rotation list → move detail. -->
+      <rotation-timeline
+        [steps]="steps()"
+        [roster]="roster()"
+        [selection]="selection()"
+        [measured]="measured()"
+        (pick)="onPick($event)"
+        (dragFrom)="onDragStart($event)"
+        (dropOn)="onTimelineDrop($event)"
+      />
+
+      <div class="timeline-controls">
+        <button type="button" (click)="runSample()" [disabled]="sampling() || steps().length === 0">
+          {{ sampling() ? 'Running…' : 'Run once' }}
+        </button>
+        <button type="button" (click)="copySelection()" [disabled]="selection() === null">
+          Copy{{ selectedCount() > 1 ? ' ' + selectedCount() + ' steps' : '' }}
+        </button>
+        <button type="button" (click)="pasteClipboard()" [disabled]="clipboard().length === 0">
+          Paste {{ clipboard().length }}
+        </button>
+        @if (selectionIsGroup()) {
+          <button type="button" (click)="ungroupSelection()">Ungroup</button>
+          <label class="repeat">
+            repeats ×
+            <input
+              type="number"
+              min="1"
+              max="20"
+              aria-label="How many times the group repeats"
+              [value]="selectedGroupRepeat()"
+              (change)="setGroupRepeat(+$any($event.target).value)"
+            />
+          </label>
+        } @else {
+          <button type="button" (click)="groupSelection()" [disabled]="!canGroup()">
+            Group ×2
+          </button>
+        }
+      </div>
+
+      @if (sampleError(); as message) {
+        <p class="error" role="alert">{{ message }}</p>
+      }
+
+      <!-- Level 3: one move, in full. The timeline can carry a tile and a badge; the word
+           "Hold" and the note live here, which is why the compact badge works at all. -->
+      @if (selectedStep(); as step) {
+        <fieldset class="detail">
+          <legend>Step {{ (selection()?.start ?? 0) + 1 }}</legend>
+          <select
+            aria-label="Action for the selected step"
+            [value]="step.action"
+            (change)="setStep(selection()!.start, { action: $any($event.target).value })"
+          >
+            @for (offer of offersForId(step.character); track offer.action) {
+              <option [value]="offer.action" [selected]="offer.action === step.action">
+                {{ offerLabel(offer) }}
+              </option>
+            }
+          </select>
+          <label class="repeat">
+            ×
+            <input
+              type="number"
+              min="1"
+              max="20"
+              aria-label="Repeat for the selected step"
+              [value]="step.repeat"
+              (change)="setStep(selection()!.start, { repeat: +$any($event.target).value })"
+            />
+          </label>
+          <input
+            type="text"
+            class="note"
+            placeholder="note"
+            aria-label="Note for the selected step"
+            [value]="step.note"
+            (change)="setStep(selection()!.start, { note: $any($event.target).value })"
+          />
+        </fieldset>
+      }
+
+      <!-- Level 2. -->
       <ol class="steps">
         @for (step of steps(); track $index) {
-          <li class="step">
-            <span class="ordinal mono">{{ $index + 1 }}</span>
+          <li class="step" [class.step--selected]="isSelected($index)">
+            <button
+              type="button"
+              class="ordinal mono"
+              [attr.aria-label]="'Select step ' + ($index + 1)"
+              (click)="onPick({ index: $index, extend: $event.shiftKey })"
+            >{{ $index + 1 }}</button>
 
             <!-- The acting character, beside the `<select>` an `<option>` cannot
                  illustrate. A ten-step rotation is otherwise ten identical dropdowns. -->
@@ -212,9 +344,9 @@
               [value]="step.action"
               (change)="setStep($index, { action: $any($event.target).value })"
             >
-              @for (action of actions(); track action) {
-                <option [value]="action" [selected]="action === step.action">
-                  {{ abilityName(step.character, action) }}
+              @for (offer of offersForId(step.character); track offer.action) {
+                <option [value]="offer.action" [selected]="offer.action === step.action">
+                  {{ offerLabel(offer) }}
                 </option>
               }
             </select>

@@ -286,9 +286,15 @@ def build_config(
 
 #: `active noelle;` and `noelle burst;` — the two shapes that name a character in an action
 #: block. Deliberately not a general parser: this is a guard over text *this module emits*.
+#:
+#: **The `[param=1]` group is not optional decoration.** The compiler emits `skill[hold=1]` for
+#: a kit variant, and without this the guard matched nothing on those lines — so a config whose
+#: only mention of a character was a hold would have passed a check written precisely to catch
+#: a config that names somebody it never declared. gcsim accepts that and simulates *nobody*:
+#: `character_details` comes back empty and the damage is zero, in valid JSON.
 _NAMES_A_CHARACTER = re.compile(
     r"^(?:active\s+([a-z0-9]+)\s*;|(?:if\s+\.[a-z0-9]+\.[a-z_]+\.ready\s*\{\s*)?"
-    r"([a-z0-9]+)\s+[a-z_]+(?::\d+)?\s*;)",
+    r"([a-z0-9]+)\s+[a-z_]+(?:\[[^\]]*\])?(?::\d+)?\s*;)",
     re.M,
 )
 

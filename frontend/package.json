@@ -23,7 +23,8 @@
     "kernel:verify-gpu": "node --import ./scripts/ts-resolve.mjs scripts/verify-kernel-gpu.mjs",
     "gcsim:verify-runner": "node --import ./scripts/ts-resolve.mjs scripts/verify-gcsim-runner.mjs",
     "gcsim:verify-recipe": "node --import ./scripts/ts-resolve.mjs scripts/verify-gcsim-recipe.mjs",
-    "verify": "npm run typecheck && npm run lint && npm test"
+    "verify": "npm run typecheck && npm run lint && npm test",
+    "check:tokens": "node scripts/check-css-tokens.mjs"
   },
   "private": true,
   "packageManager": "npm@11.9.0",

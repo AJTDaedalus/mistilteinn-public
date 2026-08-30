@@ -14,8 +14,9 @@ import pytest
 
 from app.models.build import Build, EnemyProfile
 from app.models.character import Character
-from app.models.enums import Element, Rarity, WeaponType
+from app.models.enums import Element, Rarity, StatType, WeaponType
 from app.models.team import Team
+from app.models.weapon import Weapon
 
 if TYPE_CHECKING:
     from httpx import AsyncClient
@@ -826,3 +827,74 @@ async def test_preview_of_an_empty_rotation_is_refused_rather_than_empty(
     })
 
     assert previewed.status_code == 422
+
+
+# ── the runnable preview (T.8) ───────────────────────────────────────────────
+
+
+async def test_the_default_preview_is_the_action_block_only(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """What an author reads: the loop and the gates, and nothing else.
+
+    This is what `/{id}/compile` has always returned and what "Show gcsim config" shows.
+    """
+    response = await authed_client.post(f"{ROTATIONS}/preview", json={
+        "team_id": scene.team_id, "steps": [_step(scene.ayaka)],
+    })
+
+    config = response.json()["config"]
+    assert config.startswith("active ")
+    assert "options" not in config
+
+
+async def test_a_runnable_preview_is_a_config_gcsim_could_run(
+    authed_client: AsyncClient, db_session: AsyncSession, scene: Scene,
+):
+    """**The action block is not a config**, and "Run once" was handed one that could not run.
+
+    No `options`, no character lines, no weapon, no target — `sample()` refuses it. The block
+    is the author's view; this is the simulator's, and both come from the same compile so they
+    cannot describe different rotations.
+    """
+    # Both builds need a weapon: gcsim cannot simulate a character holding nothing, and the
+    # endpoint refuses before it gets there — which the test below is about.
+    sword = Weapon(
+        nanoka_id=11509, name="Mistsplitter Reforged", weapon_type=WeaponType.SWORD,
+        rarity=Rarity.FIVE_STAR, base_atk=48.0, sub_stat_type=StatType.CRIT_DMG,
+        sub_stat_base_value=0.096,
+    )
+    db_session.add(sword)
+    await db_session.flush()
+    for build_id in (scene.ayaka_build, scene.barbara_build):
+        await authed_client.patch(f"/api/v1/builds/{build_id}", json={
+            "weapon_id": str(sword.id),
+        })
+
+    response = await authed_client.post(f"{ROTATIONS}/preview", json={
+        "team_id": scene.team_id, "steps": [_step(scene.ayaka)], "runnable": True,
+    })
+
+    config = response.json()["config"]
+    assert config.startswith("options ")
+    assert "target lvl=" in config
+    # The block is inside it, verbatim — one compile, not two.
+    assert "while 1 {" in config
+
+
+async def test_a_runnable_preview_names_the_builds_with_no_weapon(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """gcsim's own answer is `unrecognized weapon  for character kamisatoayaka`.
+
+    True, and arriving from a simulator the user did not know they had started. Naming the
+    build is the difference between "something went wrong" and "go and equip Ayaka" — and the
+    scene's builds carry no weapon, which is why this is the case that runs here.
+    """
+    response = await authed_client.post(f"{ROTATIONS}/preview", json={
+        "team_id": scene.team_id, "steps": [_step(scene.ayaka)], "runnable": True,
+    })
+
+    assert response.status_code == 422
+    assert "Kamisato Ayaka" in response.json()["detail"]
+    assert "no weapon" in response.json()["detail"]

@@ -761,5 +761,1030 @@
     "wanderers": "wandererstroupe",
     "witch": "crimsonwitchofflames",
     "wt": "wandererstroupe"
+  },
+  "character_action_params": {
+    "aetheranemo": {
+      "skill": [
+        "hold",
+        "hold_ticks"
+      ]
+    },
+    "aetherdendro": {},
+    "aetherelectro": {
+      "skill": [
+        "amulet_delay",
+        "hits",
+        "max_amulets"
+      ]
+    },
+    "aethergeo": {
+      "burst": [
+        "construct_limit",
+        "hits"
+      ],
+      "skill": [
+        "no_meteorite",
+        "short_hold"
+      ]
+    },
+    "aetherhydro": {
+      "dash": [
+        "pickup_droplets"
+      ],
+      "skill": [
+        "hold",
+        "hold_ticks",
+        "travel"
+      ]
+    },
+    "aetherpyro": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "hold"
+      ]
+    },
+    "aino": {},
+    "albedo": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "alhaitham": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision",
+        "short"
+      ],
+      "skill": [
+        "hold"
+      ]
+    },
+    "aloy": {
+      "aim": [
+        "hold",
+        "travel",
+        "weakspot"
+      ],
+      "attack": [
+        "travel"
+      ],
+      "skill": [
+        "bomb_delay",
+        "bomblets",
+        "travel"
+      ]
+    },
+    "amber": {
+      "aim": [
+        "bunny",
+        "hold",
+        "travel",
+        "weakspot"
+      ],
+      "attack": [
+        "travel"
+      ],
+      "skill": [
+        "hold"
+      ]
+    },
+    "aratakiitto": {
+      "burst": [
+        "prestack"
+      ],
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "travel",
+        "ushihit"
+      ]
+    },
+    "arlecchino": {
+      "charge": [
+        "early_cancel"
+      ],
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "baizhu": {},
+    "barbara": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "beidou": {
+      "skill": [
+        "counter"
+      ]
+    },
+    "bennett": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "hold",
+        "hold_c4"
+      ]
+    },
+    "candace": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "hold",
+        "perfect"
+      ]
+    },
+    "charlotte": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "hold"
+      ]
+    },
+    "chasca": {
+      "aim": [
+        "bullets",
+        "hold",
+        "travel",
+        "weakspot"
+      ],
+      "attack": [
+        "travel"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "chevreuse": {
+      "skill": [
+        "hold"
+      ]
+    },
+    "chiori": {
+      "skill": [
+        "hold"
+      ]
+    },
+    "chongyun": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "citlali": {
+      "attack": [
+        "travel"
+      ],
+      "charge": [
+        "travel"
+      ]
+    },
+    "clorinde": {},
+    "collei": {
+      "aim": [
+        "hold",
+        "travel",
+        "weakspot"
+      ],
+      "attack": [
+        "travel"
+      ]
+    },
+    "columbina": {},
+    "cyno": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "dahlia": {
+      "skill": [
+        "short_hold"
+      ]
+    },
+    "dehya": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "diluc": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "diona": {
+      "aim": [
+        "hold",
+        "travel",
+        "weakspot"
+      ],
+      "attack": [
+        "travel"
+      ],
+      "skill": [
+        "hold",
+        "travel"
+      ]
+    },
+    "dori": {
+      "burst": [
+        "c2_travel"
+      ],
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "travel"
+      ]
+    },
+    "durin": {
+      "burst": [
+        "travel"
+      ]
+    },
+    "emilie": {
+      "burst": [
+        "travel"
+      ],
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "travel"
+      ]
+    },
+    "escoffier": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "travel"
+      ]
+    },
+    "eula": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "hold"
+      ]
+    },
+    "faruzan": {
+      "aim": [
+        "hold",
+        "travel",
+        "weakspot"
+      ],
+      "attack": [
+        "travel"
+      ]
+    },
+    "fischl": {
+      "aim": [
+        "hold",
+        "travel",
+        "weakspot"
+      ],
+      "attack": [
+        "travel"
+      ],
+      "skill": [
+        "recast"
+      ]
+    },
+    "flins": {},
+    "freminet": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "furina": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "gaming": {
+      "burst": [
+        "man_chai_delay"
+      ],
+      "high_plunge": [
+        "collision",
+        "man_chai_delay"
+      ],
+      "low_plunge": [
+        "collision",
+        "man_chai_delay"
+      ]
+    },
+    "ganyu": {
+      "aim": [
+        "hold",
+        "travel",
+        "weakspot"
+      ],
+      "attack": [
+        "travel"
+      ]
+    },
+    "gorou": {
+      "aim": [
+        "hold",
+        "travel",
+        "weakspot"
+      ],
+      "attack": [
+        "travel"
+      ]
+    },
+    "hutao": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "ineffa": {},
+    "jean": {
+      "burst": [
+        "enter",
+        "enter_delay"
+      ],
+      "skill": [
+        "hold"
+      ]
+    },
+    "kaedeharakazuha": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "glide_cancel",
+        "hold"
+      ]
+    },
+    "kaeya": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "kamisatoayaka": {
+      "dash": [
+        "f"
+      ],
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "kamisatoayato": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "illusion_delay"
+      ]
+    },
+    "kaveh": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "keqing": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "kinich": {
+      "attack": [
+        "direction"
+      ],
+      "skill": [
+        "hold",
+        "travel"
+      ]
+    },
+    "kirara": {
+      "burst": [
+        "hits",
+        "mine_delay"
+      ],
+      "skill": [
+        "hold",
+        "short_hold"
+      ]
+    },
+    "klee": {
+      "attack": [
+        "travel"
+      ],
+      "charge": [
+        "travel"
+      ],
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "bounce",
+        "mine",
+        "mine_delay",
+        "release"
+      ]
+    },
+    "kujousara": {
+      "aim": [
+        "hold",
+        "travel",
+        "weakspot"
+      ],
+      "attack": [
+        "travel"
+      ]
+    },
+    "kukishinobu": {},
+    "lanyan": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "hold"
+      ]
+    },
+    "lauma": {
+      "skill": [
+        "hold"
+      ]
+    },
+    "layla": {
+      "burst": [
+        "travel"
+      ]
+    },
+    "lisa": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "hold"
+      ]
+    },
+    "lumineanemo": {
+      "skill": [
+        "hold",
+        "hold_ticks"
+      ]
+    },
+    "luminedendro": {},
+    "lumineelectro": {
+      "skill": [
+        "amulet_delay",
+        "hits",
+        "max_amulets"
+      ]
+    },
+    "luminegeo": {
+      "burst": [
+        "construct_limit",
+        "hits"
+      ],
+      "skill": [
+        "no_meteorite",
+        "short_hold"
+      ]
+    },
+    "luminehydro": {
+      "dash": [
+        "pickup_droplets"
+      ],
+      "skill": [
+        "hold",
+        "hold_ticks",
+        "travel"
+      ]
+    },
+    "luminepyro": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "hold"
+      ]
+    },
+    "lynette": {
+      "burst": [
+        "vivid_travel"
+      ],
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "hold"
+      ]
+    },
+    "lyney": {
+      "aim": [
+        "c6_travel",
+        "hold",
+        "travel",
+        "weakspot"
+      ],
+      "attack": [
+        "travel"
+      ]
+    },
+    "mavuika": {
+      "charge": [
+        "buffered",
+        "final",
+        "hold"
+      ],
+      "dash": [
+        "charge_cancel",
+        "collision",
+        "travel"
+      ],
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "hold",
+        "recast"
+      ]
+    },
+    "mika": {
+      "skill": [
+        "hold"
+      ]
+    },
+    "mona": {
+      "dash": [
+        "f"
+      ],
+      "skill": [
+        "hold"
+      ]
+    },
+    "mualani": {
+      "attack": [
+        "travel"
+      ],
+      "burst": [
+        "travel"
+      ]
+    },
+    "nahida": {
+      "skill": [
+        "hold"
+      ]
+    },
+    "navia": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "hold"
+      ]
+    },
+    "neuvillette": {
+      "charge": [
+        "short",
+        "ticks"
+      ]
+    },
+    "nicole": {},
+    "nilou": {
+      "skill": [
+        "travel"
+      ]
+    },
+    "ningguang": {
+      "attack": [
+        "travel"
+      ],
+      "burst": [
+        "jade",
+        "screen",
+        "travel"
+      ],
+      "charge": [
+        "travel"
+      ],
+      "skill": [
+        "noscreen"
+      ]
+    },
+    "noelle": {
+      "burst": [
+        "extend"
+      ],
+      "charge": [
+        "final",
+        "no_limit"
+      ],
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "ororon": {
+      "aim": [
+        "hold",
+        "travel",
+        "weakspot"
+      ],
+      "attack": [
+        "travel"
+      ],
+      "skill": [
+        "travel"
+      ]
+    },
+    "qiqi": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "raidenshogun": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "razor": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "hold"
+      ]
+    },
+    "rosaria": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "nobehind"
+      ]
+    },
+    "sangonomiyakokomi": {
+      "attack": [
+        "travel"
+      ]
+    },
+    "sayu": {
+      "skill": [
+        "hold",
+        "short_hold"
+      ]
+    },
+    "sethos": {
+      "aim": [
+        "hold",
+        "travel",
+        "weakspot"
+      ],
+      "attack": [
+        "travel"
+      ]
+    },
+    "shenhe": {
+      "skill": [
+        "hold"
+      ]
+    },
+    "shikanoinheizou": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "hold"
+      ]
+    },
+    "sigewinne": {
+      "aim": [
+        "hold",
+        "travel",
+        "weakspot"
+      ],
+      "attack": [
+        "travel"
+      ],
+      "burst": [
+        "ticks"
+      ],
+      "dash": [
+        "pickup_droplets"
+      ],
+      "skill": [
+        "hold"
+      ]
+    },
+    "skirk": {
+      "skill": [
+        "hold"
+      ]
+    },
+    "sucrose": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "tartaglia": {
+      "aim": [
+        "hold",
+        "travel",
+        "weakspot"
+      ],
+      "attack": [
+        "travel"
+      ],
+      "charge": []
+    },
+    "thoma": {},
+    "tighnari": {
+      "aim": [
+        "hold",
+        "travel",
+        "weakspot",
+        "wreath"
+      ],
+      "attack": [
+        "travel"
+      ],
+      "burst": [
+        "travel"
+      ],
+      "skill": [
+        "travel"
+      ]
+    },
+    "varesa": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "varka": {},
+    "venti": {
+      "aim": [
+        "hold",
+        "travel",
+        "weakspot"
+      ],
+      "attack": [
+        "travel"
+      ],
+      "skill": [
+        "hold"
+      ]
+    },
+    "wanderer": {
+      "attack": [
+        "travel"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "wriothesley": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "xiangling": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ],
+      "skill": [
+        "a4_delay"
+      ]
+    },
+    "xianyun": {
+      "attack": [
+        "travel"
+      ],
+      "charge": [
+        "travel"
+      ],
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "xiao": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "xilonen": {},
+    "xingqiu": {},
+    "xinyan": {
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "yaemiko": {
+      "attack": [
+        "travel"
+      ],
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "yanfei": {
+      "attack": [
+        "travel"
+      ],
+      "high_plunge": [
+        "collision"
+      ],
+      "low_plunge": [
+        "collision"
+      ]
+    },
+    "yaoyao": {},
+    "yelan": {
+      "aim": [
+        "hold",
+        "travel",
+        "weakspot"
+      ],
+      "attack": [
+        "travel"
+      ],
+      "burst": [
+        "travel"
+      ],
+      "skill": [
+        "marked"
+      ]
+    },
+    "yoimiya": {
+      "aim": [
+        "hold",
+        "kindling_travel",
+        "travel",
+        "weakspot"
+      ],
+      "attack": [
+        "travel"
+      ]
+    },
+    "yumemizukimizuki": {
+      "attack": [
+        "travel"
+      ],
+      "skill": [
+        "travel"
+      ]
+    },
+    "yunjin": {
+      "skill": [
+        "hold",
+        "perfect"
+      ]
+    },
+    "zhongli": {
+      "skill": [
+        "hold",
+        "hold_nostele"
+      ]
+    }
   }
 }

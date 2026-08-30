@@ -304,3 +304,80 @@ def test_a_repeat_that_is_not_a_positive_count_is_refused(repeat: str) -> None:
 def test_nothing_at_all_is_refused() -> None:
     with pytest.raises(RotationParseError):
         parse_action_block("", ROSTER)
+
+
+# ── kit variants survive the round trip ─────────────────────────────────────
+#
+# A config **this repo emits** must be readable by **this repo's** importer. Before the
+# variant group was added to `_GATED`, `skill[hold=1]` was refused — and the refusal blamed
+# the condition, which was not what was wrong.
+
+CHEVREUSE = _Character("10000090", "Chevreuse", "Pyro")
+
+
+def _gated(action: str, key: str = "chevreuse") -> str:
+    base = action.split("[", maxsplit=1)[0].split(":", maxsplit=1)[0]
+    return (
+        f"active {key};\nwhile 1 {{\n"
+        f"    if .{key}.{base}.ready {{ {key} {action}; }}\n}}"
+    )
+
+
+def test_a_hold_is_read_back_as_the_action_it_is():
+    steps = parse_action_block(_gated("skill[hold=1]"), [CHEVREUSE])
+
+    assert [s["action"] for s in steps] == ["skill_hold"]
+
+
+def test_a_hold_keeps_its_repetition():
+    steps = parse_action_block(_gated("skill[hold=1]:2"), [CHEVREUSE])
+
+    assert steps[0]["repeat"] == 2
+
+
+def test_what_the_compiler_emits_is_what_the_parser_reads():
+    """The round trip, on the whole shape rather than on one line.
+
+    A rotation published to the library and imported elsewhere goes out through
+    `compile_rotation` and comes back through here. If the two disagreed, a hold-E would be
+    refused on import — or worse, quietly read as a tap.
+    """
+    steps = [
+        {"character": "10000090", "action": "skill_hold", "repeat": 1, "note": ""},
+        {"character": "10000090", "action": "burst", "repeat": 1, "note": ""},
+        {"character": "10000090", "action": "attack", "repeat": 3, "note": ""},
+    ]
+    roster = {"10000090": CHEVREUSE}
+
+    read_back = parse_action_block(compile_rotation(steps, roster), [CHEVREUSE])
+
+    assert read_back == steps
+
+
+def test_a_parameter_this_model_cannot_hold_is_refused_not_dropped():
+    """gcsim **ignores** a parameter it does not recognise for a character — measured.
+
+    `xingqiu skill[hold=1]` and `xingqiu skill` produce byte-identical damage through the
+    committed wasm build. So importing `skill[glide_cancel=1]` as a plain `skill` would give
+    the user a rotation that looks like the author's and simulates to a different number.
+    """
+    with pytest.raises(RotationParseError) as raised:
+        parse_action_block(_gated("skill[glide_cancel=1]"), [CHEVREUSE])
+
+    assert "glide_cancel" in str(raised.value)
+
+
+def test_a_parameter_that_is_not_a_flag_is_refused():
+    """`hold=3` is a quantity, and this model expresses one boolean variant per action."""
+    with pytest.raises(RotationParseError) as raised:
+        parse_action_block(_gated("skill[hold=3]"), [CHEVREUSE])
+
+    assert "kit variant" in str(raised.value)
+
+
+def test_a_variant_no_character_declares_is_refused():
+    """`burst[hold=1]` parses as a flag and names a move gcsim has for nobody at this pin."""
+    with pytest.raises(RotationParseError) as raised:
+        parse_action_block(_gated("burst[hold=1]"), [CHEVREUSE])
+
+    assert "no such move" in str(raised.value)

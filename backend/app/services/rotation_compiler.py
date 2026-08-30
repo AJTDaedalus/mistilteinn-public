@@ -57,8 +57,59 @@ if TYPE_CHECKING:
     from app.models.character import Character
 
 
+#: How many steps a rotation may hold **after** its groups are expanded.
+#:
+#: `MAX_STEPS` (200) and `MAX_REPEAT` (20) are checked on the *authored* list, and `unroll`
+#: runs afterwards — so 200 steps each in a group repeating 20 times is 4,000 gated statements,
+#: each of which may itself carry `:20`. `MAX_REPEAT` exists "so a typo cannot compile to a
+#: config that runs for an hour", and groups walked straight around it.
+#:
+#: Ten times the authored cap: generous enough that no rotation anyone writes meets it, and
+#: bounded enough that a mistake is refused with a sentence rather than compiled.
+MAX_UNROLLED_STEPS = 2000
+
+
 class RotationCompileError(RuntimeError):
     """The rotation cannot be compiled, and the message says which step is at fault."""
+
+
+def unroll(steps: Sequence[Mapping[str, object]]) -> list[Mapping[str, object]]:
+    """Expand every group into its repeated steps — the flat list everything downstream sees.
+
+    `DECISIONS.md` §27. `DESIGN_rotation.md` §2 refused nesting because *"nesting buys
+    terseness and costs a grammar"*, and the owner amended it once the cost turned out not to
+    be paid: a group carries a repeat count and **nothing else**, and it is gone before the
+    compiler runs. gcsim receives character-for-character what it received before groups
+    existed.
+
+    **This runs in front of both `compile_rotation` and `rotation_signature`.** Those two
+    already share `_resolve` so that a signature and a config cannot disagree about who a step
+    names; putting the unroll ahead of both extends the same guarantee to *how many* steps
+    there are. The consequence is deliberate: a grouped rotation and its unrolled equal produce
+    the same `context_key` and share one cached run, which is correct because the key describes
+    what gcsim ran.
+
+    A step with no group passes through untouched, so a rotation authored before groups existed
+    unrolls to itself.
+    """
+    flat: list[Mapping[str, object]] = []
+    index = 0
+    while index < len(steps):
+        group = steps[index].get("group")
+        if not group:
+            flat.append(steps[index])
+            index += 1
+            continue
+        end = index
+        while end < len(steps) and steps[end].get("group") == group:
+            end += 1
+        chunk = list(steps[index:end])
+        # Read off the first member. The schema requires every member to agree, so this cannot
+        # silently pick one of two answers — see `_groups_are_contiguous_and_agree`.
+        repeat = int(chunk[0].get("group_repeat", 1) or 1)
+        flat.extend(chunk * repeat)
+        index = end
+    return flat
 
 
 def compile_rotation(
@@ -80,6 +131,15 @@ def compile_rotation(
         )
         raise RotationCompileError(msg)
 
+    steps = unroll(steps)
+    if len(steps) > MAX_UNROLLED_STEPS:
+        msg = (
+            f"this rotation unrolls to {len(steps)} steps, past the {MAX_UNROLLED_STEPS} a "
+            f"config may hold. A group multiplies its chunk, so a long rotation of long groups "
+            f"leaves the bound the authored list is checked against. Shorten it, or repeat a "
+            f"group fewer times."
+        )
+        raise RotationCompileError(msg)
     keys = _resolve(steps, characters)
 
     # **No swap actions are emitted, and none are needed.** gcsim's parser desugars
@@ -120,6 +180,7 @@ def rotation_signature(
     a rotation makes it a different rotation. `repeat` is in the string for the same reason:
     `attack:3` is not `attack`.
     """
+    steps = unroll(steps)
     keys = _resolve(steps, characters)
     return [
         f"{key} {step['action']}:{int(step.get('repeat', 1) or 1)}"
@@ -161,11 +222,23 @@ def _resolve(
 
 
 def _statement(key: str, step: Mapping[str, object]) -> str:
-    """One gated action, with gcsim's own `:n` repetition."""
-    action = str(step["action"])
+    """One gated action, with gcsim's own `:n` repetition and `[param=1]` variant.
+
+    **The variant becomes a parameter here and nowhere else.** The model holds `skill_hold` as
+    an action, because a hold-E is a different move to a tap-E and the owner's ruling is that
+    this model stays parameterless (`DESIGN_rotation_builder_gui.md` §3). gcsim spells the same
+    thing `skill[hold=1]` — the form a real community config uses,
+    `references/gcsim_db/clorinde-chevreuse-nicole-durin.txt:48`.
+
+    **The gate names the base action, not the variant.** `.chev.skill.ready` is the condition
+    gcsim carries; there is no `.skill_hold.ready`, because a hold and a tap share one cooldown.
+    Gating on the variant would emit a condition gcsim's parser does not know.
+    """
+    action, param = gcsim_keys.split_variant(str(step["action"]))
     repeat = int(step.get("repeat", 1) or 1)
-    call = f"{key} {action}:{repeat};" if repeat > 1 else f"{key} {action};"
-    return f"if .{key}.{action}.ready {{ {call} }}"
+    call = action if param is None else f"{action}[{param}=1]"
+    suffix = f":{repeat}" if repeat > 1 else ""
+    return f"if .{key}.{action}.ready {{ {key} {call}{suffix}; }}"
 
 
 def signature_digest(signature: Sequence[str]) -> str:

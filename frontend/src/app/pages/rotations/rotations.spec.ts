@@ -12,10 +12,31 @@ const ROSTER: RosterCharacter[] = [
     // test passed against a feature that showed `skill` on every button. Caught by looking
     // at the page.
     abilities: { skill: 'Kamisato Art: Hyouka' },
+    // The per-character vocabulary (T.3). Ayaka has no kit variant — gcsim's generated
+    // validation table declares her no `hold` — which is exactly the fixture worth having
+    // beside a character who does.
+    actions: [
+      { action: 'skill', base: 'skill', variant: null, name: 'Kamisato Art: Hyouka',
+        icon: 'Skill_S_Ayaka_01' },
+      { action: 'burst', base: 'burst', variant: null, name: 'Kamisato Art: Soumetsu',
+        icon: 'Skill_E_Ayaka' },
+      { action: 'attack', base: 'attack', variant: null, name: 'Kamisato Art: Kabuki',
+        icon: 'Skill_A_01' },
+      // One of the seven that are not talents: the key stands in for a name, and there is no
+      // sprite. Owner ruling — words, not glyphs.
+      { action: 'charge', base: 'charge', variant: null, name: 'charge', icon: null },
+    ],
   },
   // No seeded talents: the editor falls back to the action key, which is the case worth
-  // having a fixture for.
-  { nanoka_id: '10000014', name: 'Barbara', element: 'Hydro', abilities: {} },
+  // having a fixture for. And a hold-E, so the badge and the per-character offer have
+  // somewhere to be tested.
+  {
+    nanoka_id: '10000014', name: 'Barbara', element: 'Hydro', abilities: {},
+    actions: [
+      { action: 'skill', base: 'skill', variant: null, name: 'skill', icon: null },
+      { action: 'skill_hold', base: 'skill', variant: 'hold', name: 'skill', icon: null },
+    ],
+  },
 ];
 
 const OPTIONS = {
@@ -74,7 +95,7 @@ describe('RotationsPage', () => {
     page['addStep']();
 
     expect(page['steps']()).toEqual([
-      { character: '10000002', action: 'skill', repeat: 1, note: '' },
+      { character: '10000002', action: 'skill', repeat: 1, note: '', group: '', group_repeat: 1 },
     ]);
   });
 
@@ -156,7 +177,7 @@ describe('RotationsPage', () => {
     await page['load']();
     page['edit']({
       id: 'rot-1', name: 'Saved', team_id: 'team-1', description: '',
-      steps: [{ character: '10000002', action: 'burst', repeat: 1, note: '' }],
+      steps: [{ character: '10000002', action: 'burst', repeat: 1, note: '', group: '', group_repeat: 1 }],
       visibility: 'private' as const,
     });
     page['name'].set('Renamed');
@@ -166,7 +187,7 @@ describe('RotationsPage', () => {
     expect(create).not.toHaveBeenCalled();
     expect(update).toHaveBeenCalledWith('rot-1', {
       name: 'Renamed',
-      steps: [{ character: '10000002', action: 'burst', repeat: 1, note: '' }],
+      steps: [{ character: '10000002', action: 'burst', repeat: 1, note: '', group: '', group_repeat: 1 }],
     });
   });
 
@@ -197,7 +218,7 @@ describe('RotationsPage', () => {
     await page['load']();
     page['edit']({
       id: 'rot-1', name: 'Saved', team_id: 'team-1', description: '',
-      steps: [{ character: '10000002', action: 'burst', repeat: 1, note: '' }],
+      steps: [{ character: '10000002', action: 'burst', repeat: 1, note: '', group: '', group_repeat: 1 }],
       visibility: 'private' as const,
     });
     expect(page['dirty']()).toBe(false);
@@ -229,7 +250,7 @@ describe('RotationsPage', () => {
     await page['load']();
     page['edit']({
       id: 'rot-1', name: 'Saved', team_id: 'team-1', description: '',
-      steps: [{ character: '10000002', action: 'burst', repeat: 1, note: '' }],
+      steps: [{ character: '10000002', action: 'burst', repeat: 1, note: '', group: '', group_repeat: 1 }],
       visibility: 'private' as const,
     });
     page['setStep'](0, { repeat: 4 });
@@ -266,7 +287,7 @@ describe('RotationsPage library', () => {
   const TEAM = OPTIONS.teams[0];
   const ROW = {
     id: 'lib-1', name: 'Freeze opener', description: '',
-    steps: [{ character: '10000002', action: 'burst' as const, repeat: 1, note: '' }],
+    steps: [{ character: '10000002', action: 'burst' as const, repeat: 1, note: '', group: '', group_repeat: 1 }],
     characters: ['10000002', '10000014'], like_count: 2, liked_by_me: false,
   };
 
@@ -590,5 +611,507 @@ describe('RotationsPage reorder and preview', () => {
     page['schedulePreview']();
 
     expect(preview).not.toHaveBeenCalled();
+  });
+});
+
+// ── the timeline's three levels: selection, copy/paste, groups, insert ───────
+//
+// `DESIGN_rotation_builder_gui.md` §2. One selection signal and three renderers, because the
+// recurring failure in this repo is two representations that can disagree — #184 found every
+// `<select>` in this very editor showing option zero, with 418 tests passing.
+
+describe('RotationsPage — selection', () => {
+  async function editing(steps: string[] = ['skill', 'burst', 'attack']) {
+    const page = healthy();
+    await page['load']();
+    page['pickTeam'](['team-1']);
+    for (const action of steps) page['appendStep']('10000002', action as 'skill');
+    return page;
+  }
+
+  it('selects one step, and replaces the selection on a plain click', async () => {
+    const page = await editing();
+
+    page['onPick']({ index: 1, extend: false });
+    page['onPick']({ index: 2, extend: false });
+
+    expect(page['selection']()).toEqual({ start: 2, end: 2 });
+  });
+
+  it('extends from the anchor on shift-click, in either direction', async () => {
+    const page = await editing();
+
+    page['onPick']({ index: 2, extend: false });
+    page['onPick']({ index: 0, extend: true });
+
+    expect(page['selection']()).toEqual({ start: 0, end: 2 });
+  });
+
+  it('exposes the single selected step and nothing for a span', async () => {
+    // Level three edits *one* move. A detail pane showing the first of five would be editing
+    // something other than what the user has highlighted.
+    const page = await editing();
+
+    page['onPick']({ index: 1, extend: false });
+    expect(page['selectedStep']()?.action).toBe('burst');
+
+    page['onPick']({ index: 2, extend: true });
+    expect(page['selectedStep']()).toBeNull();
+  });
+
+  it('clears the selection when a step is removed', async () => {
+    // The indices moved. Keeping the span would leave it pointing at a different step, which
+    // is the same class of error as a stale cached number.
+    const page = await editing();
+    page['onPick']({ index: 2, extend: false });
+
+    page['removeStep'](2);
+
+    expect(page['selection']()).toBeNull();
+  });
+});
+
+describe('RotationsPage — copy and paste', () => {
+  async function withSteps() {
+    const page = healthy();
+    await page['load']();
+    page['pickTeam'](['team-1']);
+    page['appendStep']('10000002', 'skill');
+    page['appendStep']('10000002', 'burst');
+    return page;
+  }
+
+  it('keeps DESIGN_rotation.md §2 promise that a UI can duplicate a selection', async () => {
+    // §2 refused nesting *and* offered this instead — "the list is short and a UI can
+    // duplicate a selection" — and no UI had ever done it.
+    const page = await withSteps();
+    page['onPick']({ index: 0, extend: false });
+    page['onPick']({ index: 1, extend: true });
+
+    page['copySelection']();
+    page['pasteClipboard']();
+
+    expect(page['steps']().map((s) => s.action)).toEqual(['skill', 'burst', 'skill', 'burst']);
+  });
+
+  it('pastes after the selection and selects what it pasted', async () => {
+    const page = await withSteps();
+    page['onPick']({ index: 0, extend: false });
+    page['copySelection']();
+
+    page['pasteClipboard']();
+
+    expect(page['steps']().map((s) => s.action)).toEqual(['skill', 'skill', 'burst']);
+    expect(page['selection']()).toEqual({ start: 1, end: 1 });
+  });
+
+  it('pastes at the end when nothing is selected', async () => {
+    const page = await withSteps();
+    page['onPick']({ index: 0, extend: false });
+    page['copySelection']();
+    page['selection'].set(null);
+
+    page['pasteClipboard']();
+
+    expect(page['steps']()).toHaveLength(3);
+  });
+
+  it('drops the group id off a pasted fragment', async () => {
+    // A fragment lifted out of a group is not that group. Carrying the id would silently
+    // extend a repeat the user did not ask for — or split one, which the API refuses on save.
+    const page = await withSteps();
+    page['onPick']({ index: 0, extend: false });
+    page['onPick']({ index: 1, extend: true });
+    page['groupSelection'](3);
+    page['copySelection']();
+    page['selection'].set(null);
+
+    page['pasteClipboard']();
+
+    expect(page['steps']().slice(2).map((s) => s.group)).toEqual(['', '']);
+  });
+
+  it('keeps a pasted step for a character this team lacks, and says so', async () => {
+    // `DESIGN_rotation.md` OQ-R2's ruling for every unresolvable reference in this repo:
+    // kept and flagged. Dropping it would delete the user's work to make a save succeed.
+    const page = await withSteps();
+    page['clipboard'].set([
+      { character: 'nobody', action: 'skill', repeat: 1, note: '', group: '', group_repeat: 1 },
+    ]);
+
+    page['pasteClipboard']();
+
+    expect(page['steps']().some((s) => s.character === 'nobody')).toBe(true);
+    expect(page['actionError']()).toContain('this team does not have');
+  });
+
+  it('does nothing when the clipboard is empty', async () => {
+    const page = await withSteps();
+
+    page['pasteClipboard']();
+
+    expect(page['steps']()).toHaveLength(2);
+  });
+
+  it('leaves a chord alone while the user is typing in a field', async () => {
+    // Copying a rotation when they meant to copy the text of a note would be the editor
+    // overriding the browser.
+    const page = await withSteps();
+    page['onPick']({ index: 0, extend: false });
+    const input = document.createElement('input');
+
+    page['onEditorKey']({
+      ctrlKey: true, key: 'c', target: input, preventDefault: () => undefined,
+    } as unknown as KeyboardEvent);
+
+    expect(page['clipboard']()).toEqual([]);
+  });
+
+  it('copies on ctrl+c outside a field', async () => {
+    const page = await withSteps();
+    page['onPick']({ index: 0, extend: false });
+
+    page['onEditorKey']({
+      ctrlKey: true, key: 'c', target: document.createElement('div'),
+      preventDefault: () => undefined,
+    } as unknown as KeyboardEvent);
+
+    expect(page['clipboard']()).toHaveLength(1);
+  });
+});
+
+describe('RotationsPage — groups', () => {
+  async function withThree() {
+    const page = healthy();
+    await page['load']();
+    page['pickTeam'](['team-1']);
+    for (const action of ['skill', 'burst', 'attack']) {
+      page['appendStep']('10000002', action as 'skill');
+    }
+    return page;
+  }
+
+  it('wraps a span in a group that repeats', async () => {
+    const page = await withThree();
+    page['onPick']({ index: 0, extend: false });
+    page['onPick']({ index: 1, extend: true });
+
+    page['groupSelection'](3);
+
+    const steps = page['steps']();
+    expect(steps.map((s) => s.group)).toEqual(['g1', 'g1', '']);
+    expect(steps.map((s) => s.group_repeat)).toEqual([3, 3, 1]);
+  });
+
+  it('refuses to group a single step', async () => {
+    // A group of one repeats one step, which `repeat` already does — and it would put two
+    // ways to say the same thing on screen.
+    const page = await withThree();
+    page['onPick']({ index: 0, extend: false });
+
+    expect(page['canGroup']()).toBe(false);
+  });
+
+  it('refuses to group a span that already contains a group', async () => {
+    // No group inside a group. Part of the owner's ruling, not implementation detail.
+    const page = await withThree();
+    page['onPick']({ index: 0, extend: false });
+    page['onPick']({ index: 1, extend: true });
+    page['groupSelection'](2);
+    page['onPick']({ index: 0, extend: false });
+    page['onPick']({ index: 2, extend: true });
+
+    expect(page['canGroup']()).toBe(false);
+  });
+
+  it('picks an id nothing else is using', async () => {
+    const page = await withThree();
+    page['onPick']({ index: 0, extend: false });
+    page['onPick']({ index: 1, extend: true });
+    page['groupSelection'](2);
+    page['appendStep']('10000002', 'skill');
+    page['appendStep']('10000002', 'burst');
+    page['onPick']({ index: 3, extend: false });
+    page['onPick']({ index: 4, extend: true });
+
+    page['groupSelection'](2);
+
+    expect(new Set(page['steps']().map((s) => s.group))).toEqual(new Set(['g1', '', 'g2']));
+  });
+
+  it('ungroups the whole group, not only the selected part', async () => {
+    const page = await withThree();
+    page['onPick']({ index: 0, extend: false });
+    page['onPick']({ index: 1, extend: true });
+    page['groupSelection'](2);
+    page['onPick']({ index: 0, extend: false });
+
+    page['ungroupSelection']();
+
+    expect(page['steps']().every((s) => s.group === '')).toBe(true);
+  });
+
+  it('changes the repeat on every member, because the compiler reads one of them', async () => {
+    const page = await withThree();
+    page['onPick']({ index: 0, extend: false });
+    page['onPick']({ index: 1, extend: true });
+    page['groupSelection'](2);
+    page['onPick']({ index: 0, extend: false });
+
+    page['setGroupRepeat'](5);
+
+    expect(page['steps']().slice(0, 2).map((s) => s.group_repeat)).toEqual([5, 5]);
+  });
+
+  it('bounds the repeat to what the API accepts', async () => {
+    // MAX_REPEAT is 20. A number the field would let through and the save would refuse is
+    // the picker and the validator disagreeing.
+    const page = await withThree();
+    page['onPick']({ index: 0, extend: false });
+    page['onPick']({ index: 1, extend: true });
+    page['groupSelection'](2);
+    page['onPick']({ index: 0, extend: false });
+
+    page['setGroupRepeat'](999);
+
+    expect(page['steps']()[0].group_repeat).toBe(20);
+  });
+});
+
+describe('RotationsPage — inserting at a position', () => {
+  async function withTwo() {
+    const page = healthy();
+    await page['load']();
+    page['pickTeam'](['team-1']);
+    page['appendStep']('10000002', 'skill');
+    page['appendStep']('10000002', 'burst');
+    return page;
+  }
+
+  it('inserts rather than appends', async () => {
+    const page = await withTwo();
+
+    page['insertStep'](1, '10000002', 'attack');
+
+    expect(page['steps']().map((s) => s.action)).toEqual(['skill', 'attack', 'burst']);
+  });
+
+  it('gives the drag path and the keyboard path the same result', async () => {
+    // T.6's acceptance criterion. A drag has no keyboard equivalent, so without the second
+    // path, inserting anywhere but the end would be mouse-only.
+    const dragged = await withTwo();
+    dragged['dragOffer'].set({ character: '10000002', action: 'attack' });
+    dragged['onTimelineDrop'](1);
+
+    // `TestBed` cannot be reconfigured once a component is instantiated, and this test needs
+    // two pages to compare. Resetting is the supported way to get a second one.
+    TestBed.resetTestingModule();
+    const typed = await withTwo();
+    typed['onPick']({ index: 1, extend: false });
+    typed['addingFor'].set('10000002');
+    typed['addOffer']('attack');
+
+    expect(typed['steps']()).toEqual(dragged['steps']());
+  });
+
+  it('moves an existing tile when no palette drag is in flight', async () => {
+    // Two drag sources over one list, and which is in flight is the only thing that decides.
+    const page = await withTwo();
+    page['onDragStart'](0);
+
+    page['onTimelineDrop'](1);
+
+    expect(page['steps']().map((s) => s.action)).toEqual(['burst', 'skill']);
+  });
+
+  it('clamps an insert past the end rather than leaving a hole', async () => {
+    const page = await withTwo();
+
+    page['insertStep'](99, '10000002', 'attack');
+
+    expect(page['steps']().map((s) => s.action)).toEqual(['skill', 'burst', 'attack']);
+  });
+});
+
+describe('RotationsPage — the measured timeline goes stale', () => {
+  it('drops to the authored view the instant a step changes', async () => {
+    // The owner's ruling. Nothing on screen is ever untrue — the same rule the gcsim preview
+    // has followed since #184, which refuses to leave a stale config beside an edit that
+    // broke it.
+    const page = healthy();
+    await page['load']();
+    page['pickTeam'](['team-1']);
+    page['appendStep']('10000002', 'skill');
+    page['measured'].set([{ character: 0, key: 'ayaka', start: 1, end: 60, actions: 3 }]);
+
+    page['setStep'](0, { repeat: 2 });
+
+    expect(page['measured']()).toBeNull();
+  });
+
+  it('drops it when a different rotation is opened', async () => {
+    const page = healthy();
+    await page['load']();
+    page['measured'].set([{ character: 0, key: 'ayaka', start: 1, end: 60, actions: 3 }]);
+
+    page['newRotation']();
+
+    expect(page['measured']()).toBeNull();
+  });
+});
+
+// ── what the review found ────────────────────────────────────────────────────
+
+describe('RotationsPage — a failed run is not an empty one', () => {
+  it('reports a gcsim failure rather than "nothing executed"', async () => {
+    // `sample()` reports failure by **returning** `{"error": …}`, not by throwing — so
+    // `JSON.parse` succeeds, the object has no `logs`, and `onFieldIntervals` returns `[]`.
+    // Setting that on `measured` puts the timeline into measured mode saying every gate
+    // stayed closed, about a run that never started.
+    const page = healthy({
+      preview: vi.fn().mockResolvedValue('options iteration=1;'),
+    } as unknown as RotationsService);
+    await page['load']();
+    page['pickTeam'](['team-1']);
+    page['appendStep']('10000002', 'skill');
+    page['measured'].set(null);
+
+    // The module is loaded through `loadGcsim`, which the page calls; stubbing the page's own
+    // seam is enough to fix the behaviour under test without a wasm binary in a unit test.
+    const failing = {
+      validateConfig: () => ({}),
+      sample: () => '{"error":"requested next char 1 is not active and next action is not swap"}',
+    };
+    await page['runSampleWith'](failing as never);
+
+    expect(page['measured']()).toBeNull();
+    expect(page['sampleError']()).toContain('not active');
+  });
+
+  it('shows an Error message rather than two braces', async () => {
+    // `apiErrorMessage` understands FastAPI's `{detail}` and otherwise falls through to
+    // `JSON.stringify`, whose answer for an `Error` is `"{}"` — its properties are not
+    // enumerable. Every gcsim failure rendered as an empty object in a red box.
+    const page = healthy({
+      preview: vi.fn().mockResolvedValue('options iteration=1;'),
+    } as unknown as RotationsService);
+    await page['load']();
+    page['pickTeam'](['team-1']);
+    page['appendStep']('10000002', 'skill');
+
+    await page['runSampleWith']({
+      validateConfig: () => '{"error":"unrecognized weapon"}',
+      sample: () => '{}',
+    } as never);
+
+    expect(page['sampleError']()).toContain('unrecognized weapon');
+    expect(page['sampleError']()).not.toBe('{}');
+  });
+});
+
+describe('RotationsPage — a group cannot be split by an edit', () => {
+  async function grouped() {
+    const page = healthy();
+    await page['load']();
+    page['pickTeam'](['team-1']);
+    for (const a of ['skill', 'burst', 'attack']) page['appendStep']('10000002', a as 'skill');
+    page['onPick']({ index: 0, extend: false });
+    page['onPick']({ index: 1, extend: true });
+    page['groupSelection'](2);
+    return page;
+  }
+
+  it('a step dropped inside a group joins it', async () => {
+    // Otherwise `[g1, '', g1]` — a group in two places, which the save refuses with a 422 the
+    // user cannot trace back to a drag, and which the preview compiles as the chunk twice.
+    const page = await grouped();
+
+    page['insertStep'](1, '10000002', 'attack');
+
+    expect(page['steps']().map((s) => s.group)).toEqual(['g1', 'g1', 'g1', '']);
+  });
+
+  it('a step inserted at the edge of a group stays out of it', async () => {
+    const page = await grouped();
+
+    page['insertStep'](0, '10000002', 'attack');
+
+    expect(page['steps']()[0].group).toBe('');
+  });
+
+  it('dragging a member out releases the members it left behind', async () => {
+    // Keeping the first run and releasing the rest, rather than gathering them: the user moved
+    // that step deliberately, and moving it back would undo the edit they just made.
+    const page = await grouped();
+
+    page['reorder'](0, 2);
+
+    const groups = page['steps']().map((s) => s.group);
+    expect(groups.filter((g) => g === 'g1').length).toBeLessThan(2);
+  });
+
+  it('shows the selected group repeat, which the detail pane cannot', async () => {
+    // `selectedStep()` is null for a span, and a group needs a span — so the one control that
+    // edits this value could never display it. It read 1 while the badge read what you set.
+    const page = await grouped();
+
+    expect(page['selectedGroupRepeat']()).toBe(2);
+  });
+});
+
+describe('RotationsPage — Ctrl+C leaves the browser alone', () => {
+  it('does not cancel a copy when text is selected', async () => {
+    // The compiled gcsim config is a `<pre>` in this same dialog and is the page's main
+    // artifact. Cancelling the browser's copy and overwriting the clipboard with step JSON is
+    // the worst of both, and left no keyboard way to copy the config at all.
+    const page = healthy();
+    await page['load']();
+    page['pickTeam'](['team-1']);
+    page['appendStep']('10000002', 'skill');
+    page['onPick']({ index: 0, extend: false });
+
+    const host = document.createElement('div');
+    host.textContent = 'some config text';
+    document.body.append(host);
+    const range = document.createRange();
+    range.selectNodeContents(host);
+    document.getSelection()?.removeAllRanges();
+    document.getSelection()?.addRange(range);
+
+    let prevented = false;
+    page['onEditorKey']({
+      ctrlKey: true, key: 'c', target: document.createElement('div'),
+      preventDefault: () => { prevented = true; },
+    } as unknown as KeyboardEvent);
+
+    expect(prevented).toBe(false);
+    expect(page['clipboard']()).toEqual([]);
+    document.getSelection()?.removeAllRanges();
+    host.remove();
+  });
+});
+
+describe('RotationsPage — pasting into a group', () => {
+  it('releases the host group rather than leaving it in two places', async () => {
+    // Same shape as the drag: a fragment pasted into the middle of `g1` leaves `[g1, '', g1]`,
+    // which the save refuses and the preview compiles as the chunk twice. The fragment stays
+    // ungrouped — joining would silently extend a repeat nobody asked for — so the host is
+    // what gets released.
+    const page = healthy();
+    await page['load']();
+    page['pickTeam'](['team-1']);
+    for (const a of ['skill', 'burst', 'attack']) page['appendStep']('10000002', a as 'skill');
+    page['onPick']({ index: 0, extend: false });
+    page['onPick']({ index: 1, extend: true });
+    page['groupSelection'](2);
+    page['clipboard'].set([
+      { character: '10000002', action: 'attack', repeat: 1, note: '', group: '', group_repeat: 1 },
+    ]);
+    page['onPick']({ index: 0, extend: false });
+
+    page['pasteClipboard']();
+
+    const groups = page['steps']().map((s) => s.group);
+    expect(groups.filter((g) => g === 'g1').length).toBeLessThan(2);
   });
 });

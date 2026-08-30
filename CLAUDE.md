@@ -87,10 +87,10 @@ browser build, a 100-iteration 90-second rotation is **7.84 s single-threaded** 
 candidates is **~7.7 minutes**. The decision holds; the interaction it implies does not. It is
 a job with progress, never a request that blocks.
 
-- **Both suites pass, with nothing skipped.** **1567 backend tests, 0 skipped**; **565
+- **Both suites pass, with nothing skipped.** **1616 backend tests, 0 skipped**; **626
   frontend tests**; `create_app()` serves **53 paths**; the SPA has **17 routes plus a
   catch-all**. (Every figure here has been stale at least once — 1273 / 255 / 40, then
-  1439 / 450 / 39, then 1549 / 544 / 51. **The number is not the point; the command underneath
+  1439 / 450 / 39, then 1549 / 544 / 51, then 1567 / 565. **The number is not the point; the command underneath
   it is**, and the honest reading of this line is "roughly this many, re-derive before citing
   it".) **One integration test has been seen to fail once and pass on re-run** —
   `test_a_talent_with_no_level_set_is_not_offered`, once in four full-suite runs, passing in
@@ -104,6 +104,12 @@ a job with progress, never a request that blocks.
   gcsim crossval, gitleaks and pip-audit. `--list` shows the plan; `--clean` runs from a
   fresh clone of HEAD. **A red suite is a regression, not the size of the port** — that
   excuse expired at B.13.
+- **`npm run check:tokens` exists because CSS fails silently.** An undefined custom property
+  invalidates its whole declaration and the element keeps what it had, so `var(--accent)` — a
+  token this palette does not have — drew a badge as dark text on a dark tile with a clean
+  build, a passing lint and a unit test asserting its content. It was found by taking a
+  screenshot. The sweep found four more live in the tree, including the toast's border. Neither
+  the typecheck nor the linter reads a stylesheet's variables; this does, and CI runs it.
 - **`npm test` is `ng test`, and the distinction matters.** It builds the app first; a bare
   `npx vitest run` skips that and every TestBed spec collapses — 53 failures that mean
   nothing. *Run what CI runs* applies to the command, not only to the suite.
