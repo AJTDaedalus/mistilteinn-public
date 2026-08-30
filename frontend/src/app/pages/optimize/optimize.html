@@ -187,7 +187,23 @@
         <p class="hint">No rotations authored yet — write one before searching against it.</p>
       }
 
-      @if (!fourPieceChoices().length && candidates().length) {
+      @if (unsimulableSets().length) {
+        <!-- **Outside the picker**, because the case that most needs it is the one where the
+             picker is not rendering: an early-game inventory is largely Adventurer, Lucky Dog
+             and Tiny Miracle, so every set it can field four of may be unsimulable and the
+             fieldset disappears entirely — leaving the "you own no 4-piece yet" line below,
+             which would be false. A set vanishing looks exactly like not owning enough of it.
+
+             **No reason is given.** The first version said "usually a set released after the
+             pin"; measured against the key snapshot, that is true of one of the twelve. The
+             rest are legacy low-rarity sets that long predate it. -->
+        <p class="hint">
+          Not offered, because gcsim does not implement them at the pinned build:
+          {{ unsimulableSets().join(', ') }}.
+        </p>
+      }
+
+      @if (!fourPieceChoices().length && !unsimulableSets().length && candidates().length) {
         <!-- **Why Optimize is off, said where the control would have been.** The gate is
              "pick at least one set", and the hint explaining it lives inside the picker — so
              an inventory that can field no 4-piece, or a filter load that failed, left a
@@ -242,7 +258,7 @@
             </p>
           }
 
-          @if (!selectedSets().size && chosenPair() === null) {
+    @if (!selectedSets().size && chosenPair() === null) {
             <!-- Ruling 3: nothing is preselected, so the empty state has to say what to do
                  rather than leave a disabled button unexplained. -->
             <p class="hint">Pick at least one set. Roughly six seconds each.</p>

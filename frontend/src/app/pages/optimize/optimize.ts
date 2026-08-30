@@ -241,12 +241,38 @@ export class OptimizePage implements OnInit {
     const catalogue = this.artifactSets();
     return [...this.slotsBySet(this.candidates())]
       .filter(([, slots]) => slots.size >= 4)
+      // **And that gcsim implements.** Offering one it has no key for is offering a run that
+      // cannot happen: the backend refuses the whole calibration with a 422 naming the set, so
+      // a mixed selection returned *nothing* rather than the sets it could have done. "All
+      // 4-piece" made that the one-click default.
+      //
+      // `!== false`, not `?? false`: a set the catalogue has **no entry for** is unknown, not
+      // known-bad. `loadFilterData` swallows its own failure by design, and treating an empty
+      // catalogue as "nothing is simulable" would turn that into a silently disabled feature —
+      // the same shape as a gate with nothing able to satisfy it.
+      .filter(([setId]) => catalogue.get(setId)?.simulable !== false)
       .map(([setId, slots]) => ({
         setId,
         name: catalogue.get(setId)?.name ?? `set ${setId}`,
         slots: slots.size,
       }))
       .sort((a, b) => b.slots - a.slots || a.name.localeCompare(b.name));
+  });
+
+  /**
+   * Sets the inventory can field four of that gcsim cannot simulate at the pin.
+   *
+   * **Named rather than silently dropped.** A set vanishing from the picker with no
+   * explanation is indistinguishable from not owning enough of it, and the reason is worth
+   * saying: it is usually a set released after the pin, which is a re-pin rather than a fault.
+   */
+  protected readonly unsimulableSets = computed(() => {
+    const catalogue = this.artifactSets();
+    return [...this.slotsBySet(this.candidates())]
+      .filter(([, slots]) => slots.size >= 4)
+      .filter(([setId]) => catalogue.get(setId)?.simulable === false)
+      .map(([setId]) => catalogue.get(setId)?.name ?? `set ${setId}`)
+      .sort((a, b) => a.localeCompare(b));
   });
 
   /**
@@ -1165,6 +1191,12 @@ export class OptimizePage implements OnInit {
    * reach.
    */
   private reachableSets(pieces: readonly KernelCandidate[]): number[] {
+    // The same filter `fourPieceChoices` applies, said again **here** — this is the list that
+    // becomes the request, and a set gcsim cannot key fails the whole calibration with a 422.
+    // Nothing puts an unsimulable id into `selectedSets` today, because selection can only come
+    // from the picker; that is one layer away from the thing that provokes the refusal, and
+    // nothing prunes a selection when the catalogue changes under it.
+    const catalogue = this.artifactSets();
     // **Ordered by how much of the set the user actually owns.** R.1 measured a real account
     // at **S = 35**, so 36 calibrations and ~3.8 minutes — three times the plan's estimate,
     // and filtering by rarity or level barely helps (35 → 28 at 5-star +20), because a large
@@ -1175,6 +1207,7 @@ export class OptimizePage implements OnInit {
     // matter rather than an arbitrary third.
     return [...this.slotsBySet(pieces)]
       .filter(([, slots]) => slots.size >= 4)
+      .filter(([setId]) => catalogue.get(setId)?.simulable !== false)
       .sort((a, b) => b[1].size - a[1].size || a[0] - b[0])
       .map(([setId]) => setId);
   }

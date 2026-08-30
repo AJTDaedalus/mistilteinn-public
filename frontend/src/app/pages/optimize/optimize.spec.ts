@@ -709,8 +709,8 @@ describe('OptimizePage — the rotation objective', () => {
     const page = pageWith();
     (at(page, 'artifactSets') as { set: (m: Map<number, unknown>) => void }).set(
       new Map<number, unknown>([
-        [15003, { id: 'uuid-bs', name: 'Blizzard Strayer' }],
-        [15020, { id: 'uuid-wt', name: "Wanderer's Troupe" }],
+        [15003, { id: 'uuid-bs', name: 'Blizzard Strayer', simulable: true }],
+        [15020, { id: 'uuid-wt', name: "Wanderer's Troupe", simulable: true }],
       ]),
     );
     (at(page, 'pairFirst') as { set: (v: number) => void }).set(15003);
@@ -760,7 +760,7 @@ describe('OptimizePage — the rotation objective', () => {
         // Without this the run stops at the unresolved-set guard and never calibrates —
         // which is itself correct behaviour, and would have made this test vacuous.
         artifactSets: vi.fn().mockResolvedValue(
-          new Map([[1, { id: 'uuid-1', name: 'Set One' }]]),
+          new Map([[1, { id: 'uuid-1', name: 'Set One', simulable: true }]]),
         ),
       } as unknown as Partial<OptimizeService>,
       rotations: {
@@ -854,7 +854,7 @@ describe('OptimizePage — the rotation objective', () => {
     // the endpoint until #119, and #119's tests mock `fetch`.
     const page = pageWith();
     (at(page, 'artifactSets') as { set: (m: Map<number, unknown>) => void }).set(
-      new Map([[15003, { id: 'uuid-bs', name: 'Blizzard Strayer' }]]),
+      new Map([[15003, { id: 'uuid-bs', name: 'Blizzard Strayer', simulable: true }]]),
     );
 
     const targets = (at(page, 'calibrationTargets') as (c: number[]) => {
@@ -881,8 +881,8 @@ describe('OptimizePage — the rotation objective', () => {
     const page = pageWith();
     (at(page, 'artifactSets') as { set: (m: Map<number, unknown>) => void }).set(
       new Map<number, unknown>([
-        [15003, { id: 'uuid-bs', name: 'Blizzard Strayer' }],
-        [15020, { id: 'uuid-wt', name: "Wanderer's Troupe" }],
+        [15003, { id: 'uuid-bs', name: 'Blizzard Strayer', simulable: true }],
+        [15020, { id: 'uuid-wt', name: "Wanderer's Troupe", simulable: true }],
       ]),
     );
 
@@ -1155,9 +1155,9 @@ describe('OptimizePage teams', () => {
  */
 describe('OptimizePage set filter', () => {
   const CATALOGUE = new Map([
-    [1, { id: 'u1', name: 'Gladiator', icon: 'set_glad', fourPieceText: '+35% Normal Attack' }],
-    [2, { id: 'u2', name: 'Emblem', icon: 'set_emblem', fourPieceText: 'Bonus from ER' }],
-    [3, { id: 'u3', name: 'Noblesse', icon: 'set_noblesse', fourPieceText: '+20% party ATK' }],
+    [1, { id: 'u1', name: 'Gladiator', icon: 'set_glad', fourPieceText: '+35% Normal Attack', simulable: true }],
+    [2, { id: 'u2', name: 'Emblem', icon: 'set_emblem', fourPieceText: 'Bonus from ER', simulable: true }],
+    [3, { id: 'u3', name: 'Noblesse', icon: 'set_noblesse', fourPieceText: '+20% party ATK', simulable: true }],
   ]);
 
   /** Three sets, each reaching all five slots, so all three are 4-piece candidates. */
@@ -1404,5 +1404,103 @@ describe('Optimize refuses a search the page has already predicted is empty', ()
 
     expect(page['impossibleSlots']().length).toBeGreaterThan(0);
     expect(page['canOptimize']()).toBe(false);
+  });
+});
+
+describe('sets gcsim cannot simulate', () => {
+  /** Four slots of one set — enough for `fourPieceChoices` to reach it. */
+  const pieces = (...setIds: number[]) =>
+    setIds.flatMap((setId) =>
+      ['equip_bracer', 'equip_necklace', 'equip_shoes', 'equip_ring'].map((slot, i) => ({
+        id: `${setId}-${i}`, slot, set_id: setId, stats: {},
+      })),
+    );
+
+  const withCatalogue = (entries: [number, unknown][]) => {
+    const page = pageWith();
+    page['artifactSets'].set(new Map<number, never>(entries as never));
+    page['candidates'].set(pieces(15003, 15020) as never);
+    return page;
+  };
+
+  it('is not offered as a 4-piece', () => {
+    // Reproduced from production: "All 4-piece" selected every set the inventory could field
+    // four of, one of them was Scarlet Proof, and the whole calibration failed with a 422
+    // naming it — so a run over a mixed selection returned nothing rather than the sets it
+    // could have done.
+    const page = withCatalogue([
+      [15003, { id: 'a', name: 'Blizzard Strayer', simulable: true }],
+      [15020, { id: 'b', name: 'Scarlet Proof', simulable: false }],
+    ]);
+
+    expect(page['fourPieceChoices']().map((c) => c.setId)).toEqual([15003]);
+  });
+
+  it('is named rather than silently dropped', () => {
+    // A set vanishing from the picker looks exactly like not owning enough of it, and the
+    // reason is worth saying: usually a set released after the pinned gcsim build.
+    const page = withCatalogue([
+      [15003, { id: 'a', name: 'Blizzard Strayer', simulable: true }],
+      [15020, { id: 'b', name: 'Scarlet Proof', simulable: false }],
+    ]);
+
+    expect(page['unsimulableSets']()).toEqual(['Scarlet Proof']);
+  });
+
+  it('is not selected by "All 4-piece"', () => {
+    const page = withCatalogue([
+      [15003, { id: 'a', name: 'Blizzard Strayer', simulable: true }],
+      [15020, { id: 'b', name: 'Scarlet Proof', simulable: false }],
+    ]);
+
+    page['selectAllSets']();
+
+    expect([...page['selectedSets']()]).toEqual([15003]);
+  });
+
+  it('treats a set the catalogue does not mention as unknown, not as unusable', () => {
+    // `loadFilterData` swallows its own failure by design. Treating an empty catalogue as
+    // "nothing is simulable" would turn that into a silently disabled feature — a gate with
+    // nothing able to satisfy it, which is a shape this page has already been bitten by.
+    const page = withCatalogue([]);
+
+    expect(page['fourPieceChoices']()).toHaveLength(2);
+    expect(page['unsimulableSets']()).toEqual([]);
+  });
+});
+
+describe('an unknown simulable flag does not disable the feature', () => {
+  const pieces = (...setIds: number[]) =>
+    setIds.flatMap((setId) =>
+      ['equip_bracer', 'equip_necklace', 'equip_shoes', 'equip_ring'].map((slot, i) => ({
+        id: `${setId}-${i}`, slot, set_id: setId, stats: {},
+      })),
+    );
+
+  it('still offers a set whose catalogue entry omits the flag', () => {
+    // An older backend, or a cached response predating the field. Defaulting absent to `false`
+    // in the service defeated the `!== false` guard before it ever ran: every set became
+    // unsimulable, the picker emptied, and the page said the inventory could field no 4-piece.
+    const page = pageWith();
+    page['artifactSets'].set(
+      new Map<number, never>([[15003, { id: 'a', name: 'Blizzard Strayer' }]] as never),
+    );
+    page['candidates'].set(pieces(15003) as never);
+
+    expect(page['fourPieceChoices']()).toHaveLength(1);
+    expect(page['unsimulableSets']()).toEqual([]);
+  });
+
+  it('keeps an unsimulable set out of the list the request is built from', () => {
+    // `fourPieceChoices` is the picker; `reachableSets` is what becomes the calibration
+    // request. The guard belongs in both — nothing prunes a selection when the catalogue
+    // changes under it, and it is the request that provokes the 422.
+    const page = pageWith();
+    page['artifactSets'].set(new Map<number, never>([
+      [15003, { id: 'a', name: 'Blizzard Strayer', simulable: true }],
+      [15020, { id: 'b', name: 'Scarlet Proof', simulable: false }],
+    ] as never));
+
+    expect(page['reachableSets'](pieces(15003, 15020) as never)).toEqual([15003]);
   });
 });

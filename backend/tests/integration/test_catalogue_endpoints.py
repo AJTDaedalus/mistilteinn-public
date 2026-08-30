@@ -356,3 +356,49 @@ async def test_a_wildcard_in_a_name_search_is_taken_literally(
     assert [c["name"] for c in wildcard.json()["items"]] == ["100% Real Character"]
     assert underscore.json()["total"] == 0, "_ must not stand in for a character"
     assert [c["name"] for c in literal.json()["items"]] == ["100% Real Character"]
+
+
+async def test_artifact_sets_say_whether_gcsim_can_simulate_them(
+    client: AsyncClient, db_session: AsyncSession,
+):
+    """`simulable` is answered by the same lookup a run would use.
+
+    **The optimizer offered sets it could not run.** "All 4-piece" selected every set the
+    inventory could field four of, gcsim has no key for some of them, and one such set fails
+    the *whole* calibration with a 422 naming it — so the run returned nothing rather than the
+    sets it could have done. A client cannot work this out, so the catalogue says it.
+    """
+    from app.models.artifact import ArtifactSet
+
+    db_session.add_all([
+        ArtifactSet(nanoka_id=15003, name="Blizzard Strayer"),
+        # Real, and real about gcsim: released after the pin, so it has no key at 3647a07a.
+        ArtifactSet(nanoka_id=999001, name="Scarlet Proof"),
+    ])
+    await db_session.flush()
+
+    body = (await client.get("/api/v1/artifact-sets?limit=200")).json()
+    by_name = {row["name"]: row["simulable"] for row in body["items"]}
+
+    assert by_name["Blizzard Strayer"] is True
+    assert by_name["Scarlet Proof"] is False
+
+
+async def test_one_artifact_set_answers_simulable_the_same_way_the_list_does(
+    client: AsyncClient, db_session: AsyncSession,
+):
+    """The detail route published `simulable: false` for every set, including runnable ones.
+
+    The field is on the shared `ArtifactSetRead`, so the same documented field meant "answered
+    by the gcsim lookup" on one route and "always false" on the other — and a client fetching
+    one set would conclude it could not be simulated.
+    """
+    from app.models.artifact import ArtifactSet
+
+    row = ArtifactSet(nanoka_id=15003, name="Blizzard Strayer")
+    db_session.add(row)
+    await db_session.flush()
+
+    body = (await client.get("/api/v1/artifact-sets/15003")).json()
+
+    assert body["simulable"] is True

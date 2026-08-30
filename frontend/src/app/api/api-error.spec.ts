@@ -23,8 +23,10 @@ describe('apiErrorMessage', () => {
     expect(apiErrorMessage(err)).toBe(JSON.stringify(err));
   });
 
-  it('stringifies non-object errors', () => {
-    expect(apiErrorMessage('nope')).toBe('"nope"');
+  it('passes a thrown string through without quoting it', () => {
+    // It used to come back as `"nope"` — JSON-quoted, because the fallback stringified
+    // everything it did not recognise. A message is not a JSON document.
+    expect(apiErrorMessage('nope')).toBe('nope');
   });
 
   it('bounds what reaches the screen', () => {
@@ -40,5 +42,49 @@ describe('apiErrorMessage', () => {
 
   it('leaves a short message exactly as sent', () => {
     expect(apiErrorMessage({ detail: 'Too many requests.' })).toBe('Too many requests.');
+  });
+});
+
+describe('apiErrorMessage — things that are not API errors', () => {
+  it('gives an Error its message rather than two braces', () => {
+    // `JSON.stringify(new Error('boom'))` is `"{}"` — `message` and `name` are not enumerable.
+    // Reported from production as "an odd error that comes across as {}".
+    expect(apiErrorMessage(new Error('no candidates for Goblet'))).toBe(
+      'no candidates for Goblet',
+    );
+  });
+
+  it('falls back to the Error name when it carries no message', () => {
+    expect(apiErrorMessage(new TypeError())).toBe('TypeError');
+  });
+
+  it('passes a thrown string straight through', () => {
+    expect(apiErrorMessage('gcsim rejected the config')).toBe('gcsim rejected the config');
+  });
+
+  it('says something rather than "undefined" for a thrown nothing', () => {
+    // `JSON.stringify(undefined)` is the *value* `undefined`, so the old fallback returned
+    // something that was not even a string.
+    expect(apiErrorMessage(undefined)).toContain('nothing said what');
+    expect(apiErrorMessage(null)).toContain('nothing said what');
+  });
+
+  it('reads a message off a plain object', () => {
+    // What several browser APIs reject with, and what an Error serialised across a worker
+    // boundary arrives as.
+    expect(apiErrorMessage({ message: 'QuotaExceededError' })).toBe('QuotaExceededError');
+  });
+
+  it('names the shape rather than printing an empty object', () => {
+    expect(apiErrorMessage({})).toContain('carried no message');
+  });
+
+  it('still prefers FastAPI detail over anything else', () => {
+    expect(apiErrorMessage({ detail: 'that team has no builds' }))
+      .toBe('that team has no builds');
+  });
+
+  it('truncates a long Error message like any other', () => {
+    expect(apiErrorMessage(new Error('x'.repeat(500)))).toHaveLength(200);
   });
 });

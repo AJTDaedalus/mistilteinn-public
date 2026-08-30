@@ -47,7 +47,7 @@ from app.schemas.catalogue import (
     WeaponSummary,
 )
 from app.schemas.common import PaginatedResponse
-from app.services import kqm_weapons
+from app.services import gcsim_keys, kqm_weapons
 from app.services.element_symbols import all_visions
 from app.services.reactions import offered
 from app.services.weapon_symbols import all_classes
@@ -165,14 +165,33 @@ async def list_artifact_sets(
     offset: _Offset = 0,
     limit: _Limit = 50,
 ) -> PaginatedResponse[ArtifactSetRead]:
-    """List artifact sets with their bonus affixes."""
+    """List artifact sets with their bonus affixes, and whether gcsim can simulate each."""
     rows = await repo.search(name=name, offset=offset, limit=limit)
     return PaginatedResponse(
-        items=[ArtifactSetRead.model_validate(row) for row in rows],
+        items=[_set_read(row) for row in rows],
         total=await repo.count_filtered(name=name),
         offset=offset,
         limit=limit,
     )
+
+
+def _set_read(row: object) -> ArtifactSetRead:
+    """One set, with `simulable` answered by the same lookup a run would use.
+
+    **Asked here rather than inferred by a client.** The optimizer offered every set the
+    inventory could field four of, gcsim has no key for some of them, and one such set fails
+    the whole calibration with a 422 — so a run over a mixed selection returned nothing rather
+    than the sets it could have done. The picker can only offer what runs if the server says
+    which those are.
+    """
+    read = ArtifactSetRead.model_validate(row)
+    try:
+        gcsim_keys.artifact_set_key(read.name)
+    except gcsim_keys.GcsimKeyError:
+        read.simulable = False
+    else:
+        read.simulable = True
+    return read
 
 
 @router.get("/artifact-sets/{nanoka_id}", response_model=ArtifactSetRead)
@@ -184,7 +203,7 @@ async def get_artifact_set(
     artifact_set = await repo.get_by_nanoka_id(nanoka_id)
     if artifact_set is None:
         raise HTTPException(status_code=404, detail=f"No artifact set {nanoka_id}")
-    return ArtifactSetRead.model_validate(artifact_set)
+    return _set_read(artifact_set)
 
 
 @router.get("/enemies", response_model=PaginatedResponse[EnemyProfileRead])

@@ -23,6 +23,8 @@ export interface ArtifactSetChoice {
   name: string;
   icon: string | null | undefined;
   fourPieceText: string | null;
+  /** Whether gcsim implements it at the pin. A set it does not cannot be calibrated. */
+  simulable: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -109,6 +111,11 @@ export class OptimizeService {
       // The 4-piece bonus in the set's own words. It is what anyone is choosing between, and
       // the card is too small to print it — so it is the card's tooltip.
       fourPieceText: set.affixes?.find((a) => a.pieces_required === 4)?.description ?? null,
+      // `?? true`: **absent is unknown, not known-bad.** `optimize.ts` guards with `!== false`
+      // for exactly that reason, and defaulting to `false` here defeated it before that guard
+      // ever ran — an older backend, or a cached response predating the field, would make
+      // every set unsimulable and empty the picker.
+      simulable: set.simulable ?? true,
     }]));
   }
 }

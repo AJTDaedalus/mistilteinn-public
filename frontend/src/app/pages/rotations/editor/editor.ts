@@ -224,11 +224,9 @@ export class RotationEditor {
       const parsed = JSON.parse(raw) as Parameters<typeof onFieldIntervals>[0];
       this.measured.set(onFieldIntervals(parsed));
     } catch (err) {
-      // Surfaced, never swallowed — and **an `Error` is not an API error**. `apiErrorMessage`
-      // understands FastAPI's `{detail}` and otherwise falls through to `JSON.stringify`,
-      // whose answer for an `Error` is `"{}"`: its properties are not enumerable. So every
-      // gcsim failure rendered as two braces in a red box.
-      this.sampleError.set(err instanceof Error ? err.message : apiErrorMessage(err));
+      // Surfaced, never swallowed. The `instanceof Error` check that used to be here has
+      // moved into `apiErrorMessage` itself, where the other twenty-two callers get it too.
+      this.sampleError.set(apiErrorMessage(err));
       this.measured.set(null);
     } finally {
       this.sampling.set(false);

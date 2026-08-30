@@ -313,6 +313,18 @@ class ArtifactSetRead(BaseModel):
     piece_thresholds: list[Any] = []
     available_ranks: list[Any] = []
     affixes: list[ArtifactSetAffixRead] = []
+    #: Whether gcsim implements this set at the pin, and so whether it can be simulated.
+    #:
+    #: **Published because a client cannot work it out and was guessing.** The optimizer's
+    #: "All 4-piece" button selected every set the inventory could field four of, which
+    #: included ones gcsim has no key for — and one such set fails the *whole* calibration
+    #: with a 422 naming it, so the run returns nothing at all. The picker has to be able to
+    #: offer only what can be run, which is the guarantee `RotationOptions` already makes
+    #: about actions: *the picker offers exactly what the validator accepts.*
+    #:
+    #: A set is usually absent because it was released after the pin. That is a re-pin, not a
+    #: fault, and it is why this is a fact about the set rather than an error about the run.
+    simulable: bool = False
 
     model_config = _FROM_ORM
 

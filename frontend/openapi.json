@@ -809,7 +809,7 @@
           "catalogue"
         ],
         "summary": "List Artifact Sets",
-        "description": "List artifact sets with their bonus affixes.",
+        "description": "List artifact sets with their bonus affixes, and whether gcsim can simulate each.",
         "operationId": "list_artifact_sets_api_v1_artifact_sets_get",
         "parameters": [
           {
@@ -3561,6 +3561,11 @@
             "type": "array",
             "title": "Affixes",
             "default": []
+          },
+          "simulable": {
+            "type": "boolean",
+            "title": "Simulable",
+            "default": false
           }
         },
         "type": "object",
