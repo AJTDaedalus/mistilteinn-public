@@ -36,15 +36,18 @@ from app.schemas.catalogue import (
     ArtifactSetRead,
     CharacterRead,
     CharacterSummary,
+    CharacterWeaponGuideRead,
     ElementRead,
     EnemyProfileRead,
     OwnedWeaponRead,
     ReactionRead,
     WeaponClassRead,
     WeaponRead,
+    WeaponRecommendationRead,
     WeaponSummary,
 )
 from app.schemas.common import PaginatedResponse
+from app.services import kqm_weapons
 from app.services.element_symbols import all_visions
 from app.services.reactions import offered
 from app.services.weapon_symbols import all_classes
@@ -220,6 +223,50 @@ async def get_enemy(
     if profile is None:
         raise HTTPException(status_code=404, detail=f"No enemy profile {profile_id!r}")
     return EnemyProfileRead.model_validate(profile)
+
+
+@router.get(
+    "/characters/{nanoka_id}/weapons",
+    response_model=CharacterWeaponGuideRead,
+)
+async def character_weapon_guide(nanoka_id: str) -> CharacterWeaponGuideRead:
+    """What KeqingMains lists as this character's weapons, in the order KQM lists them.
+
+    **404 when no guide has been captured**, which is not the same as "KQM recommends nothing".
+    Three characters are captured today — the owner's *"manual, cited, small first"* — and a
+    caller showing an empty panel for an uncaptured character would be making a claim about KQM
+    that nobody made.
+
+    Static and committed, never a live fetch: a guide is somebody else's page and it changes.
+    `scripts/capture_kqm_weapons.py` re-captures deliberately, and the diff is the review.
+
+    Declared **above** `/characters/{nanoka_id}` is unnecessary — the paths differ by a
+    segment — but it is declared beside it so the two are read together.
+    """
+    guide = kqm_weapons.for_character(nanoka_id)
+    if guide is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"no KeqingMains guide captured for character {nanoka_id!r}. "
+                f"That is not a claim that none exists — see scripts/capture_kqm_weapons.py."
+            ),
+        )
+    return CharacterWeaponGuideRead(
+        character=guide.character,
+        url=guide.url,
+        retrieved_at=guide.retrieved_at,
+        weapons=[
+            WeaponRecommendationRead(
+                position=w.position,
+                weapon_id=w.weapon_id,
+                weapon_name=w.weapon_name,
+                note=w.note,
+                refinement=w.refinement,
+            )
+            for w in guide.weapons
+        ],
+    )
 
 
 @router.get("/elements", response_model=list[ElementRead])

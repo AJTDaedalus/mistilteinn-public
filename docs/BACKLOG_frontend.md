@@ -75,10 +75,21 @@ the thing that looked most likely to break and did not.
   only when the list holds more than one. There is deliberately **no weapon-class chip**: the
   server already filtered the list to the character's class, so a "Bow" chip on a Sword
   character would be a control whose only possible outcome is an empty grid.
-- **Curate recommended weapons per character from KeqingMains quick guides**, with rankings,
-  where they exist. The owner notes this is a lot of scraping and expects agents to manage it.
-  *Treat the citation rule as binding here* — this is exactly the shape of the failure
-  `CLAUDE.md` names as fairy's worst.
+- ~~**Curate recommended weapons per character from KeqingMains quick guides**, with rankings,
+  where they exist.~~ **Done (#185)**, on the owner's ruling: *"manual, cited, small first"*.
+
+  **Three characters captured** — Nahida, Furina, Kaedehara Kazuha — 34 recommendations, each
+  carrying KQM's own sentence verbatim, the page it came from and the date it was retrieved.
+  `scripts/capture_kqm_weapons.py` is the reproduction and the snapshot is committed; re-running
+  it is deliberate and the diff is the review.
+
+  **Two things the capture refuses rather than guesses**: a weapon name that does not resolve
+  to this catalogue, and a row naming several weapons where any one of them fails — all or
+  nothing, so a partial split can never be published as though it were KQM's list. Every
+  refusal is kept in the file.
+
+  **It publishes `position`, not `rank`.** KQM's table has an order and no rank numbers, and
+  the difference between citing a source and putting words in its mouth is exactly that.
 - **"Why do we need to save a build before attaching artifacts?"** — a real question about the
   flow, not a styling note. Worth answering before redesigning around it.
 

@@ -53,6 +53,8 @@ function healthy(
     {
       listCharacters: vi.fn().mockResolvedValue({ items: [AYAKA, GANYU], total: 2 }),
       listWeapons: vi.fn().mockResolvedValue({ items: [SWORD], total: 1 }),
+      // No captured guide by default — which is `null`, not an empty list.
+      weaponGuide: vi.fn().mockResolvedValue(null),
       ...catalogue,
     } as unknown as CatalogueService,
   );
@@ -400,7 +402,9 @@ describe('BuildsPage pickers', () => {
     expect(page['weaponFilters']()).toEqual([]);
     expect(page['weaponOptions']()).toEqual([{
       value: 'w-mistsplitter', label: 'Mistsplitter Reforged',
-      icon: 'UI_EquipIcon_Sword_Narukami', detail: '5★ · CRIT DMG', tags: { stars: '5' },
+      icon: 'UI_EquipIcon_Sword_Narukami', detail: '5★ · CRIT DMG',
+      // `tooltip` carries KQM's own sentence when there is one; undefined when there is not.
+      tooltip: undefined, tags: { stars: '5', kqm: '' },
     }]);
   });
 
@@ -449,5 +453,110 @@ describe('BuildsPage pickers', () => {
     expect(() => page['startNew']()).not.toThrow();
     expect(() => page['closeEditor']()).not.toThrow();
     expect(page['editing']()).toBeNull();
+  });
+});
+
+
+/**
+ * KeqingMains weapon recommendations in the picker.
+ *
+ * The owner flagged this feature as *"exactly the shape of the failure `CLAUDE.md` names as
+ * fairy's worst"*. So these tests are about **what the page claims**, not about the plumbing:
+ * an unlisted weapon is unlisted, never "not recommended", and a character with no captured
+ * guide must not be presented as one KQM says nothing about.
+ */
+describe('BuildsPage weapon recommendations', () => {
+  const GUIDE = {
+    character: 'Kamisato Ayaka',
+    url: 'https://keqingmains.com/ayaka/',
+    retrieved_at: '2026-08-30',
+    weapons: [
+      {
+        position: 1, weapon_id: 'w-mistsplitter', weapon_name: 'Mistsplitter Reforged',
+        note: "Ayaka's best sword.", refinement: null,
+      },
+    ],
+  };
+
+  const OTHER = {
+    ...SWORD, id: 'w-amenoma', name: 'Amenoma Kageuchi', stars: 4,
+    sub_stat_display: 'ATK%',
+  };
+
+  const withGuide = (guide: unknown) => healthy({}, {
+    listCharacters: vi.fn().mockResolvedValue({ items: [AYAKA], total: 1 }),
+    // Deliberately catalogue order with the recommended weapon *second*, so a passing test
+    // cannot be the input order surviving.
+    listWeapons: vi.fn().mockResolvedValue({ items: [OTHER, SWORD], total: 2 }),
+    weaponGuide: vi.fn().mockResolvedValue(guide),
+  } as unknown as CatalogueService);
+
+  it("puts KQM's list first, in KQM's order", async () => {
+    const page = withGuide(GUIDE);
+    await page['load']();
+
+    await page['selectCharacter']('char-ayaka');
+
+    expect(page['weaponOptions']().map((o) => o.value))
+      .toEqual(['w-mistsplitter', 'w-amenoma']);
+  });
+
+  it("carries KQM's own sentence rather than a summary of it", async () => {
+    // Summarising it here would be this page asserting a judgement it did not make, under
+    // someone else's name.
+    const page = withGuide(GUIDE);
+    await page['load']();
+    await page['selectCharacter']('char-ayaka');
+
+    expect(page['weaponOptions']()[0].tooltip).toBe("Ayaka's best sword.");
+  });
+
+  it('shows the position, and does not call it a rank', async () => {
+    // KQM's table carries an order and no rank numbers.
+    const page = withGuide(GUIDE);
+    await page['load']();
+    await page['selectCharacter']('char-ayaka');
+
+    expect(page['weaponOptions']()[0].detail).toBe('KQM #1 · 5★');
+  });
+
+  it('leaves an unlisted weapon unmarked rather than marking it badly', async () => {
+    const page = withGuide(GUIDE);
+    await page['load']();
+    await page['selectCharacter']('char-ayaka');
+
+    const unlisted = page['weaponOptions']()[1];
+    expect(unlisted.detail).toBe('4★ · ATK%');
+    expect(unlisted.tooltip).toBeUndefined();
+  });
+
+  it('offers no KQM filter when no guide was captured', async () => {
+    // A filter whose only possible outcome is an empty grid is not a filter — and a "KQM lists
+    // it" chip that matched nothing would imply KQM lists nothing.
+    const page = withGuide(null);
+    await page['load']();
+    await page['selectCharacter']('char-ayaka');
+
+    expect(page['weaponFilters']().map((f) => f.group)).not.toContain('kqm');
+  });
+
+  it('offers the KQM filter when there is one', async () => {
+    const page = withGuide(GUIDE);
+    await page['load']();
+    await page['selectCharacter']('char-ayaka');
+
+    expect(page['weaponFilters']().map((f) => f.group)).toContain('kqm');
+  });
+
+  it('forgets the guide when the character changes', async () => {
+    // A recommendation left over from the previous character would be the worst kind of
+    // wrong: specific, sourced, and about somebody else.
+    const page = withGuide(GUIDE);
+    await page['load']();
+    await page['selectCharacter']('char-ayaka');
+
+    await page['selectCharacter']('');
+
+    expect(page['weaponGuide']()).toBeNull();
   });
 });

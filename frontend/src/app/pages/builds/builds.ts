@@ -8,7 +8,10 @@ import { CatalogueIcon } from '../../shared/icon/icon';
 import { EntityToken } from '../../shared/token/token';
 import { allPages } from '../../api/all-pages';
 import { ArtifactPanel } from './artifact-panel';
-import { CatalogueService } from '../catalogue/catalogue.service';
+import {
+  CatalogueService,
+  type CharacterWeaponGuideRead,
+} from '../catalogue/catalogue.service';
 import {
   BuildsService,
   type BuildFields,
@@ -210,21 +213,67 @@ export class BuildsPage implements OnInit {
    * it by the chosen character's, so a chip offering "Bow" on a Sword character would filter to
    * nothing. Rarity is the axis that remains, and it is the one a player narrows by.
    */
-  protected readonly weaponOptions = computed<CardOption[]>(() =>
-    this.weapons().map((w) => ({
-      value: w.id,
-      label: w.name,
-      icon: w.icon,
-      detail: `${w.stars}★ · ${w.sub_stat_display || 'no substat'}`,
-      tags: { stars: String(w.stars) },
-    })),
-  );
+  /**
+   * What KeqingMains lists for the chosen character, or null when no guide was captured.
+   *
+   * **Null is not an empty list.** "Nobody has captured this character" and "KQM recommends
+   * nothing for them" are different statements, and a card marked *not recommended* on the
+   * strength of the first would be a claim about KQM that nobody made.
+   */
+  protected readonly weaponGuide = signal<CharacterWeaponGuideRead | null>(null);
+
+  /** `weapon id -> position in KQM's list`, for marking and ordering the picker. */
+  private readonly recommended = computed(() => {
+    const guide = this.weaponGuide();
+    return new Map((guide?.weapons ?? []).map((w) => [w.weapon_id, w]));
+  });
+
+  protected readonly weaponOptions = computed<CardOption[]>(() => {
+    const listed = this.recommended();
+    return this.weapons()
+      .map((w) => {
+        const kqm = listed.get(w.id);
+        return {
+          value: w.id,
+          label: w.name,
+          icon: w.icon,
+          // The position, not a rank — KQM's table carries an order and no rank numbers.
+          detail: kqm
+            ? `KQM #${kqm.position}${kqm.refinement ? ` (R${kqm.refinement})` : ''} · ${w.stars}★`
+            : `${w.stars}★ · ${w.sub_stat_display || 'no substat'}`,
+          // KQM's own sentence, verbatim, on hover. Summarising it here would be this page
+          // asserting a judgement it did not make, under someone else's name.
+          tooltip: kqm?.note,
+          tags: { stars: String(w.stars), kqm: kqm ? 'listed' : '' },
+        };
+      })
+      // Listed weapons first, in KQM's order; everything else after, as before. A weapon KQM
+      // did not list is not thereby *bad* — it is unlisted, which is why the rest keep their
+      // order rather than being pushed into a "not recommended" bucket.
+      .sort((a, b) => {
+        const left = listed.get(a.value)?.position ?? Number.MAX_SAFE_INTEGER;
+        const right = listed.get(b.value)?.position ?? Number.MAX_SAFE_INTEGER;
+        return left - right;
+      });
+  });
 
   protected readonly weaponFilters = computed<CardFilter[]>(() => {
+    const listed = this.recommended().size > 0;
     const stars = [...new Set(this.weapons().map((w) => w.stars))]
       .sort((a, b) => b - a)
       .map((s) => ({ value: String(s), label: `${s}★` }));
-    return stars.length > 1 ? [{ group: 'stars', label: 'Rarity', options: stars }] : [];
+    const filters: CardFilter[] = [];
+    if (listed) {
+      // Offered only when there is a guide, for the same reason the chips elsewhere are drawn
+      // from what is on screen: a filter whose only outcome is an empty grid is not a filter.
+      filters.push({
+        group: 'kqm',
+        label: 'KeqingMains',
+        options: [{ value: 'listed', label: 'KQM lists it' }],
+      });
+    }
+    if (stars.length > 1) filters.push({ group: 'stars', label: 'Rarity', options: stars });
+    return filters;
   });
 
   protected readonly editing = signal<BuildRead | null>(null);
@@ -332,6 +381,7 @@ export class BuildsPage implements OnInit {
     this.characterId.set(id);
     this.weaponId.set(null);
     this.weapons.set([]);
+    this.weaponGuide.set(null);
     const chosen = this.characters().find((c) => c.id === id);
     if (!chosen) return;
     try {
@@ -339,6 +389,10 @@ export class BuildsPage implements OnInit {
         this.catalogue.listWeapons({ weapon_type: chosen.weapon_type, offset, limit }),
       );
       this.weapons.set(page.items as WeaponSummary[]);
+      // Never fatal: the picker works without a guide, and three characters are captured
+      // today. A page that failed to open because a recommendation could not be fetched would
+      // be worse than one that simply does not mark anything.
+      this.weaponGuide.set(await this.catalogue.weaponGuide(chosen.nanoka_id));
     } catch {
       this.actionError.set('Could not load weapons for that character.');
     }

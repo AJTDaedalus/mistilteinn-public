@@ -1,0 +1,303 @@
+{
+  "source": "KeqingMains",
+  "retrieved_at": "2026-08-30",
+  "characters": {
+    "10000073": {
+      "slug": "nahida",
+      "character": "Nahida",
+      "url": "https://keqingmains.com/nahida/",
+      "weapons": [
+        {
+          "position": 1,
+          "weapon_id": "01a025dd-ebd9-7f51-8e55-e2610b22272f",
+          "weapon_name": "A Thousand Floating Dreams",
+          "as_written": "A Thousand Floating Dreams",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 2,
+          "weapon_id": "01a025dd-ebd3-7dd2-af38-ee4757ebc8b5",
+          "weapon_name": "Kagura's Verity",
+          "as_written": "Kagura’s Verity",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 3,
+          "weapon_id": "01a025dd-eadc-7813-a9ef-2a5b636b799f",
+          "weapon_name": "Sacrificial Fragments",
+          "as_written": "Sacrificial Fragments",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 4,
+          "weapon_id": "01a025dd-eb49-7d71-960b-7ac12fafb29b",
+          "weapon_name": "Wandering Evenstar",
+          "as_written": "Wandering Evenstar",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 5,
+          "weapon_id": "01a025dd-ead7-74b0-9352-28c296c138b9",
+          "weapon_name": "The Widsith",
+          "as_written": "The Widsith",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 5,
+          "weapon_id": "01a025dd-eba8-7af1-97dc-77f08fe0c215",
+          "weapon_name": "Lost Prayer to the Sacred Winds",
+          "as_written": "Lost Prayer to the Sacred Winds",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 5,
+          "weapon_id": "01a025dd-eae5-7953-9c5d-28dd71ec52ac",
+          "weapon_name": "Solar Pearl",
+          "as_written": "Solar Pearl",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 6,
+          "weapon_id": "01a025dd-ead2-71a0-9786-5f9768138826",
+          "weapon_name": "Favonius Codex",
+          "as_written": "Favonius Codex",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 7,
+          "weapon_id": "01a025dd-eaa6-7880-a638-bf5d96444af4",
+          "weapon_name": "Magic Guide",
+          "as_written": "Magic Guide",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 8,
+          "weapon_id": "01a025dd-eb0e-7d82-9963-8f0375cfd31c",
+          "weapon_name": "Mappa Mare",
+          "as_written": "Mappa Mare",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 9,
+          "weapon_id": "01a025dd-eb2c-7f93-8be4-d885dd9dbf22",
+          "weapon_name": "Hakushin Ring",
+          "as_written": "Hakushin Ring",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 10,
+          "weapon_id": "01a025dd-eaea-7693-b3fe-21a396665521",
+          "weapon_name": "Prototype Amber",
+          "as_written": "Prototype Amber",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 11,
+          "weapon_id": "01a025dd-eaab-7121-9368-aef3fc5cb130",
+          "weapon_name": "Thrilling Tales of Dragon Slayers",
+          "as_written": "Thrilling Tales of Dragon Slayers",
+          "refinement": null,
+          "note": ""
+        }
+      ]
+    },
+    "10000089": {
+      "slug": "furina",
+      "character": "Furina",
+      "url": "https://keqingmains.com/furina/",
+      "weapons": [
+        {
+          "position": 1,
+          "weapon_id": "01a025dd-e7b7-72a3-b348-3fdc2a8ecb9e",
+          "weapon_name": "Splendor of Tranquil Waters",
+          "as_written": "Splendor of Tranquil Waters",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 2,
+          "weapon_id": "01a025dd-e7bb-7a33-9187-1c89001494b5",
+          "weapon_name": "Uraku Misugiri",
+          "as_written": "Uraku Misugiri",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 3,
+          "weapon_id": "01a025dd-e789-7c91-8ab4-53fb81a66168",
+          "weapon_name": "Primordial Jade Cutter",
+          "as_written": "Primordial Jade Cutter",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 4,
+          "weapon_id": "01a025dd-e6be-7fd1-896e-59ceda0c3188",
+          "weapon_name": "Festering Desire",
+          "as_written": "Festering Desire",
+          "refinement": 5,
+          "note": ""
+        },
+        {
+          "position": 5,
+          "weapon_id": "01a025dd-e7b2-7cf1-a68e-faca9dfa21f7",
+          "weapon_name": "Light of Foliar Incision",
+          "as_written": "Light of Foliar Incision",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 6,
+          "weapon_id": "01a025dd-e796-7e71-9633-994ba5cb9b4d",
+          "weapon_name": "Key of Khaj-Nisut",
+          "as_written": "Key of Khaj-Nisut",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 7,
+          "weapon_id": "01a025dd-e63d-73d0-8ed6-825639773cfd",
+          "weapon_name": "Harbinger of Dawn",
+          "as_written": "Harbinger of Dawn",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 8,
+          "weapon_id": "01a025dd-e708-7eb0-a60c-3d61a0a3d9d6",
+          "weapon_name": "Fleuve Cendre Ferryman",
+          "as_written": "Fleuve Cendre Ferryman",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 9,
+          "weapon_id": "01a025dd-e6fe-73c1-ba14-b465b699119f",
+          "weapon_name": "Wolf-Fang",
+          "as_written": "Wolf-Fang",
+          "refinement": 1,
+          "note": ""
+        },
+        {
+          "position": 10,
+          "weapon_id": "01a025dd-e78e-7533-9071-f9896d162edd",
+          "weapon_name": "Mistsplitter Reforged",
+          "as_written": "Mistsplitter Reforged",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 11,
+          "weapon_id": "01a025dd-e66e-76a2-9d8c-2f301e9dfe3b",
+          "weapon_name": "Favonius Sword",
+          "as_written": "Favonius Sword",
+          "refinement": null,
+          "note": ""
+        }
+      ]
+    },
+    "10000047": {
+      "slug": "kazuha",
+      "character": "Kaedehara Kazuha",
+      "url": "https://keqingmains.com/kazuha/",
+      "weapons": [
+        {
+          "position": 1,
+          "weapon_id": "01a025dd-e780-71e1-8152-6e6e6da550a6",
+          "weapon_name": "Freedom-Sworn",
+          "as_written": "Freedom-Sworn",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 2,
+          "weapon_id": "01a025dd-e6f3-77b0-84fc-3f4dd87fa8c2",
+          "weapon_name": "Xiphos' Moonlight",
+          "as_written": "Xiphos’ Moonlight",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 3,
+          "weapon_id": "01a025dd-e66e-76a2-9d8c-2f301e9dfe3b",
+          "weapon_name": "Favonius Sword",
+          "as_written": "Favonius Sword",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 4,
+          "weapon_id": "01a025dd-e708-7eb0-a60c-3d61a0a3d9d6",
+          "weapon_name": "Fleuve Cendre Ferryman",
+          "as_written": "Fleuve Cendre Ferryman",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 5,
+          "weapon_id": "01a025dd-e678-7a11-88e5-8657483c57ec",
+          "weapon_name": "Sacrificial Sword",
+          "as_written": "Sacrificial Sword",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 6,
+          "weapon_id": "01a025dd-e68e-7330-ad20-de38f09acfd9",
+          "weapon_name": "Iron Sting",
+          "as_written": "Iron Sting",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 6,
+          "weapon_id": "01a025dd-e6f9-7023-99f6-0126cd76a8cc",
+          "weapon_name": "Toukabou Shigure",
+          "as_written": "Toukabou Shigure",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 7,
+          "weapon_id": "01a025dd-e649-7872-8be7-8ce3e7c1cce7",
+          "weapon_name": "Dark Iron Sword",
+          "as_written": "Dark Iron Sword",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 8,
+          "weapon_id": "01a025dd-e789-7c91-8ab4-53fb81a66168",
+          "weapon_name": "Primordial Jade Cutter",
+          "as_written": "Primordial Jade Cutter",
+          "refinement": null,
+          "note": ""
+        },
+        {
+          "position": 8,
+          "weapon_id": "01a025dd-e78e-7533-9071-f9896d162edd",
+          "weapon_name": "Mistsplitter Reforged",
+          "as_written": "Mistsplitter Reforged",
+          "refinement": null,
+          "note": ""
+        }
+      ]
+    }
+  },
+  "refused": [],
+  "withheld": [
+    "note"
+  ]
+}

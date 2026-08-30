@@ -443,6 +443,37 @@ class WeaponClassRead(BaseModel):
     icon: str
 
 
+class WeaponRecommendationRead(BaseModel):
+    """One weapon KeqingMains lists for a character."""
+
+    #: Where it appears in KQM's list. **Not a rank**: the table carries an order and no rank
+    #: numbers, and publishing it as a rank would put words in the source's mouth.
+    position: int
+    weapon_id: str
+    weapon_name: str
+    #: KQM's own sentence, verbatim. Summarising it would be this repo asserting a judgement
+    #: it did not make.
+    note: str
+    #: The refinement KQM specified, when it did — `R5 Festering Desire` and `Festering Desire`
+    #: are different recommendations.
+    refinement: int | None = None
+
+
+class CharacterWeaponGuideRead(BaseModel):
+    """A character's captured recommendations, and where they came from.
+
+    **The citation travels with the claim.** `url` and `retrieved_at` are published so a reader
+    can open the page rather than take this repo's word — the same discipline as the reaction
+    table, and for the reason `CLAUDE.md` names: fabricated citations in curated data is the
+    failure this project must not import.
+    """
+
+    character: str
+    url: str
+    retrieved_at: str
+    weapons: list[WeaponRecommendationRead]
+
+
 class ReactionRead(BaseModel):
     """One elemental reaction, and what a party must field to produce it.
 

@@ -11,6 +11,7 @@ export type EnemyProfileRead = components['schemas']['EnemyProfileRead'];
 export type ReactionRead = components['schemas']['ReactionRead'];
 export type ElementRead = components['schemas']['ElementRead'];
 export type WeaponClassRead = components['schemas']['WeaponClassRead'];
+export type CharacterWeaponGuideRead = components['schemas']['CharacterWeaponGuideRead'];
 
 /**
  * Reads of the seeded catalogue — G.6a's endpoints.
@@ -127,6 +128,20 @@ export class CatalogueService {
     const { data, error } = await this.api.GET('/api/v1/weapon-classes');
     if (error) throw new Error('Could not load weapon classes');
     return data;
+  }
+
+  /**
+   * What KeqingMains lists as this character's weapons, or null if none was captured.
+   *
+   * **Null rather than an empty list**, and the distinction is the point: "nobody has captured
+   * this character" and "KQM recommends nothing" are different statements, and showing an
+   * empty panel for the first would be a claim about KQM that nobody made.
+   */
+  async weaponGuide(nanokaId: string): Promise<CharacterWeaponGuideRead | null> {
+    const { data, error } = await this.api.GET('/api/v1/characters/{nanoka_id}/weapons', {
+      params: { path: { nanoka_id: nanokaId } },
+    });
+    return error ? null : data;
   }
 
   async listEnemies(params: { name?: string; offset?: number; limit?: number } = {}) {

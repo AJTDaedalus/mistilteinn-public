@@ -1035,6 +1035,49 @@
         }
       }
     },
+    "/api/v1/characters/{nanoka_id}/weapons": {
+      "get": {
+        "tags": [
+          "catalogue"
+        ],
+        "summary": "Character Weapon Guide",
+        "description": "What KeqingMains lists as this character's weapons, in the order KQM lists them.\n\n**404 when no guide has been captured**, which is not the same as \"KQM recommends nothing\".\nThree characters are captured today \u2014 the owner's *\"manual, cited, small first\"* \u2014 and a\ncaller showing an empty panel for an uncaptured character would be making a claim about KQM\nthat nobody made.\n\nStatic and committed, never a live fetch: a guide is somebody else's page and it changes.\n`scripts/capture_kqm_weapons.py` re-captures deliberately, and the diff is the review.\n\nDeclared **above** `/characters/{nanoka_id}` is unnecessary \u2014 the paths differ by a\nsegment \u2014 but it is declared beside it so the two are read together.",
+        "operationId": "character_weapon_guide_api_v1_characters__nanoka_id__weapons_get",
+        "parameters": [
+          {
+            "name": "nanoka_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Nanoka Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterWeaponGuideRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/elements": {
       "get": {
         "tags": [
@@ -4377,6 +4420,38 @@
         "title": "CharacterSummary",
         "description": "A character as a list entry."
       },
+      "CharacterWeaponGuideRead": {
+        "properties": {
+          "character": {
+            "type": "string",
+            "title": "Character"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "retrieved_at": {
+            "type": "string",
+            "title": "Retrieved At"
+          },
+          "weapons": {
+            "items": {
+              "$ref": "#/components/schemas/WeaponRecommendationRead"
+            },
+            "type": "array",
+            "title": "Weapons"
+          }
+        },
+        "type": "object",
+        "required": [
+          "character",
+          "url",
+          "retrieved_at",
+          "weapons"
+        ],
+        "title": "CharacterWeaponGuideRead",
+        "description": "A character's captured recommendations, and where they came from.\n\n**The citation travels with the claim.** `url` and `retrieved_at` are published so a reader\ncan open the page rather than take this repo's word \u2014 the same discipline as the reaction\ntable, and for the reason `CLAUDE.md` names: fabricated citations in curated data is the\nfailure this project must not import."
+      },
       "CompareWeaponsRequest": {
         "properties": {
           "hit": {
@@ -7703,6 +7778,46 @@
         ],
         "title": "WeaponRead",
         "description": "A weapon in full, with its growth curves and refinement rows."
+      },
+      "WeaponRecommendationRead": {
+        "properties": {
+          "position": {
+            "type": "integer",
+            "title": "Position"
+          },
+          "weapon_id": {
+            "type": "string",
+            "title": "Weapon Id"
+          },
+          "weapon_name": {
+            "type": "string",
+            "title": "Weapon Name"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "refinement": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refinement"
+          }
+        },
+        "type": "object",
+        "required": [
+          "position",
+          "weapon_id",
+          "weapon_name",
+          "note"
+        ],
+        "title": "WeaponRecommendationRead",
+        "description": "One weapon KeqingMains lists for a character."
       },
       "WeaponRefinementRead": {
         "properties": {

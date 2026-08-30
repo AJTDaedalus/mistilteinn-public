@@ -87,6 +87,23 @@ export class CardPicker {
    * yet" option. A picker that can only ever add a weapon would quietly remove that state.
    */
   readonly clearable = input(false, { transform: booleanAttribute });
+  /**
+   * Keep the caller's order instead of sorting by name.
+   *
+   * **One lowercase word on purpose.** HTML lowercases static attributes, so an input named
+   * `preserveOrder` would silently never match `<mist-card-picker preserveOrder>` — the flag
+   * reads as set and is not. `multi`, `clearable` and `chip` escape that only by being single
+   * words.
+   *
+   * Alphabetical is right when the options have no order of their own — sixty artifact sets,
+   * a hundred and fifty characters. It is **wrong** when the caller's order is the
+   * information: the build weapon picker lists KeqingMains' recommendations first, in KQM's
+   * order, and sorting that alphabetically discards the whole point.
+   *
+   * Found by looking: the page's own options were ordered correctly and the picker re-sorted
+   * them, so a unit test asserting the page was right while the screen was wrong.
+   */
+  readonly ordered = input(false, { transform: booleanAttribute });
 
   readonly selectedChange = output<string[]>();
 
@@ -120,10 +137,21 @@ export class CardPicker {
       return `${option.label} ${option.detail ?? ''}`.toLowerCase().includes(query);
     });
 
-    return [...kept].sort((a, b) => {
-      const byPicked = Number(picked.has(b.value)) - Number(picked.has(a.value));
-      return byPicked !== 0 ? byPicked : a.label.localeCompare(b.label);
-    });
+    // Selected-first stays either way: a picker's other job is showing what you already
+    // chose, and scrolling a wall of sixty to find the two ticked is the failure this
+    // replaces. Only the tiebreak changes.
+    const keepOrder = this.ordered();
+    return kept
+      .map((option, index) => ({ option, index }))
+      .sort((a, b) => {
+        const byPicked =
+          Number(picked.has(b.option.value)) - Number(picked.has(a.option.value));
+        if (byPicked !== 0) return byPicked;
+        return keepOrder
+          ? a.index - b.index
+          : a.option.label.localeCompare(b.option.label);
+      })
+      .map(({ option }) => option);
   });
 
   protected isSelected(value: string): boolean {
