@@ -90,10 +90,9 @@ the thing that looked most likely to break and did not.
 
   **It publishes `position`, not `rank`.** KQM's table has an order and no rank numbers, and
   the difference between citing a source and putting words in its mouth is exactly that.
-- **"Why do we need to save a build before attaching artifacts?"** — a real question about the
-  flow, not a styling note. Worth answering before redesigning around it.
-
-  **Answered, 2026-08-29.** Because equipping is a property of the *artifact*, not of the
+- ~~**"Why do we need to save a build before attaching artifacts?"** — a real question about
+  the flow, not a styling note. Worth answering before redesigning around it.~~ **Answered,
+  2026-08-29.** Because equipping is a property of the *artifact*, not of the
   build: it is `PATCH /artifacts/{id}` with `build_id`, and a build that has not been saved has
   no id to point at. `ArtifactPanel` takes `buildId` and is inert while it is null; that is not
   a rule someone chose, it is the shape of the write.

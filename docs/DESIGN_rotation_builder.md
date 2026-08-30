@@ -138,13 +138,17 @@ that rotation**. Today that is discovered during a search, long after authoring.
 
 It is also, precisely, a `sim_run`: one gcsim aggregate for one context.
 
-**Which collides with `DECISIONS.md` §25 — the run corpus has no producer.** That open question
-asks who runs gcsim and submits the result. This feature answers it: *the author does, when they
-ask whether their rotation works*, and the run is worth caching because it is exactly what the
-corpus stores.
+**This collided with `DECISIONS.md` §25 — the run corpus had no producer — and §25 has since
+been answered differently: the owner chose "make searches fill it", built in #183.** A rotation
+search now runs one aggregate and submits it, so the corpus has its producer and this feature
+no longer has to be one.
 
-**One feature closing two open questions is a reason to look hard at it, not a reason to assume
-it is right.** It costs a gcsim run (~3 s, measured in `DESIGN_client_optimizer.md`) at a moment
+**That makes OQ-B3 smaller, not moot.** The question left is only whether an *author* should
+be able to ask "does this work?" without running a search — and the search's aggregate already
+made the stability warning real, so the answer is now visible somewhere rather than nowhere.
+
+**One feature closing two open questions was a reason to look hard at it, not to assume it was
+right** — and looking is what found the cheaper answer. It costs a gcsim run (~3 s, measured in `DESIGN_client_optimizer.md`) at a moment
 the user is waiting, and it makes the builder depend on the wasm bundle. Recorded here so the
 two decisions are made together rather than twice.
 
@@ -154,9 +158,9 @@ two decisions are made together rather than twice.
 
 | | question |
 |---|---|
-| **OQ-B1** | Does "extensive" mean the surface (§4), or does the owner want the model to express more — sections, repeats, conditionals? The second reopens `DESIGN_rotation.md` §2 and is a different document. |
-| **OQ-B2** | Is the quick-add line (B.7) wanted? It is the fastest single change and the only one that reintroduces a syntax, however small. |
-| **OQ-B3** | Should "does this work?" (§5) be built, given it costs a gcsim run at authoring time — and should its result feed the run corpus, answering `DECISIONS.md` §25? |
+| ~~**OQ-B1**~~ | **Answered: the surface.** Every surface item is built (#181, #184). |
+| ~~**OQ-B2**~~ | **Answered: no — buttons only.** One way in, and no second vocabulary to drift. |
+| **OQ-B3** | Should "does this work?" (§5) be built for the *author*, given it costs a gcsim run at the moment they are waiting? ~~and should its result feed the run corpus~~ — §25 is answered: searches fill it (#183), and the stability warning it made real now fires during a search. |
 | **OQ-B4** | Is the rotation *library* now part of the builder's job — "start from someone else's and edit it" — or does copying remain a separate action? #177 made copies possible; nothing makes them a starting point. |
 
 **All five surface items are built.** B.1, B.2, B.3 and B.6 in #181; B.4 and B.5 in #184.

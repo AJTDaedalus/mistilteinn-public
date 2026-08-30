@@ -37,7 +37,8 @@ this list.
 | `DESIGN_artifact_ranking.md` | scoring one artifact against a build, on the rotation engine |
 | `BACKLOG_frontend.md` | the owner's manual audit, §§1–12 (#162–#181) |
 | `TASKS_rotation_library.md` | publishing, finding, liking and copying a rotation (#177–#180) |
-| `DESIGN_rotation_builder.md` | the builder's design pass, and the half needing no answer (#181) |
+| `DESIGN_rotation_builder.md` | the builder's design pass and every surface item (#181, #184) |
+| — | the run corpus's first producer, and the owner's four rulings (#183, #185) |
 
 **The app is walkable end to end**: import a GOOD export, equip pieces to a build, assemble a
 team, author a rotation, compile it to gcsim, search your own artifacts for the best five, and
@@ -60,16 +61,25 @@ someone will find it:
 
 | | |
 |---|---|
-| `DECISIONS.md` §25 | **The run corpus has no producer**, and the design's intended one cannot be it — the search calls `sample()` where the corpus stores an aggregate. Either a search pays for a run it does not need, or a `sim_run` means something else. |
-| `DESIGN_rotation_builder.md` §6 | OQ-B1..B4 — whether "extensive" means the surface or the grammar, whether a quick-add line is wanted, whether authoring should run gcsim (which would answer §25), and whether the library is the builder's starting point. |
-| `BACKLOG_frontend.md` §3 | **KeqingMains weapon recommendations.** The owner flagged it as the shape of fairy's worst failure; nothing should be scraped before the sourcing is agreed. |
+| `DESIGN_rotation_builder.md` §6 | **OQ-B3** — should *authoring* run gcsim too? §25 is answered, so this is now only about a "does this rotation work?" button, not about who produces a run. **OQ-B4** — is the library the builder's starting point? |
 | `BACKLOG_frontend.md` §3 | One build per character and a build priority — the owner marked it *later*. |
+| `BACKLOG_frontend.md` §11 | **"Sets and enemies are broken"** — not reproduced. Both routes render headless and answer 200 in production. Needs one detail: did the link do nothing, or did the page load and its cards do nothing? |
 
-**Two subsystems are built, gated, and wired to nothing.** Worth knowing before trusting that a
-feature works because its tests pass: `createGpuKernel` has no callers, which is why the
-single-hit search ran on the main thread until #175 gave it a budget; and `POST /sim-runs` has
-no callers, which is why the rotation library's `your_dps` is always null. Both were found by
-building something that needed them, not by reading.
+**Answered 2026-08-29, and all four built:** the run corpus's producer (§25 — searches fill
+it), the builder's scope (OQ-B1, surface only), the quick-add line (OQ-B2, declined), and
+KeqingMains sourcing (manual, cited, small first — three characters captured).
+
+**One subsystem is still built, gated, and wired to nothing:** `createGpuKernel` has no
+callers, which is why the single-hit search ran on the main thread until #175 gave it a budget.
+`POST /sim-runs` was the other until #183 — a rotation search now writes a row, and the
+library reports `your_dps` from it.
+
+**Both were found by building something that needed them, not by reading**, and that is the
+entry's point: a green suite here is good at formulas and blind to wiring. The same session
+found a query-count test that passed while counting zero, an ability-name lookup that was live
+and doing nothing because gcsim's actions and the catalogue's talent types are different
+vocabularies, and a `<select>` that had always shown its first option. None of them failed a
+test; all of them were visible on screen.
 
 **The cost figure in the escalation is wrong and the DESIGN says so.** It inferred ~14 s for
 59 candidates from §6's **native, all-cores** 0.238 s/run. Measured against the committed
@@ -77,10 +87,12 @@ browser build, a 100-iteration 90-second rotation is **7.84 s single-threaded** 
 candidates is **~7.7 minutes**. The decision holds; the interaction it implies does not. It is
 a job with progress, never a request that blocks.
 
-- **Both suites pass, with nothing skipped.** **1549 backend tests, 0 skipped**; **544
-  frontend tests**; `create_app()` serves **51 paths**; the SPA has **17 routes plus a
+- **Both suites pass, with nothing skipped.** **1567 backend tests, 0 skipped**; **565
+  frontend tests**; `create_app()` serves **53 paths**; the SPA has **17 routes plus a
   catch-all**. (Every figure here has been stale at least once — 1273 / 255 / 40, then
-  1439 / 450 / 39. **The number is not the point; the command underneath it is.**) **One integration test has been seen to fail once and pass on re-run** —
+  1439 / 450 / 39, then 1549 / 544 / 51. **The number is not the point; the command underneath
+  it is**, and the honest reading of this line is "roughly this many, re-derive before citing
+  it".) **One integration test has been seen to fail once and pass on re-run** —
   `test_a_talent_with_no_level_set_is_not_offered`, once in four full-suite runs, passing in
   isolation and on the two runs after. Recorded rather than chased on a single observation,
   and recorded rather than ignored: in a repo whose rule is that a check which could not run
