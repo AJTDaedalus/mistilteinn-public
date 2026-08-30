@@ -1,7 +1,8 @@
 # DESIGN: the rotation builder
 
-**Status: proposed 2026-08-29; B.1, B.2, B.3 and B.6 built the same day (#181). B.4, B.5 and
-everything in §6 are open.** Owner request
+**Status: OQ-B1 and OQ-B2 answered by the owner 2026-08-29 — "the surface only", and no
+quick-add line. B.1, B.2, B.3 and B.6 built in #181; B.4 and B.5 in #184. B.7 is closed.
+OQ-B3 and OQ-B4 remain.** Owner request
 (`BACKLOG_frontend.md` §5): *"I want a very extensive and easy to use rotation builder, it's
 one of our key distinctions from gcsim."*
 
@@ -110,7 +111,7 @@ Ordered by ratio of what it saves to what it risks. **None of them changes the m
 | B.4 | Drag to reorder | n clicks → one drag | drag-and-drop needs a keyboard equivalent, so the arrows stay |
 | B.5 | Live compile preview | sight of the gates while authoring | must compile the *unsaved* steps — see §3.3 |
 | B.6 | Show and edit `note` per step | a field the model has carried since R.4 and no UI has ever shown | none |
-| B.7 | Quick-add line accepting `nahida skill, attack:4` | a whole rotation in one line for anyone who prefers typing | **it is a syntax**, and §1 is about not growing one |
+| ~~B.7~~ | ~~Quick-add line~~ | — | **Closed by the owner (OQ-B2): "No — buttons only."** One way in, and no chance of a typed vocabulary drifting from the clickable one. |
 
 ### B.7 deserves its own paragraph, because it is the one that could go wrong
 
@@ -158,11 +159,29 @@ two decisions are made together rather than twice.
 | **OQ-B3** | Should "does this work?" (§5) be built, given it costs a gcsim run at authoring time — and should its result feed the run corpus, answering `DECISIONS.md` §25? |
 | **OQ-B4** | Is the rotation *library* now part of the builder's job — "start from someone else's and edit it" — or does copying remain a separate action? #177 made copies possible; nothing makes them a starting point. |
 
-**B.1, B.2, B.3, B.4 and B.6 need no answer.** They are pure surface and contradict nothing.
-**B.1, B.2, B.3 and B.6 are built (#181).** B.4 (drag) is not: it needs either a new dependency
-or hand-rolled HTML5 drag, and the arrows already work — a modest gain for a real cost, left
-until something else asks for the same machinery. B.5 needs only the §3.3 caveat honoured.
-Everything in §6 waits.
+**All five surface items are built.** B.1, B.2, B.3 and B.6 in #181; B.4 and B.5 in #184.
+
+B.4 uses native HTML5 drag rather than a new dependency, and **the arrows stay** — a drag has
+no keyboard equivalent, and this list has to be reorderable both ways. `reorder` is the general
+move and `move` is its ±1 case; a test pins that they agree, because a swap and a splice
+coincide only for ±1 and that coincidence is worth holding.
+
+B.5 honours §3.3 by **compiling on the server**: `POST /rotations/preview` takes unsaved steps
+and answers with the same `compile_rotation` a save would use. The alternative was a second
+compiler in TypeScript, and the readiness gates it would have to reimplement are exactly what
+stop gcsim's two silent failures.
+
+### What building B.5 found
+
+**Every step's dropdowns were showing the first option, whatever the step held.** `[value]` on
+a `<select>` is assigned in the same change-detection pass that renders its `@for` options, so
+the assignment lands before the option exists and the browser falls back to index 0.
+
+The compiled config was correct the whole time — which is why nothing failed and no test
+noticed. It was visible the moment the preview sat beside the editor: step 2 read *"Bennett ·
+Chihayaburu"* next to a config that said `kaedeharakazuha skill`. `[selected]` on the option
+fixes it, and it is a bug that predates this chunk — `addStep()` always used the first roster
+member, so before the quick-add every step genuinely was the first character.
 
 ### One thing building B.1 found
 

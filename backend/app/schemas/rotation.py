@@ -236,6 +236,26 @@ class LibraryRotationRead(BaseModel):
     your_dps: float | None = None
 
 
+class RotationPreviewRequest(BaseModel):
+    """Body for `POST /rotations/preview` — compile steps that have not been saved.
+
+    **Why this exists rather than the editor compiling client-side.** `POST /{id}/compile`
+    reads the *stored* rotation, so an editor showing a live preview of unsaved work would
+    either show the saved version — worse than no preview, because it looks current — or grow
+    a second compiler in TypeScript. The second compiler is the real hazard: the gates are what
+    stop gcsim's two silent failures (`DESIGN_rotation.md` §3.4), and two implementations of
+    them would eventually disagree about a config nobody reads.
+
+    So the steps come here and the **same** `compile_rotation` answers.
+    """
+
+    #: The team the steps are validated against. A step naming someone not on it is refused,
+    #: exactly as it is on save — a preview that accepted more than the save would is a
+    #: preview of something that cannot exist.
+    team_id: str
+    steps: list[RotationStep] = Field(default_factory=list, max_length=MAX_STEPS)
+
+
 class RotationCopyRequest(BaseModel):
     """Body for `POST /rotations/{id}/copy` — which of the caller's teams to copy it onto."""
 

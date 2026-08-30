@@ -2406,6 +2406,57 @@
         ]
       }
     },
+    "/api/v1/rotations/preview": {
+      "post": {
+        "tags": [
+          "rotations"
+        ],
+        "summary": "Preview Compile",
+        "description": "Compile steps that have not been saved, so an editor can show what it is building.\n\nDeclared **above** `/{rotation_id}` for the reason `/options` and `/library` are: FastAPI\nmatches in declaration order, and below it this is a rotation whose id is \"preview\".\n\nWrites nothing. It is a POST because the steps are a body, not because it changes anything\n\u2014 and it is rate-limited like a write because it does real work per call.\n\nThe same validation as a save, deliberately: a preview that accepted a step the save would\nrefuse is a preview of a rotation that cannot exist.",
+        "operationId": "preview_compile_api_v1_rotations_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RotationPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Preview Compile Api V1 Rotations Preview Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/rotations/library": {
       "get": {
         "tags": [
@@ -6310,6 +6361,28 @@
         ],
         "title": "RotationOptions",
         "description": "Everything an editor needs to offer a step that will be accepted.\n\nBoth halves come from the same place the write path reads: `actions` from\n`authorable_actions()`, `teams` from the roster extraction `_check_steps_against_team`\nvalidates against. The guarantee is **the picker offers exactly what the validator\naccepts** \u2014 the alternative is a UI list that drifts, and a user told their own\nselection is invalid."
+      },
+      "RotationPreviewRequest": {
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "title": "Team Id"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/RotationStep"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Steps"
+          }
+        },
+        "type": "object",
+        "required": [
+          "team_id"
+        ],
+        "title": "RotationPreviewRequest",
+        "description": "Body for `POST /rotations/preview` \u2014 compile steps that have not been saved.\n\n**Why this exists rather than the editor compiling client-side.** `POST /{id}/compile`\nreads the *stored* rotation, so an editor showing a live preview of unsaved work would\neither show the saved version \u2014 worse than no preview, because it looks current \u2014 or grow\na second compiler in TypeScript. The second compiler is the real hazard: the gates are what\nstop gcsim's two silent failures (`DESIGN_rotation.md` \u00a73.4), and two implementations of\nthem would eventually disagree about a config nobody reads.\n\nSo the steps come here and the **same** `compile_rotation` answers."
       },
       "RotationRead": {
         "properties": {

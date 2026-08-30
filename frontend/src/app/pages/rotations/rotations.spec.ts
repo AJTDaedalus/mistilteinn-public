@@ -473,3 +473,122 @@ describe('RotationsPage builder', () => {
     expect(page['steps']()[0].note).toBe('after Furina stacks');
   });
 });
+
+
+/**
+ * Reordering by drag, and the live preview — `DESIGN_rotation_builder.md` B.4 and B.5.
+ *
+ * **Order is the rotation.** A reorder that lands a step one position out does not fail; it
+ * produces a different, plausible rotation, which is the only kind of bug this list can have.
+ */
+describe('RotationsPage reorder and preview', () => {
+  const withSteps = async (page: ReturnType<typeof healthy>, ...actions: string[]) => {
+    await page['load']();
+    for (const action of actions) {
+      page['appendStep']('10000002', action as never);
+    }
+    return page;
+  };
+  const order = (page: ReturnType<typeof healthy>) => page['steps']().map((s) => s.action);
+
+  it('moves a step down to the index it was dropped on', async () => {
+    const page = await withSteps(healthy(), 'skill', 'burst', 'attack');
+
+    page['reorder'](0, 2);
+
+    expect(order(page)).toEqual(['burst', 'attack', 'skill']);
+  });
+
+  it('moves a step up to the index it was dropped on', async () => {
+    const page = await withSteps(healthy(), 'skill', 'burst', 'attack');
+
+    page['reorder'](2, 0);
+
+    expect(order(page)).toEqual(['attack', 'skill', 'burst']);
+  });
+
+  it('leaves the list alone for a drop on itself or out of range', async () => {
+    const page = await withSteps(healthy(), 'skill', 'burst');
+
+    page['reorder'](0, 0);
+    page['reorder'](0, 5);
+    page['reorder'](-1, 1);
+
+    expect(order(page)).toEqual(['skill', 'burst']);
+  });
+
+  it('agrees with the arrows, which are the keyboard path', async () => {
+    // Both exist on purpose: a drag has no keyboard equivalent. They must not disagree about
+    // what "move this one down" means — a swap and a splice happen to coincide for ±1, and
+    // that coincidence is the thing worth pinning.
+    //
+    // One page, because `TestBed.configureTestingModule` refuses a second call once the
+    // module is instantiated.
+    const page = await withSteps(healthy(), 'skill', 'burst', 'attack');
+
+    page['move'](0, 1);
+    const byArrow = order(page);
+    page['steps'].set([]);
+    for (const action of ['skill', 'burst', 'attack']) {
+      page['appendStep']('10000002', action as never);
+    }
+    page['reorder'](0, 1);
+
+    expect(byArrow).toEqual(['burst', 'skill', 'attack']);
+    expect(order(page)).toEqual(byArrow);
+  });
+
+  it('drops nothing when no drag was in flight', async () => {
+    const page = await withSteps(healthy(), 'skill', 'burst');
+
+    page['onDrop'](1);
+
+    expect(order(page)).toEqual(['skill', 'burst']);
+  });
+
+  it('compiles what is on screen, not what was saved', async () => {
+    // The whole point of B.5: `compile()` reads the stored rotation, so a preview of unsaved
+    // work built on it would show the saved version — worse than none, because it looks
+    // current.
+    const preview = vi.fn().mockResolvedValue('while 1 { }');
+    const page = await withSteps(
+      healthy({ preview } as unknown as RotationsService), 'skill',
+    );
+    page['teamId'].set('team-1');
+
+    page['togglePreview']();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(preview).toHaveBeenCalledWith('team-1', page['steps']());
+  });
+
+  it('shows a refusal rather than a stale config', async () => {
+    // The refusal names the step that cannot compile. A previous config left beside the edit
+    // that broke it would be the preview lying.
+    const page = await withSteps(
+      healthy({
+        preview: vi.fn().mockRejectedValue({ detail: 'that team does not field 10000037' }),
+      } as unknown as RotationsService),
+      'skill',
+    );
+    page['teamId'].set('team-1');
+    page['compiled'].set('stale');
+
+    await page['refreshPreview']();
+
+    expect(page['compiled']()).toBeNull();
+    expect(page['previewError']()).toContain('10000037');
+  });
+
+  it('does not call the server while the preview is closed', async () => {
+    const preview = vi.fn().mockResolvedValue('');
+    const page = await withSteps(
+      healthy({ preview } as unknown as RotationsService), 'skill',
+    );
+
+    page['schedulePreview']();
+
+    expect(preview).not.toHaveBeenCalled();
+  });
+});

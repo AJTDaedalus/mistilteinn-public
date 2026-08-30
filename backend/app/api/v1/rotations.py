@@ -45,6 +45,7 @@ from app.schemas.rotation import (
     RotationImportRead,
     RotationImportRequest,
     RotationOptions,
+    RotationPreviewRequest,
     RotationRead,
     RotationStep,
     RotationUpdate,
@@ -245,6 +246,34 @@ async def import_from_gcsim(
     return RotationImportRead(
         steps=[RotationStep(**step) for step in steps], rewrites=notes,
     )
+
+
+@router.post("/preview")
+@limiter.limit(WRITE_LIMIT)
+async def preview_compile(
+    request: Request,  # slowapi reads the client address off it
+    repo: _Repo,
+    body: RotationPreviewRequest,
+) -> dict[str, str]:
+    """Compile steps that have not been saved, so an editor can show what it is building.
+
+    Declared **above** `/{rotation_id}` for the reason `/options` and `/library` are: FastAPI
+    matches in declaration order, and below it this is a rotation whose id is "preview".
+
+    Writes nothing. It is a POST because the steps are a body, not because it changes anything
+    — and it is rate-limited like a write because it does real work per call.
+
+    The same validation as a save, deliberately: a preview that accepted a step the save would
+    refuse is a preview of a rotation that cannot exist.
+    """
+    if await repo.team_characters(body.team_id) == set() and body.steps:
+        raise HTTPException(status_code=404, detail=f"No team {body.team_id!r}")
+    await _check_steps_against_team(repo, body.team_id, body.steps)
+    roster = await repo.character_rows(body.team_id)
+    try:
+        return {"config": compile_rotation([s.model_dump() for s in body.steps], roster)}
+    except RotationCompileError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.get("/library", response_model=PaginatedResponse[LibraryRotationRead])

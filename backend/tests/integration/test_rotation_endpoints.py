@@ -766,3 +766,63 @@ async def test_a_config_naming_someone_off_the_team_is_refused_by_name(
 
     assert response.status_code == 422
     assert "bennett" in response.json()["detail"]
+
+
+# ── previewing what unsaved steps compile to (B.5) ───────────────────────────
+
+
+async def test_preview_compiles_steps_that_were_never_saved(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """The whole reason this endpoint exists.
+
+    `POST /{id}/compile` reads the **stored** rotation, so an editor showing a live preview of
+    unsaved work would either show the saved version — worse than no preview, because it looks
+    current — or grow a second compiler in TypeScript. The second compiler is the hazard: the
+    readiness gates are what stop gcsim's two silent failures, and two implementations of them
+    would eventually disagree about a config nobody reads.
+    """
+    previewed = await authed_client.post(f"{ROTATIONS}/preview", json={
+        "team_id": scene.team_id,
+        "steps": [_step(scene.ayaka, "burst"), _step(scene.barbara, "skill")],
+    })
+
+    assert previewed.status_code == 200, previewed.text
+    config = previewed.json()["config"]
+    assert "while 1" in config
+    assert ".ready" in config
+
+
+async def test_preview_saves_nothing(authed_client: AsyncClient, scene: Scene):
+    """A POST because the steps are a body, not because it changes anything."""
+    await authed_client.post(f"{ROTATIONS}/preview", json={
+        "team_id": scene.team_id, "steps": [_step(scene.ayaka)],
+    })
+
+    listed = await authed_client.get(ROTATIONS)
+    assert listed.json()["items"] == []
+
+
+async def test_preview_refuses_exactly_what_a_save_refuses(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """A preview that accepted a step the save would refuse is a preview of a rotation that
+    cannot exist — which is a worse lie than showing nothing."""
+    refused = await authed_client.post(f"{ROTATIONS}/preview", json={
+        "team_id": scene.team_id, "steps": [_step("10000037", "burst")],
+    })
+
+    assert refused.status_code == 422
+    assert "10000037" in refused.text
+
+
+async def test_preview_of_an_empty_rotation_is_refused_rather_than_empty(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """`compile_rotation` refuses an empty action block, because gcsim would accept a config
+    with nothing in it and report a plausible zero."""
+    previewed = await authed_client.post(f"{ROTATIONS}/preview", json={
+        "team_id": scene.team_id, "steps": [],
+    })
+
+    assert previewed.status_code == 422

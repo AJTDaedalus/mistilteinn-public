@@ -152,6 +152,21 @@ export class RotationsService {
     return data;
   }
 
+  /**
+   * What these steps would compile to, without saving them.
+   *
+   * `compile()` reads the **stored** rotation, so a live preview of unsaved work needs this:
+   * the alternative is a second compiler in TypeScript, and the readiness gates it would have
+   * to reimplement are exactly what stop gcsim's two silent failures.
+   */
+  async preview(teamId: string, steps: RotationStep[]): Promise<string> {
+    const { data, error } = await this.api.POST('/api/v1/rotations/preview', {
+      body: { team_id: teamId, steps },
+    });
+    if (error) throw error;
+    return (data as { config: string }).config;
+  }
+
   /** The gcsim config this rotation becomes — so a user can see what they authored. */
   async compile(id: string): Promise<string> {
     const { data, error } = await this.api.POST('/api/v1/rotations/{rotation_id}/compile', {

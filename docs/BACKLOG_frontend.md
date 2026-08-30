@@ -174,9 +174,15 @@ show that a suggested piece is *owned*. Drag-and-drop for the ranking.
   The like is optimistic and reverts on failure: a like is a one-bit opinion, and waiting a
   round trip to see it register is the wrong trade, while a count that stayed after a failure
   would be a number the server does not agree with.
-- **The rotation builder gets its own design pass**, after the smaller items. The owner: *"I
-  want a very extensive and easy to use rotation builder, it's one of our key distinctions from
-  gcsim."*
+- ~~**The rotation builder gets its own design pass**, after the smaller items.~~ **Done —
+  `docs/DESIGN_rotation_builder.md` (#181), and every surface item with it (#181, #184).**
+
+  The design's first job was establishing what *"extensive"* can mean: `DESIGN_rotation.md` §2
+  says the model refuses to be a language, so it means *costs less to say*. The owner confirmed
+  (OQ-B1, "the surface only") and closed the quick-add line (OQ-B2, "buttons only").
+
+  Shipped: ability names, click-a-face-click-an-action, duplicate-in-place, per-step notes,
+  drag to reorder, and a live gcsim preview of **unsaved** steps.
 
 ## 6. Optimize
 

@@ -193,8 +193,15 @@
               [value]="step.character"
               (change)="setStep($index, { character: $any($event.target).value })"
             >
+              <!-- `[selected]` on the option, not `[value]` on the select. Angular sets the
+                   select's `value` property in the same pass that renders these options, so
+                   the assignment lands before the option exists and the browser falls back to
+                   index 0 — **every step showed the first character and the first action**,
+                   whatever it actually held. The compiled config was right the whole time,
+                   which is why nothing failed: seen in a screenshot where step 2 read
+                   "Bennett" beside a config that said `kaedeharakazuha skill`. -->
               @for (member of roster(); track member.nanoka_id) {
-                <option [value]="member.nanoka_id">
+                <option [value]="member.nanoka_id" [selected]="member.nanoka_id === step.character">
                   {{ member.name }} · {{ member.element }}
                 </option>
               }
@@ -206,7 +213,9 @@
               (change)="setStep($index, { action: $any($event.target).value })"
             >
               @for (action of actions(); track action) {
-                <option [value]="action">{{ abilityName(step.character, action) }}</option>
+                <option [value]="action" [selected]="action === step.action">
+                  {{ abilityName(step.character, action) }}
+                </option>
               }
             </select>
 
@@ -276,15 +285,11 @@
         <button type="button" (click)="save()" [disabled]="!canSave()">
           {{ editing() ? 'Save changes' : 'Save rotation' }}
         </button>
-        <button
-          type="button"
-          (click)="compile()"
-          [disabled]="editing() === null || dirty()"
-          [attr.title]="
-            dirty() ? 'Save first — compiling reads the stored rotation, not the screen.' : null
-          "
-        >
-          Show gcsim config
+        <!-- B.5: the preview compiles what is **on screen**, so it needs no save and carries
+             no "save first" caveat. `Show gcsim config` read the stored rotation, which is
+             why it was disabled while dirty. -->
+        <button type="button" (click)="togglePreview()">
+          {{ previewing() ? 'Hide gcsim config' : 'Show gcsim config' }}
         </button>
         @if (editing()) {
           <button type="button" (click)="newRotation()">New</button>
@@ -295,8 +300,17 @@
         <p class="error" role="alert">{{ message }}</p>
       }
 
+      @if (previewError(); as message) {
+        <!-- Shown, not swallowed: the refusal names the step that cannot compile, which is the
+             most useful thing a preview can say. A stale config left beside an edit that broke
+             it would be the preview lying. -->
+        <p class="error" role="alert">{{ message }}</p>
+      }
+
       @if (compiled(); as config) {
-        <!-- Shown because a compiler nobody can inspect is a compiler nobody can check. -->
+        <!-- Shown because a compiler nobody can inspect is a compiler nobody can check — and
+             live, because the readiness gates are what stop gcsim's two silent failures and
+             watching them appear is the difference between trusting the compiler and hoping. -->
         <figure class="compiled">
           <figcaption class="eyebrow">What gcsim receives</figcaption>
           <pre class="mono">{{ config }}</pre>

@@ -353,6 +353,7 @@ export class RotationsPage implements OnInit {
   protected appendStep(character: string, action: RotationAction): void {
     this.steps.update((steps) => [...steps, { character, action, repeat: 1, note: '' }]);
     this.compiled.set(null);
+    this.schedulePreview();
   }
 
   /**
@@ -395,11 +396,13 @@ export class RotationsPage implements OnInit {
       ...steps.slice(index + 1),
     ]);
     this.compiled.set(null);
+    this.schedulePreview();
   }
 
   protected removeStep(index: number): void {
     this.steps.update((steps) => steps.filter((_, i) => i !== index));
     this.compiled.set(null);
+    this.schedulePreview();
   }
 
   /**
@@ -416,6 +419,39 @@ export class RotationsPage implements OnInit {
     [next[index], next[target]] = [next[target], next[index]];
     this.steps.set(next);
     this.compiled.set(null);
+    this.schedulePreview();
+  }
+
+  /**
+   * Move a step to an arbitrary index — what a drag reports (B.4).
+   *
+   * The arrows stay and are not a fallback: a drag has no keyboard equivalent, and this list
+   * is reorderable with one hand on a phone and with a keyboard because both exist. Sharing
+   * the tail of `move` would need `move` to take a destination, which is the same function
+   * spelled twice; this is the general one and `move` is the ±1 case.
+   */
+  protected reorder(from: number, to: number): void {
+    const steps = this.steps();
+    if (from === to || from < 0 || to < 0 || from >= steps.length || to >= steps.length) return;
+    const next = [...steps];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    this.steps.set(next);
+    this.compiled.set(null);
+    this.schedulePreview();
+  }
+
+  /** The step being dragged, or null. A signal so the row can show it is in flight. */
+  protected readonly dragging = signal<number | null>(null);
+
+  protected onDragStart(index: number): void {
+    this.dragging.set(index);
+  }
+
+  protected onDrop(index: number): void {
+    const from = this.dragging();
+    this.dragging.set(null);
+    if (from !== null) this.reorder(from, index);
   }
 
   protected setStep(index: number, patch: Partial<RotationStep>): void {
@@ -423,6 +459,7 @@ export class RotationsPage implements OnInit {
       steps.map((step, i) => (i === index ? { ...step, ...patch } : step)),
     );
     this.compiled.set(null);
+    this.schedulePreview();
   }
 
   protected async save(): Promise<void> {
@@ -491,6 +528,53 @@ export class RotationsPage implements OnInit {
    * something else" failure this project keeps meeting. The first version of this guard
    * covered only a brand-new rotation and left that hole open for edits to a saved one.
    */
+  // ── the live preview (DESIGN_rotation_builder B.5) ───────────────────────
+  //
+  // The gates are what `DESIGN_rotation.md` §3.4 calls "the whole point" — they are what stops
+  // a bare action list running once and `while 1` deadlocking on an ungated action. Seeing
+  // them appear as the rotation is written is the difference between a compiler you trust and
+  // one you hope about.
+
+  /** Whether the preview pane is open. Off by default: it costs a request per edit. */
+  protected readonly previewing = signal(false);
+  protected readonly previewError = signal<string | null>(null);
+
+  protected togglePreview(): void {
+    this.previewing.update((on) => !on);
+    if (this.previewing()) void this.refreshPreview();
+    else this.compiled.set(null);
+  }
+
+  /**
+   * Recompile the **unsaved** steps.
+   *
+   * Debounced, because it fires on every step edit and each call is a round trip that
+   * validates a roster. 300 ms is long enough that holding an arrow key does not queue a
+   * request per repeat, and short enough to feel like it is keeping up.
+   */
+  private previewTimer: ReturnType<typeof setTimeout> | null = null;
+
+  protected schedulePreview(): void {
+    if (!this.previewing()) return;
+    if (this.previewTimer !== null) clearTimeout(this.previewTimer);
+    this.previewTimer = setTimeout(() => void this.refreshPreview(), 300);
+  }
+
+  protected async refreshPreview(): Promise<void> {
+    const teamId = this.teamId();
+    if (!teamId) return;
+    this.previewError.set(null);
+    try {
+      this.compiled.set(await this.rotations.preview(teamId, this.steps()));
+    } catch (err) {
+      // **Shown, not swallowed.** A refusal here names the step that cannot compile, which is
+      // the most useful thing the preview can say — and a stale config left on screen beside
+      // an edit that broke it would be the preview lying.
+      this.compiled.set(null);
+      this.previewError.set(apiErrorMessage(err));
+    }
+  }
+
   protected async compile(): Promise<void> {
     const id = this.editing();
     if (!id || this.dirty()) return;

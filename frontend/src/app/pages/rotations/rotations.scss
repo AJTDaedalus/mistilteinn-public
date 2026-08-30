@@ -362,3 +362,13 @@
   width: 100%;
   font-size: var(--text-xs);
 }
+
+/* A row being dragged. Dimmed rather than hidden: a gap where the row was makes the list jump
+   under the pointer, and the thing being moved should stay visible while it moves. */
+.step--dragging {
+  opacity: 0.45;
+}
+
+.step[draggable='true'] {
+  cursor: grab;
+}

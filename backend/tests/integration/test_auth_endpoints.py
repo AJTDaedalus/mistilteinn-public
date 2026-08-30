@@ -124,6 +124,9 @@ _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     # and it still requires a signed-in caller, because `liked_by_me` is a fact about someone
     # and a like has to belong to an account. An anonymous library would need a different
     # response shape, not a different filter.
+    # Compiling unsaved steps validates them against a team, so it is owner-scoped for the
+    # same reason `compile` is: it would otherwise report whether a team exists.
+    ("POST", "/api/v1/rotations/preview", {}),
     ("GET", "/api/v1/rotations/library", None),
     ("POST", "/api/v1/rotations/00000000-0000-0000-0000-000000000001/like", {}),
     ("DELETE", "/api/v1/rotations/00000000-0000-0000-0000-000000000001/like", None),
