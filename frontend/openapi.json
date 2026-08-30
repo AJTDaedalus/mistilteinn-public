@@ -6160,6 +6160,14 @@
               }
             ],
             "title": "Icon"
+          },
+          "abilities": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Abilities",
+            "default": {}
           }
         },
         "type": "object",

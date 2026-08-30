@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.base import generate_uuid7
 from app.models.build import Build
+from app.models.character import Character
 from app.models.enums import Visibility
 from app.models.rotation import Rotation, RotationCharacter, RotationLike
 from app.models.team import Team
@@ -19,7 +20,6 @@ from app.schemas.team import TEAM_SLOTS
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from app.models.character import Character
 
 
 class RotationStaleError(RuntimeError):
@@ -124,18 +124,30 @@ class RotationRepository(BaseRepository[Rotation]):
         """The nanoka ids of every character on a team — for validating steps on write."""
         return set(await self.character_rows(team_id))
 
-    def _teams(self) -> Select[tuple[Team]]:
+    def _teams(self, *, with_talents: bool = False) -> Select[tuple[Team]]:
         """Teams, owner-scoped, eager-loaded down to each build's character.
 
         Eager, because a lazy hop here is a `MissingGreenlet` inside a request — the shape
         Chunk G met three times before `lazy="raise_on_sql"` made it loud.
+
+        `with_talents` reaches one level further, to each character's talent rows. **Off by
+        default and on only for `/options`**, which is the one caller that publishes ability
+        names: the compiler and the library need a character's key, not what their burst is
+        called, and loading three talent rows per member on every library listing would be
+        payload nobody reads.
         """
         stmt = select(Team)
         if self.owner_id is not None:
             stmt = stmt.where(Team.owner_id == self.owner_id)
         return stmt.options(
             *(
-                selectinload(getattr(Team, name.removesuffix("_id"))).selectinload(
+                (
+                    selectinload(getattr(Team, name.removesuffix("_id")))
+                    .selectinload(Build.character)
+                    .selectinload(Character.talents)
+                )
+                if with_talents
+                else selectinload(getattr(Team, name.removesuffix("_id"))).selectinload(
                     Build.character,
                 )
                 for name in TEAM_SLOTS
@@ -223,16 +235,23 @@ class RotationRepository(BaseRepository[Rotation]):
             if getattr(team, name) is not None
         ]
 
-    async def rosters(self) -> list[tuple[Team, dict[str, Character]]]:
+    async def rosters(
+        self, *, with_talents: bool = False,
+    ) -> list[tuple[Team, dict[str, Character]]]:
         """Every team the caller owns, with who is on it.
 
         This is what the editor offers as step options, and it comes through `_roster` —
         the same extraction the write path validates against. Two implementations would
         eventually offer a character the validator then refused, and the user would be told
         their own selection was invalid.
+
+        `with_talents` reaches one level further so the editor can label an action with the
+        character's own name for it — see `_teams`.
         """
         teams = (
-            (await self.session.execute(self._teams().order_by(Team.created_at.desc())))
+            (await self.session.execute(
+                self._teams(with_talents=with_talents).order_by(Team.created_at.desc()),
+            ))
             .scalars()
             .unique()
             .all()

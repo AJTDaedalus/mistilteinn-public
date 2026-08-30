@@ -47,9 +47,13 @@ import json
 import re
 from functools import cache
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+
+from app.models.enums import TalentType
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from app.models.enums import Element
 
 _SNAPSHOT = Path(__file__).resolve().parents[1] / "data" / "gcsim" / "keys.json"
@@ -99,6 +103,43 @@ def authorable_actions() -> tuple[str, ...]:
     something gcsim would reject.
     """
     return tuple(a for a in gcsim_actions() if a not in _NOT_AUTHORED)
+
+
+#: Which of gcsim's actions **is** a levelled talent, and which one.
+#:
+#: The two vocabularies are not the same and looked like they were: gcsim writes `skill`, the
+#: catalogue stores `TalentType.ELEMENTAL_SKILL`. A builder labelling an action with the
+#: character's own name for it needs the correspondence, and keying it by the *action* means
+#: no client ever performs the mapping.
+#:
+#: **Three, not ten.** `dash`, `jump` and `walk` are not abilities at all. `charge`, `aim`,
+#: `high_plunge` and `low_plunge` scale off the normal-attack talent but are **not** what the
+#: game calls by that name — labelling a charged attack "Akara" would be a wrong name rather
+#: than a missing one, so they keep their key. That is the same choice `weapon_symbols` makes
+#: about the crossbow: absent beats plausible.
+_ACTION_TALENTS: dict[str, TalentType] = {
+    "attack": TalentType.NORMAL_ATTACK,
+    "skill": TalentType.ELEMENTAL_SKILL,
+    "burst": TalentType.ELEMENTAL_BURST,
+}
+
+
+def ability_names(talents: Iterable[Any]) -> dict[str, str]:
+    """`action -> the character's own name for it`, for the three actions that are talents.
+
+    Takes rows rather than a character so it needs no import from `app.models`, and skips a
+    talent with no name rather than storing an empty string — absent is the honest answer and
+    the caller already falls back to the action key.
+    """
+    by_type = {
+        getattr(talent, "talent_type", None): getattr(talent, "name", "")
+        for talent in talents
+    }
+    return {
+        action: by_type[talent_type]
+        for action, talent_type in _ACTION_TALENTS.items()
+        if by_type.get(talent_type)
+    }
 
 
 def normalise(name: str) -> str:

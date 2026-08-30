@@ -341,9 +341,58 @@ export class RotationsPage implements OnInit {
   protected addStep(): void {
     const first = this.roster()[0];
     if (!first || this.actions().length === 0) return;
+    this.appendStep(first.nanoka_id, this.actions()[0]);
+  }
+
+  /**
+   * Append one step. The shared path, so the two ways to add one cannot drift.
+   *
+   * `DESIGN_rotation_builder.md` B.2 adds a second entry point — click a face, click an
+   * action — and two `steps.update` calls would eventually initialise a step differently.
+   */
+  protected appendStep(character: string, action: RotationAction): void {
+    this.steps.update((steps) => [...steps, { character, action, repeat: 1, note: '' }]);
+    this.compiled.set(null);
+  }
+
+  /**
+   * The character whose actions the quick-add row is offering, or null for none.
+   *
+   * A two-click add: pick a face, pick an action, and the step appends. The roster is already
+   * drawn on this page and was not clickable — B.2 measured the old path at five to seven
+   * interactions per step, most of them spent in two `<select>`s.
+   */
+  protected readonly addingFor = signal<string | null>(null);
+
+  protected toggleAddingFor(nanokaId: string): void {
+    this.addingFor.update((current) => (current === nanokaId ? null : nanokaId));
+  }
+
+  protected quickAdd(action: RotationAction): void {
+    const character = this.addingFor();
+    if (!character) return;
+    this.appendStep(character, action);
+    this.addingFor.set(null);
+  }
+
+  /**
+   * This character's own name for an action, or the action key.
+   *
+   * **A gcsim config says `nahida skill`, and that is the complaint that started the chunk.**
+   * Only the three levelled talents have names; `dash`, `jump` and `walk` are not abilities,
+   * so they keep their key — as does a character whose talents are not seeded.
+   */
+  protected abilityName(nanokaId: string, action: string): string {
+    const member = this.roster().find((c) => c.nanoka_id === nanokaId);
+    return member?.abilities?.[action] ?? action;
+  }
+
+  /** Duplicate a step in place — what `DESIGN_rotation.md` §2 promised a UI would do. */
+  protected duplicateStep(index: number): void {
     this.steps.update((steps) => [
-      ...steps,
-      { character: first.nanoka_id, action: this.actions()[0], repeat: 1, note: '' },
+      ...steps.slice(0, index + 1),
+      { ...steps[index] },
+      ...steps.slice(index + 1),
     ]);
     this.compiled.set(null);
   }

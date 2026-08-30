@@ -163,11 +163,15 @@ async def rotation_options(repo: _Repo) -> RotationOptions:
                         name=character.name,
                         element=str(character.element.value),
                         icon=character.icon,
+                        # Keyed by gcsim's **action**, not by talent type: they are two
+                        # vocabularies and they look like one. `gcsim_keys.ability_names`
+                        # owns the correspondence so no client performs it.
+                        abilities=gcsim_keys.ability_names(character.talents),
                     )
                     for nanoka_id, character in sorted(roster.items())
                 ],
             )
-            for team, roster in await repo.rosters()
+            for team, roster in await repo.rosters(with_talents=True)
         ],
     )
 

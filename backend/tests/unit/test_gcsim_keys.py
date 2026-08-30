@@ -13,9 +13,11 @@ from pathlib import Path
 
 import pytest
 
+from app.models.enums import TalentType
 from app.services import gcsim_keys
 from app.services.gcsim_keys import (
     GcsimKeyError,
+    ability_names,
     artifact_set_key,
     character_key,
     normalise,
@@ -146,3 +148,58 @@ def test_nothing_here_ever_emits_an_alias() -> None:
     key = gcsim_keys.character_key("10000096", "Arlecchino", "Pyro")
 
     assert key == "arlecchino"
+
+
+# ── ability names: two vocabularies that look like one ───────────────────────
+
+
+class _Talent:
+    """The two attributes `ability_names` reads. A row stands in for a Character.talents item."""
+
+    def __init__(self, talent_type: TalentType, name: str) -> None:
+        self.talent_type = talent_type
+        self.name = name
+
+
+def test_abilities_are_keyed_by_gcsims_action_not_by_talent_type() -> None:
+    """**The mistake this test exists to prevent, made once already.**
+
+    gcsim writes `skill`; the catalogue stores `TalentType.ELEMENTAL_SKILL`. The first version
+    of the builder's ability labels keyed them by talent type, so every lookup missed and every
+    action showed its own key — a feature that was live, green and doing nothing. It was caught
+    by *looking at the page*, not by a test, because the unit fixture had been written with the
+    same wrong assumption.
+    """
+    names = ability_names([
+        _Talent(TalentType.NORMAL_ATTACK, "Akara"),
+        _Talent(TalentType.ELEMENTAL_SKILL, "All Schemes to Know"),
+        _Talent(TalentType.ELEMENTAL_BURST, "Illusory Heart"),
+    ])
+
+    assert names == {
+        "attack": "Akara",
+        "skill": "All Schemes to Know",
+        "burst": "Illusory Heart",
+    }
+    assert set(names) <= set(gcsim_keys.authorable_actions())
+
+
+def test_an_action_that_is_not_a_talent_has_no_name() -> None:
+    """`dash`, `jump` and `walk` are not abilities; `charge` and the plunges scale off the
+    normal-attack talent but are not what the game calls by that name. Labelling a charged
+    attack "Akara" would be a wrong name rather than a missing one."""
+    names = ability_names([_Talent(TalentType.NORMAL_ATTACK, "Akara")])
+
+    assert "charge" not in names
+    assert "dash" not in names
+    assert "high_plunge" not in names
+
+
+def test_a_talent_with_no_name_is_absent_rather_than_empty() -> None:
+    """Absent is the honest answer, and the caller already falls back to the action key. An
+    empty string would render as a blank button."""
+    assert ability_names([_Talent(TalentType.ELEMENTAL_SKILL, "")]) == {}
+
+
+def test_a_character_with_no_seeded_talents_gets_nothing() -> None:
+    assert ability_names([]) == {}

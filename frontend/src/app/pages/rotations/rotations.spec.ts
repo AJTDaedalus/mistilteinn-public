@@ -2,11 +2,20 @@ import { TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi } from 'vitest';
 
 import { RotationsPage } from './rotations';
-import { RotationsService } from './rotations.service';
+import { RotationsService, type RosterCharacter } from './rotations.service';
 
-const ROSTER = [
-  { nanoka_id: '10000002', name: 'Kamisato Ayaka', element: 'Cryo' },
-  { nanoka_id: '10000014', name: 'Barbara', element: 'Hydro' },
+const ROSTER: RosterCharacter[] = [
+  {
+    nanoka_id: '10000002', name: 'Kamisato Ayaka', element: 'Cryo',
+    // Keyed by **gcsim's action**, not by talent type. The first version of this fixture
+    // used `elemental_skill` — the same wrong assumption the implementation had — so the
+    // test passed against a feature that showed `skill` on every button. Caught by looking
+    // at the page.
+    abilities: { skill: 'Kamisato Art: Hyouka' },
+  },
+  // No seeded talents: the editor falls back to the action key, which is the case worth
+  // having a fixture for.
+  { nanoka_id: '10000014', name: 'Barbara', element: 'Hydro', abilities: {} },
 ];
 
 const OPTIONS = {
@@ -366,5 +375,101 @@ describe('RotationsPage library', () => {
 
     await expect(page['openLibrary'](TEAM)).resolves.toBeUndefined();
     expect(() => page['closeLibrary']()).not.toThrow();
+  });
+});
+
+
+/**
+ * The builder's authoring surface — `DESIGN_rotation_builder.md` B.1, B.2, B.3, B.6.
+ *
+ * All four are about **cost**, not capability: the model is unchanged, and §1 of that document
+ * is explicit that it must be. So these tests check that a step added the fast way is
+ * identical to one added the slow way, which is the thing that would silently drift.
+ */
+describe('RotationsPage builder', () => {
+  it('adds a step in two clicks, identical to the one the old path made', async () => {
+    // B.2. Two entry points, one `appendStep`, because two `steps.update` calls would
+    // eventually initialise a step differently and only one of them would be tested.
+    //
+    // Both paths on **one** page: `TestBed.configureTestingModule` refuses a second call once
+    // the module is instantiated, so two `healthy()` pages in one test is not available here.
+    const page = healthy();
+    await page['load']();
+
+    page['toggleAddingFor']('10000014');
+    page['quickAdd']('burst');
+    page['addStep']();
+    page['setStep'](1, { character: '10000014', action: 'burst' });
+
+    const [fast, slow] = page['steps']();
+    expect(fast).toEqual(slow);
+  });
+
+  it('closes the action list after adding, so a second click is a second character', async () => {
+    const page = healthy();
+    await page['load']();
+
+    page['toggleAddingFor']('10000014');
+    page['quickAdd']('skill');
+
+    expect(page['addingFor']()).toBeNull();
+  });
+
+  it("labels an action with the character's own name for it", async () => {
+    // B.1. A gcsim config says `nahida skill`; the complaint that started this chunk was
+    // about exactly that.
+    const page = healthy();
+    await page['load']();
+
+    expect(page['abilityName']('10000002', 'skill')).toBe('Kamisato Art: Hyouka');
+  });
+
+  it('falls back to the action key rather than showing nothing', async () => {
+    // Barbara has no seeded talents in the fixture, and `dash` is not an ability for anyone.
+    const page = healthy();
+    await page['load']();
+
+    expect(page['abilityName']('10000014', 'skill')).toBe('skill');
+    expect(page['abilityName']('10000002', 'dash')).toBe('dash');
+    expect(page['abilityName']('nobody', 'skill')).toBe('skill');
+  });
+
+  it('duplicates a step immediately after itself, not at the end', async () => {
+    // B.3. `DESIGN_rotation.md` §2 answers "repeat this section" with "write it three times…
+    // a UI can duplicate a selection", and position is the whole value: appended to the end
+    // it would be a different rotation.
+    const page = healthy();
+    await page['load']();
+    page['addStep']();
+    page['setStep'](0, { action: 'skill' });
+    page['addStep']();
+    page['setStep'](1, { action: 'burst' });
+
+    page['duplicateStep'](0);
+
+    expect(page['steps']().map((s) => s.action)).toEqual(['skill', 'skill', 'burst']);
+  });
+
+  it('duplicates by value, so editing the copy leaves the original alone', async () => {
+    const page = healthy();
+    await page['load']();
+    page['addStep']();
+
+    page['duplicateStep'](0);
+    page['setStep'](1, { repeat: 4 });
+
+    expect(page['steps']()[0].repeat).toBe(1);
+    expect(page['steps']()[1].repeat).toBe(4);
+  });
+
+  it('keeps a per-step note, which the model has carried since R.4', async () => {
+    // B.6. The field existed and no UI had ever shown it.
+    const page = healthy();
+    await page['load']();
+    page['addStep']();
+
+    page['setStep'](0, { note: 'after Furina stacks' });
+
+    expect(page['steps']()[0].note).toBe('after Furina stacks');
   });
 });

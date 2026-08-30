@@ -138,11 +138,37 @@
       } @else {
         <!-- Who is available to act, once, rather than re-read from every step's
              dropdown. -->
+        <!-- B.2: the roster was drawn here and not clickable, while the user picked the same
+             character from a `<select>` underneath. Click a face, click an action, and the
+             step appends — two interactions where the old path measured five to seven. -->
         <ul class="roster">
           @for (member of roster(); track member.nanoka_id) {
             <li>
-              <entity-token [icon]="member.icon" [name]="member.name" [size]="34" />
-              <element-chip [element]="member.element" />
+              <button
+                type="button"
+                class="roster__pick"
+                [class.roster__pick--open]="addingFor() === member.nanoka_id"
+                [attr.aria-expanded]="addingFor() === member.nanoka_id"
+                [attr.aria-label]="'Add a step for ' + member.name"
+                (click)="toggleAddingFor(member.nanoka_id)"
+              >
+                <entity-token [icon]="member.icon" [name]="member.name" [size]="34" />
+                <element-chip [element]="member.element" />
+              </button>
+
+              @if (addingFor() === member.nanoka_id) {
+                <ul class="roster__actions">
+                  @for (action of actions(); track action) {
+                    <!-- B.1: the character's own name for it — "All Schemes to Know", not
+                         `skill`. The key still governs what compiles; this is a label. -->
+                    <li>
+                      <button type="button" (click)="quickAdd(action)">
+                        {{ abilityName(member.nanoka_id, action) }}
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
             </li>
           }
         </ul>
@@ -180,7 +206,7 @@
               (change)="setStep($index, { action: $any($event.target).value })"
             >
               @for (action of actions(); track action) {
-                <option [value]="action">{{ action }}</option>
+                <option [value]="action">{{ abilityName(step.character, action) }}</option>
               }
             </select>
 
@@ -211,12 +237,32 @@
               >↓</button>
             </span>
 
+            <!-- B.3. `DESIGN_rotation.md` §2 answers "repeat this section" with "write the
+                 steps three times; the list is short and a UI can duplicate a selection" — a
+                 promise no UI had kept. -->
+            <button
+              type="button"
+              class="copy"
+              [attr.aria-label]="'Duplicate step ' + ($index + 1)"
+              (click)="duplicateStep($index)"
+            >⧉</button>
+
             <button
               type="button"
               class="drop"
               [attr.aria-label]="'Remove step ' + ($index + 1)"
               (click)="removeStep($index)"
             >×</button>
+
+            <!-- B.6: `note` has been on the model since R.4 and no UI has ever shown it. -->
+            <input
+              type="text"
+              class="note"
+              placeholder="note"
+              [attr.aria-label]="'Note for step ' + ($index + 1)"
+              [value]="step.note"
+              (change)="setStep($index, { note: $any($event.target).value })"
+            />
           </li>
         } @empty {
           <li class="muted">No steps yet.</li>

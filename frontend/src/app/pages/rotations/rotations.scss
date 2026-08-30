@@ -305,3 +305,60 @@
 
   &:hover { color: var(--ink); }
 }
+
+/* ── Quick-add: click a face, click an action ────────────────────────────────
+   `DESIGN_rotation_builder.md` B.2. The roster was already drawn on this page and was not
+   clickable, while the same choice was made again in a `<select>` underneath. */
+.roster__pick {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-1);
+  background: none;
+  color: inherit;
+  cursor: pointer;
+
+  &:hover { border-color: var(--brass-deep); }
+
+  &.roster__pick--open {
+    border-color: var(--brass);
+    box-shadow: var(--glow-brass);
+  }
+}
+
+/* The ability list, under the face it belongs to. A pop-up would put it over the roster it is
+   describing; there are ten actions and they fit. */
+.roster__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  list-style: none;
+
+  button {
+    font-size: var(--text-xs);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+}
+
+/* Duplicate, beside delete. Quiet, because it is used far less than either neighbour. */
+.copy {
+  border: none;
+  background: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+
+  &:hover { color: var(--ink); }
+}
+
+/* The per-step note. Full width on its own line: it is prose, and squeezing it between two
+   dropdowns would make it look like another control. */
+.step .note {
+  grid-column: 1 / -1;
+  width: 100%;
+  font-size: var(--text-xs);
+}

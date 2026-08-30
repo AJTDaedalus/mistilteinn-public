@@ -81,6 +81,18 @@ class RosterCharacter(BaseModel):
     #: performing, and joining a second endpoint to decorate this one would be that walk
     #: wearing a different name. Nullable — a row with no art is a seeding gap, not an error.
     icon: str | None = None
+    #: This character's own names for their abilities, keyed by **gcsim's action** —
+    #: `{"skill": "All Schemes to Know"}` — so an editor can offer what the player knows.
+    #:
+    #: **A gcsim config says `nahida skill`, and that is the complaint that started this
+    #: chunk.** The action key still governs everything: this decorates a label and is never
+    #: parsed, so a character whose talents are not seeded simply shows the key.
+    #:
+    #: Keyed by the action rather than by `TalentType`, because the two vocabularies are not
+    #: the same and look like they are — gcsim writes `skill`, the catalogue stores
+    #: `elemental_skill`. `gcsim_keys.ability_names` owns the correspondence, and only three
+    #: of the ten actions have one; see its comment on why a charged attack keeps its key.
+    abilities: dict[str, str] = {}
 
 
 class TeamRoster(BaseModel):
