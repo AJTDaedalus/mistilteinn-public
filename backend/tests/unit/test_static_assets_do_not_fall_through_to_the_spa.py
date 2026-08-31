@@ -90,3 +90,42 @@ def test_the_spa_fallback_still_exists() -> None:
     `/builds` must reach `index.html`; `/icons/x.webp` must not.
     """
     assert "try_files $uri $uri/ /index.html;" in CONF
+
+
+def test_the_spa_index_is_never_cached() -> None:
+    """`index.html` is the only file Angular does not fingerprint.
+
+    Every chunk carries its hash in its name and is cached hard on purpose. `index.html` is the
+    **map** from the app to that build's chunk names, so a browser holding an old one asks a
+    new release for chunks it no longer has — and the symptom is a single lazy route that will
+    not open while every already-loaded page keeps working. Nothing is broken server-side,
+    which is why every check answers 200.
+
+    It carried no `Cache-Control` at all, so the browser applied its own heuristic.
+    """
+    block = re.search(r"location\s*=\s*/index\.html\s*\{(.*?)\n    \}", CONF, re.DOTALL)
+
+    assert block is not None, "index.html has no location of its own, so it sets no headers"
+    assert "no-cache" in block.group(1)
+
+
+def test_the_index_location_repeats_the_security_headers() -> None:
+    """**`add_header` in a location replaces the inherited set rather than adding to it.**
+
+    So a location that adds `Cache-Control` and nothing else silently serves `index.html` — the
+    document every page is delivered inside — with no CSP, no `X-Frame-Options` and no
+    `nosniff`. That is a strictly worse trade than the caching bug it fixes, and it is invisible
+    unless something asks.
+    """
+    block = re.search(r"location\s*=\s*/index\.html\s*\{(.*?)\n    \}", CONF, re.DOTALL)
+    assert block is not None
+    body = block.group(1)
+
+    for header in (
+        "Content-Security-Policy",
+        "X-Content-Type-Options",
+        "X-Frame-Options",
+        "Referrer-Policy",
+        "Permissions-Policy",
+    ):
+        assert header in body, f"{header} is inherited nowhere and would be dropped here"
