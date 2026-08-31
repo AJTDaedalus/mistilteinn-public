@@ -157,7 +157,7 @@ describe('conversions', () => {
 
 describe('evaluateRecipe', () => {
   const recipe = (hits: RecipeHit[]): Recipe =>
-    ({ hits, seed: '1', meta: { seed: '1', staleConversions: [], calibratedSetIds: [], minimumEnergyRecharge: null } });
+    ({ hits, seed: '1', meta: { seed: '1', staleConversions: [], unstable: [], calibratedSetIds: [], minimumEnergyRecharge: null } });
 
   it('sums every hit', () => {
     expect(evaluateRecipe(recipe([hit(), hit(), hit()]), stats())).toBeCloseTo(2700, 6);

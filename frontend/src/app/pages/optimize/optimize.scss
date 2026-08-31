@@ -294,3 +294,10 @@
   background: color-mix(in srgb, var(--brass) 18%, transparent);
   color: var(--ink);
 }
+
+/* "Exact" is a claim about the search; this is the one about the scoring, and they sat as a
+   single sentence until a production run printed "Exact" over a recipe that could not see 90%
+   of the damage it was ranking. */
+.warn-inline {
+  color: var(--warning);
+}

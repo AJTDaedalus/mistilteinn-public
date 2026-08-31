@@ -894,8 +894,11 @@ describe('OptimizePage — the rotation objective', () => {
     // 1 four-piece, 2 a pair.
     expect(targets.map((t) => t.artifactSetIds)).toEqual([[], ['uuid-bs'], ['uuid-wt']]);
     expect(targets.map((t) => t.setIds)).toEqual([[], [15003], [15020]]);
+    // The baseline says it is the baseline. It read "no 4-piece set", and the progress line
+    // "Calibrating no 4-piece set" then looked like a set the user had picked — reported from
+    // production as "it's weird 'no 4p' was an option".
     expect(targets.map((t) => t.label)).toEqual([
-      'no 4-piece set', 'Blizzard Strayer', "Wanderer's Troupe",
+      'the baseline (no 4-piece bonus)', 'Blizzard Strayer', "Wanderer's Troupe",
     ]);
   });
 });
@@ -1502,5 +1505,82 @@ describe('an unknown simulable flag does not disable the feature', () => {
     ] as never));
 
     expect(page['reachableSets'](pieces(15003, 15020) as never)).toEqual([15003]);
+  });
+});
+
+describe('exhaustive and trustworthy are different claims', () => {
+  it('is not shaky when nothing was caveated', () => {
+    const page = pageWith();
+    page['caveats'].set({ unstable: [], staleConversions: [], fromCache: [] } as never);
+
+    expect(page['recipeIsShaky']()).toBe(false);
+  });
+
+  it('is shaky when the rotation did not run the same way twice', () => {
+    // `calibrate.ts`: "Stability is reported, not enforced… It is the caller's job not to rank
+    // on it." The caller does rank on it, so at minimum the word "Exact" must not imply the
+    // ranking is sound.
+    const page = pageWith();
+    page['caveats'].set({
+      unstable: ['the baseline (no 4-piece bonus)'], staleConversions: [], fromCache: [],
+    } as never);
+
+    expect(page['recipeIsShaky']()).toBe(true);
+  });
+
+  it('is shaky when conversions no probe could resolve cover the damage', () => {
+    // Measured in production: four terms at ~90% damage share each, printed under "Exact —
+    // the best five over this inventory". An exhaustive walk over a scorer that could not see
+    // most of what it was ranking.
+    const page = pageWith();
+    page['caveats'].set({
+      unstable: [],
+      staleConversions: [{ label: 'x', term: 'flatDamage', damageShare: 0.903 }],
+      fromCache: [],
+    } as never);
+
+    expect(page['recipeIsShaky']()).toBe(true);
+  });
+
+  it('says nothing when there was no rotation search at all', () => {
+    // The single-hit search has no recipe, so it has no caveats and no claim to qualify.
+    const page = pageWith();
+
+    expect(page['recipeIsShaky']()).toBe(false);
+  });
+});
+
+describe('the scoring warning does not cry wolf', () => {
+  it('stays quiet for a frozen term covering almost none of the damage', () => {
+    // `staleConversionsIn`: "83 hits carrying 2% of the damage is a footnote, and 5 hits
+    // carrying 40% is not." Firing on any entry gave a 0.3% term the same red sentence as the
+    // 90.3% case this was written for.
+    const page = pageWith();
+    page['caveats'].set({
+      unstable: [],
+      staleConversions: [{ label: 'x', term: 'flatDamage', damageShare: 0.003 }],
+      fromCache: [],
+    } as never);
+
+    expect(page['recipeIsShaky']()).toBe(false);
+  });
+
+  it('speaks for a frozen term covering a real share', () => {
+    const page = pageWith();
+    page['caveats'].set({
+      unstable: [],
+      staleConversions: [{ label: 'x', term: 'flatDamage', damageShare: 0.06 }],
+      fromCache: [],
+    } as never);
+
+    expect(page['recipeIsShaky']()).toBe(true);
+  });
+
+  it('speaks for an unstable rotation whatever its conversions did', () => {
+    // Instability is not a matter of degree: the rotation did not run the same way twice.
+    const page = pageWith();
+    page['caveats'].set({ unstable: ['x'], staleConversions: [], fromCache: [] } as never);
+
+    expect(page['recipeIsShaky']()).toBe(true);
   });
 });

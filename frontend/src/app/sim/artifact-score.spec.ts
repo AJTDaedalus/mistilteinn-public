@@ -24,7 +24,7 @@ const hit = (over: Partial<RecipeHit> = {}): RecipeHit => ({
 const recipe = (hits: RecipeHit[] = [hit()]): Recipe => ({
   hits,
   seed: '1',
-  meta: { seed: '1', staleConversions: [], calibratedSetIds: [], minimumEnergyRecharge: null },
+  meta: { seed: '1', staleConversions: [], unstable: [], calibratedSetIds: [], minimumEnergyRecharge: null },
 });
 
 const pool = (over: Record<string, number> = {}): StatPool => ({ ...over });

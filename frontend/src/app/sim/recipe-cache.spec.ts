@@ -26,7 +26,10 @@ const KEY: RecipeCacheKey = {
 
 const RECIPE = {
   hits: [], seed: '12345',
-  meta: { seed: '12345', staleConversions: [], calibratedSetIds: [1], minimumEnergyRecharge: 0.3 },
+  meta: {
+    seed: '12345', staleConversions: [], unstable: [],
+    calibratedSetIds: [1], minimumEnergyRecharge: 0.3,
+  },
 } as unknown as Recipe;
 
 /** An in-memory store, so a test needs no browser. */
@@ -147,5 +150,23 @@ describe('browserStore', () => {
   it('returns something or null, never throws', () => {
     // Accessing localStorage *throws* where site data is blocked, rather than returning null.
     expect(() => browserStore()).not.toThrow();
+  });
+});
+
+describe('what the cache must carry', () => {
+  it('round-trips a recipe unstable ability list', () => {
+    // **The reason this field is on `RecipeMeta` at all.** `calibrate` returned `stable`
+    // beside the recipe, and only the recipe is persisted — so a second search over the same
+    // build served every recipe from storage with its instability forgotten, and the page then
+    // affirmatively called the ranking sound. Permanently, because the cache is persistent.
+    const store = memory();
+    const recipe = {
+      ...RECIPE,
+      meta: { ...RECIPE.meta, unstable: ['Skirk: burst'] },
+    } as unknown as Recipe;
+
+    writeRecipe(store, KEY, recipe);
+
+    expect(readRecipe(store, KEY)?.meta.unstable).toEqual(['Skirk: burst']);
   });
 });

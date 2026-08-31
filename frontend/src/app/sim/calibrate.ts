@@ -86,5 +86,8 @@ export function calibrate(runs: CalibrationRuns, request: CalibrationRequest): C
       : minimumEnergyRecharge(runs.energySweep, calibratedBursts);
 
   const { stable, unstable } = stabilityFrom(runs.instances);
+  // **Written onto the recipe, not only returned beside it.** The recipe is what gets cached;
+  // a caller that reads one back from storage has no other way to learn it was unstable.
+  recipe.meta.unstable = unstable;
   return { recipe, stable, unstable, resolved, unresolved };
 }

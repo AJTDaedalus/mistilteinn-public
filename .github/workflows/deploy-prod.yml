@@ -145,6 +145,50 @@ jobs:
           done
           [ "$fail" -eq 0 ] || exit 1
 
+      - name: What the edge is actually serving
+        # **The check above probes the origin, and users do not.** It runs `wget` inside the
+        # frontend container against 127.0.0.1, so it is blind to Cloudflare — and Cloudflare
+        # is where this exact failure lived. Measured minutes after the fix deployed:
+        #
+        #     wasm_exec.js  cf-cache-status: HIT  age: 2361  content-type: text/html
+        #     gcsim.wasm    cf-cache-status: DYNAMIC         content-type: application/wasm
+        #
+        # `.js` is a Cloudflare default-cached extension and `.wasm` is not, so the edge held
+        # the pre-fix SPA fallback for four hours while the origin was correct. That is the
+        # icons incident's second half, and nothing in this pipeline could see it.
+        #
+        # **A warning, not a failure.** The origin is what a deploy controls; an edge entry
+        # cached before the fix is real, is not this deploy's fault, and expires. Failing here
+        # would block every deploy in that window over something already fixed. Saying so, with
+        # the purge named, is the actionable half.
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          for path in gcsim/gcsim.wasm gcsim/wasm_exec.js; do
+            url="https://mistilteinn.aetherus.dev/${path}"
+            code="$(curl -s -o /dev/null -w '%{http_code}' -I --max-time 20 "$url" || echo 000)"
+            # **The status first, because the message below diagnoses a stale cache.** Without
+            # this, a tunnel outage or a Cloudflare 5xx — both of which answer with no usable
+            # content type — were reported as "the origin is correct, purge the edge", which is
+            # a confident wrong diagnosis and a purge that would not help. `000` is curl failing
+            # to connect at all.
+            if [ "$code" != "200" ]; then
+              echo "::warning::${path} answers ${code} at the edge. That is not a stale cache:"
+              echo "::warning::the origin check above passed, so the tunnel or Cloudflare is down."
+              continue
+            fi
+            headers="$(curl -sI --max-time 20 "$url" || true)"
+            type="$(grep -i '^content-type:' <<<"$headers" | tr -d '\r' || true)"
+            status="$(grep -i '^cf-cache-status:' <<<"$headers" | tr -d '\r' || true)"
+            case "$type" in
+              *javascript*|*wasm*) echo "ok  ${path} — ${type}  ${status}" ;;
+              *) echo "::warning::${path} reaches users as '${type:-nothing}' (${status:-no cf header})."
+                 echo "::warning::The origin is correct; Cloudflare is holding a pre-fix copy."
+                 echo "::warning::Purge it: Cloudflare dashboard → Caching → Purge by URL, or"
+                 echo "::warning::  curl -X POST .../zones/<zone>/purge_cache -d '{\"files\":[\"https://mistilteinn.aetherus.dev/${path}\"]}'" ;;
+            esac
+          done
+
       - name: Rollback on failure
         if: failure() && env.before != ''
         run: |

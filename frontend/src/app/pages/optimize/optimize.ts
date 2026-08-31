@@ -40,6 +40,16 @@ import {
 } from './optimize.service';
 
 /** One result row, with the pieces named rather than left as ids. */
+/**
+ * How much of a recipe's damage must sit behind frozen conversions before the ranking is
+ * called into question. Above this the order is not to be trusted; below it the terms are a
+ * footnote, which is the distinction `damageShare` was added to make.
+ *
+ * Five per cent is a judgement, not a measurement — stated so nobody reads it as one. The case
+ * this was written for measured 90.3%.
+ */
+const SHAKY_DAMAGE_SHARE = 0.05;
+
 export interface ResultRow {
   rank: number;
   damage: number;
@@ -965,6 +975,33 @@ export class OptimizePage implements OnInit {
     return Math.abs(paired.shown.result.damage - paired.row.damage) / paired.row.damage;
   }
 
+  /**
+   * Whether the recipes this ranking rests on could not be calibrated cleanly.
+   *
+   * **Exhaustive and trustworthy are different claims.** `isExact` says every combination was
+   * scored; it says nothing about whether the scorer could see what it was scoring. A rotation
+   * that does not run the same way twice leaves the probe unable to resolve its conversions,
+   * and a recipe carrying frozen terms over 90% of the damage ranks mostly on the tenth it can
+   * still respond to. Printing "Exact" alone above that is the confident-looking number this
+   * repo exists to refuse.
+   *
+   * `calibrate.ts` is explicit that an unstable recipe is not to be ranked on at all. This does
+   * not go that far — refusing would leave a user with nothing where they now get something
+   * caveated, which is a product decision rather than a defect — but the word "Exact" must not
+   * carry the claim.
+   */
+  protected recipeIsShaky(): boolean {
+    const notes = this.caveats();
+    if (notes === null) return false;
+    if (notes.unstable.length > 0) return true;
+    // **Thresholded, because `damageShare` exists for exactly this.** `staleConversionsIn`'s
+    // own docstring: *"83 hits carrying 2% of the damage is a footnote, and 5 hits carrying
+    // 40% is not."* Firing on any entry gave a single 0.3%-share frozen term the same red
+    // sentence as the 90.3% case this was written for, which is the cry-wolf shape that makes
+    // a warning worth ignoring.
+    return notes.staleConversions.some((s) => s.damageShare >= SHAKY_DAMAGE_SHARE);
+  }
+
   /** Whether Optimize can run at all, in whichever mode is chosen. */
   protected canOptimize(): boolean {
     // **Including the check the page already made.** With a main-stat combination no owned
@@ -1232,7 +1269,12 @@ export class OptimizePage implements OnInit {
     const pair = this.chosenPair();
 
     return [
-      { artifactSetIds: [], setIds: [], label: 'no 4-piece set' },
+      // **The baseline, and it must not read as a set the user chose.** Reported from
+      // production: *"it's weird 'no 4p' was an option"* — the progress line said "Calibrating
+      // no 4-piece set" beside a picker where only Finale was selected, so a target nobody
+      // picked looked like one they had. It is not optional and never was: every combination
+      // that reaches no 4-piece is scored against it, so a search without it can rank nothing.
+      { artifactSetIds: [], setIds: [], label: 'the baseline (no 4-piece bonus)' },
       ...chosen.map((setId) => ({
         artifactSetIds: [entry(setId).id], setIds: [setId], label: entry(setId).name,
       })),

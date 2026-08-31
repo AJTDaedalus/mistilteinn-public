@@ -409,15 +409,34 @@
            question nobody asked. -->
       <p class="provenance">
         @if (found.isExact) {
-          <strong>Exact</strong> — the best five over this inventory.
+          <!-- **"Exact" is about the search, not the scoring**, and printed alone it reads as
+               a claim about the answer. It appeared under a rotation whose recipe carried
+               conversions covering 90% of the damage that no probe could resolve — an
+               exhaustive walk over a scorer that could not see most of what it was ranking.
+               Both facts are true and only one of them was the headline. -->
+          <strong>Exact</strong> — every combination was scored, none were pruned by rank.
+          @if (recipeIsShaky()) {
+            <strong class="warn-inline">The scoring is not.</strong>
+            Read the warnings above before trusting the order.
+          } @else {
+            The best five over this inventory.
+          }
         } @else {
           <!-- The numbers, not just the adjective. "Not exact" alone invites a reader to
                assume a rounding; 1.4 million of 23 trillion is a different claim, and it is
                the true one. -->
           <strong>Not exact</strong> — your inventory holds
           {{ found.totalSpace | number }} combinations, which is hours of arithmetic, so this
-          searched the best {{ found.effectiveK }} pieces per slot. Very likely the best five,
-          not proven to be.
+          searched the best {{ found.effectiveK }} pieces per slot.
+          @if (recipeIsShaky()) {
+            <!-- The qualifier belongs to both branches. "Very likely the best five" is as much
+                 a claim about soundness as "the best five", and the same 90%-frozen recipe can
+                 produce it — a large inventory prefilters by rank and lands here. -->
+            <strong class="warn-inline">The scoring is in doubt too.</strong>
+            Read the warnings above before trusting the order.
+          } @else {
+            Very likely the best five, not proven to be.
+          }
         }
         <span class="muted mono">
           {{ found.evaluated | number }} combinations scored ·

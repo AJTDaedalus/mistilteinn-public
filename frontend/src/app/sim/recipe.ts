@@ -154,6 +154,17 @@ export interface RecipeMeta {
   /** Every conversion baked in that a candidate's stats would have moved. Empty is good. */
   staleConversions: StaleConversion[];
   /**
+   * Abilities whose instance count varied across iterations. Empty means the rotation ran the
+   * same way every time.
+   *
+   * **On the recipe rather than beside it, so the cache carries it.** `calibrate` returned
+   * `stable` as a sibling of the recipe, and `writeRecipe`/`readRecipe` persist only the
+   * recipe — so a cached recipe came back with its instability forgotten, and the page then
+   * affirmatively called the ranking sound. `staleConversions` survived precisely because it
+   * lives here; stability had no reason to be anywhere else.
+   */
+  unstable: string[];
+  /**
    * The catalogue id of the 4-piece set this recipe was calibrated with, or `null` for a
    * calibration that equipped none.
    *
@@ -344,6 +355,8 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
     meta: {
       seed,
       staleConversions: staleConversionsIn(hits, calcs),
+      // Filled by `calibrate`, which is the only caller that has seen more than one run.
+      unstable: [],
       // Both are the caller's to fill in: a sample payload says nothing about which catalogue
       // set was equipped, nor about a sweep it was not part of.
       calibratedSetIds: [],

@@ -235,9 +235,14 @@ export class RecipeOptimizeService {
           { setIds: target.setIds },
         );
         recipe = calibrated.recipe;
-        if (!calibrated.stable) caveats.unstable.push(target.label);
         writeRecipe(this.store, key, recipe);
       }
+
+      // **Read off the recipe, so a cache hit reports it too.** This used to sit inside the
+      // fresh-calibration branch above, so the second search over the same build served every
+      // recipe from storage, found no instability, and the page called the ranking sound —
+      // permanently, because the cache is persistent.
+      if (recipe.meta.unstable.length > 0) caveats.unstable.push(target.label);
 
       for (const stale of recipe.meta.staleConversions) {
         caveats.staleConversions.push({

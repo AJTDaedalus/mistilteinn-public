@@ -1029,3 +1029,35 @@ deploy window would have poisoned the edge for hours.
 The pin claim above is also now true rather than aspirational: `test_gcsim_pin_is_single.py`
 covered only the build script, so a hard-coded SHA in the Dockerfile would have passed green.
 It reads every pin reader now, and the parametrised check was proven to fail on one.
+
+
+## 29. The deploy checks what the edge serves, not only the origin (2026-08-30)
+
+§28 added a content-type gate to the deploy, and it passed while the feature was still broken
+for users. Measured minutes after that fix reached production:
+
+    gcsim/wasm_exec.js   cf-cache-status: HIT       age: 2361   content-type: text/html
+    gcsim/gcsim.wasm     cf-cache-status: DYNAMIC               content-type: application/wasm
+
+**The gate probes the origin.** It runs `wget` inside the frontend container against
+`127.0.0.1`, which is the right thing to assert about a deploy and is blind to Cloudflare — and
+Cloudflare is where the failure lived. `.js` is a default-cached extension and `.wasm` is not,
+so the edge held the pre-fix SPA fallback for four hours after the origin was correct.
+
+This is the second half of the icons incident, and `nginx.prod.conf` had already written it
+down: *"`content-type: text/html` at `age=4422` while the origin had the file."* §28 applied
+that lesson to the origin and stopped there.
+
+**A warning rather than a failure.** The origin is what a deploy controls; an entry cached
+before a fix is real, is not that deploy's fault, and expires on its own. Failing would block
+every deploy in the window over something already fixed. The actionable half is saying so and
+naming the purge.
+
+**And the origin now prevents recurrence**: `Cache-Control: no-cache` on `location /gcsim/`
+means the edge revalidates rather than holding a copy for four hours. This warning exists for
+the entries cached *before* that header existed, and for the next asset directory that gets
+one late.
+
+**Worth recording plainly:** the stale entry was populated by a diagnostic `curl` against the
+public hostname while the origin was still broken. Probing production through the CDN caches
+what production is currently serving — including its failures.
