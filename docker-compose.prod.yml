@@ -77,8 +77,12 @@ services:
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile.prod
+      # **The repo root, not `./frontend`.** The image builds gcsim's browser wasm itself, and
+      # the pin it must build at lives in `docs/CROSSVAL_gcsim.md` — the one document that owns
+      # it. Restating the pin in an env var or a build arg would be a second definition of
+      # "correct"; widening the context is the cheaper price. `.dockerignore` keeps it small.
+      context: .
+      dockerfile: frontend/Dockerfile.prod
     ports: !reset []          # no host ports; cloudflared reaches nginx internally
     volumes: !reset []        # nginx serves the pre-built bundle
     depends_on:

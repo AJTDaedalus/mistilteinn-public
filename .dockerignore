@@ -1,0 +1,65 @@
+# The frontend's production image builds from the repo root, because the gcsim pin it needs
+# lives in `docs/`. Everything here is what that context must not carry.
+#
+# **`frontend/.dockerignore` no longer applies.** A `.dockerignore` is resolved against the
+# build *context*, so widening the context to the repo root retired that file silently — its
+# `.env` exclusions included. Everything it held is repeated below — **prefixed `**/`**,
+# because a `.dockerignore` pattern is matched against the whole relative path and is *not*
+# implicitly recursive the way a `.gitignore` is. A bare `.env` would have excluded only the
+# one at the context root and let `frontend/.env` through, which is precisely the file the old
+# ignore was carrying.
+
+# Version control and CI
+.git
+.gitignore
+.github
+
+# Secrets. `/home/ubuntu/mistilteinn/.env` holds POSTGRES_PASSWORD and DATABASE_URL, and it
+# reached the Docker daemon the moment the context widened. Nothing COPYs it, so this was not
+# yet a leak in an image — it was one careless `COPY . .` away from being one.
+**/.env
+**/.env.*
+**/*.env
+**/.shoot-token
+
+# **The live production database.** `docker-compose.prod.yml` bind-mounts `./postgres-data`,
+# and on the deploy box that is this directory. Postgres owns it uid 999 mode 0700 while the
+# runner is `ubuntu`, so the build cannot even stat it: `can't stat '…/postgres-data'`, and the
+# rollback step re-runs the same failing command. Multi-gigabyte, unreadable, and needed by
+# nothing.
+postgres-data
+
+# The backend has its own context (`./backend`), so the frontend image needs none of it —
+# except that nothing here may exclude `docs/CROSSVAL_gcsim.md`, which is the whole reason this
+# context is the repo root.
+backend
+
+# Node / build artifacts
+**/node_modules
+**/.angular
+frontend/dist
+frontend/gcsim/gcsim.wasm
+frontend/gcsim/wasm_exec.js
+
+# Python artifacts
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.venv
+
+# Test and working artifacts
+**/coverage
+**/.nyc_output
+**/data_imports
+**/screenshots
+
+# Reference material and scanners
+references
+security
+
+# Editor / OS
+**/.vscode
+**/.idea
+**/*.swp
+**/*.swo
+**/.DS_Store

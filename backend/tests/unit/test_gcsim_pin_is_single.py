@@ -18,9 +18,21 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
+
 REPO = Path(__file__).resolve().parents[3]
 CROSSVAL_DOC = REPO / "docs" / "CROSSVAL_gcsim.md"
 BUILD_SCRIPT = REPO / "frontend" / "scripts" / "build-gcsim-wasm.sh"
+#: Every other file that builds the wasm and therefore has to know which gcsim to build.
+#:
+#: **The production image was a second reader and this test did not cover it.** It reads the
+#: pin correctly, but `DECISIONS.md` §28 claimed the invariant was *guarded* here — and a
+#: hard-coded SHA in the Dockerfile would have passed green. A test named for an invariant it
+#: does not actually hold is worse than no test: it is the claim without the check.
+PIN_READERS = (
+    BUILD_SCRIPT,
+    REPO / "frontend" / "Dockerfile.prod",
+)
 
 #: A 40-character hex string that is not obviously something else.
 _SHA = re.compile(r"\b[0-9a-f]{40}\b")
@@ -36,19 +48,28 @@ def test_the_doc_declares_the_pin():
     assert len(_declared_pin()) == 40
 
 
-def test_the_build_script_reads_the_pin_rather_than_repeating_it():
-    """A hard-coded SHA here is the drift this test exists to prevent."""
-    script = BUILD_SCRIPT.read_text()
+@pytest.mark.parametrize("reader", PIN_READERS, ids=lambda p: p.name)
+def test_everything_that_builds_the_wasm_reads_the_pin_rather_than_repeating_it(
+    reader: Path,
+) -> None:
+    """A hard-coded SHA in any of them is the drift this test exists to prevent."""
+    text = reader.read_text()
 
-    assert "CROSSVAL_gcsim.md" in script, (
-        "the wasm build script does not read the pin from docs/CROSSVAL_gcsim.md"
+    assert "CROSSVAL_gcsim.md" in text, (
+        f"{reader.name} builds the wasm without reading the pin from docs/CROSSVAL_gcsim.md"
     )
-    hard_coded = _SHA.findall(script)
+    hard_coded = _SHA.findall(text)
     assert not hard_coded, (
-        f"the wasm build script hard-codes {hard_coded}. It must read the pin from "
+        f"{reader.name} hard-codes {hard_coded}. It must read the pin from "
         f"docs/CROSSVAL_gcsim.md so a re-pin cannot leave the browser running one gcsim "
         f"while the crossval oracle asserts another."
     )
+
+
+def test_every_pin_reader_exists():
+    """A path that has moved would make the check above pass by reading nothing."""
+    for reader in PIN_READERS:
+        assert reader.is_file(), f"{reader} is listed as a pin reader and does not exist"
 
 
 def test_the_crossval_fixtures_were_produced_by_the_pinned_commit():

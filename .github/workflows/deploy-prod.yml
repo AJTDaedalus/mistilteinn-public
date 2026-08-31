@@ -118,6 +118,33 @@ jobs:
           echo "::error::Health check failed after deploy."
           exit 1
 
+      - name: The bundle serves the simulator
+        # **A 200 is not the check here, and could never have been.** `gcsim.wasm` and
+        # `wasm_exec.js` are gitignored, so the prod image was built without them; the
+        # `angular.json` asset globs matched nothing and succeeded; nginx answered
+        # `/gcsim/wasm_exec.js` with the SPA fallback — `200 text/html` — and every rotation
+        # optimize died with "could not load gcsim/wasm_exec.js". The build was green, the
+        # deploy was green, and this health check passed, for as long as that was true.
+        #
+        # So this asserts the **content type**, which is the only thing that differs between a
+        # file that is there and one the fallback invented. Exactly the lesson `DECISIONS.md`
+        # §4 records about the icons, applied to the other asset it is true of.
+        run: |
+          set -euo pipefail
+          cd "$REPO_DIR"
+          fail=0
+          for path in gcsim/wasm_exec.js gcsim/gcsim.wasm; do
+            type="$($COMPOSE exec -T frontend wget -S -qO /dev/null "http://127.0.0.1/${path}" 2>&1 \
+                    | grep -i '^ *Content-Type:' | head -1 | tr -d '\r' || true)"
+            case "${type}" in
+              *javascript*|*wasm*) echo "ok  ${path} — ${type# }" ;;
+              *) echo "::error::${path} is served as '${type:-nothing}', not a script or wasm."
+                 echo "::error::That is nginx's SPA fallback: the bundle does not carry it."
+                 fail=1 ;;
+            esac
+          done
+          [ "$fail" -eq 0 ] || exit 1
+
       - name: Rollback on failure
         if: failure() && env.before != ''
         run: |

@@ -977,3 +977,55 @@ Separate uses, and §2's promise is kept either way — it had gone unkept for s
 still refused, and the argument made here is available to anyone who wants one: they would have
 to show that the cost §2 names is not paid, and for a conditional it plainly is — gcsim would
 have to parse it, or this repo would have to evaluate it.
+
+## 28. The browser simulator is built into the production image (2026-08-30)
+
+**"Optimize with rotation" had never worked in production, and nothing said so.**
+
+`frontend/gcsim/{gcsim.wasm,wasm_exec.js}` are gitignored — 40 MB, with `PROVENANCE.md`
+arguing the pin and the recipe are what belong in a repository. `angular.json` copies them
+into the bundle **if they exist**, and an asset glob that matches nothing is not an error. So
+the production image, built from a clean checkout, contained no simulator; nginx answered
+`/gcsim/wasm_exec.js` with the SPA fallback at **`200 text/html`**; and every rotation optimize
+died with *"could not load gcsim/wasm_exec.js"*.
+
+Four layers each behaved correctly. The build was green, the deploy was green, the health check
+passed, and the status code was 200. **This is `DECISIONS.md` §4 again** — the icons served as
+`200 text/html` for months — and it is the same lesson: *a basename that exists and one that
+does not both return 200, and only the `content-type` differs.*
+
+**The artifact is built in the image rather than committed.** §4 reversed the icons decision on
+measurement — 446 files at 9.6 MB against fairy's 207 at 27 MB — and that measurement does not
+transfer: this is a single 40 MB binary that changes wholesale on every re-pin. A Go stage in
+`frontend/Dockerfile.prod` clones gcsim at the pin and builds it, which costs a slower deploy
+and no repository weight.
+
+**The pin is read, not restated.** The stage copies `docs/CROSSVAL_gcsim.md` — the one document
+that owns it — and greps it with the same expression `scripts/build-gcsim-wasm.sh` uses. That
+is why the frontend's production build context is the repo root: a build arg or an environment
+variable carrying the pin would be a second definition of what "correct" means, which
+`tests/unit/test_gcsim_pin_is_single.py` exists to prevent — and which it now actually covers,
+having read only the build script until this change added a second reader.
+
+Copying only that one document keeps the layer's cache key **narrow, not exact**: the key is
+the document's whole content, so a prose edit to it re-runs the clone and the 40 MB build with
+the pin unchanged. That is a slow deploy rather than a wrong one, and cheaper than a second
+file carrying the pin that could disagree with the one that owns it.
+
+**Two guards, because the failure was silent at both ends.** The image refuses to build a
+bundle that does not carry the simulator, since an asset glob matching nothing is exactly what
+hid this. And the deploy asserts the **content type** of what production serves — not the
+status code, which was 200 throughout and could never have caught it.
+
+**Three things review caught that would have made this worse than the bug it fixes.** The
+widened context pulled `./postgres-data` — the live database, uid 999 mode 0700 — into the
+build, which the runner cannot even stat, so the deploy *and its rollback* would both have
+failed. The CSP is `script-src 'self'` with no `'wasm-unsafe-eval'`, so shipping the artifact
+would have moved the failure from the fetch to the compile and left the feature just as dead.
+And `/gcsim/` had no `try_files $uri =404`, which this very nginx file's comment instructs for
+"any future directory of static assets" — `.js` is a Cloudflare default-cached extension, so a
+deploy window would have poisoned the edge for hours.
+
+The pin claim above is also now true rather than aspirational: `test_gcsim_pin_is_single.py`
+covered only the build script, so a hard-coded SHA in the Dockerfile would have passed green.
+It reads every pin reader now, and the parametrised check was proven to fail on one.

@@ -34,7 +34,13 @@ CONF = (
 ).read_text()
 
 #: Directories of vendored static files. Anything added here needs its own `=404` location.
-ASSET_PREFIXES = ("/icons/",)
+#:
+#: **`/gcsim/` was added to the config and not to this tuple**, in the very change that added
+#: it — so deleting that `location` block would have left this suite green while production
+#: served `200 text/html` for `wasm_exec.js` again, which is the exact regression that change
+#: exists to prevent. The same diff extended `test_gcsim_pin_is_single.py` for the same reason
+#: and did not think to look here.
+ASSET_PREFIXES = ("/icons/", "/gcsim/")
 
 
 def _location_body(prefix: str) -> str | None:

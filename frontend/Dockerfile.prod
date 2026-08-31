@@ -1,20 +1,86 @@
+# ── gcsim's browser wasm ───────────────────────────────────────────────────────
+#
+# **Built here because it is gitignored, and prod therefore never had it.**
+# `frontend/gcsim/{gcsim.wasm,wasm_exec.js}` are 40 MB and deliberately not committed
+# (`frontend/gcsim/PROVENANCE.md`). `angular.json` copies them into the bundle *if they
+# exist* — an asset glob that matches nothing is not an error — so a prod build produced a
+# bundle with no simulator, nginx answered `/gcsim/wasm_exec.js` with the SPA fallback at
+# `200 text/html`, and the loader failed with *"could not load gcsim/wasm_exec.js"*.
+#
+# **"Optimize with rotation" had therefore never worked in production**, and nothing said so:
+# the build was green, the deploy was green, the health check passed, and the status code was
+# 200. That is the icons incident again (`docs/DECISIONS.md` §4) — four layers each behaving
+# correctly, adding up to a dead feature with no symptom, and a status code that could not
+# have caught it because only the content-type differs.
+#
+# The pin is read from `docs/CROSSVAL_gcsim.md`, the one document that owns it, with the same
+# expression `scripts/build-gcsim-wasm.sh` uses. It is **not restated here**: two pins that
+# can drift apart are two definitions of what "correct" means, and
+# `tests/unit/test_gcsim_pin_is_single.py` exists to keep it that way, and covers this file.
+#
+# Copying only that document keeps the layer's cache key **narrow, not exact**: the key is the
+# document's whole content, so a prose edit to it — a tolerance note, a divergence paragraph —
+# re-runs the clone and the 40 MB build with the pin unchanged. That is a slow deploy, not a
+# wrong one, and it is cheaper than the alternative of extracting the pin into a second file
+# that could disagree with the one that owns it.
+FROM golang:1.25-alpine AS gcsim
+
+RUN apk add --no-cache git grep
+WORKDIR /src
+
+COPY docs/CROSSVAL_gcsim.md /pin/CROSSVAL_gcsim.md
+RUN set -eux; \
+    PIN="$(grep -oP '^\| \*\*Commit\*\* \| `\K[0-9a-f]{40}' /pin/CROSSVAL_gcsim.md)"; \
+    [ -n "$PIN" ] || { echo "could not read the gcsim pin from docs/CROSSVAL_gcsim.md" >&2; exit 1; }; \
+    git clone --filter=blob:none https://github.com/genshinsim/gcsim .; \
+    # The build script fetches the pin explicitly before checking it out, deliberately: a
+    # commit reachable from no ref still resolves that way, and without it a gcsim force-push
+    # would leave this image unbuildable while the crossval fixtures went on asserting the
+    # same SHA.
+    git fetch --depth 1 origin "$PIN" 2>/dev/null || git fetch origin; \
+    git checkout -q "$PIN"; \
+    mkdir -p /out; \
+    GOOS=js GOARCH=wasm go build -o /out/gcsim.wasm ./cmd/wasm; \
+    # Go moved this between releases — `misc/wasm/` up to 1.23, `lib/wasm/` from 1.24. Check
+    # both rather than pinning one, exactly as the build script does.
+    EXEC=""; \
+    for c in "$(go env GOROOT)/lib/wasm/wasm_exec.js" "$(go env GOROOT)/misc/wasm/wasm_exec.js"; do \
+      [ -f "$c" ] && EXEC="$c" && break; \
+    done; \
+    [ -n "$EXEC" ] || { echo "cannot find wasm_exec.js under $(go env GOROOT)" >&2; exit 1; }; \
+    cp "$EXEC" /out/wasm_exec.js; \
+    printf '%s\n' "$PIN" > /out/BUILT_FROM
+
 # ── builder ────────────────────────────────────────────────────────────────────
 FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 
-COPY . .
+COPY frontend/ ./
+COPY --from=gcsim /out/ ./gcsim/
+
 RUN npm run build
+
+# **Asserted, not assumed.** An `angular.json` asset glob that matches nothing succeeds
+# silently, which is the whole reason this was invisible for as long as it was. A bundle with
+# no simulator must not become an image.
+RUN set -eu; \
+    for f in gcsim/wasm_exec.js gcsim/gcsim.wasm; do \
+      [ -s "dist/mistilteinn/browser/$f" ] || { \
+        echo "the built bundle has no $f — the simulator would not load in the browser" >&2; \
+        exit 1; }; \
+    done; \
+    echo "bundle carries the simulator: $(du -h dist/mistilteinn/browser/gcsim/gcsim.wasm | cut -f1)"
 
 # ── runtime ────────────────────────────────────────────────────────────────────
 FROM nginx:stable-alpine AS runtime
 
 # Path follows the angular.json project name, renamed fairy -> mistilteinn in A.2.
 COPY --from=builder /app/dist/mistilteinn/browser /usr/share/nginx/html
-COPY nginx.prod.conf /etc/nginx/conf.d/default.conf
+COPY frontend/nginx.prod.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
