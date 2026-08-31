@@ -110,9 +110,13 @@ class SubstatAnalysisRead(BaseModel):
 
     #: Rolls behind the line, or null when the decompositions disagree about how many.
     rolls: int | None = None
-    #: Each roll's tier, `0` (worst) to `3` (best). Null unless exactly one decomposition
-    #: fits, so a client colouring per roll never colours a guess.
+    #: Each roll's tier, `0` (worst) to `3` (best). Present wherever `rolls` is — where
+    #: several decompositions of that length fit, one is read, and `roll_tiers_exact` says so.
     roll_tiers: list[int] | None = None
+    #: True when `roll_tiers` is the only combination of its length. False marks a reading
+    #: that is one of several — still worth drawing, because the alternatives differ by a tier
+    #: on a roll or two while *no* bars reads as "this line never rolled".
+    roll_tiers_exact: bool = True
     #: The total as a multiple of one best-case roll — `3.2` for 24.9% CRIT DMG against a
     #: 7.77% maximum. Needs no decomposition, so it survives the ambiguity above.
     roll_value: float | None = None
@@ -198,6 +202,7 @@ class ArtifactRead(BaseModel):
             out[index] = SubstatAnalysisRead(
                 rolls=analysis.rolls,
                 roll_tiers=list(analysis.roll_tiers) if analysis.roll_tiers else None,
+                roll_tiers_exact=analysis.tiers_exact,
                 roll_value=analysis.roll_value,
                 estimated=analysis.estimated,
             )

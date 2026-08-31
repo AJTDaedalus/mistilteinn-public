@@ -44,6 +44,9 @@ export interface ArtifactScore {
  * `searchRecipe` already picks a recipe per 4-piece state and reports `uncoveredSets` for the
  * ones it has none for. A function that silently scored across sets would produce the failure
  * that reporting exists to prevent — a confident number for a build nobody calibrated.
+ *
+ * `scoreForSlot` takes an optional `recipeAfterSwap` so a caller that *does* hold the other
+ * recipe can discharge this rather than merely be warned about it.
  */
 export function scoreArtifact(
   recipe: Recipe,
@@ -81,6 +84,20 @@ export function scoreForSlot(
   equipped: readonly StatPool[],
   candidates: readonly { id: string; stats: StatPool }[],
   slot: number,
+  /**
+   * The recipe the **swapped** build should be evaluated under, when it differs.
+   *
+   * This is how a caller discharges the set-bonus caveat above. Swapping a piece can drop a
+   * build below four of its set, and the resulting build is then a *different calibrated
+   * state* — so evaluating it under the 4-piece recipe credits a bonus it would no longer
+   * have. A caller holding the no-four-piece recipe returns it here and gets an honest,
+   * usually negative, delta instead of a flattering wrong one.
+   *
+   * `current` stays on `recipe` throughout: the build as it stands really does have the
+   * bonus, and that is what the swap is being measured against. The comparison is deliberately
+   * across two recipes because the two builds are genuinely in two different states.
+   */
+  recipeAfterSwap?: (candidateId: string) => Recipe,
 ): { id: string; score: ArtifactScore }[] {
   if (slot < 0 || slot >= equipped.length) {
     throw new RangeError(`slot ${slot} is outside the ${equipped.length} equipped pieces`);
@@ -90,7 +107,8 @@ export function scoreForSlot(
 
   return candidates.map(({ id, stats }) => {
     swapped[slot] = stats;
-    const damage = evaluateRecipe(recipe, candidateStatsFrom(swapped));
+    const after = recipeAfterSwap?.(id) ?? recipe;
+    const damage = evaluateRecipe(after, candidateStatsFrom(swapped));
     return { id, score: { damage, current, delta: damage - current } };
   });
 }

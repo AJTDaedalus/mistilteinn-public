@@ -26,6 +26,7 @@
  * a broken page.**
  */
 
+import { browserStore, type WebStorage } from '../shared/browser-store';
 import type { Recipe } from './recipe';
 
 /** Everything that changes what a calibration would produce. */
@@ -63,23 +64,9 @@ export function cacheKey(key: RecipeCacheKey): string {
 }
 
 /** Where recipes are kept. Injectable so a test needs no browser. */
-export interface RecipeStore {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-  removeItem(key: string): void;
-  readonly length: number;
-  key(index: number): string | null;
-}
+export type RecipeStore = WebStorage;
 
-/** The browser's, or `null` where there is none (SSR, a locked-down browser). */
-export function browserStore(): RecipeStore | null {
-  try {
-    return globalThis.localStorage ?? null;
-  } catch {
-    // Accessing it can *throw* where site data is blocked, not merely return null.
-    return null;
-  }
-}
+export { browserStore };
 
 /** A cached recipe, or `null`. Never throws: a cache that fails is a cache that misses. */
 export function readRecipe(store: RecipeStore | null, key: RecipeCacheKey): Recipe | null {

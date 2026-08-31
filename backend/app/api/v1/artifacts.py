@@ -70,6 +70,14 @@ router = APIRouter(prefix="/artifacts", tags=["artifacts"])
 _Offset = Annotated[int, Query(ge=0)]
 _Limit = Annotated[int, Query(ge=1, le=500)]
 
+#: How many ids one `?ids=` request may name.
+#:
+#: The caller this exists for is a result list wanting the pieces it just ranked — ten rows of
+#: five. The cap is well above that and well below anything that would make the `IN` clause a
+#: way to fetch the whole inventory a page at a time while bypassing `limit`.
+_MAX_IDS = 250
+_Ids = Annotated[list[str] | None, Query(max_length=_MAX_IDS)]
+
 
 @router.get("", response_model=PaginatedResponse[ArtifactRead])
 async def list_artifacts(
@@ -81,11 +89,22 @@ async def list_artifacts(
     #: slots need. Fetching every equipped piece and filtering on the client scales with the
     #: whole inventory rather than with five.
     build_id: str | None = None,
+    #: Specific pieces by id, for a caller that already knows which ones it wants — the
+    #: optimize page drawing a card for each artifact in a result row. Fetching those five by
+    #: id costs five rows; the alternative is widening `/artifacts/inventory`, which is the
+    #: whole inventory and ETag'd precisely so it is not re-sent.
+    #:
+    #: **`?ids=` with no value means no artifacts, not every artifact.** FastAPI parses it to
+    #: `[]`, and the repository distinguishes that from `None`.
+    ids: _Ids = None,
     offset: _Offset = 0,
     limit: _Limit = 50,
 ) -> PaginatedResponse[ArtifactRead]:
     """The caller's artifacts, in game slot order — flower, plume, sands, goblet, circlet."""
-    filters = {"slot": slot, "set_id": set_id, "equipped": equipped, "build_id": build_id}
+    filters = {
+        "slot": slot, "set_id": set_id, "equipped": equipped, "build_id": build_id,
+        "ids": ids,
+    }
     rows = await repo.search(**filters, offset=offset, limit=limit)
     return PaginatedResponse(
         items=[ArtifactRead.model_validate(row) for row in rows],

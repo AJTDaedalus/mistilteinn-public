@@ -130,3 +130,74 @@ describe('scoreForSlot', () => {
     expect(scoreForSlot(recipe(), bare(), [], 0)).toEqual([]);
   });
 });
+
+describe('scoreForSlot across two calibrated states', () => {
+  /**
+   * §10 — a swap that drops a build below four of its set lands in a *different* calibrated
+   * state, and scoring it under the old recipe credits a bonus it would no longer have.
+   */
+  /**
+   * The same rotation without the 4-piece bonus, modelled as the bonus actually is: a
+   * `bonusDmg` term the evaluator reads (`recipe-eval.ts` — `base * (1 + bonus) * …`).
+   *
+   * The first version of this helper varied `calibratedScaling`, which the evaluator does not
+   * read at all — so both recipes produced identical damage and two of these tests asserted
+   * `1350 < 1350`. A stub that changes nothing tests nothing.
+   */
+  const withBonus = () => recipe([hit({ bonusDmg: 0.5 })]);
+  const weaker = () => recipe([hit({ bonusDmg: 0 })]);
+
+  it('evaluates the swapped build on the recipe the caller names for it', () => {
+    const found = scoreForSlot(
+      withBonus(), bare(),
+      [{ id: 'keeps', stats: pool({ atk_pct: 0.5 }) },
+       { id: 'breaks', stats: pool({ atk_pct: 0.5 }) }],
+      0,
+      (id) => (id === 'breaks' ? weaker() : withBonus()),
+    );
+    const [keeps, breaks] = found;
+
+    // Identical stats, so the *only* difference is which state the build ends up in.
+    expect(breaks.score.damage).toBeLessThan(keeps.score.damage);
+  });
+
+  it('measures against the build as it stands, bonus included', () => {
+    // `current` stays on the original recipe for every candidate: the build really does have
+    // the bonus today, and that is what a swap is being compared to. Recomputing `current` on
+    // the weaker recipe would compare two builds that neither exist.
+    const found = scoreForSlot(
+      withBonus(), bare(), [{ id: 'breaks', stats: pool({ atk_pct: 0.5 }) }], 0,
+      () => weaker(),
+    );
+
+    expect(found[0].score.current).toBeCloseTo(
+      scoreForSlot(withBonus(), bare(), [{ id: 'x', stats: pool() }], 0)[0].score.current, 9,
+    );
+  });
+
+  it('can turn an apparent upgrade into the loss it really is', () => {
+    // The defect in one assertion. Under the four-piece recipe this piece is a clear gain;
+    // once the swap is scored in the state it actually produces, it is not — which is what
+    // "an off-set piece has to justify its existence" means arithmetically.
+    const flattering = scoreForSlot(
+      withBonus(), bare(), [{ id: 'p', stats: pool({ atk_pct: 0.2 }) }], 0,
+    )[0];
+    const honest = scoreForSlot(
+      withBonus(), bare(), [{ id: 'p', stats: pool({ atk_pct: 0.2 }) }], 0, () => weaker(),
+    )[0];
+
+    expect(flattering.score.delta).toBeGreaterThan(0);
+    expect(honest.score.delta).toBeLessThan(0);
+  });
+
+  it('falls back to the one recipe when the caller names none', () => {
+    const withHook = scoreForSlot(
+      recipe(), bare(), [{ id: 'p', stats: pool({ atk_pct: 0.2 }) }], 0, () => recipe(),
+    );
+    const without = scoreForSlot(
+      recipe(), bare(), [{ id: 'p', stats: pool({ atk_pct: 0.2 }) }], 0,
+    );
+
+    expect(withHook[0].score.delta).toBeCloseTo(without[0].score.delta, 9);
+  });
+});

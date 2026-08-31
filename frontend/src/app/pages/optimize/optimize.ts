@@ -1,5 +1,5 @@
 import { DecimalPipe, PercentPipe } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -8,6 +8,7 @@ import { CardPicker, type CardOption } from '../../shared/card-picker/card-picke
 import { buildOptions, buildsInTeam, teamOptions } from '../../shared/team-scope';
 import { ElementChip } from '../../shared/element/element';
 import { CatalogueIcon } from '../../shared/icon/icon';
+import { ArtifactCard } from '../../shared/artifact-card/artifact-card';
 import { EntityToken } from '../../shared/token/token';
 import { type Amplifying, type ScalingStat } from '../../sim/damage';
 import { SLOTS, type SearchResult, type Slot, search } from '../../sim/search';
@@ -26,9 +27,18 @@ import { isFilterableMainStat, sortMainStats } from '../../shared/stat-order';
 import { scoreForSlot } from '../../sim/artifact-score';
 import type { Recipe } from '../../sim/recipe';
 import { evaluateRecipe } from '../../sim/recipe-eval';
-import { candidateStatsFrom, liveQuantitiesFor, searchRecipe } from '../../sim/recipe-search';
+import { browserStore, recallAmong, remember } from './remembered';
+import type { ArtifactCardModel } from '../../shared/artifact-card/artifact-card';
+import { describeStat } from '../../shared/stat-label';
+import { substatReadings } from '../../shared/substat-bars/substat-bars';
+import {
+  candidateStatsFrom,
+  liveQuantitiesFor,
+  searchRecipe,
+} from '../../sim/recipe-search';
 import {
   RecipeOptimizeService,
+  type CalibrationResult,
   type CalibrationCaveats,
   type CalibrationProgress,
   type CalibrationTarget,
@@ -39,7 +49,6 @@ import {
   type UnreadableArtifact,
 } from './optimize.service';
 
-/** One result row, with the pieces named rather than left as ids. */
 /**
  * How much of a recipe's damage must sit behind frozen conversions before the ranking is
  * called into question. Above this the order is not to be trusted; below it the terms are a
@@ -50,11 +59,17 @@ import {
  */
 const SHAKY_DAMAGE_SHARE = 0.05;
 
+/** One result row, with the pieces named rather than left as ids. */
 export interface ResultRow {
   rank: number;
   damage: number;
   artifactIds: string[];
   pieces: string[];
+  /**
+   * Damage against the comparator, as a fraction — `0.043` is +4.3%. Null when no comparator
+   * could be established, which is not the same as being level with one.
+   */
+  percent?: number | null;
 }
 
 /**
@@ -64,6 +79,42 @@ export interface ResultRow {
  * disagree with what was actually searched, and the row would then describe a build the
  * ranking did not produce.
  */
+/**
+ * Damage added by one maximum 5★ roll of each substat, on one build over its rotation.
+ *
+ * Pure and exported so it can be tested without a page: the interesting behaviour is which
+ * quantities it *refuses* to answer for, and that deserves assertions of its own.
+ */
+export function marginalPerRoll(
+  recipe: Recipe,
+  pools: readonly Record<string, number>[],
+): { quantity: string; delta: number }[] {
+  // **Only stats the recipe can respond to.** A recipe is calibrated at one set of stats, so
+  // anything it does not read is frozen into its coefficients — Elemental Mastery most of all,
+  // whose contribution to a reaction lands in `ampMultiplier` and to Nahida's own bonus in
+  // `bonusDmg`. Evaluating a bump in one of those returns exactly zero, and printing that
+  // beside real numbers claims the stat is worthless rather than unmodelled.
+  //
+  // `liveQuantitiesFor` already answers this — it is what the Pareto filter uses to decide
+  // which quantities can matter — so the same definition serves both.
+  const live = new Set(liveQuantitiesFor(recipe));
+  const base = evaluateRecipe(recipe, candidateStatsFrom(pools));
+  return Object.entries(ONE_ROLL)
+    .filter(([, spec]) => live.has(spec.quantity))
+    .map(([quantity, spec]) => {
+      const stats = { ...candidateStatsFrom(pools) };
+      // Applied to the resolved stats rather than to a pool, so a quantity the pools do not
+      // already contain still moves — a build with no EM must still be able to ask what EM
+      // would be worth.
+      const bumped = {
+        ...stats, [quantity]: (stats[quantity as keyof typeof stats] as number) + spec.roll,
+      };
+      return { quantity, delta: evaluateRecipe(recipe, bumped as typeof stats) - base };
+    })
+    .filter((row) => Number.isFinite(row.delta))
+    .sort((a, b) => b.delta - a.delta);
+}
+
 export function describePieces(
   artifactIds: readonly string[],
   candidates: readonly KernelCandidate[],
@@ -97,7 +148,9 @@ const ONE_ROLL: Readonly<Record<string, { roll: number; quantity: string }>> = {
 };
 
 /** Slots in the order `searchRecipe` returns a build's pieces. */
-const SLOT_ORDER = ['equip_bracer', 'equip_necklace', 'equip_shoes', 'equip_ring', 'equip_dress'];
+export const SLOT_ORDER = [
+  'equip_bracer', 'equip_necklace', 'equip_shoes', 'equip_ring', 'equip_dress',
+];
 
 /** How many alternatives to name per slot. Enough to choose from, few enough to read. */
 const UPGRADES_PER_SLOT = 3;
@@ -123,7 +176,7 @@ const UPGRADES_PER_SLOT = 3;
   selector: 'page-optimize',
   imports: [
     FormsModule, RouterLink, DecimalPipe, PercentPipe,
-    CardPicker, CatalogueIcon, ElementChip, EntityToken,
+    CardPicker, CatalogueIcon, ElementChip, EntityToken, ArtifactCard,
   ],
   templateUrl: './optimize.html',
   styleUrl: './optimize.scss',
@@ -133,6 +186,20 @@ export class OptimizePage implements OnInit {
   protected readonly scopes = SCOPES;
   protected readonly talentLabel = talentLabel;
 
+  /** Where the last selection is kept. Read once: it cannot change under the page. */
+  private readonly store = browserStore();
+  /**
+   * A card per artifact named by the current results, keyed by id (§16).
+   *
+   * **Fetched by id after a search, not carried by the search.** What the kernel ranks is
+   * `KernelCandidate` — id, slot, set, stats, main stat — which has no level, no art and no
+   * substats, and widening it would widen `/artifacts/inventory`: the *whole* inventory,
+   * ETag'd precisely so it is not re-sent. Ten rows of five pieces is fifty rows to fetch.
+   *
+   * Empty is a normal state, not an error: the cards are an enrichment, and a row still shows
+   * its rank, its damage and its slot names without them.
+   */
+  protected readonly cards = signal<Map<string, ArtifactCardModel>>(new Map());
   protected readonly loading = signal(true);
   /** Non-null means the page failed to load. Never rendered as "you have no builds". */
   protected readonly error = signal<string | null>(null);
@@ -420,16 +487,158 @@ export class OptimizePage implements OnInit {
     return bySet;
   }
 
+  /**
+   * Fetch a card for every piece the current results name (§16).
+   *
+   * An effect rather than a call at the end of `run()`: there are two searches on this page
+   * and both set `result`, so hanging this off the results themselves is the version that
+   * cannot be half-wired. A rotation search that forgot the call would show cards on the
+   * single-hit tab and none on the tab the page exists for.
+   */
+  private readonly fetchCards = effect(() => {
+    void this.loadCards(this.rows());
+  });
+
+  /**
+   * The artifacts behind the current rows, by id.
+   *
+   * **Never fatal.** The cards enrich a row that is already complete without them — rank,
+   * damage, and the five slot names — so a failure here leaves them off rather than replacing
+   * a good ranking with an error.
+   */
+  private async loadCards(rows: readonly ResultRow[]): Promise<void> {
+    const ids = [...new Set(rows.flatMap((row) => row.artifactIds))];
+    if (ids.length === 0) {
+      this.cards.set(new Map());
+      return;
+    }
+    // **Which results these cards are for.** Two searches can be in flight — the single-hit
+    // one is fast and the rotation one is minutes — so a slow reply can land after a newer
+    // ranking has replaced the rows it was fetched for. Painting it then would put the
+    // previous search's pieces under the current search's numbers, which is the failure this
+    // page already guards against by dropping `result` when the build changes: a row that
+    // looks right and refers to something else.
+    const wanted = ids.join(',');
+    const stillWanted = (): boolean =>
+      [...new Set(this.rows().flatMap((row) => row.artifactIds))].join(',') === wanted;
+    try {
+      const [page, options] = await Promise.all([
+        this.artifacts.list({ ids }),
+        this.artifacts.options(),
+      ]);
+      const pieces = page.items;
+      const stats = new Map(options.stats.map((stat) => [stat.key, stat]));
+      const slots = this.slotNames();
+      // The artifact carries the catalogue's set id; `artifactSets` is keyed by nanoka's.
+      // Re-key rather than look up by the wrong one — the two id spaces are the trap this
+      // page already documents on `artifactSets`.
+      const art = new Map<string, string | null>();
+      for (const set of this.artifactSets().values()) art.set(set.id, set.icon ?? null);
+
+      if (!stillWanted()) return;
+      this.cards.set(new Map(pieces.map((piece) => [piece.id, {
+        id: piece.id,
+        icon: art.get(piece.artifact_set_id ?? '') ?? null,
+        setName: piece.set_name ?? 'No set',
+        slot: slots[piece.slot] ?? piece.slot,
+        level: piece.level,
+        mainStat: describeStat(piece.main_stat_type, piece.main_stat_value, stats),
+        substats: substatReadings(
+          piece.substats as { stat?: string; value?: unknown }[],
+          piece.substat_analysis,
+          (stat, value) => describeStat(stat, value, stats),
+        ),
+      }])));
+    } catch {
+      // Same guard on the failure path: clearing the cards for results that are no longer on
+      // screen would blank the ones that are.
+      if (stillWanted()) this.cards.set(new Map());
+    }
+  }
+
+  /**
+   * The character's current build, scored on the recipe matching the set it wears (§11).
+   *
+   * Returns null rather than a number this page cannot stand behind. Three ways that happens,
+   * and each is a real state rather than an error:
+   *
+   * - the build has fewer than five artifacts on it, so there is no build to score;
+   * - a piece it wears was not in the search's candidate pool (a main-stat filter removed it),
+   *   so its stats are not to hand;
+   * - it wears a 4-piece nobody calibrated, and scoring it on another set's recipe would
+   *   credit it a bonus it does not have — the same mistake §10 just removed from `upgrades`.
+   *
+   * The caller falls back to rank 1, which is the owner's stated fallback for a character with
+   * no build at all.
+   */
+  private comparatorFrom(
+    pieces: readonly KernelCandidate[],
+    calibrated: CalibrationResult,
+  ): { damage: number; label: string } | null {
+    const equipped = this.equippedIds();
+    if (equipped.length !== SLOT_ORDER.length) return null;
+
+    const byId = new Map(pieces.map((piece) => [piece.id, piece]));
+    const worn = equipped.map((id) => byId.get(id));
+    if (worn.some((piece) => piece === undefined)) return null;
+
+    const present = worn as KernelCandidate[];
+    const counts = new Map<number, number>();
+    for (const piece of present) {
+      const setId = piece.set_id ?? -1;
+      counts.set(setId, (counts.get(setId) ?? 0) + 1);
+    }
+    let fourPiece: number | null = null;
+    for (const [setId, count] of counts) if (count >= 4) fourPiece = setId;
+
+    // A build wearing no 4-piece is scorable only if the no-four-piece recipe exists; a build
+    // wearing one nobody calibrated is not scorable at all. Both come back null here rather
+    // than borrowing another set's recipe, which would credit a bonus the build does not have
+    // — the mistake §10 removed from `upgrades`, and it would be worse here because every row
+    // on the page is a percentage of this number.
+    const recipe = fourPiece === null
+      ? calibrated.noFourPiece
+      : calibrated.byFourPieceSet.get(fourPiece);
+    if (!recipe) return null;
+
+    // In `SLOT_ORDER`, matching `winningPools`, so the two are assembled the same way.
+    //
+    // **Not for correctness**: `candidateStatsFrom` sums the pools, so the order genuinely
+    // cannot change the number. An earlier version of this comment claimed it could, which
+    // would have been a good reason and is not a true one.
+    const pools = SLOT_ORDER.map(
+      (slot) => present.find((piece) => piece.slot === slot)?.stats ?? {},
+    );
+    return {
+      damage: evaluateRecipe(recipe, candidateStatsFrom(pools)),
+      label: 'your current build',
+    };
+  }
+
+  /** The cards for one row, in the order the row names its pieces. */
+  protected cardsFor(row: ResultRow): ArtifactCardModel[] {
+    const known = this.cards();
+    return row.artifactIds
+      .map((id) => known.get(id))
+      .filter((card): card is ArtifactCardModel => card !== undefined);
+  }
+
   protected readonly rows = computed<ResultRow[]>(() => {
     const found = this.result();
     if (!found) return [];
     const pieces = this.candidates();
     const names = this.slotNames();
+    // Rank 1 is the fallback comparator, so a page with no equipped build still shows a
+    // gradient rather than five bare numbers (§11).
+    const against = this.comparator()?.damage ?? found.builds[0]?.damage ?? null;
     return found.builds.map((build, index) => ({
       rank: index + 1,
       damage: build.damage,
       artifactIds: build.artifactIds,
       pieces: describePieces(build.artifactIds, pieces, (slot) => names[slot] ?? slot),
+      // Null rather than 0 when there is nothing to compare against: "the same as the
+      // comparator" and "there is no comparator" are different, and both would render as 0%.
+      percent: against ? (build.damage - against) / against : null,
     }));
   });
 
@@ -646,7 +855,12 @@ export class OptimizePage implements OnInit {
    * a 4-piece, pressed the wrong one of two buttons that both said "search", and got a message
    * about their whole inventory. One button cannot be pressed by mistake.
    */
-  protected readonly objective = signal<'hit' | 'rotation'>('hit');
+  /**
+   * **Rotation, because that is what this page is for** (§15). Choosing which tool is in
+   * front is not the same as inventing the user's data, and the two rules only look opposed:
+   * the fields below start empty, this one does not.
+   */
+  protected readonly objective = signal<'hit' | 'rotation'>('rotation');
   protected readonly rotations = signal<{ id: string; name: string }[]>([]);
   /** A signal, because `canSearchRotation` reads it. Same reason as `hitIndex`. */
   protected readonly rotationId = signal('');
@@ -670,6 +884,39 @@ export class OptimizePage implements OnInit {
   protected readonly scoredRecipe = signal<Recipe | null>(null);
   /** The five slot pools of the winning build, in `SLOTS` order — what a swap is measured against. */
   protected readonly winningPools = signal<Record<string, number>[] | null>(null);
+  /**
+   * The no-four-piece recipe from the same calibration, kept so a swap that *breaks* the
+   * winner's set can be scored under the state it would actually be in.
+   */
+  protected readonly baselineRecipe = signal<Recipe | null>(null);
+  /** The 4-piece set `scoredRecipe` assumes, or null when it is the no-four-piece recipe. */
+  protected readonly scoredSetId = signal<number | null>(null);
+  /** The set each of the winner's five pieces belongs to, in `SLOTS` order. */
+  protected readonly winningSetIds = signal<number[] | null>(null);
+  /**
+   * What every row is a percentage *of* — §11, the owner's design.
+   *
+   * **The character's current build**, scored on whichever calibrated recipe matches the set
+   * it actually wears, so the comparison is between two builds rather than between a build
+   * and an abstraction. The page's other "baseline" — the calibration's `noFourPiece` recipe —
+   * is a *scoring* artefact and was never meant to be read as one: the owner's "the 'no 4p'
+   * baseline doesn't make any sense" was about seeing it in the interface, and it is right,
+   * because nobody's build is "no four-piece".
+   *
+   * Null when it cannot be computed: the build wears a set nothing calibrated, or has no five
+   * pieces on it yet. The page then falls back to **rank 1**, which is the owner's own
+   * fallback for a character with no build — that row reads +0% and everything below it is
+   * negative.
+   */
+  protected readonly comparator = signal<{ damage: number; label: string } | null>(null);
+  /** The artifact ids the chosen build is wearing, for the comparator above. */
+  protected readonly equippedIds = signal<string[]>([]);
+  /**
+   * The whole calibration from the last search, so a *row* can be answered about rather than
+   * only the winner: row 3 may field a different 4-piece from row 1, and the marginal-roll
+   * table under its details has to use its own recipe.
+   */
+  protected readonly calibration = signal<CalibrationResult | null>(null);
 
   /**
    * What one more roll of each substat is worth, in damage, on the winning build.
@@ -687,37 +934,92 @@ export class OptimizePage implements OnInit {
    * ratio between stats, and a table that varied by rarity would compare a 4-star's CRIT DMG
    * against a 5-star's ATK%.
    */
-  protected readonly marginalPerRoll = computed<{ quantity: string; delta: number }[]>(() => {
-    const recipe = this.scoredRecipe();
-    const pools = this.winningPools();
-    if (!recipe || !pools) return [];
+  /**
+   * What one more roll of each substat is worth, in damage, **on the build being looked at**.
+   *
+   * Owner: *"Let's roll 'what one more roll is worth' under details then, so it's relevant to
+   * the set the user is looking at."* It used to be a standalone section computed only for the
+   * winner, which made it a fact about rank 1 printed next to a list of ten.
+   *
+   * **The Fribbels audit's third recommendation**, and the cheapest thing this page can now
+   * answer: it already holds a calibrated recipe, and a roll is a stat delta. Fribbels shows
+   * the same table as `+1x Substat → Δ Combo DMG`.
+   *
+   * It is also the honest form of what `DESIGN_artifact_ranking.md` first proposed as a
+   * "weight vector" — measured against the real rotation rather than derived from a single
+   * hit, which is the owner's ruling (`DECISIONS.md` §22).
+   *
+   * The roll sizes are the **maximum** roll for a 5-star, which is the comparison a player
+   * makes: one good roll of each. They are stated here rather than fetched because this is a
+   * ratio between stats, and a table that varied by rarity would compare a 4-star's CRIT DMG
+   * against a 5-star's ATK%.
+   */
+  /**
+   * A `computed`, and called once from the template rather than per row.
+   *
+   * **The page runs on default change detection**, so a method called from the template runs
+   * on every tick. This one rebuilds two `Map`s over the whole candidate list — 2,370 pieces
+   * on the owner's account — and evaluates the recipe nine times. As `marginalFor(row)` inside
+   * the `@for`, that ran for as long as a details pane stayed open, on every keystroke and
+   * mouse event the page saw.
+   *
+   * Only one row is ever expanded, so this depends on `pairing()` and recomputes when the
+   * expanded row changes rather than when anything at all does.
+   */
+  protected readonly marginalForExpanded = computed<{ quantity: string; delta: number }[]>(
+    () => {
+      const row = this.pairing()?.row;
+      if (!row) return [];
+      const pools = this.poolsFor(row);
+      const recipe = this.recipeFor(row);
+      return pools && recipe ? marginalPerRoll(recipe, pools) : [];
+    },
+  );
 
-    // **Only stats the recipe can respond to.** A recipe is calibrated at one set of stats, so
-    // anything it does not read is frozen into its coefficients — Elemental Mastery most of
-    // all, whose contribution to a reaction lands in `ampMultiplier` and to Nahida's own bonus
-    // in `bonusDmg`. Evaluating a bump in one of those returns exactly zero, and printing that
-    // beside real numbers claims the stat is worthless rather than unmodelled.
-    //
-    // `liveQuantitiesFor` already answers this — it is what the Pareto filter uses to decide
-    // which quantities can matter — so the same definition serves both.
-    const live = new Set(liveQuantitiesFor(recipe));
-    const base = evaluateRecipe(recipe, candidateStatsFrom(pools));
-    return Object.entries(ONE_ROLL)
-      .filter(([, spec]) => live.has(spec.quantity))
-      .map(([quantity, spec]) => {
-        const size = spec.roll;
-        const stats = { ...candidateStatsFrom(pools) };
-        // Applied to the resolved stats rather than to a pool, so a quantity the pools do not
-        // already contain still moves — a build with no EM must still be able to ask what EM
-        // would be worth.
-        const bumped = {
-          ...stats, [quantity]: (stats[quantity as keyof typeof stats] as number) + size,
-        };
-        return { quantity, delta: evaluateRecipe(recipe, bumped as typeof stats) - base };
-      })
-      .filter((row) => Number.isFinite(row.delta))
-      .sort((a, b) => b.delta - a.delta);
-  });
+  /**
+   * A bar's width as a percentage of the best line in the same table (§14).
+   *
+   * Guarded against a zero or negative best rather than trusting the sort: the list is ordered
+   * descending, so `best` is the largest — but if every quantity evaluated to nothing, dividing
+   * by it yields `Infinity` or `NaN` and Angular writes that straight into a style attribute.
+   */
+  protected barWidth(delta: number, best: number): number {
+    if (!(best > 0)) return 0;
+    return Math.max(0, Math.min(100, (delta / best) * 100));
+  }
+
+  /** One row's five stat pools, in `SLOT_ORDER`. Null if a piece it names is not to hand. */
+  private poolsFor(row: ResultRow): Record<string, number>[] | null {
+    const byId = new Map(this.candidates().map((piece) => [piece.id, piece]));
+    const worn = row.artifactIds.map((id) => byId.get(id));
+    if (worn.some((piece) => piece === undefined)) return null;
+    const present = worn as KernelCandidate[];
+    return SLOT_ORDER.map(
+      (slot) => present.find((piece) => piece.slot === slot)?.stats ?? {},
+    );
+  }
+
+  /**
+   * The recipe this row was scored with — its own 4-piece state, not the winner's.
+   *
+   * The whole point of moving the table under details: row 3 may field a different set from
+   * row 1, and answering "what is one more CRIT roll worth" with the winner's recipe would
+   * describe a build the reader is not looking at.
+   */
+  private recipeFor(row: ResultRow): Recipe | null {
+    const calibrated = this.calibration();
+    if (!calibrated) return null;
+    const byId = new Map(this.candidates().map((piece) => [piece.id, piece.set_id ?? -1]));
+    const counts = new Map<number, number>();
+    for (const id of row.artifactIds) {
+      const setId = byId.get(id) ?? -1;
+      counts.set(setId, (counts.get(setId) ?? 0) + 1);
+    }
+    for (const [setId, count] of counts) {
+      if (count >= 4) return calibrated.byFourPieceSet.get(setId) ?? null;
+    }
+    return calibrated.noFourPiece;
+  }
 
   /** Pieces in the inventory that would beat what the winning build wears, per slot. */
   /**
@@ -737,31 +1039,78 @@ export class OptimizePage implements OnInit {
     return set ? `${set} · ${stat}` : stat;
   }
 
+  /**
+   * Better pieces for each slot, scored **in the state the swap would actually leave**.
+   *
+   * §10. `scoreForSlot` has no notion of set membership — a set bonus is a constant baked into
+   * the recipe — so scoring every swap under the winner's 4-piece recipe credited a bonus that
+   * some swaps would remove. The owner's framing is the one that matters: a 4-piece build has
+   * **one free slot**, so an off-set piece is legal and belongs in this list; what it needs is
+   * for the cost of taking that slot to be visible.
+   *
+   * | the winning build | swap | before | now |
+   * |---|---|---|---|
+   * | five of the set | any slot for an off-set piece | leaves four — correct | unchanged |
+   * | four + one off-set | a set slot for another off-set piece | leaves three — **wrong** | scored on the no-four-piece recipe |
+   * | four + one off-set | the off-set slot | stays four — correct | unchanged |
+   *
+   * The middle row is the fix. Its delta is now usually negative, so it drops out of the list
+   * on its own — which is the honest form of "they need to justify their existence": a piece
+   * that pays for the whole set bonus and still wins is a real upgrade, and one that does not
+   * was never one.
+   */
   protected readonly upgrades = computed<
-    { slot: string; rows: { id: string; label: string; delta: number }[] }[]
+    { slot: string; rows: { id: string; label: string; delta: number; breaksSet: boolean }[] }[]
   >(() => {
     const recipe = this.scoredRecipe();
     const pools = this.winningPools();
     if (!recipe || !pools) return [];
 
     const names = this.slotNames();
+    const setOf = new Map<string, number>();
     const bySlot = new Map<string, { id: string; stats: Record<string, number> }[]>();
     for (const piece of this.constrained(this.candidates())) {
       const list = bySlot.get(piece.slot) ?? [];
       list.push({ id: piece.id, stats: piece.stats });
       bySlot.set(piece.slot, list);
+      setOf.set(piece.id, piece.set_id ?? -1);
     }
+
+    // Null when the winner was scored on the no-four-piece recipe: no bonus exists, so no
+    // swap can break one, and every candidate keeps the plain single-recipe scoring.
+    const assumed = this.scoredSetId();
+    const worn = this.winningSetIds();
+    const fallback = this.baselineRecipe();
+    const held = assumed === null || !worn
+      ? 0
+      : worn.filter((setId) => setId === assumed).length;
 
     return SLOT_ORDER.flatMap((slot, index) => {
       const candidates = bySlot.get(slot) ?? [];
       if (!candidates.length) return [];
-      const scored = scoreForSlot(recipe, pools, candidates, index)
+
+      /** Does putting `id` in this slot still leave four of the assumed set? */
+      const keepsSet = (id: string): boolean => {
+        if (assumed === null || !worn) return true;
+        const without = held - (worn[index] === assumed ? 1 : 0);
+        return without + (setOf.get(id) === assumed ? 1 : 0) >= 4;
+      };
+
+      const scored = scoreForSlot(
+        recipe, pools, candidates, index,
+        // Without a no-four-piece recipe to fall back on there is nothing honest to score a
+        // bonus-breaking swap with, so those are dropped below rather than scored wrongly.
+        fallback ? (id) => (keepsSet(id) ? recipe : fallback) : undefined,
+      )
+        .filter(({ id }) => fallback !== null || keepsSet(id))
         // **Strictly better only.** A zero delta is the piece already worn, or one identical
         // to it; listing those as "upgrades" would pad the answer with non-answers.
         .filter(({ score }) => score.delta > 0)
         .sort((a, b) => b.score.delta - a.score.delta)
         .slice(0, UPGRADES_PER_SLOT)
-        .map(({ id, score }) => ({ id, label: this.describe(id), delta: score.delta }));
+        .map(({ id, score }) => ({
+          id, label: this.describe(id), delta: score.delta, breaksSet: !keepsSet(id),
+        }));
       return scored.length ? [{ slot: names[slot] ?? slot, rows: scored }] : [];
     });
   });
@@ -826,7 +1175,9 @@ export class OptimizePage implements OnInit {
       // Paginated. Reading it as an array leaves the picker empty, which looks exactly like
       // having authored no rotations — the same trap W.6's compare page fell into.
       this.rotations.set(rotations.items.map((r) => ({ id: r.id, name: r.name })));
-      if (rotations.items.length > 0) this.rotationId.set(rotations.items[0].id);
+      // **Not `items[0]`.** Picking the first rotation stated a choice the user never made;
+      // §15's rule is to recall their last one and otherwise leave it empty.
+      this.rotationId.set(recallAmong(this.store, 'rotationId', this.rotations()));
       this.slotNames.set(
         Object.fromEntries(options.slots.map((slot) => [slot.key, slot.display])),
       );
@@ -835,7 +1186,10 @@ export class OptimizePage implements OnInit {
         Object.fromEntries(options.stats.map((stat) => [stat.key, stat.display ?? stat.key])),
       );
       this.builds.set(builds);
-      if (builds.length > 0) await this.selectBuild(builds[0].id);
+      // Likewise: the page opened on Aino because she sorts first, which read as a
+      // recommendation. An empty picker is the honest state when nothing is remembered.
+      const remembered = recallAmong(this.store, 'buildId', builds);
+      if (remembered) await this.selectBuild(remembered);
     } catch {
       this.error.set('Could not load your builds.');
       this.builds.set([]);
@@ -852,9 +1206,16 @@ export class OptimizePage implements OnInit {
    */
   protected async selectTeam(ids: readonly string[]): Promise<void> {
     this.teamId.set(ids[0] ?? '');
+    remember(this.store, 'teamId', ids[0] ?? '');
     const inScope = this.buildsInScope();
     if (inScope.some((b) => b.id === this.buildId())) return;
     await this.selectBuild(inScope[0]?.id ?? '');
+  }
+
+  /** Chosen rotations are remembered; the picker no longer starts on an arbitrary one. */
+  protected pickRotation(id: string): void {
+    this.rotationId.set(id);
+    remember(this.store, 'rotationId', id);
   }
 
   protected async pickBuild(ids: readonly string[]): Promise<void> {
@@ -863,6 +1224,7 @@ export class OptimizePage implements OnInit {
 
   protected async selectBuild(id: string): Promise<void> {
     this.buildId.set(id);
+    remember(this.store, 'buildId', id);
     this.hits.set([]);
     this.hitIndex.set(0);
     // A result belongs to the build it was searched for. Left up, it would sit under a
@@ -872,10 +1234,20 @@ export class OptimizePage implements OnInit {
     this.equipped.set(null);
     // …and everything the rotation search found about the *previous* build's winner.
     this.clearRotationFindings();
+    this.equippedIds.set([]);
     this.actionError.set(null);
     if (!id) return;
     try {
       this.hits.set(await this.explain.hits(id));
+      // What this character is wearing now — the comparator every result is a percentage of
+      // (§11). Its own failure is swallowed on purpose: without it the page falls back to
+      // ranking against rank 1, which is a worse comparison but not a broken page.
+      try {
+        const worn = await this.artifacts.list({ build_id: id });
+        this.equippedIds.set(worn.items.map((piece) => piece.id));
+      } catch {
+        this.equippedIds.set([]);
+      }
       const element = this.builds().find((b) => b.id === id)?.character?.element;
       if (element) {
         const guess = element.toLowerCase();
@@ -1032,6 +1404,11 @@ export class OptimizePage implements OnInit {
   private clearRotationFindings(): void {
     this.scoredRecipe.set(null);
     this.winningPools.set(null);
+    this.baselineRecipe.set(null);
+    this.scoredSetId.set(null);
+    this.winningSetIds.set(null);
+    this.comparator.set(null);
+    this.calibration.set(null);
     this.caveats.set(null);
     this.recipeNotes.set(null);
   }
@@ -1201,8 +1578,15 @@ export class OptimizePage implements OnInit {
       // be computed without a second calibration.
       const winner = found.builds[0];
       const byId = new Map(pieces.map((piece) => [piece.id, piece.stats]));
-      this.scoredRecipe.set(
-        calibrated.byFourPieceSet.get(chosen[0]) ?? calibrated.noFourPiece,
+      const fourPiece = calibrated.byFourPieceSet.get(chosen[0]);
+      this.scoredRecipe.set(fourPiece ?? calibrated.noFourPiece);
+      this.baselineRecipe.set(calibrated.noFourPiece);
+      // Null when the winner was scored on the no-four-piece recipe: there is then no bonus a
+      // swap could break, and `upgrades()` must not invent one to protect.
+      this.scoredSetId.set(fourPiece ? chosen[0] : null);
+      const setById = new Map(pieces.map((piece) => [piece.id, piece.set_id ?? -1]));
+      this.winningSetIds.set(
+        winner ? winner.artifactIds.map((id) => setById.get(id) ?? -1) : null,
       );
       this.winningPools.set(
         winner ? winner.artifactIds.map((id) => byId.get(id) ?? {}) : null,
@@ -1211,6 +1595,8 @@ export class OptimizePage implements OnInit {
         uncoveredSets: found.uncoveredSets,
         boundPruned: found.boundPruned,
       });
+      this.calibration.set(calibrated);
+      this.comparator.set(this.comparatorFrom(pieces, calibrated));
     } catch (err) {
       this.result.set(null);
       this.actionError.set(apiErrorMessage(err));

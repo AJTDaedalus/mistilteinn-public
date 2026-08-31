@@ -27,12 +27,14 @@ one file that a reader cannot tell apart is worse than one.
 
 ## What it still refuses to do
 
-**Per-roll qualities are published only when exactly one decomposition fits.** A count may
-still be *estimated* — `resolve_artifact` takes the likeliest assignment rather than refusing,
-as Genshin Optimizer does — and an estimated count never carries tiers, because a guessed
-number does not earn individually-coloured bars. Where not even a count can be reached the
-answer is `None` and the UI shows nothing: null is not zero, and this is the rule
-`UpgradePotentialRead` already follows.
+**Per-roll qualities are published wherever a count is,** which follows Genshin Optimizer:
+where several combinations of the same length fit, it takes one and colours the bars. The
+alternatives differ by a tier on a roll or two, so a *grey* bar — which reads as "this line
+never rolled" — is further from the truth than a picked one. `tiers_exact` marks a reading
+that is one of several, and the card says so on hover.
+
+Where not even a count can be reached the answer is `None` and the UI shows nothing: null is
+not zero, and this is the rule `UpgradePotentialRead` already follows.
 
 **Roll value is separate, and always exact.** `roll_value` is the total as a multiple of the
 stat's best single roll — 24.9% CRIT DMG against a 7.77% max roll is 3.20. It needs no
@@ -75,7 +77,8 @@ class SubstatAnalysis:
 
     #: Rolls behind it, or None when the decompositions disagree about how many.
     rolls: int | None
-    #: The value of each roll, or None unless exactly one decomposition fits.
+    #: The value of each roll, or None unless exactly one decomposition fits. Unlike
+    #: `roll_tiers` this is never a *reading* — a float claims more precision than a bar does.
     roll_values: tuple[float, ...] | None
     #: Each roll's quality as `0` (worst) to `3` (best), aligned with `roll_values`.
     #:
@@ -90,9 +93,12 @@ class SubstatAnalysis:
     #: Every roll count the arithmetic allows, ascending. `rolls` is the single member when
     #: there is one; this is what lets `resolve_artifact` narrow the rest.
     candidates: tuple[int, ...] = ()
-    #: The one decomposition per candidate count, where that count has exactly one. Keyed by
-    #: count, so a joint solve that picks a count also gets its tiers.
+    #: One decomposition per candidate count, keyed by count, so a joint solve that picks a
+    #: count also gets its tiers. **Every count is represented**, including those reachable
+    #: several ways — `tied_counts` says which, and `tiers_exact` carries it to the caller.
     by_count: tuple[tuple[int, tuple[int, ...]], ...] = ()
+    #: Counts reachable by more than one combination of that length.
+    tied_counts: tuple[int, ...] = ()
     #: True when `rolls` is the *likeliest* count rather than the only possible one.
     #:
     #: Genshin Optimizer takes the same fallback — `ArtifactDataManager` prefers the shortest
@@ -100,6 +106,14 @@ class SubstatAnalysis:
     #: so silently. This flag is the difference: the count is shown, and shown as an estimate,
     #: so a card can draw it without claiming more than it knows.
     estimated: bool = False
+    #: True when `roll_tiers` is the *only* combination of its length; False when it is one
+    #: reading of several the arithmetic allows equally well.
+    #:
+    #: Genshin Optimizer does not carry this distinction — `getSubstatRolls` returns every
+    #: decomposition and `artifactMeta.ts` takes the first, treating a same-length tie as
+    #: settled. This repo shows the same bars and keeps the caveat, because a tooltip is free
+    #: and a silent pick is the one thing about GO's approach worth improving on.
+    tiers_exact: bool = True
 
 
 _UNKNOWN = SubstatAnalysis(rolls=None, roll_values=None, roll_tiers=None, roll_value=None)
@@ -241,27 +255,40 @@ def analyse(
         )
 
     counts = sorted({len(combo) for combo in fits})
-    # The decompositions for each count. A count reachable exactly one way has known
-    # qualities; one reachable several ways has a known *length* only, which is a real
-    # distinction the card draws — bars, but undifferentiated ones.
     per_count: dict[int, list[tuple[float, ...]]] = {}
     for combo in fits:
         per_count.setdefault(len(combo), []).append(combo)
+
+    # **One reading per count, including the counts reachable several ways.** This module used
+    # to publish tiers only where a count had exactly one decomposition, and the effect was
+    # invisible in aggregate but not on screen: unlevelled pieces decompose trivially and were
+    # 100% coloured, while **at +20 — the only pieces anyone looks at — 44% were.** Averaged
+    # over an inventory that reads as 87% coloured, which is why the gap survived a
+    # measurement. Genshin Optimizer takes the first fitting combination and colours the bars;
+    # the tie is real but the alternatives differ by a tier on one roll, and a grey bar
+    # claims *less* than the truth rather than more. `tiers_exact` keeps the distinction.
+    #
+    # `combinations_with_replacement` walks a sorted ladder, so `combos[0]` is the
+    # lexicographically smallest — a deterministic pick, not an incidental one.
     by_count = tuple(
         (count, tuple(_quality(tiers, v) for v in combos[0]))
         for count, combos in sorted(per_count.items())
-        if len(combos) == 1
     )
+    tied = tuple(count for count, combos in sorted(per_count.items()) if len(combos) > 1)
 
     rolls = counts[0] if len(counts) == 1 else None
     tiers_out = dict(by_count).get(rolls) if rolls is not None else None
+    exact = rolls is not None and rolls not in tied
     return SubstatAnalysis(
         rolls=rolls,
-        roll_values=per_count[rolls][0] if rolls is not None and tiers_out else None,
+        # Still only when one decomposition fits: a float is a stronger claim than a bar.
+        roll_values=per_count[rolls][0] if rolls is not None and exact else None,
         roll_tiers=tiers_out,
         roll_value=roll_value,
         candidates=tuple(counts),
         by_count=by_count,
+        tied_counts=tied,
+        tiers_exact=exact if tiers_out else True,
     )
 
 
@@ -392,13 +419,17 @@ def _with_count(
     return SubstatAnalysis(
         rolls=count,
         roll_values=None,
-        # **Never alongside an estimate.** A count that is a guess can still have exactly one
-        # decomposition, and emitting its tiers painted four bars worst-tier *as fact* on a
-        # number nothing established. `roll_tiers` promises "exactly one decomposition fits";
-        # a guessed count does not earn that.
-        roll_tiers=None if is_estimate else dict(analysis.by_count).get(count),
+        # **The reading is published even for an estimated count**, which reverses this
+        # module's earlier rule. That rule was defensible on its own terms — bars painted as
+        # fact on a guessed number — but it stripped tiers from lines that decomposed
+        # uniquely, merely because some *other* line on the piece needed the budget solve. The
+        # honest fix is the flag, not the withholding: `tiers_exact` is False here and the
+        # card says so, where before the user simply saw grey and read it as "no rolls".
+        roll_tiers=dict(analysis.by_count).get(count),
         roll_value=analysis.roll_value,
         candidates=analysis.candidates,
         by_count=analysis.by_count,
+        tied_counts=analysis.tied_counts,
         estimated=is_estimate,
+        tiers_exact=not is_estimate and count not in analysis.tied_counts,
     )

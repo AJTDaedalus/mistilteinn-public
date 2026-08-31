@@ -28,17 +28,24 @@
     padding: 0;
     list-style: none;
 
-    /* Five columns, because a row now carries five things: rank, damage, the pieces, "Why?"
-       and "Equip". At three the two buttons wrapped onto a second grid track and painted over
-       each other — "WH" under "EQUIP", seen in a screenshot. The actions are pushed right by
-       the `1fr` on the pieces rather than by a margin, so they line up down the list. */
+    /* The `li` is a block now, because §12 puts the expanded explanation *inside* the row it
+       belongs to. The grid moved to `.result__row`. */
     li {
-      display: grid;
-      grid-template-columns: 2rem minmax(6rem, 9rem) 1fr auto auto;
-      gap: 0.75rem;
-      align-items: baseline;
       padding: 0.35rem 0;
       border-bottom: 1px solid rgb(255 255 255 / 7%);
+    }
+
+    /* Six columns, because a row carries six things: rank, damage, the percentage against the
+       comparator (§11), the pieces, "Details" and "Equip". At three the two buttons wrapped
+       onto a second grid track and painted over each other — "WH" under "EQUIP", seen in a
+       screenshot — and adding the percentage without adding a column here would have done it
+       again. The actions are pushed right by the `1fr` on the pieces rather than by a margin,
+       so they line up down the list. */
+    .result__row {
+      display: grid;
+      grid-template-columns: 2rem minmax(6rem, 9rem) minmax(4.5rem, auto) 1fr auto auto;
+      gap: 0.75rem;
+      align-items: baseline;
     }
 
     /* The two empty states are sentences, not rows. */
@@ -186,11 +193,13 @@
   select { min-width: 9rem; }
 }
 
-/* ── What a roll is worth, and what would beat the winner ────────────────────
-   Both are free once a search has run — the page still holds the calibrated recipe, and an
-   evaluation is 0.048 µs per hit. They sit above the caveats because they answer the question
-   the results raise: "so what should I change?" */
-.marginal,
+/* ── What would beat the winner ──────────────────────────────────────────────
+   Free once a search has run — the page still holds the calibrated recipe, and an evaluation
+   is 0.048 µs per hit. It sits above the caveats because it answers the question the results
+   raise: "so what should I change?"
+
+   The roll table that used to share these rules moved inside the details pane (§13), where it
+   describes the row being read rather than always the winner. */
 .upgrades {
   margin: var(--space-4) 0 var(--space-4);
 
@@ -208,25 +217,22 @@
   .hint { margin: 0 0 var(--space-3); }
 }
 
-.marginal__rows {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-4);
-  list-style: none;
-  margin: 0;
-  padding: 0;
+/* A table, at the owner's direction — "This needs a lot less explanation and should be a
+   table." It was a wrapping flex list of stat/number pairs, which reads as prose. */
+.marginal {
+  border-collapse: collapse;
+  margin: 0 0 var(--space-3);
 
-  li {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-2);
+  td {
+    padding: 0.15rem var(--space-3) 0.15rem 0;
+    font-size: var(--text-sm);
+    color: var(--ink-dim);
   }
-}
 
-.marginal__stat {
-  font-size: var(--text-xs);
-  letter-spacing: 0.06em;
-  color: var(--ink-dim);
+  td:last-child {
+    text-align: right;
+    color: var(--ink);
+  }
 }
 
 .upgrades__slot {
@@ -300,4 +306,57 @@
    of the damage it was ranking. */
 .warn-inline {
   color: var(--warning);
+}
+
+// §16 — five small artifact cards in place of five slot names. A row is a grid, so the cards
+// get their own track and wrap inside it rather than stretching the row.
+.pieces--cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+// A hover affordance has to look like one. This was `class="note"` with no rule behind it,
+// which renders as ordinary text — an explanation nobody would know to hover for, which is
+// the same failure as writing it somewhere it cannot render at all.
+.note {
+  border-bottom: 1px dotted var(--ink-faint);
+  cursor: help;
+}
+
+// §11 — a signed percentage against the comparator. Green up, red down, and the comparator
+// itself (or anything level with it) stays on the ordinary ink: "no different" is not a
+// result to colour, and colouring it would leave nothing for the reader to notice.
+.delta {
+  min-width: 4.5rem;
+  text-align: right;
+  color: var(--ink-dim);
+}
+
+.delta--up { color: var(--mint); }
+.delta--down { color: var(--danger); }
+
+// §16 — the winning five at full size inside the expanded pane. Auto-fit rather than five
+// fixed columns so the cards reflow on a narrow viewport instead of forcing the page to
+// scroll sideways.
+.explanation__pieces {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+// §14 — the roll table's bar. Sized against the best line in its own table, so the shape is a
+// comparison within one build rather than against an absolute nobody would know.
+.marginal__plot {
+  width: 40%;
+  min-width: 4rem;
+}
+
+.marginal__bar {
+  display: block;
+  height: 0.5rem;
+  border-radius: var(--radius-1);
+  background: var(--mint);
 }

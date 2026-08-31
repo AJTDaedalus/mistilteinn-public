@@ -1235,6 +1235,26 @@
             }
           },
           {
+            "name": "ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 250
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ids"
+            }
+          },
+          {
             "name": "offset",
             "in": "query",
             "required": false,
@@ -7190,6 +7210,11 @@
               }
             ],
             "title": "Roll Tiers"
+          },
+          "roll_tiers_exact": {
+            "type": "boolean",
+            "title": "Roll Tiers Exact",
+            "default": true
           },
           "roll_value": {
             "anyOf": [

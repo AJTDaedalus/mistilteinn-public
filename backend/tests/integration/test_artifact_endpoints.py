@@ -406,6 +406,101 @@ async def test_filtering_by_slot_narrows_the_total_too(
 
 
 @pytest.mark.asyncio
+async def test_fetching_several_artifacts_by_id(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+):
+    """§16 — a result row draws a card per piece, so it needs the five it just ranked.
+
+    The alternative was widening `/artifacts/inventory`, which carries the *whole* inventory
+    and is ETag'd for that reason. Five ids cost five rows.
+    """
+    await _seed_sets(db_session)
+    await client.post(
+        "/api/v1/artifacts/import/good",
+        json={"mode": "replace", "payload": _good(
+            _artifact(slotKey="flower", mainStatKey="hp"),
+            _artifact(slotKey="plume", mainStatKey="atk"),
+            _artifact(slotKey="sands", mainStatKey="atk_"),
+        )},
+        headers=_auth(authed_user),
+    )
+    every = (await client.get("/api/v1/artifacts", headers=_auth(authed_user))).json()
+    wanted = [every["items"][0]["id"], every["items"][2]["id"]]
+
+    got = (await client.get(
+        "/api/v1/artifacts", params={"ids": wanted}, headers=_auth(authed_user),
+    )).json()
+
+    assert [item["id"] for item in got["items"]] == wanted
+    # The total narrows with the filter, like every other one here — a paginator told there
+    # are three when it was handed two would offer a second page that does not exist.
+    assert got["total"] == 2
+
+
+@pytest.mark.asyncio
+async def test_an_empty_ids_filter_returns_nothing_while_omitting_it_returns_everything(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+):
+    """The two ways of "not naming an id" are different questions and get different answers.
+
+    `?ids=` binds to `[""]` — a filter naming one id that matches nothing. Omitting the
+    parameter binds to `None`, which is no filter at all. Asserting both together is the
+    point: each alone looks correct while the pair is confused.
+
+    Note this cannot be written with `params={"ids": []}` — httpx drops an empty list from the
+    query string, so the server is handed the *omitted* case and the test silently checks the
+    opposite of its name.
+    """
+    await _seed_sets(db_session)
+    await client.post(
+        "/api/v1/artifacts/import/good",
+        json={"mode": "replace", "payload": _good(
+            _artifact(slotKey="flower", mainStatKey="hp"),
+            _artifact(slotKey="plume", mainStatKey="atk"),
+        )},
+        headers=_auth(authed_user),
+    )
+
+    named_none = (await client.get(
+        "/api/v1/artifacts?ids=", headers=_auth(authed_user),
+    )).json()
+    named_nothing_at_all = (await client.get(
+        "/api/v1/artifacts", headers=_auth(authed_user),
+    )).json()
+
+    assert named_none["items"] == []
+    assert named_none["total"] == 0
+    assert named_nothing_at_all["total"] == 2
+
+
+@pytest.mark.asyncio
+async def test_ids_cannot_name_another_users_artifact(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+):
+    """Ownership is enforced before the id filter, not by it.
+
+    An id is guessable in a way a slot is not, so this is the one filter on this route where
+    a missing owner clause would be a disclosure rather than a wrong answer.
+    """
+    await _seed_sets(db_session)
+    await client.post(
+        "/api/v1/artifacts/import/good",
+        json={"mode": "replace", "payload": _good(_artifact())},
+        headers=_auth(authed_user),
+    )
+    mine = (await client.get("/api/v1/artifacts", headers=_auth(authed_user))).json()
+    someone_elses = "00000000-0000-0000-0000-000000000000"
+
+    got = (await client.get(
+        "/api/v1/artifacts",
+        params={"ids": [mine["items"][0]["id"], someone_elses]},
+        headers=_auth(authed_user),
+    )).json()
+
+    assert [item["id"] for item in got["items"]] == [mine["items"][0]["id"]]
+
+
+@pytest.mark.asyncio
 async def test_fetching_and_deleting_one_artifact(
     client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
 ):

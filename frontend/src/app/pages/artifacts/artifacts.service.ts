@@ -45,6 +45,12 @@ export class ArtifactsService {
       set_id?: string;
       equipped?: boolean;
       build_id?: string;
+      /**
+       * Specific pieces. **An empty array asks for none of them, not for all of them** —
+       * which is what the server means by it too, so a caller with nothing to fetch should
+       * skip the call rather than pass `[]` and hope.
+       */
+      ids?: string[];
     } = {},
   ) {
     return allPages<ArtifactRead>(async (offset, limit) => {

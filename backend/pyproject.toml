@@ -66,7 +66,14 @@ testpaths = ["tests"]
 # files were deleted per its own rule, and the two staged for the closed Chunk H lost their
 # consumer when the successor plan chose to transcribe from gcsim's Go rather than from
 # fairy's ZZZ modifier DSL. `docs/PORT_zzz_disposition.md` keeps its table.
-norecursedirs = ["build"]
+#
+# `tests/_inject_tmp/` is `scripts/inject`'s scratch directory — a deliberately mutated copy of
+# a module plus a test that is *supposed* to fail against it. It is gitignored and removed on a
+# clean run, but an interrupted one leaves it behind, and pytest then collects a failing test
+# nobody wrote into an unrelated suite. That happened: a full run reported
+# `1 failed, 1629 passed` on `test_negatives_clamp`, a mutation subject, in a tree whose own
+# tests were green.
+norecursedirs = ["build", "_inject_tmp"]
 filterwarnings = [
     "ignore::DeprecationWarning",
 ]

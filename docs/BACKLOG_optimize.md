@@ -233,7 +233,30 @@ page.
 
 Not wrong. Unlabelled.
 
-### "Pieces that would beat the winner… sounds extremely contradictory" — **partly, and narrower than first written**
+### "Pieces that would beat the winner… sounds extremely contradictory" — **FIXED**
+
+The scoring defect is closed. `scoreForSlot` takes an optional `recipeAfterSwap`, and
+`upgrades()` uses it: a swap that would leave fewer than four of the winner's set is evaluated
+on the **no-four-piece recipe** from the same calibration, which the page already held and was
+not using. `current` stays on the four-piece recipe, because the build as it stands really does
+have the bonus — the comparison is across two recipes because the two builds are genuinely in
+two different states.
+
+The effect is the owner's own framing, arithmetically: an off-set piece now has to pay for the
+whole set bonus and still win. Most do not, so they drop out of the list by the existing
+`delta > 0` filter rather than by being hidden. The ones that survive are real. Rows that spend
+the free slot are marked **"costs the set bonus"** so the price is visible rather than implied.
+
+Where no no-four-piece recipe is held, a bonus-breaking swap is **dropped** rather than scored
+wrongly — there is nothing honest to score it with.
+
+Still open from this section: the heading's *other* problem — after an **Exact** search nothing
+in the searched space can beat the winner, so every row here is something the search did not
+consider (an uncalibrated set, or a piece a main-stat filter removed). Worth saying plainly.
+
+<details><summary>The original note, kept for the reasoning</summary>
+
+
 
 > **Corrected by the owner, who was right and I was not.** The paragraph below originally said
 > every cross-set row was wrongly scored. That is false, and it is false because I did not know
@@ -261,7 +284,7 @@ understatement for one that would complete a different set. **The caller owns th
 distinction.**"* — and the caller, `upgrades()`, does not: it filters `delta > 0` and shows the
 rest.
 
-So two things are owed, and neither is "hide off-set pieces":
+So two things were owed, and neither was "hide off-set pieces":
 
 1. **Check the swap keeps four of the set** before claiming a delta. Where it does not, the
    number must either account for losing the bonus or say it cannot.
@@ -273,9 +296,35 @@ searched space can beat the winner, so a row here is always something the search
 consider — a piece from an uncalibrated set, or one a main-stat filter removed. That is worth
 saying plainly instead of implying the ranking missed something.
 
+</details>
 
 
-## 11. The baseline should be a build, not "no 4-piece"
+
+## 11. The baseline should be a build, not "no 4-piece" — **DONE**
+
+The comparator is the character's current build, scored on whichever calibrated recipe matches
+the set it actually wears. Every row shows a signed percentage against it: green above, red
+below, ordinary ink for level. The referent is stated once above the list, because a column of
+signed numbers with no named baseline is a comparison to nothing.
+
+**It refuses rather than guesses.** Three states return no comparator, and each is real:
+
+| state | why not |
+|---|---|
+| fewer than five pieces on the build | there is no build to score |
+| a worn piece was not among the searched candidates | a main-stat filter removed it; its stats are not to hand |
+| it wears a 4-piece nobody calibrated | scoring it on another set's recipe credits a bonus it does not have |
+
+The third is §10's mistake in a worse place: every row on the page is a percentage *of* this
+number. When there is no comparator the page falls back to **rank 1** — the owner's own
+fallback for a character with no build — and says so.
+
+Note the two meanings of "baseline" are now separated in the interface. The calibration's
+`noFourPiece` recipe is still mandatory and still used, as a *scoring* artefact; it is no
+longer something a reader is shown and asked to interpret.
+
+## 11a. The original note
+
 
 The owner\'s design, recorded rather than interpreted:
 
@@ -289,14 +338,63 @@ Note this is a different meaning of "baseline" from the one the code has. The ca
 4-piece bonus — and it is mandatory. The owner is describing a *comparison* baseline, which the
 page does not have at all. Both can exist; only one belongs in the interface.
 
-## 12. Details expands from its row, and groups its terms
+## 12. Details expands from its row, and groups its terms — **DONE**
+
+The pane now renders **inside the `<li>` it belongs to**, below that row. It sat under the whole
+list before, so on a ten-row result the explanation for row 2 appeared a screen away from row 2
+under a heading naming a rank the reader had to match up by eye.
+
+**The rolled-up terms were already there** and this is worth recording rather than
+re-implementing: `/explain` returns each quantity with a `sum_of_parts` and its `sources`, which
+is exactly `effective ATK = the parts that made it`. Nothing needed changing.
+
+Two things moved in with it:
+
+- **§16's second half** — the winning five at full size, with the roll-value column the compact
+  row cards have no room for.
+- **The roll table**, at the owner's direction: *"so it's relevant to the set the user is
+  looking at."* It is now computed per row, on **that row's** recipe — row 3 may field a
+  different 4-piece from row 1, and answering with the winner's recipe would describe a build
+  the reader is not looking at. It is a `<table>` now, as asked.
+
+One layout bug was introduced and fixed inside this section: the `.results li` grid declared
+five columns and §11's percentage made six children, which is the wrap-and-overpaint the
+comment above it already warned about. The grid moved to `.result__row` (the `li` is a block
+now, since it contains the pane) and declares six.
+
+## 12a. The original note
+
 
 - The pane appears at the **bottom** of the page; it should expand from the row whose Details
   was clicked.
 - Its terms should **roll up**: `effective ATK = <the parts that made it>`, rather than a flat
   list of every component. Show the components, and show what they add up to.
 
-## 13. The words
+## 13. The words — **the named three done, plus two more**
+
+| was | is |
+|---|---|
+| *Why #1 scores what it scores* | **How #1 adds up** |
+| *Not searched, because no recipe covers them* | **You own enough for a 4-piece of these, but they were not scored** |
+| *What one more roll is worth* | **Damage per substat roll** |
+| *Pieces that would beat the winner* | **Better pieces for each slot** |
+
+The second was not a style problem: the owner said they could not interpret it, and it never
+said what it meant. `uncoveredSets` is *sets you hold four slots' worth of that were never
+calibrated* — the new line says that, which also makes it actionable.
+
+The marginal-roll prose went from five lines to one, with the exclusions moved to a hover.
+**The hover needed a style**: `class="note"` had no rule behind it and rendered as ordinary
+text, which is an explanation nobody would know to reach for — the same failure as putting it
+somewhere it cannot render at all.
+
+Still open: **§10's scoring defect** behind "Better pieces for each slot" is a correctness bug,
+not a wording one, and the rename does not touch it. The marginal table still needs to **move
+under details** (owner: *"so it's relevant to the set the user is looking at"*), which waits on
+§12.
+
+## 13a. The original note
+
 
 Named by the owner: *"Why #1 scores what it scores"*, *"Not searched, because no recipe covers
 them"* (which they say they still cannot interpret — so it fails at its only job), and *"What
@@ -306,7 +404,24 @@ much less prose around it**.
 The instruction is broader than those three: *"All of the text you\'ve provided on this page
 needs cleaned."*
 
-## 14. Plots
+## 14. Plots — **the roll table has one; the ranking does not, deliberately**
+
+*"Consider plots too, a plot is worth a thousand words."*
+
+**Done:** the roll table under details draws a bar per substat, scaled against the best line in
+its own table. It is a table cell with a width rather than a chart library — the CSP forbids a
+CDN, and a ranked comparison of eight values is exactly what a bar chart is for. The number
+stays beside the bar, because the bar answers *which* and only the number answers *how much*.
+
+**Not done, and this is a judgement rather than a backlog item left lying:** the other candidate
+was damage against rank, "showing how flat or steep the top is". §11 now puts a signed
+percentage against the comparator on every row, which answers that question in the place the
+reader is already looking. A second rendering of the same five numbers would be decoration.
+Worth revisiting if the result list ever grows past ten rows, where a shape is easier to read
+than a column.
+
+## 14a. The original note
+
 
 *"Consider plots too, a plot is worth a thousand words."* Nothing on this page is a picture
 today. The obvious candidates are the marginal-roll table (a bar per substat) and the ranking
@@ -314,7 +429,18 @@ itself (damage against rank, showing how flat or steep the top is) — but that 
 not a list to implement from.
 
 
-## 15. No defaults for data; rotation mode as the default tool
+## 15. No defaults for data; rotation mode as the default tool — **DONE**
+
+Shipped on `feat/substat-bars-adopt-go-reading`. `builds[0]` and `rotations.items[0]` are gone;
+the last selection is recalled through `pages/optimize/remembered.ts` and validated against the
+list actually loaded, so a deleted build falls back to **nothing** rather than to `builds[0]` —
+which would have reinstated the invented default one layer further from where anyone looks.
+`objective` starts on `rotation`.
+
+`channel`, `scope` and `enemyLevel` were examined and **left**: they are hit-mode configuration
+rather than the user's identity, and `enemyLevel = 90` is the standard benchmark, not a guess
+about this account. `channel` is already inferred from the chosen talent.
+
 
 Owner, verbatim:
 
@@ -337,7 +463,37 @@ Worth checking while implementing: what else fills itself in. `hitIndex`, `chann
 is this the user\'s data, or is it which tool is in front?
 
 
-## 16. Artifact cards, on the row and in the details
+## 16. Artifact cards, on the row and in the details — **rows done, details pending**
+
+The result rows now draw a card per piece. What shipped, and what it needed first:
+
+| built | where |
+|---|---|
+| `ids` filter on `GET /api/v1/artifacts` | the pieces a row won with, fetched by id |
+| `shared/substat-bars` | the bars, the tooltip, and `substatReadings` |
+| `shared/stat-label` | `describeStat` / `formatStat`, so a card and an inventory row cannot format the same piece differently |
+| `shared/artifact-card` | the card itself, with a `compact` row size |
+
+**The details half waits on §12**, which moves the pane so it expands from its row — putting
+the large cards in today's bottom-of-page pane would have to be undone by that change.
+
+Two things worth keeping from the build:
+
+- **`?ids=` with nothing after it is not the same request as omitting `ids`.** The first means
+  "none of them", the second means "no filter". `if ids:` in the repository would have answered
+  the caller who asked for nothing with the caller's whole inventory, and no test that only ever
+  passes a non-empty list can see it. Pinned in
+  `tests/unit/test_artifact_id_filter_is_not_truthiness.py`, at the repository layer, because
+  over HTTP the empty case is unreachable — httpx drops an empty list from the query string
+  entirely, so a test written the obvious way checks the opposite of its name.
+- **The cards are an enrichment, never a precondition.** A row is complete without them, so a
+  failed fetch leaves them off rather than replacing a sound ranking with an error.
+
+---
+
+## 16a. The original note
+
+
 
 Owner, verbatim:
 
@@ -361,6 +517,24 @@ Two sizes of the same thing:
 Whatever draws them there is what these cards should reach for, in the same way a new surface
 reaches for `shared/{icon,token,element,combobox}` rather than deciding again. Finding that
 component and reusing it is the first task, not designing a card.
+
+**Found, and it is not a component.** The bars are inline markup in `artifacts.html` plus
+`rollBars` / `barsTitle` on `artifacts.ts` — page-local, so there is nothing to import. They
+need extracting to `shared/` first, which is the same shape as `browserStore` in §15: a pattern
+with no owner, about to be decided a second time.
+
+**The data is the real blocker, and it is a backend change.** `KernelCandidate` — what
+`/artifacts/inventory` publishes and what the search actually ranks — carries `id`, `slot`,
+`set_id`, `stats`, `main_stat` and *nothing else*: no level, no icon, no substats, no roll
+analysis. A card cannot be drawn from it.
+
+Widening that payload is the wrong fix: it is fetched for the **whole** inventory (2,370 pieces
+on the owner's account), it is ETag'd for exactly that reason, and the roll analysis is computed
+per piece. The cards need at most ten rows x five pieces.
+
+So: **fetch the winning pieces by id.** `GET /api/v1/artifacts` filters on
+`slot`/`set_id`/`equipped`/`build_id`/`offset`/`limit` and has **no `ids` parameter** — adding
+one is the first task of §16, ahead of any card markup.
 
 Worth noting what this makes possible beyond legibility: with the pieces named on each row, the
 difference between rank 1 and rank 4 becomes visible — which is the thing a ranked list is for,

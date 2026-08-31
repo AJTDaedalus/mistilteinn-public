@@ -2,7 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { ArtifactRow } from './artifacts';
-import { ArtifactsPage, comparator, formatStat, totalRollValue } from './artifacts';
+import { ArtifactsPage, comparator, totalRollValue } from './artifacts';
+import { formatStat } from '../../shared/stat-label';
 import { ArtifactsService } from './artifacts.service';
 
 const OPTIONS = {
@@ -356,6 +357,31 @@ describe('a row the data does not fit', () => {
 
 
 describe('ArtifactsPage potential', () => {
+  it('says a tie is one reading of several rather than shading it silently', async () => {
+    // The change that put colour back on +20 pieces: several tier combinations of the same
+    // length fit, one is read, and the bars are drawn. Genshin Optimizer stops there. The
+    // tooltip is what keeps it truthful — without it the reading is indistinguishable from
+    // a line where exactly one decomposition fits.
+    const page = healthy({
+      list: vi.fn().mockResolvedValue({
+        items: [{
+          ...CIRCLET,
+          substats: [{ stat: 'FIGHT_PROP_CHARGE_EFFICIENCY', value: 0.11 }],
+          substat_analysis: [
+            { rolls: 2, roll_tiers: [0, 3], roll_tiers_exact: false, roll_value: 1.7 },
+          ],
+        }],
+        total: 1, truncated: false,
+      }),
+    } as unknown as ArtifactsService);
+
+    await page['load']();
+    const sub = page['rows']()[0].substats[0];
+
+    expect(page['rollBars'](sub)).toEqual([0, 3]);
+    expect(page['barsTitle'](sub)).toBe('2 rolls, shaded by one reading of several that fit');
+  });
+
   it('carries the roll analysis onto each substat', async () => {
     // 5-star CRIT rate of 7.4% is 3.50 + 3.89 and nothing else, so both the count and each
     // roll's tier are established and the card can colour per roll.
@@ -382,6 +408,12 @@ describe('ArtifactsPage potential', () => {
   it('draws undifferentiated bars when only the count is known', async () => {
     // **`-1`, not tier 0.** "The worst roll" and "we do not know which roll" are different
     // claims, and colouring the second as the first calls a line bad on no evidence.
+    //
+    // **This is now a defensive path rather than a live one.** Since the backend adopted
+    // Genshin Optimizer's reading, every established count carries tiers, so a null beside a
+    // non-null `rolls` no longer arrives from this API. `roll_tiers` stays nullable in the
+    // contract and the renderer stays honest about it; the case is pinned here so a payload
+    // that does omit them degrades to grey rather than to tier 0.
     const page = healthy({
       list: vi.fn().mockResolvedValue({
         items: [{

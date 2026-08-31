@@ -1,0 +1,41 @@
+:host {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--ink-dim);
+}
+
+.sub__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// One bar per roll, coloured by tier — GO's idea, this palette. Tier 3 is a max roll and
+// gets the brass; `-1` is "count known, tier not" and stays deliberately neutral.
+.sub__bars {
+  display: flex;
+  gap: 2px;
+  align-items: flex-end;
+  height: 12px;
+}
+
+.bar {
+  width: 4px;
+  height: 12px;
+  border-radius: 1px;
+  background: var(--ink-faint);
+
+  &[data-tier='0'] { background: var(--periwinkle); height: 6px; }
+  &[data-tier='1'] { background: var(--azure); height: 8px; }
+  &[data-tier='2'] { background: var(--mint); height: 10px; }
+  &[data-tier='3'] { background: var(--brass); height: 12px; }
+}
+
+.sub__rv {
+  min-width: 3.5rem;
+  text-align: right;
+}

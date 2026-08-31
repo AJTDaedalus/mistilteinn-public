@@ -1,7 +1,7 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 
 import { apiErrorMessage } from '../../api/api-error';
-import { formatStat } from '../artifacts/artifacts';
+import { formatStat } from '../../shared/stat-label';
 import {
   ArtifactsService,
   type ArtifactOptions,

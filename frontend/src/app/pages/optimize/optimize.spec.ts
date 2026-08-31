@@ -3,12 +3,17 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { type Slot, search } from '../../sim/search';
 import { ArtifactsService } from '../artifacts/artifacts.service';
-import { RecipeOptimizeService } from './recipe-optimize.service';
+import {
+  RecipeOptimizeService,
+  type CalibrationResult,
+} from './recipe-optimize.service';
 import { RotationsService } from '../rotations/rotations.service';
 import { TeamsService } from '../teams/teams.service';
 import { BuildsService } from '../builds/builds.service';
 import { ExplainService } from '../explain/explain.service';
-import { OptimizePage, describePieces } from './optimize';
+import { OptimizePage, SLOT_ORDER, describePieces, marginalPerRoll } from './optimize';
+import type { Recipe } from '../../sim/recipe';
+import type { KernelCandidate } from './optimize.service';
 import { OptimizeService } from './optimize.service';
 
 const AYAKA_BUILD = {
@@ -58,6 +63,21 @@ function inventory() {
     { id: `${slot}-weak`, slot, set_id: 1, stats: { flat_atk: 10 } },
     { id: `${slot}-strong`, slot, set_id: 1, stats: { flat_atk: 100 } },
   ]);
+}
+
+/**
+ * A returning user's remembered selections.
+ *
+ * §15 stopped the page selecting `builds[0]`, so `load()` no longer chooses anything on its
+ * own — which is the point, and which would otherwise leave every test below operating on a
+ * page with no build selected. Seeding the memory models the ordinary case (someone who has
+ * used the page before) rather than reinstating the default through the harness; the
+ * fresh-user case, where nothing is remembered and so nothing is selected, is pinned
+ * explicitly in `OptimizePage defaults`.
+ */
+function rememberSelections(): void {
+  localStorage.setItem('mistilteinn:optimize:buildId', 'b1');
+  localStorage.setItem('mistilteinn:optimize:rotationId', 'r1');
 }
 
 function pageWith(overrides: {
@@ -135,6 +155,7 @@ function pageWith(overrides: {
       },
     ],
   });
+  rememberSelections();
   return TestBed.runInInjectionContext(() => new OptimizePage());
 }
 
@@ -588,6 +609,394 @@ describe('pairing an explanation with its row', () => {
 });
 
 
+describe('marginalPerRoll', () => {
+  /** §13 — moved under details, so it must answer about the row it is shown beside. */
+  const hit = (over: Record<string, unknown> = {}) => ({
+    abil: 'x', attackTag: 1, element: 'cryo', talent: 2, scaling: 'atk', flatDamage: 0,
+    calibratedScaling: 1000, bonusDmg: 0, critRate: 0.5, critDmg: 1, conversions: {},
+    calibratedBase: { atk: 1000, hp: 10000, def: 800 },
+    calibratedPercent: { atk: 0, hp: 0, def: 0 },
+    calibratedFlat: { atk: 0, hp: 0, def: 0 },
+    defMultiplier: 0.5, resMultiplier: 0.9, ampMultiplier: 1, gcsimAverageDamage: 900, ...over,
+  });
+  const withHit = () => ({
+    hits: [hit()], seed: '1',
+    meta: {
+      seed: '1', staleConversions: [], unstable: [], calibratedSetIds: [],
+      minimumEnergyRecharge: null,
+    },
+  }) as unknown as Recipe;
+
+  it('ranks the stats this build actually responds to, best first', () => {
+    const found = marginalPerRoll(withHit(), [{}, {}, {}, {}, {}]);
+
+    expect(found.length).toBeGreaterThan(0);
+    for (let i = 1; i < found.length; i += 1) {
+      expect(found[i - 1].delta).toBeGreaterThanOrEqual(found[i].delta);
+    }
+  });
+
+  it('answers for a stat the build holds none of', () => {
+    // A build with no CRIT DMG must still be able to ask what CRIT DMG would be worth — the
+    // bump is applied to the resolved stats, not to a pool that may not contain the key.
+    const found = marginalPerRoll(withHit(), [{}, {}, {}, {}, {}]);
+
+    expect(found.some((row) => row.delta > 0)).toBe(true);
+  });
+
+  it('omits quantities the recipe cannot respond to rather than showing them as zero', () => {
+    // A calibration freezes what it does not read, so a bump in one of those evaluates to
+    // exactly 0. Printing that beside real numbers claims the stat is worthless, which is a
+    // different statement from "this recipe cannot see it".
+    const found = marginalPerRoll(withHit(), [{}, {}, {}, {}, {}]);
+
+    // `every` on an empty array is true, so the guard is the assertion here, not decoration.
+    expect(found.length).toBeGreaterThan(0);
+    expect(found.every((row) => row.delta !== 0)).toBe(true);
+  });
+});
+
+describe('OptimizePage marginalForExpanded', () => {
+  it('is empty while no row is expanded', () => {
+    // It is a `computed` rather than a `marginalFor(row)` call in the template because the
+    // page runs on default change detection: as a method it rebuilt two Maps over the whole
+    // candidate list and evaluated the recipe nine times on every tick, for as long as a
+    // details pane stayed open.
+    const page = pageWith();
+
+    expect(page['marginalForExpanded']()).toEqual([]);
+  });
+
+  it('stays empty when the expanded row names pieces the page does not hold', () => {
+    const page = pageWith();
+    page['explained'].set({ rank: 1 } as never);
+
+    expect(page['marginalForExpanded']()).toEqual([]);
+  });
+});
+
+describe('OptimizePage barWidth', () => {
+  /** §14 — the bar is a table cell with a width, so a bad width is a broken style attribute. */
+  it('scales against the best line in the same table', () => {
+    const page = pageWith();
+
+    expect(page['barWidth'](50, 100)).toBe(50);
+    expect(page['barWidth'](100, 100)).toBe(100);
+  });
+
+  it('returns zero rather than Infinity when nothing scored', () => {
+    // Angular writes the result straight into `style.width.%`. `Infinity` and `NaN` are not
+    // widths, and a table where every quantity evaluated to nothing is reachable.
+    const page = pageWith();
+
+    expect(page['barWidth'](0, 0)).toBe(0);
+    expect(page['barWidth'](5, -1)).toBe(0);
+  });
+
+  it('clamps rather than overflowing its cell', () => {
+    const page = pageWith();
+
+    expect(page['barWidth'](150, 100)).toBe(100);
+    expect(page['barWidth'](-5, 100)).toBe(0);
+  });
+});
+
+describe('OptimizePage comparator', () => {
+  /**
+   * §11 — every row is a percentage of the character's current build, not of the
+   * calibration's no-four-piece recipe. The owner: *"the 'no 4p' baseline doesn't make any
+   * sense. The baseline should be the current build of the character."*
+   */
+  const recipe = () => ({
+    hits: [], seed: '1',
+    meta: {
+      seed: '1', staleConversions: [], unstable: [], calibratedSetIds: [],
+      minimumEnergyRecharge: null,
+    },
+  }) as unknown as Recipe;
+
+  /** A recipe that actually produces damage, so an assertion about it can fail. */
+  const scoring = () => ({
+    hits: [{
+      abil: 'x', attackTag: 1, element: 'cryo', talent: 2, scaling: 'atk', flatDamage: 0,
+      calibratedScaling: 1000, bonusDmg: 0, critRate: 0, critDmg: 0, conversions: {},
+      calibratedBase: { atk: 1000, hp: 10000, def: 800 },
+      calibratedPercent: { atk: 0, hp: 0, def: 0 },
+      calibratedFlat: { atk: 0, hp: 0, def: 0 },
+      defMultiplier: 0.5, resMultiplier: 0.9, ampMultiplier: 1, gcsimAverageDamage: 900,
+    }],
+    seed: '1',
+    meta: {
+      seed: '1', staleConversions: [], unstable: [], calibratedSetIds: [],
+      minimumEnergyRecharge: null,
+    },
+  }) as unknown as Recipe;
+
+  const calibration = (over: Record<string, unknown> = {}) => ({
+    byFourPieceSet: new Map<number, Recipe>(),
+    byPair: new Map<string, Recipe>(),
+    noFourPiece: recipe(),
+    caveats: {},
+    ...over,
+  } as unknown as CalibrationResult);
+
+  it('refuses a build that is not wearing five pieces', () => {
+    const page = pageWith();
+    page['equippedIds'].set(['a', 'b']);
+
+    expect(page['comparatorFrom']([], calibration())).toBeNull();
+  });
+
+  it('refuses when a worn piece was not among the searched candidates', () => {
+    // A main-stat filter can remove a piece the build is wearing. Its stats are then not to
+    // hand, and inventing them would put every percentage on the page slightly wrong.
+    const page = pageWith();
+    page['equippedIds'].set(['a', 'b', 'c', 'd', 'e']);
+
+    expect(page['comparatorFrom']([], calibration())).toBeNull();
+  });
+
+  it('refuses a build wearing a 4-piece nobody calibrated', () => {
+    // Scoring it on another set's recipe would credit a bonus it does not have — and unlike
+    // the same mistake in `upgrades`, this number is what every row is a percentage *of*.
+    const page = pageWith();
+    const worn = ['a', 'b', 'c', 'd', 'e'].map((id, i) => ({
+      id, slot: SLOT_ORDER[i], set_id: 99, stats: {}, main_stat: 'x',
+    })) as unknown as KernelCandidate[];
+    page['equippedIds'].set(['a', 'b', 'c', 'd', 'e']);
+
+    expect(page['comparatorFrom'](worn, calibration())).toBeNull();
+  });
+
+  it('scores a build with no 4-piece on the no-four-piece recipe', () => {
+    const page = pageWith();
+    const worn = ['a', 'b', 'c', 'd', 'e'].map((id, i) => ({
+      id, slot: SLOT_ORDER[i], set_id: i, stats: {}, main_stat: 'x',
+    })) as unknown as KernelCandidate[];
+    page['equippedIds'].set(['a', 'b', 'c', 'd', 'e']);
+
+    const found = page['comparatorFrom'](worn, calibration());
+
+    expect(found).not.toBeNull();
+    expect(found?.label).toBe('your current build');
+  });
+
+  it('scores the build it is given, on the matching four-piece recipe', () => {
+    // A recipe with a real hit, so the number is not zero. The first version of this test used
+    // an empty `hits` array and asserted `0 === 0` — it would have passed against any
+    // implementation, including one that returned a constant.
+    const page = pageWith();
+    const worn = SLOT_ORDER.map((slot, i) => ({
+      id: `p${i}`, slot, set_id: 7, stats: { atk_pct: 0.1 }, main_stat: 'x',
+    })) as unknown as KernelCandidate[];
+    page['equippedIds'].set(worn.map((p) => (p as unknown as { id: string }).id));
+
+    const found = page['comparatorFrom'](
+      worn, calibration({ byFourPieceSet: new Map([[7, scoring()]]) }),
+    );
+
+    expect(found?.damage).toBeGreaterThan(0);
+  });
+
+  it('does not depend on the order the pieces come in', () => {
+    // A property, not a guarded trap: `candidateStatsFrom` sums the pools, so order cannot
+    // matter. Recorded because the code orders them anyway — to match `winningPools` — and a
+    // reader is owed the reason that ordering is cosmetic rather than load-bearing.
+    const page = pageWith();
+    const worn = SLOT_ORDER.map((slot, i) => ({
+      id: `p${i}`, slot, set_id: 7, stats: { atk_pct: i / 10 }, main_stat: 'x',
+    })) as unknown as KernelCandidate[];
+    page['equippedIds'].set(worn.map((p) => (p as unknown as { id: string }).id));
+
+    const inOrder = page['comparatorFrom'](
+      worn, calibration({ byFourPieceSet: new Map([[7, scoring()]]) }),
+    );
+    const reversed = page['comparatorFrom'](
+      [...worn].reverse(), calibration({ byFourPieceSet: new Map([[7, scoring()]]) }),
+    );
+
+    expect(inOrder?.damage).toBeGreaterThan(0);
+    expect(reversed?.damage).toBe(inOrder?.damage);
+  });
+
+  it('falls back to the top result when no comparator can be established', async () => {
+    const page = pageWith();
+    await page['load']();
+    await page['run']();
+
+    // Rank 1 against itself is level, so it reads 0% and the rest are negative — the owner's
+    // stated fallback for a character with no build.
+    expect(page['comparator']()).toBeNull();
+    expect(page['rows']()[0].percent).toBe(0);
+    for (const row of page['rows']().slice(1)) {
+      expect(row.percent!).toBeLessThanOrEqual(0);
+    }
+  });
+});
+
+describe('OptimizePage artifact cards', () => {
+  /** §16 — the pieces a row won with, fetched by id after the search. */
+  it('never asks for an empty set of ids', async () => {
+    // **The trap this guards.** `?ids=` with an empty array is dropped from the query string
+    // by the HTTP client, so the server sees no filter and answers with the *entire*
+    // inventory — the caller asking for nothing getting everything. With no results there is
+    // nothing to fetch, so the call must not be made at all.
+    const list = vi.fn().mockResolvedValue({ items: [], total: 0 });
+    const page = pageWith({ artifacts: { list } as unknown as Partial<ArtifactsService> });
+
+    await page['load']();
+    await page['loadCards']([]);
+
+    // Not `not.toHaveBeenCalled()`: §11 made `selectBuild` fetch the build's own pieces
+    // through the same method, so the broad assertion would fail for an unrelated reason and
+    // say nothing about the case this test is named for.
+    expect(list.mock.calls.filter(([filters]) => 'ids' in (filters ?? {}))).toEqual([]);
+    expect(page['cards']().size).toBe(0);
+  });
+
+  it('leaves the cards off rather than failing the results when the fetch dies', async () => {
+    // A ranking is complete without cards — rank, damage and five slot names. Replacing a
+    // good answer with an error because an enrichment failed is the wrong trade.
+    const page = pageWith({
+      artifacts: {
+        list: vi.fn().mockRejectedValue(new Error('boom')),
+      } as unknown as Partial<ArtifactsService>,
+    });
+    await page['load']();
+
+    await page['loadCards']([
+      { rank: 1, damage: 1, artifactIds: ['a'], pieces: ['Flower'] },
+    ]);
+
+    expect(page['cards']().size).toBe(0);
+  });
+
+  it('discards a reply that arrives after the results it was fetched for', async () => {
+    // The single-hit search is fast and the rotation search is minutes, so both can be in
+    // flight. A slow reply landing under a newer ranking would show the previous search's
+    // pieces beside the current search's numbers.
+    const page = pageWith({
+      artifacts: {
+        list: vi.fn().mockResolvedValue({
+          items: [{
+            id: 'stale', slot: 'equip_bracer', rarity: 'five_star', level: 20,
+            main_stat_type: 'FIGHT_PROP_HP', main_stat_value: 4780, substats: [],
+            substat_analysis: [], artifact_set_id: null, set_name: null,
+          }],
+          total: 1,
+        }),
+        options: vi.fn().mockResolvedValue({ stats: [], slots: [], rarities: [] }),
+      } as unknown as Partial<ArtifactsService>,
+    });
+    await page['load']();
+
+    // `rows()` is empty here, so the ids this call was made for match nothing on screen.
+    await page['loadCards']([
+      { rank: 1, damage: 1, artifactIds: ['stale'], pieces: ['Flower'] },
+    ]);
+
+    expect(page['cards']().size).toBe(0);
+  });
+
+  it('returns a row\'s cards in the order the row names its pieces', () => {
+    const page = pageWith();
+    const card = (id: string) => ({
+      id, icon: null, setName: 'S', slot: 'Flower', level: 20, mainStat: 'HP 4,780',
+      substats: [],
+    });
+    page['cards'].set(new Map([['b', card('b')], ['a', card('a')]]));
+
+    const got = page['cardsFor'](
+      { rank: 1, damage: 1, artifactIds: ['a', 'b'], pieces: [] },
+    );
+
+    expect(got.map((c) => c.id)).toEqual(['a', 'b']);
+  });
+
+  it('skips a piece it has no card for rather than leaving a hole', () => {
+    const page = pageWith();
+    page['cards'].set(new Map([['a', {
+      id: 'a', icon: null, setName: 'S', slot: 'Flower', level: 20, mainStat: 'HP 4,780',
+      substats: [],
+    }]]));
+
+    const got = page['cardsFor'](
+      { rank: 1, damage: 1, artifactIds: ['a', 'missing'], pieces: [] },
+    );
+
+    expect(got.map((c) => c.id)).toEqual(['a']);
+  });
+});
+
+describe('OptimizePage defaults', () => {
+  /**
+   * §15 — the page must not state a choice the user did not make.
+   *
+   * These construct the page *without* `rememberSelections()`, which is the one place in this
+   * file that matters: the harness seeds a returning user, so a fresh one is only visible if
+   * a test clears the memory itself.
+   */
+  it('selects no build when nothing is remembered', async () => {
+    localStorage.clear();
+    const page = pageWith();
+    localStorage.clear();
+
+    await page['load']();
+
+    // It opened on Aino before this, because she sorts first — which reads as a
+    // recommendation rather than as the arbitrary pick it was.
+    expect(page['buildId']()).toBe('');
+    expect(page['builds']().length).toBeGreaterThan(0);
+  });
+
+  it('selects no rotation when nothing is remembered', async () => {
+    localStorage.clear();
+    const page = pageWith({
+      rotations: {
+        list: vi.fn().mockResolvedValue({
+          items: [{ id: 'r1', name: 'Burst' }], total: 1, offset: 0, limit: 50,
+        }),
+      } as unknown as Partial<RotationsService>,
+    });
+    localStorage.clear();
+
+    await page['load']();
+
+    expect(page['rotations']()).toHaveLength(1);
+    expect(page['rotationId']()).toBe('');
+  });
+
+  it('restores a remembered build', async () => {
+    const page = pageWith();
+    localStorage.setItem('mistilteinn:optimize:buildId', 'b1');
+
+    await page['load']();
+
+    expect(page['buildId']()).toBe('b1');
+  });
+
+  it('forgets a remembered build that has since been deleted', async () => {
+    // One `pageWith` per test: TestBed refuses a second configure once instantiated.
+    const page = pageWith();
+    localStorage.setItem('mistilteinn:optimize:buildId', 'deleted-since');
+
+    await page['load']();
+
+    // Not `builds[0]`: a stale id falls back to nothing, or §15 would be undone one layer
+    // down from where anyone would look for it.
+    expect(page['buildId']()).toBe('');
+  });
+
+  it('remembers a build the user picks', async () => {
+    const page = pageWith();
+    await page['load']();
+
+    await page['selectBuild']('b1');
+
+    expect(localStorage.getItem('mistilteinn:optimize:buildId')).toBe('b1');
+  });
+});
+
 describe('OptimizePage — the rotation objective', () => {
   /** `protected` members are reachable at runtime; the cast keeps the spec honest about that. */
   const at = (page: unknown, key: string) => (page as Record<string, never>)[key];
@@ -782,11 +1191,17 @@ describe('OptimizePage — the rotation objective', () => {
     expect(seenMidRun.every((r) => r === null)).toBe(true);
   });
 
-  it('starts on the single-hit objective, which stays reachable', () => {
-    // OQ-W4: deleting a fast honest answer because a slow better one exists is a downgrade.
+  it('starts on the rotation objective, with single-hit still reachable', () => {
+    // §15, and the reverse of what this test used to pin. OQ-W4's point stands — deleting a
+    // fast honest answer because a slow better one exists is a downgrade — but *which of two
+    // kept tools is in front* is a different question, and the owner's answer is the rotation
+    // one: "it's the primary upgrade we provide so keep it at the forefront."
+    //
+    // Choosing the tool is not the same as inventing the user's data, which is why this
+    // starts populated while `buildId` and `rotationId` start empty.
     const page = pageWith();
 
-    expect((at(page, 'objective') as () => string)()).toBe('hit');
+    expect((at(page, 'objective') as () => string)()).toBe('rotation');
   });
 
   it('does not calibrate when no rotation is chosen', async () => {

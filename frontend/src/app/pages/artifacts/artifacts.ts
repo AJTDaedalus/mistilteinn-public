@@ -5,6 +5,13 @@ import { apiErrorMessage } from '../../api/api-error';
 import { CardPicker, type CardOption } from '../../shared/card-picker/card-picker';
 import { isFilterableMainStat, sortMainStats } from '../../shared/stat-order';
 import { CatalogueIcon } from '../../shared/icon/icon';
+import { describeStat as describe } from '../../shared/stat-label';
+import {
+  barsTitle,
+  rollBars,
+  rollValuePercent,
+  substatReadings,
+} from '../../shared/substat-bars/substat-bars';
 import { CatalogueService } from '../catalogue/catalogue.service';
 import {
   ArtifactsService,
@@ -27,12 +34,15 @@ export interface ArtifactSubstat {
   rolls: number | null;
   /**
    * One entry per roll, `0` (worst tier) to `3` (best) — null unless exactly one
-   * decomposition fits, so a bar is never coloured by a guess.
+   * decomposition fits; where several of that length fit, one is read and `tiersExact` is
+   * false.
    *
    * When `rolls` is known but this is not, the card draws that many *undifferentiated*
    * bars: the count is established, the individual qualities are not.
    */
   tiers: number[] | null;
+  /** True when `tiers` is the only combination of its length rather than one reading. */
+  tiersExact: boolean;
   /** The line as a multiple of one best-case roll. `3.2` reads as "3.2 max rolls". */
   rollValue: number | null;
   /** True when the count is the likeliest reading rather than the only one. */
@@ -108,21 +118,6 @@ export function comparator(key: SortKey): (a: ArtifactRow, b: ArtifactRow) => nu
   }
 }
 
-/**
- * `0.466` → `46.6%`, `4780` → `4,780`. The flag decides; the page does not guess.
- *
- * Non-numeric input is rendered rather than thrown on. `substats` is a JSONB column with no
- * schema behind it, so a row written by an older importer or by hand can hold anything — and
- * `.toFixed` on that is a `TypeError` inside a computed, which takes out **the entire
- * inventory** rather than one substat. Showing the raw value keeps the bad row visible and
- * the other 799 readable.
- */
-export function formatStat(value: unknown, percentage: boolean): string {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return String(value);
-  return percentage
-    ? `${(value * 100).toFixed(1)}%`
-    : value.toLocaleString(undefined, { maximumFractionDigits: 0 });
-}
 
 /**
  * The artifact inventory, and the GOOD import that fills it.
@@ -211,17 +206,10 @@ export class ArtifactsPage implements OnInit {
       stars: stars.get(piece.rarity) ?? 0,
       level: piece.level,
       mainStat: describe(piece.main_stat_type, piece.main_stat_value, stats),
-      substats: (piece.substats as { stat?: string; value?: unknown }[]).map(
-        (sub, index) => {
-          const found = piece.substat_analysis?.[index];
-          return {
-            label: describe(sub?.stat ?? 'unknown', sub?.value, stats),
-            rolls: found?.rolls ?? null,
-            tiers: found?.roll_tiers ?? null,
-            rollValue: found?.roll_value ?? null,
-            estimated: found?.estimated ?? false,
-          };
-        },
+      substats: substatReadings(
+        piece.substats as { stat?: string; value?: unknown }[],
+        piece.substat_analysis,
+        (stat, value) => describe(stat, value, stats),
       ),
       equipped: piece.build_id !== null,
       setId: piece.artifact_set_id ?? '',
@@ -389,34 +377,16 @@ export class ArtifactsPage implements OnInit {
   }
 
   /**
-   * The bars to draw for one substat: the tier of each roll, or `-1` per roll when only the
-   * count is known.
+   * The bars, the tooltip and the roll-value column all come from `shared/substat-bars`.
    *
-   * `-1` renders undifferentiated rather than as tier 0 — the worst tier and "we do not know
-   * which tier" are different claims, and colouring the second as the first would tell the
-   * reader a line is bad on no evidence.
+   * They were defined here first and the optimize page needed the same three (§16). What is
+   * shared is not the markup but **what a bar claims** — an unknown tier is not tier zero, an
+   * estimated count is not a fact, a tie is weaker than an estimate — and a second copy would
+   * have kept the colours and quietly lost the caveats.
    */
-  protected rollBars(sub: ArtifactSubstat): number[] {
-    if (sub.tiers) return sub.tiers;
-    if (!sub.rolls) return [];
-    return Array.from({ length: Math.min(sub.rolls, 6) }, () => -1);
-  }
-
-  /** What the bars are claiming, for the `title`. Unlabelled grey bars mean nothing. */
-  protected barsTitle(sub: ArtifactSubstat): string | null {
-    if (!sub.rolls) return null;
-    const rolls = `${sub.rolls} roll${sub.rolls === 1 ? '' : 's'}`;
-    // **Estimated first.** Checking `tiers` first returned the confident wording for a
-    // guessed count, so the one case that most needs the caveat was the one that lost it.
-    if (sub.estimated) return `${rolls} — the likeliest reading, not the only one`;
-    if (sub.tiers) return `${rolls}, shaded by how high each rolled`;
-    return `${rolls}; which of them rolled high cannot be told apart`;
-  }
-
-  /** `3.2` → `320`, for the roll-value column. */
-  protected rollValuePercent(sub: ArtifactSubstat): number | null {
-    return sub.rollValue === null ? null : Math.round(sub.rollValue * 100);
-  }
+  protected readonly rollBars = rollBars;
+  protected readonly barsTitle = barsTitle;
+  protected readonly rollValuePercent = rollValuePercent;
 
   /**
    * The piece's roll value as **what it got out of what those rolls could have been**.
@@ -560,16 +530,5 @@ export class ArtifactsPage implements OnInit {
   }
 }
 
-function describe(
-  key: string,
-  value: unknown,
-  stats: Map<string, { display: string; percentage: boolean }>,
-): string {
-  const stat = stats.get(key);
-  // Falls back to the raw key rather than hiding the stat: a piece carrying something the
-  // vocabulary does not know is worth seeing, not worth silently dropping from the row.
-  if (!stat) return `${key} ${value}`;
-  return `${stat.display} ${formatStat(value, stat.percentage)}`;
-}
 
 

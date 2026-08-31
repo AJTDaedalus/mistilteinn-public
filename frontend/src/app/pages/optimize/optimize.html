@@ -117,7 +117,7 @@
       @if (objective() === 'rotation') {
         <label>
           Rotation
-          <select [ngModel]="rotationId()" (ngModelChange)="rotationId.set($event)" aria-label="Rotation">
+          <select [ngModel]="rotationId()" (ngModelChange)="pickRotation($event)" aria-label="Rotation">
             @for (option of rotations(); track option.id) {
               <option [value]="option.id">{{ option.name }}</option>
             }
@@ -318,34 +318,17 @@
     <!-- Both of these are free once a rotation search has run: the page still holds the
          calibrated recipe, and an evaluation is 0.048 µs per hit. Calibration was the
          expensive part and it is already paid for. -->
-    @if (marginalPerRoll().length) {
-      <section class="marginal">
-        <h2>What one more roll is worth</h2>
-        <p class="hint">
-          Damage added by a single maximum 5★ roll of each substat, on the winning build over
-          this rotation. Flat ATK, HP and DEF are left out — their worth depends on a base this
-          table does not carry. Stats the recipe cannot respond to are left out too, rather
-          than shown as zero: a calibration freezes what it does not read, and Elemental
-          Mastery is usually one of them.
-        </p>
-        <ul class="marginal__rows">
-          @for (row of marginalPerRoll(); track row.quantity) {
-            <li>
-              <span class="marginal__stat">{{ row.quantity }}</span>
-              <span class="mono">{{ row.delta | number: '1.0-0' }}</span>
-            </li>
-          }
-        </ul>
-      </section>
-    }
 
     @if (upgrades().length) {
       <section class="upgrades">
-        <h2>Pieces that would beat the winner</h2>
+        <!-- Renamed: the owner read "pieces that would beat the winner" as contradictory,
+             and fairly — the winner is by definition what won. These are pieces *not in* the
+             winning five that would improve it if swapped into their slot. The scoring defect
+             behind the same section is §10 and is not a wording problem. -->
+        <h2>Better pieces for each slot</h2>
         <p class="hint">
-          Scored one slot at a time against the winning build, within this recipe. A piece from
-          a different 4-piece set is understated here, because changing the set changes which
-          recipe applies.
+          One slot at a time, against the winning build. A swap that would drop you below four
+          of the set is scored without the set bonus, so it has to pay for it and still win.
         </p>
         @for (group of upgrades(); track group.slot) {
           <div class="upgrades__slot">
@@ -355,6 +338,12 @@
                 <li>
                   <span class="mono">+{{ row.delta | number: '1.0-0' }}</span>
                   <span class="muted">{{ row.label }}</span>
+                  <!-- Said on the row, not only in the hint above: this one costs the 4-piece
+                       bonus, and its delta is already net of losing it. -->
+                  @if (row.breaksSet) {
+                    <span class="warn" title="This piece breaks the 4-piece bonus. The number
+beside it is already what you would gain after losing that bonus.">costs the set bonus</span>
+                  }
                 </li>
               }
             </ul>
@@ -371,7 +360,7 @@
                HeartInstructorThe Exile…" — which is how it looked against a real inventory. A
                separator inside the element is the fix; relying on inter-element whitespace is
                not. -->
-          Not searched, because no recipe covers them:
+          You own enough for a 4-piece of these, but they were not scored:
           @for (setId of notes.uncoveredSets; track setId; let last = $last) {
             <span class="mono">{{ setLabel(setId) }}{{ last ? '' : ', ' }}</span>
           }
@@ -445,6 +434,20 @@
         </span>
       </p>
 
+      <!-- Said once, above the list, so the percentages have a stated referent. Without it a
+           column of signed numbers is a comparison to nothing in particular. -->
+      @if (comparator(); as against) {
+        <p class="hint">
+          Percentages are against {{ against.label }}
+          (<span class="mono">{{ against.damage | number: '1.0-1' }}</span>).
+        </p>
+      } @else if (rows().length) {
+        <p class="hint">
+          Percentages are against the top result — this character has no scoreable build to
+          compare with yet.
+        </p>
+      }
+
       @if (equipped(); as note) {
         <p class="hint" role="status">{{ note }}</p>
       }
@@ -452,9 +455,34 @@
       <ol class="results">
         @for (row of rows(); track row.rank) {
           <li [class.chosen]="explained()?.rank === row.rank">
+            <div class="result__row">
             <span class="rank mono">{{ row.rank }}</span>
             <span class="damage mono">{{ row.damage | number: '1.0-1' }}</span>
-            <span class="pieces">{{ row.pieces.join(' · ') }}</span>
+            <!-- §11 — every row against the comparator: green above, red below, grey level
+                 with it. Null is not zero: no comparator at all renders nothing, because a
+                 "0.0%" would claim this build matches something the page could not compute. -->
+            @if (row.percent !== null && row.percent !== undefined) {
+              <span
+                class="delta mono"
+                [class.delta--up]="row.percent > 0.0001"
+                [class.delta--down]="row.percent < -0.0001"
+              >{{ row.percent > 0 ? '+' : '' }}{{ row.percent | percent: '1.1-1' }}</span>
+            }
+            <!-- §16: the five pieces as cards. Ten rows of `Flower · Plume · Sands · Goblet ·
+                 Circlet` said nothing about *which* artifacts won, which is the one thing a
+                 ranked list is for. The slot names stay as the fallback: the cards are
+                 fetched after the search and a row is complete without them. -->
+            @if (cardsFor(row); as cards) {
+              @if (cards.length) {
+                <span class="pieces pieces--cards">
+                  @for (card of cards; track card.id) {
+                    <artifact-card [piece]="card" [compact]="true" />
+                  }
+                </span>
+              } @else {
+                <span class="pieces">{{ row.pieces.join(' · ') }}</span>
+              }
+            }
             <button type="button" (click)="explainRow(row)" [disabled]="explaining()">
               Details
             </button>
@@ -470,6 +498,100 @@
             >
               {{ equipping() ? 'Equipping…' : 'Equip' }}
             </button>
+            </div>
+            <!-- §12 — the pane expands from the row whose Details was pressed, rather
+                 than appearing at the bottom of the page. It used to sit below the whole
+                 list, so on a ten-row result the explanation for row 2 rendered a screen
+                 away from row 2, under a heading naming a rank the reader had to match up
+                 by eye. -->
+            @if (pairing(); as paired) {
+              @if (paired.row.rank === row.rank) {
+                <div class="explanation">
+                  <h2>How #{{ paired.shown.rank }} adds up</h2>
+
+                  <!-- §16, second half. The row shows the same five pieces compact; here they
+                       have room for the roll-value column, which is the number that actually
+                       answers "is this a good line". -->
+                  @if (cardsFor(row); as cards) {
+                    @if (cards.length) {
+                      <div class="explanation__pieces">
+                        @for (card of cards; track card.id) {
+                          <artifact-card [piece]="card" />
+                        }
+                      </div>
+                    }
+                  }
+
+                  <!-- Two implementations of one chain, shown together rather than reconciled: the
+                       browser's f32 kernel and the server's f64. C.2 measured their divergence at up
+                       to 3.4e-07, so a difference of that order is the tolerance doing its job — and
+                       a larger one is a real disagreement that should be visible. -->
+                  <p class="agreement">
+                    <span class="mono">{{ paired.shown.result.damage | number: '1.0-1' }}</span>
+                    from the server,
+                    <span class="mono">{{ paired.row.damage | number: '1.0-1' }}</span>
+                    from the search
+                    @if (divergence(); as delta) {
+                      <span class="muted mono">· differing by {{ delta | percent: '1.0-6' }}</span>
+                    }
+                  </p>
+
+                  <ul class="stats">
+                    @for (stat of paired.shown.result.stats; track stat.quantity) {
+                      <li>
+                        <span class="quantity">{{ stat.quantity }}</span>
+                        <span class="figure mono">{{ stat.sum_of_parts | number: '1.0-4' }}</span>
+                        <ul class="parts mono">
+                          @for (source of stat.sources; track $index) {
+                            <li>{{ source }}</li>
+                          }
+                        </ul>
+                      </li>
+                    }
+                  </ul>
+
+                  <!-- §13/§10 — moved under details at the owner's direction, "so it's
+                       relevant to the set the user is looking at". As a standalone section it
+                       was a fact about rank 1 printed beside a list of ten, and a reader
+                       looking at row 3 had no reason to know it did not describe row 3. -->
+                  @if (marginalForExpanded(); as marginal) {
+                    @if (marginal.length) {
+                      <h3>Damage per substat roll</h3>
+                      <!-- §14, "a plot is worth a thousand words" — the bar is the plot. It
+                           is a table cell with a width, not a chart library: the CSP forbids
+                           a CDN, and a ranked comparison of eight values is exactly what a
+                           bar chart is for. The number stays beside it, because the bar
+                           answers "which" and only the number answers "how much". -->
+                      <table class="marginal">
+                        <tbody>
+                          @for (line of marginal; track line.quantity) {
+                            <tr>
+                              <td>{{ line.quantity }}</td>
+                              <td class="marginal__plot">
+                                <span
+                                  class="marginal__bar"
+                                  [style.width.%]="barWidth(line.delta, marginal[0].delta)"
+                                ></span>
+                              </td>
+                              <td class="mono">{{ line.delta | number: '1.0-0' }}</td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    }
+                  }
+
+                  @if (paired.shown.result.uncited.length) {
+                    <h3>Not included</h3>
+                    <ul class="uncited">
+                      @for (note of paired.shown.result.uncited; track $index) {
+                        <li><strong>{{ note.what }}</strong> — {{ note.why }}</li>
+                      }
+                    </ul>
+                  }
+                </div>
+              }
+            }
           </li>
         } @empty {
           <li class="muted">
@@ -478,48 +600,6 @@
         }
       </ol>
 
-      @if (pairing(); as paired) {
-        <div class="explanation">
-          <h2>Why #{{ paired.shown.rank }} scores what it scores</h2>
-
-          <!-- Two implementations of one chain, shown together rather than reconciled: the
-               browser's f32 kernel and the server's f64. C.2 measured their divergence at up
-               to 3.4e-07, so a difference of that order is the tolerance doing its job — and
-               a larger one is a real disagreement that should be visible. -->
-          <p class="agreement">
-            <span class="mono">{{ paired.shown.result.damage | number: '1.0-1' }}</span>
-            from the server,
-            <span class="mono">{{ paired.row.damage | number: '1.0-1' }}</span>
-            from the search
-            @if (divergence(); as delta) {
-              <span class="muted mono">· differing by {{ delta | percent: '1.0-6' }}</span>
-            }
-          </p>
-
-          <ul class="stats">
-            @for (stat of paired.shown.result.stats; track stat.quantity) {
-              <li>
-                <span class="quantity">{{ stat.quantity }}</span>
-                <span class="figure mono">{{ stat.sum_of_parts | number: '1.0-4' }}</span>
-                <ul class="parts mono">
-                  @for (source of stat.sources; track $index) {
-                    <li>{{ source }}</li>
-                  }
-                </ul>
-              </li>
-            }
-          </ul>
-
-          @if (paired.shown.result.uncited.length) {
-            <h3>Not included</h3>
-            <ul class="uncited">
-              @for (note of paired.shown.result.uncited; track $index) {
-                <li><strong>{{ note.what }}</strong> — {{ note.why }}</li>
-              }
-            </ul>
-          }
-        </div>
-      }
     }
   }
 </section>

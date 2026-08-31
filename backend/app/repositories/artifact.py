@@ -48,6 +48,7 @@ class ArtifactRepository(BaseRepository[Artifact]):
         set_id: str | None,
         equipped: bool | None,
         build_id: str | None = None,
+        ids: Sequence[str] | None = None,
     ) -> Select[tuple[Artifact]]:
         stmt = select(Artifact)
         if self.owner_id is not None:
@@ -66,6 +67,12 @@ class ArtifactRepository(BaseRepository[Artifact]):
         # and filtering on the client scales with the whole inventory rather than with five.
         if build_id is not None:
             stmt = stmt.where(Artifact.build_id == build_id)
+        # **`is not None`, not truthiness.** An empty list is a real filter meaning "none of
+        # them", and `if ids:` would read it as "no filter" and answer with the whole
+        # inventory — the caller asking for nothing getting everything, which is the worst
+        # available direction for a filter to fail in.
+        if ids is not None:
+            stmt = stmt.where(Artifact.id.in_(ids))
         return stmt
 
     async def search(
@@ -75,6 +82,7 @@ class ArtifactRepository(BaseRepository[Artifact]):
         set_id: str | None = None,
         equipped: bool | None = None,
         build_id: str | None = None,
+        ids: Sequence[str] | None = None,
         offset: int = 0,
         limit: int = 100,
     ) -> Sequence[Artifact]:
@@ -85,7 +93,9 @@ class ArtifactRepository(BaseRepository[Artifact]):
         looks deliberate and is wrong for anything that iterates the result.
         """
         stmt = (
-            self._filtered(slot=slot, set_id=set_id, equipped=equipped, build_id=build_id)
+            self._filtered(
+                slot=slot, set_id=set_id, equipped=equipped, build_id=build_id, ids=ids,
+            )
             .options(_with_set())
             .order_by(artifact_slot_sort_order(), Artifact.level.desc(), Artifact.id)
             .offset(offset)
@@ -101,9 +111,12 @@ class ArtifactRepository(BaseRepository[Artifact]):
         set_id: str | None = None,
         equipped: bool | None = None,
         build_id: str | None = None,
+        ids: Sequence[str] | None = None,
     ) -> int:
         """Total matching `search`'s filters, so a filtered page's `total` is its own."""
-        stmt = self._filtered(slot=slot, set_id=set_id, equipped=equipped, build_id=build_id)
+        stmt = self._filtered(
+            slot=slot, set_id=set_id, equipped=equipped, build_id=build_id, ids=ids,
+        )
         result = await self.session.execute(
             select(func.count()).select_from(stmt.subquery()),
         )

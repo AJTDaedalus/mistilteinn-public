@@ -48,18 +48,24 @@ def test_a_count_beyond_the_reachable_maximum_is_excluded() -> None:
 
 
 def test_the_count_survives_when_only_the_individual_values_are_ambiguous() -> None:
-    """Several decompositions that agree on how many rolls: report the count, not the values.
+    """Several decompositions that agree on how many rolls: one reading, flagged as such.
 
     11.0% Energy Recharge at 5★ is two rolls whichever way it is split (4.53+6.48, 5.18+5.83,
     …), so the count is established even though no single pair is. **10.2% of a real
-    inventory lands here**, and refusing the count too would throw away a well-founded number
-    to avoid publishing an unfounded one.
+    inventory lands here.**
+
+    This used to publish no tiers at all. Genshin Optimizer takes the first fitting pair and
+    colours the bars, and that is the better answer: the readings differ by a tier on one
+    roll, while a grey bar says "this line never rolled". `tiers_exact` keeps the caveat that
+    GO drops — `roll_values` stays `None`, because a float claims more than a bar does.
     """
     found = analyse(stars=5, stat="FIGHT_PROP_CHARGE_EFFICIENCY", value=0.11)
 
     assert found.rolls == 2
     assert found.roll_values is None
-    assert found.roll_tiers is None
+    assert found.roll_tiers is not None
+    assert len(found.roll_tiers) == 2
+    assert found.tiers_exact is False
 
 
 def test_a_count_ambiguous_total_reports_nothing_but_the_ratio() -> None:
@@ -227,18 +233,35 @@ def test_a_line_settled_on_its_own_is_never_marked_estimated() -> None:
     assert found[0].roll_tiers is not None
 
 
-def test_an_estimated_count_never_carries_per_roll_tiers() -> None:
-    """A guessed count can still have exactly one decomposition. Publishing its tiers painted
-    bars *as fact* on a number nothing established — `roll_tiers` promises otherwise.
+def test_an_estimated_count_carries_a_reading_but_never_calls_it_exact() -> None:
+    """The reverse of this module's earlier rule, and the reason the bars were mostly grey.
+
+    Withholding tiers from an estimated count stripped them from lines that decomposed
+    perfectly well, because some *other* line on the piece had needed the budget solve. On
+    screen that is indistinguishable from "no rolls here". The count is still a guess, so the
+    reading is published with `tiers_exact` False rather than presented as fact.
     """
-    for f in resolve_artifact(stars=5, level=20, substats=[
+    # A real +20 piece from a 2,370-artifact export. **The values are load-bearing**: the
+    # four this test used to carry produced no estimate at all, so its `if f.estimated:` body
+    # never ran and it passed while checking nothing.
+    found = resolve_artifact(stars=5, level=20, substats=[
+        ("FIGHT_PROP_CRITICAL", 0.039),
         ("FIGHT_PROP_ATTACK_PERCENT", 0.169),
-        ("FIGHT_PROP_CRITICAL", 0.109),
-        ("FIGHT_PROP_CRITICAL_HURT", 0.272),
-        ("FIGHT_PROP_HP_PERCENT", 0.099),
-    ]):
-        if f.estimated:
-            assert f.roll_tiers is None, "coloured a guess"
+        ("FIGHT_PROP_CHARGE_EFFICIENCY", 0.11),
+        ("FIGHT_PROP_ELEMENT_MASTERY", 42.0),
+    ])
+    estimated = [f for f in found if f.estimated]
+
+    assert estimated, "this piece is the estimated case"
+    for f in estimated:
+        assert f.roll_tiers is not None, "a guessed count still shows what it read"
+        assert len(f.roll_tiers) == f.rolls
+        assert f.tiers_exact is False, "published a guess as fact"
+
+    # And the point of the change: a line that decomposes on its own keeps its exact reading
+    # even though the *piece* needed the budget solve elsewhere.
+    assert found[0].roll_tiers == (3,)
+    assert found[0].tiers_exact is True
 
 
 def test_a_piece_whose_lines_do_not_decompose_is_left_alone() -> None:
