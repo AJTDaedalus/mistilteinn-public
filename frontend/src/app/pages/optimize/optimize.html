@@ -351,6 +351,19 @@
         </ul>
       }
     }
+    <!-- §9 — the number the instability warning above could not give. `recipe-energy.ts`
+         computed this all along and nothing fed it a sweep or read its answer. -->
+    @if (energyGap(); as gap) {
+      <p class="warn" role="alert">
+        This build has
+        <span class="mono">{{ gap.has | percent: '1.0-1' }}</span>
+        Energy Recharge and the rotation needs
+        <span class="mono">{{ gap.needs | percent: '1.0-1' }}</span>
+        to run the same way every time —
+        <span class="mono">{{ gap.shortfall | percent: '1.0-1' }}</span> more.
+      </p>
+    }
+
     @if (asideCaveats(); as aside) {
       @if (aside.unstable.length || aside.staleConversions.length) {
         <p class="hint">

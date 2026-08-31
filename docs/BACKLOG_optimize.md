@@ -207,7 +207,29 @@ energy-marginal, which is most real ones.
 ample ER and once below what the rotation needs. Stable in the first and unstable in the
 second confirms it; unstable in both means the cause is elsewhere.
 
-## 9. The subsystem that would have explained §8 — **still not wired, and now measured**
+## 9. The subsystem that would have explained §8 — **WIRED**
+
+Both ends were dead: nothing passed `calibrate` an `energySweep`, so `minimumEnergyRecharge` was
+always null, and nothing read the field either.
+
+**Now:** the calibration walks an ER ladder and the page reports the gap —
+
+> This build has 12% Energy Recharge and the rotation needs 30% to run the same way every
+> time — 18% more.
+
+**It sweeps only when there is something to diagnose:** the rotation must already be unstable
+*and* the ability whose count varied must be a burst. A steady rotation has no threshold worth
+finding, and instability somewhere other than a burst is not an energy problem — sweeping either
+spends gcsim runs to produce a number about nothing. Six rungs at 20 iterations, against the
+100 a calibration already costs.
+
+**A null minimum stays silent.** An unmeasured threshold is not a passed one, but warning on
+every search that skipped the measurement is the cry-wolf shape `recipeIsShaky` was thresholded
+to avoid. The instability warning already names the ability that moved; this adds the number
+when there is one.
+
+## 9a. The original note
+
 
 `recipe-energy.ts` has **no input and no consumer**: `recipe-optimize.service.ts` never passes
 `energySweep` to `calibrate`, so `minimumEnergyRecharge` is always null, and nothing reads the

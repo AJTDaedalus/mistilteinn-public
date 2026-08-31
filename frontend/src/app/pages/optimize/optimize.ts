@@ -35,6 +35,7 @@ import type { ArtifactCardModel } from '../../shared/artifact-card/artifact-card
 import { describeStat } from '../../shared/stat-label';
 import { substatReadings } from '../../shared/substat-bars/substat-bars';
 import { groupStats, type StatAccount, type StatGroup } from '../../shared/stat-groups';
+import { energyShortfall, type EnergyShortfall } from '../../sim/recipe-energy';
 import {
   candidateStatsFrom,
   liveQuantitiesFor,
@@ -1465,6 +1466,30 @@ export class OptimizePage implements OnInit {
       ),
     };
   }
+
+  /**
+   * Whether the winning build can actually perform the rotation — §9.
+   *
+   * **`recipe-energy.ts` had no input and no consumer**: nothing passed `calibrate` a sweep, so
+   * `minimumEnergyRecharge` was always null, and nothing read it either. Both ends dead, in a
+   * module whose own docstring says why it matters — *a build that cannot burst when the
+   * rotation says to burst is not performing that rotation*.
+   *
+   * Null when the build clears the threshold, **and also when no threshold was measured**. The
+   * sweep only runs for an unstable rotation whose burst is what varied, so most searches have
+   * no minimum — and an unmeasured threshold is not a passed one. `recipe-energy` makes the
+   * caller that skipped the measurement say so; here that is the warning above, which already
+   * names the ability whose count moved.
+   */
+  protected readonly energyGap = computed<EnergyShortfall | null>(() => {
+    const recipe = this.scoredRecipe();
+    const pools = this.winningPools();
+    if (!recipe || !pools) return null;
+    // The winner's artifact-borne ER — the same pools the ranking scored it with, so the
+    // number in the warning is the number that produced the row above it.
+    const has = pools.reduce((sum, pool) => sum + (pool['energy_recharge'] ?? 0), 0);
+    return energyShortfall(has, recipe.meta.minimumEnergyRecharge);
+  });
 
   /** Whether Optimize can run at all, in whichever mode is chosen. */
   protected canOptimize(): boolean {

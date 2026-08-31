@@ -7,6 +7,8 @@ import { SimRunsService } from '../../sim/sim-runs.service';
 import { RotationsService } from '../rotations/rotations.service';
 import { loadGcsim } from '../../sim/gcsim-loader';
 import type { Recipe } from '../../sim/recipe';
+import { stabilityFrom } from '../../sim/recipe';
+import type { EnergyObservation } from '../../sim/recipe-energy';
 import { pairKey } from '../../sim/recipe-search';
 import {
   browserStore,
@@ -120,6 +122,21 @@ const SEED = '12345';
  * this repo regrets.
  */
 const AGGREGATE_RUNS = 100;
+
+/**
+ * The ER ladder the sweep walks, and how many iterations each rung gets.
+ *
+ * **Only walked when the rotation is already unstable**, which is the case that needs
+ * diagnosing — a rotation that runs the same way every iteration has no threshold worth
+ * finding, and charging every search for one would be a cost with no answer attached.
+ *
+ * Twenty iterations rather than a hundred: the question at each rung is "does the burst count
+ * vary *at all*", and a non-zero `sd` shows up long before a mean settles. `probe:energy`
+ * measured the boundary at 30 % on the committed gated rotation with forty, and the rungs
+ * either side of it were unambiguous.
+ */
+const ENERGY_LADDER = [0.2, 0.3, 0.45, 0.6, 0.8, 1.0] as const;
+const ENERGY_LADDER_RUNS = 20;
 
 /**
  * Per-character action counts from gcsim's aggregate, keyed `"<character> <action>"`.
@@ -249,18 +266,22 @@ export class RecipeOptimizeService {
           void this.cache(buildId, rotationId, configs.energy_recharge, aggregate.raw);
         }
 
+        const instances = aggregate ? instancesFrom(aggregate.raw, configs.characters) : {};
+        const { burst, sweep } = this.energySweep(mod, configs, instances);
+
         const calibrated = calibrate(
           {
             baseline: mod.sample(configs.baseline, SEED),
             probe: mod.sample(configs.probe, SEED),
-            instances: aggregate ? instancesFrom(aggregate.raw, configs.characters) : {},
+            instances,
+            energySweep: sweep,
           },
           // **Not `[]` for a 4-piece target.** Equipping a set to calibrate also applies its
           // 2-piece, so a recipe that does not name it lets the search add that tier again —
           // the exact double-count `RESEARCH_recipe_risks.md` §2 records. This passed `null`
           // unconditionally and was harmless only while no set bonuses reached the search at
           // all; B.1 made them reach it.
-          { setIds: target.setIds },
+          { setIds: target.setIds, burstAbility: burst ?? undefined },
         );
         recipe = calibrated.recipe;
         writeRecipe(this.store, key, recipe);
@@ -336,6 +357,65 @@ export class RecipeOptimizeService {
     } catch {
       // See the docstring: not being cached is not a failed search.
     }
+  }
+
+  /**
+   * Walk an ER ladder and report what the burst did at each rung — §8/§9.
+   *
+   * **Only when the rotation is already unstable, and only when a *burst* is what varied.**
+   * `probe:energy` measured the mechanism: the compiler gates every action on `.ready`, gcsim's
+   * particle generation carries RNG, so an energy-marginal burst fires on some iterations and
+   * not others. A rotation whose counts are steady has no threshold to find, and one whose
+   * instability is somewhere other than a burst is not an energy problem — sweeping either
+   * would spend gcsim runs to produce a number about nothing.
+   *
+   * Returns the burst's key as well, because `calibrate` needs to know which ability's count
+   * defines "performs as calibrated" and `stabilityFrom` is the only thing that knows which
+   * one moved.
+   */
+  private energySweep(
+    mod: GcsimModule,
+    configs: { baseline: string; energy_recharge: number; characters: string[] },
+    instances: Readonly<Record<string, { mean: number; sd: number }>>,
+  ): { burst: string | null; sweep: EnergyObservation[] | undefined } {
+    const { unstable } = stabilityFrom(instances);
+    const burst = unstable.find((name) => name.endsWith('burst')) ?? null;
+    if (burst === null) return { burst: null, sweep: undefined };
+
+    const sweep: EnergyObservation[] = [];
+    for (const energyRecharge of ENERGY_LADDER) {
+      // The same config with a different ER on the calibration's own stats line — the shape
+      // `_config`'s `extra` already produces server-side, applied here because a sweep is a
+      // client decision made after seeing the aggregate.
+      const text = configs.baseline.replace(
+        `add stats er=${configs.energy_recharge}`,
+        `add stats er=${energyRecharge}`,
+      );
+      if (text === configs.baseline && energyRecharge !== configs.energy_recharge) {
+        // The substitution found nothing, so every rung would be the same run. Reported by
+        // returning no sweep rather than by six identical observations, which would look like
+        // a measurement and be one config repeated.
+        return { burst, sweep: undefined };
+      }
+      let counts: Record<string, { mean: number; sd: number }>;
+      try {
+        counts = instancesFrom(
+          runConfig(mod, text, ENERGY_LADDER_RUNS).raw, configs.characters,
+        );
+      } catch {
+        // A rung gcsim refuses is a gap in the ladder, not a failed search.
+        continue;
+      }
+      const at = counts[burst];
+      if (at) {
+        sweep.push({
+          energyRecharge,
+          burstInstances: at.mean,
+          standardDeviation: at.sd,
+        });
+      }
+    }
+    return { burst, sweep: sweep.length > 0 ? sweep : undefined };
   }
 
   private async configs(

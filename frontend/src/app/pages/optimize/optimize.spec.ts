@@ -702,6 +702,60 @@ describe('OptimizePage barWidth', () => {
   });
 });
 
+describe('OptimizePage energy shortfall', () => {
+  /**
+   * §9 — the number the instability warning could not give. `recipe-energy.ts` had no input
+   * and no consumer; both ends are wired now.
+   */
+  const withMinimum = (minimum: number | null) => ({
+    hits: [], seed: '1',
+    meta: {
+      seed: '1', staleConversions: [], unstable: [], calibratedSetIds: [],
+      minimumEnergyRecharge: minimum,
+    },
+  }) as unknown as Recipe;
+
+  it('names what the build has, what the rotation needs, and the gap', () => {
+    const page = pageWith();
+    page['scoredRecipe'].set(withMinimum(0.3));
+    page['winningPools'].set([{ energy_recharge: 0.12 }, {}, {}, {}, {}]);
+
+    expect(page['energyGap']()).toEqual({ has: 0.12, needs: 0.3, shortfall: 0.3 - 0.12 });
+  });
+
+  it('says nothing when the build clears the threshold', () => {
+    const page = pageWith();
+    page['scoredRecipe'].set(withMinimum(0.3));
+    page['winningPools'].set([{ energy_recharge: 0.35 }, {}, {}, {}, {}]);
+
+    expect(page['energyGap']()).toBeNull();
+  });
+
+  it('says nothing when no threshold was measured', () => {
+    // **An unmeasured threshold is not a passed one**, and the sweep only runs for an unstable
+    // rotation whose burst is what varied — so most searches have no minimum. Warning on every
+    // one of them would be the cry-wolf shape `recipeIsShaky` was already thresholded to avoid.
+    const page = pageWith();
+    page['scoredRecipe'].set(withMinimum(null));
+    page['winningPools'].set([{ energy_recharge: 0.0 }, {}, {}, {}, {}]);
+
+    expect(page['energyGap']()).toBeNull();
+  });
+
+  it('sums the Energy Recharge across all five slots', () => {
+    // ER is an artifact stat spread over the build, not one piece's main stat. Reading one
+    // pool would understate it and warn a build that clears the threshold.
+    const page = pageWith();
+    page['scoredRecipe'].set(withMinimum(0.5));
+    page['winningPools'].set([
+      { energy_recharge: 0.1 }, { energy_recharge: 0.1 }, { energy_recharge: 0.1 },
+      { energy_recharge: 0.1 }, { energy_recharge: 0.05 },
+    ]);
+
+    expect(page['energyGap']()?.has).toBeCloseTo(0.45, 9);
+  });
+});
+
 describe('OptimizePage caveat attribution', () => {
   /**
    * Owner ruling, 2026-08-31: the baseline keeps being calibrated — the upgrade list needs it
