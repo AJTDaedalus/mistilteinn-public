@@ -76,11 +76,6 @@ export const routes: Routes = [
     canMatch: [requireApproved],
   },
   {
-    path: 'compare',
-    loadComponent: () => import('./pages/compare/compare').then((m) => m.ComparePage),
-    canMatch: [requireApproved],
-  },
-  {
     // Renamed from `explain` (owner ruling): this page runs a whole rotation for a whole team,
     // where the old one explained one hit for one build. `/explain` still resolves so a
     // bookmark does not 404 — a rename that breaks links is a rename that loses readers.

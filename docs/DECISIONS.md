@@ -1061,3 +1061,36 @@ one late.
 **Worth recording plainly:** the stale entry was populated by a diagnostic `curl` against the
 public hostname while the origin was still broken. Probing production through the CDN caches
 what production is currently serving — including its failures.
+
+## 30. The weapon comparison page is removed; its endpoints are not (2026-08-31)
+
+**Owner ruling.** *"Let's remove compare for now, it doesn't seem super useful since your
+artifact loadout may change based on weapon stats. Unless you can argue for how we're
+accounting for artifact choices, it's really not super valuable."*
+
+No argument was available, and the module had already made the owner's case in its own
+docstring:
+
+> Artifacts are held fixed, so this answers which weapon is better in the build you have, not
+> which weapon is better with its own best artifacts.
+>
+> …a weapon that wants a completely different artifact set loses a fixed-artifact comparison it
+> would win with its own pieces.
+
+The comparison worth having is *for each weapon, find its best artifacts, then compare the
+winners* — N searches, which `DESIGN_mistilteinn.md` §3.5 deliberately keeps off the server.
+The page answered the cheaper question and said so; the ruling is that the cheaper question does
+not earn a tab.
+
+**What was removed:** the route, the nav entry, the landing card, and `frontend/src/app/pages/compare/`.
+
+**What was kept, and why:** `POST /builds/{id}/compare-weapons` and `POST
+/builds/{id}/compare-weapons/gcsim`. They are tested and crossvalidated, they cost nothing to
+leave, and this is a product decision that may be reversed — deleting a working, verified
+service in order to remove a tab is the larger and less reversible move.
+
+They now have **no caller**, which this repo elsewhere treats as a defect worth naming
+(`createGpuKernel`, `recipe-energy.ts`). The distinction is that those were built and never
+wired; this was wired and deliberately unwired. Recorded here so the next audit finds the
+reason rather than the smell.
+
