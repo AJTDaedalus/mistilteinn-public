@@ -96,14 +96,32 @@ Reported from production, with the full text this time (the `{}` fix made it rea
 > the damage.* … and then **"Exact — the best five over this inventory. 279 combinations
 > scored."**
 
-**The chain, and only the last link is a defect.** The rotation is unstable — the owner's own
-words for it were *"semi-valid, not perfect but close to one cycle"*. An unstable rotation makes
-the probe run a different number of hits from the baseline, so `resolveConversions` cannot
-identify what the flat terms convert from, so the recipe freezes them — over ~90% of the
-damage. The ranking then rests on the tenth of the response it can still see.
+**The chain — and the version below is wrong. Corrected 2026-08-31, kept for the record.**
 
-Everything up to there is reported honestly and is arguably the rotation's property rather than
-a bug.
+> ~~An unstable rotation makes the probe run a different number of hits from the baseline, so
+> `resolveConversions` cannot identify what the flat terms convert from, so the recipe freezes
+> them — over ~90% of the damage.~~
+
+`resolveConversions` **throws** when the two runs differ in length:
+
+    if (baseline.hits.length !== probe.hits.length) throw new Error('probe changed the rotation…')
+
+So a structurally-varying rotation fails loudly rather than producing unresolved terms. The
+warnings therefore did **not** come from instability, and the two problems are independent.
+
+**What actually froze them: the probe moved one stat.** It set `def%=0.5` and nothing else, and
+the matcher considers only stats the probe moved — *"a stat the probe did not move has ratio 1
+and cannot be told from any other unmoved stat."* So a DEF-only probe could resolve only
+DEF-derived conversions, and every ATK- or HP-derived one was **structurally unresolvable**,
+which on an ATK-scaling character is most of them.
+
+The one-stat design was defended on the grounds that the matcher cannot separate two stats that
+move together. That is true of two moving by the **same factor**, and it does not follow that
+only one may move. **Fixed:** the probe now moves all three by different amounts
+(`atk%=0.5 hp%=0.3 def%=0.7`), at no extra gcsim cost, and a genuine ratio collision still
+falls back to "unresolved" rather than to a guess.
+
+Instability remains real and is §8's subject; it is simply not the cause of this.
 
 **What is ours:** `calibrate.ts` says, in its own docstring, *"Stability is reported, not
 enforced… **It is the caller's job not to rank on it.**"* The caller

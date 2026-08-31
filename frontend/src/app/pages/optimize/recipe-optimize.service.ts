@@ -348,8 +348,12 @@ export class RecipeOptimizeService {
         // zero-ER calibration lands one burst short. The probe moves exactly one stat,
         // because `resolveConversions` cannot separate two that moved together.
         energy_recharge: 0.30,
-        probe_stat: 'def%',
-        probe_delta: 0.5,
+        // **All three, by different amounts.** This moved only `def%` until 2026-08-31, on
+        // the reasoning that the matcher cannot separate two stats that move together — true
+        // of two moving by the *same factor*, not of two moving at all. A DEF-only probe can
+        // resolve only DEF-derived conversions, so on an ATK scaler every flat term stayed
+        // frozen and was reported as "a conversion no probe could resolve".
+        probe_deltas: { 'atk%': 0.5, 'hp%': 0.3, 'def%': 0.7 },
         iterations: 100,
       },
     });

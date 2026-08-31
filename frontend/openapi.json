@@ -4120,13 +4120,12 @@
             "type": "number",
             "title": "Energy Recharge"
           },
-          "probe_stat": {
-            "type": "string",
-            "title": "Probe Stat"
-          },
-          "probe_delta": {
-            "type": "number",
-            "title": "Probe Delta"
+          "probe_deltas": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Probe Deltas"
           },
           "characters": {
             "items": {
@@ -4142,8 +4141,7 @@
           "probe",
           "artifact_set_id",
           "energy_recharge",
-          "probe_stat",
-          "probe_delta"
+          "probe_deltas"
         ],
         "title": "CalibrationConfigs",
         "description": "The two configs a recipe is built from.\n\nThe browser runs both through `sample()`: the first becomes the recipe, and the difference\nbetween them identifies what each frozen term was converted from."
@@ -4180,22 +4178,12 @@
             "title": "Energy Recharge",
             "default": 0.3
           },
-          "probe_stat": {
-            "type": "string",
-            "enum": [
-              "def%",
-              "atk%",
-              "hp%"
-            ],
-            "title": "Probe Stat",
-            "default": "def%"
-          },
-          "probe_delta": {
-            "type": "number",
-            "maximum": 4.0,
-            "exclusiveMinimum": 0.0,
-            "title": "Probe Delta",
-            "default": 0.5
+          "probe_deltas": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Probe Deltas"
           },
           "enemy_id": {
             "anyOf": [

@@ -272,6 +272,41 @@ describe('resolveConversions', () => {
     expect(baseline.hits[0].conversions.flatDamage).toBeUndefined();
   });
 
+  it('resolves an ATK conversion, which a DEF-only probe never could', () => {
+    // **The reason the probe moves all three** (2026-08-31). It moved `def%` alone, so a term
+    // derived from ATK had ratio 1 against the only moved stat and matched nothing — it was
+    // reported as "a conversion no probe could resolve" and frozen, on every ATK scaler.
+    //
+    // Base ATK 1000 at +50% is 1500, a ratio of 1.5. HP and DEF move by different factors, so
+    // exactly one candidate matches and the term is identified rather than refused.
+    const mk = (flat: number, atkPct: number, hpPct: number, defPct: number) =>
+      parseSample({ logs: [
+        dmg(),
+        calc({ flat_dmg: flat, atk_per: atkPct, hp_per: hpPct, def_per: defPct }),
+      ] });
+    const baseline = mk(100, 0, 0, 0);
+    const probe = mk(150, 0.5, 0.3, 0.7);
+
+    expect(resolveConversions(baseline, probe)).toEqual({ resolved: 1, unresolved: 0 });
+    expect(baseline.hits[0].conversions.flatDamage)
+      .toEqual({ from: 'atk', perUnit: 100 / 1000 });
+  });
+
+  it('still refuses when two of the three happen to move a term by the same ratio', () => {
+    // Distinct deltas make a collision unlikely, not impossible: a stat's ratio is
+    // `1 + base * delta / total`, so two stats with different deltas can still coincide.
+    // That has to stay safe rather than become a guess — here `atk%` and `hp%` both move by
+    // +0.5, and because each is a percentage of its own base both totals land on x1.5.
+    const mk = (flat: number, atkPct: number, hpPct: number) => parseSample({ logs: [
+      dmg(), calc({ flat_dmg: flat, atk_per: atkPct, hp_per: hpPct }),
+    ] });
+    const baseline = mk(100, 0, 0);
+    const probe = mk(150, 0.5, 0.5);
+
+    expect(resolveConversions(baseline, probe)).toEqual({ resolved: 0, unresolved: 1 });
+    expect(baseline.hits[0].conversions.flatDamage).toBeUndefined();
+  });
+
   it('leaves a term unresolved when the probe moved nothing', () => {
     const [baseline, probe] = pair(100, 100, 0);
 

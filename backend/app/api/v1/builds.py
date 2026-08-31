@@ -1107,7 +1107,13 @@ async def calibrate_recipe(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     try:
         baseline = _config(calibration)
-        probe = _config(calibration, f"{body.probe_stat}={body.probe_delta:g}")
+        # Sorted, so two runs of the same request produce byte-identical configs — the
+        # recipe cache keys on the config's content downstream, and a dict's order is not a
+        # promise worth resting that on.
+        probe = _config(
+            calibration,
+            " ".join(f"{stat}={delta:g}" for stat, delta in sorted(body.probe_deltas.items())),
+        )
     except (GcsimKeyError, GcsimConfigError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -1118,8 +1124,7 @@ async def calibrate_recipe(
         artifact_set_id=body.artifact_set_id,
         two_piece_set_ids=body.two_piece_set_ids,
         energy_recharge=body.energy_recharge,
-        probe_stat=body.probe_stat,
-        probe_delta=body.probe_delta,
+        probe_deltas=body.probe_deltas,
     )
 
 

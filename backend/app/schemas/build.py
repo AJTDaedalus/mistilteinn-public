@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
 from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 
 from app.formula.genshin import tags
@@ -512,10 +510,45 @@ class CalibrationRequest(BaseModel):
     #: runs at the character's base ER and lands on a different burst count — measured at 2
     #: against a real candidate's 3 (`RESEARCH_recipe_risks.md` §1).
     energy_recharge: float = Field(0.30, ge=0.0, le=4.0)
-    #: The stat the probe perturbs, and by how much. The probe identifies stat conversions by
-    #: comparing two calibrations, so it must move **exactly one** thing.
-    probe_stat: Literal["def%", "atk%", "hp%"] = "def%"
-    probe_delta: float = Field(0.50, gt=0.0, le=4.0)
+    #: What the probe perturbs, and by how much — **all three scaling stats, by different
+    #: amounts**.
+    #:
+    #: This moved exactly one stat (`def%`) until 2026-08-31, on the reasoning that
+    #: `resolveConversions` cannot separate two stats that move *together*. True, but the
+    #: constraint is that they must not move by the **same factor**, not that only one may
+    #: move — and a one-stat probe can only ever resolve conversions *from that stat*. Every
+    #: ATK- or HP-derived conversion was structurally unresolvable, which on an ATK-scaling
+    #: character is most of them.
+    #:
+    #: Distinct deltas make a collision unlikely rather than impossible: a stat's ratio is
+    #: `1 + base * delta / total`, so two stats can still coincide. That is safe rather than
+    #: wrong — the matcher resolves a term only when **exactly one** stat's ratio matches, so
+    #: a collision leaves the term unresolved exactly as before.
+    probe_deltas: dict[str, float] = Field(
+        default_factory=lambda: {"atk%": 0.50, "hp%": 0.30, "def%": 0.70},
+    )
+
+    @field_validator("probe_deltas")
+    @classmethod
+    def _probe_moves_distinctly(cls, value: dict[str, float]) -> dict[str, float]:
+        """Known stats, positive, and no two by the same amount."""
+        allowed = {"atk%", "hp%", "def%"}
+        unknown = set(value) - allowed
+        if unknown:
+            msg = f"probe_deltas may only name {sorted(allowed)}; got {sorted(unknown)}"
+            raise ValueError(msg)
+        if not value:
+            msg = "probe_deltas must move at least one stat, or no conversion can be resolved"
+            raise ValueError(msg)
+        if any(delta <= 0 for delta in value.values()):
+            msg = "every probe delta must be positive; a stat that does not move tells nothing"
+            raise ValueError(msg)
+        if len(set(value.values())) != len(value):
+            # Two stats moved by the same amount are the case the one-stat design was
+            # protecting against, and the one this must still refuse.
+            msg = f"probe deltas must differ from each other; got {value}"
+            raise ValueError(msg)
+        return value
     enemy_id: str | None = None
     iterations: int = Field(100, ge=1, le=1000)
 
@@ -529,7 +562,7 @@ class CalibrationConfigs(BaseModel):
 
     #: The calibration itself — one 4-piece set, one ER, no other stat.
     baseline: str
-    #: The same, with exactly one stat moved.
+    #: The same, with the scaling stats moved by different amounts.
     probe: str
     #: Echoed so a caller can key its cache without re-deriving what it asked for.
     artifact_set_id: str | None
@@ -538,8 +571,7 @@ class CalibrationConfigs(BaseModel):
     two_piece_set_ids: list[str] = Field(default_factory=list)
     energy_recharge: float
     #: What the probe moved, so a caller can say why a conversion resolved or did not.
-    probe_stat: str
-    probe_delta: float
+    probe_deltas: dict[str, float]
     #: The gcsim keys this config declares, **in the order it declares them**.
     #:
     #: gcsim's aggregate reports `character_actions` as a positional list with no names in it,

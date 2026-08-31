@@ -142,15 +142,28 @@ async def test_the_baseline_carries_no_stat_but_energy_recharge(
     assert "atk%" not in stats_lines[0]
 
 
-async def test_the_probe_moves_exactly_one_stat(authed_client: AsyncClient, scene: Scene):
-    """`resolveConversions` compares the two runs. A probe that moved two stats by the same
-    factor could not say which a frozen term came from, and the recipe would report it
-    unresolved rather than guess."""
+async def test_the_probe_moves_all_three_scaling_stats_by_different_amounts(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """Was `test_the_probe_moves_exactly_one_stat`, and the constraint it named was wrong.
+
+    `resolveConversions` cannot say which stat a frozen term came from when two moved by the
+    **same factor** — that is the real limit, and it is about the factor, not the count. A
+    one-stat probe satisfied it by never asking about the other two, so every ATK- or
+    HP-derived conversion was structurally unresolvable and reported as "a conversion no probe
+    could resolve" on every ATK-scaling character.
+
+    Sorted, so the same request twice produces byte-identical configs: a recipe cache keyed on
+    content downstream should not depend on a dict's iteration order.
+    """
     body = (await _calibrate(authed_client, scene)).json()
     baseline = next(ln for ln in body["baseline"].splitlines() if "add stats" in ln)
     probe = next(ln for ln in body["probe"].splitlines() if "add stats" in ln)
 
-    assert probe == baseline.replace(";", " def%=0.5;")
+    assert probe == baseline.replace(";", " atk%=0.5 def%=0.7 hp%=0.3;")
+    # The deltas differ from one another, which is the property that makes them separable.
+    deltas = body["probe_deltas"]
+    assert len(set(deltas.values())) == len(deltas)
 
 
 async def test_the_energy_recharge_is_not_zero_by_default(
