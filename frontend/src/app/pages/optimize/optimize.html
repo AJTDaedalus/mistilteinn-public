@@ -57,16 +57,23 @@
         (selectedChange)="pickBuild($event)"
       />
 
-      <label>
-        Hit
-        <select aria-label="Hit" [ngModel]="hitIndex()" (ngModelChange)="hitIndex.set(+$event)">
-          @for (option of hits(); track $index) {
-            <option [value]="$index">
-              {{ talentLabel(option.talent) }} · {{ option.label }}
-            </option>
-          }
-        </select>
-      </label>
+      <!-- **Only in single-hit mode** (owner): *"hide the 'Hit' details unless 'Optimize for
+           a single hit' is selected. Either 'rotation' or the hit selector should be shown
+           depending on the optimize type."* The rotation block below is already gated the same
+           way, so the two modes now offer exactly the control each one uses — a hit picker
+           that a rotation search ignores is a setting that looks like it matters. -->
+      @if (objective() === 'hit') {
+        <label>
+          Hit
+          <select aria-label="Hit" [ngModel]="hitIndex()" (ngModelChange)="hitIndex.set(+$event)">
+            @for (option of hits(); track $index) {
+              <option [value]="$index">
+                {{ talentLabel(option.talent) }} · {{ option.label }}
+              </option>
+            }
+          </select>
+        </label>
+      }
 
       <label>
         Element
@@ -137,10 +144,6 @@
     @if (candidates().length) {
       <fieldset class="main-stats">
         <legend>Main stats</legend>
-        <p class="hint">
-          Pick as many as you would take. Leave a slot on Any to search all of it — only stats
-          you actually own are listed.
-        </p>
         <div class="main-stats__row">
           <!-- Slots with nothing to choose between are dropped, not disabled: a flower is
                always flat HP and a plume always flat ATK, so a control there offers the only
@@ -192,19 +195,15 @@
         <p class="hint">No rotations authored yet — write one before searching against it.</p>
       }
 
+      <!-- **Shortened, not removed.** The owner asked for this to go and was right that the
+           sets it names are live in the game — but the reason is accurate and the gap is real:
+           gcsim knows 54 artifact sets at our pinned commit against the catalogue's 65, and
+           `scarletproof` and `heartofthefurnace` are two it does not have. Deleting the line
+           makes a set the user owns four of vanish from the picker, which looks exactly like
+           not owning four of it. The fix is a gcsim pin bump, which is its own chunk. -->
       @if (unsimulableSets().length) {
-        <!-- **Outside the picker**, because the case that most needs it is the one where the
-             picker is not rendering: an early-game inventory is largely Adventurer, Lucky Dog
-             and Tiny Miracle, so every set it can field four of may be unsimulable and the
-             fieldset disappears entirely — leaving the "you own no 4-piece yet" line below,
-             which would be false. A set vanishing looks exactly like not owning enough of it.
-
-             **No reason is given.** The first version said "usually a set released after the
-             pin"; measured against the key snapshot, that is true of one of the twelve. The
-             rest are legacy low-rarity sets that long predate it. -->
         <p class="hint">
-          Not offered, because gcsim does not implement them at the pinned build:
-          {{ unsimulableSets().join(', ') }}.
+          gcsim cannot simulate: {{ unsimulableSets().join(', ') }}.
         </p>
       }
 
@@ -221,17 +220,13 @@
 
       @if (fourPieceChoices().length) {
         <fieldset class="set-filter">
-          <legend>Sets to search</legend>
-          <p class="hint">
-            Each costs a gcsim calibration, so pick only the ones you care about. A set can be
-            a 4-piece or half a 2+2, never both — they are two shapes of the same five slots.
-          </p>
+          <legend>Artifact Sets</legend>
 
           <div class="set-filter__controls">
             <!-- The 4-piece comes first, being far the commoner build. -->
             <mist-card-picker
               label="4-piece"
-              placeholder="None yet"
+              placeholder="Select"
               multi
               [options]="fourPieceOptions()"
               [selected]="fourPieceSelected()"
@@ -239,17 +234,19 @@
             />
 
             <mist-card-picker
-              label="2+2 pair"
-              placeholder="None yet"
+              label="2-Piece"
+              placeholder="Select"
               multi
               [options]="pairOptions()"
               [selected]="pairSelected()"
               (selectedChange)="setPair($event)"
             />
 
+            <!-- The bulk buttons are gone (owner): "All 4-piece" selected every set the
+                 inventory could field four of, which is ~28 calibrations at roughly six
+                 seconds each, and nobody would wait for that. "None" undid a selection the
+                 picker already clears. -->
             <div class="filter-actions">
-              <button type="button" (click)="selectAllSets()">All 4-piece</button>
-              <button type="button" (click)="selectNoSets()">None</button>
               <span class="muted mono">{{ calibrationCount() }} calibration(s)</span>
             </div>
           </div>
@@ -344,11 +341,6 @@
         </p>
       }
     }
-    @if (caveats(); as notes) {
-      @if (notes.fromCache.length) {
-        <p class="hint">Served from cache: {{ notes.fromCache.join(', ') }}.</p>
-      }
-    }
 
     <!-- Both of these are free once a rotation search has run: the page still holds the
          calibrated recipe, and an evaluation is 0.048 µs per hit. Calibration was the
@@ -387,21 +379,6 @@ beside it is already what you would gain after losing that bonus.">costs the set
       </section>
     }
 
-    @if (recipeNotes(); as notes) {
-      @if (notes.uncoveredSets.length) {
-        <p class="warn" role="alert">
-          <!-- Comma-separated. Angular collapses the whitespace between adjacent elements,
-               so thirty `<span>`s ran together into one unreadable wall — "Brave
-               HeartInstructorThe Exile…" — which is how it looked against a real inventory. A
-               separator inside the element is the fix; relying on inter-element whitespace is
-               not. -->
-          You own enough for a 4-piece of these, but they were not scored:
-          @for (setId of notes.uncoveredSets; track setId; let last = $last) {
-            <span class="mono">{{ setLabel(setId) }}{{ last ? '' : ', ' }}</span>
-          }
-        </p>
-      }
-    }
 
     @if (actionError(); as message) {
       <p class="error" role="alert">{{ message }}</p>
@@ -437,37 +414,33 @@ beside it is already what you would gain after losing that bonus.">costs the set
            owner's note was that it is "way more words than needed to convey this info", and
            the trailing comma-phrase read as padding. The counts are a `title`: they answer
            "how do I know" for the one reader in fifty who asks, and that reader can hover. -->
+      <!-- **One line.** Owner: *"all of that text could be replaced with '279 combinations
+           scored'"*. The exactness, the pruning and the prefilter are all real and all
+           answer a question nobody asked on arrival — so they moved to the hover.
+           
+           They are worth keeping *somewhere*: 279 looks impossibly small beside an inventory
+           holding 87,480 five-piece combinations of one set, and the pruning is the number
+           that reconciles it. Deleting it outright would leave the surprising figure with no
+           explanation anywhere. -->
       <p class="provenance">
-        @if (found.isExact) {
-          <strong>Exact</strong> — all {{ found.evaluated | number }} combinations scored.
-        } @else {
-          <strong>Approximate</strong> — best {{ found.effectiveK }} per slot, of
-          {{ found.totalSpace | number }}.
-        }
-        @if (recipeIsShaky()) {
-          <strong class="warn-inline">Scoring unreliable — see warnings.</strong>
-        }
         <span
-          class="muted mono note"
-          [attr.title]="'Pareto filter removed ' + (found.paretoRemoved | number)
-            + ' pieces that could not win under any recipe'
-            + (found.prefiltered ? '; ' + (found.prefiltered | number) + ' more dropped by rank' : '')"
-        >{{ found.paretoRemoved | number }} pruned</span>
+          class="note"
+          [attr.title]="(found.isExact
+            ? 'Every reachable combination was scored. '
+            : 'Approximate: the best ' + found.effectiveK + ' pieces per slot of '
+              + (found.totalSpace | number) + ' combinations. ')
+            + (found.paretoRemoved | number) + ' pieces were removed first because they cannot '
+            + 'win under any recipe'
+            + (found.prefiltered ? ', and ' + (found.prefiltered | number) + ' more by rank' : '')
+            + '.'"
+        >{{ found.evaluated | number }} combinations scored</span>
+        @if (recipeIsShaky()) {
+          <strong class="warn-inline">Scoring unreliable — see above.</strong>
+        }
       </p>
 
       <!-- Said once, above the list, so the percentages have a stated referent. Without it a
            column of signed numbers is a comparison to nothing in particular. -->
-      @if (comparator(); as against) {
-        <p class="hint">
-          Percentages are against {{ against.label }}
-          (<span class="mono">{{ against.damage | number: '1.0-1' }}</span>).
-        </p>
-      } @else if (rows().length) {
-        <p class="hint">
-          Percentages are against the top result — this character has no scoreable build to
-          compare with yet.
-        </p>
-      }
 
       @if (equipped(); as note) {
         <p class="hint" role="status">{{ note }}</p>
@@ -493,16 +466,23 @@ beside it is already what you would gain after losing that bonus.">costs the set
                  Circlet` said nothing about *which* artifacts won, which is the one thing a
                  ranked list is for. The slot names stay as the fallback: the cards are
                  fetched after the search and a row is complete without them. -->
-            @if (cardsFor(row); as cards) {
-              @if (cards.length) {
-                <span class="pieces pieces--cards">
-                  @for (card of cards; track card.id) {
-                    <artifact-card [piece]="card" [compact]="true" />
-                  }
-                </span>
-              } @else {
-                <span class="pieces">{{ row.pieces.join(' · ') }}</span>
+            <!-- **Hidden while this row is expanded** (owner): the details pane below shows
+                 the same five pieces at full size, so the compact strip becomes a duplicate
+                 the moment it opens. -->
+            @if (explained()?.rank !== row.rank) {
+              @if (cardsFor(row); as cards) {
+                @if (cards.length) {
+                  <span class="pieces pieces--cards">
+                    @for (card of cards; track card.id) {
+                      <artifact-card [piece]="card" [compact]="true" />
+                    }
+                  </span>
+                } @else {
+                  <span class="pieces">{{ row.pieces.join(' · ') }}</span>
+                }
               }
+            } @else {
+              <span class="pieces muted">Shown below</span>
             }
             <button type="button" (click)="explainRow(row)" [disabled]="explaining()">
               Details
@@ -528,8 +508,6 @@ beside it is already what you would gain after losing that bonus.">costs the set
             @if (pairing(); as paired) {
               @if (paired.row.rank === row.rank) {
                 <div class="explanation">
-                  <h2>How #{{ paired.shown.rank }} adds up</h2>
-
                   <!-- §16, second half. The row shows the same five pieces compact; here they
                        have room for the roll-value column, which is the number that actually
                        answers "is this a good line". -->
@@ -543,33 +521,47 @@ beside it is already what you would gain after losing that bonus.">costs the set
                     }
                   }
 
-                  <!-- Two implementations of one chain, shown together rather than reconciled: the
-                       browser's f32 kernel and the server's f64. C.2 measured their divergence at up
-                       to 3.4e-07, so a difference of that order is the tolerance doing its job — and
-                       a larger one is a real disagreement that should be visible. -->
-                  <p class="agreement">
-                    <span class="mono">{{ paired.shown.result.damage | number: '1.0-1' }}</span>
-                    from the server,
-                    <span class="mono">{{ paired.row.damage | number: '1.0-1' }}</span>
-                    from the search
-                    @if (divergence(); as delta) {
-                      <span class="muted mono">· differing by {{ delta | percent: '1.0-6' }}</span>
-                    }
-                  </p>
 
-                  <ul class="stats">
-                    @for (stat of paired.shown.result.stats; track stat.quantity) {
-                      <li>
-                        <span class="quantity">{{ stat.quantity }}</span>
-                        <span class="figure mono">{{ stat.sum_of_parts | number: '1.0-4' }}</span>
-                        <ul class="parts mono">
-                          @for (source of stat.sources; track $index) {
-                            <li>{{ source }}</li>
+                  <!-- **Grouped, not a flat list of every quantity** (owner): *"it should be
+                       aggregated into chunks like 'effective attack' which takes in its
+                       elements (flat, base, pct) into one unit… right now it's just a list of
+                       random chunks of the math."*
+                       
+                       The group's headline number is the server's own derived account, never a
+                       sum of the inputs: `base * (1 + pct) + flat` is not addition, and
+                       `sum_of_parts` says upstream that it "is not necessarily the stat". A
+                       total computed here would be a second implementation of the damage
+                       chain, and a wrong one. -->
+                  <dl class="stat-groups">
+                    @for (group of statGroups(); track group.label) {
+                      <div class="stat-group">
+                        <dt>
+                          {{ group.label }}
+                          @if (group.total; as total) {
+                            <span class="figure mono">{{ total.sum_of_parts | number: '1.0-1' }}</span>
                           }
-                        </ul>
-                      </li>
+                        </dt>
+                        <dd>
+                          <ul class="stat-group__parts">
+                            @for (input of group.inputs; track input.quantity) {
+                              <li>
+                                <span class="quantity">{{ input.quantity }}</span>
+                                <span class="figure mono">
+                                  {{ input.sum_of_parts | number: '1.0-4' }}
+                                </span>
+                                <span class="muted sources">{{ input.sources.join(' · ') }}</span>
+                              </li>
+                            }
+                          </ul>
+                          @if (group.total; as total) {
+                            <p class="stat-group__from muted">
+                              {{ total.sources.join(' · ') }}
+                            </p>
+                          }
+                        </dd>
+                      </div>
                     }
-                  </ul>
+                  </dl>
 
                   <!-- §13/§10 — moved under details at the owner's direction, "so it's
                        relevant to the set the user is looking at". As a standalone section it
@@ -618,6 +610,22 @@ beside it is already what you would gain after losing that bonus.">costs the set
           <li class="muted">
             No complete build could be made — a search needs a piece in all five slots.
           </li>
+        }
+        <!-- **The comparator as a row, not a sentence** (owner): *"'Percentages are against
+             your build' could also be removed by including the current build as +0% at the
+             bottom of the list."* It reads as the thing every other row is measured against
+             because it is sitting in the same column, at 0.0%, rather than being announced. -->
+        @if (comparator(); as against) {
+          @if (rows().length) {
+            <li class="comparator">
+              <div class="result__row">
+                <span class="rank mono">—</span>
+                <span class="damage mono">{{ against.damage | number: '1.0-1' }}</span>
+                <span class="delta mono">0.0%</span>
+                <span class="pieces muted">{{ against.label }}</span>
+              </div>
+            </li>
+          }
         }
       </ol>
 

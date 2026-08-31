@@ -368,3 +368,51 @@
   display: block;
   margin-top: var(--space-1);
 }
+
+/* The comparator row sits with the results rather than above them, so it needs to read as a
+   reference point and not as a rank. Muted, and its rank column is an em dash. */
+.results li.comparator {
+  border-top: 1px solid var(--surface-rule);
+  border-bottom: 0;
+  opacity: 0.85;
+}
+
+/* Grouped stat accounts. The group's own figure sits with its name; its inputs are indented
+   under it, so "effective ATK" reads as a result and base/pct/flat read as its parts. */
+.stat-groups { margin: 0; }
+
+.stat-group {
+  margin-bottom: var(--space-3);
+
+  dt {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--ink);
+    border-bottom: 1px solid var(--surface-rule);
+    padding-bottom: var(--space-1);
+  }
+
+  dd { margin: var(--space-1) 0 0; }
+}
+
+.stat-group__parts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    display: grid;
+    grid-template-columns: minmax(8rem, 12rem) minmax(5rem, auto) 1fr;
+    gap: var(--space-2);
+    align-items: baseline;
+    font-size: var(--text-sm);
+    color: var(--ink-dim);
+  }
+}
+
+.stat-group__from {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-xs);
+}

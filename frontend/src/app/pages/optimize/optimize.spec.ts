@@ -1138,18 +1138,6 @@ describe('OptimizePage — the rotation objective', () => {
     expect(count()).toBe(2);
   });
 
-  it('offers every reachable set when All is pressed, and none when None is', () => {
-    const page = pageWith();
-    (at(page, 'candidates') as { set: (v: unknown) => void })
-      .set(piecesFor(15003, 15020));
-
-    (at(page, 'selectAllSets') as () => void).call(page);
-    expect((at(page, 'selectedSets') as () => ReadonlySet<number>)().size).toBe(2);
-
-    (at(page, 'selectNoSets') as () => void).call(page);
-    expect((at(page, 'selectedSets') as () => ReadonlySet<number>)().size).toBe(0);
-  });
-
   it('treats a pair as chosen only when both halves are set and differ', () => {
     // Two of the same set is a 4-piece, not a 2+2, and belongs to the other control.
     const page = pageWith();
@@ -1935,15 +1923,17 @@ describe('sets gcsim cannot simulate', () => {
     expect(page['unsimulableSets']()).toEqual(['Scarlet Proof']);
   });
 
-  it('is not selected by "All 4-piece"', () => {
+  it('is not offered as a 4-piece at all', () => {
+    // Was "is not selected by All 4-piece" until that button was removed (owner: selecting
+    // every reachable set is ~28 calibrations at six seconds each, which nobody waits for).
+    // The invariant it was really protecting outlives the button: a set gcsim cannot simulate
+    // must never reach the picker, because choosing it fails the whole calibration with a 422.
     const page = withCatalogue([
       [15003, { id: 'a', name: 'Blizzard Strayer', simulable: true }],
       [15020, { id: 'b', name: 'Scarlet Proof', simulable: false }],
     ]);
 
-    page['selectAllSets']();
-
-    expect([...page['selectedSets']()]).toEqual([15003]);
+    expect(page['fourPieceChoices']().map((c) => c.setId)).toEqual([15003]);
   });
 
   it('treats a set the catalogue does not mention as unknown, not as unusable', () => {

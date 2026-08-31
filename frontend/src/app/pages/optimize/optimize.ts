@@ -31,6 +31,7 @@ import { browserStore, recallAmong, remember } from './remembered';
 import type { ArtifactCardModel } from '../../shared/artifact-card/artifact-card';
 import { describeStat } from '../../shared/stat-label';
 import { substatReadings } from '../../shared/substat-bars/substat-bars';
+import { groupStats, type StatAccount, type StatGroup } from '../../shared/stat-groups';
 import {
   candidateStatsFrom,
   liveQuantitiesFor,
@@ -467,14 +468,6 @@ export class OptimizePage implements OnInit {
     return this.artifactSets().get(setId)?.name ?? `set ${setId}`;
   }
 
-  protected selectAllSets(): void {
-    this.selectedSets.set(new Set(this.fourPieceChoices().map((c) => c.setId)));
-  }
-
-  protected selectNoSets(): void {
-    this.selectedSets.set(new Set());
-  }
-
   /** Distinct slots each set can fill — four is what a 4-piece needs. */
   private slotsBySet(pieces: readonly KernelCandidate[]): Map<number, Set<string>> {
     const bySet = new Map<number, Set<string>>();
@@ -624,6 +617,16 @@ export class OptimizePage implements OnInit {
       label: 'your current build',
     };
   }
+
+  /**
+   * The expanded row's stats, grouped as a reader thinks of them rather than as the server
+   * happened to record them. A `computed`, so it is not rebuilt on every change-detection
+   * tick — the same trap `marginalForExpanded` documents.
+   */
+  protected readonly statGroups = computed<StatGroup[]>(() => {
+    const shown = this.pairing()?.shown;
+    return shown ? groupStats(shown.result.stats as unknown as StatAccount[]) : [];
+  });
 
   /** The cards for one row, in the order the row names its pieces. */
   protected cardsFor(row: ResultRow): ArtifactCardModel[] {
