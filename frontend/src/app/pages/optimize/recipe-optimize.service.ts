@@ -219,6 +219,12 @@ export class RecipeOptimizeService {
         artifactSetId: target.artifactSetIds.join('+') || null,
         energyRecharge: configs.energy_recharge,
         seed: SEED,
+        // Sorted, so the same probe always produces the same key regardless of how the
+        // server happened to order the map.
+        probe: Object.entries(configs.probe_deltas ?? {})
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([stat, delta]) => `${stat}=${delta}`)
+          .join(','),
       };
 
       let recipe = readRecipe(this.store, key);
@@ -360,6 +366,8 @@ export class RecipeOptimizeService {
     if (error) throw error;
     return data as {
       baseline: string; probe: string; energy_recharge: number; characters: string[];
+      // Echoed by the endpoint so the cache key can name what the recipe was probed with.
+      probe_deltas: Record<string, number>;
     };
   }
 }

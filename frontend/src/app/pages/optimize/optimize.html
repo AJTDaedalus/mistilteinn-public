@@ -434,8 +434,13 @@ beside it is already what you would gain after losing that bonus.">costs the set
             + (found.prefiltered ? ', and ' + (found.prefiltered | number) + ' more by rank' : '')
             + '.'"
         >{{ found.evaluated | number }} combinations scored</span>
+        <!-- **The separator is inside the element.** Angular collapses whitespace between
+             adjacent elements, so this rendered as "279 combinations scoredScoring
+             unreliable" — the same trap the uncovered-sets list documented a few lines from
+             here, hit again by writing the two spans on separate lines and assuming the
+             newline would survive. -->
         @if (recipeIsShaky()) {
-          <strong class="warn-inline">Scoring unreliable — see above.</strong>
+          <strong class="warn-inline">&nbsp;· Scoring unreliable — see above.</strong>
         }
       </p>
 

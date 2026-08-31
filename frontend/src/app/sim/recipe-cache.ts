@@ -38,6 +38,19 @@ export interface RecipeCacheKey {
   artifactSetId: string | null;
   energyRecharge: number;
   seed: string;
+  /**
+   * What the calibration's probe moved, as a stable string.
+   *
+   * **The probe decides which conversions the recipe can resolve**, so two recipes calibrated
+   * with different probes are different recipes. It was missing from this key, and the
+   * consequence was concrete: the probe was widened from one stat to three to fix conversions
+   * that could never resolve, and every user with a warm cache was served the old recipe with
+   * the old unresolved terms — the fix shipped and changed nothing they could see.
+   *
+   * Here rather than fixed by bumping `SCHEMA`: a version bump clears the stale entries once,
+   * this stops the next probe change repeating the whole story.
+   */
+  probe: string;
 }
 
 /** Namespaced so clearing recipes cannot take unrelated keys with it. */
@@ -78,6 +91,7 @@ export function cacheKey(key: RecipeCacheKey): string {
     // Fixed precision so 0.3 and 0.30 are the same key rather than two.
     key.energyRecharge.toFixed(4),
     key.seed,
+    key.probe,
   ].join('|');
 }
 

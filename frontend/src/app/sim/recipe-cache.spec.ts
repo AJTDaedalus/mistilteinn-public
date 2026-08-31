@@ -22,6 +22,7 @@ import type { Recipe } from './recipe';
 const KEY: RecipeCacheKey = {
   gcsimPin: 'abc123', buildId: 'b1', rotationId: 'r1',
   artifactSetId: 's1', energyRecharge: 0.3, seed: '12345',
+  probe: 'atk%=0.5,def%=0.7,hp%=0.3',
 };
 
 const RECIPE = {
@@ -53,6 +54,7 @@ describe('cacheKey', () => {
     ['artifactSetId', { artifactSetId: 's2' }],
     ['energyRecharge', { energyRecharge: 0.4 }],
     ['seed', { seed: '99' }],
+    ['probe', { probe: 'def%=0.5' }],
   ] as const)('changes when %s changes', (_name, over) => {
     expect(cacheKey({ ...KEY, ...over })).not.toBe(cacheKey(KEY));
   });
@@ -150,6 +152,33 @@ describe('browserStore', () => {
   it('returns something or null, never throws', () => {
     // Accessing localStorage *throws* where site data is blocked, rather than returning null.
     expect(() => browserStore()).not.toThrow();
+  });
+});
+
+describe('the probe is part of what identifies a recipe', () => {
+  /**
+   * **Reported from production, after a fix that appeared to do nothing.** The probe was
+   * widened from one stat to three so ATK- and HP-derived conversions could resolve at all.
+   * The probe was not in this key, so every user with a warm cache was served the old recipe
+   * with the old unresolved terms — the deploy landed and the warnings did not move.
+   *
+   * A `SCHEMA` bump would clear the stale entries once. This stops the next probe change
+   * repeating the story.
+   */
+  it('misses a recipe calibrated with a different probe', () => {
+    const store = memory();
+    writeRecipe(store, KEY, RECIPE);
+
+    expect(readRecipe(store, { ...KEY, probe: 'def%=0.5' })).toBeNull();
+  });
+
+  it('hits when the probe is the same', () => {
+    // The other half: a key so specific that nothing ever hits would turn every search into
+    // a full recalibration.
+    const store = memory();
+    writeRecipe(store, KEY, RECIPE);
+
+    expect(readRecipe(store, { ...KEY })).toEqual(RECIPE);
   });
 });
 
