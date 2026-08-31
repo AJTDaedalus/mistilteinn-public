@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { groupStats, isPercent, type StatAccount } from './stat-groups';
+import { groupStats, isPercent, quantityLabel, type StatAccount } from './stat-groups';
 
 /**
  * §12 — the details pane's stat table, grouped and totalled the way a build is read.
@@ -56,7 +56,7 @@ describe('groupStats', () => {
     const [crit] = groupStats(accounts, { crit_rate: 0.561 });
 
     expect(crit.label).toBe('CRIT Rate');
-    expect(crit.rows.map((r) => r.source)).toEqual(['character', 'artifact', 'weapon']);
+    expect(crit.rows.map((r) => r.from)).toEqual(['character', 'artifact', 'weapon']);
     expect(crit.percent).toBe(true);
     expect(crit.rows.every((r) => r.percent)).toBe(true);
   });
@@ -94,5 +94,67 @@ describe('groupStats', () => {
     const groups = groupStats([account('base_atk', [['base_atk', 1000, 'character']])], {});
 
     expect(groups.map((g) => g.label)).not.toContain('Effective HP');
+  });
+});
+
+
+describe('row labels and provenance', () => {
+  it('names the quantity as a reader knows it', () => {
+    expect(quantityLabel('atk_pct')).toBe('ATK%');
+    expect(quantityLabel('crit_dmg')).toBe('CRIT DMG');
+  });
+
+  it('prettifies a quantity it has no name for rather than showing the key', () => {
+    // So a quantity added upstream reads acceptably instead of as `shield_strength`, and
+    // nothing has to be kept in step for the table to stay legible.
+    expect(quantityLabel('shield_strength')).toBe('Shield Strength');
+    expect(quantityLabel('cryo_dmg_bonus')).toBe('Cryo DMG Bonus');
+  });
+
+  it('renders a slot key in a note as the name a player uses', () => {
+    // `equip_bracer substat` beside `Base ATK` and `ATK%` is the same raw-key ugliness those
+    // labels fix, one field over. The server writes the key because the note is also a join
+    // key; the substitution happens here rather than by rewording it upstream.
+    const account: StatAccount = {
+      quantity: 'atk_pct',
+      parts: [{ quantity: 'atk_pct', value: 0.047, source: 'artifact', note: 'equip_bracer substat' }],
+      sum_of_parts: 0.047,
+      sources: ['artifact'],
+    };
+
+    const [atk] = groupStats([account], { atk: 1897 }, { equip_bracer: 'Flower' });
+
+    expect(atk.rows[0].from).toBe('Flower substat');
+  });
+
+  it('leaves the note alone when no slot vocabulary was passed', () => {
+    const account: StatAccount = {
+      quantity: 'atk_pct',
+      parts: [{ quantity: 'atk_pct', value: 0.047, source: 'artifact', note: 'equip_bracer substat' }],
+      sum_of_parts: 0.047,
+      sources: ['artifact'],
+    };
+
+    expect(groupStats([account], {})[0].rows[0].from).toBe('equip_bracer substat');
+  });
+
+  it('prefers the contribution note over its category', () => {
+    // **Four artifacts all labelled "artifact" read as one row repeated.** The note says which
+    // piece and whether it is a main stat or a substat; the source says only "artifact".
+    const account: StatAccount = {
+      quantity: 'atk_pct',
+      parts: [
+        { quantity: 'atk_pct', value: 0.308, source: 'artifact', note: 'equip_ring main stat +12' },
+        { quantity: 'atk_pct', value: 0.087, source: 'artifact' },
+      ],
+      sum_of_parts: 0.395,
+      sources: ['artifact', 'artifact'],
+    };
+
+    const [atk] = groupStats([account], { atk: 1897 });
+
+    expect(atk.rows[0].from).toBe('equip_ring main stat +12');
+    // Falls back rather than rendering blank when a contribution carries no note.
+    expect(atk.rows[1].from).toBe('artifact');
   });
 });

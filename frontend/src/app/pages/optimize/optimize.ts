@@ -634,6 +634,7 @@ export class OptimizePage implements OnInit {
       // The resolved values the chain acts on. Empty from a server that predates the field,
       // which renders groups without a headline rather than inventing one.
       (shown.result.totals ?? {}) as Record<string, number>,
+      this.slotNames(),
     );
   });
 

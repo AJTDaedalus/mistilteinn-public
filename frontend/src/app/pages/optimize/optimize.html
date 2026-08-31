@@ -75,23 +75,30 @@
         </label>
       }
 
-      <label>
-        Element
-        <select aria-label="Element" [(ngModel)]="channel">
-          @for (option of channels; track option) {
-            <option [value]="option">{{ option }}</option>
-          }
-        </select>
-      </label>
+      <!-- **Hit-only, like the hit picker above.** Element and Scope describe *one hit* for
+           the single-hit damage chain; a rotation search hands the whole thing to gcsim and
+           reads neither. Seen on a screenshot sitting beside "Optimize with rotation", which
+           is a setting that looks like it matters and does not. Enemy level stays: it reaches
+           the gcsim config too. -->
+      @if (objective() === 'hit') {
+        <label>
+          Element
+          <select aria-label="Element" [(ngModel)]="channel">
+            @for (option of channels; track option) {
+              <option [value]="option">{{ option }}</option>
+            }
+          </select>
+        </label>
 
-      <label>
-        Scope
-        <select aria-label="Scope" [(ngModel)]="scope">
-          @for (option of scopes; track option) {
-            <option [value]="option">{{ option }}</option>
-          }
-        </select>
-      </label>
+        <label>
+          Scope
+          <select aria-label="Scope" [(ngModel)]="scope">
+            @for (option of scopes; track option) {
+              <option [value]="option">{{ option }}</option>
+            }
+          </select>
+        </label>
+      }
 
       <label>
         Enemy level
@@ -100,7 +107,10 @@
 
     </div>
 
-    @if (!hit()) {
+    <!-- **Only once a build is chosen.** It read "This build has no talent levels set" under
+         a picker saying "Choose a build…", describing a build that did not exist. And only in
+         single-hit mode, which is the only mode that needs a talent to score. -->
+    @if (buildId() && objective() === 'hit' && !hit()) {
       <p class="hint">This build has no talent levels set.</p>
     }
 
@@ -130,6 +140,14 @@
         <label>
           Rotation
           <select [ngModel]="rotationId()" (ngModelChange)="pickRotation($event)" aria-label="Rotation">
+            <!-- **A placeholder, because nothing is selected by default any more.** §15 stopped
+                 the page choosing `rotations[0]`, and a `<select>` with no empty option then
+                 *displayed* the first rotation while the model held `''` — so Optimize was
+                 disabled and the control gave no clue why. This is the "select that had always
+                 shown its first option" trap the repo already records, arrived at from the
+                 other direction: there the model was set and the display was wrong, here the
+                 display is set and the model is empty. -->
+            <option value="" disabled>Choose a rotation…</option>
             @for (option of rotations(); track option.id) {
               <option [value]="option.id">{{ option.name }}</option>
             }
@@ -564,7 +582,7 @@ beside it is already what you would gain after losing that bonus.">costs the set
                           <ul class="stat-group__parts">
                             @for (row of group.rows; track $index) {
                               <li>
-                                <span class="quantity">{{ row.quantity }}</span>
+                                <span class="quantity">{{ row.label }}</span>
                                 <span class="figure mono">
                                   @if (row.percent) {
                                     {{ row.value | percent: '1.1-1' }}
@@ -572,7 +590,10 @@ beside it is already what you would gain after losing that bonus.">costs the set
                                     {{ row.value | number: '1.1-1' }}
                                   }
                                 </span>
-                                <span class="muted sources">{{ row.source }}</span>
+                                <!-- The contribution's own note — `equip_ring main stat +12` —
+                                     rather than its category. Four artifacts all labelled
+                                     "artifact" read as one row repeated. -->
+                                <span class="muted sources">{{ row.from }}</span>
                               </li>
                             }
                           </ul>

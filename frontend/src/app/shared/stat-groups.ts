@@ -48,11 +48,17 @@ export interface StatAccount {
 
 /** One contribution, ready to render. */
 export interface StatRow {
-  /** The quantity it registered under — `atk_pct`. */
-  quantity: string;
+  /** The quantity as a reader knows it — `ATK%`, not `atk_pct`. */
+  label: string;
   value: number;
-  /** Where it came from, in the server's words. */
-  source: string;
+  /**
+   * Which artifact or ability this came from.
+   *
+   * **`note` when there is one, `source` only as a fallback.** `source` is a category —
+   * four artifacts contributing ATK% all said "artifact", which names a kind rather than a
+   * thing and made four rows look like a repeated one. `note` says `equip_ring main stat +12`.
+   */
+  from: string;
   /** Whether `value` is a fraction to render as a percentage. */
   percent: boolean;
 }
@@ -124,16 +130,67 @@ function damageBonusLabel(quantity: string): string {
   return `${element.charAt(0).toUpperCase()}${element.slice(1)} DMG Bonus`;
 }
 
-function rowsFrom(accounts: readonly StatAccount[]): StatRow[] {
+/**
+ * What a reader calls each quantity.
+ *
+ * A fallback prettifies anything absent — `shield_strength` becomes `Shield Strength` — so a
+ * quantity added upstream reads acceptably rather than as a raw key, and nothing has to be
+ * kept in step for the table to stay legible.
+ */
+const LABELS: Readonly<Record<string, string>> = {
+  base_atk: 'Base ATK', atk_pct: 'ATK%', flat_atk: 'Flat ATK', atk: 'ATK',
+  base_hp: 'Base HP', hp_pct: 'HP%', flat_hp: 'Flat HP', hp: 'HP',
+  base_def: 'Base DEF', def_pct: 'DEF%', flat_def: 'Flat DEF', def: 'DEF',
+  crit_rate: 'CRIT Rate', crit_dmg: 'CRIT DMG',
+  elemental_mastery: 'Elemental Mastery', energy_recharge: 'Energy Recharge',
+  dmg_bonus: 'DMG Bonus',
+};
+
+/** `shield_strength` → `Shield Strength`; `cryo_dmg_bonus` → `Cryo DMG Bonus`. */
+export function quantityLabel(quantity: string): string {
+  const known = LABELS[quantity];
+  if (known) return known;
+  return quantity
+    .split('_')
+    .map((word) => (word === 'dmg' ? 'DMG' : word.charAt(0).toUpperCase() + word.slice(1)))
+    .join(' ');
+}
+
+/**
+ * Swap raw slot keys in a note for the names a player uses.
+ *
+ * The server writes `equip_bracer substat`, because the note is also a join key and its words
+ * are not display text. `equip_bracer` beside `Base ATK` and `ATK%` is the same raw-key
+ * ugliness those labels just fixed, one field over.
+ *
+ * Substituted rather than reworded server-side: the note is matched against elsewhere
+ * (`set_bonus_note`), and changing what it says to make it prettier is how a join quietly
+ * stops matching.
+ */
+function readableNote(note: string, slotNames: Readonly<Record<string, string>>): string {
+  let out = note;
+  for (const [key, display] of Object.entries(slotNames)) {
+    if (display) out = out.replaceAll(key, display);
+  }
+  return out;
+}
+
+function rowsFrom(
+  accounts: readonly StatAccount[],
+  slotNames: Readonly<Record<string, string>>,
+): StatRow[] {
   return accounts.flatMap((account) =>
-    account.parts.map((part) => ({
+    account.parts.map((part) => {
       // The part's own quantity, not the account's: a contribution registered under
       // `atk_pct` inside the ATK group should say so rather than inherit `atk`.
-      quantity: part.quantity || account.quantity,
-      value: part.value,
-      source: part.source,
-      percent: isPercent(part.quantity || account.quantity),
-    })),
+      const quantity = part.quantity || account.quantity;
+      return {
+        label: quantityLabel(quantity),
+        value: part.value,
+        from: part.note?.trim() ? readableNote(part.note.trim(), slotNames) : part.source,
+        percent: isPercent(quantity),
+      };
+    }),
   );
 }
 
@@ -147,6 +204,8 @@ function rowsFrom(accounts: readonly StatAccount[]): StatRow[] {
 export function groupStats(
   accounts: readonly StatAccount[],
   totals: Readonly<Record<string, number>> = {},
+  /** `{slot key: display name}`, so a note can say "Flower" rather than `equip_bracer`. */
+  slotNames: Readonly<Record<string, string>> = {},
 ): StatGroup[] {
   const byQuantity = new Map(accounts.map((a) => [a.quantity, a]));
   const claimed = new Set<string>();
@@ -168,7 +227,7 @@ export function groupStats(
       label: group.label,
       total: total ?? null,
       percent: isPercent(group.total),
-      rows: rowsFrom(mine),
+      rows: rowsFrom(mine, slotNames),
     });
   }
 
@@ -181,13 +240,13 @@ export function groupStats(
       label: damageBonusLabel(account.quantity),
       total: totals[account.quantity] ?? null,
       percent: true,
-      rows: rowsFrom([account]),
+      rows: rowsFrom([account], slotNames),
     });
   }
 
   const rest = accounts.filter((a) => !claimed.has(a.quantity));
   if (rest.length > 0) {
-    groups.push({ label: 'Other', total: null, percent: false, rows: rowsFrom(rest) });
+    groups.push({ label: 'Other', total: null, percent: false, rows: rowsFrom(rest, slotNames) });
   }
   return groups;
 }

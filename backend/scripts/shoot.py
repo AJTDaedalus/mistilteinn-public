@@ -38,7 +38,6 @@ import argparse
 import asyncio
 import json
 from pathlib import Path
-from typing import Any
 
 import httpx
 
@@ -159,11 +158,23 @@ def _remember(token: str) -> str:
 
 async def _seed(client: httpx.AsyncClient, token: str) -> None:
     """Import a GOOD export from `references/`, so the pages have something real to draw."""
-    exports = sorted(REFERENCES.glob("*.json"))
-    if not exports:
+    # **Picked by format, not by filename.** This took the last file alphabetically, and
+    # `references/` also holds an *HSR* relic export — `hsr_relic_export-…` sorts after
+    # `genshin_export_…`, so every seeded run posted Star Rail relics to a Genshin importer
+    # and got a 400. The directory is gitignored, so what is in it varies per machine and a
+    # positional guess is never safe.
+    good = []
+    for candidate in sorted(REFERENCES.glob("*.json")):
+        try:
+            parsed = json.loads(candidate.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(parsed, dict) and parsed.get("format") == "GOOD":
+            good.append((candidate, parsed))
+    if not good:
         print("no GOOD export in references/ — pages will render their empty states")
         return
-    payload: Any = json.loads(exports[-1].read_text())
+    export, payload = good[-1]
     result = await client.post(
         f"{BACKEND}/api/v1/artifacts/import/good",
         # Builds too: a screenshot of `/builds` showing "you have no builds yet" is a
@@ -175,7 +186,7 @@ async def _seed(client: httpx.AsyncClient, token: str) -> None:
     result.raise_for_status()
     body = result.json()
     built = (body.get("builds") or {}).get("created", 0)
-    print(f"seeded from {exports[-1].name}: {body['inserted']} artifacts, {built} builds")
+    print(f"seeded from {export.name}: {body['inserted']} artifacts, {built} builds")
 
 
 async def shoot(routes: tuple[str, ...], *, seed: bool, full_page: bool) -> int:
