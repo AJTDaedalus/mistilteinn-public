@@ -131,6 +131,12 @@ class RosterCharacter(BaseModel):
     #: performing, and joining a second endpoint to decorate this one would be that walk
     #: wearing a different name. Nullable — a row with no art is a seeding gap, not an error.
     icon: str | None = None
+    #: The vision's emblem basename, from `element_symbols` — the one place that decides.
+    #:
+    #: Published for the same reason as `icon`: the owner wants the vision shown as its emblem
+    #: rather than the word "Hydro", and a client building `f"{element}.webp"` would be a
+    #: second copy of that mapping which silently 404s the moment a patch adds a vision.
+    element_icon: str | None = None
     #: This character's own names for their abilities, keyed by **gcsim's action** —
     #: `{"skill": "All Schemes to Know"}` — so an editor can offer what the player knows.
     #:

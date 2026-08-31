@@ -53,7 +53,7 @@ from app.schemas.rotation import (
     TeamRoster,
 )
 from app.schemas.team import TEAM_SLOTS
-from app.services import gcsim_keys
+from app.services import element_symbols, gcsim_keys
 from app.services.gcsim_config import GcsimConfigError, build_config, target_fields
 from app.services.gcsim_keys import GcsimKeyError, authorable_actions, pinned_commit
 from app.services.rotation_compiler import (
@@ -259,6 +259,7 @@ async def rotation_options(repo: _Repo) -> RotationOptions:
                         name=character.name,
                         element=str(character.element.value),
                         icon=character.icon,
+                        element_icon=element_symbols.symbol_for(character.element),
                         # Keyed by gcsim's **action**, not by talent type: they are two
                         # vocabularies and they look like one. `gcsim_keys.ability_names`
                         # owns the correspondence so no client performs it.

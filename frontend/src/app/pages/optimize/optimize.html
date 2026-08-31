@@ -26,7 +26,12 @@
           [meta]="'C' + subject.constellation_level + ' · ' + (subject.weapon_display || 'no weapon')"
           [size]="48"
         />
-        <element-chip [element]="subject.character?.element ?? null" />
+        <element-chip
+            compact
+            [size]="22"
+            [element]="subject.character?.element ?? null"
+            [icon]="subject.character?.element_icon"
+          />
         <catalogue-icon [icon]="subject.weapon?.icon" [alt]="''" [size]="36" />
       </p>
     }

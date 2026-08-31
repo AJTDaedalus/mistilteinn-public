@@ -67,7 +67,12 @@
             (click)="toggleAddingFor(member.nanoka_id)"
           >
             <entity-token [icon]="member.icon" [name]="member.name" [size]="34" />
-            <element-chip [element]="member.element" />
+            <element-chip
+              compact
+              [size]="22"
+              [element]="member.element"
+              [icon]="member.element_icon"
+            />
           </button>
 
           @if (addingFor() === member.nanoka_id) {

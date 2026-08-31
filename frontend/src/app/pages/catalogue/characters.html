@@ -30,21 +30,31 @@
        toggle: clicking the active one clears it, so there is no separate "All" to get out of
        step with the selection. -->
   <div class="filters" role="group" aria-label="Filter characters">
-    <!-- The emblem *and* the name. A coloured glyph alone is fast for someone who knows the
-         icons and useless to everyone else — the argument `element-chip` makes at length, and
-         the accessibility bug `ng lint` caught on #131. -->
+    <!-- **The emblem alone, and larger** (owner, 2026-08-31): *"on filters you can also remove
+         the element name and just make the icon bigger."*
+         
+         The note that stood here argued for the emblem *and* the name, on the grounds that a
+         coloured glyph alone is useless to anyone who does not know the icons. That argument
+         was about **colour** being the only channel, and it still holds — but an emblem is a
+         shape, not a hue, and the button keeps a real accessible name: `aria-label` carries
+         the word, and `title` shows it on hover. Nothing here is conveyed by colour alone,
+         which is what #131 and `ng lint` were actually about. -->
     @for (vision of elements(); track vision.value) {
       <button
         type="button"
         class="chip"
         [class.chip--on]="element() === vision.value"
         [attr.aria-pressed]="element() === vision.value"
+        [attr.aria-label]="vision.value"
+        [attr.title]="vision.value"
         (click)="pickElement($any(vision.value))"
       >
         @if (vision.icon) {
-          <catalogue-icon [icon]="vision.icon" [alt]="''" [size]="16" />
+          <catalogue-icon [icon]="vision.icon" [alt]="''" [size]="26" />
+        } @else {
+          <!-- No emblem vendored: fall back to the word rather than an empty button. -->
+          {{ vision.value }}
         }
-        {{ vision.value }}
       </button>
     }
     <span class="filters__gap"></span>
@@ -94,6 +104,8 @@
                  about a character now say it the same way. -->
             <span class="card__marks">
               <element-chip
+                compact
+                [size]="22"
                 [element]="character.element ?? null"
                 [icon]="character.element_icon"
               />

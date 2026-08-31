@@ -95,7 +95,9 @@
                 [attr.title]="e.element"
                 (click)="elementFilter.set(elementFilter() === e.element ? '' : e.element)"
               >
-                <catalogue-icon [icon]="e.icon" [alt]="e.element" [size]="18" />
+                <!-- 26px, matching the catalogue's vision filter. These were already emblem-only;
+                 the owner's note was that they are too small to read at a glance. -->
+            <catalogue-icon [icon]="e.icon" [alt]="e.element" [size]="26" />
               </button>
             }
           </div>

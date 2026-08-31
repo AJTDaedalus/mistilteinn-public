@@ -6413,6 +6413,17 @@
             ],
             "title": "Icon"
           },
+          "element_icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Element Icon"
+          },
           "abilities": {
             "additionalProperties": {
               "type": "string"

@@ -42,7 +42,9 @@
             [attr.title]="e.element"
             (click)="elementFilter.set(elementFilter() === e.element ? '' : e.element)"
           >
-            <catalogue-icon [icon]="e.icon" [alt]="e.element" [size]="18" />
+            <!-- 26px, matching the catalogue's vision filter. These were already emblem-only;
+                 the owner's note was that they are too small to read at a glance. -->
+            <catalogue-icon [icon]="e.icon" [alt]="e.element" [size]="26" />
           </button>
         }
       </div>
@@ -89,7 +91,12 @@
             />
             <span class="name">{{ build.character?.name || 'No character' }}</span>
             <span class="marks">
-              <element-chip [element]="build.character?.element ?? null" />
+              <element-chip
+              compact
+              [size]="22"
+              [element]="build.character?.element ?? null"
+              [icon]="build.character?.element_icon"
+            />
               <span class="lvl">Lv{{ build.character_level }}</span>
               <span class="lvl">C{{ build.constellation_level }}</span>
             </span>
@@ -152,7 +159,12 @@
       @if (character(); as chosen) {
         <p class="subject">
           <entity-token [icon]="chosen.icon" [name]="chosen.name" [size]="48" />
-          <element-chip [element]="chosen.element ?? null" />
+          <element-chip
+              compact
+              [size]="22"
+              [element]="chosen.element ?? null"
+              [icon]="chosen.element_icon"
+            />
         </p>
         <p class="hint">
           Only {{ chosen.weapon_type_display }}s are listed — {{ chosen.name }} cannot hold
