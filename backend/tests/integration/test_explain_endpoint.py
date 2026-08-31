@@ -178,6 +178,42 @@ async def test_the_sum_is_labelled_sum_of_parts_not_total(
     assert "total" not in account
 
 
+async def test_the_response_publishes_the_resolved_totals(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """The value the chain acts on, which the accounts above cannot be added up to reach.
+
+    The groups on the details pane showed a stat's parts and never the stat, because no
+    contribution is ever registered for a derived quantity — `atk` is computed by the graph.
+    `stats.TOTALS` held a node per quantity for exactly this and nothing published it.
+    """
+    body = (await _explain(authed_client, scene.build_id)).json()
+    totals = body["totals"]
+
+    assert totals, "an empty map would render every group headline-less, which is the bug"
+    assert totals["atk"] > 0
+    for quantity in ("atk", "hp", "def", "crit_rate", "crit_dmg", "energy_recharge"):
+        assert quantity in totals, f"{quantity} is a headline stat and must be resolvable"
+
+
+async def test_the_total_is_not_the_sum_of_the_parts(authed_client: AsyncClient, scene: Scene):
+    """**The reason this is published rather than derived.**
+
+    `base * (1 + pct) + flat` is not addition. A client that summed the ATK contributions
+    would get a number that is not the build's ATK — plausible, wrong, and indistinguishable
+    from correct without doing the arithmetic. This asserts the two genuinely differ, so a
+    future change that made `totals` a sum would fail here rather than ship.
+    """
+    body = (await _explain(authed_client, scene.build_id)).json()
+    accounts = {s["quantity"]: s for s in body["stats"]}
+    contributing = [
+        accounts[q]["sum_of_parts"] for q in ("base_atk", "atk_pct", "flat_atk") if q in accounts
+    ]
+
+    assert contributing, "this build must contribute to ATK for the comparison to mean anything"
+    assert body["totals"]["atk"] != pytest.approx(sum(contributing))
+
+
 # ── The catalogue's own words ─────────────────────────────────────────────────
 
 

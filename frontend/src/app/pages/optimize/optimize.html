@@ -541,28 +541,41 @@ beside it is already what you would gain after losing that bonus.">costs the set
                     @for (group of statGroups(); track group.label) {
                       <div class="stat-group">
                         <dt>
-                          {{ group.label }}
-                          @if (group.total; as total) {
-                            <span class="figure mono">{{ total.sum_of_parts | number: '1.0-1' }}</span>
+                          <span class="stat-group__name">{{ group.label }}</span>
+                          <!-- The resolved value the optimizer acts on, from the server's own
+                               graph. Never a sum of the rows: `base * (1 + pct) + flat` is not
+                               addition, so adding them here would be a second and wrong copy
+                               of the damage chain. Absent rather than computed when the server
+                               published none. -->
+                          @if (group.total !== null) {
+                            <span class="stat-group__total mono">
+                              @if (group.percent) {
+                                {{ group.total | percent: '1.1-1' }}
+                              } @else {
+                                {{ group.total | number: '1.1-1' }}
+                              }
+                            </span>
                           }
                         </dt>
                         <dd>
+                          <!-- One row per **contribution**, not per quantity (owner): a stat
+                               fed by three sources shows three rows under its total, rather
+                               than one row with the sources joined into a sentence. -->
                           <ul class="stat-group__parts">
-                            @for (input of group.inputs; track input.quantity) {
+                            @for (row of group.rows; track $index) {
                               <li>
-                                <span class="quantity">{{ input.quantity }}</span>
+                                <span class="quantity">{{ row.quantity }}</span>
                                 <span class="figure mono">
-                                  {{ input.sum_of_parts | number: '1.0-4' }}
+                                  @if (row.percent) {
+                                    {{ row.value | percent: '1.1-1' }}
+                                  } @else {
+                                    {{ row.value | number: '1.1-1' }}
+                                  }
                                 </span>
-                                <span class="muted sources">{{ input.sources.join(' · ') }}</span>
+                                <span class="muted sources">{{ row.source }}</span>
                               </li>
                             }
                           </ul>
-                          @if (group.total; as total) {
-                            <p class="stat-group__from muted">
-                              {{ total.sources.join(' · ') }}
-                            </p>
-                          }
                         </dd>
                       </div>
                     }

@@ -1,28 +1,33 @@
 /**
- * The damage chain's stat accounts, grouped the way a player reads a build.
+ * The damage chain's stat accounts, grouped and totalled the way a player reads a build.
  *
- * Owner: *"The stats table is still confusing… It should be aggregated into chunks like
- * 'effective attack' which takes in its elements (flat, base, pct) into one unit, showing how
- * the entire effective attack is built. Same with crit, damage %, HP, def, EM, and ER. All of
- * the effective stats, and how they're derived. Right now it's just a list of random chunks of
- * the math."*
+ * Owner: *"The 'groups', like 'effective atk', should have their values shown. Essentially the
+ * final 'acting' value used in the optimizer… In cases where multiple sources contribute to a
+ * stat (crit rate, crit damage, cryo dmg) we should list them out as their own rows with the
+ * 'total' appearing there."*
  *
- * The server publishes one account per quantity — `base_atk`, `atk_pct`, `flat_atk`, `atk` —
- * flat and in whatever order they were recorded. Every number a reader wants is there; the
- * relationships between them are not, so `atk` sits beside its own inputs looking like a
- * sibling rather than their result.
+ * ## Where the total comes from, and where it does not
  *
- * ## What this does not do
+ * **From the server, resolved by the same graph that produced the damage.** `stats.TOTALS`
+ * holds a node per quantity and its docstring names this exact consumer — *"the optimizer's
+ * scoring pass and the 'explain this number' path both want this shape"* — it was simply never
+ * published. `ExplainResponse.totals` publishes it now.
  *
- * **It does not recompute anything.** The group's total is the server's own derived account
- * (`atk`), never a sum of the inputs — `sum_of_parts` is documented upstream as *"the
- * arithmetic sum of the parts, which is not necessarily the stat"*, because
- * `base * (1 + pct) + flat` is not addition. A UI that added the inputs and printed the result
- * as effective ATK would be a second, wrong implementation of the damage chain.
+ * It is emphatically **not** the sum of the rows below it. A contribution is an *input*:
+ * `base_atk`, `atk_pct` and `flat_atk` compose as `base * (1 + pct) + flat`, which is not
+ * addition, and `sum_of_parts` is documented upstream as *"the arithmetic sum of the parts,
+ * which is not necessarily the stat"*. Adding the rows up in the UI would be a second
+ * implementation of the damage chain, and a wrong one — worse than showing nothing, because it
+ * would look right.
  *
- * **It drops nothing.** A quantity that matches no family lands in `Other`, in the order the
- * server sent it. A grouping that silently hid an unrecognised stat would be worse than the
- * flat list it replaces, because the flat list at least showed everything.
+ * A group whose total the server did not publish shows its rows with no headline rather than a
+ * computed stand-in.
+ *
+ * ## It drops nothing
+ *
+ * A quantity matching no group lands in `Other`, in the order the server sent it. A grouping
+ * that silently hid an unrecognised stat would be worse than the flat list it replaces, which
+ * at least showed everything.
  */
 
 /** One contribution to a quantity, as the API publishes it. */
@@ -41,78 +46,148 @@ export interface StatAccount {
   sources: string[];
 }
 
-/** A readable stat and the accounts that produced it. */
+/** One contribution, ready to render. */
+export interface StatRow {
+  /** The quantity it registered under — `atk_pct`. */
+  quantity: string;
+  value: number;
+  /** Where it came from, in the server's words. */
+  source: string;
+  /** Whether `value` is a fraction to render as a percentage. */
+  percent: boolean;
+}
+
+/** A stat, its resolved value, and every contribution behind it. */
 export interface StatGroup {
   /** What a player calls it — `Effective ATK`. */
   label: string;
   /**
-   * The server's own derived account for this stat, when it published one.
+   * The resolved value the optimizer actually acts on, or null when the server published none.
    *
-   * Null for a family that has no single total — CRIT is a rate and a multiplier, not one
-   * number — and for a family whose total this hit did not need.
+   * Never computed here. See the module docstring.
    */
-  total: StatAccount | null;
-  /** The accounts that feed the total, in a fixed reading order rather than arrival order. */
-  inputs: StatAccount[];
+  total: number | null;
+  /** Whether `total` is a fraction to render as a percentage. */
+  percent: boolean;
+  /** One row per contribution, not per quantity — the owner asked for the sources listed. */
+  rows: StatRow[];
 }
 
 /**
- * `{family: [the quantity that is the total, ...the quantities that build it]}`.
+ * `{total quantity: [label, the input quantities that compose it]}`.
  *
- * Order inside a family is the reading order — base, then percentage, then flat — which is
- * also the order the arithmetic applies them in. It is not the order the server sends.
+ * A stat whose only input is itself — CRIT rate, EM — still belongs here: it has a resolved
+ * total and a list of contributions, which is the same shape as ATK with fewer moving parts.
  */
-const FAMILIES: readonly { label: string; total: string | null; inputs: string[] }[] = [
-  { label: 'Effective ATK', total: 'atk', inputs: ['base_atk', 'atk_pct', 'flat_atk'] },
-  { label: 'Effective HP', total: 'hp', inputs: ['base_hp', 'hp_pct', 'flat_hp'] },
-  { label: 'Effective DEF', total: 'def', inputs: ['base_def', 'def_pct', 'flat_def'] },
-  { label: 'CRIT', total: null, inputs: ['crit_rate', 'crit_dmg'] },
-  { label: 'Damage bonus', total: null, inputs: ['dmg_bonus'] },
-  { label: 'Elemental Mastery', total: null, inputs: ['elemental_mastery'] },
-  { label: 'Energy Recharge', total: null, inputs: ['energy_recharge'] },
+const GROUPS: readonly { total: string; label: string; inputs: readonly string[] }[] = [
+  { total: 'atk', label: 'Effective ATK', inputs: ['base_atk', 'atk_pct', 'flat_atk'] },
+  { total: 'hp', label: 'Effective HP', inputs: ['base_hp', 'hp_pct', 'flat_hp'] },
+  { total: 'def', label: 'Effective DEF', inputs: ['base_def', 'def_pct', 'flat_def'] },
+  { total: 'crit_rate', label: 'CRIT Rate', inputs: ['crit_rate'] },
+  { total: 'crit_dmg', label: 'CRIT DMG', inputs: ['crit_dmg'] },
+  { total: 'elemental_mastery', label: 'Elemental Mastery', inputs: ['elemental_mastery'] },
+  { total: 'energy_recharge', label: 'Energy Recharge', inputs: ['energy_recharge'] },
 ];
 
-/** Element-scoped bonuses — `pyro_dmg_bonus` — belong with the plain one. */
+/**
+ * Quantities whose value is a fraction — `0.624` means 62.4%.
+ *
+ * Named rather than inferred from the value's magnitude: a 0.9 could be 90% CRIT DMG or nine
+ * tenths of a point of something, and guessing from the number is how a display invents a unit.
+ * Anything ending `_pct` or `_dmg_bonus` is a percentage by construction of those names.
+ */
+const PERCENT_QUANTITIES = new Set([
+  'crit_rate',
+  'crit_dmg',
+  'energy_recharge',
+  'dmg_bonus',
+  'healing_bonus',
+  'incoming_healing_bonus',
+  'shield_strength',
+]);
+
+/** Whether a quantity's value is a fraction to be shown as a percentage. */
+export function isPercent(quantity: string): boolean {
+  return (
+    PERCENT_QUANTITIES.has(quantity)
+    || quantity.endsWith('_pct')
+    || quantity.endsWith('_dmg_bonus')
+  );
+}
+
+/** A damage bonus for one element — `cryo_dmg_bonus`. */
 const DMG_BONUS_SUFFIX = '_dmg_bonus';
 
+/** `cryo_dmg_bonus` → `Cryo DMG Bonus`. */
+function damageBonusLabel(quantity: string): string {
+  const element = quantity.slice(0, -DMG_BONUS_SUFFIX.length);
+  return `${element.charAt(0).toUpperCase()}${element.slice(1)} DMG Bonus`;
+}
+
+function rowsFrom(accounts: readonly StatAccount[]): StatRow[] {
+  return accounts.flatMap((account) =>
+    account.parts.map((part) => ({
+      // The part's own quantity, not the account's: a contribution registered under
+      // `atk_pct` inside the ATK group should say so rather than inherit `atk`.
+      quantity: part.quantity || account.quantity,
+      value: part.value,
+      source: part.source,
+      percent: isPercent(part.quantity || account.quantity),
+    })),
+  );
+}
+
 /**
- * Group the accounts, keeping every one of them.
+ * Group the accounts and attach the resolved totals.
  *
- * A family with nothing to show is omitted entirely: a build whose talent scales off ATK
- * records no HP quantities, and an empty "Effective HP" row would be a question the page
- * cannot answer presented as an answer it can.
+ * `totals` is `ExplainResponse.totals` — `{quantity: resolved value}`. Passing an empty map is
+ * valid and yields groups with no headline, which is what a server that has not been updated
+ * produces.
  */
-export function groupStats(accounts: readonly StatAccount[]): StatGroup[] {
+export function groupStats(
+  accounts: readonly StatAccount[],
+  totals: Readonly<Record<string, number>> = {},
+): StatGroup[] {
   const byQuantity = new Map(accounts.map((a) => [a.quantity, a]));
   const claimed = new Set<string>();
   const groups: StatGroup[] = [];
 
-  for (const family of FAMILIES) {
-    const total = family.total ? byQuantity.get(family.total) ?? null : null;
-    const inputs = family.inputs
+  for (const group of GROUPS) {
+    const mine = group.inputs
       .map((q) => byQuantity.get(q))
       .filter((a): a is StatAccount => a !== undefined);
+    const total = totals[group.total];
 
-    // Element-scoped damage bonuses join the damage family rather than falling to Other,
-    // where `pyro_dmg_bonus` would read as an unrelated stat.
-    if (family.label === 'Damage bonus') {
-      for (const account of accounts) {
-        if (account.quantity.endsWith(DMG_BONUS_SUFFIX) && !inputs.includes(account)) {
-          inputs.push(account);
-        }
-      }
-    }
+    // A group with neither a total nor a contribution is a question this build cannot answer,
+    // and an empty row would present that as an answer. A build whose talent scales off ATK
+    // records no HP quantities at all.
+    if (mine.length === 0 && total === undefined) continue;
 
-    if (total === null && inputs.length === 0) continue;
-    if (total) claimed.add(total.quantity);
-    for (const input of inputs) claimed.add(input.quantity);
-    groups.push({ label: family.label, total, inputs });
+    for (const account of mine) claimed.add(account.quantity);
+    groups.push({
+      label: group.label,
+      total: total ?? null,
+      percent: isPercent(group.total),
+      rows: rowsFrom(mine),
+    });
+  }
+
+  // One group per element, because a build carrying Cryo and Physical bonuses has two
+  // different numbers and a single "Damage bonus" row would have to pick one.
+  for (const account of accounts) {
+    if (!account.quantity.endsWith(DMG_BONUS_SUFFIX) || claimed.has(account.quantity)) continue;
+    claimed.add(account.quantity);
+    groups.push({
+      label: damageBonusLabel(account.quantity),
+      total: totals[account.quantity] ?? null,
+      percent: true,
+      rows: rowsFrom([account]),
+    });
   }
 
   const rest = accounts.filter((a) => !claimed.has(a.quantity));
   if (rest.length > 0) {
-    // Named `Other`, not dropped. See the module docstring.
-    groups.push({ label: 'Other', total: null, inputs: rest });
+    groups.push({ label: 'Other', total: null, percent: false, rows: rowsFrom(rest) });
   }
   return groups;
 }

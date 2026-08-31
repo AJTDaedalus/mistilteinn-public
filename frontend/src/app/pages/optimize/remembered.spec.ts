@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { recall, recallAmong, remember } from './remembered';
+import {
+  recall, recallAmong, recallSelections, remember, rememberSelections,
+  type Selections,
+} from './remembered';
 import type { WebStorage } from '../../shared/browser-store';
 
 /**
@@ -96,5 +99,63 @@ describe('recallAmong', () => {
     remember(store, 'buildId', 'b1');
 
     expect(recallAmong(store, 'buildId', [])).toBe('');
+  });
+});
+
+
+describe('remembering a search\'s settings', () => {
+  /**
+   * Owner: *"both for a user — 'what did I have open last time' — and for a character —
+   * 'when I last optimized this character, what did I have selected?'"*
+   */
+  const settings = (over: Partial<Selections> = {}): Selections => ({
+    objective: 'rotation', sets: [15025], pair: null, mainStats: { equip_ring: ['atk'] },
+    ...over,
+  });
+
+  it('restores this character\'s settings ahead of the page-wide ones', () => {
+    // The distinction the owner drew: reopening on Skirk should bring back what was chosen
+    // for Skirk, not the last thing done to anybody.
+    const store = memory();
+    rememberSelections(store, 'skirk', settings({ sets: [15025] }));
+    rememberSelections(store, 'noelle', settings({ sets: [15003] }));
+
+    expect(recallSelections(store, 'skirk')?.sets).toEqual([15025]);
+    // Noelle was written last, so the page-wide blob is hers.
+    expect(recallSelections(store, null)?.sets).toEqual([15003]);
+  });
+
+  it('falls back to the page-wide settings for a character never optimized', () => {
+    const store = memory();
+    rememberSelections(store, 'skirk', settings({ objective: 'hit' }));
+
+    expect(recallSelections(store, 'brand-new')?.objective).toBe('hit');
+  });
+
+  it('returns null rather than a half-restored selection', () => {
+    // A blob written by an older version can be missing fields the caller indexes into.
+    // Missed rather than repaired: a partial restore is a claim about what the user chose.
+    const store = memory();
+    store.setItem('mistilteinn:optimize:selections', JSON.stringify({ objective: 'rotation' }));
+
+    expect(recallSelections(store, null)).toBeNull();
+  });
+
+  it('misses rather than throwing on unparseable content', () => {
+    const store = memory();
+    store.setItem('mistilteinn:optimize:selections', 'not json');
+
+    expect(recallSelections(store, null)).toBeNull();
+  });
+
+  it('survives a store that refuses writes', () => {
+    const store = memory({ setItem: () => { throw new Error('QuotaExceeded'); } });
+
+    expect(() => rememberSelections(store, 'skirk', settings())).not.toThrow();
+  });
+
+  it('reads and writes nothing without a store', () => {
+    expect(recallSelections(null, 'skirk')).toBeNull();
+    expect(() => rememberSelections(null, 'skirk', settings())).not.toThrow();
   });
 });

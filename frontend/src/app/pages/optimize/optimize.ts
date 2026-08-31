@@ -27,7 +27,10 @@ import { isFilterableMainStat, sortMainStats } from '../../shared/stat-order';
 import { scoreForSlot } from '../../sim/artifact-score';
 import type { Recipe } from '../../sim/recipe';
 import { evaluateRecipe } from '../../sim/recipe-eval';
-import { browserStore, recallAmong, remember } from './remembered';
+import {
+  browserStore, recallAmong, recallSelections, remember, rememberSelections,
+  type Selections,
+} from './remembered';
 import type { ArtifactCardModel } from '../../shared/artifact-card/artifact-card';
 import { describeStat } from '../../shared/stat-label';
 import { substatReadings } from '../../shared/substat-bars/substat-bars';
@@ -625,7 +628,13 @@ export class OptimizePage implements OnInit {
    */
   protected readonly statGroups = computed<StatGroup[]>(() => {
     const shown = this.pairing()?.shown;
-    return shown ? groupStats(shown.result.stats as unknown as StatAccount[]) : [];
+    if (!shown) return [];
+    return groupStats(
+      shown.result.stats as unknown as StatAccount[],
+      // The resolved values the chain acts on. Empty from a server that predates the field,
+      // which renders groups without a headline rather than inventing one.
+      (shown.result.totals ?? {}) as Record<string, number>,
+    );
   });
 
   /** The cards for one row, in the order the row names its pieces. */
@@ -1225,6 +1234,42 @@ export class OptimizePage implements OnInit {
     await this.selectBuild(inScope[0]?.id ?? '');
   }
 
+  /** The search settings as they stand, for `rememberSelections`. */
+  private currentSelections(): Selections {
+    const pair = this.chosenPair();
+    return {
+      objective: this.objective(),
+      sets: [...this.selectedSets()],
+      pair: pair === null ? null : [pair[0], pair[1]],
+      // Copied, not aliased: the signal's value is readonly and `Selections` is a plain
+      // record that gets JSON-serialised.
+      mainStats: Object.fromEntries(
+        Object.entries(this.mainStatBySlot()).map(([slot, keys]) => [slot, [...keys]]),
+      ),
+    };
+  }
+
+  /**
+   * Put back what was chosen last time — for this character first, then page-wide.
+   *
+   * **Sets are filtered against what this inventory can actually field.** A set remembered
+   * from a character whose pieces have since been equipped elsewhere would otherwise sit
+   * selected and uncalibratable, and the search would refuse with a message about a set the
+   * user did not knowingly pick.
+   */
+  private restoreSelections(characterId: string | null): void {
+    const found = recallSelections(this.store, characterId);
+    if (!found) return;
+    if (found.objective === 'hit' || found.objective === 'rotation') {
+      this.objective.set(found.objective);
+    }
+    const reachable = new Set(this.fourPieceChoices().map((c) => c.setId));
+    this.selectedSets.set(new Set(found.sets.filter((id) => reachable.has(id))));
+    this.pairFirst.set(found.pair?.[0] ?? null);
+    this.pairSecond.set(found.pair?.[1] ?? null);
+    this.mainStatBySlot.set(found.mainStats ?? {});
+  }
+
   /** Chosen rotations are remembered; the picker no longer starts on an arbitrary one. */
   protected pickRotation(id: string): void {
     this.rotationId.set(id);
@@ -1433,7 +1478,17 @@ export class OptimizePage implements OnInit {
   /** The one button. It runs the mode that is chosen, which is the whole point of there being one. */
   protected optimizeNow(): Promise<void> {
     this.clearRotationFindings();
+    // **Saved when the search runs, not on every toggle.** Pressing Optimize is the signal
+    // that this combination is what the user meant; a filter switched on and off again would
+    // otherwise be remembered as a decision.
+    this.keepSelections();
     return this.objective() === 'rotation' ? this.runRotation() : this.run();
+  }
+
+  /** This character's settings and the page-wide ones, written together. */
+  private keepSelections(): void {
+    const character = this.builds().find((b) => b.id === this.buildId())?.character?.id ?? null;
+    rememberSelections(this.store, character, this.currentSelections());
   }
 
   /**

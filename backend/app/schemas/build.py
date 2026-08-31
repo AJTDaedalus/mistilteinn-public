@@ -455,6 +455,18 @@ class ExplainResponse(BaseModel):
 
     damage: float
     stats: list[StatAccountRead]
+    #: Every resolved stat total, keyed by quantity — `{"atk": 2431.7, "crit_rate": 0.624}`.
+    #:
+    #: **The value the chain acts on, which `stats` above cannot be added up to reach.** A
+    #: contribution is an input: `base_atk`, `atk_pct` and `flat_atk` compose as
+    #: `base * (1 + pct) + flat`, and `StatAccountRead.sum_of_parts` says in its own docstring
+    #: that it "is not necessarily the stat". A client that summed the parts would be a second
+    #: implementation of the damage chain, and a wrong one — which is why this is published
+    #: rather than left to be derived.
+    #:
+    #: Resolved by the same evaluator and under the same scope as `damage`, so the number and
+    #: the stats behind it always describe one build.
+    totals: dict[str, float] = {}
     set_effects: list[SetEffectRead]
     simulation: SimulationNoteRead | None = None
     #: Anything that could not be tied to a contribution, a run, or the catalogue. Listed

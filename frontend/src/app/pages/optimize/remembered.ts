@@ -23,6 +23,86 @@ const PREFIX = 'mistilteinn:optimize:';
 /** The selections worth remembering. Data the user chose — never which tool is in front. */
 export type Remembered = 'buildId' | 'teamId' | 'rotationId';
 
+/**
+ * The search settings worth restoring, as one blob.
+ *
+ * Owner: *"it would be nice if the optimize tab remembered the last selected options, both for
+ * a user — 'what did I have open last time I did an optimization' — and for a character —
+ * 'when I last optimized this character, what did I have selected?'"*
+ *
+ * Both, because they answer different questions. Reopening the page should look like you left
+ * it; picking a character you tuned last week should bring back what you chose *for them*, not
+ * what you happened to be doing five minutes ago on someone else.
+ */
+export interface Selections {
+  /** `hit` or `rotation`. */
+  objective: string;
+  /** Catalogue ids of the 4-piece sets to search. */
+  sets: number[];
+  /** The 2+2 pair, or null. */
+  pair: [number, number] | null;
+  /** `{slot: [main stat keys]}` — the main-stat filter. */
+  mainStats: Record<string, string[]>;
+}
+
+/** Where a character's own settings live. `null` for the page-wide "last time" blob. */
+export type Scope = string | null;
+
+function slot(scope: Scope): string {
+  return scope === null ? 'selections' : `selections:${scope}`;
+}
+
+/**
+ * Store this character's settings **and** the page-wide ones, in that order.
+ *
+ * Written together on purpose: they always agree at the moment of writing, and two call sites
+ * that could drift apart is how "the page remembered something the character did not" happens.
+ */
+export function rememberSelections(
+  store: WebStorage | null, character: Scope, selections: Selections,
+): void {
+  if (store === null) return;
+  const payload = JSON.stringify(selections);
+  for (const key of [slot(null), ...(character === null ? [] : [slot(character)])]) {
+    try {
+      store.setItem(PREFIX + key, payload);
+    } catch {
+      // A full or blocked store means the page opens with defaults next time, which is the
+      // same outcome as never having remembered.
+    }
+  }
+}
+
+/**
+ * This character's settings, falling back to the page-wide ones, then to null.
+ *
+ * **The character's own come first.** Reopening on Skirk should restore what was chosen for
+ * Skirk rather than the last thing done to anybody, which is the distinction the owner drew.
+ */
+export function recallSelections(store: WebStorage | null, character: Scope): Selections | null {
+  if (store === null) return null;
+  for (const key of [...(character === null ? [] : [slot(character)]), slot(null)]) {
+    try {
+      const raw = store.getItem(PREFIX + key);
+      if (raw === null) continue;
+      const found = JSON.parse(raw) as Selections;
+      // A blob written by an older version can be missing fields a caller will index into.
+      // Missed rather than repaired, for the reason `readRecipe` gives: a half-restored
+      // selection is a claim about what the user chose.
+      if (
+        typeof found?.objective === 'string'
+        && Array.isArray(found?.sets)
+        && typeof found?.mainStats === 'object' && found.mainStats !== null
+      ) {
+        return found;
+      }
+    } catch {
+      // Unparseable is a miss, never a throw.
+    }
+  }
+  return null;
+}
+
 /** Store `value` under `field`, or forget it when empty. Never throws. */
 export function remember(
   store: WebStorage | null, field: Remembered, value: string,

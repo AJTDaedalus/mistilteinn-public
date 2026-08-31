@@ -124,6 +124,25 @@ class BuildEvaluator:
         """
         return float(self._calculator.compute(stats.scoped(node, scope)))
 
+    def totals(self, scope: str) -> dict[str, float]:
+        """Every resolved stat total under `scope`, keyed by quantity.
+
+        **The value the chain actually acts on**, not a sum of contributions: `base_atk`,
+        `atk_pct` and `flat_atk` compose as `base * (1 + pct) + flat`, so adding the
+        contributions gives a number that is not the stat. `stats.TOTALS` already held a node
+        per quantity for exactly this — its docstring names *"the 'explain this number' path"*
+        as a wanted consumer — and nothing published it, so the explanation could show a stat's
+        parts and never the stat.
+
+        Scoped like every other read, for the reason `_value` gives: a scope-gated
+        contribution is invisible under every other scope, and reporting an unscoped total
+        beside scoped damage would put two different builds on one screen.
+        """
+        return {
+            quantity: self._value(node, scope)
+            for quantity, node in stats.TOTALS.items()
+        }
+
     def evaluate(self, hit: Hit) -> DamageResult:
         """Resolve the stats this hit needs and run the damage chain."""
         scope = hit.scope

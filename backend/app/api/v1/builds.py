@@ -447,13 +447,13 @@ async def explain_build(
         _require_one_per_slot(equipped_rows, "the equipped build")
 
     try:
-        proposed, proposed_damage = _scored(
+        proposed, proposed_damage, proposed_totals = _scored(
             base, proposed_rows, bonuses, hit, enemy, build.character_level,
         )
         equipped = proposed
         equipped_damage = proposed_damage
         if body.compare_to_equipped and body.artifact_ids is not None:
-            equipped, equipped_damage = _scored(
+            equipped, equipped_damage, _ = _scored(
                 base, equipped_rows, bonuses, hit, enemy, build.character_level,
             )
     except (artifact_optimizer.OptimizerInputError, StatInputError) as exc:
@@ -470,6 +470,10 @@ async def explain_build(
 
     return ExplainResponse(
         damage=proposed_damage,
+        # The **proposed** build's totals, matching `damage` and `stats` above. The equipped
+        # build's are deliberately not published: this response describes one build, and a
+        # second stat block under the same keys is how a reader ends up reading the wrong one.
+        totals=proposed_totals,
         stats=[
             StatAccountRead(
                 quantity=account_.quantity,
@@ -719,8 +723,14 @@ def _scored(
     hit: Hit,
     enemy: Enemy,
     character_level: int,
-) -> "tuple[tuple[Contribution, ...], float]":
-    """Contributions and damage for one set of pieces, through the one scoring path."""
+) -> "tuple[tuple[Contribution, ...], float, dict[str, float]]":
+    """Contributions, damage, and the resolved stat totals for one set of pieces.
+
+    The totals come from the **same evaluator** that produced the damage, under the same
+    scope. Resolving them separately would let the printed stats and the printed number
+    describe two different builds — which is the drift the contribution log's own
+    tag/quantity check exists to make impossible one layer down.
+    """
     combination = build_assembler.candidates(rows)
     log, _ = artifact_optimizer.build_combination_log(
         base, combination, artifact_optimizer.bonuses_by_set(bonuses),
@@ -728,7 +738,7 @@ def _scored(
     evaluator = BuildEvaluator(
         registry=log.registry, enemy=enemy, character_level=character_level,
     )
-    return tuple(log.contributions), evaluator.evaluate(hit).expected
+    return tuple(log.contributions), evaluator.evaluate(hit).expected, evaluator.totals(hit.scope)
 
 
 def _set_descriptions(rows: "Sequence[Artifact]") -> dict[str, str]:

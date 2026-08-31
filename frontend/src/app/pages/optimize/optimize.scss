@@ -377,24 +377,47 @@
   opacity: 0.85;
 }
 
-/* Grouped stat accounts. The group's own figure sits with its name; its inputs are indented
-   under it, so "effective ATK" reads as a result and base/pct/flat read as its parts. */
-.stat-groups { margin: 0; }
+/* ── The stat breakdown ──────────────────────────────────────────────────────
+   Owner: *"the table overall looks ugly, I think it's color and style, let's try using a more
+   Mitya-styled color scheme, maybe with gold being the row separators?"*
+
+   So: brass rules, and the two-accent split the palette is built on — warm brass for the stat
+   and its resolved value (identity), cool ink for the contributions beneath it (data). The
+   rows were undifferentiated `--ink-dim` on a `--surface-rule` grey, which is why it read as a
+   dump rather than a table. */
+.stat-groups {
+  margin: 0;
+  border-top: 1px solid color-mix(in srgb, var(--brass) 45%, transparent);
+}
 
 .stat-group {
-  margin-bottom: var(--space-3);
+  /* The gold separator the owner asked for. Between rows rather than around them: a border on
+     every side turns a list into a stack of boxes. */
+  border-bottom: 1px solid color-mix(in srgb, var(--brass) 45%, transparent);
+  padding: var(--space-2) 0;
 
   dt {
     display: flex;
     align-items: baseline;
-    gap: var(--space-2);
-    font-size: var(--text-sm);
-    color: var(--ink);
-    border-bottom: 1px solid var(--surface-rule);
-    padding-bottom: var(--space-1);
+    justify-content: space-between;
+    gap: var(--space-3);
   }
 
   dd { margin: var(--space-1) 0 0; }
+}
+
+.stat-group__name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--brass-hi);
+}
+
+/* The number the optimizer actually acts on. Given the brass and the weight because it is the
+   line a reader came for; the contributions under it are the working. */
+.stat-group__total {
+  font-size: var(--text-md);
+  color: var(--brass);
 }
 
 .stat-group__parts {
@@ -404,15 +427,16 @@
 
   li {
     display: grid;
-    grid-template-columns: minmax(8rem, 12rem) minmax(5rem, auto) 1fr;
+    grid-template-columns: minmax(7rem, 10rem) minmax(4.5rem, auto) 1fr;
     gap: var(--space-2);
     align-items: baseline;
+    padding: 0.1rem 0;
     font-size: var(--text-sm);
     color: var(--ink-dim);
   }
-}
 
-.stat-group__from {
-  margin: var(--space-1) 0 0;
-  font-size: var(--text-xs);
+  /* The contribution's own value reads as data, not identity — the palette's cool accent. */
+  .figure { color: var(--mint); }
+
+  .quantity { color: var(--ink); }
 }

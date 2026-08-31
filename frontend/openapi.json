@@ -5088,6 +5088,14 @@
             "type": "array",
             "title": "Stats"
           },
+          "totals": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Totals",
+            "default": {}
+          },
           "set_effects": {
             "items": {
               "$ref": "#/components/schemas/SetEffectRead"
