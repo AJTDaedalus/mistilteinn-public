@@ -9,28 +9,28 @@
   min-width: 0;
 }
 
+/* Art beside the numbers. The art is the identity now — it names the slot and the set at a
+   glance — so it gets the room the two labels used to take. */
 .piece__head {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
 }
 
-.piece__ident {
+/* **Stacked, not spread.** The figures used to sit in a three-column grid with the level
+   pushed right, which left a gap between the stat and its value that grew with the card and
+   read as an alignment bug. Grouped against the art, there is nothing to stretch. */
+.piece__figures {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  line-height: 1.25;
 }
 
-.piece__slot {
+.piece__main {
   font-size: var(--text-sm);
   color: var(--ink);
-}
-
-.piece__set {
-  font-size: var(--text-xs);
-  color: var(--ink-dim);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -39,12 +39,6 @@
 .piece__level {
   font-size: var(--text-xs);
   color: var(--brass);
-}
-
-.piece__main {
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--ink);
 }
 
 .piece__subs {
@@ -57,7 +51,10 @@
   border-top: 1px solid var(--surface-rule);
 }
 
+/* Sized so five sit on one row of an ordinary screen, which is what the row is for. */
 :host(.piece--compact) {
-  .piece__main,
-  .piece__set { font-size: var(--text-xs); }
+  flex: 0 1 auto;
+  padding: var(--space-1) var(--space-2);
+
+  .piece__main { font-size: var(--text-xs); }
 }

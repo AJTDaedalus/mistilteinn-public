@@ -360,3 +360,11 @@
   border-radius: var(--radius-1);
   background: var(--mint);
 }
+
+/* A line of its own inside a warning paragraph. Without it the ability names run on from the
+   sentence before them, which is how the previous version of this warning read — one long
+   line the eye slides off. */
+.block {
+  display: block;
+  margin-top: var(--space-1);
+}

@@ -65,12 +65,34 @@ export interface CalibrationProgress {
 
 /** What a calibrated set of recipes knows it does not know. */
 export interface CalibrationCaveats {
-  /** States whose rotation was not the same every iteration — no recipe describes them. */
-  unstable: string[];
+  /**
+   * States whose rotation was not the same every iteration, **with the abilities that varied**.
+   *
+   * The names were computed all along — `stabilityFrom` returns them and `recipe.meta.unstable`
+   * carries them through the cache — and the page threw them away, printing only "the rotation
+   * did not run the same way every iteration". That tells a reader something is wrong and
+   * nothing about what to change. Naming the ability points straight at it: a burst that fires
+   * twice in some iterations and three times in others is an energy problem, and the reader is
+   * the only one who can fix it.
+   */
+  unstable: { label: string; abilities: string[] }[];
   /** States carrying a conversion no probe could resolve, with the damage share affected. */
   staleConversions: { label: string; term: string; damageShare: number }[];
   /** States whose recipes were served from cache rather than recalculated. */
   fromCache: string[];
+  /**
+   * The subset of the above belonging to states that **did not score the ranking**.
+   *
+   * Only the baseline, today. It is calibrated because the upgrade list needs it to score a
+   * swap that breaks the winner's set (§10) — but `searchRecipe` picks its states from
+   * `fourPieceSets`, which never contains `null`, so no result row was ever scored with it.
+   *
+   * **Reported apart because it was judging a ranking it took no part in.** Its instability
+   * flipped the page to "Scoring unreliable", which is a claim about the order of the
+   * results, and the baseline contributes nothing to that order. Owner ruling, 2026-08-31:
+   * keep calibrating it, stop letting it judge.
+   */
+  unscoredLabels: string[];
 }
 
 export interface CalibrationResult {
@@ -177,7 +199,7 @@ export class RecipeOptimizeService {
     const byPair = new Map<string, Recipe>();
     let noFourPiece: Recipe | null = null;
     const caveats: CalibrationCaveats = {
-      unstable: [], staleConversions: [], fromCache: [],
+      unstable: [], staleConversions: [], fromCache: [], unscoredLabels: [],
     };
 
     onProgress({ done: 0, total: targets.length, current: '', loading: true });
@@ -238,11 +260,17 @@ export class RecipeOptimizeService {
         writeRecipe(this.store, key, recipe);
       }
 
+      // A target with no set ids is the baseline: calibrated, never searched. See
+      // `unscoredLabels`.
+      if (target.setIds.length === 0) caveats.unscoredLabels.push(target.label);
+
       // **Read off the recipe, so a cache hit reports it too.** This used to sit inside the
       // fresh-calibration branch above, so the second search over the same build served every
       // recipe from storage, found no instability, and the page called the ranking sound —
       // permanently, because the cache is persistent.
-      if (recipe.meta.unstable.length > 0) caveats.unstable.push(target.label);
+      if (recipe.meta.unstable.length > 0) {
+        caveats.unstable.push({ label: target.label, abilities: recipe.meta.unstable });
+      }
 
       for (const stale of recipe.meta.staleConversions) {
         caveats.staleConversions.push({

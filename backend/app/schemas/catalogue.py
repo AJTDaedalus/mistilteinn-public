@@ -309,7 +309,13 @@ class ArtifactSetRead(BaseModel):
     id: str
     nanoka_id: int
     name: str
+    #: The set's representative icon — nanoka's own, which is the **flower**.
     icon: str | None = None
+    #: The icon for each slot, keyed by `ArtifactSlot` value.
+    #:
+    #: Null on a database seeded before this field existed, in which case a client should fall
+    #: back to `icon` — the old behaviour, which drew a flower in every slot.
+    part_icons: dict[str, str] | None = None
     piece_thresholds: list[Any] = []
     available_ranks: list[Any] = []
     affixes: list[ArtifactSetAffixRead] = []

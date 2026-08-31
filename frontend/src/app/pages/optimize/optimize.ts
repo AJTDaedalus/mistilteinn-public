@@ -532,13 +532,23 @@ export class OptimizePage implements OnInit {
       // The artifact carries the catalogue's set id; `artifactSets` is keyed by nanoka's.
       // Re-key rather than look up by the wrong one — the two id spaces are the trap this
       // page already documents on `artifactSets`.
-      const art = new Map<string, string | null>();
-      for (const set of this.artifactSets().values()) art.set(set.id, set.icon ?? null);
+      //
+      // **Per slot, falling back to the set's own icon.** nanoka's set icon is the *flower*,
+      // so using it everywhere drew five flowers per build — the owner's "do we not have
+      // icons for anything but the flowers?". `part_icons` is null on a database seeded
+      // before that column, and the fallback is then exactly the old behaviour.
+      const art = new Map<string, { set: string | null; parts: Record<string, string> | null }>();
+      for (const set of this.artifactSets().values()) {
+        art.set(set.id, { set: set.icon ?? null, parts: set.partIcons });
+      }
 
       if (!stillWanted()) return;
       this.cards.set(new Map(pieces.map((piece) => [piece.id, {
         id: piece.id,
-        icon: art.get(piece.artifact_set_id ?? '') ?? null,
+        icon: (() => {
+          const found = art.get(piece.artifact_set_id ?? '');
+          return found?.parts?.[piece.slot] ?? found?.set ?? null;
+        })(),
         setName: piece.set_name ?? 'No set',
         slot: slots[piece.slot] ?? piece.slot,
         level: piece.level,
@@ -1365,13 +1375,46 @@ export class OptimizePage implements OnInit {
   protected recipeIsShaky(): boolean {
     const notes = this.caveats();
     if (notes === null) return false;
-    if (notes.unstable.length > 0) return true;
+    // **Only recipes that scored the ranking get to judge it** (owner ruling, 2026-08-31).
+    // The baseline is calibrated so the upgrade list can score a set-breaking swap, but
+    // `searchRecipe` never visits the no-four-piece state, so no row on screen was scored
+    // with it. Its instability was flipping this to "Scoring unreliable" — a claim about an
+    // order it played no part in producing.
+    const unscored = new Set(notes.unscoredLabels);
+    if (notes.unstable.some((entry) => !unscored.has(entry.label))) return true;
     // **Thresholded, because `damageShare` exists for exactly this.** `staleConversionsIn`'s
     // own docstring: *"83 hits carrying 2% of the damage is a footnote, and 5 hits carrying
     // 40% is not."* Firing on any entry gave a single 0.3%-share frozen term the same red
     // sentence as the 90.3% case this was written for, which is the cry-wolf shape that makes
     // a warning worth ignoring.
-    return notes.staleConversions.some((s) => s.damageShare >= SHAKY_DAMAGE_SHARE);
+    return notes.staleConversions.some(
+      (s) => !unscored.has(s.label) && s.damageShare >= SHAKY_DAMAGE_SHARE,
+    );
+  }
+
+  /**
+   * The caveats split by whether the recipe they belong to actually scored the ranking.
+   *
+   * The baseline's problems are real and worth showing — the upgrade list uses that recipe to
+   * price a swap that breaks the winner's set — but they say nothing about the order of the
+   * results, and printing them in one undifferentiated red block said otherwise.
+   */
+  protected readonly rankingCaveats = computed(() => this.splitCaveats(false));
+  protected readonly asideCaveats = computed(() => this.splitCaveats(true));
+
+  private splitCaveats(unscored: boolean): {
+    unstable: { label: string; abilities: string[] }[];
+    staleConversions: { label: string; term: string; damageShare: number }[];
+  } {
+    const notes = this.caveats();
+    if (notes === null) return { unstable: [], staleConversions: [] };
+    const held = new Set(notes.unscoredLabels);
+    return {
+      unstable: notes.unstable.filter((entry) => held.has(entry.label) === unscored),
+      staleConversions: notes.staleConversions.filter(
+        (stale) => held.has(stale.label) === unscored,
+      ),
+    };
   }
 
   /** Whether Optimize can run at all, in whichever mode is chosen. */

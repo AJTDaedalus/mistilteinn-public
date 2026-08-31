@@ -41,6 +41,7 @@ class FixtureTransport:
         details: dict[tuple[str, str], dict[str, Any]] | None = None,
         version: str = FIXTURE_VERSION,
         fail: set[tuple[str, str]] | None = None,
+        unreleased: dict[str, list[int | str]] | None = None,
     ) -> None:
         self.indexes = indexes or {}
         self.details = details or {}
@@ -49,10 +50,25 @@ class FixtureTransport:
         self.fail = fail or set()
         self.calls: list[tuple[str, ...]] = []
         self.closed = False
+        #: What `gi.new` names as not yet released, per entity. Empty by default, so every
+        #: existing test keeps importing exactly what its index holds.
+        self.unreleased = unreleased or {}
 
     async def resolve_version(self) -> str:
         self.calls.append(("version",))
         return self.version
+
+    async def fetch_manifest(self) -> dict[str, Any]:
+        """The manifest's shape, including `gi.new` — the unreleased ids the importer holds
+        back so beta content never reaches the database (owner ruling)."""
+        self.calls.append(("manifest",))
+        return {
+            "gi": {
+                "latest": self.version,
+                "live": self.version,
+                "new": self.unreleased,
+            },
+        }
 
     async def fetch_index(self, entity: str) -> dict[str, Any]:
         self.calls.append(("index", entity))

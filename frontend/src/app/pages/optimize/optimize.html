@@ -292,11 +292,31 @@
     }
 
     <!-- R.9: what the recipes do not cover, shown rather than swallowed. -->
-    @if (caveats(); as notes) {
+    <!-- **Split by whether the recipe scored the ranking.** These were one red block, so the
+         baseline's instability read as a verdict on the order of the results — an order it
+         takes no part in producing, because `searchRecipe` never visits the no-four-piece
+         state. It is calibrated for the upgrade list, and its problems belong to that. -->
+    @if (rankingCaveats(); as notes) {
       @if (notes.unstable.length) {
+        <!-- **Names the ability, not just the fact.** This said only "the rotation did not run
+             the same way every iteration", which tells a reader something is wrong and nothing
+             about what to change. The names were computed all along. An ability whose count
+             varies is almost always energy: a burst gated on `.ready` fires in some iterations
+             and not others when the build is marginal on ER — `BACKLOG_optimize.md` §8. -->
         <p class="warn" role="alert">
-          No recipe describes {{ notes.unstable.join(', ') }} — the rotation did not run the
-          same way every iteration, so there is nothing stable to replay.
+          The rotation did not run the same way every iteration, so no recipe describes it.
+          @for (entry of notes.unstable; track entry.label) {
+            <span class="block">
+              {{ entry.label }} — varied: <span class="mono">{{ entry.abilities.join(', ') }}</span>
+            </span>
+          }
+          <!-- **Measured, not guessed** — `npm run probe:energy`, recorded in
+               `BACKLOG_optimize.md` §8. The same gated rotation is unstable below 30% ER and
+               performs identically every iteration at and above it. -->
+          <span class="block">
+            An ability whose count varies is short of energy: it fires on some iterations and
+            not others. More Energy Recharge, or a rotation that bursts less often, settles it.
+          </span>
         </p>
       }
       @if (notes.staleConversions.length) {
@@ -310,6 +330,16 @@
           }
         </ul>
       }
+    }
+    @if (asideCaveats(); as aside) {
+      @if (aside.unstable.length || aside.staleConversions.length) {
+        <p class="hint">
+          The baseline recipe has the same trouble. It does not affect the ranking — no result
+          was scored with it — but the off-set suggestions under Details rest on it.
+        </p>
+      }
+    }
+    @if (caveats(); as notes) {
       @if (notes.fromCache.length) {
         <p class="hint">Served from cache: {{ notes.fromCache.join(', ') }}.</p>
       }
@@ -396,42 +426,28 @@ beside it is already what you would gain after losing that bonus.">costs the set
       <!-- What the answer claims is as important as the answer. A top-10 that is really the
            top 10 of a pruned subset, shown without saying so, is a confident answer to a
            question nobody asked. -->
+      <!-- **Terse on purpose.** This said: "Exact — every combination was scored, none were
+           pruned by rank. The scoring is not. Read the warnings above before trusting the
+           order." followed by "279 combinations scored · 949 pieces pruned losslessly". The
+           owner's note was that it is "way more words than needed to convey this info", and
+           the trailing comma-phrase read as padding. The counts are a `title`: they answer
+           "how do I know" for the one reader in fifty who asks, and that reader can hover. -->
       <p class="provenance">
         @if (found.isExact) {
-          <!-- **"Exact" is about the search, not the scoring**, and printed alone it reads as
-               a claim about the answer. It appeared under a rotation whose recipe carried
-               conversions covering 90% of the damage that no probe could resolve — an
-               exhaustive walk over a scorer that could not see most of what it was ranking.
-               Both facts are true and only one of them was the headline. -->
-          <strong>Exact</strong> — every combination was scored, none were pruned by rank.
-          @if (recipeIsShaky()) {
-            <strong class="warn-inline">The scoring is not.</strong>
-            Read the warnings above before trusting the order.
-          } @else {
-            The best five over this inventory.
-          }
+          <strong>Exact</strong> — all {{ found.evaluated | number }} combinations scored.
         } @else {
-          <!-- The numbers, not just the adjective. "Not exact" alone invites a reader to
-               assume a rounding; 1.4 million of 23 trillion is a different claim, and it is
-               the true one. -->
-          <strong>Not exact</strong> — your inventory holds
-          {{ found.totalSpace | number }} combinations, which is hours of arithmetic, so this
-          searched the best {{ found.effectiveK }} pieces per slot.
-          @if (recipeIsShaky()) {
-            <!-- The qualifier belongs to both branches. "Very likely the best five" is as much
-                 a claim about soundness as "the best five", and the same 90%-frozen recipe can
-                 produce it — a large inventory prefilters by rank and lands here. -->
-            <strong class="warn-inline">The scoring is in doubt too.</strong>
-            Read the warnings above before trusting the order.
-          } @else {
-            Very likely the best five, not proven to be.
-          }
+          <strong>Approximate</strong> — best {{ found.effectiveK }} per slot, of
+          {{ found.totalSpace | number }}.
         }
-        <span class="muted mono">
-          {{ found.evaluated | number }} combinations scored ·
-          {{ found.paretoRemoved | number }} pieces pruned losslessly@if (found.prefiltered) {,
-          {{ found.prefiltered | number }} by rank}
-        </span>
+        @if (recipeIsShaky()) {
+          <strong class="warn-inline">Scoring unreliable — see warnings.</strong>
+        }
+        <span
+          class="muted mono note"
+          [attr.title]="'Pareto filter removed ' + (found.paretoRemoved | number)
+            + ' pieces that could not win under any recipe'
+            + (found.prefiltered ? '; ' + (found.prefiltered | number) + ' more dropped by rank' : '')"
+        >{{ found.paretoRemoved | number }} pruned</span>
       </p>
 
       <!-- Said once, above the list, so the percentages have a stated referent. Without it a

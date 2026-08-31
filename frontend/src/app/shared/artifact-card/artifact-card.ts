@@ -4,17 +4,22 @@ import { CatalogueIcon } from '../icon/icon';
 import { SubstatBars, type SubstatReading } from '../substat-bars/substat-bars';
 
 /**
- * One artifact, small: its set art, its level, its main stat, and its four lines with roll
- * bars.
+ * One artifact, small: its art, its level, its main stat, and — on demand — its four lines
+ * with roll bars.
  *
  * `BACKLOG_optimize.md` §16. A result row used to read `Flower · Plume · Sands · Goblet ·
- * Circlet` beside a number — ten identical lines, saying nothing about *which* pieces won.
- * The difference between rank 1 and rank 4 is the thing a ranked list is for, and five names
- * that never change cannot show it.
+ * Circlet` — five names that never change beside a number, which cannot show the difference
+ * between rank 1 and rank 4 that a ranked list exists to show.
+ *
+ * **The art replaces both names** (owner, 2026-08-31): *"we could replace both the slot name
+ * and the set name with just the icon, making it a little bigger."* That only became possible
+ * once the per-slot icons were seeded — until then every slot drew the set's flower, so the
+ * icon identified the set but not the piece, and the slot name was carrying that alone.
+ * The names live on as the `title`, so nothing is lost to a reader who wants them.
  */
 export interface ArtifactCardModel {
   id: string;
-  /** The set's icon basename, or null. `catalogue-icon` renders nothing for a null. */
+  /** The icon for this piece's own slot, falling back to the set's. */
   icon: string | null;
   setName: string;
   slot: string;
@@ -29,30 +34,38 @@ export interface ArtifactCardModel {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CatalogueIcon, SubstatBars],
   template: `
-    <header class="piece__head">
-      <catalogue-icon [icon]="piece().icon" [alt]="''" [size]="compact() ? 28 : 40" />
-      <div class="piece__ident">
-        <span class="piece__slot">{{ piece().slot }}</span>
-        <span class="piece__set">{{ piece().setName }}</span>
+    <div class="piece__head" [attr.title]="piece().slot + ' · ' + piece().setName">
+      <catalogue-icon
+        [icon]="piece().icon"
+        [alt]="piece().slot + ', ' + piece().setName"
+        [size]="compact() ? 34 : 44"
+      />
+      <div class="piece__figures">
+        <span class="piece__main mono">{{ piece().mainStat }}</span>
+        <span class="piece__level mono">+{{ piece().level }}</span>
       </div>
-      <span class="piece__level mono">+{{ piece().level }}</span>
-    </header>
+    </div>
 
-    <p class="piece__main mono">{{ piece().mainStat }}</p>
-
-    <ul class="piece__subs">
-      @for (sub of piece().substats; track $index) {
-        <li>
-          <substat-bars [sub]="sub" [showRollValue]="!compact()" />
-        </li>
-      }
-    </ul>
+    @if (!compact()) {
+      <ul class="piece__subs">
+        @for (sub of piece().substats; track $index) {
+          <li><substat-bars [sub]="sub" /></li>
+        }
+      </ul>
+    }
   `,
   styleUrl: './artifact-card.scss',
   host: { '[class.piece--compact]': 'compact()' },
 })
 export class ArtifactCard {
   readonly piece = input.required<ArtifactCardModel>();
-  /** The row-level size: no roll-value column, smaller art. */
+  /**
+   * The row-level size: art, main stat and level only.
+   *
+   * **The substats are hidden here, not merely smaller** (owner): *"we could hide the stats
+   * until you hit details, just show the set icons and main stats until hitting details."*
+   * Five cards each carrying four bar-rows is most of a screen per result row, and the row's
+   * job is to be scannable — the detail pane is where a piece is read.
+   */
   readonly compact = input(false);
 }

@@ -127,7 +127,43 @@ Also fixed: the baseline calibration was labelled **"no 4-piece set"**, so the p
 read *"Calibrating no 4-piece set"* beside a picker holding only Finale — a target nobody chose
 looking like one they had. It is **"the baseline (no 4-piece bonus)"** now.
 
-## 8. Why that rotation is unstable — a mechanism, and the machinery that would say so
+## 8. Why that rotation is unstable — **CONFIRMED by experiment**
+
+The mechanism below was written as a hypothesis with the one experiment that would settle it.
+That experiment has now been run: `cd frontend && npm run probe:energy`
+(`scripts/probe-energy-stability.mjs`), against the committed `rotation_gated.txt` — Ayaka,
+90 s, burst gated on `.ready` — at 40 iterations per point.
+
+|   ER | burst mean | burst sd | |
+|---:|---:|---:|---|
+|   0% | 2.0250 | 0.1581 | **unstable** |
+|  10% | 2.2250 | 0.4229 | **unstable** |
+|  20% | 2.9000 | 0.3038 | **unstable** |
+|  30% | 3.0000 | 0.0000 | stable |
+|  45% | 3.0000 | 0.0000 | stable |
+|  60% | 3.0000 | 0.0000 | stable |
+| 100% | 3.0000 | 0.0000 | stable |
+
+**Confirmed, with a sharp boundary at 30 %.** The hypothesis predicted stable above the
+threshold and unstable below it, and that is the shape. The alternative it had to beat —
+unstable at every ER, meaning the cause lies elsewhere — is ruled out.
+
+So this is not an edge case: **it will hit any rotation whose burst is energy-marginal**, which
+is most real ones. The owner's own rotation reports exactly this, and the page now names the
+ability whose count varied instead of only saying that something did.
+
+What follows from it, and what is still open:
+
+- **Done:** the warning names the varying ability and says an ability with a varying count is
+  usually short of energy. That is now a measured claim rather than a plausible one.
+- **Open:** the *number*. `recipe-energy.ts` computes the minimum ER a recipe needs, but the
+  calibration never runs the sweep that feeds it (`energySweep` is never passed), so
+  `minimumEnergyRecharge` is always null and nothing reads it — §9. Turning "usually short of
+  energy" into "this build has 12 %, this rotation needs 30 %" costs one extra gcsim run per ER
+  point per calibration, which is the trade to weigh.
+
+## 8a. The original hypothesis
+
 
 **Read from the code, not reproduced against the owner's rotation.** Stated as a hypothesis
 with its mechanism, and with the one experiment that would settle it.
@@ -153,7 +189,18 @@ energy-marginal, which is most real ones.
 ample ER and once below what the rotation needs. Stable in the first and unstable in the
 second confirms it; unstable in both means the cause is elsewhere.
 
-## 9. The subsystem that would have explained §8, wired to nothing
+## 9. The subsystem that would have explained §8 — **still not wired, and now measured**
+
+`recipe-energy.ts` has **no input and no consumer**: `recipe-optimize.service.ts` never passes
+`energySweep` to `calibrate`, so `minimumEnergyRecharge` is always null, and nothing reads the
+field either. Both ends are dead, which is why the audit found it "wired to nothing".
+
+§8's experiment now supplies the evidence that it is worth wiring: the threshold is real, sharp,
+and the thing a user can act on. The cost is a sweep — one extra gcsim run per ER point per
+calibration — against a 7.84 s baseline per run.
+
+## 9a. The original note
+
 
 `recipe-energy.ts` exists to answer exactly this, and its own docstring says why it matters:
 *a build that cannot burst when the rotation says to burst **is not performing that

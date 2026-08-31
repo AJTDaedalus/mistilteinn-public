@@ -436,6 +436,27 @@ def refinement_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
 
 # -- Artifact sets (D.5) ------------------------------------------------------------
 
+def _part_icons(payload: dict[str, Any]) -> dict[str, str] | None:
+    """`{slot: icon}` from the payload's `parts`, or None where it publishes none.
+
+    **Read, not derived.** The basenames differ only in a trailing digit — `_1` for
+    `equip_ring`, `_4` for `equip_bracer` — and computing them from the set icon would be a
+    guess about a numbering nobody documents. `parts` states the pairing, so this copies it.
+
+    None rather than `{}` for a set with no parts: a set that publishes no per-slot art and one
+    whose art failed to parse should not look alike to a caller deciding whether to fall back.
+    """
+    parts = payload.get("parts")
+    if not isinstance(parts, dict):
+        return None
+    found = {
+        slot: part["icon"]
+        for slot, part in parts.items()
+        if isinstance(part, dict) and isinstance(part.get("icon"), str)
+    }
+    return found or None
+
+
 def artifact_set_fields(key: str, payload: dict[str, Any]) -> dict[str, Any]:
     """The `ArtifactSet` column values for one detail payload.
 
@@ -452,6 +473,7 @@ def artifact_set_fields(key: str, payload: dict[str, Any]) -> dict[str, Any]:
         "nanoka_id": int(key),
         "name": affixes[0].get("name", ""),
         "icon": payload.get("icon"),
+        "part_icons": _part_icons(payload),
         # `need` is per-set data, not the constant [2, 4]: 60 sets are [2, 4] and five are
         # [1] — the "Prayers" circlets (15009-15013), genuine one-piece sets (C.5).
         "piece_thresholds": payload.get("need") or [],

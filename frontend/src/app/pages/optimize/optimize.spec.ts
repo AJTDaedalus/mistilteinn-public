@@ -5,6 +5,7 @@ import { type Slot, search } from '../../sim/search';
 import { ArtifactsService } from '../artifacts/artifacts.service';
 import {
   RecipeOptimizeService,
+  type CalibrationCaveats,
   type CalibrationResult,
 } from './recipe-optimize.service';
 import { RotationsService } from '../rotations/rotations.service';
@@ -698,6 +699,75 @@ describe('OptimizePage barWidth', () => {
 
     expect(page['barWidth'](150, 100)).toBe(100);
     expect(page['barWidth'](-5, 100)).toBe(0);
+  });
+});
+
+describe('OptimizePage caveat attribution', () => {
+  /**
+   * Owner ruling, 2026-08-31: the baseline keeps being calibrated — the upgrade list needs it
+   * to price a swap that breaks the winner's set — but it must stop judging the ranking.
+   * `searchRecipe` picks its states from `fourPieceSets`, which never contains `null`, so no
+   * result row was ever scored with the baseline.
+   */
+  const caveats = (over: Record<string, unknown> = {}) => ({
+    unstable: [], staleConversions: [], fromCache: [], unscoredLabels: [], ...over,
+  }) as unknown as CalibrationCaveats;
+
+  it('does not call the scoring unreliable because the baseline is unstable', () => {
+    const page = pageWith();
+    page['caveats'].set(caveats({
+      unstable: [{ label: 'the baseline (no 4-piece bonus)', abilities: ['Skirk: burst'] }],
+      unscoredLabels: ['the baseline (no 4-piece bonus)'],
+    }));
+
+    expect(page['recipeIsShaky']()).toBe(false);
+    expect(page['asideCaveats']().unstable.map((e) => e.label))
+      .toEqual(['the baseline (no 4-piece bonus)']);
+    expect(page['rankingCaveats']().unstable).toEqual([]);
+  });
+
+  it('still calls it unreliable when a set that scored the ranking is unstable', () => {
+    // The half that must not be lost: Finale *is* searched, so its instability is a verdict
+    // on the order and has to reach the reader.
+    const page = pageWith();
+    page['caveats'].set(caveats({
+      unstable: [
+        { label: 'Finale of the Deep Galleries', abilities: ['Skirk: burst'] },
+        { label: 'the baseline (no 4-piece bonus)', abilities: ['Skirk: burst'] },
+      ],
+      unscoredLabels: ['the baseline (no 4-piece bonus)'],
+    }));
+
+    expect(page['recipeIsShaky']()).toBe(true);
+    expect(page['rankingCaveats']().unstable.map((e) => e.label))
+      .toEqual(['Finale of the Deep Galleries']);
+    // The names are what makes the warning actionable — an ability that varies is the thing
+    // the reader can do something about.
+    expect(page['rankingCaveats']().unstable[0].abilities).toEqual(['Skirk: burst']);
+  });
+
+  it('ignores a frozen conversion on a recipe that scored nothing', () => {
+    const page = pageWith();
+    page['caveats'].set(caveats({
+      staleConversions: [
+        { label: 'the baseline (no 4-piece bonus)', term: 'flatDamage', damageShare: 0.903 },
+      ],
+      unscoredLabels: ['the baseline (no 4-piece bonus)'],
+    }));
+
+    expect(page['recipeIsShaky']()).toBe(false);
+    expect(page['asideCaveats']().staleConversions).toHaveLength(1);
+  });
+
+  it('keeps a frozen conversion on a recipe that did score', () => {
+    const page = pageWith();
+    page['caveats'].set(caveats({
+      staleConversions: [
+        { label: 'Finale of the Deep Galleries', term: 'flatDamage', damageShare: 0.886 },
+      ],
+    }));
+
+    expect(page['recipeIsShaky']()).toBe(true);
   });
 });
 

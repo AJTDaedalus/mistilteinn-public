@@ -22,6 +22,14 @@ export interface ArtifactSetChoice {
   id: string;
   name: string;
   icon: string | null | undefined;
+  /**
+   * The icon for each slot, keyed by slot value.
+   *
+   * `icon` above is nanoka's set icon, which is the **flower** — so a card drawing it in
+   * every slot showed five flowers, which is what the owner noticed. Null on a database
+   * seeded before the column existed; a caller falls back to `icon` then.
+   */
+  partIcons: Record<string, string> | null;
   fourPieceText: string | null;
   /** Whether gcsim implements it at the pin. A set it does not cannot be calibrated. */
   simulable: boolean;
@@ -108,6 +116,7 @@ export class OptimizeService {
       id: set.id,
       name: set.name,
       icon: set.icon,
+      partIcons: set.part_icons ?? null,
       // The 4-piece bonus in the set's own words. It is what anyone is choosing between, and
       // the card is too small to print it — so it is the card's tooltip.
       fourPieceText: set.affixes?.find((a) => a.pieces_required === 4)?.description ?? null,

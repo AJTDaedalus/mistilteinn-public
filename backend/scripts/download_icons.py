@@ -172,6 +172,14 @@ async def wanted() -> list[tuple[str, str]]:
                 portrait = portrait_name(row.icon) if model is Character else None
                 if portrait:
                     found.append((portrait, f"{label} {row.name} portrait"))
+                # **A set has five pieces and five pictures.** `artifact_sets.icon` is the
+                # *flower* — nanoka's representative icon — so vendoring only that left every
+                # plume, sands, goblet and circlet in the app drawing a flower. The other four
+                # are named in `part_icons`, read from the payload rather than guessed from
+                # the basename's trailing digit.
+                for slot, icon in (getattr(row, "part_icons", None) or {}).items():
+                    if icon and icon != row.icon:
+                        found.append((icon, f"{label} {row.name} {slot}"))
         # The talents' own sprites — the game's picture of each character's normal attack,
         # elemental skill and burst. The rotation builder draws these on its move buttons and
         # on the timeline (`DESIGN_rotation_builder_gui.md`), and nothing fetched them before:

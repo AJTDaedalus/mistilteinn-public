@@ -3562,6 +3562,20 @@
             ],
             "title": "Icon"
           },
+          "part_icons": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Part Icons"
+          },
           "piece_thresholds": {
             "items": {},
             "type": "array",

@@ -128,6 +128,18 @@ class ArtifactSet(TimestampMixin, Base):
     nanoka_id: Mapped[int] = mapped_column(Integer, unique=True, nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
     icon: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    #: The icon for each slot, keyed by `ArtifactSlot` value.
+    #:
+    #: **`icon` above is the flower and nothing else.** nanoka publishes one icon per set —
+    #: `UI_RelicIcon_15025_4` — and five more under `parts`, one per slot. Only the first was
+    #: seeded, so every artifact card in the app drew a flower whatever slot it was, which is
+    #: what the owner noticed: *"Do we not have icons for anything but the flowers?"*
+    #:
+    #: The suffix-to-slot mapping is **read from the payload, never derived from the number**:
+    #: `tests/fixtures/nanoka_gi/detail/artifact_15025.json` names `_1` as `equip_ring` and
+    #: `_4` as `equip_bracer`, and inferring that from the digit is exactly the kind of guess
+    #: the seeding rule forbids.
+    part_icons: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     #: e.g. `[2, 4]` or `[1]` — how many pieces each affix row requires, in affix order.
     piece_thresholds: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)

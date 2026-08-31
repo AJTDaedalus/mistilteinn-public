@@ -189,7 +189,15 @@ export class ArtifactsPage implements OnInit {
    * Empty until it loads, and a miss yields null — which `CatalogueIcon` renders as nothing.
    * Art arriving late must never hold up the inventory.
    */
-  protected readonly setIcons = signal<Map<string, string | null>>(new Map());
+  /**
+   * `{set id: {slot: icon}}`, with the set's own icon under `''`.
+   *
+   * **A set has five pictures, not one.** nanoka's set icon is the flower, so keying art by
+   * set alone drew a flower on every plume, sands, goblet and circlet in the inventory —
+   * which is what the owner noticed. `part_icons` names the rest; the set icon stays as the
+   * fallback for a database seeded before that column existed.
+   */
+  protected readonly setIcons = signal<Map<string, Record<string, string | null>>>(new Map());
 
   protected readonly rows = computed<ArtifactRow[]>(() => {
     const opts = this.options();
@@ -201,7 +209,10 @@ export class ArtifactsPage implements OnInit {
     return this.artifacts().map((piece) => ({
       id: piece.id,
       setName: piece.set_name ?? 'No set',
-      setIcon: setArt.get(piece.artifact_set_id ?? '') ?? null,
+      setIcon: (() => {
+        const art = setArt.get(piece.artifact_set_id ?? '');
+        return art?.[piece.slot] ?? art?.[''] ?? null;
+      })(),
       slot: slots.get(piece.slot) ?? piece.slot,
       stars: stars.get(piece.rarity) ?? 0,
       level: piece.level,
@@ -364,7 +375,9 @@ export class ArtifactsPage implements OnInit {
     if (this.setIcons().size > 0) return;
     try {
       const page = await this.catalogue.listArtifactSets({ limit: 200 });
-      this.setIcons.set(new Map(page.items.map((set) => [set.id, set.icon ?? null])));
+      this.setIcons.set(new Map(page.items.map((set) => [
+        set.id, { ...(set.part_icons ?? {}), '': set.icon ?? null },
+      ])));
     } catch {
       // No `error` signal: this failing means the cards have no pictures, which is not a
       // state worth telling somebody about while their inventory is on screen.

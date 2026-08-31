@@ -114,6 +114,10 @@ class NanokaTransport(Protocol):
         """The pinned nanoka version this transport serves."""
         ...
 
+    async def fetch_manifest(self) -> dict[str, Any]:
+        """The raw manifest, which names the versions and the unreleased ids."""
+        ...
+
     async def fetch_index(self, entity: str) -> dict[str, Any]:
         """The `{id: summary}` index for one entity."""
         ...
@@ -218,13 +222,22 @@ class EntityResult:
 
     `failed` is a list and not a count on purpose: a seed that reports "3 failures" tells
     you to go read the log, and a seed that reports *which* ids failed can be diffed
-    between runs. `imported + skipped + len(failed)` equals `total` by construction.
+    between runs. `imported + skipped + len(failed) + len(unreleased)` equals `total` by
+    construction.
     """
 
     entity: str
     total: int = 0
     imported: int = 0
     skipped: int = 0
+    #: Ids held back because the game has not released them yet, named rather than counted.
+    #:
+    #: **Owner ruling: beta content must not reach the app.** nanoka's `latest` is a datamine
+    #: patch that carries unreleased characters, weapons, sets and enemies; its manifest names
+    #: them in `gi.new`, which is exactly `latest - live` (verified against both indexes for
+    #: all four entities). Excluded here rather than filtered in the API, so an unreleased row
+    #: never reaches the database in the first place.
+    unreleased: list[str] = field(default_factory=list)
     pruned: int = 0
     failed: list[str] = field(default_factory=list)
     #: Detail payloads pulled by `dry_run` to prove the detail URL grammar. Separate from
@@ -252,9 +265,13 @@ class EntityResult:
                 f"{self.entity}: {self.total} in index, {self.sampled} detail(s) sampled, "
                 f"{len(self.failed)} failed"
             )
+        # Reported, never silent: a seed that quietly drops rows is indistinguishable from one
+        # whose upstream lost them, and this one drops rows *on purpose*.
+        held = f", {len(self.unreleased)} unreleased" if self.unreleased else ""
         return (
             f"{self.entity}: {self.imported}/{self.total} imported, "
-            f"{self.skipped} skipped, {self.pruned} pruned, {len(self.failed)} failed"
+            f"{self.skipped} skipped, {self.pruned} pruned, "
+            f"{len(self.failed)} failed{held}"
         )
 
 
@@ -281,6 +298,8 @@ class NanokaGIImporter(BaseImporter):
         self.transport: NanokaTransport = transport or HttpNanokaTransport(
             version=version, timeout=timeout,
         )
+        #: `{entity: unreleased ids}`, read from the manifest once per run.
+        self._unreleased_ids: dict[str, frozenset[str]] | None = None
         self._concurrency = max(1, concurrency)
         #: One `EntityResult` per completed pass, in the order the passes ran. `seed_db`
         #: (D.7) reports these and exits non-zero if any pass has failures.
@@ -460,6 +479,28 @@ class NanokaGIImporter(BaseImporter):
 
     # -- Shared machinery the D.3-D.6 mappings run on --------------------------
 
+    async def _unreleased(self, entity: str) -> frozenset[str]:
+        """The ids of `entity` the game has not released, from the manifest's `gi.new`.
+
+        Cached per run: one manifest fetch serves all four passes.
+
+        **Version-independent, deliberately.** `gi.new` is `latest - live`, so it names what is
+        unreleased *now* rather than what is new in the pinned patch. An id in it is unreleased
+        whichever version is being seeded, which is why `--version 7.0.51` gets the same
+        exclusions as an unpinned run.
+
+        A manifest without `gi.new` yields nothing held back, which is the pre-existing
+        behaviour rather than a silent empty seed.
+        """
+        if self._unreleased_ids is None:
+            manifest = await self.transport.fetch_manifest()
+            new = manifest.get("gi", {}).get("new", {}) or {}
+            self._unreleased_ids = {
+                name: frozenset(str(i) for i in (ids or []))
+                for name, ids in new.items()
+            }
+        return self._unreleased_ids.get(entity, frozenset())
+
     async def _run_pass(
         self,
         entity: str,
@@ -481,7 +522,18 @@ class NanokaGIImporter(BaseImporter):
         """
         index = await self.transport.fetch_index(entity)
         keys = _index_keys(index)
-        result = EntityResult(entity=entity, total=len(keys))
+        held = await self._unreleased(entity)
+        kept = [key for key in keys if _base_id(key) not in held]
+        # **`total` stays the whole index**, and the held-back ids are counted beside it. It
+        # is what `verify_seed` compares against the committed index to detect "the database
+        # is from a different patch" — a detector that a deliberate exclusion must not trip,
+        # or every seed would report drift that is not there.
+        result = EntityResult(
+            entity=entity,
+            total=len(keys),
+            unreleased=sorted(set(keys) - set(kept)),
+        )
+        keys = kept
 
         for batch in _batched(keys, self._concurrency):
             payloads = await asyncio.gather(
@@ -585,6 +637,16 @@ class NanokaGIImporter(BaseImporter):
         )
         return rows.scalar_one_or_none()
 
+
+
+def _base_id(key: str) -> str:
+    """The entity id in an index key, without a Traveler's element suffix.
+
+    `10000005-2` is the Anemo Traveler and its base id is `10000005`. The manifest names
+    unreleased content by bare id, so a Traveler body held back upstream has to match all
+    seven of its variant keys rather than none of them.
+    """
+    return key.split("-", 1)[0]
 
 
 def _index_keys(index: dict[str, Any]) -> list[str]:
