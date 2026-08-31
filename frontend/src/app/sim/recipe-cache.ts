@@ -50,9 +50,27 @@ const PREFIX = 'mistilteinn:recipe:';
  * from a different simulator** — the exact shape of failure `verify-gcsim-recipe.mjs` exists
  * to prevent one layer down, and the one fairy shipped for months.
  */
+/**
+ * The shape of what is stored, bumped whenever `RecipeMeta` gains a field a consumer indexes.
+ *
+ * **This exists because it was missing once and broke production.** `meta.unstable` was added
+ * to the recipe while this cache was already full of recipes written without it, and
+ * `recipe.meta.unstable.length` then threw `Cannot read properties of undefined` — for exactly
+ * the users who had run a search before, and for nobody who had not.
+ *
+ * `gcsimPin` answers "a different simulator produced this". It does not answer "a different
+ * version of this code wrote this", and those are separate questions: the pin can sit still
+ * across a release that changes the schema, which is precisely what happened.
+ *
+ * Bumping it makes every older entry miss and recalibrate. That costs one calibration and is
+ * the cheap direction; the other direction hands a caller half a recipe.
+ */
+const SCHEMA = 2;
+
 export function cacheKey(key: RecipeCacheKey): string {
   return [
     PREFIX,
+    `v${SCHEMA}`,
     key.gcsimPin,
     key.buildId,
     key.rotationId,
@@ -68,12 +86,37 @@ export type RecipeStore = WebStorage;
 
 export { browserStore };
 
+/**
+ * Whether a parsed entry carries everything a consumer will index into.
+ *
+ * **A miss, never a repair.** The obvious fix for the production crash was to default the
+ * missing lists to `[]` — and that would have re-created the bug #193 had just fixed. An
+ * empty `unstable` is not "we do not know"; it is the affirmative claim *this rotation ran
+ * the same way every iteration*, which is what the page prints as a ranking worth trusting.
+ * Manufacturing it from a recipe that never said so is the green-by-absence failure this repo
+ * treats as a defect, and it would be permanent, because the cache is persistent.
+ *
+ * Missing the entry costs one recalibration. Filling it in costs the reader a warning they
+ * were owed and cannot get back.
+ */
+function isComplete(recipe: Recipe | null): boolean {
+  if (recipe === null || typeof recipe !== 'object') return false;
+  const meta = recipe.meta as Recipe['meta'] | undefined;
+  return Array.isArray(recipe.hits)
+    && meta !== undefined
+    && Array.isArray(meta.unstable)
+    && Array.isArray(meta.staleConversions)
+    && Array.isArray(meta.calibratedSetIds);
+}
+
 /** A cached recipe, or `null`. Never throws: a cache that fails is a cache that misses. */
 export function readRecipe(store: RecipeStore | null, key: RecipeCacheKey): Recipe | null {
   if (store === null) return null;
   try {
     const raw = store.getItem(cacheKey(key));
-    return raw === null ? null : (JSON.parse(raw) as Recipe);
+    if (raw === null) return null;
+    const found = JSON.parse(raw) as Recipe;
+    return isComplete(found) ? found : null;
   } catch {
     return null;
   }

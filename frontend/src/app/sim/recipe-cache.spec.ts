@@ -153,6 +153,53 @@ describe('browserStore', () => {
   });
 });
 
+describe('a cached recipe written before a field existed', () => {
+  /**
+   * **Reported from production: `Cannot read properties of undefined (reading 'length')`.**
+   *
+   * `meta.unstable` was added after this cache shipped, and the cache is persistent with no
+   * schema in its key — so every recipe stored before that change came back missing the
+   * field, and `recipe.meta.unstable.length` threw. It broke the optimizer for exactly the
+   * people who had used it before, and worked perfectly for anyone who had not.
+   */
+  it('misses a recipe stored under an older schema rather than returning half of one', () => {
+    const store = memory();
+    // What the previous version wrote: the same key inputs, no `unstable`.
+    store.setItem(
+      [
+        'mistilteinn:recipe:', KEY.gcsimPin, KEY.buildId, KEY.rotationId,
+        KEY.artifactSetId, KEY.energyRecharge.toFixed(4), KEY.seed,
+      ].join('|'),
+      JSON.stringify({ hits: [], seed: '12345', meta: { seed: '12345' } }),
+    );
+
+    expect(readRecipe(store, KEY)).toBeNull();
+  });
+
+  it('misses an entry missing the lists a consumer indexes, rather than repairing it', () => {
+    // Belt and braces behind the key: the version stops *known* old shapes loading, this
+    // stops an unknown one — a truncated write, a hand-edited entry — reaching a caller that
+    // reads `.length` off it.
+    const store = memory();
+    store.setItem(cacheKey(KEY), JSON.stringify({ hits: [], seed: '12345', meta: {} }));
+
+    expect(readRecipe(store, KEY)).toBeNull();
+  });
+
+  it('does not manufacture an empty `unstable`, which would claim the rotation was stable', () => {
+    // **The fix that would have re-created the bug #193 closed.** Defaulting the field is not
+    // "we do not know" — an empty list is the affirmative claim that the rotation ran the same
+    // way every iteration, which is what the page prints as a ranking worth trusting.
+    const store = memory();
+    store.setItem(cacheKey(KEY), JSON.stringify({
+      hits: [], seed: '12345',
+      meta: { seed: '12345', staleConversions: [], calibratedSetIds: [] },
+    }));
+
+    expect(readRecipe(store, KEY)).toBeNull();
+  });
+});
+
 describe('what the cache must carry', () => {
   it('round-trips a recipe unstable ability list', () => {
     // **The reason this field is on `RecipeMeta` at all.** `calibrate` returned `stable`
