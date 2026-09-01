@@ -66,6 +66,34 @@ def test_everything_that_builds_the_wasm_reads_the_pin_rather_than_repeating_it(
     )
 
 
+def test_no_source_file_repeats_the_pin():
+    """The pin is declared once and read everywhere — *including* from tests.
+
+    The check above covers the files that **build** the wasm. It did not cover the ones that
+    **assert** against it, and the 2026-08-31 re-pin found two: `tests/crossval` declared its
+    own `PINNED_GCSIM` literal, and `tests/integration/test_sim_run_cache.py` used a real SHA
+    as arbitrary cache-key data, which reads as a third pin to anyone grepping for one.
+
+    A literal SHA in a fixture is fine and deliberate — `sim_version` records *which* gcsim
+    produced that data, which is the opposite of a second declaration. So only source is
+    scanned.
+    """
+    pin = _declared_pin()
+    offenders = []
+    for root in ((REPO / "backend" / "tests"), (REPO / "backend" / "scripts"),
+                 (REPO / "backend" / "app"), (REPO / "frontend" / "scripts")):
+        for path in root.rglob("*"):
+            if path.suffix not in {".py", ".sh", ".mjs", ".ts"} or "fixtures" in path.parts:
+                continue
+            if pin in path.read_text(errors="ignore"):
+                offenders.append(str(path.relative_to(REPO)))
+    assert not offenders, (
+        f"these files repeat the pin instead of reading it: {sorted(offenders)}. Import "
+        f"`pinned_commit()` — a second copy is a second definition of what 'correct' means, "
+        f"and it goes stale silently at the next re-pin."
+    )
+
+
 def test_every_pin_reader_exists():
     """A path that has moved would make the check above pass by reading nothing."""
     for reader in PIN_READERS:

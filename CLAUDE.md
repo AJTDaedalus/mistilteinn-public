@@ -169,10 +169,11 @@ a job with progress, never a request that blocks.
   `CROSSVAL_REQUIRE_DB=1`, so a skip is a failure** — that is the gate fairy shipped a stale
   golden fixture without. The harness seeds itself from the committed nanoka fixtures through
   the real importer, so it needs no network.
-- **Two deliberate divergences from gcsim** are recorded in `docs/CROSSVAL_gcsim.md`: the
-  RES curve is continuous at exactly 0.75 (gcsim's `>` looks like a `>=`), and crit is
-  computed rather than rolled. A crossval mismatch landing on either is not a formula error
-  here.
+- **One deliberate divergence from gcsim** is recorded in `docs/CROSSVAL_gcsim.md`: crit is
+  computed rather than rolled. A crossval mismatch landing on it is not a formula error here.
+  **The RES curve was the second and is resolved** — gcsim's `>` at exactly 0.75 really was a
+  typo for `>=`, upstream fixed it in `#2717`, and the 2026-08-31 re-pin picked it up. The two
+  implementations now agree at every resistance.
 - **Enemy base stats are curve bases, not level-90 stats.** A Hilichurl's `base_hp` is
   `13.584`; the growth curve is named in `enemy_profiles.stat_curves` and the curve table is
   `app/data/yuanshen/snapshot/growth_curves.json` (E.5). Anything that multiplies those

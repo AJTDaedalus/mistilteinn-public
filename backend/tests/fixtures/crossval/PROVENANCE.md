@@ -7,8 +7,14 @@ repo and compares.
 | | |
 |---|---|
 | **Oracle** | `github.com/genshinsim/gcsim` |
-| **Commit** | `3647a07a7cc3004bc1e79d9bb5f7444de20dceaa` — the pin in `docs/CROSSVAL_gcsim.md` |
-| **Recorded** | 2026-08-21, task F.7 |
+| **Commit** | `a36661d918772851378d48a38c267dd6efe49540` — the pin in `docs/CROSSVAL_gcsim.md` |
+| **Recorded** | 2026-08-21, task F.7 · regenerated 2026-08-31 at the new pin |
+
+**The re-pin from `3647a07a` changed nothing but `sim_version`.** Regenerated through the
+recipe below and diffed field by field after stripping the per-run noise: every damage
+figure, every statistic and the embedded config are byte-identical. That is the result a
+re-pin should produce for a case chosen to isolate the damage chain, and it is recorded
+because "the oracle did not move" is only worth anything if someone checked.
 
 The JSON carries its own provenance: `sim_version` is the commit that produced it and
 `modified` says whether the working tree was dirty. **The harness asserts both**, so a
@@ -24,7 +30,7 @@ reviewable diff rather than as a side effect of running the tests.
 # gcsim is not vendored: it is a 35 MB Go binary and building it needs a Go toolchain.
 CASES=$(pwd)/backend/tests/fixtures/crossval      # run this from the repo root
 git clone https://github.com/genshinsim/gcsim /tmp/gcsim && cd /tmp/gcsim
-git checkout 3647a07a7cc3004bc1e79d9bb5f7444de20dceaa
+git checkout a36661d918772851378d48a38c267dd6efe49540
 go build -o gcsim ./cmd/gcsim
 ./gcsim -c "$CASES/ayaka_normal_1.txt" -nb -out "$CASES/ayaka_normal_1.json"
 ```

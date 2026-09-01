@@ -40,10 +40,17 @@ from app.services.stat_calculator import (
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.gcsim_keys import pinned_commit
+
 _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "crossval"
 
 #: The gcsim commit these fixtures must have come from — the pin in `docs/CROSSVAL_gcsim.md`.
-PINNED_GCSIM = "3647a07a7cc3004bc1e79d9bb5f7444de20dceaa"
+#:
+#: **Read, never repeated.** This was a literal SHA until the 2026-08-31 re-pin, and it is
+#: exactly the drift `test_gcsim_pin_is_single` exists to prevent — that test only checked the
+#: files that *build* the wasm, so a second pin sitting in the oracle's own assertion was
+#: outside its reach. The re-pin found it the way a stale pin is always found: by failing.
+PINNED_GCSIM = pinned_commit()
 
 #: gcsim's `character_details[].snapshot` is indexed by its `Stat` enum
 #: (`pkg/core/attributes/stats.go:12-40`). **Four of these seven were confirmed

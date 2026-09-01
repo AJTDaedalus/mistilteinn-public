@@ -13,10 +13,10 @@ gcsim is the reference for *correctness and feature scope*, deliberately not for
 | | |
 |---|---|
 | **Repository** | `github.com/genshinsim/gcsim` |
-| **Commit** | `3647a07a7cc3004bc1e79d9bb5f7444de20dceaa` |
-| **Dated** | 2026-08-14 |
-| **Title** | `Add Stellar-Conduct (#2711)` |
-| **Pinned** | 2026-08-21, Chunk F |
+| **Commit** | `a36661d918772851378d48a38c267dd6efe49540` |
+| **Dated** | 2026-08-29 |
+| **Title** | `Fix max level of characters from Enka (#2726)` |
+| **Pinned** | 2026-08-31 — re-pinned from `3647a07a` to pick up Ifa and Jahoda |
 
 **A citation names a file, a line range, and this commit.** A citation that names only a
 file is a citation to a moving target: gcsim refactors, and "see `pkg/core/attributes`" ages
@@ -56,27 +56,29 @@ here is a constant nobody can re-check.
 Deliberate, tested, and listed here because **F.8's tolerance argument has to know about
 them** — a crossval mismatch that lands on one of these is not a formula error on this side.
 
-### 1. The RES curve is continuous at exactly 0.75
+### 1. ~~The RES curve is continuous at exactly 0.75~~ — **resolved upstream 2026-08-31**
 
-gcsim (`pkg/enemy/damage.go:89-93`):
+**gcsim fixed this, and this project no longer diverges.** `Fix Res Mod at 75% effective
+res (#2717)` landed between the old pin and this one, and `pkg/enemy/damage.go` now reads:
 
 ```go
-resmod := 1 - res/2
 if res >= 0 && res < 0.75 {
     resmod = 1 - res
-} else if res > 0.75 {
+} else if res >= 0.75 {
     resmod = 1 / (4*res + 1)
 }
 ```
 
-A resistance of **exactly** 0.75 matches neither branch and falls through to the
-negative-RES default, giving `1 - 0.75/2 = 0.625` — where both neighbouring branches give
-`0.25`. That is a 2.5x discontinuity at a single point, and since the two surrounding
-formulas agree there, it reads as a `>` that should be `>=`.
+`>=`, which is what this project has always used. The two implementations now agree at every
+resistance, including exactly 0.75.
 
-This project uses `>=`, which is continuous.
-`test_the_curve_is_continuous_at_exactly_three_quarters` pins it. A crossval case against an
-enemy at exactly 75% resistance would disagree with gcsim by 2.5x; nothing else would.
+The entry is kept rather than deleted because F.8's tolerance argument was written knowing
+about it, and because the reasoning still holds as a record: a resistance of exactly 0.75 used
+to match neither branch and fall through to the negative-RES default, giving `1 - 0.75/2 =
+0.625` where both neighbouring branches give `0.25` — a 2.5x discontinuity at a single point.
+It read as a `>` that should have been a `>=`, and upstream agreed.
+`test_the_curve_is_continuous_at_exactly_three_quarters` still pins our side; it is now a
+check that we match gcsim rather than one that we deliberately do not.
 
 ### 2. Growth curves are float32 in the dump and decimal in gcsim
 

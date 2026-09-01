@@ -20,7 +20,10 @@ if TYPE_CHECKING:
 
     from app.models.user import User
 
-PIN = "3647a07a7cc3004bc1e79d9bb5f7444de20dceaa"
+# Two *arbitrary* pins. This test is about a cache key telling two gcsim builds apart, not
+# about which build the repo pins — so a real SHA here was only ever a decoy, and it read as a
+# third declaration of the pin to anyone grepping for one.
+PIN = "1111111111111111111111111111111111111111"
 OTHER_PIN = "0000000000000000000000000000000000000000"
 
 _CONTEXT = {

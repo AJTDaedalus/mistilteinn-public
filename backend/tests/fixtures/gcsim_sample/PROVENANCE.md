@@ -85,6 +85,31 @@ candidate's element bonuses reach which hit. They are emitted as a strict pair, 
 instance, ability matching on all 245 in the larger fixture; the parser **verifies** that
 rather than assuming it.
 
+## Regenerated at the 2026-08-31 re-pin — and one case moved
+
+`3647a07a` → `a36661d9` (15 upstream commits). Four of the six recordings came back
+**byte-identical**. Two did not:
+
+| fixture | hits | damage |
+|---|---|---|
+| `rotation_gated_calc.json` | 221 → **245** | +13.43 % |
+| `rotation_gated_nostats_calc.json` | 221 → **245** | +13.42 % |
+
+The whole difference is `physical/1`: 172 → 196 normal-attack hits. No other element or
+attack tag moved, and `noelle_redhorn*` and `skirk_team` are unchanged in every field.
+
+**What this is not.** It is not drift on our side. The crossval oracle regenerated at the same
+pin differs only in `sim_version`, and every replay in `verify-gcsim-recipe` still matches to
+~1e-16. The decomposition transcribes gcsim exactly; gcsim's own output for this one rotation
+changed.
+
+**What it probably is, and the honest limit of that claim.** Of the fifteen commits, none touch
+Ayaka or the frame tables. The plausible candidate is `Make ICD per Char per Tag per Group
+(#2727)`, which re-keys internal cooldowns in `pkg/target/icd.go`. **This was not confirmed** —
+attributing it would need the old wasm rebuilt and a bisect, which was not done. Recorded as an
+open question rather than asserted, because a 13 % move in a golden fixture with a guessed cause
+is exactly the thing that later gets cited as settled.
+
 ## Why they are committed at all
 
 `RESEARCH_gcsim_calibration.md` proves the decomposition is exact across these hits. That proof

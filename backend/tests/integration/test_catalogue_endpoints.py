@@ -372,7 +372,7 @@ async def test_artifact_sets_say_whether_gcsim_can_simulate_them(
 
     db_session.add_all([
         ArtifactSet(nanoka_id=15003, name="Blizzard Strayer"),
-        # Real, and real about gcsim: released after the pin, so it has no key at 3647a07a.
+        # Real, and real about gcsim: no key at the pin, whatever the pin currently is.
         ArtifactSet(nanoka_id=999001, name="Scarlet Proof"),
     ])
     await db_session.flush()
