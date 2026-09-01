@@ -221,11 +221,23 @@ select, input, textarea {
     letter-spacing: normal;
   }
 
+  // **The `×` deletes the row, and must look level with the row's title.**
+  //
+  // `li` is `align-items: stretch`, so this button stretches to the full card height and its
+  // glyph centres inside that box. On a one-line row — a rotation — that reads correctly. On a
+  // **team**, which is four members tall, the × settles beside an arbitrary member and reads
+  // as "remove this one": a person dropping Bennett from a team would delete the team.
+  //
+  // Pinned to the top with `.pick`'s own top padding, so it sits on the title it acts on. Found
+  // by rendering `/teams` and looking at it; no test asserts on where a glyph lands.
   .drop {
     flex: 0 0 auto;
-    padding: 0 var(--space-3);
+    display: flex;
+    align-items: flex-start;
+    padding: var(--space-3);
     color: var(--ink-faint);
     font-size: var(--text-md);
+    line-height: 1;
 
     &:hover {
       color: var(--danger);
@@ -265,3 +277,57 @@ select, input, textarea {
   border-left: var(--accent-border-width) solid var(--brass);
   border-radius: var(--radius-2);
 }
+
+/* ── The editor, as a pop-up ─────────────────────────────────────────────────
+   A native `<dialog>`, for the same reason `card-picker` uses one: focus trapping, Escape and
+   a backdrop, none of which a hand-rolled panel gets for free. Card pickers inside it open
+   their own dialogs on top, which the top layer stacks correctly.
+
+   **Shared, because this was the third copy.** `/builds` had it, `/rotations` had its own
+   near-identical `.editor-dialog`, and `/teams` was about to get a fourth — which is the
+   pattern `CLAUDE.md` names: something nothing owned, so every page decided separately, and
+   the copies drift. A page sets its own `width`; everything else lives here.
+
+   `/rotations` keeps `.editor-dialog` deliberately: it is wider because a rotation is a list
+   of steps, and merging the two would mean one of them gets a width chosen for the other. */
+.editor {
+  max-height: 88vh;
+  padding: 0 var(--space-4) var(--space-4);
+  border: 1px solid var(--brass-deep);
+  border-radius: var(--radius-2);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-card);
+
+  &::backdrop { background: rgb(0 0 0 / 55%); }
+}
+
+.editor__head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 calc(var(--space-4) * -1) var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--surface-rule);
+  background: var(--surface);
+
+  h2 { margin: 0; font-size: var(--text-lg); }
+}
+
+.editor__close {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--ink-dim);
+  font-size: var(--text-lg);
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover { color: var(--ink); }
+}
+
+/* The dialog's own children need the column a pane used to give them. */
+.editor > *:not(.editor__head) { margin-bottom: var(--space-2); }

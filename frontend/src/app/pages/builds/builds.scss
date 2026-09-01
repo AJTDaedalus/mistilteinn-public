@@ -61,52 +61,9 @@
   }
 }
 
-/* ── The editor, as a pop-up ─────────────────────────────────────────────────
-   A native `<dialog>`, for the same reason `card-picker` uses one: focus trapping, Escape and
-   a backdrop, none of which a hand-rolled panel gets for free. The card pickers inside it open
-   their own dialogs on top, which the top layer stacks correctly. */
-.editor {
-  width: min(46rem, 92vw);
-  max-height: 88vh;
-  padding: 0 var(--space-4) var(--space-4);
-  border: 1px solid var(--brass-deep);
-  border-radius: var(--radius-2);
-  background: var(--surface);
-  color: var(--ink);
-  box-shadow: var(--shadow-card);
-
-  &::backdrop { background: rgb(0 0 0 / 55%); }
-}
-
-.editor__head {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin: 0 calc(var(--space-4) * -1) var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--surface-rule);
-  background: var(--surface);
-
-  h2 { margin: 0; font-size: var(--text-lg); }
-}
-
-.editor__close {
-  margin-left: auto;
-  border: none;
-  background: none;
-  color: var(--ink-dim);
-  font-size: var(--text-lg);
-  line-height: 1;
-  cursor: pointer;
-
-  &:hover { color: var(--ink); }
-}
-
-/* The dialog's own children need the column the pane used to give them. */
-.editor > *:not(.editor__head) { margin-bottom: var(--space-2); }
+/* The editor dialog itself is shared — see `.editor` in `styles.scss`. This page only says
+   how wide its own is: a build editor holds card pickers, a team editor holds four names. */
+.editor { width: min(46rem, 92vw); }
 
 /* ── Finding a build among seventy-five ─────────────────────────────────────
    A GOOD import makes one build per equipped character — 75 on the owner's account. The search

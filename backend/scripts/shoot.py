@@ -37,6 +37,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import re
 from pathlib import Path
 
 import httpx
@@ -60,21 +61,51 @@ SERVICE_LABEL = "Screenshots"
 #: Where localStorage keeps the session. Must match `api/auth.service.ts`.
 TOKEN_KEY = "mistilteinn.token"  # noqa: S105 — a storage key, not a credential
 
-#: Every route in `app.routes.ts` worth a picture, in the order the product intends them.
-ROUTES = (
-    "/",
-    "/inventory",
-    "/builds",
-    "/teams",
-    "/rotations",
-    "/optimize",
-    "/compare",
-    "/explain",
-    "/characters",
-    "/weapons",
-    "/artifact-sets",
-    "/enemies",
+#: Where the SPA declares its routes. Read, never copied — see `_routes`.
+APP_ROUTES = (
+    Path(__file__).resolve().parents[2] / "frontend" / "src" / "app" / "app.routes.ts"
 )
+
+#: The order the product intends, for the routes that have one. Anything the route table
+#: carries and this does not is appended rather than dropped, so a new page cannot go
+#: unphotographed just because nobody added it here.
+PREFERRED = (
+    "/", "/inventory", "/my-weapons", "/builds", "/teams", "/rotations", "/optimize",
+    "/calculate", "/characters", "/weapons", "/artifact-sets", "/enemies",
+)
+
+
+def _routes() -> tuple[str, ...]:
+    """Every visitable route, read off `app.routes.ts`.
+
+    **This was a hand-maintained tuple and it drifted.** It still listed `/compare`, which the
+    owner had removed — so the harness resolved it through the `**` catch-all, photographed the
+    **landing page**, and filed it as `compare.png`. It also listed `/explain`, now a redirect,
+    and it had never been told about `/calculate` or `/my-weapons`, both of which are in the
+    main nav.
+
+    A visual harness that silently photographs the wrong page is worse than one that errors,
+    and this is the repo whose standing lesson is that rendering a page and looking at it is
+    the check nothing else performs. So the list is derived.
+
+    Redirects and the catch-all are excluded: they are not pages, and following one produces a
+    picture of somewhere else under the wrong name — which is the whole defect.
+    """
+    text = APP_ROUTES.read_text()
+    # Each entry is `path: '...'`, optionally followed by `redirectTo:` before the next path.
+    entries = re.findall(r"path:\s*'([^']*)'((?:(?!path:).)*)", text, re.S)
+    found = []
+    for path, body in entries:
+        if path == "**" or "redirectTo" in body:
+            continue
+        found.append("/" + path)
+    seen = set(found)
+    ordered = [r for r in PREFERRED if r in seen]
+    ordered += [r for r in found if r not in set(ordered)]
+    return tuple(ordered)
+
+
+ROUTES = _routes()
 
 VIEWPORT = {"width": 1440, "height": 1000}
 

@@ -111,8 +111,39 @@
     align-items: center;
     margin-top: 0.75rem;
     padding: 0.75rem 1rem;
-    border: 1px solid rgb(255 255 255 / 12%);
+    border: 1px solid var(--surface-rule);
     border-radius: 0.4rem;
+  }
+
+  /* Two chips, not a drop-down. `.chip` is already the page's word for "pick one of a small
+     fixed set" — it is what the main-stat rows use — and reusing it puts one control
+     vocabulary on the row instead of a browser `<select>` beside two brass card-pickers. */
+  .objective-modes {
+    display: flex;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    border: none;
+  }
+
+  /* The rotation list fills the row the `<select>` used to, and stops short of the full
+     width: a name is short, and a picker stretched across the panel reads as a text field. */
+  /* The combobox's visible name. `<label>` would be wrong — it must wrap a real control,
+     and this is a custom element that carries its own `ariaLabel`. */
+  .field {
+    display: flex;
+    flex: 1 1 auto;
+    gap: 0.5rem;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .field__name { color: var(--ink-dim); }
+
+  .rotation-picker {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 26rem;
   }
 
   /* Beside "Why?", not instead of it: one explains the row and the other acts on it, and a
@@ -285,7 +316,12 @@
   letter-spacing: normal;
 }
 
-.slot-stats .chip {
+/* **`.chip` is the page's word for "pick one of a small fixed set", so it is defined once.**
+   It was scoped to `.slot-stats`, which meant the objective chips took the global button
+   surface and `.chip--on` matched nothing — both modes rendered identically while one of them
+   was active. Caught on screen, not by a test: an unstyled chip is a perfectly valid button.
+   Angular scopes component styles, so this reaches only this page's template. */
+.chip {
   padding: 2px var(--space-2);
   border: 1px solid var(--surface-rule);
   border-radius: var(--radius-pill);
@@ -295,10 +331,17 @@
   cursor: pointer;
 }
 
-.slot-stats .chip--on {
+.chip--on {
   border-color: var(--brass);
   background: color-mix(in srgb, var(--brass) 18%, transparent);
   color: var(--ink);
+}
+
+/* The objective is a primary control rather than a dense filter, so it reads at body size. */
+.objective-modes .chip {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  letter-spacing: normal;
 }
 
 /* "Exact" is a claim about the search; this is the one about the scoring, and they sat as a

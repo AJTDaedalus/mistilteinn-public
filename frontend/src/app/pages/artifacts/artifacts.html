@@ -89,7 +89,7 @@
             <!-- N.3: a `replace` re-equips what it can by matching stats, and names what it
                  could not. A slot that emptied silently is discovered later from a damage
                  number. -->
-            <p class="warn">{{ result.unequipped.length }} slot(s) not refilled:</p>
+            <p class="warn">{{ result.unequipped.length }} slot{{ result.unequipped.length === 1 ? '' : 's' }} not refilled:</p>
             <ul class="rejections">
               @for (note of result.unequipped; track $index) {
                 <li>{{ note }}</li>
@@ -103,7 +103,7 @@
                 {{ builds.skipped_existing.length }} kept}.
             </p>
             @if (builds.unresolved.length) {
-              <p class="warn">{{ builds.unresolved.length }} character(s) not recognised:</p>
+              <p class="warn">{{ builds.unresolved.length }} character{{ builds.unresolved.length === 1 ? '' : 's' }} not recognised:</p>
               <ul class="rejections">
                 @for (key of builds.unresolved; track key) {
                   <li class="mono">{{ key }}</li>
@@ -113,7 +113,7 @@
             @if (builds.unresolved_weapons.length) {
               <!-- Named because a build with no weapon is a legitimate state, so an
                    unresolved one is otherwise completely silent. -->
-              <p class="warn">{{ builds.unresolved_weapons.length }} weapon(s) not recognised:</p>
+              <p class="warn">{{ builds.unresolved_weapons.length }} weapon{{ builds.unresolved_weapons.length === 1 ? '' : 's' }} not recognised:</p>
               <ul class="rejections">
                 @for (note of builds.unresolved_weapons; track $index) {
                   <li class="mono">{{ note }}</li>
@@ -135,7 +135,7 @@
                    omission, not a lost weapon. `hint` rather than `warn` for that reason:
                    it is information, not a problem. -->
               <p class="hint">
-                {{ builds.no_weapon_in_export.length }} character(s) had artifacts but no weapon
+                {{ builds.no_weapon_in_export.length }} character{{ builds.no_weapon_in_export.length === 1 ? '' : 's' }} had artifacts but no weapon
                 in this export. Usually they are holding a 1★ or 2★ default weapon, which
                 scanners leave out — equip something and re-scan if you want them here.
               </p>
@@ -146,7 +146,7 @@
             @if (builds.reassigned.length) {
               <!-- Moving a piece in-game and re-scanning is legitimate, but it leaves the
                    build that had it a slot short, and nothing else would mention that. -->
-              <p class="warn">{{ builds.reassigned.length }} piece(s) moved off another build:</p>
+              <p class="warn">{{ builds.reassigned.length }} piece{{ builds.reassigned.length === 1 ? '' : 's' }} moved off another build:</p>
               <ul class="rejections">
                 @for (note of builds.reassigned; track $index) { <li>{{ note }}</li> }
               </ul>

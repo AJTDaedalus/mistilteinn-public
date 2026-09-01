@@ -233,3 +233,41 @@ describe('TeamsPage', () => {
     expect(page['members'](team as never)).toEqual(['Kamisato Ayaka', 'Barbara']);
   });
 });
+
+describe('the team builder as a pop-up', () => {
+  /* `BACKLOG_frontend.md` §4. The builder used to be a permanent form holding the left half
+     of the page; it is a dialog now, opened from a header button like `/builds` and
+     `/rotations`.
+
+     This harness builds the page with `new TeamsPage()` rather than a fixture, so `viewChild`
+     returns undefined and there is no dialog element — which is exactly the case the
+     `showModal?.()` optional call exists for, and asserting it here keeps that guard honest. */
+
+  it('opens on a blank team, and does not throw without a dialog element', () => {
+    const page = healthy();
+    page['name'].set('Half-typed');
+
+    expect(() => page['startNew']()).not.toThrow();
+
+    expect(page['name']()).toBe('');
+    expect(page['editing']()).toBeNull();
+  });
+
+  it('forgets a half-filled team when the dialog is dismissed', () => {
+    // Escape and the backdrop close a native dialog without going through the close button,
+    // so the reset hangs off `(close)`. Without it, reopening shows the abandoned draft and
+    // "New team" is a lie.
+    const page = healthy();
+    page['name'].set('Abandoned');
+    page['picked'].set({ build1_id: 'b-ayaka-c0', build2_id: null, build3_id: null, build4_id: null });
+
+    page['onEditorClosed']();
+
+    expect(page['name']()).toBe('');
+    expect(page['picked']().build1_id).toBeNull();
+  });
+
+  it('closing is safe when there is no dialog to close', () => {
+    expect(() => healthy()['closeEditor']()).not.toThrow();
+  });
+});

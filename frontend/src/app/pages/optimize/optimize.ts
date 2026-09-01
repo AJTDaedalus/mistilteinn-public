@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 
 import { apiErrorMessage } from '../../api/api-error';
 import { CardPicker, type CardOption } from '../../shared/card-picker/card-picker';
+import { Combobox } from '../../shared/combobox/combobox';
 import { buildOptions, buildsInTeam, teamOptions } from '../../shared/team-scope';
 import { ElementChip } from '../../shared/element/element';
 import { CatalogueIcon } from '../../shared/icon/icon';
@@ -182,7 +183,7 @@ const UPGRADES_PER_SLOT = 3;
   selector: 'page-optimize',
   imports: [
     FormsModule, RouterLink, DecimalPipe, PercentPipe,
-    CardPicker, CatalogueIcon, ElementChip, EntityToken, ArtifactCard,
+    CardPicker, CatalogueIcon, ElementChip, EntityToken, ArtifactCard, Combobox,
   ],
   templateUrl: './optimize.html',
   styleUrl: './optimize.scss',
@@ -903,6 +904,11 @@ export class OptimizePage implements OnInit {
    */
   protected readonly objective = signal<'hit' | 'rotation'>('rotation');
   protected readonly rotations = signal<{ id: string; name: string }[]>([]);
+
+  /** The same list, in the shape `mist-combobox` reads. */
+  protected readonly rotationOptions = computed(() =>
+    this.rotations().map((r) => ({ value: r.id, label: r.name })),
+  );
   /** A signal, because `canSearchRotation` reads it. Same reason as `hitIndex`. */
   protected readonly rotationId = signal('');
   protected readonly calibrating = signal<CalibrationProgress | null>(null);

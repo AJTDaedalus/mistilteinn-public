@@ -145,9 +145,12 @@
       <!-- `clearable`, because `weapon_id` is nullable by design (OQ-T3): a build being
            assembled without one is a real state, and the damage chain refuses to run without
            a weapon, which is the right place for that refusal. -->
+      <!-- "Choose a weapon…", matching the character picker directly above it. "None yet"
+           described the *state* where its neighbour named the *action*, so one dialog asked
+           two different questions of the same kind of control. -->
       <mist-card-picker
         label="Weapon"
-        placeholder="None yet"
+        placeholder="Choose a weapon…"
         clearable
         ordered
         [options]="weaponOptions()"

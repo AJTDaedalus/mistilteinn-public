@@ -174,11 +174,15 @@ What follows from it, and what is still open:
 
 - **Done:** the warning names the varying ability and says an ability with a varying count is
   usually short of energy. That is now a measured claim rather than a plausible one.
-- **Open:** the *number*. `recipe-energy.ts` computes the minimum ER a recipe needs, but the
-  calibration never runs the sweep that feeds it (`energySweep` is never passed), so
-  `minimumEnergyRecharge` is always null and nothing reads it — §9. Turning "usually short of
-  energy" into "this build has 12 %, this rotation needs 30 %" costs one extra gcsim run per ER
-  point per calibration, which is the trade to weigh.
+- ~~**Open:** the *number*.~~ **Done, and this entry was stale.** `energySweep` is passed by
+  `recipe-optimize.service.ts`, `calibrate.ts` sets `meta.minimumEnergyRecharge` from it, and
+  both `optimize.ts` and the service read it through `energyShortfall`. The note above
+  describing both ends as dead survives in `optimize.ts` as a comment about the state it was
+  written in.
+
+  Found during the 2026-08-31 frontend audit by walking the backlog against the tree rather
+  than trusting it — **an entry that reports finished work as open is the reason a reader stops
+  believing the file**, which is the same argument `CLAUDE.md` makes about its own counts.
 
 ## 8a. The original hypothesis
 

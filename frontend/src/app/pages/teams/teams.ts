@@ -1,4 +1,6 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  Component, ElementRef, OnInit, computed, inject, signal, viewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -179,12 +181,47 @@ export class TeamsPage implements OnInit {
           build1_id: picked.build1_id!,
         });
         await this.load();
+        // Closed, not reset — the same ruling as the build editor (#170). The form used to
+        // sit permanently on the page, so blanking it was the only way to say "saved"; in a
+        // dialog, closing says it, and an empty editor left open reads as a save that did
+        // not take.
         this.newTeam();
+        this.closeEditor();
       }
     } catch (err) {
       // Verbatim: the API names the character it saw twice, and which slots hold it.
       this.actionError.set(apiErrorMessage(err));
     }
+  }
+
+  /* ── The builder, as a pop-up ────────────────────────────────────────────────
+     `BACKLOG_frontend.md` §4. Same shape as the build editor (#170) and the rotation editor:
+     a native `<dialog>` for the focus trapping, Escape and backdrop a hand-rolled panel would
+     have to reimplement. */
+  /** The reactions a saved team could produce, in the shape `mist-combobox` reads. */
+  protected readonly reactionOptions = computed<ComboboxOption[]>(() =>
+    this.reactionsPresent().map((r) => ({ value: r.id, label: r.name })),
+  );
+
+  protected readonly editor = viewChild<ElementRef<HTMLDialogElement>>('editor');
+
+  /** Open on a blank team.
+   *
+   * **`showModal?.()`, deliberately** — `HTMLDialogElement` is absent in jsdom, so a bare
+   * call throws in every TestBed spec that touches this path.
+   */
+  protected startNew(): void {
+    this.newTeam();
+    this.editor()?.nativeElement.showModal?.();
+  }
+
+  protected closeEditor(): void {
+    this.editor()?.nativeElement.close?.();
+  }
+
+  /** Escape and the backdrop close the dialog without going through `closeEditor`. */
+  protected onEditorClosed(): void {
+    this.newTeam();
   }
 
   protected edit(team: TeamRead): void {
@@ -197,6 +234,7 @@ export class TeamsPage implements OnInit {
       >,
     );
     this.actionError.set(null);
+    this.editor()?.nativeElement.showModal?.();
   }
 
   protected newTeam(): void {

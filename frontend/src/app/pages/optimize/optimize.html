@@ -125,34 +125,45 @@
          a 4-piece and then pressing the wrong button is how a filter looks like it did
          nothing. One button, at the end, after everything it reads. -->
     <div class="objective">
-      <label>
-        <select
-          [ngModel]="objective()"
-          (ngModelChange)="objective.set($event)"
-          aria-label="What to optimize"
-        >
-          <option value="hit">Optimize for single hit</option>
-          <option value="rotation">Optimize with rotation</option>
-        </select>
-      </label>
+      <!-- **A mode, not a list.** This was a native `<select>` sitting directly beside two
+           brass card-pickers — two control vocabularies in one row, and the page already
+           expresses "pick one of a small fixed set" as chips a few sections below. Two
+           options never needed a drop-down. -->
+      <fieldset class="objective-modes" aria-label="What to optimize">
+        <button
+          type="button"
+          class="chip"
+          [class.chip--on]="objective() === 'rotation'"
+          [attr.aria-pressed]="objective() === 'rotation'"
+          (click)="objective.set('rotation')"
+        >With a rotation</button>
+        <button
+          type="button"
+          class="chip"
+          [class.chip--on]="objective() === 'hit'"
+          [attr.aria-pressed]="objective() === 'hit'"
+          (click)="objective.set('hit')"
+        >For a single hit</button>
+      </fieldset>
 
       @if (objective() === 'rotation') {
-        <label>
-          Rotation
-          <select [ngModel]="rotationId()" (ngModelChange)="pickRotation($event)" aria-label="Rotation">
-            <!-- **A placeholder, because nothing is selected by default any more.** §15 stopped
-                 the page choosing `rotations[0]`, and a `<select>` with no empty option then
-                 *displayed* the first rotation while the model held `''` — so Optimize was
-                 disabled and the control gave no clue why. This is the "select that had always
-                 shown its first option" trap the repo already records, arrived at from the
-                 other direction: there the model was set and the display was wrong, here the
-                 display is set and the model is empty. -->
-            <option value="" disabled>Choose a rotation…</option>
-            @for (option of rotations(); track option.id) {
-              <option [value]="option.id">{{ option.name }}</option>
-            }
-          </select>
-        </label>
+        <!-- A `<span>`, not a `<label>`: a label must wrap a real form control, and the
+             combobox is a custom element. It carries `ariaLabel` itself. -->
+        <span class="field">
+          <span class="field__name">Rotation</span>
+          <!-- `mist-combobox`, the house control for a named list with no art — the same
+               one the team slots use. It carries the placeholder properly, which the
+               `<select>` could not: with no empty option it *displayed* the first rotation
+               while the model held `''`, so Optimize was disabled with no clue why. -->
+          <mist-combobox
+            class="rotation-picker"
+            [options]="rotationOptions()"
+            [value]="rotationId() || null"
+            ariaLabel="Rotation"
+            placeholder="Choose a rotation…"
+            (valueChange)="pickRotation($event ?? '')"
+          />
+        </span>
       }
     </div>
 
@@ -265,7 +276,7 @@
                  seconds each, and nobody would wait for that. "None" undid a selection the
                  picker already clears. -->
             <div class="filter-actions">
-              <span class="muted mono">{{ calibrationCount() }} calibration(s)</span>
+              <span class="muted mono">{{ calibrationCount() }} calibration{{ calibrationCount() === 1 ? '' : 's' }}</span>
             </div>
           </div>
 
@@ -419,7 +430,7 @@ beside it is already what you would gain after losing that bonus.">costs the set
       <!-- OQ-O2: reported, never swallowed. A search over an inventory quietly missing
            pieces recommends the best of what it was shown. -->
       <p class="warn" role="alert">
-        {{ unreadable().length }} artifact(s) could not be read and were left out of the
+        {{ unreadable().length }} artifact{{ unreadable().length === 1 ? '' : 's' }} could not be read and were left out of the
         search:
       </p>
       <ul class="unreadable">

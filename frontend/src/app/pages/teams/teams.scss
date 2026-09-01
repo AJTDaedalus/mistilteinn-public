@@ -1,15 +1,26 @@
 .teams {
   padding: 1rem;
 
+  /* Title and "New team" on one line, matching `/builds` and `/rotations`. Adding the button
+     to a block header stacked it under the heading, where it clipped the title's rule —
+     visible in a screenshot, invisible to every test. */
   header {
-    margin-bottom: 1rem;
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
 
-    h1 { margin: 0 0 0.25rem; }
+    h1 { margin: 0; }
   }
 
+  /* Pushed to the right, as on `/builds`. */
+  .new { margin-left: auto; }
+
+  /* One column. It was two — a permanent builder beside the saved teams — and with the
+     builder in a dialog there is nothing to put beside them. */
   .layout {
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(14rem, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 1rem;
     align-items: start;
   }
@@ -60,9 +71,6 @@
 
 }
 
-@media (width <= 60rem) {
-  .teams .layout { grid-template-columns: minmax(0, 1fr); }
-}
 
 // ── Art ──────────────────────────────────────────────────────────────────────
 
@@ -143,4 +151,16 @@
   margin-bottom: var(--space-2);
 
   select { width: 100%; }
+}
+
+/* The team builder's own width. The shared dialog is in `styles.scss`; a team is a name and
+   four slots, so it needs less room than the build editor's card pickers. */
+.teams .editor { width: min(34rem, 92vw); }
+
+
+/* The reaction filter sits above a row of element buttons, so it stops short of the panel
+   width — a full-bleed picker over six small buttons reads as a text field. */
+.teams .reaction-filter {
+  display: block;
+  max-width: 22rem;
 }

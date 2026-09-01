@@ -87,9 +87,10 @@ browser build, a 100-iteration 90-second rotation is **7.84 s single-threaded** 
 candidates is **~7.7 minutes**. The decision holds; the interaction it implies does not. It is
 a job with progress, never a request that blocks.
 
-- **Both suites pass, with nothing skipped.** **1616 backend tests, 0 skipped**; **626
-  frontend tests**; `create_app()` serves **53 paths**; the SPA has **17 routes plus a
-  catch-all**. (Every figure here has been stale at least once — 1273 / 255 / 40, then
+- **Both suites pass, with nothing skipped.** **1647 backend tests, 0 skipped**; **802
+  frontend tests**; `create_app()` serves **49 paths**; the SPA has **14 routes, 2 redirects
+  and a catch-all** — the redirects are `/artifacts`→`/inventory` and `/explain`→`/calculate`,
+  and a screenshot harness that followed one was how the count came to be re-derived at all. (Every figure here has been stale at least once — 1273 / 255 / 40, then
   1439 / 450 / 39, then 1549 / 544 / 51, then 1567 / 565. **The number is not the point; the command underneath
   it is**, and the honest reading of this line is "roughly this many, re-derive before citing
   it".) **One integration test has been seen to fail once and pass on re-run** —

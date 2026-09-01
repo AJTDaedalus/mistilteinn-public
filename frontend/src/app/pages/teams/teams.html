@@ -1,6 +1,11 @@
 <section class="teams">
   <header>
     <h1>Teams</h1>
+    <!-- `BACKLOG_frontend.md` §4, and the same shape as `/builds` (#170) and `/rotations`:
+         the saved things are the page, and making a new one is a button. The builder was a
+         permanent form holding the left half of the viewport — about 300 px of content in a
+         column twice that tall, with the saved teams squeezed into what was left. -->
+    <button type="button" class="new" (click)="startNew()">New team</button>
   </header>
 
   @if (error(); as message) {
@@ -18,8 +23,16 @@
     </p>
   } @else {
     <div class="layout">
-      <div class="pane">
-        <h2>{{ editing() ? 'Editing' : 'New team' }}</h2>
+      <dialog #editor class="editor" (close)="onEditorClosed()">
+        <header class="editor__head">
+          <h2>{{ editing() ? 'Editing' : 'New team' }}</h2>
+          <button
+            type="button"
+            class="editor__close"
+            aria-label="Close"
+            (click)="closeEditor()"
+          >×</button>
+        </header>
 
         <label>
           Name
@@ -62,7 +75,7 @@
         @if (actionError(); as message) {
           <p class="error" role="alert">{{ message }}</p>
         }
-      </div>
+      </dialog>
 
       <div class="pane">
         <h2>Saved</h2>
@@ -70,17 +83,18 @@
           <!-- Reactions at least one saved team could produce. The table is the server's,
                committed and cited in `docs/RESEARCH_elemental_reactions.md`. "Could", not
                "will": whether a rotation triggers one is the simulator's question. -->
+          <!-- `mist-combobox`, the control this page already uses for its slots. A native
+               `<select>` here stretched the full panel width and rendered in the browser's own
+               font beside a row of house-styled element buttons. -->
           <div class="team-reactions">
-            <select
-              aria-label="Filter by reaction"
-              [value]="reactionFilter()"
-              (change)="reactionFilter.set($any($event.target).value)"
-            >
-              <option value="">Any reaction</option>
-              @for (r of reactionsPresent(); track r.id) {
-                <option [value]="r.id">{{ r.name }}</option>
-              }
-            </select>
+            <mist-combobox
+              class="reaction-filter"
+              [options]="reactionOptions()"
+              [value]="reactionFilter() || null"
+              ariaLabel="Filter by reaction"
+              placeholder="Any reaction"
+              (valueChange)="reactionFilter.set($event ?? '')"
+            />
           </div>
         }
 
