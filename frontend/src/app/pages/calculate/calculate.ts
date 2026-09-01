@@ -15,6 +15,7 @@ import { pairKey } from '../../sim/recipe-search';
 import { CardPicker, type CardOption } from '../../shared/card-picker/card-picker';
 import { CatalogueIcon } from '../../shared/icon/icon';
 import { evaluateHit, type CandidateStats, NO_STATS } from '../../sim/recipe-eval';
+import { energyDelayMessage, type EnergyDelay } from '../../sim/energy-delay';
 import type { Recipe } from '../../sim/recipe';
 import { apiErrorMessage } from '../../api/api-error';
 import { injectApi } from '../../api/api.client';
@@ -134,6 +135,9 @@ export class CalculatePage implements OnInit {
   protected readonly teamId = signal('');
   protected readonly rotationId = signal('');
   protected readonly result = signal<Contribution[] | null>(null);
+
+  /** The red line naming who could not burst on time — the owner's wording, gcsim's seconds. */
+  protected readonly energyDelay = signal<string | null>(null);
 
   /** Characters whose recipe could not be built — named rather than silently dropped. */
   protected readonly skipped = signal<string[]>([]);
@@ -286,6 +290,9 @@ export class CalculatePage implements OnInit {
     try {
       const rows: Contribution[] = [];
       const skipped: string[] = [];
+      // Measured once: the wait belongs to the team and the rotation, not to one character's
+      // calibration, so the first run that reports any is the one that answers for all of them.
+      let delays: EnergyDelay[] = [];
       const builds = this.teamBuilds();
       if (!builds.length) {
         this.error.set('That team has no builds to calculate.');
@@ -308,6 +315,9 @@ export class CalculatePage implements OnInit {
           [target],
           () => undefined,
         );
+        if (!delays.length && calibrated.caveats.energyDelays.length) {
+          delays = [...calibrated.caveats.energyDelays];
+        }
         const recipe = this.recipeFor(target, calibrated);
         if (!recipe) {
           // **Named, not skipped.** `continue` dropped a character out of the table and out
@@ -320,6 +330,7 @@ export class CalculatePage implements OnInit {
       }
       this.result.set(rows);
       this.skipped.set(skipped);
+      this.energyDelay.set(energyDelayMessage(delays));
     } catch (err) {
       this.error.set(apiErrorMessage(err));
     } finally {

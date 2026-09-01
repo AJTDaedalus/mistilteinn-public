@@ -65,6 +65,13 @@
           <span class="total__window muted">over 90s</span>
         </p>
 
+        @if (energyDelay(); as delay) {
+          <!-- gcsim's own seconds, from `failed_actions`. A rotation that stalls on energy
+               loses DPS with nothing else on screen to explain it — 67 s on the owner's own
+               team, against an otherwise identical action list. -->
+          <p class="error" role="alert">{{ delay }}</p>
+        }
+
         @if (skipped().length) {
           <!-- Said, not swallowed. A character dropped from the table is also dropped from the
                total, so a silent skip understates the rotation with nothing on screen to

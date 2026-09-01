@@ -375,6 +375,16 @@
       </p>
     }
 
+    @if (energyDelay(); as delay) {
+      <!-- **gcsim's own seconds, per character.** `pkg/agg/failures` sums the frames of every
+           `insufficient_energy` interval and divides by 60, so this is measured rather than
+           inferred. Measured on the owner's team: identical action counts to gcsim's published
+           run, 191.7 s against 124.6 s, and the whole difference was one teammate waiting.
+           Teammates only — the calibration strips the optimized character's own ER, so their
+           wait here would be an artefact; theirs is the shortfall line above. -->
+      <p class="error" role="alert">{{ delay }}</p>
+    }
+
     @if (asideCaveats(); as aside) {
       @if (aside.unstable.length || aside.staleConversions.length) {
         <p class="hint">

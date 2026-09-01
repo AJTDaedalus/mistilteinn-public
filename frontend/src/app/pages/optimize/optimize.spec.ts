@@ -628,7 +628,7 @@ describe('marginalPerRoll', () => {
     hits: [hit()], seed: '1',
     meta: {
       seed: '1', staleConversions: [], characters: [], unstable: [], calibratedSetIds: [],
-      minimumEnergyRecharge: null,
+      minimumEnergyRecharge: null, energyDelays: [],
     },
   }) as unknown as Recipe;
 
@@ -839,7 +839,7 @@ describe('OptimizePage comparator', () => {
     hits: [], seed: '1',
     meta: {
       seed: '1', staleConversions: [], characters: [], unstable: [], calibratedSetIds: [],
-      minimumEnergyRecharge: null,
+      minimumEnergyRecharge: null, energyDelays: [],
     },
   }) as unknown as Recipe;
 
@@ -856,7 +856,7 @@ describe('OptimizePage comparator', () => {
     seed: '1',
     meta: {
       seed: '1', staleConversions: [], characters: [], unstable: [], calibratedSetIds: [],
-      minimumEnergyRecharge: null,
+      minimumEnergyRecharge: null, energyDelays: [],
     },
   }) as unknown as Recipe;
 

@@ -31,6 +31,8 @@
  */
 
 /** Which stat an ability scales off. gcsim states this; it is not inferred. */
+import type { EnergyDelay } from './energy-delay';
+
 export type RecipeScaling = 'atk' | 'hp' | 'def' | 'em';
 
 /** A stat a conversion can draw from. */
@@ -192,6 +194,18 @@ export interface RecipeMeta {
    * who. Empty is a valid state — a caller that did not supply names gets indices.
    */
   characters: string[];
+  /**
+   * How long each character waited on energy, in seconds, from gcsim's own `failed_actions`.
+   *
+   * Beside `unstable` because it is the same kind of fact: something true of the *run* that no
+   * candidate's artifacts can change, and that a damage number alone cannot say. Empty when
+   * the aggregate was not run — a 4-piece target does not measure it.
+   */
+  //
+  // **Optional, because it is genuinely absent.** Only the baseline target runs the aggregate
+  // that measures it, so a 4-piece recipe has no delays to carry — and making every caller
+  // invent an empty array to satisfy a type would be the type lying about the data.
+  energyDelays?: EnergyDelay[];
   /**
    * The catalogue id of the 4-piece set this recipe was calibrated with, or `null` for a
    * calibration that equipped none.
@@ -403,6 +417,7 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
       // set was equipped, nor about a sweep it was not part of.
       calibratedSetIds: [],
       minimumEnergyRecharge: null,
+      energyDelays: [],
     },
   };
 }

@@ -45,7 +45,7 @@ const recipe = (hits: RecipeHit[], calibratedSetId: number | null = null): Recip
     // Plural since B.3: a 2+2 calibration equips two sets. This helper still takes one,
     // because every case here is a 4-piece or none.
     calibratedSetIds: calibratedSetId === null ? [] : [calibratedSetId],
-    minimumEnergyRecharge: null,
+    minimumEnergyRecharge: null, energyDelays: [],
   },
 });
 

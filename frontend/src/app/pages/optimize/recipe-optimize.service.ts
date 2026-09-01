@@ -17,6 +17,7 @@ import {
   type RecipeStore,
 } from '../../sim/recipe-cache';
 import { energyShortfall, type EnergyShortfall } from '../../sim/recipe-energy';
+import { energyDelays, type EnergyDelay } from '../../sim/energy-delay';
 
 /**
  * How the gcsim module is obtained, and where recipes are kept.
@@ -78,6 +79,13 @@ export interface CalibrationCaveats {
    * the only one who can fix it.
    */
   unstable: { label: string; abilities: string[] }[];
+  /**
+   * Teammates who could not burst on time, with gcsim's own seconds.
+   *
+   * Carried on `recipe.meta` as well, for the same reason `unstable` is: the aggregate that
+   * measures it runs on a cache **miss**, so a hit would otherwise come back silent.
+   */
+  energyDelays: EnergyDelay[];
   /** States carrying a conversion no probe could resolve, with the damage share affected. */
   staleConversions: { label: string; term: string; damageShare: number }[];
   /** States whose recipes were served from cache rather than recalculated. */
@@ -217,6 +225,7 @@ export class RecipeOptimizeService {
     let noFourPiece: Recipe | null = null;
     const caveats: CalibrationCaveats = {
       unstable: [], staleConversions: [], fromCache: [], unscoredLabels: [],
+      energyDelays: [],
     };
 
     onProgress({ done: 0, total: targets.length, current: '', loading: true });
@@ -299,6 +308,29 @@ export class RecipeOptimizeService {
           recipe.meta.characters = [
             ...(configs.character_names?.length ? configs.character_names : configs.characters ?? []),
           ];
+          // **Paired against gcsim's own key order, not the display names.** `failed_actions`
+          // is indexed positionally by `configs.characters`; passing the display list would
+          // still line up today and would blame the wrong character the moment the two orders
+          // diverge, silently and plausibly. So the keys index it, and the names label it.
+          //
+          // **Teammates only, and that is a correctness limit rather than a choice.** The
+          // aggregate runs `configs.baseline`, which strips the optimized character's
+          // artifacts down to `er=0` — so *their* wait in this run is an artefact of the
+          // calibration, not their build. Teammates carry their real gear, so theirs is real.
+          //
+          // The optimized character's own energy is already covered, properly, by
+          // `minimumEnergyRecharge` and `energyShortfall`, which the ER sweep measures against
+          // their actual ER.
+          const keys = configs.characters ?? [];
+          recipe.meta.energyDelays = aggregate
+            ? energyDelays(aggregate.raw, keys)
+              .filter((delay) => keys.indexOf(delay.character) > 0)
+              .map((delay) => ({
+                ...delay,
+                character: recipe.meta.characters[keys.indexOf(delay.character)]
+                  ?? delay.character,
+              }))
+            : [];
           return recipe;
         };
 
@@ -330,6 +362,11 @@ export class RecipeOptimizeService {
       // permanently, because the cache is persistent.
       if (recipe.meta.unstable.length > 0) {
         caveats.unstable.push({ label: target.label, abilities: recipe.meta.unstable });
+      }
+      // Reported once for the run, not once per target: the wait is a property of the team and
+      // the rotation, and repeating it per artifact set would read as several problems.
+      if (recipe.meta.energyDelays?.length && !caveats.energyDelays.length) {
+        caveats.energyDelays = [...recipe.meta.energyDelays];
       }
 
       for (const stale of recipe.meta.staleConversions) {
