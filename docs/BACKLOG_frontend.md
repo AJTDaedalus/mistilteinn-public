@@ -383,20 +383,39 @@ the page for 227 seconds now returns in **4.1 s** — saying, in the result, tha
 DESIGN §2 expecting the GPU to search exhaustively, and `createGpuKernel` has no callers. That
 is the sentence to revisit if the GPU is ever wired up.
 
-## 11. Not reproduced: "sets and enemies are broken"
+## 11. ~~Not reproduced~~ **Reproduced 2026-09-01: there is nothing to click**
 
-**I could not reproduce this and have not guessed at it.** Tested 2026-08-29:
+The owner: *"Sets and enemies are currently broken, I can't click them."*
 
-- both nav links navigate correctly in a headless browser — `/artifact-sets` renders `ARTIFACT
-  SETS` with 190 nodes, `/enemies` renders `ENEMIES` with 3,240;
-- both routes return `200` in production, as do their APIs;
-- one console 404 on `/artifact-sets`, for a set icon nanoka does not publish — benign, and
-  `CatalogueIcon` hides it.
+This sat as *not reproduced* for three days because the checks asked the wrong question. Both
+routes render and both answer 200, and the earlier note stopped there. Driving the pages in a
+browser answers it:
 
-**The likeliest explanation is the one thing I can see:** those links sit in
-`.shell__group--reference`, styled `--ink-faint`, and render visibly dimmer than the primary nav
-group. That reads as *disabled*. It does not explain why Characters and Weapons — in the same
-group — were clearly used, so it is a hypothesis and not a finding.
+| page | interactive controls | rows |
+|---|---|---|
+| `/characters` | **10** | 134 |
+| `/weapons` | **9** | 254 |
+| `/artifact-sets` | **1** | 190 |
+| `/enemies` | **1** | 3,231 |
 
-Worth asking the owner for one detail: whether the link did nothing, or the page loaded and its
-cards did nothing.
+The single control on each is the **Search** button. `/characters` and `/weapons` carry a row
+of element and rarity chips; the other two carry none. Clicking a card does nothing on any of
+the four — no page has clickable cards — so the difference the owner felt is **entirely the
+missing filter row**.
+
+`/artifact-sets` is a **6,866-pixel** wall of 65 dense cards, five columns wide, every affix
+spelled out. `/enemies` renders 3,231 rows. Neither can be narrowed except by typing a name.
+
+**The nav is not the fault**, and that was checked rather than assumed: all four links carry
+the right `href`, navigate, and land on the right heading with no console errors.
+
+### What it needs, and the part that is a decision
+
+- **`/artifact-sets`** has an obvious mirror: rarity chips from `available_ranks`, exactly as
+  `/characters` does with 5★/4★.
+- **`/enemies` has no type or family column.** `EnemyProfile` carries name, level, base stats
+  and per-element resistances — nothing to group by. A useful filter there is a *design
+  choice* ("resists cryo"? a level band? by region?), and inventing a taxonomy for someone
+  else's catalogue is not a call to make unilaterally.
+
+Both endpoints accept **`name` only**, so either fix is backend and frontend together.

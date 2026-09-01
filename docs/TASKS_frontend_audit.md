@@ -21,7 +21,7 @@ that doc's closing section; this file tracks what landed.
 | task | why it is not done |
 |---|---|
 | **B.4 — `/optimize` prose** | **Examined and declined.** The 417-word figure was a measurement artifact: it counts every conditional branch as though all rendered at once, when most are empty states that appear one at a time and say what to do. The three long passages each carry information needed to trust a number — *"a swap that would drop you below four of the set is scored without the set bonus"* is not obvious and is what makes the ranking believable. The genuine slop on that page was the `(s)` plurals, now fixed. Recorded as declined rather than left open, because an item that reads as pending work when it was decided is the same failure as §8 reporting finished work as open |
-| **B.5 — §11 "sets and enemies are broken"** | **Blocked on detail.** Both routes render and answer 200. Needs: did the link do nothing, or did the page load and its cards do nothing? |
+| **B.5 — §11 "sets and enemies are broken"** | **Reproduced, and it was neither guess.** The pages load and the nav works; they simply have **no filter row** where `/characters` and `/weapons` have one — 1 interactive control against 10 and 9. `/artifact-sets` is 6,866 px of 65 dense cards; `/enemies` renders 3,231 rows; neither can be narrowed except by typing a name. `/artifact-sets` has an obvious mirror (rarity chips from `available_ranks`); **`/enemies` has no type or family column at all**, so what to filter it by is a design call rather than a task. Full evidence in `BACKLOG_frontend.md` §11 |
 
 ## Done since
 
