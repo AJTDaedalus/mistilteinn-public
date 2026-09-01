@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { NO_STATS, evaluateHit } from './recipe-eval';
 import {
   effectiveCritRate,
   parseSample,
@@ -26,10 +27,16 @@ function dmg(over: Record<string, unknown> = {}) {
   return { event: 'damage', logs: { abil: 'Normal 1', ele: 'cryo', 'attack-tag': 1, ...over } };
 }
 
-/** A `calc` log entry, with the fields the parser reads. */
-function calc(over: Record<string, unknown> = {}) {
+/**
+ * A `calc` log entry, with the fields the parser reads.
+ *
+ * `charIndex` rides on the **envelope**, where gcsim puts it — not in the payload. The parser
+ * reads it from there to decide whose hit this is.
+ */
+function calc(over: Record<string, unknown> = {}, charIndex = 0) {
   return {
     event: 'calc',
+    char_index: charIndex,
     logs: {
       abil: 'Normal 1', talent: 2, total_scaling: 1000, base_atk: 1000, atk_per: 0,
       flat_atk: 0, base_hp: 10000, base_def: 800, flat_dmg: 0, flat_hp: 0, flat_def: 0,
@@ -43,6 +50,7 @@ function calc(over: Record<string, unknown> = {}) {
 }
 
 const hit = (over: Partial<RecipeHit> = {}): RecipeHit => ({
+  mine: true,
   abil: 'x', attackTag: -1, element: '19', talent: 2, scaling: 'atk', flatDamage: 0,
   conversions: {},
   calibratedBase: { atk: 1000, hp: 10000, def: 800 },
@@ -229,6 +237,68 @@ describe('staleConversions', () => {
   });
 });
 
+
+describe("a teammate's hits belong to a build that is not being optimized", () => {
+  /**
+   * **The bug this was found by measuring**, on the owner's Skirk / Furina / Yelan / Citlali
+   * rotation. Teammates were **85.9% of the damage**, and applying a candidate's stats to
+   * every hit meant most of the gain a candidate appeared to give was applied to Furina's
+   * damage — which no artifact of Skirk's can move.
+   *
+   * The config says so plainly: the calibrated character gets `add stats er=0.3`, while
+   * teammates carry their whole equipped stat line.
+   */
+  it("freezes a teammate's hit at what gcsim measured", () => {
+    const mine = hit({ mine: true, talent: 2, gcsimAverageDamage: 1000 });
+    const theirs = hit({ mine: false, talent: 2, gcsimAverageDamage: 1000 });
+    const buffed = { ...NO_STATS, atkPercent: 0.5, critRate: 0.3, critDmg: 1 };
+
+    expect(evaluateHit(theirs, buffed)).toBe(1000);
+    expect(evaluateHit(mine, buffed)).not.toBe(evaluateHit(mine, NO_STATS));
+  });
+
+  it('reads whose hit it is from the log envelope', () => {
+    // `char_index` sits beside `event`, not inside `logs`. Reading it from the payload gives
+    // `undefined` for every hit — the same nesting mistake that made an earlier count of the
+    // flat fields report them all as zero.
+    const parsed = parseSample({ logs: [
+      dmg(), calc({}, 0), dmg(), calc({}, 2),
+    ] });
+
+    expect(parsed.hits.map((h) => h.mine)).toEqual([true, false]);
+  });
+
+  it("does not report a teammate's flat stats as an unresolved conversion", () => {
+    // `furina add stats atk=311 … hp=6035 …` is her equipped gear, not a conversion. Counting
+    // it reported the whole team's frozen stats as unresolvable — 89.3% of the damage on the
+    // owner's rotation, every point of it a teammate's.
+    const theirs = parseSample({ logs: [
+      dmg(), calc({ flat_atk: 311, flat_hp: 6035, flat_def: 74 }, 1),
+    ] });
+
+    expect(theirs.meta.staleConversions).toEqual([]);
+  });
+
+  it('still reports one on the calibrated character', () => {
+    // The other half: this must not silence a term that genuinely belongs to the build.
+    const mine = parseSample({ logs: [
+      dmg(), calc({ flat_atk: 311, flat_hp: 6035, flat_def: 74 }, 0),
+    ] });
+
+    expect(mine.meta.staleConversions.map((s) => s.term).sort())
+      .toEqual(['flatAtk', 'flatDef', 'flatHp']);
+  });
+
+  it("does not try to resolve a conversion on a hit the probe cannot move", () => {
+    // The probe perturbs the calibrated character's stat line and nobody else's, so a
+    // teammate's hit is identical in both runs and has nothing to identify.
+    const mk = (flat: number, defPct: number) =>
+      parseSample({ logs: [dmg(), calc({ flat_dmg: flat, def_per: defPct }, 1)] });
+
+    expect(resolveConversions(mk(100, 0), mk(150, 0.5)))
+      .toEqual({ resolved: 0, unresolved: 0 });
+  });
+});
 
 describe('resolveConversions', () => {
   const pair = (baseFlat: number, probeFlat: number, probeDefPercent: number) => {

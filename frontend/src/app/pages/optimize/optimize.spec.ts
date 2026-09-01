@@ -613,6 +613,10 @@ describe('pairing an explanation with its row', () => {
 describe('marginalPerRoll', () => {
   /** §13 — moved under details, so it must answer about the row it is shown beside. */
   const hit = (over: Record<string, unknown> = {}) => ({
+    // `mine` — the hit belongs to the character being optimized. Without it `evaluateHit`
+    // freezes the hit at its calibrated damage, so nothing responds to a stat bump and this
+    // whole table reads empty. Which is the new behaviour working, not a broken fixture.
+    mine: true,
     abil: 'x', attackTag: 1, element: 'cryo', talent: 2, scaling: 'atk', flatDamage: 0,
     calibratedScaling: 1000, bonusDmg: 0, critRate: 0.5, critDmg: 1, conversions: {},
     calibratedBase: { atk: 1000, hp: 10000, def: 800 },

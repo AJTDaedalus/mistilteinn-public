@@ -57,6 +57,18 @@ export interface RecipeHit {
   /** gcsim's ability name — `Soumetsu (Cutting)`, `Normal 1`. Not a label to show a user. */
   abil: string;
   /**
+   * Whether this hit belongs to the character being optimized.
+   *
+   * **A team's damage is mostly not the optimized character's**, and only that character's
+   * artifacts change during a search. Measured on the owner's Skirk/Furina/Yelan/Citlali
+   * rotation: teammates are 90.9% of the damage, and applying a candidate's stats to every hit
+   * put **78.4% of the gain a candidate appeared to give onto damage that cannot move** —
+   * Furina's ATK% raised by Skirk's artifacts.
+   *
+   * `false` freezes the hit at what gcsim measured, which is what it is: a constant.
+   */
+  mine: boolean;
+  /**
    * gcsim's attack tag — normal, charged, skill, burst. Read from the paired `damage` event,
    * because the `calc` event does not carry it.
    */
@@ -311,7 +323,12 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
   // across 245 hits, ability matching on every one. `calc` carries the decomposition;
   // `damage` carries the element by name and the attack tag. Neither alone is enough.
   const damages = entries.filter((e) => e.event === 'damage').map((e) => e.logs as unknown as DamageLog);
-  const calcs = entries.filter((e) => e.event === 'calc').map((e) => e.logs as unknown as CalcLog);
+  const calcEntries = entries.filter((e) => e.event === 'calc');
+  const calcs = calcEntries.map((e) => e.logs as unknown as CalcLog);
+  // **Whose hit this is.** gcsim puts `char_index` on the log *envelope*, not in the `calc`
+  // payload — the same nesting that made an earlier count of these fields read every value as
+  // absent. `owner` names the calibrated character's index; anything else is a teammate.
+  const owners = calcEntries.map((e) => (e as { char_index?: number }).char_index ?? -1);
 
   const hits: RecipeHit[] = [];
   for (let i = 0; i < calcs.length; i++) {
@@ -329,6 +346,11 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
     }
     hits.push({
       abil: c.abil,
+      // The calibrated character is the config's first, which is how `build_config` writes it
+      // — the build, then its teammates. A hit with no `char_index` is treated as the
+      // calibrated character's: freezing a hit that should scale understates every candidate
+      // equally, while scaling one that should not is the bug this field exists to fix.
+      mine: owners[i] <= 0,
       attackTag: d?.['attack-tag'] ?? -1,
       element: d?.ele ?? '',
       talent: c.talent,
@@ -385,7 +407,12 @@ function staleConversionsIn(hits: RecipeHit[], calcs: CalcLog[]): StaleConversio
     let count = 0;
     let damage = 0;
     for (let i = 0; i < landed.length && i < hits.length; i++) {
-      if (read(landed[i]) !== 0) {
+      // **Only the calibrated character's hits.** A teammate's flat ATK is their equipped
+      // gear — `furina add stats atk=311 …` in the config — not a conversion, and nothing in a
+      // search can move it. Counting those reported *the whole team's* frozen stats as an
+      // unresolvable conversion: on the owner's Skirk rotation that was 89.3% of the damage,
+      // every point of it a teammate's, while Skirk's own hits carried no flat terms at all.
+      if (hits[i].mine && read(landed[i]) !== 0) {
         count++;
         damage += hits[i].gcsimAverageDamage;
       }
@@ -458,6 +485,10 @@ export function resolveConversions(
   for (let i = 0; i < baseline.hits.length; i++) {
     const b = baseline.hits[i];
     const p = probe.hits[i];
+    // The probe perturbs the calibrated character's stat line and nobody else's, so a
+    // teammate's hit is identical in both runs and has nothing to identify. Skipped rather
+    // than counted unresolved, which is what made the warning describe the whole team.
+    if (!b.mine) continue;
     for (const { term, read } of TERMS) {
       const before = read(b);
       if (before === 0) continue;

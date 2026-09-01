@@ -12,6 +12,7 @@ import { type StatPool, scoreArtifact, scoreForSlot } from './artifact-score';
  */
 
 const hit = (over: Partial<RecipeHit> = {}): RecipeHit => ({
+  mine: true,
   abil: 'x', attackTag: 1, element: 'cryo', talent: 2, scaling: 'atk', flatDamage: 0,
   calibratedScaling: 1000, bonusDmg: 0, critRate: 0, critDmg: 0,
   conversions: {},

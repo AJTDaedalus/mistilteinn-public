@@ -25,6 +25,7 @@ const CONDITIONAL = 1;
 const STATIC = 2;
 
 const hit = (over: Partial<RecipeHit> = {}): RecipeHit => ({
+  mine: true,
   abil: 'x', attackTag: 1, element: 'cryo', talent: 2, scaling: 'atk', flatDamage: 0,
   calibratedScaling: 1000, conversions: {},
   calibratedBase: { atk: 1000, hp: 10000, def: 800 },

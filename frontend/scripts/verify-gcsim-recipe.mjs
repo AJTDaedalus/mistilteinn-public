@@ -51,7 +51,17 @@ const CASES = [
     config: 'skirk_team.txt',
     calc: 'skirk_team_calc.json',
     minHits: 200,
-    stale: ['flatDamage'],
+    // **Empty, and that is the fix rather than a regression.** This expected `['flatDamage']`
+    // until hits carried an owner. Every flat-bearing hit in this fixture belongs to
+    // `char_index` 1 or 2 — Furina and Yelan — and the calibrated character's 74 landed hits
+    // carry none. Those terms are the teammates' *equipped stats*, which the config states
+    // outright (`furina add stats atk=311 … hp=6035 …`), not conversions: nothing in a search
+    // moves them and no probe can identify them.
+    //
+    // The discrimination is the point, and `noelle_redhorn` above is the control: solo, every
+    // hit `char_index` 0, and her DEF-to-ATK conversions are **still reported**. A change that
+    // simply silenced the warning would have silenced hers too.
+    stale: [],
   },
 ];
 

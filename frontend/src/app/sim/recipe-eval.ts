@@ -126,6 +126,16 @@ export function totalFor(
 
 /** One hit's average damage with a candidate's stats applied. */
 export function evaluateHit(hit: RecipeHit, stats: CandidateStats): number {
+  // **A teammate's hit does not respond to this build's artifacts.** Only the optimized
+  // character's gear changes during a search, so a teammate's damage is a constant and
+  // `gcsimAverageDamage` is what gcsim measured it to be.
+  //
+  // Without this the candidate's ATK%, CRIT rate and CRIT DMG were added to *every* hit,
+  // including Furina's own ATK and crit. Measured on the owner's Skirk rotation: teammates are
+  // 90.9% of the damage, and 78.4% of the gain a candidate appeared to provide was applied to
+  // damage that cannot move — so the ranking was driven mostly by a number no artifact affects.
+  if (!hit.mine) return hit.gcsimAverageDamage;
+
   // EM has no base or percentage form; a hit scaling off it takes the whole value.
   const scaling = hit.scaling === 'em'
     ? stats.elementalMastery

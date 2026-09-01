@@ -16,6 +16,7 @@ import type { Recipe, RecipeHit } from './recipe';
  */
 
 const hit = (over: Partial<RecipeHit> = {}): RecipeHit => ({
+  mine: true,
   abil: 'x', attackTag: 1, element: 'cryo', talent: 2, scaling: 'atk', flatDamage: 0,
   // **Deliberately different.** In a valid recipe these are equal — calibration runs at zero
   // artifact stats — so a stub that makes them equal cannot tell `baseStat` from
