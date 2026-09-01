@@ -66,3 +66,54 @@
 }
 
 .hits__element { font-size: var(--text-xs); }
+
+/* ── The results sheet ───────────────────────────────────────────────────────
+   By ability, the way gcsim's own sheet reads. Gold rules and nothing else: the owner's
+   direction on the optimize table was a Mitya palette *"without going overboard"*, and a
+   table of numbers needs separation far more than it needs decoration. */
+.abilities {
+  width: 100%;
+  margin: var(--space-2) 0 var(--space-1);
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+
+  th {
+    padding: var(--space-1) var(--space-2);
+    border-bottom: 1px solid var(--brass-deep);
+    color: var(--ink-dim);
+    font-weight: 600;
+    text-align: left;
+  }
+
+  td {
+    padding: var(--space-1) var(--space-2);
+    border-bottom: 1px solid var(--surface-rule);
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  /* Right-aligned, so digits line up on the decimal the way a reader compares them. */
+  .num { text-align: right; }
+}
+
+/* The full hit list, kept but folded away: a total nobody can take apart is a number to
+   trust rather than one to check. */
+.every-hit {
+  margin-top: var(--space-1);
+
+  summary {
+    color: var(--ink-dim);
+    font-size: var(--text-xs);
+    cursor: pointer;
+  }
+}
+
+.total__dps {
+  margin-left: var(--space-3);
+  color: var(--ink);
+}
+
+.total__window {
+  margin-left: var(--space-1);
+  font-size: var(--text-xs);
+}

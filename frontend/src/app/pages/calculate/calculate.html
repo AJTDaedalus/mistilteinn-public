@@ -59,7 +59,20 @@
         <p class="total">
           <span class="total__label">Rotation damage</span>
           <span class="total__value mono">{{ total() | number: '1.0-0' }}</span>
+          <!-- gcsim's headline figure, so the two can be read side by side. The window is
+               `build_config`'s own 90 s, which every calibration here was built with. -->
+          <span class="total__dps mono">{{ dps() | number: '1.0-0' }} DPS</span>
+          <span class="total__window muted">over 90s</span>
         </p>
+
+        @if (skipped().length) {
+          <!-- Said, not swallowed. A character dropped from the table is also dropped from the
+               total, so a silent skip understates the rotation with nothing on screen to
+               explain the gap. -->
+          <p class="warn" role="status">
+            No recipe for {{ skipped().join(', ') }} — their damage is missing from this total.
+          </p>
+        }
 
         @for (row of rows; track row.buildId) {
           <details class="who">
@@ -72,17 +85,50 @@
               </span>
             </summary>
 
-            <!-- Every damage point, which is what makes the total checkable rather than
-                 something to take on trust. -->
-            <ul class="hits">
-              @for (hit of row.hits; track $index) {
-                <li>
-                  <span class="hits__abil">{{ hit.ability }}</span>
-                  <span class="hits__element muted">{{ hit.element }}</span>
-                  <span class="mono">{{ hit.damage | number: '1.0-0' }}</span>
-                </li>
-              }
-            </ul>
+            <!-- **By ability first**, which is how gcsim's results sheet reads and the
+                 question anyone actually has: what is carrying this character. A 90-second
+                 rotation lands hundreds of hits, so the flat list was more rows and less
+                 answer. -->
+            <table class="abilities">
+              <thead>
+                <tr>
+                  <th scope="col">Ability</th>
+                  <th scope="col" class="num">Hits</th>
+                  <th scope="col" class="num">Average</th>
+                  <th scope="col" class="num">Damage</th>
+                  <th scope="col" class="num">Share</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (line of row.abilities; track line.ability) {
+                  <tr>
+                    <td>
+                      {{ line.ability }}
+                      <span class="muted">{{ line.element }}</span>
+                    </td>
+                    <td class="num mono">{{ line.count }}</td>
+                    <td class="num mono">{{ line.mean | number: '1.0-0' }}</td>
+                    <td class="num mono">{{ line.total | number: '1.0-0' }}</td>
+                    <td class="num mono">{{ line.share * 100 | number: '1.0-1' }}%</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+
+            <!-- Every damage point still, underneath: a total nobody can take apart is a
+                 number to trust rather than one to check. -->
+            <details class="every-hit">
+              <summary>Every hit ({{ row.hits.length }})</summary>
+              <ul class="hits">
+                @for (hit of row.hits; track $index) {
+                  <li>
+                    <span class="hits__abil">{{ hit.ability }}</span>
+                    <span class="hits__element muted">{{ hit.element }}</span>
+                    <span class="mono">{{ hit.damage | number: '1.0-0' }}</span>
+                  </li>
+                }
+              </ul>
+            </details>
           </details>
         }
       } @else {

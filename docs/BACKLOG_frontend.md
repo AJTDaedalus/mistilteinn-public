@@ -121,7 +121,15 @@ the thing that looked most likely to break and did not.
   **"Build Priority" is still to do**, and belongs with the *later* section below rather than
   here, since the ranking is what the tab would open.
 
-### One build per character, and a priority order — *later*
+### ~~One build per character~~, and a priority order — **both answered**
+
+**The ranking shipped (#212); the uniqueness constraint is declined** — owner ruling,
+`DECISIONS.md` §31, 2026-09-01: *"Convention is to keep T1.a, because each user's account only
+has one of each character."* Limiting one build per character would reinstate what T.1a
+dropped on 2026-08-24, five days before this entry was written. The two are reconciled in the
+ruling's favour.
+
+Build Priority, artifact stealing and drag-to-reorder are all built. The original note follows.
 
 The owner is explicit that this is a nice-to-have for when there is nothing else: limit one
 build per character like Fribbels, add a **Build Priority** ranking, and let a higher-ranked

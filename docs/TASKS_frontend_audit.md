@@ -20,11 +20,14 @@ that doc's closing section; this file tracks what landed.
 
 | task | why it is not done |
 |---|---|
-| **B.3 — one build per character** | **Contradicts a standing owner ruling.** `uq_builds_owner_character` existed and was *dropped by owner decision on 2026-08-24* (migration `27770f8ae917`, T.1a): it forbade saving a C0 beside a C6, or a Physical Eula against a Cryo one, which the migration calls *"ordinary things to want to compare in this game"*. The rule moved rather than vanished — gcsim refuses a party holding the same character twice, so `api/v1/teams.py` enforces it where it bites. §3 was written five days later and asks to reinstate what that decision removed. Not implemented either way: reversing a documented ruling is the owner's call, not a task |
 | **B.4 — `/optimize` prose** | **Examined and declined.** The 417-word figure was a measurement artifact: it counts every conditional branch as though all rendered at once, when most are empty states that appear one at a time and say what to do. The three long passages each carry information needed to trust a number — *"a swap that would drop you below four of the set is scored without the set bonus"* is not obvious and is what makes the ranking believable. The genuine slop on that page was the `(s)` plurals, now fixed. Recorded as declined rather than left open, because an item that reads as pending work when it was decided is the same failure as §8 reporting finished work as open |
 | **B.5 — §11 "sets and enemies are broken"** | **Blocked on detail.** Both routes render and answer 200. Needs: did the link do nothing, or did the page load and its cards do nothing? |
 
 ## Done since
+
+| task | what |
+|---|---|
+| **B.3** | **Closed by owner ruling, `DECISIONS.md` §31** (2026-09-01): *"Convention is to keep T1.a, because each user's account only has one of each character."* §3 asked to reinstate the uniqueness constraint T.1a dropped; the ruling stands, so nothing is built and nothing reverted. An account holds one copy of a character, so two builds of it are hypotheticals about one owned character rather than two equippable things — and pieces are contested *between* characters, which is what #212's ranking already orders |
 
 | task | what |
 |---|---|

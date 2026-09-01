@@ -1094,3 +1094,39 @@ They now have **no caller**, which this repo elsewhere treats as a defect worth 
 wired; this was wired and deliberately unwired. Recorded here so the next audit finds the
 reason rather than the smell.
 
+## 31. T.1a stands — several builds per character, and no uniqueness constraint (2026-09-01)
+
+**Owner ruling.** *"Convention is to keep T1.a, because each user's account only has one of
+each character."*
+
+`BACKLOG_frontend.md` §3 asked to *"limit one build per character like Fribbels"*. That would
+reinstate `uq_builds_owner_character`, which **T.1a dropped by owner decision on 2026-08-24**
+(migration `27770f8ae917`). The backlog entry was written five days after the ruling and the
+two were never reconciled; this reconciles them in the ruling's favour.
+
+**Nothing is built and nothing is reverted.** The status quo already is T.1a, so the decision
+is recorded rather than implemented — but it is recorded, because an audit that found the
+contradiction and left it unresolved would send the next reader to re-derive it.
+
+### What the reason changes downstream
+
+An account holds one copy of a character, so two builds of that character are **hypotheticals
+about one owned character** rather than two things that can be equipped at once. That is
+consistent with everything the constraint's removal was for: a C0 beside a C6, a Physical Eula
+against a Cryo one — comparisons, not inventory.
+
+It also means the **build priority** shipped in #212 ranks what actually contends. Pieces are
+contested *between characters*, not between two builds of one, so a ranking over builds
+behaves as a ranking over characters in every real account. The three-way rule needs no
+change: a higher-ranked build takes a contested piece, a lower-ranked one is refused, and an
+unranked build takes from nobody.
+
+**The rule that did move is still where T.1a put it.** gcsim refuses a party holding the same
+character twice, so `api/v1/teams.py` enforces one-per-team — which is the place the game's
+own constraint actually bites, and the reason dropping the database constraint cost nothing.
+
+### The part of §3 that shipped
+
+Ranking and stealing (#212). Only the uniqueness constraint was ever in question, and it is
+answered here. **§3 is closed.**
+

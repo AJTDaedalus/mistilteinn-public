@@ -10,6 +10,11 @@ twice — `pkg/simulation/setup.go:94` at pin `3647a07` returns `duplicated char
 two builds of one character can coexist in a collection and cannot coexist on a team.
 `app/api/v1/teams.py` enforces that instead.
 
+**Reaffirmed 2026-09-01** (`docs/DECISIONS.md` §31). `BACKLOG_frontend.md` §3 asked to
+reinstate the constraint five days after this migration; the owner declined — *"each user's
+account only has one of each character"*, so two builds of one character are hypotheticals
+about a single owned character rather than two things that can be equipped at once.
+
 Revision ID: 27770f8ae917
 Revises: b82d4f1a6c73
 Create Date: 2026-08-24 06:17:04.824758
