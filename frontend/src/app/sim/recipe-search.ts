@@ -150,6 +150,8 @@ export function candidateStatsFrom(
     elementalMastery: sum(pools, 'elemental_mastery'),
     critRate: sum(pools, 'crit_rate'),
     critDmg: sum(pools, 'crit_dmg'),
+    // Summed like any other stat, and used unlike any other: ER buys bursts, not damage.
+    energyRecharge: sum(pools, 'energy_recharge'),
     elementBonus,
   };
 }

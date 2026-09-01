@@ -80,3 +80,31 @@ export function energyShortfall(
     shortfall: minimum - buildEnergyRecharge,
   };
 }
+
+
+/**
+ * The burst count a candidate's own Energy Recharge buys.
+ *
+ * **A step function, because bursts are integers.** Between two rungs of the ladder the count
+ * is whatever the lower rung measured — you do not get four fifths of a burst for being four
+ * fifths of the way to affording it. Below the ladder's floor the floor's own count stands;
+ * above its ceiling, the ceiling's.
+ *
+ * This is measured, not modelled: every point is a gcsim run at that ER on the same config.
+ * The alternative — fitting a curve to "how much damage is ER worth" — is the thing
+ * `DESIGN_energy_in_the_optimizer.md` rejected, because gcsim's own optimizer does not do it
+ * either.
+ */
+export function burstsAt(
+  sweep: readonly EnergyObservation[],
+  energyRecharge: number,
+): number | null {
+  if (!sweep.length) return null;
+  const ordered = [...sweep].sort((a, b) => a.energyRecharge - b.energyRecharge);
+  let best = ordered[0];
+  for (const point of ordered) {
+    if (point.energyRecharge <= energyRecharge) best = point;
+    else break;
+  }
+  return best.burstInstances;
+}

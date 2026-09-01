@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { NO_STATS, evaluateHit, evaluateRecipe, type CandidateStats } from './recipe-eval';
+import {
+  NO_STATS, burstRatio, evaluateHit, evaluateRecipe, type CandidateStats,
+} from './recipe-eval';
 import type { Recipe, RecipeHit } from './recipe';
 
 /**
@@ -173,5 +175,59 @@ describe('evaluateRecipe', () => {
     const mixed = recipe([hit({ element: 'cryo' }), hit({ element: 'physical' })]);
 
     expect(evaluateRecipe(mixed, stats({ elementBonus: { cryo: 1 } }))).toBeCloseTo(2700, 6);
+  });
+});
+
+describe('burstRatio — weighing Energy Recharge', () => {
+  /**
+   * The owner's ask: *"it doesn't do anything above the threshold where the character can burst
+   * on time, but if they can't, the DPS gain from ER should be evaluated in whether or not the
+   * reduced delay is worth the cost of dropping dps stats."*
+   *
+   * The ladder is measured — one gcsim run per rung on the same config — so this weighs ER
+   * against damage without modelling the relationship between them.
+   */
+  const SWEEP = [
+    { energyRecharge: 0.0, burstInstances: 2, standardDeviation: 0 },
+    { energyRecharge: 0.2, burstInstances: 3, standardDeviation: 0 },
+    { energyRecharge: 0.4, burstInstances: 4, standardDeviation: 0 },
+  ];
+
+  const recipeWith = (meta: Record<string, unknown>) => ({
+    hits: [],
+    meta: {
+      seed: '1', staleConversions: [], characters: [], unstable: [], calibratedSetIds: [],
+      minimumEnergyRecharge: null, ...meta,
+    },
+  } as unknown as Recipe);
+
+  const withEr = (energyRecharge: number) => ({ ...NO_STATS, energyRecharge });
+
+  it('is 1 above the threshold, so ER stops being worth anything', () => {
+    const recipe = recipeWith({
+      energySweep: SWEEP, calibratedBurstInstances: 4, burstAttackTag: 3,
+    });
+    expect(burstRatio(recipe, withEr(0.4))).toBe(1);
+    expect(burstRatio(recipe, withEr(0.9))).toBe(1);
+  });
+
+  it('is below 1 for a candidate that cannot cast what the recipe assumed', () => {
+    const recipe = recipeWith({
+      energySweep: SWEEP, calibratedBurstInstances: 4, burstAttackTag: 3,
+    });
+    // Two bursts where the calibration had four: half the burst damage, not half of everything.
+    expect(burstRatio(recipe, withEr(0))).toBe(0.5);
+    expect(burstRatio(recipe, withEr(0.2))).toBe(0.75);
+  });
+
+  it('is 1 when no ladder was measured', () => {
+    // The honest default: nothing is scaled, and the ranking is what it was before ER entered.
+    expect(burstRatio(recipeWith({ calibratedBurstInstances: 4, burstAttackTag: 3 }),
+      withEr(0))).toBe(1);
+  });
+
+  it('is 1 when the recipe cannot say which hits are bursts', () => {
+    expect(burstRatio(recipeWith({ energySweep: SWEEP, calibratedBurstInstances: 4 }),
+      withEr(0))).toBe(1);
   });
 });

@@ -7,7 +7,7 @@ import { SimRunsService } from '../../sim/sim-runs.service';
 import { RotationsService } from '../rotations/rotations.service';
 import { loadGcsim } from '../../sim/gcsim-loader';
 import type { Recipe } from '../../sim/recipe';
-import { stabilityFrom } from '../../sim/recipe';
+import { BURST_ATTACK_TAG, stabilityFrom } from '../../sim/recipe';
 import type { EnergyObservation } from '../../sim/recipe-energy';
 import { pairKey } from '../../sim/recipe-search';
 import {
@@ -17,7 +17,7 @@ import {
   type RecipeStore,
 } from '../../sim/recipe-cache';
 import { energyShortfall, type EnergyShortfall } from '../../sim/recipe-energy';
-import { energyCost, type EnergyCost } from '../../sim/energy-delay';
+import { energyCost, subjectIsShort, type EnergyCost } from '../../sim/energy-delay';
 
 /**
  * How the gcsim module is obtained, and where recipes are kept.
@@ -313,7 +313,23 @@ export class RecipeOptimizeService {
         }
 
         const instances = aggregate ? instancesFrom(aggregate.raw, configs.characters) : {};
-        const { burst, sweep } = this.energySweep(mod, configs, instances);
+
+        // What energy costs, measured rather than inferred — and the trigger for the ladder
+        // below.
+        //
+        // **Display names, not gcsim keys.** The message reaches a person, and `furina` beside
+        // `kaedeharakazuha` is the raw-key ugliness this repo keeps fixing one field at a time.
+        // The list is still positional against gcsim's own order, which is what indexes every
+        // per-character array.
+        const keys = configs.characters ?? [];
+        const party = configs.character_names?.length ? configs.character_names : keys;
+        const cost = aggregate && freeEnergy
+          ? energyCost(aggregate.raw, freeEnergy.raw, party)
+          : null;
+        // Only the optimized character's own shortfall triggers their ladder — see
+        // `subjectIsShort`. Index 0 is the subject of the config.
+        const subjectShort = subjectIsShort(cost, party[0] ?? '');
+        const { burst, sweep } = this.energySweep(mod, configs, instances, subjectShort);
 
         // Names for `RecipeHit.owner`, so a result can show the damage share per character.
         // Set before `calibrate` writes the recipe to the cache, or a cache hit comes back
@@ -345,12 +361,12 @@ export class RecipeOptimizeService {
           // had to skip them, because the baseline strips their artifacts to `er=0` and their
           // wait was an artefact. A burst *count* does not care: the baseline is the same
           // config in both runs, so the difference is energy and nothing else.
-          const keys = configs.characters ?? [];
-          recipe.meta.energyCost = aggregate && freeEnergy
-            ? energyCost(aggregate.raw, freeEnergy.raw, recipe.meta.characters.length
-              ? recipe.meta.characters
-              : keys)
-            : null;
+          recipe.meta.energyCost = cost;
+          // **The ladder rides with the recipe**, because scoring needs it and a cache hit
+          // must not come back without it — the same argument `meta.unstable` makes.
+          recipe.meta.energySweep = sweep;
+          recipe.meta.calibratedBurstInstances = burst ? instances[burst]?.mean : undefined;
+          recipe.meta.burstAttackTag = BURST_ATTACK_TAG;
           return recipe;
         };
 
@@ -467,9 +483,20 @@ export class RecipeOptimizeService {
     mod: GcsimModule,
     configs: { baseline: string; energy_recharge: number; characters: string[] },
     instances: Readonly<Record<string, { mean: number; sd: number }>>,
+    shortOfEnergy = false,
   ): { burst: string | null; sweep: EnergyObservation[] | undefined } {
+    // **Unstable *or* short.** The original trigger was instability alone — a burst count that
+    // varies between iterations. That misses the commonest case entirely: the owner's Furina
+    // casts exactly 2 bursts every single iteration where free energy casts 5. Perfectly
+    // stable, perfectly starved, and `minimumEnergyRecharge` was null for precisely the builds
+    // that need it.
+    //
+    // `shortOfEnergy` comes from the free-energy counterfactual, which detects the condition
+    // directly rather than through its symptom.
     const { unstable } = stabilityFrom(instances);
-    const burst = unstable.find((name) => name.endsWith('burst')) ?? null;
+    const burst = unstable.find((name) => name.endsWith('burst'))
+      ?? (shortOfEnergy ? Object.keys(instances).find((name) => name.endsWith('burst')) : undefined)
+      ?? null;
     if (burst === null) return { burst: null, sweep: undefined };
 
     const sweep: EnergyObservation[] = [];

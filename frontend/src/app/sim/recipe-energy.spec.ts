@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  burstsAt,
   energyShortfall,
   minimumEnergyRecharge,
   type EnergyObservation,
@@ -81,5 +82,36 @@ describe('energyShortfall', () => {
     // An unmeasured threshold is not a passed one — but blocking every build on a
     // measurement nobody took would be worse. The caller that skipped it has to say so.
     expect(energyShortfall(0.0, null)).toBeNull();
+  });
+});
+
+
+describe('burstsAt', () => {
+  /** A ladder like the sweep's: one gcsim run per rung, on the same config. */
+  const SWEEP = [
+    { energyRecharge: 0.0, burstInstances: 2, standardDeviation: 0 },
+    { energyRecharge: 0.2, burstInstances: 3, standardDeviation: 0 },
+    { energyRecharge: 0.4, burstInstances: 4, standardDeviation: 0 },
+    { energyRecharge: 0.6, burstInstances: 5, standardDeviation: 0 },
+  ];
+
+  it('is a step function, because bursts are integers', () => {
+    // You do not get four fifths of a burst for being four fifths of the way to affording it.
+    expect(burstsAt(SWEEP, 0.39)).toBe(3);
+    expect(burstsAt(SWEEP, 0.40)).toBe(4);
+  });
+
+  it('holds the floor below the ladder and the ceiling above it', () => {
+    expect(burstsAt(SWEEP, -0.1)).toBe(2);
+    expect(burstsAt(SWEEP, 5)).toBe(5);
+  });
+
+  it('reads an unsorted ladder the same way', () => {
+    expect(burstsAt([...SWEEP].reverse(), 0.45)).toBe(4);
+  });
+
+  it('says nothing when no ladder was measured', () => {
+    // Null rather than a guess: a sweep that never ran is not a rotation with no bursts.
+    expect(burstsAt([], 0.4)).toBeNull();
   });
 });

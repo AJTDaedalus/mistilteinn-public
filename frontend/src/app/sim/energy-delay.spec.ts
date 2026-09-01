@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  energyCost, energyCostMessage, energyDelays, energyDelayMessage,
+  energyCost, energyCostMessage, energyDelays, energyDelayMessage, subjectIsShort,
 } from './energy-delay';
 
 /**
@@ -126,5 +126,35 @@ describe('energyCost — the counterfactual', () => {
       'Energy insufficient to burst on time for Furina (2 of 5 bursts), '
       + 'Skirk (3 of 4 bursts), Escoffier (3 of 4 bursts) — costing 7.0% DPS.',
     );
+  });
+});
+
+describe('subjectIsShort — ER is per character', () => {
+  const cost = {
+    characters: [
+      { character: 'Furina', seconds: 0, bursts: { real: 2, free: 5 } },
+    ],
+    dpsCost: 0.07,
+  };
+
+  it('is true when the optimized character is the starved one', () => {
+    expect(subjectIsShort(cost, 'Furina')).toBe(true);
+  });
+
+  it("is false when it is a teammate who is starved", () => {
+    // The owner's question: *"If Furina is starved and Skirk isn't, does it trigger ER
+    // optimization for Skirk? Even though that does nothing?"* It must not — Skirk's burst
+    // count is governed by his own ER, so the ladder would spend six gcsim runs measuring a
+    // curve that is flat. Her shortfall is still named by the warning.
+    expect(subjectIsShort(cost, 'Skirk')).toBe(false);
+  });
+
+  it('is false before anything has been measured', () => {
+    expect(subjectIsShort(null, 'Furina')).toBe(false);
+  });
+
+  it('is false for a character short by nothing', () => {
+    const even = { characters: [{ character: 'Skirk', seconds: 0, bursts: { real: 4, free: 4 } }], dpsCost: 0 };
+    expect(subjectIsShort(even, 'Skirk')).toBe(false);
   });
 });

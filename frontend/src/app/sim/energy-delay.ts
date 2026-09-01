@@ -182,3 +182,23 @@ export function energyCostMessage(cost: EnergyCost): string | null {
   const toll = cost.dpsCost > 0.001 ? ` — costing ${(cost.dpsCost * 100).toFixed(1)}% DPS.` : '.';
   return `Energy insufficient to burst on time for ${named}${toll}`;
 }
+
+
+/**
+ * Whether *this* character is the one short of energy.
+ *
+ * **ER is strictly per-character.** A starved Furina is a real problem and says nothing about
+ * what an Energy Recharge sands would do for Skirk — his burst count is governed by his own
+ * ER and nobody else's. So the ladder that measures "what would more ER buy" runs only when
+ * the character being optimized is the one falling short; triggering it because a *teammate*
+ * is starved would spend six gcsim runs to measure a curve that is flat.
+ *
+ * The teammate's shortfall is not lost — it is what the warning names. It simply is not a
+ * reason to weigh ER on somebody else's artifacts.
+ */
+export function subjectIsShort(cost: EnergyCost | null, subject: string): boolean {
+  if (!cost || !subject) return false;
+  return cost.characters.some(
+    (c) => c.character === subject && c.bursts.free > c.bursts.real,
+  );
+}

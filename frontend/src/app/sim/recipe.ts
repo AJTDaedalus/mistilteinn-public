@@ -32,6 +32,20 @@
 
 /** Which stat an ability scales off. gcsim states this; it is not inferred. */
 import type { EnergyCost } from './energy-delay';
+import type { EnergyObservation } from './recipe-energy';
+
+/**
+ * gcsim's attack tag for an Elemental Burst.
+ *
+ * `pkg/core/attacks/attack.go` at the pin: the enum starts at `AttackTagNone = iota`, so
+ * `None 0, Normal 1, Extra 2, Plunge 3, ElementalArt 4, ElementalArtHold 5, **ElementalBurst
+ * 6**`. Corroborated against a parsed run, where normal hits carry tag 1.
+ *
+ * A literal because it is pinned: `docs/CROSSVAL_gcsim.md` names the commit, and a re-pin that
+ * renumbered this enum would move every tag at once — which `tests/crossval` would catch long
+ * before a burst was mistaken for a plunge.
+ */
+export const BURST_ATTACK_TAG = 6;
 
 export type RecipeScaling = 'atk' | 'hp' | 'def' | 'em';
 
@@ -206,6 +220,17 @@ export interface RecipeMeta {
   // that measures it, so a 4-piece recipe has none to carry — and making every caller invent
   // an empty value to satisfy a type would be the type lying about the data.
   energyCost?: EnergyCost | null;
+  /**
+   * The measured bursts-versus-ER ladder, and the burst count the calibration itself ran at.
+   *
+   * **Both, or neither is usable.** A ladder without the calibration's own count cannot say
+   * whether a candidate is above or below where the recipe's damage was measured, and the
+   * count alone cannot say what a different ER would buy.
+   */
+  energySweep?: EnergyObservation[];
+  calibratedBurstInstances?: number;
+  /** gcsim's attack tag for a burst hit, so scoring knows which hits the ladder governs. */
+  burstAttackTag?: number;
   /**
    * The catalogue id of the 4-piece set this recipe was calibrated with, or `null` for a
    * calibration that equipped none.
