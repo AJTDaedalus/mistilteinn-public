@@ -17,6 +17,15 @@ gcsim is the reference for *correctness and feature scope*, deliberately not for
 | **Dated** | 2026-08-29 |
 | **Title** | `Fix max level of characters from Enka (#2726)` |
 | **Pinned** | 2026-08-31 — re-pinned from `3647a07a` to pick up Ifa and Jahoda |
+| **Go toolchain** | `1.27` — gcsim's own `go.mod` at this commit says `go 1.27.0` |
+
+**The Go row is load-bearing, not documentation.** `frontend/Dockerfile.prod` builds the
+browser wasm from this pin, and the 2026-08-31 re-pin moved to a gcsim requiring Go 1.27 while
+that image was still `golang:1.25-alpine` with `GOTOOLCHAIN=local`. Three deploys failed in a
+row with every local gate green: `scripts/ci_local` does not build the production image, and
+the machine that ran the gates had a newer Go than the container did.
+`tests/unit/test_prod_go_satisfies_the_gcsim_pin.py` compares this row against the Dockerfile,
+so the next re-pin that needs a newer toolchain fails a test instead.
 
 **A citation names a file, a line range, and this commit.** A citation that names only a
 file is a citation to a moving target: gcsim refactors, and "see `pkg/core/attributes`" ages

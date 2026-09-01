@@ -23,7 +23,16 @@
 # re-runs the clone and the 40 MB build with the pin unchanged. That is a slow deploy, not a
 # wrong one, and it is cheaper than the alternative of extracting the pin into a second file
 # that could disagree with the one that owns it.
-FROM golang:1.25-alpine AS gcsim
+# **The toolchain has to satisfy gcsim's own `go.mod`, and it did not.** The 2026-08-31 re-pin
+# moved to a gcsim that declares `go 1.27.0`; this image was `golang:1.25-alpine` with
+# `GOTOOLCHAIN=local`, so the build died with
+# `go.mod requires go >= 1.27.0 (running go 1.25.14)` and **three deploys failed in a row**
+# while every local gate stayed green — `scripts/ci_local` does not build this image, and the
+# host that does had a newer Go than the container.
+#
+# `tests/unit/test_prod_go_satisfies_the_gcsim_pin.py` compares the two now, so a future re-pin
+# fails a test rather than a deploy.
+FROM golang:1.27-alpine AS gcsim
 
 RUN apk add --no-cache git grep
 WORKDIR /src
