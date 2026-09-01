@@ -40,6 +40,11 @@
                 "glob": "wasm_exec.js",
                 "input": "gcsim",
                 "output": "gcsim"
+              },
+              {
+                "glob": "BUILT_FROM",
+                "input": "gcsim",
+                "output": "gcsim"
               }
             ],
             "styles": [

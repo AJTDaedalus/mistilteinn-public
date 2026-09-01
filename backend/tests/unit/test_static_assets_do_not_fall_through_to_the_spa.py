@@ -129,3 +129,34 @@ def test_the_index_location_repeats_the_security_headers() -> None:
         "Permissions-Policy",
     ):
         assert header in body, f"{header} is inherited nowhere and would be dropped here"
+
+
+def test_every_gcsim_asset_is_copied_into_the_bundle() -> None:
+    """nginx can only serve what the build put there.
+
+    The rules above stop a *present* asset falling through to the SPA. This is the other half:
+    an asset the build never copied is missing for a different reason and produces the same
+    symptom — and `angular.json` names each gcsim file individually rather than globbing the
+    directory, so adding one to the image does not add it to the bundle.
+
+    `BUILT_FROM` records which gcsim commit produced the wasm. It was written into the image
+    and **not** copied here, so `/gcsim/BUILT_FROM` 404'd in production and "which gcsim is
+    prod running?" had no answer from outside — asked, and unanswerable, right after a re-pin
+    broke three deploys.
+    """
+    import json
+
+    angular = json.loads(
+        (Path(__file__).resolve().parents[3] / "frontend" / "angular.json").read_text(),
+    )
+    build = angular["projects"]["mistilteinn"]["architect"]["build"]["options"]
+    globs = {
+        asset["glob"]
+        for asset in build["assets"]
+        if isinstance(asset, dict) and asset.get("input") == "gcsim"
+    }
+
+    assert globs == {"gcsim.wasm", "wasm_exec.js", "BUILT_FROM"}, (
+        f"the bundle copies {sorted(globs)} out of gcsim/. A file the build skips is a 404 "
+        f"in production, and a file nobody asked for is dead weight in a 40 MB directory."
+    )
