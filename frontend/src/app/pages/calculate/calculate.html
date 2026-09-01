@@ -54,95 +54,179 @@
       <p class="muted" role="status">{{ note }}</p>
     }
 
-    @if (result(); as rows) {
-      @if (rows.length) {
-        <p class="total">
-          <span class="total__label">Rotation damage</span>
-          <span class="total__value mono">{{ total() | number: '1.0-0' }}</span>
-          <!-- gcsim's headline figure, so the two can be read side by side. The window is
-               `build_config`'s own 90 s, which every calibration here was built with. -->
-          <span class="total__dps mono">{{ dps() | number: '1.0-0' }} DPS</span>
-          <span class="total__window muted">over 90s</span>
-        </p>
-
-        @if (energyDelay(); as delay) {
-          <!-- gcsim's own seconds, from `failed_actions`. A rotation that stalls on energy
-               loses DPS with nothing else on screen to explain it — 67 s on the owner's own
-               team, against an otherwise identical action list. -->
-          <p class="error" role="alert">{{ delay }}</p>
-        }
-
-        @if (skipped().length) {
-          <!-- Said, not swallowed. A character dropped from the table is also dropped from the
-               total, so a silent skip understates the rotation with nothing on screen to
-               explain the gap. -->
-          <p class="warn" role="status">
-            No recipe for {{ skipped().join(', ') }} — their damage is missing from this total.
+    @if (stats(); as report) {
+      @if (headline(); as head) {
+        <!-- **Every figure carries its spread and the run count.** A mean alone claims a
+             precision the run does not have, and `n` is part of the number rather than a
+             footnote — the scientific-practice rule this page is built to. -->
+        <section class="headline">
+          <p class="headline__primary">
+            <span class="headline__label">Damage per second</span>
+            <span class="headline__value mono">{{ head.dps?.value | number: '1.0-0' }}</span>
+            @if (head.dps?.uncertainty) {
+              <span class="headline__pm mono">± {{ head.dps?.uncertainty | number: '1.0-0' }}</span>
+            }
+            <span class="headline__n">over {{ head.iterations }} iterations</span>
           </p>
+
+          <dl class="headline__rest">
+            <div>
+              <dt>Duration</dt>
+              <dd class="mono">{{ head.duration?.value | number: '1.0-1' }}<span class="unit">s</span></dd>
+            </div>
+            <div>
+              <dt>Energy / s</dt>
+              <dd class="mono">{{ head.eps?.value | number: '1.0-2' }}</dd>
+            </div>
+            <div>
+              <dt>Reactions / s</dt>
+              <dd class="mono">{{ head.rps?.value | number: '1.0-2' }}</dd>
+            </div>
+            <div>
+              <dt>Healing / s</dt>
+              <dd class="mono">{{ head.hps?.value | number: '1.0-0' }}</dd>
+            </div>
+            <div>
+              <dt>Shield HP</dt>
+              <dd class="mono">{{ head.shp?.value | number: '1.0-0' }}</dd>
+            </div>
+          </dl>
+        </section>
+      }
+
+      @if (energyDelay(); as delay) {
+        <!-- gcsim's own seconds, from `failed_actions`, now measured on every character's real
+             gear rather than a calibration that stripped one of them. -->
+        <p class="error" role="alert">{{ delay }}</p>
+      }
+
+      <h2>Characters</h2>
+      <ul class="party">
+        @for (who of report.characters; track who.name) {
+          <li>
+            <details>
+              <summary>
+                <catalogue-icon [icon]="iconFor(who.name)" [alt]="''" [size]="32" />
+                <span class="party__name">{{ who.name }}</span>
+                <span class="party__dps mono">
+                  {{ who.dps?.mean | number: '1.0-0' }}
+                  <span class="unit">DPS</span>
+                </span>
+                <span class="party__share muted mono">{{ shareOf(who) | percent: '1.0-1' }}</span>
+              </summary>
+
+              <dl class="party__facts">
+                <div>
+                  <dt>Field time</dt>
+                  <dd class="mono">{{ who.fieldTime?.mean | number: '1.0-1' }}<span class="unit">s</span></dd>
+                </div>
+                <div>
+                  <dt>Energy at end</dt>
+                  <dd class="mono">{{ who.endingEnergy?.mean | number: '1.0-1' }}</dd>
+                </div>
+                @if (who.insufficientEnergy >= 1) {
+                  <div>
+                    <dt>Waiting on energy</dt>
+                    <dd class="mono danger">{{ who.insufficientEnergy | number: '1.0-1' }}<span class="unit">s</span></dd>
+                  </div>
+                }
+              </dl>
+
+              @if (who.bySource.length) {
+                <table class="sheet">
+                  <caption>Damage by source</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Source</th>
+                      <th scope="col" class="num">DPS</th>
+                      <th scope="col" class="num">±</th>
+                      <th scope="col" class="num">Share</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (source of who.bySource; track source.name) {
+                      <tr>
+                        <td>{{ source.name }}</td>
+                        <td class="num mono">{{ source.spread.mean | number: '1.0-0' }}</td>
+                        <td class="num mono muted">{{ source.spread.sd | number: '1.0-0' }}</td>
+                        <td class="num mono">{{ sourceShare(who, source) | percent: '1.0-1' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+
+              @if (who.byElement.length) {
+                <table class="sheet">
+                  <caption>Damage by element</caption>
+                  <tbody>
+                    @for (element of who.byElement; track element.name) {
+                      <tr>
+                        <td>{{ element.name }}</td>
+                        <td class="num mono">{{ element.spread.mean | number: '1.0-0' }}</td>
+                        <td class="num mono muted">{{ element.spread.sd | number: '1.0-0' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+
+              @if (who.actions.length) {
+                <table class="sheet">
+                  <caption>Actions</caption>
+                  <tbody>
+                    @for (action of who.actions; track action.name) {
+                      <tr>
+                        <td>{{ action.name }}</td>
+                        <td class="num mono">{{ action.spread.mean | number: '1.0-1' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            </details>
+          </li>
         }
+      </ul>
 
-        @for (row of rows; track row.buildId) {
-          <details class="who">
-            <summary>
-              <catalogue-icon [icon]="row.icon" [alt]="''" [size]="32" />
-              <span class="who__name">{{ row.name }}</span>
-              <span class="who__total mono">{{ row.total | number: '1.0-0' }}</span>
-              <span class="who__share muted">
-                {{ total() ? (row.total / total() * 100 | number: '1.0-1') : '0' }}%
-              </span>
-            </summary>
-
-            <!-- **By ability first**, which is how gcsim's results sheet reads and the
-                 question anyone actually has: what is carrying this character. A 90-second
-                 rotation lands hundreds of hits, so the flat list was more rows and less
-                 answer. -->
-            <table class="abilities">
-              <thead>
-                <tr>
-                  <th scope="col">Ability</th>
-                  <th scope="col" class="num">Hits</th>
-                  <th scope="col" class="num">Average</th>
-                  <th scope="col" class="num">Damage</th>
-                  <th scope="col" class="num">Share</th>
-                </tr>
-              </thead>
+      @if (report.reactions.length || report.auraUptime.length) {
+        <h2>The target</h2>
+        <div class="target">
+          @if (report.reactions.length) {
+            <table class="sheet">
+              <caption>Reactions</caption>
               <tbody>
-                @for (line of row.abilities; track line.ability) {
+                @for (reaction of report.reactions; track reaction.name) {
                   <tr>
-                    <td>
-                      {{ line.ability }}
-                      <span class="muted">{{ line.element }}</span>
-                    </td>
-                    <td class="num mono">{{ line.count }}</td>
-                    <td class="num mono">{{ line.mean | number: '1.0-0' }}</td>
-                    <td class="num mono">{{ line.total | number: '1.0-0' }}</td>
-                    <td class="num mono">{{ line.share * 100 | number: '1.0-1' }}%</td>
+                    <td>{{ reaction.name }}</td>
+                    <td class="num mono">{{ reaction.spread.mean | number: '1.0-1' }}</td>
+                    <td class="num mono muted">± {{ reaction.spread.sd | number: '1.0-1' }}</td>
                   </tr>
                 }
               </tbody>
             </table>
-
-            <!-- Every damage point still, underneath: a total nobody can take apart is a
-                 number to trust rather than one to check. -->
-            <details class="every-hit">
-              <summary>Every hit ({{ row.hits.length }})</summary>
-              <ul class="hits">
-                @for (hit of row.hits; track $index) {
-                  <li>
-                    <span class="hits__abil">{{ hit.ability }}</span>
-                    <span class="hits__element muted">{{ hit.element }}</span>
-                    <span class="mono">{{ hit.damage | number: '1.0-0' }}</span>
-                  </li>
+          }
+          @if (report.auraUptime.length) {
+            <table class="sheet">
+              <caption>Aura uptime</caption>
+              <tbody>
+                @for (aura of report.auraUptime; track aura.name) {
+                  <tr>
+                    <td>{{ aura.name }}</td>
+                    <td class="num mono">{{ aura.spread.mean | number: '1.0-1' }}<span class="unit">%</span></td>
+                  </tr>
                 }
-              </ul>
-            </details>
-          </details>
-        }
-      } @else {
-        <p class="muted">
-          Nothing to calculate — none of that team's characters could be simulated at this pin.
-        </p>
+              </tbody>
+            </table>
+          }
+        </div>
       }
+
+      <!-- Stated, not implied by absence. -->
+      <p class="hint not-modelled">
+        Not shown: per-iteration damage timelines and cumulative contribution, which gcsim
+        charts and this does not yet draw.
+      </p>
     }
   }
 </section>

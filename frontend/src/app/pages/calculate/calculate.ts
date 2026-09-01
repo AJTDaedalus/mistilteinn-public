@@ -1,38 +1,24 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { DecimalPipe, PercentPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import { BuildsService, type BuildRead } from '../builds/builds.service';
 import { RotationsService, type RotationRead, type TeamRoster } from '../rotations/rotations.service';
-import {
-  RecipeOptimizeService,
-  type CalibrationResult,
-  type CalibrationTarget,
-} from '../optimize/recipe-optimize.service';
+import { GCSIM_LOADER, runConfig } from '../optimize/recipe-optimize.service';
 import { ArtifactsService } from '../artifacts/artifacts.service';
 import { CatalogueService } from '../catalogue/catalogue.service';
-import { pairKey } from '../../sim/recipe-search';
 import { CardPicker, type CardOption } from '../../shared/card-picker/card-picker';
 import { CatalogueIcon } from '../../shared/icon/icon';
-import { evaluateHit, type CandidateStats, NO_STATS } from '../../sim/recipe-eval';
-import { energyDelayMessage, type EnergyDelay } from '../../sim/energy-delay';
-import type { Recipe } from '../../sim/recipe';
+import {
+  energyCost, energyCostMessage, type EnergyCost,
+} from '../../sim/energy-delay';
+import {
+  charactersInConfig, displayNames, parseRotationStats, toPrecision, type RotationStats,
+} from '../../sim/rotation-stats';
 import { apiErrorMessage } from '../../api/api-error';
 import { injectApi } from '../../api/api.client';
 
 /** One character's contribution, and the hits it is made of. */
-interface Contribution {
-  buildId: string;
-  name: string;
-  icon: string | null;
-  total: number;
-  /** Damage per second over the simulated window — gcsim's headline figure. */
-  dps: number;
-  /** By ability, biggest first, the way gcsim's results sheet reads. */
-  abilities: AbilityLine[];
-  hits: { ability: string; element: string; damage: number }[];
-}
-
 /**
  * What a rotation actually does, hit by hit.
  *
@@ -56,53 +42,29 @@ interface Contribution {
  * So this is a job with a button, not something the page does on load.
  */
 /**
- * The window a rotation is simulated over, in seconds.
+ * Iterations per run.
  *
- * `build_config`'s own default (`duration: int = 90`), which every calibration this page reads
- * is built with. It is a **second copy of that fact**, so
- * `tests/unit/test_rotation_duration_is_one_number.py` asserts the two agree — a DPS figure
- * divided by the wrong window is wrong in a way nothing on screen would show.
+ * **100, and the page says so.** gcsim's database pages use 1000; 100 costs about eight
+ * seconds in the browser and already gives a standard deviation tight enough to quote — on the
+ * owner's team, 192,581 ± 5,732 over 200. `n` is part of the number, not a footnote, which is
+ * why it is rendered beside the result rather than hidden here.
  */
-const ROTATION_SECONDS = 90;
+const ITERATIONS = 100;
 
-/** One ability's share of a character's damage. */
-interface AbilityLine {
-  ability: string;
-  element: string;
-  count: number;
-  total: number;
-  mean: number;
-  share: number;
-}
-
-/** Group a character's hits by ability, biggest contributor first. */
-function byAbility(
-  hits: readonly { ability: string; element: string; damage: number }[],
-  total: number,
-): AbilityLine[] {
-  const groups = new Map<string, AbilityLine>();
-  for (const hit of hits) {
-    const line = groups.get(hit.ability) ?? {
-      ability: hit.ability, element: hit.element, count: 0, total: 0, mean: 0, share: 0,
-    };
-    line.count += 1;
-    line.total += hit.damage;
-    groups.set(hit.ability, line);
-  }
-  return [...groups.values()]
-    .map((line) => ({
-      ...line,
-      mean: line.count ? line.total / line.count : 0,
-      // `|| 0` rather than a guard above: a character who dealt nothing is a real row, and
-      // 0/0 would print NaN% beside their name.
-      share: total ? line.total / total : 0,
-    }))
-    .sort((a, b) => b.total - a.total);
+/**
+ * The same config, with gcsim told energy is free.
+ *
+ * `ignore_burst_energy` is a real config option (`pkg/gcs/parser/parseOptions.go`), which is
+ * how gcsim's own substat optimizer measures what energy costs — it runs the rotation as if
+ * every burst were affordable and compares.
+ */
+function withFreeEnergy(config: string): string {
+  return config.replace(/^options /m, 'options ignore_burst_energy=true ');
 }
 
 @Component({
   selector: 'page-calculate',
-  imports: [DecimalPipe, RouterLink, CardPicker, CatalogueIcon],
+  imports: [DecimalPipe, PercentPipe, RouterLink, CardPicker, CatalogueIcon],
   templateUrl: './calculate.html',
   styleUrl: './calculate.scss',
 })
@@ -112,7 +74,7 @@ export class CalculatePage implements OnInit {
   private readonly buildsService = inject(BuildsService);
   private readonly artifacts = inject(ArtifactsService);
   private readonly catalogue = inject(CatalogueService);
-  private readonly recipes = inject(RecipeOptimizeService);
+  private readonly loadModule = inject(GCSIM_LOADER);
 
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
@@ -134,13 +96,30 @@ export class CalculatePage implements OnInit {
 
   protected readonly teamId = signal('');
   protected readonly rotationId = signal('');
-  protected readonly result = signal<Contribution[] | null>(null);
 
-  /** The red line naming who could not burst on time — the owner's wording, gcsim's seconds. */
-  protected readonly energyDelay = signal<string | null>(null);
+  /**
+   * The red line naming who could not burst on time — the owner's wording, gcsim's seconds.
+   *
+   * **Every character now, not just teammates.** The old path measured this on a calibration
+   * that stripped one character's ER to zero; this runs their real gear, so there is no
+   * character the number cannot be trusted for.
+   */
+  protected readonly energyCost = signal<EnergyCost | null>(null);
 
-  /** Characters whose recipe could not be built — named rather than silently dropped. */
-  protected readonly skipped = signal<string[]>([]);
+  /**
+   * The red line naming who could not burst on time, and what it costs.
+   *
+   * Seconds when the rotation waits, missed bursts when it skips — the compiler's `.ready`
+   * gates mean this app's own rotations always skip, so a warning built only on seconds is
+   * silent exactly where it matters most.
+   */
+  protected readonly energyDelay = computed(() => {
+    const cost = this.energyCost();
+    return cost ? energyCostMessage(cost) : null;
+  });
+
+  /** gcsim's own report on the last run, or null before one has finished. */
+  protected readonly stats = signal<RotationStats | null>(null);
 
   /** Artifact-set uuid → catalogue id, for turning equipped pieces into a calibration. */
   protected readonly setNanokaIds = signal<Map<string, number>>(new Map());
@@ -169,12 +148,27 @@ export class CalculatePage implements OnInit {
       })),
   );
 
-  protected readonly total = computed(() =>
-    (this.result() ?? []).reduce((sum, row) => sum + row.total, 0),
-  );
-
-  /** The team's damage per second over the simulated window — gcsim's headline figure. */
-  protected readonly dps = computed(() => this.total() / ROTATION_SECONDS);
+  /**
+   * The headline figures, rounded to what their spread supports.
+   *
+   * A mean printed to more digits than its standard deviation justifies is a claim the run
+   * cannot back — 192,580.52 ± 5,732.01 is eight digits of precision on four of knowledge.
+   */
+  protected readonly headline = computed(() => {
+    const stats = this.stats();
+    if (!stats) return null;
+    const quote = (spread: { mean: number; sd: number } | null) =>
+      spread ? toPrecision(spread.mean, spread.sd) : null;
+    return {
+      iterations: stats.iterations,
+      dps: quote(stats.dps),
+      duration: quote(stats.duration),
+      eps: quote(stats.eps),
+      rps: quote(stats.rps),
+      hps: quote(stats.hps),
+      shp: quote(stats.shp),
+    };
+  });
 
   protected readonly canRun = computed(
     () => !!this.rotationId() && !this.running(),
@@ -212,204 +206,94 @@ export class CalculatePage implements OnInit {
     // A rotation belongs to one team, so the previous choice cannot survive a new team —
     // leaving it selected would run a rotation against a party that never performs it.
     this.rotationId.set('');
-    this.result.set(null);
-  }
-
-  /** The pin the recipes will be keyed by, from the server rather than guessed. */
-  private async readPin(buildId: string): Promise<void> {
-    const { data, error } = await this.api.POST(
-      '/api/v1/rotations/{rotation_id}/context-key',
-      {
-        params: { path: { rotation_id: this.rotationId() } },
-        body: { build_id: buildId },
-      },
-    );
-    if (error) throw new Error('Could not read the gcsim pin');
-    this.gcsimPin.set(data.gcsim_pin);
+    this.stats.set(null);
   }
 
   /**
-   * The calibration each character's own gear actually asks for.
+   * Run the team's real rotation through gcsim and read what it reports.
    *
-   * **A set bonus cannot be added as flat stats.** `Calibration`'s docstring is explicit —
-   * every 4-piece is conditional, and equipping it in gcsim is *"the only way it can be
-   * modelled"*, with the kernel understating an unequipped one by 15–25 %.
+   * **Calculate is not a search, so it can run the thing.** It used to calibrate a recipe per
+   * character and evaluate it at their gear — the optimizer's machinery, which exists so a
+   * search can score thousands of candidates without thousands of runs. One team and one
+   * rotation is one run.
    *
-   * Calculate used the baseline for everyone, so a Skirk in four Finale of the Deep Galleries
-   * was scored as a Skirk in nothing. Measured against gcsim on the owner's team: the page
-   * read **12,497,892** for a rotation that deals **15,737,381** — 20.6 % low, inside the
-   * range that docstring predicts.
+   * `POST /rotations/{id}/preview` with `runnable: true` already assembles a config carrying
+   * **every character's real gear**, and gcsim's own result object holds every field its
+   * results page prints. So this fetches, runs, and reads.
+   *
+   * What it removes rather than adds: the 1.3 % residual against gcsim — there is no
+   * approximation left to be off by — the `mine` filter, per-character 4-piece resolution, and
+   * the teammate-versus-optimized asymmetry in the energy warning, since the delay is now
+   * measured for everyone from their real gear.
    */
-  private async targetFor(buildId: string): Promise<CalibrationTarget> {
-    const pieces = await this.artifacts.list({ build_id: buildId });
-    const counts = new Map<string, number>();
-    for (const piece of pieces.items) {
-      const id = piece.artifact_set_id;
-      if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
-    }
-    const nanokaOf = (uuid: string): number | undefined => this.setNanokaIds().get(uuid);
-
-    const four = [...counts].find(([, n]) => n >= 4);
-    if (four) {
-      const nanoka = nanokaOf(four[0]);
-      if (nanoka !== undefined) return { artifactSetIds: [four[0]], setIds: [nanoka], label: '' };
-    }
-    // A 2+2 is a real loadout, not a fallback: half this game's supports wear one.
-    const pairs = [...counts].filter(([, n]) => n >= 2).slice(0, 2);
-    if (pairs.length === 2) {
-      const ids = pairs.map(([uuid]) => nanokaOf(uuid));
-      if (ids.every((n): n is number => n !== undefined)) {
-        return { artifactSetIds: pairs.map(([uuid]) => uuid), setIds: ids, label: '' };
-      }
-    }
-    // Nothing reaches a bonus, so the baseline *is* the honest calibration here.
-    return { artifactSetIds: [], setIds: [], label: '' };
-  }
-
-  /** Which recipe a target's result lands in. */
-  private recipeFor(target: CalibrationTarget, calibrated: CalibrationResult): Recipe | null {
-    if (target.setIds.length === 1) return calibrated.byFourPieceSet.get(target.setIds[0]) ?? null;
-    if (target.setIds.length === 2) {
-      return calibrated.byPair.get(pairKey(target.setIds[0], target.setIds[1])) ?? null;
-    }
-    return calibrated.noFourPiece;
-  }
-
-  /** The builds on the chosen team, in slot order. */
-  private teamBuilds(): BuildRead[] {
+  /** The party's art, by display name — the roster the team picker already loaded. */
+  protected iconFor(name: string): string {
     const team = this.teams().find((t) => t.id === this.teamId());
-    if (!team) return [];
-    const wanted = new Set(team.characters.map((c) => c.nanoka_id));
-    return this.builds().filter((b) => wanted.has(b.character?.nanoka_id ?? ''));
+    return team?.characters.find((c) => c.name === name)?.icon ?? '';
+  }
+
+  /**
+   * One character's share of the team's damage.
+   *
+   * Summed from the per-character DPS rather than taken from the headline: the two agree, and
+   * summing what is on screen means a reader can check the arithmetic themselves.
+   */
+  protected shareOf(who: { dps: { mean: number } | null }): number {
+    const total = (this.stats()?.characters ?? [])
+      .reduce((sum, c) => sum + (c.dps?.mean ?? 0), 0);
+    return total ? (who.dps?.mean ?? 0) / total : 0;
+  }
+
+  /** One source's share of that character's own damage. */
+  protected sourceShare(
+    who: { bySource: { spread: { mean: number } }[] },
+    source: { spread: { mean: number } },
+  ): number {
+    const total = who.bySource.reduce((sum, s) => sum + s.spread.mean, 0);
+    return total ? source.spread.mean / total : 0;
   }
 
   protected async run(): Promise<void> {
     this.running.set(true);
     this.error.set(null);
-    this.result.set(null);
+    this.stats.set(null);
+    this.energyCost.set(null);
     try {
-      const rows: Contribution[] = [];
-      const skipped: string[] = [];
-      // Measured once: the wait belongs to the team and the rotation, not to one character's
-      // calibration, so the first run that reports any is the one that answers for all of them.
-      let delays: EnergyDelay[] = [];
-      const builds = this.teamBuilds();
-      if (!builds.length) {
-        this.error.set('That team has no builds to calculate.');
+      const rotation = this.rotations().find((r) => r.id === this.rotationId());
+      if (!rotation) {
+        this.error.set('That rotation could not be found.');
         return;
       }
-      await this.readPin(builds[0].id);
-      for (const [index, build] of builds.entries()) {
-        const who = build.character?.name ?? 'someone';
-        this.progress.set(`Calibrating ${who} (${index + 1} of ${builds.length})…`);
+      this.progress.set('Assembling the config\u2026');
+      const config = await this.rotationsService.preview(this.teamId(), rotation.steps, true);
 
-        // **One target, the baseline.** A 4-piece recipe answers "what if this build wore
-        // that set"; here the build's own gear is the question, so the reference calibration
-        // is the right one and the equipped stats supply the rest.
-        // **The set this character is actually wearing**, not the baseline. See `targetFor`.
-        const target = { ...(await this.targetFor(build.id)), label: who };
-        const calibrated = await this.recipes.calibrateAll(
-          build.id,
-          this.rotationId(),
-          this.gcsimPin(),
-          [target],
-          () => undefined,
-        );
-        if (!delays.length && calibrated.caveats.energyDelays.length) {
-          delays = [...calibrated.caveats.energyDelays];
-        }
-        const recipe = this.recipeFor(target, calibrated);
-        if (!recipe) {
-          // **Named, not skipped.** `continue` dropped a character out of the table and out
-          // of the total, so the page under-reported without saying anything was missing.
-          skipped.push(who);
-          continue;
-        }
-        const stats = await this.equippedStats(build.id);
-        rows.push(this.contribution(build, recipe, stats));
-      }
-      this.result.set(rows);
-      this.skipped.set(skipped);
-      this.energyDelay.set(energyDelayMessage(delays));
+      this.progress.set(`Simulating ${ITERATIONS} iterations\u2026`);
+      const mod = await this.loadModule();
+      const finished = runConfig(mod, config, ITERATIONS);
+
+      // **From the config, not the roster.** Every per-character array is positional against
+      // the order the config declares, which is the subject build then teammates — not the
+      // order `/rotations/options` happens to return. Using the roster named Citlali for
+      // Furina's missed bursts: a plausible sentence about the wrong character.
+      const roster = (this.teams().find((t) => t.id === this.teamId())?.characters ?? [])
+        .map((c) => c.name);
+      const names = displayNames(charactersInConfig(config), roster);
+      this.stats.set(parseRotationStats(finished.raw, names));
+
+      // **A second run with energy free, because a gated rotation hides the shortfall.**
+      // The compiler gates every step on `.ready`, so gcsim never attempts a burst it cannot
+      // pay for and records no failure — `insufficient_energy` is 0 for a team that is plainly
+      // starved. gcsim's own optimizer uses the same counterfactual for the same reason.
+      //
+      // It doubles the wait, so it runs after the numbers are already on screen.
+      this.progress.set('Measuring what energy costs\u2026');
+      const free = runConfig(mod, withFreeEnergy(config), ITERATIONS);
+      this.energyCost.set(energyCost(finished.raw, free.raw, names));
     } catch (err) {
       this.error.set(apiErrorMessage(err));
     } finally {
       this.running.set(false);
       this.progress.set('');
     }
-  }
-
-  /** One character's hits, evaluated at their own gear. */
-  private contribution(build: BuildRead, recipe: Recipe, stats: CandidateStats): Contribution {
-    // **`mine`, or every character is charged for the whole team.**
-    //
-    // A recipe carries the *rotation's* hits, not one character's: `hit.mine` marks the ones
-    // belonging to the character it was calibrated for. Mapping over all of them gave each row
-    // its own damage plus every teammate's at their calibration value, so four rows each
-    // reported roughly the team's total and the page summed them.
-    //
-    // Measured on the owner's Skirk team against gcsim on the same seed: Skirk's row read
-    // **15,737,381**, which is the whole team; his own hits are **11,335,604**, which matches
-    // gcsim to the digit. The page reported **58,082,172** for a rotation that deals
-    // **15,737,381** — 3.7x — and the per-character shares were meaningless because every row
-    // held nearly the same number.
-    //
-    // This is the same omission as #206 in the optimizer, in a second place. `evaluateHit`
-    // already refuses to *scale* a teammate's hit; nothing was stopping this from *counting*
-    // it.
-    const hits = recipe.hits.filter((hit) => hit.mine).map((hit) => ({
-      ability: hit.abil,
-      element: hit.element,
-      damage: evaluateHit(hit, stats),
-    }));
-    const total = hits.reduce((sum, hit) => sum + hit.damage, 0);
-    return {
-      buildId: build.id,
-      name: build.character?.name ?? 'No character',
-      icon: build.character?.icon ?? null,
-      total,
-      dps: total / ROTATION_SECONDS,
-      // **Grouped, the way gcsim's results sheet groups.** A flat list of every hit is more
-      // rows and less information: a 90-second rotation produces hundreds, and "which ability
-      // is carrying this character" is the question the sheet exists to answer. The individual
-      // hits stay underneath, because a total nobody can take apart is a number to trust
-      // rather than check.
-      abilities: byAbility(hits, total),
-      hits,
-    };
-  }
-
-  /**
-   * The build's equipped gear, in the kernel's quantities.
-   *
-   * From the server, because the `FIGHT_PROP` → quantity translation lives there and a
-   * client-side copy would be a second definition of what every stat means — with a silent
-   * failure mode, since a mis-mapped substat produces a plausible number for the wrong stat.
-   */
-  private async equippedStats(buildId: string): Promise<CandidateStats> {
-    const { data, error } = await this.api.GET('/api/v1/builds/{build_id}/equipped-stats', {
-      params: { path: { build_id: buildId } },
-    });
-    if (error) throw new Error('Could not read the build’s equipped stats');
-    const pool = data.stats;
-    const elementBonus: Record<string, number> = {};
-    for (const [quantity, value] of Object.entries(pool)) {
-      if (quantity.endsWith('_dmg_bonus')) {
-        elementBonus[quantity.slice(0, -'_dmg_bonus'.length)] = value;
-      }
-    }
-    return {
-      ...NO_STATS,
-      atkPercent: pool['atk_pct'] ?? 0,
-      atkFlat: pool['flat_atk'] ?? 0,
-      hpPercent: pool['hp_pct'] ?? 0,
-      hpFlat: pool['flat_hp'] ?? 0,
-      defPercent: pool['def_pct'] ?? 0,
-      defFlat: pool['flat_def'] ?? 0,
-      elementalMastery: pool['elemental_mastery'] ?? 0,
-      critRate: pool['crit_rate'] ?? 0,
-      critDmg: pool['crit_dmg'] ?? 0,
-      elementBonus,
-    };
   }
 }

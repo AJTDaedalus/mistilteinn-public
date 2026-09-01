@@ -67,18 +67,138 @@
 
 .hits__element { font-size: var(--text-xs); }
 
+
 /* ── The results sheet ───────────────────────────────────────────────────────
-   By ability, the way gcsim's own sheet reads. Gold rules and nothing else: the owner's
-   direction on the optimize table was a Mitya palette *"without going overboard"*, and a
-   table of numbers needs separation far more than it needs decoration. */
-.abilities {
+   gcsim's own numbers, in our own clothes. Two accents kept apart, as the palette intends:
+   **brass is identity and action, mint and azure are data and state**, so a damage figure
+   never competes with a button for the same attention.
+
+   Gold rules separate; they do not decorate. Everything else is spacing. */
+
+.headline {
+  margin: var(--space-3) 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--surface-rule);
+  border-left: var(--accent-border-width) solid var(--brass);
+  border-radius: var(--radius-2);
+  background: var(--surface);
+}
+
+.headline__primary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: baseline;
+  margin: 0;
+}
+
+.headline__label {
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* The number the page exists to report, in the data accent rather than the brand's. */
+.headline__value {
+  color: var(--azure-hi);
+  font-size: var(--text-2xl);
+  line-height: 1.1;
+}
+
+/* **The spread is not decoration.** A mean without it is a claim the run cannot support, so
+   it sits beside the value at the same weight the eye reads next. */
+.headline__pm {
+  color: var(--mint);
+  font-size: var(--text-md);
+}
+
+.headline__n {
+  color: var(--ink-faint);
+  font-size: var(--text-xs);
+}
+
+.headline__rest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  margin: var(--space-3) 0 0;
+
+  dt {
+    color: var(--ink-dim);
+    font-size: var(--text-xs);
+  }
+
+  dd {
+    margin: 0;
+    color: var(--ink);
+  }
+}
+
+.unit {
+  margin-left: 0.15em;
+  color: var(--ink-faint);
+  font-size: 0.85em;
+}
+
+.party {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    border: 1px solid var(--surface-rule);
+    border-radius: var(--radius-2);
+    background: var(--surface);
+  }
+
+  summary {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    padding: var(--space-2) var(--space-3);
+    cursor: pointer;
+  }
+}
+
+.party__name { flex: 1; }
+.party__dps { color: var(--azure-hi); }
+.party__share { min-width: 4rem; text-align: right; }
+
+.party__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  margin: 0;
+  padding: 0 var(--space-3) var(--space-2);
+
+  dt { color: var(--ink-dim); font-size: var(--text-xs); }
+  dd { margin: 0; }
+}
+
+.danger { color: var(--danger); }
+
+.sheet {
   width: 100%;
-  margin: var(--space-2) 0 var(--space-1);
+  margin: 0 0 var(--space-3);
+  padding: 0 var(--space-3);
   border-collapse: collapse;
   font-size: var(--text-sm);
 
+  caption {
+    padding: var(--space-1) var(--space-3);
+    color: var(--ink-dim);
+    font-size: var(--text-xs);
+    letter-spacing: 0.06em;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
   th {
-    padding: var(--space-1) var(--space-2);
+    padding: var(--space-1) var(--space-3);
     border-bottom: 1px solid var(--brass-deep);
     color: var(--ink-dim);
     font-weight: 600;
@@ -86,34 +206,23 @@
   }
 
   td {
-    padding: var(--space-1) var(--space-2);
+    padding: var(--space-1) var(--space-3);
     border-bottom: 1px solid var(--surface-rule);
   }
 
   tr:last-child td { border-bottom: none; }
 
-  /* Right-aligned, so digits line up on the decimal the way a reader compares them. */
+  /* Right-aligned so digits line up where a reader compares them. */
   .num { text-align: right; }
 }
 
-/* The full hit list, kept but folded away: a total nobody can take apart is a number to
-   trust rather than one to check. */
-.every-hit {
-  margin-top: var(--space-1);
+.target {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
 
-  summary {
-    color: var(--ink-dim);
-    font-size: var(--text-xs);
-    cursor: pointer;
-  }
+  .sheet { width: auto; min-width: 16rem; }
 }
 
-.total__dps {
-  margin-left: var(--space-3);
-  color: var(--ink);
-}
-
-.total__window {
-  margin-left: var(--space-1);
-  font-size: var(--text-xs);
-}
+/* What the page does not model, said in the same place rather than implied by absence. */
+.not-modelled { margin-top: var(--space-4); }

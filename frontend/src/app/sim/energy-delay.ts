@@ -89,3 +89,96 @@ export function energyDelayMessage(delays: readonly EnergyDelay[]): string | nul
     .join(', ');
   return `Energy insufficient to burst on time for ${named}.`;
 }
+
+
+/* ── Missed bursts: the same problem, as a gated rotation shows it ───────────
+ *
+ * **`insufficient_energy` cannot fire for a rotation this app compiled.** The compiler gates
+ * every step on `.ready`, so gcsim never *attempts* a burst it cannot pay for — it skips it,
+ * and records no failure. Measured on the owner's own team: the ungated community config
+ * reports 67.1 s for Furina; the identical gear on our compiled rotation reports **0 for all
+ * four**, while Furina casts 2 bursts where free energy casts 5.
+ *
+ * So a warning built only on seconds is correct when it fires and silent exactly where this
+ * app's own rotations fail. The counterfactual gcsim's optimizer uses covers both: run once
+ * with `ignore_burst_energy=true` and compare.
+ */
+
+/** One character's shortfall, however the rotation expresses it. */
+export interface EnergyShortfallReport {
+  character: string;
+  /** Seconds spent unable to act. Non-zero only for ungated rotations. */
+  seconds: number;
+  /** Bursts cast with real energy, and with energy free. */
+  bursts: { real: number; free: number };
+}
+
+/** What energy is costing the team, measured against the free-energy run. */
+export interface EnergyCost {
+  characters: EnergyShortfallReport[];
+  /** Fraction of DPS lost to energy — `(free - real) / real`. */
+  dpsCost: number;
+}
+
+function burstsOf(raw: unknown, index: number): number {
+  const wrapper = raw as { statistics?: { character_actions?: unknown[] };
+    stats?: { character_actions?: unknown[] } } | null;
+  const stats = wrapper?.statistics ?? wrapper?.stats;
+  const sources = (stats?.character_actions?.[index] as { sources?: Record<string, { mean?: number }> })
+    ?.sources;
+  return sources?.['burst']?.mean ?? 0;
+}
+
+function dpsOf(raw: unknown): number {
+  const wrapper = raw as { statistics?: { dps?: { mean?: number } };
+    stats?: { dps?: { mean?: number } } } | null;
+  return (wrapper?.statistics ?? wrapper?.stats)?.dps?.mean ?? 0;
+}
+
+/**
+ * Compare a real run against the same rotation with energy free.
+ *
+ * `floor` drops a character short by less than a fifth of a burst — that is where a frame
+ * boundary fell across iterations, not a build that cannot pay for its burst.
+ */
+export function energyCost(real: unknown, free: unknown, characters: readonly string[],
+  floor = 0.2): EnergyCost {
+  const out: EnergyShortfallReport[] = [];
+  const delays = energyDelays(real, characters, 1);
+  const bySeconds = new Map(delays.map((d) => [d.character, d.seconds]));
+
+  for (let i = 0; i < characters.length; i++) {
+    const name = characters[i] ?? `character ${i + 1}`;
+    const bursts = { real: burstsOf(real, i), free: burstsOf(free, i) };
+    const seconds = bySeconds.get(name) ?? 0;
+    if (bursts.free - bursts.real >= floor || seconds >= 1) {
+      out.push({ character: name, seconds, bursts });
+    }
+  }
+
+  const realDps = dpsOf(real);
+  return {
+    characters: out.sort((a, b) => (b.bursts.free - b.bursts.real) - (a.bursts.free - a.bursts.real)),
+    dpsCost: realDps ? (dpsOf(free) - realDps) / realDps : 0,
+  };
+}
+
+/**
+ * The owner's sentence, told the way this rotation actually fails.
+ *
+ * Seconds when the rotation waits; missed bursts when it skips. Both, when both happen. The
+ * DPS cost is the number that answers *"is more Energy Recharge worth it"*, so it closes the
+ * line rather than sitting in a separate caveat.
+ */
+export function energyCostMessage(cost: EnergyCost): string | null {
+  if (!cost.characters.length) return null;
+  const named = cost.characters.map((c) => {
+    const missed = c.bursts.free - c.bursts.real;
+    if (missed >= 0.2) {
+      return `${c.character} (${c.bursts.real.toFixed(0)} of ${c.bursts.free.toFixed(0)} bursts)`;
+    }
+    return `${c.character} (${c.seconds.toFixed(1)}s)`;
+  }).join(', ');
+  const toll = cost.dpsCost > 0.001 ? ` — costing ${(cost.dpsCost * 100).toFixed(1)}% DPS.` : '.';
+  return `Energy insufficient to burst on time for ${named}${toll}`;
+}

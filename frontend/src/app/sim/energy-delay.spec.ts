@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { energyDelays, energyDelayMessage } from './energy-delay';
+import {
+  energyCost, energyCostMessage, energyDelays, energyDelayMessage,
+} from './energy-delay';
 
 /**
  * The numbers here are the owner's real run: identical action counts to gcsim's own database
@@ -63,5 +65,66 @@ describe('energyDelayMessage', () => {
       { character: 'Furina', seconds: 67.1 },
       { character: 'Escoffier', seconds: 12.5 },
     ])).toBe('Energy insufficient to burst on time for Furina (67.1s), Escoffier (12.5s).');
+  });
+});
+
+
+describe('energyCost — the counterfactual', () => {
+  /**
+   * The owner's real numbers. Their compiled rotation reports `insufficient_energy = 0` for
+   * every character, because the compiler gates each step on `.ready` and gcsim never attempts
+   * a burst it cannot pay for. The shortfall is visible only as bursts not cast.
+   */
+  const real = {
+    stats: {
+      dps: { mean: 173979 },
+      character_actions: [
+        { sources: { burst: { mean: 3 } } },
+        { sources: { burst: { mean: 2 } } },
+        { sources: { burst: { mean: 0 } } },
+        { sources: { burst: { mean: 3 } } },
+      ],
+      failed_actions: [{}, {}, {}, {}],
+    },
+  };
+  const free = {
+    stats: {
+      dps: { mean: 186167 },
+      character_actions: [
+        { sources: { burst: { mean: 4 } } },
+        { sources: { burst: { mean: 5 } } },
+        { sources: { burst: { mean: 0 } } },
+        { sources: { burst: { mean: 4 } } },
+      ],
+    },
+  };
+  const party = ['Skirk', 'Furina', 'Citlali', 'Escoffier'];
+
+  it('finds the shortfall a gated rotation hides', () => {
+    const cost = energyCost(real, free, party);
+    expect(cost.characters.map((c) => c.character)).toEqual(['Furina', 'Skirk', 'Escoffier']);
+    expect(cost.characters[0].bursts).toEqual({ real: 2, free: 5 });
+  });
+
+  it('prices it, because that is the question being asked', () => {
+    expect(energyCost(real, free, party).dpsCost).toBeCloseTo(0.07, 2);
+  });
+
+  it('leaves a character who loses nothing out of it', () => {
+    // Citlali never bursts in this rotation; she is not short of energy, she simply has none
+    // to spend, and naming her would teach a reader to ignore the line.
+    expect(energyCost(real, free, party).characters.map((c) => c.character))
+      .not.toContain('Citlali');
+  });
+
+  it('says nothing when energy costs nothing', () => {
+    expect(energyCostMessage(energyCost(real, real, party))).toBeNull();
+  });
+
+  it('reads as the owner wrote it, with the toll', () => {
+    expect(energyCostMessage(energyCost(real, free, party))).toBe(
+      'Energy insufficient to burst on time for Furina (2 of 5 bursts), '
+      + 'Skirk (3 of 4 bursts), Escoffier (3 of 4 bursts) — costing 7.0% DPS.',
+    );
   });
 });

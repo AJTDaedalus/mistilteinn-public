@@ -1,56 +1,38 @@
 import { TestBed } from '@angular/core/testing';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { CalculatePage } from './calculate';
-import { ArtifactsService } from '../artifacts/artifacts.service';
 import { BuildsService } from '../builds/builds.service';
-import { CatalogueService } from '../catalogue/catalogue.service';
-import { RecipeOptimizeService } from '../optimize/recipe-optimize.service';
+import { GCSIM_LOADER } from '../optimize/recipe-optimize.service';
 import { RotationsService } from '../rotations/rotations.service';
-import type { Recipe, RecipeHit } from '../../sim/recipe';
 
 /**
- * **This page had no spec, and three defects lived in it at once.**
+ * **Calculate runs the team's real config through gcsim and reads what it reports.**
  *
- * Reported by the owner: *"I'm not confident it's calculating the rotation the same way
- * Optimize is, the damage is very different. It also only shows one character's icon."*
- * Measured against gcsim on the same seed and rotation, the page read **58,082,172** for a
- * rotation that deals **15,737,381**.
+ * It used to calibrate a recipe per character — the optimizer's machinery, which exists so a
+ * search can score thousands of candidates cheaply. One team and one rotation is one run, and
+ * running it removes the approximation rather than improving it.
  *
- * All three were one-liners, and none of them could fail a test that did not exist.
+ * Parsing gcsim's object is `rotation-stats.spec.ts`; this covers what the page decides.
  */
 
-const NO_TRIPLE = { atk: 0, hp: 0, def: 0 };
-
-/** A hit shaped like the parser's, minimal but complete enough for `evaluateHit`. */
-function hit(mine: boolean, damage: number): RecipeHit {
-  return {
-    abil: mine ? 'skill' : 'teammate skill',
-    element: 'cryo',
-    attackTag: 1,
-    talent: 0,
-    mine,
-    owner: mine ? 0 : 1,
-    scaling: 'atk',
-    flatDamage: 0,
-    conversions: {},
-    calibratedBase: { ...NO_TRIPLE, atk: damage },
-    calibratedPercent: { ...NO_TRIPLE },
-    calibratedFlat: { ...NO_TRIPLE },
-    critRate: 0,
-    critDmg: 0,
-    gcsimAverageDamage: damage,
-  } as unknown as RecipeHit;
-}
+const REPORT = {
+  characters: [
+    { name: 'Skirk', dps: { mean: 120000, sd: 0, min: 0, max: 0 }, insufficientEnergy: 0,
+      bySource: [{ name: 'Normal (Skill) 0', spread: { mean: 90, sd: 0, min: 0, max: 0 } },
+                 { name: 'Normal 0', spread: { mean: 10, sd: 0, min: 0, max: 0 } }],
+      byElement: [], actions: [], fieldTime: null, endingEnergy: null },
+    { name: 'Furina', dps: { mean: 30000, sd: 0, min: 0, max: 0 }, insufficientEnergy: 67.1,
+      bySource: [], byElement: [], actions: [], fieldTime: null, endingEnergy: null },
+  ],
+};
 
 function page() {
   TestBed.configureTestingModule({
     providers: [
       { provide: RotationsService, useValue: {} },
       { provide: BuildsService, useValue: {} },
-      { provide: ArtifactsService, useValue: {} },
-      { provide: CatalogueService, useValue: {} },
-      { provide: RecipeOptimizeService, useValue: {} },
+      { provide: GCSIM_LOADER, useValue: vi.fn() },
     ],
   });
   return TestBed.runInInjectionContext(
@@ -58,85 +40,75 @@ function page() {
   ) as unknown as Record<string, never>;
 }
 
-describe('CalculatePage contribution', () => {
-  it("counts only the character's own hits", () => {
-    // A recipe carries the *rotation's* hits. Counting a teammate's charged every character
-    // for the whole team, so four rows each reported roughly the team total and the page
-    // summed them — 3.7x on the owner's data.
-    const recipe = {
-      hits: [hit(true, 100), hit(false, 900), hit(true, 50)],
-      meta: {},
-    } as unknown as Recipe;
+describe('CalculatePage headline', () => {
+  it('rounds the estimate to what its spread supports', () => {
+    // 192,580.52 ± 5,732.01 is eight digits of precision on four of knowledge.
     const p = page();
-
-    const row = (p['contribution'] as unknown as (b: unknown, r: Recipe, s: unknown) => {
-      total: number; hits: unknown[];
-    })({ id: 'b1', character: { name: 'Skirk' } }, recipe, {
-      atkPercent: 0, atkFlat: 0, hpPercent: 0, hpFlat: 0, defPercent: 0, defFlat: 0,
-      elementalMastery: 0, critRate: 0, critDmg: 0, elementBonus: {}, allElementBonus: 0,
+    (p['stats'] as unknown as { set: (v: unknown) => void }).set({
+      iterations: 200,
+      dps: { mean: 192580.52, sd: 5732.01, min: 0, max: 0 },
+      duration: { mean: 191.7, sd: 0.4, min: 0, max: 0 },
+      eps: null, rps: null, hps: null, shp: null,
+      characters: [], reactions: [], auraUptime: [],
     });
 
-    // **Which hits are counted** is what this page decides; what one is *worth* belongs to
-    // `recipe-eval`, which has its own suite. Asserting a number here would need a fully
-    // shaped hit and would be testing the evaluator twice.
-    expect(row.hits.length).toBe(2);
-    expect(row.hits.map((h) => (h as { ability: string }).ability))
-      .not.toContain('teammate skill');
+    const head = (p['headline'] as unknown as () => { dps: { value: number; uncertainty: number } })();
+
+    expect(head.dps.value).toBe(192600);
+    expect(head.dps.uncertainty).toBe(5700);
+  });
+
+  it('is null before a run', () => {
+    expect((page()['headline'] as unknown as () => unknown)()).toBeNull();
   });
 });
 
-describe('CalculatePage team cards', () => {
-  it('shows every face on the team, not the first', () => {
-    // `icon: team.characters[0]?.icon` drew one character for a party of four.
+describe('CalculatePage shares', () => {
+  it('sums the per-character figures it shows, so a reader can check it', () => {
     const p = page();
-    (p['teams'] as unknown as { set: (v: unknown[]) => void }).set([
-      {
-        id: 't1',
-        name: 'Freeze',
-        characters: [
-          { name: 'Skirk', icon: 'a.webp' }, { name: 'Furina', icon: 'b.webp' },
-          { name: 'Citlali', icon: 'c.webp' }, { name: 'Escoffier', icon: 'd.webp' },
-        ],
-      },
-    ]);
+    (p['stats'] as unknown as { set: (v: unknown) => void }).set(REPORT);
+    // `.call(p, …)`: `shareOf` reads `this.stats()`, and pulling the method off the object
+    // detaches it. The first version of this test lost `this` and blamed the code.
+    const share = (w: unknown) =>
+      (p['shareOf'] as unknown as (this: unknown, w: unknown) => number).call(p, w);
 
-    const options = (p['teamOptions'] as unknown as () => { icons?: unknown[] }[])();
+    expect(share(REPORT.characters[0])).toBeCloseTo(0.8);
+    expect(share(REPORT.characters[1])).toBeCloseTo(0.2);
+  });
 
-    expect(options[0].icons).toEqual(['a.webp', 'b.webp', 'c.webp', 'd.webp']);
+  it('gives a source its share of that character, not of the team', () => {
+    const p = page();
+    const share = p['sourceShare'] as unknown as (w: unknown, s: unknown) => number;
+    const skirk = REPORT.characters[0];
+
+    expect(share(skirk, skirk.bySource[0])).toBeCloseTo(0.9);
+  });
+
+  it('does not divide by zero for a character who dealt nothing', () => {
+    const p = page();
+    (p['stats'] as unknown as { set: (v: unknown) => void }).set({ characters: [] });
+    expect(
+      (p['shareOf'] as unknown as (this: unknown, w: unknown) => number).call(p, { dps: null }),
+    ).toBe(0);
   });
 });
 
-describe('CalculatePage calibration targets', () => {
-  const p = () => page();
+describe('CalculatePage energy warning', () => {
+  it('reports the shortfall the counterfactual found', () => {
+    const p = page();
+    (p['energyCost'] as unknown as { set: (v: unknown) => void }).set({
+      characters: [{ character: 'Furina', seconds: 0, bursts: { real: 2, free: 5 } }],
+      dpsCost: 0.07,
+    });
 
-  it('reads a 4-piece recipe when the character wears one', () => {
-    const recipe = { hits: [], meta: {} } as unknown as Recipe;
-    const got = (p()['recipeFor'] as unknown as (t: unknown, c: unknown) => Recipe | null)(
-      { artifactSetIds: ['u1'], setIds: [15026], label: '' },
-      { byFourPieceSet: new Map([[15026, recipe]]), byPair: new Map(), noFourPiece: null },
+    expect((p['energyDelay'] as unknown as () => string)()).toBe(
+      'Energy insufficient to burst on time for Furina (2 of 5 bursts) — costing 7.0% DPS.',
     );
-
-    expect(got).toBe(recipe);
   });
 
-  it('reads a pair recipe for a 2+2', () => {
-    const recipe = { hits: [], meta: {} } as unknown as Recipe;
-    const got = (p()['recipeFor'] as unknown as (t: unknown, c: unknown) => Recipe | null)(
-      { artifactSetIds: ['u1', 'u2'], setIds: [15026, 15003], label: '' },
-      { byFourPieceSet: new Map(), byPair: new Map([['15003+15026', recipe]]), noFourPiece: null },
-    );
-
-    expect(got).toBe(recipe);
-  });
-
-  it('falls back to the baseline when nothing reaches a bonus', () => {
-    // Not a failure: with no set bonus in play the baseline *is* the honest calibration.
-    const recipe = { hits: [], meta: {} } as unknown as Recipe;
-    const got = (p()['recipeFor'] as unknown as (t: unknown, c: unknown) => Recipe | null)(
-      { artifactSetIds: [], setIds: [], label: '' },
-      { byFourPieceSet: new Map(), byPair: new Map(), noFourPiece: recipe },
-    );
-
-    expect(got).toBe(recipe);
+  it('says nothing before the second run has finished', () => {
+    // The counterfactual runs *after* the numbers are on screen, so the absence of a warning
+    // must not read as "energy is fine" while it is still being measured.
+    expect((page()['energyDelay'] as unknown as () => unknown)()).toBeNull();
   });
 });
