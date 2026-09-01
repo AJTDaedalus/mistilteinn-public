@@ -73,6 +73,22 @@ export class BuildsService {
     return data;
   }
 
+  /**
+   * Set the whole ranking at once, best first.
+   *
+   * **The whole order, not one build's rank.** A ranking is a permutation: setting one place
+   * without the others produces ties and gaps, and a drag-and-drop list has the finished order
+   * to hand anyway. One request is also one transaction, so a half-applied reorder is not a
+   * state anyone can observe.
+   */
+  async setPriority(buildIds: string[]): Promise<number> {
+    const { data, error } = await this.api.PUT('/api/v1/builds/priority', {
+      body: { build_ids: buildIds },
+    });
+    if (error) throw error;
+    return (data as { ranked: number }).ranked;
+  }
+
   async remove(id: string): Promise<void> {
     const { error } = await this.api.DELETE('/api/v1/builds/{build_id}', {
       params: { path: { build_id: id } },

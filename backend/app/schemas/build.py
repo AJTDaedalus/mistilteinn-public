@@ -116,6 +116,40 @@ class BuildOptions(BaseModel):
     max_talent_level: int
 
 
+class BuildPriorityOrder(BaseModel):
+    """Body for `PUT /builds/priority` — the ranking, in order, as build ids.
+
+    **The whole order at once, rather than a priority per `PATCH`.** A ranking is a
+    permutation: setting one build's rank without the others produces ties and gaps, and a
+    drag-and-drop list sends the finished order anyway. One request also means one transaction,
+    so a half-applied reorder is not a state anyone can observe.
+    """
+
+    model_config = {"extra": "forbid"}
+
+    #: Every build the caller wants ranked, best first. Builds left out become unranked.
+    build_ids: list[str] = Field(default_factory=list, max_length=500)
+
+    @field_validator("build_ids")
+    @classmethod
+    def _no_duplicates(cls, value: list[str]) -> list[str]:
+        """A build cannot hold two places, and a repeat is a client bug worth naming."""
+        if len(set(value)) != len(value):
+            seen: set[str] = set()
+            dupes = sorted({v for v in value if v in seen or seen.add(v)})  # type: ignore[func-returns-value]
+            msg = f"a build cannot appear twice in a ranking; repeated: {dupes}"
+            raise ValueError(msg)
+        return value
+
+
+class BuildPriorityRead(BaseModel):
+    """What `PUT /builds/priority` changed."""
+
+    #: How many builds were ranked. Ids the caller does not own are ignored rather than
+    #: refused, so this can be smaller than the list sent.
+    ranked: int
+
+
 class BuildRead(BaseModel):
     """One saved build."""
 
@@ -129,6 +163,12 @@ class BuildRead(BaseModel):
     constellation_level: int
     talent_levels: dict[str, int] = {}
     notes: str = ""
+    #: Where this build sits in the owner's ranking — 0 is first, `None` is unranked.
+    #:
+    #: **The column has existed, indexed, since the build model was written, and nothing has
+    #: ever read or written it.** `BACKLOG_frontend.md` §3 asks for the ranking it was clearly
+    #: added for; this is the field arriving at the API at last.
+    optimizer_priority: int | None = None
     #: The catalogue rows a list needs to draw a row, **beside** the ids rather than instead
     #: of them: a client that stores `character_id` keeps working, and these are for drawing
     #: rather than for referring.

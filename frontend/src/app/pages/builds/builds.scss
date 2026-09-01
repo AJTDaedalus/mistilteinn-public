@@ -15,7 +15,10 @@
     h1 { margin: 0; }
   }
 
-  .new {
+  /* Both actions sit to the right, together. `.rank-open` takes the auto margin so the pair
+     stays adjacent — giving both one splits the free space between them and strands
+     "Priority" in the middle of the header. */
+  .rank-open {
     margin-left: auto;
   }
 
@@ -245,3 +248,53 @@
     .drop:focus-visible { opacity: 1; }
   }
 }
+
+/* ── The build ranking (§3) ──────────────────────────────────────────────────
+   A short ordered list, not the grid. It shares the dialog in `styles.scss`. */
+.rank { width: min(30rem, 92vw); }
+
+.rank__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--surface-rule);
+    border-radius: var(--radius-2);
+    /* `grab`, because the row is draggable and nothing else says so. The arrows carry the
+       same move for anyone not using a mouse. */
+    cursor: grab;
+  }
+}
+
+.rank__row--dragging { opacity: 0.5; }
+
+.rank__n {
+  min-width: 1.6rem;
+  color: var(--brass);
+}
+
+.rank__who {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank__add { flex: 1 1 auto; min-width: 0; }
+
+.rank .field {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.rank .field__name { color: var(--ink-dim); }

@@ -20,8 +20,13 @@ that doc's closing section; this file tracks what landed.
 
 | task | why it is not done |
 |---|---|
-| **B.1 — Build Priority** | Next. `optimizer_priority` exists on `Build`, indexed, and **nothing reads or writes it** — the fifth subsystem in this repo built and wired to nothing. Needs schema exposure, a reorder endpoint, drag-to-reorder UI |
-| **B.2 — artifact stealing** | Follows B.1. The optimizer currently *refuses* a piece held elsewhere; with a ranking it can take it from a lower-ranked build and say so |
-| **B.3 — one build per character** | **Blocked on an owner decision.** The local data has two Skirk builds and three Xingqiu builds; a uniqueness constraint needs a migration that deletes or merges builds that already exist |
-| **B.4 — `/optimize` prose** | Three explanatory paragraphs are genuinely long. The rest of that page's 417 words are conditional empty states that say what to do, and cutting those would cost more than it saves |
+| **B.3 — one build per character** | **Contradicts a standing owner ruling.** `uq_builds_owner_character` existed and was *dropped by owner decision on 2026-08-24* (migration `27770f8ae917`, T.1a): it forbade saving a C0 beside a C6, or a Physical Eula against a Cryo one, which the migration calls *"ordinary things to want to compare in this game"*. The rule moved rather than vanished — gcsim refuses a party holding the same character twice, so `api/v1/teams.py` enforces it where it bites. §3 was written five days later and asks to reinstate what that decision removed. Not implemented either way: reversing a documented ruling is the owner's call, not a task |
+| **B.4 — `/optimize` prose** | **Examined and declined.** The 417-word figure was a measurement artifact: it counts every conditional branch as though all rendered at once, when most are empty states that appear one at a time and say what to do. The three long passages each carry information needed to trust a number — *"a swap that would drop you below four of the set is scored without the set bonus"* is not obvious and is what makes the ranking believable. The genuine slop on that page was the `(s)` plurals, now fixed. Recorded as declined rather than left open, because an item that reads as pending work when it was decided is the same failure as §8 reporting finished work as open |
 | **B.5 — §11 "sets and enemies are broken"** | **Blocked on detail.** Both routes render and answer 200. Needs: did the link do nothing, or did the page load and its cards do nothing? |
+
+## Done since
+
+| task | what |
+|---|---|
+| **B.1** | Build priority. `PUT /builds/priority` takes the whole order; `optimizer_priority` reaches the API for the first time since the column was added. A short ranked list with drag **and** arrows, not a draggable 75-card grid |
+| **B.2** | The optimizer takes a contested piece when this build outranks the holder, names whose it was, and refuses — naming them — when it does not. An **unranked build takes from nobody**: without a rank there is no claim, and preferring whichever build is open is the surprise a ranking exists to remove |

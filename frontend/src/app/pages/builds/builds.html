@@ -4,6 +4,7 @@
     <!-- §1's second pattern, and the owner's: the saved things are the page, and "New build"
          is a button that opens one. The editor used to sit permanently in the left two thirds,
          which is why the list it pushed aside could never be a grid. -->
+    <button type="button" class="rank-open" (click)="openRanking()">Priority</button>
     <button type="button" class="new" (click)="startNew()">New build</button>
   </header>
 
@@ -120,6 +121,81 @@
         }
       }
     </ul>
+
+    <!-- §3's ranking. A short list rather than the grid: 75 cards are not draggable in any
+         useful sense, and a ranking only matters for the characters that contend for the same
+         pieces. -->
+    <dialog #ranking class="editor rank" (close)="rankSaved.set(false)">
+      <header class="editor__head">
+        <h2>Build priority</h2>
+        <button type="button" class="editor__close" aria-label="Close" (click)="closeRanking()">×</button>
+      </header>
+
+      <p class="hint">
+        Highest first. When two builds want the same artifact, the higher one takes it.
+      </p>
+
+      <ol class="rank__list">
+        @for (build of rankedBuilds(); track build.id; let i = $index) {
+          <li
+            draggable="true"
+            [class.rank__row--dragging]="rankDragging() === i"
+            (dragstart)="onRankDragStart(i)"
+            (dragover)="$event.preventDefault()"
+            (drop)="onRankDrop(i)"
+          >
+            <span class="rank__n mono">{{ i + 1 }}</span>
+            <catalogue-icon [icon]="build.character?.icon || ''" [alt]="''" [size]="28" />
+            <span class="rank__who">{{ build.character?.name || 'Unnamed build' }}</span>
+            <span class="reorder">
+              <button
+                type="button"
+                [attr.aria-label]="'Move ' + (build.character?.name || 'build') + ' up'"
+                [disabled]="$first"
+                (click)="moveRank(i, -1)"
+              >↑</button>
+              <button
+                type="button"
+                [attr.aria-label]="'Move ' + (build.character?.name || 'build') + ' down'"
+                [disabled]="$last"
+                (click)="moveRank(i, 1)"
+              >↓</button>
+            </span>
+            <button
+              type="button"
+              class="drop"
+              [attr.aria-label]="'Remove ' + (build.character?.name || 'build') + ' from the ranking'"
+              (click)="removeFromRanking(build.id)"
+            >×</button>
+          </li>
+        } @empty {
+          <li class="muted">Nothing ranked yet — add a build below.</li>
+        }
+      </ol>
+
+      <span class="field">
+        <span class="field__name">Add</span>
+        <mist-combobox
+          class="rank__add"
+          [options]="rankableOptions()"
+          [value]="null"
+          ariaLabel="Add a build to the ranking"
+          placeholder="Choose a build…"
+          (valueChange)="addToRanking($event)"
+        />
+      </span>
+
+      <div class="controls">
+        <button type="button" (click)="saveRanking()">Save priority</button>
+        @if (rankSaved()) {
+          <span class="hint">Saved.</span>
+        }
+      </div>
+
+      @if (rankError(); as message) {
+        <p class="error" role="alert">{{ message }}</p>
+      }
+    </dialog>
 
     <dialog #editor class="editor" (close)="onEditorClosed()">
       <header class="editor__head">

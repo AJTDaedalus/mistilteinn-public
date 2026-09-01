@@ -1712,6 +1712,53 @@
         }
       }
     },
+    "/api/v1/builds/priority": {
+      "put": {
+        "tags": [
+          "builds"
+        ],
+        "summary": "Set Build Priority",
+        "description": "Set the owner's build ranking, best first.\n\n`BACKLOG_frontend.md` \u00a73. The ranking answers \"who gets the piece\" when two builds want\nthe same artifact \u2014 see the optimizer's equip path, which until now refused outright.\n\n**Declared before `/{build_id}` on purpose.** FastAPI matches in declaration order, so a\nliteral path registered after a parameterised one is unreachable: `/priority` would arrive\nas `build_id=\"priority\"` and 404 as a missing build. That is a silent routing bug, not an\nerror, which is why it is stated here rather than left to path order to imply.",
+        "operationId": "set_build_priority_api_v1_builds_priority_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuildPriorityOrder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuildPriorityRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/builds/options": {
       "get": {
         "tags": [
@@ -3869,6 +3916,36 @@
         "title": "BuildOptions",
         "description": "What an editor may offer for a build.\n\nThe same guarantee `/rotations/options` gives (R.5): **the form offers exactly what the\nvalidator accepts.** `talents` is `LEVELLED_TALENTS`, which is both what `_validated_talents`\nchecks against and what `gcsim_config._talents` renders \u2014 so a form built from this cannot\nproduce a key that is stored and ignored, or one that renders as level 1.\n\nA list rather than a TypeScript union, because a generated type is erased at runtime and a\npage needs to *iterate* these to draw three inputs. Hardcoding them there would be a third\ncopy of the tuple."
       },
+      "BuildPriorityOrder": {
+        "properties": {
+          "build_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 500,
+            "title": "Build Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "BuildPriorityOrder",
+        "description": "Body for `PUT /builds/priority` \u2014 the ranking, in order, as build ids.\n\n**The whole order at once, rather than a priority per `PATCH`.** A ranking is a\npermutation: setting one build's rank without the others produces ties and gaps, and a\ndrag-and-drop list sends the finished order anyway. One request also means one transaction,\nso a half-applied reorder is not a state anyone can observe."
+      },
+      "BuildPriorityRead": {
+        "properties": {
+          "ranked": {
+            "type": "integer",
+            "title": "Ranked"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ranked"
+        ],
+        "title": "BuildPriorityRead",
+        "description": "What `PUT /builds/priority` changed."
+      },
       "BuildRead": {
         "properties": {
           "id": {
@@ -3929,6 +4006,17 @@
             "type": "string",
             "title": "Notes",
             "default": ""
+          },
+          "optimizer_priority": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Optimizer Priority"
           },
           "character": {
             "anyOf": [

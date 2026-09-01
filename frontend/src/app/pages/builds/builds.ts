@@ -5,6 +5,7 @@ import { apiErrorMessage } from '../../api/api-error';
 import { CardPicker, type CardFilter, type CardOption } from '../../shared/card-picker/card-picker';
 import { ElementChip } from '../../shared/element/element';
 import { CatalogueIcon } from '../../shared/icon/icon';
+import { Combobox, type ComboboxOption } from '../../shared/combobox/combobox';
 import { EntityToken } from '../../shared/token/token';
 import { allPages } from '../../api/all-pages';
 import { ArtifactPanel } from './artifact-panel';
@@ -82,7 +83,9 @@ export function matchesBuild(
  */
 @Component({
   selector: 'page-builds',
-  imports: [FormsModule, ArtifactPanel, CardPicker, CatalogueIcon, ElementChip, EntityToken],
+  imports: [
+    FormsModule, ArtifactPanel, CardPicker, CatalogueIcon, ElementChip, EntityToken, Combobox,
+  ],
   templateUrl: './builds.html',
   styleUrl: './builds.scss',
 })
@@ -286,6 +289,105 @@ export class BuildsPage implements OnInit {
   );
 
   protected readonly canSave = computed(() => this.characterId() !== '');
+
+  /* ── The build ranking ───────────────────────────────────────────────────────
+     `BACKLOG_frontend.md` §3, and the reason `optimizer_priority` was on the model with an
+     index for months while nothing read it. The ranking answers "who gets the piece" when two
+     builds want the same artifact — the optimizer used to refuse outright.
+
+     **A short list, not the grid.** Seventy-five cards are not draggable in any useful sense,
+     and a ranking only matters for the handful of characters that actually contend for pieces.
+     So the ranking is its own list: add a build to it, drag or nudge it into place. */
+  protected readonly ranking = viewChild<ElementRef<HTMLDialogElement>>('ranking');
+  protected readonly rankOrder = signal<string[]>([]);
+  protected readonly rankError = signal<string | null>(null);
+  protected readonly rankSaved = signal(false);
+
+  /** The ranked builds, in rank order, as rows to draw. */
+  protected readonly rankedBuilds = computed(() => {
+    const byId = new Map(this.builds().map((b) => [b.id, b]));
+    return this.rankOrder().map((id) => byId.get(id)).filter((b) => b !== undefined);
+  });
+
+  /** Everything not yet ranked, for the picker that adds to the list. */
+  protected readonly rankableOptions = computed<ComboboxOption[]>(() => {
+    const ranked = new Set(this.rankOrder());
+    return this.builds()
+      .filter((b) => !ranked.has(b.id))
+      .map((b) => ({ value: b.id, label: b.character?.name || 'Unnamed build' }));
+  });
+
+  protected openRanking(): void {
+    // Seeded from what the server holds, so opening it twice does not show a stale draft.
+    this.rankOrder.set(
+      this.builds()
+        .filter((b) => b.optimizer_priority !== null && b.optimizer_priority !== undefined)
+        .sort((a, b) => (a.optimizer_priority ?? 0) - (b.optimizer_priority ?? 0))
+        .map((b) => b.id),
+    );
+    this.rankError.set(null);
+    this.rankSaved.set(false);
+    this.ranking()?.nativeElement.showModal?.();
+  }
+
+  protected closeRanking(): void {
+    this.ranking()?.nativeElement.close?.();
+  }
+
+  protected addToRanking(buildId: string | null): void {
+    if (!buildId || this.rankOrder().includes(buildId)) return;
+    this.rankOrder.update((order) => [...order, buildId]);
+    this.rankSaved.set(false);
+  }
+
+  protected removeFromRanking(buildId: string): void {
+    this.rankOrder.update((order) => order.filter((id) => id !== buildId));
+    this.rankSaved.set(false);
+  }
+
+  /**
+   * Move a build one place.
+   *
+   * **Buttons as well as dragging.** The rotation builder learned this: a drag-only reorder is
+   * unusable by keyboard and fiddly with a trackpad, and the buttons are what a test can press.
+   */
+  protected moveRank(index: number, delta: number): void {
+    const target = index + delta;
+    const order = this.rankOrder();
+    if (target < 0 || target >= order.length) return;
+    const next = [...order];
+    [next[index], next[target]] = [next[target], next[index]];
+    this.rankOrder.set(next);
+    this.rankSaved.set(false);
+  }
+
+  protected readonly rankDragging = signal<number | null>(null);
+
+  protected onRankDragStart(index: number): void {
+    this.rankDragging.set(index);
+  }
+
+  protected onRankDrop(index: number): void {
+    const from = this.rankDragging();
+    this.rankDragging.set(null);
+    if (from === null || from === index) return;
+    const next = [...this.rankOrder()];
+    const [moved] = next.splice(from, 1);
+    next.splice(index, 0, moved);
+    this.rankOrder.set(next);
+    this.rankSaved.set(false);
+  }
+
+  protected async saveRanking(): Promise<void> {
+    this.rankError.set(null);
+    try {
+      await this.service.setPriority(this.rankOrder());
+      await this.load();
+      this.rankSaved.set(true);
+    } catch (err) {
+      this.rankError.set(apiErrorMessage(err));
+    }
+  }
 
   protected readonly editor = viewChild<ElementRef<HTMLDialogElement>>('editor');
 

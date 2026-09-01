@@ -718,14 +718,45 @@ export class OptimizePage implements OnInit {
         // and an absent field means the same thing as an explicit null — nobody holds it.
         (piece) => piece.build_id != null && piece.build_id !== buildId,
       );
-      if (heldElsewhere.length) {
+
+      // **The ranking decides who keeps the piece** — `BACKLOG_frontend.md` §3, *"let a
+      // higher-ranked character steal an artifact from a lower-ranked one"*. Until this, the
+      // answer was always "nobody moves, go and undress the other build yourself", which is
+      // the friction the ranking exists to remove.
+      //
+      // Lower number ranks higher; `null` is unranked and loses to anything ranked. **An
+      // unranked build takes from no one**: without a rank there is no claim to make, and
+      // silently preferring the build you happen to be looking at is how someone loses a
+      // piece off a character they care about.
+      const mine = this.builds().find((b) => b.id === buildId);
+      const myRank = mine?.optimizer_priority ?? null;
+      const outranks = (holderId: string): boolean => {
+        if (myRank === null) return false;
+        const holder = this.builds().find((b) => b.id === holderId);
+        const theirs = holder?.optimizer_priority ?? null;
+        return theirs === null || theirs > myRank;
+      };
+      const nameOf = (holderId: string): string =>
+        this.builds().find((b) => b.id === holderId)?.character?.name ?? 'another build';
+
+      const blocked = heldElsewhere.filter((piece) => !outranks(piece.build_id!));
+      if (blocked.length) {
+        const holders = [...new Set(blocked.map((piece) => nameOf(piece.build_id!)))];
         this.actionError.set(
-          `${heldElsewhere.length} of these pieces are equipped to another build `
-          + `(${heldElsewhere.map((p) => p.set_name || p.slot).join(', ')}). `
-          + 'Nothing was changed — take them off that build first.',
+          `${blocked.length} of these pieces are equipped to ${holders.join(', ')}, `
+          + (myRank === null
+            ? 'and this build has no priority. Rank it above them on Builds, or take the '
+              + 'pieces off by hand.'
+            : 'which rank above this build. Nothing was changed.'),
         );
         return;
       }
+
+      // Taken, not silently moved: the report below names who lost what.
+      const taken = heldElsewhere.map(
+        (piece) => `${piece.set_name || piece.slot} from ${nameOf(piece.build_id!)}`,
+      );
+      for (const piece of heldElsewhere) await this.artifacts.equip(piece.id, null);
 
       const already = new Set(pieces.filter((p) => p.build_id === buildId).map((p) => p.id));
       const winners = new Set(row.artifactIds);
@@ -743,11 +774,16 @@ export class OptimizePage implements OnInit {
         if (!already.has(id)) await this.artifacts.equip(id, buildId);
       }
       const moved = row.artifactIds.length - already.size;
+      // **A piece taken off another build is said out loud.** The whole point of the ranking
+      // is that a suggested piece is *owned*; a silent steal would leave someone wondering
+      // later why a character they were not looking at is missing a goblet.
+      const tookFrom = taken.length ? ` Took ${taken.join(', ')}.` : '';
       this.equipped.set(
         already.size === row.artifactIds.length
-          ? 'Already equipped — this build is wearing #' + row.rank + ' already.'
-          : `Equipped ${moved} piece(s) from #${row.rank}`
-            + (already.size ? `; ${already.size} were already on this build.` : '.'),
+          ? `Already equipped — this build is wearing #${row.rank} already.`
+          : `Equipped ${moved} piece${moved === 1 ? '' : 's'} from #${row.rank}`
+            + (already.size ? `; ${already.size} were already on this build.` : '.')
+            + tookFrom,
       );
     } catch (err) {
       // Verbatim: the API's refusal names the holding build, which is more useful than

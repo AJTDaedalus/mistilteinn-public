@@ -2117,3 +2117,77 @@ describe('the scoring warning does not cry wolf', () => {
     expect(page['recipeIsShaky']()).toBe(true);
   });
 });
+
+
+/**
+ * The build ranking decides who keeps a piece — `BACKLOG_frontend.md` §3.
+ *
+ * Before this, a piece held by another build was refused outright: *"take them off that build
+ * first"*. That refusal is the friction the ranking exists to remove, and removing it wrongly
+ * is how someone loses a goblet off a character they were not looking at.
+ */
+describe('OptimizePage equip, with a ranking', () => {
+  const ROW = { rank: 1, damage: 100, artifactIds: ['a1', 'a2'], pieces: ['Flower', 'Plume'] };
+
+  function pageRanked(mineRank: number | null, holderRank: number | null) {
+    const get = vi.fn(async (id: string) => ({
+      id, build_id: id === 'a2' ? 'b2' : null, slot: 'equip_bracer', set_name: 'Gladiator',
+    }));
+    const equip = vi.fn().mockResolvedValue({});
+    const list = vi.fn().mockResolvedValue({ items: [], total: 0, offset: 0, limit: 50 });
+    const page = pageWith({
+      artifacts: {
+        options: vi.fn().mockResolvedValue(OPTIONS), get, equip, list,
+      } as unknown as Partial<ArtifactsService>,
+    }) as unknown as Record<string, never>;
+    (page['buildId'] as unknown as { set: (v: string) => void }).set('b1');
+    (page['builds'] as unknown as { set: (v: unknown[]) => void }).set([
+      { id: 'b1', optimizer_priority: mineRank, character: { name: 'Skirk' } },
+      { id: 'b2', optimizer_priority: holderRank, character: { name: 'Ayaka' } },
+    ]);
+    return { page, equip };
+  }
+
+  const run = (page: Record<string, never>) =>
+    (page['equipRow'] as unknown as (r: unknown) => Promise<void>).call(page, ROW);
+
+  it('takes the piece when this build ranks higher, and says whose it was', async () => {
+    const { page, equip } = pageRanked(0, 3);
+
+    await run(page);
+
+    expect(equip).toHaveBeenCalledWith('a2', null);
+    // Named, not silent: a piece vanishing off a character nobody was looking at is the
+    // failure mode this message exists to prevent.
+    expect((page['equipped'] as unknown as () => string)()).toContain('Ayaka');
+    expect((page['actionError'] as unknown as () => unknown)()).toBeNull();
+  });
+
+  it('refuses when the holder ranks higher, and names them', async () => {
+    const { page, equip } = pageRanked(3, 0);
+
+    await run(page);
+
+    expect(equip).not.toHaveBeenCalled();
+    expect((page['actionError'] as unknown as () => string)()).toContain('Ayaka');
+  });
+
+  it('an unranked build takes from nobody', async () => {
+    // Without a rank there is no claim to make, and silently preferring the build you happen
+    // to be looking at is exactly the surprise the ranking is meant to remove.
+    const { page, equip } = pageRanked(null, 5);
+
+    await run(page);
+
+    expect(equip).not.toHaveBeenCalled();
+    expect((page['actionError'] as unknown as () => string)()).toContain('no priority');
+  });
+
+  it('outranks an unranked holder', async () => {
+    const { page, equip } = pageRanked(2, null);
+
+    await run(page);
+
+    expect(equip).toHaveBeenCalledWith('a2', null);
+  });
+});

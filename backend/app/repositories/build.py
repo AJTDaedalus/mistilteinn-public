@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import selectinload
 
 from app.models.artifact import Artifact, ArtifactSet
@@ -56,6 +56,45 @@ class BuildRepository(BaseRepository[Build]):
         )
         result = await self.session.execute(stmt)
         return result.scalars().all()
+
+    async def set_priority_order(self, build_ids: Sequence[str]) -> int:
+        """Rank the named builds 0, 1, 2 … and unrank every other build in scope.
+
+        Returns how many rows were ranked.
+
+        **Scoped to the owner, and silently ignores ids the caller does not own** rather than
+        refusing the whole request: a ranking sent from a stale list would otherwise fail
+        entirely because one build was deleted in another tab, which is a worse answer than
+        ranking the rest.
+
+        **Unranking the remainder is the point.** A ranking is a permutation of what the user
+        arranged; leaving old values behind would mix two orderings and produce ties nothing
+        can break.
+        """
+        owned = select(Build.id)
+        if self.owner_id is not None:
+            owned = owned.where(Build.owner_id == self.owner_id)
+        mine = set((await self.session.execute(owned)).scalars().all())
+
+        ranked = [bid for bid in build_ids if bid in mine]
+        clear = update(Build).values(optimizer_priority=None)
+        if self.owner_id is not None:
+            clear = clear.where(Build.owner_id == self.owner_id)
+        await self.session.execute(clear)
+        for rank, build_id in enumerate(ranked):
+            await self.session.execute(
+                update(Build).where(Build.id == build_id).values(optimizer_priority=rank),
+            )
+        await self.session.flush()
+        return len(ranked)
+
+    async def priority_of(self, build_ids: Sequence[str]) -> dict[str, int | None]:
+        """The rank of each named build, for callers deciding who outranks whom."""
+        stmt = select(Build.id, Build.optimizer_priority).where(Build.id.in_(list(build_ids)))
+        if self.owner_id is not None:
+            stmt = stmt.where(Build.owner_id == self.owner_id)
+        rows = await self.session.execute(stmt)
+        return {row.id: row.optimizer_priority for row in rows}
 
     async def count_filtered(self) -> int:
         """Total in the caller's scope, matching `search`."""

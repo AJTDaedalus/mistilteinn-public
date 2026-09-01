@@ -54,6 +54,8 @@ from app.schemas.build import (
     AvailableHitRead,
     BuildCreate,
     BuildOptions,
+    BuildPriorityOrder,
+    BuildPriorityRead,
     BuildRead,
     BuildUpdate,
     CalibrationConfigs,
@@ -183,6 +185,27 @@ async def list_builds(
         offset=offset,
         limit=limit,
     )
+
+
+@router.put("/priority", response_model=BuildPriorityRead)
+@limiter.limit(WRITE_LIMIT)
+async def set_build_priority(
+    request: Request,  # slowapi reads the client address off it
+    body: BuildPriorityOrder,
+    repo: Annotated[BuildRepository, Depends(get_owned_build_repo)],
+) -> BuildPriorityRead:
+    """Set the owner's build ranking, best first.
+
+    `BACKLOG_frontend.md` §3. The ranking answers "who gets the piece" when two builds want
+    the same artifact — see the optimizer's equip path, which until now refused outright.
+
+    **Declared before `/{build_id}` on purpose.** FastAPI matches in declaration order, so a
+    literal path registered after a parameterised one is unreachable: `/priority` would arrive
+    as `build_id="priority"` and 404 as a missing build. That is a silent routing bug, not an
+    error, which is why it is stated here rather than left to path order to imply.
+    """
+    ranked = await repo.set_priority_order(body.build_ids)
+    return BuildPriorityRead(ranked=ranked)
 
 
 @router.get("/options", response_model=BuildOptions)
