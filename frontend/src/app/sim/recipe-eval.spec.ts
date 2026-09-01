@@ -237,3 +237,49 @@ describe('energyRatio — weighing Energy Recharge', () => {
       withEr(0.2))).toBe(1);
   });
 });
+
+
+describe('energyRatio — the denominator is the same ladder', () => {
+  /**
+   * It was `dpsAt(sweep, candidateEr) / calibratedEnergyDps`: a numerator floored onto a
+   * 20-iteration rung over a denominator that was a 100-iteration aggregate at the build's
+   * exact ER. Two different measurements of the same quantity, so the ratio at the calibration
+   * point was **not 1** — 0.928 for the owner's Furina, whose 0.279 artifact ER floored onto
+   * the 0.20 rung (142,380) while the aggregate read 153,417.
+   */
+  const sweep = [
+    { energyRecharge: 0.2, burstInstances: 2, standardDeviation: 0, dps: 142380 },
+    { energyRecharge: 0.279, burstInstances: 2, standardDeviation: 0, dps: 151000 },
+    { energyRecharge: 0.8, burstInstances: 3, standardDeviation: 0, dps: 158306 },
+  ];
+
+  const recipeWith = (meta: Record<string, unknown>) => ({
+    hits: [], seed: '1',
+    meta: {
+      seed: '1', staleConversions: [], characters: [], unstable: [], calibratedSetIds: [],
+      minimumEnergyRecharge: null, energySweep: sweep, calibratedEnergyDps: 153417, ...meta,
+    },
+  } as unknown as Parameters<typeof energyRatio>[0]);
+
+  const at = (er: number) => ({ ...NO_STATS, energyRecharge: er });
+
+  it('is exactly 1 at the ER the calibration ran at', () => {
+    expect(energyRatio(recipeWith({ calibratedEnergyRecharge: 0.279 }), at(0.279))).toBe(1);
+  });
+
+  it('pays a candidate for crossing a rung, measured against that same point', () => {
+    expect(energyRatio(recipeWith({ calibratedEnergyRecharge: 0.279 }), at(0.8)))
+      .toBeCloseTo(158306 / 151000, 9);
+  });
+
+  it('charges a candidate that falls below it', () => {
+    expect(energyRatio(recipeWith({ calibratedEnergyRecharge: 0.279 }), at(0.2)))
+      .toBeCloseTo(142380 / 151000, 9);
+  });
+
+  it('falls back to the aggregate for a recipe cached before the field existed', () => {
+    // A graceful fallback rather than a throw — but `SCHEMA` 5 makes those entries miss, so
+    // this is the belt to that braces.
+    expect(energyRatio(recipeWith({}), at(0.279))).toBeCloseTo(151000 / 153417, 9);
+  });
+});

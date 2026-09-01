@@ -742,3 +742,171 @@ probes, where the subject wears an ER value and a set bonus and no substats; a b
 loses far more to a missed burst than a real one, and the ratio read **47.9%** where Calculate,
 same team and rotation with the actual artifacts equipped, measured **6.9%**. Both are true
 about their own run; only one is about the player's build.
+
+## 20. "Better pieces for each slot" is deleted — it could only ever be empty
+
+**Owner, 2026-09-01:** *"The optimized sets already have a flex slot (non-set piece) so I'm not
+sure what this section is meant to provide?"*
+
+They were right, and the argument is short. The search walks every combination in a 4-piece
+state and returns the best. The section then scored **single-slot swaps against that winner**.
+A swap that keeps the same 4-piece state produces a combination the walk *already scored*, and
+the winner beat it by definition — so its delta is necessarily ≤ 0 and the row cannot appear.
+
+Which means the set-breaking rows §18 removed were the section's **entire content**: a swap that
+changes the 4-piece state is the one thing the walk did not try. Removing them left a section
+that renders nothing on an exact search. Confirmed by driving the real page against the owner's
+Skirk Freeze team twice — `section.upgrades` was absent from the DOM both times, because
+`upgrades()` returned an empty array.
+
+The only case it could still speak to is a **truncated** search — the "searched the best 17
+pieces per slot" path — where rank pruning discards pieces the walk never tried. That is real
+information, and the page already prints it as the "not exact" notice; a second surface for the
+same caveat, under a heading that does not mention truncation, is worse than none.
+
+**Nothing failed when it was deleted**, which is its own finding: the section had no test
+coverage at all. It was verified by looking at the page, twice, which is the check this repo
+keeps saying it does not automate.
+
+### What this leaves behind
+
+- **`sim/artifact-score.ts` now has no caller.** Kept rather than deleted, with a banner saying
+  so: its other half is exactly the feature `DESIGN_artifact_ranking.md` and
+  `AUDIT_fribbels_parity.md` §5 ask for — *"is this piece any good?"* on the inventory page,
+  with the signed delta the audit names as what makes a list decidable. If §5 is still unbuilt
+  next time someone reads that banner, delete the module.
+- **The baseline's justification changed and the comments now say so.** Four places explained
+  that the no-four-piece recipe is calibrated *for the upgrade list*. It is now calibrated
+  because it is the run the energy measurement is taken on — the aggregate, the free-energy
+  counterfactual and the ER ladder that §17 hands to every other recipe. That is a better
+  reason than the one it replaced.
+
+## 21. The ladder was measuring its own noise — **FIXED**, and the shape it hid
+
+**Owner, 2026-09-01:** *"Are we sure the denominator for DPS is really moving with ER? Its DPS
+is suspiciously very close, <<1%, to the non-ER ones which tells me not much changed."*
+
+It was moving; it could not resolve the movement. Three defects, all visible in the ladder the
+owner's own run produced at `ENERGY_LADDER_RUNS = 20`:
+
+| artifact ER | 0.20 | 0.30 | 0.45 | 0.60 | 0.80 | 1.00 |
+|---|---|---|---|---|---|---|
+| team DPS | 142,380 | 152,589 | 157,761 | **154,314** | 158,306 | **156,188** |
+| Furina bursts | 2 | 2 | 2.8 | **2.5** | 3 | 3 |
+
+**More ER, fewer bursts, twice.** Impossible — every burst is gated on `.ready`, so extra energy
+brings a cast forward or changes nothing. The whole signal above 0.30 ER was +3.7 % and the dip
+was 2.2 % of it.
+
+1. **`dpsAt` takes a running maximum.** It invents nothing: every value it returns was measured
+   at an ER the candidate can pay for. Below the whole ladder it returns the lowest rung rather
+   than `null`, which used to disable ER weighting for exactly the builds shortest of it.
+
+   **Its first stated justification was wrong and is corrected below** — see §21a. "More ER
+   cannot buy less" is false; the true claim is narrower and depends on where `ENERGY_LADDER`
+   stops.
+2. **The ratio is taken against the same ladder.** The denominator was `calibratedEnergyDps`, a
+   100-iteration aggregate, under a numerator floored onto a 20-iteration rung — so
+   `energyRatio` returned **0.928 at the calibration point**, where its own docstring says 1.
+   `calibratedEnergyRecharge` is read through `dpsAt` now, and the calibration's ER is itself a
+   rung.
+3. **`ENERGY_LADDER_RUNS` 20 → 60.** `AGGREGATE_RUNS` is 100 and CLAUDE.md records the mean
+   moving 0.3 % between 25 and 100, so the aggregate was never where precision was missing.
+
+### What the clean ladder shows
+
+Re-measured on the same build, 2026-09-01:
+
+| artifact ER | 0.20 | 0.30 | 0.45 | 0.60 | 0.80 | 1.00 |
+|---|---|---|---|---|---|---|
+| team DPS | 142,912 | 154,013 | 157,976 | 158,005 | 157,816 | 157,591 |
+| Furina bursts | 2.00 | 2.00 | 2.88 | 2.83 | 3.00 | 3.00 |
+
+Residual reversals are 0.12 % and 0.14 %. **The curve saturates at 0.45 ER** — flat within
+0.3 % from there to 1.00. The calibration ran at ~0.30 (that rung reads 154,013 against the
+aggregate's 153,779, the same point measured twice), so the ratio is 1.0 there and an ER sands
+is worth **+2.6 %** against the 46.6 % HP% sands it displaces. On an HP scaler that is not
+close, and the owner's *"<<1 %"* was the model telling the truth through a noisy instrument.
+
+### Two findings this surfaced, both open
+
+- **"2 of 5 bursts" overstates what ER can fix.** The free-energy counterfactual has Furina
+  casting 5; the ladder says **3 is the ceiling at any ER**. The remainder is particle
+  generation, not recharge. The warning therefore implies ER could buy three more bursts when
+  it can buy one. The honest sentence names the ladder's ceiling, not the counterfactual's.
+- **`dpsCost` measured 0.0082** on this run — 0.8 %, consistent with the ladder's 2.6 % of
+  headroom. Worth keeping beside §19's note that the 47.9 % figure was a calibration-probe
+  artefact.
+
+## 22. Per-set ER failure, and the seconds it costs — **owner request, designed not built**
+
+**Owner, 2026-09-01:** *"When ER requirements aren't met, it'd be nice to show on each set the
+**individual** failure of ER, since the global 'Energy insufficient' details are for the
+baseline. It'd also be nice to get the seconds delay caused by that, at both the global level
+and details level."*
+
+Correct on the diagnosis: `energyCost` is measured once, on the baseline config, where the
+subject wears an ER value and a set bonus and no substats. It describes *that* build, and every
+result row is a different one.
+
+**Both are computable from runs already made — no extra gcsim work.**
+
+- **Per row.** Each row has its own artifact-borne ER, and `burstsAt(sweep, rowEr)` already
+  reads the ladder. So a row can say what the subject casts *at its own ER*, against the
+  ladder's ceiling rather than against the counterfactual (see §21). The ladder varies only the
+  subject's ER — teammates keep their equipped gear — so a per-row line can honestly speak
+  about the optimized character and must not claim anything about the others.
+- **Seconds.** `insufficient_energy` is 0 for a gated rotation, which is why the warning counts
+  bursts. But gcsim reports `statistics.duration`, `rotation-stats.ts` already parses it, and
+  Calculate already displays it. The team-level delay is `duration(real) − duration(free)` from
+  the two aggregates the search already runs; the per-row figure needs `duration` added to
+  `EnergyObservation` and a `durationAt(sweep, er)` beside `dpsAt`, read off ladder runs that
+  are already happening.
+
+The one design question is where the per-row line lives — on the row itself, or inside its
+Details pane. Details is the safer default: the row is already dense, and this is a fact about
+one build rather than a comparison between them.
+
+
+## 21a. "More ER cannot buy less" is false — measured, and the correction
+
+Asked by the owner, 2026-09-01: *"There's really no ER that gets to the 5 bursts? That seems
+unusual."* A fair challenge, and answering it properly falsified the premise this repo had just
+written into `dpsAt`.
+
+Native gcsim, the owner's own team and rotation, 100 iterations, fixed 90-second duration —
+pushed past anything the browser ladder sweeps:
+
+| artifact ER | 0.3 | 0.6 | 1.0 | 1.5 | **2.0** | **3.0** | 5.0 | free |
+|---|---|---|---|---|---|---|---|---|
+| team DPS | 154,106 | 157,499 | 157,359 | 157,471 | **139,387** | 141,487 | 141,812 | 154,241 |
+| Furina bursts | 2 | 2.74 | 3 | 3 | 3 | **5** | 5 | 5 |
+| Skirk bursts | 3 | 3 | 3 | 3 | 3 | **2** | 2 | 4 |
+
+**Five bursts is reachable — at ~300 % artifact ER**, which no build gets near (an ER sands is
+51.8 %, plus an ER weapon and rolls tops out around 130 %). So "3 is the ceiling" is right in
+practice and wrong as stated, and the owner was right to find it odd.
+
+**And the route there costs DPS.** An 11.5 % collapse between 1.5 and 2.0 with *identical* burst
+counts, and at 3.0 Furina's two extra bursts cost Skirk one of his. A `while 1` rotation runs
+for a fixed duration, so a cast that becomes affordable **consumes time another character was
+using**. Energy is not a free parameter of a fixed sequence, and it is not monotone in team DPS.
+
+### What this does and does not change
+
+The running maximum **stays**, and its reason is rewritten. It is not "monotonicity is a law";
+it is: *`ENERGY_LADDER` stops at 1.0, the curve is monotone below that, and the reversals inside
+it measure 0.12 % — the noise of a 60-iteration mean.* Both the docstring and
+`recipe-energy.spec.ts` now carry that, including a test that asserts the **limitation** rather
+than hiding it: given a ladder with a real decline, `dpsAt` flattens it. That case cannot arise
+today because no such rung is swept. **Raise `ENERGY_LADDER` past ~1.5 and the running max
+becomes a build scored on a peak it does not have.**
+
+### And a third conflation in the warning
+
+`ignore_burst_energy` frees **the whole team**, not the character being optimized: the
+counterfactual gives Skirk 4 bursts and Escoffier 4, more than any ER gives them. So "Furina
+casts 2 of 5" is measured against a world where nobody pays for anything, and the rotation's
+timing differs for everyone in it. The same shape as §19's Skirk problem, one level up — an
+honest per-character number needs a per-character counterfactual, or the ladder's own ceiling.
+That is now the specification for §22's per-row line.

@@ -108,7 +108,12 @@ const PREFIX = 'mistilteinn:recipe:';
 // serving that after the fix, so ER would go on being pruned and the owner would again run a
 // fresh optimize and see nothing change. Same shape as 3, one layer further out: the field is
 // present in both versions and what *populates* it changed.
-const SCHEMA = 4;
+//
+// **5: the ladder is measured differently.** `meta` gained `calibratedEnergyRecharge`, the
+// sweep gained a rung at the build's own ER, `ENERGY_LADDER_RUNS` went 20 → 60, and `dpsAt`
+// now reads a running maximum. A v4 entry holds a 20-iteration sweep with no baseline rung, and
+// `energyRatio` would fall back to the old denominator and quietly score on it.
+const SCHEMA = 5;
 
 export function cacheKey(key: RecipeCacheKey): string {
   return [

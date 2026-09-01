@@ -196,8 +196,16 @@ export function evaluateRecipe(recipe: Recipe, stats: CandidateStats): number {
  */
 export function energyRatio(recipe: Recipe, stats: CandidateStats): number {
   const sweep = recipe.meta.energySweep;
-  const calibrated = recipe.meta.calibratedEnergyDps;
-  if (!sweep?.length || !calibrated) return 1;
+  if (!sweep?.length) return 1;
+  // **Both sides off the same ladder.** The denominator used to be `calibratedEnergyDps`, a
+  // 100-iteration aggregate, against a numerator floored onto a 20-iteration rung — so the
+  // ratio at the calibration's own ER was 0.928 rather than 1, and the two measurements'
+  // noise added instead of cancelling. `calibratedEnergyRecharge` is read through the same
+  // `dpsAt`, which makes the ratio exactly 1 there whatever the rungs happen to say.
+  const baseline = recipe.meta.calibratedEnergyRecharge !== undefined
+    ? dpsAt(sweep, recipe.meta.calibratedEnergyRecharge)
+    : recipe.meta.calibratedEnergyDps ?? null;
+  if (!baseline) return 1;
   const at = dpsAt(sweep, stats.energyRecharge);
-  return at === null ? 1 : at / calibrated;
+  return at === null ? 1 : at / baseline;
 }

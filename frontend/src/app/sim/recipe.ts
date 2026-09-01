@@ -231,6 +231,21 @@ export interface RecipeMeta {
   /** Team DPS at the ER the calibration itself ran at — what every rung is measured against. */
   calibratedEnergyDps?: number;
   /**
+   * The artifact-borne ER the calibration ran at, so a ratio can be taken **against the same
+   * ladder** rather than against a separately-measured number.
+   *
+   * `calibratedEnergyDps` is a 100-iteration aggregate; every rung is 20 iterations at a
+   * different ER. Dividing one by the other meant `energyRatio` did not return 1 at the
+   * calibration point — measured at **0.928** for the owner's Furina, whose 0.279 artifact ER
+   * floors to the 0.20 rung (142,380) while the aggregate read 153,417. Two different
+   * measurements of the same build, disagreeing by the width of a rung.
+   *
+   * With this, the denominator is `dpsAt(sweep, calibratedEnergyRecharge)`: same ladder, same
+   * iteration count, same flooring, so the ratio is 1 at the calibration point by construction
+   * and the rungs' shared noise divides out instead of accumulating.
+   */
+  calibratedEnergyRecharge?: number;
+  /**
    * The catalogue id of the 4-piece set this recipe was calibrated with, or `null` for a
    * calibration that equipped none.
    *

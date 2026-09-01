@@ -116,3 +116,76 @@ describe('burstsAt and dpsAt', () => {
     expect(burstsAt(bare, 0.4)).toBe(4);
   });
 });
+
+
+describe('dpsAt — more ER cannot buy less', () => {
+  /**
+   * The owner's real ladder, 2026-09-01, at the 20 iterations per rung this was measured with.
+   * It is **non-monotonic in both columns**: 157,761 DPS at 0.45 ER against 154,314 at 0.60,
+   * with the burst count falling 2.8 → 2.5 for *more* energy. Neither can happen — every burst
+   * is gated on `.ready`, so extra energy brings a cast forward or changes nothing.
+   *
+   * Kept as the fixture because it is the measurement that motivated the running maximum, and
+   * a synthetic ladder would not have the shape that caused the bug.
+   */
+  const owners = [
+    { energyRecharge: 0.2, burstInstances: 2, standardDeviation: 0, dps: 142380 },
+    { energyRecharge: 0.3, burstInstances: 2, standardDeviation: 0, dps: 152589 },
+    { energyRecharge: 0.45, burstInstances: 2.8, standardDeviation: 0.41, dps: 157761 },
+    { energyRecharge: 0.6, burstInstances: 2.5, standardDeviation: 0.51, dps: 154314 },
+    { energyRecharge: 0.8, burstInstances: 3, standardDeviation: 0, dps: 158306 },
+    { energyRecharge: 1.0, burstInstances: 3, standardDeviation: 0, dps: 156188 },
+  ];
+
+  /**
+   * **The ladder's top rung is what makes the running max safe**, and this pins it.
+   *
+   * "More ER cannot buy less" was the original justification and it is false: measured
+   * natively on the same team, team DPS falls 11.5 % between 1.5 and 2.0 artifact ER, and at
+   * 3.0 Furina's two extra bursts cost Skirk one of his — a `while 1` rotation runs for a
+   * fixed duration, so a cast that becomes affordable consumes time somebody else was using.
+   *
+   * The running max is safe only because `ENERGY_LADDER` stops at 1.0, inside the monotone
+   * region. If that constant is ever raised past ~1.5 this test should start failing, which is
+   * the point of it.
+   */
+  it('never reads a rung the candidate cannot pay for, and flattens one it can', () => {
+    const displacing = [
+      { energyRecharge: 1.0, burstInstances: 3, standardDeviation: 0, dps: 157471 },
+      { energyRecharge: 2.0, burstInstances: 3, standardDeviation: 0, dps: 139387 },
+    ];
+    // Sound half: a build at 1.0 is never credited a rung above it.
+    expect(dpsAt(displacing, 1.0)).toBe(157471);
+    // **The limitation, asserted rather than hidden.** A build at 2.0 is handed 1.0's number,
+    // because the running max refuses the decline — and here the decline was *real*. This is
+    // exactly why `ENERGY_LADDER` stopping at 1.0 is load-bearing: no such rung exists, so the
+    // case never arises in production. Raise that constant past ~1.5 and this becomes a build
+    // scored on a peak it does not have.
+    expect(dpsAt(displacing, 2.0)).toBe(157471);
+  });
+
+  it('does not let a noisy dip cost a candidate that paid more', () => {
+    // Without the running max this returned 154,314 — scoring a build with 0.60 ER 2.2 % below
+    // one with 0.45, for no reason but which side of a coin flip its gcsim run fell.
+    expect(dpsAt(owners, 0.6)).toBe(157761);
+    expect(dpsAt(owners, 1.0)).toBe(158306);
+  });
+
+  it('still steps, rather than interpolating', () => {
+    // Between two rungs the honest answer is the lower one's: each is a measurement, and a
+    // point between them is not.
+    expect(dpsAt(owners, 0.44)).toBe(152589);
+    expect(dpsAt(owners, 0.3)).toBe(152589);
+  });
+
+  it('reads the lowest rung for a build below the whole ladder', () => {
+    // Returning null here would disable ER weighting for exactly the builds shortest of it.
+    expect(dpsAt(owners, 0.05)).toBe(142380);
+  });
+
+  it('is null only when nothing was measured', () => {
+    expect(dpsAt([], 0.5)).toBeNull();
+    expect(dpsAt([{ energyRecharge: 0.2, burstInstances: 2, standardDeviation: 0 }], 0.5))
+      .toBeNull();
+  });
+});

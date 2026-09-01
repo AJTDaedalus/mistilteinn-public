@@ -93,9 +93,15 @@ export interface CalibrationCaveats {
   /**
    * The subset of the above belonging to states that **did not score the ranking**.
    *
-   * Only the baseline, today. It is calibrated because the upgrade list needs it to score a
-   * swap that breaks the winner's set (§10) — but `searchRecipe` picks its states from
-   * `fourPieceSets`, which never contains `null`, so no result row was ever scored with it.
+   * Only the baseline, today. It is calibrated because it is the run the energy measurement is
+   * taken on — the aggregate, the free-energy counterfactual and the ER ladder, which
+   * `shareEnergyMeasurement` then hands to every other recipe — but `searchRecipe` picks its
+   * states from `fourPieceSets`, which never contains `null`, so no result row was ever scored
+   * with it.
+   *
+   * It used to be justified by the per-slot upgrade list, which is gone (2026-09-01): on an
+   * exact search that list was provably empty, because a single-slot swap keeping the same
+   * 4-piece state is a combination the walk already scored and the winner already beat.
    *
    * **Reported apart because it was judging a ranking it took no part in.** Its instability
    * flipped the page to "Scoring unreliable", which is a claim about the order of the
@@ -154,7 +160,22 @@ function withFreeEnergy(config: string): string {
  * either side of it were unambiguous.
  */
 const ENERGY_LADDER = [0.2, 0.3, 0.45, 0.6, 0.8, 1.0] as const;
-const ENERGY_LADDER_RUNS = 20;
+
+/**
+ * Iterations per rung.
+ *
+ * **Raised from 20 because the ladder was measuring its own noise.** On the owner's Furina the
+ * 20-iteration sweep came back *non-monotonic* — 157,761 DPS at 0.45 ER against 154,314 at
+ * 0.60, with the burst count falling 2.8 → 2.5 for more energy, which cannot happen. The whole
+ * signal above 0.30 ER is +3.7 %, so 2.2 % of noise was over half of it.
+ *
+ * `AGGREGATE_RUNS = 100` is the calibrated figure and `CLAUDE.md` records the mean moving only
+ * 0.3 % between 25 and 100 iterations, so the aggregate is not where precision was missing.
+ * 60 is chosen against the cost: a rung of the owner's 90-second rotation is ~2.3 s at 20, so
+ * the ladder goes from ~14 s to ~42 s inside a search that already takes minutes — and
+ * `dpsAt`'s running maximum handles whatever noise is left rather than trusting it.
+ */
+const ENERGY_LADDER_RUNS = 60;
 
 /**
  * Per-character action counts from gcsim's aggregate, keyed `"<character> <action>"`.
@@ -221,6 +242,7 @@ export function shareEnergyMeasurement(recipes: readonly Recipe[]): void {
     if (recipe === donor) continue;
     recipe.meta.energySweep = donor.meta.energySweep;
     recipe.meta.calibratedEnergyDps = donor.meta.calibratedEnergyDps;
+    recipe.meta.calibratedEnergyRecharge = donor.meta.calibratedEnergyRecharge;
     // The warning is a property of the team and the rotation, so it belongs on all of them —
     // `caveats.energyCost` already reports it once for the run rather than once per set.
     recipe.meta.energyCost ??= donor.meta.energyCost;
@@ -407,6 +429,8 @@ export class RecipeOptimizeService {
           recipe.meta.energySweep = sweep;
           // The calibration's own DPS, which every rung is measured against.
           recipe.meta.calibratedEnergyDps = aggregate?.dps?.mean ?? undefined;
+          // The ER the ladder's own baseline rung sits at — see `calibratedEnergyRecharge`.
+          recipe.meta.calibratedEnergyRecharge = configs.energy_recharge;
           return recipe;
         };
 
@@ -543,7 +567,13 @@ export class RecipeOptimizeService {
     if (burst === null) return { burst: null, sweep: undefined };
 
     const sweep: EnergyObservation[] = [];
-    for (const energyRecharge of ENERGY_LADDER) {
+    // **The calibration's own ER is a rung.** Without it the baseline is floored onto whatever
+    // rung sits below — 0.279 onto 0.20 for the owner's Furina — so `energyRatio`'s denominator
+    // described a build with 8 % less ER than the one being optimized, and every candidate on
+    // the same rung was compared against it rather than against itself.
+    const rungs = [...new Set([...ENERGY_LADDER, configs.energy_recharge])]
+      .sort((a, b) => a - b);
+    for (const energyRecharge of rungs) {
       // The same config with a different ER on the calibration's own stats line — the shape
       // `_config`'s `extra` already produces server-side, applied here because a sweep is a
       // client decision made after seeing the aggregate.

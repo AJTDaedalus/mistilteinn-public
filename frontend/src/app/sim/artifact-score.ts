@@ -1,3 +1,25 @@
+/**
+ * **Nothing in `app/` calls this module as of 2026-09-01, and that is recorded rather than
+ * hidden.**
+ *
+ * Its only consumer was Optimize's per-slot "better pieces" list, removed on the owner's
+ * ruling: on an *exact* search that list is provably empty, because a single-slot swap keeping
+ * the same 4-piece state is a combination the walk already scored and the winner already beat.
+ * Its rows were only ever set-breaking swaps, and *"there's no point calculating 'better
+ * pieces' that lose the 4p bonus. That's never a thing."*
+ *
+ * Kept, not deleted, because the *other* half of this file is the feature
+ * `DESIGN_artifact_ranking.md` and `AUDIT_fribbels_parity.md` §5 both ask for and neither has
+ * built: **"is this piece any good?"** on the inventory page — a score for one artifact against
+ * one build, independent of a five-piece search, with the signed delta the audit names as the
+ * thing that turns a sortable list into a decidable one.
+ *
+ * This repo's standing lesson is that a subsystem wired to nothing is found by building
+ * something that needs it, never by reading — `createGpuKernel` and `POST /sim-runs` both sat
+ * here. So: `scoreForSlot` and `scoreArtifact` are tested, correct, and have no caller. If that
+ * is still true when someone next reads this and §5 is still unbuilt, delete them.
+ */
+
 import { type Recipe } from './recipe';
 import { evaluateRecipe } from './recipe-eval';
 import { candidateStatsFrom } from './recipe-search';

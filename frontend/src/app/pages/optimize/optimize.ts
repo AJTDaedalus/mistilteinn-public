@@ -25,7 +25,6 @@ import type { ArtifactSetChoice } from './optimize.service';
 import { RotationsService } from '../rotations/rotations.service';
 import { TeamsService, type TeamRead } from '../teams/teams.service';
 import { isFilterableMainStat, sortMainStats } from '../../shared/stat-order';
-import { scoreForSlot } from '../../sim/artifact-score';
 import type { Recipe } from '../../sim/recipe';
 import { evaluateRecipe } from '../../sim/recipe-eval';
 import {
@@ -166,9 +165,6 @@ const ONE_ROLL: Readonly<Record<string, { roll: number; quantity: string }>> = {
 export const SLOT_ORDER = [
   'equip_bracer', 'equip_necklace', 'equip_shoes', 'equip_ring', 'equip_dress',
 ];
-
-/** How many alternatives to name per slot. Enough to choose from, few enough to read. */
-const UPGRADES_PER_SLOT = 3;
 
 /**
  * Search a user's own artifacts, in their own browser.
@@ -583,7 +579,7 @@ export class OptimizePage implements OnInit {
    * - a piece it wears was not in the search's candidate pool (a main-stat filter removed it),
    *   so its stats are not to hand;
    * - it wears a 4-piece nobody calibrated, and scoring it on another set's recipe would
-   *   credit it a bonus it does not have — the same mistake §10 just removed from `upgrades`.
+   *   credit it a bonus it does not have — §10's mistake, in the list that used to sit below.
    *
    * The caller falls back to rank 1, which is the owner's stated fallback for a character with
    * no build at all.
@@ -611,8 +607,8 @@ export class OptimizePage implements OnInit {
     // A build wearing no 4-piece is scorable only if the no-four-piece recipe exists; a build
     // wearing one nobody calibrated is not scorable at all. Both come back null here rather
     // than borrowing another set's recipe, which would credit a bonus the build does not have
-    // — the mistake §10 removed from `upgrades`, and it would be worse here because every row
-    // on the page is a percentage of this number.
+    // — §10's mistake, and it would be worse here because every row on the page is a
+    // percentage of this number.
     const recipe = fourPiece === null
       ? calibrated.noFourPiece
       : calibrated.byFourPieceSet.get(fourPiece);
@@ -991,15 +987,6 @@ export class OptimizePage implements OnInit {
   /** The five slot pools of the winning build, in `SLOTS` order — what a swap is measured against. */
   protected readonly winningPools = signal<Record<string, number>[] | null>(null);
   /**
-   * The no-four-piece recipe from the same calibration, kept so a swap that *breaks* the
-   * winner's set can be scored under the state it would actually be in.
-   */
-  protected readonly baselineRecipe = signal<Recipe | null>(null);
-  /** The 4-piece set `scoredRecipe` assumes, or null when it is the no-four-piece recipe. */
-  protected readonly scoredSetId = signal<number | null>(null);
-  /** The set each of the winner's five pieces belongs to, in `SLOTS` order. */
-  protected readonly winningSetIds = signal<number[] | null>(null);
-  /**
    * What every row is a percentage *of* — §11, the owner's design.
    *
    * **The character's current build**, scored on whichever calibrated recipe matches the set
@@ -1128,94 +1115,6 @@ export class OptimizePage implements OnInit {
   }
 
   /** Pieces in the inventory that would beat what the winning build wears, per slot. */
-  /**
-   * A piece, named the way a player would recognise it: set and main stat.
-   *
-   * **Not the id.** These are uuid7 and therefore *time-ordered*, so every artifact imported in
-   * the same second shares a prefix — a truncated id rendered `01a04dfd` for all fifteen
-   * upgrades on screen, an identifier that identifies nothing. Seen in a screenshot.
-   */
-  protected describe(id: string): string {
-    const piece = this.candidates().find((c) => c.id === id);
-    if (!piece) return id.slice(0, 8);
-    // `.name`, not the row: `artifactSets()` maps to `{ id, name }`, and interpolating the
-    // object rendered `[object Object]` on every upgrade. Seen in a screenshot.
-    const set = piece.set_id != null ? this.artifactSets().get(piece.set_id)?.name : null;
-    const stat = this.statNames()[piece.main_stat] ?? piece.main_stat;
-    return set ? `${set} · ${stat}` : stat;
-  }
-
-  /**
-   * Better pieces for each slot, **only where the swap keeps the four-piece bonus**.
-   *
-   * §10 made a set-breaking swap score honestly — on the no-four-piece recipe, so it had to
-   * pay for the bonus it removed and still win. That was the right *arithmetic* and the wrong
-   * *list*. Owner ruling, 2026-09-01: **"there's no point calculating 'better pieces' that
-   * lose the 4p bonus. That's never a thing."** A recommendation nobody would ever take is
-   * noise whether or not its number is correct, and a row captioned "costs the set bonus" was
-   * asking the reader to re-adjudicate a decision they had already made.
-   *
-   * | the winning build | swap | now |
-   * |---|---|---|
-   * | five of the set | any slot for an off-set piece | leaves four — offered |
-   * | four + one off-set | a set slot for another off-set piece | leaves three — **not offered** |
-   * | four + one off-set | the off-set slot | stays four — offered |
-   *
-   * So the fallback recipe is gone from here. `noFourPiece` is still calibrated and still
-   * load-bearing — `recipe-search` walks it for combinations that wear no four-piece at all —
-   * but nothing on this list is scored with it any more, which is why every row can be read
-   * as a plain "swap this in".
-   */
-  protected readonly upgrades = computed<
-    { slot: string; rows: { id: string; label: string; delta: number }[] }[]
-  >(() => {
-    const recipe = this.scoredRecipe();
-    const pools = this.winningPools();
-    if (!recipe || !pools) return [];
-
-    const names = this.slotNames();
-    const setOf = new Map<string, number>();
-    const bySlot = new Map<string, { id: string; stats: Record<string, number> }[]>();
-    for (const piece of this.constrained(this.candidates())) {
-      const list = bySlot.get(piece.slot) ?? [];
-      list.push({ id: piece.id, stats: piece.stats });
-      bySlot.set(piece.slot, list);
-      setOf.set(piece.id, piece.set_id ?? -1);
-    }
-
-    // Null when the winner was scored on the no-four-piece recipe: no bonus exists, so no
-    // swap can break one, and every candidate is offerable.
-    const assumed = this.scoredSetId();
-    const worn = this.winningSetIds();
-    const held = assumed === null || !worn
-      ? 0
-      : worn.filter((setId) => setId === assumed).length;
-
-    return SLOT_ORDER.flatMap((slot, index) => {
-      const candidates = bySlot.get(slot) ?? [];
-      if (!candidates.length) return [];
-
-      /** Does putting `id` in this slot still leave four of the assumed set? */
-      const keepsSet = (id: string): boolean => {
-        if (assumed === null || !worn) return true;
-        const without = held - (worn[index] === assumed ? 1 : 0);
-        return without + (setOf.get(id) === assumed ? 1 : 0) >= 4;
-      };
-
-      const scored = scoreForSlot(recipe, pools, candidates, index)
-        // Every row left is scored under the winner's own recipe, because every row left
-        // keeps the bonus that recipe assumes.
-        .filter(({ id }) => keepsSet(id))
-        // **Strictly better only.** A zero delta is the piece already worn, or one identical
-        // to it; listing those as "upgrades" would pad the answer with non-answers.
-        .filter(({ score }) => score.delta > 0)
-        .sort((a, b) => b.score.delta - a.score.delta)
-        .slice(0, UPGRADES_PER_SLOT)
-        .map(({ id, score }) => ({ id, label: this.describe(id), delta: score.delta }));
-      return scored.length ? [{ slot: names[slot] ?? slot, rows: scored }] : [];
-    });
-  });
-
   protected readonly recipeNotes = signal<
     { uncoveredSets: number[]; boundPruned: number } | null
   >(null);
@@ -1514,7 +1413,7 @@ export class OptimizePage implements OnInit {
     const notes = this.caveats();
     if (notes === null) return false;
     // **Only recipes that scored the ranking get to judge it** (owner ruling, 2026-08-31).
-    // The baseline is calibrated so the upgrade list can score a set-breaking swap, but
+    // The baseline is still calibrated — it is where the energy measurement is taken — but
     // `searchRecipe` never visits the no-four-piece state, so no row on screen was scored
     // with it. Its instability was flipping this to "Scoring unreliable" — a claim about an
     // order it played no part in producing.
@@ -1533,9 +1432,9 @@ export class OptimizePage implements OnInit {
   /**
    * The caveats split by whether the recipe they belong to actually scored the ranking.
    *
-   * The baseline's problems are real and worth showing — the upgrade list uses that recipe to
-   * price a swap that breaks the winner's set — but they say nothing about the order of the
-   * results, and printing them in one undifferentiated red block said otherwise.
+   * The baseline's problems are real and worth showing — it is the run the energy ladder and
+   * the free-energy counterfactual are measured on — but they say nothing about the order of
+   * the results, and printing them in one undifferentiated red block said otherwise.
    */
   protected readonly rankingCaveats = computed(() => this.splitCaveats(false));
   protected readonly asideCaveats = computed(() => this.splitCaveats(true));
@@ -1619,9 +1518,6 @@ export class OptimizePage implements OnInit {
   private clearRotationFindings(): void {
     this.scoredRecipe.set(null);
     this.winningPools.set(null);
-    this.baselineRecipe.set(null);
-    this.scoredSetId.set(null);
-    this.winningSetIds.set(null);
     this.comparator.set(null);
     this.calibration.set(null);
     this.caveats.set(null);
@@ -1789,20 +1685,12 @@ export class OptimizePage implements OnInit {
         },
       );
       this.result.set(found);
-      // Keep what the search used, so the marginal table and the per-slot upgrades below can
-      // be computed without a second calibration.
+      // Keep what the search used, so the marginal table can be computed without a second
+      // calibration.
       const winner = found.builds[0];
       const byId = new Map(pieces.map((piece) => [piece.id, piece.stats]));
       const fourPiece = calibrated.byFourPieceSet.get(chosen[0]);
       this.scoredRecipe.set(fourPiece ?? calibrated.noFourPiece);
-      this.baselineRecipe.set(calibrated.noFourPiece);
-      // Null when the winner was scored on the no-four-piece recipe: there is then no bonus a
-      // swap could break, and `upgrades()` must not invent one to protect.
-      this.scoredSetId.set(fourPiece ? chosen[0] : null);
-      const setById = new Map(pieces.map((piece) => [piece.id, piece.set_id ?? -1]));
-      this.winningSetIds.set(
-        winner ? winner.artifactIds.map((id) => setById.get(id) ?? -1) : null,
-      );
       this.winningPools.set(
         winner ? winner.artifactIds.map((id) => byId.get(id) ?? {}) : null,
       );

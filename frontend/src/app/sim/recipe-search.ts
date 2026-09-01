@@ -17,6 +17,7 @@
 
 import type { Recipe } from './recipe';
 import { evaluateRecipe, NO_STATS, type CandidateStats } from './recipe-eval';
+import { dpsAt } from './recipe-energy';
 import {
   SLOTS,
   bucketBySlot,
@@ -175,10 +176,16 @@ export function fourPieceSetOf(setCounts: Readonly<Record<number, number>>): num
  * read as agreement.
  */
 function energyLadderVaries(recipe: Recipe): boolean {
-  const measured = (recipe.meta.energySweep ?? [])
-    .map((point) => point.dps)
-    .filter((dps): dps is number => typeof dps === 'number');
-  return new Set(measured).size > 1;
+  const sweep = recipe.meta.energySweep ?? [];
+  const ers = sweep.map((point) => point.energyRecharge);
+  if (!ers.length) return false;
+  // **Read through `dpsAt`, not off the rungs.** `dpsAt` takes a running maximum, because more
+  // ER cannot buy less and a ladder that decreases is reporting its noise. Comparing the raw
+  // rungs would call a genuinely flat ladder "varying" whenever two runs disagreed, and keep
+  // ER live — and so unpruned — for every search where it buys nothing.
+  const lo = dpsAt(sweep, Math.min(...ers));
+  const hi = dpsAt(sweep, Math.max(...ers));
+  return lo !== null && hi !== null && hi > lo;
 }
 
 /**

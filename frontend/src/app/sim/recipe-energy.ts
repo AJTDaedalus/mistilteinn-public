@@ -128,18 +128,65 @@ export function burstsAt(
  *
  * A step function for the same reason `burstsAt` is: each rung is a gcsim run, and between two
  * of them the honest answer is the lower one's.
+ *
+ * ## The running maximum, and the claim that does *not* justify it
+ *
+ * **"More ER cannot buy less" is false, and was measured false.** That was this function's
+ * first stated reason and it does not survive contact with gcsim. Native run on the owner's
+ * team, 100 iterations, fixed 90-second duration:
+ *
+ * | artifact ER | 0.3 | 0.6 | 1.0 | 1.5 | 2.0 | 3.0 | 5.0 |
+ * |---|---|---|---|---|---|---|---|
+ * | team DPS | 154,106 | 157,499 | 157,359 | 157,471 | **139,387** | 141,487 | 141,812 |
+ * | Furina bursts | 2 | 2.74 | 3 | 3 | 3 | **5** | 5 |
+ * | Skirk bursts | 3 | 3 | 3 | 3 | 3 | **2** | 2 |
+ *
+ * An 11.5 % collapse at 2.0, and at 3.0 Furina's two extra bursts cost Skirk one of his. A
+ * `while 1` rotation runs for a fixed duration, so a cast that becomes affordable **consumes
+ * time another character was using**. Energy is not a free parameter of a fixed sequence.
+ *
+ * The narrower claim is the true one, and it is what this rests on: **over the range the
+ * ladder measures — `ENERGY_LADDER` stops at 1.0, and no build reaches even that without an ER
+ * sands, an ER weapon and rolls — the curve is monotone**, and the reversals inside it are
+ * 0.12 % and 0.14 %, which is the noise of a 60-iteration mean. So this reads the best rung at
+ * or below `energyRecharge` rather than the last one, and it is safe *because the ladder's top
+ * rung is inside the region where the effect is monotone* — not because monotonicity is a law.
+ *
+ * **If `ENERGY_LADDER` is ever extended past ~1.5, this becomes wrong** and the running max
+ * would hand a candidate a peak it cannot actually reach. That is the tripwire on this
+ * function, and it is stated here rather than left to be rediscovered.
+ *
+ * That is not a hypothetical. Measured on the owner's Furina, 2026-09-01, at
+ * `ENERGY_LADDER_RUNS = 20`:
+ *
+ * | artifact ER | 0.20 | 0.30 | 0.45 | 0.60 | 0.80 | 1.00 |
+ * |---|---|---|---|---|---|---|
+ * | team DPS | 142,380 | 152,589 | 157,761 | **154,314** | 158,306 | **156,188** |
+ * | bursts | 2 | 2 | 2.8 | **2.5** | 3 | 3 |
+ *
+ * More ER, *fewer bursts*, twice — and at these rungs that **is** noise, unlike the real
+ * displacement above. The whole signal above 0.30 is +3.7 % and this dip is 2.2 % of it, so
+ * without the running max a candidate landing on the 0.60 rung was scored 2.2 % worse than one
+ * on 0.45 for no reason but which side of a coin flip its gcsim run fell. At 60 iterations the
+ * same ladder reverses by 0.12 %.
+ *
+ * The running max invents no measurement: every value it returns was measured, at an ER the
+ * candidate can actually pay for.
  */
 export function dpsAt(
   sweep: readonly EnergyObservation[],
   energyRecharge: number,
 ): number | null {
-  const rungs = sweep.filter((point) => typeof point.dps === 'number');
-  if (!rungs.length) return null;
-  const ordered = [...rungs].sort((a, b) => a.energyRecharge - b.energyRecharge);
-  let best = ordered[0];
-  for (const point of ordered) {
-    if (point.energyRecharge <= energyRecharge) best = point;
-    else break;
+  let best: number | null = null;
+  for (const point of sweep) {
+    if (typeof point.dps !== 'number') continue;
+    if (point.energyRecharge > energyRecharge) continue;
+    if (best === null || point.dps > best) best = point.dps;
   }
-  return best.dps ?? null;
+  if (best !== null) return best;
+  // Below every rung: the lowest measured one is the closest honest answer, and returning null
+  // would silently disable ER weighting for exactly the builds most short of it.
+  const measured = sweep.filter((p) => typeof p.dps === 'number');
+  if (!measured.length) return null;
+  return measured.reduce((lo, p) => (p.energyRecharge < lo.energyRecharge ? p : lo)).dps ?? null;
 }

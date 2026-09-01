@@ -326,7 +326,7 @@
     <!-- **Split by whether the recipe scored the ranking.** These were one red block, so the
          baseline's instability read as a verdict on the order of the results — an order it
          takes no part in producing, because `searchRecipe` never visits the no-four-piece
-         state. It is calibrated for the upgrade list, and its problems belong to that. -->
+         state. It is calibrated because the energy measurement is taken on it. -->
     @if (rankingCaveats(); as notes) {
       @if (notes.unstable.length) {
         <!-- **Names the ability, not just the fact.** This said only "the rotation did not run
@@ -397,34 +397,6 @@
     <!-- Both of these are free once a rotation search has run: the page still holds the
          calibrated recipe, and an evaluation is 0.048 µs per hit. Calibration was the
          expensive part and it is already paid for. -->
-
-    @if (upgrades().length) {
-      <section class="upgrades">
-        <!-- Renamed: the owner read "pieces that would beat the winner" as contradictory,
-             and fairly — the winner is by definition what won. These are pieces *not in* the
-             winning five that would improve it if swapped into their slot. The scoring defect
-             behind the same section is §10 and is not a wording problem. -->
-        <h2>Better pieces for each slot</h2>
-        <p class="hint">
-          One slot at a time, against the winning build. Swaps that would drop you below four
-          of the set are not offered.
-        </p>
-        @for (group of upgrades(); track group.slot) {
-          <div class="upgrades__slot">
-            <h3>{{ group.slot }}</h3>
-            <ul>
-              @for (row of group.rows; track row.id) {
-                <li>
-                  <span class="mono">+{{ row.delta | number: '1.0-0' }}</span>
-                  <span class="muted">{{ row.label }}</span>
-                </li>
-              }
-            </ul>
-          </div>
-        }
-      </section>
-    }
-
 
     @if (actionError(); as message) {
       <p class="error" role="alert">{{ message }}</p>

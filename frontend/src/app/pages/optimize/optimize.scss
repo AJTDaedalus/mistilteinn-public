@@ -240,23 +240,6 @@
 
    The roll table that used to share these rules moved inside the details pane (§13), where it
    describes the row being read rather than always the winner. */
-.upgrades {
-  margin: var(--space-4) 0 var(--space-4);
-
-  h2 {
-    font-size: var(--text-md);
-    margin-bottom: var(--space-1);
-  }
-
-  h3 {
-    font-size: var(--text-sm);
-    color: var(--ink-dim);
-    margin: 0 0 var(--space-1);
-  }
-
-  .hint { margin: 0 0 var(--space-3); }
-}
-
 /* A table, at the owner's direction — "This needs a lot less explanation and should be a
    table." It was a wrapping flex list of stat/number pairs, which reads as prose. */
 .marginal {
@@ -272,18 +255,6 @@
   td:last-child {
     text-align: right;
     color: var(--ink);
-  }
-}
-
-.upgrades__slot {
-  margin-bottom: var(--space-3);
-
-  ul { list-style: none; margin: 0; padding: 0; }
-
-  li {
-    display: flex;
-    gap: var(--space-3);
-    font-size: var(--text-sm);
   }
 }
 
