@@ -21,6 +21,19 @@ export interface EnergyObservation {
   burstInstances: number;
   /** Spread of that count. **Non-zero means the rotation is not the same every iteration.** */
   standardDeviation: number;
+  /**
+   * Team DPS at this rung.
+   *
+   * **The burst count is not what ER buys.** Measured on the owner's team: Furina's damage is
+   * **98.3 % `AttackTagElementalArt`** and only **1.5 %** burst — the Salon Members are skill
+   * damage, and her burst matters because it *buffs the team*, not because it hits. Scaling
+   * burst-tagged hits was therefore nearly a no-op on the character that motivated the
+   * feature.
+   *
+   * DPS at each rung captures the whole effect — buff uptime, cast frequency, damage — without
+   * attributing any of it to a hit tag.
+   */
+  dps?: number;
 }
 
 /**
@@ -107,4 +120,26 @@ export function burstsAt(
     else break;
   }
   return best.burstInstances;
+}
+
+
+/**
+ * Team DPS at the ER a candidate can pay for, read off the same ladder.
+ *
+ * A step function for the same reason `burstsAt` is: each rung is a gcsim run, and between two
+ * of them the honest answer is the lower one's.
+ */
+export function dpsAt(
+  sweep: readonly EnergyObservation[],
+  energyRecharge: number,
+): number | null {
+  const rungs = sweep.filter((point) => typeof point.dps === 'number');
+  if (!rungs.length) return null;
+  const ordered = [...rungs].sort((a, b) => a.energyRecharge - b.energyRecharge);
+  let best = ordered[0];
+  for (const point of ordered) {
+    if (point.energyRecharge <= energyRecharge) best = point;
+    else break;
+  }
+  return best.dps ?? null;
 }

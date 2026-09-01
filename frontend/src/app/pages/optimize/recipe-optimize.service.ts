@@ -7,7 +7,7 @@ import { SimRunsService } from '../../sim/sim-runs.service';
 import { RotationsService } from '../rotations/rotations.service';
 import { loadGcsim } from '../../sim/gcsim-loader';
 import type { Recipe } from '../../sim/recipe';
-import { BURST_ATTACK_TAG, stabilityFrom } from '../../sim/recipe';
+import { stabilityFrom } from '../../sim/recipe';
 import type { EnergyObservation } from '../../sim/recipe-energy';
 import { pairKey } from '../../sim/recipe-search';
 import {
@@ -365,8 +365,8 @@ export class RecipeOptimizeService {
           // **The ladder rides with the recipe**, because scoring needs it and a cache hit
           // must not come back without it — the same argument `meta.unstable` makes.
           recipe.meta.energySweep = sweep;
-          recipe.meta.calibratedBurstInstances = burst ? instances[burst]?.mean : undefined;
-          recipe.meta.burstAttackTag = BURST_ATTACK_TAG;
+          // The calibration's own DPS, which every rung is measured against.
+          recipe.meta.calibratedEnergyDps = aggregate?.dps?.mean ?? undefined;
           return recipe;
         };
 
@@ -515,10 +515,14 @@ export class RecipeOptimizeService {
         return { burst, sweep: undefined };
       }
       let counts: Record<string, { mean: number; sd: number }>;
+      let rungDps: number | null;
       try {
-        counts = instancesFrom(
-          runConfig(mod, text, ENERGY_LADDER_RUNS).raw, configs.characters,
-        );
+        const run = runConfig(mod, text, ENERGY_LADDER_RUNS);
+        counts = instancesFrom(run.raw, configs.characters);
+        // **What the rung is actually for.** The burst *count* is not what ER buys: the owner's
+        // Furina is 98.3 % skill damage and 1.5 % burst, because her burst buffs the team and
+        // removes the delay rather than hitting hard. DPS at each rung carries all of that.
+        rungDps = run.dps?.mean ?? null;
       } catch {
         // A rung gcsim refuses is a gap in the ladder, not a failed search.
         continue;
@@ -527,6 +531,7 @@ export class RecipeOptimizeService {
       if (at) {
         sweep.push({
           energyRecharge,
+          dps: rungDps ?? undefined,
           burstInstances: at.mean,
           standardDeviation: at.sd,
         });

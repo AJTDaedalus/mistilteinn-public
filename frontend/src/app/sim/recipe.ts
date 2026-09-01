@@ -228,9 +228,8 @@ export interface RecipeMeta {
    * count alone cannot say what a different ER would buy.
    */
   energySweep?: EnergyObservation[];
-  calibratedBurstInstances?: number;
-  /** gcsim's attack tag for a burst hit, so scoring knows which hits the ladder governs. */
-  burstAttackTag?: number;
+  /** Team DPS at the ER the calibration itself ran at — what every rung is measured against. */
+  calibratedEnergyDps?: number;
   /**
    * The catalogue id of the 4-piece set this recipe was calibrated with, or `null` for a
    * calibration that equipped none.

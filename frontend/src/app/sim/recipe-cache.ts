@@ -93,7 +93,16 @@ const PREFIX = 'mistilteinn:recipe:';
  * Bumping it makes every older entry miss and recalibrate. That costs one calibration and is
  * the cheap direction; the other direction hands a caller half a recipe.
  */
-const SCHEMA = 2;
+// **3: the recipe carries what energy costs.** `meta` gained `energyCost`, `energySweep`,
+// `calibratedEnergyDps` and `burstAttackTag`; a v2 entry has none of them, so a cache hit came
+// back silent — no warning, and ER weighted at a flat ratio of 1. The owner ran a fresh
+// optimize after the deploy and saw exactly nothing change.
+//
+// **This is the fourth time this cache served something its key did not describe** —
+// `meta.unstable` (#195), the probe (#202), the rotation's steps (#207), and now a new field
+// with no version behind it. The first three were keys that omitted an input; this is a
+// *shape* change, which the version is what guards.
+const SCHEMA = 3;
 
 export function cacheKey(key: RecipeCacheKey): string {
   return [

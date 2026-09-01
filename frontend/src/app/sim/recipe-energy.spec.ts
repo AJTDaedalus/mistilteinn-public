@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   burstsAt,
+  dpsAt,
   energyShortfall,
   minimumEnergyRecharge,
   type EnergyObservation,
@@ -86,32 +87,32 @@ describe('energyShortfall', () => {
 });
 
 
-describe('burstsAt', () => {
-  /** A ladder like the sweep's: one gcsim run per rung, on the same config. */
+describe('burstsAt and dpsAt', () => {
   const SWEEP = [
-    { energyRecharge: 0.0, burstInstances: 2, standardDeviation: 0 },
-    { energyRecharge: 0.2, burstInstances: 3, standardDeviation: 0 },
-    { energyRecharge: 0.4, burstInstances: 4, standardDeviation: 0 },
-    { energyRecharge: 0.6, burstInstances: 5, standardDeviation: 0 },
+    { energyRecharge: 0.0, burstInstances: 2, standardDeviation: 0, dps: 150000 },
+    { energyRecharge: 0.2, burstInstances: 3, standardDeviation: 0, dps: 170000 },
+    { energyRecharge: 0.4, burstInstances: 4, standardDeviation: 0, dps: 190000 },
   ];
 
-  it('is a step function, because bursts are integers', () => {
-    // You do not get four fifths of a burst for being four fifths of the way to affording it.
+  it('reads the ladder as a step function, because each rung is a run', () => {
     expect(burstsAt(SWEEP, 0.39)).toBe(3);
-    expect(burstsAt(SWEEP, 0.40)).toBe(4);
+    expect(dpsAt(SWEEP, 0.39)).toBe(170000);
   });
 
   it('holds the floor below the ladder and the ceiling above it', () => {
-    expect(burstsAt(SWEEP, -0.1)).toBe(2);
-    expect(burstsAt(SWEEP, 5)).toBe(5);
+    expect(dpsAt(SWEEP, -1)).toBe(150000);
+    expect(dpsAt(SWEEP, 9)).toBe(190000);
   });
 
-  it('reads an unsorted ladder the same way', () => {
-    expect(burstsAt([...SWEEP].reverse(), 0.45)).toBe(4);
-  });
-
-  it('says nothing when no ladder was measured', () => {
-    // Null rather than a guess: a sweep that never ran is not a rotation with no bursts.
+  it('says nothing when the ladder was never measured', () => {
     expect(burstsAt([], 0.4)).toBeNull();
+    expect(dpsAt([], 0.4)).toBeNull();
+  });
+
+  it('says nothing when the ladder carries no DPS', () => {
+    // An older recipe, from before the rungs were priced.
+    const bare = SWEEP.map(({ dps: _dps, ...rest }) => rest);
+    expect(dpsAt(bare, 0.4)).toBeNull();
+    expect(burstsAt(bare, 0.4)).toBe(4);
   });
 });

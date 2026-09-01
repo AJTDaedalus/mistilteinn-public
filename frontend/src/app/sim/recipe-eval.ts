@@ -34,7 +34,7 @@ import {
   type Recipe,
   type RecipeHit,
 } from './recipe';
-import { burstsAt } from './recipe-energy';
+import { dpsAt } from './recipe-energy';
 
 /**
  * A candidate's artifact-borne stats, keyed the way `search.ts` keys them.
@@ -168,36 +168,36 @@ export function evaluateHit(hit: RecipeHit, stats: CandidateStats): number {
  * is not a weight to apply here.
  */
 export function evaluateRecipe(recipe: Recipe, stats: CandidateStats): number {
-  const ratio = burstRatio(recipe, stats);
+  // **One factor for the whole character, not per hit.** What Energy Recharge buys is a burst
+  // that lands on time — and a burst's worth is rarely its own damage. Measured on the owner's
+  // Furina: **98.3 % of her damage is skill-tagged and 1.5 % is burst**, because her burst
+  // buffs the team and removes the delay the rotation spends waiting for it. Scaling
+  // burst-tagged hits therefore moved 1.5 % of the damage on the character the feature exists
+  // for.
+  //
+  // The ladder measures team DPS at each ER instead, which carries the buff, the delay and the
+  // damage together without attributing any of them to a hit.
+  const ratio = energyRatio(recipe, stats);
   let total = 0;
-  for (const hit of recipe.hits) {
-    const damage = evaluateHit(hit, stats);
-    // **Only burst hits move with the burst count.** Scaling everything would charge a
-    // character's normals for a burst they could not afford, which is a different and much
-    // larger claim than the ladder measured.
-    total += ratio !== 1 && hit.mine && hit.attackTag === recipe.meta.burstAttackTag
-      ? damage * ratio
-      : damage;
-  }
-  return total;
+  for (const hit of recipe.hits) total += evaluateHit(hit, stats);
+  return ratio === 1 ? total : total * ratio;
 }
 
 /**
- * How many bursts this candidate's Energy Recharge buys, against the calibration's own count.
+ * What this candidate's Energy Recharge does to the rotation, against the calibration's.
  *
- * **1 when the ladder cannot answer**, which is the honest default: no sweep was measured, or
- * the recipe does not know which hits are bursts, so nothing is scaled and the ranking is
- * exactly what it was before ER entered it.
+ * **1 when the ladder cannot answer** — no sweep, or no calibration DPS to compare against —
+ * which is the honest default: nothing is scaled and the ranking is what it was before ER
+ * entered it.
  *
- * Above the threshold the ladder returns the same count and the ratio is 1 — ER stops being
- * worth anything, which is the behaviour the owner described. Below it, a candidate that
- * cannot cast the burst the recipe was calibrated for stops being scored as though it could.
+ * Above the threshold the ladder returns the same DPS and the ratio is 1, so ER stops being
+ * worth anything. Below it, a candidate that cannot cast the burst on time is scored for the
+ * rotation it actually performs rather than the one the recipe was calibrated for.
  */
-export function burstRatio(recipe: Recipe, stats: CandidateStats): number {
+export function energyRatio(recipe: Recipe, stats: CandidateStats): number {
   const sweep = recipe.meta.energySweep;
-  const calibrated = recipe.meta.calibratedBurstInstances;
-  if (!sweep?.length || !calibrated || recipe.meta.burstAttackTag === undefined) return 1;
-  const affordable = burstsAt(sweep, stats.energyRecharge);
-  if (affordable === null) return 1;
-  return affordable / calibrated;
+  const calibrated = recipe.meta.calibratedEnergyDps;
+  if (!sweep?.length || !calibrated) return 1;
+  const at = dpsAt(sweep, stats.energyRecharge);
+  return at === null ? 1 : at / calibrated;
 }
