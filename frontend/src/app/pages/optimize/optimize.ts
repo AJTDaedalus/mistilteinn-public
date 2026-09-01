@@ -36,6 +36,7 @@ import { describeStat } from '../../shared/stat-label';
 import { substatReadings } from '../../shared/substat-bars/substat-bars';
 import { groupStats, type StatAccount, type StatGroup } from '../../shared/stat-groups';
 import { energyShortfall, type EnergyShortfall } from '../../sim/recipe-energy';
+import { damageShare, type CharacterShare } from '../../sim/damage-share';
 import {
   candidateStatsFrom,
   liveQuantitiesFor,
@@ -637,6 +638,22 @@ export class OptimizePage implements OnInit {
       (shown.result.totals ?? {}) as Record<string, number>,
       this.slotNames(),
     );
+  });
+
+  /**
+   * Who actually deals this row's damage — gcsim reports it and this page did not.
+   *
+   * Evaluated with the row's own pieces, so it is the share *for this result*: the optimized
+   * character's slice grows with their artifacts while teammates stay where gcsim measured
+   * them. It is also what makes a small delta legible — a build whose teammates are 86% of the
+   * damage cannot move the total much, and that is the rotation's shape rather than a fault.
+   */
+  protected readonly rowDamageShare = computed<CharacterShare[]>(() => {
+    const row = this.pairing()?.row;
+    const recipe = this.scoredRecipe();
+    if (!row || !recipe) return [];
+    const pools = this.poolsFor(row);
+    return pools ? damageShare(recipe, candidateStatsFrom(pools)) : [];
   });
 
   /** The cards for one row, in the order the row names its pieces. */

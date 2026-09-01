@@ -584,6 +584,11 @@ class CalibrationConfigs(BaseModel):
     energy_recharge: float
     #: What the probe moved, so a caller can say why a conversion resolved or did not.
     probe_deltas: dict[str, float]
+    #: The same characters as `characters`, in the same order, as a player reads them.
+    #:
+    #: gcsim's keys are `kaedeharakazuha`; a damage-share row wants "Kaedehara Kazuha". Sent
+    #: rather than prettified client-side because no rule turns one into the other.
+    character_names: list[str] = []
     #: The gcsim keys this config declares, **in the order it declares them**.
     #:
     #: gcsim's aggregate reports `character_actions` as a positional list with no names in it,

@@ -26,6 +26,7 @@ const STATIC = 2;
 
 const hit = (over: Partial<RecipeHit> = {}): RecipeHit => ({
   mine: true,
+  owner: 0,
   abil: 'x', attackTag: 1, element: 'cryo', talent: 2, scaling: 'atk', flatDamage: 0,
   calibratedScaling: 1000, conversions: {},
   calibratedBase: { atk: 1000, hp: 10000, def: 800 },
@@ -40,7 +41,7 @@ const recipe = (hits: RecipeHit[], calibratedSetId: number | null = null): Recip
   seed: '1',
   meta: {
     seed: '1',
-    staleConversions: [], unstable: [],
+    staleConversions: [], characters: [], unstable: [],
     // Plural since B.3: a 2+2 calibration equips two sets. This helper still takes one,
     // because every case here is a 4-piece or none.
     calibratedSetIds: calibratedSetId === null ? [] : [calibratedSetId],

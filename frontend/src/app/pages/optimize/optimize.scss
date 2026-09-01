@@ -440,3 +440,49 @@
 
   .quantity { color: var(--ink); }
 }
+
+/* Damage share, the way gcsim reports it: who actually deals this rotation's damage. The
+   optimized character's row is brass — it is the one the search is choosing for, and on a
+   support-heavy team it is easy to miss how small a slice it is. */
+.share__title {
+  font-size: var(--text-sm);
+  color: var(--ink-dim);
+  margin: 0 0 var(--space-1);
+}
+
+.share {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+
+  li {
+    display: grid;
+    grid-template-columns: minmax(7rem, 10rem) 1fr minmax(3.5rem, auto);
+    gap: var(--space-2);
+    align-items: center;
+    font-size: var(--text-sm);
+    color: var(--ink-dim);
+  }
+}
+
+.share__bar {
+  display: block;
+  height: 0.5rem;
+  background: color-mix(in srgb, var(--surface-rule) 60%, transparent);
+  border-radius: var(--radius-1);
+
+  i {
+    display: block;
+    height: 100%;
+    border-radius: var(--radius-1);
+    background: var(--mint);
+  }
+}
+
+.share__pct { text-align: right; }
+
+.share--mine {
+  color: var(--brass-hi);
+
+  .share__bar i { background: var(--brass); }
+}

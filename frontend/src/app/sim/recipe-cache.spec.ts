@@ -23,12 +23,13 @@ const KEY: RecipeCacheKey = {
   gcsimPin: 'abc123', buildId: 'b1', rotationId: 'r1',
   artifactSetId: 's1', energyRecharge: 0.3, seed: '12345',
   probe: 'atk%=0.5,def%=0.7,hp%=0.3',
+  context: 'ctx-abc123',
 };
 
 const RECIPE = {
   hits: [], seed: '12345',
   meta: {
-    seed: '12345', staleConversions: [], unstable: [],
+    seed: '12345', staleConversions: [], characters: [], unstable: [],
     calibratedSetIds: [1], minimumEnergyRecharge: 0.3,
   },
 } as unknown as Recipe;
@@ -55,6 +56,7 @@ describe('cacheKey', () => {
     ['energyRecharge', { energyRecharge: 0.4 }],
     ['seed', { seed: '99' }],
     ['probe', { probe: 'def%=0.5' }],
+    ['context', { context: 'ctx-different' }],
   ] as const)('changes when %s changes', (_name, over) => {
     expect(cacheKey({ ...KEY, ...over })).not.toBe(cacheKey(KEY));
   });
@@ -155,6 +157,37 @@ describe('browserStore', () => {
   });
 });
 
+describe('a rotation is its steps, not its id', () => {
+  /**
+   * **Reported from production:** *"I changed my team and rotation, but when I clicked
+   * optimize it didn't recompute. It just gave me the same damage back."*
+   *
+   * `rotationId` is an id. Editing a rotation's steps, or changing who is on its team, leaves
+   * it unchanged — so the recipe calibrated for the old rotation was still a hit. The context
+   * hash covers the steps, the team, the build's level, weapon and talents, the target and the
+   * pin.
+   *
+   * The third time this cache served something its key did not describe, after `meta.unstable`
+   * and the probe. All three are one shape: something that determines the value, absent from
+   * what identifies it.
+   */
+  it('misses when the rotation behind the same id has changed', () => {
+    const store = memory();
+    writeRecipe(store, KEY, RECIPE);
+
+    expect(readRecipe(store, { ...KEY, context: 'ctx-after-an-edit' })).toBeNull();
+  });
+
+  it('still hits when nothing about the simulation changed', () => {
+    // A key so specific that nothing ever hits would turn every search into a full
+    // recalibration — six seconds a set, which is the cost this cache exists to avoid.
+    const store = memory();
+    writeRecipe(store, KEY, RECIPE);
+
+    expect(readRecipe(store, { ...KEY })).toEqual(RECIPE);
+  });
+});
+
 describe('the probe is part of what identifies a recipe', () => {
   /**
    * **Reported from production, after a fix that appeared to do nothing.** The probe was
@@ -222,7 +255,7 @@ describe('a cached recipe written before a field existed', () => {
     const store = memory();
     store.setItem(cacheKey(KEY), JSON.stringify({
       hits: [], seed: '12345',
-      meta: { seed: '12345', staleConversions: [], calibratedSetIds: [] },
+      meta: { seed: '12345', staleConversions: [], characters: [], calibratedSetIds: [] },
     }));
 
     expect(readRecipe(store, KEY)).toBeNull();

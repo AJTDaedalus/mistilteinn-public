@@ -91,6 +91,13 @@ references/*.png
 !references/mitya_ornament.png
 !references/genshin_optimizer_artifact_info.png
 
+# Saved web pages passed in during review — gcsim's results view, and anything like it.
+# Same reason as the screenshots above, and then some: "Save page as" drags a site's whole
+# vendored bundle in with it (1.8 MB of minified JS, CSS and art the first time), and a
+# third-party dump nobody reads is not a reference. Keep the page on disk and cite the URL.
+references/*.html
+references/*_files/
+
 # Screenshots from `cd backend && python -m scripts.shoot`. Working output, not artefacts.
 screenshots/
 

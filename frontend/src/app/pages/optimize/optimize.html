@@ -568,6 +568,26 @@ beside it is already what you would gain after losing that bonus.">costs the set
                        `sum_of_parts` says upstream that it "is not necessarily the stat". A
                        total computed here would be a second implementation of the damage
                        chain, and a wrong one. -->
+                  <!-- Who deals the damage, which gcsim reports and this page did not. It is
+                       also the context a small delta needs: a build whose teammates are most of
+                       the rotation cannot move the total much. -->
+                  @if (rowDamageShare(); as shares) {
+                    @if (shares.length > 1) {
+                      <h3 class="share__title">Damage share</h3>
+                      <ul class="share">
+                        @for (who of shares; track who.name) {
+                          <li [class.share--mine]="who.mine">
+                            <span class="share__name">{{ who.name }}</span>
+                            <span class="share__bar">
+                              <i [style.width.%]="who.share * 100"></i>
+                            </span>
+                            <span class="share__pct mono">{{ who.share | percent: '1.1-1' }}</span>
+                          </li>
+                        }
+                      </ul>
+                    }
+                  }
+
                   <dl class="stat-groups">
                     @for (group of statGroups(); track group.label) {
                       <div class="stat-group">

@@ -166,6 +166,26 @@ async def test_the_probe_moves_all_three_scaling_stats_by_different_amounts(
     assert len(set(deltas.values())) == len(deltas)
 
 
+async def test_the_characters_are_named_as_a_player_reads_them(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """`characters` are gcsim keys; a damage-share row wants "Kaedehara Kazuha".
+
+    Sent rather than prettified client-side because no rule turns `kaedeharakazuha` into the
+    spaced name, and paired through `character_key` rather than by position so a reordering
+    upstream cannot silently attach a name to the wrong character.
+    """
+    body = (await _calibrate(authed_client, scene)).json()
+
+    assert len(body["character_names"]) == len(body["characters"])
+    assert all(name for name in body["character_names"]), "a blank name is worse than a key"
+    # The keys are lowercase and unspaced; a display name is neither, unless the character's
+    # own name happens to be one word.
+    assert body["character_names"] != body["characters"] or all(
+        key.islower() for key in body["characters"]
+    )
+
+
 async def test_the_energy_recharge_is_not_zero_by_default(
     authed_client: AsyncClient, scene: Scene,
 ):

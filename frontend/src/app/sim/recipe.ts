@@ -69,6 +69,14 @@ export interface RecipeHit {
    */
   mine: boolean;
   /**
+   * Which character in the config this hit belongs to, by index.
+   *
+   * `mine` answers the scoring question; this answers *whose*, so a result can show the damage
+   * share per character — the number that made "the optimized character is 14% of their own
+   * rotation" visible at all.
+   */
+  owner: number;
+  /**
    * gcsim's attack tag — normal, charged, skill, burst. Read from the paired `damage` event,
    * because the `calc` event does not carry it.
    */
@@ -176,6 +184,14 @@ export interface RecipeMeta {
    * lives here; stability had no reason to be anywhere else.
    */
   unstable: string[];
+  /**
+   * The config's characters, in the order it declares them, so `RecipeHit.owner` has names.
+   *
+   * On the recipe rather than beside it for the same reason `unstable` is: the recipe is what
+   * gets cached, and a caller reading one back from storage has no other way to learn who is
+   * who. Empty is a valid state — a caller that did not supply names gets indices.
+   */
+  characters: string[];
   /**
    * The catalogue id of the 4-piece set this recipe was calibrated with, or `null` for a
    * calibration that equipped none.
@@ -351,6 +367,7 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
       // calibrated character's: freezing a hit that should scale understates every candidate
       // equally, while scaling one that should not is the bug this field exists to fix.
       mine: owners[i] <= 0,
+      owner: Math.max(owners[i], 0),
       attackTag: d?.['attack-tag'] ?? -1,
       element: d?.ele ?? '',
       talent: c.talent,
@@ -377,6 +394,9 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
     meta: {
       seed,
       staleConversions: staleConversionsIn(hits, calcs),
+      // Filled by the caller, the only thing that knows the config's character order — a
+      // sample payload carries indices and no names.
+      characters: [],
       // Filled by `calibrate`, which is the only caller that has seen more than one run.
       unstable: [],
       // Both are the caller's to fill in: a sample payload says nothing about which catalogue

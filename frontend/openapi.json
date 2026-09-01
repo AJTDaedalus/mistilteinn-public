@@ -4127,6 +4127,14 @@
             "type": "object",
             "title": "Probe Deltas"
           },
+          "character_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Character Names",
+            "default": []
+          },
           "characters": {
             "items": {
               "type": "string"

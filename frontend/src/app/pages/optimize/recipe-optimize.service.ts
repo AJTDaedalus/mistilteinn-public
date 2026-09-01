@@ -222,6 +222,21 @@ export class RecipeOptimizeService {
     onProgress({ done: 0, total: targets.length, current: '', loading: true });
     const mod = await this.loadModule();
 
+    // **What the cache is actually keyed on.** `rotationId` is an id: editing a rotation's
+    // steps, or changing who is on its team, leaves it unchanged, and the recipe for the old
+    // rotation stayed a hit. This hash covers the steps, the team, the build's level, weapon
+    // and talents, the target and the pin.
+    //
+    // A failure here disables the cache for this run rather than falling back to the id.
+    // Recalibrating costs seconds; serving a recipe for a rotation the user has since changed
+    // costs them a wrong answer they have no way to spot.
+    let context: string | null;
+    try {
+      context = (await this.rotations.contextKey(rotationId, buildId)).context_key;
+    } catch {
+      context = null;
+    }
+
     for (const [index, target] of targets.entries()) {
       onProgress({ done: index, total: targets.length, current: target.label, loading: false });
 
@@ -242,9 +257,12 @@ export class RecipeOptimizeService {
           .sort(([a], [b]) => a.localeCompare(b))
           .map(([stat, delta]) => `${stat}=${delta}`)
           .join(','),
+        context: context ?? '',
       };
 
-      let recipe = readRecipe(this.store, key);
+      // No context hash means no cache: see above. `readRecipe` is skipped rather than given
+      // a key that cannot tell two rotations apart.
+      let recipe = context === null ? null : readRecipe(this.store, key);
       if (recipe !== null) {
         caveats.fromCache.push(target.label);
       } else {
@@ -269,6 +287,21 @@ export class RecipeOptimizeService {
         const instances = aggregate ? instancesFrom(aggregate.raw, configs.characters) : {};
         const { burst, sweep } = this.energySweep(mod, configs, instances);
 
+        // Names for `RecipeHit.owner`, so a result can show the damage share per character.
+        // Set before `calibrate` writes the recipe to the cache, or a cache hit comes back
+        // with indices and no names — the shape `meta.unstable` was added to avoid.
+        const named = (recipe: Recipe) => {
+          // `?? []` because a server that does not publish the order is a recipe with indices
+          // and no names, which `damageShare` renders as "character 2" — worse than names and
+          // far better than a throw inside a calibration the user is waiting on.
+          // Display names when the server sends them, gcsim keys when it does not: a raw
+          // `kaedeharakazuha` reads badly, and a wrong name reads as right.
+          recipe.meta.characters = [
+            ...(configs.character_names?.length ? configs.character_names : configs.characters ?? []),
+          ];
+          return recipe;
+        };
+
         const calibrated = calibrate(
           {
             baseline: mod.sample(configs.baseline, SEED),
@@ -283,8 +316,8 @@ export class RecipeOptimizeService {
           // all; B.1 made them reach it.
           { setIds: target.setIds, burstAbility: burst ?? undefined },
         );
-        recipe = calibrated.recipe;
-        writeRecipe(this.store, key, recipe);
+        recipe = named(calibrated.recipe);
+        if (context !== null) writeRecipe(this.store, key, recipe);
       }
 
       // A target with no set ids is the baseline: calibrated, never searched. See
@@ -448,6 +481,8 @@ export class RecipeOptimizeService {
       baseline: string; probe: string; energy_recharge: number; characters: string[];
       // Echoed by the endpoint so the cache key can name what the recipe was probed with.
       probe_deltas: Record<string, number>;
+      /** The same characters as `characters`, as a player reads them. */
+      character_names?: string[];
     };
   }
 }

@@ -51,6 +51,21 @@ export interface RecipeCacheKey {
    * this stops the next probe change repeating the whole story.
    */
   probe: string;
+  /**
+   * The server's hash of everything that makes this simulation what it is — the build's level,
+   * weapon and talents, the **rotation's steps**, the team, the target and the pin.
+   *
+   * **`rotationId` is an id, not a description.** Editing a rotation's steps leaves its id
+   * alone, so a cached recipe for the old steps was still a hit: the owner changed their team
+   * and rotation, pressed Optimize, and got the previous damage back. Same for changing who is
+   * on the team — the rotation still points at the same team row.
+   *
+   * This is the third time this cache has served something its key did not describe
+   * (`meta.unstable`, then the probe). All three are one shape: something that determines the
+   * value, absent from what identifies it. A content hash ends the pattern rather than adding
+   * a third field to remember.
+   */
+  context: string;
 }
 
 /** Namespaced so clearing recipes cannot take unrelated keys with it. */
@@ -92,6 +107,7 @@ export function cacheKey(key: RecipeCacheKey): string {
     key.energyRecharge.toFixed(4),
     key.seed,
     key.probe,
+    key.context,
   ].join('|');
 }
 

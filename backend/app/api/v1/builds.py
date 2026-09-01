@@ -741,6 +741,30 @@ def _scored(
     return tuple(log.contributions), evaluator.evaluate(hit).expected, evaluator.totals(hit.scope)
 
 
+def _display_names(keys: "Sequence[str]", builds: "Sequence[Build]") -> list[str]:
+    """Display names for gcsim keys, in the order the keys are given.
+
+    Keyed by `gcsim_keys.character_key` — the same function that produced the config's names —
+    so the pairing cannot drift. A key nothing matches keeps the key: a wrong name is worse
+    than a raw one, because only one of them looks wrong.
+    """
+    by_key: dict[str, str] = {}
+    for build in builds:
+        character = getattr(build, "character", None)
+        if character is None:
+            continue
+        try:
+            # `nanoka_id` first: every Traveler variant is named "Traveler" and only the id
+            # says which body it is, so the name alone cannot resolve one.
+            key = gcsim_keys.character_key(
+                str(character.nanoka_id), character.name, character.element,
+            )
+        except GcsimKeyError:
+            continue
+        by_key[key] = character.name
+    return [by_key.get(key, key) for key in keys]
+
+
 def _set_descriptions(rows: "Sequence[Artifact]") -> dict[str, str]:
     """Map a set contribution's note to the catalogue's published text.
 
@@ -1131,6 +1155,11 @@ async def calibrate_recipe(
         baseline=baseline,
         probe=probe,
         characters=character_order(baseline),
+        # The same order, as a player reads them. `character_order` returns gcsim keys, and
+        # `kaedeharakazuha` on a damage-share row is the raw-key ugliness this repo keeps
+        # fixing one field at a time. Mapped through `character_key` rather than by position,
+        # so a reordering upstream cannot silently pair a name with the wrong character.
+        character_names=_display_names(character_order(baseline), [build, *teammates]),
         artifact_set_id=body.artifact_set_id,
         two_piece_set_ids=body.two_piece_set_ids,
         energy_recharge=body.energy_recharge,

@@ -17,6 +17,7 @@ import type { Recipe, RecipeHit } from './recipe';
 
 const hit = (over: Partial<RecipeHit> = {}): RecipeHit => ({
   mine: true,
+  owner: 0,
   abil: 'x', attackTag: 1, element: 'cryo', talent: 2, scaling: 'atk', flatDamage: 0,
   // **Deliberately different.** In a valid recipe these are equal — calibration runs at zero
   // artifact stats — so a stub that makes them equal cannot tell `baseStat` from
@@ -158,7 +159,7 @@ describe('conversions', () => {
 
 describe('evaluateRecipe', () => {
   const recipe = (hits: RecipeHit[]): Recipe =>
-    ({ hits, seed: '1', meta: { seed: '1', staleConversions: [], unstable: [], calibratedSetIds: [], minimumEnergyRecharge: null } });
+    ({ hits, seed: '1', meta: { seed: '1', staleConversions: [], characters: [], unstable: [], calibratedSetIds: [], minimumEnergyRecharge: null } });
 
   it('sums every hit', () => {
     expect(evaluateRecipe(recipe([hit(), hit(), hit()]), stats())).toBeCloseTo(2700, 6);

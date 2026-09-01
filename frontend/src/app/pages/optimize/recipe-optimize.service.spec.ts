@@ -157,7 +157,7 @@ describe('RecipeOptimizeService', () => {
   it('names a recipe served from cache rather than passing it off as fresh', async () => {
     const cached = {
       hits: [], seed: '12345',
-      meta: { seed: '12345', staleConversions: [], unstable: [], calibratedSetIds: [], minimumEnergyRecharge: null },
+      meta: { seed: '12345', staleConversions: [], characters: [], unstable: [], calibratedSetIds: [], minimumEnergyRecharge: null },
     };
     const service = setup({ cached });
 
@@ -190,7 +190,7 @@ describe('RecipeOptimizeService', () => {
     const service = setup();
     const recipe = {
       hits: [], seed: '1',
-      meta: { seed: '1', staleConversions: [], unstable: [], calibratedSetIds: [], minimumEnergyRecharge: 0.3 },
+      meta: { seed: '1', staleConversions: [], characters: [], unstable: [], calibratedSetIds: [], minimumEnergyRecharge: 0.3 },
     } as never;
 
     expect(service.shortfall(recipe, 0.45)).toBeNull();

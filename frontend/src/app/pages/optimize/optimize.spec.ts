@@ -627,7 +627,7 @@ describe('marginalPerRoll', () => {
   const withHit = () => ({
     hits: [hit()], seed: '1',
     meta: {
-      seed: '1', staleConversions: [], unstable: [], calibratedSetIds: [],
+      seed: '1', staleConversions: [], characters: [], unstable: [], calibratedSetIds: [],
       minimumEnergyRecharge: null,
     },
   }) as unknown as Recipe;
@@ -714,7 +714,7 @@ describe('OptimizePage energy shortfall', () => {
   const withMinimum = (minimum: number | null) => ({
     hits: [], seed: '1',
     meta: {
-      seed: '1', staleConversions: [], unstable: [], calibratedSetIds: [],
+      seed: '1', staleConversions: [], characters: [], unstable: [], calibratedSetIds: [],
       minimumEnergyRecharge: minimum,
     },
   }) as unknown as Recipe;
@@ -768,7 +768,7 @@ describe('OptimizePage caveat attribution', () => {
    * result row was ever scored with the baseline.
    */
   const caveats = (over: Record<string, unknown> = {}) => ({
-    unstable: [], staleConversions: [], fromCache: [], unscoredLabels: [], ...over,
+    unstable: [], staleConversions: [], characters: [], fromCache: [], unscoredLabels: [], ...over,
   }) as unknown as CalibrationCaveats;
 
   it('does not call the scoring unreliable because the baseline is unstable', () => {
@@ -838,7 +838,7 @@ describe('OptimizePage comparator', () => {
   const recipe = () => ({
     hits: [], seed: '1',
     meta: {
-      seed: '1', staleConversions: [], unstable: [], calibratedSetIds: [],
+      seed: '1', staleConversions: [], characters: [], unstable: [], calibratedSetIds: [],
       minimumEnergyRecharge: null,
     },
   }) as unknown as Recipe;
@@ -855,7 +855,7 @@ describe('OptimizePage comparator', () => {
     }],
     seed: '1',
     meta: {
-      seed: '1', staleConversions: [], unstable: [], calibratedSetIds: [],
+      seed: '1', staleConversions: [], characters: [], unstable: [], calibratedSetIds: [],
       minimumEnergyRecharge: null,
     },
   }) as unknown as Recipe;
@@ -1273,7 +1273,7 @@ describe('OptimizePage — the rotation objective', () => {
       }
       return {
         byFourPieceSet: new Map(), noFourPiece: null,
-        caveats: { unstable: [], staleConversions: [], fromCache: [] },
+        caveats: { unstable: [], staleConversions: [], characters: [], fromCache: [] },
       };
     });
 
@@ -1902,7 +1902,7 @@ describe('switching mode does not leave the other mode findings up', () => {
     page['objective'].set('hit');
     page['scoredRecipe'].set({ terms: [] } as never);
     page['winningPools'].set([{}] as never);
-    page['caveats'].set({ unstable: ['x'], staleConversions: [] } as never);
+    page['caveats'].set({ unstable: ['x'], staleConversions: [], characters: [] } as never);
 
     await page['optimizeNow']();
 
@@ -2044,7 +2044,7 @@ describe('an unknown simulable flag does not disable the feature', () => {
 describe('exhaustive and trustworthy are different claims', () => {
   it('is not shaky when nothing was caveated', () => {
     const page = pageWith();
-    page['caveats'].set({ unstable: [], staleConversions: [], fromCache: [] } as never);
+    page['caveats'].set({ unstable: [], staleConversions: [], characters: [], fromCache: [] } as never);
 
     expect(page['recipeIsShaky']()).toBe(false);
   });
@@ -2055,7 +2055,7 @@ describe('exhaustive and trustworthy are different claims', () => {
     // ranking is sound.
     const page = pageWith();
     page['caveats'].set({
-      unstable: ['the baseline (no 4-piece bonus)'], staleConversions: [], fromCache: [],
+      unstable: ['the baseline (no 4-piece bonus)'], staleConversions: [], characters: [], fromCache: [],
     } as never);
 
     expect(page['recipeIsShaky']()).toBe(true);
@@ -2112,7 +2112,7 @@ describe('the scoring warning does not cry wolf', () => {
   it('speaks for an unstable rotation whatever its conversions did', () => {
     // Instability is not a matter of degree: the rotation did not run the same way twice.
     const page = pageWith();
-    page['caveats'].set({ unstable: ['x'], staleConversions: [], fromCache: [] } as never);
+    page['caveats'].set({ unstable: ['x'], staleConversions: [], characters: [], fromCache: [] } as never);
 
     expect(page['recipeIsShaky']()).toBe(true);
   });
