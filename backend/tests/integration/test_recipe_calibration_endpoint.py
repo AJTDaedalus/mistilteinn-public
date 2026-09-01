@@ -186,6 +186,36 @@ async def test_the_characters_are_named_as_a_player_reads_them(
     )
 
 
+async def test_each_character_carries_its_burst_energy_cost(
+    authed_client: AsyncClient, db_session: AsyncSession, scene: Scene,
+):
+    """Positional against `characters`, and `None` where the burst costs no energy.
+
+    Optimize compares burst counts against a free-energy counterfactual to decide who is
+    starved. That counterfactual moves the whole team's timing, so a character whose burst
+    spends something other than energy still shows a different count — and was reported as
+    short of energy. Owner, 2026-08-31: *"Skirk has no burst energy cost, she has a unique
+    burst effect. Something is very wrong there."*
+
+    Both values are asserted because only one of them is the interesting one: a field that
+    published `0` or omitted the entry would pass a test that only ever set a real cost.
+    """
+    from sqlalchemy import select
+
+    async def costs_for(cost: int | None) -> list[int | None]:
+        ayaka = (await db_session.execute(
+            select(Character).where(Character.nanoka_id == "10000002"),
+        )).scalar_one()
+        ayaka.burst_energy_cost = cost
+        await db_session.flush()
+        body = (await _calibrate(authed_client, scene)).json()
+        assert len(body["burst_energy_costs"]) == len(body["characters"])
+        return body["burst_energy_costs"]
+
+    assert await costs_for(80) == [80]
+    assert await costs_for(None) == [None]
+
+
 async def test_the_energy_recharge_is_not_zero_by_default(
     authed_client: AsyncClient, scene: Scene,
 ):

@@ -124,6 +124,14 @@ class RosterCharacter(BaseModel):
     nanoka_id: str
     name: str
     element: str
+    #: Energy this character's burst costs, or **`None` when it costs none at all**.
+    #:
+    #: Load-bearing rather than decorative. A client comparing burst counts across a
+    #: free-energy counterfactual must not read a character whose burst spends something else
+    #: as starved of energy: the counterfactual moves the *whole team's* timing, so her count
+    #: shifts for reasons that are not hers. Reported from production: *"Skirk has no burst
+    #: energy cost, she has a unique burst effect. Something is very wrong there."*
+    burst_energy_cost: int | None = None
     #: The catalogue art's basename, so an editor can draw the roster rather than list it.
     #:
     #: Published here rather than looked up client-side for the reason `/options` exists at

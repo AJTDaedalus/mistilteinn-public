@@ -637,6 +637,16 @@ class CalibrationConfigs(BaseModel):
     #: parallel construction that drifted would attribute one character's instability to
     #: another — a warning naming the wrong person, which is worse than no warning.
     characters: list[str] = Field(default_factory=list)
+    #: Each character's burst energy cost, positionally against `characters`.
+    #:
+    #: **`None` means the burst costs no energy at all**, which is a real and load-bearing
+    #: distinction: Skirk's burst spends Serpent's Subtlety, not energy. A free-energy
+    #: counterfactual changes the *whole team's* timing, so her burst count moves between the
+    #: two runs for reasons that have nothing to do with her — and reporting her as "energy
+    #: insufficient" is a warning about a constraint she does not have. Reported from
+    #: production: *"Skirk has no burst energy cost, she has a unique burst effect. Something is
+    #: very wrong there."*
+    burst_energy_costs: list[int | None] = Field(default_factory=list)
 
 
 class GcsimComparisonRequest(BaseModel):

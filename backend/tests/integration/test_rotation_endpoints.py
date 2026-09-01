@@ -296,6 +296,33 @@ async def test_options_carry_each_team_and_who_is_on_it(
     assert {c["element"] for c in roster} == {"Cryo", "Hydro"}
 
 
+async def test_options_publish_each_characters_burst_energy_cost(
+    authed_client: AsyncClient, db_session: AsyncSession, scene: Scene,
+):
+    """A burst that costs no energy publishes `None`, and that is the load-bearing case.
+
+    Owner, 2026-08-31: *"Skirk has no burst energy cost, she has a unique burst effect.
+    Something is very wrong there."* The client compares burst counts against a free-energy
+    counterfactual, which moves the whole team's timing — so without this field it read a
+    character who cannot be starved of energy as starved of energy.
+    """
+    from sqlalchemy import select
+
+    from app.models.character import Character
+
+    for nanoka_id, cost in ((scene.ayaka, 80), (scene.barbara, None)):
+        character = (await db_session.execute(
+            select(Character).where(Character.nanoka_id == nanoka_id),
+        )).scalar_one()
+        character.burst_energy_cost = cost
+    await db_session.flush()
+
+    teams = (await authed_client.get(f"{ROTATIONS}/options")).json()["teams"]
+    roster = {c["nanoka_id"]: c["burst_energy_cost"] for c in teams[0]["characters"]}
+
+    assert roster == {scene.ayaka: 80, scene.barbara: None}
+
+
 async def test_options_offer_only_the_callers_own_teams(
     authed_client: AsyncClient, db_session: AsyncSession, scene: Scene,
 ):

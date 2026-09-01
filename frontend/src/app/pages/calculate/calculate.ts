@@ -275,8 +275,8 @@ export class CalculatePage implements OnInit {
       // the order the config declares, which is the subject build then teammates — not the
       // order `/rotations/options` happens to return. Using the roster named Citlali for
       // Furina's missed bursts: a plausible sentence about the wrong character.
-      const roster = (this.teams().find((t) => t.id === this.teamId())?.characters ?? [])
-        .map((c) => c.name);
+      const party = this.teams().find((t) => t.id === this.teamId())?.characters ?? [];
+      const roster = party.map((c) => c.name);
       const names = displayNames(charactersInConfig(config), roster);
       this.stats.set(parseRotationStats(finished.raw, names));
 
@@ -288,7 +288,14 @@ export class CalculatePage implements OnInit {
       // It doubles the wait, so it runs after the numbers are already on screen.
       this.progress.set('Measuring what energy costs\u2026');
       const free = runConfig(mod, withFreeEnergy(config), ITERATIONS);
-      this.energyCost.set(energyCost(finished.raw, free.raw, names));
+      // Positional against the config's own order, like the names — and `null` for a burst
+      // that costs no energy, so a character who cannot be starved is never reported as such.
+      const costs = names.map(
+        (n) => roster.indexOf(n) >= 0
+          ? party.find((c) => c.name === n)?.burst_energy_cost ?? null
+          : null,
+      );
+      this.energyCost.set(energyCost(finished.raw, free.raw, names, costs));
     } catch (err) {
       this.error.set(apiErrorMessage(err));
     } finally {

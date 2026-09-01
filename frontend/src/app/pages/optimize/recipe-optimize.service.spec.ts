@@ -5,6 +5,7 @@ import {
   GCSIM_LOADER,
   RECIPE_STORE,
   RecipeOptimizeService,
+  shareEnergyMeasurement,
 } from './recipe-optimize.service';
 import { API_BASE_URL } from '../../api/api.client';
 import type { RecipeStore } from '../../sim/recipe-cache';
@@ -195,5 +196,70 @@ describe('RecipeOptimizeService', () => {
 
     expect(service.shortfall(recipe, 0.45)).toBeNull();
     expect(service.shortfall(recipe, 0.12)).toMatchObject({ has: 0.12, needs: 0.3 });
+  });
+});
+
+
+describe('shareEnergyMeasurement', () => {
+  /**
+   * The energy measurement is taken once per search, on the **set-free** target — because the
+   * aggregate is filed in the run corpus under a key that names the context and not the
+   * artifacts, so one run has to answer for every set.
+   *
+   * It was then stored on that target only, and that target is the baseline: the recipe
+   * `unscoredLabels` exists to say nobody ranks on. Every 4-piece recipe — the ones that
+   * actually score — came back with no ladder, so `energyRatio` was 1 for every candidate and
+   * `liveQuantitiesFor` saw a flat ladder and went on pruning ER.
+   *
+   * That is the second half of the owner's report. Fixing the Pareto layer alone changes
+   * nothing while the ladder never reaches the recipe being scored.
+   */
+  const sweep = [
+    { energyRecharge: 0, burstInstances: 1, standardDeviation: 0, dps: 50 },
+    { energyRecharge: 1, burstInstances: 2, standardDeviation: 0, dps: 100 },
+  ];
+  const cost = { characters: [{ character: 'Furina', seconds: 0, bursts: { real: 2, free: 5 } }], dpsCost: 0.07 };
+
+  const recipe = (meta: Record<string, unknown> = {}) => ({
+    hits: [], seed: '1',
+    meta: {
+      seed: '1', staleConversions: [], characters: [], unstable: [], calibratedSetIds: [],
+      minimumEnergyRecharge: null, ...meta,
+    },
+  } as unknown as Parameters<typeof shareEnergyMeasurement>[0][number]);
+
+  it('gives the ladder to the recipes that actually score', () => {
+    const baseline = recipe({ energySweep: sweep, calibratedEnergyDps: 100, energyCost: cost });
+    const fourPiece = recipe();
+
+    shareEnergyMeasurement([baseline, fourPiece]);
+
+    expect(fourPiece.meta.energySweep).toBe(sweep);
+    expect(fourPiece.meta.calibratedEnergyDps).toBe(100);
+    expect(fourPiece.meta.energyCost).toBe(cost);
+  });
+
+  it('does nothing when no ladder was swept', () => {
+    // Not every rotation is energy-constrained, and inventing a flat one would make
+    // `liveQuantitiesFor` keep ER live for every search that has no reason to.
+    const a = recipe();
+    const b = recipe();
+
+    shareEnergyMeasurement([a, b]);
+
+    expect(b.meta.energySweep).toBeUndefined();
+    expect(b.meta.calibratedEnergyDps).toBeUndefined();
+  });
+
+  it('does not overwrite a recipe that measured its own cost', () => {
+    const own = { characters: [], dpsCost: 0 };
+    const baseline = recipe({ energySweep: sweep, calibratedEnergyDps: 100, energyCost: cost });
+    const other = recipe({ energyCost: own });
+
+    shareEnergyMeasurement([baseline, other]);
+
+    expect(other.meta.energyCost).toBe(own);
+    // The ladder is still shared: it is what scoring reads, and there was none to keep.
+    expect(other.meta.energySweep).toBe(sweep);
   });
 });

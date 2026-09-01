@@ -764,6 +764,29 @@ def _scored(
     return tuple(log.contributions), evaluator.evaluate(hit).expected, evaluator.totals(hit.scope)
 
 
+def _burst_energy_costs(
+    keys: "Sequence[str]", builds: "Sequence[Build]",
+) -> list[int | None]:
+    """Each key's burst energy cost, or `None` where the burst does not use energy.
+
+    Paired the same way `_display_names` pairs — through `gcsim_keys.character_key` rather than
+    by position — so a reordering upstream cannot attach one character's cost to another.
+    """
+    by_key: dict[str, int | None] = {}
+    for build in builds:
+        character = build.character
+        if character is None:
+            continue
+        try:
+            key = gcsim_keys.character_key(
+                str(character.nanoka_id), character.name, character.element,
+            )
+        except gcsim_keys.GcsimKeyError:
+            continue
+        by_key[key] = character.burst_energy_cost
+    return [by_key.get(key) for key in keys]
+
+
 def _display_names(keys: "Sequence[str]", builds: "Sequence[Build]") -> list[str]:
     """Display names for gcsim keys, in the order the keys are given.
 
@@ -1183,6 +1206,13 @@ async def calibrate_recipe(
         # fixing one field at a time. Mapped through `character_key` rather than by position,
         # so a reordering upstream cannot silently pair a name with the wrong character.
         character_names=_display_names(character_order(baseline), [build, *teammates]),
+        # Positional against `characters`, and **`None` where the burst costs no energy** —
+        # Skirk spends Serpent's Subtlety. A caller comparing burst counts across a
+        # free-energy counterfactual must not read her as starved: the counterfactual moves
+        # the whole team's timing, so her count changes for reasons that are not hers.
+        burst_energy_costs=_burst_energy_costs(
+            character_order(baseline), [build, *teammates],
+        ),
         artifact_set_id=body.artifact_set_id,
         two_piece_set_ids=body.two_piece_set_ids,
         energy_recharge=body.energy_recharge,

@@ -127,6 +127,47 @@ describe('energyCost — the counterfactual', () => {
       + 'Skirk (3 of 4 bursts), Escoffier (3 of 4 bursts) — costing 7.0% DPS.',
     );
   });
+
+  /**
+   * Owner, 2026-08-31: *"Skirk has no burst energy cost, she has a unique burst effect.
+   * Something is very wrong there."*
+   *
+   * Her burst spends Serpent's Subtlety, so it cannot be short of energy — and yet her count
+   * moves between the two runs above, because the counterfactual changes the whole team's
+   * timing. That is the false positive: a real difference, attributed to the wrong cause.
+   */
+  const costs = [null, 60, 60, 60];
+
+  it('never reports a character whose burst costs no energy', () => {
+    expect(energyCost(real, free, party, costs).characters.map((c) => c.character))
+      .toEqual(['Furina', 'Escoffier']);
+  });
+
+  it('still names the teammates who are genuinely short', () => {
+    expect(energyCostMessage(energyCost(real, free, party, costs))).toBe(
+      'Energy insufficient to burst on time for Furina (2 of 5 bursts), '
+      + 'Escoffier (3 of 4 bursts) — costing 7.0% DPS.',
+    );
+  });
+
+  it('filters nothing when the costs are unknown', () => {
+    // An empty list is "the caller has not said", which is different from "none of them cost
+    // energy" — guessing the second from the first would silently empty the warning.
+    expect(energyCost(real, free, party, []).characters).toHaveLength(3);
+  });
+
+  /**
+   * Optimize's two runs are calibration probes: the subject wears an ER value and a set bonus
+   * and nothing else, so a missed burst costs far more of that build's DPS than of a real one.
+   * The ratio read 47.9% on Optimize where Calculate, on the same team and rotation with the
+   * actual artifacts equipped, measured 6.9%.
+   */
+  it('omits the toll for a run that was not wearing real gear', () => {
+    expect(energyCostMessage(energyCost(real, free, party, costs), false)).toBe(
+      'Energy insufficient to burst on time for Furina (2 of 5 bursts), '
+      + 'Escoffier (3 of 4 bursts).',
+    );
+  });
 });
 
 describe('subjectIsShort — ER is per character', () => {

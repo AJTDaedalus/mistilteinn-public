@@ -102,7 +102,13 @@ const PREFIX = 'mistilteinn:recipe:';
 // `meta.unstable` (#195), the probe (#202), the rotation's steps (#207), and now a new field
 // with no version behind it. The first three were keys that omitted an input; this is a
 // *shape* change, which the version is what guards.
-const SCHEMA = 3;
+//
+// **4: the ladder is on every recipe, not only the baseline.** A v3 entry for a 4-piece target
+// has `energySweep` undefined — correctly, for how v3 was written — and a cache hit would keep
+// serving that after the fix, so ER would go on being pruned and the owner would again run a
+// fresh optimize and see nothing change. Same shape as 3, one layer further out: the field is
+// present in both versions and what *populates* it changed.
+const SCHEMA = 4;
 
 export function cacheKey(key: RecipeCacheKey): string {
   return [

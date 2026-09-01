@@ -483,6 +483,8 @@ describe('explaining the winner', () => {
     // And a 1% disagreement is reported as 1%, not smoothed away.
     (page['explain'] as unknown as { explain: unknown }).explain =
       vi.fn().mockResolvedValue(explanation(winner.damage * 1.01));
+    // Details toggles, so the open pane has to be closed before this row can be re-explained.
+    await page['explainRow'](winner);
     await page['explainRow'](winner);
     expect(page['divergence']()).toBeCloseTo(0.01, 6);
   });
@@ -519,6 +521,22 @@ describe('explaining the winner', () => {
     expect(page['explained']()).toBeNull();
   });
 
+  it('closes the details pane when its own row is pressed again', async () => {
+    // Owner, 2026-08-31: *"clicking 'details' again should compress the row on optimize."*
+    const explain = vi.fn().mockResolvedValue(explanation(1));
+    const page = pageWith({ explain: { explain } as unknown as Partial<ExplainService> });
+    await page['load']();
+    await page['run']();
+
+    await page['explainRow'](page['rows']()[0]);
+    expect(page['explained']()?.rank).toBe(page['rows']()[0].rank);
+
+    await page['explainRow'](page['rows']()[0]);
+    expect(page['explained']()).toBeNull();
+    // Closing asks the server nothing — it is a disclosure, not a second query.
+    expect(explain).toHaveBeenCalledTimes(1);
+  });
+
   it('shows the API refusal verbatim and drops the stale explanation', async () => {
     const detail = 'the pieces to explain must be five pieces, one per slot.';
     const page = pageWith({
@@ -532,6 +550,8 @@ describe('explaining the winner', () => {
 
     (page['explain'] as unknown as { explain: unknown }).explain =
       vi.fn().mockRejectedValue({ detail });
+    // Close the pane the first call opened, then ask again — the refusal is on the re-open.
+    await page['explainRow'](page['rows']()[0]);
     await page['explainRow'](page['rows']()[0]);
 
     expect(page['actionError']()).toBe(detail);

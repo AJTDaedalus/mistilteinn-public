@@ -65,6 +65,51 @@ describe('liveQuantitiesFor', () => {
     expect(liveQuantitiesFor(recipe([hit()]))).not.toEqual(expect.arrayContaining(['hp_pct']));
   });
 
+  /**
+   * Reported from production, and the same failure as the Redhorn case above wearing a stat
+   * instead of a set: *"I just tried an Optimize run on this team with Furina, but no ER sands
+   * were picked in any of the top optimizations."*
+   */
+  const sweep = (dps: number[]) => dps.map((d, i) => ({
+    energyRecharge: 0.1 * i, burstInstances: i, standardDeviation: 0, dps: d,
+  }));
+
+  const withLadder = (rungs: { dps?: number; energyRecharge: number;
+    burstInstances: number; standardDeviation: number }[]): Recipe => {
+    const r = recipe([hit()]);
+    return { ...r, meta: { ...r.meta, energySweep: rungs, calibratedEnergyDps: 100 } };
+  };
+
+  it('includes energy recharge when the ladder is not flat', () => {
+    // `evaluateRecipe` scales by the ladder, so ER changes the score — and a live set that
+    // omits it prunes every ER piece that is dominated on crit and ATK, which is all of them.
+    expect(liveQuantitiesFor(withLadder(sweep([80, 100]))))
+      .toEqual(expect.arrayContaining(['energy_recharge']));
+  });
+
+  it('leaves it out when every rung reports the same DPS', () => {
+    // Above the threshold ER provably buys nothing: `energyRatio` is 1 for every candidate.
+    // Keeping ER live there would cost the pruning of every search for the benefit of none.
+    expect(liveQuantitiesFor(withLadder(sweep([100, 100]))))
+      .not.toEqual(expect.arrayContaining(['energy_recharge']));
+  });
+
+  it('leaves it out when the recipe has no ladder at all', () => {
+    expect(liveQuantitiesFor(recipe([hit()])))
+      .not.toEqual(expect.arrayContaining(['energy_recharge']));
+  });
+
+  it('does not read an unmeasured rung as agreement', () => {
+    // A rung with no `dps` is unmeasured, not flat. Counting it as a second identical value
+    // would hide a real ladder behind one missing measurement.
+    const rungs = [
+      { energyRecharge: 0, burstInstances: 0, standardDeviation: 0, dps: 80 },
+      { energyRecharge: 0.1, burstInstances: 1, standardDeviation: 0 },
+    ];
+    expect(liveQuantitiesFor(withLadder(rungs)))
+      .not.toEqual(expect.arrayContaining(['energy_recharge']));
+  });
+
   it('includes every element the rotation actually deals damage in', () => {
     const r = recipe([hit({ element: 'geo' }), hit({ element: 'physical' })]);
 
@@ -126,6 +171,56 @@ describe('searchRecipe', () => {
     expect(viaRecipe.paretoRemoved).toBe(0);
     expect(viaRecipe.evaluated).toBe(32);
     expect(viaRecipe.builds).toHaveLength(32);
+  });
+
+  /**
+   * Reported from production: *"I just tried an Optimize run on this team with Furina, but no
+   * ER sands were picked in any of the top optimizations... I'm suspecting we're not weighing
+   * ER correctly in the optimizer."*
+   *
+   * The weighing was correct. `evaluateRecipe` scales by the energy ladder, and the ladder was
+   * measured — but ER was not in the live set, so **every ER piece was pruned before it was
+   * ever scored**. The same shape as the Redhorn case above: a lossless layer told the wrong
+   * objective is not lossless, and the ranking it returns still looks complete.
+   */
+  it('keeps an ER piece that the ladder can reward', () => {
+    // Each slot offers an ATK piece and an ER piece. On crit and ATK alone the ER piece is
+    // dominated flat — an all-zero vector — so without ER in the live set it is discarded.
+    const inv = SLOTS.flatMap((slot) => [
+      { id: `${slot}-atk`, slot, setId: 1, stats: { atk_pct: 0.3 } } as Candidate,
+      { id: `${slot}-er`, slot, setId: 1, stats: { energy_recharge: 0.3 } } as Candidate,
+    ]);
+    const base = recipe([hit()]);
+    const laddered: Recipe = {
+      ...base,
+      meta: {
+        ...base.meta,
+        calibratedEnergyDps: 100,
+        // Below 1.0 of artifact ER the rotation drops a burst; at or above it, it does not.
+        energySweep: [
+          { energyRecharge: 0, burstInstances: 1, standardDeviation: 0, dps: 50 },
+          { energyRecharge: 1.0, burstInstances: 2, standardDeviation: 0, dps: 100 },
+        ],
+      },
+    };
+
+    const flat = searchRecipe(inv, { recipes: only(base), topN: 32 });
+    const laddered_ = searchRecipe(inv, {
+      recipes: { byFourPieceSet: new Map([[1, laddered]]), noFourPiece: laddered },
+      topN: 32,
+    });
+
+    // Without a ladder ER is dead weight and the layer is right to prune it.
+    expect(flat.paretoRemoved).toBe(5);
+    // With one, every piece survives to be scored...
+    expect(laddered_.paretoRemoved).toBe(0);
+    // ...and the winner is a *mix*: four ER pieces reach the 1.0 threshold, and the fifth slot
+    // goes to ATK because the ladder pays nothing above it. That build is unreachable for an
+    // ER-blind search — it is not the all-ATK winner and not an all-ER one either, which is
+    // exactly the shape the owner was looking for and not finding.
+    const winner = laddered_.builds[0].artifactIds;
+    expect(winner.filter((id) => id.endsWith('-er'))).toHaveLength(4);
+    expect(winner.filter((id) => id.endsWith('-atk'))).toHaveLength(1);
   });
 
   it('prunes DEF while the conversion is frozen, and keeps it once resolved', () => {

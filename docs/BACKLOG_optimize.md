@@ -630,3 +630,115 @@ one is the first task of §16, ahead of any card markup.
 Worth noting what this makes possible beyond legibility: with the pieces named on each row, the
 difference between rank 1 and rank 4 becomes visible — which is the thing a ranked list is for,
 and which "733.7 / 732.5 / 731.4" against five identical labels cannot show.
+
+## 17. ER was weighted and never chosen — **the prefilter was the bug**
+
+**Owner, 2026-08-31:** *"I just tried an Optimize run on this team with Furina, but no ER sands
+were picked in any of the top optimizations... I'm suspecting we're not weighing ER correctly in
+the optimizer."* And the target behaviour, stated the same day:
+
+> *"Ideal optimize behavior is that it'd weight ER alongside damage stats. Obviously it doesn't
+> do anything above the threshold where the character can burst on time, but if they can't, the
+> DPS gain from ER should be evaluated in whether or not the reduced delay is 'worth' the cost
+> of dropping dps stats for ER."*
+
+The weighing was right and the search never saw it. `evaluateRecipe` scales by the energy
+ladder; the ladder was measured; the warning named the right characters. But
+`liveQuantitiesFor` — the objective `paretoFilter` prunes against — did not list
+`energy_recharge`, so an ER sands had an **all-zero vector**, was dominated by everything, and
+was discarded **before it was ever scored**. Nothing the ladder could have changed survived to
+be ranked, and the ranking still looked complete.
+
+That is exactly the failure that function's own docstring warns about — §10's DEF/Redhorn case
+— arriving through a stat rather than through a set. **Twice now**, which is the entry worth
+keeping: a lossless layer is only lossless with respect to the objective it is told, and it is
+told separately from the scorer. Adding a term to `evaluateRecipe` without adding it here is a
+silent, complete loss of that term.
+
+### The second half: the ladder never reached the recipe being scored
+
+Fixing the prefilter alone changed **nothing on screen**, which is how the rest was found.
+
+The energy measurement — the aggregate, the free-energy counterfactual, and the ER ladder — is
+taken once per search on the **set-free** target, and rightly so: the aggregate is offered to
+the run corpus, a `sim_run` row is keyed by context and *not* by artifacts, so one run has to
+answer for every set. But it was also *stored* on that target only, and that target is the
+baseline — the recipe `unscoredLabels` exists to say nobody ranks on. Every 4-piece recipe came
+back with `energySweep` and `calibratedEnergyDps` undefined, so `energyRatio` returned 1 for
+every candidate and `liveQuantitiesFor` saw a flat ladder and went on pruning ER.
+
+The measurement was correct, complete, and attached to the one recipe nothing reads.
+`shareEnergyMeasurement` now stamps it onto all of them after the loop, which also covers the
+cache-hit path. Sharing is sound for the same reason taking one measurement is: the ladder
+varies the subject's ER on the calibration's own stats line and reads team DPS — nothing in it
+depends on which set the search is walking.
+
+**Verified on the owner's own data**, driving the real page against the recreated Skirk Freeze
+team (`scripts/shoot.py`'s account, Playwright, real gcsim in the browser). The ladder that came
+back is emphatically not flat:
+
+| artifact ER | 0.20 | 0.30 | 0.45 | 0.60 | 0.80 | 1.00 |
+|---|---|---|---|---|---|---|
+| team DPS | 142,380 | 152,589 | 157,761 | 154,314 | 158,306 | 156,188 |
+| Furina bursts | 2 | 2 | 2.8 | 2.5 | 3 | 3 |
+
+`energyRecharge` now appears in the per-roll table, sourced from that ladder. Its delta on this
+build is **0**, and that is the correct answer rather than a missing one: `dpsAt` is a step
+function over six rungs, and one 6.48 % roll does not cross the next one. The owner's ruling
+covers exactly this — *"obviously it doesn't do anything above the threshold"*.
+
+**Fixed.** ER joins the live set when the ladder is not flat — above the threshold every rung
+reports the same DPS, `energyRatio` is 1 for every candidate, and pruning on a quantity that
+provably cannot change an order would cost every search for the benefit of none. A rung with no
+measured DPS is *unmeasured*, not flat, and is skipped rather than counted as agreement.
+
+The regression test is the readable statement of the owner's ruling: with a ladder, the winner
+is **four ER pieces and one ATK** — reaching the threshold and then stopping, because the ladder
+pays nothing above it. That build is unreachable for an ER-blind search, being neither the
+all-ATK winner nor an all-ER one.
+
+`ONE_ROLL` gained `energy_recharge` alongside (0.0648, depot 501 id `501234` in
+`artifact_substat_values.json`): a table answering *"what is one more roll worth"* that omits
+the stat the page is warning about is answering a different question. `liveQuantitiesFor` gates
+that row too, so on a build already over the threshold it is correctly absent rather than
+printed as a zero.
+
+## 18. Three owner rulings on the results list — **DONE**
+
+- **"There's no point calculating 'better pieces' that lose the 4p bonus. That's never a
+  thing."** §10 made a set-breaking swap score honestly, on the no-four-piece recipe, so it had
+  to pay for the bonus it removed and still win. Right arithmetic, wrong list: a recommendation
+  nobody would take is noise whether or not its number is correct, and a row captioned "costs
+  the set bonus" asked the reader to re-adjudicate a decision they had already made. Those
+  candidates are dropped rather than priced. `noFourPiece` is still calibrated and still
+  load-bearing — `recipe-search` walks it for combinations wearing no four-piece at all — it
+  simply no longer scores anything on screen.
+- **"Clicking 'details' again should compress the row on optimize."** It only ever opened; the
+  only way to close the pane was to open a different row. Closing asks the server nothing, and
+  the button says which way it goes.
+- **"I don't like the color of the background of the details either."** It was
+  `rgb(221 174 33 / 8%)`, wrong twice: brass is this palette's *action* accent and an opened
+  disclosure is state, and a literal colour is the rule `_tokens.scss` exists to enforce. The
+  row lifts to `--surface`, the pane recesses to `--bg-deep` on a `--surface-rule` border.
+
+## 19. The energy warning named a character who cannot be short of energy — **FIXED**
+
+**Owner:** *"Skirk has no burst energy cost, she has a unique burst effect. Something is very
+wrong there."*
+
+The warning decides who is starved by comparing burst counts against a free-energy
+counterfactual — and that counterfactual moves the **whole team's** timing, so a character whose
+burst spends something else still casts a different number of them. Every such difference was
+being attributed to her own energy. Skirk spends Serpent's Subtlety; her catalogue row carries
+`burst_energy_cost = None`, and nothing was reading it.
+
+Now published on `RosterCharacter` and on `CalibrationConfigs` (positional against
+`characters`, paired through `gcsim_keys.character_key` rather than by index), and filtered on.
+An **empty** list means "the caller has not said" and filters nothing — guessing "none of them
+cost energy" from "I was not told" would silently empty the warning.
+
+**And the toll is gone from Optimize's copy of the sentence.** Its two runs are calibration
+probes, where the subject wears an ER value and a set bonus and no substats; a build like that
+loses far more to a missed burst than a real one, and the ratio read **47.9%** where Calculate,
+same team and rotation with the actual artifacts equipped, measured **6.9%**. Both are true
+about their own run; only one is about the player's build.

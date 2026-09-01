@@ -190,6 +190,44 @@ export function instancesFrom(
 }
 
 /**
+ * Give every recipe the one energy measurement the run made.
+ *
+ * **The measurement is taken on the set-free target only**, and deliberately: the aggregate is
+ * offered to the run corpus, a `sim_run` row is keyed by context — character, weapon, team,
+ * rotation, target — and *not* by artifacts, so running one per set would file set-specific
+ * numbers under a set-independent key. One run answers for the whole search.
+ *
+ * But it was also *stored* on that target only, and that target is the baseline — the recipe
+ * `unscoredLabels` exists to say nobody ranks on. Every 4-piece recipe, which is what actually
+ * scores the ranking, came back with `energySweep` undefined and `calibratedEnergyDps`
+ * undefined, so `energyRatio` returned 1 for every candidate and `liveQuantitiesFor` saw a flat
+ * ladder. The measurement was correct, complete, and attached to the one recipe nothing reads.
+ *
+ * That is the second half of *"no ER sands were picked in any of the top optimizations"*: the
+ * first half was the Pareto layer not knowing ER was live, and fixing that alone changes
+ * nothing while the ladder never reaches the recipe being scored.
+ *
+ * Sharing is sound for the same reason taking one measurement is: the ladder varies the
+ * *subject's ER on the calibration's own stats line* and reads team DPS. Nothing in it depends
+ * on which artifact set the search is currently walking.
+ *
+ * A donor is whichever recipe carries a ladder — normally the set-free one. None means the
+ * rotation is not energy-constrained (no ladder was swept), and nothing is stamped.
+ */
+export function shareEnergyMeasurement(recipes: readonly Recipe[]): void {
+  const donor = recipes.find((r) => r.meta.energySweep?.length);
+  if (!donor) return;
+  for (const recipe of recipes) {
+    if (recipe === donor) continue;
+    recipe.meta.energySweep = donor.meta.energySweep;
+    recipe.meta.calibratedEnergyDps = donor.meta.calibratedEnergyDps;
+    // The warning is a property of the team and the rotation, so it belongs on all of them —
+    // `caveats.energyCost` already reports it once for the run rather than once per set.
+    recipe.meta.energyCost ??= donor.meta.energyCost;
+  }
+}
+
+/**
  * Calibrating a build's recipes, and reporting what they do not cover.
  *
  * `docs/TASKS_recipe_surface.md` R.8/R.9. One calibration per **4-piece state** — every
@@ -233,6 +271,8 @@ export class RecipeOptimizeService {
     const byFourPieceSet = new Map<number, Recipe>();
     const byPair = new Map<string, Recipe>();
     let noFourPiece: Recipe | null = null;
+    /** Every recipe this run produced, so the energy measurement can reach all of them. */
+    const calibrated: Recipe[] = [];
     const caveats: CalibrationCaveats = {
       unstable: [], staleConversions: [], fromCache: [], unscoredLabels: [],
       energyCost: null,
@@ -324,7 +364,7 @@ export class RecipeOptimizeService {
         const keys = configs.characters ?? [];
         const party = configs.character_names?.length ? configs.character_names : keys;
         const cost = aggregate && freeEnergy
-          ? energyCost(aggregate.raw, freeEnergy.raw, party)
+          ? energyCost(aggregate.raw, freeEnergy.raw, party, configs.burst_energy_costs ?? [])
           : null;
         // Only the optimized character's own shortfall triggers their ladder — see
         // `subjectIsShort`. Index 0 is the subject of the config.
@@ -415,7 +455,10 @@ export class RecipeOptimizeService {
       if (target.setIds.length === 0) noFourPiece = recipe;
       else if (target.setIds.length === 1) byFourPieceSet.set(target.setIds[0], recipe);
       else byPair.set(pairKey(target.setIds[0], target.setIds[1]), recipe);
+      calibrated.push(recipe);
     }
+
+    shareEnergyMeasurement(calibrated);
 
     onProgress({ done: targets.length, total: targets.length, current: '', loading: false });
     return { byFourPieceSet, byPair, noFourPiece, caveats };
@@ -572,6 +615,14 @@ export class RecipeOptimizeService {
       probe_deltas: Record<string, number>;
       /** The same characters as `characters`, as a player reads them. */
       character_names?: string[];
+      /**
+       * Positional against `characters`, `null` where the burst costs no energy at all.
+       *
+       * Skirk's burst spends Serpent's Subtlety, and the free-energy counterfactual moves the
+       * whole team's timing, so her burst count changes for reasons that are not hers. Without
+       * this the warning named her as short of energy.
+       */
+      burst_energy_costs?: (number | null)[];
     };
   }
 }

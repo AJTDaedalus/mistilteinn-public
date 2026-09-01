@@ -4229,6 +4229,20 @@
             },
             "type": "array",
             "title": "Characters"
+          },
+          "burst_energy_costs": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Burst Energy Costs"
           }
         },
         "type": "object",
@@ -6493,6 +6507,17 @@
           "element": {
             "type": "string",
             "title": "Element"
+          },
+          "burst_energy_cost": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Burst Energy Cost"
           },
           "icon": {
             "anyOf": [

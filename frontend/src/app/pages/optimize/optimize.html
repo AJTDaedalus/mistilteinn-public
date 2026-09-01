@@ -406,8 +406,8 @@
              behind the same section is §10 and is not a wording problem. -->
         <h2>Better pieces for each slot</h2>
         <p class="hint">
-          One slot at a time, against the winning build. A swap that would drop you below four
-          of the set is scored without the set bonus, so it has to pay for it and still win.
+          One slot at a time, against the winning build. Swaps that would drop you below four
+          of the set are not offered.
         </p>
         @for (group of upgrades(); track group.slot) {
           <div class="upgrades__slot">
@@ -417,12 +417,6 @@
                 <li>
                   <span class="mono">+{{ row.delta | number: '1.0-0' }}</span>
                   <span class="muted">{{ row.label }}</span>
-                  <!-- Said on the row, not only in the hint above: this one costs the 4-piece
-                       bonus, and its delta is already net of losing it. -->
-                  @if (row.breaksSet) {
-                    <span class="warn" title="This piece breaks the 4-piece bonus. The number
-beside it is already what you would gain after losing that bonus.">costs the set bonus</span>
-                  }
                 </li>
               }
             </ul>
@@ -541,8 +535,13 @@ beside it is already what you would gain after losing that bonus.">costs the set
             } @else {
               <span class="pieces muted">Shown below</span>
             }
-            <button type="button" (click)="explainRow(row)" [disabled]="explaining()">
-              Details
+            <button
+              type="button"
+              (click)="explainRow(row)"
+              [disabled]="explaining()"
+              [attr.aria-expanded]="explained()?.rank === row.rank"
+            >
+              {{ explained()?.rank === row.rank ? 'Hide' : 'Details' }}
             </button>
             <!-- Owner, 2026-08-29: put the winning five onto the build that was searched for.
                  It reads every piece before moving any, so one held by another build aborts

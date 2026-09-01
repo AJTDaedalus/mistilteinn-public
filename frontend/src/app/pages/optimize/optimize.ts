@@ -153,6 +153,13 @@ const ONE_ROLL: Readonly<Record<string, { roll: number; quantity: string }>> = {
   elementalMastery: { roll: 23.31, quantity: 'elemental_mastery' },
   critRate: { roll: 0.0389, quantity: 'crit_rate' },
   critDmg: { roll: 0.0777, quantity: 'crit_dmg' },
+  // Depot 501, id `501234` in `artifact_substat_values.json` — the same snapshot and the same
+  // top tier as every row above. Present because ER is a scoring quantity now, and a table
+  // that answers "what is one more roll worth" while omitting the stat the page is warning
+  // about would be answering a different question. `liveQuantitiesFor` still gates it: on a
+  // build already over the threshold the ladder is flat, ER is not live, and this row is
+  // correctly absent rather than printed as a zero.
+  energyRecharge: { roll: 0.0648, quantity: 'energy_recharge' },
 };
 
 /** Slots in the order `searchRecipe` returns a build's pieces. */
@@ -808,7 +815,9 @@ export class OptimizePage implements OnInit {
    */
   protected readonly energyDelay = computed(() => {
     const cost = this.caveats()?.energyCost;
-    return cost ? energyCostMessage(cost) : null;
+    // `false`: these two runs are calibration probes, not the player's gear — see the
+    // parameter's own note. The names are honest; the toll would not be.
+    return cost ? energyCostMessage(cost, false) : null;
   });
 
   protected readonly equipping = signal(false);
@@ -1137,27 +1146,28 @@ export class OptimizePage implements OnInit {
   }
 
   /**
-   * Better pieces for each slot, scored **in the state the swap would actually leave**.
+   * Better pieces for each slot, **only where the swap keeps the four-piece bonus**.
    *
-   * §10. `scoreForSlot` has no notion of set membership — a set bonus is a constant baked into
-   * the recipe — so scoring every swap under the winner's 4-piece recipe credited a bonus that
-   * some swaps would remove. The owner's framing is the one that matters: a 4-piece build has
-   * **one free slot**, so an off-set piece is legal and belongs in this list; what it needs is
-   * for the cost of taking that slot to be visible.
+   * §10 made a set-breaking swap score honestly — on the no-four-piece recipe, so it had to
+   * pay for the bonus it removed and still win. That was the right *arithmetic* and the wrong
+   * *list*. Owner ruling, 2026-09-01: **"there's no point calculating 'better pieces' that
+   * lose the 4p bonus. That's never a thing."** A recommendation nobody would ever take is
+   * noise whether or not its number is correct, and a row captioned "costs the set bonus" was
+   * asking the reader to re-adjudicate a decision they had already made.
    *
-   * | the winning build | swap | before | now |
-   * |---|---|---|---|
-   * | five of the set | any slot for an off-set piece | leaves four — correct | unchanged |
-   * | four + one off-set | a set slot for another off-set piece | leaves three — **wrong** | scored on the no-four-piece recipe |
-   * | four + one off-set | the off-set slot | stays four — correct | unchanged |
+   * | the winning build | swap | now |
+   * |---|---|---|
+   * | five of the set | any slot for an off-set piece | leaves four — offered |
+   * | four + one off-set | a set slot for another off-set piece | leaves three — **not offered** |
+   * | four + one off-set | the off-set slot | stays four — offered |
    *
-   * The middle row is the fix. Its delta is now usually negative, so it drops out of the list
-   * on its own — which is the honest form of "they need to justify their existence": a piece
-   * that pays for the whole set bonus and still wins is a real upgrade, and one that does not
-   * was never one.
+   * So the fallback recipe is gone from here. `noFourPiece` is still calibrated and still
+   * load-bearing — `recipe-search` walks it for combinations that wear no four-piece at all —
+   * but nothing on this list is scored with it any more, which is why every row can be read
+   * as a plain "swap this in".
    */
   protected readonly upgrades = computed<
-    { slot: string; rows: { id: string; label: string; delta: number; breaksSet: boolean }[] }[]
+    { slot: string; rows: { id: string; label: string; delta: number }[] }[]
   >(() => {
     const recipe = this.scoredRecipe();
     const pools = this.winningPools();
@@ -1174,10 +1184,9 @@ export class OptimizePage implements OnInit {
     }
 
     // Null when the winner was scored on the no-four-piece recipe: no bonus exists, so no
-    // swap can break one, and every candidate keeps the plain single-recipe scoring.
+    // swap can break one, and every candidate is offerable.
     const assumed = this.scoredSetId();
     const worn = this.winningSetIds();
-    const fallback = this.baselineRecipe();
     const held = assumed === null || !worn
       ? 0
       : worn.filter((setId) => setId === assumed).length;
@@ -1193,21 +1202,16 @@ export class OptimizePage implements OnInit {
         return without + (setOf.get(id) === assumed ? 1 : 0) >= 4;
       };
 
-      const scored = scoreForSlot(
-        recipe, pools, candidates, index,
-        // Without a no-four-piece recipe to fall back on there is nothing honest to score a
-        // bonus-breaking swap with, so those are dropped below rather than scored wrongly.
-        fallback ? (id) => (keepsSet(id) ? recipe : fallback) : undefined,
-      )
-        .filter(({ id }) => fallback !== null || keepsSet(id))
+      const scored = scoreForSlot(recipe, pools, candidates, index)
+        // Every row left is scored under the winner's own recipe, because every row left
+        // keeps the bonus that recipe assumes.
+        .filter(({ id }) => keepsSet(id))
         // **Strictly better only.** A zero delta is the piece already worn, or one identical
         // to it; listing those as "upgrades" would pad the answer with non-answers.
         .filter(({ score }) => score.delta > 0)
         .sort((a, b) => b.score.delta - a.score.delta)
         .slice(0, UPGRADES_PER_SLOT)
-        .map(({ id, score }) => ({
-          id, label: this.describe(id), delta: score.delta, breaksSet: !keepsSet(id),
-        }));
+        .map(({ id, score }) => ({ id, label: this.describe(id), delta: score.delta }));
       return scored.length ? [{ slot: names[slot] ?? slot, rows: scored }] : [];
     });
   });
@@ -1419,7 +1423,18 @@ export class OptimizePage implements OnInit {
    * 3.4e-07. They are shown together rather than reconciled: a difference outside that is a
    * real disagreement and should be visible, not smoothed over by displaying only one.
    */
+  /**
+   * Open the details pane for a row — or close it, if it is the row already open.
+   *
+   * Owner, 2026-08-31: *"clicking 'details' again should compress the row on optimize."*
+   * Every other disclosure on the page toggles, and this one only ever opened; the only way
+   * to get the pane off the screen was to open a different row.
+   */
   protected async explainRow(row: ResultRow): Promise<void> {
+    if (this.explained()?.rank === row.rank) {
+      this.explained.set(null);
+      return;
+    }
     const hit = this.hit();
     const id = this.buildId();
     if (!hit || !id) return;

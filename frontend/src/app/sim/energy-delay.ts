@@ -141,14 +141,34 @@ function dpsOf(raw: unknown): number {
  * `floor` drops a character short by less than a fifth of a burst — that is where a frame
  * boundary fell across iterations, not a build that cannot pay for its burst.
  */
-export function energyCost(real: unknown, free: unknown, characters: readonly string[],
-  floor = 0.2): EnergyCost {
+export function energyCost(
+  real: unknown,
+  free: unknown,
+  characters: readonly string[],
+  /**
+   * Each character's burst energy cost, positionally — **`null` where the burst costs none**.
+   *
+   * A character whose burst spends something other than energy cannot be short of it. Skirk's
+   * burst spends Serpent's Subtlety, and her count still moves between the two runs, because
+   * the counterfactual changes the *whole team's* timing rather than only her own. Reported
+   * from production: *"Skirk has no burst energy cost, she has a unique burst effect.
+   * Something is very wrong there."*
+   *
+   * Empty means "not known", and nothing is filtered — the caller has not said, so this does
+   * not guess.
+   */
+  burstEnergyCosts: readonly (number | null | undefined)[] = [],
+  floor = 0.2,
+): EnergyCost {
   const out: EnergyShortfallReport[] = [];
   const delays = energyDelays(real, characters, 1);
   const bySeconds = new Map(delays.map((d) => [d.character, d.seconds]));
 
   for (let i = 0; i < characters.length; i++) {
     const name = characters[i] ?? `character ${i + 1}`;
+    // Their burst does not use energy, so a difference in its count is the rotation moving
+    // around them — never a shortfall of theirs.
+    if (burstEnergyCosts.length && !burstEnergyCosts[i]) continue;
     const bursts = { real: burstsOf(real, i), free: burstsOf(free, i) };
     const seconds = bySeconds.get(name) ?? 0;
     if (bursts.free - bursts.real >= floor || seconds >= 1) {
@@ -170,7 +190,22 @@ export function energyCost(real: unknown, free: unknown, characters: readonly st
  * DPS cost is the number that answers *"is more Energy Recharge worth it"*, so it closes the
  * line rather than sitting in a separate caveat.
  */
-export function energyCostMessage(cost: EnergyCost): string | null {
+export function energyCostMessage(
+  cost: EnergyCost,
+  /**
+   * Whether the run this was measured on wore the user's real gear.
+   *
+   * **Optimize's did not.** Its two runs come from the calibration configs, where the subject
+   * is stripped to an ER value and a set bonus so the probes can isolate one stat at a time —
+   * a build with no substats loses far more to a missed burst than a real one does, and the
+   * ratio it produced said **47.9%** where Calculate, running the same team on the same
+   * rotation with the actual artifacts equipped, measured **6.9%**.
+   *
+   * Both numbers are correct about their own run. Only one is about the player's build, so
+   * only that one is shown; the names and burst counts are true either way and stay.
+   */
+  realGear = true,
+): string | null {
   if (!cost.characters.length) return null;
   const named = cost.characters.map((c) => {
     const missed = c.bursts.free - c.bursts.real;
@@ -179,7 +214,9 @@ export function energyCostMessage(cost: EnergyCost): string | null {
     }
     return `${c.character} (${c.seconds.toFixed(1)}s)`;
   }).join(', ');
-  const toll = cost.dpsCost > 0.001 ? ` — costing ${(cost.dpsCost * 100).toFixed(1)}% DPS.` : '.';
+  const toll = realGear && cost.dpsCost > 0.001
+    ? ` — costing ${(cost.dpsCost * 100).toFixed(1)}% DPS.`
+    : '.';
   return `Energy insufficient to burst on time for ${named}${toll}`;
 }
 

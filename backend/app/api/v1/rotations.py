@@ -259,6 +259,7 @@ async def rotation_options(repo: _Repo) -> RotationOptions:
                         name=character.name,
                         element=str(character.element.value),
                         icon=character.icon,
+                        burst_energy_cost=character.burst_energy_cost,
                         element_icon=element_symbols.symbol_for(character.element),
                         # Keyed by gcsim's **action**, not by talent type: they are two
                         # vocabularies and they look like one. `gcsim_keys.ability_names`

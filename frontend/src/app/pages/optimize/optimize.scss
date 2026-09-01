@@ -52,12 +52,21 @@
     li.muted { display: block; }
   }
 
-  .results li.chosen { background: rgb(221 174 33 / 8%); }
+  /* The expanded row, lifted rather than tinted.
+     Owner, 2026-08-31: *"I don't like the color of the background of the details either."*
+     It was `rgb(221 174 33 / 8%)` — a hardcoded brass wash, wrong on both counts. Brass is
+     this palette's *action* accent, and an opened disclosure is state, not an action; and a
+     literal colour here is the rule `_tokens.scss` exists to enforce. `--surface` is the
+     neutral lift every other raised thing in the app uses. */
+  .results li.chosen { background: var(--surface); }
 
   .explanation {
     margin-top: 1rem;
     padding: 0.9rem 1rem;
-    border: 1px solid rgb(255 255 255 / 12%);
+    /* Recessed inside the lifted row, so the pane reads as opening out of it rather than
+       floating over it. Both tokens, replacing a hardcoded white-alpha border. */
+    background: var(--bg-deep);
+    border: 1px solid var(--surface-rule);
     border-radius: 0.4rem;
 
     h2 { margin: 0 0 0.35rem; font-size: 1rem; }

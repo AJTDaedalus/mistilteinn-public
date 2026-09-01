@@ -165,6 +165,23 @@ export function fourPieceSetOf(setCounts: Readonly<Record<number, number>>): num
 }
 
 /**
+ * Whether more Energy Recharge could change this recipe's score at all.
+ *
+ * The ladder is a step function of team DPS against ER. If every rung reports the same DPS the
+ * rotation already bursts on time at the lowest ER measured, `energyRatio` returns 1 whatever
+ * the candidate wears, and ER is dead weight — the same answer as having no ladder.
+ *
+ * A rung with no `dps` is not a flat rung; it is an unmeasured one, and is skipped rather than
+ * read as agreement.
+ */
+function energyLadderVaries(recipe: Recipe): boolean {
+  const measured = (recipe.meta.energySweep ?? [])
+    .map((point) => point.dps)
+    .filter((dps): dps is number => typeof dps === 'number');
+  return new Set(measured).size > 1;
+}
+
+/**
  * The quantities that change a recipe's score, for the lossless Pareto layer.
  *
  * **Getting this wrong makes a lossless layer lossy**, silently: a piece dominated on the
@@ -185,9 +202,24 @@ export function fourPieceSetOf(setCounts: Readonly<Record<number, number>>): num
  *
  * Intersecting would make a layer that advertises itself as lossless **silently lossy**, and
  * the result would still look like a complete ranking. `docs/TASKS_recipe_surface.md` R.6.
+ *
+ * ## Energy Recharge, and the bug this docstring predicted
+ *
+ * Reported from production: *"I just tried an Optimize run on this team with Furina, but no ER
+ * sands were picked in any of the top optimizations."* ER became a scoring quantity when
+ * `evaluateRecipe` started scaling by the energy ladder — and this function did not know, so
+ * **every ER sands dominated on crit and ATK was discarded before it was ever scored**. The
+ * ladder was working; nothing it could have changed survived to be ranked. Exactly the failure
+ * the paragraph above describes, arriving through a stat rather than through a set.
+ *
+ * It is added **only when the ladder is not flat**. Above the ER threshold every rung returns
+ * the same DPS, `energyRatio` is 1 for every candidate, and ER genuinely cannot change an
+ * order — pruning on a quantity that provably does nothing would cost every search for the
+ * benefit of none. So the condition is the same one the scorer uses.
  */
 export function liveQuantitiesFor(...recipes: readonly Recipe[]): string[] {
   const live = new Set<string>(['crit_rate', 'crit_dmg']);
+  if (recipes.some(energyLadderVaries)) live.add('energy_recharge');
   const parts: Record<string, string[]> = {
     atk: ['base_atk', 'atk_pct', 'flat_atk'],
     hp: ['base_hp', 'hp_pct', 'flat_hp'],
