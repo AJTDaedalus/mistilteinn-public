@@ -17,7 +17,7 @@ import {
   type RecipeStore,
 } from '../../sim/recipe-cache';
 import { energyShortfall, type EnergyShortfall } from '../../sim/recipe-energy';
-import { energyDelays, type EnergyDelay } from '../../sim/energy-delay';
+import { energyCost, type EnergyCost } from '../../sim/energy-delay';
 
 /**
  * How the gcsim module is obtained, and where recipes are kept.
@@ -80,12 +80,12 @@ export interface CalibrationCaveats {
    */
   unstable: { label: string; abilities: string[] }[];
   /**
-   * Teammates who could not burst on time, with gcsim's own seconds.
+   * What energy is costing the team, measured against the same rotation run with it free.
    *
    * Carried on `recipe.meta` as well, for the same reason `unstable` is: the aggregate that
    * measures it runs on a cache **miss**, so a hit would otherwise come back silent.
    */
-  energyDelays: EnergyDelay[];
+  energyCost: EnergyCost | null;
   /** States carrying a conversion no probe could resolve, with the damage share affected. */
   staleConversions: { label: string; term: string; damageShare: number }[];
   /** States whose recipes were served from cache rather than recalculated. */
@@ -130,6 +130,16 @@ const SEED = '12345';
  * this repo regrets.
  */
 const AGGREGATE_RUNS = 100;
+
+/**
+ * The same config with gcsim told energy is free.
+ *
+ * `ignore_burst_energy` is a real config option (`pkg/gcs/parser/parseOptions.go`), and the
+ * counterfactual gcsim's own substat optimizer measures against.
+ */
+function withFreeEnergy(config: string): string {
+  return config.replace(/^options /m, 'options ignore_burst_energy=true ');
+}
 
 /**
  * The ER ladder the sweep walks, and how many iterations each rung gets.
@@ -225,7 +235,7 @@ export class RecipeOptimizeService {
     let noFourPiece: Recipe | null = null;
     const caveats: CalibrationCaveats = {
       unstable: [], staleConversions: [], fromCache: [], unscoredLabels: [],
-      energyDelays: [],
+      energyCost: null,
     };
 
     onProgress({ done: 0, total: targets.length, current: '', loading: true });
@@ -286,6 +296,15 @@ export class RecipeOptimizeService {
         // a set-independent key.
         const wantsAggregate = target.artifactSetIds.length === 0;
         const aggregate = wantsAggregate ? runConfig(mod, configs.baseline, AGGREGATE_RUNS) : null;
+        // **The same run with energy free, because a gated rotation hides the shortfall.**
+        // The compiler gates every step on `.ready`, so gcsim never *attempts* an unaffordable
+        // burst and records no `insufficient_energy` — measured at 0 for all four characters
+        // on a team plainly starved, where the ungated community config reported 67.1 s.
+        // Comparing against `ignore_burst_energy` is what gcsim's own substat optimizer does,
+        // and it is the only way a gated rotation can say what energy costs.
+        const freeEnergy = aggregate
+          ? runConfig(mod, withFreeEnergy(configs.baseline), AGGREGATE_RUNS)
+          : null;
         if (aggregate !== null) {
           // Offered to the cache, never awaited for correctness. `DECISIONS.md` §25: the
           // corpus accumulates from real searches, and a user whose search finished must not
@@ -321,16 +340,17 @@ export class RecipeOptimizeService {
           // The optimized character's own energy is already covered, properly, by
           // `minimumEnergyRecharge` and `energyShortfall`, which the ER sweep measures against
           // their actual ER.
+          //
+          // **Every character now, and the optimized one included.** The seconds-based figure
+          // had to skip them, because the baseline strips their artifacts to `er=0` and their
+          // wait was an artefact. A burst *count* does not care: the baseline is the same
+          // config in both runs, so the difference is energy and nothing else.
           const keys = configs.characters ?? [];
-          recipe.meta.energyDelays = aggregate
-            ? energyDelays(aggregate.raw, keys)
-              .filter((delay) => keys.indexOf(delay.character) > 0)
-              .map((delay) => ({
-                ...delay,
-                character: recipe.meta.characters[keys.indexOf(delay.character)]
-                  ?? delay.character,
-              }))
-            : [];
+          recipe.meta.energyCost = aggregate && freeEnergy
+            ? energyCost(aggregate.raw, freeEnergy.raw, recipe.meta.characters.length
+              ? recipe.meta.characters
+              : keys)
+            : null;
           return recipe;
         };
 
@@ -365,8 +385,8 @@ export class RecipeOptimizeService {
       }
       // Reported once for the run, not once per target: the wait is a property of the team and
       // the rotation, and repeating it per artifact set would read as several problems.
-      if (recipe.meta.energyDelays?.length && !caveats.energyDelays.length) {
-        caveats.energyDelays = [...recipe.meta.energyDelays];
+      if (recipe.meta.energyCost?.characters.length && !caveats.energyCost) {
+        caveats.energyCost = recipe.meta.energyCost;
       }
 
       for (const stale of recipe.meta.staleConversions) {

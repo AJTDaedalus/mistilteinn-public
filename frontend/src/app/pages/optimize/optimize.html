@@ -376,12 +376,12 @@
     }
 
     @if (energyDelay(); as delay) {
-      <!-- **gcsim's own seconds, per character.** `pkg/agg/failures` sums the frames of every
-           `insufficient_energy` interval and divides by 60, so this is measured rather than
-           inferred. Measured on the owner's team: identical action counts to gcsim's published
-           run, 191.7 s against 124.6 s, and the whole difference was one teammate waiting.
-           Teammates only — the calibration strips the optimized character's own ER, so their
-           wait here would be an artefact; theirs is the shortfall line above. -->
+      <!-- **Measured against the same rotation with energy free.** A rotation this app
+           compiled gates every step on `.ready`, so gcsim never attempts an unaffordable burst
+           and records no failure — `insufficient_energy` reads 0 for a team that plainly
+           cannot burst. Comparing burst counts is what gcsim's own substat optimizer does, and
+           it covers the optimized character too: the baseline is the same config in both runs,
+           so the difference is energy and nothing else. -->
       <p class="error" role="alert">{{ delay }}</p>
     }
 

@@ -30,7 +30,7 @@ const RECIPE = {
   hits: [], seed: '12345',
   meta: {
     seed: '12345', staleConversions: [], characters: [], unstable: [],
-    calibratedSetIds: [1], minimumEnergyRecharge: 0.3, energyDelays: [],
+    calibratedSetIds: [1], minimumEnergyRecharge: 0.3,
   },
 } as unknown as Recipe;
 

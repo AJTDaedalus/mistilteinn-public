@@ -457,7 +457,7 @@ describe('2+2 pair search', () => {
     hits: [hit({ talent })],
     seed: '1',
     meta: {
-      seed: '1', staleConversions: [], characters: [], unstable: [], calibratedSetIds: ids, minimumEnergyRecharge: null, energyDelays: [],
+      seed: '1', staleConversions: [], characters: [], unstable: [], calibratedSetIds: ids, minimumEnergyRecharge: null,
     },
   });
 

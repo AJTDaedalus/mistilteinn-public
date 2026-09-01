@@ -37,7 +37,7 @@ import { describeStat } from '../../shared/stat-label';
 import { substatReadings } from '../../shared/substat-bars/substat-bars';
 import { groupStats, type StatAccount, type StatGroup } from '../../shared/stat-groups';
 import { energyShortfall, type EnergyShortfall } from '../../sim/recipe-energy';
-import { energyDelayMessage } from '../../sim/energy-delay';
+import { energyCostMessage } from '../../sim/energy-delay';
 import { damageShare, type CharacterShare } from '../../sim/damage-share';
 import {
   candidateStatsFrom,
@@ -801,13 +801,15 @@ export class OptimizePage implements OnInit {
   /**
    * The red line naming who cannot burst on time, and by how long.
    *
-   * Owner's wording. It reads off the recipe's `energyDelays`, which carry gcsim's own
-   * per-character seconds; a rotation that stalls on energy loses DPS with nothing else on
-   * screen to explain it — measured at **67 seconds** on the owner's own team.
+   * Owner's wording. Measured against the same rotation run with energy free, because a
+   * rotation this app compiled gates every step on `.ready` and so never records a *failed*
+   * action — it skips the burst instead. On the owner's team: Furina casts 2 bursts where free
+   * energy casts 5, costing 7 % DPS, while `insufficient_energy` reads 0 for everyone.
    */
-  protected readonly energyDelay = computed(
-    () => energyDelayMessage(this.caveats()?.energyDelays ?? []),
-  );
+  protected readonly energyDelay = computed(() => {
+    const cost = this.caveats()?.energyCost;
+    return cost ? energyCostMessage(cost) : null;
+  });
 
   protected readonly equipping = signal(false);
   /** Non-null after an equip that succeeded, saying what actually moved. */

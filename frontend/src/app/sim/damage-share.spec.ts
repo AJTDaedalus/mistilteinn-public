@@ -24,7 +24,7 @@ const recipe = (hits: RecipeHit[], characters: string[] = []): Recipe => ({
   hits, seed: '1',
   meta: {
     seed: '1', staleConversions: [], unstable: [], characters,
-    calibratedSetIds: [], minimumEnergyRecharge: null, energyDelays: [],
+    calibratedSetIds: [], minimumEnergyRecharge: null,
   },
 } as unknown as Recipe);
 

@@ -31,7 +31,7 @@
  */
 
 /** Which stat an ability scales off. gcsim states this; it is not inferred. */
-import type { EnergyDelay } from './energy-delay';
+import type { EnergyCost } from './energy-delay';
 
 export type RecipeScaling = 'atk' | 'hp' | 'def' | 'em';
 
@@ -203,9 +203,9 @@ export interface RecipeMeta {
    */
   //
   // **Optional, because it is genuinely absent.** Only the baseline target runs the aggregate
-  // that measures it, so a 4-piece recipe has no delays to carry — and making every caller
-  // invent an empty array to satisfy a type would be the type lying about the data.
-  energyDelays?: EnergyDelay[];
+  // that measures it, so a 4-piece recipe has none to carry — and making every caller invent
+  // an empty value to satisfy a type would be the type lying about the data.
+  energyCost?: EnergyCost | null;
   /**
    * The catalogue id of the 4-piece set this recipe was calibrated with, or `null` for a
    * calibration that equipped none.
@@ -417,7 +417,6 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
       // set was equipped, nor about a sweep it was not part of.
       calibratedSetIds: [],
       minimumEnergyRecharge: null,
-      energyDelays: [],
     },
   };
 }
