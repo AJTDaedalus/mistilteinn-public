@@ -7,8 +7,19 @@ Real, community-submitted gcsim configs pulled from **gcsim's own public databas
 
 **These files are verbatim.** Do not reformat, re-indent, normalise line endings, or "fix"
 anything in them — they are test input for the gcsim-config importer, and any edit invalidates
-the test. In particular every file uses **CRLF (`\r\n`)** line endings, exactly as the database
-stores them.
+the test. The first four use **CRLF (`\r\n`)** line endings, exactly as the database stores
+them; `skirk-furina-citlali-escoffier.txt` uses bare **LF**, and that is the API payload's own
+content rather than an artefact of retrieval — checked against the raw JSON before saving. The
+importer therefore has to read both, which is a reason to keep the pair rather than tidy one.
+
+## The fifth file
+
+`skirk-furina-citlali-escoffier.txt` (gcsim db `kDHmWKmfgqtF`) was added **2026-08-31**,
+retrieved from the same `/api/share/db/<id>` endpoint. The owner linked it as a rotation they
+wanted to import, and it turned out to be the first committed config with an **opener** —
+19 statements that run once before the loop.
+
+It imported silently as 32 steps, dropping all 19. It is here as the regression case.
 
 ## How they were retrieved
 

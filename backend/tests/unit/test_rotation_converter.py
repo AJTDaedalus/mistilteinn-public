@@ -20,12 +20,12 @@ DB = pathlib.Path(__file__).resolve().parents[2].parent / "references" / "gcsim_
 
 
 def test_the_committed_configs_are_where_this_file_thinks_they_are() -> None:
-    """**A `skipif` here would be a lie.** These four files are committed, so their absence is
+    """**A `skipif` here would be a lie.** These five files are committed, so their absence is
     a wrong path in this test rather than an environment without them — and a skip would report
     green for a check that never ran, which this repo treats as a failure.
     """
     assert DB.is_dir(), f"{DB} does not exist"
-    assert len(list(DB.glob("*.txt"))) == 4
+    assert len(list(DB.glob("*.txt"))) == 5
 
 
 class _Character:
@@ -178,3 +178,58 @@ def test_a_config_built_on_user_functions_is_still_refused(name: str) -> None:
 
     with pytest.raises(RotationParseError):
         parse_action_block(text, [])
+
+
+# ── the opener ───────────────────────────────────────────────────────────────
+
+
+def test_an_opener_is_refused_rather_than_dropped() -> None:
+    """A config's pre-loop actions are not part of the cycle, and must not vanish into it.
+
+    `skirk-furina-citlali-escoffier.txt` is the owner's own linked rotation. It runs 19
+    statements once — Furina's opener, Citlali, Escoffier, then Skirk's burst and four
+    `attack:5` strings — before entering a `for` loop of 32.
+
+    Before the head guard existed this imported **silently, as 32 steps**: a clean-looking
+    result, the right character on field, and none of the opener. The tail of a config has
+    been guarded since the parser was written, with a comment explaining that gcsim would run
+    those statements so dropping them changes what the config means. The head had no such
+    check, and the same argument applies to it exactly.
+    """
+    roster = [
+        _Character("10000114", "Skirk", "cryo"),
+        _Character("10000089", "Furina", "hydro"),
+        _Character("10000107", "Citlali", "cryo"),
+        _Character("10000112", "Escoffier", "cryo"),
+    ]
+    text, _ = convert((DB / "skirk-furina-citlali-escoffier.txt").read_text())
+
+    with pytest.raises(RotationParseError) as refused:
+        parse_action_block(text, roster)
+
+    message = str(refused.value)
+    assert "19 statement(s) run before the loop" in message
+    # The burst is the one a reader would most notice missing, so it is named explicitly.
+    assert "skirk burst" in message
+    assert "The loop itself is importable without them." in message
+
+
+def test_a_config_statement_before_the_loop_is_not_an_opener() -> None:
+    """`char`, `add`, `options`, `target`, `energy` and `active` all precede the loop legally.
+
+    The head guard must tell those apart from actions, or it would refuse every config ever
+    written. It asks the same `_statement` parser the body uses, so the two cannot disagree.
+    """
+    roster = [_Character("10000002", "Kamisato Ayaka", "cryo")]
+    config = (
+        'ayaka char lvl=90/90 cons=0 talent=9,9,9;\n'
+        'ayaka add weapon="mistsplitter" refine=1 lvl=90/90;\n'
+        "options iteration=100;\n"
+        "target lvl=100 resist=0.1;\n"
+        "active ayaka;\n"
+        "while 1 {\n"
+        "if .ayaka.attack.ready { ayaka attack; }\n"
+        "}\n"
+    )
+
+    assert len(parse_action_block(config, roster)) == 1

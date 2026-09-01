@@ -93,7 +93,7 @@ def parse_action_block(config: str, characters: Iterable[Any]) -> list[dict[str,
     lines = [line.strip() for line in config.splitlines()]
     lines = [line for line in lines if line and not line.startswith("#")]
 
-    body = _loop_body(lines)
+    body = _loop_body(lines, by_key)
 
     steps: list[dict[str, Any]] = []
     problems: list[str] = []
@@ -158,7 +158,7 @@ def _canonical(key: str, by_key: dict[str, str]) -> str:
     return alias if alias is not None and alias in by_key else key
 
 
-def _loop_body(lines: list[str]) -> list[str]:
+def _loop_body(lines: list[str], by_key: dict[str, str]) -> list[str]:
     """The statements inside `while 1 { … }`, refusing every other shape.
 
     **A bare action list is refused, and that is the point.** gcsim runs one without a loop
@@ -217,6 +217,30 @@ def _loop_body(lines: list[str]) -> list[str]:
             f"the loop is {lines[start]!r}, not `while 1 {{`. A bounded or conditional loop "
             f"repeats a rotation a number of times, which is a property of the simulation "
             f"rather than of the rotation, and this model does not carry it."
+        )
+        raise RotationParseError(msg)
+
+    # **Anything before the loop is guarded the same way as anything after it.** The tail
+    # check below has been here since the start; the head had none, and an opener — the
+    # statements a config runs once before its cycle — was dropped without a word. Measured on
+    # a real community config (gcsim db `kDHmWKmfgqtF`): 19 statements silently discarded,
+    # including the on-field character's burst, leaving 32 steps that looked like a clean
+    # import of a 51-statement rotation. That is precisely the failure the tail comment names,
+    # and it was on the side nobody had written a check for.
+    #
+    # A *config* statement is not an opener: `skirk char lvl=90`, `add weapon=`, `options`,
+    # `target`, `energy` and `active` all legitimately precede the loop and carry no actions.
+    # The test is whether the line reads as an action, asked with the same parser that reads
+    # the body — so the two can never disagree about what an action is.
+    head = [line for line in lines[:start] if line]
+    opener = [line for line in head if _statement(line, by_key)[0] is not None]
+    if opener:
+        msg = (
+            f"{len(opener)} statement(s) run before the loop and would be dropped: "
+            f"{'; '.join(repr(o) for o in opener)}. That is an opener — actions a rotation "
+            f"performs once before its cycle — and this model holds a single repeating list, "
+            f"so importing it would silently discard them. The loop itself is importable "
+            f"without them."
         )
         raise RotationParseError(msg)
 
