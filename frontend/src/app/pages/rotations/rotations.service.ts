@@ -178,6 +178,29 @@ export class RotationsService {
     return (data as { config: string }).config;
   }
 
+  /**
+   * Read a gcsim config back into steps — a **preview**, which saves nothing.
+   *
+   * The server refuses rather than guesses: a config using conditionals, `wait`, or a loop
+   * that is not `while 1` comes back 422 naming every line it could not express, because
+   * dropping an `if .noelle.energy > 40` would leave a rotation that looks like the author's
+   * and simulates to a number they never published. `rotation_parser.py` is written at length
+   * about why that refusal is the feature.
+   *
+   * `rewrites` is the other half: what the converter *did* change, in words, so a `for`
+   * becoming a `while 1` is met here rather than in a damage number.
+   */
+  async importFromGcsim(
+    teamId: string, config: string,
+  ): Promise<{ steps: RotationStep[]; rewrites: string[] }> {
+    const { data, error } = await this.api.POST('/api/v1/rotations/import', {
+      body: { team_id: teamId, config },
+    });
+    if (error) throw error;
+    const read = data as { steps: RotationStep[]; rewrites?: string[] };
+    return { steps: read.steps, rewrites: read.rewrites ?? [] };
+  }
+
   /** The gcsim config this rotation becomes — so a user can see what they authored. */
   async compile(id: string): Promise<string> {
     const { data, error } = await this.api.POST('/api/v1/rotations/{rotation_id}/compile', {

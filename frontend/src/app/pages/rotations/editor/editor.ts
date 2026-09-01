@@ -832,6 +832,54 @@ export class RotationEditor {
   // them appear as the rotation is written is the difference between a compiler you trust and
   // one you hope about.
 
+  /* ── Import from gcsim ──────────────────────────────────────────────────────
+     The parser, the converter and `POST /rotations/import` all shipped on 2026-08-29 and
+     **nothing ever called them**. The owner hand-built a rotation that already existed at a
+     gcsim db link, reporting they *"can't seem to find how to import a rotation from gcsim
+     format"* — which was exactly right: the page's only entry point was "New rotation".
+
+     It lives in the builder rather than on its own screen because the endpoint returns a
+     *preview*. Importing creates nothing; the steps land here, get edited, and are saved
+     through the same button as any other rotation. */
+  protected readonly importing = signal(false);
+  protected readonly configText = signal('');
+  protected readonly importError = signal<string | null>(null);
+  /** What the converter rewrote. Kept on screen after a successful import — never silent. */
+  protected readonly rewrites = signal<string[]>([]);
+
+  protected toggleImport(): void {
+    this.importing.update((on) => !on);
+    if (!this.importing()) this.importError.set(null);
+  }
+
+  /**
+   * Replace the steps with the config's.
+   *
+   * **Replaces, and says so before the click** — the panel names how many steps it will
+   * overwrite. A config is a whole rotation, so appending it to half of another one would
+   * produce something neither the author nor the user wrote.
+   */
+  protected async importConfig(): Promise<void> {
+    const teamId = this.teamId();
+    const config = this.configText().trim();
+    if (!teamId || !config) return;
+    this.importError.set(null);
+    try {
+      const { steps, rewrites } = await this.rotations.importFromGcsim(teamId, config);
+      this.steps.set(steps);
+      this.rewrites.set(rewrites);
+      this.importing.set(false);
+      this.configText.set('');
+      this.schedulePreview();
+    } catch (err) {
+      // The 422 names every line it refused. That list *is* the answer to "why did this not
+      // import", so it goes on screen whole rather than as "import failed" -- and past the
+      // shared 200-character cap, which was cutting the first refusal seen on screen off
+      // mid-sentence. The cap guards against unrecognised bodies; this message is authored.
+      this.importError.set(apiErrorMessage(err, 2000));
+    }
+  }
+
   /** Whether the preview pane is open. Off by default: it costs a request per edit. */
   protected readonly previewing = signal(false);
   protected readonly previewError = signal<string | null>(null);

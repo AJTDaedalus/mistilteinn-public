@@ -20,13 +20,13 @@
  * The first fix for this was made at **one call site** in the rotation editor, which left the
  * other twenty-two. This is the one place that owes every caller an answer.
  */
-export function apiErrorMessage(error: unknown): string {
+export function apiErrorMessage(error: unknown, maxLength = MAX_MESSAGE): string {
   // An `Error` first: it is the commonest thing a `catch` holds and the one the fallback was
   // silently worst at.
   if (error instanceof Error) {
-    return truncate(error.message || error.name || 'Error');
+    return truncate(error.message || error.name || 'Error', maxLength);
   }
-  if (typeof error === 'string') return truncate(error);
+  if (typeof error === 'string') return truncate(error, maxLength);
   if (error === null || error === undefined) {
     // `JSON.stringify(undefined)` is the *value* `undefined`, so the old fallback returned
     // something that was not even a string.
@@ -35,7 +35,7 @@ export function apiErrorMessage(error: unknown): string {
   if (error && typeof error === 'object' && 'detail' in error) {
     const detail = (error as { detail: unknown }).detail;
     if (typeof detail === 'string') {
-      return truncate(detail);
+      return truncate(detail, maxLength);
     }
     if (Array.isArray(detail)) {
       const msgs = detail
@@ -44,7 +44,7 @@ export function apiErrorMessage(error: unknown): string {
         )
         .filter((m): m is string => !!m);
       if (msgs.length) {
-        return truncate(msgs.join('; '));
+        return truncate(msgs.join('; '), maxLength);
       }
     }
   }
@@ -52,7 +52,7 @@ export function apiErrorMessage(error: unknown): string {
   // `Error` serialised across a worker boundary arrives as.
   if (typeof error === 'object' && 'message' in error) {
     const message = (error as { message: unknown }).message;
-    if (typeof message === 'string' && message) return truncate(message);
+    if (typeof message === 'string' && message) return truncate(message, maxLength);
   }
   const stringified = JSON.stringify(error);
   // `{}` is what an object with no enumerable properties gives, and it tells a user nothing.
@@ -60,9 +60,18 @@ export function apiErrorMessage(error: unknown): string {
   if (!stringified || stringified === '{}') {
     return 'Something went wrong, and the error carried no message.';
   }
-  return truncate(stringified);
+  return truncate(stringified, maxLength);
 }
 
+/**
+ * A caller may raise the cap when it knows the message is *authored* rather than incidental.
+ *
+ * 200 characters is right for the case the guard was built for — an unrecognised body, which
+ * can be a stack trace. It is wrong for an endpoint whose refusal is a list: the gcsim import
+ * answers "why did this not import" by naming every line it could not express, and cutting
+ * that off mid-sentence throws away the whole answer. Found by importing a config and reading
+ * the screen, not by a test: the truncation is valid output and every suite stayed green.
+ */
 /** Longest message this will hand to the UI. */
 const MAX_MESSAGE = 200;
 
@@ -75,6 +84,6 @@ const MAX_MESSAGE = 200;
  * extractor is gone and the guard moved here, where every caller gets it rather than
  * whichever one happened to reimplement it.
  */
-function truncate(message: string): string {
-  return message.length <= MAX_MESSAGE ? message : `${message.slice(0, MAX_MESSAGE - 1)}…`;
+function truncate(message: string, limit: number = MAX_MESSAGE): string {
+  return message.length <= limit ? message : `${message.slice(0, limit - 1)}…`;
 }

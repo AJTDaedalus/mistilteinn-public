@@ -1167,3 +1167,61 @@ describe('RotationEditor — a drag that goes nowhere', () => {
     expect(setData).toHaveBeenCalledWith('text/plain', expect.stringContaining('Ayaka'));
   });
 });
+
+describe('RotationEditor importing a gcsim config', () => {
+  /* The parser and `POST /rotations/import` shipped with no caller. The owner hand-built a
+     rotation that already existed at a gcsim db link, because the page's only entry point was
+     "New rotation". These tests are about the door, not the parser -- the refusal logic has
+     its own suite in `backend/tests/unit/test_rotation_parser.py`. */
+
+  it('replaces the steps with the imported ones, and keeps the rewrites on screen', async () => {
+    const importFromGcsim = vi.fn().mockResolvedValue({
+      steps: [
+        { character: 'skirk', action: 'skill', repeat: 1, note: '' },
+        { character: 'skirk', action: 'attack', repeat: 3, note: '' },
+      ],
+      rewrites: ['line 4: `for` became `while 1`'],
+    });
+    const page = editorWith({ importFromGcsim } as unknown as Partial<RotationsService>);
+    page['addStep']();
+    page['configText'].set('skirk skill;');
+
+    await page['importConfig']();
+
+    expect(importFromGcsim).toHaveBeenCalledWith('team-1', 'skirk skill;');
+    expect(page['steps']().length).toBe(2);
+    // Never silent: a `for` becoming a `while 1` is a real change to the author's config, and
+    // the user meets it here rather than in a damage number.
+    expect(page['rewrites']()).toEqual(['line 4: `for` became `while 1`']);
+  });
+
+  it('shows a refusal whole, and leaves the steps it refused to replace alone', async () => {
+    // The 422 names every line it could not express. That list *is* the answer to "why did
+    // this not import", so a summary of it would throw away the feature.
+    const detail = 'line 3: `if .noelle.energy > 40` is a condition, not a step';
+    const page = editorWith({
+      importFromGcsim: vi.fn().mockRejectedValue({ detail }),
+    } as unknown as Partial<RotationsService>);
+    page['addStep']();
+    const before = page['steps']();
+    page['configText'].set('if .noelle.energy > 40 { noelle burst; }');
+
+    await page['importConfig']();
+
+    expect(page['importError']()).toContain('condition, not a step');
+    expect(page['steps']()).toEqual(before);
+  });
+
+  it('does not call the server without a team', async () => {
+    // A config names characters in gcsim's vocabulary, and turning `noelle` back into a
+    // catalogue row needs the roster -- the endpoint 422s without one, so asking is pointless.
+    const importFromGcsim = vi.fn();
+    const page = editorWith({ importFromGcsim } as unknown as Partial<RotationsService>);
+    page['pickTeam']([]);
+    page['configText'].set('skirk skill;');
+
+    await page['importConfig']();
+
+    expect(importFromGcsim).not.toHaveBeenCalled();
+  });
+});

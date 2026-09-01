@@ -332,7 +332,56 @@
     @if (editing()) {
       <button type="button" (click)="newRotation()">New</button>
     }
+    <!-- The importer shipped on 2026-08-29 with no caller, so a gcsim config could be parsed
+         and refused by line with no way to hand one in. Disabled without a team for the same
+         reason the endpoint 422s without one: a config names characters in gcsim's
+         vocabulary, and turning `noelle` back into a catalogue row needs the roster. -->
+    <button type="button" (click)="toggleImport()" [disabled]="!teamId()">
+      {{ importing() ? 'Cancel import' : 'Import from gcsim' }}
+    </button>
   </div>
+
+  @if (importing()) {
+    <div class="import">
+      <label for="gcsim-config">Paste a gcsim config</label>
+      <textarea
+        id="gcsim-config"
+        rows="8"
+        spellcheck="false"
+        placeholder="skirk skill;&#10;skirk attack, attack, attack;"
+        [value]="configText()"
+        (input)="configText.set($any($event.target).value)"
+      ></textarea>
+      <p class="hint">
+        The action block, or a whole config — the rest is ignored. Anything that cannot be
+        expressed as steps is refused by line rather than dropped.
+        @if (steps().length > 0) {
+          <strong>This replaces the {{ steps().length }} step{{ steps().length === 1 ? '' : 's' }}
+          below.</strong>
+        }
+      </p>
+      <button type="button" (click)="importConfig()" [disabled]="!configText().trim()">
+        Read it into steps
+      </button>
+    </div>
+  }
+
+  @if (importError(); as message) {
+    <!-- Whole, not summarised. A refusal lists every line it could not express, and that
+         list is the answer to "why did this not import". -->
+    <p class="error" role="alert">{{ message }}</p>
+  }
+
+  @if (rewrites().length > 0) {
+    <div class="rewrites">
+      <p class="hint">Imported, with changes:</p>
+      <ul>
+        @for (note of rewrites(); track note) {
+          <li class="hint">{{ note }}</li>
+        }
+      </ul>
+    </div>
+  }
 
   @if (actionError(); as message) {
     <p class="error" role="alert">{{ message }}</p>

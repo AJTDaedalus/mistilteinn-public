@@ -88,3 +88,19 @@ describe('apiErrorMessage — things that are not API errors', () => {
     expect(apiErrorMessage(new Error('x'.repeat(500)))).toHaveLength(200);
   });
 });
+
+describe('apiErrorMessage caps', () => {
+  it('still truncates at 200 by default, so no existing caller changed', () => {
+    const long = 'x'.repeat(400);
+    expect(apiErrorMessage({ detail: long }).length).toBe(200);
+  });
+
+  it('lets a caller keep an authored refusal whole', () => {
+    // The gcsim import answers "why did this not import" by naming every line it could not
+    // express. At 200 characters that list is cut mid-sentence, which is how it was found --
+    // on screen, with every suite green, because a truncated string is valid output.
+    const refusal = `line ${'3'.repeat(1)}: ${'condition, not a step. '.repeat(20)}`;
+    expect(refusal.length).toBeGreaterThan(200);
+    expect(apiErrorMessage({ detail: refusal }, 2000)).toBe(refusal);
+  });
+});

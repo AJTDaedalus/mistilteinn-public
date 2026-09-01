@@ -37,6 +37,18 @@ label {
   line-height: 1.2;
 }
 
+/* Delete, told apart from duplicate. The two sat side by side as `⧉` and `×`, same size and
+   same colour, and the owner reported *"we need a way to delete moves"* about a button that
+   was already there — which is a control nobody can find rather than one nobody built.
+   Colour on hover/focus only, so a row of steps still reads as a row of steps. */
+.drop {
+  &:hover,
+  &:focus-visible {
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+}
+
 .controls {
   display: flex;
   gap: 0.5rem;
@@ -92,7 +104,11 @@ label {
    focus trapping, Escape and backdrop a hand-rolled panel would have to reimplement. The
    team picker inside it opens its own dialog on top, which the top layer stacks. */
 .editor-dialog {
-  width: min(52rem, 94vw);
+  /* 72rem, up from 52. The owner: *"the builder UI could be wider"*, in the same breath as
+     not finding the delete control. Those are one complaint — `.step` is `nowrap` with the
+     label set to shrink, so every rem the dialog lacks comes out of the step's text and
+     pushes four unlabelled glyph buttons into a huddle. Width is most of the legibility fix. */
+  width: min(72rem, 94vw);
   max-height: 88vh;
   padding: 0 var(--space-4) var(--space-4);
   border: 1px solid var(--brass-deep);
@@ -351,4 +367,34 @@ label {
 /* Smaller than it was: this is the source, and the timeline is the subject. */
 .roster li {
   padding: 2px var(--space-2);
+}
+
+/* The gcsim import panel. Sits under the controls rather than in a dialog of its own: the
+   endpoint returns a preview, and the steps it produces are edited in the list right below,
+   so putting a modal between the paste and the result would hide the thing being changed. */
+.import {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--brass-deep);
+  border-radius: var(--radius-2);
+
+  textarea {
+    width: 100%;
+    /* The one place a rotation arrives as text someone else wrote. Monospace because gcsim's
+       own config is, and a misread `;` is a refusal the user then has to find by eye. */
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    line-height: 1.45;
+    resize: vertical;
+  }
+
+  button { justify-self: start; }
+}
+
+.rewrites {
+  margin-top: 0.5rem;
+
+  ul { margin: 0.2rem 0 0; padding-left: 1.1rem; }
 }
