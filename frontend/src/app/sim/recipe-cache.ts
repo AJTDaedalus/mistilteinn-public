@@ -113,7 +113,18 @@ const PREFIX = 'mistilteinn:recipe:';
 // sweep gained a rung at the build's own ER, `ENERGY_LADDER_RUNS` went 20 → 60, and `dpsAt`
 // now reads a running maximum. A v4 entry holds a 20-iteration sweep with no baseline rung, and
 // `energyRatio` would fall back to the old denominator and quietly score on it.
-const SCHEMA = 5;
+//
+// **6: `staleConversions` no longer counts teammates.** #227 restored the `mine` filter that
+// `staleConversionsAfter` was missing, so a term belonging to a teammate's equipped gear is no
+// longer reported as a conversion no probe could resolve. The list lives in `meta` and is read
+// off the recipe *so that a cache hit reports it too* — which is exactly why the fix alone
+// changed nothing the owner could see: every v5 entry still holds the old list, naming
+// `flatAtk`, `flatHp` and `flatDef` against 96.6 % of the damage.
+//
+// **That is the fifth time, and the fourth of these entries says so.** The rule this file
+// keeps rediscovering: fixing what *populates* a cached field is a change to the cached
+// shape, whatever the field's type says. The type never changed here either.
+const SCHEMA = 6;
 
 export function cacheKey(key: RecipeCacheKey): string {
   return [
