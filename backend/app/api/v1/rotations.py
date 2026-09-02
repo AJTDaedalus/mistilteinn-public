@@ -43,6 +43,7 @@ from app.schemas.rotation import (
     RosterCharacter,
     RotationCopyRequest,
     RotationCreate,
+    RotationImportLinkRequest,
     RotationImportRead,
     RotationImportRequest,
     RotationOptions,
@@ -56,6 +57,12 @@ from app.schemas.team import TEAM_SLOTS
 from app.services import element_symbols, gcsim_keys
 from app.services.gcsim_config import GcsimConfigError, build_config, target_fields
 from app.services.gcsim_keys import GcsimKeyError, authorable_actions, pinned_commit
+from app.services.gcsim_share import (
+    GcsimShareError,
+    HttpShareTransport,
+    ShareTransport,
+    fetch_config,
+)
 from app.services.rotation_compiler import (
     RotationCompileError,
     compile_rotation,
@@ -297,6 +304,16 @@ async def create_rotation(
     return RotationRead.model_validate(created)
 
 
+def get_share_transport() -> ShareTransport:
+    """The live gcsim transport, overridable in a test.
+
+    A dependency rather than a module-level singleton for the reason `NanokaTransport` is a
+    protocol: **no test in this repo touches the network**, and the unit lane blocks
+    `socket.connect` outright. A test overrides this with a transport that serves a fixture.
+    """
+    return HttpShareTransport()
+
+
 @router.post("/import", response_model=RotationImportRead)
 @limiter.limit(WRITE_LIMIT)
 async def import_from_gcsim(
@@ -318,15 +335,7 @@ async def import_from_gcsim(
     way to see the difference. `rotation_parser` is written at length about this.
     """
     roster = await repo.character_rows(body.team_id)
-    if not roster:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                f"team {body.team_id!r} has no builds, so there is no roster to map gcsim's "
-                f"character keys onto. A config names characters in gcsim's vocabulary; "
-                f"turning `noelle` back into a catalogue row needs the team."
-            ),
-        )
+    _require_roster(roster, body.team_id)
     # **Converted first, then parsed.** The converter rewrites what is mechanically
     # translatable — `for`→`while 1`, comma sequences into one step each, comments away, and
     # the `.ready` gates our own compiler adds to everything — and the parser refuses whatever
@@ -336,7 +345,30 @@ async def import_from_gcsim(
     # one is blocked only by gcsim's short aliases (`arle`, `esco`), and two use user-defined
     # functions and cycle-index conditionals that are different rotations rather than different
     # spellings.
-    converted, notes = convert(body.config)
+    return _read_config(body.config, roster)
+
+
+def _require_roster(roster: dict[str, object], team_id: str) -> None:
+    """A config names characters in gcsim's vocabulary; a team is what maps them back."""
+    if not roster:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"team {team_id!r} has no builds, so there is no roster to map gcsim's "
+                f"character keys onto. A config names characters in gcsim's vocabulary; "
+                f"turning `noelle` back into a catalogue row needs the team."
+            ),
+        )
+
+
+def _read_config(config: str, roster: dict[str, object]) -> RotationImportRead:
+    """One config, read into steps — the half both import endpoints share.
+
+    Split out when the link importer arrived, so that a rotation fetched from gcsim and one
+    pasted from it cannot be read by two different parsers. The refusal rules are the whole
+    value of this path; a second copy of them would be a second set of them.
+    """
+    converted, notes = convert(config)
     try:
         steps = parse_action_block(converted, roster.values())
     except RotationParseError as exc:
@@ -344,6 +376,36 @@ async def import_from_gcsim(
     return RotationImportRead(
         steps=[RotationStep(**step) for step in steps], rewrites=notes,
     )
+
+
+@router.post("/import/link", response_model=RotationImportRead)
+@limiter.limit(WRITE_LIMIT)
+async def import_from_gcsim_link(
+    request: Request,  # slowapi reads the client address off it
+    body: RotationImportLinkRequest,
+    repo: _Repo,
+    transport: Annotated[ShareTransport, Depends(get_share_transport)],
+) -> RotationImportRead:
+    """The same import, from a gcsim database link rather than its pasted config.
+
+    **This is a fetch, not a simulation.** One GET of a stored document per import, and what
+    comes back is saved here as steps — so nothing depends on gcsim once this returns. That
+    matters because the owner's standing ruling is that this project does not push compute to
+    them.
+
+    **The endpoint it reads is undocumented**: `/api/share/db/<id>` is the route gcsim's own
+    single-page app calls, read out of its published bundle, and it may change. Survivable
+    because the import is a one-time write — a break costs new imports and never saved ones,
+    and the paste box beside it is the fallback. `gcsim_share` says the rest, including why
+    this takes an id and never a URL.
+    """
+    roster = await repo.character_rows(body.team_id)
+    _require_roster(roster, body.team_id)
+    try:
+        config = await fetch_config(body.link, transport)
+    except GcsimShareError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return _read_config(config, roster)
 
 
 @router.post("/preview")

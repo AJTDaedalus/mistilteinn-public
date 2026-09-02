@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from app.api.v1.rotations import get_share_transport
 from app.models.build import Build, EnemyProfile
 from app.models.character import Character
 from app.models.enums import Element, Rarity, StatType, WeaponType
@@ -706,6 +707,17 @@ async def test_a_character_gcsim_does_not_implement_is_refused_with_its_reason(
     assert "gcsim has no character key" in response.json()["detail"]
 
 
+class _StubShare:
+    """A share transport that serves one payload. No test here reaches gcsim."""
+
+    def __init__(self, payload: dict[str, object]) -> None:
+        self.payload = payload
+
+    async def fetch(self, entry_id: str) -> dict[str, object]:
+        """The stored run, ignoring which id was asked for."""
+        return self.payload
+
+
 # ── importing a gcsim config ─────────────────────────────────────────────────
 
 
@@ -732,6 +744,55 @@ async def test_a_config_this_app_emitted_imports_back_to_its_steps(
         (scene.barbara, "skill", 1),
         (scene.ayaka, "attack", 3),
     ]
+
+
+async def test_a_link_imports_the_same_way_a_pasted_config_does(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """The link tier, end to end, with gcsim served from a fixture rather than the network.
+
+    The point of the assertion is that both tiers land on **one** parser: a rotation fetched
+    from gcsim and one pasted from it must be read by the same rules, or the refusals that are
+    the whole value of this path would exist in one tier and not the other.
+    """
+    # gcsim's own keys, as the other import tests spell them.
+    config = (
+        "active barbara;\n"
+        "barbara skill;\n"
+        "kamisatoayaka attack:3;\n"
+    )
+
+    app = authed_client._transport.app
+    app.dependency_overrides[get_share_transport] = lambda: _StubShare(
+        {"config_file": config},
+    )
+    try:
+        imported = await authed_client.post(f"{ROTATIONS}/import/link", json={
+            "team_id": scene.team_id, "link": "https://gcsim.app/db/kDHmWKmfgqtF",
+        })
+    finally:
+        app.dependency_overrides.pop(get_share_transport, None)
+
+    assert imported.status_code == 200, imported.text
+    assert [(s["character"], s["action"], s["repeat"]) for s in imported.json()["steps"]] == [
+        (scene.barbara, "skill", 1),
+        (scene.ayaka, "attack", 3),
+    ]
+
+
+async def test_a_link_that_is_not_gcsim_is_refused_before_anything_is_fetched(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """No transport is registered, so reaching one at all would raise rather than 422.
+
+    That is the assertion: the refusal happens in the parse, not after a request.
+    """
+    response = await authed_client.post(f"{ROTATIONS}/import/link", json={
+        "team_id": scene.team_id, "link": "https://gcsim.app.evil.example/db/kDHmWKmfgqtF",
+    })
+
+    assert response.status_code == 422, response.text
+    assert "not a gcsim database link" in response.json()["detail"]
 
 
 async def test_importing_creates_nothing(authed_client: AsyncClient, scene: Scene):

@@ -2516,6 +2516,53 @@
         ]
       }
     },
+    "/api/v1/rotations/import/link": {
+      "post": {
+        "tags": [
+          "rotations"
+        ],
+        "summary": "Import From Gcsim Link",
+        "description": "The same import, from a gcsim database link rather than its pasted config.\n\n**This is a fetch, not a simulation.** One GET of a stored document per import, and what\ncomes back is saved here as steps \u2014 so nothing depends on gcsim once this returns. That\nmatters because the owner's standing ruling is that this project does not push compute to\nthem.\n\n**The endpoint it reads is undocumented**: `/api/share/db/<id>` is the route gcsim's own\nsingle-page app calls, read out of its published bundle, and it may change. Survivable\nbecause the import is a one-time write \u2014 a break costs new imports and never saved ones,\nand the paste box beside it is the fallback. `gcsim_share` says the rest, including why\nthis takes an id and never a URL.",
+        "operationId": "import_from_gcsim_link_api_v1_rotations_import_link_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RotationImportLinkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RotationImportRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/rotations/preview": {
       "post": {
         "tags": [
@@ -6615,6 +6662,27 @@
         ],
         "title": "RotationCreate",
         "description": "Body for `POST /rotations`."
+      },
+      "RotationImportLinkRequest": {
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "title": "Team Id"
+          },
+          "link": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Link"
+          }
+        },
+        "type": "object",
+        "required": [
+          "team_id",
+          "link"
+        ],
+        "title": "RotationImportLinkRequest",
+        "description": "Body for `POST /rotations/import/link` \u2014 a gcsim database link instead of its config.\n\nThe owner asked for this because copying a config out of gcsim's viewer is the tedious\nhalf of importing someone else's rotation.\n\n**A link, parsed server-side into an id.** `gcsim_share` builds the URL it fetches from a\nconstant host, so nothing a user types ever reaches an HTTP client \u2014 see that module on\nwhy a service that fetches a user-supplied URL is a request-forgery primitive."
       },
       "RotationImportRead": {
         "properties": {

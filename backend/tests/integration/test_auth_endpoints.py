@@ -121,6 +121,10 @@ _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     # Importing reads a team's roster to map gcsim's character keys, so it is owned
     # for the same reason `compile` is: it would otherwise report whether a team exists.
     ("POST", "/api/v1/rotations/import", {}),
+    # The link tier is owned for the same reason, and for one more: it makes this backend
+    # fetch from gcsim on the caller's behalf, so an anonymous caller would be an open proxy
+    # against a third party.
+    ("POST", "/api/v1/rotations/import/link", {}),
     # The library reads *published* rotations across every user, so it is not owner-scoped —
     # and it still requires a signed-in caller, because `liked_by_me` is a fact about someone
     # and a like has to belong to an account. An anonymous library would need a different

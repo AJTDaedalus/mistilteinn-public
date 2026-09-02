@@ -440,3 +440,18 @@ label {
     overflow-y: auto;
   }
 }
+
+
+/* The link row: an input that takes the width it can and a button that does not shrink. */
+.import__link {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.import__link input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.import__link button { flex: 0 0 auto; }

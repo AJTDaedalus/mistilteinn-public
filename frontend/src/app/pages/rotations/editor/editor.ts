@@ -843,6 +843,8 @@ export class RotationEditor {
      through the same button as any other rotation. */
   protected readonly importing = signal(false);
   protected readonly configText = signal('');
+  /** A gcsim database link, as the alternative to pasting its config. */
+  protected readonly configLink = signal('');
   protected readonly importError = signal<string | null>(null);
   /** What the converter rewrote. Kept on screen after a successful import — never silent. */
   protected readonly rewrites = signal<string[]>([]);
@@ -879,6 +881,36 @@ export class RotationEditor {
       this.importError.set(apiErrorMessage(err, 2000));
     }
   }
+
+  /**
+   * The same import, from a link.
+   *
+   * **Shares `importConfig`'s landing.** A rotation fetched from gcsim and one pasted from it
+   * are read by one parser on the server and land in one place here, so the refusals that are
+   * the whole value of importing cannot exist in one tier and not the other.
+   */
+  protected async importLink(): Promise<void> {
+    const teamId = this.teamId();
+    const link = this.configLink().trim();
+    if (!teamId || !link) return;
+    this.importError.set(null);
+    this.fetchingLink.set(true);
+    try {
+      const { steps, rewrites } = await this.rotations.importFromGcsimLink(teamId, link);
+      this.steps.set(steps);
+      this.rewrites.set(rewrites);
+      this.importing.set(false);
+      this.configLink.set('');
+      this.schedulePreview();
+    } catch (err) {
+      this.importError.set(apiErrorMessage(err, 2000));
+    } finally {
+      this.fetchingLink.set(false);
+    }
+  }
+
+  /** True while the server is fetching from gcsim — a round trip a user should see. */
+  protected readonly fetchingLink = signal(false);
 
   /** Whether the preview pane is open. Off by default: it costs a request per edit. */
   protected readonly previewing = signal(false);

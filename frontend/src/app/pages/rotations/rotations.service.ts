@@ -201,6 +201,25 @@ export class RotationsService {
     return { steps: read.steps, rewrites: read.rewrites ?? [] };
   }
 
+  /**
+   * The same import, from a gcsim database link.
+   *
+   * **The link goes to the server, not to gcsim.** `/api/share/db/` sends no
+   * `Access-Control-Allow-Origin`, so a browser fetch from this origin is blocked — and
+   * routing it through the backend is what lets the id be validated against a constant host
+   * rather than a URL being fetched wholesale.
+   */
+  async importFromGcsimLink(
+    teamId: string, link: string,
+  ): Promise<{ steps: RotationStep[]; rewrites: string[] }> {
+    const { data, error } = await this.api.POST('/api/v1/rotations/import/link', {
+      body: { team_id: teamId, link },
+    });
+    if (error) throw error;
+    const read = data as { steps: RotationStep[]; rewrites?: string[] };
+    return { steps: read.steps, rewrites: read.rewrites ?? [] };
+  }
+
   /** The gcsim config this rotation becomes — so a user can see what they authored. */
   async compile(id: string): Promise<string> {
     const { data, error } = await this.api.POST('/api/v1/rotations/{rotation_id}/compile', {

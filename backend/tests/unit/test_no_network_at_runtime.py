@@ -12,10 +12,24 @@ from tests.unit.conftest import NetworkAccessDeniedError
 
 _APP = Path(__file__).resolve().parents[2] / "app"
 
-#: Modules allowed to speak to the outside world at all. `nanoka_gi_importer` is the one,
-#: and only `scripts/seed_db.py` runs it — deliberately, by hand. Nothing else in `app/`
-#: may grow a fetch without this list changing in the same commit.
-_NETWORK_CAPABLE = {"app/data/importers/nanoka_gi_importer.py"}
+#: Modules allowed to speak to the outside world at all. Nothing else in `app/` may grow a
+#: fetch without this list changing in the same commit.
+#:
+#: - `nanoka_gi_importer` — the catalogue. Only `scripts/seed_db.py` runs it, by hand.
+#: - `gcsim_share` — **the first request-time fetch this app has**, and the entry worth
+#:   pausing on. E.6's rule is that the runtime reads committed snapshots rather than
+#:   fetching them, and that rule is about *game data*: a number this app computes with must
+#:   be pinned and reproducible. A gcsim database entry is neither — it is a document the
+#:   user is asking to import, named by a link they pasted, and it is written to this
+#:   database as steps the moment it arrives. Nothing downstream re-fetches it.
+#:
+#:   What it does change: a request now holds a worker while a third party answers. The
+#:   transport carries a 20-second timeout and a size ceiling for that reason, and the
+#:   endpoint requires a signed-in caller so it cannot be used as an open proxy.
+_NETWORK_CAPABLE = {
+    "app/data/importers/nanoka_gi_importer.py",
+    "app/services/gcsim_share.py",
+}
 
 #: Modules whose import means the file can open a connection. Matched against **parsed
 #: imports**, not against the file's text — several modules name these in a docstring while

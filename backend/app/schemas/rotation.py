@@ -417,6 +417,24 @@ class RotationImportRequest(BaseModel):
     config: str = Field(..., min_length=1, max_length=100_000)
 
 
+class RotationImportLinkRequest(BaseModel):
+    """Body for `POST /rotations/import/link` — a gcsim database link instead of its config.
+
+    The owner asked for this because copying a config out of gcsim's viewer is the tedious
+    half of importing someone else's rotation.
+
+    **A link, parsed server-side into an id.** `gcsim_share` builds the URL it fetches from a
+    constant host, so nothing a user types ever reaches an HTTP client — see that module on
+    why a service that fetches a user-supplied URL is a request-forgery primitive.
+    """
+
+    #: The same roster requirement as a pasted config, for the same reason.
+    team_id: str
+    #: `https://gcsim.app/db/kDHmWKmfgqtF`, its `/sh/` short form, or the bare id. Bounded
+    #: because a share id is at most 64 characters and a link around it is short.
+    link: str = Field(..., min_length=1, max_length=512)
+
+
 class RotationImportRead(BaseModel):
     """The steps a config was read as — a **preview**, not a saved rotation.
 

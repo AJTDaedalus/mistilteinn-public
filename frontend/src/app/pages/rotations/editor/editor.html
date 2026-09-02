@@ -267,7 +267,33 @@
 
     @if (importing()) {
       <div class="import">
-        <label for="gcsim-config">Paste a gcsim config</label>
+        <!-- The link first, because it is the shorter road: copying a config out of gcsim's
+           viewer is the tedious half of importing someone else's rotation. The paste box stays
+           below it, and is the fallback when the fetch fails — the endpoint it reads is
+           gcsim's own app's, and undocumented. -->
+      <label for="gcsim-link">Import from a gcsim link</label>
+      <div class="import__link">
+        <input
+          id="gcsim-link"
+          type="url"
+          spellcheck="false"
+          placeholder="https://gcsim.app/db/kDHmWKmfgqtF"
+          [value]="configLink()"
+          (input)="configLink.set($any($event.target).value)"
+          (keydown.enter)="importLink()"
+        />
+        <button
+          type="button"
+          (click)="importLink()"
+          [disabled]="!configLink().trim() || fetchingLink()"
+        >{{ fetchingLink() ? 'Fetching…' : 'Fetch it' }}</button>
+      </div>
+      <p class="hint">
+        The run's config is fetched and read into steps, exactly as pasting it would be.
+        Nothing is simulated on gcsim's side, and once imported the steps are yours.
+      </p>
+
+      <label for="gcsim-config">…or paste a gcsim config</label>
         <textarea
           id="gcsim-config"
           rows="8"
