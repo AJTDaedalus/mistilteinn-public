@@ -594,7 +594,17 @@ export function resolveConversions(
   return { resolved, unresolved };
 }
 
-/** The conversions still frozen after a resolution pass, with their share of the damage. */
+/**
+ * The conversions still frozen after a resolution pass, with their share of the damage.
+ *
+ * **`mine` is the same rule `staleConversionsIn` states, and it was missing here.** This
+ * function *overwrites* the list that one produced, so filtering teammates out upstream and
+ * not downstream put them straight back: the owner saw `flatAtk`, `flatHp` and `flatDef` each
+ * reported against **96.6 % of the damage**, on a team whose subject carried no unresolved
+ * term at all. A teammate's flat ATK is their equipped gear — `furina add stats atk=311 …` in
+ * the config — not a conversion, and no search can move it, so warning about it is a warning
+ * nobody can act on.
+ */
 function staleConversionsAfter(recipe: Recipe): StaleConversion[] {
   const total = recipe.hits.reduce((sum, h) => sum + h.gcsimAverageDamage, 0);
   const out: StaleConversion[] = [];
@@ -602,7 +612,7 @@ function staleConversionsAfter(recipe: Recipe): StaleConversion[] {
     let count = 0;
     let damage = 0;
     for (const hit of recipe.hits) {
-      if (read(hit) !== 0 && hit.conversions[term] === undefined) {
+      if (hit.mine && read(hit) !== 0 && hit.conversions[term] === undefined) {
         count++;
         damage += hit.gcsimAverageDamage;
       }

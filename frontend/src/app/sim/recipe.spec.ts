@@ -302,6 +302,30 @@ describe("a teammate's hits belong to a build that is not being optimized", () =
 });
 
 describe('resolveConversions', () => {
+  it("does not report a teammate's flat stats as an unresolvable conversion", () => {
+    // The owner saw `flatAtk`, `flatHp` and `flatDef` each reported against 96.6 % of the
+    // damage on a team whose subject carried no unresolved term at all. Every point of it was
+    // a teammate's equipped gear — `furina add stats atk=311 …` in the config — which is not a
+    // conversion and which no search can move.
+    //
+    // The rule was already stated twice: `staleConversionsIn` filters on `mine`, and the
+    // resolution loop itself does `if (!b.mine) continue`. Only the reporter that runs *after*
+    // the resolver was missing it, and it overwrites what the other two produced — so the
+    // resolver skipped every teammate and the reporter then counted every one as unresolved.
+    const sample = (flat: number) => parseSample({ logs: [
+      dmg(),
+      calc({ flat_atk: 0 }, 0),
+      dmg(),
+      calc({ flat_atk: flat }, 1),
+    ] });
+
+    const baseline = sample(311);
+    resolveConversions(baseline, sample(311));
+
+    expect(baseline.hits.some((h) => !h.mine)).toBe(true);
+    expect(baseline.meta.staleConversions).toEqual([]);
+  });
+
   const pair = (baseFlat: number, probeFlat: number, probeDefPercent: number) => {
     const mk = (flat: number, defPct: number) => parseSample({ logs: [
       dmg(), calc({ flat_dmg: flat, def_per: defPct }),
