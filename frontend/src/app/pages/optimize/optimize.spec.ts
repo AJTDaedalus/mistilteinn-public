@@ -807,6 +807,39 @@ describe('OptimizePage per-row bursts', () => {
     expect(page['burstsFor'](0.2)).toEqual({ funded: 2, most: 3, short: true });
   });
 
+  it('rounds the count, because a burst count is a mean and reads like one', () => {
+    // The owner saw `3.166666666666666/3.2833333333333337 bursts`. Rounded in the component
+    // rather than the template so the badge and its tooltip cannot disagree.
+    const page = pageWith();
+    page['caveats'].set({
+      unstable: [], staleConversions: [], fromCache: [], unscoredLabels: [],
+      energyCost: null,
+      energySweep: [
+        { energyRecharge: 0.2, burstInstances: 3.166666666666666, dps: 100 },
+        { energyRecharge: 0.6, burstInstances: 3.2833333333333337, dps: 120 },
+      ],
+    } as unknown as CalibrationCaveats);
+
+    expect(page['burstsFor'](0.2)).toEqual({ funded: 3.2, most: 3.3, short: false });
+  });
+
+  it('stays quiet when the gap is smaller than half a burst', () => {
+    // 3.17 against 3.28 is 0.117 of a burst — the ladder's own variance, not something a
+    // player lost. A badge that fires on a tenth of a burst is one every row carries.
+    const page = pageWith();
+    page['caveats'].set({
+      unstable: [], staleConversions: [], fromCache: [], unscoredLabels: [],
+      energyCost: null,
+      energySweep: [
+        { energyRecharge: 0.2, burstInstances: 3.17, dps: 100 },
+        { energyRecharge: 0.6, burstInstances: 3.28, dps: 120 },
+      ],
+    } as unknown as CalibrationCaveats);
+
+    expect(page['burstsFor'](0.2)?.short).toBe(false);
+    expect(page['burstsFor'](0.9)?.short).toBe(false);
+  });
+
   it('does not flag a row that funds everything the ladder could buy', () => {
     // "3 of 3" under every line is noise. A row only reports when it is behind.
     const page = pageWith();

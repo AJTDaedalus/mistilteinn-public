@@ -67,6 +67,14 @@ import {
 const SHAKY_DAMAGE_SHARE = 0.05;
 
 /** One result row, with the pieces named rather than left as ids. */
+/**
+ * How far behind a row must be before its burst count is worth showing.
+ *
+ * Half a burst. Below that the difference is the ladder's own variance: two rungs of the
+ * owner's sweep read 3.17 and 3.28, which is not a burst anyone can act on.
+ */
+const MEANINGFUL_BURST_GAP = 0.5;
+
 export interface ResultRow {
   rank: number;
   damage: number;
@@ -716,7 +724,18 @@ export class OptimizePage implements OnInit {
     const funded = burstsAt(sweep, energyRecharge);
     if (funded === null) return null;
     const most = Math.max(...sweep.map((point) => point.burstInstances));
-    return { funded, most, short: funded < most };
+    // **Rounded here, not in the template**, so the badge and its tooltip cannot disagree.
+    // A burst count is a mean over iterations, so it is fractional — the owner saw
+    // `3.166666666666666/3.2833333333333337 bursts`.
+    const round = (n: number) => Math.round(n * 10) / 10;
+    return {
+      funded: round(funded),
+      most: round(most),
+      // **Half a burst, not any difference at all.** Those two numbers are 0.117 apart, which
+      // across the ladder's iterations is variance rather than a burst anybody lost — and a
+      // badge that warns about a tenth of a burst is one every row carries and nobody reads.
+      short: most - funded >= MEANINGFUL_BURST_GAP,
+    };
   }
 
   /**
