@@ -145,13 +145,29 @@ a job with progress, never a request that blocks.
   `docs/RESEARCH_recipe_cost.md` §2 explains it. **The symptom is misleading**: `flush()`
   reports `index out of range [0] with length 0` while the real message is on `simulate()`'s
   return value, which is a *string* on failure.
-- **A saved rotation is authored here and compiled to gcsim, never read back.** The compiler
-  emits the `while 1` loop and a `.ready` gate on every step, because gcsim's two worst
-  behaviours are silent: a bare action list runs **once**, and `while 1` **deadlocks** on an
-  ungated action — both producing a plausible config with exactly one burst in it.
-  `rotation_signature` and `compile_rotation` share `_resolve`, and `gcsim_config.target_fields`
-  backs both the rendered target and the hashed one, so a cache key and the config it was
-  cached from cannot describe different things.
+- **A saved rotation is authored here and compiled to gcsim, never read back.** It is emitted
+  **as written, to completion** (#224): no `while 1`, no `duration`, and an unkillable target
+  so gcsim's damage mode ends the run on `noMoreActions` — which is exactly "when the rotation
+  finishes". Length comes from the rotation's own `group_repeat`. The earlier note here, that
+  the compiler emits a loop and a gate on every step, was true when written and is the thing
+  #224 removed: that shape meant `duration=90` decided what was measured, and since gcsim
+  starts every character at full energy **a single ninety-second pass never asks anyone to pay
+  for a second burst** — so the optimizer could not see Energy Recharge at all.
+
+  **Bursts, and only bursts, still carry a `.ready` gate**, and the rule is what a wait is
+  waiting *for*. A cooldown always expires, so waiting on one is safe and models a player.
+  Energy may never arrive, and gcsim has **no watchdog**: `actionReadyCheckPhase` retries the
+  frame forever, `stopCheck` never consults duration in damage mode, and an unfundable burst
+  blocks the sim while a per-frame stats slice grows until the kernel kills it — measured at
+  **2.4 GB**. A healthy run of the owner's 243-action rotation is **0.03 s and 32 MB**, so a
+  gcsim run using real memory is a hang, not a big simulation.
+
+  **A gated burst is skipped, so `insufficient_energy` reads 0 for a team plainly starved**;
+  the observable signal is the **burst count**. `rotation_signature` and `compile_rotation`
+  share `_resolve`, and `gcsim_config.target_fields` backs both the rendered target and the
+  hashed one, so a cache key and the config it was cached from cannot describe different
+  things — and because `target` gained `hp`, every recipe cache entry missed once on deploy
+  without a `SCHEMA` bump.
 - **A seeded database says which patch it is.** `seed_runs` holds one append-only row per
   seed run: version pinned, per-entity counts, failed ids, and whether the run finished.
   `succeeded` is written `False` first and flipped at the end, so a run that died half way
