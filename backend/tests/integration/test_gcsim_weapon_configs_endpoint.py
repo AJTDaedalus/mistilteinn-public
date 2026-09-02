@@ -163,15 +163,17 @@ async def test_the_baseline_wears_what_the_build_wears(
 async def test_the_config_carries_the_compiled_rotation_not_a_bare_action(
     authed_client: AsyncClient, scene: Scene,
 ):
-    """`while 1` and a `.ready` gate, or gcsim runs the rotation once or deadlocks.
+    """The rotation as written: the steps, in order, with nothing wrapped around them.
 
     Both failures are silent and produce a plausible config with exactly one burst in it.
     """
     body = (await _ask(authed_client, scene, [scene.candidate_id])).json()
     config = body["candidates"][0]["config"]
 
-    assert "while 1" in config
-    assert ".ready" in config
+    assert "while 1" not in config
+    # Bursts, and only bursts, carry a gate: energy is the one readiness condition a rotation
+    # cannot make true on its own, and an ungated one hangs gcsim outright.
+    assert config.count("if .") == config.count(".burst.ready")
 
 
 async def test_the_iteration_count_reaches_the_config(

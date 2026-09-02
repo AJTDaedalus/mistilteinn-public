@@ -105,9 +105,9 @@ async def test_a_user_can_get_from_nothing_to_a_compiled_rotation(
     assert config.status_code == 200, config.text
     text = config.json()["config"]
     assert text.startswith("active barbara;")
-    assert "while 1 {" in text
-    assert "if .kamisatoayaka.burst.ready { kamisatoayaka burst; }" in text
-    assert "if .kamisatoayaka.attack.ready { kamisatoayaka attack:3; }" in text
+    assert "while 1" not in text
+    assert "kamisatoayaka burst;" in text
+    assert "kamisatoayaka attack:3;" in text
 
     # 6. And a cache key that identifies this build running this rotation.
     key = await authed_client.post(

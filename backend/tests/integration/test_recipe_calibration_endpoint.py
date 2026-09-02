@@ -310,11 +310,11 @@ async def test_an_unknown_rotation_is_a_404(authed_client: AsyncClient, scene: S
 async def test_the_config_carries_the_compiled_rotation(
     authed_client: AsyncClient, scene: Scene,
 ):
-    """`while 1` and a `.ready` gate, or gcsim runs the rotation once or deadlocks."""
+    """The rotation as written: the steps, in order, with nothing wrapped around them."""
     body = (await _calibrate(authed_client, scene)).json()
 
-    assert "while 1" in body["baseline"]
-    assert ".ready" in body["baseline"]
+    assert "while 1" not in body["baseline"]
+    assert body["baseline"].count("if .") == body["baseline"].count(".burst.ready")
 
 
 async def _named_set(db_session: AsyncSession, nanoka_id: int, name: str) -> str:

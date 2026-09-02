@@ -354,7 +354,9 @@ async def test_the_options_path_is_not_read_as_a_rotation_id(
 # ── Compiling ─────────────────────────────────────────────────────────────────
 
 
-async def test_a_rotation_compiles_to_a_gated_loop(authed_client: AsyncClient, scene: Scene):
+async def test_a_rotation_compiles_to_the_steps_as_written(
+    authed_client: AsyncClient, scene: Scene,
+):
     """Offered because a compiler nobody can inspect is a compiler nobody can check."""
     created = (await authed_client.post(ROTATIONS, json={
         "name": "Real", "team_id": scene.team_id,
@@ -364,8 +366,8 @@ async def test_a_rotation_compiles_to_a_gated_loop(authed_client: AsyncClient, s
     config = (await authed_client.post(f"{ROTATIONS}/{created['id']}/compile")).json()["config"]
 
     assert config.startswith("active barbara;")
-    assert "while 1 {" in config
-    assert "if .kamisatoayaka.attack.ready { kamisatoayaka attack:3; }" in config
+    assert "while 1" not in config
+    assert "kamisatoayaka attack:3;" in config
     assert " swap" not in config
 
 
@@ -526,7 +528,7 @@ async def test_the_key_reports_what_it_hashed(authed_client: AsyncClient, scene:
 
     assert body["rotation"] == ["kamisatoayaka attack:3"]
     assert body["team"] == ["barbara", "kamisatoayaka"]
-    assert body["target"] == {"lvl": 90, "resist": 0.1, "pos": "0,1"}
+    assert body["target"] == {"lvl": 90, "resist": 0.1, "pos": "0,1", "hp": 999999999}
     assert len(body["context_key"]) == 64
 
 
@@ -609,7 +611,7 @@ async def test_an_enemy_supplies_the_target(
         json={"build_id": scene.ayaka_build, "enemy_nanoka_id": 21010101},
     )).json()
 
-    assert body["target"] == {"lvl": 93, "resist": 0.25, "pos": "0,1"}
+    assert body["target"] == {"lvl": 93, "resist": 0.25, "pos": "0,1", "hp": 999999999}
 
 
 async def test_the_enemy_changes_the_key(
@@ -817,8 +819,10 @@ async def test_preview_compiles_steps_that_were_never_saved(
 
     assert previewed.status_code == 200, previewed.text
     config = previewed.json()["config"]
-    assert "while 1" in config
-    assert ".ready" in config
+    assert "while 1" not in config
+    # The burst is gated, the skill is not — a cooldown always expires, energy may never come.
+    assert ".burst.ready" in config
+    assert ".skill.ready" not in config
 
 
 async def test_preview_saves_nothing(authed_client: AsyncClient, scene: Scene):
@@ -906,7 +910,7 @@ async def test_a_runnable_preview_is_a_config_gcsim_could_run(
     assert config.startswith("options ")
     assert "target lvl=" in config
     # The block is inside it, verbatim — one compile, not two.
-    assert "while 1 {" in config
+    assert "while 1" not in config
 
 
 async def test_a_runnable_preview_names_the_builds_with_no_weapon(

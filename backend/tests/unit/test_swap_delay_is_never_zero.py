@@ -57,11 +57,26 @@ def test_it_does_not_pin_a_swap_delay_at_all():
     assert "swap_delay" not in build_config(_build(), actions=["burst"])
 
 
-@pytest.mark.parametrize(("iterations", "duration"), [(1, 5), (100, 90), (500, 180)])
-def test_the_options_line_still_carries_what_it_should(iterations, duration):
-    config = build_config(
-        _build(), actions=["burst"], iterations=iterations, duration=duration,
-    )
+@pytest.mark.parametrize("iterations", [1, 100, 500])
+def test_the_options_line_still_carries_what_it_should(iterations):
+    config = build_config(_build(), actions=["burst"], iterations=iterations)
 
     assert f"iteration={iterations}" in config
-    assert f"duration={duration}" in config
+
+
+def test_the_options_line_pins_no_duration():
+    """**`duration` is gone, and its absence is the point.**
+
+    It defaulted to 90 and nothing ever passed anything else, so every rotation this app
+    simulated was truncated at ninety seconds by a constant nobody chose — and every DPS figure
+    was divided by it. The target now carries `hp=`, which puts gcsim in the mode where a run
+    ends when its *actions* do.
+
+    Emitting it anyway would be worse than harmless: in HP mode gcsim **ignores** it, so the
+    line would read as a decision and be inert. Measured on the owner's rotation, which reports
+    the same 189.3 s whether the config says `duration=90`, `duration=3600` or nothing.
+    """
+    config = build_config(_build(), actions=["burst"])
+
+    assert "duration" not in config
+    assert "hp=999999999" in config

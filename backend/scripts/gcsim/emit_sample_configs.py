@@ -13,6 +13,7 @@ that skips when the database is absent.
 
 from __future__ import annotations
 
+import json
 import types
 from pathlib import Path
 
@@ -69,21 +70,43 @@ CASES = {
 }
 
 
-#: The R.3 pair. One rotation, compiled two ways, and the **difference between them is the
-#: gate**.
+#: The R.3 pair, rewritten for the emitter that runs a rotation **to completion**.
 #:
-#: `rotation_gated` is what `rotation_compiler` really emits: a `while 1` loop with a
-#: readiness gate on every step. `rotation_ungated` is the same rotation written the way a
-#: person reasonably would before learning gcsim's two silent behaviours — no loop, no gates.
+#: The old pair asked whether the compiled config *looped* — `while 1` against a bare list —
+#: because the failure of the day was a rotation that ran once over a ninety-second clock.
+#: That question is now meaningless: there is no loop and no clock, and a rotation runs
+#: exactly as long as its author wrote it.
 #:
-#: Both are configs gcsim **accepts**, which is exactly the point: acceptance proves nothing.
-#: `verify-gcsim-config.mjs` runs both and requires the first to cycle many times and the
-#: second to run once. A gate that only ever sees passing input cannot be trusted to fail.
-ROTATION_STEPS = [
-    {"character": "10000002", "action": "burst", "repeat": 1},
-    {"character": "10000002", "action": "skill", "repeat": 1},
-    {"character": "10000002", "action": "attack", "repeat": 3},
-]
+#: The property that replaced it is the one the owner actually asked for: **the emitted config
+#: performs the rotation's own number of cycles.** So the pair is the same rotation authored
+#: twice, at `group_repeat` 3 and 1, and the check requires gcsim to report 3 and 1.
+#:
+#: Both are configs gcsim accepts, which is still the point — acceptance proves nothing. The
+#: single-cycle case is the control: without it this would be a gate that has only ever seen
+#: passing input, which is not a gate.
+#:
+#: **The counted action is the skill, not the burst.** A burst is the one action the compiler
+#: gates, so a starved rotation skips it and the count would measure energy rather than
+#: length. A skill only ever waits for its cooldown, and gcsim always waits.
+def _rotation_steps(group_repeat: int) -> list[dict[str, object]]:
+    return [
+        {"character": "10000002", "action": "burst", "repeat": 1,
+         "group": "core", "group_repeat": group_repeat},
+        {"character": "10000002", "action": "skill", "repeat": 1,
+         "group": "core", "group_repeat": group_repeat},
+        {"character": "10000002", "action": "attack", "repeat": 3,
+         "group": "core", "group_repeat": group_repeat},
+    ]
+
+
+#: How many cycles the repeated case is authored with.
+#:
+#: **Written to a manifest beside the configs, not re-read from them.** The first cut of the
+#: verifier counted the cycles in the emitted file and compared that to what gcsim ran — which
+#: compares the config against itself and passes for *any* number the compiler happens to
+#: emit. Deleting a cycle from the fixture was not caught. The authored count has to come from
+#: outside the artefact being checked or the check has only one possible answer.
+ROTATION_CYCLES = 3
 
 
 def _rotation_cases() -> dict[str, str]:
@@ -92,18 +115,12 @@ def _rotation_cases() -> dict[str, str]:
     build = _build(character, "Mistsplitter Reforged", "Blizzard Strayer")
     roster = {"10000002": character}
 
-    gated = compile_rotation(ROTATION_STEPS, roster)
+    repeated = compile_rotation(_rotation_steps(ROTATION_CYCLES), roster)
 
-    # The control, built by stripping the compiler's own output rather than by writing a
-    # second emitter. Two generators would drift, and the one that drifted would be the one
-    # nobody reads — leaving the gate comparing the real config against a stale idea of what
-    # "wrong" looks like.
-    key = gcsim_keys.character_key(character.nanoka_id, character.name, character.element)
-    ungated_lines = [f"active {key};"]
-    for step in ROTATION_STEPS:
-        repeat = step["repeat"]
-        call = f"{key} {step['action']}:{repeat};" if repeat > 1 else f"{key} {step['action']};"
-        ungated_lines.append(call)
+    # The control, produced by the **same** compiler with a different authored repeat, rather
+    # than by a second emitter written to look wrong. Two generators would drift, and the one
+    # that drifted would be the one nobody reads.
+    once = compile_rotation(_rotation_steps(1), roster)
 
     # R.3. A calibration replaces the build's artifacts with one 4-piece set and an ER, and
     # it is emitted here so the existing `gcsim:verify-config` gate proves gcsim accepts it —
@@ -114,7 +131,7 @@ def _rotation_cases() -> dict[str, str]:
     # and would describe a rotation nobody is scoring (`RESEARCH_recipe_risks.md` §1).
     calibrated = build_config(
         build,
-        action_block=gated,
+        action_block=repeated,
         calibration=Calibration(
             set_key=gcsim_keys.artifact_set_key("Blizzard Strayer"),
             energy_recharge=0.30,
@@ -122,8 +139,8 @@ def _rotation_cases() -> dict[str, str]:
     )
 
     return {
-        "rotation_gated": build_config(build, action_block=gated),
-        "rotation_ungated": build_config(build, action_block="\n".join(ungated_lines)),
+        "rotation_repeated": build_config(build, action_block=repeated),
+        "rotation_once": build_config(build, action_block=once),
         "rotation_calibrated": calibrated,
     }
 
@@ -139,6 +156,10 @@ def main() -> None:
         path = OUT / f"{name}.txt"
         path.write_text(text)
         print(f"wrote {path.relative_to(OUT.parents[2])}")
+    manifest = OUT / "rotation_cycles.json"
+    manifest.write_text(json.dumps(
+        {"rotation_repeated": ROTATION_CYCLES, "rotation_once": 1}, indent=2) + "\n")
+    print(f"wrote {manifest.relative_to(OUT.parents[2])}")
 
 
 if __name__ == "__main__":

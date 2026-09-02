@@ -171,15 +171,14 @@ def build_config(
     action_block: str | None = None,
     enemy: EnemyProfile | None = None,
     iterations: int = 100,
-    duration: int = 90,
 ) -> str:
     """The gcsim config text for one build.
 
     Two ways to supply the rotation, and exactly one may be used:
 
     - **`action_block`** — a compiled block from `rotation_compiler`, emitted verbatim. This
-      is the real path: it carries the `while 1` loop and the readiness gates, without which
-      the rotation runs once or deadlocks.
+      is the real path: it carries the rotation as the user defined it, already unrolled, and
+      the run ends when those actions do rather than at a duration this file chose.
     - **`actions`** — a flat list of bare action names for the build's own character, emitted
       one per line with no loop and no gates. It predates the rotation model and survives for
       the B.3 sample configs, whose whole job is to prove the *character and gear* lines are
@@ -225,7 +224,13 @@ def build_config(
         # Omitted rather than pinned to a number, because gcsim's default is gcsim's answer
         # (`pkg/gcs/parser/parser.go:55`, "default swap timer of 1") and a value restated here
         # is one this repo would have to defend as game data.
-        f"options iteration={iterations} duration={duration};",
+        # **No `duration`.** It is not omitted for tidiness: the target carries `hp=`, and in
+        # HP mode gcsim ignores `duration` outright — measured on the owner's rotation, which
+        # reports the same 189.3 s whether the config says `duration=90`, `duration=3600` or
+        # nothing at all. Emitting it would be a line that looks like it decides something and
+        # does not, which is how `duration=90` spent months deciding what every rotation
+        # measured. `target_fields` carries the argument for HP mode itself.
+        f"options iteration={iterations};",
         "",
         char_line,
     ]
@@ -436,6 +441,22 @@ def _accumulate(stats: dict[str, float], prop: object, value: float) -> None:
     stats[name] = stats.get(name, 0.0) + value
 
 
+#: Target HP, set so gcsim never kills it — which is how a run is told to end when the
+#: **actions** end rather than at a duration.
+#:
+#: gcsim has two stopping rules. Without `hp` it runs for `duration` and pads with idle time
+#: once the action list is exhausted, so a 20-second rotation was reported as a 90-second one
+#: and its DPS divided by ninety. With `hp` it runs until the target dies **or the actions run
+#: out**, and `duration` is ignored outright — measured on the owner's rotation, which reports
+#: the same 189.3 s whether the config says `duration=90`, `duration=3600` or nothing.
+#:
+#: So this number's job is to never be reached. It is the same value the gcsim database's own
+#: configs use (`references/gcsim_db/skirk-furina-citlali-escoffier.txt`), which is the
+#: strongest argument available that it is the community's idiom rather than this repo's
+#: invention. Owner ruling, 2026-09-01: *"The optimizer should run through the rotation as
+#: defined to completion, regardless of how short/long it is."*
+_UNKILLABLE = 999999999
+
 def target_fields(enemy: EnemyProfile | None) -> dict[str, object]:
     """What gcsim is being pointed at, as fields.
 
@@ -450,7 +471,7 @@ def target_fields(enemy: EnemyProfile | None) -> dict[str, object]:
     """
     if enemy is None:
         # The default target, in one place. Two literals would be one literal and a copy.
-        return {"lvl": 90, "resist": 0.1, "pos": "0,1"}
+        return {"lvl": 90, "resist": 0.1, "pos": "0,1", "hp": _UNKILLABLE}
 
     resistances = {
         enemy.physical_res, enemy.anemo_res, enemy.cryo_res, enemy.dendro_res,
@@ -463,12 +484,20 @@ def target_fields(enemy: EnemyProfile | None) -> dict[str, object]:
             f"that does not exist; pick a channel-specific target instead."
         )
         raise GcsimConfigError(msg)
-    return {"lvl": enemy.level, "resist": resistances.pop(), "pos": "0,1"}
+    return {
+        "lvl": enemy.level, "resist": resistances.pop(), "pos": "0,1", "hp": _UNKILLABLE,
+    }
 
 
 def _target(enemy: EnemyProfile | None) -> str:
-    """The target line, rendered from `target_fields`."""
+    """The target line, rendered from `target_fields`.
+
+    Every field the dict carries is rendered, `hp` included — the two must not diverge, because
+    `sim_context.context_key` hashes this same dict and a key that omitted `hp` would serve a
+    cached run from the duration-capped era for a config that is no longer duration-capped.
+    """
     fields = target_fields(enemy)
     return (
-        f"target lvl={fields['lvl']} resist={fields['resist']:g} pos={fields['pos']};"
+        f"target lvl={fields['lvl']} resist={fields['resist']:g} "
+        f"pos={fields['pos']} hp={fields['hp']};"
     )

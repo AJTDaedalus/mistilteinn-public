@@ -65,9 +65,14 @@ console.log(`gcsim accepted all ${files.length} emitted configs`);
 //
 // So the compiled rotation is *run*, and its action counts are read back.
 //
-// `rotation_ungated` is the control — the same rotation without the loop and gates the
-// compiler adds. It must run once. Without it this would be a gate that has only ever seen
+// The question used to be whether the config *looped*. It no longer loops: a rotation runs
+// exactly as long as its author wrote it, so the property checked here is that the emitted
+// config performs the authored number of cycles. `rotation_once` is the control — the same
+// rotation at `group_repeat` 1. Without it this would be a gate that has only ever seen
 // passing input, which is not a gate.
+//
+// **Skills are counted, not bursts.** The compiler gates bursts, so a starved rotation skips
+// one and the count would be measuring energy rather than length.
 
 function runSim(cfg) {
   globalThis.initializeAggregator(cfg);
@@ -87,46 +92,107 @@ function actionCounts(out) {
   return counts;
 }
 
-const pair = ['rotation_gated', 'rotation_ungated'];
+const pair = ['rotation_repeated', 'rotation_once'];
 if (!pair.every((n) => files.includes(`${n}.txt`))) {
   console.error(
-    `the rotation pair is missing from ${CASES}. Both are required: the gated config is ` +
-      `what the compiler emits, and the ungated one is the control that proves this check ` +
-      `can fail. Regenerate with: cd backend && python -m scripts.gcsim.emit_sample_configs`,
+    `the rotation pair is missing from ${CASES}. Both are required: the repeated config is ` +
+      `what the compiler emits for a rotation authored with cycles, and the single-cycle one ` +
+      `is the control that proves this check can fail. Regenerate with: ` +
+      `cd backend && python -m scripts.gcsim.emit_sample_configs`,
   );
   process.exit(1);
 }
 
+// **The authored count comes from the manifest, not from the config.** Counting the cycles in
+// the emitted file and comparing that to what gcsim ran compares the artefact against itself:
+// it passes for any number the compiler emits, and deleting a cycle from the fixture was not
+// caught. The generator writes what the rotation was *authored* with; that is the only anchor
+// outside the thing under test.
+const MANIFEST = join(CASES, 'rotation_cycles.json');
+if (!existsSync(MANIFEST)) {
+  console.error(
+    `${MANIFEST} is missing. It carries the authored cycle count, without which this check ` +
+      `can only compare the emitted config to itself. Regenerate with: ` +
+      `cd backend && python -m scripts.gcsim.emit_sample_configs`,
+  );
+  process.exit(1);
+}
+const authoredCycles = JSON.parse(readFileSync(MANIFEST, 'utf8'));
+
 const measured = {};
+const sources = {};
 for (const name of pair) {
-  const out = runSim(readFileSync(join(CASES, `${name}.txt`), 'utf8'));
+  sources[name] = readFileSync(join(CASES, `${name}.txt`), 'utf8');
+  const out = runSim(sources[name]);
   measured[name] = actionCounts(out);
   console.log(`  ${name}: ${JSON.stringify(measured[name])}`);
 }
 
-// The rotation has one burst per cycle, so burst count *is* the cycle count.
-const gatedCycles = measured.rotation_gated.burst ?? 0;
-const ungatedCycles = measured.rotation_ungated.burst ?? 0;
+// The emitter's three decisions, pinned structurally. Each was a real defect: a loop made the
+// rotation's length irrelevant, a pinned duration truncated it, and gating every action turned
+// a cooldown wait into a silent skip.
+for (const name of pair) {
+  const text = sources[name];
+  const structural = [
+    ['while 1', text.includes('while 1'), 'a loop makes the rotation own length irrelevant'],
+    ['duration=', text.includes('duration='), 'a pinned clock truncates the rotation'],
+    ['.skill.ready', text.includes('.skill.ready'), 'gating a cooldown turns waiting into skipping'],
+  ];
+  for (const [needle, present, why] of structural) {
+    if (present) {
+      console.error(`${name} contains \`${needle}\`: ${why}.`);
+      process.exit(1);
+    }
+  }
+  if (!text.includes('.burst.ready')) {
+    console.error(
+      `${name} has no burst gate. Energy is the one readiness condition a rotation cannot ` +
+        `satisfy on its own, and an ungated burst hangs gcsim outright rather than failing.`,
+    );
+    process.exit(1);
+  }
+}
 
-if (ungatedCycles > 1.5) {
+// Skills are ungated, so gcsim performs every one the rotation asks for. That makes the skill
+// count the rotation's length, measured rather than asserted.
+const expected = authoredCycles;
+
+// The emitted config must also *write* what the rotation was authored with. This is the half
+// that catches a compiler dropping or duplicating a cycle, and it is separate from the half
+// that catches gcsim not performing what was written.
+for (const name of pair) {
+  const written = sources[name].split('\n').filter((l) => l.includes(' skill;')).length;
+  if (written !== expected[name]) {
+    console.error(
+      `${name} was authored with ${expected[name]} cycle(s) but the emitted config writes ` +
+        `${written}. The compiler is not emitting the rotation the user wrote.`,
+    );
+    process.exit(1);
+  }
+}
+
+if (expected.rotation_once !== 1 || expected.rotation_repeated < 2) {
   console.error(
-    `the ungated control ran ${ungatedCycles} cycles. It is supposed to run once — that is ` +
-      `the failure this check exists to catch. If gcsim's behaviour changed, this check is ` +
-      `now measuring nothing and needs rewriting rather than relaxing.`,
+    `the pair no longer differs: the control writes ${expected.rotation_once} skill(s) and ` +
+      `the repeated case ${expected.rotation_repeated}. The control must be one cycle and ` +
+      `the other must be several, or this check cannot fail. Fix the generator, not this.`,
   );
   process.exit(1);
 }
 
-if (gatedCycles < 2) {
-  console.error(
-    `the compiled rotation ran ${gatedCycles} cycle(s) over the configured duration. A ` +
-      `rotation is a cycle: it should repeat until the clock runs out. Running once is ` +
-      `exactly the D.2 failure — a plausible number for a question nobody asked.`,
-  );
-  process.exit(1);
+for (const name of pair) {
+  const ran = measured[name].skill ?? 0;
+  if (Math.abs(ran - expected[name]) > 0.001) {
+    console.error(
+      `${name} was authored with ${expected[name]} skill cast(s) and gcsim performed ${ran}. ` +
+        `A rotation runs as written, to completion: a mismatch means the emitted config is ` +
+        `answering a different question from the one the user wrote.`,
+    );
+    process.exit(1);
+  }
 }
 
 console.log(
-  `rotation cycles: gated ${gatedCycles}, ungated control ${ungatedCycles} — ` +
-    `the loop and the gates are doing work gcsim can see`,
+  `rotation cycles: ${expected.rotation_repeated} authored and performed, control ` +
+    `${expected.rotation_once} — the rotation own length is what gcsim runs`,
 );

@@ -139,43 +139,6 @@ def test_a_wait_is_refused_rather_than_dropped() -> None:
         parse_action_block(config, ROSTER)
 
 
-def test_an_ungated_action_is_refused() -> None:
-    """Valid gcsim, and a **deadlock**: `while 1` waits for an action that is not ready, so a
-    burst at the top waits for energy it can no longer generate. The compiler gates every step
-    precisely so a user cannot author this; accepting it on import would let one in through
-    the back door."""
-    config = "active noelle;\nwhile 1 {\n    noelle burst;\n}\n"
-
-    with pytest.raises(RotationParseError, match="gate"):
-        parse_action_block(config, ROSTER)
-
-
-def test_an_action_list_with_no_loop_is_refused() -> None:
-    """**A bare list runs once.** gcsim accepts it and simulates one burst over ninety
-    seconds — a plausible number for a question nobody asked, and the first of the two silent
-    behaviours the compiler exists to prevent."""
-    config = "active noelle;\nnoelle skill;\nnoelle burst;\n"
-
-    with pytest.raises(RotationParseError, match="no loop at all"):
-        parse_action_block(config, ROSTER)
-
-
-def test_a_for_loop_is_told_apart_from_no_loop_at_all() -> None:
-    """**The message has to be true.** A real community config (`skirk_team.txt`) wraps its
-    second cycle in `for let i=0; i<1; i=i+1 { … }`, and the first version of this parser told
-    it that it had no loop — sending a reader to look for a bug in a file that plainly has
-    one. A `for` is a loop; it is the *wrong* loop, and that is a different sentence."""
-    config = (
-        "active noelle;\n"
-        "for let i=0; i<1; i=i+1 {\n"
-        "    noelle skill;\n"
-        "}\n"
-    )
-
-    with pytest.raises(RotationParseError, match="`for`, not `while 1`"):
-        parse_action_block(config, ROSTER)
-
-
 def test_a_character_the_roster_does_not_have_is_refused_by_name() -> None:
     """The importer cannot invent a team. Naming the key is what lets the user fix it."""
     config = (
@@ -343,9 +306,12 @@ def test_what_the_compiler_emits_is_what_the_parser_reads():
     refused on import — or worse, quietly read as a tap.
     """
     steps = [
-        {"character": "10000090", "action": "skill_hold", "repeat": 1, "note": ""},
-        {"character": "10000090", "action": "burst", "repeat": 1, "note": ""},
-        {"character": "10000090", "action": "attack", "repeat": 3, "note": ""},
+        {"character": "10000090", "action": "skill_hold", "repeat": 1, "note": "",
+         "group": "", "group_repeat": 1},
+        {"character": "10000090", "action": "burst", "repeat": 1, "note": "",
+         "group": "", "group_repeat": 1},
+        {"character": "10000090", "action": "attack", "repeat": 3, "note": "",
+         "group": "", "group_repeat": 1},
     ]
     roster = {"10000090": CHEVREUSE}
 
@@ -381,3 +347,86 @@ def test_a_variant_no_character_declares_is_refused():
         parse_action_block(_gated("burst[hold=1]"), [CHEVREUSE])
 
     assert "no such move" in str(raised.value)
+
+
+# ── The three shapes a real config comes in (2026-09-01) ─────────────────────
+#
+# All three used to be refused. `while 1` was the only importable form, which meant the parser
+# could read exactly one config: the one this app had written.
+
+
+def test_a_bare_action_list_is_the_rotation_run_once():
+    """It is what the compiler emits now, so refusing it would refuse our own output.
+
+    The old refusal — *"gcsim runs a bare action list once, over a 90-second duration that is
+    one burst"* — was true of a config with `duration=90`. The compiler stopped emitting that.
+    """
+    steps = parse_action_block(
+        "active chevreuse;\nchevreuse skill;\nchevreuse attack:2;\n", [CHEVREUSE],
+    )
+
+    assert [s["action"] for s in steps] == ["skill", "attack"]
+    assert {s["group"] for s in steps} == {""}
+    assert {s["group_repeat"] for s in steps} == {1}
+
+
+def test_a_for_loop_becomes_a_group_with_its_own_repeat():
+    """`group_repeat` is exactly the field the old refusal said did not exist.
+
+    It said *"a bounded loop repeats a rotation a number of times, which is a property of the
+    simulation rather than of the rotation, and this model does not carry it"*. Groups landed
+    afterwards and nothing revisited this.
+    """
+    config = (
+        "active chevreuse;\n"
+        "for let a=0; a<4; a=a+1 {\n"
+        "chevreuse skill;\n"
+        "chevreuse attack:2;\n"
+        "}\n"
+    )
+
+    steps = parse_action_block(config, [CHEVREUSE])
+
+    assert [s["group"] for s in steps] == ["loop", "loop"]
+    assert [s["group_repeat"] for s in steps] == [4, 4]
+
+
+def test_an_opener_is_kept_rather_than_dropped_or_refused():
+    """gcsim db `kDHmWKmfgqtF` opens with 19 statements before its cycle.
+
+    Those were silently discarded once, then refused, and are now imported: ungrouped steps
+    ahead of the group, which is what an opener is.
+    """
+    config = (
+        "active chevreuse;\n"
+        "chevreuse burst;\n"
+        "for let a=0; a<3; a=a+1 {\n"
+        "chevreuse attack;\n"
+        "}\n"
+    )
+
+    steps = parse_action_block(config, [CHEVREUSE])
+
+    assert [(s["action"], s["group"], s["group_repeat"]) for s in steps] == [
+        ("burst", "", 1), ("attack", "loop", 3),
+    ]
+
+
+def test_a_line_inside_the_loop_that_cannot_be_read_is_still_named():
+    """The filter that finds the opener must not become a filter that hides bad lines.
+
+    An earlier draft of this decided membership with "does it parse as an action?", which
+    swallowed every line a user actually needed told about.
+    """
+    config = (
+        "active chevreuse;\n"
+        "for let a=0; a<2; a=a+1 {\n"
+        "chevreuse skill;\n"
+        "if .chevreuse.energy >= 80 { chevreuse burst; }\n"
+        "}\n"
+    )
+
+    with pytest.raises(RotationParseError) as caught:
+        parse_action_block(config, [CHEVREUSE])
+
+    assert ".chevreuse.energy" in str(caught.value)

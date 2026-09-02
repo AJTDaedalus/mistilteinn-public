@@ -67,6 +67,15 @@ _ACTIVE = re.compile(r"^active\s+([a-z0-9]+)\s*;$")
 #: produced* could not be read back by *this repo's* importer — and the refusal blamed the
 #: condition, which was not what was wrong. Real community configs use the same form:
 #: `references/gcsim_db/clorinde-chevreuse-nicole-durin.txt:48`.
+#: `noelle attack:3;` or `noelle skill[hold=1];` — the shape this app emits, and the shape
+#: every community config is written in.
+_BARE = re.compile(
+    r"^([a-z0-9]+)\s+([a-z_]+)(?:\[([^\]]*)\])?(?::([^\s;]+))?\s*;$",
+)
+
+#: The same action wrapped in the readiness gate this app emitted until 2026-09-01. Still read,
+#: because a config exported before then is still a config someone may re-import, and because
+#: hand-written community configs do use gates where the author wanted a conditional cast.
 _GATED = re.compile(
     r"^if\s+\.([a-z0-9]+)\.([a-z_]+)\.ready\s*\{\s*"
     r"([a-z0-9]+)\s+([a-z_]+)(?:\[([^\]]*)\])?(?::([^\s;]+))?\s*;\s*\}$",
@@ -93,13 +102,17 @@ def parse_action_block(config: str, characters: Iterable[Any]) -> list[dict[str,
     lines = [line.strip() for line in config.splitlines()]
     lines = [line for line in lines if line and not line.startswith("#")]
 
-    body = _loop_body(lines, by_key)
+    body = _action_lines(lines)
 
     steps: list[dict[str, Any]] = []
     problems: list[str] = []
-    for line in body:
+    for line, group, group_repeat in body:
         step, problem = _statement(line, by_key)
         if step is not None:
+            # Carried on **every** member, because the schema requires the members of a group
+            # to agree and refuses a repeat count on a step with no group.
+            step["group"] = group
+            step["group_repeat"] = group_repeat
             steps.append(step)
         else:
             problems.append(problem)
@@ -116,8 +129,8 @@ def parse_action_block(config: str, characters: Iterable[Any]) -> list[dict[str,
 
     if not steps:
         msg = (
-            "the loop has no steps in it. A rotation with no steps is nothing to do — gcsim "
-            "would accept the config and simulate a character standing still."
+            "this config has no action steps in it. A rotation with no steps is nothing to "
+            "do — gcsim would accept the config and simulate a character standing still."
         )
         raise RotationParseError(msg)
     return steps
@@ -158,37 +171,52 @@ def _canonical(key: str, by_key: dict[str, str]) -> str:
     return alias if alias is not None and alias in by_key else key
 
 
-def _loop_body(lines: list[str], by_key: dict[str, str]) -> list[str]:
-    """The statements inside `while 1 { … }`, refusing every other shape.
+#: Statements that configure the simulation rather than act in it.
+#:
+#: Load-bearing for the opener: everything *else* outside the loop is treated as an action and
+#: reported if it cannot be read, so a line this set does not recognise is never dropped in
+#: silence. Testing the opposite way — "does it parse as an action?" — would swallow exactly
+#: the lines a user needs told about.
+_CONFIG_PREFIXES = ("options", "target", "active", "energy", "fn ", "let ")
 
-    **A bare action list is refused, and that is the point.** gcsim runs one without a loop
-    exactly once, so a ninety-second config produces a single burst — a plausible number for a
-    question nobody asked. It is the first of the two silent behaviours the compiler was
-    written to prevent, and importing one would let it in through the back door.
+
+def _is_config(line: str) -> bool:
+    if line.startswith(_CONFIG_PREFIXES):
+        return True
+    # `<character> char lvl=…` / `<character> add weapon=…` — two words, then the keyword.
+    _, _, rest = line.partition(" ")
+    return rest.startswith(("char ", "add "))
+
+
+#: `for let a=0; a<5; a=a+1 {` — the bound is the only part this model keeps.
+_FOR_BOUND = re.compile(r"^for\s.*?<\s*(\d+)\s*;.*\{$")
+
+
+def _action_lines(lines: list[str]) -> list[tuple[str, str, int]]:
+    """Every action line, as `(line, group, group_repeat)`, in the order gcsim runs them.
+
+    ## Three shapes, because real configs have three
+
+    **A bare list** is a rotation that runs once. This used to be refused — *"gcsim runs a bare
+    action list once, over a 90-second duration that is one burst"* — and that refusal was
+    correct only while this repo *emitted* `while 1`. Since 2026-09-01 the compiler emits the
+    rotation as defined and lets it end when its actions do, so a bare list is the normal shape
+    and refusing it would refuse this app's own output.
+
+    **An opener followed by a loop** is what the gcsim database is full of: statements that run
+    once, then a bounded cycle. Both halves are kept — the opener ungrouped, the cycle as a
+    group. Refusing it cost a real import: gcsim db `kDHmWKmfgqtF` has 19 opener statements,
+    and this model could not hold them.
+
+    **A `for` loop** carries its own repeat count, and `group_repeat` is exactly the field for
+    it — the refusal said *"this model has no field for it"*, which stopped being true when
+    groups landed. `while 1` is still read, and still cannot be counted: it is unbounded, so
+    its body is taken as one pass, which is what this parser has always returned for it.
     """
-    opens = [i for i, line in enumerate(lines) if line.startswith("while")]
-    if not opens:
-        # **Say which it is.** A `for` loop is a loop, and reporting "no loop" for a config
-        # that plainly has one sends the reader looking for a bug in their file. Measured
-        # against a real community config (`skirk_team.txt`), which uses
-        # `for let i=0; i<1; i=i+1 { … }` and got told it had no loop at all.
-        if any(line.startswith(("for ", "for(")) for line in lines):
-            msg = (
-                "the loop is a `for`, not `while 1`. A bounded loop runs a rotation a fixed "
-                "number of times, which is a property of the *simulation* — how long to run "
-                "for — rather than of the rotation itself, and this model has no field for "
-                "it. The steps inside are very likely importable once the loop is `while 1`."
-            )
-            raise RotationParseError(msg)
-        msg = (
-            "no loop at all. A rotation is a cycle, and gcsim runs a bare action list "
-            "**once** — over a 90-second duration that is one burst, reported without "
-            "complaint. If this config is meant to run its actions a single time it is not a "
-            "rotation this app can hold."
-        )
-        raise RotationParseError(msg)
+    opens = [i for i, line in enumerate(lines) if line.startswith(("while", "for ", "for("))]
+
     if len(opens) > 1:
-        # **Say which it is, again.** Both community configs that reach this branch have one
+        # **Say which it is.** Both community configs that reach this branch have one
         # top-level cycle and one `while` *inside a user-defined function* — a helper that
         # waits for a cooldown, not a second rotation. Reporting "2 loops. Which of these is
         # it?" sends a reader looking for an ambiguity their file does not have.
@@ -211,62 +239,79 @@ def _loop_body(lines: list[str], by_key: dict[str, str]) -> list[str]:
         )
         raise RotationParseError(msg)
 
-    start = opens[0]
-    if lines[start] != "while 1 {":
-        msg = (
-            f"the loop is {lines[start]!r}, not `while 1 {{`. A bounded or conditional loop "
-            f"repeats a rotation a number of times, which is a property of the simulation "
-            f"rather than of the rotation, and this model does not carry it."
-        )
-        raise RotationParseError(msg)
+    if not opens:
+        # No loop: every non-config line is the rotation, once through, in order. Unreadable
+        # ones are kept so `parse_action_block` can name them rather than drop them.
+        return [(line, "", 1) for line in lines if line and not _is_config(line)]
 
-    # **Anything before the loop is guarded the same way as anything after it.** The tail
-    # check below has been here since the start; the head had none, and an opener — the
-    # statements a config runs once before its cycle — was dropped without a word. Measured on
-    # a real community config (gcsim db `kDHmWKmfgqtF`): 19 statements silently discarded,
-    # including the on-field character's burst, leaving 32 steps that looked like a clean
-    # import of a 51-statement rotation. That is precisely the failure the tail comment names,
-    # and it was on the side nobody had written a check for.
-    #
-    # A *config* statement is not an opener: `skirk char lvl=90`, `add weapon=`, `options`,
-    # `target`, `energy` and `active` all legitimately precede the loop and carry no actions.
-    # The test is whether the line reads as an action, asked with the same parser that reads
-    # the body — so the two can never disagree about what an action is.
-    head = [line for line in lines[:start] if line]
-    opener = [line for line in head if _statement(line, by_key)[0] is not None]
-    if opener:
-        msg = (
-            f"{len(opener)} statement(s) run before the loop and would be dropped: "
-            f"{'; '.join(repr(o) for o in opener)}. That is an opener — actions a rotation "
-            f"performs once before its cycle — and this model holds a single repeating list, "
-            f"so importing it would silently discard them. The loop itself is importable "
-            f"without them."
-        )
+    start = opens[0]
+    header = lines[start]
+    if header == "while 1 {":
+        repeat = 1
+    else:
+        match = _FOR_BOUND.match(header)
+        if match is None:
+            msg = (
+                f"the loop is {header!r}, which this model cannot count. A `while 1 {{` runs "
+                f"until the simulation stops and a `for let i=0; i<N; i=i+1 {{` runs N times; "
+                f"a conditional loop runs a number of times only the simulation knows, and "
+                f"there is no repeat count to store for it."
+            )
+            raise RotationParseError(msg)
+        repeat = int(match.group(1))
+        if repeat < 1:
+            msg = (
+                f"the loop runs {repeat} times, so its body never executes. A rotation whose "
+                f"cycle never runs is not a rotation this app can hold."
+            )
+            raise RotationParseError(msg)
+
+    closes = [i for i, line in enumerate(lines) if line == "}"]
+    if not closes:
+        msg = f"the {header!r} loop is never closed."
         raise RotationParseError(msg)
 
     # Anything after the closing brace is outside the rotation and is not silently ignored:
     # gcsim would run it, so a config carrying it does not mean what the imported steps say.
-    closes = [i for i, line in enumerate(lines) if line == "}"]
-    if not closes:
-        msg = "the `while 1 {` loop is never closed."
-        raise RotationParseError(msg)
-    tail = [line for line in lines[closes[-1] + 1 :] if line]
+    tail = [line for line in lines[closes[-1] + 1 :] if line and not _is_config(line)]
     if tail:
         msg = (
             f"{len(tail)} statement(s) follow the loop and would run after it: "
-            f"{'; '.join(repr(t) for t in tail)}. A rotation is the loop and nothing else."
+            f"{'; '.join(repr(t) for t in tail)}. This model holds an opener and one cycle, "
+            f"and has nowhere to put a third section."
         )
         raise RotationParseError(msg)
-    return [line for line in lines[start + 1 : closes[-1]] if line]
+
+    # **The opener is kept, not dropped and not refused.** A *config* statement is not an
+    # opener: `skirk char lvl=90`, `add weapon=`, `options`, `target`, `energy` and `active`
+    # all legitimately precede the loop and carry no actions. The test is whether the line
+    # reads as an action, asked with the same parser that reads the body — so the two can
+    # never disagree about what an action is.
+    opener = [(line, "", 1) for line in lines[:start] if line and not _is_config(line)]
+    body = [
+        (line, "loop", repeat) for line in lines[start + 1 : closes[-1]] if line
+    ]
+    return opener + body
 
 
 def _statement(line: str, by_key: dict[str, str]) -> tuple[dict[str, Any] | None, str]:
-    """One gated action, or the reason this line could not be read as one."""
+    """One action, gated or bare, or the reason this line could not be read as one.
+
+    **Bare is the normal form now.** The gate was refused as recently as 2026-08-31, on the
+    argument that an ungated action inside `while 1` deadlocks — true, and it stopped being
+    this app's problem when the compiler stopped emitting `while 1`. Refusing bare actions
+    would now refuse this app's own output, and would go on refusing every config in the gcsim
+    database, none of which gates.
+    """
     match = _GATED.match(line)
     if match is None:
-        return None, _why_not(line)
-
-    gate_key, gate_action, key, action, param_text, repeat_text = match.groups()
+        bare = _BARE.match(line)
+        if bare is None:
+            return None, _why_not(line)
+        key, action, param_text, repeat_text = bare.groups()
+        gate_key, gate_action = key, action
+    else:
+        gate_key, gate_action, key, action, param_text, repeat_text = match.groups()
     # Both sides, and **before** they are compared: a config writing `if .arle.skill.ready
     # { arle skill; }` must still be checked for the gate matching its own action.
     gate_key = _canonical(gate_key, by_key)

@@ -20,28 +20,119 @@ Both are mechanical consequences of the action's *type*. That is exactly what a 
 carry and a user should not have to, and it is the whole of the owner's ruling that gcsim's
 syntax is the wrong authoring surface.
 
-## What it emits, and why each part
+## The shape this emitted until 2026-09-01, and why it was wrong
 
+    options iteration=100 duration=90;
     active kamisatoayaka;
     while 1 {
         if .kamisatoayaka.burst.ready { kamisatoayaka burst; }
         if .kamisatoayaka.attack.ready { kamisatoayaka attack:3; }
     }
 
-- **`while 1`** because a rotation is a *cycle*. The user writes one pass, not ninety seconds
-  of actions, and without the loop it runs once (failure 1).
-- **A readiness gate on every step.** `.<char>.<action>.ready` is a first-class condition —
-  `pkg/conditional/character.go:134` calls `char.ActionReady(act, nil)`, which accounts for
-  **cooldown and burst energy together**. So the user never types an energy threshold, never
-  learns a burst cost, and cannot write failure 2.
+Three decisions in there, each defensible alone and jointly producing a simulation that
+**could not measure Energy Recharge at all**:
+
+- **`while 1`** repeated the user's cycle forever, so the rotation's own length stopped
+  mattering and `duration` decided what was measured.
+- **`duration=90`**, a constant nobody chose, truncated every rotation at ninety seconds.
+- **A readiness gate on every step**, which turns *waiting* into *skipping*. gcsim only records
+  `insufficient_energy` for an action it **attempted and failed**; a gated burst is never
+  attempted, so the field read **0 for a team plainly starved** and the only visible symptom
+  was a burst count nobody was looking at.
+
+Owner, 2026-09-01: *"The optimizer should run through the rotation as defined to completion,
+regardless of how short/long it is, and score ER appropriately."*
+
+### The correction that followed, the same day
+
+Dropping all three at once was too much. `duration` and `while 1` were right to go; **removing
+every gate was not**, and the verification run that was meant to bless it died instead:
+
+    runtime: out of memory: cannot allocate 155189248-byte block (2369191936 in use)
+    fatal error: out of memory
+        pkg/stats/status/status.go:56  avgUpdate
+        pkg/simulation/run.go:187      actionReadyCheckPhase
+
+**gcsim has no watchdog.** `actionReadyCheckPhase` answers `ErrActionNotReady` with
+`advanceFrames(1, actionReadyCheckPhase)` — retry, forever, with nothing counting the retries.
+`stopCheck()` ends a run on `noMoreActions`, on all targets dead, or on an exact
+`F == Duration*60`; and `target hp=` turns damage mode **on implicitly**
+(`pkg/gcs/parser/parseTarget.go:63`), where duration is never consulted at all. An unkillable
+target, no duration and no gate therefore remove *every* termination condition together, and
+the run grows a per-frame stats slice until the kernel takes it.
+
+Bisecting the emitted 116 actions put it on action 92, `escoffier burst` — the fourth cycle,
+where her `er=0.583` runs out. The identical config with her at `er=3.0` finishes in **0.03 s
+using 32 MB**. That ratio is the diagnostic worth keeping: a healthy run of this size is
+free, so a gcsim run consuming real memory is a hang, not a big simulation.
+
+**This is the failure mode the optimizer exists to find**, which is what made it unshippable
+rather than merely unlucky: the hang happens precisely when a character cannot fund a burst.
+
+### What the measurements said
+
+Same team, same rotation, native gcsim. Furina's artifact ER against team DPS, and how long she
+spent unable to act:
+
+| passes | DPS @ er=0.3 | DPS @ er=0.9 | ER is worth | Furina waited @ 0.3 |
+|---|---|---|---|---|
+| 1 | 274,719 | 274,662 | **0.0 %** | 0 s |
+| 2 | 198,313 | 246,811 | **+24.5 %** | 15.9 s |
+| 3 | 167,314 | 238,297 | **+42.4 %** | 37.2 s |
+| 5 | 136,270 | 232,332 | **+70.5 %** | 87.7 s |
+
+**One pass cannot see ER, and that is gcsim, not a bug here: every character starts at full
+energy.** Measured directly — a single pass at er=0, er=0.3 and er=2.0 returns the same
+duration, the same DPS and the same burst counts. The first cycle is always free, so a rotation
+has to run past it before energy is a cost. There is no `start_energy` option to turn that off;
+`pkg/gcs/parser/parseOptions.go` has no such case.
+
+Against that, the gated 90-second window reported ER as worth **+2.6 %**. The optimizer was
+never weighing ER wrongly. It was weighing it against a simulation in which nobody ever pays
+for a second burst.
+
+**Read that table as the *ungated* model, because it is one — the `waited` column only has
+meaning where gcsim blocks.** It is not what this file now emits, and the difference is not
+small. Measured on the owner's own 87-step rotation and gear (243 actions, five bursts each,
+50 iterations), with bursts gated:
+
+| artifact ER | 0.279 | 0.6 | 1.0 | 1.3 | 1.6 | 2.0 |
+|---|---|---|---|---|---|---|
+| team DPS | 267,508 | 267,211 | 266,676 | 267,329 | 287,085 | 307,850 |
+| ER is worth | — | -0.1 % | -0.3 % | -0.1 % | **+7.3 %** | **+15.1 %** |
+
+Duration is 101.1 s at every rung, set by the rotation. Base ER is 1.0
+(`pkg/core/player/character/basestat.go:82`), so the step is at ~260 % total and she is at
+128 %.
+
+**The two models disagree about what ER is worth, and the disagreement is the open question.**
+Waiting spreads one character's shortfall across the whole team, so it prices ER high;
+skipping costs only the burst and its cast time, so it prices ER low. Waiting is arguably the
+better model of a player and it is the one that cannot be run — see the correction above. So
+what ships is the cheaper answer, and **the gated emitter will systematically under-value ER
+against a rotation whose author would have waited.** Recorded here rather than settled,
+because which of the two a build should be scored against is the owner's ruling, not this
+file's.
+
+## What it emits now
+
+    active kamisatoayaka;
+    kamisatoayaka burst;
+    kamisatoayaka attack:3;
+
+- **No loop wrapper of any kind.** `unroll` has already expanded whatever repeats the rotation
+  *defines*, so the emitted list **is** the whole rotation. "A bare action list runs once" is
+  no longer failure 1 — once is exactly the ask, and the length is the user's rather than ours.
+- **No gates**, so gcsim waits for an action rather than skipping it. That is what a player
+  does, and it is what makes `insufficient_energy` report real seconds — the number the owner
+  asked for and that this could not previously produce. Failure 2 does not return with them:
+  the deadlock was a property of `while 1`, and a finite list cannot deadlock, only take longer.
+- **`gcsim_config` sets `target hp=` and emits no `duration`**, so the run ends when the
+  actions do. In HP mode gcsim ignores `duration` entirely — measured: the same rotation
+  reports 189.3 s whether the config says `duration=90`, `duration=3600` or nothing at all.
 - **No swap actions.** `pkg/simulation/run.go:154`: *"the evaluator should handle adding in
   implicit swaps if next char is not active"*, with a sanity check that errors if one was
   missed. Emitting our own would double them.
-
-**Every step is gated, including `attack`.** An attack is essentially always ready, so its gate
-is noise in generated text nobody reads. Gating selectively would mean a table of "which
-actions can stall", maintained by hand against gcsim's behaviour — and a wrong entry there
-reintroduces the deadlock silently. A redundant `if` is the cheaper mistake.
 """
 
 from __future__ import annotations
@@ -156,10 +247,8 @@ def compile_rotation(
     # `active` is the **first step's** character, not the team's first slot. Otherwise the
     # rotation opens with an implicit swap gcsim has to pay for, before the user's first
     # intended action — a cost they did not write and cannot see.
-    lines = [f"active {keys[0]};", "while 1 {"]
-    for key, step in zip(keys, steps, strict=True):
-        lines.append(f"    {_statement(key, step)}")
-    lines.append("}")
+    lines = [f"active {keys[0]};"]
+    lines.extend(_statement(key, step) for key, step in zip(keys, steps, strict=True))
     return "\n".join(lines) + "\n"
 
 
@@ -221,8 +310,13 @@ def _resolve(
     return resolved
 
 
+#: The one action whose readiness the rotation cannot make true on its own. See
+#: `_statement` for why exactly one action needs this.
+_ENERGY_GATED_ACTION = "burst"
+
+
 def _statement(key: str, step: Mapping[str, object]) -> str:
-    """One gated action, with gcsim's own `:n` repetition and `[param=1]` variant.
+    """One action, with gcsim's own `:n` repetition and `[param=1]` variant.
 
     **The variant becomes a parameter here and nowhere else.** The model holds `skill_hold` as
     an action, because a hold-E is a different move to a tap-E and the owner's ruling is that
@@ -230,15 +324,30 @@ def _statement(key: str, step: Mapping[str, object]) -> str:
     thing `skill[hold=1]` — the form a real community config uses,
     `references/gcsim_db/clorinde-chevreuse-nicole-durin.txt:48`.
 
-    **The gate names the base action, not the variant.** `.chev.skill.ready` is the condition
-    gcsim carries; there is no `.skill_hold.ready`, because a hold and a tap share one cooldown.
-    Gating on the variant would emit a condition gcsim's parser does not know.
+    **Gated on bursts and nothing else, since 2026-09-01.** The rule is about what a wait is
+    *waiting for*:
+
+    - A **cooldown** always expires. Waiting on it is free of risk and models what a player
+      does, so every non-burst action is emitted bare and gcsim waits.
+    - **Energy** may never arrive. A burst nobody can pay for blocks the whole simulation, so
+      no later action runs, so no particles drop, so the energy never comes. gcsim has no
+      watchdog for this — see the module docstring — and the run does not fail, it grows
+      until the process is killed.
+
+    Gating everything was the older mistake and turned every cooldown wait into a silent skip;
+    gating nothing was the newer one and hung. The burst is the only action whose readiness
+    condition the rotation itself cannot satisfy, so it is the only one that gets a gate.
     """
     action, param = gcsim_keys.split_variant(str(step["action"]))
     repeat = int(step.get("repeat", 1) or 1)
     call = action if param is None else f"{action}[{param}=1]"
     suffix = f":{repeat}" if repeat > 1 else ""
-    return f"if .{key}.{action}.ready {{ {key} {call}{suffix}; }}"
+    statement = f"{key} {call}{suffix};"
+    if action != _ENERGY_GATED_ACTION:
+        return statement
+    # The gate names the base action, not the variant: a hold and a tap share one cooldown,
+    # and `.burst_hold.ready` is a condition gcsim's parser does not know.
+    return f"if .{key}.{action}.ready {{ {statement} }}"
 
 
 def signature_digest(signature: Sequence[str]) -> str:

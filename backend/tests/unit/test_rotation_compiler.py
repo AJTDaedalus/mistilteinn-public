@@ -32,50 +32,87 @@ def _step(character: str = "10000002", action: str = "burst", repeat: int = 1) -
     return {"character": character, "action": action, "repeat": repeat}
 
 
-# ── Failure 1: the config must cycle ─────────────────────────────────────────
+# ── What replaced the loop and the gates (2026-09-01) ────────────────────────
+#
+# Owner ruling: *"The optimizer should run through the rotation as defined to completion,
+# regardless of how short/long it is, and score ER appropriately."*
+#
+# The two failures the loop and the gates answered are still real, and the module docstring
+# keeps the argument. They are answered differently now: `unroll` already expands the
+# rotation's own repeats, so "a bare list runs once" is the ask rather than the bug; and the
+# deadlock belonged to `while 1`, which a finite list cannot reproduce.
 
 
-def test_the_rotation_is_wrapped_in_a_loop():
-    """Without it the whole rotation happens once in ninety seconds.
+def test_the_rotation_is_emitted_as_written_with_no_loop_wrapper():
+    """The list *is* the rotation, so wrapping it would repeat what the user already sized.
 
-    That is not a subtle error — it is most of the DPS figure — and gcsim reports it as a
-    perfectly ordinary run.
+    `while 1` made the rotation's length irrelevant and handed the decision to `duration=90` —
+    a constant nobody chose, which is what every damage figure was then divided by.
     """
     out = compile_rotation([_step()], ROSTER)
 
-    assert "while 1 {" in out
-    assert out.rstrip().endswith("}")
+    assert "while 1" not in out
+    assert out == (
+        "active kamisatoayaka;\n"
+        "if .kamisatoayaka.burst.ready { kamisatoayaka burst; }\n"
+    )
 
 
-# ── Failure 2: every step is gated ───────────────────────────────────────────
+def test_a_group_repeat_is_what_makes_the_rotation_long():
+    """Length comes from the rotation's own definition, never from this file.
+
+    An opener plus a core loop is exactly the shape of a real gcsim database config, and it is
+    expressible here because `unroll` runs in front of the emitter.
+    """
+    opener = {"character": "10000002", "action": "burst", "repeat": 1}
+    core = [
+        {"character": "10000002", "action": "skill", "repeat": 1,
+         "group": "loop", "group_repeat": 4},
+        {"character": "10000002", "action": "attack", "repeat": 2,
+         "group": "loop", "group_repeat": 4},
+    ]
+
+    out = compile_rotation([opener, *core], ROSTER)
+
+    assert out.count("kamisatoayaka skill;") == 4
+    assert out.count("kamisatoayaka attack:2;") == 4
+    assert out.count("kamisatoayaka burst;") == 1
 
 
-def test_every_step_carries_a_readiness_gate():
-    """`.ready` calls gcsim's own `ActionReady`, so it covers cooldown *and* burst energy.
+def test_only_a_burst_carries_a_readiness_gate():
+    """The gate is about what a wait is waiting *for*, not about caution.
 
-    The user never types an energy threshold and cannot write the deadlock.
+    A cooldown always expires, so waiting on one is safe and models a player. Energy may never
+    arrive: a burst nobody can fund blocks the simulation, so nothing later runs, so no
+    particles drop, so the energy never comes. gcsim has no watchdog for that — it retries the
+    frame forever and grows a per-frame stats slice until the kernel kills it (2.4 GB, measured
+    2026-09-01 on the owner's own rotation, at `escoffier burst` in the fourth cycle).
+
+    So the burst is gated and nothing else is. Gating everything was the older mistake: it
+    turned every cooldown wait into a silent skip.
     """
     out = compile_rotation(
         [_step(action="burst"), _step(action="skill"), _step(action="attack")], ROSTER,
     )
 
-    assert out.count("if .kamisatoayaka.") == 3
-    assert ".burst.ready" in out
-    assert ".skill.ready" in out
+    assert out.count("if .") == 1
+    assert "if .kamisatoayaka.burst.ready { kamisatoayaka burst; }" in out
+    assert "kamisatoayaka skill;" in out
+    assert "kamisatoayaka attack;" in out
 
 
-def test_even_attack_is_gated():
-    """An attack is essentially always ready, so its gate is noise — deliberately.
+def test_a_gated_burst_still_hides_insufficient_energy_so_bursts_are_counted_instead():
+    """Recorded because the gate has a real cost and the cost has a named replacement.
 
-    Gating selectively needs a hand-maintained table of "which actions can stall", and a
-    wrong entry there brings the deadlock back silently. A redundant `if` is the cheaper
-    mistake.
+    gcsim populates `insufficient_energy` only for an action it **attempted** and could not pay
+    for. A gated burst is never attempted, so that field reads 0 for a team plainly starved.
+    The observable signal is the **burst count**: a burst that did not fire is a burst that is
+    not in the log, and unlike `insufficient_energy` it cannot be confused with a rotation that
+    never asked for one.
     """
-    assert "if .kamisatoayaka.attack.ready" in compile_rotation([_step(action="attack")], ROSTER)
+    starved = compile_rotation([_step(action="burst")], ROSTER)
 
-
-# ── The rest of the emission ─────────────────────────────────────────────────
-
+    assert ".burst.ready" in starved
 
 def test_repeat_uses_gcsims_own_colon_syntax():
     out = compile_rotation([_step(action="attack", repeat=3)], ROSTER)
@@ -167,18 +204,9 @@ def test_a_variant_action_becomes_a_gcsim_parameter():
     out = compile_rotation([_step(action="skill_hold")], ROSTER)
 
     assert "kamisatoayaka skill[hold=1];" in out
-
-
-def test_the_gate_names_the_base_action_not_the_variant():
-    """There is no `.skill_hold.ready` in gcsim, and a hold shares the tap's cooldown.
-
-    Gating on the variant would emit a condition gcsim's parser does not know — which fails
-    loudly, but only once someone simulates. This keeps it impossible.
-    """
-    out = compile_rotation([_step(action="skill_hold")], ROSTER)
-
-    assert "if .kamisatoayaka.skill.ready {" in out
-    assert "skill_hold.ready" not in out
+    # The model's word for the action never reaches gcsim, which has no `skill_hold`. This used
+    # to be guarded by the gate test as well; the gate is gone and the mapping is not.
+    assert "skill_hold" not in out
 
 
 def test_a_variant_still_takes_gcsims_repetition():

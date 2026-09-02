@@ -10,15 +10,15 @@ is mechanically translatable first, then refuse whatever is still unexpressible 
 | from | to | why it is a rewrite and not a guess |
 |---|---|---|
 | `# …`, `// …` | dropped | comments carry no behaviour |
-| `char a;` | gated statement | `while 1` **deadlocks** on an ungated action; see below |
+| `char a;` | the statement, verbatim | actions are emitted ungated since 2026-09-01 |
 | `char a, b, c;` | three statements | gcsim's own shorthand for three actions in order |
-| `char a;` | `if .char.a.ready { char a; }` | see below |
+| `char a;` | `char a;` | unchanged — actions are ungated since 2026-09-01 |
 
-**The `.ready` gate is added, not assumed.** That is a real change to the text, and it is the
-same change `rotation_compiler` makes to everything authored here — because `while 1` **deadlocks**
-on an ungated action, so an un-gated import would produce a config that hangs rather than one
-that runs. A converted rotation therefore behaves exactly like an authored one, which is the
-only behaviour this app can honestly claim.
+**The `.ready` gate is no longer added.** It used to be, on the argument that `while 1`
+deadlocks on an ungated action — true, and irrelevant once the compiler stopped emitting
+`while 1`. A gate makes gcsim *skip* an action it cannot afford rather than *wait* for it,
+which is how `insufficient_energy` came to read 0 for a team plainly starved. A converted
+config now says what the author wrote.
 
 ## What it refuses, and will keep refusing
 
@@ -77,11 +77,12 @@ def convert(config: str) -> tuple[str, list[str]]:
             continue
 
         if _FOR_LOOP.match(line):
-            notes.append(
-                f"{raw.strip()!r} became `while 1 {{`. A rotation here is a cycle, and how "
-                f"long to run for is stated separately.",
-            )
-            out.append("while 1 {")
+            # **Kept verbatim, bound and all.** This used to rewrite the header to `while 1 {`
+            # and note that "how long to run for is stated separately" — which was true while
+            # `duration=90` stated it, and threw away the one number the author *did* write.
+            # `group_repeat` holds it now, so the parser reads the bound off this line and the
+            # rotation runs the number of cycles its author asked for.
+            out.append(line)
             continue
 
         expanded = _split_sequence(line)
@@ -158,6 +159,5 @@ def _split_sequence(line: str) -> list[str] | None:
             # that swallowed it would turn a refusal into a silent omission.
             return None
         name, repeat = action.groups()
-        call = f"{key} {name}:{repeat};" if repeat else f"{key} {name};"
-        statements.append(f"if .{key}.{name}.ready {{ {call} }}")
+        statements.append(f"{key} {name}:{repeat};" if repeat else f"{key} {name};")
     return statements

@@ -36,13 +36,18 @@ class _Character:
 # ── the rewrites ─────────────────────────────────────────────────────────────
 
 
-def test_a_bounded_loop_becomes_the_cycle_it_describes() -> None:
-    """`for i<4` four times over 90 seconds *is* a cycle; how long to run is stated elsewhere."""
+def test_a_bounded_loop_keeps_its_own_bound() -> None:
+    """`for i<4` says the author wants four cycles, and that is the one number they wrote.
+
+    This used to rewrite the header to `while 1 {` and note that *"how long to run for is
+    stated separately"* — true while `duration=90` stated it, and a silent discard of the
+    author's count. `group_repeat` holds it now.
+    """
     text, notes = convert("active a;\nfor let i=0; i<4; i=i+1 {\n    a skill;\n}\n")
 
-    assert "while 1 {" in text
-    assert "for" not in text
-    assert any("while 1" in note for note in notes)
+    assert "for let i=0; i<4; i=i+1 {" in text
+    assert "while 1" not in text
+    assert notes == []
 
 
 def test_a_sequence_written_across_several_lines_is_rejoined() -> None:
@@ -54,14 +59,17 @@ def test_a_sequence_written_across_several_lines_is_rejoined() -> None:
         "active a;\nwhile 1 {\n    a charge,\n         attack:6,\n         attack:3;\n}\n",
     )
 
-    assert text.count("if .a.") == 3
+    assert text.count("a attack") == 2
     assert "a attack:6;" in text
+    assert "a charge;" in text
 
 
 def test_a_comma_sequence_becomes_one_step_each() -> None:
     text, notes = convert("active a;\nwhile 1 {\n    a burst, skill, attack:3;\n}\n")
 
-    assert text.count("if .a.") == 3
+    assert text.count("a burst;") == 1
+    assert text.count("a skill;") == 1
+    assert text.count("a attack:3;") == 1
     assert "a attack:3;" in text
     assert any("3 steps" in note for note in notes)
 
@@ -76,11 +84,15 @@ def test_comments_are_dropped_in_both_dialects() -> None:
 
 
 def test_every_rewrite_is_named() -> None:
-    """**Nothing changes silently.** A `for` becoming a `while 1` is a real change to somebody
-    else's config, and they should meet it in a list rather than in a damage number."""
+    """**Nothing changes silently.** Splitting one comma sequence into two steps is a real
+    change to somebody else's config, and they should meet it in a list rather than in a
+    damage number.
+
+    The `for` header no longer contributes a note, because it is no longer rewritten.
+    """
     _, notes = convert("active a;\nfor let i=0; i<2; i=i+1 {\n    a burst, skill;\n}\n")
 
-    assert len(notes) == 2
+    assert notes == ["'a burst, skill;' became 2 steps."]
 
 
 def test_a_config_we_emitted_survives_untouched() -> None:
@@ -183,18 +195,17 @@ def test_a_config_built_on_user_functions_is_still_refused(name: str) -> None:
 # ── the opener ───────────────────────────────────────────────────────────────
 
 
-def test_an_opener_is_refused_rather_than_dropped() -> None:
-    """A config's pre-loop actions are not part of the cycle, and must not vanish into it.
+def test_the_openers_statements_are_imported_not_dropped_or_refused() -> None:
+    """`skirk-furina-citlali-escoffier.txt` is the config the owner linked, end to end.
 
-    `skirk-furina-citlali-escoffier.txt` is the owner's own linked rotation. It runs 19
-    statements once — Furina's opener, Citlali, Escoffier, then Skirk's burst and four
-    `attack:5` strings — before entering a `for` loop of 32.
+    It runs 19 statements once — Furina's opener, Citlali, Escoffier, then Skirk's burst and
+    four `attack:5` strings — before entering a `for` loop of 32.
 
-    Before the head guard existed this imported **silently, as 32 steps**: a clean-looking
-    result, the right character on field, and none of the opener. The tail of a config has
-    been guarded since the parser was written, with a comment explaining that gcsim would run
-    those statements so dropping them changes what the config means. The head had no such
-    check, and the same argument applies to it exactly.
+    Its history is the whole argument for this test. It first imported **silently as 32
+    steps**: a clean-looking result, the right character on field, and none of the opener. A
+    head guard turned that into a refusal, which was honest and still left the config
+    unimportable. Both halves are now held: the opener as ungrouped steps, the cycle as a
+    group carrying the `for`'s own bound.
     """
     roster = [
         _Character("10000114", "Skirk", "cryo"),
@@ -204,14 +215,17 @@ def test_an_opener_is_refused_rather_than_dropped() -> None:
     ]
     text, _ = convert((DB / "skirk-furina-citlali-escoffier.txt").read_text())
 
-    with pytest.raises(RotationParseError) as refused:
-        parse_action_block(text, roster)
+    steps = parse_action_block(text, roster)
 
-    message = str(refused.value)
-    assert "19 statement(s) run before the loop" in message
-    # The burst is the one a reader would most notice missing, so it is named explicitly.
-    assert "skirk burst" in message
-    assert "The loop itself is importable without them." in message
+    opener = [s for s in steps if s["group"] == ""]
+    cycle = [s for s in steps if s["group"] == "loop"]
+    assert len(opener) == 19, "the opener is what silently vanished the first time"
+    assert len(cycle) == 32
+    # The `for let a=0; a<5; a=a+1` bound, which `group_repeat` is exactly the field for.
+    assert {s["group_repeat"] for s in cycle} == {5}
+    # Skirk's burst is in the opener and nowhere else — the statement a reader would most
+    # notice missing, and the one the old refusal named.
+    assert ("10000114", "burst") in [(s["character"], s["action"]) for s in opener]
 
 
 def test_a_config_statement_before_the_loop_is_not_an_opener() -> None:

@@ -135,7 +135,7 @@ def test_an_evenly_resistant_enemy_is_emitted():
     )
     config = build_config(_build(), actions=["burst"], enemy=enemy)
 
-    assert "target lvl=100 resist=0.1 pos=0,1;" in config
+    assert "target lvl=100 resist=0.1 pos=0,1 hp=999999999;" in config
 
 
 # ── W.2/W.3 — substituting a candidate weapon ────────────────────────────────
