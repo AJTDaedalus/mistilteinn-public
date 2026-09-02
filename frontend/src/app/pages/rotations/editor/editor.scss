@@ -108,8 +108,8 @@ label {
      not finding the delete control. Those are one complaint — `.step` is `nowrap` with the
      label set to shrink, so every rem the dialog lacks comes out of the step's text and
      pushes four unlabelled glyph buttons into a huddle. Width is most of the legibility fix. */
-  width: min(72rem, 94vw);
-  max-height: 88vh;
+  width: min(108rem, 96vw);
+  max-height: 92vh;
   padding: 0 var(--space-4) var(--space-4);
   border: 1px solid var(--brass-deep);
   border-radius: var(--radius-2);
@@ -397,4 +397,46 @@ label {
   margin-top: 0.5rem;
 
   ul { margin: 0.2rem 0 0; padding-left: 1.1rem; }
+}
+
+
+/* ── Two columns, once there is width for them ───────────────────────────────
+   The owner: *"the rotation builder feels cramped"*. Measured before changing anything: at
+   1920x1200 the dialog was 1152x1056 — **60 % of the viewport's width** — showing **9 of 32
+   steps**. Width was not scarce, it was unused: a step row is a name, a move and four glyph
+   buttons, and the rest of those 1152 pixels was gap.
+
+   Stacking the controls above the list spends the dialog's whole height on chrome before the
+   first step. Beside it, the list gets the full height instead, and the extra width goes to
+   the thing there is never enough of.
+
+   **The markup gained a wrapper rather than the grid gaining placement rules.** Two attempts
+   placed the eleven flat children by hand and both scattered: `rotation-timeline` is the
+   *seventh* child, not the second, so any rule that assumes a row number is guessing at an
+   order the markup never stated. A container per column says it once. */
+@media (min-width: 88rem) {
+  .editor-dialog {
+    display: grid;
+    grid-template-columns: minmax(0, 36rem) minmax(0, 1fr);
+    column-gap: var(--space-4);
+    align-items: start;
+  }
+
+  .editor-dialog__head { grid-column: 1 / -1; }
+
+  /* Its own scroller, so the controls beside it stay put rather than scrolling away from the
+     list they act on. */
+  .editor-dialog__aside {
+    grid-column: 1;
+    min-height: 0;
+    overflow-y: auto;
+    max-height: 78vh;
+  }
+
+  .editor-dialog > .steps {
+    grid-column: 2;
+    min-height: 0;
+    max-height: 78vh;
+    overflow-y: auto;
+  }
 }

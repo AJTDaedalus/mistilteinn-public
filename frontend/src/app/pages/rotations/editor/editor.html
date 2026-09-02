@@ -14,226 +14,320 @@
       (click)="close()"
     >×</button>
   </header>
+  <!-- Column one on a wide viewport: everything that acts on the list. Wrapped so the
+       grid has containers to place rather than eleven flat children in an order the
+       markup never chose — auto-placement put the team picker in the step column and
+       pushed every button below the fold. -->
+  <div class="editor-dialog__aside">
 
-  <label>
-    Name
-    <input
-      type="text"
-      name="name"
-      [ngModel]="name()" (ngModelChange)="name.set($event)"
-      placeholder="Melt opener"
-      aria-label="Rotation name"
-    />
-  </label>
-
-  <mist-card-picker
-    label="Team"
-    placeholder="Choose a team…"
-    [options]="teamOptions()"
-    [selected]="teamId() ? [teamId()] : []"
-    [disabled]="editing() !== null"
-    (selectedChange)="pickTeam($event)"
-  />
-  @if (editing()) {
-    <!-- The API has no `team_id` on PATCH: moving a rotation would reinterpret every
-         step against a different party, and the steps that stopped resolving would be
-         found later, at compile time, far from the edit that caused it. -->
-    <p class="hint">
-      A saved rotation stays on its team. Build a new one for another team.
-    </p>
-  }
-
-  @if (roster().length === 0) {
-    <p class="hint">That team has no builds yet, so there is nobody to act.</p>
-  } @else {
-    <!-- Who is available to act, once, rather than re-read from every step's
-         dropdown. -->
-    <!-- B.2: the roster was drawn here and not clickable, while the user picked the same
-         character from a `<select>` underneath. Click a face, click an action, and the
-         step appends — two interactions where the old path measured five to seven.
-
-         Labelled, because it is a *source* and looked like a header. The three bands below
-         read in order now: pick a move, see the rotation, edit one step. -->
-    <p class="band-label">Pick a move</p>
-    <ul class="roster">
-      @for (member of roster(); track member.nanoka_id) {
-        <li>
-          <button
-            type="button"
-            class="roster__pick"
-            [class.roster__pick--open]="addingFor() === member.nanoka_id"
-            [attr.aria-expanded]="addingFor() === member.nanoka_id"
-            [attr.aria-label]="'Add a step for ' + member.name"
-            (click)="toggleAddingFor(member.nanoka_id)"
-          >
-            <entity-token [icon]="member.icon" [name]="member.name" [size]="34" />
-            <element-chip
-              compact
-              [size]="22"
-              [element]="member.element"
-              [icon]="member.element_icon"
-            />
-          </button>
-
-          @if (addingFor() === member.nanoka_id) {
-            <ul class="roster__actions">
-              <!-- **Per character, not one list for everyone.** A hold-E is a different
-                   move to a tap-E and only 55 of gcsim's 117 characters have one, so the
-                   palette asks the server what *this* character can do
-                   (`DESIGN_rotation_builder_gui.md` §3). The badge is the owner's `t`/`h`;
-                   the word is in the button's label, because a corner glyph is never the
-                   only channel. -->
-              @for (offer of offersFor(member); track offer.action) {
-                <li>
-                  <button
-                    type="button"
-                    class="offer"
-                    draggable="true"
-                    [attr.aria-label]="offerLabel(offer)"
-                    [attr.title]="offerLabel(offer)"
-                    (dragstart)="onOfferDragStart($event, member.nanoka_id, offer)"
-                    (dragend)="endDrag()"
-                    (click)="addOffer(offer.action)"
-                  >
-                    @if (offer.icon) {
-                      <catalogue-icon [icon]="offer.icon" [alt]="''" [size]="26" />
-                    }
-                    <!-- `offerLabel`, not `offer.name`. The palette was the one surface left
-                         showing the raw value: a literal `high_plunge` on the button while the
-                         row and the tile said "High plunge", and while this button's own
-                         `aria-label` already said "High plunge" — visible text disagreeing
-                         with its own accessible name. -->
-                    <span class="offer__name">{{ offerLabel(offer) }}</span>
-                    @if (offer.variant) {
-                      <span class="offer__badge" aria-hidden="true">
-                        {{ variantBadge(offer.variant) }}
-                      </span>
-                    }
-                  </button>
-                </li>
-              }
-            </ul>
-            <!-- The keyboard half of T.6, and it is the buttons above rather than a
-                 button of its own: with a step selected they **insert there**, and with
-                 nothing selected they append. A single "Insert before step N" control
-                 could only ever insert one action — the first offer, which is always
-                 `skill` — so a burst or a hold could not be placed mid-rotation without a
-                 mouse. -->
-            @if (selection(); as span) {
-              <p class="hint">
-                Adding will insert before step {{ span.start + 1 }}.
-              </p>
-            }
-          }
-        </li>
-      }
-    </ul>
-  }
-
-  <!-- Level 1 of the owner's hierarchy: timeline → rotation list → move detail. -->
-  <rotation-timeline
-    [steps]="steps()"
-    [roster]="roster()"
-    [selection]="selection()"
-    [measured]="measured()"
-    (pick)="onPick($event)"
-    (dragFrom)="onDragStart($event)"
-    (dragEnd)="endDrag()"
-    (dropOn)="onTimelineDrop($event)"
-  />
-
-  <div class="timeline-controls">
-    <button type="button" (click)="runSample()" [disabled]="sampling() || steps().length === 0">
-      {{ sampling() ? 'Running…' : 'Run once' }}
-    </button>
-    <button type="button" (click)="copySelection()" [disabled]="selection() === null">
-      Copy{{ selectedCount() > 1 ? ' ' + selectedCount() + ' steps' : '' }}
-    </button>
-    <button type="button" (click)="pasteClipboard()" [disabled]="clipboard().length === 0">
-      Paste {{ clipboard().length }}
-    </button>
-    @if (selectionIsGroup()) {
-      <button type="button" (click)="ungroupSelection()">Ungroup</button>
-      <label class="repeat">
-        repeats ×
-        <input
-          type="number"
-          min="1"
-          max="20"
-          aria-label="How many times the group repeats"
-          [value]="selectedGroupRepeat()"
-          (change)="setGroupRepeat(+$any($event.target).value)"
-        />
-      </label>
-    } @else {
-      <button type="button" (click)="groupSelection()" [disabled]="!canGroup()">
-        Group ×2
-      </button>
-    }
-  </div>
-
-  @if (sampleError(); as message) {
-    <p class="error" role="alert">{{ message }}</p>
-  }
-
-  <!-- Level 3: one move, in full. The timeline can carry a tile and a badge; the word
-       "Hold" and the note live here, which is why the compact badge works at all. -->
-  @if (selectedStep(); as step) {
-    <fieldset class="detail">
-      <legend>Step {{ (selection()?.start ?? 0) + 1 }}</legend>
-      <!-- The acting character moved here with everything else about one move. The list used
-           to carry this select on every row, which meant level 2 and level 3 edited the same
-           two fields side by side — the same control twice, one of them redundant. -->
-      <select
-        aria-label="Character for the selected step"
-        [value]="step.character"
-        (change)="setStep(selection()!.start, { character: $any($event.target).value })"
-      >
-        <!-- `[selected]` on the option, not `[value]` on the select. Angular assigns the
-             select's `value` in the same pass that renders these options, so the assignment
-             lands before the option exists and the browser falls back to index 0. Every step
-             showed the first character, whatever it held; the compiled config was right the
-             whole time, which is why nothing failed. Seen in a screenshot (#184). -->
-        @for (member of roster(); track member.nanoka_id) {
-          <option [value]="member.nanoka_id" [selected]="member.nanoka_id === step.character">
-            {{ member.name }} · {{ member.element }}
-          </option>
-        }
-      </select>
-      <select
-        aria-label="Action for the selected step"
-        [value]="step.action"
-        (change)="setStep(selection()!.start, { action: $any($event.target).value })"
-      >
-        @for (offer of offersForId(step.character); track offer.action) {
-          <option [value]="offer.action" [selected]="offer.action === step.action">
-            {{ offerLabel(offer) }}
-          </option>
-        }
-      </select>
-      <label class="repeat">
-        ×
-        <input
-          type="number"
-          min="1"
-          max="20"
-          aria-label="Repeat for the selected step"
-          [value]="step.repeat"
-          (change)="setStep(selection()!.start, { repeat: +$any($event.target).value })"
-        />
-      </label>
+    <label>
+      Name
       <input
         type="text"
-        class="note"
-        placeholder="note"
-        aria-label="Note for the selected step"
-        [value]="step.note"
-        (change)="setStep(selection()!.start, { note: $any($event.target).value })"
+        name="name"
+        [ngModel]="name()" (ngModelChange)="name.set($event)"
+        placeholder="Melt opener"
+        aria-label="Rotation name"
       />
-    </fieldset>
-  }
+    </label>
 
-  <!-- Level 2. -->
+    <mist-card-picker
+      label="Team"
+      placeholder="Choose a team…"
+      [options]="teamOptions()"
+      [selected]="teamId() ? [teamId()] : []"
+      [disabled]="editing() !== null"
+      (selectedChange)="pickTeam($event)"
+    />
+    @if (editing()) {
+      <!-- The API has no `team_id` on PATCH: moving a rotation would reinterpret every
+           step against a different party, and the steps that stopped resolving would be
+           found later, at compile time, far from the edit that caused it. -->
+      <p class="hint">
+        A saved rotation stays on its team. Build a new one for another team.
+      </p>
+    }
+
+    @if (roster().length === 0) {
+      <p class="hint">That team has no builds yet, so there is nobody to act.</p>
+    } @else {
+      <!-- Who is available to act, once, rather than re-read from every step's
+           dropdown. -->
+      <!-- B.2: the roster was drawn here and not clickable, while the user picked the same
+           character from a `<select>` underneath. Click a face, click an action, and the
+           step appends — two interactions where the old path measured five to seven.
+
+           Labelled, because it is a *source* and looked like a header. The three bands below
+           read in order now: pick a move, see the rotation, edit one step. -->
+      <p class="band-label">Pick a move</p>
+      <ul class="roster">
+        @for (member of roster(); track member.nanoka_id) {
+          <li>
+            <button
+              type="button"
+              class="roster__pick"
+              [class.roster__pick--open]="addingFor() === member.nanoka_id"
+              [attr.aria-expanded]="addingFor() === member.nanoka_id"
+              [attr.aria-label]="'Add a step for ' + member.name"
+              (click)="toggleAddingFor(member.nanoka_id)"
+            >
+              <entity-token [icon]="member.icon" [name]="member.name" [size]="34" />
+              <element-chip
+                compact
+                [size]="22"
+                [element]="member.element"
+                [icon]="member.element_icon"
+              />
+            </button>
+
+            @if (addingFor() === member.nanoka_id) {
+              <ul class="roster__actions">
+                <!-- **Per character, not one list for everyone.** A hold-E is a different
+                     move to a tap-E and only 55 of gcsim's 117 characters have one, so the
+                     palette asks the server what *this* character can do
+                     (`DESIGN_rotation_builder_gui.md` §3). The badge is the owner's `t`/`h`;
+                     the word is in the button's label, because a corner glyph is never the
+                     only channel. -->
+                @for (offer of offersFor(member); track offer.action) {
+                  <li>
+                    <button
+                      type="button"
+                      class="offer"
+                      draggable="true"
+                      [attr.aria-label]="offerLabel(offer)"
+                      [attr.title]="offerLabel(offer)"
+                      (dragstart)="onOfferDragStart($event, member.nanoka_id, offer)"
+                      (dragend)="endDrag()"
+                      (click)="addOffer(offer.action)"
+                    >
+                      @if (offer.icon) {
+                        <catalogue-icon [icon]="offer.icon" [alt]="''" [size]="26" />
+                      }
+                      <!-- `offerLabel`, not `offer.name`. The palette was the one surface left
+                           showing the raw value: a literal `high_plunge` on the button while the
+                           row and the tile said "High plunge", and while this button's own
+                           `aria-label` already said "High plunge" — visible text disagreeing
+                           with its own accessible name. -->
+                      <span class="offer__name">{{ offerLabel(offer) }}</span>
+                      @if (offer.variant) {
+                        <span class="offer__badge" aria-hidden="true">
+                          {{ variantBadge(offer.variant) }}
+                        </span>
+                      }
+                    </button>
+                  </li>
+                }
+              </ul>
+              <!-- The keyboard half of T.6, and it is the buttons above rather than a
+                   button of its own: with a step selected they **insert there**, and with
+                   nothing selected they append. A single "Insert before step N" control
+                   could only ever insert one action — the first offer, which is always
+                   `skill` — so a burst or a hold could not be placed mid-rotation without a
+                   mouse. -->
+              @if (selection(); as span) {
+                <p class="hint">
+                  Adding will insert before step {{ span.start + 1 }}.
+                </p>
+              }
+            }
+          </li>
+        }
+      </ul>
+    }
+
+    <!-- Level 1 of the owner's hierarchy: timeline → rotation list → move detail. -->
+    <rotation-timeline
+      [steps]="steps()"
+      [roster]="roster()"
+      [selection]="selection()"
+      [measured]="measured()"
+      (pick)="onPick($event)"
+      (dragFrom)="onDragStart($event)"
+      (dragEnd)="endDrag()"
+      (dropOn)="onTimelineDrop($event)"
+    />
+
+    <div class="timeline-controls">
+      <button type="button" (click)="runSample()" [disabled]="sampling() || steps().length === 0">
+        {{ sampling() ? 'Running…' : 'Run once' }}
+      </button>
+      <button type="button" (click)="copySelection()" [disabled]="selection() === null">
+        Copy{{ selectedCount() > 1 ? ' ' + selectedCount() + ' steps' : '' }}
+      </button>
+      <button type="button" (click)="pasteClipboard()" [disabled]="clipboard().length === 0">
+        Paste {{ clipboard().length }}
+      </button>
+      @if (selectionIsGroup()) {
+        <button type="button" (click)="ungroupSelection()">Ungroup</button>
+        <label class="repeat">
+          repeats ×
+          <input
+            type="number"
+            min="1"
+            max="20"
+            aria-label="How many times the group repeats"
+            [value]="selectedGroupRepeat()"
+            (change)="setGroupRepeat(+$any($event.target).value)"
+          />
+        </label>
+      } @else {
+        <button type="button" (click)="groupSelection()" [disabled]="!canGroup()">
+          Group ×2
+        </button>
+      }
+    </div>
+
+    @if (sampleError(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+
+    <!-- Level 3: one move, in full. The timeline can carry a tile and a badge; the word
+         "Hold" and the note live here, which is why the compact badge works at all. -->
+    @if (selectedStep(); as step) {
+      <fieldset class="detail">
+        <legend>Step {{ (selection()?.start ?? 0) + 1 }}</legend>
+        <!-- The acting character moved here with everything else about one move. The list used
+             to carry this select on every row, which meant level 2 and level 3 edited the same
+             two fields side by side — the same control twice, one of them redundant. -->
+        <select
+          aria-label="Character for the selected step"
+          [value]="step.character"
+          (change)="setStep(selection()!.start, { character: $any($event.target).value })"
+        >
+          <!-- `[selected]` on the option, not `[value]` on the select. Angular assigns the
+               select's `value` in the same pass that renders these options, so the assignment
+               lands before the option exists and the browser falls back to index 0. Every step
+               showed the first character, whatever it held; the compiled config was right the
+               whole time, which is why nothing failed. Seen in a screenshot (#184). -->
+          @for (member of roster(); track member.nanoka_id) {
+            <option [value]="member.nanoka_id" [selected]="member.nanoka_id === step.character">
+              {{ member.name }} · {{ member.element }}
+            </option>
+          }
+        </select>
+        <select
+          aria-label="Action for the selected step"
+          [value]="step.action"
+          (change)="setStep(selection()!.start, { action: $any($event.target).value })"
+        >
+          @for (offer of offersForId(step.character); track offer.action) {
+            <option [value]="offer.action" [selected]="offer.action === step.action">
+              {{ offerLabel(offer) }}
+            </option>
+          }
+        </select>
+        <label class="repeat">
+          ×
+          <input
+            type="number"
+            min="1"
+            max="20"
+            aria-label="Repeat for the selected step"
+            [value]="step.repeat"
+            (change)="setStep(selection()!.start, { repeat: +$any($event.target).value })"
+          />
+        </label>
+        <input
+          type="text"
+          class="note"
+          placeholder="note"
+          aria-label="Note for the selected step"
+          [value]="step.note"
+          (change)="setStep(selection()!.start, { note: $any($event.target).value })"
+        />
+      </fieldset>
+    }
+
+    <!-- Level 2. -->
+
+    <div class="controls">
+      <button type="button" (click)="addStep()" [disabled]="roster().length === 0">
+        Add step
+      </button>
+      <button type="button" (click)="save()" [disabled]="!canSave()">
+        {{ editing() ? 'Save changes' : 'Save rotation' }}
+      </button>
+      <!-- B.5: the preview compiles what is **on screen**, so it needs no save and carries
+           no "save first" caveat. `Show gcsim config` read the stored rotation, which is
+           why it was disabled while dirty. -->
+      <button type="button" (click)="togglePreview()">
+        {{ previewing() ? 'Hide gcsim config' : 'Show gcsim config' }}
+      </button>
+      @if (editing()) {
+        <button type="button" (click)="newRotation()">New</button>
+      }
+      <!-- The importer shipped on 2026-08-29 with no caller, so a gcsim config could be parsed
+           and refused by line with no way to hand one in. Disabled without a team for the same
+           reason the endpoint 422s without one: a config names characters in gcsim's
+           vocabulary, and turning `noelle` back into a catalogue row needs the roster. -->
+      <button type="button" (click)="toggleImport()" [disabled]="!teamId()">
+        {{ importing() ? 'Cancel import' : 'Import from gcsim' }}
+      </button>
+    </div>
+
+    @if (importing()) {
+      <div class="import">
+        <label for="gcsim-config">Paste a gcsim config</label>
+        <textarea
+          id="gcsim-config"
+          rows="8"
+          spellcheck="false"
+          placeholder="skirk skill;&#10;skirk attack, attack, attack;"
+          [value]="configText()"
+          (input)="configText.set($any($event.target).value)"
+        ></textarea>
+        <p class="hint">
+          The action block, or a whole config — the rest is ignored. Anything that cannot be
+          expressed as steps is refused by line rather than dropped.
+          @if (steps().length > 0) {
+            <strong>This replaces the {{ steps().length }} step{{ steps().length === 1 ? '' : 's' }}
+            below.</strong>
+          }
+        </p>
+        <button type="button" (click)="importConfig()" [disabled]="!configText().trim()">
+          Read it into steps
+        </button>
+      </div>
+    }
+
+    @if (importError(); as message) {
+      <!-- Whole, not summarised. A refusal lists every line it could not express, and that
+           list is the answer to "why did this not import". -->
+      <p class="error" role="alert">{{ message }}</p>
+    }
+
+    @if (rewrites().length > 0) {
+      <div class="rewrites">
+        <p class="hint">Imported, with changes:</p>
+        <ul>
+          @for (note of rewrites(); track note) {
+            <li class="hint">{{ note }}</li>
+          }
+        </ul>
+      </div>
+    }
+
+    @if (actionError(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+
+    @if (previewError(); as message) {
+      <!-- Shown, not swallowed: the refusal names the step that cannot compile, which is the
+           most useful thing a preview can say. A stale config left beside an edit that broke
+           it would be the preview lying. -->
+      <p class="error" role="alert">{{ message }}</p>
+    }
+
+    @if (compiled(); as config) {
+      <!-- Shown because a compiler nobody can inspect is a compiler nobody can check — and
+           live, because the readiness gates are what stop gcsim's two silent failures and
+           watching them appear is the difference between trusting the compiler and hoping. -->
+      <figure class="compiled">
+        <figcaption class="eyebrow">What gcsim receives</figcaption>
+        <pre class="mono">{{ config }}</pre>
+      </figure>
+    }
+  </div>
   <ol class="steps">
     @for (step of steps(); track $index) {
       <!-- Draggable, like the timeline's tiles. The list stopped being a drag surface when the
@@ -315,92 +409,4 @@
       <li class="muted">No steps yet.</li>
     }
   </ol>
-
-  <div class="controls">
-    <button type="button" (click)="addStep()" [disabled]="roster().length === 0">
-      Add step
-    </button>
-    <button type="button" (click)="save()" [disabled]="!canSave()">
-      {{ editing() ? 'Save changes' : 'Save rotation' }}
-    </button>
-    <!-- B.5: the preview compiles what is **on screen**, so it needs no save and carries
-         no "save first" caveat. `Show gcsim config` read the stored rotation, which is
-         why it was disabled while dirty. -->
-    <button type="button" (click)="togglePreview()">
-      {{ previewing() ? 'Hide gcsim config' : 'Show gcsim config' }}
-    </button>
-    @if (editing()) {
-      <button type="button" (click)="newRotation()">New</button>
-    }
-    <!-- The importer shipped on 2026-08-29 with no caller, so a gcsim config could be parsed
-         and refused by line with no way to hand one in. Disabled without a team for the same
-         reason the endpoint 422s without one: a config names characters in gcsim's
-         vocabulary, and turning `noelle` back into a catalogue row needs the roster. -->
-    <button type="button" (click)="toggleImport()" [disabled]="!teamId()">
-      {{ importing() ? 'Cancel import' : 'Import from gcsim' }}
-    </button>
-  </div>
-
-  @if (importing()) {
-    <div class="import">
-      <label for="gcsim-config">Paste a gcsim config</label>
-      <textarea
-        id="gcsim-config"
-        rows="8"
-        spellcheck="false"
-        placeholder="skirk skill;&#10;skirk attack, attack, attack;"
-        [value]="configText()"
-        (input)="configText.set($any($event.target).value)"
-      ></textarea>
-      <p class="hint">
-        The action block, or a whole config — the rest is ignored. Anything that cannot be
-        expressed as steps is refused by line rather than dropped.
-        @if (steps().length > 0) {
-          <strong>This replaces the {{ steps().length }} step{{ steps().length === 1 ? '' : 's' }}
-          below.</strong>
-        }
-      </p>
-      <button type="button" (click)="importConfig()" [disabled]="!configText().trim()">
-        Read it into steps
-      </button>
-    </div>
-  }
-
-  @if (importError(); as message) {
-    <!-- Whole, not summarised. A refusal lists every line it could not express, and that
-         list is the answer to "why did this not import". -->
-    <p class="error" role="alert">{{ message }}</p>
-  }
-
-  @if (rewrites().length > 0) {
-    <div class="rewrites">
-      <p class="hint">Imported, with changes:</p>
-      <ul>
-        @for (note of rewrites(); track note) {
-          <li class="hint">{{ note }}</li>
-        }
-      </ul>
-    </div>
-  }
-
-  @if (actionError(); as message) {
-    <p class="error" role="alert">{{ message }}</p>
-  }
-
-  @if (previewError(); as message) {
-    <!-- Shown, not swallowed: the refusal names the step that cannot compile, which is the
-         most useful thing a preview can say. A stale config left beside an edit that broke
-         it would be the preview lying. -->
-    <p class="error" role="alert">{{ message }}</p>
-  }
-
-  @if (compiled(); as config) {
-    <!-- Shown because a compiler nobody can inspect is a compiler nobody can check — and
-         live, because the readiness gates are what stop gcsim's two silent failures and
-         watching them appear is the difference between trusting the compiler and hoping. -->
-    <figure class="compiled">
-      <figcaption class="eyebrow">What gcsim receives</figcaption>
-      <pre class="mono">{{ config }}</pre>
-    </figure>
-  }
 </dialog>
