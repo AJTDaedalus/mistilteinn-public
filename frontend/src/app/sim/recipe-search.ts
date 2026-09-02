@@ -245,12 +245,19 @@ export function liveQuantitiesFor(...recipes: readonly Recipe[]): string[] {
 }
 
 /** Score one combination against the recipe. */
-function score(
+/**
+ * Every stat pool a combination contributes under one recipe, set bonuses included.
+ *
+ * Split out of `score` so that reading a combination's Energy Recharge and scoring its damage
+ * cannot disagree about which bonuses apply. The calibrated-set rule below is the subtle part,
+ * and one copy of it is the point.
+ */
+function poolsFor(
   recipe: Recipe,
   combination: readonly Candidate[],
   setCounts: Record<number, number>,
   bonusesBySet: Map<number, SetBonus[]>,
-): number {
+): Readonly<Record<string, number>>[] {
   const pools: Readonly<Record<string, number>>[] = combination.map((c) => c.stats);
   for (const [setId, count] of Object.entries(setCounts)) {
     // **Skip the set the recipe was calibrated with.** Equipping a set to calibrate also
@@ -261,7 +268,19 @@ function score(
       if (count >= tier.piecesRequired) pools.push(tier.stats);
     }
   }
-  return evaluateRecipe(recipe, candidateStatsFrom(pools));
+  return pools;
+}
+
+
+function score(
+  recipe: Recipe,
+  combination: readonly Candidate[],
+  setCounts: Record<number, number>,
+  bonusesBySet: Map<number, SetBonus[]>,
+): number {
+  return evaluateRecipe(
+    recipe, candidateStatsFrom(poolsFor(recipe, combination, setCounts, bonusesBySet)),
+  );
 }
 
 /**
@@ -330,12 +349,19 @@ export function searchRecipe(
     damage: number,
     combination: readonly Candidate[],
     setCounts: Record<number, number>,
+    recipe: Recipe,
   ): void => {
     if (best.length < topN || damage > best[best.length - 1].damage) {
       const build: ScoredBuild = {
         damage,
         artifactIds: combination.map((c) => c.id),
         setCounts: { ...setCounts },
+        // **Resolved here and not in the walk.** Every evaluated combination reaches `offer`;
+        // only the few that beat the threshold reach this branch, so reading a stat block is
+        // paid for once per surviving build rather than once per candidate.
+        energyRecharge: candidateStatsFrom(
+          poolsFor(recipe, combination, setCounts, bonusesBySet),
+        ).energyRecharge,
       };
       let i = best.length;
       while (i > 0 && best[i - 1].damage < damage) i -= 1;
@@ -391,7 +417,10 @@ export function searchRecipe(
         evaluated += 1;
         const setCounts: Record<number, number> = {};
         for (const [setId, n] of counts) if (n > 0) setCounts[setId] = n;
-        offer(score(recipe, combination, setCounts, bonusesBySet), combination, setCounts);
+        offer(
+          score(recipe, combination, setCounts, bonusesBySet),
+          combination, setCounts, recipe,
+        );
         return;
       }
 

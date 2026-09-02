@@ -86,6 +86,14 @@ export interface CalibrationCaveats {
    * measures it runs on a cache **miss**, so a hit would otherwise come back silent.
    */
   energyCost: EnergyCost | null;
+  /**
+   * The ER ladder itself, so a **row** can say how many bursts its own gear funds.
+   *
+   * `energyCost` is one sentence about the run; this is what makes the same question askable
+   * per result. Every recipe carries the same ladder — `shareEnergyMeasurement` stamps the
+   * baseline's onto all of them — so holding one copy here is not a third source of truth.
+   */
+  energySweep: readonly EnergyObservation[] | null;
   /** States carrying a conversion no probe could resolve, with the damage share affected. */
   staleConversions: { label: string; term: string; damageShare: number }[];
   /** States whose recipes were served from cache rather than recalculated. */
@@ -297,7 +305,7 @@ export class RecipeOptimizeService {
     const calibrated: Recipe[] = [];
     const caveats: CalibrationCaveats = {
       unstable: [], staleConversions: [], fromCache: [], unscoredLabels: [],
-      energyCost: null,
+      energyCost: null, energySweep: null,
     };
 
     onProgress({ done: 0, total: targets.length, current: '', loading: true });
@@ -465,6 +473,9 @@ export class RecipeOptimizeService {
       }
       // Reported once for the run, not once per target: the wait is a property of the team and
       // the rotation, and repeating it per artifact set would read as several problems.
+      if (recipe.meta.energySweep?.length && !caveats.energySweep) {
+        caveats.energySweep = recipe.meta.energySweep;
+      }
       if (recipe.meta.energyCost?.characters.length && !caveats.energyCost) {
         caveats.energyCost = recipe.meta.energyCost;
       }

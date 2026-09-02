@@ -138,6 +138,50 @@ describe('candidateStatsFrom', () => {
 });
 
 describe('searchRecipe', () => {
+  it('reports the Energy Recharge each winning build actually carries', () => {
+    // §22. The global energy line is measured on the *baseline*, so it reads the same under
+    // every row; a row can only say what its own five pieces fund if the search reports the ER
+    // they add up to. Without this the page had a rank and a damage number and no way to tell
+    // a build that misses a burst from one that does not.
+    const erPieces: Candidate[] = SLOTS.map((slot) => (
+      { id: `${slot}-er`, slot, setId: 1, stats: { energy_recharge: 0.13 } } as Candidate
+    ));
+
+    // Every fixture piece is set 1, so the recipe set has to cover that 4-piece state — a
+    // set covering only `noFourPiece` scores nothing at all.
+    const r = recipe([hit()]);
+    const out = searchRecipe(erPieces, {
+      recipes: { byFourPieceSet: new Map([[1, r]]), noFourPiece: r }, topN: 1,
+    });
+
+    expect(out.builds).toHaveLength(1);
+    expect(out.builds[0].energyRecharge).toBeCloseTo(0.65, 6);
+  });
+
+  it('adds a set bonus into a build\'s Energy Recharge, and not the calibrated set twice', () => {
+    // The same rule `score` follows, and the reason `poolsFor` exists rather than a second
+    // summation: a recipe calibrated *with* a set already carries its 2-piece in every term,
+    // so counting the tier again here would report an ER the build does not have.
+    const pieces: Candidate[] = SLOTS.map((slot) => (
+      { id: `${slot}-er`, slot, setId: 1, stats: { energy_recharge: 0.1 } } as Candidate
+    ));
+    const bonuses = [{ setId: 1, piecesRequired: 2, stats: { energy_recharge: 0.2 } }];
+    const uncalibrated = recipe([hit()]);
+    const calibrated = recipe([hit()]);
+    calibrated.meta.calibratedSetIds = [1];
+
+    const forSet1 = (r: Recipe) => ({ byFourPieceSet: new Map([[1, r]]), noFourPiece: r });
+    const counted = searchRecipe(pieces, {
+      recipes: forSet1(uncalibrated), setBonuses: bonuses, topN: 1,
+    });
+    const skipped = searchRecipe(pieces, {
+      recipes: forSet1(calibrated), setBonuses: bonuses, topN: 1,
+    });
+
+    expect(counted.builds[0].energyRecharge).toBeCloseTo(0.7, 6);
+    expect(skipped.builds[0].energyRecharge).toBeCloseTo(0.5, 6);
+  });
+
   it('keeps DEF pieces that the single-hit search discards', () => {
     // G.8's acceptance, stated as the contrast it is. The single-hit chain does not model
     // Redhorn's conversion, so DEF is not in its live set — every DEF piece is dominated and

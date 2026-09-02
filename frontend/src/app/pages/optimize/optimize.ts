@@ -35,7 +35,7 @@ import type { ArtifactCardModel } from '../../shared/artifact-card/artifact-card
 import { describeStat } from '../../shared/stat-label';
 import { substatReadings } from '../../shared/substat-bars/substat-bars';
 import { groupStats, type StatAccount, type StatGroup } from '../../shared/stat-groups';
-import { energyShortfall, type EnergyShortfall } from '../../sim/recipe-energy';
+import { burstsAt, energyShortfall, type EnergyShortfall } from '../../sim/recipe-energy';
 import { energyCostMessage } from '../../sim/energy-delay';
 import { damageShare, type CharacterShare } from '../../sim/damage-share';
 import {
@@ -77,6 +77,18 @@ export interface ResultRow {
    * could be established, which is not the same as being level with one.
    */
   percent?: number | null;
+  /**
+   * Bursts this row's own gear funds, against the most the ladder ever saw.
+   *
+   * Null when the run carried no ER ladder, or when the row's ER is unknown — the kernel
+   * search scores damage without resolving a stat block. Null is not zero: "no burst" and "we
+   * did not measure" are different sentences and only one of them is about the build.
+   *
+   * `short` is the whole point of showing it. The global energy line is measured on the
+   * *baseline*, so it says the same thing under every row; this says what **this** set of five
+   * pieces pays for, which is the question a ranked list is being asked.
+   */
+  bursts?: { funded: number; most: number; short: boolean } | null;
 }
 
 /**
@@ -685,8 +697,27 @@ export class OptimizePage implements OnInit {
       // Null rather than 0 when there is nothing to compare against: "the same as the
       // comparator" and "there is no comparator" are different, and both would render as 0%.
       percent: against ? (build.damage - against) / against : null,
+      bursts: this.burstsFor(build.energyRecharge),
     }));
   });
+
+  /**
+   * How many bursts one row's Energy Recharge funds, read off the run's own ladder.
+   *
+   * The ceiling is the ladder's best rung rather than the rotation's burst count on purpose:
+   * the ladder is what this page measured, and a rotation asking for five bursts that no
+   * reachable ER funds would otherwise render every row as a failure. `docs` for the cliff:
+   * the owner's Furina needs ~260 % total ER for her fifth, and no artifact swap crosses that,
+   * so "3 of 3 the ladder could buy" is the true sentence and "3 of 5" is not.
+   */
+  private burstsFor(energyRecharge: number | undefined): ResultRow['bursts'] {
+    const sweep = this.caveats()?.energySweep;
+    if (!sweep?.length || energyRecharge === undefined) return null;
+    const funded = burstsAt(sweep, energyRecharge);
+    if (funded === null) return null;
+    const most = Math.max(...sweep.map((point) => point.burstInstances));
+    return { funded, most, short: funded < most };
+  }
 
   /**
    * Put a result's five pieces onto the build that was searched for (owner, 2026-08-29).

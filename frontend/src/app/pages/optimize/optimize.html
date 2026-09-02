@@ -492,6 +492,20 @@
             <!-- **Hidden while this row is expanded** (owner): the details pane below shows
                  the same five pieces at full size, so the compact strip becomes a duplicate
                  the moment it opens. -->
+            <!-- §22 — what THIS row's five pieces fund. The red line above is measured on the
+                 baseline, so it reads the same under every row; this is the per-set answer the
+                 owner asked for. Shown only when the row is short: "3 of 3" on every line is
+                 noise, and a row that funds everything the ladder could buy has nothing to
+                 report. -->
+            @if (row.bursts; as bursts) {
+              @if (bursts.short) {
+                <span
+                  class="bursts mono"
+                  [title]="'This set funds ' + bursts.funded + ' of the ' + bursts.most
+                    + ' bursts the measured ER range could buy.'"
+                >{{ bursts.funded }}/{{ bursts.most }} bursts</span>
+              }
+            }
             @if (explained()?.rank !== row.rank) {
               @if (cardsFor(row); as cards) {
                 @if (cards.length) {

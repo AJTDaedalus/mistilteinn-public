@@ -780,6 +780,56 @@ describe('OptimizePage energy shortfall', () => {
   });
 });
 
+describe('OptimizePage per-row bursts', () => {
+  /**
+   * §22, owner: *"when ER requirements aren't met, it'd be nice to show on each set the
+   * individual failure of ER, since the global 'Energy insufficient' details are for the
+   * baseline."*
+   *
+   * The global line is measured once, on the baseline, so it reads identically under every
+   * row. This says what **this** row's five pieces fund.
+   */
+  const sweep = [
+    { energyRecharge: 0.2, burstInstances: 2, dps: 100 },
+    { energyRecharge: 0.6, burstInstances: 3, dps: 120 },
+  ] as unknown as CalibrationCaveats['energySweep'];
+
+  const withSweep = (page: OptimizePage) => {
+    page['caveats'].set({
+      unstable: [], staleConversions: [], fromCache: [], unscoredLabels: [],
+      energyCost: null, energySweep: sweep,
+    } as unknown as CalibrationCaveats);
+  };
+
+  it('reports a row short of the best the ladder saw', () => {
+    const page = pageWith();
+    withSweep(page);
+    expect(page['burstsFor'](0.2)).toEqual({ funded: 2, most: 3, short: true });
+  });
+
+  it('does not flag a row that funds everything the ladder could buy', () => {
+    // "3 of 3" under every line is noise. A row only reports when it is behind.
+    const page = pageWith();
+    withSweep(page);
+    expect(page['burstsFor'](0.9)).toEqual({ funded: 3, most: 3, short: false });
+  });
+
+  it('says nothing when the run measured no ladder', () => {
+    // **Null is not zero.** "This build funds no bursts" and "we did not measure" are
+    // different sentences, and rendering the first for the second would be a lie about gear.
+    const page = pageWith();
+    expect(page['burstsFor'](0.2)).toBeNull();
+  });
+
+  it('says nothing when the row carries no Energy Recharge of its own', () => {
+    // The kernel search scores a damage number without ever resolving a stat block, so its
+    // builds leave `energyRecharge` undefined rather than reporting a 0 they did not measure.
+    const page = pageWith();
+    withSweep(page);
+    expect(page['burstsFor'](undefined)).toBeNull();
+  });
+});
+
 describe('OptimizePage caveat attribution', () => {
   /**
    * Owner ruling, 2026-08-31: the baseline keeps being calibrated — the upgrade list needs it

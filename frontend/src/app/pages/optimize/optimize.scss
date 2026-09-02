@@ -357,6 +357,15 @@
   color: var(--ink-dim);
 }
 
+// §22 — what this row's own five pieces fund, shown only when it is behind. `--warn` rather
+// than `--danger`: a set that misses a burst is not broken, it is a trade the ranking already
+// priced, and the row above it is the alternative.
+.bursts {
+  min-width: 5.5rem;
+  text-align: right;
+  color: var(--warning);
+}
+
 .delta--up { color: var(--mint); }
 .delta--down { color: var(--danger); }
 

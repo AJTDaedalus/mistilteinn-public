@@ -88,6 +88,17 @@ export interface ScoredBuild {
   damage: number;
   artifactIds: string[];
   setCounts: Record<number, number>;
+  /**
+   * The Energy Recharge this combination actually carries, set bonuses included.
+   *
+   * **Optional because only the recipe search can know it.** The kernel search below scores a
+   * damage number and never resolves a stat block, so it leaves this undefined rather than
+   * reporting a 0 that would read as "this build has no ER".
+   *
+   * Present so a row can say how many bursts it funds: a build that misses one is the whole
+   * reason ER is weighed at all, and the rank alone cannot show it.
+   */
+  energyRecharge?: number;
 }
 
 export interface SearchResult {
