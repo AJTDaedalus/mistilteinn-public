@@ -124,7 +124,13 @@ const PREFIX = 'mistilteinn:recipe:';
 // **That is the fifth time, and the fourth of these entries says so.** The rule this file
 // keeps rediscovering: fixing what *populates* a cached field is a change to the cached
 // shape, whatever the field's type says. The type never changed here either.
-const SCHEMA = 6;
+//
+// **7: a term the probe never moved is `constant`, not unresolved.** The matcher only ever
+// considered stats the probe *moved*, so a term with a ratio of 1 matched nothing by
+// construction and was filed as unresolvable — 183 of the subject's 198 flat-carrying hits on
+// the owner's own team. `RecipeHit` gained `constantTerms`, and a v6 entry has none of them,
+// so the warning would survive on every cached recipe exactly as it survived #227.
+const SCHEMA = 7;
 
 export function cacheKey(key: RecipeCacheKey): string {
   return [

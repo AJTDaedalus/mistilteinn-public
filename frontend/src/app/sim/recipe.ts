@@ -118,6 +118,20 @@ export interface RecipeHit {
    */
   conversions: Partial<Record<ConversionTerm, ResolvedConversion>>;
   /**
+   * Terms the probe showed do not move at all, and which are therefore **correctly** frozen.
+   *
+   * **A third state, because two were not enough.** The matcher asks which candidate stat moved
+   * by the same factor as the term, and a term that did not move has a ratio of 1 — which no
+   * *moved* stat can equal, so it always matched nothing and was filed as "a conversion no
+   * probe could resolve". Measured on the owner's team: **183 of the subject's 198 flat-
+   * carrying hits do not move under the probe**, so nearly every one of them was reported.
+   *
+   * Flat ATK that is simply flat is not an unresolvable conversion. Holding it constant is
+   * exactly right — `resolvedTerm` returns the calibration's value and the candidate's own
+   * flat is added on top — so there is nothing here to warn about.
+   */
+  constantTerms?: ConversionTerm[];
+  /**
    * The scaling stat **as the calibration computed it** — gcsim's `total_scaling`. Used by
    * `replayHit` to check the transcription against gcsim's own answer, and **not** by the
    * evaluator, which rebuilds it from the parts below.
@@ -427,6 +441,7 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
       scaling: scalingOf(c),
       flatDamage: c.flat_dmg,
       conversions: {},
+      constantTerms: [],
       calibratedBase: { atk: c.base_atk, hp: c.base_hp, def: c.base_def },
       calibratedPercent: { atk: c.atk_per, hp: c.hp_per, def: c.def_per },
       calibratedFlat: { atk: c.flat_atk, hp: c.flat_hp, def: c.flat_def },
@@ -544,7 +559,7 @@ export function resolveConversions(
   baseline: Recipe,
   probe: Recipe,
   tolerance = 1e-6,
-): { resolved: number; unresolved: number } {
+): { resolved: number; unresolved: number; constant: number } {
   if (baseline.hits.length !== probe.hits.length) {
     throw new Error(
       `probe changed the rotation: ${baseline.hits.length} hits against ${probe.hits.length}. ` +
@@ -554,6 +569,7 @@ export function resolveConversions(
   const sources: ConversionSource[] = ['atk', 'hp', 'def'];
   let resolved = 0;
   let unresolved = 0;
+  let constant = 0;
 
   for (let i = 0; i < baseline.hits.length; i++) {
     const b = baseline.hits[i];
@@ -566,6 +582,17 @@ export function resolveConversions(
       const before = read(b);
       if (before === 0) continue;
       const ratio = read(p) / before;
+
+      // **Did it move at all?** Asked first, because the matcher below cannot answer it: a
+      // stat is a candidate only when the probe moved it, so a term with ratio 1 matches
+      // nothing by construction and would be counted unresolved for ever.
+      if (Math.abs(ratio - 1) <= tolerance) {
+        // Optional on the type because a recipe cached before this existed genuinely has no
+        // answer here — absent is not "no constants", and a `?? []` read says so.
+        b.constantTerms = [...(b.constantTerms ?? []), term];
+        constant++;
+        continue;
+      }
 
       // The source is the stat whose ratio matches this term's. A stat the probe did not move
       // has ratio 1 and cannot be told from any other unmoved stat, so it is a candidate only
@@ -591,7 +618,7 @@ export function resolveConversions(
   // no longer frozen — leaving it in the list would warn about something that was fixed, and
   // a warning nobody can act on is one everybody learns to ignore.
   baseline.meta.staleConversions = staleConversionsAfter(baseline);
-  return { resolved, unresolved };
+  return { resolved, unresolved, constant };
 }
 
 /**
@@ -612,7 +639,10 @@ function staleConversionsAfter(recipe: Recipe): StaleConversion[] {
     let count = 0;
     let damage = 0;
     for (const hit of recipe.hits) {
-      if (hit.mine && read(hit) !== 0 && hit.conversions[term] === undefined) {
+      if (
+        hit.mine && read(hit) !== 0 && hit.conversions[term] === undefined
+        && !(hit.constantTerms ?? []).includes(term)
+      ) {
         count++;
         damage += hit.gcsimAverageDamage;
       }

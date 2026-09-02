@@ -297,11 +297,32 @@ describe("a teammate's hits belong to a build that is not being optimized", () =
       parseSample({ logs: [dmg(), calc({ flat_dmg: flat, def_per: defPct }, 1)] });
 
     expect(resolveConversions(mk(100, 0), mk(150, 0.5)))
-      .toEqual({ resolved: 0, unresolved: 0 });
+      .toEqual({ resolved: 0, unresolved: 0, constant: 0 });
   });
 });
 
 describe('resolveConversions', () => {
+  it('calls a term the probe never moved constant, not unresolvable', () => {
+    // **The matcher cannot answer this question**, which is why it is asked before the
+    // matcher runs: a stat is a candidate only when the probe *moved* it, so a term with a
+    // ratio of 1 matches nothing by construction and was counted unresolved for ever.
+    //
+    // Measured on the owner's team: 183 of the subject's 198 flat-carrying hits do not move
+    // under the probe. Flat ATK that is simply flat is not an unresolvable conversion — it is
+    // a constant, `resolvedTerm` returns the calibration's value, and the candidate's own flat
+    // is added on top. There is nothing to warn about.
+    const mk = (atkPct: number) => parseSample({ logs: [
+      dmg(), calc({ flat_atk: 311, atk_per: atkPct }),
+    ] });
+
+    const baseline = mk(0);
+    const out = resolveConversions(baseline, mk(0.5));
+
+    expect(out).toEqual({ resolved: 0, unresolved: 0, constant: 1 });
+    expect(baseline.hits[0].constantTerms).toContain('flatAtk');
+    expect(baseline.meta.staleConversions).toEqual([]);
+  });
+
   it("does not report a teammate's flat stats as an unresolvable conversion", () => {
     // The owner saw `flatAtk`, `flatHp` and `flatDef` each reported against 96.6 % of the
     // damage on a team whose subject carried no unresolved term at all. Every point of it was
@@ -339,7 +360,7 @@ describe('resolveConversions', () => {
     const [baseline, probe] = pair(100, 150, 0.5);
     const r = resolveConversions(baseline, probe);
 
-    expect(r).toEqual({ resolved: 1, unresolved: 0 });
+    expect(r).toEqual({ resolved: 1, unresolved: 0, constant: 0 });
     expect(baseline.hits[0].conversions.flatDamage)
       .toEqual({ from: 'def', perUnit: 100 / 800 });
   });
@@ -349,7 +370,7 @@ describe('resolveConversions', () => {
     // ratio equals, because it was computed at cast rather than at this hit.
     const [baseline, probe] = pair(100, 123, 0.5);
 
-    expect(resolveConversions(baseline, probe)).toEqual({ resolved: 0, unresolved: 1 });
+    expect(resolveConversions(baseline, probe)).toEqual({ resolved: 0, unresolved: 1, constant: 0 });
     expect(baseline.hits[0].conversions.flatDamage).toBeUndefined();
   });
 
@@ -363,7 +384,7 @@ describe('resolveConversions', () => {
     const baseline = mk(100, 0);
     const probe = mk(150, 0.5);
 
-    expect(resolveConversions(baseline, probe)).toEqual({ resolved: 0, unresolved: 1 });
+    expect(resolveConversions(baseline, probe)).toEqual({ resolved: 0, unresolved: 1, constant: 0 });
     expect(baseline.hits[0].conversions.flatDamage).toBeUndefined();
   });
 
@@ -382,7 +403,7 @@ describe('resolveConversions', () => {
     const baseline = mk(100, 0, 0, 0);
     const probe = mk(150, 0.5, 0.3, 0.7);
 
-    expect(resolveConversions(baseline, probe)).toEqual({ resolved: 1, unresolved: 0 });
+    expect(resolveConversions(baseline, probe)).toEqual({ resolved: 1, unresolved: 0, constant: 0 });
     expect(baseline.hits[0].conversions.flatDamage)
       .toEqual({ from: 'atk', perUnit: 100 / 1000 });
   });
@@ -398,7 +419,7 @@ describe('resolveConversions', () => {
     const baseline = mk(100, 0, 0);
     const probe = mk(150, 0.5, 0.5);
 
-    expect(resolveConversions(baseline, probe)).toEqual({ resolved: 0, unresolved: 1 });
+    expect(resolveConversions(baseline, probe)).toEqual({ resolved: 0, unresolved: 1, constant: 0 });
     expect(baseline.hits[0].conversions.flatDamage).toBeUndefined();
   });
 
