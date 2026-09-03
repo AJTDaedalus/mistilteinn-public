@@ -451,3 +451,20 @@ def test_a_readiness_gate_with_an_else_is_refused_for_the_branch_not_the_conditi
     assert "guards on something else" not in branch
     # The other message is still right for a condition this model genuinely cannot read.
     assert "guards on something else" in unreadable
+
+
+def test_the_same_unreadable_line_is_refused_once_with_a_count() -> None:
+    """**Unrolling a loop copies its problems too.**
+
+    `for i < 6` with one unreadable block in it reported that block six times, so the owner's
+    re-import was a wall of the same sentence — and a refusal list that repeats itself is one
+    nobody finishes reading. The count is kept because "six times" says something "once" does
+    not: it is *inside* the loop rather than beside it.
+    """
+    block = "if .flins.status.manifest-flame {\n  flins skill;\n}\n"
+    with pytest.raises(RotationParseError) as refused:
+        parse_action_block(block * 3, [_Character("10000001", "Flins", "Pyro")])
+
+    message = str(refused.value)
+    assert message.count("manifest-flame") == 1
+    assert "repeated 3 times" in message

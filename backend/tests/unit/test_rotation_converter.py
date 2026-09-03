@@ -332,3 +332,23 @@ def test_a_block_the_unroll_cannot_read_is_carried_through_rather_than_abandoned
     assert text.count("if .a.status.flame {") == 2
     assert "a burst;" in text
     assert "a attack;" in text
+
+
+def test_a_rewrite_repeated_by_unrolling_is_named_once_with_a_count() -> None:
+    """The rewrite list follows the same rule as the refusal list, for the same reason.
+
+    Unrolling `for i < 6` copies the lines inside it, so one branch reduction in the loop
+    produced six identical notes. These notes exist to be **read** — they are how a user sees
+    that their `for` became six cycles rather than discovering it in a damage number — and a
+    list that repeats itself is one nobody finishes.
+    """
+    _text, notes = convert(
+        "for let i=0; i<3; i=i+1 {\n"
+        "  if is_even(i) {\n    a burst;\n  } else {\n    a attack;\n  }\n"
+        "  if .a.burst.ready {\n    a burst, attack;\n  } else {\n    a attack;\n  }\n"
+        "}\n",
+    )
+
+    gated = [note for note in notes if "gated step" in note]
+    assert len(gated) == 1
+    assert "(x3)" in gated[0]

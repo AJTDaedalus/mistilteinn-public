@@ -121,6 +121,18 @@ def parse_action_block(config: str, characters: Iterable[Any]) -> list[dict[str,
             problems.append(problem)
 
     if problems:
+        # **Each distinct problem once, with a count.** Unrolling a counted loop copies every
+        # line in it, so one unreadable block inside `for i < 6` was reported six times — the
+        # owner's re-import was a wall of the same sentence, and a refusal list that repeats
+        # itself is one nobody finishes reading. The count is kept because "six times" says
+        # something "once" does not: it is inside the loop, not beside it.
+        counted: dict[str, int] = {}
+        for problem in problems:
+            counted[problem] = counted.get(problem, 0) + 1
+        problems = [
+            line if times == 1 else f"{line} (repeated {times} times, once per cycle)"
+            for line, times in counted.items()
+        ]
         msg = (
             "this config uses gcsim features a rotation cannot express, so it was not "
             "imported:\n  - " + "\n  - ".join(problems) + "\n"

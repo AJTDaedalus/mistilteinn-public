@@ -303,7 +303,18 @@ def convert(config: str) -> tuple[str, list[str]]:
     out, branch_notes = _reduce_ready_branches(out)
     notes.extend(branch_notes)
 
-    return "\n".join(out) + "\n", notes
+    # **Each rewrite named once, with a count** — the same rule the refusal list follows, and
+    # for the same reason. Unrolling a counted loop copies the lines inside it, so one branch
+    # reduction inside `for i < 6` produced six identical notes. A rewrite list that repeats
+    # itself is one nobody reads, and these notes exist to be read: they are how a user sees
+    # that their `for` became six cycles rather than discovering it in a damage number.
+    counted: dict[str, int] = {}
+    for note in notes:
+        counted[note] = counted.get(note, 0) + 1
+    return "\n".join(out) + "\n", [
+        note if times == 1 else f"{note} (x{times})"
+        for note, times in counted.items()
+    ]
 
 
 def _joined(lines: list[str]) -> list[str]:
