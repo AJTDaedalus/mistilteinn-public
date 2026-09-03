@@ -1130,3 +1130,50 @@ own constraint actually bites, and the reason dropping the database constraint c
 Ranking and stealing (#212). Only the uniqueness constraint was ever in question, and it is
 answered here. **§3 is closed.**
 
+
+## 32
+
+**Text is allowed in the rotation builder where buttons cannot reach — and OQ-B2 is narrowed,
+not repealed.**
+
+`DESIGN_rotation_builder.md` OQ-B2 was answered by the owner on 2026-08-29: *"No — buttons
+only."* The reason recorded there is good and still stands — *one way in, and no chance of a
+typed vocabulary drifting from the clickable one* — and the builder exists at all because
+gcsim's syntax is the wrong authoring surface.
+
+**Owner, 2026-09-03, on the Tier 3 language plan:**
+
+> *"We can expand beyond buttons where needed, don't consider this a hard and fast rule. The
+> priority is feature parity with the user being able to build a similar rotation in the tool
+> if they desire, some of these things are too complicated for that."*
+
+and, on user-defined functions specifically:
+
+> *"user defined functions almost need to be written, and if a user wants that level of
+> complexity they'll have to author them themselves."*
+
+**The distinction that keeps both rulings true.** OQ-B2 refused a *quick-add line for actions*
+— a second, typed way to do exactly what the move buttons already do. That is still refused,
+and for its original reason. What is now allowed is a surface for **what buttons cannot
+express**: user-defined functions, and expressions outside a fixed dropdown vocabulary. One is
+a competing vocabulary; the other is the only vocabulary there is.
+
+Two constraints make the new surface honest rather than a loophole:
+
+1. **It is not a second parser.** Typed text goes through the *same* parser as an import, so
+   nothing authored escapes the rules an imported config obeys, and the tree stays the single
+   source of truth.
+2. **Its diagnostics land before it does.** A typed surface is only as friendly as its errors,
+   so validation and diagnostics are their own phase and ship *first*
+   (`TASKS_rotation_language.md` Phase 6, then Phase 7).
+
+**This changed the plan's shape, not just its permissions.** Under "buttons only" the value
+curve ran 13 % → 84 % → gated, and the GUI was the only way in. With text as a first-class
+surface, **every rotation becomes editable as soon as parse and emit exist** (Phase 7), and the
+GUI phases after it move work from typing to clicking rather than deciding whether a rotation
+can be edited at all.
+
+**Measured, so the "too complicated" judgement is not a guess.** Of the 41 configs in the
+2026-09-03 gcsim-database corpus that define a function, **41 have control flow in the body and
+30 take a parameter**. There is no "simple function" case a form could have covered, and
+inlining them as macros — the obvious shortcut — does not exist.
