@@ -102,6 +102,23 @@ jobs:
           # Idempotent: a no-op when already at head.
           $COMPOSE run --rm backend alembic upgrade head
 
+      - name: Seed the furnishing suites
+        run: |
+          set -euo pipefail
+          cd "$REPO_DIR"
+          # **On every deploy, not on the manual re-seed job**, and the difference matters.
+          # `seed_db` needs a version negotiated against upstream and is therefore deliberate;
+          # this reads a **committed fixture** at the pinned version, touches no network, and
+          # upserts by `nanoka_id`, so running it every time is a no-op once seeded.
+          #
+          # It is here because the alternative is the failure this file's own header names: a
+          # migration without a seed **deploys green, health-checks green, and serves an empty
+          # page**. The teapot tracker would render zero sets and nothing would say why.
+          #
+          # It refuses a truncated capture rather than deleting rows, so a bad fixture fails
+          # the deploy instead of emptying the table.
+          $COMPOSE run --rm backend python -m scripts.seed_teapot
+
       - name: Health check
         run: |
           set -euo pipefail
