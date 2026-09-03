@@ -86,38 +86,58 @@
 
 .chips {
   display: flex;
-  gap: 0.15rem;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
 }
 
-/* Emblem-only toggles. `title` carries the name for a pointer and the icon's `alt` carries it
-   for assistive tech — a coloured glyph is never the only label, which is the argument
-   `element-chip` makes at length. `.chip--text` is for rarity, which has no emblem. */
+/* **A drawn tile, not a bare glyph.** These were 20px icons with a transparent border at
+   opacity 0.5, and the weapon-type row in particular then read as *disabled*: those glyphs are
+   dark grey on dark navy and each carries a diagonal slash, which is the universal drawing for
+   *not allowed*. Nothing said the row was a control at all, let alone which control.
+
+   `/teams` and `/characters` had already drawn this same idea as a bordered tile and `/weapons`
+   had already put the names beside these exact glyphs — four pages, four drawings of one thing.
+   This is the bordered one, with the label `/weapons` proved was available all along.
+
+   `title` still carries the name for a pointer and the icon's `alt` for assistive tech: a
+   coloured glyph is never the only label, which is the argument `element-chip` makes at
+   length. `.chip--text` is for rarity, which has no emblem. */
 .chip {
   display: inline-flex;
   align-items: center;
-  padding: 0.2rem;
-  border: 1px solid transparent;
+  gap: var(--space-1);
+  padding: 0.2rem var(--space-2) 0.2rem 0.3rem;
+  border: 1px solid var(--surface-rule);
   border-radius: var(--radius-1);
-  background: none;
+  background: var(--surface);
   color: var(--ink-dim);
-  line-height: 0;
-  opacity: 0.5;
-  transition: opacity var(--t-fast) var(--ease);
+  transition:
+    color var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease);
   cursor: pointer;
 
-  &:hover { opacity: 0.85; }
+  &:hover { border-color: var(--halo-brass); color: var(--ink); }
 
   &.chip--on {
-    opacity: 1;
     border-color: var(--brass);
+    color: var(--brass);
     box-shadow: var(--glow-brass);
     color: var(--ink);
   }
 }
 
+/* Rarity has no emblem, so it is the same tile carrying only text — bare text with no border
+   at all was the third of the three drawings this page shipped. */
 .chip--text {
-  padding: 0.15rem var(--space-2);
+  padding: 0.2rem var(--space-2);
   font-size: var(--text-xs);
+  line-height: 1.4;
+}
+
+.chip__label {
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
   line-height: 1.4;
 }
 

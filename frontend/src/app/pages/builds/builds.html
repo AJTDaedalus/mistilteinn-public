@@ -44,8 +44,11 @@
             (click)="elementFilter.set(elementFilter() === e.element ? '' : e.element)"
           >
             <!-- 26px, matching the catalogue's vision filter. These were already emblem-only;
-                 the owner's note was that they are too small to read at a glance. -->
+                 the owner's note was that they are too small to read at a glance. The name is
+                 beside it now, so all three filter rows on this page are one shape rather than
+                 three — and so colour is a second channel on a label rather than the only one. -->
             <catalogue-icon [icon]="e.icon" [alt]="e.element" [size]="26" />
+            <span class="chip__label">{{ e.element }}</span>
           </button>
         }
       </div>
@@ -60,6 +63,12 @@
             (click)="weaponFilter.set(weaponFilter() === w.value ? '' : w.value)"
           >
             <catalogue-icon [icon]="w.icon" [alt]="w.label" [size]="18" />
+            <!-- **The name, which the label already carried and only a tooltip could see.**
+                 Bare, unlabelled weapon glyphs are dark grey on dark navy and each carries a
+                 diagonal slash, so the row read as *disabled* rather than *filter by weapon
+                 type*. `/weapons` has shown these names beside the same glyphs all along,
+                 which is what made that page legible and this one guesswork. -->
+            <span class="chip__label">{{ w.label }}</span>
           </button>
         }
       </div>

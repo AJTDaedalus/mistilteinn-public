@@ -23,7 +23,7 @@ import {
   type RotationStep,
   type TeamRoster,
 } from '../rotations.service';
-import { beginDrag, humanise, moveLabel } from '../notation';
+import { actionLetter, beginDrag, humanise, moveLabel } from '../notation';
 import { regroup } from './regroup';
 
 /**
@@ -649,6 +649,32 @@ export class RotationEditor {
   }
 
   /** What this step does, named the way the player knows it — with the variant spelled out. */
+  /**
+   * The community letter for a step — `N`, `C`, `E`, `Q` — or `null` where there is none.
+   *
+   * **Split out of the label so it can carry its own weight.** `N - Soloist's Solicitation`
+   * gave the letter and the name the same size, and the name then truncated: the fast channel
+   * a reader actually scans was buried inside the slow one, at the same visual priority as
+   * text they could not finish reading. Owner, 2026-09-03: *"the font is so small for the long
+   * move names it's hard to see."*
+   *
+   * Six actions have no letter and get none — `notation.ts` argues that at length, and the
+   * badge is simply absent for them rather than inventing a fifth.
+   */
+  protected stepLetter(step: RotationStep): string | null {
+    const offer = this.offersForId(step.character).find((o) => o.action === step.action);
+    return actionLetter(offer?.base ?? step.action);
+  }
+
+  /** The move's name without the letter, since the badge now carries that. */
+  protected stepName(step: RotationStep): string {
+    const label = this.actionLabel(step);
+    const letter = this.stepLetter(step);
+    return letter && label.startsWith(`${letter} - `)
+      ? label.slice(letter.length + 3)
+      : label;
+  }
+
   protected actionLabel(step: RotationStep): string {
     const offer = this.offersForId(step.character).find((o) => o.action === step.action);
     // No offer means the team no longer fields this character, so there is no vocabulary to

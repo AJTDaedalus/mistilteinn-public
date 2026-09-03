@@ -66,6 +66,35 @@
       </p>
     }
 
+    <!-- **The mode comes before the fields it governs.** It used to sit *below* them, so the
+         panel showed you a Hit picker, an Element and a Scope and only then asked whether you
+         were optimizing a single hit at all — the consequence read before the choice, and the
+         controls appearing and disappearing above a toggle you had not reached yet.
+
+         **A mode, not a list.** This was a native `<select>` sitting directly beside two
+         brass card-pickers — two control vocabularies in one row, and the page already
+         expresses "pick one of a small fixed set" as chips a few sections below. Two
+         options never needed a drop-down. -->
+    <div class="modes-row">
+      <span class="field__name">Optimize</span>
+      <fieldset class="objective-modes" aria-label="What to optimize">
+        <button
+          type="button"
+          class="chip"
+          [class.chip--on]="objective() === 'rotation'"
+          [attr.aria-pressed]="objective() === 'rotation'"
+          (click)="objective.set('rotation')"
+        >With a rotation</button>
+        <button
+          type="button"
+          class="chip"
+          [class.chip--on]="objective() === 'hit'"
+          [attr.aria-pressed]="objective() === 'hit'"
+          (click)="objective.set('hit')"
+        >For a single hit</button>
+      </fieldset>
+    </div>
+
     <div class="controls">
       <!-- A team first, then who in it. Optional: 75 builds against eight teams on the
            owner's account, so requiring one would strand most builds. Clearing it widens the
@@ -92,7 +121,11 @@
            depending on the optimize type."* The rotation block below is already gated the same
            way, so the two modes now offer exactly the control each one uses — a hit picker
            that a rotation search ignores is a setting that looks like it matters. -->
-      @if (objective() === 'hit') {
+      <!-- **And only once a build is chosen**, because `hits()` is empty until then and the
+           control rendered as a 40px `<select>` holding zero options — a field that looks
+           broken rather than one that is waiting. The same is true of Element and Scope: they
+           describe a hit that does not exist yet. The hint below says so in words. -->
+      @if (objective() === 'hit' && buildId()) {
         <label>
           Hit
           <select aria-label="Hit" [ngModel]="hitIndex()" (ngModelChange)="hitIndex.set(+$event)">
@@ -110,7 +143,7 @@
            reads neither. Seen on a screenshot sitting beside "Optimize with rotation", which
            is a setting that looks like it matters and does not. Enemy level stays: it reaches
            the gcsim config too. -->
-      @if (objective() === 'hit') {
+      @if (objective() === 'hit' && buildId()) {
         <label>
           Element
           <select aria-label="Element" [(ngModel)]="channel">
@@ -143,6 +176,9 @@
     @if (buildId() && objective() === 'hit' && !hit()) {
       <p class="hint">This build has no talent levels set.</p>
     }
+    @if (!buildId() && objective() === 'hit') {
+      <p class="hint">Choose a build to pick the hit to optimize.</p>
+    }
 
     <!-- The rotation objective (R.8/R.9).
          Built and tested since R.9, and until now **unreachable**: the component has carried
@@ -155,26 +191,6 @@
          a 4-piece and then pressing the wrong button is how a filter looks like it did
          nothing. One button, at the end, after everything it reads. -->
     <div class="objective">
-      <!-- **A mode, not a list.** This was a native `<select>` sitting directly beside two
-           brass card-pickers — two control vocabularies in one row, and the page already
-           expresses "pick one of a small fixed set" as chips a few sections below. Two
-           options never needed a drop-down. -->
-      <fieldset class="objective-modes" aria-label="What to optimize">
-        <button
-          type="button"
-          class="chip"
-          [class.chip--on]="objective() === 'rotation'"
-          [attr.aria-pressed]="objective() === 'rotation'"
-          (click)="objective.set('rotation')"
-        >With a rotation</button>
-        <button
-          type="button"
-          class="chip"
-          [class.chip--on]="objective() === 'hit'"
-          [attr.aria-pressed]="objective() === 'hit'"
-          (click)="objective.set('hit')"
-        >For a single hit</button>
-      </fieldset>
 
       @if (objective() === 'rotation') {
         <!-- A `<span>`, not a `<label>`: a label must wrap a real form control, and the
@@ -260,12 +276,6 @@
            `scarletproof` and `heartofthefurnace` are two it does not have. Deleting the line
            makes a set the user owns four of vanish from the picker, which looks exactly like
            not owning four of it. The fix is a gcsim pin bump, which is its own chunk. -->
-      @if (unsimulableSets().length) {
-        <p class="hint">
-          gcsim cannot simulate: {{ unsimulableSets().join(', ') }}.
-        </p>
-      }
-
       @if (!fourPieceChoices().length && !unsimulableSets().length && candidates().length) {
         <!-- **Why Optimize is off, said where the control would have been.** The gate is
              "pick at least one set", and the hint explaining it lives inside the picker — so
@@ -280,6 +290,23 @@
       @if (fourPieceChoices().length) {
         <fieldset class="set-filter">
           <legend>Artifact Sets</legend>
+
+          <!-- **Inside the fieldset it is about.** This sat above it, flush to the page edge as
+               plain muted body text, so it warned you about sets before you had opened the
+               thing that offers sets — a caveat with nothing to attach to.
+
+               **Shortened, not removed.** The owner asked for this to go and was right that the
+               sets it names are live in the game — but the reason is accurate and the gap is
+               real: gcsim knows 54 artifact sets at our pinned commit against the catalogue's
+               65, and `scarletproof` and `heartofthefurnace` are two it does not have. Deleting
+               the line makes a set the user owns four of vanish from the picker, which looks
+               exactly like not owning four of it. The fix is a gcsim pin bump, which is its own
+               chunk. -->
+          @if (unsimulableSets().length) {
+            <p class="hint set-filter__caveat">
+              Not offered below — gcsim cannot simulate {{ unsimulableSets().join(', ') }}.
+            </p>
+          }
 
           <div class="set-filter__controls">
             <!-- The 4-piece comes first, being far the commoner build. -->
@@ -319,21 +346,28 @@
                nothing that ranks today changes under anybody. The two disagree by a factor of
                six on their own team, which is why the label says what it costs rather than
                naming a mode. -->
-          <label class="energy-model">
-            <input
-              type="checkbox"
-              [checked]="waitForEnergy()"
-              (change)="waitForEnergy.set($any($event.target).checked)"
-            />
-            <span>
-              Wait for energy instead of skipping the burst
-              <span class="hint">
-                A character who cannot pay for a burst holds the rotation up rather than
-                dropping it — which is what a player does, and prices Energy Recharge far
-                higher. Slower, and assumes a standard rate of incoming energy.
-              </span>
-            </span>
-          </label>
+          <!-- **The checkbox's label is the title, and the explanation is its sibling.**
+               These were one `<label>` wrapping the box and a span holding both the title and
+               the hint, which drew the box beside the *paragraph* with the title sitting
+               indented above it with nothing to its left — a heading with no control, over a
+               control belonging to body copy. It was `align-items` losing a specificity
+               fight to a `label` rule elsewhere on the page, and the answer is not a stronger
+               selector: the markup now says what the box is for. -->
+          <div class="energy-model">
+            <label class="energy-model__choice">
+              <input
+                type="checkbox"
+                [checked]="waitForEnergy()"
+                (change)="waitForEnergy.set($any($event.target).checked)"
+              />
+              <span>Wait for energy instead of skipping the burst</span>
+            </label>
+            <p class="hint energy-model__why">
+              A character who cannot pay for a burst holds the rotation up rather than
+              dropping it — which is what a player does, and prices Energy Recharge far
+              higher. Slower, and assumes a standard rate of incoming energy.
+            </p>
+          </div>
 
           <!-- §W — weapons in the search. Owner: *"Weapon should definitely be opt-in, off by
                default, and like set allow you to select some."* Closed, this is one line of
@@ -584,6 +618,17 @@
       @if (equipped(); as note) {
         <p class="hint" role="status">{{ note }}</p>
       }
+
+      <!-- **A header, because ten rows of bare numbers name nothing.** The score column read
+           `745.2` with a signed percentage beside it and no label anywhere on the page, so a
+           reader could not tell whether it was DPS, damage for one hit, or an index — and the
+           two search modes genuinely mean different things by it. -->
+      <div class="results__head" aria-hidden="true">
+        <span class="results__head-rank">#</span>
+        <span class="results__head-score">{{ scoreLabel() }}</span>
+        <span class="results__head-delta">vs. equipped</span>
+        <span class="results__head-pieces">Five pieces</span>
+      </div>
 
       <ol class="results">
         <!-- §W — the weapon comparison, above the rows it explains. Each weapon was searched

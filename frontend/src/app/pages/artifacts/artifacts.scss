@@ -113,6 +113,7 @@
   font-size: var(--text-sm);
   max-height: 12rem;
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 // ── Filters ──────────────────────────────────────────────────────────────────

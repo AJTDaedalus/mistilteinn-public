@@ -419,3 +419,100 @@ the right `href`, navigate, and land on the right heading with no console errors
   else's catalogue is not a call to make unilaterally.
 
 Both endpoints accept **`name` only**, so either fix is backend and frontend together.
+
+---
+
+## 13. Teapot: expand a set to its pieces, and a shopping list
+
+**Asked for by the owner, 2026-09-03**, verbatim: *"Add to the backlog being able to 'expand'
+teapot sets to see the pieces required (with images) and quantities. Bonus points if we can
+include materials and make a 'shopping list'."*
+
+### The first half is nearly free — the data is already seeded
+
+`furnishing_suites.units` holds exactly this, as `{furnishing_id: count}`, for all 109 suites:
+
+```
+Adventurer Camp     {"370503": 1, "370504": 1, "372301": 1, "372405": 2, "373113": 1, "374102": 6}
+Book Lover's Study  {"361206": 1, "361207": 1, ... }
+```
+
+So the quantities are in the database now and nothing on screen reads them. What is **missing
+is the furnishings themselves**: there is no `furnishings` table, so those ids have no name,
+no rarity and no icon. That is one capture (`nanoka` furniture index, pinned at
+`FIXTURE_VERSION` like `suite.json`), one table, one seed script and one migration — the same
+shape as `seed_teapot.py`, which is the model to copy including its `MINIMUM_*` prune refusal.
+
+Art follows the same route the set images already took: `scripts/download_icons.py` vendors
+from `https://static.nanoka.cc/assets/gi/`, and the files are **committed** per
+`docs/DECISIONS.md` §4.
+
+### The second half is a real feature, and the blocker is not the recipes
+
+A shopping list needs `furniture.recipe` — the ingredients per piece — which is also
+capturable. The blocker is the other side of the subtraction: **this app has no record of what
+materials a user holds, and GOOD does not export any.** `docs/DESIGN_account_tracking.md`
+§"Scope note" says exactly this and put it out of scope.
+
+That still leaves a genuinely useful version, and it should be built first because it needs no
+inventory at all:
+
+- **Gross cost.** "This set needs 4× Fir Wood, 12× Iron Chunk, 2× Dye" — summed over the
+  pieces, with quantities. That is the whole shopping list minus the subtraction, and for a
+  player standing at the crafting bench it is most of the value.
+- **Across several sets.** Tick three sets, get one combined list. This is where it beats
+  reading the game's own UI, which only ever shows one recipe at a time.
+- **Net cost** — what you are *short* of — is the part that needs a materials inventory. Keep
+  it as a later layer over the same view rather than a precondition for any of it, and it
+  arrives the day a materials source does.
+
+### Order
+
+`units` → furnishings table → expand row → recipes → gross list → (later) net list. The first
+three are the owner's actual ask; everything after is the bonus.
+
+---
+
+## 14. Found while answering §13: twelve characters the owner owns have no build, so the teapot tracker cannot see them
+
+**Not a bug — documented, deliberate behaviour with a cost that has grown.**
+
+`good_build_service` creates **a build for each character holding a weapon or an artifact**,
+and says so at length. The reason is good: the reference export lists 89 characters including
+GO's `Manekin` / `Manekina` practice mannequins, and the owner ruled those out of scope
+entirely. Keying on "is something equipped" excludes them without the module ever knowing
+their names.
+
+Measured on the owner's own export (`references/genshin_export_2026-08-28_11-07.json`):
+
+| | |
+|---|---|
+| characters in the export | **89** |
+| characters holding a weapon or artifact | **75** ← the builds that exist |
+| owned, wearing nothing | **15** |
+| …of those, real characters (minus 2 mannequins and a Traveler variant) | **12** |
+
+They are Dahlia, Yun Jin, Ningguang, Amber, Razor, Yaoyao, Mika, Kaveh, Sethos, Shikanoin
+Heizou, Alyosha and Ifa. The owner noticed three of them missing from `/builds` by looking at
+a screenshot.
+
+**What changed is `builds.owned`.** When this rule was written a build was a build. Track 1
+then made `builds.owned` the app's record of *what you actually have*, and Track 3 keyed the
+teapot tracker to it — so a character with nothing equipped is now invisible to a feature that
+has nothing to do with equipment. Eleven of the twelve favour two furnishing sets each:
+**22 sets, 440 Primogems**, that the tracker will never offer.
+
+### The fix, and the part that is a decision
+
+The rule should stay for **artifacts** — an unequipped character has no build to optimize.
+What it should stop doing is deciding *ownership*. Two candidates:
+
+1. **Import every non-mannequin character as `owned=True` with no artifacts.** Honest, and it
+   makes `/builds` the roster it claims to be. Costs a mannequin exclusion that is a name list
+   — the thing the current rule was written to avoid.
+2. **Separate the roster from the builds.** `owned` moves off `builds` onto its own per-user
+   character row, and a build stays what it is. Cleaner, and a schema change.
+
+Either way the mannequins need handling on their own terms rather than as a side effect, which
+is the observation worth carrying: **the current rule excludes them correctly by accident**,
+and twelve real characters pay for it. Owner's call.

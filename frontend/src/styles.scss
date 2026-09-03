@@ -68,6 +68,30 @@ button, .btn {
     box-shadow: var(--glow-brass);
   }
 
+  /* **A disabled button has to look disabled**, and this rule did not exist at all.
+     `styles.scss` had no `:disabled` anywhere, so a disabled button inherited the enabled
+     appearance exactly — measured on `/calculate`'s CALCULATE with a team but no rotation:
+     `opacity: 1`, `cursor: pointer`, the same violet fill. A user picks a team, clicks the
+     big purple button, and nothing happens with no message.
+
+     Dimmed **and** given a `not-allowed` cursor and no hover response, so the state is
+     carried three ways rather than by opacity alone. */
+  &:disabled,
+  &[aria-disabled='true'] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    filter: saturate(0.4);
+
+    &:hover {
+      border-color: var(--surface-rule);
+      box-shadow: none;
+    }
+
+    &:active {
+      transform: none;
+    }
+  }
+
   &.btn-primary {
     background: var(--violet);
     border-color: var(--violet);
@@ -79,7 +103,14 @@ button, .btn {
   }
 }
 
-select, input, textarea {
+/* **Checkboxes and radios are excluded**, because the block below sizes and pads a text
+   field and a checkbox is neither. Without this they inherited a background, a border and
+   3-6px of padding meant for an input, which is why four different checkbox appearances
+   existed in one app: styled blue in the build editor, raw white on `/optimize`, raw white
+   again across `/teapot`, native blue on "Reimport builds". */
+select,
+input:not([type='checkbox']):not([type='radio']),
+textarea {
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   color: var(--ink);
@@ -94,6 +125,105 @@ select, input, textarea {
     box-shadow: var(--glow-brass);
   }
 }
+
+/* **Drawn, not left to the platform.** `accent-color` only tints the *checked* state, so an
+   unchecked box stayed a bright white square on a dark panel — the single lightest thing on
+   the page, and on `/optimize` it drew the eye harder than the search button. These are drawn
+   from the palette in both states, which is the same argument every other control on the site
+   already makes. `appearance: none` means the check mark is ours too. */
+input[type='checkbox'],
+input[type='radio'] {
+  appearance: none;
+  flex: 0 0 auto;
+  width: 0.95rem;
+  height: 0.95rem;
+  margin: 0;
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  background: var(--surface);
+  cursor: pointer;
+  transition:
+    border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
+
+  &:hover:not(:disabled) { border-color: var(--halo-brass); }
+
+  &:focus-visible {
+    outline: 2px solid var(--brass);
+    outline-offset: 2px;
+  }
+
+  &:checked {
+    border-color: var(--brass);
+    background: var(--brass);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+}
+
+input[type='radio'] { border-radius: 50%; }
+
+/* **The mark is masked, not painted into the SVG.** A data-URI `background-image` would carry
+   its own hardcoded stroke colour — the one thing this repo's palette rule exists to prevent,
+   and unreachable from `_tokens.scss` forever after. Masking a shape and filling it with
+   `--bg-deep` keeps every colour on the control a token.
+
+   `appearance: none` is what makes this possible: a default checkbox is a replaced element
+   with no `::before` to hang anything on, and once its appearance is dropped it is an ordinary
+   box again. */
+input[type='checkbox']:checked::before,
+input[type='radio']:checked::before {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-deep);
+}
+
+input[type='checkbox']:checked::before {
+  $tick: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' d='M3.5 8.5l3 3 6-6'/%3E%3C/svg%3E";
+  mask: url($tick) center / 100% 100% no-repeat;
+  -webkit-mask: url($tick) center / 100% 100% no-repeat;
+}
+
+input[type='radio']:checked::before {
+  mask: radial-gradient(circle, #000 0 34%, transparent 36%);
+  -webkit-mask: radial-gradient(circle, #000 0 34%, transparent 36%);
+}
+
+/* **Scrollbars have to be visible, because a sliced element is not an affordance.**
+   Nothing in this app styled them, so every scrollable box relied on the platform's overlay
+   scrollbar — invisible until you already know to scroll. The audit found four dialogs and
+   the rotation builder's move palette where the only cue that more content existed was a
+   card sliced through the middle: a reader has no reason to believe the rest is reachable.
+
+   `scrollbar-gutter: stable` on the overflow containers keeps the track from reflowing the
+   content when it appears, which is the reason overlay scrollbars were adopted in the first
+   place. Applied to anything that scrolls rather than to `body`, so the page itself keeps the
+   platform's own behaviour. */
+[style*='overflow'],
+.scrolls,
+dialog,
+[class*='__body'],
+[class*='overlay'] {
+  scrollbar-color: var(--surface-rule) transparent;
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-rule);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: var(--radius-pill);
+}
+
+::-webkit-scrollbar-thumb:hover { background-color: var(--halo-brass); background-clip: content-box; }
 
 .surface {
   background: var(--surface);

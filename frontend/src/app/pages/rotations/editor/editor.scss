@@ -31,6 +31,17 @@ label {
 
 .repeat input { width: 3.5rem; }
 
+/* **The two arrows are one control and must stay on one line.** There was no rule here at
+   all, so they were inline content that wrapped whenever a row ran out of width — which made
+   a list of identical rows render at two different heights depending on how long the move's
+   name happened to be. Found on screen; nothing about it fails a test. */
+.reorder {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 0.15rem;
+  white-space: nowrap;
+}
+
 .reorder button,
 .drop {
   padding: 0.1rem 0.45rem;
@@ -235,10 +246,40 @@ label {
   font-size: var(--text-sm);
 }
 
+/* **The community letter, given its own weight.** `N - Soloist's Solicitation` rendered the
+   letter and the name at one size and then truncated the name — so the channel a reader
+   actually scans by was buried inside the one they could not finish reading.
+
+   Sized and coloured per letter, because N/C/E/Q is a four-item vocabulary a player already
+   knows: E and Q are the cooldown moves a rotation is planned around, N and C the filler
+   between them, and telling those apart at a glance is most of reading a rotation. */
+.step__letter {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: var(--radius-1);
+  background: var(--surface-hi);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Colour is the *second* signal, never the only one — the letter itself is the first, so
+   this survives a reader who cannot separate the hues. */
+.step__letter[data-letter='E'] { color: var(--mint); }
+.step__letter[data-letter='Q'] { color: var(--brass); }
+.step__letter[data-letter='N'],
+.step__letter[data-letter='C'] { color: var(--ink-dim); }
+
 .step__what {
   flex: 0 1 auto;
   min-width: 3rem;
-  color: var(--ink);
+  color: var(--ink-dim);
   font-size: var(--text-sm);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -438,6 +479,7 @@ label {
     grid-column: 1;
     min-height: 0;
     overflow-y: auto;
+  scrollbar-gutter: stable;
     max-height: 78vh;
   }
 
@@ -446,6 +488,7 @@ label {
     min-height: 0;
     max-height: 78vh;
     overflow-y: auto;
+  scrollbar-gutter: stable;
   }
 }
 

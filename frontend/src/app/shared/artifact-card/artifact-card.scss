@@ -58,3 +58,19 @@
 
   .piece__main { font-size: var(--text-xs); }
 }
+
+/* The set name on a compact card. Truncated rather than wrapped: five of these sit in one
+   result row, and a wrapping name would make each row a different height — the same defect
+   the rotation step list had with its reorder arrows. */
+.piece__set {
+  display: block;
+  /* **Narrow enough that five cards stay on one line.** At 9rem the strip wrapped onto two
+     rows, which made each result a different height — trading one legibility problem for a
+     worse one. The name truncates; the tooltip on the card head still carries it in full. */
+  max-width: 6.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+}

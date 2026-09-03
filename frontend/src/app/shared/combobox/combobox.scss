@@ -67,6 +67,7 @@
   list-style: none;
   max-height: 280px;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   background: var(--surface-hi);
   border: 1px solid var(--brass);
   border-radius: var(--radius-1);

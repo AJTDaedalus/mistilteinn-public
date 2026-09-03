@@ -1038,6 +1038,18 @@ export class OptimizePage implements OnInit {
       .filter((card): card is ArtifactCardModel => card !== undefined);
   }
 
+  /**
+   * What the score column actually is, which depends on what was searched.
+   *
+   * **The two objectives do not measure the same thing**, so one fixed word would be wrong
+   * half the time: a rotation search scores team DPS over the whole rotation, a single-hit
+   * search scores the damage of one hit. The column had no label at all, which is how a
+   * reader ended up unable to say whether `745.2` was DPS, damage or an index.
+   */
+  protected readonly scoreLabel = computed(
+    () => (this.objective() === 'rotation' ? 'Team DPS' : 'Hit damage'),
+  );
+
   protected readonly rows = computed<ResultRow[]>(() => {
     const found = this.result();
     if (!found) return [];

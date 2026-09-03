@@ -169,6 +169,18 @@ with its own data (a user's material inventory, which this app does not have and
 export). **Out of scope here**; the tracker answers *which sets are worth doing next*, not
 *can I afford them*.
 
+**Revisited 2026-09-03 (owner):** expanding a set to its pieces was asked for, and the useful
+part of a shopping list turns out not to need an inventory — a *gross* cost ("this set needs
+4x Fir Wood") is worth most of the value on its own, and only the *net* cost needs to know
+what you hold. `furnishing_suites.units` already carries `{furnishing_id: count}` for all 109
+suites, so the quantities are seeded today and nothing reads them.
+`docs/BACKLOG_frontend.md` §13.
+
+**And §14, found while answering it:** this tracker keys off `builds.owned`, and
+`good_build_service` only creates a build for a character *holding a weapon or an artifact* —
+so twelve characters the owner owns are invisible to it, worth 22 sets and 440 Primogems. That
+rule predates `owned` meaning anything.
+
 ---
 
 ## What else is worth storing

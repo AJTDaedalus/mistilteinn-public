@@ -38,8 +38,29 @@ const ICON_BASE = '/icons';
       />
     }
   `,
+  // Bound on the host rather than written as a custom property, because a property that only
+  // ever gets its value from TypeScript is invisible to `npm run check:tokens` — which reads
+  // stylesheets — and would be reported as used-but-never-defined for the life of the file.
+  host: {
+    '[style.min-width.px]': 'size()',
+    '[style.min-height.px]': 'size()',
+  },
   styles: `
-    :host { display: inline-flex; }
+    /* **The box keeps its size when the image does not arrive.**
+
+       This component hides a broken image so nothing renders as a torn placeholder, which is
+       right — but it hid the *space* too, so a card whose icon 404s lost its icon's height
+       and its title rose ~44px above every sibling in the row. Measured on /artifact-sets:
+       UI_RelicIcon_15004_4.webp is missing, and "Glacier and Snowfield" renders as a
+       visibly different component from the cards beside it.
+
+       Reserving the box turns a missing icon into a gap, which is what "absent" should look
+       like — and it is the difference between one card lacking art and a row looking broken. */
+    :host {
+      display: inline-flex;
+      flex: 0 0 auto;
+    }
+
     img { border-radius: 0.25rem; }
 
     /* A "fill" host class makes the image fill its box, and this rule has to live *here*.
@@ -93,6 +114,13 @@ export class CatalogueIcon {
   });
 
   protected readonly visible = computed(() => !!this.icon() && !this.failed());
+
+  /**
+   * The size to hold open even when nothing is drawn.
+   *
+   * `fill` icons size from their parent, so reserving a pixel box there would fight the card
+   * that contains them; everything else gets its declared `size`.
+   */
   protected readonly src = computed(() => `${ICON_BASE}/${this.icon()}.webp`);
 
   protected hide(): void {

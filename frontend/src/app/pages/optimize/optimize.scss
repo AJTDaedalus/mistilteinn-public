@@ -45,7 +45,21 @@
       display: grid;
       grid-template-columns: 2rem minmax(6rem, 9rem) minmax(4.5rem, auto) 1fr auto auto;
       gap: 0.75rem;
-      align-items: baseline;
+      /* **Centred, not baseline.** The piece strip is now two lines tall inside each card, so
+         a baseline computed from the first line of text pushed the rank and score out of line
+         with the cards they label. */
+      align-items: center;
+    }
+
+    /* **EQUIP changes five pieces of gear; DETAILS reads.** They sat flush beside each
+       other at the same size, border and colour, ten times down the page, so the row's only
+       state-changing control was indistinguishable from the one that expands a disclosure.
+       Given the brass action accent and a little air, so the destructive-adjacent one is the
+       one the eye lands on — and so a mis-click is a deliberate act rather than a near-miss. */
+    .equip {
+      border-color: var(--halo-brass);
+      color: var(--brass);
+      margin-left: var(--space-2);
     }
 
     /* The two empty states are sentences, not rows. */
@@ -111,6 +125,7 @@
     font-size: 0.85rem;
     max-height: 12rem;
     overflow-y: auto;
+  scrollbar-gutter: stable;
   }
 
   .objective {
@@ -403,6 +418,20 @@
 
 /* The comparator row sits with the results rather than above them, so it needs to read as a
    reference point and not as a rank. Muted, and its rank column is an em dash. */
+/* The column header. `aria-hidden`, because a screen reader already gets each row's meaning
+   from its own labels and an announced header row would repeat them ten times. */
+.results__head {
+  display: grid;
+  grid-template-columns: 2rem minmax(6rem, 9rem) minmax(4.5rem, auto) 1fr auto auto;
+  gap: 0.75rem;
+  padding: 0 var(--space-2) var(--space-1);
+  border-bottom: 1px solid var(--surface-rule);
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 .results li.comparator {
   border-top: 1px solid var(--surface-rule);
   border-bottom: 0;
@@ -549,13 +578,23 @@
 /* The energy-model toggle. A checkbox with its consequence beside it rather than a mode name:
    "waiting" means nothing until you know it costs time and prices ER higher. */
 .energy-model {
-  display: flex;
-  gap: var(--space-2);
-  align-items: start;
   margin: var(--space-2) 0;
 }
 
-.energy-model .hint { display: block; }
+/* The box and the sentence it switches, on one line and nothing else on it. */
+.energy-model__choice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+/* Indented under the choice so it reads as that choice's explanation rather than as the next
+   thing in the fieldset. The indent is the box plus its gap. */
+.energy-model__why {
+  display: block;
+  margin: 0.15rem 0 0 1.7rem;
+}
 
 /* A re-opened saved run. It renders from the stored snapshot and runs no gcsim — that is
    what storing the result bought. */
@@ -588,3 +627,22 @@
 
 .save-run__name { flex: 0 1 20rem; min-width: 0; }
 .save-run__done { color: var(--ink-dim); font-size: var(--text-sm); }
+
+/* **The mode, on its own row above the fields it governs.** It used to sit below them, so the
+   Hit / Element / Scope controls appeared and disappeared above the toggle that decided
+   whether they applied. */
+.modes-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* A `<select>` sizes itself to its longest option, and a hit reads
+   "Elemental Skill · Cutting Torrent (Charged, fully charged)" — so this one grew from 40px to
+   660px on selection and reflowed the whole control bar onto two lines. A field that changes
+   width sixteen-fold when you use it makes the panel feel unstable; it truncates now instead. */
+.controls select {
+  max-width: 22rem;
+}

@@ -42,7 +42,16 @@ export interface ArtifactCardModel {
       />
       <div class="piece__figures">
         <span class="piece__main mono">{{ piece().mainStat }}</span>
-        <span class="piece__level mono">+{{ piece().level }}</span>
+        <!-- **The set name, in compact form too.** Compact dropped it to a tooltip, and on the
+             optimize results that made ten ranked rows visually identical: the same five main
+             stats on every line, the only difference a 34px icon. The set is the thing that
+             actually differs between candidates, so it is the thing a ranked list has to show.
+             The full card keeps showing substats below and has no need of it in this row. -->
+        @if (compact()) {
+          <span class="piece__set">{{ piece().setName }}</span>
+        } @else {
+          <span class="piece__level mono">+{{ piece().level }}</span>
+        }
       </div>
     </div>
 
