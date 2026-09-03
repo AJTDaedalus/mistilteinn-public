@@ -21,10 +21,13 @@ from app.config import settings
 from app.models.base import generate_uuid7
 from app.models.teapot import FurnishingSuite, FurnishingSuiteFavorite
 
-FIXTURE = (
-    Path(__file__).resolve().parent.parent
-    / "tests" / "fixtures" / "nanoka_gi" / "suite.json"
-)
+#: The committed capture, **under `app/data/` rather than `tests/fixtures/`**.
+#:
+#: `tests/` is excluded from the production image (`backend/.dockerignore`), so seed data kept
+#: there deploys as a `FileNotFoundError` — which is exactly how the first deploy of this
+#: tracker failed. Data the running app needs lives beside the app, like
+#: `app/data/yuanshen/snapshot/` already does.
+FIXTURE = Path(__file__).resolve().parent.parent / "app" / "data" / "teapot" / "suite.json"
 
 #: Below this, the capture is broken rather than the patch being small.
 #:
