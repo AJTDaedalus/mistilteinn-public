@@ -39,6 +39,8 @@ this list.
 | `TASKS_rotation_library.md` | publishing, finding, liking and copying a rotation (#177–#180) |
 | `DESIGN_rotation_builder.md` | the builder's design pass and every surface item (#181, #184) |
 | — | the run corpus's first producer, and the owner's four rulings (#183, #185) |
+| `DESIGN_weapons_in_the_optimizer.md` | weapons in the search, KQM tiering for 102 characters (#237, #240) |
+| `DESIGN_conditional_steps.md` | a guarded block a rotation can hold, and the import that reads one (#238) |
 
 **The app is walkable end to end**: import a GOOD export, equip pieces to a build, assemble a
 team, author a rotation, compile it to gcsim, search your own artifacts for the best five, and
@@ -51,10 +53,31 @@ kits the corpus existed to curate. Its two `TODO(chunk-H)` markers are gone too:
 (2026-08-25): rotations are authored, never optimized.** A user writes a rotation deliberately,
 and one arrived at by search is not one they would recognise as theirs.
 
-**Every plan in this repo now has zero open tasks.** `docs/DESIGN_rotation_library.md` and
-`docs/DESIGN_artifact_ranking.md` were the last two open on 2026-08-29 and both shipped that
-day; `docs/TASKS_weapon_passives.md` closed before them. `docs/AUDIT_fribbels_parity.md` is
-the standing list of what the UI still lacks.
+**Two plans carry open questions, and both say so in their own banner.**
+`DESIGN_conditional_steps.md` has **OQ-C1** — nothing authors a condition in the builder, so a
+guarded rotation can be imported and edited around but not written from scratch — and **OQ-C2**,
+which matters for scoring: a block guarded on `.energy >= 30` changes shape as ER changes, and
+the energy ladder's monotonicity argument assumes it does not.
+`DESIGN_weapons_in_the_optimizer.md` has **OQ-W2** (may an unowned weapon be compared?) and
+**OQ-W3** (how cross-weapon results should read). Everything else closed on 2026-08-29;
+`docs/AUDIT_fribbels_parity.md` is the standing list of what the UI still lacks.
+
+**The owner ruled on the energy model, 2026-09-02: build waiting as an *option*.** A character
+who cannot fund a burst **skips** it by default; `wait_for_energy=True` makes gcsim hold the
+whole simulation until the energy arrives, which is what a person at a keyboard does. Measured
+on their own team, same rotation, Furina's ER swept:
+
+| Furina ER | skip DPS / duration | wait DPS / duration |
+|---|---|---|
+| 0.279 — her gear | 266,761 · 101.1 s | 217,172 · **151.5 s** |
+| 1.6 | 286,234 · 101.1 s | 313,510 · 102.1 s |
+
+ER is worth **+7.3 % skipping against +44.4 % waiting**, and the duration column is why:
+skipping is not merely under-pricing ER, it is **blind to the mechanism**, because a skipped
+burst costs no time. Waiting only terminates because of a cited energy drip
+(`gcsim_config.ENERGY_DRIP`, five community configs, three calling it *standard Energy drops*)
+— without one gcsim retries the frame forever and the run grows to 2.4 GB.
+`docs/DESIGN_waiting_for_energy.md`.
 
 **What is left is waiting on the owner, not on effort.** Four questions, each recorded where
 someone will find it:
@@ -74,8 +97,18 @@ callers, which is why the single-hit search ran on the main thread until #175 ga
 `POST /sim-runs` was the other until #183 — a rotation search now writes a row, and the
 library reports `your_dps` from it.
 
-**Both were found by building something that needed them, not by reading**, and that is the
-entry's point: a green suite here is good at formulas and blind to wiring. The same session
+**A third was `/compare-weapons`, `/compare-weapons/gcsim` and `sim/weapon-ranking.ts`** —
+built, tested, and reachable from no caller at all until #237 put weapons in the optimizer.
+That one was found by the **owner going to use a feature**, not by anybody reading the code.
+
+**And #237 then shipped its own version of the same failure**: the weapon picker worked, the
+backend substitution had an integration test, the search loop and the energy-ladder grouping
+had unit tests, and a real two-weapon run came back **flat** — both weapons at 1,376,712.1, to
+the decimal — because the client never passed the id and the cache key had no weapon in it
+(#240). Every test passed the whole time. **Drive the feature.**
+
+**All of these were found by building or using something that needed them, not by reading**,
+and that is the entry's point: a green suite here is good at formulas and blind to wiring. The same session
 found a query-count test that passed while counting zero, an ability-name lookup that was live
 and doing nothing because gcsim's actions and the catalogue's talent types are different
 vocabularies, and a `<select>` that had always shown its first option. None of them failed a
@@ -87,11 +120,11 @@ browser build, a 100-iteration 90-second rotation is **7.84 s single-threaded** 
 candidates is **~7.7 minutes**. The decision holds; the interaction it implies does not. It is
 a job with progress, never a request that blocks.
 
-- **Both suites pass, with nothing skipped.** **1647 backend tests, 0 skipped**; **802
-  frontend tests**; `create_app()` serves **49 paths**; the SPA has **14 routes, 2 redirects
+- **Both suites pass, with nothing skipped.** **1699 backend tests, 0 skipped**; **896
+  frontend tests** over 52 files; `create_app()` serves **51 paths**; the SPA has **14 routes, 2 redirects
   and a catch-all** — the redirects are `/artifacts`→`/inventory` and `/explain`→`/calculate`,
   and a screenshot harness that followed one was how the count came to be re-derived at all. (Every figure here has been stale at least once — 1273 / 255 / 40, then
-  1439 / 450 / 39, then 1549 / 544 / 51, then 1567 / 565. **The number is not the point; the command underneath
+  1439 / 450 / 39, then 1549 / 544 / 51, then 1567 / 565, then 1647 / 802 / 49. **The number is not the point; the command underneath
   it is**, and the honest reading of this line is "roughly this many, re-derive before citing
   it".) **One integration test has been seen to fail once and pass on re-run** —
   `test_a_talent_with_no_level_set_is_not_offered`, once in four full-suite runs, passing in
@@ -114,6 +147,18 @@ a job with progress, never a request that blocks.
 - **`npm test` is `ng test`, and the distinction matters.** It builds the app first; a bare
   `npx vitest run` skips that and every TestBed spec collapses — 53 failures that mean
   nothing. *Run what CI runs* applies to the command, not only to the suite.
+
+  **Three things here look like "the typecheck" and none of them is.** `npx tsc -p
+  tsconfig.app.json` **skips `*.spec.ts`**, so eleven fixtures missing a newly required field
+  passed it and failed `ng test`. The container's Angular compiler rejects what `tsc` accepts —
+  `new Map(list.map((x) => [k, x]))` inferred a `{}` value type there and not here. And bare
+  `tsconfig.json` is vacuous (`"files": []`). **`npm run verify` is the only one that means
+  what it appears to mean**; when it disagrees with `npx tsc`, believe `verify`. A Playwright
+  click that keeps retrying against `vite-error-overlay` is usually a build error the host
+  missed — `docker compose logs frontend | grep -iE "✘|\[ERROR\]"` finds it.
+
+  **`api.types.ts` is generated and gitignored**, so it survives a branch switch and describes
+  whichever branch generated it last. Run `npm run codegen` after switching.
 - **The frontend compiles and is tested in CI.** It did not, at the fork: 161 TypeScript
   errors against endpoints B.6 deleted, hidden because `frontend/openapi.json` was stale and
   `npm run codegen` builds `api.types.ts` from that file. The contract is regenerated on
@@ -145,7 +190,27 @@ a job with progress, never a request that blocks.
   `docs/RESEARCH_recipe_cost.md` §2 explains it. **The symptom is misleading**: `flush()`
   reports `index out of range [0] with length 0` while the real message is on `simulate()`'s
   return value, which is a *string* on failure.
-- **A saved rotation is authored here and compiled to gcsim, never read back.** It is emitted
+- **A rotation now round-trips, and "never read back" is no longer true.** Import, compile,
+  import again returns identical steps. `POST /rotations/import/link` takes a gcsim database
+  link — `/api/share/db/<id>` is the route their own app calls, read out of its published
+  bundle, and it answers with `config_file`. **It takes an id and never a URL**: the link is
+  parsed server-side and the host is a constant, because a service that fetches a
+  user-supplied URL is a request-forgery primitive pointed at whatever this backend can reach.
+  It is also **the first request-time fetch in `app/`** — E.6's allowlist argues the case, and
+  the endpoint requires a signed-in caller so it cannot be an open proxy against gcsim.
+- **A step can be inside a guarded block**, and the guard is a *block* rather than a flag on
+  each step. `group` is a path (`"flame/energy"` nests) and `group_condition` rides beside
+  `group_repeat`. gcsim evaluates a guard **once on entry**, and an action inside can change
+  what it tested — `internal/characters/flins/skill.go:56` deletes the very status its block
+  is guarded on — so `if A { x; }` plus `if A && B { y; }` would re-test `A` after `x` cleared
+  it and the rotation would run differently while looking like the one that was written. The
+  condition vocabulary is deliberately short (readiness, energy, status) and everything outside
+  it is refused **by name**. `docs/DESIGN_conditional_steps.md`.
+- **Two importer reductions need no model change at all.** `if is_even(i)` inside a counted
+  loop is arithmetic — unrolled into explicit cycles. `if .x.burst.ready { A } else { A minus
+  the burst }` *is* a gated step. Both refuse to fire when the shape is not actually that, so
+  a branch is never reduced on a guess.
+- **A saved rotation is authored here and compiled to gcsim.** It is emitted
   **as written, to completion** (#224): no `while 1`, no `duration`, and an unkillable target
   so gcsim's damage mode ends the run on `noMoreActions` — which is exactly "when the rotation
   finishes". Length comes from the rotation's own `group_repeat`. The earlier note here, that
