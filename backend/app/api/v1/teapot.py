@@ -22,7 +22,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import get_current_user, get_db
 from app.models.build import Build
 from app.models.character import Character
-from app.models.teapot import FurnishingSuite, FurnishingSuiteFavorite, TeapotProgress
+from app.models.teapot import (
+    FurnishingSuite,
+    FurnishingSuiteFavorite,
+    TeapotBuilt,
+    TeapotProgress,
+)
 from app.models.user import User
 from app.services.teapot import REWARD_PER_CHARACTER, progress_for
 
@@ -48,6 +53,11 @@ class SuiteRow(BaseModel):
     completed: list[str]
     #: Available and not owned — why a set can be worth less than its favourite count says.
     unowned: list[str]
+    #: Has the user built this set?
+    #:
+    #: A different axis from the invitations: building costs materials and time, inviting to
+    #: a set already standing costs a walk. Two sets worth 60 primogems are not equal work.
+    built: bool
     #: Nothing left to claim from the characters this user owns.
     done: bool
     remaining: int
@@ -89,6 +99,10 @@ async def list_suites(session: _Session, user: _User) -> TeapotRead:
         )
     }
 
+    built = set((await session.execute(
+        select(TeapotBuilt.suite_id).where(TeapotBuilt.owner_id == user.id),
+    )).scalars())
+
     suites = (await session.execute(select(FurnishingSuite))).scalars().all()
     favorites: dict[str, list[str]] = {}
     for suite_id, character in await session.execute(
@@ -108,6 +122,7 @@ async def list_suites(session: _Session, user: _User) -> TeapotRead:
         ],
         owned_ids,
         invited,
+        built,
     )
     return TeapotRead(
         suites=[
@@ -115,7 +130,7 @@ async def list_suites(session: _Session, user: _User) -> TeapotRead:
                 suite_id=row.suite_id, name=row.name, icon=row.icon,
                 placement=row.placement,
                 available=list(row.available), completed=list(row.completed),
-                unowned=list(row.unowned), done=row.done,
+                unowned=list(row.unowned), built=row.built, done=row.done,
                 remaining=row.remaining, remaining_primogems=row.remaining_primogems,
             )
             for row in rows
@@ -169,6 +184,38 @@ async def mark_not_invited(
             TeapotProgress.owner_id == user.id,
             TeapotProgress.suite_id == suite_id,
             TeapotProgress.character_nanoka_id == character_nanoka_id,
+        ),
+    )
+    await session.commit()
+
+
+@router.put("/suites/{suite_id}/built", status_code=204)
+async def mark_built(suite_id: str, session: _Session, user: _User) -> None:
+    """Record that this set has been built.
+
+    **Separate from the invitations, because it is separate work.** Owner, 2026-09-03:
+    *"it takes time and effort to build them so that's different from the invites."* A set can
+    be built with nobody invited yet, and every character can be invited to a set the user
+    never told us they built — neither implies the other.
+
+    Idempotent, like the invitation endpoints.
+    """
+    if await session.get(FurnishingSuite, suite_id) is None:
+        raise HTTPException(status_code=404, detail="no such furnishing set")
+    existing = await session.get(
+        TeapotBuilt, {"owner_id": user.id, "suite_id": suite_id},
+    )
+    if existing is None:
+        session.add(TeapotBuilt(owner_id=user.id, suite_id=suite_id))
+        await session.commit()
+
+
+@router.delete("/suites/{suite_id}/built", status_code=204)
+async def mark_not_built(suite_id: str, session: _Session, user: _User) -> None:
+    """Un-mark a set as built — a set can be dismantled, and a tick can be a mistake."""
+    await session.execute(
+        delete(TeapotBuilt).where(
+            TeapotBuilt.owner_id == user.id, TeapotBuilt.suite_id == suite_id,
         ),
     )
     await session.commit()

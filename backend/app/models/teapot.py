@@ -98,3 +98,30 @@ class TeapotProgress(Base):
     done_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=text("now()"),
     )
+
+
+class TeapotBuilt(Base):
+    """A set this user has actually built in their teapot.
+
+    **A different axis from `TeapotProgress`, not a summary of it.** Owner, 2026-09-03:
+    *"it takes time and effort to build them so that's different from the invites."*
+
+    Building costs materials and time; inviting a character to a set already standing costs a
+    walk. So a built set with three characters left to invite is the *cheapest* 60 primogems
+    on the page, and an unbuilt one with three is the same reward for much more work — a
+    distinction the tracker cannot draw without this table.
+
+    Its absence is the default: nothing is written for a set nobody has built.
+    """
+
+    __tablename__ = "teapot_built"
+
+    owner_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True,
+    )
+    suite_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("furnishing_suites.id", ondelete="CASCADE"), primary_key=True,
+    )
+    built_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()"),
+    )

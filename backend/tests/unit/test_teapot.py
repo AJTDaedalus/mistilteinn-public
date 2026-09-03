@@ -138,3 +138,102 @@ def test_the_order_is_the_same_one_the_reward_would_give(monkeypatch) -> None:
 
     assert [row.suite_id for row in rows] == without
     assert rows[0].remaining_primogems == 3 * 999
+
+
+# ── built is a separate axis from invited ───────────────────────────────────
+
+
+def test_a_set_can_be_built_with_nobody_invited() -> None:
+    """Owner: *"it takes time and effort to build them so that's different from the
+    invites."* Building and inviting are separate work and neither implies the other."""
+    rows = progress_for([suite("s1", "Camp", ["a"])], {"a"}, set(), {"s1"})
+
+    assert rows[0].built is True
+    assert rows[0].remaining == 1, "building it does not invite anybody"
+
+
+def test_a_set_can_be_fully_invited_without_being_marked_built() -> None:
+    """The user may simply not have told us. An inferred `built` would be a claim the data
+    does not support."""
+    rows = progress_for([suite("s1", "Camp", ["a"])], {"a"}, {("s1", "a")}, set())
+
+    assert rows[0].built is False
+    assert rows[0].done is True
+
+
+def test_at_equal_reward_the_set_already_built_comes_first() -> None:
+    """**A real preference, not a tidy-up.** Two sets worth 40 primogems are not equal work
+    if one is already standing in your teapot and the other needs materials."""
+    rows = progress_for(
+        [suite("s1", "Zzz Unbuilt", ["a", "b"]), suite("s2", "Aaa Built", ["a", "b"])],
+        {"a", "b"},
+        set(),
+        {"s2"},
+    )
+
+    assert [row.name for row in rows] == ["Aaa Built", "Zzz Unbuilt"]
+
+
+def test_being_built_never_outranks_a_bigger_reward() -> None:
+    """The primary order is still gains for this user; built is only a tie-break."""
+    rows = progress_for(
+        [suite("s1", "Built But Small", ["a"]), suite("s2", "Unbuilt But Big", ["a", "b"])],
+        {"a", "b"},
+        set(),
+        {"s1"},
+    )
+
+    assert [row.name for row in rows] == ["Unbuilt But Big", "Built But Small"]
+
+
+def test_ordering_counts_only_characters_this_user_owns_and_has_not_invited() -> None:
+    """The owner's headline ask: *"ordering by the highest-gains sets for a given user."*
+
+    A set favoured by six characters you do not have ranks below one favoured by a single
+    character you do.
+    """
+    rows = progress_for(
+        [
+            suite("s1", "Six You Lack", ["p", "q", "r", "s", "t", "u"]),
+            suite("s2", "One You Have", ["a"]),
+        ],
+        {"a"},
+        set(),
+        set(),
+    )
+
+    assert [row.name for row in rows] == ["One You Have", "Six You Lack"]
+
+
+# ── the capture's own shape ─────────────────────────────────────────────────
+
+
+def test_every_favouring_character_favours_exactly_two_sets() -> None:
+    """**Read off the committed capture, not off a database.**
+
+    The first version of this asked the *test* database, which has no seeded suites — so it
+    counted zero characters, found zero violations, and passed by measuring nothing. This repo
+    has shipped that exact shape before.
+
+    The invariant belongs to the capture: all 116 characters with a favourite have exactly
+    two, which is what the wiki's *"up to 40 Primogems per character"* means and why progress
+    is keyed per character per set. A capture that broke this would change what the tracker
+    counts.
+    """
+    import json
+    from collections import Counter
+    from pathlib import Path
+
+    published = json.loads(
+        (Path("app/data/teapot/suite.json")).read_text(encoding="utf-8"),
+    )
+    per_character = Counter(
+        character
+        for entry in published.values()
+        for character in (entry.get("favorite") or [])
+    )
+
+    assert per_character, "the capture names no favourites at all — it is not being read"
+    assert len(per_character) == 116
+    odd = {c: n for c, n in per_character.items() if n != 2}
+    assert not odd, f"these characters favour a number of sets other than two: {odd}"

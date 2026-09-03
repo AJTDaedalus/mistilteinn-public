@@ -34,7 +34,12 @@ from app.models.seed_provenance import SeedRun
 from app.models.session import Session
 from app.models.sim_run import SimRun
 from app.models.team import Team
-from app.models.teapot import FurnishingSuite, FurnishingSuiteFavorite, TeapotProgress
+from app.models.teapot import (
+    FurnishingSuite,
+    FurnishingSuiteFavorite,
+    TeapotBuilt,
+    TeapotProgress,
+)
 from app.models.user import User
 from app.models.weapon import OwnedWeapon, Weapon, WeaponRefinement
 
@@ -68,6 +73,7 @@ __all__ = [
     "TalentScaling",
     "TalentType",
     "Team",
+    "TeapotBuilt",
     "TeapotProgress",
     "TimestampMixin",
     "User",

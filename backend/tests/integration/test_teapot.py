@@ -240,3 +240,68 @@ async def test_the_reward_constant_is_published_so_a_client_can_show_its_working
     assert body["reward_per_character"] == 20
     row = next(s for s in body["suites"] if s["name"] == "Worth Forty")
     assert row["remaining_primogems"] == 40
+
+
+async def test_a_set_can_be_marked_built(
+    authed_client: AsyncClient, db_session, authed_user,
+):
+    """Owner: *"give users the way to mark sets 'complete' as having been built."*"""
+    ids = await _any_characters(db_session, 1)
+    suite = await _suite(db_session, "Constructed", ids)
+    await _own(db_session, authed_user, ids[0])
+
+    marked = await authed_client.put(f"{TEAPOT}/suites/{suite.id}/built")
+    assert marked.status_code == 204
+
+    body = (await authed_client.get(f"{TEAPOT}/suites")).json()
+    row = next(s for s in body["suites"] if s["name"] == "Constructed")
+    assert row["built"] is True
+    assert row["remaining"] == 1, "building it invites nobody"
+
+
+async def test_built_and_invited_are_independent(
+    authed_client: AsyncClient, db_session, authed_user,
+):
+    """Neither implies the other: a set can stand with nobody invited, and every character can
+    be invited to a set the user never told us they built."""
+    ids = await _any_characters(db_session, 1)
+    suite = await _suite(db_session, "Independent", ids)
+    await _own(db_session, authed_user, ids[0])
+
+    await authed_client.put(f"{TEAPOT}/suites/{suite.id}/invited/{ids[0]}")
+
+    body = (await authed_client.get(f"{TEAPOT}/suites")).json()
+    row = next(s for s in body["suites"] if s["name"] == "Independent")
+    assert row["done"] is True
+    assert row["built"] is False
+
+
+async def test_a_built_set_can_be_un_marked(
+    authed_client: AsyncClient, db_session, authed_user,
+):
+    """A set can be dismantled, and a tick can be a mistake."""
+    ids = await _any_characters(db_session, 1)
+    suite = await _suite(db_session, "Dismantled", ids)
+    await authed_client.put(f"{TEAPOT}/suites/{suite.id}/built")
+
+    removed = await authed_client.delete(f"{TEAPOT}/suites/{suite.id}/built")
+    assert removed.status_code == 204
+
+    body = (await authed_client.get(f"{TEAPOT}/suites")).json()
+    assert next(s for s in body["suites"] if s["name"] == "Dismantled")["built"] is False
+
+
+async def test_marking_a_set_built_twice_is_not_an_error(
+    authed_client: AsyncClient, db_session, authed_user,
+):
+    ids = await _any_characters(db_session, 1)
+    suite = await _suite(db_session, "Twice Built", ids)
+    await authed_client.put(f"{TEAPOT}/suites/{suite.id}/built")
+
+    assert (await authed_client.put(f"{TEAPOT}/suites/{suite.id}/built")).status_code == 204
+
+
+async def test_marking_a_set_that_does_not_exist_as_built_says_so(
+    authed_client: AsyncClient,
+):
+    assert (await authed_client.put(f"{TEAPOT}/suites/nope/built")).status_code == 404

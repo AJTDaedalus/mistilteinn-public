@@ -15,6 +15,11 @@ and the rollback put prod back.
 | **With a `favorite` list** | 79 |
 | **Distinct characters favouring one** | 116 |
 
+**Every one of the 116 characters favours exactly two sets** — measured over the seeded data,
+not assumed. That corroborates the reward model independently: the wiki's *"up to 40 Primogems
+per character"* is two sets at 20 each, and it is why progress has to be keyed **per character
+per set**. A character invited to one of their two is still owed the other.
+
 `favorite` holds **nanoka character ids** — the same ones `characters.nanoka_id` carries, which
 is what lets the tracker join to a user's owned roster with no translation. Verified against
 the seeded database rather than assumed: all **232** favourite rows resolve.

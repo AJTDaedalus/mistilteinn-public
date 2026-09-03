@@ -75,6 +75,13 @@ class SuiteProgress:
     #: Shown rather than hidden: it is why a set can be worth less than its favourite count
     #: suggests, and it is what changes when the user pulls that character.
     unowned: tuple[str, ...]
+    #: Has the user actually built this set?
+    #:
+    #: **A different axis from the invitations, not a summary of them.** Building costs
+    #: materials and time; inviting to a set already standing costs a walk. So a built set
+    #: with three characters left is the cheapest reward on the page, and an unbuilt one with
+    #: three is the same primogems for much more work.
+    built: bool = False
 
     @property
     def done(self) -> bool:
@@ -101,20 +108,29 @@ class SuiteProgress:
 
 
 def rank(rows: Iterable[SuiteProgress]) -> list[SuiteProgress]:
-    """Most worth doing first.
+    """Most worth doing first, for **this** user.
 
-    Ordered by `remaining`, which is the same order `remaining × reward` would give: the
-    reward is one constant for every character, and a positive constant multiplier cannot
-    change a ranking. Ties break on name so the list is stable between loads — an order that
-    shuffles under the reader is one they stop trusting.
+    Ordered by `remaining` — characters who favour the set, whom the user **owns**, and who
+    have **not been invited yet**. That is the owner's ask exactly: *"ordering by the
+    highest-gains sets for a given user."* A set favoured by six characters you do not have
+    ranks below one favoured by a single character you do.
+
+    It is also the order `remaining × reward` would give, because the reward is one constant
+    per character and a positive multiplier cannot change a ranking.
+
+    **Ties break on already-built first**, and that is a real preference rather than a
+    tidy-up: two sets worth 60 primogems are not equal work if one is already standing in
+    your teapot and the other needs materials. Then on name, so the list is stable between
+    loads — an order that shuffles under the reader is one they stop trusting.
     """
-    return sorted(rows, key=lambda row: (-row.remaining, row.name.lower()))
+    return sorted(rows, key=lambda row: (-row.remaining, not row.built, row.name.lower()))
 
 
 def progress_for(
     suites: Iterable[Mapping[str, object]],
     owned_character_ids: set[str],
     invited: set[tuple[str, str]],
+    built_suite_ids: set[str] | None = None,
 ) -> list[SuiteProgress]:
     """Build the tracker's rows from the catalogue and this user's state.
 
@@ -122,10 +138,13 @@ def progress_for(
     that is how the reward is given. The same character invited to one of their two favourite
     sets is still owed the other.
 
+    `built_suite_ids` is the separate axis: which sets this user has actually constructed.
+
     `suites` carries `favorite` as **nanoka character ids**, which is what
     `owned_character_ids` holds too — the join needs no translation, which is the finding that
     made this feature cheap.
     """
+    already_built = built_suite_ids or set()
     rows = []
     for suite in suites:
         suite_id = str(suite["id"])
@@ -140,5 +159,6 @@ def progress_for(
             available=tuple(sorted(owned - already)),
             completed=tuple(sorted(already)),
             unowned=tuple(sorted(c for c in favourites if c not in owned_character_ids)),
+            built=suite_id in already_built,
         ))
     return rank(rows)

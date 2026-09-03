@@ -138,6 +138,8 @@ _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
         ),
         None,
     ),
+    ("PUT", "/api/v1/teapot/suites/00000000-0000-0000-0000-000000000001/built", {}),
+    ("DELETE", "/api/v1/teapot/suites/00000000-0000-0000-0000-000000000001/built", None),
     # saved optimization runs — DESIGN_account_tracking.md Track 2
     ("GET", "/api/v1/optimization-runs", None),
     ("GET", "/api/v1/optimization-runs/public", None),

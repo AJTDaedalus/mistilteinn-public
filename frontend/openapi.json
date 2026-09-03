@@ -3693,6 +3693,86 @@
         }
       }
     },
+    "/api/v1/teapot/suites/{suite_id}/built": {
+      "put": {
+        "tags": [
+          "teapot"
+        ],
+        "summary": "Mark Built",
+        "description": "Record that this set has been built.\n\n**Separate from the invitations, because it is separate work.** Owner, 2026-09-03:\n*\"it takes time and effort to build them so that's different from the invites.\"* A set can\nbe built with nobody invited yet, and every character can be invited to a set the user\nnever told us they built \u2014 neither implies the other.\n\nIdempotent, like the invitation endpoints.",
+        "operationId": "mark_built_api_v1_teapot_suites__suite_id__built_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "suite_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Suite Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "teapot"
+        ],
+        "summary": "Mark Not Built",
+        "description": "Un-mark a set as built \u2014 a set can be dismantled, and a tick can be a mistake.",
+        "operationId": "mark_not_built_api_v1_teapot_suites__suite_id__built_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "suite_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Suite Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/sim-runs": {
       "get": {
         "tags": [
@@ -9588,6 +9668,10 @@
             "type": "array",
             "title": "Unowned"
           },
+          "built": {
+            "type": "boolean",
+            "title": "Built"
+          },
           "done": {
             "type": "boolean",
             "title": "Done"
@@ -9617,6 +9701,7 @@
           "available",
           "completed",
           "unowned",
+          "built",
           "done",
           "remaining"
         ],

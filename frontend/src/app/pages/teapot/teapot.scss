@@ -28,6 +28,16 @@
 
 .teapot__head { display: flex; align-items: baseline; gap: var(--space-3); }
 
+/* Its own control, because building a set is its own work. */
+.teapot__built {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: 0 0 auto;
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+}
+
 .teapot__chars {
   display: flex;
   flex-wrap: wrap;

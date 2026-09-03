@@ -19,6 +19,20 @@ export class TeapotService {
   }
 
   /**
+   * Record — or un-record — that this set has been **built**.
+   *
+   * A different axis from the invitations: building costs materials and time, inviting to a
+   * set already standing costs a walk.
+   */
+  async setBuilt(suiteId: string, built: boolean): Promise<void> {
+    const params = { params: { path: { suite_id: suiteId } } };
+    const { error } = built
+      ? await this.api.PUT('/api/v1/teapot/suites/{suite_id}/built', params)
+      : await this.api.DELETE('/api/v1/teapot/suites/{suite_id}/built', params);
+    if (error) throw error;
+  }
+
+  /**
    * Record — or un-record — that one character has been invited to one set.
    *
    * **Per character per set**, because that is how the reward is given: a set favoured by

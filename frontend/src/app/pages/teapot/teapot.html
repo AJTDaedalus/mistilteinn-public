@@ -50,6 +50,18 @@
       @for (row of visible(); track row.suite_id) {
         <li class="teapot__row" [class.teapot__row--done]="row.done">
           <div class="teapot__head">
+            <!-- **Built is separate work from inviting**, so it gets its own control rather
+                 than being inferred from the ticks below. -->
+            <label class="teapot__built" [title]="row.built ? 'Built' : 'Not built yet'">
+              <input
+                type="checkbox"
+                [checked]="row.built"
+                [disabled]="busyBuilding(row)"
+                (change)="toggleBuilt(row)"
+                [attr.aria-label]="'Mark ' + row.name + ' as built'"
+              />
+              built
+            </label>
             <span class="teapot__name">{{ row.name }}</span>
             <span class="teapot__where muted">{{ placement(row) }}</span>
             <span class="teapot__remaining">

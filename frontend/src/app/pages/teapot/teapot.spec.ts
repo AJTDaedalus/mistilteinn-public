@@ -7,7 +7,7 @@ import { TeapotPage } from './teapot';
 
 const suite = (over: Partial<SuiteRow> = {}): SuiteRow => ({
   suite_id: 's1', name: 'Adventurer Camp', icon: '', placement: 'O',
-  available: ['a'], completed: [], unowned: [], done: false,
+  available: ['a'], completed: [], unowned: [], built: false, done: false,
   remaining: 1, remaining_primogems: null,
   ...over,
 } as SuiteRow);
@@ -20,6 +20,7 @@ describe('TeapotPage', () => {
   let fixture: ComponentFixture<TeapotPage>;
   let suites: ReturnType<typeof vi.fn>;
   let setInvited: ReturnType<typeof vi.fn>;
+  let setBuilt: ReturnType<typeof vi.fn>;
 
   async function build(): Promise<void> {
     fixture = TestBed.createComponent(TeapotPage);
@@ -31,10 +32,11 @@ describe('TeapotPage', () => {
   beforeEach(async () => {
     suites = vi.fn().mockResolvedValue(read());
     setInvited = vi.fn().mockResolvedValue(undefined);
+    setBuilt = vi.fn().mockResolvedValue(undefined);
     await TestBed.configureTestingModule({
       imports: [TeapotPage],
       providers: [
-        { provide: TeapotService, useValue: { suites, setInvited } },
+        { provide: TeapotService, useValue: { suites, setInvited, setBuilt } },
         {
           provide: CatalogueService,
           useValue: {
@@ -214,5 +216,39 @@ describe('TeapotPage', () => {
     await build();
 
     expect(fixture.nativeElement.querySelectorAll('.chip--unowned').length).toBe(2);
+  });
+});
+
+
+describe('TeapotPage — built is its own axis', () => {
+  // Owner: *"it takes time and effort to build them so that's different from the invites."*
+  it('marks a set built without inviting anybody', async () => {
+    const suites = vi.fn().mockResolvedValue(read());
+    const setBuilt = vi.fn().mockResolvedValue(undefined);
+    await TestBed.configureTestingModule({
+      imports: [TeapotPage],
+      providers: [
+        {
+          provide: TeapotService,
+          useValue: { suites, setBuilt, setInvited: vi.fn() },
+        },
+        {
+          provide: CatalogueService,
+          useValue: { listCharacters: vi.fn().mockResolvedValue({ items: [] }) },
+        },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(TeapotPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector('.teapot__built input').click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(setBuilt).toHaveBeenCalledWith('s1', true);
+    // Building it invites nobody, so the reward is untouched.
+    expect(fixture.nativeElement.querySelectorAll('.chip--available').length).toBe(1);
   });
 });

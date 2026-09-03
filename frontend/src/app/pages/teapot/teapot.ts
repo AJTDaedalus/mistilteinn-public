@@ -154,6 +154,36 @@ export class TeapotPage {
   }
 
   /**
+   * Mark a set as built, or un-mark it.
+   *
+   * **Separate work from inviting**, so a separate control. Optimistic and reverted on
+   * failure, like the invitation ticks.
+   */
+  protected async toggleBuilt(row: SuiteRow): Promise<void> {
+    const next = !row.built;
+    this.busy.set(`${row.suite_id}/built`);
+    this.applyBuilt(row.suite_id, next);
+    try {
+      await this.teapot.setBuilt(row.suite_id, next);
+    } catch (caught) {
+      this.applyBuilt(row.suite_id, !next);
+      this.error.set(apiErrorMessage(caught));
+    } finally {
+      this.busy.set(null);
+    }
+  }
+
+  private applyBuilt(suiteId: string, built: boolean): void {
+    this.rows.update((rows) => rows.map(
+      (row) => (row.suite_id === suiteId ? { ...row, built } : row),
+    ));
+  }
+
+  protected busyBuilding(row: SuiteRow): boolean {
+    return this.busy() === `${row.suite_id}/built`;
+  }
+
+  /**
    * A character's display name.
    *
    * Falls back to the nanoka id, which is what the tracker holds. **Not a hard failure**: a
