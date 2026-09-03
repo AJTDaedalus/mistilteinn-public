@@ -63,6 +63,24 @@ class RotationStep(BaseModel):
     #: Meaningless without `group`, and refused there rather than ignored — a repeat count on
     #: an ungrouped step is a user believing something is happening that is not.
     group_repeat: int = Field(default=1, ge=1, le=MAX_REPEAT)
+    #: A gcsim condition guarding the group this step is in, or `""` for an unguarded one.
+    #:
+    #: **A block, not a per-step flag, and this config is why.** The cheap model is a condition
+    #: on each step, ANDed — `if A { skill; }` then `if A && B { burst; }`. gcsim evaluates a
+    #: block's condition **once, on entry**; that form evaluates `A` again. And `A` changes in
+    #: between: `internal/characters/flins/skill.go:56` is `c.DeleteStatus(skillKey)`, so
+    #: Flins's skill deletes the status its own block is guarded on. Flattened, the burst would
+    #: never fire — and the import would succeed, carrying the author's name and simulating to
+    #: a different number.
+    #:
+    #: Carried on **every** member like `group_repeat`, and the members of a group must agree.
+    #: Nesting rides on `group` being a path: `"flame/energy"` is a block inside a block, and
+    #: the compiler emits one `if` per segment, outermost first.
+    #:
+    #: `DESIGN_conditional_steps.md` states the vocabulary. Everything outside it is refused by
+    #: name, because a grammar that accepts what it cannot faithfully re-emit is how a rotation
+    #: silently becomes a different one.
+    group_condition: str = Field(default="", max_length=120)
 
     @field_validator("action")
     @classmethod

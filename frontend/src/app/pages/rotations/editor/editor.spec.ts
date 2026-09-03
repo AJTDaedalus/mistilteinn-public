@@ -424,7 +424,7 @@ describe('RotationEditor — copy and paste', () => {
     // kept and flagged. Dropping it would delete the user's work to make a save succeed.
     const page = await withSteps();
     page['clipboard'].set([
-      { character: 'nobody', action: 'skill', repeat: 1, note: '', group: '', group_repeat: 1 },
+      { character: 'nobody', action: 'skill', repeat: 1, note: '', group: '', group_repeat: 1, group_condition: '' },
     ]);
 
     page['pasteClipboard']();
@@ -776,7 +776,7 @@ describe('RotationEditor — pasting into a group', () => {
     page['onPick']({ index: 1, extend: true });
     page['groupSelection'](2);
     page['clipboard'].set([
-      { character: '10000002', action: 'attack', repeat: 1, note: '', group: '', group_repeat: 1 },
+      { character: '10000002', action: 'attack', repeat: 1, note: '', group: '', group_repeat: 1, group_condition: '' },
     ]);
     page['onPick']({ index: 0, extend: false });
 
@@ -794,7 +794,7 @@ describe('RotationEditor — saving, compiling and dirtiness', () => {
     page['addStep']();
 
     expect(page['steps']()).toEqual([
-      { character: '10000002', action: 'skill', repeat: 1, note: '', group: '', group_repeat: 1 },
+      { character: '10000002', action: 'skill', repeat: 1, note: '', group: '', group_repeat: 1, group_condition: '' },
     ]);
   });
 
@@ -879,7 +879,7 @@ describe('RotationEditor — saving, compiling and dirtiness', () => {
     const page = editorWith({ create, update } as unknown as RotationsService);
     page['load']({
       id: 'rot-1', name: 'Saved', team_id: 'team-1', description: '',
-      steps: [{ character: '10000002', action: 'burst', repeat: 1, note: '', group: '', group_repeat: 1 }],
+      steps: [{ character: '10000002', action: 'burst', repeat: 1, note: '', group: '', group_repeat: 1, group_condition: '' }],
       visibility: 'private' as const,
     });
     page['name'].set('Renamed');
@@ -889,7 +889,7 @@ describe('RotationEditor — saving, compiling and dirtiness', () => {
     expect(create).not.toHaveBeenCalled();
     expect(update).toHaveBeenCalledWith('rot-1', {
       name: 'Renamed',
-      steps: [{ character: '10000002', action: 'burst', repeat: 1, note: '', group: '', group_repeat: 1 }],
+      steps: [{ character: '10000002', action: 'burst', repeat: 1, note: '', group: '', group_repeat: 1, group_condition: '' }],
     });
   });
 
@@ -918,7 +918,7 @@ describe('RotationEditor — saving, compiling and dirtiness', () => {
     const page = editorWith({ compile } as unknown as RotationsService);
     page['load']({
       id: 'rot-1', name: 'Saved', team_id: 'team-1', description: '',
-      steps: [{ character: '10000002', action: 'burst', repeat: 1, note: '', group: '', group_repeat: 1 }],
+      steps: [{ character: '10000002', action: 'burst', repeat: 1, note: '', group: '', group_repeat: 1, group_condition: '' }],
       visibility: 'private' as const,
     });
     expect(page['dirty']()).toBe(false);
@@ -948,7 +948,7 @@ describe('RotationEditor — saving, compiling and dirtiness', () => {
     } as unknown as RotationsService);
     page['load']({
       id: 'rot-1', name: 'Saved', team_id: 'team-1', description: '',
-      steps: [{ character: '10000002', action: 'burst', repeat: 1, note: '', group: '', group_repeat: 1 }],
+      steps: [{ character: '10000002', action: 'burst', repeat: 1, note: '', group: '', group_repeat: 1, group_condition: '' }],
       visibility: 'private' as const,
     });
     page['setStep'](0, { repeat: 4 });

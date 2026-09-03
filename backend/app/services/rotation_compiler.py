@@ -247,9 +247,90 @@ def compile_rotation(
     # `active` is the **first step's** character, not the team's first slot. Otherwise the
     # rotation opens with an implicit swap gcsim has to pay for, before the user's first
     # intended action — a cost they did not write and cannot see.
-    lines = [f"active {keys[0]};"]
-    lines.extend(_statement(key, step) for key, step in zip(keys, steps, strict=True))
+    lines = [f"active {keys[0]};", *_blocked(keys, steps)]
     return "\n".join(lines) + "\n"
+
+
+def _blocked(keys: Sequence[str], steps: Sequence[Mapping[str, object]]) -> list[str]:
+    """The statements, wrapped in the `if` blocks their groups are guarded by.
+
+    **A block, not a condition per statement.** gcsim evaluates a guard once on entry, and an
+    action inside can change what it tested — `internal/characters/flins/skill.go:56` deletes
+    the very status its block is guarded on. Emitting `if A { x; }` then `if A && B { y; }`
+    would re-test `A` after `x` cleared it, so the rotation would run differently while looking
+    like the one that was written. `DESIGN_conditional_steps.md` argues it at length.
+
+    Nesting comes from `group` being a path: `"flame/energy"` is a block inside a block. Blocks
+    are compared as a prefix, so consecutive steps in the same one stay in it and a change
+    closes exactly what it must.
+    """
+    lines: list[str] = []
+    open_blocks: list[tuple[str, str]] = []
+    conditions = _conditions_by_path(steps)
+
+    for key, step in zip(keys, steps, strict=True):
+        wanted = _guards(step, conditions)
+        shared = 0
+        while (
+            shared < len(open_blocks)
+            and shared < len(wanted)
+            and open_blocks[shared] == wanted[shared]
+        ):
+            shared += 1
+        while len(open_blocks) > shared:
+            open_blocks.pop()
+            lines.append("    " * len(open_blocks) + "}")
+        for block in wanted[shared:]:
+            lines.append("    " * len(open_blocks) + f"if {block[1]} {{")
+            open_blocks.append(block)
+        lines.append("    " * len(open_blocks) + _statement(key, step))
+
+    while open_blocks:
+        open_blocks.pop()
+        lines.append("    " * len(open_blocks) + "}")
+    return lines
+
+
+def _conditions_by_path(steps: Sequence[Mapping[str, object]]) -> dict[str, str]:
+    """Which condition guards each block, gathered across every step in it.
+
+    **A step carries only its innermost condition**, because that is the block it sits directly
+    in — an outer block's condition arrives on the steps directly inside *it*. So the chain has
+    to be assembled from the whole rotation rather than read off one step.
+
+    Reading it off one step was the first draft, and it produced two *siblings* where the
+    author wrote a nest: the outer block closed before the inner opened. That is the flattening
+    `DESIGN_conditional_steps.md` refuses, arrived at by accident rather than by choice, and it
+    is why this function exists.
+    """
+    found: dict[str, str] = {}
+    for step in steps:
+        path = str(step.get("group") or "")
+        condition = str(step.get("group_condition") or "")
+        if path and condition:
+            found.setdefault(path, condition)
+    return found
+
+
+def _guards(
+    step: Mapping[str, object], conditions: Mapping[str, str],
+) -> list[tuple[str, str]]:
+    """`(path, condition)` for every guarded block this step is inside, outermost first.
+
+    A segment no step guards is a plain group — `group_repeat`'s concern, already expanded by
+    `unroll` before this runs — and opens no block.
+    """
+    path = str(step.get("group") or "")
+    if not path:
+        return []
+    chain: list[tuple[str, str]] = []
+    prefix = ""
+    for segment in [part for part in path.split("/") if part]:
+        prefix = f"{prefix}/{segment}" if prefix else segment
+        condition = conditions.get(prefix)
+        if condition:
+            chain.append((prefix, condition))
+    return chain
 
 
 def rotation_signature(

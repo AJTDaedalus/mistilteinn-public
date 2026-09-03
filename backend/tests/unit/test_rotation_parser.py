@@ -311,11 +311,11 @@ def test_what_the_compiler_emits_is_what_the_parser_reads():
     """
     steps = [
         {"character": "10000090", "action": "skill_hold", "repeat": 1, "note": "",
-         "group": "", "group_repeat": 1},
+         "group": "", "group_repeat": 1, "group_condition": ""},
         {"character": "10000090", "action": "burst", "repeat": 1, "note": "",
-         "group": "", "group_repeat": 1},
+         "group": "", "group_repeat": 1, "group_condition": ""},
         {"character": "10000090", "action": "attack", "repeat": 3, "note": "",
-         "group": "", "group_repeat": 1},
+         "group": "", "group_repeat": 1, "group_condition": ""},
     ]
     roster = {"10000090": CHEVREUSE}
 
@@ -461,10 +461,59 @@ def test_the_same_unreadable_line_is_refused_once_with_a_count() -> None:
     nobody finishes reading. The count is kept because "six times" says something "once" does
     not: it is *inside* the loop rather than beside it.
     """
-    block = "if .flins.status.manifest-flame {\n  flins skill;\n}\n"
+    block = "if .flins.nightsoul > 40 {\n  flins skill;\n}\n"
     with pytest.raises(RotationParseError) as refused:
         parse_action_block(block * 3, [_Character("10000001", "Flins", "Pyro")])
 
     message = str(refused.value)
-    assert message.count("manifest-flame") == 1
+    assert message.count("nightsoul") == 1
     assert "repeated 3 times" in message
+
+
+def test_a_guarded_block_survives_the_round_trip_with_its_nesting() -> None:
+    """**The property the whole design rests on.**
+
+    From the owner's config (`gcsim.app/db/bgHjR7MP7Fkn`): a status guard with a nested energy
+    threshold. gcsim evaluates a guard **once on entry**, and Flins's skill deletes the very
+    status its block is guarded on (`internal/characters/flins/skill.go:56`) — so a model that
+    flattened the nest into two conditions ANDed per step would re-test the status *after* the
+    skill cleared it, the burst would never fire, and the import would succeed while simulating
+    to a different number.
+
+    Import, compile, import again: identical steps, and the block re-emitted as a nest.
+    """
+    config = (
+        "active flins;\n"
+        "flins attack;\n"
+        "if .flins.status.manifest-flame {\n"
+        "    flins skill;\n"
+        "    if .flins.energy >= 30 {\n"
+        "        flins burst;\n"
+        "    }\n"
+        "}\n"
+        "flins dash;\n"
+    )
+    flins = _Character("10000001", "Flins", "Pyro")
+
+    steps = parse_action_block(config, [flins])
+    again = parse_action_block(compile_rotation(steps, {"10000001": flins}), [flins])
+
+    assert steps == again
+    guarded = [step for step in steps if step["group_condition"]]
+    assert [(s["action"], s["group"], s["group_condition"]) for s in guarded] == [
+        ("skill", "guard1", ".flins.status.manifest-flame"),
+        ("burst", "guard1/guard2", ".flins.energy >= 30"),
+    ]
+
+
+def test_a_condition_outside_the_vocabulary_is_still_refused_by_name() -> None:
+    """**The grammar accepts only what it can faithfully re-emit.**
+
+    Readiness, energy and status are read. Anything else — a Nightsoul threshold, a comparison
+    between two characters, a user-defined predicate — is refused and named, because a grammar
+    that accepts what it cannot re-emit is how a rotation silently becomes a different one.
+    """
+    config = "if .flins.nightsoul > 40 {\n  flins skill;\n}\n"
+
+    with pytest.raises(RotationParseError, match="nightsoul"):
+        parse_action_block(config, [_Character("10000001", "Flins", "Pyro")])

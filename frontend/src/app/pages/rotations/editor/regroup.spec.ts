@@ -6,7 +6,7 @@ import type { RotationStep } from '../rotations.service';
 function step(action: string, group = '', groupRepeat = 1): RotationStep {
   return {
     character: '10000002', action, repeat: 1, note: '',
-    group, group_repeat: groupRepeat,
+    group, group_repeat: groupRepeat, group_condition: '',
   } as RotationStep;
 }
 
@@ -36,7 +36,7 @@ describe('regroup', () => {
   });
 
   it('resets the repeat on what it releases', () => {
-    // A released step carrying `group_repeat: 2` is a number nothing reads — and the schema
+    // A released step carrying `group_repeat: 2, group_condition: ''` is a number nothing reads — and the schema
     // refuses one on an ungrouped step, so leaving it would fail the next save.
     const steps = [step('skill', 'g', 2), step('attack'), step('burst', 'g', 2)];
 

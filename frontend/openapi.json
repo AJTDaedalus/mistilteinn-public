@@ -4328,6 +4328,17 @@
             "maxItems": 2,
             "title": "Two Piece Set Ids"
           },
+          "weapon_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weapon Id"
+          },
           "energy_recharge": {
             "type": "number",
             "maximum": 4.0,
@@ -6885,6 +6896,12 @@
             "minimum": 1.0,
             "title": "Group Repeat",
             "default": 1
+          },
+          "group_condition": {
+            "type": "string",
+            "maxLength": 120,
+            "title": "Group Condition",
+            "default": ""
           }
         },
         "type": "object",

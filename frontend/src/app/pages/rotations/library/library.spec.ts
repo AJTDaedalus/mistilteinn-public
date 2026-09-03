@@ -66,7 +66,7 @@ describe('RotationLibrary', () => {
   const TEAM = OPTIONS.teams[0];
   const ROW = {
     id: 'lib-1', name: 'Freeze opener', description: '',
-    steps: [{ character: '10000002', action: 'burst' as const, repeat: 1, note: '', group: '', group_repeat: 1 }],
+    steps: [{ character: '10000002', action: 'burst' as const, repeat: 1, note: '', group: '', group_repeat: 1, group_condition: '' }],
     characters: ['10000002', '10000014'], like_count: 2, liked_by_me: false,
   };
 

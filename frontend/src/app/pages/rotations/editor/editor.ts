@@ -471,6 +471,9 @@ export class RotationEditor {
         note: '',
         group: inside?.group ?? '',
         group_repeat: inside?.group_repeat ?? 1,
+        // A step dropped into a guarded block is inside the guard, for the same reason it
+        // joins the group: the block it landed in is the one it looks like it landed in.
+        group_condition: inside?.group_condition ?? '',
       },
       ...current.slice(at),
     ]);
@@ -564,7 +567,11 @@ export class RotationEditor {
    */
   protected appendStep(character: string, action: RotationAction): void {
     this.steps.update((steps) => [
-      ...steps, { character, action, repeat: 1, note: '', group: '', group_repeat: 1 },
+      ...steps,
+      {
+        character, action, repeat: 1, note: '',
+        group: '', group_repeat: 1, group_condition: '',
+      },
     ]);
     this.touched();
   }

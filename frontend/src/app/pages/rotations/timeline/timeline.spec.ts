@@ -42,7 +42,7 @@ const DAHLIA: RosterCharacter = {
 
 function step(character: string, action: string, extra: Partial<RotationStep> = {}) {
   return {
-    character, action, repeat: 1, note: '', group: '', group_repeat: 1, ...extra,
+    character, action, repeat: 1, note: '', group: '', group_repeat: 1, group_condition: '', ...extra,
   } as RotationStep;
 }
 
@@ -157,8 +157,8 @@ describe('RotationTimeline — authored', () => {
 
   it('draws a group as one run with its repeat', () => {
     const el = render([
-      step('10000073', 'skill', { group: 'g', group_repeat: 3 }),
-      step('10000073', 'charge', { group: 'g', group_repeat: 3 }),
+      step('10000073', 'skill', { group: 'g', group_repeat: 3, group_condition: '' }),
+      step('10000073', 'charge', { group: 'g', group_repeat: 3, group_condition: '' }),
     ]);
 
     expect(el.querySelectorAll('.run')).toHaveLength(1);
@@ -168,7 +168,7 @@ describe('RotationTimeline — authored', () => {
   it('breaks a run at a group boundary even for the same character', () => {
     // A bracket drawn across the boundary would say the repeat covered the ungrouped step.
     const el = render([
-      step('10000073', 'skill', { group: 'g', group_repeat: 2 }),
+      step('10000073', 'skill', { group: 'g', group_repeat: 2, group_condition: '' }),
       step('10000073', 'charge'),
     ]);
 

@@ -79,6 +79,17 @@ _BARE = re.compile(
 #: The readiness condition this model *does* understand, for telling a branch it cannot
 #: express from a condition it cannot read. See `_why_refused`.
 _READY_CONDITION = re.compile(r"\.[a-z0-9]+\.[a-z_]+\.ready\b")
+#: The conditions a block may carry, and nothing else. `DESIGN_conditional_steps.md` states
+#: why the list is short: a grammar that accepts what it cannot faithfully re-emit is how a
+#: rotation silently becomes a different one, so anything outside this is refused by name.
+_BLOCK_CONDITION = re.compile(
+    r"^if\s+("
+    r"\.[a-z0-9]+\.[a-z_]+\.ready"
+    r"|\.[a-z0-9]+\.energy\s*(?:>=|<=|>|<|==)\s*\d+"
+    r"|\.[a-z0-9]+\.status\.[a-z0-9_-]+"
+    r")\s*\{$",
+)
+_CLOSE_BLOCK = re.compile(r"^\}$")
 _GATED = re.compile(
     r"^if\s+\.([a-z0-9]+)\.([a-z_]+)\.ready\s*\{\s*"
     r"([a-z0-9]+)\s+([a-z_]+)(?:\[([^\]]*)\])?(?::([^\s;]+))?\s*;\s*\}$",
@@ -109,13 +120,14 @@ def parse_action_block(config: str, characters: Iterable[Any]) -> list[dict[str,
 
     steps: list[dict[str, Any]] = []
     problems: list[str] = []
-    for line, group, group_repeat in body:
+    for line, group, group_repeat, condition in body:
         step, problem = _statement(line, by_key)
         if step is not None:
             # Carried on **every** member, because the schema requires the members of a group
             # to agree and refuses a repeat count on a step with no group.
             step["group"] = group
             step["group_repeat"] = group_repeat
+            step["group_condition"] = condition
             steps.append(step)
         else:
             problems.append(problem)
@@ -207,8 +219,43 @@ def _is_config(line: str) -> bool:
 _FOR_BOUND = re.compile(r"^for\s.*?<\s*(\d+)\s*;.*\{$")
 
 
-def _action_lines(lines: list[str]) -> list[tuple[str, str, int]]:
-    """Every action line, as `(line, group, group_repeat)`, in the order gcsim runs them.
+def _with_blocks(
+    lines: list[str], base_group: str, base_repeat: int,
+) -> list[tuple[str, str, int, str]]:
+    """Walk a run of lines, turning `if … { … }` into the group path each step is inside.
+
+    **A block, not a per-step flag.** gcsim evaluates a guard once on entry and an action
+    inside can change what it tested — `internal/characters/flins/skill.go:56` deletes the very
+    status its block is guarded on — so a rotation that flattened the nest would run
+    differently while looking like the one that was written.
+
+    Only the conditions in `_BLOCK_CONDITION` open a block. Anything else is left in place for
+    `_statement` to refuse **by name**, which is what makes an unimportable config say why
+    rather than arrive missing a guard nobody can see.
+    """
+    out: list[tuple[str, str, int, str]] = []
+    stack: list[str] = []
+    conditions: list[str] = []
+    unnamed = 0
+
+    for line in lines:
+        opened = _BLOCK_CONDITION.match(line)
+        if opened:
+            unnamed += 1
+            stack.append(f"guard{unnamed}")
+            conditions.append(opened.group(1))
+            continue
+        if _CLOSE_BLOCK.match(line) and stack:
+            stack.pop()
+            conditions.pop()
+            continue
+        group = "/".join([*( [base_group] if base_group else [] ), *stack])
+        out.append((line, group, base_repeat, conditions[-1] if conditions else ""))
+    return out
+
+
+def _action_lines(lines: list[str]) -> list[tuple[str, str, int, str]]:
+    """Every action line, as `(line, group, group_repeat, condition)`, in gcsim's own order.
 
     ## Three shapes, because real configs have three
 
@@ -257,7 +304,7 @@ def _action_lines(lines: list[str]) -> list[tuple[str, str, int]]:
     if not opens:
         # No loop: every non-config line is the rotation, once through, in order. Unreadable
         # ones are kept so `parse_action_block` can name them rather than drop them.
-        return [(line, "", 1) for line in lines if line and not _is_config(line)]
+        return _with_blocks([line for line in lines if line and not _is_config(line)], "", 1)
 
     start = opens[0]
     header = lines[start]
@@ -302,10 +349,12 @@ def _action_lines(lines: list[str]) -> list[tuple[str, str, int]]:
     # all legitimately precede the loop and carry no actions. The test is whether the line
     # reads as an action, asked with the same parser that reads the body — so the two can
     # never disagree about what an action is.
-    opener = [(line, "", 1) for line in lines[:start] if line and not _is_config(line)]
-    body = [
-        (line, "loop", repeat) for line in lines[start + 1 : closes[-1]] if line
-    ]
+    opener = _with_blocks(
+        [line for line in lines[:start] if line and not _is_config(line)], "", 1,
+    )
+    body = _with_blocks(
+        [line for line in lines[start + 1 : closes[-1]] if line], "loop", repeat,
+    )
     return opener + body
 
 

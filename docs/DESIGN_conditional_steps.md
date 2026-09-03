@@ -1,6 +1,12 @@
 # DESIGN — conditional steps in a rotation
 
-**Status:** design, 2026-09-02. Nothing built.
+**Status:** built 2026-09-02, the import half. `group` is a path, `group_condition` rides
+beside `group_repeat`, the compiler emits nested `if` blocks and the parser reads them back.
+The owner's config (`gcsim.app/db/bgHjR7MP7Fkn`) imports as **180 steps, 12 guarded**, and
+the round trip is stable: import, compile, import again returns identical steps.
+
+**OQ-C1 is still open** — nothing authors a condition in the builder yet, so a guarded
+rotation can be imported and edited around but not written from scratch.
 
 ## Branch policy
 

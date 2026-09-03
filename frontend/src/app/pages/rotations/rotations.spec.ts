@@ -122,8 +122,8 @@ describe('RotationsPage', () => {
     const summary = page['summarise']({
       id: 'r', name: 'n', team_id: 't', description: '',
       steps: [
-        { character: 'a', action: 'attack', repeat: 3, note: '', group: '', group_repeat: 1 },
-        { character: 'a', action: 'burst', repeat: 1, note: '', group: '', group_repeat: 1 },
+        { character: 'a', action: 'attack', repeat: 3, note: '', group: '', group_repeat: 1, group_condition: '' },
+        { character: 'a', action: 'burst', repeat: 1, note: '', group: '', group_repeat: 1, group_condition: '' },
       ],
     } as never);
 
