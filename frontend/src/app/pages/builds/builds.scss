@@ -298,3 +298,13 @@
 }
 
 .rank .field__name { color: var(--ink-dim); }
+
+/* The ownership toggle. A record kept now so a later feature can rely on it having been kept
+   all along — the teapot tracker is the first thing that reads it. */
+.owned {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.owned small { display: block; color: var(--ink-dim); font-size: var(--text-xs); }

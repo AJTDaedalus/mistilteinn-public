@@ -1,0 +1,126 @@
+<section class="inspector" aria-label="Selected step">
+  @if (!node()) {
+    <p class="inspector__empty">Select a step to see its settings.</p>
+  } @else {
+    @if (carried()) {
+      <p class="inspector__carried">
+        Carried as written. gcsim runs this exactly as typed, and it is edited in the source
+        view rather than here.
+      </p>
+    }
+
+    @if (kind() === 'action') {
+      <label class="inspector__field">
+        Repeat
+        <input
+          type="number" min="1" max="99"
+          [value]="repeat()"
+          (change)="repeatChange.emit(+$any($event.target).value)"
+        />
+      </label>
+
+      <label class="inspector__field">
+        Note
+        <input
+          type="text" maxlength="200"
+          [value]="note()"
+          placeholder="why this step is here"
+          (change)="noteChange.emit($any($event.target).value)"
+        />
+      </label>
+
+      @if (params().length) {
+        <div class="inspector__params">
+          <span class="inspector__label">gcsim parameters</span>
+          <ul class="inspector__list">
+            @for (param of params(); track param[0]) {
+              <li><code>{{ param[0] }}={{ param[1] }}</code></li>
+            }
+          </ul>
+          <p class="inspector__hint">
+            Carried exactly as written. This builder offers no control for these, and changing
+            one would be a different move.
+          </p>
+        </div>
+      }
+    }
+
+    @if (kind() === 'loop' && bound() !== null) {
+      <label class="inspector__field">
+        Repeat this block
+        <input
+          type="number" min="1" max="99"
+          [value]="bound()"
+          (change)="boundChange.emit(+$any($event.target).value)"
+        />
+      </label>
+    }
+
+    @if (kind() === 'branch' || kind() === 'loop') {
+      <div class="inspector__condition">
+        <span class="inspector__label">Condition</span>
+        @for (row of rows(); track $index) {
+          <div class="inspector__row">
+            @if ($index > 0) {
+              <select
+                aria-label="Join"
+                (change)="setRow($index, { join: $any($event.target).value })"
+              >
+                <option value="&&" [selected]="row.join !== '||'">and</option>
+                <option value="||" [selected]="row.join === '||'">or</option>
+              </select>
+            }
+
+            <select
+              aria-label="Character"
+              (change)="setRow($index, { subject: $any($event.target).value, property: '' })"
+            >
+              <option value="" [selected]="!row.subject">character…</option>
+              @for (member of roster(); track member.nanoka_id) {
+                <option [value]="keyOf(member)" [selected]="row.subject === keyOf(member)">
+                  {{ member.name }}
+                </option>
+              }
+            </select>
+
+            <select
+              aria-label="Property"
+              (change)="setRow($index, { property: $any($event.target).value })"
+            >
+              <option value="" [selected]="!row.property">what about them…</option>
+              @for (offer of propertiesForRow(row); track offer.path) {
+                <option [value]="offer.path" [selected]="row.property === offer.path">
+                  {{ offer.label }}
+                </option>
+              }
+            </select>
+
+            @if (isNumeric(row)) {
+              <select
+                aria-label="Comparison"
+                (change)="setRow($index, { comparison: $any($event.target).value })"
+              >
+                @for (comparison of comparisons; track comparison) {
+                  <option [value]="comparison" [selected]="row.comparison === comparison">
+                    {{ comparison }}
+                  </option>
+                }
+              </select>
+              <input
+                type="number"
+                aria-label="Value"
+                [value]="row.value"
+                (change)="setRow($index, { value: $any($event.target).value })"
+              />
+            }
+
+            <button type="button" class="inspector__drop" (click)="removeRow($index)">
+              remove
+            </button>
+          </div>
+        }
+        <button type="button" class="inspector__add" (click)="addRow()">add condition</button>
+      </div>
+    }
+  }
+</section>

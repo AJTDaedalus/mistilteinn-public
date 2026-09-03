@@ -120,7 +120,21 @@ _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     ("POST", "/api/v1/rotations/00000000-0000-0000-0000-000000000001/compile", {}),
     # Importing reads a team's roster to map gcsim's character keys, so it is owned
     # for the same reason `compile` is: it would otherwise report whether a team exists.
+    # the teapot set tracker — DESIGN_account_tracking.md Track 3
+    ("GET", "/api/v1/teapot/suites", None),
+    ("PUT", "/api/v1/teapot/suites/00000000-0000-0000-0000-000000000001/done", {}),
+    ("DELETE", "/api/v1/teapot/suites/00000000-0000-0000-0000-000000000001/done", None),
+    # saved optimization runs — DESIGN_account_tracking.md Track 2
+    ("GET", "/api/v1/optimization-runs", None),
+    ("GET", "/api/v1/optimization-runs/public", None),
+    ("POST", "/api/v1/optimization-runs", {}),
+    ("GET", "/api/v1/optimization-runs/shared/00000000-0000-0000-0000-000000000001", None),
+    ("GET", "/api/v1/optimization-runs/00000000-0000-0000-0000-000000000001", None),
+    ("PATCH", "/api/v1/optimization-runs/00000000-0000-0000-0000-000000000001", {}),
+    ("DELETE", "/api/v1/optimization-runs/00000000-0000-0000-0000-000000000001", None),
     ("POST", "/api/v1/rotations/import", {}),
+    # The source view's every keystroke — Phase 7 of the rotation language.
+    ("POST", "/api/v1/rotations/validate", {}),
     # The link tier is owned for the same reason, and for one more: it makes this backend
     # fetch from gcsim on the caller's behalf, so an anonymous caller would be an open proxy
     # against a third party.

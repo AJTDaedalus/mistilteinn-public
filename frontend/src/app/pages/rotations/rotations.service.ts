@@ -13,6 +13,14 @@ export type TeamRoster = components['schemas']['TeamRoster'];
 export type RosterCharacter = components['schemas']['RosterCharacter'];
 /** One move a particular character can be given — the per-character vocabulary (T.3). */
 export type ActionOffer = components['schemas']['ActionOffer'];
+/** A rotation as a tree — what `steps` becomes once it can hold loops, branches and `fn`. */
+export type RotationTree = components['schemas']['RotationTree'];
+/** One problem with a rotation, positioned so the editor can underline it. */
+export type Diagnostic = components['schemas']['Diagnostic'];
+/** What `POST /rotations/validate` answers with. */
+export type RotationSourceRead = components['schemas']['RotationSourceRead'];
+/** One `fn` a rotation declares — authored as text, offered as a button. */
+export type DeclaredFunction = components['schemas']['DeclaredFunction'];
 
 /** The action a step may name — the ten the backend publishes, not a list restated here. */
 export type RotationAction = RotationStep['action'];
@@ -190,6 +198,25 @@ export class RotationsService {
    * `rewrites` is the other half: what the converter *did* change, in words, so a `for`
    * becoming a `while 1` is met here rather than in a damage number.
    */
+  /**
+   * Parse and check rotation source, saving nothing — the source view's every keystroke.
+   *
+   * **The parser is Python, so this is a round trip rather than a local call.** That is a
+   * deliberate cost: `DECISIONS.md` §32 allows a typed surface precisely because typed text
+   * goes through the *same* parser an imported config does, and a second implementation in
+   * TypeScript would be the second vocabulary the ruling refuses.
+   *
+   * It never throws for bad *rotation* text — half-typed source comes back as a tree with
+   * diagnostics. It does throw for a bad request, which is a different thing.
+   */
+  async validateSource(teamId: string, source: string): Promise<RotationSourceRead> {
+    const { data, error } = await this.api.POST('/api/v1/rotations/validate', {
+      body: { team_id: teamId, source },
+    });
+    if (error) throw error;
+    return data as RotationSourceRead;
+  }
+
   async importFromGcsim(
     teamId: string, config: string,
   ): Promise<{ steps: RotationStep[]; rewrites: string[] }> {

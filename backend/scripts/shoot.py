@@ -71,7 +71,7 @@ APP_ROUTES = (
 #: unphotographed just because nobody added it here.
 PREFERRED = (
     "/", "/inventory", "/my-weapons", "/builds", "/teams", "/rotations", "/optimize",
-    "/calculate", "/characters", "/weapons", "/artifact-sets", "/enemies",
+    "/calculate", "/teapot", "/characters", "/weapons", "/artifact-sets", "/enemies",
 )
 
 

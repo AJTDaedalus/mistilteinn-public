@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 DUPLICATE_SLOT_DETAIL = "A build cannot occupy more than one slot on the same team."
 
@@ -50,6 +50,9 @@ class TeamCreate(BaseModel):
     """Body for `POST /teams`."""
 
     name: str = ""
+
+    #: Why this team exists, in the user's own words.
+    notes: str = Field(default="", max_length=1000)
     build1_id: str
     build2_id: str | None = None
     build3_id: str | None = None
@@ -65,6 +68,9 @@ class TeamUpdate(BaseModel):
     """Body for `PATCH /teams/{id}` — all fields optional, partial update."""
 
     name: str | None = None
+
+    #: Why this team exists, in the user's own words.
+    notes: str | None = None
     build1_id: str | None = None
     build2_id: str | None = None
     build3_id: str | None = None
@@ -83,6 +89,9 @@ class TeamRead(BaseModel):
     """Response for team read endpoints."""
 
     id: str
+
+    #: Why this team exists, in the user's own words.
+    notes: str = Field(default="", max_length=1000)
     name: str
     build1_id: str | None
     build2_id: str | None

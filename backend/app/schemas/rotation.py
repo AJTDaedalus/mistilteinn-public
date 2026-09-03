@@ -15,7 +15,9 @@ from __future__ import annotations
 from pydantic import BaseModel, Field, field_validator
 
 from app.models.enums import Visibility
+from app.schemas.rotation_nodes import RotationTree
 from app.services.gcsim_keys import all_offerable_actions, authorable_actions
+from app.services.rotation_diagnostics import Diagnostic
 
 #: How many steps one rotation may hold.
 #:
@@ -453,6 +455,60 @@ class RotationImportLinkRequest(BaseModel):
     link: str = Field(..., min_length=1, max_length=512)
 
 
+class DeclaredFunction(BaseModel):
+    """One `fn` a rotation declares, as the builder needs to offer it."""
+
+    name: str
+    #: Its parameter names, in order. A call needs one argument each, and the builder can only
+    #: ask for them if it knows what they are called.
+    parameters: list[str] = []
+
+
+class RotationSourceRequest(BaseModel):
+    """Body for `POST /rotations/validate` — the source view's every keystroke.
+
+    Separate from `RotationImportRequest` because it means something different: an import is
+    a whole `.txt` file somebody else wrote, while this is the **rotation half** as the editor
+    holds it, sent back on change to be parsed and checked. Sharing one body would make the
+    two indistinguishable in a log and force the editor to fabricate a config wrapper.
+    """
+
+    team_id: str
+    #: The rotation source. Empty is allowed and means an empty rotation — a user clearing the
+    #: editor is not an error, and refusing it would strand them with a validation failure
+    #: they cannot dismiss.
+    source: str = Field(default="", max_length=100_000)
+
+
+class RotationSourceRead(BaseModel):
+    """A parsed rotation, its diagnostics, and what it re-emits as.
+
+    **The tree is the source of truth and `source` is what it renders back to** (task 7.4).
+    A client that shows the returned `source` after an edit gets normalisation for free; one
+    that keeps the user's own text keeps their formatting. Both are valid, and the tree is the
+    same either way, which is the property that makes the two-way sync safe.
+    """
+
+    tree: RotationTree
+    diagnostics: list[Diagnostic] = []
+    #: `emit(tree)` — the rotation as this app would write it.
+    source: str = ""
+    #: The functions this rotation declares, offered as buttons.
+    #:
+    #: **Authoring an `fn` stays text; calling one is a click.** A function body is control
+    #: flow — which is why it needs text — but a *call* is a name and some arguments, exactly
+    #: what the picker already deals in. Published from the tree so the vocabulary cannot
+    #: drift: rename or delete a function and it stops being offered, because the tree stopped
+    #: declaring it.
+    functions: list[DeclaredFunction] = []
+    #: True when every node is one the builder can render and edit.
+    #:
+    #: The honest trigger for showing the source view (OQ-L1's narrowest form): a rotation the
+    #: GUI can build needs no text surface, and one holding a `raw` node, an `fn`, a `wait` or
+    #: an `else` has no other way to be edited.
+    editable_in_builder: bool = True
+
+
 class RotationImportRead(BaseModel):
     """The steps a config was read as — a **preview**, not a saved rotation.
 
@@ -464,7 +520,28 @@ class RotationImportRead(BaseModel):
     """
 
     steps: list[RotationStep]
+    #: The same import as a tree, when the config has one — task 5.2.
+    #:
+    #: **Beside `steps` rather than instead of it**, for the whole of the rollout. A config
+    #: holding a user function, an `else` or a `wait` has a tree and *no* faithful steps form,
+    #: so `steps` comes back empty for it while this is populated; a config within the older
+    #: model has both, and they describe the same rotation. A client that reads only `steps`
+    #: keeps working and simply cannot see the richer imports, which is the correct failure for
+    #: a rollout rather than a version bump.
+    tree: RotationTree | None = None
     #: What the converter rewrote, in words. **Never silent**: a `for` becoming a `while 1` is
     #: a real change to the author's config, and a user should meet it here rather than in a
     #: damage number.
     rewrites: list[str] = []
+    #: Everything wrong with the config, positioned — Phase 6, task 6.6.
+    #:
+    #: **The same list the editor shows**, from the same call, so the importer and the source
+    #: view cannot disagree about what is wrong with a rotation. An error means gcsim will not
+    #: run it; a warning means it will run and probably not do what the author meant.
+    diagnostics: list[Diagnostic] = []
+    #: What the parser carried rather than understood, one line per `raw` node.
+    #:
+    #: The counterpart of `rewrites`, and the reason `RawNode.reason` is required: a user has
+    #: to be able to see *which* constructs are opaque before deciding whether this rotation is
+    #: one they can edit in the builder or one they will edit as text.
+    carried: list[str] = []

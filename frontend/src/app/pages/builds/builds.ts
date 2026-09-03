@@ -24,6 +24,7 @@ import {
 /** What a new build starts as. Matches the server's own defaults, which bound each field. */
 function blank(talents: string[]): BuildFields {
   return {
+    name: '',
     character_level: 90,
     ascension_phase: 6,
     weapon_level: 90,
@@ -31,6 +32,10 @@ function blank(talents: string[]): BuildFields {
     constellation_level: 0,
     talent_levels: Object.fromEntries(talents.map((t) => [t, 1])),
     notes: '',
+    // **True by default**, matching the importer: a GOOD export records gear the player has,
+    // and that is how nearly every build arrives. A build made to try something out is the
+    // case a user opts into.
+    owned: true,
   };
 }
 
@@ -569,8 +574,10 @@ export class BuildsPage implements OnInit {
       weapon_level: build.weapon_level,
       refinement: build.refinement,
       constellation_level: build.constellation_level,
+      name: build.name ?? '',
       talent_levels: { ...blank(this.talents()).talent_levels, ...build.talent_levels },
       notes: build.notes,
+      owned: build.owned ?? true,
     };
     if (build.character_id) await this.selectCharacter(build.character_id);
     this.weaponId.set(build.weapon_id ?? null);

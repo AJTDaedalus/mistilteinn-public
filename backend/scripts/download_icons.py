@@ -52,6 +52,7 @@ from app.database import async_session_factory
 from app.models.artifact import ArtifactSet
 from app.models.build import EnemyProfile
 from app.models.character import Character, Talent
+from app.models.teapot import FurnishingSuite
 from app.models.weapon import Weapon
 from app.services import element_symbols, weapon_symbols
 from app.services.practice_dummies import is_practice_dummy
@@ -95,6 +96,11 @@ SOURCES = (
     (Weapon, "weapon"),
     (ArtifactSet, "artifact set"),
     (EnemyProfile, "enemy"),
+    # The teapot tracker's furnishing sets. All 109 carry an icon and all resolve —
+    # sampled and checked on `content-type`, not on the status code, because a 404 and
+    # nginx's SPA fallback both answer 200 and this repo has already shipped a site with
+    # no art and no symptom because of it. ~50-60 KB each, so about 6 MB.
+    (FurnishingSuite, "furnishing suite"),
 )
 
 #: Characters have a second image: the half-body gacha portrait, ~118 KB against the 22 KB

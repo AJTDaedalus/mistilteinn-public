@@ -1,0 +1,53 @@
+<ol
+  class="outline"
+  role="tree"
+  tabindex="0"
+  aria-label="Rotation outline"
+  (keydown)="onKey($event)"
+>
+  @for (row of rows(); track keyFor(row.path)) {
+    <li
+      class="outline__row"
+      role="treeitem"
+      [class.outline__row--selected]="selected() === keyFor(row.path)"
+      [class.outline__row--carried]="row.carried"
+      [attr.aria-selected]="selected() === keyFor(row.path)"
+      [attr.aria-level]="row.depth + 1"
+      [class.outline__row--over]="over() === keyFor(row.path)"
+      [style.padding-left.rem]="0.4 + row.depth * 1.1"
+      draggable="true"
+      tabindex="-1"
+      (click)="select(row)"
+      (keydown.enter)="select(row)"
+      (keydown.space)="select(row); $event.preventDefault()"
+      (dragstart)="onDragStart(row)"
+      (dragover)="onDragOver(row, $event)"
+      (drop)="onDrop(row, $event)"
+      (dragend)="onDragEnd()"
+    >
+      @if (row.children) {
+        <button
+          type="button"
+          class="outline__twist"
+          [attr.aria-label]="isCollapsed(row) ? 'Expand block' : 'Collapse block'"
+          (click)="toggle(row); $event.stopPropagation()"
+        >{{ isCollapsed(row) ? '▸' : '▾' }}</button>
+      } @else {
+        <span class="outline__twist outline__twist--empty" aria-hidden="true"></span>
+      }
+
+      <span class="outline__label">{{ row.label }}</span>
+
+      @if (row.children && isCollapsed(row)) {
+        <span class="outline__count">{{ row.children }} inside</span>
+      }
+      @if (row.carried) {
+        <span class="outline__badge" title="Carried as written — edit in the source view">
+          as written
+        </span>
+      }
+    </li>
+  } @empty {
+    <li class="outline__empty">No steps yet.</li>
+  }
+</ol>

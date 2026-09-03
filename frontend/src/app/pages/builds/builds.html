@@ -298,9 +298,35 @@
         <build-artifact-panel [buildId]="editing()?.id ?? null" />
       </fieldset>
 
+      <label class="build-name">
+        Name
+        <input
+          type="text"
+          name="build-name"
+          maxlength="120"
+          placeholder="Melt Ayaka"
+          [(ngModel)]="fields.name"
+          aria-label="Build name"
+        />
+      </label>
+
       <label class="notes">
         Notes
         <input type="text" [(ngModel)]="fields.notes" aria-label="Notes" />
+      </label>
+
+      <label class="owned">
+        <input
+          type="checkbox"
+          name="owned"
+          [ngModel]="fields.owned"
+          (ngModelChange)="fields.owned = $event"
+          aria-label="I have this character"
+        />
+        <span>
+          I have this character
+          <small>Leave this off for a build you made to test.</small>
+        </span>
       </label>
 
       <div class="controls">

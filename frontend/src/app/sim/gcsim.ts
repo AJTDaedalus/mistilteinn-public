@@ -150,12 +150,17 @@ export function run(
 /**
  * Pull the two numbers a comparison needs out of gcsim's result.
  *
+ * **Exported so a run retrieved from the corpus is read the same way one just simulated is.**
+ * The corpus stores `raw` — gcsim's own result object — and a second parser written beside
+ * this one would eventually disagree with it about what a cached run scored, which is the
+ * shape of bug that produces a confident wrong number.
+ *
  * **Null rather than zero when a block is absent.** Zero damage is a real, meaningful answer —
  * a rotation that never connects — so collapsing "gcsim did not report this" into it would
  * hide a shape change in the result behind a plausible number, which is exactly how a ranking
  * comes out flat and looks deliberate.
  */
-function readResult(out: unknown): Omit<GcsimRun, 'iterations'> {
+export function readResult(out: unknown): Omit<GcsimRun, 'iterations'> {
   const stats = (out as { stats?: Record<string, unknown> })?.stats;
   const total = stats?.['total_damage'] as { mean?: number } | undefined;
   const dps = stats?.['dps'] as { mean?: number; sd?: number } | undefined;

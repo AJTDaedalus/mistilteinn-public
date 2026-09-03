@@ -1,0 +1,38 @@
+:host { display: block; }
+
+.teapot { display: flex; flex-direction: column; gap: var(--space-3); }
+
+.teapot__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+/* Why the primogem column is empty. Said on the page rather than only in a doc: a blank
+   column nobody can explain reads as a bug. */
+.teapot__uncited { flex: 1 1 20rem; font-size: var(--text-xs); }
+
+.teapot__filters { display: flex; flex-wrap: wrap; gap: var(--space-3); font-size: var(--text-sm); }
+.teapot__filters label { display: flex; align-items: center; gap: var(--space-1); }
+
+.teapot__list { margin: 0; padding: 0; list-style: none; }
+
+.teapot__row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--surface-rule);
+}
+
+/* Finished sets sink rather than disappear — a user has to be able to undo a tick, and that
+   means being able to see it. */
+.teapot__row--done .teapot__name { color: var(--ink-dim); text-decoration: line-through; }
+
+.teapot__tick { flex: 0 0 auto; }
+.teapot__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.teapot__where { flex: 0 0 auto; font-size: var(--text-xs); }
+.teapot__remaining { flex: 0 0 7rem; text-align: right; font-variant-numeric: tabular-nums; }
+.teapot__locked { flex: 0 0 auto; font-size: var(--text-xs); }
+.teapot__empty { padding: var(--space-2); }

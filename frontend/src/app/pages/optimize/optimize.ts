@@ -10,6 +10,9 @@ import {
   type CharacterWeaponGuideRead,
 } from '../catalogue/catalogue.service';
 import type { WeaponSummary } from '../builds/builds.service';
+import type { OptimizationRunRead } from './runs/optimization-runs.service';
+import { OptimizationRunsService } from './runs/optimization-runs.service';
+import { PreviousRuns } from './runs/previous-runs';
 import { CardPicker, type CardOption } from '../../shared/card-picker/card-picker';
 import { Combobox } from '../../shared/combobox/combobox';
 import { buildOptions, buildsInTeam, teamOptions } from '../../shared/team-scope';
@@ -226,12 +229,14 @@ export const SLOT_ORDER = [
   imports: [
     FormsModule, RouterLink, DecimalPipe, PercentPipe,
     CardPicker, CatalogueIcon, ElementChip, EntityToken, ArtifactCard, Combobox,
+    PreviousRuns,
   ],
   templateUrl: './optimize.html',
   styleUrl: './optimize.scss',
 })
 export class OptimizePage implements OnInit {
   protected readonly channels = CHANNELS;
+  private readonly runs = inject(OptimizationRunsService);
   protected readonly scopes = SCOPES;
   protected readonly talentLabel = talentLabel;
 
@@ -357,7 +362,109 @@ export class OptimizePage implements OnInit {
   protected readonly build = computed(
     () => this.builds().find((b) => b.id === this.buildId()) ?? null,
   );
+  /** A saved run the user re-opened, rendered instead of re-running the search. */
+  protected readonly savedRun = signal<OptimizationRunRead | null>(null);
+  /** True when the re-opened run was measured against gear that has since changed. */
+  protected readonly savedRunIsStale = computed(() => {
+    const run = this.savedRun();
+    const build = this.build();
+    if (!run || !build) return false;
+    // **Compared against the snapshot, not re-read from the build.** That is the whole point
+    // of storing one: a result measured on different gear is a different result, and saying
+    // so is the difference between a stale number and a wrong one.
+    const then = (run.snapshot as { build?: Record<string, unknown> })?.build ?? {};
+    return (
+      then['character_level'] !== build.character_level
+      || then['weapon_id'] !== build.weapon_id
+      || then['constellation_level'] !== build.constellation_level
+    );
+  });
+
+  /** The character the page is currently answering for, so saved runs can be narrowed. */
+  protected readonly characterId = computed(
+    () => this.build()?.character_id ?? null,
+  );
   protected readonly hit = computed(() => this.hits()[this.hitIndex()] ?? null);
+
+  /** Re-open a saved run. **No gcsim runs** — that is what storing the result bought. */
+  protected async openSavedRun(runId: string): Promise<void> {
+    try {
+      this.savedRun.set(await this.runs.read(runId));
+    } catch (caught) {
+      this.error.set(apiErrorMessage(caught));
+    }
+  }
+
+  protected closeSavedRun(): void {
+    this.savedRun.set(null);
+  }
+
+  /** True once a finished search is on screen and has not been saved yet. */
+  protected readonly canSaveRun = computed(
+    () => this.result() !== null && !this.searching() && this.savedRunId() === null,
+  );
+  protected readonly savedRunId = signal<string | null>(null);
+  protected readonly savingRun = signal(false);
+
+  /**
+   * Store what this search concluded, and what it was asked and run against.
+   *
+   * **A snapshot, not a set of ids.** The artifacts are stored with the stats they carried at
+   * the time, because a build changes: re-reading them later would show a number that was
+   * never measured, and nothing on the page could tell the reader that had happened.
+   */
+  protected async saveRun(): Promise<void> {
+    const found = this.result();
+    const build = this.build();
+    if (!found || !build || this.savingRun()) return;
+    this.savingRun.set(true);
+    try {
+      const winner = found.builds[0];
+      const runnerUp = found.builds[1];
+      const saved = await this.runs.save({
+        name: this.runName() || `${build.character?.name ?? 'Build'} search`,
+        objective: {
+          artifact_set_ids: [...this.selectedSets()],
+          weapon_ids: [...this.selectedWeapons()],
+          wait_for_energy: this.waitForEnergy(),
+          enemy_level: this.enemyLevel,
+        },
+        snapshot: {
+          build: {
+            id: build.id,
+            character_id: build.character_id,
+            character_level: build.character_level,
+            constellation_level: build.constellation_level,
+            weapon_id: build.weapon_id,
+          },
+          // The pieces as they were, not as they will be.
+          artifacts: (this.winningPools() ?? []).map((stats, index) => ({
+            id: winner?.artifactIds[index] ?? null, stats,
+          })),
+        },
+        result: {
+          artifact_ids: winner?.artifactIds ?? [],
+          damage: winner?.damage ?? 0,
+        },
+        score: winner?.damage ?? 0,
+        // Null rather than zero when there is nobody to be ahead of — a search with one
+        // candidate has no margin, which is not the same as a margin of nothing.
+        margin: winner && runnerUp && runnerUp.damage > 0
+          ? winner.damage / runnerUp.damage - 1
+          : null,
+        iterations: found.evaluated,
+        character_id: build.character_id ?? null,
+        rotation_id: this.rotationId() || null,
+      });
+      this.savedRunId.set(saved.id);
+    } catch (caught) {
+      this.actionError.set(apiErrorMessage(caught));
+    } finally {
+      this.savingRun.set(false);
+    }
+  }
+
+  protected readonly runName = signal('');
   protected readonly canSearch = computed(
     () => this.hit() !== null && !this.searching(),
   );

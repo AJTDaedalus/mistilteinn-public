@@ -42,14 +42,22 @@ export class TeamsService {
    * server refused it with a schema error about a field the page never showed them.
    */
   async create(
-    body: { name: string; build1_id: string } & Partial<Record<TeamSlot, string | null>>,
+    body: { name: string; notes?: string; build1_id: string }
+      & Partial<Record<TeamSlot, string | null>>,
   ) {
-    const { data, error } = await this.api.POST('/api/v1/teams', { body });
+    // `notes` has a server default; sending it explicitly keeps the typed body honest about
+    // what the endpoint accepts rather than relying on a cast to paper over the difference.
+    const { data, error } = await this.api.POST('/api/v1/teams', {
+      body: { notes: '', ...body },
+    });
     if (error) throw error;
     return data;
   }
 
-  async update(id: string, body: { name?: string } & Partial<Record<TeamSlot, string | null>>) {
+  async update(
+    id: string,
+    body: { name?: string; notes?: string } & Partial<Record<TeamSlot, string | null>>,
+  ) {
     const { data, error } = await this.api.PATCH('/api/v1/teams/{team_id}', {
       params: { path: { team_id: id } },
       body,

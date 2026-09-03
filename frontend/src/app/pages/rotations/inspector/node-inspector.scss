@@ -1,0 +1,59 @@
+:host { display: block; min-width: 0; }
+
+.inspector {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-top: 1px solid var(--surface-rule);
+}
+
+.inspector__empty,
+.inspector__hint { color: var(--ink-dim); font-size: var(--text-sm); margin: 0; }
+
+.inspector__carried {
+  margin: 0;
+  color: var(--warning);
+  font-size: var(--text-sm);
+}
+
+.inspector__field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.inspector__field input { width: 100%; max-width: 22rem; min-width: 0; }
+.inspector__field input[type='number'] { width: 5rem; }
+
+.inspector__label { color: var(--ink-dim); font-size: var(--text-xs); }
+
+.inspector__list { margin: 0; padding-left: 1.1rem; font-size: var(--text-sm); }
+
+.inspector__condition { display: flex; flex-direction: column; gap: var(--space-1); }
+
+.inspector__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* A `select` with `min-width: auto` will not shrink, and on a narrow panel it overflowed its
+   own row — the same trap `editor.scss` records. */
+.inspector__row select { min-width: 0; max-width: 14rem; }
+.inspector__row input[type='number'] { width: 5rem; }
+
+.inspector__add,
+.inspector__drop {
+  background: none;
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  color: var(--ink-dim);
+  cursor: pointer;
+  font-size: var(--text-xs);
+  padding: 0 var(--space-2);
+}
+
+.inspector__add { align-self: flex-start; }

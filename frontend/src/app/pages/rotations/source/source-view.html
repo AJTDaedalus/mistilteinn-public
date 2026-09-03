@@ -1,0 +1,51 @@
+<div class="source">
+  @if (required()) {
+    <p class="source__hint">
+      This rotation uses gcsim features the builder cannot draw — a user-defined function, or
+      a condition outside the pickers. It is edited here, as text.
+    </p>
+  }
+
+  <app-function-palette [functions]="declared()" (called)="addCall($event)" />
+
+  <textarea
+    class="source__editor"
+    rows="18"
+    spellcheck="false"
+    aria-label="Rotation source"
+    [value]="text()"
+    (input)="onInput($any($event.target).value)"
+  ></textarea>
+
+  <div class="source__state">
+    @if (checking()) {
+      <span>checking…</span>
+    } @else if (draft()) {
+      <span>unsaved draft — the last readable version is still in place</span>
+    } @else {
+      <span>read</span>
+    }
+  </div>
+
+  @if (errors().length) {
+    <ul class="source__list">
+      @for (problem of errors(); track problem.message + problem.line) {
+        <li class="source__item source__item--error">
+          <span class="source__at">{{ problem.line }}:{{ problem.column }}</span>
+          {{ problem.message }}
+        </li>
+      }
+    </ul>
+  }
+
+  @if (warnings().length) {
+    <ul class="source__list">
+      @for (problem of warnings(); track problem.message + problem.line) {
+        <li class="source__item source__item--warning">
+          <span class="source__at">{{ problem.line }}:{{ problem.column }}</span>
+          {{ problem.message }}
+        </li>
+      }
+    </ul>
+  }
+</div>

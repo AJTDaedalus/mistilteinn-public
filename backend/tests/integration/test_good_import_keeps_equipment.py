@@ -42,7 +42,10 @@ def _good(*pieces: dict) -> dict:
     return {"format": "GOOD", "version": 2, "source": "test", "artifacts": list(pieces)}
 
 
-def _piece(set_key: str, slot: str, main: str, percent: float, level: int = 20) -> dict:
+def _piece(
+    set_key: str, slot: str, main: str, percent: float, level: int = 20,
+    *, locked: bool = False,
+) -> dict:
     """One GOOD artifact.
 
     `percent` is written the way GOOD writes it — **10.9 means 10.9%** — and the importer
@@ -57,7 +60,7 @@ def _piece(set_key: str, slot: str, main: str, percent: float, level: int = 20) 
     """
     return {
         "setKey": set_key, "slotKey": slot, "level": level, "rarity": 5,
-        "mainStatKey": main, "location": "", "lock": False,
+        "mainStatKey": main, "location": "", "lock": locked,
         "substats": [{"key": "critRate_", "value": percent}],
     }
 
@@ -340,3 +343,52 @@ async def test_a_refused_replace_leaves_equipment_exactly_as_it_was(
 
     after = [str(a.id) for a in await _equipped(db_session, scene["build_id"])]
     assert after == equipped_before
+
+
+async def test_a_locked_piece_arrives_locked(db_session: AsyncSession, scene: dict):
+    """`DESIGN_account_tracking.md` X.1.
+
+    **`lock` has been parsed since the importer was written and stored nowhere.** An
+    optimizer that recommends building around a piece somebody has locked for another
+    character is giving advice they cannot take — worse than not knowing, because the
+    recommendation looks actionable.
+    """
+    payload = _good(_piece("BlizzardStrayer", "flower", "hp", 10.9, locked=True))
+
+    await _replace(db_session, scene["owner_id"], payload)
+
+    stored = (await db_session.execute(select(Artifact))).scalars().all()
+    assert [piece.locked for piece in stored] == [True]
+
+
+async def test_an_unlocked_piece_arrives_unlocked(db_session: AsyncSession, scene: dict):
+    """The flag has to be able to say both things, or it is not carrying anything."""
+    payload = _good(_piece("BlizzardStrayer", "flower", "hp", 10.9))
+
+    await _replace(db_session, scene["owner_id"], payload)
+
+    stored = (await db_session.execute(select(Artifact))).scalars().all()
+    assert [piece.locked for piece in stored] == [False]
+
+
+async def test_an_import_records_when_it_happened(
+    db_session: AsyncSession, scene: dict,
+):
+    """`DESIGN_account_tracking.md` X.3.
+
+    A GOOD import replaces an inventory wholesale, so this is what later tells a user whether
+    a saved optimization result predates their last farming session — the commonest reason a
+    stored number stops being true.
+    """
+    from app.models.user import User
+
+    owner = await db_session.get(User, scene["owner_id"])
+    assert owner.gear_imported_at is None, "nothing should be stamped before an import"
+
+    await _replace(
+        db_session, scene["owner_id"],
+        _good(_piece("BlizzardStrayer", "flower", "hp", 10.9)),
+    )
+
+    await db_session.refresh(owner)
+    assert owner.gear_imported_at is not None

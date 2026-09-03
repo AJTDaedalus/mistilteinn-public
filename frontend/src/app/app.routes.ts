@@ -94,6 +94,11 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
+    path: 'teapot',
+    loadComponent: () => import('./pages/teapot/teapot').then((m) => m.TeapotPage),
+    canMatch: [requireApproved],
+  },
+  {
     path: 'enemies',
     loadComponent: () => import('./pages/catalogue/enemies').then((m) => m.EnemiesPage),
     canMatch: [requireApproved],

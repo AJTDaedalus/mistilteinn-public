@@ -18,6 +18,7 @@ from app.repositories.artifact_set import ArtifactSetRepository
 from app.repositories.build import BuildRepository
 from app.repositories.character import CharacterRepository
 from app.repositories.enemy import EnemyProfileRepository
+from app.repositories.optimization_run import OptimizationRunRepository
 from app.repositories.owned_weapon import OwnedWeaponRepository
 from app.repositories.rotation import RotationLibraryRepository, RotationRepository
 from app.repositories.session import SessionRepository
@@ -210,6 +211,18 @@ async def get_owned_rotation_repo(
 ) -> RotationRepository:
     """FastAPI DI factory for a `RotationRepository` scoped to the caller's own rotations."""
     return RotationRepository(session, owner_id=str(current_user.id))
+
+
+async def get_optimization_run_repo(
+    session: DBSession, current_user: CurrentUser
+) -> OptimizationRunRepository:
+    """FastAPI DI factory for saved optimization runs, scoped to the caller.
+
+    Scoped like `get_owned_rotation_repo` rather than open like the library one: reading
+    somebody else's run goes through a **share key**, which is a different question from
+    listing your own and deserves a different door.
+    """
+    return OptimizationRunRepository(session, owner_id=str(current_user.id))
 
 
 async def get_rotation_library_repo(

@@ -1,0 +1,64 @@
+<section class="runs" aria-label="Previous optimization runs">
+  <header class="runs__head">
+    <h2 class="runs__title">Previous runs</h2>
+    <div class="runs__scope" role="group" aria-label="Whose runs">
+      <button
+        type="button"
+        [class.runs__tab--on]="scope() === 'mine'"
+        class="runs__tab"
+        (click)="setScope('mine')"
+      >Mine</button>
+      <button
+        type="button"
+        [class.runs__tab--on]="scope() === 'published'"
+        class="runs__tab"
+        (click)="setScope('published')"
+      >Shared</button>
+      @if (characterId()) {
+        <label class="runs__filter">
+          <input
+            type="checkbox"
+            [checked]="onlyThisCharacter()"
+            (change)="toggleCharacter()"
+          />
+          this character only
+        </label>
+      }
+    </div>
+  </header>
+
+  @if (loading()) {
+    <p class="runs__note">Loading…</p>
+  } @else if (failed()) {
+    <p class="runs__note">
+      Could not load previous runs. You can still start a new search.
+    </p>
+  } @else if (empty()) {
+    <p class="runs__note">
+      @if (scope() === 'mine') {
+        No saved runs yet — finish a search and save it to see it here.
+      } @else {
+        Nobody has shared a run yet.
+      }
+    </p>
+  } @else {
+    <ul class="runs__list">
+      @for (row of rows(); track row.id) {
+        <li class="runs__row">
+          <button type="button" class="runs__open" (click)="opened.emit(row.id)">
+            <span class="runs__name">{{ row.name || 'Untitled run' }}</span>
+            <span class="runs__score">{{ score(row.score) }}</span>
+            @if (margin(row.margin); as ahead) {
+              <span class="runs__margin">{{ ahead }}</span>
+            }
+            <span class="runs__meta">{{ energyModel(row) }}</span>
+            <span class="runs__meta">{{ row.iterations }} iterations</span>
+            @if (shared(row.visibility)) {
+              <span class="runs__badge">shared</span>
+            }
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</section>

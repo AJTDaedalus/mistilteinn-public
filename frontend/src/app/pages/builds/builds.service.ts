@@ -11,6 +11,9 @@ export type { CharacterSummary, WeaponSummary };
 
 /** Everything the form sends. Levels are numbers the server bounds; it is not asked twice. */
 export interface BuildFields {
+  /** The user's own name for the build — two for one character are otherwise told apart by
+   *  their gear, which means reading five artifacts to answer "which is this?". */
+  name: string;
   character_level: number;
   ascension_phase: number;
   weapon_level: number;
@@ -18,6 +21,8 @@ export interface BuildFields {
   constellation_level: number;
   talent_levels: Record<string, number>;
   notes: string;
+  /** Does the user actually have this character, or is this a build made to test? */
+  owned: boolean;
 }
 
 /**

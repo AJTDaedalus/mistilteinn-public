@@ -1,0 +1,93 @@
+<section class="teapot">
+  <header>
+    <h1>Teapot sets</h1>
+    <p class="muted">
+      Furnishing sets, ordered by how many characters you have who favour them and have not
+      been invited yet.
+    </p>
+  </header>
+
+  @if (error(); as message) {
+    <p class="error" role="alert">
+      {{ message }}
+      <button type="button" (click)="load()">Retry</button>
+    </p>
+  }
+
+  @if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else {
+    <div class="teapot__summary">
+      @if (primogems(); as total) {
+        <span><strong>{{ total | number }}</strong> primogems still on the table</span>
+      }
+      <span class="muted">{{ claimable() }} characters still to invite</span>
+      <span class="muted">{{ finished() }} sets done</span>
+      @if (reward() === null) {
+        <span class="muted teapot__uncited">
+          Primogem totals are not shown: the server published no reward figure. The order is
+          unaffected.
+        </span>
+      }
+    </div>
+
+    <div class="teapot__filters">
+      <label>
+        <input type="checkbox" [checked]="hideDone()" (change)="hideDone.set(!hideDone())" />
+        hide finished
+      </label>
+      <label>
+        <input
+          type="checkbox"
+          [checked]="hideUnreachable()"
+          (change)="hideUnreachable.set(!hideUnreachable())"
+        />
+        hide sets nobody you have favours
+      </label>
+    </div>
+
+    <ul class="teapot__list">
+      @for (row of visible(); track row.suite_id) {
+        <li class="teapot__row" [class.teapot__row--done]="row.done">
+          <label class="teapot__tick">
+            <input
+              type="checkbox"
+              [checked]="row.done"
+              [disabled]="busy() === row.suite_id"
+              (change)="toggle(row)"
+              [attr.aria-label]="'Mark ' + row.name + ' as done'"
+            />
+          </label>
+
+          <span class="teapot__name">{{ row.name }}</span>
+          <span class="teapot__where muted">{{ placement(row) }}</span>
+
+          <span class="teapot__remaining">
+            @if (row.remaining > 0) {
+              @if (row.remaining_primogems; as gems) {
+                {{ gems }} primos
+              } @else {
+                {{ row.remaining }} to invite
+              }
+            } @else if (row.done) {
+              done
+            } @else {
+              —
+            }
+          </span>
+
+          @if (row.unowned_favorites.length) {
+            <span class="teapot__locked muted"
+              title="Characters who favour this set that you do not have">
+              {{ row.unowned_favorites.length }} you don't have
+            </span>
+          }
+        </li>
+      } @empty {
+        <li class="teapot__empty muted">
+          Nothing to show — try turning off the filters above.
+        </li>
+      }
+    </ul>
+  }
+</section>

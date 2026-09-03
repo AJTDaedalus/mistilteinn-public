@@ -818,9 +818,18 @@ async def test_importing_creates_nothing(authed_client: AsyncClient, scene: Scen
 async def test_a_config_using_gcsim_features_we_cannot_express_is_refused(
     authed_client: AsyncClient, scene: Scene,
 ):
-    """**The refusal that is the whole feature.** Importing this without the energy guard
-    would produce a rotation that looks like the author's and bursts on a different schedule
-    — same name, different number, no way for the user to tell."""
+    """**No longer a refusal, and that is the whole feature.**
+
+    This used to 422, and the reason was right at the time: importing it without the energy
+    guard would produce a rotation that looks like the author's and bursts on a different
+    schedule — same name, different number, no way for the user to tell.
+
+    `DESIGN_rotation_language.md` removes the dilemma rather than the rule. The tree carries
+    the guard and the `wait`, so nothing is dropped and nothing is approximated; `steps` comes
+    back **empty**, because this rotation genuinely has no faithful steps form, and `carried`
+    says which constructs are held as source rather than understood. Refusing it now would
+    throw away a rotation this app can run.
+    """
     config = (
         "active barbara;\n"
         "while 1 {\n"
@@ -833,10 +842,11 @@ async def test_a_config_using_gcsim_features_we_cannot_express_is_refused(
         f"{ROTATIONS}/import", json={"team_id": scene.team_id, "config": config},
     )
 
-    assert response.status_code == 422
-    detail = response.json()["detail"]
-    assert "energy" in detail
-    assert "wait" in detail
+    assert response.status_code == 200
+    body = response.json()
+    assert body["tree"] is not None
+    assert body["tree"]["nodes"], "the rotation must survive as a tree"
+    assert body["carried"], "and the user must be told what was carried rather than read"
 
 
 async def test_a_config_naming_someone_off_the_team_is_refused_by_name(
@@ -990,3 +1000,118 @@ async def test_a_runnable_preview_names_the_builds_with_no_weapon(
     assert response.status_code == 422
     assert "Kamisato Ayaka" in response.json()["detail"]
     assert "no weapon" in response.json()["detail"]
+
+
+# ── POST /rotations/validate — the endpoint the source view is built on (Phase 7) ──
+
+
+async def _validate_source(client: AsyncClient, scene: Scene, source: str):
+    response = await client.post(
+        f"{ROTATIONS}/validate", json={"team_id": scene.team_id, "source": source},
+    )
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+async def test_valid_source_comes_back_with_a_tree_and_no_diagnostics(
+    authed_client: AsyncClient, scene: Scene,
+):
+    body = await _validate_source(authed_client, scene, "barbara skill;")
+
+    assert body["tree"]["nodes"]
+    assert body["diagnostics"] == []
+    assert body["editable_in_builder"] is True
+
+
+async def test_half_typed_source_is_not_an_error(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """**The editor sends this on every keystroke**, so half-typed text is the normal state.
+    Refusing it would strand a user mid-word with a failure they cannot dismiss."""
+    body = await _validate_source(authed_client, scene, "if .x.burst.rea")
+
+    assert body["tree"]["nodes"], "the text must survive as a tree"
+
+
+async def test_empty_source_is_allowed(authed_client: AsyncClient, scene: Scene):
+    """Clearing the editor is not an error."""
+    body = await _validate_source(authed_client, scene, "")
+
+    assert body["tree"]["nodes"] == []
+
+
+async def test_a_problem_comes_back_positioned(authed_client: AsyncClient, scene: Scene):
+    body = await _validate_source(authed_client, scene, "barbara skill;\nf();")
+
+    problem = next(d for d in body["diagnostics"] if d["severity"] == "error")
+    assert problem["line"] == 2
+    assert "nothing defines" in problem["message"]
+
+
+async def test_source_comes_back_as_the_tree_renders_it(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """The tree is the source of truth and this is what it emits — the property that makes
+    the two-way sync safe."""
+    body = await _validate_source(authed_client, scene, "  barbara   skill;  ")
+
+    assert body["source"].strip() == "barbara skill;"
+
+
+async def test_a_rotation_needing_text_says_so(authed_client: AsyncClient, scene: Scene):
+    """OQ-L1's narrowest form: the source view is offered when the builder cannot do the job,
+    which is a fact about the rotation rather than a preference."""
+    body = await _validate_source(
+        authed_client, scene, "fn f() {\n  999;\n}\n" + "barbara skill;",
+    )
+
+    assert body["editable_in_builder"] is False
+
+
+async def test_validate_needs_a_team(authed_client: AsyncClient):
+    response = await authed_client.post(
+        f"{ROTATIONS}/validate",
+        json={"team_id": "01a05ad3-0000-7000-8000-000000000000", "source": "x skill;"},
+    )
+
+    assert response.status_code in {403, 404, 422}
+
+
+async def test_a_declared_function_is_offered_as_something_to_call(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """Owner, 2026-09-03: *"a way to treat user defined functions (in a rotation's scope) as
+    buttons to draw onto the rotation."*
+
+    **Authoring one stays text; calling one becomes a click.** A body is control flow, which is
+    why it needs text at all; a call is a name and some arguments, which is exactly what the
+    picker already deals in.
+    """
+    body = await _validate_source(
+        authed_client, scene,
+        "fn opener(delay) {\n  barbara skill;\n}\nopener(30);",
+    )
+
+    assert body["functions"] == [{"name": "opener", "parameters": ["delay"]}]
+
+
+async def test_the_offered_functions_come_from_the_rotation_itself(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """So the vocabulary cannot drift: delete the declaration and it stops being offered,
+    because the tree stopped declaring it."""
+    body = await _validate_source(authed_client, scene, "barbara skill;")
+
+    assert body["functions"] == []
+
+
+async def test_a_function_inside_a_block_is_still_offered(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """`_tree_nodes` walks bodies, so a declaration is found wherever it sits."""
+    body = await _validate_source(
+        authed_client, scene,
+        "for let i=0; i<2; i=i+1 {\n  barbara skill;\n}\nfn later() {\n  barbara burst;\n}",
+    )
+
+    assert [f["name"] for f in body["functions"]] == ["later"]

@@ -2,7 +2,7 @@ import { InjectionToken, Injectable, inject } from '@angular/core';
 
 import { injectApi } from '../../api/api.client';
 import { calibrate } from '../../sim/calibrate';
-import { run as runConfig, type GcsimModule } from '../../sim/gcsim';
+import { readResult, run as runConfig, type GcsimModule } from '../../sim/gcsim';
 import { SimRunsService } from '../../sim/sim-runs.service';
 import { RotationsService } from '../rotations/rotations.service';
 import { loadGcsim } from '../../sim/gcsim-loader';
@@ -420,7 +420,20 @@ export class RecipeOptimizeService {
         // every target in the search; running one each would store a set-specific number under
         // a set-independent key.
         const wantsAggregate = target.artifactSetIds.length === 0;
-        const aggregate = wantsAggregate ? runConfig(mod, configs.baseline, AGGREGATE_RUNS) : null;
+        // **Local cache, then the corpus, then simulate.** `readRecipe` above answers in
+        // microseconds and is checked first; this is a request, so it is checked second; and
+        // gcsim is the last resort. A corpus hit is what makes the run store cross-device and
+        // cross-user rather than a write-only log.
+        const corpusRaw = wantsAggregate
+          ? await this.fromCorpus(buildId, rotationId, configs.energy_recharge)
+          : null;
+        const aggregate = !wantsAggregate
+          ? null
+          : corpusRaw !== null
+            // Read with `readResult`, the same function a fresh run uses. A second parser
+            // would eventually disagree with it about what a cached run scored.
+            ? { iterations: AGGREGATE_RUNS, ...readResult(corpusRaw) }
+            : runConfig(mod, configs.baseline, AGGREGATE_RUNS);
         // **The same run with energy free, because a gated rotation hides the shortfall.**
         // The compiler gates every step on `.ready`, so gcsim never *attempts* an unaffordable
         // burst and records no `insufficient_energy` — measured at 0 for all four characters
@@ -430,10 +443,11 @@ export class RecipeOptimizeService {
         const freeEnergy = aggregate
           ? runConfig(mod, withFreeEnergy(configs.baseline), AGGREGATE_RUNS)
           : null;
-        if (aggregate !== null) {
-          // Offered to the cache, never awaited for correctness. `DECISIONS.md` §25: the
-          // corpus accumulates from real searches, and a user whose search finished must not
-          // be told otherwise because a cache write was refused.
+        // Offered to the cache, never awaited for correctness. `DECISIONS.md` §25: the
+        // corpus accumulates from real searches, and a user whose search finished must not be
+        // told otherwise because a cache write was refused. **Skipped on a corpus hit** —
+        // writing back what was just read would be a no-op request per search.
+        if (aggregate !== null && corpusRaw === null) {
           void this.cache(buildId, rotationId, configs.energy_recharge, aggregate.raw);
         }
 
@@ -561,6 +575,37 @@ export class RecipeOptimizeService {
   /** Whether this build can perform the rotation these recipes describe. */
   shortfall(recipe: Recipe, buildEnergyRecharge: number): EnergyShortfall | null {
     return energyShortfall(buildEnergyRecharge, recipe.meta.minimumEnergyRecharge);
+  }
+
+  /**
+   * Ask the corpus whether this run already exists, before simulating it.
+   *
+   * **The read half of the corpus, which was built and had no caller.** `POST /sim-runs` sat
+   * in that state until #183; `GET /sim-runs/retrieve` — endpoint, ER bucketing, neighbour
+   * rule and stated-reason outcome — was still in it. Calling it is what makes the corpus
+   * **cross-device and cross-user** instead of a write-only log: two people with the same
+   * character, weapon, talents, rotation and gcsim pin produce the same calibration, and
+   * `context_key` already says so.
+   *
+   * It does **not** replace `recipe-cache.ts`. That one is local and answers in microseconds;
+   * this is a request. The order is local first, server second, simulate last — and until
+   * the hit rate is measured (`DESIGN_account_tracking.md` OQ-A3) the local cache is a
+   * correctness-neutral optimisation that stays.
+   *
+   * Returns `null` for anything that is not a usable hit, including a failure: a corpus that
+   * cannot be read is a slower search, not a failed one.
+   */
+  private async fromCorpus(
+    buildId: string,
+    rotationId: string,
+    energyRecharge: number,
+  ): Promise<unknown | null> {
+    try {
+      const key = await this.rotations.contextKey(rotationId, buildId);
+      return await this.simRuns.retrieve(key.context_key, energyRecharge);
+    } catch {
+      return null;
+    }
   }
 
   /**

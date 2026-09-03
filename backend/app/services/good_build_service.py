@@ -307,6 +307,11 @@ def _new_build(
         refinement=wielded.refinement if wielded else 1,
         talent_levels=dict(entry.talents) if entry else {},
         notes=notes,
+        # **Stated rather than left to the column default.** The default is true today and a
+        # later change to it must not silently reclassify every import — an imported build is
+        # owned because a GOOD export is a record of gear the player has, which is a fact
+        # about this code path rather than about the schema.
+        owned=True,
     )
 
 

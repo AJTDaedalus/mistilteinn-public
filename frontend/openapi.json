@@ -2319,6 +2319,416 @@
         }
       }
     },
+    "/api/v1/optimization-runs": {
+      "get": {
+        "tags": [
+          "optimization-runs"
+        ],
+        "summary": "List Runs",
+        "description": "This user's saved runs, newest first.\n\n**Never ordered by score.** A score is a damage number for one character against one\nenemy, so ranking two runs for different characters by it would invent a comparison the\ndata does not support.",
+        "operationId": "list_runs_api_v1_optimization_runs_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "character_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Character Id"
+            }
+          },
+          {
+            "name": "rotation_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rotation Id"
+            }
+          },
+          {
+            "name": "gcsim_pin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Gcsim Pin"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OptimizationRunSummary"
+                  },
+                  "title": "Response List Runs Api V1 Optimization Runs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "optimization-runs"
+        ],
+        "summary": "Save Run",
+        "description": "Save a completed search.\n\n**Private on creation**, always. Publishing is a separate PATCH, because a private thing\nbecoming visible is not a mistake anyone can take back \u2014 the same reasoning `Visibility`\nrecords for rotations.",
+        "operationId": "save_run_api_v1_optimization_runs_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OptimizationRunCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OptimizationRunRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/optimization-runs/public": {
+      "get": {
+        "tags": [
+          "optimization-runs"
+        ],
+        "summary": "List Public",
+        "description": "Everyone's published runs \u2014 the shared half of the owner's ask.",
+        "operationId": "list_public_api_v1_optimization_runs_public_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "character_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Character Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OptimizationRunSummary"
+                  },
+                  "title": "Response List Public Api V1 Optimization Runs Public Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/optimization-runs/shared/{share_key}": {
+      "get": {
+        "tags": [
+          "optimization-runs"
+        ],
+        "summary": "Read Shared",
+        "description": "A published run by its key, readable without owning it.\n\nA private run **404s rather than 403s**: telling a caller that a key exists but is not\ntheirs is telling them the key is worth guessing at.",
+        "operationId": "read_shared_api_v1_optimization_runs_shared__share_key__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "share_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Share Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OptimizationRunRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/optimization-runs/{run_id}": {
+      "get": {
+        "tags": [
+          "optimization-runs"
+        ],
+        "summary": "Read Run",
+        "description": "One of the caller's own runs, in full.",
+        "operationId": "read_run_api_v1_optimization_runs__run_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OptimizationRunRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "optimization-runs"
+        ],
+        "summary": "Update Run",
+        "description": "Rename a run, or publish it.\n\n**The result is not editable.** A saved run records what happened, and letting it be\nrewritten would make the library a place where numbers are asserted rather than measured.",
+        "operationId": "update_run_api_v1_optimization_runs__run_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OptimizationRunUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OptimizationRunRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "optimization-runs"
+        ],
+        "summary": "Delete Run",
+        "description": "Delete a saved run.",
+        "operationId": "delete_run_api_v1_optimization_runs__run_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/rotations": {
       "get": {
         "tags": [
@@ -2494,6 +2904,53 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RotationImportRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/rotations/validate": {
+      "post": {
+        "tags": [
+          "rotations"
+        ],
+        "summary": "Validate Source",
+        "description": "Parse and check rotation source, without saving anything.\n\n**This is what makes the source view possible at all**, and it is deliberately the *same*\nparser and the same validator the importer runs. The owner's ruling of 2026-09-03 allows\na typed surface where buttons cannot reach; `DECISIONS.md` \u00a732 records why that is not a\nsecond vocabulary, and the reason is exactly this endpoint: text typed in the editor goes\nthrough the code an imported config goes through, so nothing authored can escape the rules\nan import obeys.\n\n**It never refuses.** Unparseable source still returns a tree \u2014 one `raw` node holding it \u2014\nbecause the editor sends this on every keystroke and half-typed text is the normal state,\nnot an error. What is wrong with it comes back in `diagnostics` with positions to underline.",
+        "operationId": "validate_source_api_v1_rotations_validate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RotationSourceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RotationSourceRead"
                 }
               }
             }
@@ -3111,6 +3568,113 @@
         }
       }
     },
+    "/api/v1/teapot/suites": {
+      "get": {
+        "tags": [
+          "teapot"
+        ],
+        "summary": "List Suites",
+        "description": "Every furnishing set, ranked by how much of it this user can still claim.\n\n**Ordered by remaining owned favourites**, which is the same order the owner's\n\"remaining primogems\" would give: the reward is one constant per character, and a positive\nconstant multiplier cannot change a ranking.",
+        "operationId": "list_suites_api_v1_teapot_suites_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeapotRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/teapot/suites/{suite_id}/done": {
+      "put": {
+        "tags": [
+          "teapot"
+        ],
+        "summary": "Mark Done",
+        "description": "Mark a set as already done.\n\nIdempotent: ticking a set twice is not an error, and a client that retries a request it\nis not sure landed should not have to care.",
+        "operationId": "mark_done_api_v1_teapot_suites__suite_id__done_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "suite_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Suite Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "teapot"
+        ],
+        "summary": "Mark Not Done",
+        "description": "Un-tick a set.\n\n**The reason finished sets sink rather than disappear**: a user has to be able to undo a\ntick, which means they have to be able to see it.",
+        "operationId": "mark_not_done_api_v1_teapot_suites__suite_id__done_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "suite_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Suite Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/sim-runs": {
       "get": {
         "tags": [
@@ -3348,6 +3912,55 @@
   },
   "components": {
     "schemas": {
+      "ActionNode": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "action",
+            "title": "Kind",
+            "default": "action"
+          },
+          "character": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Character"
+          },
+          "action": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Action"
+          },
+          "repeat": {
+            "type": "integer",
+            "maximum": 99.0,
+            "minimum": 1.0,
+            "title": "Repeat",
+            "default": 1
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Note",
+            "default": ""
+          },
+          "params": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Params"
+          }
+        },
+        "type": "object",
+        "required": [
+          "character",
+          "action"
+        ],
+        "title": "ActionNode",
+        "description": "One action by one character \u2014 what a `RotationStep` was."
+      },
       "ActionOffer": {
         "properties": {
           "action": {
@@ -3769,6 +4382,59 @@
         "title": "AscensionPassiveRead",
         "description": "One ascension passive.\n\n`unlock_ascension` is **nullable and stays that way**: a passive gated by a condition\nrather than a phase has no phase, and a `0` there would claim it is ungated."
       },
+      "AssignNode": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "assign",
+            "title": "Kind",
+            "default": "assign"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Literal"
+              },
+              {
+                "$ref": "#/components/schemas/Identifier"
+              },
+              {
+                "$ref": "#/components/schemas/StatePath"
+              },
+              {
+                "$ref": "#/components/schemas/Unary"
+              },
+              {
+                "$ref": "#/components/schemas/Binary"
+              }
+            ],
+            "title": "Value",
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "binary": "#/components/schemas/Binary",
+                "identifier": "#/components/schemas/Identifier",
+                "literal": "#/components/schemas/Literal",
+                "state": "#/components/schemas/StatePath",
+                "unary": "#/components/schemas/Unary"
+              }
+            }
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "value"
+        ],
+        "title": "AssignNode",
+        "description": "`x = expr;` outside a loop header."
+      },
       "AvailableHitRead": {
         "properties": {
           "talent": {
@@ -3807,8 +4473,276 @@
         "title": "AvailableHitRead",
         "description": "One hit a build can be asked about, in the terms `HitSpec.talent` takes.\n\nOffered from the **same parse** `resolve_talent_hit` uses, so a page built from this\ncannot name a hit the resolver then refuses \u2014 the picker-matches-validator guarantee this\nrepo applies wherever a user chooses from a list."
       },
+      "Binary": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "binary",
+            "title": "Kind",
+            "default": "binary"
+          },
+          "op": {
+            "type": "string",
+            "title": "Op"
+          },
+          "left": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Literal"
+              },
+              {
+                "$ref": "#/components/schemas/Identifier"
+              },
+              {
+                "$ref": "#/components/schemas/StatePath"
+              },
+              {
+                "$ref": "#/components/schemas/Unary"
+              },
+              {
+                "$ref": "#/components/schemas/Binary"
+              }
+            ],
+            "title": "Left",
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "binary": "#/components/schemas/Binary",
+                "identifier": "#/components/schemas/Identifier",
+                "literal": "#/components/schemas/Literal",
+                "state": "#/components/schemas/StatePath",
+                "unary": "#/components/schemas/Unary"
+              }
+            }
+          },
+          "right": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Literal"
+              },
+              {
+                "$ref": "#/components/schemas/Identifier"
+              },
+              {
+                "$ref": "#/components/schemas/StatePath"
+              },
+              {
+                "$ref": "#/components/schemas/Unary"
+              },
+              {
+                "$ref": "#/components/schemas/Binary"
+              }
+            ],
+            "title": "Right",
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "binary": "#/components/schemas/Binary",
+                "identifier": "#/components/schemas/Identifier",
+                "literal": "#/components/schemas/Literal",
+                "state": "#/components/schemas/StatePath",
+                "unary": "#/components/schemas/Unary"
+              }
+            }
+          }
+        },
+        "type": "object",
+        "required": [
+          "op",
+          "left",
+          "right"
+        ],
+        "title": "Binary",
+        "description": "`a && b`, `.x.energy >= 30`. Two operands and an operator with a precedence."
+      },
+      "BranchNode": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "branch",
+            "title": "Kind",
+            "default": "branch"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 64,
+            "title": "Label",
+            "default": ""
+          },
+          "arms": {
+            "items": {
+              "prefixItems": [
+                {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Literal"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Identifier"
+                    },
+                    {
+                      "$ref": "#/components/schemas/StatePath"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Unary"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Binary"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "kind",
+                    "mapping": {
+                      "binary": "#/components/schemas/Binary",
+                      "identifier": "#/components/schemas/Identifier",
+                      "literal": "#/components/schemas/Literal",
+                      "state": "#/components/schemas/StatePath",
+                      "unary": "#/components/schemas/Unary"
+                    }
+                  }
+                },
+                {
+                  "items": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/ActionNode"
+                      },
+                      {
+                        "$ref": "#/components/schemas/LoopNode"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BranchNode"
+                      },
+                      {
+                        "$ref": "#/components/schemas/WaitNode"
+                      },
+                      {
+                        "$ref": "#/components/schemas/SwapNode"
+                      },
+                      {
+                        "$ref": "#/components/schemas/LetNode"
+                      },
+                      {
+                        "$ref": "#/components/schemas/AssignNode"
+                      },
+                      {
+                        "$ref": "#/components/schemas/CallNode"
+                      },
+                      {
+                        "$ref": "#/components/schemas/FnNode"
+                      },
+                      {
+                        "$ref": "#/components/schemas/RawNode"
+                      }
+                    ],
+                    "discriminator": {
+                      "propertyName": "kind",
+                      "mapping": {
+                        "action": "#/components/schemas/ActionNode",
+                        "assign": "#/components/schemas/AssignNode",
+                        "branch": "#/components/schemas/BranchNode",
+                        "call": "#/components/schemas/CallNode",
+                        "fn": "#/components/schemas/FnNode",
+                        "let": "#/components/schemas/LetNode",
+                        "loop": "#/components/schemas/LoopNode",
+                        "raw": "#/components/schemas/RawNode",
+                        "swap": "#/components/schemas/SwapNode",
+                        "wait": "#/components/schemas/WaitNode"
+                      }
+                    }
+                  },
+                  "type": "array"
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Arms"
+          },
+          "otherwise": {
+            "anyOf": [
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ActionNode"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LoopNode"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BranchNode"
+                    },
+                    {
+                      "$ref": "#/components/schemas/WaitNode"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SwapNode"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LetNode"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AssignNode"
+                    },
+                    {
+                      "$ref": "#/components/schemas/CallNode"
+                    },
+                    {
+                      "$ref": "#/components/schemas/FnNode"
+                    },
+                    {
+                      "$ref": "#/components/schemas/RawNode"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "kind",
+                    "mapping": {
+                      "action": "#/components/schemas/ActionNode",
+                      "assign": "#/components/schemas/AssignNode",
+                      "branch": "#/components/schemas/BranchNode",
+                      "call": "#/components/schemas/CallNode",
+                      "fn": "#/components/schemas/FnNode",
+                      "let": "#/components/schemas/LetNode",
+                      "loop": "#/components/schemas/LoopNode",
+                      "raw": "#/components/schemas/RawNode",
+                      "swap": "#/components/schemas/SwapNode",
+                      "wait": "#/components/schemas/WaitNode"
+                    }
+                  }
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otherwise"
+          }
+        },
+        "type": "object",
+        "required": [
+          "arms"
+        ],
+        "title": "BranchNode",
+        "description": "An `if` / `else if` / `else` chain, as **one** node.\n\ngcsim evaluates the chain once and takes one arm. Modelling it as separate `if`s would\nre-test each condition after the previous arm ran, and an action inside an arm can change\nwhat the next one tests \u2014 `internal/characters/flins/skill.go:56` deletes the very status\nits block is guarded on. `DESIGN_conditional_steps.md` records that hazard; this closes\n**OQ-C3** by giving the `else` somewhere to live."
+      },
       "BuildCreate": {
         "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "title": "Name",
+            "default": ""
+          },
+          "owned": {
+            "type": "boolean",
+            "title": "Owned",
+            "default": true
+          },
           "character_id": {
             "type": "string",
             "title": "Character Id"
@@ -4065,6 +4999,16 @@
             ],
             "title": "Optimizer Priority"
           },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "default": ""
+          },
+          "owned": {
+            "type": "boolean",
+            "title": "Owned",
+            "default": true
+          },
           "character": {
             "anyOf": [
               {
@@ -4116,6 +5060,29 @@
       },
       "BuildUpdate": {
         "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "owned": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owned"
+          },
           "weapon_id": {
             "anyOf": [
               {
@@ -4383,6 +5350,61 @@
         ],
         "title": "CalibrationRequest",
         "description": "Body for `POST /builds/{id}/calibrate` (R.3).\n\nOne calibration per **4-piece state**. `RESEARCH_conditional_sets.md`: every 4-piece bonus\nin the game is conditional, so only a run with the set equipped can hold it \u2014 and R.2\nmeasured the cost of not doing so at **15\u201325 % understated**."
+      },
+      "CallNode": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "call",
+            "title": "Kind",
+            "default": "call"
+          },
+          "function": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Function"
+          },
+          "arguments": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/Literal"
+                },
+                {
+                  "$ref": "#/components/schemas/Identifier"
+                },
+                {
+                  "$ref": "#/components/schemas/StatePath"
+                },
+                {
+                  "$ref": "#/components/schemas/Unary"
+                },
+                {
+                  "$ref": "#/components/schemas/Binary"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "kind",
+                "mapping": {
+                  "binary": "#/components/schemas/Binary",
+                  "identifier": "#/components/schemas/Identifier",
+                  "literal": "#/components/schemas/Literal",
+                  "state": "#/components/schemas/StatePath",
+                  "unary": "#/components/schemas/Unary"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Arguments"
+          }
+        },
+        "type": "object",
+        "required": [
+          "function"
+        ],
+        "title": "CallNode",
+        "description": "`f(a, b);` \u2014 a call to a user-defined function."
       },
       "CharacterRead": {
         "properties": {
@@ -4946,6 +5968,68 @@
         "title": "ContributionRead",
         "description": "One value and where it came from."
       },
+      "DeclaredFunction": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "parameters": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Parameters",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "DeclaredFunction",
+        "description": "One `fn` a rotation declares, as the builder needs to offer it."
+      },
+      "Diagnostic": {
+        "properties": {
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "line": {
+            "type": "integer",
+            "title": "Line",
+            "default": 1
+          },
+          "column": {
+            "type": "integer",
+            "title": "Column",
+            "default": 1
+          },
+          "length": {
+            "type": "integer",
+            "title": "Length",
+            "default": 1
+          },
+          "path": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Path"
+          }
+        },
+        "type": "object",
+        "required": [
+          "severity",
+          "message"
+        ],
+        "title": "Diagnostic",
+        "description": "One problem, with the position an editor underlines."
+      },
       "DivergenceRead": {
         "properties": {
           "reference_bucket": {
@@ -5351,6 +6435,88 @@
         "title": "ExplainResponse",
         "description": "A build's account of itself, and optionally of what it improves on."
       },
+      "FnNode": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "fn",
+            "title": "Kind",
+            "default": "fn"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "parameters": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Parameters"
+          },
+          "body": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ActionNode"
+                },
+                {
+                  "$ref": "#/components/schemas/LoopNode"
+                },
+                {
+                  "$ref": "#/components/schemas/BranchNode"
+                },
+                {
+                  "$ref": "#/components/schemas/WaitNode"
+                },
+                {
+                  "$ref": "#/components/schemas/SwapNode"
+                },
+                {
+                  "$ref": "#/components/schemas/LetNode"
+                },
+                {
+                  "$ref": "#/components/schemas/AssignNode"
+                },
+                {
+                  "$ref": "#/components/schemas/CallNode"
+                },
+                {
+                  "$ref": "#/components/schemas/FnNode"
+                },
+                {
+                  "$ref": "#/components/schemas/RawNode"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "kind",
+                "mapping": {
+                  "action": "#/components/schemas/ActionNode",
+                  "assign": "#/components/schemas/AssignNode",
+                  "branch": "#/components/schemas/BranchNode",
+                  "call": "#/components/schemas/CallNode",
+                  "fn": "#/components/schemas/FnNode",
+                  "let": "#/components/schemas/LetNode",
+                  "loop": "#/components/schemas/LoopNode",
+                  "raw": "#/components/schemas/RawNode",
+                  "swap": "#/components/schemas/SwapNode",
+                  "wait": "#/components/schemas/WaitNode"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Body"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "FnNode",
+        "description": "`fn name(params) { body }`.\n\nStructural here, and **authored as text** \u2014 owner, 2026-09-03: *\"user defined functions\nalmost need to be written\u2026 they'll have to author them themselves.\"* Measured: of the 41\ncorpus configs defining one, 41 have control flow in the body and 30 take a parameter, so\nthere is no simple-function case a form could have covered."
+      },
       "GcsimCandidateConfig": {
         "properties": {
           "weapon_id": {
@@ -5633,6 +6799,28 @@
         "title": "HitSpec",
         "description": "The hit a search or a ranking is judged on.\n\n**Either a `multiplier` or a `talent`, never both and never neither.** Naming the talent\nresolves the multiplier from the build's own character at its own talent level; giving a\nmultiplier outright still works, because asking about a hypothetical hit is legitimate and\nthe optimizer's fixtures do exactly that.\n\n**`channel` stays required either way.** The published table gives a multiplier and says\nnothing about which element the hit lands as \u2014 a normal attack is physical for most\ncharacters and not for a catalyst user, and infusions move it. Deriving it would be\ninventing a rule the data does not state."
       },
+      "Identifier": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "identifier",
+            "title": "Kind",
+            "default": "identifier"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "Identifier",
+        "description": "The config's own variable \u2014 a loop index, a `let` binding, a function parameter."
+      },
       "ImportRejection": {
         "properties": {
           "index": {
@@ -5826,6 +7014,59 @@
         "title": "KernelTarget",
         "description": "What the search scores against. `search.ts`'s `Target`."
       },
+      "LetNode": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "let",
+            "title": "Kind",
+            "default": "let"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Literal"
+              },
+              {
+                "$ref": "#/components/schemas/Identifier"
+              },
+              {
+                "$ref": "#/components/schemas/StatePath"
+              },
+              {
+                "$ref": "#/components/schemas/Unary"
+              },
+              {
+                "$ref": "#/components/schemas/Binary"
+              }
+            ],
+            "title": "Value",
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "binary": "#/components/schemas/Binary",
+                "identifier": "#/components/schemas/Identifier",
+                "literal": "#/components/schemas/Literal",
+                "state": "#/components/schemas/StatePath",
+                "unary": "#/components/schemas/Unary"
+              }
+            }
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "value"
+        ],
+        "title": "LetNode",
+        "description": "`let x = expr;`."
+      },
       "LibraryRotationRead": {
         "properties": {
           "id": {
@@ -5887,6 +7128,39 @@
         "title": "LibraryRotationRead",
         "description": "One published rotation, as the library lists it.\n\n**Not `RotationRead` with fields added.** That schema is what an author sees of their own\nrotation; this is what a stranger sees of someone else's, and the difference is the point:\n`like_count` and `liked_by_me` are facts about the *caller*, and `characters` is the\nderived index rather than the steps.\n\nThe steps are here too, because a rotation nobody can read before copying is one nobody\nshould copy \u2014 the whole argument for `POST /{id}/compile` applies to a shared rotation with\nmore force."
       },
+      "Literal": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "literal",
+            "title": "Kind",
+            "default": "literal"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "title": "Literal",
+        "description": "A number, a boolean, or a string."
+      },
       "LoginRequest": {
         "properties": {
           "email": {
@@ -5929,6 +7203,174 @@
         "title": "LoginResponse",
         "description": "Response for `POST /auth/login` \u2014 bearer token and its expiry."
       },
+      "LoopNode": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "loop",
+            "title": "Kind",
+            "default": "loop"
+          },
+          "loop": {
+            "type": "string",
+            "enum": [
+              "counted",
+              "guarded"
+            ],
+            "title": "Loop"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 64,
+            "title": "Label",
+            "default": ""
+          },
+          "variable": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variable"
+          },
+          "bound": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Literal"
+                  },
+                  {
+                    "$ref": "#/components/schemas/Identifier"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StatePath"
+                  },
+                  {
+                    "$ref": "#/components/schemas/Unary"
+                  },
+                  {
+                    "$ref": "#/components/schemas/Binary"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "kind",
+                  "mapping": {
+                    "binary": "#/components/schemas/Binary",
+                    "identifier": "#/components/schemas/Identifier",
+                    "literal": "#/components/schemas/Literal",
+                    "state": "#/components/schemas/StatePath",
+                    "unary": "#/components/schemas/Unary"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bound"
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Literal"
+                  },
+                  {
+                    "$ref": "#/components/schemas/Identifier"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StatePath"
+                  },
+                  {
+                    "$ref": "#/components/schemas/Unary"
+                  },
+                  {
+                    "$ref": "#/components/schemas/Binary"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "kind",
+                  "mapping": {
+                    "binary": "#/components/schemas/Binary",
+                    "identifier": "#/components/schemas/Identifier",
+                    "literal": "#/components/schemas/Literal",
+                    "state": "#/components/schemas/StatePath",
+                    "unary": "#/components/schemas/Unary"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condition"
+          },
+          "body": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ActionNode"
+                },
+                {
+                  "$ref": "#/components/schemas/LoopNode"
+                },
+                {
+                  "$ref": "#/components/schemas/BranchNode"
+                },
+                {
+                  "$ref": "#/components/schemas/WaitNode"
+                },
+                {
+                  "$ref": "#/components/schemas/SwapNode"
+                },
+                {
+                  "$ref": "#/components/schemas/LetNode"
+                },
+                {
+                  "$ref": "#/components/schemas/AssignNode"
+                },
+                {
+                  "$ref": "#/components/schemas/CallNode"
+                },
+                {
+                  "$ref": "#/components/schemas/FnNode"
+                },
+                {
+                  "$ref": "#/components/schemas/RawNode"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "kind",
+                "mapping": {
+                  "action": "#/components/schemas/ActionNode",
+                  "assign": "#/components/schemas/AssignNode",
+                  "branch": "#/components/schemas/BranchNode",
+                  "call": "#/components/schemas/CallNode",
+                  "fn": "#/components/schemas/FnNode",
+                  "let": "#/components/schemas/LetNode",
+                  "loop": "#/components/schemas/LoopNode",
+                  "raw": "#/components/schemas/RawNode",
+                  "swap": "#/components/schemas/SwapNode",
+                  "wait": "#/components/schemas/WaitNode"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Body"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loop"
+        ],
+        "title": "LoopNode",
+        "description": "A `for` with a bound, or a `while` with a guard."
+      },
       "MeResponse": {
         "properties": {
           "email": {
@@ -5952,6 +7394,347 @@
         ],
         "title": "MeResponse",
         "description": "Response for `GET /auth/me` \u2014 the current user's identity and account status."
+      },
+      "OptimizationRunCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "title": "Name",
+            "default": ""
+          },
+          "objective": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Objective"
+          },
+          "snapshot": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Snapshot"
+          },
+          "result": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Result"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "margin": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Margin"
+          },
+          "iterations": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Iterations",
+            "default": 0
+          },
+          "elapsed_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elapsed Seconds"
+          },
+          "gcsim_pin": {
+            "type": "string",
+            "maxLength": 64,
+            "title": "Gcsim Pin",
+            "default": ""
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "rotation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rotation Id"
+          },
+          "rotation_signature": {
+            "type": "string",
+            "maxLength": 64,
+            "title": "Rotation Signature",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "objective",
+          "snapshot",
+          "result",
+          "score"
+        ],
+        "title": "OptimizationRunCreate",
+        "description": "Body for `POST /optimization-runs` \u2014 a search the client has just finished."
+      },
+      "OptimizationRunRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/Visibility"
+          },
+          "share_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share Key"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "margin": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Margin"
+          },
+          "iterations": {
+            "type": "integer",
+            "title": "Iterations"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "rotation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rotation Id"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "summary": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Summary"
+          },
+          "objective": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Objective"
+          },
+          "snapshot": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Snapshot"
+          },
+          "result": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Result"
+          },
+          "elapsed_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elapsed Seconds"
+          },
+          "gcsim_pin": {
+            "type": "string",
+            "title": "Gcsim Pin",
+            "default": ""
+          },
+          "rotation_signature": {
+            "type": "string",
+            "title": "Rotation Signature",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "visibility",
+          "score",
+          "iterations",
+          "created_at"
+        ],
+        "title": "OptimizationRunRead",
+        "description": "One run in full."
+      },
+      "OptimizationRunSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/Visibility"
+          },
+          "share_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share Key"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "margin": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Margin"
+          },
+          "iterations": {
+            "type": "integer",
+            "title": "Iterations"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "rotation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rotation Id"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "summary": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "visibility",
+          "score",
+          "iterations",
+          "created_at"
+        ],
+        "title": "OptimizationRunSummary",
+        "description": "One row of the list \u2014 enough to choose between runs without loading any of them."
+      },
+      "OptimizationRunUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "visibility": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Visibility"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "OptimizationRunUpdate",
+        "description": "Body for `PATCH /optimization-runs/{id}` \u2014 the two things a user changes afterwards.\n\nNot the result. A saved run records what happened, and editing that would make the\nlibrary a place where numbers are asserted rather than measured."
       },
       "OwnedWeaponRead": {
         "properties": {
@@ -6366,6 +8149,33 @@
         "title": "RarityVocabularyEntry",
         "description": "One rarity, as a page needs to render it."
       },
+      "RawNode": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "raw",
+            "title": "Kind",
+            "default": "raw"
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Source"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "reason"
+        ],
+        "title": "RawNode",
+        "description": "Source this parser did not model, carried exactly.\n\n**The piece the whole design rests on.** Import reaches 100 % at the parser's first phase\nbecause anything unmodelled becomes one of these, emits byte-identically, and blocks\nnothing.\n\nTwo rules keep it from being silent degradation:\n\n- **`reason` is required.** A user must be able to see *which* construct is carried rather\n  than understood, because that is the difference between editing it in the builder and\n  editing it as text.\n- **It is opaque, never partial.** A production that cannot complete raws its *whole*\n  construct. Reading half a `for` and raw-ing the body would produce a tree that looks\n  structured and emits something the author did not write."
+      },
       "ReactionRead": {
         "properties": {
           "id": {
@@ -6717,12 +8527,38 @@
             "type": "array",
             "title": "Steps"
           },
+          "tree": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RotationTree"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "rewrites": {
             "items": {
               "type": "string"
             },
             "type": "array",
             "title": "Rewrites",
+            "default": []
+          },
+          "diagnostics": {
+            "items": {
+              "$ref": "#/components/schemas/Diagnostic"
+            },
+            "type": "array",
+            "title": "Diagnostics",
+            "default": []
+          },
+          "carried": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Carried",
             "default": []
           }
         },
@@ -6847,6 +8683,65 @@
         "title": "RotationRead",
         "description": "One saved rotation."
       },
+      "RotationSourceRead": {
+        "properties": {
+          "tree": {
+            "$ref": "#/components/schemas/RotationTree"
+          },
+          "diagnostics": {
+            "items": {
+              "$ref": "#/components/schemas/Diagnostic"
+            },
+            "type": "array",
+            "title": "Diagnostics",
+            "default": []
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": ""
+          },
+          "functions": {
+            "items": {
+              "$ref": "#/components/schemas/DeclaredFunction"
+            },
+            "type": "array",
+            "title": "Functions",
+            "default": []
+          },
+          "editable_in_builder": {
+            "type": "boolean",
+            "title": "Editable In Builder",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "tree"
+        ],
+        "title": "RotationSourceRead",
+        "description": "A parsed rotation, its diagnostics, and what it re-emits as.\n\n**The tree is the source of truth and `source` is what it renders back to** (task 7.4).\nA client that shows the returned `source` after an edit gets normalisation for free; one\nthat keeps the user's own text keeps their formatting. Both are valid, and the tree is the\nsame either way, which is the property that makes the two-way sync safe."
+      },
+      "RotationSourceRequest": {
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "title": "Team Id"
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 100000,
+            "title": "Source",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "team_id"
+        ],
+        "title": "RotationSourceRequest",
+        "description": "Body for `POST /rotations/validate` \u2014 the source view's every keystroke.\n\nSeparate from `RotationImportRequest` because it means something different: an import is\na whole `.txt` file somebody else wrote, while this is the **rotation half** as the editor\nholds it, sent back on change to be parsed and checked. Sharing one body would make the\ntwo indistinguishable in a log and force the editor to fabricate a config wrapper."
+      },
       "RotationStep": {
         "properties": {
           "character": {
@@ -6916,6 +8811,66 @@
         ],
         "title": "RotationStep",
         "description": "One action by one character."
+      },
+      "RotationTree": {
+        "properties": {
+          "nodes": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ActionNode"
+                },
+                {
+                  "$ref": "#/components/schemas/LoopNode"
+                },
+                {
+                  "$ref": "#/components/schemas/BranchNode"
+                },
+                {
+                  "$ref": "#/components/schemas/WaitNode"
+                },
+                {
+                  "$ref": "#/components/schemas/SwapNode"
+                },
+                {
+                  "$ref": "#/components/schemas/LetNode"
+                },
+                {
+                  "$ref": "#/components/schemas/AssignNode"
+                },
+                {
+                  "$ref": "#/components/schemas/CallNode"
+                },
+                {
+                  "$ref": "#/components/schemas/FnNode"
+                },
+                {
+                  "$ref": "#/components/schemas/RawNode"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "kind",
+                "mapping": {
+                  "action": "#/components/schemas/ActionNode",
+                  "assign": "#/components/schemas/AssignNode",
+                  "branch": "#/components/schemas/BranchNode",
+                  "call": "#/components/schemas/CallNode",
+                  "fn": "#/components/schemas/FnNode",
+                  "let": "#/components/schemas/LetNode",
+                  "loop": "#/components/schemas/LoopNode",
+                  "raw": "#/components/schemas/RawNode",
+                  "swap": "#/components/schemas/SwapNode",
+                  "wait": "#/components/schemas/WaitNode"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Nodes"
+          }
+        },
+        "type": "object",
+        "title": "RotationTree",
+        "description": "A rotation, as an ordered tree."
       },
       "RotationUpdate": {
         "properties": {
@@ -7127,6 +9082,15 @@
         ],
         "title": "SetRecommendationRead",
         "description": "One artifact set \u2014 or one *kind* of two-piece \u2014 KeqingMains lists for a character."
+      },
+      "Severity": {
+        "type": "string",
+        "enum": [
+          "error",
+          "warning"
+        ],
+        "title": "Severity",
+        "description": "How much a diagnostic matters."
       },
       "SimRunCoverage": {
         "properties": {
@@ -7490,6 +9454,30 @@
         "title": "StatVocabularyEntry",
         "description": "One stat, as a page needs to render it."
       },
+      "StatePath": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "state",
+            "title": "Kind",
+            "default": "state"
+          },
+          "segments": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Segments"
+          }
+        },
+        "type": "object",
+        "required": [
+          "segments"
+        ],
+        "title": "StatePath",
+        "description": "A reach into the simulation: `.furina.energy`, `.x.burst.ready`.\n\n**Deliberately not an `Identifier`.** Only gcsim can answer one of these, and a condition\neditor that treats both as \"a string\" ends up offering the loop index `i` as a character."
+      },
       "SubstatAnalysisRead": {
         "properties": {
           "rolls": {
@@ -7542,6 +9530,94 @@
         "type": "object",
         "title": "SubstatAnalysisRead",
         "description": "One substat's reconstruction. Every field is nullable, and the nulls are the point."
+      },
+      "SuiteRow": {
+        "properties": {
+          "suite_id": {
+            "type": "string",
+            "title": "Suite Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "icon": {
+            "type": "string",
+            "title": "Icon"
+          },
+          "placement": {
+            "type": "string",
+            "title": "Placement"
+          },
+          "owned_favorites": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Owned Favorites"
+          },
+          "unowned_favorites": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unowned Favorites"
+          },
+          "done": {
+            "type": "boolean",
+            "title": "Done"
+          },
+          "remaining": {
+            "type": "integer",
+            "title": "Remaining"
+          },
+          "remaining_primogems": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remaining Primogems"
+          }
+        },
+        "type": "object",
+        "required": [
+          "suite_id",
+          "name",
+          "icon",
+          "placement",
+          "owned_favorites",
+          "unowned_favorites",
+          "done",
+          "remaining"
+        ],
+        "title": "SuiteRow",
+        "description": "One set in the tracker."
+      },
+      "SwapNode": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "swap",
+            "title": "Kind",
+            "default": "swap"
+          },
+          "character": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Character"
+          }
+        },
+        "type": "object",
+        "required": [
+          "character"
+        ],
+        "title": "SwapNode",
+        "description": "An explicit `x swap;`. gcsim also inserts one implicitly; this is the written kind."
       },
       "TalentRead": {
         "properties": {
@@ -7661,6 +9737,12 @@
             "title": "Name",
             "default": ""
           },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Notes",
+            "default": ""
+          },
           "build1_id": {
             "type": "string",
             "title": "Build1 Id"
@@ -7711,6 +9793,12 @@
           "id": {
             "type": "string",
             "title": "Id"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Notes",
+            "default": ""
           },
           "name": {
             "type": "string",
@@ -7813,6 +9901,17 @@
             ],
             "title": "Name"
           },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
           "build1_id": {
             "anyOf": [
               {
@@ -7861,6 +9960,85 @@
         "type": "object",
         "title": "TeamUpdate",
         "description": "Body for `PATCH /teams/{id}` \u2014 all fields optional, partial update."
+      },
+      "TeapotRead": {
+        "properties": {
+          "suites": {
+            "items": {
+              "$ref": "#/components/schemas/SuiteRow"
+            },
+            "type": "array",
+            "title": "Suites"
+          },
+          "reward_per_character": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reward Per Character"
+          }
+        },
+        "type": "object",
+        "required": [
+          "suites"
+        ],
+        "title": "TeapotRead",
+        "description": "The tracker, ranked."
+      },
+      "Unary": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "unary",
+            "title": "Kind",
+            "default": "unary"
+          },
+          "op": {
+            "type": "string",
+            "title": "Op"
+          },
+          "operand": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Literal"
+              },
+              {
+                "$ref": "#/components/schemas/Identifier"
+              },
+              {
+                "$ref": "#/components/schemas/StatePath"
+              },
+              {
+                "$ref": "#/components/schemas/Unary"
+              },
+              {
+                "$ref": "#/components/schemas/Binary"
+              }
+            ],
+            "title": "Operand",
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "binary": "#/components/schemas/Binary",
+                "identifier": "#/components/schemas/Identifier",
+                "literal": "#/components/schemas/Literal",
+                "state": "#/components/schemas/StatePath",
+                "unary": "#/components/schemas/Unary"
+              }
+            }
+          }
+        },
+        "type": "object",
+        "required": [
+          "op",
+          "operand"
+        ],
+        "title": "Unary",
+        "description": "`!x`, `-n`. One operator over one operand."
       },
       "UncitedRead": {
         "properties": {
@@ -8037,6 +10215,36 @@
         ],
         "title": "Visibility",
         "description": "Whether a rotation is the author's alone, or offered to everyone on this instance.\n\n**Private is the default, and that is the decision** (`DECISIONS.md` \u00a721, OQ-4). A private\nrotation becoming visible by default is not a mistake that can be taken back \u2014 the author\ncannot un-share what someone has already read \u2014 so sharing is something a user does, never\nsomething that happens to them.\n\nTwo values, deliberately. A middle tier (unlisted, link-only, friends) is a permission\nmodel, and this repo has no notion of one; adding a value here would be inventing the\nsmallest possible version of it and then owing the rest."
+      },
+      "WaitNode": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "wait",
+            "title": "Kind",
+            "default": "wait"
+          },
+          "frames": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Frames"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "wait",
+              "delay"
+            ],
+            "title": "Mode",
+            "default": "wait"
+          }
+        },
+        "type": "object",
+        "required": [
+          "frames"
+        ],
+        "title": "WaitNode",
+        "description": "gcsim's `wait(n)` or `delay(n)` \u2014 32 corpus configs use one."
       },
       "WeaponClassRead": {
         "properties": {

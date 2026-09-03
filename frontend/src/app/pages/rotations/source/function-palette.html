@@ -1,0 +1,20 @@
+@if (functions().length) {
+  <div class="palette">
+    <span class="palette__label">Functions this rotation declares</span>
+    <ul class="palette__list">
+      @for (declared of functions(); track declared.name) {
+        <li>
+          <button
+            type="button"
+            class="palette__call"
+            [title]="'Add a call to ' + declared.name"
+            (click)="draw(declared)"
+          >{{ preview(declared) }}</button>
+        </li>
+      }
+    </ul>
+    <p class="palette__hint">
+      Written below as text, because a function body is control flow. Calling one is a click.
+    </p>
+  </div>
+}

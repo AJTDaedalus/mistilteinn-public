@@ -556,3 +556,35 @@
 }
 
 .energy-model .hint { display: block; }
+
+/* A re-opened saved run. It renders from the stored snapshot and runs no gcsim — that is
+   what storing the result bought. */
+.saved-run {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+}
+
+.saved-run__head { display: flex; align-items: baseline; gap: var(--space-3); }
+.saved-run__head h2 { margin: 0; font-size: var(--text-md); flex: 1 1 auto; }
+
+/* Stale is a warning, not an error: the number is true about the gear it was measured on. */
+.saved-run__stale { margin: 0; color: var(--warning); font-size: var(--text-sm); }
+
+.saved-run__score { margin: 0; font-variant-numeric: tabular-nums; }
+.saved-run__margin { color: var(--mint); margin: 0 var(--space-2); }
+
+/* Saving a finished search. Offered rather than automatic: the previous-runs list is a
+   record the user curates, and saving everything would make it a log they have to prune. */
+.save-run {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.save-run__name { flex: 0 1 20rem; min-width: 0; }
+.save-run__done { color: var(--ink-dim); font-size: var(--text-sm); }

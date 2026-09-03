@@ -28,11 +28,13 @@ from app.models.enums import (
     UserStatus,
     WeaponType,
 )
+from app.models.optimization_run import OptimizationRun
 from app.models.rotation import Rotation
 from app.models.seed_provenance import SeedRun
 from app.models.session import Session
 from app.models.sim_run import SimRun
 from app.models.team import Team
+from app.models.teapot import FurnishingSuite, FurnishingSuiteFavorite, TeapotProgress
 from app.models.user import User
 from app.models.weapon import OwnedWeapon, Weapon, WeaponRefinement
 
@@ -52,6 +54,9 @@ __all__ = [
     "DamageType",
     "Element",
     "EnemyProfile",
+    "FurnishingSuite",
+    "FurnishingSuiteFavorite",
+    "OptimizationRun",
     "OwnedWeapon",
     "Rarity",
     "Rotation",
@@ -63,6 +68,7 @@ __all__ = [
     "TalentScaling",
     "TalentType",
     "Team",
+    "TeapotProgress",
     "TimestampMixin",
     "User",
     "UserStatus",

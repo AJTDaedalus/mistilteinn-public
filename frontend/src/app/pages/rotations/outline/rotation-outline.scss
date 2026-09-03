@@ -1,0 +1,71 @@
+:host { display: block; min-width: 0; }
+
+/* **Dense on purpose.** This is a record of decisions already made, so it earns its space by
+   fitting a long rotation on screen rather than by being comfortable to read one line of. */
+.outline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: auto;
+  font-size: var(--text-sm);
+}
+
+.outline:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+
+.outline__row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: var(--radius-1);
+  cursor: pointer;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.outline__row:hover { background: var(--surface-hi); }
+
+.outline__row--selected { background: var(--surface-hi); box-shadow: inset 2px 0 0 var(--brass); }
+
+.outline__row--over { box-shadow: inset 0 2px 0 var(--mint); }
+
+.outline__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.outline__row--carried .outline__row--over { box-shadow: inset 0 2px 0 var(--mint); }
+
+.outline__label {
+  font-family: var(--font-mono);
+  color: var(--ink-dim);
+}
+
+.outline__twist {
+  flex: 0 0 auto;
+  width: 1rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-dim);
+  cursor: pointer;
+  font-size: 0.7rem;
+}
+
+.outline__twist--empty { cursor: default; }
+
+.outline__count,
+.outline__badge {
+  flex: 0 0 auto;
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+}
+
+.outline__badge {
+  padding: 0 0.35rem;
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-pill);
+}
+
+.outline__empty { padding: 0.5rem 0.4rem; color: var(--ink-dim); }

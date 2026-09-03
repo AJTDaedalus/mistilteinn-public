@@ -49,14 +49,27 @@ from app.schemas.rotation import (
     RotationOptions,
     RotationPreviewRequest,
     RotationRead,
+    RotationSourceRead,
+    RotationSourceRequest,
     RotationStep,
     RotationUpdate,
     TeamRoster,
 )
+from app.schemas.rotation_nodes import (
+    ActionNode,
+    BranchNode,
+    FnNode,
+    LoopNode,
+    RawNode,
+    RotationTree,
+    SwapNode,
+)
 from app.schemas.team import TEAM_SLOTS
 from app.services import element_symbols, gcsim_keys
 from app.services.gcsim_config import GcsimConfigError, build_config, target_fields
+from app.services.gcsim_emitter import emit_tree
 from app.services.gcsim_keys import GcsimKeyError, authorable_actions, pinned_commit
+from app.services.gcsim_parser import split_config
 from app.services.gcsim_share import (
     GcsimShareError,
     HttpShareTransport,
@@ -70,7 +83,13 @@ from app.services.rotation_compiler import (
     signature_digest,
 )
 from app.services.rotation_converter import convert
-from app.services.rotation_parser import RotationParseError, parse_action_block
+from app.services.rotation_diagnostics import validate_rotation
+from app.services.rotation_parser import (
+    RotationParseError,
+    _canonical,
+    _roster_keys,
+    parse_action_block,
+)
 from app.services.sim_context import ER_BUCKET_PERCENT, context_key
 
 if TYPE_CHECKING:
@@ -361,21 +380,165 @@ def _require_roster(roster: dict[str, object], team_id: str) -> None:
         )
 
 
+def _unknown_characters(tree: RotationTree, roster: dict[str, object]) -> set[str]:
+    """Characters the tree names that this team cannot supply.
+
+    Resolved **forward** through `character_key`, the same direction `rotation_parser` uses,
+    and through the same alias table — so `arle` on a team with Arlecchino is not reported as
+    a stranger.
+    """
+    known = _roster_keys(roster.values())
+    return {
+        name for name in _tree_characters(list(tree.nodes))
+        if _canonical(name, known) not in known
+    }
+
+
+def _tree_characters(nodes: list) -> set[str]:
+    """Every character named anywhere in `nodes`, including inside blocks."""
+    found: set[str] = set()
+    for node in nodes:
+        if isinstance(node, ActionNode | SwapNode):
+            found.add(node.character)
+        elif isinstance(node, BranchNode):
+            for _, body in node.arms:
+                found |= _tree_characters(body)
+            if node.otherwise is not None:
+                found |= _tree_characters(node.otherwise)
+        elif isinstance(node, LoopNode | FnNode):
+            found |= _tree_characters(node.body)
+    return found
+
+
 def _read_config(config: str, roster: dict[str, object]) -> RotationImportRead:
-    """One config, read into steps — the half both import endpoints share.
+    """One config, read into steps **and** a tree — the half both import endpoints share.
 
     Split out when the link importer arrived, so that a rotation fetched from gcsim and one
     pasted from it cannot be read by two different parsers. The refusal rules are the whole
     value of this path; a second copy of them would be a second set of them.
+
+    **The tree never refuses.** `gcsim_parser` carries anything it cannot model as a `RawNode`
+    holding exact source, so every config produces one — that is Phase 2's promise and the
+    reason import is 100 %. The older steps reader still runs beside it and still refuses by
+    name, because until the builder can edit a tree (Phases 8–10) `steps` is what the client
+    renders. A config the steps reader rejects therefore comes back with a tree, an empty step
+    list, and its refusal in `carried` rather than as a 422 — which is the behaviour change
+    this whole feature exists to make.
     """
     converted, notes = convert(config)
+    _, rotation_source = split_config(config)
+    tree, diagnostics = validate_rotation(rotation_source, roster)
+    carried = [node.reason for node in tree.nodes if isinstance(node, RawNode)]
+
+    # **An unknown character is still fatal, and an unexpressible construct no longer is.**
+    # The two arrive as the same `RotationParseError` and they are not the same problem: a
+    # `fn` is something this app can now run, while `xiangling` on a team without her is a
+    # rotation nobody can simulate. Returning a tree for the second would replace a refusal a
+    # user can act on with a rotation that fails later and further away.
+    unknown = sorted(_unknown_characters(tree, roster))
+    if unknown:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"this config names {', '.join(repr(u) for u in unknown)}, who "
+                f"{'is' if len(unknown) == 1 else 'are'} not on this team. A rotation is "
+                f"compiled against the team's builds, so there is nobody for these steps to "
+                f"act as."
+            ),
+        )
     try:
         steps = parse_action_block(converted, roster.values())
     except RotationParseError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        # No longer fatal: the tree holds the rotation, so refusing the whole import would
+        # throw away something this app can now run. The reason is reported instead.
+        return RotationImportRead(
+            steps=[], tree=tree, rewrites=notes, diagnostics=diagnostics,
+            carried=[*carried, *str(exc).splitlines()],
+        )
     return RotationImportRead(
-        steps=[RotationStep(**step) for step in steps], rewrites=notes,
+        steps=[RotationStep(**step) for step in steps], tree=tree, rewrites=notes,
+        diagnostics=diagnostics, carried=carried,
     )
+
+
+@router.post("/validate", response_model=RotationSourceRead)
+async def validate_source(
+    body: RotationSourceRequest,
+    repo: _Repo,
+) -> RotationSourceRead:
+    """Parse and check rotation source, without saving anything.
+
+    **This is what makes the source view possible at all**, and it is deliberately the *same*
+    parser and the same validator the importer runs. The owner's ruling of 2026-09-03 allows
+    a typed surface where buttons cannot reach; `DECISIONS.md` §32 records why that is not a
+    second vocabulary, and the reason is exactly this endpoint: text typed in the editor goes
+    through the code an imported config goes through, so nothing authored can escape the rules
+    an import obeys.
+
+    **It never refuses.** Unparseable source still returns a tree — one `raw` node holding it —
+    because the editor sends this on every keystroke and half-typed text is the normal state,
+    not an error. What is wrong with it comes back in `diagnostics` with positions to underline.
+    """
+    roster = await repo.character_rows(body.team_id)
+    _require_roster(roster, body.team_id)
+    tree, diagnostics = validate_rotation(body.source, roster)
+    return RotationSourceRead(
+        tree=tree,
+        diagnostics=diagnostics,
+        source=emit_tree(tree),
+        editable_in_builder=_editable_in_builder(tree),
+        functions=_declared_functions(tree),
+    )
+
+
+def _declared_functions(tree: RotationTree) -> list[dict]:
+    """Every `fn` the rotation declares, as something the builder can offer as a button.
+
+    Owner, 2026-09-03: *"fn stays text only, but… a way to treat user defined functions (in a
+    rotation's scope) as buttons to draw onto the rotation."*
+
+    **Authoring one stays text; calling one becomes a click.** That is the split the owner
+    drew and it is the right one: a function body is control flow, which is why it needs text
+    at all, while a *call* is exactly the shape the picker already deals in — a name and some
+    arguments. The vocabulary comes from the rotation itself, so it cannot drift: a function
+    that is renamed or deleted stops being offered because the tree stopped declaring it.
+    """
+    return [
+        {"name": node.name, "parameters": list(node.parameters)}
+        for _, node in _tree_nodes(list(tree.nodes))
+        if isinstance(node, FnNode)
+    ]
+
+
+#: Node kinds the builder can render and edit. Everything else needs the source view.
+_BUILDER_KINDS = frozenset({"action", "loop", "branch", "swap", "wait"})
+
+
+def _editable_in_builder(tree: RotationTree) -> bool:
+    """Can every node in `tree` be edited without typing?
+
+    The honest trigger for OQ-L1's narrowest form. A `raw` node cannot be — that is what raw
+    means — and neither can an `fn`, by the owner's own reading: *"user defined functions
+    almost need to be written."*
+    """
+    return all(
+        node.kind in _BUILDER_KINDS for _, node in _tree_nodes(list(tree.nodes))
+    )
+
+
+def _tree_nodes(nodes: list) -> list[tuple[tuple, object]]:
+    """Every node with its path, including inside blocks."""
+    out: list[tuple[tuple, object]] = []
+    for index, node in enumerate(nodes):
+        out.append(((index,), node))
+        if isinstance(node, LoopNode | FnNode):
+            out.extend(((index, *p), n) for p, n in _tree_nodes(node.body))
+        elif isinstance(node, BranchNode):
+            for arm, (_, body) in enumerate(node.arms):
+                out.extend(((index, arm, *p), n) for p, n in _tree_nodes(body))
+            if node.otherwise is not None:
+                out.extend(((index, *p), n) for p, n in _tree_nodes(node.otherwise))
+    return out
 
 
 @router.post("/import/link", response_model=RotationImportRead)

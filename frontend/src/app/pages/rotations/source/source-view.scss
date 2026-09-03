@@ -1,0 +1,52 @@
+:host { display: block; }
+
+.source {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.source__hint {
+  color: var(--ink-dim);
+  font-size: 0.85rem;
+}
+
+.source__editor {
+  width: 100%;
+  min-height: 18rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  background: var(--bg-deep);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  resize: vertical;
+  /* Wide rotations scroll inside the editor rather than pushing the dialog wider. */
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.source__editor:focus-visible { outline: 2px solid var(--brass); outline-offset: 1px; }
+
+.source__state {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 1.25rem;
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
+
+.source__list { margin: 0; padding-left: 1.1rem; }
+
+.source__item { font-size: 0.85rem; }
+
+/* Error and warning are the palette's, never written out here: `.muted`/`.hint`/`.error`/
+   `.warn` were once defined by hand in nine stylesheets, so the two colours the app uses to
+   say something is wrong were the only ones not in the palette. */
+.source__item--error { color: var(--danger); }
+.source__item--warning { color: var(--warning); }
+
+.source__at { color: var(--ink-dim); font-family: var(--font-mono); }

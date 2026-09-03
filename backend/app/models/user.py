@@ -17,6 +17,15 @@ class User(TimestampMixin, Base):
     __tablename__ = "users"
 
     id: Mapped[uuid_pk]
+    #: When this user last replaced their inventory from a GOOD export.
+    #:
+    #: A GOOD import replaces an inventory wholesale, so this is what tells a user whether a
+    #: saved optimization result predates their last farming session — the commonest reason a
+    #: stored number stops being true. Null until they have imported once.
+    gear_imported_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True,
+    )
+
     email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False, index=True)
     label: Mapped[str] = mapped_column(String(200), nullable=False, default="")
     password_hash: Mapped[str] = mapped_column(String(72), nullable=False)

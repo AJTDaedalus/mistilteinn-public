@@ -11,6 +11,7 @@ Field provenance: `tests/fixtures/nanoka_gi/artifact.json` (index),
 from __future__ import annotations
 
 from sqlalchemy import (
+    Boolean,
     Case,
     Float,
     ForeignKey,
@@ -249,6 +250,14 @@ class Artifact(TimestampMixin, Base):
     main_stat_type: Mapped[StatType] = mapped_column(enum_column(StatType, 48), nullable=False)
     main_stat_value: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
 
+    #: The user's own "do not feed this away" flag, as their GOOD export recorded it.
+    #:
+    #: **Read since the importer was written and dropped until now.** An optimizer that builds
+    #: around a piece somebody has locked for another character is giving advice they cannot
+    #: take, which is a worse failure than not knowing: the recommendation looks actionable.
+    locked: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false"),
+    )
     substats: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
 
     artifact_set: Mapped[ArtifactSet | None] = relationship(lazy=GUARDED_LAZY)

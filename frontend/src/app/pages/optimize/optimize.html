@@ -16,6 +16,36 @@
     </p>
   } @else {
 
+    <!-- **Saved runs first**, before any search is started — the owner's stated first
+         impression of the page. It fails soft: a list that cannot load must not stop
+         somebody starting a new search. -->
+    <app-previous-runs
+      [characterId]="characterId()"
+      (opened)="openSavedRun($event)"
+    />
+
+    @if (savedRun(); as run) {
+      <section class="saved-run" aria-label="A saved run">
+        <header class="saved-run__head">
+          <h2>{{ run.name || 'Untitled run' }}</h2>
+          <button type="button" (click)="closeSavedRun()">Close</button>
+        </header>
+        @if (savedRunIsStale()) {
+          <p class="saved-run__stale" role="status">
+            Your gear has changed since this ran. The result below is what was measured then,
+            not what this build would score now.
+          </p>
+        }
+        <p class="saved-run__score">
+          {{ run.score | number: '1.0-0' }}
+          @if (run.margin !== null && run.margin !== undefined) {
+            <span class="saved-run__margin">+{{ run.margin * 100 | number: '1.1-1' }}%</span>
+          }
+          <span class="muted">{{ run.iterations }} iterations</span>
+        </p>
+      </section>
+    }
+
     <!-- Who the page is answering for. Both pages ran their whole computation against a
          build named only inside a `<select>` the reader has already looked away from. -->
     @if (build(); as subject) {
@@ -487,6 +517,28 @@
     }
 
     @if (result(); as found) {
+      <!-- **Saving is offered, never automatic.** A search a user was only trying out should
+           not accumulate in their library — the list is a record they curate, and a page that
+           saved every run would make it a log they have to prune. -->
+      <div class="save-run">
+        @if (savedRunId()) {
+          <span class="save-run__done">Saved to your previous runs.</span>
+        } @else {
+          <input
+            type="text"
+            class="save-run__name"
+            maxlength="120"
+            placeholder="name this run (optional)"
+            aria-label="Name this run"
+            [value]="runName()"
+            (input)="runName.set($any($event.target).value)"
+          />
+          <button type="button" [disabled]="!canSaveRun() || savingRun()" (click)="saveRun()">
+            {{ savingRun() ? 'Saving…' : 'Save this run' }}
+          </button>
+        }
+      </div>
+
       <!-- What the answer claims is as important as the answer. A top-10 that is really the
            top 10 of a pruned subset, shown without saying so, is a confident answer to a
            question nobody asked. -->

@@ -29,6 +29,12 @@ class Team(TimestampMixin, Base):
     owner_id: Mapped[str | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    #: Why this team exists, in the user's own words.
+    #:
+    #: A team has no free text at all, and "Furina for the Skirk melt test" is exactly the
+    #: sort of thing that is obvious when written and gone a month later.
+    notes: Mapped[str] = mapped_column(String(1000), nullable=False, default="")
+
     name: Mapped[str] = mapped_column(String(200), default="")
 
     build1_id: Mapped[str | None] = mapped_column(

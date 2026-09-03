@@ -39,12 +39,14 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import delete, select
 
 from app.data.snapshot import artifact_main_stat_value
 from app.models.artifact import Artifact, ArtifactSet
+from app.models.user import User
 from app.services.substat_rolls import analyse
 
 if TYPE_CHECKING:
@@ -177,6 +179,9 @@ async def store_good_import(
                 artifact.rarity.stars, artifact.level, artifact.main_stat,
             ),
             substats=list(artifact.substats),
+            # **Carried through at last.**  has been read since the
+            # importer was written; the column to put it in is new.
+            locked=artifact.lock,
         )
         for artifact, set_id in resolved
     ]
@@ -191,6 +196,18 @@ async def store_good_import(
     await session.flush()
 
     unequipped = await _restore_equipment(session, owner_id, equipped_before)
+
+    # **Stamped here, once the write has actually happened.** A GOOD import replaces an
+    # inventory wholesale, and this is what later tells a user whether a saved optimization
+    # result predates their last farming session — the commonest reason a stored number
+    # stops being true. Setting it before the write would date an import that failed.
+    owner = await session.get(User, owner_id)
+    if owner is not None:
+        owner.gear_imported_at = datetime.now(UTC)
+        # Flushed with the rest of the write rather than left for the caller's commit: this
+        # function's other effects are already visible by the time it returns, and a stamp
+        # that is not would be a field whose presence depended on who called it.
+        await session.flush()
 
     return StoredImport(
         inserted=len(resolved),

@@ -80,6 +80,13 @@ class Rotation(TimestampMixin, Base):
     #: always read and written whole. A child table would buy ordering columns and a join to
     #: express something the list already says.
     steps: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    #: The rotation as a tree, once it has one. Nullable through the rollout.
+    #:
+    #: `DESIGN_rotation_language.md`. `steps` is a tree flattened into a list with a path
+    #: column, and it cannot hold `else`, nested loops or a user function. The read path
+    #: **prefers `tree` and falls back to `steps`**, so a row written before this column
+    #: existed keeps working and no deploy needs a coordinated backfill.
+    tree: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     team: Mapped[object] = relationship("Team")
 
