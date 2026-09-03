@@ -17,6 +17,39 @@
     <p class="muted">Loading…</p>
   } @else {
 
+    <!-- **Two tabs, because the page answers two questions.** Owner: *"we need a tab for both
+         so users can change ownership manually if needed."*
+
+         A build says what gear a character has, and is only ever made for a character holding
+         some. The roster says whether the account has the character at all. They were one
+         thing until 2026-09-03, and twelve of the owner's characters had no build and so no
+         way to be counted — 22 furnishing sets the teapot tracker could not offer.
+
+         The search and the filter chips below are deliberately **shared**: they narrow whichever
+         tab is showing, so switching tabs keeps your place rather than resetting it. -->
+    <div class="tabs" role="tablist" aria-label="Builds or roster">
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        [class.tab--on]="tab() === 'builds'"
+        [attr.aria-selected]="tab() === 'builds'"
+        (click)="tab.set('builds')"
+      >Builds <span class="tab__count">{{ builds().length }}</span></button>
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        [class.tab--on]="tab() === 'roster'"
+        [attr.aria-selected]="tab() === 'roster'"
+        (click)="tab.set('roster')"
+      >Roster <span class="tab__count">{{ ownedCount() }}</span></button>
+    </div>
+
+    @if (actionError(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+
     <!-- 75 builds from a GOOD import, about nine visible at a time. The search matches
          **characters only** (owner ruling): typing "sword" used to match every build
          holding one, so a search for a character returned a wall of weapons. The weapon
@@ -85,8 +118,53 @@
       </div>
     </div>
 
+    @if (tab() === 'roster') {
+      <p class="muted saved-count">
+        {{ shownRoster().length }} of {{ roster().length }} · you have {{ ownedCount() }}
+      </p>
+
+      <ul class="saved roster">
+        @for (entry of shownRoster(); track entry.character_id) {
+          <!-- **Three states, not two**, because `owned` is tri-state: `null` means nobody has
+               said, which is not the same as the user saying no. A fresh account should not
+               read as "you own none of the 150 characters". -->
+          <li
+            [class.roster--owned]="entry.owned === true"
+            [class.roster--unowned]="entry.owned === false"
+            [class.roster--unsaid]="entry.owned === null"
+          >
+            <label class="roster__pick">
+              <catalogue-icon class="face" [icon]="entry.icon" [alt]="''" [size]="72" />
+              <span class="name">{{ entry.name }}</span>
+              <span class="marks">
+                <element-chip compact [size]="22" [element]="entry.element ?? null" />
+              </span>
+              <span class="roster__say">
+                <input
+                  type="checkbox"
+                  [checked]="entry.owned === true"
+                  [disabled]="savingCharacter() === entry.character_id"
+                  [attr.aria-label]="'I have ' + entry.name"
+                  (change)="toggleOwned(entry, $any($event.target).checked)"
+                />
+                <span>I have them</span>
+              </span>
+            </label>
+          </li>
+        } @empty {
+          <li class="muted">Nothing matches.</li>
+        }
+      </ul>
+    } @else {
+
+    <!-- The unbuilt placeholders are counted too, because they are cards on this grid. The
+         line said "75 of 75" while 87 cards rendered, which is the kind of small lie that
+         makes a reader stop trusting the rest of the page. -->
     <p class="muted saved-count">
       {{ shownBuilds().length }} of {{ builds().length }}
+      @if (unbuilt().length) {
+        · {{ unbuilt().length }} owned, not built
+      }
     </p>
 
     <ul class="saved">
@@ -129,7 +207,25 @@
           <li class="muted">No builds yet.</li>
         }
       }
+
+      <!-- **Owned, and not built.** The owner's original request: flag these and push them to
+           the bottom. They are last because they are prompts rather than builds, and muted for
+           the same reason — a card that looks like the others would read as a build with
+           everything missing. Clicking one opens the editor on that character. -->
+      @for (entry of unbuilt(); track entry.character_id) {
+        <li class="unbuilt">
+          <button type="button" class="pick" (click)="buildFor(entry)">
+            <catalogue-icon class="face" [icon]="entry.icon" [alt]="''" [size]="72" />
+            <span class="name">{{ entry.name }}</span>
+            <span class="marks">
+              <element-chip compact [size]="22" [element]="entry.element ?? null" />
+            </span>
+            <span class="weapon">Not built yet</span>
+          </button>
+        </li>
+      }
     </ul>
+    }
 
     <!-- §3's ranking. A short list rather than the grid: 75 cards are not draggable in any
          useful sense, and a ranking only matters for the characters that contend for the same
@@ -322,20 +418,6 @@
       <label class="notes">
         Notes
         <input type="text" [(ngModel)]="fields.notes" aria-label="Notes" />
-      </label>
-
-      <label class="owned">
-        <input
-          type="checkbox"
-          name="owned"
-          [ngModel]="fields.owned"
-          (ngModelChange)="fields.owned = $event"
-          aria-label="I have this character"
-        />
-        <span>
-          I have this character
-          <small>Leave this off for a build you made to test.</small>
-        </span>
       </label>
 
       <div class="controls">

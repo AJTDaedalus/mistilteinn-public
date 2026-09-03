@@ -9,7 +9,6 @@ every anomaly/stun/daze column on `EnemyProfile` are gone rather than re-pointed
 from __future__ import annotations
 
 from sqlalchemy import (
-    Boolean,
     CheckConstraint,
     Float,
     ForeignKey,
@@ -120,22 +119,6 @@ class Build(TimestampMixin, Base):
     #: means reading five artifacts to answer "which of these is this?".
     name: Mapped[str] = mapped_column(String(120), nullable=False, default="")
     notes: Mapped[str] = mapped_column(String(1000), nullable=False, default="")
-    #: Does the user actually have this character, or is this a build made to test?
-    #:
-    #: **Defaults true**, because an import is how nearly every build arrives and a GOOD export
-    #: is a record of gear the player has. Owner, 2026-09-03: *"users can choose it when
-    #: building one manually but when imported they default to owned=True … this way we know
-    #: which units they actually have on their account and which they've just made to test."*
-    #:
-    #: **It deliberately connects to nothing yet** beyond the teapot tracker that reads it —
-    #: it is a record kept now so a later feature can rely on it having been kept all along.
-    #:
-    #: Worth naming the asymmetry it closes: `owned_weapons` already records a user's actual
-    #: weapons and artifacts arrive from a GOOD export, so **characters were the only entity
-    #: with no ownership record**, and a build is the only per-character row there is.
-    owned: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=True, server_default=text("true"),
-    )
     optimizer_priority: Mapped[int | None] = mapped_column(
         Integer, nullable=True, default=None, index=True,
     )

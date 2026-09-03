@@ -54,12 +54,6 @@ class BuildCreate(BaseModel):
     #: The user's own name for this build. Two builds for one character are otherwise told
     #: apart by their gear, which means reading five artifacts to answer "which is this?".
     name: str = Field(default="", max_length=120)
-    #: Does the user actually have this character?
-    #:
-    #: **Defaults true**, matching the import path: a GOOD export is a record of gear the
-    #: player has, and that is how nearly every build arrives. A build made to try something
-    #: out is the case a user opts into, not out of.
-    owned: bool = True
 
 
     character_id: str
@@ -94,9 +88,6 @@ class BuildUpdate(BaseModel):
     model_config = {"extra": "forbid"}
 
     name: str | None = Field(default=None, max_length=120)
-    #: Toggled from the build page — owner: *"They can change that in the build page if
-    #: wanted."*
-    owned: bool | None = None
 
     weapon_id: str | None = None
     character_level: int | None = Field(None, ge=1, le=90)
@@ -186,9 +177,6 @@ class BuildRead(BaseModel):
     #: added for; this is the field arriving at the API at last.
     optimizer_priority: int | None = None
     name: str = ""
-    #: Whether the user actually has this character — a record kept now so a
-    #: later feature can rely on it having been kept all along.
-    owned: bool = True
     #: The catalogue rows a list needs to draw a row, **beside** the ids rather than instead
     #: of them: a client that stores `character_id` keeps working, and these are for drawing
     #: rather than for referring.

@@ -29,6 +29,7 @@ from app.models.enums import (
     WeaponType,
 )
 from app.models.optimization_run import OptimizationRun
+from app.models.roster import CharacterRosterEntry
 from app.models.rotation import Rotation
 from app.models.seed_provenance import SeedRun
 from app.models.session import Session
@@ -55,6 +56,7 @@ __all__ = [
     "BuffPreset",
     "Build",
     "Character",
+    "CharacterRosterEntry",
     "Constellation",
     "DamageType",
     "Element",

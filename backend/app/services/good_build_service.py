@@ -63,6 +63,8 @@ from sqlalchemy import select
 from app.models.build import Build
 from app.models.character import Character
 from app.models.weapon import Weapon
+from app.repositories.roster import CharacterRosterRepository
+from app.services.roster import is_mannequin
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -101,6 +103,13 @@ class BuildImportReport:
     """What was built, and everything that was not."""
 
     created: int = 0
+    #: Roster rows written — **a separate output from builds, answering a different question**.
+    #:
+    #: A build says *what gear this character has* and is made only for a character holding
+    #: some. Ownership says *does this account have this character*, comes from `characters[]`,
+    #: and is the reason twelve real characters used to be invisible to the teapot tracker.
+    #: `DESIGN_character_roster.md` §4.
+    roster_written: int = 0
     #: Characters that already had a build. Named, because "nothing happened" and "your
     #: edits were kept" look identical otherwise.
     skipped_existing: list[str] = field(default_factory=list)
@@ -218,6 +227,34 @@ async def rebuild_builds(
     held_weapon = {lookup_key(w.location): w for w in parsed.weapons if w.location}
     characters_by_key = {lookup_key(c.key): c for c in parsed.characters}
 
+    # **Ownership, from `characters[]` — every character the account has, gear or not.**
+    #
+    # The build rule below is unchanged and still keys on *equipment*, which is right: an
+    # unequipped character has nothing to optimize. But equipment was also standing in for
+    # ownership, and that cost twelve of the owner's characters their roster entry — 22
+    # furnishing sets, 440 Primogems the teapot tracker could not see.
+    #
+    # The mannequins were excluded for free by the equipment rule and now have to be excluded
+    # on purpose; `services/roster.py` does it by nanoka id prefix rather than by name, which
+    # is the part the old rule was sensibly avoiding.
+    #
+    # `upsert_imported` leaves `manual` rows alone, so a character the user deliberately
+    # un-owned does not come back on every rescan.
+    owned_character_ids = []
+    for parsed_character in parsed.characters:
+        _, catalogue_rows = _resolve(
+            lookup_key(parsed_character.key), characters_by_key, by_key,
+        )
+        if not catalogue_rows:
+            continue
+        catalogue_row = _pick(catalogue_rows)
+        if is_mannequin(catalogue_row.nanoka_id):
+            continue
+        owned_character_ids.append(str(catalogue_row.id))
+    report.roster_written = await CharacterRosterRepository(
+        session, owner_id,
+    ).upsert_imported(owned_character_ids)
+
     # Who is holding what. `location` is the only link the export gives.
     worn: dict[str, list[ParsedArtifact]] = defaultdict(list)
     for artifact in parsed.artifacts:
@@ -307,11 +344,6 @@ def _new_build(
         refinement=wielded.refinement if wielded else 1,
         talent_levels=dict(entry.talents) if entry else {},
         notes=notes,
-        # **Stated rather than left to the column default.** The default is true today and a
-        # later change to it must not silently reclassify every import — an imported build is
-        # owned because a GOOD export is a record of gear the player has, which is a fact
-        # about this code path rather than about the schema.
-        owned=True,
     )
 
 

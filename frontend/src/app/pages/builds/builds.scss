@@ -321,10 +321,99 @@
 
 /* The ownership toggle. A record kept now so a later feature can rely on it having been kept
    all along — the teapot tracker is the first thing that reads it. */
-.owned {
+
+/* ── The two tabs ────────────────────────────────────────────────────────────
+   Owner: *"we need a tab for both so users can change ownership manually if needed."*
+
+   A build says what gear a character has and is only ever made for a character holding some;
+   the roster says whether the account has the character at all. The page only ever asked the
+   first, which is why twelve of the owner's characters could not be counted. */
+.tabs {
   display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
+  gap: var(--space-1);
+  margin: 0 0 var(--space-3);
+  border-bottom: 1px solid var(--surface-rule);
 }
 
-.owned small { display: block; color: var(--ink-dim); font-size: var(--text-xs); }
+.tab {
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: var(--radius-1) var(--radius-1) 0 0;
+  background: none;
+  color: var(--ink-dim);
+  padding: var(--space-2) var(--space-4);
+  margin-bottom: -1px;
+
+  &:hover { color: var(--ink); box-shadow: none; }
+
+  &.tab--on {
+    border-color: var(--surface-rule);
+    background: var(--surface);
+    color: var(--brass);
+  }
+}
+
+/* The count is data beside a label, so it takes the numeric face the rest of the app uses. */
+.tab__count {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--ink-dim);
+  margin-left: var(--space-1);
+}
+
+/* ── The roster tab ──────────────────────────────────────────────────────────
+   The same grid as the builds, because they are the same kind of card and drawing them
+   differently would make switching tabs feel like changing page. */
+.roster__pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  padding: var(--space-2);
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-transform: none;
+  font-family: var(--font-body);
+  letter-spacing: normal;
+
+  &:hover { box-shadow: none; }
+}
+
+.roster__say {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--ink-dim);
+}
+
+/* **Three states, not two.** `owned = null` means nobody has said, which is not the user
+   saying no — DESIGN §2.1. So an untouched roster reads as untouched rather than as a wall of
+   refusals, and only a deliberate "no" is drawn as one. */
+.roster--owned {
+  border-color: var(--brass-deep);
+
+  .roster__say { color: var(--brass); }
+}
+
+.roster--unowned {
+  opacity: 0.55;
+}
+
+.roster--unsaid .name { color: var(--ink-dim); }
+
+/* ── Owned, and not built ────────────────────────────────────────────────────
+   The owner's original request: flag these and push them to the bottom. Muted because they
+   are prompts rather than builds — a card drawn like the others would read as a build with
+   everything missing rather than as an invitation to make one. They sort last for free:
+   they are appended after the list. */
+.unbuilt {
+  border-style: dashed !important;
+  opacity: 0.7;
+
+  &:hover { opacity: 1; }
+
+  .weapon { color: var(--ink-dim); font-style: italic; }
+}

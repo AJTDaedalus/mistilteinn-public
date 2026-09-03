@@ -3568,6 +3568,91 @@
         }
       }
     },
+    "/api/v1/roster": {
+      "get": {
+        "tags": [
+          "roster"
+        ],
+        "summary": "List Roster",
+        "description": "Every character that can be owned, with this user's answer where they have given one.\n\n**The catalogue left-joined to the roster**, rather than the roster alone: the tab has to\noffer a toggle for a character the user has never touched, and a row that does not exist\ncannot carry one.\n\nMannequins are excluded \u2014 `services/roster.py` says why, and by id rather than by name.",
+        "operationId": "list_roster_api_v1_roster_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RosterRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/roster/{character_id}": {
+      "patch": {
+        "tags": [
+          "roster"
+        ],
+        "summary": "Set Owned",
+        "description": "Record the user's own answer about one character.\n\nAlways written as `manual`, which is what stops the next import overwriting it. A user who\nun-owns a character they have gear for means it; an import that undid that every rescan\nwould read as the app ignoring them.",
+        "operationId": "set_owned_api_v1_roster__character_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "character_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Character Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RosterEntryUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RosterEntryRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/teapot/suites": {
       "get": {
         "tags": [
@@ -4836,11 +4921,6 @@
             "title": "Name",
             "default": ""
           },
-          "owned": {
-            "type": "boolean",
-            "title": "Owned",
-            "default": true
-          },
           "character_id": {
             "type": "string",
             "title": "Character Id"
@@ -5102,11 +5182,6 @@
             "title": "Name",
             "default": ""
           },
-          "owned": {
-            "type": "boolean",
-            "title": "Owned",
-            "default": true
-          },
           "character": {
             "anyOf": [
               {
@@ -5169,17 +5244,6 @@
               }
             ],
             "title": "Name"
-          },
-          "owned": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Owned"
           },
           "weapon_id": {
             "anyOf": [
@@ -8545,6 +8609,128 @@
         ],
         "title": "RosterCharacter",
         "description": "One character an editor may name in a step."
+      },
+      "RosterEntryRead": {
+        "properties": {
+          "character_id": {
+            "type": "string",
+            "title": "Character Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon"
+          },
+          "element": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Element"
+          },
+          "weapon_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weapon Type"
+          },
+          "rarity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rarity"
+          },
+          "owned": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owned"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "character_id",
+          "name"
+        ],
+        "title": "RosterEntryRead",
+        "description": "One catalogue character and this user's answer about them."
+      },
+      "RosterEntryUpdate": {
+        "properties": {
+          "owned": {
+            "type": "boolean",
+            "title": "Owned",
+            "description": "Does this account have this character?"
+          }
+        },
+        "type": "object",
+        "required": [
+          "owned"
+        ],
+        "title": "RosterEntryUpdate",
+        "description": "The user's own answer."
+      },
+      "RosterRead": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/RosterEntryRead"
+            },
+            "type": "array",
+            "title": "Entries"
+          },
+          "owned_count": {
+            "type": "integer",
+            "title": "Owned Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entries",
+          "owned_count"
+        ],
+        "title": "RosterRead",
+        "description": "The whole roster in one response."
       },
       "RotationCopyRequest": {
         "properties": {

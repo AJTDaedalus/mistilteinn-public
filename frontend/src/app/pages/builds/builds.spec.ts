@@ -5,6 +5,7 @@ import { MAX_PAGE_LIMIT } from '../../api/page-size';
 import { CatalogueService } from '../catalogue/catalogue.service';
 import { BuildsPage, matchesBuild } from './builds';
 import { BuildsService } from './builds.service';
+import { RosterService } from './roster.service';
 
 const AYAKA = {
   id: 'char-ayaka', nanoka_id: '10000002', name: 'Kamisato Ayaka', element: 'Cryo',
@@ -30,11 +31,20 @@ const OPTIONS = {
 function pageWith(
   builds: Partial<BuildsService>,
   catalogue: Partial<CatalogueService> = {},
+  roster: Partial<RosterService> = {},
 ) {
   TestBed.configureTestingModule({
     providers: [
       { provide: BuildsService, useValue: builds },
       { provide: CatalogueService, useValue: catalogue },
+      {
+        provide: RosterService,
+        useValue: {
+          list: vi.fn().mockResolvedValue({ entries: [], owned_count: 0 }),
+          setOwned: vi.fn().mockResolvedValue({}),
+          ...roster,
+        } as unknown as RosterService,
+      },
     ],
   });
   return TestBed.runInInjectionContext(() => new BuildsPage());
@@ -43,6 +53,7 @@ function pageWith(
 function healthy(
   builds: Partial<BuildsService> = {},
   catalogue: Partial<CatalogueService> = {},
+  roster: Partial<RosterService> = {},
 ) {
   return pageWith(
     {
@@ -57,6 +68,7 @@ function healthy(
       weaponGuide: vi.fn().mockResolvedValue(null),
       ...catalogue,
     } as unknown as CatalogueService,
+    roster,
   );
 }
 
@@ -562,5 +574,143 @@ describe('BuildsPage weapon recommendations', () => {
     await page['selectCharacter']('');
 
     expect(page['weaponGuide']()).toBeNull();
+  });
+});
+
+/**
+ * The roster tab — `DESIGN_character_roster.md`.
+ *
+ * These exist because the defect this design fixes was invisible to every test in the suite:
+ * every table was correct and the *question* was being asked of the wrong one. So they assert
+ * on the join, on the tri-state, and on what happens when a save fails — the three places a
+ * wrong answer would look like a right one.
+ */
+const OWNED = (over: Record<string, unknown> = {}) => ({
+  character_id: 'char-ayaka', name: 'Kamisato Ayaka', icon: null, element: 'Cryo',
+  weapon_type: 'WEAPON_SWORD_ONE_HAND', rarity: 'five_star',
+  owned: true, source: 'import', ...over,
+});
+
+describe('BuildsPage roster tab', () => {
+  it('losing the roster does not take the build editor down with it', async () => {
+    // A second view of this page must not be able to break the first one. It resolves to an
+    // empty roster rather than rejecting the whole `Promise.all`.
+    const page = healthy({}, {}, {
+      list: vi.fn().mockRejectedValue(new Error('boom')),
+    } as unknown as RosterService);
+
+    await page['load']();
+
+    expect(page['error']()).toBeNull();
+    expect(page['roster']()).toEqual([]);
+  });
+
+  it('counts only an explicit yes as owned', async () => {
+    // The tri-state. `null` is "nobody has said", and counting it either way is a lie.
+    const page = healthy({}, {}, {
+      list: vi.fn().mockResolvedValue({
+        entries: [
+          OWNED(),
+          OWNED({ character_id: 'b', owned: false }),
+          OWNED({ character_id: 'c', owned: null, source: null }),
+        ],
+        owned_count: 1,
+      }),
+    } as unknown as RosterService);
+
+    await page['load']();
+
+    expect(page['ownedCount']()).toBe(1);
+  });
+
+  it('lists an owned character with no build as unbuilt', async () => {
+    const page = healthy({}, {}, {
+      list: vi.fn().mockResolvedValue({ entries: [OWNED()], owned_count: 1 }),
+    } as unknown as RosterService);
+
+    await page['load']();
+
+    expect(page['unbuilt']().map((e) => e.character_id)).toEqual(['char-ayaka']);
+  });
+
+  it('does not call a character unbuilt once they have a build', async () => {
+    const page = healthy(
+      {
+        list: vi.fn().mockResolvedValue([
+          { id: 'b1', character: AYAKA, character_level: 90, constellation_level: 0 },
+        ]),
+      } as unknown as BuildsService,
+      {},
+      {
+        list: vi.fn().mockResolvedValue({ entries: [OWNED()], owned_count: 1 }),
+      } as unknown as RosterService,
+    );
+
+    await page['load']();
+
+    expect(page['unbuilt']()).toEqual([]);
+  });
+
+  it('an unowned character is never unbuilt, however few builds they have', async () => {
+    // "Not built" is only interesting for a character you actually have. Otherwise the tab
+    // would prompt you to build all 148.
+    const page = healthy({}, {}, {
+      list: vi.fn().mockResolvedValue({
+        entries: [OWNED({ owned: false }), OWNED({ character_id: 'c', owned: null })],
+        owned_count: 0,
+      }),
+    } as unknown as RosterService);
+
+    await page['load']();
+
+    expect(page['unbuilt']()).toEqual([]);
+  });
+
+  it('a failed save puts the checkbox back', async () => {
+    // A box that moves and stays moved after the write failed is worse than one that never
+    // moved: the user now believes a fact the server does not hold.
+    const setOwned = vi.fn().mockRejectedValue(new Error('nope'));
+    const page = healthy({}, {}, {
+      list: vi.fn().mockResolvedValue({
+        entries: [OWNED({ owned: false, source: 'manual' })], owned_count: 0,
+      }),
+      setOwned,
+    } as unknown as RosterService);
+    await page['load']();
+
+    await page['toggleOwned'](page['roster']()[0], true);
+
+    expect(page['roster']()[0].owned).toBe(false);
+    expect(page['actionError']()).toContain('Kamisato Ayaka');
+    expect(page['savingCharacter']()).toBeNull();
+  });
+
+  it('a successful save keeps the new answer and marks it the user\'s own', async () => {
+    const page = healthy({}, {}, {
+      list: vi.fn().mockResolvedValue({
+        entries: [OWNED({ owned: false, source: 'import' })], owned_count: 0,
+      }),
+    } as unknown as RosterService);
+    await page['load']();
+
+    await page['toggleOwned'](page['roster']()[0], true);
+
+    expect(page['roster']()[0].owned).toBe(true);
+    expect(page['roster']()[0].source).toBe('manual');
+    expect(page['actionError']()).toBeNull();
+  });
+
+  it('the search narrows the roster with the same predicate as the builds', async () => {
+    const page = healthy({}, {}, {
+      list: vi.fn().mockResolvedValue({
+        entries: [OWNED(), OWNED({ character_id: 'g', name: 'Ganyu' })],
+        owned_count: 2,
+      }),
+    } as unknown as RosterService);
+    await page['load']();
+
+    page['search'].set('ganyu');
+
+    expect(page['shownRoster']().map((e) => e.name)).toEqual(['Ganyu']);
   });
 });

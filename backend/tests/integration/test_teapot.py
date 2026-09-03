@@ -6,9 +6,9 @@ from httpx import AsyncClient  # noqa: TC002 — a fixture type, resolved at run
 from sqlalchemy import select
 
 from app.models.base import generate_uuid7
-from app.models.build import Build
 from app.models.character import Character
 from app.models.enums import Element, Rarity, WeaponType
+from app.models.roster import SOURCE_MANUAL, CharacterRosterEntry
 from app.models.teapot import FurnishingSuite, FurnishingSuiteFavorite
 
 TEAPOT = "/api/v1/teapot"
@@ -50,13 +50,18 @@ async def _character(session, nanoka_id: str) -> Character:
 
 
 async def _own(session, authed_user, nanoka_id: str, *, owned: bool = True) -> None:
-    """Give the user a build for that character."""
+    """Say whether the user has that character.
+
+    **A roster row, not a build.** Ownership moved off `builds` on 2026-09-03
+    (`DESIGN_character_roster.md`): a build is made only for a character holding gear, so
+    twelve characters the owner has could not carry the flag at all — 22 sets, 440 Primogems
+    this tracker could not see. Nothing here needs a build any more, which is the point.
+    """
     user, _ = authed_user
     character = await _character(session, nanoka_id)
-    session.add(Build(
-        id=generate_uuid7(), owner_id=str(user.id), character_id=str(character.id),
-        character_level=90, ascension_phase=6, weapon_level=90, refinement=1,
-        constellation_level=0, talent_levels={}, notes="", owned=owned,
+    session.add(CharacterRosterEntry(
+        owner_id=str(user.id), character_id=str(character.id),
+        owned=owned, source=SOURCE_MANUAL,
     ))
     await session.commit()
 
@@ -98,11 +103,16 @@ async def test_owning_the_character_makes_the_set_worth_doing(
     assert row["available"] == ids
 
 
-async def test_a_test_build_does_not_count_as_owning_the_character(
+async def test_a_character_marked_not_owned_does_not_count(
     authed_client: AsyncClient, db_session, authed_user,
 ):
     """`owned=False` is exactly the distinction the owner asked for — *"which units they
-    actually have… and which they've just made to test"*."""
+    actually have… and which they've just made to test"*.
+
+    Renamed from `test_a_test_build_does_not_count_as_owning_the_character`: the answer is no
+    longer attached to a build, and a name saying otherwise would send the next reader to the
+    wrong table.
+    """
     ids = await _any_characters(db_session, 1)
     await _suite(db_session, "TestOnly", ids)
     await _own(db_session, authed_user, ids[0], owned=False)

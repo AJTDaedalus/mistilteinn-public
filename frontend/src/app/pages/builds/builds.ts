@@ -20,6 +20,7 @@ import {
   type CharacterSummary,
   type WeaponSummary,
 } from './builds.service';
+import { RosterService, type RosterEntry } from './roster.service';
 
 /** What a new build starts as. Matches the server's own defaults, which bound each field. */
 function blank(talents: string[]): BuildFields {
@@ -32,10 +33,6 @@ function blank(talents: string[]): BuildFields {
     constellation_level: 0,
     talent_levels: Object.fromEntries(talents.map((t) => [t, 1])),
     notes: '',
-    // **True by default**, matching the importer: a GOOD export records gear the player has,
-    // and that is how nearly every build arrives. A build made to try something out is the
-    // case a user opts into.
-    owned: true,
   };
 }
 
@@ -119,6 +116,21 @@ export class BuildsPage implements OnInit {
    * Client-side, because the list is already loaded in full and a round trip per keystroke
    * would be slower and no more correct.
    */
+  /**
+   * Which tab is showing. Owner: *"we need a tab for both so users can change ownership
+   * manually if needed."*
+   *
+   * The two answer different questions and the page had only ever asked one of them: a build
+   * says what gear a character has, the roster says whether the account has the character at
+   * all. Twelve of the owner's characters had no build — because a build is only made for a
+   * character holding gear — and so no way to be counted. `DESIGN_character_roster.md`.
+   */
+  protected readonly tab = signal<'builds' | 'roster'>('builds');
+
+  protected readonly roster = signal<RosterEntry[]>([]);
+  /** Non-null while one toggle is in flight, so the row can show it is saving. */
+  protected readonly savingCharacter = signal<string | null>(null);
+
   protected readonly search = signal('');
   protected readonly elementFilter = signal('');
   protected readonly weaponFilter = signal('');
@@ -171,6 +183,59 @@ export class BuildsPage implements OnInit {
       this.search(), this.elementFilter(), this.weaponFilter(), this.starsFilter(),
     )),
   );
+
+  protected readonly ownedCount = computed(
+    () => this.roster().filter((entry) => entry.owned === true).length,
+  );
+
+  /**
+   * The roster tab's rows, through the same search and filters the builds tab uses.
+   *
+   * Reuses `matchesBuild` by shaping each entry into the `{ character }` it reads — one
+   * predicate rather than two that must agree. The chips themselves are still drawn from the
+   * builds, which is a known narrowing: a vision nobody has built for offers no chip even
+   * though the roster has characters of it. Left alone deliberately — the alternative is
+   * chips that change meaning when you switch tabs.
+   */
+  protected readonly shownRoster = computed(() => {
+    const match = matchesBuild(
+      this.search(), this.elementFilter(), this.weaponFilter(), this.starsFilter(),
+    );
+    return this.roster().filter((entry) => match({
+      character: {
+        name: entry.name,
+        element: entry.element,
+        weapon_type: entry.weapon_type,
+        stars: entry.rarity === 'five_star' ? 5 : entry.rarity === 'four_star' ? 4 : null,
+      },
+    }));
+  });
+
+  /**
+   * Characters the account owns and has not built.
+   *
+   * Shown on the **builds** tab, muted and last — the owner's original request, kept because
+   * it is a useful thing for that tab to say: *you have this character and have not built
+   * them*. It is a prompt, not an empty row pretending to be a build.
+   */
+  protected readonly unbuilt = computed(() => {
+    const built = new Set(
+      this.builds().map((build) => build.character?.id).filter(Boolean) as string[],
+    );
+    const match = matchesBuild(
+      this.search(), this.elementFilter(), this.weaponFilter(), this.starsFilter(),
+    );
+    return this.roster()
+      .filter((entry) => entry.owned === true && !built.has(entry.character_id))
+      .filter((entry) => match({
+        character: {
+          name: entry.name,
+          element: entry.element,
+          weapon_type: entry.weapon_type,
+          stars: entry.rarity === 'five_star' ? 5 : entry.rarity === 'four_star' ? 4 : null,
+        },
+      }));
+  });
 
   /**
    * The character grid.
@@ -437,16 +502,55 @@ export class BuildsPage implements OnInit {
 
   private readonly service = inject(BuildsService);
   private readonly catalogue = inject(CatalogueService);
+  private readonly rosterService = inject(RosterService);
 
   ngOnInit(): void {
     void this.load();
+  }
+
+  /**
+   * Record the user's own answer about one character.
+   *
+   * **Optimistic, and reverted on failure.** A checkbox that waits for a round trip before it
+   * moves reads as broken, and a checkbox that moves and silently stays moved after the save
+   * failed is worse — the user believes a fact the server does not hold. So it flips, and flips
+   * back with a message if the write did not land.
+   */
+  protected async toggleOwned(entry: RosterEntry, owned: boolean): Promise<void> {
+    const previous = entry.owned;
+    this.savingCharacter.set(entry.character_id);
+    this.actionError.set(null);
+    this.applyOwned(entry.character_id, owned, 'manual');
+    try {
+      await this.rosterService.setOwned(entry.character_id, owned);
+    } catch {
+      this.applyOwned(entry.character_id, previous, entry.source);
+      this.actionError.set(`Could not save whether you have ${entry.name}.`);
+    } finally {
+      this.savingCharacter.set(null);
+    }
+  }
+
+  private applyOwned(
+    characterId: string, owned: boolean | null, source: string | null,
+  ): void {
+    this.roster.update((entries) => entries.map(
+      (entry) => entry.character_id === characterId ? { ...entry, owned, source } : entry,
+    ));
+  }
+
+  /** Open the editor on a new build for a character the account owns but has not built. */
+  protected async buildFor(entry: RosterEntry): Promise<void> {
+    this.tab.set('builds');
+    this.startNew();
+    await this.selectCharacter(entry.character_id);
   }
 
   protected async load(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const [options, builds, characters] = await Promise.all([
+      const [options, builds, characters, roster] = await Promise.all([
         this.service.options(),
         this.service.list(),
         // Every character, not the first page. 150 today against a cap of 200 — so this is
@@ -454,11 +558,16 @@ export class BuildsPage implements OnInit {
         // picker would quietly lose the *newest* characters, which are exactly the ones
         // someone opens this page to build.
         allPages((offset, limit) => this.catalogue.listCharacters({ offset, limit })),
+        // **Not fatal if it fails.** The roster is a second view of this page, and losing it
+        // must not take the build editor with it — so it resolves to an empty roster rather
+        // than rejecting the whole `Promise.all`.
+        this.rosterService.list().catch(() => ({ entries: [], owned_count: 0 })),
       ]);
       this.talents.set(options.talents);
       this.maxTalent.set(options.max_talent_level);
       this.builds.set(builds);
       this.characters.set(characters.items as CharacterSummary[]);
+      this.roster.set(roster.entries);
       if (this.editing() === null) this.fields = blank(options.talents);
     } catch {
       // Surfaced, not swallowed: an empty list and a failed request look identical on
@@ -466,6 +575,7 @@ export class BuildsPage implements OnInit {
       this.error.set('Could not load the build editor.');
       this.builds.set([]);
       this.characters.set([]);
+      this.roster.set([]);
     } finally {
       this.loading.set(false);
     }
@@ -577,7 +687,6 @@ export class BuildsPage implements OnInit {
       name: build.name ?? '',
       talent_levels: { ...blank(this.talents()).talent_levels, ...build.talent_levels },
       notes: build.notes,
-      owned: build.owned ?? true,
     };
     if (build.character_id) await this.selectCharacter(build.character_id);
     this.weaponId.set(build.weapon_id ?? null);

@@ -21,8 +21,6 @@ export interface BuildFields {
   constellation_level: number;
   talent_levels: Record<string, number>;
   notes: string;
-  /** Does the user actually have this character, or is this a build made to test? */
-  owned: boolean;
 }
 
 /**

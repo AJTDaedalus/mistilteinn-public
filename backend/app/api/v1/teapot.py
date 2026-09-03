@@ -20,8 +20,6 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_current_user, get_db
-from app.models.build import Build
-from app.models.character import Character
 from app.models.teapot import (
     FurnishingSuite,
     FurnishingSuiteFavorite,
@@ -29,6 +27,7 @@ from app.models.teapot import (
     TeapotProgress,
 )
 from app.models.user import User
+from app.repositories.roster import CharacterRosterRepository
 from app.services.teapot import REWARD_PER_CHARACTER, progress_for
 
 router = APIRouter(prefix="/teapot", tags=["teapot"])
@@ -82,12 +81,14 @@ async def list_suites(session: _Session, user: _User) -> TeapotRead:
     "remaining primogems" would give: the reward is one constant per character, and a positive
     constant multiplier cannot change a ranking.
     """
-    owned = await session.execute(
-        select(Character.nanoka_id)
-        .join(Build, Build.character_id == Character.id)
-        .where(Build.owner_id == user.id, Build.owned.is_(True)),
-    )
-    owned_ids = {row for row in owned.scalars() if row}
+    # **The roster, not builds.** This joined `builds.owned` until 2026-09-03, which meant a
+    # character had to be *holding gear* to count as owned — so twelve characters the owner has
+    # were invisible here, worth 22 sets and 440 Primogems. `DESIGN_character_roster.md`.
+    #
+    # `services/teapot.py` is unchanged: `progress_for` takes the id set as an argument, so the
+    # source of truth could move without the tracker's logic knowing. That is what passing it in
+    # rather than querying inside bought.
+    owned_ids = await CharacterRosterRepository(session, str(user.id)).owned_nanoka_ids()
 
     # `(suite, character)` pairs, because the reward is **per character per set**: the same
     # character invited to one of their two favourite sets is still owed the other.

@@ -120,6 +120,14 @@ _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     ("POST", "/api/v1/rotations/00000000-0000-0000-0000-000000000001/compile", {}),
     # Importing reads a team's roster to map gcsim's character keys, so it is owned
     # for the same reason `compile` is: it would otherwise report whether a team exists.
+    # the character roster — DESIGN_character_roster.md. Owned for the plainest reason there
+    # is: it is a statement about one account's characters, and the PATCH writes it.
+    ("GET", "/api/v1/roster", None),
+    (
+        "PATCH",
+        "/api/v1/roster/00000000-0000-0000-0000-000000000001",
+        {"owned": True},
+    ),
     # the teapot set tracker — DESIGN_account_tracking.md Track 3
     ("GET", "/api/v1/teapot/suites", None),
     (
