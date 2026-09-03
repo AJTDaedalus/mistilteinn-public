@@ -130,6 +130,12 @@ ever waiting, and the reason is that the rotation contains one burst per charact
 out of gcsim's starting energy. ER was not weakly measured there; it was **structurally
 unmeasurable**, and a ladder run against it would have reported ±1 % of noise as a verdict.
 
+**A user-authored energy guard is this same choice, made locally.** `.energy >= 30` on a block
+tells the sim to skip rather than wait inside that block, so a guarded rotation prices ER lower
+even when the run as a whole is waiting — measured at +8.8 % against +23.5 % on the owner's own
+config (`DESIGN_conditional_steps.md`, OQ-C2). The two models are therefore not a global switch
+over an otherwise-neutral rotation; a rotation can contain the other one.
+
 **OQ-E3 — is the comparison a first-class feature?** Running both and showing two ER curves is
 the honest way to present a 70 % disagreement. It is also twice the compute, and the owner's
 own framing is that most searches compare one or two things.

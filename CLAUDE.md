@@ -55,9 +55,13 @@ and one arrived at by search is not one they would recognise as theirs.
 
 **Two plans carry open questions, and both say so in their own banner.**
 `DESIGN_conditional_steps.md` has **OQ-C1** — nothing authors a condition in the builder, so a
-guarded rotation can be imported and edited around but not written from scratch — and **OQ-C2**,
-which matters for scoring: a block guarded on `.energy >= 30` changes shape as ER changes, and
-the energy ladder's monotonicity argument assumes it does not.
+guarded rotation can be imported and edited around but not written from scratch — and **OQ-C3**,
+a general `else`. **OQ-C2 is answered** (2026-09-02) and the worry was the wrong shape: a block
+guarded on `.energy >= 30` does **not** break the ladder's monotonicity — every reversal is
+inside the 60-iteration noise floor — it **compresses the ER signal**, +8.8 % against +23.5 %
+for the same rotation with the guard's threshold dropped. An energy guard is a *local skipping
+model inside a waiting-model run*, under-pricing ER by the same mechanism: a skipped action
+costs no time. That is the honest score of the rotation as written, not an artifact to correct.
 `DESIGN_weapons_in_the_optimizer.md` has **OQ-W2** (may an unowned weapon be compared?) and
 **OQ-W3** (how cross-weapon results should read). Everything else closed on 2026-08-29;
 `docs/AUDIT_fribbels_parity.md` is the standing list of what the UI still lacks.
