@@ -19,7 +19,11 @@ from __future__ import annotations
 import pytest
 
 from app.services.rotation_compiler import compile_rotation
-from app.services.rotation_parser import RotationParseError, parse_action_block
+from app.services.rotation_parser import (
+    RotationParseError,
+    _why_not,
+    parse_action_block,
+)
 
 
 class _Character:
@@ -430,3 +434,20 @@ def test_a_line_inside_the_loop_that_cannot_be_read_is_still_named():
         parse_action_block(config, [CHEVREUSE])
 
     assert ".chevreuse.energy" in str(caught.value)
+
+
+def test_a_readiness_gate_with_an_else_is_refused_for_the_branch_not_the_condition() -> None:
+    """**A refusal that misidentifies its own reason sends the reader to fix the wrong thing.**
+
+    Reported from a real community config (`gcsim.app/db/bgHjR7MP7Fkn`, 2026-09-02): the import
+    told the owner that `if .sucrose.burst.ready {` *"guards on something else"* than
+    `.<char>.<action>.ready` — while quoting a line that is exactly that form. What makes it
+    unimportable is the `else` it opens, and a rotation here has nowhere to put an alternative.
+    """
+    branch = _why_not("if .sucrose.burst.ready {")
+    unreadable = _why_not("if .flins.energy >= 30 {")
+
+    assert "branch" in branch
+    assert "guards on something else" not in branch
+    # The other message is still right for a condition this model genuinely cannot read.
+    assert "guards on something else" in unreadable

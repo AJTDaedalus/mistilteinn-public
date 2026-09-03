@@ -56,6 +56,208 @@ _SEQUENCE = re.compile(r"^([a-z0-9_]+)\s+(.+);$")
 _ACTION = re.compile(r"^([a-z_]+)(?::(\d+))?$")
 
 
+#: `if .sucrose.burst.ready {` — a branch whose condition this model already understands.
+_READY_BRANCH = re.compile(r"^if\s+(\.[a-z0-9]+\.[a-z_]+\.ready)\s*\{$")
+_ELSE = re.compile(r"^\}\s*else\s*\{$")
+_CLOSE = re.compile(r"^\}$")
+
+
+#: `for let i=0; i<6; i=i+1 {` — the loop variable and its bound, for resolving a branch that
+#: only asks which cycle this is.
+_FOR_INDEXED = re.compile(r"^for\s+let\s+(\w+)\s*=\s*0\s*;\s*\1\s*<\s*(\d+)\s*;.*\{$")
+#: `if is_even(i) {` and `if !is_even(i) {`.
+_PARITY = re.compile(r"^if\s+(!?)is_even\(\s*(\w+)\s*\)\s*\{$")
+
+
+def _unroll_parity(lines: list[str]) -> tuple[list[str], list[str]]:
+    """Resolve `if is_even(i)` inside `for let i=0; i<N` by writing the cycles out.
+
+    **Not a runtime condition at all.** `is_even(i)` asks which cycle this is, and inside a
+    counted loop that is known before the simulation starts — cycle 0 takes one branch, cycle 1
+    the other, and so on to the bound. Writing them out leaves a flat list of steps, which is
+    what this model already is.
+
+    From the owner's report (`gcsim.app/db/bgHjR7MP7Fkn`), where one character bursts on odd
+    cycles and another on even ones. Refusing that was refusing arithmetic.
+
+    **Only for the loop's own variable, and only when nothing else in the loop needs it.** A
+    parity test on some other name is a condition this cannot resolve, and it is left for the
+    parser to refuse by name.
+    """
+    # **The loop is not always the first line.** A config opens with `active <char>;` and any
+    # number of `energy` or option statements before it, and looking only at `lines[0]` meant
+    # the unroll silently did nothing on every real config — including the one it was written
+    # for.
+    start = next(
+        (i for i, line in enumerate(lines) if _FOR_INDEXED.match(line)),
+        None,
+    )
+    if start is None:
+        return lines, []
+    header = _FOR_INDEXED.match(lines[start])
+    if header is None:  # pragma: no cover — `start` was found by this same match
+        return lines, []
+    variable, bound = header.group(1), int(header.group(2))
+    end = _closes_at(lines, start)
+    if end is None:
+        return lines, []
+    inner = lines[start + 1:end]
+    if not any(
+        (parity := _PARITY.match(line)) and parity.group(2) == variable for line in inner
+    ):
+        return lines, []
+
+    prefix, suffix, body = lines[:start], lines[end + 1:], inner
+    cycles: list[str] = []
+    for index in range(bound):
+        resolved = _one_cycle(body, variable, index)
+        if resolved is None:
+            return lines, []
+        cycles.extend(resolved)
+    note = (
+        f"`is_even({variable})` inside `for {variable} < {bound}` was written out as "
+        f"{bound} cycles: which cycle it is, is known before the run."
+    )
+    return [*prefix, *cycles, *suffix], [note]
+
+
+def _closes_at(lines: list[str], start: int) -> int | None:
+    """Where the block opened at *start* closes, counting nesting. `None` if it never does."""
+    depth = 0
+    for cursor in range(start, len(lines)):
+        line = lines[cursor].strip()
+        if line.endswith("{"):
+            depth += 1
+        if line.startswith("}"):
+            depth -= 1
+            if depth == 0:
+                return cursor
+    return None
+
+
+def _one_cycle(body: list[str], variable: str, index: int) -> list[str] | None:
+    """One iteration of a counted loop, with its parity branches resolved. `None` if nested."""
+    out: list[str] = []
+    cursor = 0
+    while cursor < len(body):
+        line = body[cursor]
+        parity = _PARITY.match(line)
+        if parity is None:
+            if line.endswith("{"):
+                # **Copied through, not given up on.** A block this does not understand — the
+                # status guard in the owner's config — is still a block the *parser* will
+                # refuse by name. Bailing here meant one unresolvable construct anywhere in the
+                # loop threw away the parity resolution too, so a config with both got neither.
+                close = _closes_at(body, cursor)
+                if close is None:
+                    return None
+                out.extend(body[cursor:close + 1])
+                cursor = close + 1
+                continue
+            out.append(line)
+            cursor += 1
+            continue
+        if parity.group(2) != variable:
+            return None
+        taken = (index % 2 == 0) != bool(parity.group(1))
+        chosen, alternative, close = _branches(body, cursor + 1)
+        if close is None:
+            return None
+        out.extend(chosen if taken else alternative)
+        cursor = close + 1
+    return out
+
+
+def _branches(body: list[str], start: int) -> tuple[list[str], list[str], int | None]:
+    """The two sides of an `if … } else { … }`, and where it closes."""
+    first, cursor = _until(body, start, _ELSE)
+    if cursor is None:
+        rest, close = _until(body, start, _CLOSE)
+        return rest, [], close
+    second, close = _until(body, cursor + 1, _CLOSE)
+    return first, second, close
+
+
+def _reduce_ready_branches(lines: list[str]) -> tuple[list[str], list[str]]:
+    """Rewrite `if .x.a.ready { A } else { B }` to a gated step, when B is A without the gate.
+
+    **This is the commonest shape in real community configs, and it was refused.** Reported by
+    the owner from `gcsim.app/db/bgHjR7MP7Fkn`:
+
+        if .sucrose.burst.ready {
+          sucrose burst, attack, skill, dash;
+        } else {
+          sucrose attack, skill, dash;
+        }
+
+    Read the branches side by side and the `else` is the `if` with the burst taken out. So the
+    whole construct *means* "burst if it is ready, then attack, skill, dash" — which is exactly
+    what a `.ready`-gated step already is, and exactly what this repo's own compiler emits. The
+    model was never missing the expressiveness; the importer was not recognising the shape.
+
+    **Only when the branches actually say that.** If the `else` differs by anything more than
+    the gated action, the two sides are genuinely different rotations and this leaves them
+    alone for the parser to refuse by name. A branch reduced on a guess would be a rotation the
+    author did not write, which is the whole reason imports refuse rather than drop.
+    """
+    out: list[str] = []
+    notes: list[str] = []
+    index = 0
+    while index < len(lines):
+        opened = _READY_BRANCH.match(lines[index])
+        if opened is None:
+            out.append(lines[index])
+            index += 1
+            continue
+
+        body, cursor = _until(lines, index + 1, _ELSE)
+        if cursor is None:
+            out.append(lines[index])
+            index += 1
+            continue
+        alternative, close = _until(lines, cursor + 1, _CLOSE)
+        if close is None:
+            out.append(lines[index])
+            index += 1
+            continue
+
+        gate = opened.group(1)
+        action = f"{gate.split('.')[1]} {gate.split('.')[2]};"
+        if body[:1] == [action] and body[1:] == alternative:
+            out.append(f"if {gate} {{ {action} }}")
+            out.extend(alternative)
+            notes.append(
+                f"`if {gate} … else …` became a gated step: the two branches differ only by "
+                f"`{action}`, which is what a readiness gate says.",
+            )
+            index = close + 1
+            continue
+
+        # Not that shape. Left whole, for the parser to refuse and name.
+        out.extend(lines[index:close + 1])
+        index = close + 1
+    return out, notes
+
+
+def _until(
+    lines: list[str], start: int, marker: re.Pattern[str],
+) -> tuple[list[str], int | None]:
+    """The steps from *start* up to *marker*, expanded, and where the marker was.
+
+    `None` when the marker never arrives or a nested block intervenes: a branch containing
+    another branch is not the flat shape this reduction is about.
+    """
+    body: list[str] = []
+    for cursor in range(start, len(lines)):
+        line = lines[cursor]
+        if marker.match(line):
+            return body, cursor
+        if line.endswith("{"):
+            return body, None
+        body.extend(_split_sequence(line) or [line])
+    return body, None
+
+
 def convert(config: str) -> tuple[str, list[str]]:
     """Rewrite `config` toward the supported subset.
 
@@ -92,6 +294,14 @@ def convert(config: str) -> tuple[str, list[str]]:
         if len(expanded) > 1:
             notes.append(f"{raw.strip()!r} became {len(expanded)} steps.")
         out.extend(expanded)
+
+    # **After the line rewrites, not instead of them.** The reduction compares two branches
+    # step for step, and a comma sequence is several steps written as one line — so it has to
+    # run once both sides have been expanded into the same shape.
+    out, parity_notes = _unroll_parity(out)
+    notes.extend(parity_notes)
+    out, branch_notes = _reduce_ready_branches(out)
+    notes.extend(branch_notes)
 
     return "\n".join(out) + "\n", notes
 

@@ -76,6 +76,9 @@ _BARE = re.compile(
 #: The same action wrapped in the readiness gate this app emitted until 2026-09-01. Still read,
 #: because a config exported before then is still a config someone may re-import, and because
 #: hand-written community configs do use gates where the author wanted a conditional cast.
+#: The readiness condition this model *does* understand, for telling a branch it cannot
+#: express from a condition it cannot read. See `_why_refused`.
+_READY_CONDITION = re.compile(r"\.[a-z0-9]+\.[a-z_]+\.ready\b")
 _GATED = re.compile(
     r"^if\s+\.([a-z0-9]+)\.([a-z_]+)\.ready\s*\{\s*"
     r"([a-z0-9]+)\s+([a-z_]+)(?:\[([^\]]*)\])?(?::([^\s;]+))?\s*;\s*\}$",
@@ -408,6 +411,20 @@ def _why_not(line: str) -> str:
             f"field. A rotation missing its waits is a different rotation."
         )
     if line.startswith("if"):
+        # **A `.ready` gate is refused for a different reason, and said so wrongly.** The
+        # message below claims the condition guards on something this model does not
+        # understand, which is a false statement about `if .sucrose.burst.ready {` — that is
+        # exactly the form named as the only one allowed. What makes it unimportable is the
+        # branch it opens, not the condition it tests, and a refusal that misidentifies its own
+        # reason sends the reader to fix something that is not wrong. Reported from a real
+        # community config, 2026-09-02.
+        if _READY_CONDITION.search(line):
+            return (
+                f"{line!r} — the condition is a readiness gate this model understands, but it "
+                f"opens a **branch**. A rotation here is a list of steps with no alternatives "
+                f"in it, so there is nowhere for the `else` to go; keeping only one side would "
+                f"be a rotation the author did not write."
+            )
         return (
             f"{line!r} — the only condition a step can carry is `.<char>.<action>.ready`. "
             f"This one guards on something else, and dropping it would change what the "

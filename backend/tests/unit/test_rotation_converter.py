@@ -247,3 +247,88 @@ def test_a_config_statement_before_the_loop_is_not_an_opener() -> None:
     )
 
     assert len(parse_action_block(config, roster)) == 1
+
+
+def test_a_ready_branch_whose_else_is_the_if_without_the_gate_becomes_a_gated_step() -> None:
+    """**The commonest shape in real community configs, and it was refused.**
+
+    Reported by the owner from `gcsim.app/db/bgHjR7MP7Fkn`. Read the branches side by side and
+    the `else` is the `if` with the burst taken out, so the construct *means* "burst if it is
+    ready, then attack, skill, dash" — which is what a readiness gate says and what this
+    repo's own compiler emits. The model was never missing the expressiveness; the importer
+    was not recognising the shape.
+    """
+    text, notes = convert(
+        "if .sucrose.burst.ready {\n"
+        "  sucrose burst, attack, skill, dash;\n"
+        "} else {\n"
+        "  sucrose attack, skill, dash;\n"
+        "}\n",
+    )
+
+    assert text.splitlines() == [
+        "if .sucrose.burst.ready { sucrose burst; }",
+        "sucrose attack;",
+        "sucrose skill;",
+        "sucrose dash;",
+    ]
+    assert any("gated step" in note for note in notes)
+
+
+def test_a_branch_whose_sides_genuinely_differ_is_left_for_the_parser_to_refuse() -> None:
+    """**A branch reduced on a guess is a rotation the author did not write.**
+
+    The reduction holds only when the `else` is the `if` minus the gated action. Anything else
+    is two different rotations, and this leaves them whole so the parser refuses them by name —
+    the same rule as everywhere else here: refuse, never drop.
+    """
+    text, notes = convert(
+        "if .sucrose.burst.ready {\n  sucrose burst;\n} else {\n  sucrose dash;\n}\n",
+    )
+
+    assert "else" in text
+    assert notes == []
+
+
+def test_a_parity_branch_in_a_counted_loop_is_written_out_as_cycles() -> None:
+    """**`is_even(i)` is arithmetic, not a runtime condition.**
+
+    Inside `for let i=0; i<N` it asks which cycle this is, and that is known before the
+    simulation starts. Cycle 0 takes one branch, cycle 1 the other. Writing them out leaves a
+    flat list of steps, which is what this model already is — so refusing it was refusing
+    arithmetic. From the owner's report, `gcsim.app/db/bgHjR7MP7Fkn`.
+    """
+    text, notes = convert(
+        "for let i=0; i<4; i=i+1 {\n"
+        "  ineffa skill;\n"
+        "  if !is_even(i) {\n    ineffa burst;\n  } else {\n    ineffa attack;\n  }\n"
+        "}\n",
+    )
+
+    assert text.splitlines() == [
+        "ineffa skill;", "ineffa attack;",
+        "ineffa skill;", "ineffa burst;",
+        "ineffa skill;", "ineffa attack;",
+        "ineffa skill;", "ineffa burst;",
+    ]
+    assert any("written out as 4 cycles" in note for note in notes)
+
+
+def test_a_block_the_unroll_cannot_read_is_carried_through_rather_than_abandoned() -> None:
+    """**One unresolvable construct should not cost the resolvable ones.**
+
+    The owner's config has both parity branches and a status guard. Bailing on the guard threw
+    away the parity resolution with it, so a config with both got neither. The guard is copied
+    into each cycle for the parser to refuse by name; the parity is still resolved.
+    """
+    text, notes = convert(
+        "for let i=0; i<2; i=i+1 {\n"
+        "  if is_even(i) {\n    a burst;\n  } else {\n    a attack;\n  }\n"
+        "  if .a.status.flame {\n    a skill;\n  }\n"
+        "}\n",
+    )
+
+    assert any("written out as 2 cycles" in note for note in notes)
+    assert text.count("if .a.status.flame {") == 2
+    assert "a burst;" in text
+    assert "a attack;" in text
