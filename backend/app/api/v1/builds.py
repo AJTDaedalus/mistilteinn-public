@@ -1117,7 +1117,9 @@ async def calibrate_recipe(
             ),
         )
     try:
-        action_block = compile_rotation(rotation.steps or [], roster)
+        action_block = compile_rotation(
+            rotation.steps or [], roster, wait_for_energy=body.wait_for_energy,
+        )
     except RotationCompileError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -1188,6 +1190,7 @@ async def calibrate_recipe(
             action_block=action_block,
             enemy=enemy,
             iterations=body.iterations,
+            energy_drip=body.wait_for_energy,
         )
         if extra is None:
             return text

@@ -129,6 +129,14 @@ export function burstsAt(
  * A step function for the same reason `burstsAt` is: each rung is a gcsim run, and between two
  * of them the honest answer is the lower one's.
  *
+ * **All of the below was measured under the *skipping* model, and the waiting model has not
+ * been re-measured.** Owner's ruling of 2026-09-02 makes waiting an option
+ * (`DESIGN_waiting_for_energy.md`, OQ-E2), and under it the rotation's **duration moves with
+ * ER** — 151.5 s at the owner's real gear down to 102.1 s at 1.6 — so DPS climbs for two
+ * reasons at once where here it climbs for one. The running maximum rests on monotonicity over
+ * the ladder's range; that argument was established for a constant duration and does not
+ * automatically carry. **Re-measure before trusting a waiting-model ladder.**
+ *
  * ## The running maximum, and the claim that does *not* justify it
  *
  * **"More ER cannot buy less" is false, and was measured false.** That was this function's

@@ -161,6 +161,31 @@ def character_order(config: str) -> list[str]:
     return _CHAR_LINE.findall(config)
 
 
+#: The energy a team collects from particles and enemy hits that its own rotation does not
+#: generate — emitted **only** for the waiting model, where a burst is ungated and gcsim holds
+#: the whole simulation until it can be paid for.
+#:
+#: **Without it, waiting does not terminate.** gcsim has no watchdog:
+#: `actionReadyCheckPhase` retries the frame forever and `stopCheck` never consults duration in
+#: damage mode, so an unfundable burst blocks the run while a per-frame stats slice grows —
+#: measured at **2.4 GB and `fatal error: out of memory`**. The drip bounds the wait, and the
+#: *length* of that wait is the Energy Recharge penalty the waiting model exists to price.
+#:
+#: **Cited, not chosen.** Five configs use this exact line, four committed under
+#: `references/gcsim_db/` and one the owner's own import; three of them call it *standard
+#: Energy drops*:
+#:
+#:   - `clorinde-chevreuse-nicole-durin.txt:30`
+#:   - `mavuika-escoffier-citlali-bennett.txt:33`
+#:   - `arlecchino-citlali-escoffier-bennett.txt:34`
+#:   - `neuvillette-furina-citlali-escoffier.txt:32`
+#:   - `gcsim.app/db/bgHjR7MP7Fkn:36`
+#:
+#: It is still an **assumption**, and a ranking produced under it is a ranking against a stated
+#: rate of incoming energy. Saying so is the difference between a citation and a claim.
+ENERGY_DRIP = "energy every interval=480,720 amount=1;"
+
+
 def build_config(
     build: Build,
     *,
@@ -171,6 +196,7 @@ def build_config(
     action_block: str | None = None,
     enemy: EnemyProfile | None = None,
     iterations: int = 100,
+    energy_drip: bool = False,
 ) -> str:
     """The gcsim config text for one build.
 
@@ -275,6 +301,8 @@ def build_config(
 
     lines.append("")
     lines.append(_target(enemy))
+    if energy_drip:
+        lines.append(ENERGY_DRIP)
     lines.append("")
     if action_block is not None:
         # Verbatim: the block already names its own `active` character, which is the first

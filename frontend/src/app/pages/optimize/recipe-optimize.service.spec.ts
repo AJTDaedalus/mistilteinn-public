@@ -108,6 +108,45 @@ beforeEach(() => {
 });
 
 describe('RecipeOptimizeService', () => {
+  it('does not let the two energy models share one cache entry', async () => {
+    // **#240's lesson, applied before it bit.** A client-side option that never reaches the
+    // cache key produces two identical answers — which reads as the two models *agreeing*
+    // rather than as the option doing nothing. They do not agree: measured on the owner's own
+    // team, Energy Recharge is worth +7.3 % skipping against +44.4 % waiting.
+    const written: string[] = [];
+    const recording: RecipeStore = {
+      getItem: () => null,
+      setItem: (k) => void written.push(k),
+      removeItem: () => undefined,
+      get length() { return 0; },
+      key: () => null,
+    };
+    TestBed.resetTestingModule();
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.resolve(new Response(
+      JSON.stringify({
+        baseline: 'cfg', probe: 'cfg def%=0.5', energy_recharge: 0.3,
+        artifact_set_id: null, probe_stat: 'def%', probe_delta: 0.5,
+      }),
+      { status: 200, headers: { 'content-type': 'application/json' } },
+    )));
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: API_BASE_URL, useValue: 'http://test.local' },
+        { provide: GCSIM_LOADER, useValue: () => Promise.resolve(gcsimStub()) },
+        { provide: RECIPE_STORE, useValue: recording },
+      ],
+    });
+    const service = TestBed.inject(RecipeOptimizeService);
+    const target = [{ artifactSetIds: [], setIds: [], label: 'baseline' }];
+    const ignoreProgress = () => undefined;
+
+    await service.calibrateAll('b1', 'r1', 'pin', target, ignoreProgress, undefined, false);
+    await service.calibrateAll('b1', 'r1', 'pin', target, ignoreProgress, undefined, true);
+
+    expect(written.length).toBeGreaterThan(1);
+    expect(new Set(written).size).toBe(written.length);
+  });
+
   it('does not let two weapons share one cache entry', async () => {
     // **The feature shipped broken and every test passed.** The backend substitution had an
     // integration test, the search loop had unit tests, the energy ladder grouping had unit

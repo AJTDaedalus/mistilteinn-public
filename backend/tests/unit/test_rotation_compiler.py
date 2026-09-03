@@ -325,3 +325,27 @@ def test_a_rotation_inside_the_cap_still_compiles():
     ]
 
     assert compile_rotation(steps, ROSTER).count("kamisatoayaka attack;") == 200
+
+
+def test_waiting_leaves_the_burst_ungated_and_skipping_gates_it() -> None:
+    """**The gate is the whole difference between the two models.**
+
+    Gated, gcsim skips a burst nobody can pay for and the rotation carries on. Ungated it
+    *waits*, holding the entire simulation until the energy arrives — which is what a person at
+    a keyboard does, and what the owner's *"without the ER% she doesn't burst on time"*
+    describes.
+
+    Measured on their own team and rotation: the two models price Energy Recharge **+7.3 %
+    against +44.4 %** from her real gear to 1.6, and under waiting her real gear costs **50
+    seconds of delay** on a 101-second rotation. `DESIGN_waiting_for_energy.md`.
+    """
+    steps = [_step(action="burst"), _step(action="attack")]
+
+    skipping = compile_rotation(steps, ROSTER)
+    waiting = compile_rotation(steps, ROSTER, wait_for_energy=True)
+
+    assert "if .kamisatoayaka.burst.ready { kamisatoayaka burst; }" in skipping
+    assert "if ." not in waiting
+    assert "kamisatoayaka burst;" in waiting
+    # Everything else is identical: one switch, not two emitters.
+    assert skipping.replace("if .kamisatoayaka.burst.ready { ", "").replace(" }", "") == waiting

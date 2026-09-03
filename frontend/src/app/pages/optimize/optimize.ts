@@ -407,6 +407,20 @@ export class OptimizePage implements OnInit {
     }).sort((a, b) => b.damage - a.damage);
   });
 
+  /**
+   * Hold the simulation when a burst cannot be paid for, rather than skipping it.
+   *
+   * Owner's ruling, 2026-09-02: *"Build waiting as an option."* Off by default, so nothing
+   * that ranks today changes under anybody.
+   *
+   * **The two models disagree by a factor of six.** Measured on the owner's own team, Furina's
+   * ER from her real gear to 1.6: Energy Recharge is worth **+7.3 % skipping against +44.4 %
+   * waiting**, because her real gear costs **50 seconds of delay** on a 101-second rotation
+   * and a *skipped* burst costs no time at all. Skipping does not merely under-price ER; it is
+   * blind to the mechanism.
+   */
+  protected readonly waitForEnergy = signal(false);
+
   protected readonly comparingWeapons = signal(false);
   protected readonly selectedWeapons = signal<ReadonlySet<string>>(new Set());
   protected readonly weapons = signal<WeaponSummary[]>([]);
@@ -1967,7 +1981,7 @@ export class OptimizePage implements OnInit {
         calibratedRuns.push(await this.recipeOptimize.calibrateAll(
           id, this.rotationId(), snapshot.version, targets,
           (progress) => this.calibrating.set(progress),
-          weaponId,
+          weaponId, this.waitForEnergy(),
         ));
       }
       const calibrated = calibratedRuns[0];

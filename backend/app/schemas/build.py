@@ -568,6 +568,20 @@ class CalibrationRequest(BaseModel):
     #: weapons. **The build is never modified**: the substitution lives in the config this
     #: endpoint emits and nowhere else.
     weapon_id: str | None = None
+    #: Hold the simulation when a burst cannot be paid for, instead of skipping it.
+    #:
+    #: **Two models, and they disagree by a factor of six.** Skipping gates the burst: gcsim
+    #: does not attempt it and the rotation carries on, so the cost is that burst's damage and
+    #: its cast time. Waiting leaves it ungated: gcsim holds the *whole* simulation until the
+    #: energy arrives, which is what a person at a keyboard does.
+    #:
+    #: Measured on the owner's own team, Furina's ER from her real gear to 1.6: Energy Recharge
+    #: is worth **+7.3 % skipping against +44.4 % waiting**, because her real gear costs **50
+    #: seconds of delay** on a 101-second rotation and a *skipped* burst costs no time at all.
+    #:
+    #: Waiting also emits `gcsim_config.ENERGY_DRIP`, without which it does not terminate —
+    #: gcsim has no watchdog and the run grows to 2.4 GB. `DESIGN_waiting_for_energy.md`.
+    wait_for_energy: bool = False
     #: Artifact-borne Energy Recharge to calibrate at, as a fraction.
     #:
     #: **Not zero, and that is the point.** ER is an artifact stat, so a zero-ER calibration

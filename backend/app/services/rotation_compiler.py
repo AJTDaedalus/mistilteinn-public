@@ -206,6 +206,8 @@ def unroll(steps: Sequence[Mapping[str, object]]) -> list[Mapping[str, object]]:
 def compile_rotation(
     steps: Sequence[Mapping[str, object]],
     characters: Mapping[str, Character],
+    *,
+    wait_for_energy: bool = False,
 ) -> str:
     """The gcsim action-list block for `steps`.
 
@@ -247,11 +249,15 @@ def compile_rotation(
     # `active` is the **first step's** character, not the team's first slot. Otherwise the
     # rotation opens with an implicit swap gcsim has to pay for, before the user's first
     # intended action — a cost they did not write and cannot see.
-    lines = [f"active {keys[0]};", *_blocked(keys, steps)]
+    lines = [f"active {keys[0]};", *_blocked(keys, steps, wait_for_energy)]
     return "\n".join(lines) + "\n"
 
 
-def _blocked(keys: Sequence[str], steps: Sequence[Mapping[str, object]]) -> list[str]:
+def _blocked(
+    keys: Sequence[str],
+    steps: Sequence[Mapping[str, object]],
+    wait_for_energy: bool = False,
+) -> list[str]:
     """The statements, wrapped in the `if` blocks their groups are guarded by.
 
     **A block, not a condition per statement.** gcsim evaluates a guard once on entry, and an
@@ -283,7 +289,9 @@ def _blocked(keys: Sequence[str], steps: Sequence[Mapping[str, object]]) -> list
         for block in wanted[shared:]:
             lines.append("    " * len(open_blocks) + f"if {block[1]} {{")
             open_blocks.append(block)
-        lines.append("    " * len(open_blocks) + _statement(key, step))
+        lines.append(
+            "    " * len(open_blocks) + _statement(key, step, wait_for_energy),
+        )
 
     while open_blocks:
         open_blocks.pop()
@@ -396,7 +404,9 @@ def _resolve(
 _ENERGY_GATED_ACTION = "burst"
 
 
-def _statement(key: str, step: Mapping[str, object]) -> str:
+def _statement(
+    key: str, step: Mapping[str, object], wait_for_energy: bool = False,
+) -> str:
     """One action, with gcsim's own `:n` repetition and `[param=1]` variant.
 
     **The variant becomes a parameter here and nowhere else.** The model holds `skill_hold` as
@@ -424,7 +434,15 @@ def _statement(key: str, step: Mapping[str, object]) -> str:
     call = action if param is None else f"{action}[{param}=1]"
     suffix = f":{repeat}" if repeat > 1 else ""
     statement = f"{key} {call}{suffix};"
-    if action != _ENERGY_GATED_ACTION:
+    # **The gate is the whole difference between the two models.** Gated, gcsim skips a burst
+    # nobody can pay for; ungated it *waits*, holding the entire simulation until the energy
+    # arrives — which is what a person at a keyboard does, and what prices Energy Recharge some
+    # 70 % higher on the owner's own team.
+    #
+    # Ungated only terminates because the waiting model also emits `ENERGY_DRIP`; without it
+    # gcsim retries the frame forever and the run grows to 2.4 GB.
+    # `DESIGN_waiting_for_energy.md` carries the argument and the drip's citations.
+    if wait_for_energy or action != _ENERGY_GATED_ACTION:
         return statement
     # The gate names the base action, not the variant: a hold and a tap share one cooldown,
     # and `.burst_hold.ready` is a condition gcsim's parser does not know.

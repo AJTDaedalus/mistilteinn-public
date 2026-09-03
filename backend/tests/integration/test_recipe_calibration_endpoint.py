@@ -23,6 +23,7 @@ from app.models.enums import Element, Rarity, StatType, WeaponType
 from app.models.rotation import Rotation
 from app.models.team import Team
 from app.models.weapon import Weapon
+from app.services import gcsim_config
 
 if TYPE_CHECKING:
     from httpx import AsyncClient
@@ -438,3 +439,30 @@ async def test_an_unknown_weapon_is_refused_rather_than_ignored(
 
     assert response.status_code == 404, response.text
     assert "weapon" in response.json()["detail"]
+
+
+async def test_the_waiting_model_ungates_the_burst_and_adds_the_drip(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """**Two models, and the request has to be able to ask for either.**
+
+    Skipping gates the burst — gcsim does not attempt one it cannot pay for. Waiting leaves it
+    ungated and holds the whole simulation until the energy arrives, which is what a person at
+    a keyboard does, and it only terminates because of the cited drip.
+
+    Measured on the owner's own team: Energy Recharge is worth **+7.3 % skipping against
+    +44.4 % waiting**, because her real gear costs 50 seconds of delay on a 101-second rotation
+    and a skipped burst costs no time at all.
+
+    The assertion is that the flag reaches the **emitted config**. The first version of this
+    field landed on `BuildCreate` rather than `CalibrationRequest` — a string replace matching
+    the first of several identical lines — and every calibration answered 500.
+    """
+    skipping = (await _calibrate(authed_client, scene)).json()
+    waiting = (await _calibrate(authed_client, scene, wait_for_energy=True)).json()
+
+    assert ".ready" in skipping["baseline"]
+    assert gcsim_config.ENERGY_DRIP not in skipping["baseline"]
+
+    assert ".ready" not in waiting["baseline"]
+    assert gcsim_config.ENERGY_DRIP in waiting["baseline"]

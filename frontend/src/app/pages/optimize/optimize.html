@@ -285,6 +285,26 @@
             </div>
           </div>
 
+          <!-- The energy model. Owner's ruling: waiting is an *option*, off by default, so
+               nothing that ranks today changes under anybody. The two disagree by a factor of
+               six on their own team, which is why the label says what it costs rather than
+               naming a mode. -->
+          <label class="energy-model">
+            <input
+              type="checkbox"
+              [checked]="waitForEnergy()"
+              (change)="waitForEnergy.set($any($event.target).checked)"
+            />
+            <span>
+              Wait for energy instead of skipping the burst
+              <span class="hint">
+                A character who cannot pay for a burst holds the rotation up rather than
+                dropping it — which is what a player does, and prices Energy Recharge far
+                higher. Slower, and assumes a standard rate of incoming energy.
+              </span>
+            </span>
+          </label>
+
           <!-- §W — weapons in the search. Owner: *"Weapon should definitely be opt-in, off by
                default, and like set allow you to select some."* Closed, this is one line of
                text and the search is exactly what it was. -->

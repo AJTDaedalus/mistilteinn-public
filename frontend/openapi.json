@@ -4339,6 +4339,11 @@
             ],
             "title": "Weapon Id"
           },
+          "wait_for_energy": {
+            "type": "boolean",
+            "title": "Wait For Energy",
+            "default": false
+          },
           "energy_recharge": {
             "type": "number",
             "maximum": 4.0,

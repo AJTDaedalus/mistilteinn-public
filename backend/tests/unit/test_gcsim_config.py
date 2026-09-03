@@ -12,6 +12,7 @@ import types
 
 import pytest
 
+from app.services import gcsim_config
 from app.services.gcsim_config import (
     Calibration,
     GcsimConfigError,
@@ -446,3 +447,25 @@ def test_the_guard_sees_a_variant_that_also_repeats():
     line = "if .chevreuse.skill.ready { chevreuse skill[hold=1]:2; }"
 
     assert _NAMES_A_CHARACTER.search(line).group(2) == "chevreuse"
+
+
+def test_the_energy_drip_is_emitted_only_for_the_waiting_model() -> None:
+    """**Without it, waiting does not terminate.**
+
+    gcsim has no watchdog: an ungated burst nobody can fund blocks the run while a per-frame
+    stats slice grows — measured at 2.4 GB and `fatal error: out of memory`. The drip bounds
+    the wait, and the *length* of that wait is the Energy Recharge penalty the waiting model
+    exists to price.
+
+    **Cited, not chosen.** Five configs use this exact line — four under `references/gcsim_db/`
+    and the owner's own import — and three of them call it *standard Energy drops*. A number
+    this repo invented for a ranking is the failure `CLAUDE.md` names as fairy's worst.
+    """
+    build = _build()
+
+    plain = build_config(build, actions=["burst"])
+    waiting = build_config(build, actions=["burst"], energy_drip=True)
+
+    assert gcsim_config.ENERGY_DRIP not in plain
+    assert gcsim_config.ENERGY_DRIP in waiting
+    assert gcsim_config.ENERGY_DRIP == "energy every interval=480,720 amount=1;"

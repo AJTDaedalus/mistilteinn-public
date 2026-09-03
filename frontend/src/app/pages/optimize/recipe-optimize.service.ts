@@ -329,6 +329,14 @@ export class RecipeOptimizeService {
      * comparing weapons.
      */
     weaponId?: string,
+    /**
+     * Hold the simulation when a burst cannot be paid for, rather than skipping it.
+     *
+     * **The two models disagree by a factor of six**, so a recipe calibrated under one is not
+     * the other's — see the cache key below, and #240 for what happens when a client-side
+     * option never reaches it.
+     */
+    waitForEnergy = false,
   ): Promise<CalibrationResult> {
     const byFourPieceSet = new Map<number, Recipe>();
     const byPair = new Map<string, Recipe>();
@@ -389,7 +397,11 @@ export class RecipeOptimizeService {
         //
         // Measured before the fix, on a real two-weapon run: Azurelight and Haran Geppaku
         // Futsu both 1,376,712.1, to the decimal.
-        context: `${context ?? ''}${weaponId ? `|weapon=${weaponId}` : ''}`,
+        // **#240's lesson, applied before it bites.** A client-side option that never
+        // reaches the cache key produces two identical answers, which reads as the
+        // models agreeing rather than as the option doing nothing.
+        context: `${context ?? ''}${weaponId ? `|weapon=${weaponId}` : ''}`
+          + (waitForEnergy ? '|waiting' : ''),
       };
 
       // No context hash means no cache: see above. `readRecipe` is skipped rather than given
@@ -676,6 +688,7 @@ export class RecipeOptimizeService {
     rotationId: string,
     artifactSetIds: readonly string[],
     weaponId?: string,
+    waitForEnergy = false,
   ) {
     const { data, error } = await this.api.POST('/api/v1/builds/{build_id}/calibrate', {
       params: { path: { build_id: buildId } },
@@ -684,6 +697,10 @@ export class RecipeOptimizeService {
         // Omitted rather than sent as null when there is none, so a search over the
         // build's own weapon puts nothing new in the request it has always sent.
         ...(weaponId ? { weapon_id: weaponId } : {}),
+        // Always stated rather than omitted when false: the request says which of the two
+        // energy models produced the recipe, and a number whose meaning depends on an
+        // unstated assumption is the shape this repo refuses.
+        wait_for_energy: waitForEnergy,
         // One set is a 4-piece; two are a 2+2, which the endpoint refuses to combine with a
         // 4-piece because five slots cannot hold both.
         artifact_set_id: artifactSetIds.length === 1 ? artifactSetIds[0] : null,
