@@ -400,6 +400,26 @@
           }
         </button>
 
+        <!-- ×n inline. Owner, 2026-09-02: *"While tweaking rotations, it'd be nice to be able
+             to select x n for a step to repeat it."* The model has carried `repeat` per step
+             all along and the editor below can set it — but only for the *selected* step, so
+             changing three rows' counts meant three selections. This is the same field, on the
+             row it belongs to. -->
+        <span class="step__times">
+          <!-- Labelled by `aria-label` rather than a hidden span: this app has no
+               visually-hidden class, and using one would have printed "Repeat step 7" into
+               every row. The same silent failure as an undefined custom property. -->
+          <input
+            type="number"
+            class="mono"
+            min="1"
+            max="99"
+            [attr.aria-label]="'Repeat step ' + ($index + 1)"
+            [value]="step.repeat"
+            (change)="setRepeat($index, $any($event.target).value)"
+          />
+        </span>
+
         <span class="reorder">
           <button
             type="button"

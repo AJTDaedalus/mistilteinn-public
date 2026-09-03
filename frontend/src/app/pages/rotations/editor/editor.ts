@@ -764,6 +764,23 @@ export class RotationEditor {
     this.touched();
   }
 
+  /**
+   * Set one step's repeat from the row, without selecting it first.
+   *
+   * Owner, 2026-09-02: *"While tweaking rotations, it'd be nice to be able to select x n for a
+   * step to repeat it."* The field existed and only the selected step could reach it, so
+   * changing three counts took three selections.
+   *
+   * **Clamped rather than refused.** A number input can be emptied or pasted into, and a step
+   * repeated zero times is a step that is not there — which is a deletion, and deletion has
+   * its own button. Anything unreadable stays at what it was.
+   */
+  protected setRepeat(index: number, raw: string): void {
+    const parsed = Number.parseInt(raw, 10);
+    if (!Number.isFinite(parsed)) return;
+    this.setStep(index, { repeat: Math.min(99, Math.max(1, parsed)) });
+  }
+
   protected setStep(index: number, patch: Partial<RotationStep>): void {
     this.steps.update((steps) =>
       steps.map((step, i) => (i === index ? { ...step, ...patch } : step)),

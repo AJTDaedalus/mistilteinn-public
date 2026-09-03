@@ -455,3 +455,11 @@ label {
 }
 
 .import__link button { flex: 0 0 auto; }
+
+
+/* The inline ×n. Narrow enough to sit in the row's furniture rather than compete with the
+   step's own text, which is what the row is for. */
+.step__times input {
+  width: 3.25rem;
+  text-align: right;
+}

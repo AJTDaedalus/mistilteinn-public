@@ -142,6 +142,41 @@ describe('RotationEditor builder', () => {
     expect(page['steps']()[1].repeat).toBe(4);
   });
 
+  it('sets a repeat from the row, without selecting the step first', async () => {
+    // Owner, 2026-09-02: *"While tweaking rotations, it'd be nice to be able to select x n for
+    // a step to repeat it."* The field existed and only the *selected* step could reach it, so
+    // changing three counts took three selections.
+    const page = editorWith();
+    page['addStep']();
+    page['addStep']();
+
+    page['setRepeat'](1, '3');
+
+    expect(page['steps']()[1].repeat).toBe(3);
+    expect(page['steps']()[0].repeat).toBe(1);
+  });
+
+  it('leaves the count alone when the box is emptied, and never lets it reach zero', async () => {
+    // **A number input can be emptied or pasted into.** A step repeated zero times is a step
+    // that is not there — which is a deletion, and deletion has its own button two cells away.
+    // Anything unreadable keeps what it had rather than becoming a number nobody typed.
+    const page = editorWith();
+    page['addStep']();
+    page['setRepeat'](0, '5');
+
+    page['setRepeat'](0, '');
+    expect(page['steps']()[0].repeat).toBe(5);
+
+    page['setRepeat'](0, 'abc');
+    expect(page['steps']()[0].repeat).toBe(5);
+
+    page['setRepeat'](0, '0');
+    expect(page['steps']()[0].repeat).toBe(1);
+
+    page['setRepeat'](0, '9999');
+    expect(page['steps']()[0].repeat).toBe(99);
+  });
+
   it('keeps a per-step note, which the model has carried since R.4', async () => {
     // B.6. The field existed and no UI had ever shown it.
     const page = editorWith();
