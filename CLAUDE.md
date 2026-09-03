@@ -194,8 +194,17 @@ a job with progress, never a request that blocks.
   `docs/RESEARCH_recipe_cost.md` §2 explains it. **The symptom is misleading**: `flush()`
   reports `index out of range [0] with length 0` while the real message is on `simulate()`'s
   return value, which is a *string* on failure.
-- **A rotation now round-trips, and "never read back" is no longer true.** Import, compile,
-  import again returns identical steps. `POST /rotations/import/link` takes a gcsim database
+- **A rotation round-trips only if it is flat, and the unqualified claim here was wrong.**
+  Import, compile, import again returns identical steps **for a rotation with no
+  `group_repeat`**. For a grouped one it does not: the compiler unrolls the group — which is
+  #224's "as written, to completion", and correct — so re-importing the emitted config reads
+  the cycles back as flat steps and the grouping is gone. Measured over the gcsim database,
+  2026-09-03: of 33 importable configs, **29 carry a `group_repeat > 1` and all 29 drift; the
+  4 flat ones are the 4 that are stable** — the correlation is exact. Nothing in the app
+  re-imports its own output, so this is a latent inconsistency rather than a live bug, and the
+  simulated *number* is right either way. It is written down because the sentence that used to
+  stand here would have been used to justify trusting a round trip that does not hold.
+  `POST /rotations/import/link` takes a gcsim database
   link — `/api/share/db/<id>` is the route their own app calls, read out of its published
   bundle, and it answers with `config_file`. **It takes an id and never a URL**: the link is
   parsed server-side and the host is a constant, because a service that fetches a

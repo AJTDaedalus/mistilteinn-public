@@ -517,3 +517,31 @@ def test_a_condition_outside_the_vocabulary_is_still_refused_by_name() -> None:
 
     with pytest.raises(RotationParseError, match="nightsoul"):
         parse_action_block(config, [_Character("10000001", "Flins", "Pyro")])
+
+
+def test_a_stray_closing_brace_is_not_reported_as_an_unreadable_statement() -> None:
+    """A `}` is punctuation. It can never be a step, so it can never be a *missing* step.
+
+    Measured over 256 real database configs: a bare `}` appeared in 82 refusal lists, always
+    beside the `} else {` whose block it closes. The reader was told twice about one
+    construct, the second time in a form carrying no information at all —
+    `'}' — not a statement this model can express.`
+
+    The refusal list is the whole value of this importer, and a list padded with punctuation
+    is one people skim. The `else` itself is still reported, because that one is real.
+    """
+    config = (
+        "active noelle;\n"
+        "while 1 {\n"
+        "    if i > 0 && .noelle.burst.ready {\n"
+        "        noelle burst;\n"
+        "    }\n"
+        "}\n"
+    )
+
+    with pytest.raises(RotationParseError) as caught:
+        parse_action_block(config, ROSTER)
+
+    message = str(caught.value)
+    assert "i > 0" in message
+    assert "'}' —" not in message

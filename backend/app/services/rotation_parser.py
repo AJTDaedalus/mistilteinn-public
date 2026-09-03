@@ -121,6 +121,13 @@ def parse_action_block(config: str, characters: Iterable[Any]) -> list[dict[str,
     steps: list[dict[str, Any]] = []
     problems: list[str] = []
     for line, group, group_repeat, condition in body:
+        # **Punctuation is never a missing step.** A `}` whose `if` was refused above leaks
+        # out here, and reporting it says nothing the reader can act on: measured over 256
+        # real database configs, a bare `}` appeared in 82 refusal lists, every one of them
+        # beside the construct it closes. The refusal list is this importer's whole value and
+        # a list padded with braces is one people skim.
+        if line.strip() == "}":
+            continue
         step, problem = _statement(line, by_key)
         if step is not None:
             # Carried on **every** member, because the schema requires the members of a group

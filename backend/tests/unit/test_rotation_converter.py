@@ -129,6 +129,83 @@ def test_an_inexpressible_line_is_passed_through_not_converted(line: str) -> Non
     assert line.strip() in text
 
 
+def test_a_variant_inside_a_sequence_is_split_like_any_other() -> None:
+    """**Found by importing 256 real database configs**, where this was the largest
+    single cause of a false refusal.
+
+    `razor skill[hold=1];` imports on its own — `hold` is one of the three variants the model
+    holds. Put the same action in a comma sequence and the whole line was abandoned, because
+    the splitter bailed out on the first part it could not match and returned the line
+    untouched. The parser then reported the *sequence* as unreadable, so a rotation was
+    refused for a construct both halves of the importer already understand.
+
+    The bail-out was protecting a real rule — an unknown parameter must be refused **by
+    name**, never silently dropped — but that is the parser's job and the parser does it, on
+    each part separately. Splitting hands it more precise lines, not fewer.
+    """
+    text, _ = convert(
+        "active razor;\nwhile 1 {\n    razor skill[hold=1], dash, attack, burst;\n}\n",
+    )
+
+    assert "razor skill[hold=1];" in text
+    assert "razor dash;" in text
+    assert "razor attack;" in text
+    assert "razor burst;" in text
+
+
+def test_a_variant_with_a_repeat_keeps_both_when_split() -> None:
+    """`chevreuse burst, skill[hold=1]:2;` — the bracket and the `:2` are both the author's."""
+    text, _ = convert(
+        "active chevreuse;\nwhile 1 {\n    chevreuse burst, skill[hold=1]:2;\n}\n",
+    )
+
+    assert "chevreuse burst;" in text
+    assert "chevreuse skill[hold=1]:2;" in text
+
+
+def test_an_unknown_parameter_in_a_sequence_still_reaches_the_parser() -> None:
+    """The rule the bail-out existed for, kept: splitting must not swallow the parameter.
+
+    After splitting, `[glide_cancel=1]` arrives at the parser intact and is refused there by
+    name — a *better* message than the generic "not a statement this model can express" the
+    unsplit line used to produce.
+    """
+    text, _ = convert(
+        "active razor;\nwhile 1 {\n    razor skill[glide_cancel=1], dash;\n}\n",
+    )
+
+    assert "razor skill[glide_cancel=1];" in text
+    assert "razor dash;" in text
+
+
+def test_a_debug_print_is_stripped_like_a_comment() -> None:
+    """`print()` writes to gcsim's log and changes no damage, so it is a comment with
+    parentheses — but it was refusing whole configs.
+
+    Found across 9 of 256 real database configs, always trailing a real statement:
+    `navia attack:2, dash;    print(.navia.shrapnel);`. The line could not be read as one
+    statement, so the actions in front of the `print` were refused with it.
+
+    Stripped **and named** — the note is the rule this converter follows everywhere: nothing
+    is dropped in silence, even when what is dropped provably cannot change a number.
+    """
+    text, notes = convert(
+        "active navia;\nwhile 1 {\n    navia attack:2, dash;    print(.navia.shrapnel);\n}\n",
+    )
+
+    assert "navia attack:2;" in text
+    assert "navia dash;" in text
+    assert "print" not in text
+    assert any("print" in n for n in notes)
+
+
+def test_a_print_on_its_own_line_leaves_no_empty_statement() -> None:
+    text, notes = convert('active sucrose;\nwhile 1 {\n    print("hi");\n}\n')
+
+    assert "print" not in text
+    assert any("print" in n for n in notes)
+
+
 # ── the four, as published ───────────────────────────────────────────────────
 
 

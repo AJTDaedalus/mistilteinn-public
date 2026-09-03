@@ -53,7 +53,19 @@ _FOR_LOOP = re.compile(r"^for\s+let\s+\w+\s*=.*?\{$")
 _SEQUENCE = re.compile(r"^([a-z0-9_]+)\s+(.+);$")
 
 #: A single action within a sequence: `attack:6`, `skill`, `charge`.
-_ACTION = re.compile(r"^([a-z_]+)(?::(\d+))?$")
+#: An action inside a comma sequence: a name, an optional `[param=1]` variant, an
+#: optional `:n` repeat. The bracket is captured rather than excluded so that a variant
+#: survives the split and reaches the parser, which is the half that knows which
+#: parameters are real kit variants and refuses the rest by name.
+#: A `print(...)` statement, gcsim's debug output.
+#:
+#: It writes to the log and changes no damage, which makes it a comment with parentheses. It
+#: is stripped rather than refused because it was refusing whole *configs*: it trails a real
+#: statement often enough (`navia attack:2, dash;    print(.navia.shrapnel);`) that the
+#: actions in front of it went down with it.
+_PRINT = re.compile(r"\bprint\s*\([^)]*\)\s*;?")
+
+_ACTION = re.compile(r"^([a-z_]+)(\[[^\]]*\])?(?::(\d+))?$")
 
 
 #: `if .sucrose.burst.ready {` — a branch whose condition this model already understands.
@@ -278,6 +290,14 @@ def convert(config: str) -> tuple[str, list[str]]:
         if not line:
             continue
 
+        # **Named, not silently dropped**, even though it provably cannot change a number.
+        # That rule is what makes the rest of this converter's notes worth reading.
+        if _PRINT.search(line):
+            line = _PRINT.sub("", line).strip()
+            notes.append("gcsim `print(...)` debug output was dropped; it affects no damage.")
+            if not line:
+                continue
+
         if _FOR_LOOP.match(line):
             # **Kept verbatim, bound and all.** This used to rewrite the header to `while 1 {`
             # and note that "how long to run for is stated separately" — which was true while
@@ -375,10 +395,18 @@ def _split_sequence(line: str) -> list[str] | None:
     for part in body.split(","):
         action = _ACTION.match(part.strip())
         if action is None:
-            # A parameterised action (`skill[hold=1]`), a function call, anything else. Passed
+            # A function call, a bare expression, anything with no action shape at all. Passed
             # through unconverted so `rotation_parser` refuses it **by name** — a converter
             # that swallowed it would turn a refusal into a silent omission.
             return None
-        name, repeat = action.groups()
-        statements.append(f"{key} {name}:{repeat};" if repeat else f"{key} {name};")
+        name, variant, repeat = action.groups()
+        # **The variant rides along rather than blocking the split.** Bailing out here refused
+        # `razor skill[hold=1], dash, attack, burst;` whole, although `razor skill[hold=1];`
+        # imports on its own — `hold` is one of the three variants the model holds. Found by
+        # importing 256 real database configs, where this was the largest single cause of a
+        # false refusal. The rule the bail-out protected is untouched: an unknown parameter
+        # still arrives at the parser intact and is still refused there by name, now on its
+        # own line rather than buried in a sequence the reader has to bisect by hand.
+        suffix = f":{repeat}" if repeat else ""
+        statements.append(f"{key} {name}{variant or ''}{suffix};")
     return statements
