@@ -72,10 +72,14 @@ class FurnishingSuiteFavorite(Base):
 
 
 class TeapotProgress(Base):
-    """A set this user has already done.
+    """One character this user has already invited to one set.
 
-    Seelie's whole affordance: mark it off and it leaves the list. One row per finished set,
-    and its absence is the default — nothing has to be written for a user who has done nothing.
+    **Per character per set, not per set** — owner's correction, 2026-09-03. A set favoured by
+    three characters you own is worth three invitations and three rewards, so a row keyed only
+    by the set could not record having done two of them: the tracker would either call the set
+    finished and lose 20 primogems, or call it untouched and ask for work already done.
+
+    Its absence is the default, so nothing is written for a user who has done nothing.
     """
 
     __tablename__ = "teapot_progress"
@@ -86,6 +90,11 @@ class TeapotProgress(Base):
     suite_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("furnishing_suites.id", ondelete="CASCADE"), primary_key=True,
     )
+    #: The character invited **to this set**, by nanoka id.
+    #:
+    #: Not a foreign key to `characters`, for the reason `FurnishingSuiteFavorite` gives: a
+    #: favourite can name a character this database has not seeded yet.
+    character_nanoka_id: Mapped[str] = mapped_column(String(32), primary_key=True)
     done_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=text("now()"),
     )

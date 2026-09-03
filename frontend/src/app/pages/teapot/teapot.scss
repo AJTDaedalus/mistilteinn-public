@@ -20,11 +20,39 @@
 
 .teapot__row {
   display: flex;
-  align-items: baseline;
-  gap: var(--space-3);
-  padding: var(--space-1) var(--space-2);
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
   border-bottom: 1px solid var(--surface-rule);
 }
+
+.teapot__head { display: flex; align-items: baseline; gap: var(--space-3); }
+
+.teapot__chars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* **Three states, told apart by more than colour.** Available carries a live checkbox,
+   completed a ticked one, and unowned no control at all — so the difference survives a
+   reader who cannot distinguish the two greys. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+}
+
+.chip--available { color: var(--ink); border-color: var(--brass); }
+.chip--completed { color: var(--ink-dim); text-decoration: line-through; }
+.chip--unowned { color: var(--ink-faint); font-style: italic; }
 
 /* Finished sets sink rather than disappear — a user has to be able to undo a tick, and that
    means being able to see it. */

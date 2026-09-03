@@ -18,16 +18,23 @@ export class TeapotService {
     return data as TeapotRead;
   }
 
-  /** Mark a set done, or un-mark it. Idempotent either way. */
-  async setDone(suiteId: string, done: boolean): Promise<void> {
-    const call = done
-      ? this.api.PUT('/api/v1/teapot/suites/{suite_id}/done', {
-          params: { path: { suite_id: suiteId } },
-        })
-      : this.api.DELETE('/api/v1/teapot/suites/{suite_id}/done', {
-          params: { path: { suite_id: suiteId } },
-        });
-    const { error } = await call;
+  /**
+   * Record — or un-record — that one character has been invited to one set.
+   *
+   * **Per character per set**, because that is how the reward is given: a set favoured by
+   * three characters you own is three invitations and 60 primogems. Idempotent either way.
+   */
+  async setInvited(suiteId: string, character: string, invited: boolean): Promise<void> {
+    const params = {
+      params: { path: { suite_id: suiteId, character_nanoka_id: character } },
+    };
+    const { error } = invited
+      ? await this.api.PUT(
+          '/api/v1/teapot/suites/{suite_id}/invited/{character_nanoka_id}', params,
+        )
+      : await this.api.DELETE(
+          '/api/v1/teapot/suites/{suite_id}/invited/{character_nanoka_id}', params,
+        );
     if (error) throw error;
   }
 }

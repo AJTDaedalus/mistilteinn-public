@@ -3595,14 +3595,14 @@
         ]
       }
     },
-    "/api/v1/teapot/suites/{suite_id}/done": {
+    "/api/v1/teapot/suites/{suite_id}/invited/{character_nanoka_id}": {
       "put": {
         "tags": [
           "teapot"
         ],
-        "summary": "Mark Done",
-        "description": "Mark a set as already done.\n\nIdempotent: ticking a set twice is not an error, and a client that retries a request it\nis not sure landed should not have to care.",
-        "operationId": "mark_done_api_v1_teapot_suites__suite_id__done_put",
+        "summary": "Mark Invited",
+        "description": "Record that this character has been invited to this set.\n\n**Per character per set**, because that is how the reward is given: a set favoured by three\ncharacters you own is worth three invitations and 60 primogems. Ticking the set as a whole\nwould either lose the two you had not done or ask you to repeat the one you had.\n\nIdempotent \u2014 ticking twice is not an error, and a client retrying a request it is not sure\nlanded should not have to care.",
+        "operationId": "mark_invited_api_v1_teapot_suites__suite_id__invited__character_nanoka_id__put",
         "security": [
           {
             "HTTPBearer": []
@@ -3616,6 +3616,15 @@
             "schema": {
               "type": "string",
               "title": "Suite Id"
+            }
+          },
+          {
+            "name": "character_nanoka_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Character Nanoka Id"
             }
           }
         ],
@@ -3639,9 +3648,9 @@
         "tags": [
           "teapot"
         ],
-        "summary": "Mark Not Done",
-        "description": "Un-tick a set.\n\n**The reason finished sets sink rather than disappear**: a user has to be able to undo a\ntick, which means they have to be able to see it.",
-        "operationId": "mark_not_done_api_v1_teapot_suites__suite_id__done_delete",
+        "summary": "Mark Not Invited",
+        "description": "Un-tick one character on one set.\n\n**The reason a completed character stays on the row rather than vanishing**: a user has to\nbe able to undo a tick, which means they have to be able to see it.",
+        "operationId": "mark_not_invited_api_v1_teapot_suites__suite_id__invited__character_nanoka_id__delete",
         "security": [
           {
             "HTTPBearer": []
@@ -3655,6 +3664,15 @@
             "schema": {
               "type": "string",
               "title": "Suite Id"
+            }
+          },
+          {
+            "name": "character_nanoka_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Character Nanoka Id"
             }
           }
         ],
@@ -9549,19 +9567,26 @@
             "type": "string",
             "title": "Placement"
           },
-          "owned_favorites": {
+          "available": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Owned Favorites"
+            "title": "Available"
           },
-          "unowned_favorites": {
+          "completed": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Unowned Favorites"
+            "title": "Completed"
+          },
+          "unowned": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unowned"
           },
           "done": {
             "type": "boolean",
@@ -9589,8 +9614,9 @@
           "name",
           "icon",
           "placement",
-          "owned_favorites",
-          "unowned_favorites",
+          "available",
+          "completed",
+          "unowned",
           "done",
           "remaining"
         ],

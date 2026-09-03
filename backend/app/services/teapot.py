@@ -36,12 +36,16 @@ if TYPE_CHECKING:
 #: - Genshin Impact Wiki, *Furnishing Set* —
 #:   <https://genshin-impact.fandom.com/wiki/Furnishing_Set>
 #:
+#: **Once per character per set** — owner's correction, 2026-09-03. A set favoured by three
+#: characters you own is worth three invitations and 60 primogems, not 20.
+#:
 #: Two independent sources agreeing, because this repo's hardest-won lesson was fabricated
 #: citations in curated data. Only the Primogems are modelled: Mora and the unique reward are
 #: real but are not what anyone sorts by.
 #:
-#: **One-time per set is what makes `teapot_progress` the right shape.** The reward does not
-#: repeat, so a ticked set is finished rather than on cooldown.
+#: **That is why `teapot_progress` is keyed by character as well as set.** A row per set could
+#: not record having invited two of three favouring characters: the tracker would either call
+#: the set finished and lose 20 primogems, or call it untouched and ask for work already done.
 REWARD_PER_CHARACTER: int | None = 20
 
 
@@ -53,21 +57,44 @@ class SuiteProgress:
     name: str
     icon: str
     placement: str
-    #: Characters who favour this set **and whom the user owns**.
-    owned_favorites: tuple[str, ...]
-    #: Characters who favour it that the user does not have — why a set can be worth less
-    #: than its favourite count suggests, and why that is shown rather than hidden.
-    unowned_favorites: tuple[str, ...]
-    done: bool
+    # **Three states per character per set**, owner's own vocabulary, 2026-09-03. Every
+    # character who favours this set is in exactly one of them, and the whole point of the
+    # tracker is the first: *which set to build next, because it has characters you have not
+    # invited yet*.
+    #:
+    #: **Available and owned** — you have them and have not invited them. Worth 20 primogems
+    #: each, and the only state that makes a set worth building.
+    available: tuple[str, ...]
+    #: **Completed and owned** — invited already, so worth nothing more.
+    #:
+    #: Kept rather than subtracted away, because the page shows them: a user has to see a tick
+    #: to undo one, and "3 of 4 done" is the sentence they are looking for.
+    completed: tuple[str, ...]
+    #: **Available and not owned** — they favour it, you do not have them.
+    #:
+    #: Shown rather than hidden: it is why a set can be worth less than its favourite count
+    #: suggests, and it is what changes when the user pulls that character.
+    unowned: tuple[str, ...]
+
+    @property
+    def done(self) -> bool:
+        """Nothing left to claim from the characters this user owns.
+
+        **Derived rather than stored.** A set is finished when there is nobody available to
+        invite; a separate flag could disagree with the rows it is meant to summarise. Note it
+        is *not* the same as "every favouring character invited" — a set can be finished for
+        you and still list characters you do not have.
+        """
+        return not self.available and bool(self.completed)
 
     @property
     def remaining(self) -> int:
-        """Owned favoured characters still to invite. Zero once the set is marked done."""
-        return 0 if self.done else len(self.owned_favorites)
+        """Characters available and owned. One 20-primogem reward each."""
+        return len(self.available)
 
     @property
     def remaining_primogems(self) -> int | None:
-        """`remaining × REWARD_PER_CHARACTER`, or `None` while the constant is uncited."""
+        """`remaining × REWARD_PER_CHARACTER`, or `None` if the constant is unset."""
         if REWARD_PER_CHARACTER is None:
             return None
         return self.remaining * REWARD_PER_CHARACTER
@@ -87,30 +114,31 @@ def rank(rows: Iterable[SuiteProgress]) -> list[SuiteProgress]:
 def progress_for(
     suites: Iterable[Mapping[str, object]],
     owned_character_ids: set[str],
-    done_suite_ids: set[str],
+    invited: set[tuple[str, str]],
 ) -> list[SuiteProgress]:
     """Build the tracker's rows from the catalogue and this user's state.
+
+    `invited` is `(suite_id, character_nanoka_id)` pairs — **per character per set**, because
+    that is how the reward is given. The same character invited to one of their two favourite
+    sets is still owed the other.
 
     `suites` carries `favorite` as **nanoka character ids**, which is what
     `owned_character_ids` holds too — the join needs no translation, which is the finding that
     made this feature cheap.
     """
-    rows = [
-        SuiteProgress(
-            suite_id=str(suite["id"]),
+    rows = []
+    for suite in suites:
+        suite_id = str(suite["id"])
+        favourites = tuple(suite.get("favorite") or ())
+        owned = {c for c in favourites if c in owned_character_ids}
+        already = {c for c in owned if (suite_id, c) in invited}
+        rows.append(SuiteProgress(
+            suite_id=suite_id,
             name=str(suite["name"]),
             icon=str(suite.get("icon") or ""),
             placement=str(suite.get("placement") or ""),
-            owned_favorites=tuple(
-                sorted(c for c in (suite.get("favorite") or ()) if c in owned_character_ids),
-            ),
-            unowned_favorites=tuple(
-                sorted(
-                    c for c in (suite.get("favorite") or ()) if c not in owned_character_ids
-                ),
-            ),
-            done=str(suite["id"]) in done_suite_ids,
-        )
-        for suite in suites
-    ]
+            available=tuple(sorted(owned - already)),
+            completed=tuple(sorted(already)),
+            unowned=tuple(sorted(c for c in favourites if c not in owned_character_ids)),
+        ))
     return rank(rows)

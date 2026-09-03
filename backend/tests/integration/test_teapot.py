@@ -81,7 +81,7 @@ async def test_a_set_favoured_by_nobody_you_have_is_worth_nothing(
     row = next(s for s in body["suites"] if s["name"] == "Unreachable")
 
     assert row["remaining"] == 0
-    assert row["unowned_favorites"] == [ids[0]]
+    assert row["unowned"] == [ids[0]]
 
 
 async def test_owning_the_character_makes_the_set_worth_doing(
@@ -95,7 +95,7 @@ async def test_owning_the_character_makes_the_set_worth_doing(
     row = next(s for s in body["suites"] if s["name"] == "Reachable")
 
     assert row["remaining"] == 1
-    assert row["owned_favorites"] == ids
+    assert row["available"] == ids
 
 
 async def test_a_test_build_does_not_count_as_owning_the_character(
@@ -127,35 +127,80 @@ async def test_the_most_worth_doing_comes_first(
     assert listed.index("AaThree") < listed.index("AaOne")
 
 
-async def test_marking_a_set_done_takes_it_off_the_top(
+async def test_inviting_one_character_leaves_the_others_owed(
     authed_client: AsyncClient, db_session, authed_user,
 ):
-    ids = await _any_characters(db_session, 1)
-    suite = await _suite(db_session, "Finished", ids)
-    await _own(db_session, authed_user, ids[0])
+    """**The correction that made this per character per set.** A set favoured by two
+    characters you own is two invitations and 40 primogems; ticking one must leave the other.
+    """
+    ids = await _any_characters(db_session, 2)
+    suite = await _suite(db_session, "TwoWorth", ids)
+    for nanoka_id in ids:
+        await _own(db_session, authed_user, nanoka_id)
 
-    assert (await authed_client.put(f"{TEAPOT}/suites/{suite.id}/done")).status_code == 204
+    marked = await authed_client.put(f"{TEAPOT}/suites/{suite.id}/invited/{ids[0]}")
+    assert marked.status_code == 204
+
+    body = (await authed_client.get(f"{TEAPOT}/suites")).json()
+    row = next(s for s in body["suites"] if s["name"] == "TwoWorth")
+    assert row["completed"] == [ids[0]]
+    assert row["available"] == [ids[1]]
+    assert row["remaining"] == 1
+    assert row["remaining_primogems"] == 20
+    assert row["done"] is False
+
+
+async def test_a_set_is_done_once_every_owned_favourite_is_invited(
+    authed_client: AsyncClient, db_session, authed_user,
+):
+    ids = await _any_characters(db_session, 2)
+    suite = await _suite(db_session, "Finished", ids)
+    for nanoka_id in ids:
+        await _own(db_session, authed_user, nanoka_id)
+        await authed_client.put(f"{TEAPOT}/suites/{suite.id}/invited/{nanoka_id}")
 
     body = (await authed_client.get(f"{TEAPOT}/suites")).json()
     row = next(s for s in body["suites"] if s["name"] == "Finished")
+
     assert row["done"] is True
     assert row["remaining"] == 0
 
 
-async def test_a_finished_set_can_be_un_ticked(
+async def test_a_character_invited_to_one_set_is_still_owed_on_another(
     authed_client: AsyncClient, db_session, authed_user,
 ):
-    """Which is why finished sets sink rather than disappear: a user has to be able to undo a
-    tick, and that means being able to see it."""
+    """A character favours two sets and each pays its own reward, so a tick on one must not
+    finish the other. This is what the per-set key could not express."""
+    ids = await _any_characters(db_session, 1)
+    first = await _suite(db_session, "SetOne", ids)
+    await _suite(db_session, "SetTwo", ids)
+    await _own(db_session, authed_user, ids[0])
+
+    await authed_client.put(f"{TEAPOT}/suites/{first.id}/invited/{ids[0]}")
+
+    body = (await authed_client.get(f"{TEAPOT}/suites")).json()
+    rows = {s["name"]: s for s in body["suites"]}
+    assert rows["SetOne"]["done"] is True
+    assert rows["SetTwo"]["remaining"] == 1
+
+
+async def test_an_invitation_can_be_un_ticked(
+    authed_client: AsyncClient, db_session, authed_user,
+):
+    """Which is why a completed character stays on the row: a user has to see a tick to undo
+    it."""
     ids = await _any_characters(db_session, 1)
     suite = await _suite(db_session, "Oops", ids)
     await _own(db_session, authed_user, ids[0])
-    await authed_client.put(f"{TEAPOT}/suites/{suite.id}/done")
+    await authed_client.put(f"{TEAPOT}/suites/{suite.id}/invited/{ids[0]}")
 
-    assert (await authed_client.delete(f"{TEAPOT}/suites/{suite.id}/done")).status_code == 204
+    removed = await authed_client.delete(f"{TEAPOT}/suites/{suite.id}/invited/{ids[0]}")
+    assert removed.status_code == 204
 
     body = (await authed_client.get(f"{TEAPOT}/suites")).json()
-    assert next(s for s in body["suites"] if s["name"] == "Oops")["done"] is False
+    row = next(s for s in body["suites"] if s["name"] == "Oops")
+    assert row["available"] == ids
+    assert row["completed"] == []
 
 
 async def test_ticking_twice_is_not_an_error(
@@ -165,13 +210,14 @@ async def test_ticking_twice_is_not_an_error(
     ids = await _any_characters(db_session, 1)
     suite = await _suite(db_session, "Twice", ids)
 
-    await authed_client.put(f"{TEAPOT}/suites/{suite.id}/done")
+    await authed_client.put(f"{TEAPOT}/suites/{suite.id}/invited/{ids[0]}")
 
-    assert (await authed_client.put(f"{TEAPOT}/suites/{suite.id}/done")).status_code == 204
+    second = await authed_client.put(f"{TEAPOT}/suites/{suite.id}/invited/{ids[0]}")
+    assert second.status_code == 204
 
 
 async def test_ticking_a_set_that_does_not_exist_says_so(authed_client: AsyncClient):
-    response = await authed_client.put(f"{TEAPOT}/suites/nope/done")
+    response = await authed_client.put(f"{TEAPOT}/suites/nope/invited/10000002")
 
     assert response.status_code == 404
 

@@ -9,21 +9,60 @@ def suite(sid: str, name: str, favorite: list[str]) -> dict:
     return {"id": sid, "name": name, "icon": "", "placement": "I", "favorite": favorite}
 
 
-def test_only_owned_characters_count_toward_a_set() -> None:
+def test_the_three_states_are_exclusive_and_complete() -> None:
+    """**Owner's model, 2026-09-03**: a character is available-and-owned, completed-and-owned,
+    or available-and-not-owned. Every favouring character is in exactly one."""
+    rows = progress_for(
+        [suite("s1", "Camp", ["a", "b", "c"])], {"a", "b"}, {("s1", "b")},
+    )
+    row = rows[0]
+
+    assert row.available == ("a",)          # owned, not yet invited — worth 20
+    assert row.completed == ("b",)          # owned, already invited — worth nothing more
+    assert row.unowned == ("c",)            # favours it, you do not have them
+    assert set(row.available) | set(row.completed) | set(row.unowned) == {"a", "b", "c"}
+
+
+def test_only_available_owned_characters_are_worth_anything() -> None:
     """The whole reason `builds.owned` exists: a set favoured by three characters you do not
     have is worth nothing to you."""
     rows = progress_for([suite("s1", "Camp", ["a", "b", "c"])], {"a"}, set())
 
-    assert rows[0].owned_favorites == ("a",)
-    assert rows[0].unowned_favorites == ("b", "c")
+    assert rows[0].available == ("a",)
+    assert rows[0].unowned == ("b", "c")
     assert rows[0].remaining == 1
 
 
-def test_a_finished_set_has_nothing_remaining() -> None:
-    rows = progress_for([suite("s1", "Camp", ["a", "b"])], {"a", "b"}, {"s1"})
+def test_a_set_is_done_only_when_every_owned_favourite_is_invited() -> None:
+    both = progress_for(
+        [suite("s1", "Camp", ["a", "b"])], {"a", "b"}, {("s1", "a"), ("s1", "b")},
+    )
+    one = progress_for([suite("s1", "Camp", ["a", "b"])], {"a", "b"}, {("s1", "a")})
+
+    assert both[0].done is True
+    assert both[0].remaining == 0
+    assert one[0].done is False
+    assert one[0].remaining == 1, "the second character is still worth inviting"
+
+
+def test_a_set_can_be_done_for_you_and_still_list_characters_you_lack() -> None:
+    """`done` means nothing left *to claim*, not every favouring character invited."""
+    rows = progress_for([suite("s1", "Camp", ["a", "b"])], {"a"}, {("s1", "a")})
 
     assert rows[0].done is True
-    assert rows[0].remaining == 0
+    assert rows[0].unowned == ("b",)
+
+
+def test_inviting_a_character_to_one_set_leaves_their_other_set_owed() -> None:
+    """**The bug the per-set key had.** A character favours two sets and each is worth its own
+    reward, so a tick on one must not silently finish the other."""
+    rows = progress_for(
+        [suite("s1", "One", ["a"]), suite("s2", "Two", ["a"])], {"a"}, {("s1", "a")},
+    )
+    by_name = {row.name: row for row in rows}
+
+    assert by_name["One"].done is True
+    assert by_name["Two"].remaining == 1
 
 
 def test_the_most_worth_doing_comes_first() -> None:
@@ -40,7 +79,9 @@ def test_finished_sets_sink_rather_than_disappear() -> None:
     """Seelie's affordance is *mark it off*, not *delete it* — a user has to be able to see
     what they have done, and unmark one they ticked by mistake."""
     rows = progress_for(
-        [suite("s1", "Done", ["a", "b"]), suite("s2", "Todo", ["a"])], {"a", "b"}, {"s1"},
+        [suite("s1", "Done", ["a", "b"]), suite("s2", "Todo", ["a"])],
+        {"a", "b"},
+        {("s1", "a"), ("s1", "b")},
     )
 
     assert [row.name for row in rows] == ["Todo", "Done"]
@@ -49,8 +90,8 @@ def test_finished_sets_sink_rather_than_disappear() -> None:
 def test_ties_break_on_name_so_the_list_does_not_shuffle() -> None:
     """An order that changes between loads is one a reader stops trusting."""
     rows = rank([
-        SuiteProgress("2", "Beta", "", "I", ("a",), (), False),
-        SuiteProgress("1", "Alpha", "", "I", ("a",), (), False),
+        SuiteProgress("2", "Beta", "", "I", ("a",), (), ()),
+        SuiteProgress("1", "Alpha", "", "I", ("a",), (), ()),
     ])
 
     assert [row.name for row in rows] == ["Alpha", "Beta"]
@@ -66,15 +107,16 @@ def test_the_reward_is_twenty_primogems_per_character() -> None:
     rows = progress_for([suite("s1", "Camp", ["a", "b"])], {"a", "b"}, set())
 
     assert teapot.REWARD_PER_CHARACTER == 20
+    # Two owned favourites, neither invited: two rewards, because it is per character per set.
     assert rows[0].remaining_primogems == 40
 
 
-def test_a_finished_set_is_worth_nothing_more() -> None:
-    """The reward is **one-time per set**, which is what makes `teapot_progress` a done flag
-    rather than a cooldown."""
-    rows = progress_for([suite("s1", "Camp", ["a"])], {"a"}, {"s1"})
+def test_an_invited_character_is_worth_nothing_more() -> None:
+    """The reward is once **per character per set**, so a tick removes exactly that
+    character's 20 primogems and leaves the rest."""
+    rows = progress_for([suite("s1", "Camp", ["a", "b"])], {"a", "b"}, {("s1", "a")})
 
-    assert rows[0].remaining_primogems == 0
+    assert rows[0].remaining_primogems == 20
 
 
 def test_the_order_is_the_same_one_the_reward_would_give(monkeypatch) -> None:

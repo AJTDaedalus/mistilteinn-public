@@ -49,39 +49,64 @@
     <ul class="teapot__list">
       @for (row of visible(); track row.suite_id) {
         <li class="teapot__row" [class.teapot__row--done]="row.done">
-          <label class="teapot__tick">
-            <input
-              type="checkbox"
-              [checked]="row.done"
-              [disabled]="busy() === row.suite_id"
-              (change)="toggle(row)"
-              [attr.aria-label]="'Mark ' + row.name + ' as done'"
-            />
-          </label>
-
-          <span class="teapot__name">{{ row.name }}</span>
-          <span class="teapot__where muted">{{ placement(row) }}</span>
-
-          <span class="teapot__remaining">
-            @if (row.remaining > 0) {
-              @if (row.remaining_primogems; as gems) {
-                {{ gems }} primos
+          <div class="teapot__head">
+            <span class="teapot__name">{{ row.name }}</span>
+            <span class="teapot__where muted">{{ placement(row) }}</span>
+            <span class="teapot__remaining">
+              @if (row.remaining > 0) {
+                @if (row.remaining_primogems; as gems) {
+                  {{ gems }} primos
+                } @else {
+                  {{ row.remaining }} to invite
+                }
+              } @else if (row.done) {
+                done
               } @else {
-                {{ row.remaining }} to invite
+                —
               }
-            } @else if (row.done) {
-              done
-            } @else {
-              —
-            }
-          </span>
-
-          @if (row.unowned_favorites.length) {
-            <span class="teapot__locked muted"
-              title="Characters who favour this set that you do not have">
-              {{ row.unowned_favorites.length }} you don't have
             </span>
-          }
+          </div>
+
+          <!-- **Three states per character, and each is its own reward.** A set favoured by
+               three characters you own is three invitations, so a tick belongs on the
+               character rather than on the set. -->
+          <ul class="teapot__chars">
+            @for (character of row.available; track character) {
+              <li>
+                <label class="chip chip--available">
+                  <input
+                    type="checkbox"
+                    [checked]="false"
+                    [disabled]="busyWith(row, character)"
+                    (change)="toggle(row, character)"
+                    [attr.aria-label]="'Mark ' + characterName(character) + ' as invited'"
+                  />
+                  {{ characterName(character) }}
+                </label>
+              </li>
+            }
+            @for (character of row.completed; track character) {
+              <li>
+                <label class="chip chip--completed">
+                  <input
+                    type="checkbox"
+                    [checked]="true"
+                    [disabled]="busyWith(row, character)"
+                    (change)="toggle(row, character)"
+                    [attr.aria-label]="'Mark ' + characterName(character) + ' as not invited'"
+                  />
+                  {{ characterName(character) }}
+                </label>
+              </li>
+            }
+            @for (character of row.unowned; track character) {
+              <li>
+                <span class="chip chip--unowned" title="You do not have this character">
+                  {{ characterName(character) }}
+                </span>
+              </li>
+            }
+          </ul>
         </li>
       } @empty {
         <li class="teapot__empty muted">

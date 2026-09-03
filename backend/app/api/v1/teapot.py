@@ -39,13 +39,16 @@ class SuiteRow(BaseModel):
     name: str
     icon: str
     placement: str
-    #: Characters who favour this set and whom the user has.
-    owned_favorites: list[str]
-    #: Characters who favour it that the user does not have.
-    #:
-    #: Shown rather than hidden: it is why a set can be worth less than its favourite count
-    #: suggests, and a reader who cannot see that will think the tracker is wrong.
-    unowned_favorites: list[str]
+    # **Three states per character per set** — the owner's own vocabulary. Every favouring
+    # character is in exactly one, and the tracker exists for the first: which set to build
+    # next, because it has characters you have not invited yet.
+    #: Available and owned — worth 20 primogems each.
+    available: list[str]
+    #: Completed and owned — already invited, worth nothing more.
+    completed: list[str]
+    #: Available and not owned — why a set can be worth less than its favourite count says.
+    unowned: list[str]
+    #: Nothing left to claim from the characters this user owns.
     done: bool
     remaining: int
     #: `remaining × reward`, or **null while the reward constant is uncited** (OQ-A4).
@@ -76,10 +79,15 @@ async def list_suites(session: _Session, user: _User) -> TeapotRead:
     )
     owned_ids = {row for row in owned.scalars() if row}
 
-    done = await session.execute(
-        select(TeapotProgress.suite_id).where(TeapotProgress.owner_id == user.id),
-    )
-    done_ids = set(done.scalars())
+    # `(suite, character)` pairs, because the reward is **per character per set**: the same
+    # character invited to one of their two favourite sets is still owed the other.
+    invited = {
+        (suite_id, character)
+        for suite_id, character in await session.execute(
+            select(TeapotProgress.suite_id, TeapotProgress.character_nanoka_id)
+            .where(TeapotProgress.owner_id == user.id),
+        )
+    }
 
     suites = (await session.execute(select(FurnishingSuite))).scalars().all()
     favorites: dict[str, list[str]] = {}
@@ -99,14 +107,15 @@ async def list_suites(session: _Session, user: _User) -> TeapotRead:
             for suite in suites
         ],
         owned_ids,
-        done_ids,
+        invited,
     )
     return TeapotRead(
         suites=[
             SuiteRow(
                 suite_id=row.suite_id, name=row.name, icon=row.icon,
-                placement=row.placement, owned_favorites=list(row.owned_favorites),
-                unowned_favorites=list(row.unowned_favorites), done=row.done,
+                placement=row.placement,
+                available=list(row.available), completed=list(row.completed),
+                unowned=list(row.unowned), done=row.done,
                 remaining=row.remaining, remaining_primogems=row.remaining_primogems,
             )
             for row in rows
@@ -115,32 +124,51 @@ async def list_suites(session: _Session, user: _User) -> TeapotRead:
     )
 
 
-@router.put("/suites/{suite_id}/done", status_code=204)
-async def mark_done(suite_id: str, session: _Session, user: _User) -> None:
-    """Mark a set as already done.
+@router.put("/suites/{suite_id}/invited/{character_nanoka_id}", status_code=204)
+async def mark_invited(
+    suite_id: str, character_nanoka_id: str, session: _Session, user: _User,
+) -> None:
+    """Record that this character has been invited to this set.
 
-    Idempotent: ticking a set twice is not an error, and a client that retries a request it
-    is not sure landed should not have to care.
+    **Per character per set**, because that is how the reward is given: a set favoured by three
+    characters you own is worth three invitations and 60 primogems. Ticking the set as a whole
+    would either lose the two you had not done or ask you to repeat the one you had.
+
+    Idempotent — ticking twice is not an error, and a client retrying a request it is not sure
+    landed should not have to care.
     """
     suite = await session.get(FurnishingSuite, suite_id)
     if suite is None:
         raise HTTPException(status_code=404, detail="no such furnishing set")
-    existing = await session.get(TeapotProgress, {"owner_id": user.id, "suite_id": suite_id})
+    existing = await session.get(
+        TeapotProgress,
+        {
+            "owner_id": user.id, "suite_id": suite_id,
+            "character_nanoka_id": character_nanoka_id,
+        },
+    )
     if existing is None:
-        session.add(TeapotProgress(owner_id=user.id, suite_id=suite_id))
+        session.add(TeapotProgress(
+            owner_id=user.id, suite_id=suite_id,
+            character_nanoka_id=character_nanoka_id,
+        ))
         await session.commit()
 
 
-@router.delete("/suites/{suite_id}/done", status_code=204)
-async def mark_not_done(suite_id: str, session: _Session, user: _User) -> None:
-    """Un-tick a set.
+@router.delete("/suites/{suite_id}/invited/{character_nanoka_id}", status_code=204)
+async def mark_not_invited(
+    suite_id: str, character_nanoka_id: str, session: _Session, user: _User,
+) -> None:
+    """Un-tick one character on one set.
 
-    **The reason finished sets sink rather than disappear**: a user has to be able to undo a
-    tick, which means they have to be able to see it.
+    **The reason a completed character stays on the row rather than vanishing**: a user has to
+    be able to undo a tick, which means they have to be able to see it.
     """
     await session.execute(
         delete(TeapotProgress).where(
-            TeapotProgress.owner_id == user.id, TeapotProgress.suite_id == suite_id,
+            TeapotProgress.owner_id == user.id,
+            TeapotProgress.suite_id == suite_id,
+            TeapotProgress.character_nanoka_id == character_nanoka_id,
         ),
     )
     await session.commit()
