@@ -496,31 +496,12 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
  */
 function staleConversionsIn(hits: RecipeHit[], calcs: CalcLog[]): StaleConversion[] {
   const landed = calcs.filter((c) => c.damage !== 0);
-  const total = hits.reduce((sum, h) => sum + h.gcsimAverageDamage, 0);
-  const reads: [ConversionTerm, (c: CalcLog) => number][] = [
-    ['flatDamage', (c) => c.flat_dmg],
-    ['flatAtk', (c) => c.flat_atk],
-    ['flatHp', (c) => c.flat_hp],
-    ['flatDef', (c) => c.flat_def],
-  ];
-  const out: StaleConversion[] = [];
-  for (const [term, read] of reads) {
-    let count = 0;
-    let damage = 0;
-    for (let i = 0; i < landed.length && i < hits.length; i++) {
-      // **Only the calibrated character's hits.** A teammate's flat ATK is their equipped
-      // gear — `furina add stats atk=311 …` in the config — not a conversion, and nothing in a
-      // search can move it. Counting those reported *the whole team's* frozen stats as an
-      // unresolvable conversion: on the owner's Skirk rotation that was 89.3% of the damage,
-      // every point of it a teammate's, while Skirk's own hits carried no flat terms at all.
-      if (hits[i].mine && read(landed[i]) !== 0) {
-        count++;
-        damage += hits[i].gcsimAverageDamage;
-      }
-    }
-    if (count > 0) out.push({ term, hits: count, damageShare: total > 0 ? damage / total : 0 });
-  }
-  return out;
+  const reads = new Map(TERMS.map((t) => [t.term, t.fromCalc]));
+  // At parse time every present term is frozen — nothing has been resolved yet. Counting the
+  // owner's Skirk rotation without the `mine` filter reported 89.3 % of the damage as an
+  // unresolvable conversion, every point of it a teammate's, while Skirk's own hits carried
+  // no flat terms at all; the filter now lives in `tallyStale` where both callers get it.
+  return tallyStale(hits, (term, i) => i < landed.length && reads.get(term)!(landed[i]) !== 0);
 }
 
 
@@ -545,12 +526,60 @@ export function totalStat(hit: RecipeHit, stat: ConversionSource): number {
   return hit.calibratedBase[stat] * (1 + hit.calibratedPercent[stat]) + hit.calibratedFlat[stat];
 }
 
-const TERMS: { term: ConversionTerm; read: (h: RecipeHit) => number }[] = [
-  { term: 'flatDamage', read: (h) => h.flatDamage },
-  { term: 'flatAtk', read: (h) => h.calibratedFlat.atk },
-  { term: 'flatHp', read: (h) => h.calibratedFlat.hp },
-  { term: 'flatDef', read: (h) => h.calibratedFlat.def },
+/**
+ * The four baked-in terms, listed **once**.
+ *
+ * `read` answers from a calibrated hit and `fromCalc` from the raw parse, because the two
+ * callers below ask at two different moments. They were two separate arrays naming the same
+ * four terms in the same order, which is a drift surface with no symptom: adding a fifth term
+ * to one would have produced a list that silently never mentions it.
+ */
+const TERMS: {
+  term: ConversionTerm;
+  read: (h: RecipeHit) => number;
+  fromCalc: (c: CalcLog) => number;
+}[] = [
+  { term: 'flatDamage', read: (h) => h.flatDamage, fromCalc: (c) => c.flat_dmg },
+  { term: 'flatAtk', read: (h) => h.calibratedFlat.atk, fromCalc: (c) => c.flat_atk },
+  { term: 'flatHp', read: (h) => h.calibratedFlat.hp, fromCalc: (c) => c.flat_hp },
+  { term: 'flatDef', read: (h) => h.calibratedFlat.def, fromCalc: (c) => c.flat_def },
 ];
+
+/**
+ * The one place a stale-conversion list is assembled.
+ *
+ * **This exists because the rule was written out twice and drifted.** Both callers share it:
+ * only the subject's own hits count, `damageShare` is measured against the *whole* run's
+ * damage, and a term with no affected hits is omitted rather than reported as zero. #227
+ * restored the `mine` filter to one of them — and the other, which *overwrites* its result,
+ * still had it missing, so the owner saw `flatAtk`, `flatHp` and `flatDef` each reported
+ * against **96.6 % of the damage** on a team whose subject carried no unresolved term at all.
+ * Two functions, one fix, one of them still wrong.
+ *
+ * What differs between the callers is only *which terms are still frozen*, so that is the
+ * parameter and everything else is here.
+ */
+function tallyStale(
+  hits: readonly RecipeHit[],
+  frozen: (term: ConversionTerm, index: number) => boolean,
+): StaleConversion[] {
+  const total = hits.reduce((sum, h) => sum + h.gcsimAverageDamage, 0);
+  const out: StaleConversion[] = [];
+  for (const { term } of TERMS) {
+    let count = 0;
+    let damage = 0;
+    for (let i = 0; i < hits.length; i++) {
+      // **Only the calibrated character's hits.** A teammate's flat ATK is their equipped
+      // gear — `furina add stats atk=311 …` in the config — not a conversion, and nothing in
+      // a search can move it, so warning about it is a warning nobody can act on.
+      if (!hits[i].mine || !frozen(term, i)) continue;
+      count++;
+      damage += hits[i].gcsimAverageDamage;
+    }
+    if (count > 0) out.push({ term, hits: count, damageShare: total > 0 ? damage / total : 0 });
+  }
+  return out;
+}
 
 /**
  * Identify what each frozen term converts from, by comparing two calibrations.
@@ -646,21 +675,15 @@ export function resolveConversions(
  * nobody can act on.
  */
 function staleConversionsAfter(recipe: Recipe): StaleConversion[] {
-  const total = recipe.hits.reduce((sum, h) => sum + h.gcsimAverageDamage, 0);
-  const out: StaleConversion[] = [];
-  for (const { term, read } of TERMS) {
-    let count = 0;
-    let damage = 0;
-    for (const hit of recipe.hits) {
-      if (
-        hit.mine && read(hit) !== 0 && hit.conversions[term] === undefined
-        && !(hit.constantTerms ?? []).includes(term)
-      ) {
-        count++;
-        damage += hit.gcsimAverageDamage;
-      }
-    }
-    if (count > 0) out.push({ term, hits: count, damageShare: total > 0 ? damage / total : 0 });
-  }
-  return out;
+  const reads = new Map(TERMS.map((t) => [t.term, t.read]));
+  return tallyStale(recipe.hits, (term, i) => {
+    const hit = recipe.hits[i];
+    // Resolved and constant terms are no longer stale: a resolved one rescales with the
+    // candidate, and a constant one the probe never moved is not something a search can act on.
+    return (
+      reads.get(term)!(hit) !== 0
+      && hit.conversions[term] === undefined
+      && !(hit.constantTerms ?? []).includes(term)
+    );
+  });
 }
