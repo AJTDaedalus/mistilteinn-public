@@ -1,6 +1,9 @@
 # DESIGN — waiting for energy, as an option
 
-**Status:** design, 2026-09-02. Nothing built.
+**Status:** built and merged 2026-09-02 (#242). `wait_for_energy` reaches the compiler and
+`energy_drip` the config; the option is on the optimize page, **off by default**, and the two
+models cannot share a cache entry. **OQ-E2 is answered below** — the waiting ladder is strictly
+monotone. OQ-E1 (per search or per rotation) and OQ-E3 (showing both curves) remain open.
 
 ## Branch policy
 
@@ -96,10 +99,36 @@ gets a different answer. Stating that is the difference between a citation and a
 whether they would wait; a searcher wants to compare. Leaning per search, so the two can be run
 against the same rotation and compared, which is the owner's stated reason for wanting both.
 
-**OQ-E2 — what does waiting do to the energy ladder?** The ladder varies ER and reads team DPS,
-and under waiting the *rotation's duration* changes with ER as well. `dpsAt`'s running-maximum
-argument rests on the ladder's range being monotone, which was measured under skipping.
-Re-measure before trusting a waiting-model ladder.
+**OQ-E2 — what does waiting do to the energy ladder? — ANSWERED 2026-09-02, and the risk runs
+the other way.** Both models were swept over `ENERGY_LADDER`'s own six rungs at
+`ENERGY_LADDER_RUNS = 60`, same rotation, same team, the two configs differing only in the gate
+and the drip:
+
+| artifact ER | 0.20 | 0.30 | 0.45 | 0.60 | 0.80 | 1.00 |
+|---|---|---|---|---|---|---|
+| **waiting** DPS | 199,535 | 220,191 | 245,580 | 259,226 | 269,221 | 276,824 |
+| waiting duration | 160.9 s | 149.7 s | 136.1 s | 128.0 s | 119.6 s | 113.9 s |
+| **skipping** DPS | 267,640 | 267,100 | 265,796 | 266,297 | 267,316 | 267,701 |
+
+Waiting is **strictly monotone across the whole ladder, +38.7 %**, the duration falling at every
+rung. Skipping spans **+0.0 %** with two reversals of −0.20 % and −0.49 %.
+
+The concern was that a duration moving with ER makes DPS climb for two reasons at once and so
+voids the monotonicity argument. That is true about the mechanism and **backwards about the
+risk**: a running maximum is dangerous over a flat noisy curve, where the peak it keeps is
+noise — which is the *skipping* ladder above — and has nothing to do over the waiting one,
+where no rung is ever below the one before it. `dpsAt` is safe under waiting for the reason it
+was written, and safer than under the model it was justified for.
+
+**What this does not settle** is the tripwire on extending `ENERGY_LADDER` past ~1.5; that
+hazard is about a peak no candidate can reach and belongs to both models unchanged.
+
+**A first attempt measured the wrong thing and said so loudly**, which is worth recording. Run
+against the team's *current* rotation — 16 steps, replaced since — the duration was **10.8 s at
+every rung**, identical to a tenth of a second. Under waiting that is impossible if anyone is
+ever waiting, and the reason is that the rotation contains one burst per character, all paid
+out of gcsim's starting energy. ER was not weakly measured there; it was **structurally
+unmeasurable**, and a ladder run against it would have reported ±1 % of noise as a verdict.
 
 **OQ-E3 — is the comparison a first-class feature?** Running both and showing two ER curves is
 the honest way to present a 70 % disagreement. It is also twice the compute, and the owner's

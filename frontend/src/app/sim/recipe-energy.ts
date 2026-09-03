@@ -129,13 +129,29 @@ export function burstsAt(
  * A step function for the same reason `burstsAt` is: each rung is a gcsim run, and between two
  * of them the honest answer is the lower one's.
  *
- * **All of the below was measured under the *skipping* model, and the waiting model has not
- * been re-measured.** Owner's ruling of 2026-09-02 makes waiting an option
- * (`DESIGN_waiting_for_energy.md`, OQ-E2), and under it the rotation's **duration moves with
- * ER** — 151.5 s at the owner's real gear down to 102.1 s at 1.6 — so DPS climbs for two
- * reasons at once where here it climbs for one. The running maximum rests on monotonicity over
- * the ladder's range; that argument was established for a constant duration and does not
- * automatically carry. **Re-measure before trusting a waiting-model ladder.**
+ * **All of the below was measured under the *skipping* model. The waiting model has now been
+ * measured too (OQ-E2, 2026-09-02), and it is the safer of the two for this function.** Both
+ * models, same rotation and team, this ladder's own six rungs at `ENERGY_LADDER_RUNS = 60`:
+ *
+ * | artifact ER | 0.20 | 0.30 | 0.45 | 0.60 | 0.80 | 1.00 |
+ * |---|---|---|---|---|---|---|
+ * | **waiting** DPS | 199,535 | 220,191 | 245,580 | 259,226 | 269,221 | 276,824 |
+ * | waiting duration | 160.9 s | 149.7 s | 136.1 s | 128.0 s | 119.6 s | 113.9 s |
+ * | **skipping** DPS | 267,640 | 267,100 | 265,796 | 266,297 | 267,316 | 267,701 |
+ *
+ * Waiting is **strictly monotone over the whole ladder, +38.7 %**, with the duration falling at
+ * every rung — the duration column *is* the ER penalty, and it is why the signal is clean.
+ * Skipping on the same rotation spans **+0.0 %** with two reversals.
+ *
+ * So the concern this caveat was raised for — that a moving duration makes DPS climb for two
+ * reasons and breaks the argument — is real about the mechanism and **backwards about the
+ * risk**. A running maximum is dangerous over a flat noisy curve, because the peak it keeps is
+ * noise; that is the *skipping* ladder above. Over the waiting ladder there is nothing for it
+ * to do, because no rung is ever below the one before it.
+ *
+ * **The tripwire below still stands and is unchanged**: it is about extending `ENERGY_LADDER`
+ * past ~1.5, where an unreachable peak could be handed to a candidate, and that hazard belongs
+ * to both models.
  *
  * ## The running maximum, and the claim that does *not* justify it
  *
