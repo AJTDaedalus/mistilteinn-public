@@ -26,7 +26,18 @@
   border-bottom: 1px solid var(--surface-rule);
 }
 
-.teapot__head { display: flex; align-items: baseline; gap: var(--space-3); }
+/* **Centred, not baseline-aligned**, now the row carries a 44px picture: a baseline that was
+   right for a line of text drops the art below the name it belongs to. */
+.teapot__head { display: flex; align-items: center; gap: var(--space-2); }
+
+/* The set's own screenshot. `cover` because these are 4:3 room shots and a contained one
+   would letterbox into a tile mostly made of background. */
+.teapot__art {
+  flex: 0 0 auto;
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  overflow: hidden;
+}
 
 /* Its own control, because building a set is its own work. */
 .teapot__built {
@@ -54,7 +65,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 0 var(--space-2);
+  padding: 0 var(--space-2) 0 var(--space-1);
   border: 1px solid var(--surface-rule);
   border-radius: var(--radius-pill);
   font-size: var(--text-xs);
@@ -74,3 +85,15 @@
 .teapot__remaining { flex: 0 0 7rem; text-align: right; font-variant-numeric: tabular-nums; }
 .teapot__locked { flex: 0 0 auto; font-size: var(--text-xs); }
 .teapot__empty { padding: var(--space-2); }
+
+/* A face on each chip. Round, because an avatar icon is drawn as a circle and a square crop
+   of one reads as a mistake. */
+.chip__face {
+  flex: 0 0 auto;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+/* An unowned character is greyed *and* their face is dimmed, so the state survives being
+   read at a glance rather than depending on the italic alone. */
+.chip--unowned .chip__face { opacity: 0.45; filter: grayscale(1); }

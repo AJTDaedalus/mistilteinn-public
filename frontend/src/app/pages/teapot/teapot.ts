@@ -3,6 +3,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 
 import { apiErrorMessage } from '../../api/api-error';
 import type { SuiteRow } from './teapot.service';
+import { CatalogueIcon } from '../../shared/icon/icon';
 import { CatalogueService } from '../catalogue/catalogue.service';
 import { TeapotService } from './teapot.service';
 
@@ -25,7 +26,7 @@ import { TeapotService } from './teapot.service';
 @Component({
   selector: 'app-teapot',
   standalone: true,
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, CatalogueIcon],
   templateUrl: './teapot.html',
   styleUrl: './teapot.scss',
 })
@@ -43,6 +44,8 @@ export class TeapotPage {
   protected readonly busy = signal<string | null>(null);
   /** nanoka id → name, so a chip reads "Noelle" rather than "10000027". */
   protected readonly names = signal<Map<string, string>>(new Map());
+  /** nanoka id → avatar basename, so a chip carries a face rather than only a word. */
+  protected readonly faces = signal<Map<string, string>>(new Map());
 
   protected readonly visible = computed(() => this.rows().filter((row) => {
     if (this.hideDone() && row.done) return false;
@@ -75,13 +78,21 @@ export class TeapotPage {
       // was a 422 this method's own `catch` swallowed, so every chip silently read as a
       // nanoka id. The catalogue holds 150 characters, so one page covers it.
       const page = await this.catalogue.listCharacters({ limit: 200 });
-      const rows = (page as { items?: { nanoka_id: string; name: string }[] })?.items ?? [];
+      const rows = (page as {
+        items?: { nanoka_id: string; name: string; icon?: string | null }[];
+      })?.items ?? [];
       // **The pairs are typed explicitly.** `new Map(rows.map((r) => [a, b]))` infers
       // `string[]` rather than a tuple under the container's Angular compiler, which is
       // stricter than the host `tsc` — CLAUDE.md records this exact trap, and `npm run
       // verify` passing here does not mean the container will build it.
       const pairs: [string, string][] = rows.map((row) => [row.nanoka_id, row.name]);
       this.names.set(new Map(pairs));
+      // **Only the rows that actually have art.** A catalogue row with no icon is a seeding
+      // gap rather than an error, and `catalogue-icon` hides a broken image — but leaving the
+      // id out of the map keeps "no art" and "no character" distinguishable here.
+      const art = rows.filter((row) => row.icon);
+      const faces: [string, string][] = art.map((row) => [row.nanoka_id, row.icon as string]);
+      this.faces.set(new Map(faces));
     } catch {
       this.names.set(new Map());
     }
@@ -192,6 +203,11 @@ export class TeapotPage {
    */
   protected characterName(nanokaId: string): string {
     return this.names().get(nanokaId) ?? nanokaId;
+  }
+
+  /** The character's avatar basename, or `null` when the catalogue has no art for them. */
+  protected characterIcon(nanokaId: string): string | null {
+    return this.faces().get(nanokaId) ?? null;
   }
 
   protected placement(row: SuiteRow): string {

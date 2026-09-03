@@ -62,6 +62,13 @@
               />
               built
             </label>
+            <catalogue-icon
+              class="teapot__art"
+              [icon]="row.icon"
+              [alt]="row.name"
+              [size]="44"
+              fit="cover"
+            />
             <span class="teapot__name">{{ row.name }}</span>
             <span class="teapot__where muted">{{ placement(row) }}</span>
             <span class="teapot__remaining">
@@ -93,6 +100,13 @@
                     (change)="toggle(row, character)"
                     [attr.aria-label]="'Mark ' + characterName(character) + ' as invited'"
                   />
+                  <catalogue-icon
+                    class="chip__face"
+                    [icon]="characterIcon(character)"
+                    [alt]="characterName(character)"
+                    [size]="20"
+                    fit="cover"
+                  />
                   {{ characterName(character) }}
                 </label>
               </li>
@@ -107,6 +121,13 @@
                     (change)="toggle(row, character)"
                     [attr.aria-label]="'Mark ' + characterName(character) + ' as not invited'"
                   />
+                  <catalogue-icon
+                    class="chip__face"
+                    [icon]="characterIcon(character)"
+                    [alt]="characterName(character)"
+                    [size]="20"
+                    fit="cover"
+                  />
                   {{ characterName(character) }}
                 </label>
               </li>
@@ -114,6 +135,13 @@
             @for (character of row.unowned; track character) {
               <li>
                 <span class="chip chip--unowned" title="You do not have this character">
+                  <catalogue-icon
+                    class="chip__face"
+                    [icon]="characterIcon(character)"
+                    [alt]="characterName(character)"
+                    [size]="20"
+                    fit="cover"
+                  />
                   {{ characterName(character) }}
                 </span>
               </li>

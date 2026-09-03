@@ -6,7 +6,7 @@ import { TeapotService } from './teapot.service';
 import { TeapotPage } from './teapot';
 
 const suite = (over: Partial<SuiteRow> = {}): SuiteRow => ({
-  suite_id: 's1', name: 'Adventurer Camp', icon: '', placement: 'O',
+  suite_id: 's1', name: 'Adventurer Camp', icon: 'UI_Home_Suite_Camp_01', placement: 'O',
   available: ['a'], completed: [], unowned: [], built: false, done: false,
   remaining: 1, remaining_primogems: null,
   ...over,
@@ -41,7 +41,7 @@ describe('TeapotPage', () => {
           provide: CatalogueService,
           useValue: {
             listCharacters: vi.fn().mockResolvedValue({
-              items: [{ nanoka_id: 'a', name: 'Noelle' }],
+              items: [{ nanoka_id: 'a', name: 'Noelle', icon: 'UI_AvatarIcon_Noelle' }],
             }),
           },
         },
@@ -144,6 +144,30 @@ describe('TeapotPage', () => {
     expect(fixture.nativeElement.querySelector('.chip--completed input')).toBeTruthy();
     // An unowned character has no control at all — there is nothing to tick.
     expect(fixture.nativeElement.querySelector('.chip--unowned input')).toBeFalsy();
+  });
+
+  it("shows the set's own picture", async () => {
+    await build();
+
+    const art: HTMLImageElement =
+      fixture.nativeElement.querySelector('.teapot__art img');
+    expect(art?.getAttribute('src')).toContain('UI_Home_Suite_Camp_01');
+  });
+
+  it('puts a face on each character chip', async () => {
+    await build();
+
+    const face: HTMLImageElement =
+      fixture.nativeElement.querySelector('.chip__face img');
+    expect(face?.getAttribute('src')).toContain('UI_AvatarIcon_Noelle');
+  });
+
+  it('still names a character whose art the catalogue lacks', async () => {
+    // A row with no icon is a seeding gap, not an error — the name has to survive it.
+    suites.mockResolvedValue(read({ suites: [suite({ available: ['zzz'] })] }));
+    await build();
+
+    expect(fixture.nativeElement.textContent).toContain('zzz');
   });
 
   it('names a character rather than showing its id', async () => {
