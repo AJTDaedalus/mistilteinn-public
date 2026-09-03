@@ -179,6 +179,20 @@ export class CardPicker {
       .map(({ option }) => option);
   });
 
+  /**
+   * Does this picker hold few enough options to be drawn small?
+   *
+   * Counted on the **whole** option list rather than the filtered view, so the panel does not
+   * resize under the reader as they type — a dialog that jumps between two widths mid-search
+   * is worse than one that is too wide.
+   *
+   * Eight is one full row of cards at the grid's own `minmax(7.5rem, …)`, so the threshold is
+   * "everything fits on one row anyway" rather than a number chosen for its own sake.
+   */
+  protected readonly isSmall = computed(
+    () => this.options().length <= 8 && !this.filters().length,
+  );
+
   protected isSelected(value: string): boolean {
     return this.selected().includes(value);
   }

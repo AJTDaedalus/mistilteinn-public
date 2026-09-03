@@ -73,6 +73,20 @@ export interface ArtifactRow {
 const INITIAL_ROWS = 120;
 const MORE_ROWS = 120;
 
+/**
+ * The page sizes offered at the top of the list.
+ *
+ * **Because the only way forward was at the bottom of an 11,664-pixel page.** Audit finding 5:
+ * "Showing 120 of 2369" with a SHOW MORE button eleven screens down — reaching piece 500 meant
+ * four full-page scrolls and the end meant twenty, with nothing near the top even hinting that
+ * more existed.
+ *
+ * `Infinity` is "all of them", and it is offered rather than hidden: the alternative is a user
+ * pressing SHOW MORE nineteen times. It is last and labelled with the real count, because
+ * rendering 2,369 cards is genuinely slow and the number is the warning.
+ */
+const PAGE_SIZES = [120, 300, 600, Infinity] as const;
+
 export type SortKey = 'rollValue' | 'level' | 'set' | 'slot' | 'stars';
 
 /**
@@ -319,6 +333,24 @@ export class ArtifactsPage implements OnInit {
   protected readonly visible = computed(() => this.matching().slice(0, this.shown()));
 
   protected readonly hasMore = computed(() => this.matching().length > this.shown());
+
+  protected readonly pageSizes = PAGE_SIZES;
+
+  /** Label for a size chip: the number, or "All" with the count it means. */
+  protected sizeLabel(size: number): string {
+    return Number.isFinite(size) ? String(size) : `All ${this.matching().length}`;
+  }
+
+  protected setPageSize(size: number): void {
+    this.shown.set(Number.isFinite(size) ? size : this.matching().length);
+  }
+
+  /** Which chip reads as pressed. `Infinity` matches once everything is on screen. */
+  protected isPageSize(size: number): boolean {
+    return Number.isFinite(size)
+      ? this.shown() === size
+      : !this.hasMore() && this.matching().length > 0;
+  }
 
   protected showMore(): void {
     this.shown.update((n) => n + MORE_ROWS);

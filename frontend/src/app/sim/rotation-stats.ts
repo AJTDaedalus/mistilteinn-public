@@ -92,6 +92,27 @@ interface Stats {
 }
 
 /**
+ * Flatten a per-target array, keeping which target each row came from.
+ *
+ * gcsim reports reactions and aura uptime once per enemy. Concatenating them loses that, and
+ * the result is a table listing `bloom` three times with three different numbers and no column
+ * accounting for it — which reads as the simulator contradicting itself.
+ *
+ * The suffix appears **only when there is more than one target**, because a single enemy is the
+ * ordinary case and `bloom (target 1)` on its own would be noise claiming a distinction that
+ * does not exist.
+ */
+function perTarget(entries: unknown[] | undefined): NamedSpread[] {
+  const list = entries ?? [];
+  const many = list.length > 1;
+  return list.flatMap((entry, index) =>
+    namedSpreads(entry, 'sources').map((row) =>
+      many ? { ...row, name: `${row.name} · target ${index + 1}` } : row,
+    ),
+  );
+}
+
+/**
  * Read a finished run.
  *
  * `names` is the display order, positional against gcsim's own character order — the same
@@ -126,9 +147,14 @@ export function parseRotationStats(raw: unknown, names: readonly string[]): Rota
     });
   }
 
-  // Reactions and aura uptime are per *target*, not per character — one entry for one enemy.
-  const reactions: NamedSpread[] = [];
-  for (const entry of st.source_reactions ?? []) reactions.push(...namedSpreads(entry, 'sources'));
+  // Reactions and aura uptime are per *target*, not per character — one entry per enemy.
+  //
+  // **Which enemy has to survive the flattening.** These were concatenated into one list, so a
+  // three-enemy run rendered `bloom` three times with different numbers and nothing saying why
+  // — the audit's finding 14, and it reads as a bug in the simulator rather than as three
+  // separate targets. The name carries the target when there is more than one; with a single
+  // enemy, which is the ordinary case, nothing changes.
+  const reactions = perTarget(st.source_reactions);
 
   return {
     iterations: st.iterations ?? 0,
@@ -140,7 +166,7 @@ export function parseRotationStats(raw: unknown, names: readonly string[]): Rota
     duration: spread(st.duration),
     characters,
     reactions,
-    auraUptime: (st.target_aura_uptime ?? []).flatMap((e) => namedSpreads(e, 'sources')),
+    auraUptime: perTarget(st.target_aura_uptime),
   };
 }
 

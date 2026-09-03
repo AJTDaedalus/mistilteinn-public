@@ -3,6 +3,23 @@
     <h1>Calculate</h1>
   </header>
 
+  <!-- **What this page is for**, said on the page. It was one picker and a button above ~700px
+       of empty viewport, while the landing page sold the feature in a sentence the page itself
+       never repeated. The list is what you actually get back, so the wait has a shape before
+       you commit to it. -->
+  <div class="intro">
+    <p>
+      Run a team's rotation through gcsim and take it apart: every multiplier in a hit, in
+      order, with its source — and what is <em>not</em> modelled.
+    </p>
+    <ul class="intro__what">
+      <li>Damage per second for the team, with its spread over repeated runs.</li>
+      <li>What each character contributed, and how long each held the field.</li>
+      <li>Reactions and aura uptime on the target.</li>
+      <li>An explicit list of what the model leaves out.</li>
+    </ul>
+  </div>
+
   @if (error(); as message) {
     <p class="error" role="alert">
       {{ message }}

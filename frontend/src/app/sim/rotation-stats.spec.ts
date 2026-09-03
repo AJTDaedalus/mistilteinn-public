@@ -155,3 +155,74 @@ describe('displayNames', () => {
     expect(gcsimKeyOf("Sangonomiya Kokomi")).toBe('sangonomiyakokomi');
   });
 });
+
+describe('parseRotationStats, per-target rows', () => {
+  /**
+   * gcsim reports reactions once **per enemy**, and these were concatenated into one flat
+   * list — so a three-target run rendered `bloom` three times with three different numbers and
+   * no column accounting for it. Audit finding 14. It reads as the simulator contradicting
+   * itself rather than as three separate targets.
+   */
+  it('names the target when a reaction is reported for more than one', () => {
+    const stats = parseRotationStats({
+      statistics: {
+        iterations: 10,
+        source_reactions: [
+          { sources: { bloom: { mean: 1, sd: 0, min: 1, max: 1 } } },
+          { sources: { bloom: { mean: 2.6, sd: 0.5, min: 2, max: 3 } } },
+          { sources: { bloom: { mean: 2, sd: 0, min: 2, max: 2 } } },
+        ],
+      },
+    }, ['Nahida']);
+
+    expect(stats.reactions.map((r) => r.name)).toEqual([
+      'bloom · target 1', 'bloom · target 2', 'bloom · target 3',
+    ]);
+  });
+
+  it('says nothing about targets when there is only one', () => {
+    // The ordinary case. A `· target 1` suffix on its own would be noise claiming a
+    // distinction that does not exist.
+    const stats = parseRotationStats({
+      statistics: {
+        iterations: 10,
+        source_reactions: [{ sources: { bloom: { mean: 2, sd: 0, min: 2, max: 2 } } }],
+      },
+    }, ['Nahida']);
+
+    expect(stats.reactions.map((r) => r.name)).toEqual(['bloom']);
+  });
+
+  it('keeps every row rather than collapsing duplicates', () => {
+    // The values differ per target, so dropping one would be losing a measurement — and
+    // `track reaction.name` in the template needs them distinct to render all three at all.
+    const stats = parseRotationStats({
+      statistics: {
+        iterations: 10,
+        source_reactions: [
+          { sources: { bloom: { mean: 1, sd: 0, min: 1, max: 1 } } },
+          { sources: { bloom: { mean: 2.6, sd: 0.5, min: 2, max: 3 } } },
+        ],
+      },
+    }, ['Nahida']);
+
+    expect(stats.reactions.map((r) => r.spread.mean)).toEqual([1, 2.6]);
+    expect(new Set(stats.reactions.map((r) => r.name)).size).toBe(2);
+  });
+
+  it('labels aura uptime per target too', () => {
+    const stats = parseRotationStats({
+      statistics: {
+        iterations: 10,
+        target_aura_uptime: [
+          { sources: { dendro: { mean: 80, sd: 1, min: 79, max: 81 } } },
+          { sources: { dendro: { mean: 60, sd: 1, min: 59, max: 61 } } },
+        ],
+      },
+    }, ['Nahida']);
+
+    expect(stats.auraUptime.map((a) => a.name)).toEqual([
+      'dendro · target 1', 'dendro · target 2',
+    ]);
+  });
+});

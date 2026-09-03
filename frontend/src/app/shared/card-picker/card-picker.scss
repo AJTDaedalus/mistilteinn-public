@@ -43,6 +43,13 @@
    A native `<dialog>`, which brings focus trapping, Escape and the backdrop with it. */
 .picker__dialog {
   width: min(64rem, 92vw);
+
+  /* A handful of options does not need a page-wide modal. The rotation picker was the case
+     the audit named: one 135px card in a 1020px panel. */
+  &.picker__dialog--few {
+    width: min(30rem, 92vw);
+  }
+
   max-height: 82vh;
   padding: var(--space-4);
   border: 1px solid var(--surface-rule);
@@ -78,11 +85,22 @@
   input[type='search'] { flex: 1 1 auto; min-width: 0; }
 }
 
+/* **The filters cannot eat the dialog.** They were unbounded, and the artifact slot picker is
+   the case that proves it: 33 artifact sets drew a chip each, filling half the panel before a
+   single card was visible and pushing the second filter group off the bottom entirely. A filter
+   row taller than the results it filters is not a filter row.
+
+   It scrolls at four rows or so, and the grid below it keeps its own scroll — the same
+   arrangement the grid already uses, for the same reason: the thing you are choosing from
+   should be on screen while you narrow it. */
 .picker__filters {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1);
   margin-bottom: var(--space-2);
+  max-height: 9rem;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .picker__grid {

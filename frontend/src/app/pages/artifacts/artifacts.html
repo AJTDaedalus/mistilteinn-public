@@ -249,6 +249,12 @@
       </label>
     </div>
 
+    <!-- **The page-size control belongs here, not eleven screens down.** The only way forward
+         used to be a SHOW MORE button at the bottom of an 11,664px page: piece 500 was four
+         full-page scrolls away and the end was twenty, with nothing near the top saying more
+         existed. The button below stays — it is the right control once you are already at the
+         bottom — but it is no longer the only one. -->
+    <div class="count-row">
     <p class="muted count">
       @if (truncated()) {
         Showing {{ visible().length }} of {{ matching().length }} loaded, of {{ total() }} —
@@ -260,6 +266,22 @@
         Showing {{ visible().length }} of {{ total() }} pieces.
       }
     </p>
+
+    @if (matching().length > 120) {
+      <div class="chips page-size" role="group" aria-label="How many to show">
+        <span class="page-size__name">Show</span>
+        @for (size of pageSizes; track size) {
+          <button
+            type="button"
+            class="chip chip--text"
+            [class.chip--on]="isPageSize(size)"
+            [attr.aria-pressed]="isPageSize(size)"
+            (click)="setPageSize(size)"
+          >{{ sizeLabel(size) }}</button>
+        }
+      </div>
+    }
+    </div>
 
     <ul class="grid">
       @for (row of visible(); track row.id) {

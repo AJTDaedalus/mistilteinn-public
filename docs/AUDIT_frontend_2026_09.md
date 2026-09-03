@@ -1,5 +1,30 @@
 # Frontend usability & visual audit — 2026-09
 
+> **Status, 2026-09-03: all fifteen findings addressed, across two PRs.**
+>
+> **#254** took the systemic half — the ones that were a pattern nothing owned, so every page
+> decided separately: app-wide scrollbars (§4, §9), a `:disabled` rule that **did not exist**
+> (§7, §11), checkboxes drawn from the palette (§11), the `/builds` filter row that read as
+> *forbidden* (§10), `/optimize`'s mode toggle moving above the fields it governs and its
+> zero-option `Hit` select (§6, §8), a missing icon that no longer collapses its card (§12),
+> and the results table's header (§1, §2).
+>
+> **#256** took the four that were features rather than restyles: the artifact picker (§3),
+> the inventory's page size (§5), `/calculate`'s empty state and its per-target reaction rows
+> (§14), and the picker dialog's size (§15).
+>
+> **Two findings were withdrawn or declined after checking**, and both are recorded where they
+> stand rather than quietly dropped: §7's import claim (a two-step confirmation already
+> existed at `artifacts.ts:486-500`) and the "underlined like a link" note under *Smaller
+> things* (it is `border-bottom: 1px dotted` with `cursor: help`, the conventional tooltip
+> affordance).
+>
+> **Two of the four in #256 turned out to be different problems than they looked**, which is
+> the entry worth carrying out of this document: §14's duplicate `bloom` rows were **three
+> enemies**, discarded at parse time — no table styling could have fixed it; and §3's picker
+> was fixed once, shipped with the sort silently discarded by the control, and had to be
+> looked at again to notice.
+
 A fresh-eyes pass over every reachable page and dialog, grounded entirely in screenshots taken
 during this session. Nothing here was inferred from reading source: every finding names the
 image it was seen in. Where something looked wrong at one size, it was re-checked at another

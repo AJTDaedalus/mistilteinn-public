@@ -35,7 +35,16 @@
 
 <!-- A native `<dialog>`: it gives focus trapping, Escape, and the backdrop for free, and every
      hand-rolled modal in this repo would otherwise have to reimplement all three. -->
-<dialog #dialog class="picker__dialog" (close)="search.set('')">
+<!-- **Sized to what it holds.** It was a fixed 64rem whatever was in it, so the rotation
+     picker drew one 135px card in a 1020px panel — 85% dead space, and a modal that
+     large reads as a page rather than as a choice belonging to the field behind it.
+     Audit finding 15. -->
+<dialog
+  #dialog
+  class="picker__dialog"
+  [class.picker__dialog--few]="isSmall()"
+  (close)="search.set('')"
+>
   <header class="picker__head">
     <h2>{{ label() || 'Choose' }}</h2>
     <button type="button" class="picker__close" aria-label="Close" (click)="close()">×</button>

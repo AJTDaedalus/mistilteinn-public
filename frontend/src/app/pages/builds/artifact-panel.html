@@ -19,21 +19,26 @@
           <button type="button" (click)="unequip(slot)">Take off</button>
         } @else {
           <!-- Only unequipped pieces of this slot: A.1 refuses a filled slot by name rather
-               than swapping, so offering an equipped piece would invite a refusal. -->
-          <select
-            [attr.aria-label]="'Equip a ' + slot.display"
-            (change)="equip($any($event.target).value)"
-          >
-            <option value="">Empty</option>
-            @for (option of slot.candidates; track option.id) {
-              <option [value]="option.id">
-                {{ option.set_name || 'No set' }} · +{{ option.level }} ·
-                {{ describe(option) }}
-              </option>
-            }
-          </select>
+               than swapping, so offering an equipped piece would invite a refusal.
+
+               **The house picker, not a `<select>`.** The Flower select held 360 single-line
+               options with no search, no substats and no roll value — the audit's third
+               finding, and the only native control in a dialog whose character and weapon
+               fields are card pickers. Search, set and main-stat chips, substats on hover, and
+               each card's total roll value now come with it. -->
           @if (slot.candidates.length === 0) {
-            <span class="muted">nothing spare</span>
+            <span class="muted">Nothing spare for this slot.</span>
+          } @else {
+            <mist-card-picker
+              class="slot-pick"
+              ordered
+              [label]="slot.display"
+              placeholder="Equip a piece…"
+              [options]="options_for(slot)"
+              [filters]="filtersFor(slot)"
+              [selected]="[]"
+              (selectedChange)="equip($event[0] ?? '')"
+            />
           }
         }
       </li>
