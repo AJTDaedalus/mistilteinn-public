@@ -361,7 +361,9 @@ export class RecipeOptimizeService {
     for (const [index, target] of targets.entries()) {
       onProgress({ done: index, total: targets.length, current: target.label, loading: false });
 
-      const configs = await this.configs(buildId, rotationId, target.artifactSetIds);
+      const configs = await this.configs(
+        buildId, rotationId, target.artifactSetIds, weaponId,
+      );
       const key = {
         // `RecipeCacheKey` still spells this field `gcsimPin`. Renaming it there would
         // change every persisted key and re-calibrate every cached recipe for a word, so
@@ -378,7 +380,16 @@ export class RecipeOptimizeService {
           .sort(([a], [b]) => a.localeCompare(b))
           .map(([stat, delta]) => `${stat}=${delta}`)
           .join(','),
-        context: context ?? '',
+        // **The weapon is part of what makes this simulation what it is**, and the server's
+        // own `context_key` has always said so — but this client asks for that key once, per
+        // build, before the weapon loop. Without the weapon here every weapon shares one cache
+        // entry, so the second reads the first's recipe and the ranking comes back *flat*:
+        // every candidate scoring the worn weapon's number, which reads as "these weapons are
+        // equivalent" rather than as a bug.
+        //
+        // Measured before the fix, on a real two-weapon run: Azurelight and Haran Geppaku
+        // Futsu both 1,376,712.1, to the decimal.
+        context: `${context ?? ''}${weaponId ? `|weapon=${weaponId}` : ''}`,
       };
 
       // No context hash means no cache: see above. `readRecipe` is skipped rather than given

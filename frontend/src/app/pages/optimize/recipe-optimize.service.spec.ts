@@ -61,16 +61,22 @@ function store(cached?: unknown): RecipeStore {
   };
 }
 
-function setup(over: { cached?: unknown; sample?: (cfg: string) => string } = {}) {
-  const gcsim = {
+/** The module stub, shared so a second test cannot drift from `setup`'s idea of it. */
+function gcsimStub(sample?: (cfg: string) => string) {
+  return {
     validateConfig: () => ({}),
-    sample: over.sample ?? ((cfg: string) => sampleJson(cfg.includes('def%') ? { def_per: 0.5 } : {})),
+    sample: sample ?? ((cfg: string) => sampleJson(cfg.includes('def%') ? { def_per: 0.5 } : {})),
     initializeAggregator: () => undefined,
     initializeWorker: () => undefined,
     simulate: () => new Uint8Array(),
     aggregate: () => undefined,
     flush: () => '{}',
   };
+}
+
+
+function setup(over: { cached?: unknown; sample?: (cfg: string) => string } = {}) {
+  const gcsim = gcsimStub(over.sample);
 
   // **Stubbed before the service is constructed.** The API client captures `fetch` when it is
   // created, so a spy installed afterwards never intercepts — the first version of this reached
@@ -102,6 +108,55 @@ beforeEach(() => {
 });
 
 describe('RecipeOptimizeService', () => {
+  it('does not let two weapons share one cache entry', async () => {
+    // **The feature shipped broken and every test passed.** The backend substitution had an
+    // integration test, the search loop had unit tests, the energy ladder grouping had unit
+    // tests — and on a real two-weapon run Azurelight and Haran Geppaku Futsu came back at
+    // **1,376,712.1 each, to the decimal**. A flat ranking reads as "these weapons are
+    // equivalent" rather than as a bug, which is a conclusion a user would believe.
+    //
+    // Two causes. The client never passed the id, because a string replace matched the wrong
+    // indentation and changed nothing while reporting success. And `context` is asked for
+    // once, per build, *before* the weapon loop — so even once passed, every weapon shared one
+    // cache entry and the second read the first's recipe.
+    //
+    // This asserts the half a unit test can see: two weapons, two keys.
+    const written: string[] = [];
+    const recording: RecipeStore = {
+      getItem: () => null,
+      setItem: (k) => void written.push(k),
+      removeItem: () => undefined,
+      get length() { return 0; },
+      key: () => null,
+    };
+    TestBed.resetTestingModule();
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.resolve(new Response(
+      JSON.stringify({
+        baseline: 'cfg', probe: 'cfg def%=0.5', energy_recharge: 0.3,
+        artifact_set_id: null, probe_stat: 'def%', probe_delta: 0.5,
+      }),
+      { status: 200, headers: { 'content-type': 'application/json' } },
+    )));
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: API_BASE_URL, useValue: 'http://test.local' },
+        { provide: GCSIM_LOADER, useValue: () => Promise.resolve(gcsimStub()) },
+        { provide: RECIPE_STORE, useValue: recording },
+      ],
+    });
+    const service = TestBed.inject(RecipeOptimizeService);
+    const target = [{ artifactSetIds: [], setIds: [], label: 'baseline' }];
+    const ignoreProgress = () => undefined;
+
+    await service.calibrateAll('b1', 'r1', 'pin', target, ignoreProgress, 'w-one');
+    await service.calibrateAll('b1', 'r1', 'pin', target, ignoreProgress, 'w-two');
+
+    expect(written.length).toBeGreaterThan(1);
+    expect(new Set(written).size).toBe(written.length);
+  });
+
+
+
   it('calibrates one recipe per target and keys them by set', async () => {
     const service = setup();
     const out = await service.calibrateAll('b1', 'r1', 'pin', [
