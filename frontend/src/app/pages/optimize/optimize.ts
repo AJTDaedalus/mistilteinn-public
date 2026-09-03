@@ -1236,12 +1236,27 @@ export class OptimizePage implements OnInit {
    * the fields below start empty, this one does not.
    */
   protected readonly objective = signal<'hit' | 'rotation'>('rotation');
-  protected readonly rotations = signal<{ id: string; name: string }[]>([]);
+  protected readonly rotations = signal<
+    { id: string; name: string; team_id: string }[]
+  >([]);
 
-  /** The same list, in the shape `mist-combobox` reads. */
-  protected readonly rotationOptions = computed(() =>
-    this.rotations().map((r) => ({ value: r.id, label: r.name })),
-  );
+  /**
+   * The rotations this team actually has, in the shape `mist-combobox` reads.
+   *
+   * **Scoped, because an unscoped one offers a guaranteed failure.** A rotation belongs to a
+   * team, and `/calibrate` refuses one whose team does not include the build —
+   * *"rotation X is for a team that does not include Furina, so it never acts on this build"*.
+   * Offering it anyway means the only feedback is a 422 after the click, naming a mismatch the
+   * page could have known before it.
+   *
+   * Empty team selection shows everything, which is what "Any team" means.
+   */
+  protected readonly rotationOptions = computed(() => {
+    const team = this.teamId();
+    return this.rotations()
+      .filter((r) => !team || r.team_id === team)
+      .map((r) => ({ value: r.id, label: r.name }));
+  });
   /** A signal, because `canSearchRotation` reads it. Same reason as `hitIndex`. */
   protected readonly rotationId = signal('');
   protected readonly calibrating = signal<CalibrationProgress | null>(null);
@@ -1453,7 +1468,9 @@ export class OptimizePage implements OnInit {
       this.teams.set(teams);
       // Paginated. Reading it as an array leaves the picker empty, which looks exactly like
       // having authored no rotations — the same trap W.6's compare page fell into.
-      this.rotations.set(rotations.items.map((r) => ({ id: r.id, name: r.name })));
+      this.rotations.set(
+        rotations.items.map((r) => ({ id: r.id, name: r.name, team_id: r.team_id })),
+      );
       // **Not `items[0]`.** Picking the first rotation stated a choice the user never made;
       // §15's rule is to recall their last one and otherwise leave it empty.
       this.rotationId.set(recallAmong(this.store, 'rotationId', this.rotations()));
@@ -1486,6 +1503,14 @@ export class OptimizePage implements OnInit {
   protected async selectTeam(ids: readonly string[]): Promise<void> {
     this.teamId.set(ids[0] ?? '');
     remember(this.store, 'teamId', ids[0] ?? '');
+    // **The chosen rotation goes with it, for the same reason the build does.** A rotation
+    // belongs to a team, and one left selected from the previous team is a search `/calibrate`
+    // will refuse — so the page would be holding an answer under a rotation the user just
+    // filtered away, and saying so only after the click.
+    if (!this.rotationOptions().some((r) => r.value === this.rotationId())) {
+      this.rotationId.set('');
+      remember(this.store, 'rotationId', '');
+    }
     const inScope = this.buildsInScope();
     if (inScope.some((b) => b.id === this.buildId())) return;
     await this.selectBuild(inScope[0]?.id ?? '');

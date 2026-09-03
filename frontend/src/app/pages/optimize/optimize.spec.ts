@@ -681,6 +681,50 @@ describe('marginalPerRoll', () => {
   });
 });
 
+describe('OptimizePage rotation scope', () => {
+  const rotations = [
+    { id: 'r-a', name: 'Freeze', team_id: 't-1' },
+    { id: 'r-b', name: 'Overload', team_id: 't-2' },
+  ];
+
+  it('offers only the rotations the chosen team has', () => {
+    // **An unscoped list offers a guaranteed failure.** A rotation belongs to a team, and
+    // `/calibrate` refuses one whose team does not include the build — *"rotation X is for a
+    // team that does not include Furina, so it never acts on this build"*. Offering it anyway
+    // means the only feedback is a 422 after the click, naming a mismatch the page knew.
+    const page = pageWith();
+    page['rotations'].set(rotations);
+
+    page['teamId'].set('t-1');
+    expect(page['rotationOptions']().map((r) => r.value)).toEqual(['r-a']);
+
+    page['teamId'].set('t-2');
+    expect(page['rotationOptions']().map((r) => r.value)).toEqual(['r-b']);
+  });
+
+  it('shows every rotation when no team narrows the page', () => {
+    // "Any team" means any, and an empty list here would read as having authored none.
+    const page = pageWith();
+    page['rotations'].set(rotations);
+    page['teamId'].set('');
+
+    expect(page['rotationOptions']().map((r) => r.value)).toEqual(['r-a', 'r-b']);
+  });
+
+  it('drops a chosen rotation the new team does not have', async () => {
+    // It goes with the team for the same reason the build does: leaving it selected holds the
+    // page's answer under a rotation the user just filtered away.
+    const page = pageWith();
+    page['rotations'].set(rotations);
+    page['teamId'].set('t-1');
+    page['rotationId'].set('r-a');
+
+    await page['selectTeam'](['t-2']);
+
+    expect(page['rotationId']()).toBe('');
+  });
+});
+
 describe('OptimizePage marginalForExpanded', () => {
   it('is empty while no row is expanded', () => {
     // It is a `computed` rather than a `marginalFor(row)` call in the template because the
