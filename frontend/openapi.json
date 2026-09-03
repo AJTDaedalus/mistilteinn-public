@@ -4699,6 +4699,14 @@
             },
             "type": "array",
             "title": "Weapons"
+          },
+          "sets": {
+            "items": {
+              "$ref": "#/components/schemas/SetRecommendationRead"
+            },
+            "type": "array",
+            "title": "Sets",
+            "default": []
           }
         },
         "type": "object",
@@ -7032,6 +7040,72 @@
         "title": "SetEffectRead",
         "description": "A set bonus that applied, in the catalogue's own words."
       },
+      "SetRecommendationRead": {
+        "properties": {
+          "position": {
+            "type": "integer",
+            "title": "Position"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "as_written": {
+            "type": "string",
+            "title": "As Written"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "set_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Set Id"
+          },
+          "set_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Set Name"
+          },
+          "pieces": {
+            "type": "string",
+            "title": "Pieces",
+            "default": ""
+          },
+          "playstyle": {
+            "type": "string",
+            "title": "Playstyle",
+            "default": ""
+          },
+          "relative_dps": {
+            "type": "string",
+            "title": "Relative Dps",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "position",
+          "kind",
+          "as_written",
+          "note"
+        ],
+        "title": "SetRecommendationRead",
+        "description": "One artifact set \u2014 or one *kind* of two-piece \u2014 KeqingMains lists for a character."
+      },
       "SimRunCoverage": {
         "properties": {
           "context_key": {
@@ -8143,16 +8217,15 @@
             "type": "string",
             "title": "Note"
           },
-          "refinement": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Refinement"
+          "playstyle": {
+            "type": "string",
+            "title": "Playstyle",
+            "default": ""
+          },
+          "relative_dps": {
+            "type": "string",
+            "title": "Relative Dps",
+            "default": ""
           }
         },
         "type": "object",

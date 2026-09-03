@@ -241,12 +241,24 @@ export class BuildsPage implements OnInit {
           label: w.name,
           icon: w.icon,
           // The position, not a rank — KQM's table carries an order and no rank numbers.
+          //
+          // **The refinement is gone from this line** (owner): it is read off the weapon the
+          // user owns, so KQM's `R5` was somebody else's account's number shown against this
+          // user's inventory. What replaced it is `relative_dps` where KQM published one — a
+          // full guide states each weapon against a baseline, and that is their comparison
+          // rather than a figure this app derived.
           detail: kqm
-            ? `KQM #${kqm.position}${kqm.refinement ? ` (R${kqm.refinement})` : ''} · ${w.stars}★`
+            ? [
+                `KQM #${kqm.position}`,
+                kqm.relative_dps,
+                kqm.playstyle,
+                `${w.stars}★`,
+              ].filter(Boolean).join(' · ')
             : `${w.stars}★ · ${w.sub_stat_display || 'no substat'}`,
           // KQM's own sentence, verbatim, on hover. Summarising it here would be this page
           // asserting a judgement it did not make, under someone else's name.
           tooltip: kqm?.note,
+          recommended: Boolean(kqm),
           tags: { stars: String(w.stars), kqm: kqm ? 'listed' : '' },
         };
       })

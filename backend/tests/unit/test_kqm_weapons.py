@@ -9,6 +9,7 @@ more than the source said.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from app.services import kqm_weapons
@@ -62,19 +63,53 @@ def test_every_recommendation_keeps_kqms_own_words() -> None:
         assert all(w.note.strip() for w in guide.weapons)
 
 
-def test_a_refinement_is_data_rather_than_part_of_the_name() -> None:
-    """KQM writes `R5 Festering Desire` for some entries. `Festering Desire` at R1 is a
-    different recommendation, so the number is kept and the name resolves cleanly."""
+def test_a_refinement_is_stripped_from_the_name_and_not_stored() -> None:
+    """Owner, 2026-09-02: *"you can strip out refinement, the user can specify the refinement
+    they have."* It is read off the weapon they own, so a captured `R5` would be a number from
+    somebody else's account in a field nothing consults — while the name it was written beside
+    has to resolve cleanly either way."""
     names = [
         w.weapon_name
         for nanoka_id in kqm_weapons.captured_characters()
-        for w in (kqm_weapons.for_character(nanoka_id) or kqm_weapons.CharacterGuide(
-            "", "", "", (),
-        )).weapons
+        for w in kqm_weapons.for_character(nanoka_id).weapons  # type: ignore[union-attr]
     ]
 
-    assert not any(name.startswith(("R1 ", "R2 ", "R3 ", "R4 ", "R5 ")) for name in names)
+    assert names
+    assert not any(re.search(r"\bR[1-5]\b", name) for name in names)
 
+
+def test_a_full_guide_keeps_the_playstyle_each_ranking_was_written_for() -> None:
+    """**A ranking KQM wrote for *Burst Support Zhongli* is not a ranking for Zhongli.**
+
+    A full guide recommends per build, and flattening its tables into one list would attribute
+    to the character a judgement the source scoped to a playstyle. A quick guide has one list
+    and no playstyles, so `""` there is correct rather than missing.
+    """
+    playstyles = {
+        w.playstyle
+        for nanoka_id in kqm_weapons.captured_characters()
+        for w in kqm_weapons.for_character(nanoka_id).weapons  # type: ignore[union-attr]
+        if w.playstyle
+    }
+
+    assert len(playstyles) > 1, (
+        "no captured guide carries a playstyle — a full guide's tables have been flattened"
+    )
+
+
+def test_a_published_percentage_is_kqms_and_never_derived() -> None:
+    """A full guide states each weapon against a baseline its note names. Where KQM published
+    no number this is empty, because deriving one would be a figure invented under their
+    name."""
+    published = [
+        w.relative_dps
+        for nanoka_id in kqm_weapons.captured_characters()
+        for w in kqm_weapons.for_character(nanoka_id).weapons  # type: ignore[union-attr]
+        if w.relative_dps
+    ]
+
+    assert published, "no captured guide carries KQM's own comparison"
+    assert all(value.endswith("%") for value in published)
 
 def test_an_uncaptured_character_is_none_rather_than_an_empty_guide() -> None:
     """**The distinction the whole feature rests on.** "Nobody has captured this character" and
@@ -84,8 +119,25 @@ def test_an_uncaptured_character_is_none_rather_than_an_empty_guide() -> None:
     assert kqm_weapons.for_character(None) is None
 
 
-def test_the_capture_is_small_and_deliberate() -> None:
-    """The owner's ruling was *"manual, cited, small first"* — prove the shape before scaling.
-    This is a reminder rather than a limit: growing it means running the capture and reviewing
-    the diff, which is exactly the review this design wants."""
-    assert 0 < len(kqm_weapons.captured_characters()) <= 20
+def test_every_captured_character_carries_its_citation() -> None:
+    """What replaced the size cap.
+
+    This asserted `<= 20` characters — the *"manual, cited, small first"* ruling made into a
+    reminder while the pipeline was being proved. It is proved, and the owner's follow-up was
+    *"Why only those three characters? KQM has a quickguide for almost all characters"*, so the
+    cap now guards nothing and would only ever fail on the capture being widened, which is the
+    thing it was supposed to be leading to.
+
+    **What matters at any size is the citation**, and unlike a count that is a property of every
+    row rather than of the file: a guide with no page to check is a recommendation this repo is
+    making in KQM's name.
+    """
+    captured = kqm_weapons.captured_characters()
+
+    assert captured
+    for nanoka_id in captured:
+        guide = kqm_weapons.for_character(nanoka_id)
+        assert guide is not None
+        assert guide.url.startswith("https://keqingmains.com/"), guide.character
+        assert guide.retrieved_at, guide.character
+        assert guide.weapons, guide.character

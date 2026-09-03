@@ -41,6 +41,7 @@ from app.schemas.catalogue import (
     EnemyProfileRead,
     OwnedWeaponRead,
     ReactionRead,
+    SetRecommendationRead,
     WeaponClassRead,
     WeaponRead,
     WeaponRecommendationRead,
@@ -281,9 +282,24 @@ async def character_weapon_guide(nanoka_id: str) -> CharacterWeaponGuideRead:
                 weapon_id=w.weapon_id,
                 weapon_name=w.weapon_name,
                 note=w.note,
-                refinement=w.refinement,
+                playstyle=w.playstyle,
+                relative_dps=w.relative_dps,
             )
             for w in guide.weapons
+        ],
+        sets=[
+            SetRecommendationRead(
+                position=e.position,
+                kind=e.kind,
+                as_written=e.as_written,
+                note=e.note,
+                set_id=e.set_id,
+                set_name=e.set_name,
+                pieces=e.pieces,
+                playstyle=e.playstyle,
+                relative_dps=e.relative_dps,
+            )
+            for e in guide.sets
         ],
     )
 

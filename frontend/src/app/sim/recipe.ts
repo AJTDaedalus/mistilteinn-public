@@ -279,6 +279,19 @@ export interface RecipeMeta {
    */
   calibratedSetIds: readonly number[];
   /**
+   * The weapon this recipe was calibrated with, when the search covers more than one.
+   *
+   * **A recipe is per weapon as much as it is per set.** A different weapon is a different
+   * base ATK and a different passive, so it is a different recipe — `context_key` on the
+   * server has always included the weapon, and this is the same fact where the browser can
+   * see it. `undefined` on a search over the build's own weapon, which is every search until
+   * the weapon picker is opened.
+   *
+   * Its first job is `shareEnergyMeasurement`: an energy ladder belongs to the weapon it was
+   * swept on, and Favonius makes particles on crit.
+   */
+  weaponKey?: string;
+  /**
    * The lowest artifact Energy Recharge at which this rotation performs as calibrated, or
    * `null` if it was never measured. See `recipe-energy.ts`.
    */

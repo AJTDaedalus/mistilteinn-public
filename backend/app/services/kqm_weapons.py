@@ -44,9 +44,38 @@ class Recommendation:
     weapon_name: str
     #: KQM's own words. Verbatim.
     note: str
-    #: The refinement KQM specified, when it specified one. `R5 Festering Desire` and
-    #: `Festering Desire` are different recommendations, so this is data rather than noise.
-    refinement: int | None = None
+    #: Which build this is for, on a guide that recommends per build. `""` on a quick guide,
+    #: which has one list and no playstyles.
+    #:
+    #: **Not optional decoration.** Zhongli's guide yields 46 recommendations across five
+    #: playstyles, and without this they are 46 rows with no way to say that a ranking written
+    #: for *Burst Support Zhongli* is not a ranking for Zhongli.
+    playstyle: str = ""
+    #: KQM's own comparison, as they published it — `"114.2%"` of a baseline their note names.
+    #: `""` on a quick guide, which states an order and no number; deriving one would be
+    #: putting a figure in their mouth.
+    relative_dps: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class SetRecommendation:
+    """One artifact set, or one *kind* of two-piece, KQM lists for a character.
+
+    **`kind` is the whole point.** `2pc HP% / Skill% / ER / Hydro%` is not a set and must not
+    become one: it names every set whose two-piece grants HP%, which this catalogue already
+    knows. Published as KQM's text with `kind="stat"`, so the client can colour the two-piece
+    selector from it rather than this repo resolving it to a name KQM never wrote.
+    """
+
+    position: int
+    kind: str
+    as_written: str
+    note: str
+    set_id: str | None = None
+    set_name: str | None = None
+    pieces: str = ""
+    playstyle: str = ""
+    relative_dps: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,6 +87,8 @@ class CharacterGuide:
     url: str
     retrieved_at: str
     weapons: tuple[Recommendation, ...]
+    #: The artifact-set half of the same guide; empty where KQM's page has no set table.
+    sets: tuple[SetRecommendation, ...] = ()
 
 
 @cache
@@ -80,9 +111,24 @@ def _loaded() -> dict[str, CharacterGuide]:
                     weapon_id=str(w["weapon_id"]),
                     weapon_name=str(w["weapon_name"]),
                     note=str(w["note"]),
-                    refinement=w.get("refinement"),
+                    playstyle=str(w.get("playstyle", "")),
+                    relative_dps=str(w.get("relative_dps", "")),
                 )
                 for w in entry["weapons"]
+            ),
+            sets=tuple(
+                SetRecommendation(
+                    position=int(e["position"]),
+                    kind=str(e.get("kind", "stat")),
+                    as_written=str(e.get("as_written", "")),
+                    note=str(e.get("note", "")),
+                    set_id=e.get("set_id"),
+                    set_name=e.get("set_name"),
+                    pieces=str(e.get("pieces", "")),
+                    playstyle=str(e.get("playstyle", "")),
+                    relative_dps=str(e.get("relative_dps", "")),
+                )
+                for e in entry.get("sets", [])
             ),
         )
         for nanoka_id, entry in raw.get("characters", {}).items()

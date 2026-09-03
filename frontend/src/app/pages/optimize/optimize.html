@@ -276,8 +276,52 @@
                  seconds each, and nobody would wait for that. "None" undid a selection the
                  picker already clears. -->
             <div class="filter-actions">
-              <span class="muted mono">{{ calibrationCount() }} calibration{{ calibrationCount() === 1 ? '' : 's' }}</span>
+              <span class="muted mono">
+                {{ calibrationCount() }} calibration{{ calibrationCount() === 1 ? '' : 's' }}
+                @if (selectedWeapons().size) {
+                  · about {{ estimatedMinutes() }} min
+                }
+              </span>
             </div>
+          </div>
+
+          <!-- §W — weapons in the search. Owner: *"Weapon should definitely be opt-in, off by
+               default, and like set allow you to select some."* Closed, this is one line of
+               text and the search is exactly what it was. -->
+          <div class="weapon-compare">
+            <button type="button" class="linkish" (click)="toggleWeaponComparison()">
+              {{ comparingWeapons() ? 'Just the equipped weapon' : 'Compare other weapons too' }}
+            </button>
+
+            @if (comparingWeapons()) {
+              <!-- The equipped weapon is not in this list: it is the baseline every candidate
+                   is measured against, not a hypothesis to tick. -->
+              <p class="hint">
+                Searching against <strong>{{ build()?.weapon?.name || 'the equipped weapon' }}</strong>.
+                Each weapon added is a full artifact search of its own — a weapon that wants
+                different pieces would lose a comparison it should win — so each costs about
+                <strong>2½ minutes</strong>.
+              </p>
+
+              <mist-card-picker
+                label="Also compare"
+                placeholder="Select weapons"
+                multi
+                ordered
+                [options]="weaponOptions()"
+                [selected]="weaponsSelected()"
+                (selectedChange)="setWeapons($event)"
+              />
+
+              @if (weaponGuide(); as guide) {
+                <p class="hint">
+                  Weapons KeqingMains lists for {{ guide.character }} are marked and shown
+                  first, in their order —
+                  <a [href]="guide.url" target="_blank" rel="noopener">their guide</a>,
+                  retrieved {{ guide.retrieved_at }}.
+                </p>
+              }
+            }
           </div>
 
           @if (pairSelected().length === 1) {
@@ -470,6 +514,30 @@
       }
 
       <ol class="results">
+        <!-- §W — the weapon comparison, above the rows it explains. Each weapon was searched
+             in full, so these are best-against-best rather than one build re-scored: a weapon
+             that wants different pieces gets them. -->
+        @if (weaponRanking().length) {
+          <ol class="weapon-ranking">
+            @for (entry of weaponRanking(); track entry.name) {
+              <li [class.weapon-ranking__equipped]="entry.equipped">
+                <span class="weapon-ranking__name">{{ entry.name }}</span>
+                @if (entry.equipped) {
+                  <span class="muted mono">equipped</span>
+                }
+                <span class="damage mono">{{ entry.damage | number: '1.0-1' }}</span>
+                @if (entry.percent !== null) {
+                  <span
+                    class="delta mono"
+                    [class.delta--up]="entry.percent > 0.0001"
+                    [class.delta--down]="entry.percent < -0.0001"
+                  >{{ entry.percent > 0 ? '+' : '' }}{{ entry.percent | percent: '1.1-1' }}</span>
+                }
+              </li>
+            }
+          </ol>
+        }
+
         @for (row of rows(); track row.rank) {
           <li [class.chosen]="explained()?.rank === row.rank">
             <div class="result__row">

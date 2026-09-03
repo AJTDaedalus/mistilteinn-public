@@ -30,6 +30,31 @@ export interface CardOption {
   tags?: Readonly<Record<string, string>>;
   /** Shown on hover. For a set's bonus text, which is too long for a card. */
   tooltip?: string;
+  /**
+   * Draw this card as recommended, and sort it above the rest.
+   *
+   * **Only ever set from a cited source.** Owner, 2026-09-02: *"We should have both sets and
+   * weapons 'tiered' with recommended sets/weapons first and highlighted somehow."* The
+   * recommendation comes from KeqingMains and carries their sentence in `tooltip`; a "tier"
+   * this app derived itself and labelled recommended would be a citation-shaped thing with no
+   * citation, which `CLAUDE.md` names as fairy's worst failure.
+   *
+   * A character with no captured guide has no recommended cards and **no heading either** —
+   * see `optimize`'s weapon options.
+   */
+  recommended?: boolean;
+  /**
+   * A stat this card's set grants at two pieces, as a `--stat-*` suffix.
+   *
+   * Owner, 2026-09-02: *"color coding that identifies the stat (red for attack, blue for hp,
+   * yellow for defense, silver for dmg%)"*, then *"ER can be green, give other random weird
+   * 2P sets another color"*.
+   *
+   * **Never the only signal.** The card's `detail` line names the stat in words, because a
+   * palette that encodes meaning in hue alone is unreadable to a colour-blind user and
+   * invisible in a screenshot pasted into chat.
+   */
+  statColour?: string;
 }
 
 /** One row of chips in the pop-up. */

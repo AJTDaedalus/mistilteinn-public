@@ -472,9 +472,42 @@ class WeaponRecommendationRead(BaseModel):
     #: KQM's own sentence, verbatim. Summarising it would be this repo asserting a judgement
     #: it did not make.
     note: str
-    #: The refinement KQM specified, when it did — `R5 Festering Desire` and `Festering Desire`
-    #: are different recommendations.
-    refinement: int | None = None
+    #: Which build this is for, on a guide that recommends per build; `""` on a quick guide.
+    #:
+    #: **A ranking KQM wrote for *Burst Support Zhongli* is not a ranking for Zhongli.** His
+    #: guide carries 46 recommendations across five playstyles, and publishing them without
+    #: this would flatten a distinction the source drew deliberately.
+    playstyle: str = ""
+    #: KQM's own comparison as published — `"114.2%"` of a baseline their note names. `""` on a
+    #: quick guide, which states an order and no number; deriving one would be a figure this
+    #: repo invented under someone else's name.
+    relative_dps: str = ""
+
+
+class SetRecommendationRead(BaseModel):
+    """One artifact set — or one *kind* of two-piece — KeqingMains lists for a character."""
+
+    position: int
+    #: `"set"` when this names a set in this catalogue; `"stat"` when KQM described a two-piece
+    #: by the stat it grants rather than by a name.
+    #:
+    #: **`2pc HP% / Skill% / ER / Hydro%` is not a set and must not become one.** It names
+    #: *every* set whose two-piece grants HP%, which this catalogue already knows — so it is
+    #: published as KQM's text and the client colours the two-piece selector from it, rather
+    #: than being resolved to a name KQM never wrote.
+    kind: str
+    #: KQM's own text for the row, verbatim, whichever kind it is.
+    as_written: str
+    #: KQM's own sentence about it. Verbatim.
+    note: str
+    set_id: str | None = None
+    set_name: str | None = None
+    #: `"4pc"`, `"2pc"`, or `"2pc/4pc"` when KQM wrote a piece count in front of the name.
+    pieces: str = ""
+    #: Which build this is for, on a guide that recommends per build.
+    playstyle: str = ""
+    #: KQM's own comparison as published — `"100%"` of a baseline their note names.
+    relative_dps: str = ""
 
 
 class CharacterWeaponGuideRead(BaseModel):
@@ -490,6 +523,8 @@ class CharacterWeaponGuideRead(BaseModel):
     url: str
     retrieved_at: str
     weapons: list[WeaponRecommendationRead]
+    #: The artifact-set half of the same guide. Empty where KQM's page has no set table.
+    sets: list[SetRecommendationRead] = []
 
 
 class ReactionRead(BaseModel):

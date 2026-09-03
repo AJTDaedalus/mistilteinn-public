@@ -556,6 +556,18 @@ class CalibrationRequest(BaseModel):
     #:
     #: Mutually exclusive with `artifact_set_id`: five slots cannot hold both.
     two_piece_set_ids: list[str] = Field(default_factory=list, max_length=2)
+    #: A weapon to calibrate with **instead of** the build's own, as a catalogue id.
+    #:
+    #: **Comparing weapons needs its own calibration, not a re-score.** A different weapon is a
+    #: different base ATK and a different passive, so it is a different recipe —
+    #: `sim_context.context_key` has always included the weapon. Without this field a client
+    #: could not ask for one at all, which is why the optimizer's weapon comparison could rank
+    #: nothing.
+    #:
+    #: `None` calibrates the build as it stands, which is every request that is not comparing
+    #: weapons. **The build is never modified**: the substitution lives in the config this
+    #: endpoint emits and nowhere else.
+    weapon_id: str | None = None
     #: Artifact-borne Energy Recharge to calibrate at, as a fraction.
     #:
     #: **Not zero, and that is the point.** ER is an artifact stat, so a zero-ER calibration

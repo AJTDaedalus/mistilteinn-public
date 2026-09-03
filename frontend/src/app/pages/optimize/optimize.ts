@@ -3,7 +3,13 @@ import { Component, OnInit, computed, effect, inject, signal } from '@angular/co
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
+import { allPages } from '../../api/all-pages';
 import { apiErrorMessage } from '../../api/api-error';
+import {
+  CatalogueService,
+  type CharacterWeaponGuideRead,
+} from '../catalogue/catalogue.service';
+import type { WeaponSummary } from '../builds/builds.service';
 import { CardPicker, type CardOption } from '../../shared/card-picker/card-picker';
 import { Combobox } from '../../shared/combobox/combobox';
 import { buildOptions, buildsInTeam, teamOptions } from '../../shared/team-scope';
@@ -74,6 +80,18 @@ const SHAKY_DAMAGE_SHARE = 0.05;
  * owner's sweep read 3.17 and 3.28, which is not a burst anyone can act on.
  */
 const MEANINGFUL_BURST_GAP = 0.5;
+
+/**
+ * What each stat colour is called, in words.
+ *
+ * **The card says it as well as showing it.** Colour alone is unreadable to a colour-blind
+ * user and invisible in a screenshot pasted into chat, which is how most of this project's
+ * visual defects have been reported.
+ */
+const STAT_NAMES: Record<string, string> = {
+  atk: 'ATK%', hp: 'HP%', def: 'DEF%', dmg: 'DMG%',
+  er: 'Energy Recharge', em: 'Elemental Mastery', other: 'other',
+};
 
 export interface ResultRow {
   rank: number;
@@ -344,6 +362,116 @@ export class OptimizePage implements OnInit {
     () => this.hit() !== null && !this.searching(),
   );
 
+  // ── Weapons in the search (owner, 2026-09-02) ─────────────────────────────
+  //
+  // **Off by default, and the equipped weapon is not in this list.** Owner: *"Weapon should
+  // definitely be opt-in, off by default"* and *"The default should be the equipped weapon on
+  // the build still."* A set is a hypothesis the user opts into; the weapon they are wearing is
+  // what every candidate is measured *against*, so it is the baseline rather than an entry
+  // that can be unticked. With this closed the search is exactly what it was: one weapon, no
+  // extra cost, no extra UI.
+  //
+  // **Each selected weapon is a full search, not a re-score.** Owner: *"Locking the set doesn't
+  // make a lot of sense because weapons can significantly affect which artifacts win."* So a
+  // weapon costs a calibration per set state **and its own energy ladder** — roughly 2.5
+  // minutes — and the picker says so rather than letting a click become an hour.
+  /**
+   * One entry per weapon searched, when more than one was.
+   *
+   * Empty for an ordinary search, so nothing renders and nothing changes. `weaponId` is
+   * `undefined` for the equipped weapon, which is always the first entry and is what the rest
+   * are compared against.
+   */
+  protected readonly weaponResults = signal<
+    { weaponId: string | undefined; result: SearchResult }[]
+  >([]);
+
+  /** The best damage each searched weapon reached, worn weapon first. */
+  protected readonly weaponRanking = computed(() => {
+    const runs = this.weaponResults();
+    if (!runs.length) return [];
+    const worn = runs[0].result.builds[0]?.damage ?? 0;
+    const named = this.weapons();
+    return runs.map((run) => {
+      const damage = run.result.builds[0]?.damage ?? 0;
+      return {
+        name: run.weaponId
+          ? named.find((w) => w.id === run.weaponId)?.name ?? 'weapon'
+          : this.build()?.weapon?.name ?? 'equipped',
+        equipped: run.weaponId === undefined,
+        damage,
+        // Null rather than 0 against itself: "the same as the worn weapon" and "this *is* the
+        // worn weapon" are different, and both would render as 0 %.
+        percent: run.weaponId === undefined || !worn ? null : (damage - worn) / worn,
+      };
+    }).sort((a, b) => b.damage - a.damage);
+  });
+
+  protected readonly comparingWeapons = signal(false);
+  protected readonly selectedWeapons = signal<ReadonlySet<string>>(new Set());
+  protected readonly weapons = signal<WeaponSummary[]>([]);
+  /**
+   * What KeqingMains lists for this build's character, or null when nothing was captured.
+   *
+   * **Null is not an empty list**, and the distinction is the whole tiering rule: "nobody has
+   * captured this character" and "KQM recommends nothing" are different statements, and a card
+   * marked *not recommended* on the strength of the first is a claim about KQM nobody made.
+   */
+  protected readonly weaponGuide = signal<CharacterWeaponGuideRead | null>(null);
+
+  private readonly recommendedWeapons = computed(() => {
+    // **Annotated, because the inference is wrong here and only Angular's compiler says so.**
+    // `new Map(list.map((w) => [w.weapon_id, w]))` gives TypeScript a `(string | Rec)[]` rather
+    // than a tuple, so the value type collapsed to `{}` and `.position` did not exist on it.
+    // `npx tsc` passed; the container build failed — which is why the browser is the check.
+    const listed = new Map<string, CharacterWeaponGuideRead['weapons'][number]>();
+    for (const weapon of this.weaponGuide()?.weapons ?? []) {
+      listed.set(weapon.weapon_id, weapon);
+    }
+    return listed;
+  });
+
+  protected readonly weaponOptions = computed<CardOption[]>(() => {
+    const listed = this.recommendedWeapons();
+    const equipped = this.build()?.weapon?.id;
+    return this.weapons()
+      .filter((w) => w.id !== equipped)
+      .map((w) => {
+        const kqm = listed.get(w.id);
+        return {
+          value: w.id,
+          label: w.name,
+          icon: w.icon,
+          detail: kqm
+            ? [`KQM #${kqm.position}`, kqm.relative_dps, kqm.playstyle, `${w.stars}★`]
+              .filter(Boolean).join(' · ')
+            : `${w.stars}★ · ${w.sub_stat_display || 'no substat'}`,
+          // KQM's own sentence, verbatim. Summarising it would be this page asserting a
+          // judgement it did not make, under someone else's name.
+          tooltip: kqm?.note,
+          recommended: Boolean(kqm),
+          tags: { stars: String(w.stars), kqm: kqm ? 'listed' : '' },
+        };
+      })
+      // KQM's order first; everything else keeps the order it came in. A weapon KQM did not
+      // list is not thereby bad — it is unlisted.
+      .sort((a, b) => (listed.get(a.value)?.position ?? Number.MAX_SAFE_INTEGER)
+        - (listed.get(b.value)?.position ?? Number.MAX_SAFE_INTEGER));
+  });
+
+  protected readonly weaponsSelected = computed(() => [...this.selectedWeapons()]);
+
+  protected setWeapons(ids: string[]): void {
+    this.selectedWeapons.set(new Set(ids));
+  }
+
+  protected toggleWeaponComparison(): void {
+    this.comparingWeapons.update((on) => !on);
+    // Closing it clears the selection rather than hiding one: a hidden weapon still costing
+    // 2.5 minutes of the next search is the interaction this repo refuses elsewhere.
+    if (!this.comparingWeapons()) this.selectedWeapons.set(new Set());
+  }
+
   /** Every set the inventory could field a 4-piece of, most-owned first. */
   protected readonly fourPieceChoices = computed(() => {
     const catalogue = this.artifactSets();
@@ -408,10 +536,35 @@ export class OptimizePage implements OnInit {
   });
 
   /** How many recipes the selection implies — the baseline, one per set, one for the pair. */
-  protected readonly calibrationCount = computed(
+  /** The states one weapon implies — the baseline, one per set, one for the pair. */
+  private readonly statesPerWeapon = computed(
     () => 1
       + this.fourPieceChoices().filter((c) => this.isSelected(c.setId)).length
       + (this.chosenPair() === null ? 0 : 1),
+  );
+
+  /**
+   * Every calibration the selection implies, **weapons included**.
+   *
+   * A weapon is a full search of its own, not a re-score: a different weapon is a different
+   * base ATK and a different passive, so every set state has to be calibrated again for it.
+   * The equipped weapon is always one of them, which is why this multiplies by
+   * `1 + selected`.
+   */
+  protected readonly calibrationCount = computed(
+    () => this.statesPerWeapon() * (1 + this.selectedWeapons().size),
+  );
+
+  /**
+   * What the search will take, in minutes, as a sentence rather than a number to interpret.
+   *
+   * **Said before the click, not discovered during it.** A weapon is roughly 2½ minutes —
+   * measured, not guessed: a calibration and its probe per set state at ~15 s, plus that
+   * weapon's own energy ladder at ~30 s. Four weapons is ten minutes, and a user who is told
+   * that can decide; one who is not has a page that appears to hang.
+   */
+  protected readonly estimatedMinutes = computed(
+    () => Math.round(this.calibrationCount() * 0.25 + this.selectedWeapons().size * 0.5),
   );
 
   protected isSelected(setId: number): boolean {
@@ -441,6 +594,37 @@ export class OptimizePage implements OnInit {
    * anything" is neither. One set selected is an unfinished pair, said out loud rather than
    * silently searching nothing.
    */
+  /**
+   * A set's two-piece stat, as a `--stat-*` suffix, or `undefined` for the oddities.
+   *
+   * Owner: *"red for attack, blue for hp, yellow for defense, silver for dmg%"*, then *"ER can
+   * be green, give other random weird 2P sets another color"*.
+   *
+   * **EM gets its own colour rather than the grey bucket.** Six sets grant it and half the
+   * roster scales on it, which is not an oddity. Grey is for the genuinely odd — healing
+   * bonus, shield-cost reduction, and the two sets whose two-piece is a *flat* stat.
+   *
+   * Read from `setBonuses`, which is the catalogue's own answer. Nothing here is a list of
+   * sets written out by hand: that is the shape of the curated-data failure this repo
+   * legislates against, and it goes stale the first time a set is added.
+   */
+  private twoPieceStat(setId: number): string | undefined {
+    const bonus = this.setBonuses().find(
+      (b) => b.setId === setId && b.piecesRequired === 2,
+    );
+    if (!bonus) return undefined;
+    const granted = Object.keys(bonus.stats).find((key) => bonus.stats[key] !== 0);
+    if (!granted) return undefined;
+    if (granted.endsWith('_dmg_bonus')) return 'dmg';
+    return {
+      atk_pct: 'atk',
+      hp_pct: 'hp',
+      def_pct: 'def',
+      energy_recharge: 'er',
+      elemental_mastery: 'em',
+    }[granted] ?? 'other';
+  }
+
   private cardFor(setId: number, slots: number): CardOption {
     const known = this.artifactSets().get(setId);
     return {
@@ -454,6 +638,15 @@ export class OptimizePage implements OnInit {
     };
   }
 
+  /** The same card, tinted by the two-piece stat — only the 2-piece picker wants that. */
+  private pairCardFor(setId: number, slots: number): CardOption {
+    const stat = this.twoPieceStat(setId);
+    const card = this.cardFor(setId, slots);
+    return stat
+      ? { ...card, statColour: stat, detail: `${card.detail} · 2pc ${STAT_NAMES[stat] ?? stat}` }
+      : card;
+  }
+
   protected readonly fourPieceOptions = computed<CardOption[]>(() => {
     const inPair = new Set([this.pairFirst(), this.pairSecond()]);
     return this.fourPieceChoices()
@@ -464,7 +657,7 @@ export class OptimizePage implements OnInit {
   protected readonly pairOptions = computed<CardOption[]>(() =>
     this.fourPieceChoices()
       .filter((choice) => !this.selectedSets().has(choice.setId))
-      .map((choice) => this.cardFor(choice.setId, choice.slots)),
+      .map((choice) => this.pairCardFor(choice.setId, choice.slots)),
   );
 
   protected readonly fourPieceSelected = computed(() =>
@@ -518,6 +711,41 @@ export class OptimizePage implements OnInit {
    * cannot be half-wired. A rotation search that forgot the call would show cards on the
    * single-hit tab and none on the tab the page exists for.
    */
+  /**
+   * Load the character's weapons and KQM's list when the build changes.
+   *
+   * **Only while the picker is open.** A search over the equipped weapon needs neither, and
+   * fetching 40 weapons and a guide for every build selection would be work nobody asked for
+   * on the page's commonest path.
+   */
+  private readonly fetchWeapons = effect(() => {
+    const build = this.build();
+    const comparing = this.comparingWeapons();
+    if (!comparing || !build?.character) {
+      this.weapons.set([]);
+      this.weaponGuide.set(null);
+      return;
+    }
+    void this.loadWeapons(build.character.weapon_type, build.character.nanoka_id);
+  });
+
+  private async loadWeapons(
+    weaponType: NonNullable<Parameters<CatalogueService['listWeapons']>[0]>['weapon_type'],
+    nanokaId: string,
+  ): Promise<void> {
+    try {
+      const page = await allPages((offset, limit) =>
+        this.catalogue.listWeapons({ weapon_type: weaponType, offset, limit }),
+      );
+      this.weapons.set(page.items as WeaponSummary[]);
+      // Never fatal: the picker works without a guide, and a character KQM has no page for is
+      // a character with no tier rather than a broken page.
+      this.weaponGuide.set(await this.catalogue.weaponGuide(nanokaId));
+    } catch {
+      this.actionError.set('Could not load weapons for that character.');
+    }
+  }
+
   private readonly fetchCards = effect(() => {
     void this.loadCards(this.rows());
   });
@@ -1174,6 +1402,7 @@ export class OptimizePage implements OnInit {
   private readonly teamsService = inject(TeamsService);
   private readonly optimize = inject(OptimizeService);
   private readonly artifacts = inject(ArtifactsService);
+  private readonly catalogue = inject(CatalogueService);
   private readonly explain = inject(ExplainService);
   private readonly buildsService = inject(BuildsService);
 
@@ -1703,10 +1932,20 @@ export class OptimizePage implements OnInit {
         return;
       }
       const targets = this.calibrationTargets(chosen);
-      const calibrated = await this.recipeOptimize.calibrateAll(
-        id, this.rotationId(), snapshot.version, targets,
-        (progress) => this.calibrating.set(progress),
-      );
+      // **One calibration pass per weapon, and the equipped weapon is always the first.**
+      // `undefined` is the build as it stands — the search this page has always run — and each
+      // selected weapon is calibrated on top of it rather than instead of it, because the
+      // comparison is *against* what is being worn.
+      const weaponRuns: (string | undefined)[] = [undefined, ...this.selectedWeapons()];
+      const calibratedRuns: CalibrationResult[] = [];
+      for (const weaponId of weaponRuns) {
+        calibratedRuns.push(await this.recipeOptimize.calibrateAll(
+          id, this.rotationId(), snapshot.version, targets,
+          (progress) => this.calibrating.set(progress),
+          weaponId,
+        ));
+      }
+      const calibrated = calibratedRuns[0];
       this.caveats.set(calibrated.caveats);
 
       if (calibrated.noFourPiece === null) {
@@ -1734,6 +1973,38 @@ export class OptimizePage implements OnInit {
           twoPiecePairs: pair === null ? [] : [pair],
         },
       );
+      // **A search per weapon, not one search re-scored.** Each weapon filters the inventory
+      // against its own objective and walks it with its own recipes — the arrangement
+      // `recipe-search.spec.ts` pins, and the one a hoisted Pareto filter would break by
+      // discarding a piece that loses under one weapon and wins under another.
+      const perWeapon = [{ weaponId: undefined as string | undefined, result: found }];
+      for (let index = 1; index < calibratedRuns.length; index += 1) {
+        const run = calibratedRuns[index];
+        if (run.noFourPiece === null) continue;
+        perWeapon.push({
+          weaponId: weaponRuns[index],
+          result: searchRecipe(
+            pieces.map((piece) => ({
+              id: piece.id,
+              slot: piece.slot as Slot,
+              setId: piece.set_id ?? -1,
+              stats: piece.stats,
+            })),
+            {
+              recipes: {
+                byFourPieceSet: run.byFourPieceSet,
+                byPair: run.byPair,
+                noFourPiece: run.noFourPiece,
+              },
+              setBonuses: this.setBonuses(),
+              fourPieceSets: chosen,
+              twoPiecePairs: pair === null ? [] : [pair],
+            },
+          ),
+        });
+      }
+      this.weaponResults.set(perWeapon.length > 1 ? perWeapon : []);
+
       this.result.set(found);
       // Keep what the search used, so the marginal table can be computed without a second
       // calibration.

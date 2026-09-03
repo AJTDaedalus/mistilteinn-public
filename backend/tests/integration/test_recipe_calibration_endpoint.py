@@ -399,3 +399,42 @@ async def test_a_two_piece_set_gcsim_does_not_implement_is_refused(
 
     assert response.status_code == 422
     assert "gcsim does not implement" in response.json()["detail"]
+
+
+async def test_a_named_weapon_is_calibrated_instead_of_the_build_s_own(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """**The field the weapon comparison could not exist without.**
+
+    Comparing weapons needs a calibration *per weapon*, not a re-score: a different weapon is a
+    different base ATK and a different passive, and `sim_context.context_key` has always said
+    so. `CalibrationRequest` carried no weapon at all, so a client could not ask — which is why
+    the optimizer's weapon comparison could rank nothing.
+
+    The assertion is that the substitution **reaches the emitted config**, because one that
+    silently did nothing would produce a *flat ranking* — every candidate scoring the worn
+    weapon's number — which reads as "these weapons are equivalent" rather than as a bug, and
+    is a conclusion a user would believe.
+    """
+    worn = (await _calibrate(authed_client, scene)).json()
+    swapped = (await _calibrate(authed_client, scene, weapon_id=scene.candidate_id)).json()
+
+    assert 'weapon="dullblade"' in worn["baseline"]
+    assert 'weapon="mistsplitterreforged"' in swapped["baseline"]
+    assert worn["baseline"] != swapped["baseline"]
+
+
+async def test_an_unknown_weapon_is_refused_rather_than_ignored(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """A weapon id that resolves to nothing must not fall back to the equipped one.
+
+    Falling back is the flat-ranking failure with extra steps: the caller asked to score a
+    weapon, got the worn weapon's number, and has no way to tell.
+    """
+    response = await _calibrate(
+        authed_client, scene, weapon_id="00000000-0000-0000-0000-000000000009",
+    )
+
+    assert response.status_code == 404, response.text
+    assert "weapon" in response.json()["detail"]

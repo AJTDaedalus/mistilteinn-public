@@ -138,6 +138,34 @@ describe('candidateStatsFrom', () => {
 });
 
 describe('searchRecipe', () => {
+  it('filters the inventory per weapon, so a piece one weapon wants survives the other search', () => {
+    // **H1, and the shape that avoids it.** The Pareto layer prunes the inventory against
+    // `liveQuantitiesFor`, and a piece dominated under one objective is discarded *before*
+    // scoring. Two weapons are two objectives — an ATK scaler and a DEF scaler want different
+    // pieces — so a filter hoisted out of the per-weapon loop would throw away the winner of
+    // whichever search ran second, silently, and still return a confident ranking.
+    //
+    // That is #222 one level out: a lossless layer made lossy by an objective that does not
+    // cover everything being scored. This pins the arrangement that cannot go wrong — one
+    // `searchRecipe` call per weapon, each filtering against its own recipes.
+    const pieces: Candidate[] = SLOTS.flatMap((slot) => [
+      { id: `${slot}-atk`, slot, setId: 1, stats: { atk_pct: 0.5 } } as Candidate,
+      { id: `${slot}-def`, slot, setId: 1, stats: { def_pct: 0.5 } } as Candidate,
+    ]);
+    const forSet1 = (r: Recipe) => ({ byFourPieceSet: new Map([[1, r]]), noFourPiece: r });
+    const atkWeapon = recipe([hit({ scaling: 'atk' })]);
+    const defWeapon = recipe([hit({
+      scaling: 'atk', conversions: { flatDamage: { from: 'def', perUnit: 4 } },
+    })]);
+
+    const onAtk = searchRecipe(pieces, { recipes: forSet1(atkWeapon), topN: 1 });
+    const onDef = searchRecipe(pieces, { recipes: forSet1(defWeapon), topN: 1 });
+
+    // Each search kept what its own weapon scales on. Neither pruned for the other.
+    expect(onAtk.builds[0].artifactIds.every((id) => id.endsWith('-atk'))).toBe(true);
+    expect(onDef.builds[0].artifactIds.every((id) => id.endsWith('-def'))).toBe(true);
+  });
+
   it('reports the Energy Recharge each winning build actually carries', () => {
     // §22. The global energy line is measured on the *baseline*, so it reads the same under
     // every row; a row can only say what its own five pieces fund if the search reports the ER

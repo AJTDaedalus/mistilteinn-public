@@ -83,6 +83,8 @@
           type="button"
           class="picker__card"
           [class.picker__card--on]="isSelected(option.value)"
+          [class.picker__card--recommended]="option.recommended"
+          [attr.data-stat]="option.statColour || null"
           [attr.aria-pressed]="isSelected(option.value)"
           [attr.title]="option.tooltip"
           (click)="pick(option.value)"

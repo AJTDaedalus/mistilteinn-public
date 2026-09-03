@@ -142,3 +142,35 @@
   gap: 0.15rem;
   line-height: 0;
 }
+
+
+/* A card a cited source recommends. Owner: *"recommended sets/weapons first and highlighted
+   somehow"* — first is the caller's ordering, this is the highlight.
+
+   **A border rather than a fill**, so it reads under a selected card's own state instead of
+   fighting it: a card can be both recommended and chosen, and the two have to be legible at
+   once. The label already says `KQM #n`, so this never carries the meaning alone. */
+.picker__card--recommended {
+  border-color: var(--brass);
+  box-shadow: inset 0 0 0 1px var(--brass-deep);
+}
+
+
+/* A two-piece card, tinted by the stat its bonus grants. A left edge rather than a fill or a
+   border: the card already uses its border for *selected* and its outline for *recommended*,
+   and a third meaning competing for the same pixels would make all three harder to read.
+
+   **A class per stat, not a custom property built in the template.** The first draft composed
+   the property name from a string in the binding, which `check:tokens` cannot verify and which
+   turns a typo in the stat name into an undefined property — the silent failure that check
+   exists for. A second draft bound `[class]`, which in Angular replaces the whole attribute
+   and would have dropped `picker__card` itself. One data attribute, seven static rules: every
+   token is written out for the checker to read, and an unknown stat matches nothing rather
+   than painting nothing. */
+.picker__card[data-stat="atk"] { border-left: 3px solid var(--stat-atk); }
+.picker__card[data-stat="hp"] { border-left: 3px solid var(--stat-hp); }
+.picker__card[data-stat="def"] { border-left: 3px solid var(--stat-def); }
+.picker__card[data-stat="dmg"] { border-left: 3px solid var(--stat-dmg); }
+.picker__card[data-stat="er"] { border-left: 3px solid var(--stat-er); }
+.picker__card[data-stat="em"] { border-left: 3px solid var(--stat-em); }
+.picker__card[data-stat="other"] { border-left: 3px solid var(--stat-other); }

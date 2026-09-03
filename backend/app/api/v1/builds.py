@@ -1079,6 +1079,7 @@ async def calibrate_recipe(
     rotations: Annotated[RotationRepository, Depends(get_owned_rotation_repo)],
     sets: Annotated[ArtifactSetRepository, Depends(get_artifact_set_repo)],
     enemies: Annotated[EnemyProfileRepository, Depends(get_enemy_profile_repo)],
+    weapons: Annotated[WeaponRepository, Depends(get_weapon_repo)],
 ) -> CalibrationConfigs:
     """The two gcsim configs a damage recipe is built from (R.3).
 
@@ -1157,11 +1158,33 @@ async def calibrate_recipe(
     if body.enemy_id and enemy is None:
         raise HTTPException(status_code=404, detail=f"enemy profile {body.enemy_id} not found")
 
+    # **The weapon comparison's own calibration.** `body.weapon_id` names a weapon to emit in
+    # place of the build's, and it is resolved here rather than trusted: a substitution that
+    # silently did nothing would produce a *flat ranking* — every weapon scoring the worn
+    # weapon's number — which reads as "these are equivalent" rather than as a bug, and is a
+    # conclusion a user would believe. `SubstituteWeapon` states the same argument at length.
+    #
+    # The refinement is the build's own, and the level is too: ranking a level-90 worn weapon
+    # against a level-1 candidate measures levelling rather than weapons.
+    substitute: SubstituteWeapon | None = None
+    if body.weapon_id is not None and body.weapon_id != str(
+        build.weapon.id if build.weapon else "",
+    ):
+        candidate = await weapons.get_by_id(body.weapon_id)
+        if candidate is None:
+            raise HTTPException(status_code=404, detail=f"weapon {body.weapon_id} not found")
+        substitute = SubstituteWeapon(
+            weapon=candidate,
+            level=build.weapon_level,
+            refinement=build.refinement,
+        )
+
     def _config(calibration: Calibration, extra: str | None = None) -> str:
         text = build_config(
             build,
             teammates=teammates,
             calibration=calibration,
+            substitute_weapon=substitute,
             action_block=action_block,
             enemy=enemy,
             iterations=body.iterations,

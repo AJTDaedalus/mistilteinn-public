@@ -244,6 +244,28 @@ export function instancesFrom(
  * rotation is not energy-constrained (no ladder was swept), and nothing is stamped.
  */
 export function shareEnergyMeasurement(recipes: readonly Recipe[]): void {
+  // **Grouped by weapon, because a ladder is a property of one.** Sharing across *sets* is
+  // sound: the sweep varies the subject's ER on the calibration's own stats line, and nothing
+  // in it depends on which set the search is walking. Sharing across *weapons* is not, and
+  // Favonius is the sharpest case available — it makes particles on crit, so its energy curve
+  // is genuinely different from a stat-stick's. One donor for the run would price the weapon
+  // the owner asked about using another weapon's energy behaviour.
+  //
+  // `weaponKey` is empty for a search over a single weapon, which is every search until the
+  // weapon picker is opened — so this groups into one bucket and behaves exactly as before.
+  const byWeapon = new Map<string, Recipe[]>();
+  for (const recipe of recipes) {
+    const key = recipe.meta.weaponKey ?? '';
+    const bucket = byWeapon.get(key);
+    if (bucket) bucket.push(recipe);
+    else byWeapon.set(key, [recipe]);
+  }
+  for (const bucket of byWeapon.values()) shareWithinOneWeapon(bucket);
+}
+
+
+/** The original rule, now scoped to the weapon whose ladder it is. */
+function shareWithinOneWeapon(recipes: readonly Recipe[]): void {
   const donor = recipes.find((r) => r.meta.energySweep?.length);
   if (!donor) return;
   for (const recipe of recipes) {
@@ -297,6 +319,16 @@ export class RecipeOptimizeService {
     cacheEpoch: string,
     targets: readonly CalibrationTarget[],
     onProgress: (progress: CalibrationProgress) => void,
+    /**
+     * A weapon to calibrate with instead of the build's own, as a catalogue id.
+     *
+     * **A weapon is a recipe, not a re-score.** Different base ATK, different passive — so
+     * every set state has to be calibrated again for it, and `context_key` on the server has
+     * always included the weapon, which is what makes each weapon's cache entry its own.
+     * `undefined` calibrates the build as it stands, which is every search that is not
+     * comparing weapons.
+     */
+    weaponId?: string,
   ): Promise<CalibrationResult> {
     const byFourPieceSet = new Map<number, Recipe>();
     const byPair = new Map<string, Recipe>();
@@ -439,6 +471,10 @@ export class RecipeOptimizeService {
           recipe.meta.calibratedEnergyDps = aggregate?.dps?.mean ?? undefined;
           // The ER the ladder's own baseline rung sits at — see `calibratedEnergyRecharge`.
           recipe.meta.calibratedEnergyRecharge = configs.energy_recharge;
+          // **On the recipe, so the energy ladder knows whose it is.** Grouping in
+          // `shareEnergyMeasurement` reads this; without it every weapon would be
+          // handed the first one's sweep.
+          recipe.meta.weaponKey = weaponId;
           return recipe;
         };
 
@@ -625,12 +661,18 @@ export class RecipeOptimizeService {
   }
 
   private async configs(
-    buildId: string, rotationId: string, artifactSetIds: readonly string[],
+    buildId: string,
+    rotationId: string,
+    artifactSetIds: readonly string[],
+    weaponId?: string,
   ) {
     const { data, error } = await this.api.POST('/api/v1/builds/{build_id}/calibrate', {
       params: { path: { build_id: buildId } },
       body: {
         rotation_id: rotationId,
+        // Omitted rather than sent as null when there is none, so a search over the
+        // build's own weapon puts nothing new in the request it has always sent.
+        ...(weaponId ? { weapon_id: weaponId } : {}),
         // One set is a 4-piece; two are a 2+2, which the endpoint refuses to combine with a
         // 4-piece because five slots cannot hold both.
         artifact_set_id: artifactSetIds.length === 1 ? artifactSetIds[0] : null,

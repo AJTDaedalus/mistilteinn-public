@@ -120,6 +120,28 @@
   --danger: #f08a86;
   --warning: #e8b95c;
 
+  // -- Stat colours, for the two-piece selector. Owner, 2026-09-02: *"color coding that
+  //    identifies the stat (red for attack, blue for hp, yellow for defense, silver for
+  //    dmg%)"*, then *"ER can be green, give other random weird 2P sets another color"*.
+  //
+  //    **Their own tokens, not the element ones.** `--element-hydro` is the nearest blue and
+  //    `--element-geo` the nearest yellow, and borrowing them would make one colour mean
+  //    "HP%" in this selector and "Hydro" three components away. Same pixel, two vocabularies.
+  //
+  //    EM is given a colour of its own rather than the grey bucket: six sets grant it and half
+  //    the roster scales on it, which is not an oddity. Grey is for the genuinely odd — healing
+  //    bonus, shield-cost reduction, and the two sets whose two-piece is a *flat* stat.
+  //
+  //    Sampled to sit beside this palette rather than taken from a default wheel, and never
+  //    the only signal: every chip carries the stat's name as text.
+  --stat-atk: #e08a7a;
+  --stat-hp: #6fa8d8;
+  --stat-def: #d8b45c;
+  --stat-dmg: #a9adc4;
+  --stat-er: #7fc08a;
+  --stat-em: #b48fd4;
+  --stat-other: #7f8399;
+
   // -- Layout. The widest a page's content grows, however wide the window is.
   --measure: 90rem;
 

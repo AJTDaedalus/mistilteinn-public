@@ -405,6 +405,10 @@ describe('BuildsPage pickers', () => {
       icon: 'UI_EquipIcon_Sword_Narukami', detail: '5★ · CRIT DMG',
       // `tooltip` carries KQM's own sentence when there is one; undefined when there is not.
       tooltip: undefined, tags: { stars: '5', kqm: '' },
+      // **False, not absent.** A card is drawn as recommended only when a cited source lists
+      // it, and this character has no captured guide — which is a different statement from
+      // "KQM recommends nothing", and neither of them is "recommended".
+      recommended: false,
     }]);
   });
 
