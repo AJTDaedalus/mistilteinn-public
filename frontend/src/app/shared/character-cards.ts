@@ -22,7 +22,11 @@ import type { CharacterSummary } from '../pages/catalogue/catalogue.service';
 export function characterCardOptions(characters: readonly CharacterSummary[]): CardOption[] {
   return characters.map((c) => ({
     value: c.id,
-    label: c.name,
+    // **`display_name`, not `name`.** Sixteen catalogue rows are named `Traveler` — seven
+    // elements for each of two bodies — so a grid keyed on `name` drew Aether Pyro and Lumine
+    // Pyro as the same card twice. The server derives the difference from the icon, which is
+    // the only signal that exists. `app/services/traveler.py`.
+    label: c.display_name,
     icon: c.icon,
     detail: c.weapon_type_display,
     tags: { element: c.element ?? '', weapon: c.weapon_type ?? '' },

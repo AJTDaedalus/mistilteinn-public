@@ -389,6 +389,19 @@
   color: var(--ink-dim);
 }
 
+/* gcsim cannot run every character this catalogue holds — six Traveler elements, not seven —
+   and the roster used to offer the row, the builds tab used to offer the build, and the first
+   sign was a search failing several minutes in. Drawn as a caveat rather than a warning: the
+   character is real and ownable, and only the simulation is unavailable. */
+.roster__nosim {
+  padding: 0 var(--space-1);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  font-size: var(--text-xs);
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+
 /* **Three states, not two.** `owned = null` means nobody has said, which is not the user
    saying no — DESIGN §2.1. So an untouched roster reads as untouched rather than as a wall of
    refusals, and only a deliberate "no" is drawn as one. */
