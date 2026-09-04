@@ -69,6 +69,12 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
       TEST_DATABASE_URL: ${TEST_DATABASE_URL}
+      # **This is production, and until now nothing said so.** `Settings.ENV` defaults to
+      # `"local"` and neither compose file overrode it, so every `settings.ENV == "production"`
+      # branch in the codebase was dead here — including `email_preflight`, whose entire job is
+      # to refuse a deploy whose mail cannot work. It was a no-op in the one place it exists
+      # for. `tests/unit/test_settings_reach_the_container.py` now asserts this line.
+      ENV: production
       # ── Open registration (DESIGN_open_registration.md) ──────────────────────
       # **Enumerated here because this service has no `env_file:`.** A setting absent from
       # this list is invisible to the app whatever `.env` says, and invisible *silently*:

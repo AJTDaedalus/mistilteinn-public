@@ -93,6 +93,19 @@ def test_every_required_setting_is_a_real_setting() -> None:
     assert unknown == []
 
 
+def test_production_says_it_is_production() -> None:
+    """**Every `ENV == "production"` branch in the codebase depends on this one line.**
+
+    `Settings.ENV` defaults to `"local"`, and for a while neither compose file overrode it —
+    so in production `settings.ENV` was `"local"` and every such branch was dead code on the
+    only machine it exists for. `email_preflight` was the sharpest case: a gate written to
+    refuse a deploy whose mail cannot work, which returned immediately without checking.
+
+    Nothing failed. Nothing could have: a check that does not run passes.
+    """
+    assert "ENV: production" in _backend_environment(PROD)
+
+
 def test_uvicorn_is_told_to_trust_the_proxy() -> None:
     """Without `--forwarded-allow-ips`, every per-IP rate limit is one global bucket.
 
