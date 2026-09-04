@@ -11,7 +11,7 @@ from app.models.weapon import Weapon
 from app.repositories.base import BaseRepository, ilike_contains
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterable, Sequence
 
     from sqlalchemy import Select
 
@@ -87,6 +87,24 @@ class WeaponRepository(BaseRepository[Weapon]):
             .options(selectinload(Weapon.refinements))
         )
         return list((await self.session.execute(stmt)).scalars().all())
+
+    async def ids_by_nanoka_ids(self, nanoka_ids: Iterable[int]) -> dict[int, str]:
+        """`{nanoka id: row id}` for the ids this pin has, silently omitting the ones it lacks.
+
+        **A batch lookup, because the caller has a list.** `kqm_weapons` holds 1,353
+        recommendations keyed by the game's ids, and resolving them one `get_by_nanoka_id` at a
+        time would be a query per row on a page load.
+
+        A missing id is an absent key rather than an error: a weapon released after the pinned
+        patch is a fact about the pin, and the caller decides what to do about it.
+        """
+        ids = list(dict.fromkeys(nanoka_ids))
+        if not ids:
+            return {}
+        result = await self.session.execute(
+            select(Weapon.nanoka_id, Weapon.id).where(Weapon.nanoka_id.in_(ids)),
+        )
+        return dict(result.all())  # type: ignore[arg-type]
 
     async def get_by_nanoka_id(self, nanoka_id: int) -> Weapon | None:
         """One weapon by its source id, with its five refinement rows."""

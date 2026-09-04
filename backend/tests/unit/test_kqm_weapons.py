@@ -16,6 +16,9 @@ from app.services import kqm_weapons
 
 _SNAPSHOT = Path(kqm_weapons.__file__).resolve().parents[1] / "data" / "kqm" / "weapons.json"
 
+#: For the one comprehension that reads a guide it has already asserted is present.
+_EMPTY = kqm_weapons.CharacterGuide(character="", url="", retrieved_at="", weapons=())
+
 
 def test_the_snapshot_carries_its_own_citation() -> None:
     """**A claim without a source is the thing this must not become.**
@@ -33,15 +36,133 @@ def test_the_snapshot_carries_its_own_citation() -> None:
 
 
 def test_every_recommendation_names_a_weapon_this_repo_has() -> None:
-    """The capture refuses a name it cannot resolve rather than guessing at it, so a `weapon_id`
-    here is always a real catalogue row. A recommendation naming a weapon that does not exist
-    would be unactionable *and* unfalsifiable."""
+    """The capture refuses a name it cannot resolve rather than guessing at it, so every row
+    here names a weapon the catalogue holds. A recommendation naming one that does not exist
+    would be unactionable *and* unfalsifiable.
+
+    **`assert weapon.weapon_id` used to be this test**, and it could not return a second
+    answer: any string, from any database or none, passed it. It passed for months while the
+    ids it was checking existed in exactly one database.
+    """
     for nanoka_id in kqm_weapons.captured_characters():
         guide = kqm_weapons.for_character(nanoka_id)
         assert guide is not None
         for weapon in guide.weapons:
-            assert weapon.weapon_id
+            assert isinstance(weapon.weapon_nanoka_id, int)
             assert weapon.weapon_name
+
+
+#: What a `uuid7` primary key looks like. Not a general UUID pattern — the point is to
+#: recognise *this repo's own row ids*, which is what got committed.
+_ROW_ID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$")
+
+
+def test_no_id_in_the_snapshot_is_a_row_id_from_somebody_s_database() -> None:
+    """**The check on the class of mistake, not on the instance.**
+
+    `weapon_id` and `set_id` held `uuid7` primary keys until 2026-09-04. `models/base.py` mints
+    those per insert, so the file described whichever database the capture happened to run
+    against — **zero of the 205 weapon ids and zero of the 32 set ids existed in production**,
+    and every recommendation silently missed. Nothing errored; both pickers just looked like
+    pickers with no guide.
+
+    A committed snapshot must not carry a primary key from anybody's database. Asserting the
+    ids are *ints* would pass a re-capture that reintroduced a row id under a new field name;
+    this fails on the shape wherever it appears.
+    """
+    raw = json.loads(_SNAPSHOT.read_text())
+    offenders = [
+        (nanoka_id, key, value)
+        for nanoka_id, entry in raw["characters"].items()
+        for row in [*entry["weapons"], *entry.get("sets", [])]
+        for key, value in row.items()
+        if isinstance(value, str) and _ROW_ID.match(value)
+    ]
+
+    assert offenders == []
+
+
+def test_a_named_set_is_not_filed_as_a_stat_description() -> None:
+    """`kind` separates a set from a *kind* of two-piece, and the distinction is load-bearing —
+    `2pc HP% / ER` names every set granting HP%, not a set, and resolving it would invent a
+    name KQM never wrote.
+
+    But a trailing qualifier used to sink the row: `4pc Emblem of Severed Fate (EoSF)` matched
+    nothing and was filed `stat` along with 46 others, so a quarter of the set half named a set
+    and did not say so.
+
+    The signature is narrow on purpose. A cell naming *several* sets — Albedo's
+    `4pc Tenacity of the Millelith (4ToM), 4pc Noblesse Oblige (4NO), or 4pc Instructor (4IN)` —
+    is correctly a `stat` row, because it resolves to no single set. What must not survive is a
+    `stat` row whose whole text is **one** set this snapshot elsewhere names outright.
+    """
+    named = {
+        entry.set_name
+        for nanoka_id in kqm_weapons.captured_characters()
+        for entry in (kqm_weapons.for_character(nanoka_id) or _EMPTY).sets
+        if entry.set_name
+    }
+    strip = re.compile(r"^(?:[24]pc(?:\s*/\s*[24]pc)?)\s+|\s*\([^)]*\)\s*$")
+
+    for nanoka_id in kqm_weapons.captured_characters():
+        guide = kqm_weapons.for_character(nanoka_id)
+        assert guide is not None
+        for entry in guide.sets:
+            if entry.kind != "stat":
+                continue
+            bare = strip.sub("", strip.sub("", entry.as_written)).strip()
+
+            assert bare not in named, (
+                f"{entry.as_written!r} on {guide.character} is filed as a stat description "
+                f"while {bare!r} is a set this snapshot names elsewhere"
+            )
+
+
+def test_a_set_row_carries_an_id_exactly_when_it_names_a_set() -> None:
+    """`kind` and `set_nanoka_id` must agree: a `set` row resolves to one, a `stat` row does
+    not. They are written together and could drift apart in a re-capture."""
+    for nanoka_id in kqm_weapons.captured_characters():
+        guide = kqm_weapons.for_character(nanoka_id)
+        assert guide is not None
+        for entry in guide.sets:
+            assert (entry.set_nanoka_id is not None) == (entry.kind == "set"), entry.as_written
+
+
+#: The committed nanoka 7.0.51 capture, read rather than the database **so this check can
+#: never pass by being skipped** — the rule `test_roster_excludes_only_the_mannequins.py`
+#: follows, and the one this bug spent months on the wrong side of.
+_FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "nanoka_gi"
+
+
+def test_every_id_resolves_against_the_catalogue() -> None:
+    """**The check that would have caught it.**
+
+    Nothing joined this snapshot to the catalogue, so an id that meant nothing anywhere looked
+    exactly like one that meant something. Against production it meant nothing: 0 of 205 weapon
+    ids and 0 of 32 set ids resolved, and both pickers rendered as though no guide existed.
+
+    Reading the committed fixtures rather than a seeded database is deliberate — an
+    integration test guarded on a database is a test that reports "could not check" as a pass,
+    which is the exact state the bug lived in.
+    """
+    weapons = {int(key) for key in json.loads((_FIXTURES / "weapon.json").read_text())}
+    sets = {int(key) for key in json.loads((_FIXTURES / "artifact.json").read_text())}
+
+    unresolved = []
+    for nanoka_id in kqm_weapons.captured_characters():
+        guide = kqm_weapons.for_character(nanoka_id)
+        assert guide is not None
+        unresolved += [
+            f"{guide.character}: weapon {w.weapon_nanoka_id} ({w.weapon_name})"
+            for w in guide.weapons if w.weapon_nanoka_id not in weapons
+        ]
+        unresolved += [
+            f"{guide.character}: set {e.set_nanoka_id} ({e.set_name})"
+            for e in guide.sets
+            if e.set_nanoka_id is not None and e.set_nanoka_id not in sets
+        ]
+
+    assert unresolved == []
 
 
 def test_the_order_is_preserved_because_the_order_is_the_claim() -> None:

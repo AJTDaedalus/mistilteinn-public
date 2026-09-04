@@ -1172,7 +1172,7 @@
           "catalogue"
         ],
         "summary": "Character Weapon Guide",
-        "description": "What KeqingMains lists as this character's weapons, in the order KQM lists them.\n\n**404 when no guide has been captured**, which is not the same as \"KQM recommends nothing\".\nThree characters are captured today \u2014 the owner's *\"manual, cited, small first\"* \u2014 and a\ncaller showing an empty panel for an uncaptured character would be making a claim about KQM\nthat nobody made.\n\nStatic and committed, never a live fetch: a guide is somebody else's page and it changes.\n`scripts/capture_kqm_weapons.py` re-captures deliberately, and the diff is the review.\n\nDeclared **above** `/characters/{nanoka_id}` is unnecessary \u2014 the paths differ by a\nsegment \u2014 but it is declared beside it so the two are read together.",
+        "description": "What KeqingMains lists as this character's weapons, in the order KQM lists them.\n\n**404 when no guide has been captured**, which is not the same as \"KQM recommends nothing\" \u2014\na caller showing an empty panel for an uncaptured character would be making a claim about\nKQM that nobody made.\n\nStatic and committed, never a live fetch: a guide is somebody else's page and it changes.\n`scripts/capture_kqm_weapons.py` re-captures deliberately, and the diff is the review.\n\n**The snapshot holds the game's ids and this resolves them here.** It held *row* ids until\n2026-09-04, which meant it only worked against the one database it was captured from \u2014\nzero of them existed in production, so every recommendation silently missed and both\npickers looked like pickers with no guide. Resolving at read time keeps the published\n`weapon_id` a row id, so no client had to change.\n\nDeclared **above** `/characters/{nanoka_id}` is unnecessary \u2014 the paths differ by a\nsegment \u2014 but it is declared beside it so the two are read together.",
         "operationId": "character_weapon_guide_api_v1_characters__nanoka_id__weapons_get",
         "parameters": [
           {
@@ -9567,6 +9567,17 @@
             ],
             "title": "Set Id"
           },
+          "set_nanoka_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Set Nanoka Id"
+          },
           "set_name": {
             "anyOf": [
               {
@@ -11027,8 +11038,19 @@
             "title": "Position"
           },
           "weapon_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Weapon Id"
+          },
+          "weapon_nanoka_id": {
+            "type": "integer",
+            "title": "Weapon Nanoka Id"
           },
           "weapon_name": {
             "type": "string",
@@ -11052,7 +11074,7 @@
         "type": "object",
         "required": [
           "position",
-          "weapon_id",
+          "weapon_nanoka_id",
           "weapon_name",
           "note"
         ],

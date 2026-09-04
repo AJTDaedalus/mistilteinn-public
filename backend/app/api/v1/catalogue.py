@@ -249,16 +249,25 @@ async def get_enemy(
     "/characters/{nanoka_id}/weapons",
     response_model=CharacterWeaponGuideRead,
 )
-async def character_weapon_guide(nanoka_id: str) -> CharacterWeaponGuideRead:
+async def character_weapon_guide(
+    nanoka_id: str,
+    weapons: Annotated[WeaponRepository, Depends(get_weapon_repo)],
+    sets: Annotated[ArtifactSetRepository, Depends(get_artifact_set_repo)],
+) -> CharacterWeaponGuideRead:
     """What KeqingMains lists as this character's weapons, in the order KQM lists them.
 
-    **404 when no guide has been captured**, which is not the same as "KQM recommends nothing".
-    Three characters are captured today — the owner's *"manual, cited, small first"* — and a
-    caller showing an empty panel for an uncaptured character would be making a claim about KQM
-    that nobody made.
+    **404 when no guide has been captured**, which is not the same as "KQM recommends nothing" —
+    a caller showing an empty panel for an uncaptured character would be making a claim about
+    KQM that nobody made.
 
     Static and committed, never a live fetch: a guide is somebody else's page and it changes.
     `scripts/capture_kqm_weapons.py` re-captures deliberately, and the diff is the review.
+
+    **The snapshot holds the game's ids and this resolves them here.** It held *row* ids until
+    2026-09-04, which meant it only worked against the one database it was captured from —
+    zero of them existed in production, so every recommendation silently missed and both
+    pickers looked like pickers with no guide. Resolving at read time keeps the published
+    `weapon_id` a row id, so no client had to change.
 
     Declared **above** `/characters/{nanoka_id}` is unnecessary — the paths differ by a
     segment — but it is declared beside it so the two are read together.
@@ -272,6 +281,14 @@ async def character_weapon_guide(nanoka_id: str) -> CharacterWeaponGuideRead:
                 f"That is not a claim that none exists — see scripts/capture_kqm_weapons.py."
             ),
         )
+
+    weapon_rows = await weapons.ids_by_nanoka_ids(
+        w.weapon_nanoka_id for w in guide.weapons
+    )
+    set_rows = await sets.ids_by_nanoka_ids(
+        e.set_nanoka_id for e in guide.sets if e.set_nanoka_id is not None
+    )
+
     return CharacterWeaponGuideRead(
         character=guide.character,
         url=guide.url,
@@ -279,7 +296,12 @@ async def character_weapon_guide(nanoka_id: str) -> CharacterWeaponGuideRead:
         weapons=[
             WeaponRecommendationRead(
                 position=w.position,
-                weapon_id=w.weapon_id,
+                # **Null rather than dropped** when this pin does not have the weapon. KQM's
+                # sentence and their ordering are still true; what is missing is a card to
+                # attach them to, and that is a fact about the pin. Dropping the row would
+                # quietly shorten a cited list.
+                weapon_id=weapon_rows.get(w.weapon_nanoka_id),
+                weapon_nanoka_id=w.weapon_nanoka_id,
                 weapon_name=w.weapon_name,
                 note=w.note,
                 playstyle=w.playstyle,
@@ -293,7 +315,10 @@ async def character_weapon_guide(nanoka_id: str) -> CharacterWeaponGuideRead:
                 kind=e.kind,
                 as_written=e.as_written,
                 note=e.note,
-                set_id=e.set_id,
+                set_id=(
+                    set_rows.get(e.set_nanoka_id) if e.set_nanoka_id is not None else None
+                ),
+                set_nanoka_id=e.set_nanoka_id,
                 set_name=e.set_name,
                 pieces=e.pieces,
                 playstyle=e.playstyle,
