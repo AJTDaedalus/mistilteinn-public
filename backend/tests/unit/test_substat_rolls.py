@@ -8,9 +8,19 @@ count is the number people judge an artifact by, and a confident wrong one is wo
 
 from __future__ import annotations
 
+from itertools import combinations_with_replacement
+
 import pytest
 
-from app.services.substat_rolls import _budget, _displayed, analyse, resolve_artifact
+from app.services.substat_rolls import (
+    _budget,
+    _denoise,
+    _displayed,
+    _max_rolls,
+    _tiers_for,
+    analyse,
+    resolve_artifact,
+)
 
 #: 5★ CRIT DMG: 5.44 / 6.22 / 6.99 / 7.77 percent.
 CRIT_DMG_MAX = 0.0777
@@ -322,6 +332,87 @@ def test_a_flat_stat_still_displays_whole() -> None:
     """Flat ATK and HP are shown as integers, and the same rounding has to apply to them."""
     assert _displayed(16.0, fraction=False) == 16
     assert _displayed(16.5, fraction=False) == 17
+
+
+def test_a_four_roll_sum_on_the_boundary_matches() -> None:
+    """**The one two users hit, and the reason the tier de-noise moved.**
+
+    `6.22 + 6.22 + 6.22 + 6.99 = 25.65`, which the game displays as `25.7%` and an export
+    writes as `0.257`. An ordinary four-roll CRIT DMG line.
+
+    De-noising the *sum* to six decimal places is enough for one roll and not for four: the
+    stored total is `25.6499994…`, which rounds to `25.649999` and half-ups to `25.6`. So the
+    line matched nothing, and `good_import_service` refused the whole piece as a scanner
+    error. Two separate users reported it — twice on one export, which is the tell that it was
+    arithmetic rather than a scanner slip.
+    """
+    found = analyse(stars=5, stat="FIGHT_PROP_CRITICAL_HURT", value=0.257, level=20)
+
+    assert found.rolls == 4
+
+
+def test_the_neighbour_below_it_still_matches_too() -> None:
+    """25.6% is `5.44 + 5.44 + 6.99 + 7.77` and was reachable before the fix.
+
+    Pinned beside its neighbour because a de-noise that moved *every* sum up by a tenth would
+    satisfy the test above and be just as wrong. The two values are adjacent and both real.
+    """
+    assert analyse(stars=5, stat="FIGHT_PROP_CRITICAL_HURT", value=0.256, level=20).rolls == 4
+
+
+def _reachable(stars: int, stat: str, tiers: tuple[float, ...]) -> set[tuple[int, float]]:
+    """Every `(count, displayed total)` these tier values can produce at this rarity."""
+    fraction = tiers[-1] < 1.0
+    return {
+        (n, _displayed(sum(combo), fraction=fraction))
+        for n in range(1, _max_rolls(stars, None) + 1)
+        for combo in combinations_with_replacement(tiers, n)
+    }
+
+
+def test_every_sum_the_stored_tiers_reach_is_one_the_published_tiers_reach() -> None:
+    """**The invariant, rather than the instance.**
+
+    The 25.7% case was found by a user rather than by a test, and a test pinning 25.7 would
+    not have found the other twenty-six values in the same state. This is the general claim:
+    for every rarity, stat and legal roll count, a sum of the tiers *as stored* must display
+    like a sum of the tiers *as published*.
+
+    Published values are recovered by rounding to the number of decimals the game shows them
+    to — four for a fraction, two for a flat stat — which is deliberately **not** how
+    `_denoise` does it. A check that reproduces the implementation cannot disagree with it.
+    """
+    for stars in (1, 2, 3, 4, 5):
+        for stat, tiers in _tiers_for(stars).items():
+            fraction = tiers[-1] < 1.0
+            published = tuple(round(v, 4 if fraction else 2) for v in tiers)
+
+            assert _reachable(stars, stat, tiers) == _reachable(stars, stat, published), (
+                f"{stars}star {stat}"
+            )
+
+
+def test_the_invariant_notices_a_tier_that_is_off() -> None:
+    """**The planted failure.** A check that can only return one answer is not a check.
+
+    Nudging one 5-star CRIT DMG tier by a millionth is smaller than the float32 noise the real
+    table carries, and the test above must still see it — otherwise it would have passed
+    against the noisy tiers that caused the bug.
+    """
+    tiers = _tiers_for(5)["FIGHT_PROP_CRITICAL_HURT"]
+    nudged = (tiers[0], tiers[1] - 1e-6, *tiers[2:])
+
+    assert _reachable(5, "FIGHT_PROP_CRITICAL_HURT", nudged) != _reachable(
+        5, "FIGHT_PROP_CRITICAL_HURT", tiers,
+    )
+
+
+def test_a_tier_is_denoised_to_the_value_the_game_publishes() -> None:
+    """Six significant figures, not six decimal places — the distinction is the whole fix."""
+    assert _denoise(0.062199998646974564) == 0.0622
+    assert _denoise(298.7500000001) == 298.75
+    # Wide enough not to touch a real value: a flat HP roll has five significant figures.
+    assert _denoise(0.05249999836) == 0.0525
 
 
 def test_a_value_no_combination_reaches_is_still_unknown() -> None:

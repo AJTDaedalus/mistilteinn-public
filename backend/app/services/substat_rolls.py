@@ -18,12 +18,19 @@ to the same precision the export uses, and compare exactly.** `getSubstatRolls`
 keyed by that rounded string and returns every decomposition. Same idea, computed on demand
 rather than precomputed.
 
-Measured over a real 2,370-artifact export (7,878 substats): **85.0%** of substats decompose
-exactly one way — so every roll value and its quality is known — **10.2%** more admit several
-decompositions that agree on the *count*, and **4.8%** match nothing in the table.
-These are the numbers from **after** the depot and rarity-cap fixes; an earlier pass
-reported 84.9/8.9/2.8/3.4 against the same corpus and is superseded — two measurements of
-one file that a reader cannot tell apart is worse than one.
+Measured over a real 2,370-artifact export (7,878 substats), calling `analyse` per line with
+the piece's rarity and level and no joint solve: **88.1%** decompose exactly one way — so
+every roll value and its quality is known — **10.5%** more admit several decompositions of
+one length, **1.4%** cannot settle a count, and **0** match nothing at all.
+
+Two earlier passes reported 84.9/8.9/2.8/3.4 and 85.0/10.2/4.8 against the same corpus and
+are superseded. Neither is reproducible by the method above and neither said what its method
+was, which is the actual lesson: **two measurements of one file that a reader cannot tell
+apart are worse than one.** The figures here name the call that produces them.
+
+The last of those four buckets is the one that moved and the reason it is worth stating: it
+was **1** line before `_denoise` and is **0** after, and that one line was the 25.7% CRIT DMG
+substat two users had a whole artifact refused for.
 
 ## What it still refuses to do
 
@@ -119,6 +126,37 @@ class SubstatAnalysis:
 _UNKNOWN = SubstatAnalysis(rolls=None, roll_values=None, roll_tiers=None, roll_value=None)
 
 
+#: Significant figures kept when a tier value is read off the snapshot.
+#:
+#: **The tables are float32 and the published values are not.** A true 5★ CRIT DMG roll of
+#: `0.0622` is stored as `0.062199998646974564`; six significant figures recovers `0.0622`
+#: exactly, and no real value has enough of them to be changed by it — the widest is a flat HP
+#: roll at five (`298.75`). float32 carries about 7.2, so this sits between the noise and the
+#: data with room on both sides.
+_TIER_FIGURES = 6
+
+
+def _denoise(value: float) -> float:
+    """One tier value as it was published, with the float32 noise taken off.
+
+    **The noise has to come off the table, not off the sum.** `_displayed` used to de-noise the
+    total to six *decimal places* — an absolute 5e-7, which covers one roll (a 5.25% ATK% tier
+    is off by 1.6e-7) and does not cover four, because the error is per-roll and accumulates:
+
+        6.22 + 6.22 + 6.22 + 6.99 = 25.65        the game displays 25.7
+        stored:                     25.6499994…  → round(…, 6) = 25.649999 → 25.6
+
+    So a perfectly ordinary four-roll CRIT DMG line matched nothing, and
+    `good_import_service` refused the whole piece as a scanner error. Measured across every
+    legal (rarity, stat, count) combination, **38 of 4,170 landed on the wrong side** —
+    sixteen of them CRIT DMG, the stat people reroll into hardest. Two users hit it.
+
+    Cleaning each tier once makes every sum of them exact, at any count, for free.
+    `docs/RESEARCH_substat_rounding.md`.
+    """
+    return float(f"{value:.{_TIER_FIGURES}g}")
+
+
 @lru_cache(maxsize=16)
 def _tiers_for(stars: int) -> dict[str, tuple[float, ...]]:
     """`{FIGHT_PROP_*: the values that stat can roll}` at this rarity.
@@ -148,7 +186,10 @@ def _tiers_for(stars: int) -> dict[str, tuple[float, ...]]:
         for prop, values in per_prop.items():
             if len(set(values)) > 1:
                 table[prop].extend(values)
-    return {prop: tuple(sorted(set(values))) for prop, values in table.items()}
+    return {
+        prop: tuple(sorted({_denoise(value) for value in values}))
+        for prop, values in table.items()
+    }
 
 
 @lru_cache(maxsize=64)
@@ -178,32 +219,31 @@ def _quality(tiers: tuple[float, ...], value: float) -> int:
     return round(tiers.index(value) * TOP_QUALITY / (len(tiers) - 1))
 
 
-#: Enough places to erase float32 noise from the snapshot and nowhere near enough to change a
-#: real value. The tables are stored as float32, so an exact 5.25% arrives as 5.249999836.
+#: Places kept before the half-up rounding, to erase the float noise a *scaled export value*
+#: carries — `0.053 * 100` is `5.300000000000001`. **Not the tier de-noise**: that is
+#: `_denoise`, applied once to the table, because noise on a tier multiplies with the roll
+#: count and noise on an export value does not. Conflating the two is the bug `_denoise`
+#: documents.
 _NOISE_PLACES = 6
 
 
 def _displayed(value: float, *, fraction: bool) -> float:
     """The number as an export writes it: a percentage to one decimal, a flat stat whole.
 
-    **Half-up, and de-noised first.** Both matter, and together they were the whole of the
-    grey-bar problem:
-
-    - the tier tables are float32, so a true 5.25% ATK% roll is stored as `0.05249999836`;
-    - Python's `round` is banker's, so `round(5.249999836, 1)` is `5.2`.
-
-    The game displays `5.3` and the export writes `0.053`, so the comparison failed and the
-    line was reported as matching no combination at all. Measured on a real 2,370-piece
-    inventory, **the four commonest 5-star ATK% values in the export are 0.041 / 0.047 /
-    0.053 / 0.058 against tiers of 0.0408 / 0.0466 / 0.0525 / 0.0583** — two of the four
-    landed on a rounding boundary and never matched.
+    **Half-up.** Python's `round` is banker's, so `round(5.25, 1)` is `5.2` where the game
+    shows `5.3`. Measured on a real 2,370-piece inventory, **the four commonest 5-star ATK%
+    values in the export are 0.041 / 0.047 / 0.053 / 0.058 against tiers of 0.0408 / 0.0466 /
+    0.0525 / 0.0583** — two of the four land on a boundary and rounded the wrong way, so the
+    line matched no combination at all and the card drew a grey bar.
 
     This is what Genshin Optimizer does and why it has bars where we had gaps: it compares the
     **displayed** value, and the displayed value is the one the game rounded, not the one the
     table stores.
+
+    The tier values reaching it are already clean — see `_denoise`, which is where the float32
+    noise comes off, and why it cannot come off here.
     """
     scaled = value * 100 if fraction else value
-    # De-noise before rounding, or the boundary case rounds the wrong way.
     quantum = Decimal("0.1") if fraction else Decimal("1")
     return float(
         Decimal(repr(round(scaled, _NOISE_PLACES))).quantize(quantum, rounding=ROUND_HALF_UP),

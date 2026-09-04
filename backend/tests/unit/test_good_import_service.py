@@ -22,21 +22,37 @@ def _artifact(substats: list[dict], *, rarity: Rarity = Rarity.FIVE_STAR, level:
 
 
 def test_a_value_no_combination_reaches_is_refused() -> None:
-    """**Owner request, and a real piece.**
+    """**Owner request.** A value the tiers cannot sum to at any legal count is a scanner
+    error, and refused rather than imported, because every number computed from the piece
+    would inherit the fault.
 
-    One artifact in a 2,370-piece Irminsul export carries a CRIT DMG substat of **25.7%**,
-    which no combination of the tiers reaches at any legal roll count — the nearest four-roll
-    sums are 25.6 and 26.4. It is present verbatim in the GOOD file, `elixerCrafted` is false,
-    and no game mechanic explains it, so it is a scanner error.
+    26.0% CRIT DMG: the reachable sums either side are 25.7 and 26.4, at every count from one
+    roll to six. Plausible to look at and arithmetically impossible, which is the whole shape
+    this check is for.
+    """
+    found = _impossible_substats(
+        _artifact([{"stat": "FIGHT_PROP_CRITICAL_HURT", "value": 0.260}]),
+    )
 
-    Refused rather than imported, because every number computed from the piece would inherit
-    the fault.
+    assert found == [("FIGHT_PROP_CRITICAL_HURT", 0.260)]
+
+
+def test_a_four_roll_boundary_is_imported_rather_than_called_a_scanner_error() -> None:
+    """**Two users lost pieces to this, and the docstring here used to cite it as evidence.**
+
+    25.7% CRIT DMG is `6.22 x3 + 6.99`. It was refused because the float32 de-noise was
+    calibrated for a single roll, so the stored four-roll total came to 25.6499994 and matched
+    nothing — see `substat_rolls._denoise`. The message told users to re-scan a piece that was
+    already correct.
+
+    Pinned here rather than only in `test_substat_rolls.py` because this is the surface where
+    the wrong answer cost something: the whole artifact was dropped, not the line.
     """
     found = _impossible_substats(
         _artifact([{"stat": "FIGHT_PROP_CRITICAL_HURT", "value": 0.257}]),
     )
 
-    assert found == [("FIGHT_PROP_CRITICAL_HURT", 0.257)]
+    assert found == []
 
 
 def test_an_ambiguous_line_is_not_an_impossible_one() -> None:
@@ -79,7 +95,7 @@ def test_a_malformed_substat_is_left_to_the_parser() -> None:
 
 
 def test_the_reason_names_the_values_so_they_can_be_found_in_game() -> None:
-    reason = _impossible_reason([("FIGHT_PROP_CRITICAL_HURT", 0.257)])
+    reason = _impossible_reason([("FIGHT_PROP_CRITICAL_HURT", 0.260)])
 
-    assert "FIGHT_PROP_CRITICAL_HURT=0.257" in reason
+    assert "FIGHT_PROP_CRITICAL_HURT=0.26" in reason
     assert "Re-scan" in reason

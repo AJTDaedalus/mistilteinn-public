@@ -301,14 +301,19 @@ def _impossible_substats(artifact: ParsedArtifact) -> list[tuple[str, float]]:
     """Substats whose value no combination of rolls can produce, at any legal count.
 
     **Not a rounding complaint.** `substat_rolls` compares the *displayed* value, the way the
-    game rounds it, so a legitimate roll matches even on a boundary — that fix took the
-    undetermined share of a real 2,370-piece inventory from 3.5% to 0.04%. What is left is a
-    value the game could not have produced.
+    game rounds it, so a legitimate roll matches even on a boundary. What is left is a value
+    the game could not have produced.
 
-    Exactly one piece in that inventory has one: a CRIT DMG substat of **25.7%**, where the
-    nearest reachable four-roll sums are 25.6 and 26.4. It is present verbatim in the GOOD
-    file, so it came from the scanner rather than from us — a one-digit slip is the likely
-    story, and `elixerCrafted` is false, so no game mechanic explains it.
+    **That claim was false twice, and both times this check refused real pieces.** The first
+    was single-roll boundaries; the second was multi-roll ones — a CRIT DMG line of **25.7%**
+    is `6.22 x3 + 6.99`, and two users had their pieces dropped for it before `_denoise` moved
+    the float32 correction onto the table where it belongs. The sentence that used to stand
+    here named 25.7 as the one genuine scanner error in a 2,370-piece inventory, and it was
+    this bug's own symptom written down as evidence.
+
+    So the standard for adding to the "impossible" story is a piece re-checked against the
+    tables *after* the arithmetic is right, not a value that looked odd once.
+    `docs/RESEARCH_substat_rounding.md`.
     """
     # `rarity` is a `Rarity` enum and `substats` is a tuple of dicts — not an int and not
     # pairs. Getting that wrong flagged all 2,370 pieces as impossible, which is why this ran
