@@ -77,10 +77,15 @@ services:
       # first finding of fairy's pre-merge review of this same feature.
       # `backend/tests/unit/test_settings_reach_the_container.py` reads this file and fails
       # if a setting is missing.
-      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-console}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-console}   # `resend` once the key is set; see DEPLOY.md §4a
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM: ${EMAIL_FROM:-}
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:4201}
+      # **No localhost fallback in production.** The dev file defaults this to
+      # `localhost:4201`, and inheriting that here would point every verification link at the
+      # recipient's own machine — the single most likely way this feature fails silently.
+      # Unset resolves to the real origin instead, and `email_preflight` refuses to boot on
+      # anything local-looking regardless.
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://mistilteinn.aetherus.dev}
       REGISTRATION_OPEN: ${REGISTRATION_OPEN:-true}
       AUTO_APPROVE_ON_VERIFY: ${AUTO_APPROVE_ON_VERIFY:-false}
       EMAIL_VERIFY_TTL_SECONDS: ${EMAIL_VERIFY_TTL_SECONDS:-86400}

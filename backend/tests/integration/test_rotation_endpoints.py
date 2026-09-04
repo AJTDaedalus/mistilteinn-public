@@ -1115,3 +1115,49 @@ async def test_a_function_inside_a_block_is_still_offered(
     )
 
     assert [f["name"] for f in body["functions"]] == ["later"]
+
+
+async def test_the_sixth_import_in_five_minutes_is_throttled_with_an_explanation(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """Owner, 2026-09-04: five back to back, then one a minute, with a warning.
+
+    **Driven through the endpoint** rather than only against the throttle, because the unit
+    tests cannot show that the decision is wired to the handler, that the status is 429, or
+    that the explanation survives into the response body — which is the part the user reads.
+
+    The throttle is process-wide by design, so this resets it first: another test in this
+    file imports successfully and would otherwise have spent part of the allowance.
+
+    **`reset()`, not `forget(key)`.** The first attempt passed the caller's *email* while the
+    throttle keys on the user id, so it cleared nothing — and passed anyway, because nothing
+    else had spent the allowance yet. A test whose isolation is decorative is worse than one
+    with none, since it fails later for a reason that looks unrelated.
+    """
+    from app.services.import_throttle import BURST, import_throttle
+
+    config = "active barbara;\nbarbara skill;\n"
+    app = authed_client._transport.app
+    app.dependency_overrides[get_share_transport] = lambda: _StubShare(
+        {"config_file": config},
+    )
+
+    import_throttle.reset()
+    try:
+        codes = []
+        for _ in range(BURST + 1):
+            response = await authed_client.post(f"{ROTATIONS}/import/link", json={
+                "team_id": scene.team_id, "link": "https://gcsim.app/db/kDHmWKmfgqtF",
+            })
+            codes.append(response.status_code)
+        refused = response
+    finally:
+        app.dependency_overrides.pop(get_share_transport, None)
+
+    assert codes[:BURST] == [200] * BURST, f"the burst should pass freely, got {codes}"
+    assert codes[BURST] == 429
+
+    detail = refused.json()["detail"]
+    assert "gcsim" in detail, "the message must say whose servers this costs"
+    assert "one a minute" in detail
+    assert int(refused.headers["Retry-After"]) > 0

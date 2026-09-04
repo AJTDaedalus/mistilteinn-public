@@ -103,10 +103,20 @@ Open registration turns it into a free proxy pointed at gcsim's servers, and the
 already ruled on exactly this (2026-09-02): *"I don't want to push our compute load to them."*
 
 **This is mistilteinn's version of fairy's optimizer row**, and it is the one quota that is
-about somebody else's bill rather than ours. Shipped as **5/hour per account**; the daily
-ceiling the first draft of this section promised is **OQ-OR3**, because counting imports needs
-a column distinguishing them from hand-authored rotations and inventing one mid-change was the
-wrong trade.
+about somebody else's bill rather than ours.
+
+**Owner ruling, 2026-09-04:** *"we don't need to put a limit on daily cap, but if a user does
+more than 5 rotation imports in 5 minutes we should give them a warning and rate limit them to
+one rotation per minute."* So: a burst of five back to back, then a one-minute floor, and a
+message either way. That closes **OQ-OR3** by removing the need for it — a daily ceiling would
+have required a column marking a rotation as imported, and a throttle on *requests* needs no
+such thing.
+
+It is a **courtesy throttle, not a security boundary**: state is per worker and in memory, so
+two workers mean roughly twice these numbers and a deploy forgets everything. Acceptable for
+keeping an enthusiastic user from hammering gcsim; it would not be acceptable for a control
+that mattered, and `app/services/import_throttle.py` says so at the top so nobody later
+mistakes it for one.
 
 ### 3.3 Row quotas, sized to this app's real inventory
 
@@ -120,7 +130,7 @@ artifacts arrive in one bulk GOOD import rather than one at a time.
 | Builds per user | 500 | 6.6× the owner's 75, and above one build per catalogue character |
 | Teams per user | 200 | |
 | Rotations per user | 500 | |
-| `rotations/import/link` | **5/hour per account** | somebody else's servers (§3.2). The daily cap needs a `source` column that does not exist — **OQ-OR3** |
+| `rotations/import/link` | **5 per 5 min, then 1/min** | somebody else's servers (§3.2). Owner ruled out a daily cap, 2026-09-04 |
 | `POST /sim-runs` | *not capped* | writes a corpus row per search; bounded today by `WRITE_LIMIT` and left there rather than guessed at |
 
 Exceeding one returns `409` naming the limit — a real user hitting a cap deserves to know
@@ -184,11 +194,9 @@ TDD, and **no test may make a network call** — the unit lane already blocks `s
 phase below works with `EMAIL_PROVIDER=console`; only actual delivery to a real inbox needs the
 API key and the SPF/DKIM/DMARC records. The code does not care which, and the flag is the seam.
 
-**OQ-OR3 — a `source` column on `Rotation`, so the gcsim import cap can be counted in the
-database.** §3.2's cap shipped as a per-account rate limit only. A daily ceiling needs to
-count *imports*, and nothing distinguishes an imported rotation from an authored one — so
-counting rows created in the last day would cap somebody's own authoring, which is wrong. One
-nullable column and a migration; deliberately not folded into this change.
+~~**OQ-OR3** — a `source` column so the import cap could be counted daily.~~ **Closed
+2026-09-04 by owner ruling**: no daily cap. The burst-then-interval throttle in §3.2 limits
+*requests*, which needs no column at all.
 
 **OQ-OR2 — Turnstile keys.** Same shape: `TURNSTILE_SECRET_KEY=""` skips verification
 entirely, so the code ships and the layer switches on when the keys exist.

@@ -76,6 +76,7 @@ from app.services.gcsim_share import (
     ShareTransport,
     fetch_config,
 )
+from app.services.import_throttle import import_throttle
 from app.services.rotation_compiler import (
     RotationCompileError,
     compile_rotation,
@@ -549,19 +550,13 @@ def _tree_nodes(nodes: list) -> list[tuple[tuple, object]]:
 # a free proxy pointed at gcsim: an account is no longer something a human granted. The owner
 # ruled on exactly this, 2026-09-02 — *"I don't want to push our compute load to them."*
 #
-# Per account rather than per IP, because a bot farm's cost to gcsim scales with accounts.
+# Per account rather than per IP, because the cost to gcsim scales with accounts.
 #
-# **A rate limit and not a daily database-counted cap**, which the design asked for and this
-# deliberately does not implement: `Rotation` carries no column saying an entry arrived from a
-# link, so counting rows created in the last day would conflate fetched rotations with
-# hand-authored ones — and capping somebody's own authoring at twenty a day would be wrong.
-# The column is worth adding; inventing it inside this change was not. `OQ-OR3`.
-#
-# What that leaves is honest rather than complete: slowapi's storage is per worker and in
-# memory, so production's two workers make this really 10/hour per account, and a deploy
-# resets it. Still a real bound on what any one account can send gcsim's way.
-# `DESIGN_open_registration.md` §3.2.
-@limiter.limit("5/hour")
+# **No daily cap** (owner, 2026-09-04) and no `@limiter.limit`: the shape asked for is five
+# imports back to back, then one a minute with a message saying so. Two slowapi decorators
+# cannot express that — every decorator binds on every request, so a `1/minute` alongside a
+# `5/5minutes` would refuse the second import of a legitimate burst. `import_throttle` says
+# the rest.
 async def import_from_gcsim_link(
     request: Request,  # slowapi reads the client address off it
     body: RotationImportLinkRequest,
@@ -581,6 +576,16 @@ async def import_from_gcsim_link(
     and the paste box beside it is the fallback. `gcsim_share` says the rest, including why
     this takes an id and never a URL.
     """
+    # Keyed on the account, because this fetches from somebody else's servers and the cost
+    # follows the person rather than the address they came from.
+    decision = import_throttle.check(str(repo.owner_id))
+    if not decision.allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=decision.warning,
+            headers={"Retry-After": str(decision.retry_after)},
+        )
+
     roster = await repo.character_rows(body.team_id)
     _require_roster(roster, body.team_id)
     try:

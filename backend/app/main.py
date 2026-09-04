@@ -19,6 +19,7 @@ from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.repositories.auth_token import AuthTokenRepository
 from app.repositories.session import SessionRepository
 from app.repositories.user import UserRepository
+from app.services.email_preflight import enforce_production_email
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,12 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     jobs. Searching moved to the browser (DESIGN §3.5), where a search interrupted by a
     closed tab needs no server-side reconciliation.
     """
+    # **Before the database, because it needs nothing and refuses fastest.** A production
+    # deploy whose mail cannot work should fail here rather than serve a signup flow that
+    # answers 202 and delivers nothing. `services/email_preflight.py` says why refusing to
+    # boot is the right severity.
+    enforce_production_email(settings)
+
     await wait_for_db()
     async with async_session_factory() as db:
         deleted = await SessionRepository(db).delete_expired()
