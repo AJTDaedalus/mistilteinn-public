@@ -41,6 +41,37 @@ def is_mannequin(nanoka_id: str | None) -> bool:
     return bool(nanoka_id) and nanoka_id.startswith(MANNEQUIN_ID_PREFIXES)  # type: ignore[union-attr]
 
 
+def is_unreleased(element: object | None, talent_count: int | None) -> bool:
+    """Is this catalogue row a character the game has not shipped yet?
+
+    **A separate predicate from `is_mannequin`, deliberately.** Both mean "cannot be owned",
+    for different reasons — a mannequin will never be a character, and one of these will be.
+    Folding them together would make the mannequin test, which asserts *these fourteen rows are
+    the mannequins*, quietly stop saying that.
+
+    **Not a release date.** Every Traveler row carries `release_date` `1970-01-01`, the epoch
+    sentinel nanoka gives a character with no date, so a date comparison excludes all sixteen.
+
+    **Both halves, and the conjunction is the safety.** "No talents" is the property that
+    actually matters — a character with none cannot be built, damaged-calculated or compiled to
+    gcsim — but on its own it is the quiet, one-directional failure this repo keeps warning
+    about: a seed whose *detail* pass failed leaves real characters talentless, and a roster
+    that silently dropped them is the exact defect `DESIGN_character_roster.md` was written to
+    fix. A missing **element** cannot happen that way. Element is read from the index row and
+    talents from the detail fetch, so a half-imported real character has an element and no
+    talents, and is kept.
+
+    Exactly two rows are missing both at nanoka 7.0.51 — `10000134` and `10000135`, the two
+    crossbow Traveler bodies, which rendered as two identical blank rows on the roster tab.
+    When they ship, an element and talents arrive with them and they become ownable with no
+    code change, which is why this is a property and not a list of ids that would go stale.
+
+    A `talent_count` of `None` means the caller did not count, and is not an answer: it reads
+    as *released*, so a query that forgot to join cannot empty the roster.
+    """
+    return element is None and talent_count == 0
+
+
 @dataclass(frozen=True, slots=True)
 class RosterRow:
     """One catalogue character, and what this user has said about them.
