@@ -247,6 +247,53 @@
         ]
       }
     },
+    "/api/v1/auth/me/avatar": {
+      "put": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Set Avatar",
+        "description": "Choose the character whose headshot stands in for this account, or clear it.\n\n**A 404 for an id that names nothing, rather than a quiet no-op.** Accepting it would answer\n200 to a save that changed nothing, and the page would go on showing the avatar the user\nhad just replaced with no indication of why.\n\n`character_id: null` clears it \u2014 the *Clear* button \u2014 so setting and unsetting are one\ncode path. `DESIGN_user_avatar.md` \u00a74.",
+        "operationId": "set_avatar_api_v1_auth_me_avatar_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAvatarRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/teams": {
       "get": {
         "tags": [
@@ -4740,6 +4787,36 @@
         "title": "AvailableHitRead",
         "description": "One hit a build can be asked about, in the terms `HitSpec.talent` takes.\n\nOffered from the **same parse** `resolve_talent_hit` uses, so a page built from this\ncannot name a hit the resolver then refuses \u2014 the picker-matches-validator guarantee this\nrepo applies wherever a user chooses from a list."
       },
+      "AvatarRead": {
+        "properties": {
+          "character_id": {
+            "type": "string",
+            "title": "Character Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon"
+          }
+        },
+        "type": "object",
+        "required": [
+          "character_id",
+          "name"
+        ],
+        "title": "AvatarRead",
+        "description": "The character standing in for an account, as the client needs it to draw one.\n\n**One optional object rather than three flat nullable fields.** `avatar_character_id`,\n`avatar_name` and `avatar_icon` side by side are three things that can disagree; this is\neither present or it is not.\n\n`name` is here because the client needs it for the image's `alt` text and for the line\nnaming who is shown \u2014 and a bare id would make the account page fetch the whole catalogue\nbefore it could name what it is already displaying. `icon` may still be null: it is a\nseeding gap for a handful of rows, and `CatalogueIcon` renders nothing at all for one."
+      },
       "Binary": {
         "properties": {
           "kind": {
@@ -7630,6 +7707,16 @@
           },
           "status": {
             "$ref": "#/components/schemas/UserStatus"
+          },
+          "avatar": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AvatarRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -9394,6 +9481,28 @@
         ],
         "title": "SearchContextRead",
         "description": "Everything `search.ts`'s `SearchContext` needs except the inventory.\n\nO.1. The inventory has its own home \u2014 `/artifacts/inventory`, which is ETag'd because the\nbrowser holds it across searches (OQ-S3). This is the per-build, per-hit half.\n\n**Published, not recomputed.** Every figure here is one the server already works out for\n`/explain`: the base from `build_assembler.base_contributions`, set bonuses from the same\nmodule, the hit through `resolve_talent_hit`. A second assembly of \"what a build starts\nfrom\" is how two definitions of it begin \u2014 which `build_assembler` records having already\nhappened once.\n\n`base` is keyed by **kernel quantity**, which is the reason this endpoint exists at all:\nthe kernel reads `base_atk` and the source spells it `FIGHT_PROP_BASE_ATTACK`, and the\nmapping between them decides what every stat means."
+      },
+      "SetAvatarRequest": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "character_id"
+        ],
+        "title": "SetAvatarRequest",
+        "description": "Body for `PUT /auth/me/avatar`.\n\n`None` clears the avatar, so setting and unsetting are one code path with one shape \u2014 a\nseparate `DELETE` route would be a second path to keep honest for no gain.\n\n**Required, and unknown fields are refused**, which for a nullable field is not\nbelt-and-braces. With a `None` default and Pydantic's `extra=\"ignore\"`, a client sending\n`{\"characterId\": \"\u2026\"}` \u2014 one camelCase slip \u2014 validates, lands in the clear branch, and\n**erases the avatar with a 200**. The handler's own docstring refuses to no-op on an\nunknown id for a weaker version of this reason; here the 200 changed something nobody\nasked to change. Both shapes are a 422 now. Same rule as `BuildCreate`."
       },
       "SetEffectRead": {
         "properties": {

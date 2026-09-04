@@ -27,6 +27,13 @@ export const routes: Routes = [
     canMatch: [requireApproved],
   },
   {
+    // The first account surface this app has had. The header chip could sign you out and
+    // nothing else — your own email appeared only inside it, truncated at 16 characters.
+    path: 'account',
+    loadComponent: () => import('./pages/account/account').then((m) => m.AccountPage),
+    canMatch: [requireApproved],
+  },
+  {
     path: 'characters',
     loadComponent: () =>
       import('./pages/catalogue/characters').then((m) => m.CharactersPage),

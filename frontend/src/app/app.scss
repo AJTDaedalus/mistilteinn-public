@@ -101,6 +101,21 @@
   border-left: 1px solid var(--surface-rule);
 }
 
+/* The face and the name are one target. A separate link on a 28px picture is a second
+   click target for the same destination, and the smaller of the two is the one people miss. */
+.identity-chip__you {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-decoration: none;
+  transition: color var(--t-fast) var(--ease);
+
+  &:hover .identity-chip__name,
+  &.active .identity-chip__name {
+    color: var(--brass);
+  }
+}
+
 .identity-chip__name {
   font-size: var(--text-sm);
   color: var(--ink-dim);

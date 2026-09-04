@@ -30,7 +30,15 @@
           <a routerLink="/enemies" routerLinkActive="active">Enemies</a>
         </span>
         <span class="identity-chip">
-          <span class="identity-chip__name mono">{{ auth.me()?.label || auth.me()?.email }}</span>
+          <!-- The name is the link, and the face rides beside it. `CatalogueIcon` renders
+               nothing at all when there is no avatar or its art is missing, so the chip
+               degrades to exactly what it was before this feature. -->
+          <a class="identity-chip__you" routerLink="/account" routerLinkActive="active">
+            @if (auth.me()?.avatar; as avatar) {
+              <catalogue-icon [icon]="avatar.icon" [alt]="avatar.name" [size]="28" />
+            }
+            <span class="identity-chip__name mono">{{ auth.me()?.label || auth.me()?.email }}</span>
+          </a>
           <button class="identity-chip__signout" (click)="signOut()">Sign out</button>
         </span>
       </nav>

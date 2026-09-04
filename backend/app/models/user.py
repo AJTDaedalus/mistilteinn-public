@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime  # noqa: TC003 — SQLAlchemy resolves Mapped[datetime.datetime] at runtime
 
-from sqlalchemy import DateTime, Index, String
+from sqlalchemy import DateTime, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, validates
 
 from app.models.base import Base, TimestampMixin, enum_column, uuid_pk
@@ -60,6 +60,21 @@ class User(TimestampMixin, Base):
     )
     approved_at: Mapped[datetime.datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
+    )
+
+    #: The character whose headshot stands in for this account, or null for nobody yet.
+    #:
+    #: **A foreign key, not the `UI_AvatarIcon_*` basename.** A stored basename is an
+    #: unvalidated string that no constraint keeps true, and nanoka's art names have changed
+    #: before — a stale one fails silently, because `CatalogueIcon` hides an image that 404s
+    #: and a broken avatar is indistinguishable from no avatar. The key means the picture
+    #: always comes from a real catalogue row.
+    #:
+    #: **`SET NULL`, where `builds.character_id` is `CASCADE`.** A build is *about* its
+    #: character; an avatar is decoration on an account, and no `DELETE` against the
+    #: catalogue may reach a user row. `DESIGN_user_avatar.md` §3.
+    avatar_character_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("characters.id", ondelete="SET NULL"), nullable=True,
     )
 
     __table_args__ = (Index("ix_users_status", "status"),)

@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 
 import { apiErrorMessage } from '../../api/api-error';
 import { CardPicker, type CardFilter, type CardOption } from '../../shared/card-picker/card-picker';
+import { characterCardFilters, characterCardOptions } from '../../shared/character-cards';
 import { ElementChip } from '../../shared/element/element';
 import { CatalogueIcon } from '../../shared/icon/icon';
 import { Combobox, type ComboboxOption } from '../../shared/combobox/combobox';
@@ -238,46 +239,14 @@ export class BuildsPage implements OnInit {
   });
 
   /**
-   * The character grid.
+   * The character grid — the same one `/account` draws, built by the same function.
    *
-   * Filters are the two axes a player narrows by — vision and weapon class — and both are the
-   * chips the picker draws from `tags`. Rarity is deliberately not one: a 4★ character is not
-   * a worse build subject, and offering it as a filter implies it is.
+   * It was a private copy here and a verbatim second copy there; `shared/character-cards`
+   * carries the rationale for the chips and is now the only place that decides them.
    */
-  protected readonly characterOptions = computed<CardOption[]>(() =>
-    this.characters().map((c) => ({
-      value: c.id,
-      label: c.name,
-      icon: c.icon,
-      detail: c.weapon_type_display,
-      tags: { element: c.element ?? '', weapon: c.weapon_type ?? '' },
-    })),
-  );
+  protected readonly characterOptions = computed(() => characterCardOptions(this.characters()));
 
-  protected readonly characterFilters = computed<CardFilter[]>(() => {
-    const elements = new Map<string, string | null>();
-    const weapons = new Map<string, { label: string; icon: string | null }>();
-    for (const c of this.characters()) {
-      if (c.element && !elements.has(c.element)) elements.set(c.element, c.element_icon ?? null);
-      if (c.weapon_type && !weapons.has(c.weapon_type)) {
-        weapons.set(c.weapon_type, {
-          label: c.weapon_type_display, icon: c.weapon_type_icon ?? null,
-        });
-      }
-    }
-    return [
-      {
-        group: 'element',
-        label: 'Vision',
-        options: [...elements].sort().map(([value, icon]) => ({ value, label: value, icon })),
-      },
-      {
-        group: 'weapon',
-        label: 'Weapon',
-        options: [...weapons].sort().map(([value, { label, icon }]) => ({ value, label, icon })),
-      },
-    ];
-  });
+  protected readonly characterFilters = computed(() => characterCardFilters(this.characters()));
 
   /**
    * The weapon grid.

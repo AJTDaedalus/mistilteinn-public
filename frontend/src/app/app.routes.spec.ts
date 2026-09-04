@@ -19,24 +19,26 @@ import { routes } from './app.routes';
  * exists in that state. Reading the template as text would have been simpler and would also
  * have passed had the links been placed outside the `@if`, where nobody would see them.
  */
-function renderedShell(): string {
+function shell(me: Record<string, unknown> = { label: 'Tester', email: 't@example.com' }) {
+  TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [App],
     providers: [
       provideRouter([]),
       {
         provide: AuthService,
-        useValue: {
-          status: signal('approved'),
-          me: signal({ label: 'Tester', email: 't@example.com' }),
-          logout: vi.fn(),
-        },
+        useValue: { status: signal('approved'), me: signal(me), logout: vi.fn() },
       },
     ],
   });
   const fixture = TestBed.createComponent(App);
   fixture.detectChanges();
-  return (fixture.nativeElement as HTMLElement).querySelector('.shell__nav')?.innerHTML ?? '';
+  return fixture;
+}
+
+function renderedShell(): string {
+  const el = shell().nativeElement as HTMLElement;
+  return el.querySelector('.shell__nav')?.innerHTML ?? '';
 }
 
 /** Paths that are deliberately not in the nav, and why each one is exempt. */
@@ -79,5 +81,43 @@ describe('app routes', () => {
       expect(reason.length).toBeGreaterThan(10);
       expect(routes.some((route) => (route.path ?? '') === path)).toBe(true);
     }
+  });
+});
+
+/**
+ * The face beside your name in the header.
+ *
+ * `CatalogueIcon` hides itself when art is missing, so an account with no avatar and one whose
+ * image 404s render identically — which is deliberate, and is also why the presence of the
+ * image is asserted here rather than assumed from the field being set.
+ */
+describe('the identity chip', () => {
+  const chip = (me: Record<string, unknown>) =>
+    (shell(me).nativeElement as HTMLElement).querySelector('.identity-chip')!;
+
+  it('draws the chosen character', () => {
+    const el = chip({
+      label: 'Tester', email: 't@example.com',
+      avatar: { character_id: 'c1', name: 'Kamisato Ayaka', icon: 'UI_AvatarIcon_Ayaka' },
+    });
+
+    const img = el.querySelector('img')!;
+    expect(img.getAttribute('src')).toBe('/icons/UI_AvatarIcon_Ayaka.webp');
+    expect(img.getAttribute('alt')).toBe('Kamisato Ayaka');
+  });
+
+  it('is the name alone when nobody has been chosen', () => {
+    // Every account that existed before this feature is in this state, and it is the state
+    // the chip has always been in. It must not gain a hole.
+    const el = chip({ label: 'Tester', email: 't@example.com', avatar: null });
+
+    expect(el.querySelector('img')).toBeNull();
+    expect(el.textContent).toContain('Tester');
+  });
+
+  it('takes you to the account page', () => {
+    const el = chip({ label: 'Tester', email: 't@example.com', avatar: null });
+
+    expect(el.querySelector('a')?.getAttribute('href')).toBe('/account');
   });
 });

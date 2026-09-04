@@ -1,0 +1,65 @@
+<section class="account">
+  <header>
+    <h1>Account</h1>
+    <p class="muted">Who you are here, and the face that stands in for you.</p>
+  </header>
+
+  @if (auth.me(); as me) {
+    <dl class="account__facts">
+      <dt>Email</dt>
+      <dd class="mono">{{ me.email }}</dd>
+      @if (me.label) {
+        <dt>Name</dt>
+        <dd>{{ me.label }}</dd>
+      }
+      <dt>Status</dt>
+      <dd>{{ me.status }}</dd>
+    </dl>
+  }
+
+  <section class="account__avatar">
+    <h2>Avatar</h2>
+    <p class="muted">
+      Any character in the catalogue — this is decoration, so it is not limited to the ones you
+      own.
+    </p>
+
+    <div class="account__chosen">
+      <!-- The headshot itself, large enough to actually see. The picker's trigger names the
+           same choice, but at chip size — and the picture is the thing being chosen. -->
+      @if (avatar(); as chosen) {
+        <catalogue-icon [icon]="chosen.icon" [alt]="chosen.name" [size]="64" />
+        <span class="account__name">{{ chosen.name }}</span>
+      } @else {
+        <!-- Named, not left blank: an empty slot beside a picker reads as a picture that
+             failed to load. -->
+        <span class="account__none muted">Nobody yet</span>
+      }
+    </div>
+
+    @if (loading()) {
+      <p class="muted">Loading characters…</p>
+    } @else if (catalogueError(); as message) {
+      <!-- The picker is what broke, not the page. Everything above still stands. -->
+      <p class="error" role="alert">
+        {{ message }}
+        <button type="button" (click)="load()">Retry</button>
+      </p>
+    } @else {
+      <mist-card-picker
+        label="Character"
+        placeholder="Choose a character…"
+        clearable
+        [options]="characterOptions()"
+        [filters]="characterFilters()"
+        [selected]="selected()"
+        [disabled]="saving()"
+        (selectedChange)="pick($event)"
+      />
+    }
+
+    @if (saveError(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+  </section>
+</section>

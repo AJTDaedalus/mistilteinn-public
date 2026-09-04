@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 from datetime import datetime  # noqa: TC003 — needed at runtime for Pydantic field validation
-from typing import Annotated, Literal
+from typing import TYPE_CHECKING, Annotated, Literal
 
 from pydantic import BaseModel, EmailStr, Field, model_validator
 
 from app.models.enums import UserStatus
 from app.services.password import validate_password
+
+if TYPE_CHECKING:
+    from app.models.character import Character
+    from app.models.user import User
 
 PasswordStr = Annotated[str, Field(min_length=12, max_length=72)]
 
@@ -60,12 +64,73 @@ class LoginResponse(BaseModel):
     expires_at: datetime
 
 
+class AvatarRead(BaseModel):
+    """The character standing in for an account, as the client needs it to draw one.
+
+    **One optional object rather than three flat nullable fields.** `avatar_character_id`,
+    `avatar_name` and `avatar_icon` side by side are three things that can disagree; this is
+    either present or it is not.
+
+    `name` is here because the client needs it for the image's `alt` text and for the line
+    naming who is shown — and a bare id would make the account page fetch the whole catalogue
+    before it could name what it is already displaying. `icon` may still be null: it is a
+    seeding gap for a handful of rows, and `CatalogueIcon` renders nothing at all for one.
+    """
+
+    character_id: str
+    name: str
+    icon: str | None = None
+
+
 class MeResponse(BaseModel):
     """Response for `GET /auth/me` — the current user's identity and account status."""
 
     email: EmailStr
     label: str
     status: UserStatus
+    #: Null until the user picks one, which is every account that existed before this field.
+    avatar: AvatarRead | None = None
+
+    @classmethod
+    def for_user(cls, user: User, character: Character | None) -> MeResponse:
+        """Build the response for `user`, showing `character` as their avatar if there is one.
+
+        The character is passed in rather than read off the user, because `User` deliberately
+        has no ORM relationship to it: lazy loading is refused repo-wide
+        (`test_lazy_loads_are_refused.py`), and one nullable column plus one explicit fetch is
+        less machinery than a guarded relationship that only ever loads one row.
+        """
+        return cls(
+            email=user.email,
+            label=user.label,
+            status=user.status,
+            avatar=(
+                AvatarRead(
+                    character_id=str(character.id), name=character.name, icon=character.icon,
+                )
+                if character is not None
+                else None
+            ),
+        )
+
+
+class SetAvatarRequest(BaseModel):
+    """Body for `PUT /auth/me/avatar`.
+
+    `None` clears the avatar, so setting and unsetting are one code path with one shape — a
+    separate `DELETE` route would be a second path to keep honest for no gain.
+
+    **Required, and unknown fields are refused**, which for a nullable field is not
+    belt-and-braces. With a `None` default and Pydantic's `extra="ignore"`, a client sending
+    `{"characterId": "…"}` — one camelCase slip — validates, lands in the clear branch, and
+    **erases the avatar with a 200**. The handler's own docstring refuses to no-op on an
+    unknown id for a weaker version of this reason; here the 200 changed something nobody
+    asked to change. Both shapes are a 422 now. Same rule as `BuildCreate`.
+    """
+
+    model_config = {"extra": "forbid"}
+
+    character_id: str | None
 
 
 class VerifyEmailRequest(BaseModel):

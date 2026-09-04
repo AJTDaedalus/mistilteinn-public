@@ -9,6 +9,7 @@ import secrets
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, status
 
 from app.dependencies import (
+    CurrentUser,
     CurrentUserAnyStatus,
     DBSession,
     RegistrationServiceDep,
@@ -17,7 +18,10 @@ from app.dependencies import (
 )
 from app.middleware.client_ip import get_client_ip
 from app.middleware.rate_limit import limiter
+from app.models.character import Character
 from app.models.enums import UserStatus
+from app.models.user import User
+from app.repositories.character import CharacterRepository
 from app.repositories.session import SessionRepository
 from app.repositories.user import UserRepository
 from app.schemas.auth import (
@@ -28,11 +32,13 @@ from app.schemas.auth import (
     RegisterResponse,
     ResendVerificationRequest,
     ResendVerificationResponse,
+    SetAvatarRequest,
     VerifyEmailRequest,
     VerifyEmailResponse,
 )
 from app.services.email_policy import is_disposable, normalize
 from app.services.password import DUMMY_HASH, hash_password, verify_password
+from app.services.practice_dummies import is_practice_dummy
 from app.services.signup_log import (
     REGISTER_ACCEPTED,
     REGISTER_CAPTCHA_FAILED,
@@ -292,11 +298,53 @@ async def logout(
         await session_repo.delete_by_token_hash(token_hash)
 
 
+async def _avatar_character(user: User, db: DBSession) -> Character | None:
+    """The character this user has chosen, or `None` — including when they have chosen nobody.
+
+    One query, and only for an account that has picked something. `User` carries no ORM
+    relationship to `Character` on purpose (`DESIGN_user_avatar.md` §3), so this is the single
+    place that resolves the column.
+    """
+    if user.avatar_character_id is None:
+        return None
+    return await CharacterRepository(db).get_by_id(user.avatar_character_id)
+
+
 @router.get("/me", response_model=MeResponse)
-async def get_me(current_user: CurrentUserAnyStatus) -> MeResponse:
+async def get_me(current_user: CurrentUserAnyStatus, db: DBSession) -> MeResponse:
     """Return the authenticated user's profile. Accessible to PENDING and APPROVED users."""
-    return MeResponse(
-        email=current_user.email,
-        label=current_user.label,
-        status=current_user.status,
-    )
+    return MeResponse.for_user(current_user, await _avatar_character(current_user, db))
+
+
+@router.put("/me/avatar", response_model=MeResponse)
+async def set_avatar(
+    body: SetAvatarRequest,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> MeResponse:
+    """Choose the character whose headshot stands in for this account, or clear it.
+
+    **A 404 for an id that names nothing, rather than a quiet no-op.** Accepting it would answer
+    200 to a save that changed nothing, and the page would go on showing the avatar the user
+    had just replaced with no indication of why.
+
+    `character_id: null` clears it — the *Clear* button — so setting and unsetting are one
+    code path. `DESIGN_user_avatar.md` §4.
+    """
+    character: Character | None = None
+    if body.character_id is not None:
+        character = await CharacterRepository(db).get_by_id(body.character_id)
+        # **A practice mannequin is not a character you can be.** `get_by_id` is the plain
+        # primary-key fetch and so skips the exclusion `CharacterRepository._filtered` applies
+        # to every list and count — meaning an id the picker cannot offer would validate here.
+        # The picker would then have no card matching the saved value and read "Choose a
+        # character…" while the page above it said "Manekin".
+        if character is None or is_practice_dummy(character.nanoka_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="No such character.",
+            )
+
+    current_user.avatar_character_id = None if character is None else str(character.id)
+    await db.commit()
+
+    return MeResponse.for_user(current_user, character)

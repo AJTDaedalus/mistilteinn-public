@@ -73,6 +73,7 @@ async def _make_approved_user(db_session: AsyncSession) -> tuple[User, str]:
 _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     ("GET", "/api/v1/auth/me", None),
     ("POST", "/api/v1/auth/logout", {}),
+    ("PUT", "/api/v1/auth/me/avatar", {}),  # DESIGN_user_avatar.md
     # teams
     ("GET", "/api/v1/teams", None),
     ("POST", "/api/v1/teams", {}),

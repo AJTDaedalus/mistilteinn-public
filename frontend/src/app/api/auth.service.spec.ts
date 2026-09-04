@@ -32,6 +32,17 @@ function mockFetchSequence(responses: { payload: unknown; status?: number }[]) {
   });
 }
 
+/**
+ * The first request the client actually sent.
+ *
+ * `openapi-fetch` calls `fetch(new Request(...))` — one argument, not the `(url, init)` pair
+ * the older style assumes — and reading it wrongly gives an assertion that passes on
+ * `'[object Request]'` containing nothing.
+ */
+function requestSent(call = 0): Request {
+  return (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[call][0] as Request;
+}
+
 beforeEach(() => {
   localStorage.clear();
 });
@@ -42,6 +53,51 @@ afterEach(() => {
 });
 
 describe('AuthService', () => {
+  describe('setAvatar', () => {
+    const AVATAR = {
+      email: 'a@example.com',
+      label: 'A',
+      status: 'approved',
+      avatar: { character_id: 'char-1', name: 'Kamisato Ayaka', icon: 'UI_AvatarIcon_Ayaka' },
+    };
+
+    it('puts the chosen character and adopts the response as the new me', async () => {
+      // **The response is adopted rather than a `refresh()` fired.** The header chip reads
+      // `me`, so a second round trip is a window in which the page shows the old face after a
+      // save that worked.
+      mockFetch(AVATAR);
+      const svc = setup();
+
+      await svc.setAvatar('char-1');
+
+      const sent = requestSent();
+      expect(sent.url).toContain('/api/v1/auth/me/avatar');
+      expect(sent.method).toBe('PUT');
+      expect(await sent.json()).toEqual({ character_id: 'char-1' });
+      expect(svc.me()?.avatar?.name).toBe('Kamisato Ayaka');
+    });
+
+    it('sends null to clear it', async () => {
+      mockFetch({ ...AVATAR, avatar: null });
+      const svc = setup();
+
+      await svc.setAvatar(null);
+
+      expect(await requestSent().json()).toEqual({ character_id: null });
+      expect(svc.me()?.avatar).toBeNull();
+    });
+
+    it('throws and leaves me alone when the server refuses', async () => {
+      // A 404 means the id named nothing. Adopting a failure response — or silently
+      // succeeding — would leave the page showing an avatar the account does not have.
+      mockFetch({ detail: 'No such character.' }, 404);
+      const svc = setup();
+
+      await expect(svc.setAvatar('gone')).rejects.toBeDefined();
+      expect(svc.me()).toBeNull();
+    });
+  });
+
   describe('initial state', () => {
     it('is unauthed when localStorage has no token', () => {
       const svc = setup();

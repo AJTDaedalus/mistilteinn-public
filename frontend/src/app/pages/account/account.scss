@@ -1,0 +1,36 @@
+:host { display: block; }
+
+.account { display: flex; flex-direction: column; gap: var(--space-6); max-width: var(--measure); }
+
+.account__facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.account__facts dt { color: var(--ink-faint); }
+.account__facts dd { margin: 0; color: var(--ink-dim); }
+
+.account__avatar { display: flex; flex-direction: column; gap: var(--space-3); }
+
+/* Centred rather than baseline-aligned: the picture is 64px and a baseline built for a line
+   of text drops it below the name it belongs to. */
+/* **Sized to its content, not to the column.** Stretched full width it reads as a text
+   input — which is exactly what the picker's trigger below it is, so two different controls
+   drew as the same one. */
+.account__chosen {
+  align-self: flex-start;
+  min-width: 14rem;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  background: var(--surface);
+}
+
+.account__name { font-size: var(--text-lg); }
+.account__none { font-size: var(--text-sm); }

@@ -146,6 +146,22 @@ export class AuthService {
     return 'approved';
   }
 
+  /**
+   * Choose the character whose headshot stands in for this account, or clear it with `null`.
+   *
+   * **Writes the response into `me` rather than re-fetching.** The header chip already reads
+   * that signal, so the new face is on screen the moment the request lands and nothing else
+   * has to know this method exists. The endpoint answers with the whole `MeResponse` for
+   * exactly this reason.
+   */
+  async setAvatar(characterId: string | null): Promise<void> {
+    const { data, error } = await this.api.PUT('/api/v1/auth/me/avatar', {
+      body: { character_id: characterId },
+    });
+    if (error) throw error;
+    if (data) this._me.set(data);
+  }
+
   async logout(): Promise<void> {
     // Clear local state first so the token can't be used by any concurrent
     // requests or be picked up by the onResponse middleware during the
