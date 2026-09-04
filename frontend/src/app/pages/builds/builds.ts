@@ -8,6 +8,7 @@ import { ElementChip } from '../../shared/element/element';
 import { CatalogueIcon } from '../../shared/icon/icon';
 import { Combobox, type ComboboxOption } from '../../shared/combobox/combobox';
 import { EntityToken } from '../../shared/token/token';
+import { KQM_FILTER, listedFirst, weaponCard, weaponsById } from '../../shared/kqm/kqm';
 import { allPages } from '../../api/all-pages';
 import { ArtifactPanel } from './artifact-panel';
 import {
@@ -264,51 +265,19 @@ export class BuildsPage implements OnInit {
    */
   protected readonly weaponGuide = signal<CharacterWeaponGuideRead | null>(null);
 
-  /** `weapon id -> position in KQM's list`, for marking and ordering the picker. */
-  private readonly recommended = computed(() => {
-    const guide = this.weaponGuide();
-    return new Map((guide?.weapons ?? []).map((w) => [w.weapon_id, w]));
-  });
+  /** `weapon id -> what KQM said`, for marking and ordering the picker. */
+  private readonly recommended = computed(() => weaponsById(this.weaponGuide()));
 
   protected readonly weaponOptions = computed<CardOption[]>(() => {
     const listed = this.recommended();
-    return this.weapons()
-      .map((w) => {
-        const kqm = listed.get(w.id);
-        return {
-          value: w.id,
-          label: w.name,
-          icon: w.icon,
-          // The position, not a rank — KQM's table carries an order and no rank numbers.
-          //
-          // **The refinement is gone from this line** (owner): it is read off the weapon the
-          // user owns, so KQM's `R5` was somebody else's account's number shown against this
-          // user's inventory. What replaced it is `relative_dps` where KQM published one — a
-          // full guide states each weapon against a baseline, and that is their comparison
-          // rather than a figure this app derived.
-          detail: kqm
-            ? [
-                `KQM #${kqm.position}`,
-                kqm.relative_dps,
-                kqm.playstyle,
-                `${w.stars}★`,
-              ].filter(Boolean).join(' · ')
-            : `${w.stars}★ · ${w.sub_stat_display || 'no substat'}`,
-          // KQM's own sentence, verbatim, on hover. Summarising it here would be this page
-          // asserting a judgement it did not make, under someone else's name.
-          tooltip: kqm?.note,
-          recommended: Boolean(kqm),
-          tags: { stars: String(w.stars), kqm: kqm ? 'listed' : '' },
-        };
-      })
-      // Listed weapons first, in KQM's order; everything else after, as before. A weapon KQM
-      // did not list is not thereby *bad* — it is unlisted, which is why the rest keep their
-      // order rather than being pushed into a "not recommended" bucket.
-      .sort((a, b) => {
-        const left = listed.get(a.value)?.position ?? Number.MAX_SAFE_INTEGER;
-        const right = listed.get(b.value)?.position ?? Number.MAX_SAFE_INTEGER;
-        return left - right;
-      });
+    // **The refinement is not on this line** (owner): it is read off the weapon the user owns,
+    // so KQM's `R5` would be somebody else's account's number shown against this user's
+    // inventory. `relative_dps` took its place where KQM published one.
+    const cards = this.weapons().map((w) => weaponCard(w, listed.get(w.id)));
+    // Listed weapons first, in KQM's order; everything else after, as before. A weapon KQM did
+    // not list is not thereby *bad* — it is unlisted, which is why the rest keep their order
+    // rather than being pushed into a "not recommended" bucket.
+    return listedFirst(cards, (card) => listed.get(card.value)?.position);
   });
 
   protected readonly weaponFilters = computed<CardFilter[]>(() => {
@@ -320,11 +289,7 @@ export class BuildsPage implements OnInit {
     if (listed) {
       // Offered only when there is a guide, for the same reason the chips elsewhere are drawn
       // from what is on screen: a filter whose only outcome is an empty grid is not a filter.
-      filters.push({
-        group: 'kqm',
-        label: 'KeqingMains',
-        options: [{ value: 'listed', label: 'KQM lists it' }],
-      });
+      filters.push(KQM_FILTER);
     }
     if (stars.length > 1) filters.push({ group: 'stars', label: 'Rarity', options: stars });
     return filters;
