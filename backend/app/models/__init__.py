@@ -8,6 +8,7 @@ from app.models.artifact import (
     ArtifactSetAffix,
     main_stats_for,
 )
+from app.models.auth_token import AuthToken
 from app.models.base import Base, TimestampMixin
 from app.models.buff_preset import BuffPreset
 from app.models.build import Build, EnemyProfile
@@ -52,6 +53,7 @@ __all__ = [
     "ArtifactSetAffix",
     "ArtifactSlot",
     "AscensionPassive",
+    "AuthToken",
     "Base",
     "BuffPreset",
     "Build",

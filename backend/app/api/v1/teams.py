@@ -19,12 +19,13 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
-from app.dependencies import get_owned_build_repo, get_owned_team_repo
+from app.dependencies import SettingsDep, get_owned_build_repo, get_owned_team_repo
 from app.middleware.rate_limit import WRITE_LIMIT, limiter
 from app.repositories.build import BuildRepository
 from app.repositories.team import TeamRepository
 from app.schemas.common import PaginatedResponse
 from app.schemas.team import TEAM_SLOTS, TeamCreate, TeamRead, TeamUpdate, assert_slots_distinct
+from app.services.quotas import enforce_quota
 
 router = APIRouter(prefix="/teams", tags=["teams"])
 
@@ -109,8 +110,10 @@ async def create_team(
     body: TeamCreate,
     repo: Annotated[TeamRepository, Depends(get_owned_team_repo)],
     builds: Annotated[BuildRepository, Depends(get_owned_build_repo)],
+    settings: SettingsDep,
 ) -> TeamRead:
     """Create a team of up to four builds, having checked it is one that could be simulated."""
+    await enforce_quota(repo, settings.MAX_TEAMS_PER_USER, "Team")
     await _validated_members(builds, {slot: getattr(body, slot) for slot in TEAM_SLOTS})
     team = await repo.create(body.model_dump())
     return TeamRead.model_validate(team)

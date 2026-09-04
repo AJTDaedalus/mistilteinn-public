@@ -9,6 +9,14 @@ export const routes: Routes = [
     canMatch: [requireUnauthed],
   },
   {
+    // **No guard at all**, deliberately. The person arriving here has clicked a link in their
+    // email and is by definition not signed in — but they might also be signed in on this
+    // device already, or pending, and every one of those is a legitimate arrival. A
+    // `requireUnauthed` here would bounce the exact user the link was sent to.
+    path: 'verify',
+    loadComponent: () => import('./pages/auth/verify').then((m) => m.VerifyPage),
+  },
+  {
     path: 'pending',
     loadComponent: () => import('./pages/auth/pending').then((m) => m.PendingPage),
     canMatch: [requirePending],

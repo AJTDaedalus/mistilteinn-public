@@ -16,6 +16,19 @@ export class LoginPage {
   private router = inject(Router);
 
   mode = signal<'signin' | 'register'>('signin');
+
+  /** Set once registration is accepted, so the form is replaced by "check your email". */
+  registered = signal(false);
+
+  /**
+   * The honeypot.
+   *
+   * Hidden from people and from assistive technology; naive form-filling bots populate every
+   * input they find. A non-empty value gets the *same* 202 from the backend, which creates
+   * nothing and sends nothing — a distinguishable rejection would tell the bot's author which
+   * field to skip, and the trap is worth more than the block.
+   */
+  website = signal('');
   email = signal('');
   label = signal('');
   password = signal('');
@@ -49,8 +62,16 @@ export class LoginPage {
     this.error.set('');
     this.loading.set(true);
     try {
-      await this.auth.register({ email: this.email().trim(), label: this.label(), password: this.password() });
-      await this.router.navigateByUrl('/pending');
+      await this.auth.register({
+        email: this.email().trim(),
+        label: this.label(),
+        password: this.password(),
+        website: this.website(),
+      });
+      // **Always this, whatever the address.** The backend answers 202 identically for a new
+      // address and one already registered, so there is nothing here to branch on — and a
+      // branch would be the enumeration oracle put back by the client.
+      this.registered.set(true);
     } catch (e: unknown) {
       // `apiErrorMessage`, not a local extractor. This page used to carry its own, which
       // handled only the *string* form of `detail` — and FastAPI sends an **array** for

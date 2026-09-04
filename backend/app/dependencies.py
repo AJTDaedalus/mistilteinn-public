@@ -10,11 +10,13 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import Settings, get_settings
 from app.database import get_db
 from app.models.enums import UserStatus
 from app.models.user import User
 from app.repositories.artifact import ArtifactRepository
 from app.repositories.artifact_set import ArtifactSetRepository
+from app.repositories.auth_token import AuthTokenRepository
 from app.repositories.build import BuildRepository
 from app.repositories.character import CharacterRepository
 from app.repositories.enemy import EnemyProfileRepository
@@ -26,8 +28,63 @@ from app.repositories.sim_run import SimRunRepository
 from app.repositories.team import TeamRepository
 from app.repositories.user import UserRepository
 from app.repositories.weapon import WeaponRepository
+from app.services.email import EmailSender, get_email_sender
+from app.services.registration import RegistrationService
+from app.services.turnstile import TurnstileVerifier
 
 DBSession = Annotated[AsyncSession, Depends(get_db)]
+
+#: Runtime configuration, injected rather than imported at module scope.
+#:
+#: `get_settings` is `lru_cache`d, so a handler that reads a flag through this dependency sees
+#: the process's settings and a test can override it with `app.dependency_overrides`. Reading
+#: `get_settings()` inline instead would make `REGISTRATION_OPEN` and `AUTO_APPROVE_ON_VERIFY`
+#: untestable without mutating a cached singleton.
+SettingsDep = Annotated[Settings, Depends(get_settings)]
+
+
+def get_email_sender_dep() -> EmailSender:
+    """FastAPI DI factory for the mail sender. Overridable in tests.
+
+    A dependency rather than a direct `get_email_sender()` call so a test can swap in
+    `RecordingEmailSender` and assert on what *would* have been sent — which is how every
+    test in this feature avoids the network the unit lane blocks anyway.
+    """
+    return get_email_sender()
+
+
+EmailSenderDep = Annotated[EmailSender, Depends(get_email_sender_dep)]
+
+
+def get_turnstile(settings: SettingsDep) -> TurnstileVerifier:
+    """FastAPI DI factory for `TurnstileVerifier`. Overridable in tests."""
+    return TurnstileVerifier(
+        secret_key=settings.TURNSTILE_SECRET_KEY,
+        expected_hostname=settings.TURNSTILE_EXPECTED_HOSTNAME,
+    )
+
+
+TurnstileDep = Annotated[TurnstileVerifier, Depends(get_turnstile)]
+
+
+async def get_registration_service(
+    session: DBSession,
+    settings: SettingsDep,
+    email_sender: EmailSenderDep,
+) -> RegistrationService:
+    """FastAPI DI factory for `RegistrationService`."""
+    return RegistrationService(
+        users=UserRepository(session),
+        tokens=AuthTokenRepository(session),
+        sessions=SessionRepository(session),
+        email_sender=email_sender,
+        settings=settings,
+    )
+
+
+RegistrationServiceDep = Annotated[
+    RegistrationService, Depends(get_registration_service)
+]
 
 # ── Public (no auth) repo factories ──────────────────────────────────────────
 #

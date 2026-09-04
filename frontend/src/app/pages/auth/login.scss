@@ -159,3 +159,47 @@
   font-size: var(--text-sm);
   margin: 0;
 }
+
+/* **The honeypot must be invisible to people and present to bots.**
+   `display:none` on the wrapper is what a form-filling bot ignores and a browser honours; the
+   field is also `tabindex="-1"` and `aria-hidden` in the template so neither keyboard nor
+   screen reader can reach it. A visually-hidden-but-focusable pattern would be wrong here —
+   the trap only works if no legitimate user can fill it by accident. */
+.honeypot {
+  display: none;
+}
+
+/* Replaces the register form once it has been submitted. */
+.check-email {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+
+  h2 {
+    margin: 0;
+    font-size: var(--text-lg);
+  }
+
+  p {
+    margin: 0;
+    color: var(--ink-dim);
+  }
+}
+
+/* A button that reads as a link — it changes the page's mode rather than navigating, so an
+   `<a>` would be a lie about what it does. */
+.linkish {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--brass);
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+
+  &:hover { color: var(--brass-hi); box-shadow: none; }
+}

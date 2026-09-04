@@ -45,6 +45,35 @@ services:
       TESTING: "false"
       LOG_LEVEL: info
       PYTHONPATH: /app
+      # **Belt and braces with `ConsoleEmailSender`'s own `flush=True`.** Python buffers
+      # stdout when it is not a TTY, and in a container it never is — so anything printed
+      # rather than logged vanishes. The console mail sender is the *default* provider, and a
+      # verification link nobody can read is a signup flow that looks broken.
+      PYTHONUNBUFFERED: "1"
+      # ── Open registration (DESIGN_open_registration.md) ──────────────────────
+      # **Enumerated here because this service has no `env_file:`.** A setting absent from
+      # this list is invisible to the app whatever `.env` says, and invisible *silently*:
+      # verification mail printed to a container log nobody reads, links pointing at
+      # localhost, Turnstile off, and a signup flow that looks like it worked. That was the
+      # first finding of fairy's pre-merge review of this same feature.
+      # `backend/tests/unit/test_settings_reach_the_container.py` reads this file and fails
+      # if a setting is missing.
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-console}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:4201}
+      REGISTRATION_OPEN: ${REGISTRATION_OPEN:-true}
+      AUTO_APPROVE_ON_VERIFY: ${AUTO_APPROVE_ON_VERIFY:-false}
+      EMAIL_VERIFY_TTL_SECONDS: ${EMAIL_VERIFY_TTL_SECONDS:-86400}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
+      TURNSTILE_EXPECTED_HOSTNAME: ${TURNSTILE_EXPECTED_HOSTNAME:-}
+      MAX_ARTIFACTS_PER_USER: ${MAX_ARTIFACTS_PER_USER:-10000}
+      MAX_BUILDS_PER_USER: ${MAX_BUILDS_PER_USER:-500}
+      MAX_TEAMS_PER_USER: ${MAX_TEAMS_PER_USER:-200}
+      MAX_ROTATIONS_PER_USER: ${MAX_ROTATIONS_PER_USER:-500}
+      MAX_GCSIM_IMPORTS_PER_DAY: ${MAX_GCSIM_IMPORTS_PER_DAY:-20}
+      MAX_SIM_RUNS_PER_DAY: ${MAX_SIM_RUNS_PER_DAY:-200}
+      UNVERIFIED_REAP_DAYS: ${UNVERIFIED_REAP_DAYS:-30}
     extra_hosts:
       # Reach the shared Postgres through the host's published 5432 rather than by
       # joining fairy's compose network — see the note at the top of this file.

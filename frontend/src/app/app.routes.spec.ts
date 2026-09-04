@@ -50,6 +50,9 @@ const NOT_IN_NAV: Record<string, string> = {
   explain: 'a redirect to /calculate, for the same reason: the page was renamed when it grew '
     + 'from explaining one hit to calculating a whole rotation, and a rename that breaks '
     + 'links is a rename that loses readers',
+  verify: 'reached only from a link in a confirmation email, never from the nav — the person '
+    + 'arriving is finishing a signup, and a nav entry would offer every signed-in user a '
+    + 'page that can only tell them their link is invalid',
 };
 
 describe('app routes', () => {

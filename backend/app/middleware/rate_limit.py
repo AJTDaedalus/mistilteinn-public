@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING
 
 from slowapi import Limiter
 
+from app.middleware.client_ip import get_client_ip
+
 if TYPE_CHECKING:
     from fastapi import Request
 
@@ -21,9 +23,10 @@ def _owner_key(request: Request) -> str:
     if auth.lower().startswith("bearer "):
         token = auth[7:]
         return hashlib.sha256(token.encode()).hexdigest()[:32]
-    if request.client:
-        return request.client.host
-    return "unknown"
+    # **`get_client_ip`, not `request.client.host`.** Behind nginx the peer is the nginx
+    # container, so the raw attribute was one shared bucket for every anonymous caller on the
+    # internet — see `client_ip.py`.
+    return get_client_ip(request)
 
 
 limiter = Limiter(key_func=_owner_key)

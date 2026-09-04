@@ -12,7 +12,10 @@
         [class.active]="mode() === 'register'"
         type="button"
         (click)="mode.set('register')"
-      >Request access</button>
+      ><!-- **"Create account", not "Request access".** The old wording described the old flow
+             accurately: you asked, and a human decided. Nobody is deciding now — confirming
+             your address is the whole gate — and a label promising a queue you are not in is
+             a worse lie than a vague one. -->Create account</button>
     </div>
 
     @if (mode() === 'signin') {
@@ -52,7 +55,26 @@
       </form>
     }
 
-    @if (mode() === 'register') {
+    @if (mode() === 'register' && registered()) {
+      <!-- **The same message for every address**, including one that is already registered.
+           The backend's 202 is deliberately identical in both cases, so saying anything more
+           specific here would put the enumeration oracle back on the client. -->
+      <div class="check-email">
+        <span class="eyebrow">check your email</span>
+        <h2>Confirm your address</h2>
+        <p>
+          If that address can receive mail, a confirmation link is on its way. Open it to
+          finish setting up your account — the link is good for 24 hours.
+        </p>
+        <p class="muted">
+          Nothing arrived? Check spam, then
+          <button type="button" class="linkish" (click)="mode.set('signin'); registered.set(false)">
+            sign in
+          </button>
+          to request a new link.
+        </p>
+      </div>
+    } @else if (mode() === 'register') {
       <form class="login-form" (ngSubmit)="requestAccess()">
         <label class="field">
           <span class="field__label eyebrow">Email</span>
@@ -109,11 +131,27 @@
             <span class="field__hint field__hint--error">Passwords do not match.</span>
           }
         </label>
+        <!-- **Honeypot.** `display:none` plus `tabindex="-1"`, `autocomplete="off"` and
+             `aria-hidden` so no person and no screen reader ever reaches it. Bots fill every
+             input they can see in the DOM. -->
+        <div class="honeypot" aria-hidden="true">
+          <label>
+            Website
+            <input
+              type="text"
+              tabindex="-1"
+              autocomplete="off"
+              name="website"
+              [ngModel]="website()"
+              (ngModelChange)="website.set($event)"
+            />
+          </label>
+        </div>
         @if (error()) {
           <p class="login-error">{{ error() }}</p>
         }
         <button class="btn btn-primary" type="submit" [disabled]="loading() || password2Mismatch">
-          {{ loading() ? 'Submitting…' : 'Request access' }}
+          {{ loading() ? 'Submitting…' : 'Create account' }}
         </button>
       </form>
     }

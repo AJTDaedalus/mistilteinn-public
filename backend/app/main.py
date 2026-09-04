@@ -16,7 +16,9 @@ from app.database import async_session_factory, wait_for_db
 from app.middleware.body_size import BodySizeLimitMiddleware
 from app.middleware.rate_limit import limiter
 from app.middleware.security_headers import SecurityHeadersMiddleware
+from app.repositories.auth_token import AuthTokenRepository
 from app.repositories.session import SessionRepository
+from app.repositories.user import UserRepository
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +37,23 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
         deleted = await SessionRepository(db).delete_expired()
         if deleted:
             logger.info("Startup: purged %d expired sessions", deleted)
+
+        # Spent and lapsed verification links, beside the sessions and for the same reasons:
+        # they are credentials with an expiry, and a consumed row is kept only long enough to
+        # answer "was this link used twice?" during an incident.
+        spent = await AuthTokenRepository(db).delete_expired()
+        if spent:
+            logger.info("Startup: purged %d spent auth tokens", spent)
+
+        # **Bots that never click do not accumulate forever.** Scoped tightly: PENDING *and*
+        # never verified. An approved account is never touched, and neither is one that
+        # verified and is waiting on manual approval — that person is waiting on us.
+        reaped = await UserRepository(db).delete_stale_unverified(
+            settings.UNVERIFIED_REAP_DAYS,
+        )
+        if reaped:
+            logger.info("Startup: reaped %d unverified signups", reaped)
+        await db.commit()
     yield
 
 

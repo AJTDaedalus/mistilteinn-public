@@ -543,6 +543,25 @@ def _tree_nodes(nodes: list) -> list[tuple[tuple, object]]:
 
 @router.post("/import/link", response_model=RotationImportRead)
 @limiter.limit(WRITE_LIMIT)
+# **Somebody else's servers, so a tighter limit than anything else here.**
+#
+# This is the only request-time outbound fetch in `app/`, and open registration turns it into
+# a free proxy pointed at gcsim: an account is no longer something a human granted. The owner
+# ruled on exactly this, 2026-09-02 — *"I don't want to push our compute load to them."*
+#
+# Per account rather than per IP, because a bot farm's cost to gcsim scales with accounts.
+#
+# **A rate limit and not a daily database-counted cap**, which the design asked for and this
+# deliberately does not implement: `Rotation` carries no column saying an entry arrived from a
+# link, so counting rows created in the last day would conflate fetched rotations with
+# hand-authored ones — and capping somebody's own authoring at twenty a day would be wrong.
+# The column is worth adding; inventing it inside this change was not. `OQ-OR3`.
+#
+# What that leaves is honest rather than complete: slowapi's storage is per worker and in
+# memory, so production's two workers make this really 10/hour per account, and a deploy
+# resets it. Still a real bound on what any one account can send gcsim's way.
+# `DESIGN_open_registration.md` §3.2.
+@limiter.limit("5/hour")
 async def import_from_gcsim_link(
     request: Request,  # slowapi reads the client address off it
     body: RotationImportLinkRequest,

@@ -6,9 +6,16 @@ import hashlib
 import json as _json
 import secrets
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, status
 
-from app.dependencies import CurrentUserAnyStatus, DBSession
+from app.dependencies import (
+    CurrentUserAnyStatus,
+    DBSession,
+    RegistrationServiceDep,
+    SettingsDep,
+    TurnstileDep,
+)
+from app.middleware.client_ip import get_client_ip
 from app.middleware.rate_limit import limiter
 from app.models.enums import UserStatus
 from app.repositories.session import SessionRepository
@@ -19,17 +26,65 @@ from app.schemas.auth import (
     MeResponse,
     RegisterRequest,
     RegisterResponse,
+    ResendVerificationRequest,
+    ResendVerificationResponse,
+    VerifyEmailRequest,
+    VerifyEmailResponse,
 )
+from app.services.email_policy import is_disposable, normalize
 from app.services.password import DUMMY_HASH, hash_password, verify_password
+from app.services.signup_log import (
+    REGISTER_ACCEPTED,
+    REGISTER_CAPTCHA_FAILED,
+    REGISTER_CLOSED,
+    REGISTER_DISPOSABLE,
+    REGISTER_HONEYPOT,
+    RESEND_REQUESTED,
+    VERIFY_FAILED,
+    VERIFY_OK,
+    signup_event,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 _SESSION_TTL_SECONDS = 30 * 24 * 3600  # 30 days
 _AUTH_ERROR = "Invalid email or password."
 
+#: Turnstile mints a token *for an action*, and the verifier checks it. Getting these wrong is
+#: fairy's review finding 3: forgot-password sent a `register`-action token and 403'd the
+#: moment Turnstile was configured.
+_ACTION_REGISTER = "register"
+_ACTION_RESEND = "resend-verification"
+
+_CAPTCHA_ERROR = "Could not verify that you are human. Please try again."
+
 
 def _login_ip_key(request: Request) -> str:
-    return request.client.host if request.client else "unknown"
+    # See `middleware/client_ip.py`: this read `request.client.host`, which behind nginx is
+    # the same value for every request on the internet — so `5/15minutes` per IP was five
+    # attempts per fifteen minutes for everyone at once.
+    return get_client_ip(request)
+
+
+def _register_ip_key(request: Request) -> str:
+    return get_client_ip(request)
+
+
+def _resend_email_key(request: Request) -> str:
+    """Key on the **normalized** address, which is the whole point.
+
+    Fairy's review finding 4: the per-email limits keyed on the raw body while identity
+    resolved on the normalized column, so rotating Gmail dots bought unlimited resend budget
+    aimed at one inbox — and this endpoint mails the address on the *account*, so our server
+    becomes a free email cannon and our sending domain takes the reputational damage.
+    """
+    raw: bytes | None = getattr(request, "_body", None)
+    if raw:
+        try:
+            return normalize(str(_json.loads(raw).get("email", "")))
+        except ValueError:
+            pass
+    return "unknown"
 
 
 def _login_email_key(request: Request) -> str:
@@ -46,26 +101,136 @@ def _login_email_key(request: Request) -> str:
 @router.post(
     "/register",
     response_model=RegisterResponse,
-    status_code=status.HTTP_201_CREATED,
+    # **202, not 201.** Nothing is created synchronously any more: the row and the mail are
+    # both queued behind the response, and for an address that already exists nothing is
+    # created at all. "Accepted" is the only code that is true for every outcome — and saying
+    # "Created" for the duplicate case would be the enumeration oracle wearing a status code.
+    status_code=status.HTTP_202_ACCEPTED,
 )
-async def register(body: RegisterRequest, db: DBSession) -> RegisterResponse:
-    """Register a new account. Returns pending status; no session token issued."""
-    repo = UserRepository(db)
-    if await repo.get_by_email(body.email) is not None:
+# **This endpoint had no rate limit at all.** That was survivable only because a registered
+# account was inert until a human approved it — which is precisely the gate
+# `DESIGN_open_registration.md` removes. Per IP; the per-email limit arrives with
+# `email_normalized`, because keying the raw address lets rotating Gmail dots buy unlimited
+# budget against one inbox (fairy's review, finding 4).
+@limiter.limit("3/hour", key_func=_register_ip_key)
+@limiter.limit("10/day", key_func=_register_ip_key)
+async def register(
+    request: Request,
+    body: RegisterRequest,
+    background: BackgroundTasks,
+    registration: RegistrationServiceDep,
+    turnstile: TurnstileDep,
+    settings: SettingsDep,
+) -> RegisterResponse:
+    """Begin registration. **The same 202 for every well-formed request.**
+
+    What it used to do — 409 on a duplicate — was a free membership-checking API for anyone
+    who found the URL. `DESIGN_open_registration.md` §2.
+    """
+    # **Read, not merely defined.** Fairy shipped this flag documented in its runbook as *the*
+    # response to a bot wave and wired to nothing — an operator would have flipped it
+    # mid-incident, restarted, and watched signups continue with nothing red. A documented
+    # control that does nothing is worse than no control, because it is trusted.
+    if not settings.REGISTRATION_OPEN:
+        signup_event(REGISTER_CLOSED, ip=get_client_ip(request))
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered.",
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Registration is temporarily closed. Existing accounts are unaffected.",
         )
+
+    # **Honeypot: answer exactly as success would.** Create nothing, send nothing, never an
+    # error — a distinguishable rejection tells the bot's author which field to skip, and the
+    # trap is worth more than the block.
+    if body.website:
+        signup_event(REGISTER_HONEYPOT, ip=get_client_ip(request), email=body.email)
+        return RegisterResponse()
+
+    if not await turnstile.verify(
+        body.turnstile_token, action=_ACTION_REGISTER, remote_ip=get_client_ip(request),
+    ):
+        signup_event(REGISTER_CAPTCHA_FAILED, ip=get_client_ip(request), email=body.email)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=_CAPTCHA_ERROR)
+
+    if is_disposable(body.email):
+        signup_event(REGISTER_DISPOSABLE, ip=get_client_ip(request), email=body.email)
+        # One of the few bot rejections worth making **visible**: it is also the message a
+        # legitimate user who reached for a throwaway address needs to read.
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Please use a permanent email address.",
+        )
+
+    # **Hashed unconditionally, before the existence check, and deliberately so.** Returning
+    # the same body for a known and an unknown address closes the status oracle but not the
+    # timing one: bcrypt at cost 12 is ~250 ms, so a handler that skipped the hash for
+    # duplicates would still answer "already registered" measurably faster. Do not "optimise"
+    # this into the new-account branch.
     pw_hash = hash_password(body.password)
-    await repo.create(
-        {
-            "email": body.email,
-            "label": body.label,
-            "password_hash": pw_hash,
-            "status": UserStatus.PENDING,
-        }
+
+    signup_event(REGISTER_ACCEPTED, ip=get_client_ip(request), email=body.email)
+    # Out of band: a slow provider must not hold the request open, and a provider outage must
+    # not 500 a signup whose user row was already written.
+    background.add_task(
+        registration.register, email=body.email, password_hash=pw_hash, label=body.label,
     )
     return RegisterResponse()
+
+
+@router.post("/verify-email", response_model=VerifyEmailResponse)
+@limiter.limit("20/hour", key_func=_register_ip_key)
+async def verify_email(
+    request: Request,
+    body: VerifyEmailRequest,
+    registration: RegistrationServiceDep,
+) -> VerifyEmailResponse:
+    """Consume a verification link, verifying the address and possibly approving.
+
+    **Failures name their reason.** The token is a secret rather than an identifier, so there
+    is nothing to enumerate by being precise — and `expired` is what lets the UI offer a
+    resend instead of a dead end.
+    """
+    result = await registration.verify(body.token)
+    if not result.ok:
+        signup_event(VERIFY_FAILED, ip=get_client_ip(request), reason=str(result.outcome))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"reason": str(result.outcome)},
+        )
+    signup_event(VERIFY_OK, ip=get_client_ip(request), approved=result.approved)
+    return VerifyEmailResponse(
+        status="approved" if result.approved else "pending",
+        session_token=result.session_token,
+        expires_at=result.expires_at,
+    )
+
+
+@router.post(
+    "/resend-verification",
+    response_model=ResendVerificationResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+@limiter.limit("3/hour", key_func=_register_ip_key)
+@limiter.limit("3/hour", key_func=_resend_email_key)
+async def resend_verification(
+    request: Request,
+    body: ResendVerificationRequest,
+    registration: RegistrationServiceDep,
+    turnstile: TurnstileDep,
+) -> ResendVerificationResponse:
+    """Re-issue a verification link. **Answers identically for every address.**
+
+    An unknown address, an already-verified one, and a genuinely unverified one all get the
+    same 202. Anything else makes this the enumeration oracle `register` was changed to stop
+    being.
+    """
+    if not await turnstile.verify(
+        body.turnstile_token, action=_ACTION_RESEND, remote_ip=get_client_ip(request),
+    ):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=_CAPTCHA_ERROR)
+
+    signup_event(RESEND_REQUESTED, ip=get_client_ip(request), email=body.email)
+    await registration.resend(body.email)
+    return ResendVerificationResponse()
 
 
 @router.post("/login", response_model=LoginResponse)

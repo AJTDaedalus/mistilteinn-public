@@ -68,9 +68,12 @@ describe('LoginPage', () => {
   });
 
   describe('requestAccess()', () => {
-    it('calls auth.register with email, label, password and navigates to /pending', async () => {
+    it('registers and shows "check your email" rather than navigating', async () => {
+      // **It used to navigate to `/pending`.** Registration no longer creates an approved-or-
+      // pending account synchronously — it queues a verification email — so the honest next
+      // screen is "check your email", and the user is not signed in to have a pending state.
       const { comp, auth, router } = setup();
-      const regSpy = vi.spyOn(auth, 'register').mockResolvedValue('pending');
+      const regSpy = vi.spyOn(auth, 'register').mockResolvedValue('verification_sent');
       const navSpy = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
 
       comp.email.set('new@example.com');
@@ -83,13 +86,33 @@ describe('LoginPage', () => {
         email: 'new@example.com',
         label: 'tester',
         password: 'strong-pass-456',
+        website: '',
       });
-      expect(navSpy).toHaveBeenCalledWith('/pending');
+      expect(comp.registered()).toBe(true);
+      expect(navSpy).not.toHaveBeenCalled();
+    });
+
+    it('sends the honeypot value it was given', async () => {
+      // The field is invisible, so a filled one means a bot. The client sends it rather than
+      // judging it: the *backend* answers 202 and creates nothing, because a rejection the
+      // client could show would tell the bot's author which field to skip.
+      const { comp, auth } = setup();
+      const regSpy = vi.spyOn(auth, 'register').mockResolvedValue('verification_sent');
+
+      comp.email.set('bot@example.com');
+      comp.password.set('strong-pass-456');
+      comp.confirmPassword.set('strong-pass-456');
+      comp.website.set('http://spam.example');
+      await comp.requestAccess();
+
+      expect(regSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ website: 'http://spam.example' }),
+      );
     });
 
     it('does not submit when passwords do not match', async () => {
       const { comp, auth } = setup();
-      const regSpy = vi.spyOn(auth, 'register').mockResolvedValue('pending');
+      const regSpy = vi.spyOn(auth, 'register').mockResolvedValue('verification_sent');
 
       comp.email.set('new@example.com');
       comp.password.set('strong-pass-456');

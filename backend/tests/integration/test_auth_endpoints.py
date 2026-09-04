@@ -277,8 +277,11 @@ async def test_register_is_public(client: AsyncClient) -> None:
     resp = await client.post(
         "/api/v1/auth/register",
         json={"email": "public@example.com", "label": "Test", "password": _TEST_PASSWORD},
+        headers={"CF-Connecting-IP": "203.0.113.173"},
     )
-    assert resp.status_code == 201
+    # 202 since open registration: the work is queued behind the response rather than done
+    # in it, and the same body comes back whatever the address.
+    assert resp.status_code == 202
 
 
 # ── token accepted ────────────────────────────────────────────────────────────

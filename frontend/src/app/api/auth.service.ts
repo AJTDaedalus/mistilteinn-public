@@ -13,6 +13,12 @@ export class PendingUserError extends Error {
   }
 }
 
+export type VerifyFailureReason = 'expired' | 'already_used' | 'invalid';
+
+export type VerifyOutcome =
+  | { ok: true; status: 'approved' | 'pending' }
+  | { ok: false; reason: VerifyFailureReason };
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private api = injectApi();
@@ -55,12 +61,78 @@ export class AuthService {
     this._me.set(data ?? null);
   }
 
-  async register({ email, label, password }: { email: string; label: string; password: string }): Promise<'pending'> {
+  /**
+   * Begin registration.
+   *
+   * **Returns the same thing for every well-formed request**, including an address that is
+   * already registered. The backend used to answer 409 for a duplicate, which was a free
+   * membership-checking API for anyone who found the URL; there is deliberately no branch
+   * here to reintroduce it. What the user is told is "check your email", always.
+   *
+   * `website` is the honeypot and is sent empty by the real form. `turnstileToken` is empty
+   * until Turnstile keys exist, which the backend treats as "skip verification".
+   */
+  async register({
+    email,
+    label,
+    password,
+    turnstileToken = '',
+    website = '',
+  }: {
+    email: string;
+    label: string;
+    password: string;
+    turnstileToken?: string;
+    website?: string;
+  }): Promise<'verification_sent'> {
     const { error } = await this.api.POST('/api/v1/auth/register', {
-      body: { email, label, password },
+      body: { email, label, password, turnstile_token: turnstileToken, website },
     });
     if (error) throw error;
-    return 'pending';
+    return 'verification_sent';
+  }
+
+  /**
+   * Consume an emailed verification link.
+   *
+   * **Auto-approval hands back a session in the same response**, so one click leaves the user
+   * signed in rather than bouncing them to a login form for a password they typed two minutes
+   * ago. That is the whole UX win of this feature.
+   */
+  async verifyEmail(token: string): Promise<VerifyOutcome> {
+    const { data, error, response } = await this.api.POST('/api/v1/auth/verify-email', {
+      body: { token },
+    });
+    if (response.status === 400) {
+      const reason = (error as { detail?: { reason?: string } })?.detail?.reason;
+      return {
+        ok: false,
+        reason: reason === 'expired' || reason === 'already_used' ? reason : 'invalid',
+      };
+    }
+    if (!data) return { ok: false, reason: 'invalid' };
+
+    if (data.session_token) {
+      this.writeToken(data.session_token);
+      await this.refresh();
+    }
+    return { ok: true, status: data.status };
+  }
+
+  /**
+   * Ask for a fresh confirmation link.
+   *
+   * Answers `true` for every address — known, unknown, or already verified — because
+   * anything else would make this the enumeration oracle `register` was changed to stop
+   * being. **It has a caller**: fairy shipped this method with none at all, so a user whose
+   * 24-hour link lapsed had no route to a new one and the distinct `expired` outcome existed
+   * to offer something nothing consumed.
+   */
+  async resendVerification(email: string, turnstileToken = ''): Promise<boolean> {
+    const { response } = await this.api.POST('/api/v1/auth/resend-verification', {
+      body: { email, turnstile_token: turnstileToken },
+    });
+    return response.status === 202;
   }
 
   async login(email: string, password: string): Promise<'approved'> {

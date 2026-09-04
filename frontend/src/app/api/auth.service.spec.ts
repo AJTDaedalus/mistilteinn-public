@@ -119,13 +119,13 @@ describe('AuthService', () => {
   });
 
   describe('register()', () => {
-    it('does not store a token and returns pending', async () => {
+    it('does not store a token and reports that a verification email was sent', async () => {
       mockFetch({ status: 'pending' }, 201);
       const svc = setup();
 
       const result = await svc.register({ email: 'x@y.com', label: 'me', password: 'test-password-123' });
 
-      expect(result).toBe('pending');
+      expect(result).toBe('verification_sent');
       expect(svc.token()).toBeNull();
       expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
     });

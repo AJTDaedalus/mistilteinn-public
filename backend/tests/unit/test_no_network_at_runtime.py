@@ -26,9 +26,24 @@ _APP = Path(__file__).resolve().parents[2] / "app"
 #:   What it does change: a request now holds a worker while a third party answers. The
 #:   transport carries a 20-second timeout and a size ceiling for that reason, and the
 #:   endpoint requires a signed-in caller so it cannot be used as an open proxy.
+#: - `email/resend.py` and `turnstile.py` — **open registration, 2026-09-04.** Both talk to a
+#:   vendor on the signup path, and both are here deliberately rather than by oversight.
+#:
+#:   Neither fetches *data this app computes with*, which is the distinction E.6 is actually
+#:   about: one hands a message to a mail provider and one asks Cloudflare whether a CAPTCHA
+#:   token is genuine. Nothing either returns is stored, pinned, or used in a damage number.
+#:
+#:   **Both are behind a seam that is off by default.** `EMAIL_PROVIDER` defaults to
+#:   `console`, which prints to stdout, and an empty `TURNSTILE_SECRET_KEY` skips verification
+#:   entirely — so a fresh clone runs the whole signup flow with no key and no network, and
+#:   every test in the feature asserts against a recording sender. That is what keeps this
+#:   amendment from widening what a *test* can reach, which is the property the socket guard
+#:   in `conftest` enforces independently.
 _NETWORK_CAPABLE = {
     "app/data/importers/nanoka_gi_importer.py",
     "app/services/gcsim_share.py",
+    "app/services/email/resend.py",
+    "app/services/turnstile.py",
 }
 
 #: Modules whose import means the file can open a connection. Matched against **parsed

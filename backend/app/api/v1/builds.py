@@ -29,6 +29,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from app.api.v1.artifacts import _kernel_stats
 from app.dependencies import (
     CurrentUser,
+    SettingsDep,
     get_artifact_set_repo,
     get_character_repo,
     get_enemy_profile_repo,
@@ -103,6 +104,7 @@ from app.services.gcsim_config import (
     character_order,
 )
 from app.services.gcsim_keys import GcsimKeyError, pinned_commit
+from app.services.quotas import enforce_quota
 from app.services.rotation_compiler import RotationCompileError, compile_rotation
 from app.services.stat_calculator import StatInputError
 from app.services.talent_hits import (
@@ -234,8 +236,11 @@ async def create_build(
     repo: Annotated[BuildRepository, Depends(get_owned_build_repo)],
     characters: _Characters,
     weapons: _Weapons,
+    settings: SettingsDep,
 ) -> BuildRead:
     """Save a build, having checked it is one that could exist."""
+    # The layer that assumes every bot defence failed. `DESIGN_open_registration.md` §3.3.
+    await enforce_quota(repo, settings.MAX_BUILDS_PER_USER, "Build")
     await _validated_pairing(
         characters, weapons,
         character_id=body.character_id, weapon_id=body.weapon_id,

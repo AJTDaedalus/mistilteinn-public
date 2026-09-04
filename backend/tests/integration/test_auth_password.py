@@ -62,9 +62,12 @@ async def test_register_happy_path(client: AsyncClient, db_session: AsyncSession
     resp = await client.post(
         "/api/v1/auth/register",
         json={"email": "newuser@example.com", "password": _DEFAULT_PASSWORD},
+        headers={"CF-Connecting-IP": "203.0.113.172"},
     )
-    assert resp.status_code == 201
-    assert resp.json() == {"status": "pending"}
+    # 202, not 201: nothing is created synchronously any more — the row and the verification
+    # email are both written behind the response.
+    assert resp.status_code == 202
+    assert resp.json() == {"status": "verification_sent"}
 
     # Verify user exists in DB with password_hash set and status PENDING
     from sqlalchemy import select
@@ -77,15 +80,28 @@ async def test_register_happy_path(client: AsyncClient, db_session: AsyncSession
 
 
 @pytest.mark.asyncio
-async def test_register_duplicate_email_returns_409(
+async def test_register_does_not_disclose_that_an_email_is_known(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
+    """**This test used to assert the opposite**, and the opposite was an oracle.
+
+    Answering `409 "Email already registered."` let anyone with the URL test whether an
+    address has an account here. That was acceptable while a human approved every signup;
+    open registration makes it a free membership-checking API
+    (`DESIGN_open_registration.md` §2). The duplicate path now returns the same 202 and the
+    same body as a new address, and the account holder is told by email instead.
+
+    Renamed rather than deleted: a reader looking for "why doesn't this 409?" should land on
+    the answer, not on an absence.
+    """
     await _make_user(db_session, email="dup@example.com")
     resp = await client.post(
         "/api/v1/auth/register",
         json={"email": "dup@example.com", "password": _DEFAULT_PASSWORD},
+        headers={"CF-Connecting-IP": "203.0.113.171"},
     )
-    assert resp.status_code == 409
+    assert resp.status_code == 202
+    assert resp.json() == {"status": "verification_sent"}
 
 
 @pytest.mark.asyncio

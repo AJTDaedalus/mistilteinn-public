@@ -18,11 +18,13 @@ if TYPE_CHECKING:
 
 from app.config import Settings, get_settings
 from app.database import get_db
+from app.dependencies import get_email_sender_dep, get_turnstile
 from app.main import create_app
 from app.models.base import Base
 from app.models.enums import UserStatus
 from app.models.session import Session
 from app.models.user import User
+from app.services.email.recording import RecordingEmailSender
 from app.services.password import hash_password
 
 _TEST_PASSWORD = "alpha-test-password-1234"  # noqa: S105
@@ -86,6 +88,48 @@ async def client(db_session) -> AsyncGenerator[AsyncClient, None]:
         yield ac
 
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+async def signup_client(db_session):
+    """A client with overridable settings and a mail sender that records instead of sending.
+
+    Returns `(make, mailbox)`. `make(**overrides)` builds a client whose app sees
+    `Settings(**overrides)`, so a test can flip `AUTO_APPROVE_ON_VERIFY` or
+    `REGISTRATION_OPEN` without touching the process environment — which is the only way to
+    test a flag whose whole purpose is being flipped under pressure.
+
+    Every message the app would have sent lands in `mailbox.sent`. **No network**: the unit
+    lane blocks `socket.connect` outright, and this keeps the integration lane honest too.
+
+    Pass `email_sender=` or `turnstile=` to substitute a different fake for one client. With
+    no `turnstile=`, the real verifier runs with an empty secret and therefore passes — the
+    same no-key path a fresh clone takes.
+    """
+    mailbox = RecordingEmailSender()
+    stack: list = []
+
+    def make(email_sender=None, turnstile=None, **settings_overrides) -> AsyncClient:
+        app = create_app()
+        app.dependency_overrides[get_settings] = lambda: Settings(
+            DATABASE_URL=TEST_DATABASE_URL, TESTING=True, **settings_overrides,
+        )
+        app.dependency_overrides[get_email_sender_dep] = lambda: email_sender or mailbox
+        if turnstile is not None:
+            app.dependency_overrides[get_turnstile] = lambda: turnstile
+
+        async def override_get_db():
+            yield db_session
+
+        app.dependency_overrides[get_db] = override_get_db
+        client = AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
+        stack.append(client)
+        return client
+
+    yield make, mailbox
+
+    for client in stack:
+        await client.aclose()
 
 
 async def make_session_for(user: User, db_session: AsyncSession) -> str:

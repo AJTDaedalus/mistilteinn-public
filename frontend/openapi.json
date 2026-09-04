@@ -38,7 +38,7 @@
           "auth"
         ],
         "summary": "Register",
-        "description": "Register a new account. Returns pending status; no session token issued.",
+        "description": "Begin registration. **The same 202 for every well-formed request.**\n\nWhat it used to do \u2014 409 on a duplicate \u2014 was a free membership-checking API for anyone\nwho found the URL. `DESIGN_open_registration.md` \u00a72.",
         "operationId": "register_api_v1_auth_register_post",
         "requestBody": {
           "content": {
@@ -51,12 +51,96 @@
           "required": true
         },
         "responses": {
-          "201": {
+          "202": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RegisterResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/verify-email": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Verify Email",
+        "description": "Consume a verification link, verifying the address and possibly approving.\n\n**Failures name their reason.** The token is a secret rather than an identifier, so there\nis nothing to enumerate by being precise \u2014 and `expired` is what lets the UI offer a\nresend instead of a dead end.",
+        "operationId": "verify_email_api_v1_auth_verify_email_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyEmailResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/resend-verification": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Resend Verification",
+        "description": "Re-issue a verification link. **Answers identically for every address.**\n\nAn unknown address, an already-verified one, and a genuinely unverified one all get the\nsame 202. Anything else makes this the enumeration oracle `register` was changed to stop\nbeing.",
+        "operationId": "resend_verification_api_v1_auth_resend_verification_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendVerificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResendVerificationResponse"
                 }
               }
             }
@@ -8407,7 +8491,18 @@
           },
           "label": {
             "type": "string",
+            "maxLength": 200,
             "title": "Label",
+            "default": ""
+          },
+          "turnstile_token": {
+            "type": "string",
+            "title": "Turnstile Token",
+            "default": ""
+          },
+          "website": {
+            "type": "string",
+            "title": "Website",
             "default": ""
           }
         },
@@ -8423,14 +8518,47 @@
         "properties": {
           "status": {
             "type": "string",
-            "const": "pending",
+            "const": "verification_sent",
             "title": "Status",
-            "default": "pending"
+            "default": "verification_sent"
           }
         },
         "type": "object",
         "title": "RegisterResponse",
         "description": "Response for `POST /auth/register` \u2014 always pending until email verification."
+      },
+      "ResendVerificationRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "turnstile_token": {
+            "type": "string",
+            "title": "Turnstile Token",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "ResendVerificationRequest",
+        "description": "Body for `POST /auth/resend-verification`."
+      },
+      "ResendVerificationResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "verification_sent",
+            "title": "Status",
+            "default": "verification_sent"
+          }
+        },
+        "type": "object",
+        "title": "ResendVerificationResponse",
+        "description": "Response for `POST /auth/resend-verification` \u2014 identical for every address.\n\nAnswering differently for a known and an unknown address would make this endpoint the\naccount-enumeration oracle that `register` just stopped being."
       },
       "RetrievalOutcome": {
         "properties": {
@@ -10503,6 +10631,63 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VerifyEmailRequest": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "VerifyEmailRequest",
+        "description": "Body for `POST /auth/verify-email`.\n\n**The token arrives in a POST body rather than a query string**, for two reasons and the\nsecond is the one people miss. Secrets in URLs leak \u2014 into Referer headers, browser\nhistory, nginx access logs and Cloudflare analytics \u2014 and a live account-takeover\ncredential should not be in an access log. And a `GET`-consumes endpoint is burned by the\nmail scanners that fetch every link in an email before the human does: Outlook Safe Links,\ncorporate gateways, Slack unfurls. Against those, the scanner spends the single-use token\nand the user's own click fails \u2014 a bug that reproduces only for users at companies you\ncannot test against.\n\nA scanner fetching the SPA route instead gets an HTML shell and does not execute Angular,\nso the token survives to the real click. `DESIGN_open_registration.md` \u00a72 (D-OR3)."
+      },
+      "VerifyEmailResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "pending"
+            ],
+            "title": "Status"
+          },
+          "session_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Token"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "VerifyEmailResponse",
+        "description": "Response for `POST /auth/verify-email`.\n\n`session_token` is populated only when verification also approved the account, so the user\nlands verified *and* signed in from one click with no password re-entry. That is the whole\nUX win of this design and it costs one field."
       },
       "Visibility": {
         "type": "string",
