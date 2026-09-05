@@ -45,6 +45,31 @@ EXTERNAL_DIR = Path(__file__).resolve().parent / "external"
 SLOTS = ("flower", "plume", "sands", "goblet", "circlet")
 
 
+#: Genshin Optimizer's substat key -> the raw property this repo spells stats with.
+#:
+#: **Two vocabularies meet here and only here.** The draw model is quoted verbatim from GO's
+#: `consts.ts`, so its keys are GO's; everything downstream reads kernel quantities. Rather
+#: than a second key-to-quantity table — which would be a second chance to map `critRate_` onto
+#: the wrong thing, silently optimising for a stat nobody has — this maps GO's key onto the
+#: **raw property**, and `stat_calculator._quantity_for_prop` stays the single definition of
+#: what a property means.
+#:
+#: Ten entries, one per drawable substat. A GO key absent from this table is a key this repo
+#: cannot place, and `substat_weights_by_quantity` refuses rather than dropping it.
+GO_KEY_TO_PROPERTY = {
+    "hp": "FIGHT_PROP_HP",
+    "atk": "FIGHT_PROP_ATTACK",
+    "def": "FIGHT_PROP_DEFENSE",
+    "hp_": "FIGHT_PROP_HP_PERCENT",
+    "atk_": "FIGHT_PROP_ATTACK_PERCENT",
+    "def_": "FIGHT_PROP_DEFENSE_PERCENT",
+    "eleMas": "FIGHT_PROP_ELEMENT_MASTERY",
+    "enerRech_": "FIGHT_PROP_CHARGE_EFFICIENCY",
+    "critRate_": "FIGHT_PROP_CRITICAL",
+    "critDMG_": "FIGHT_PROP_CRITICAL_HURT",
+}
+
+
 class ExternalDataUnavailableError(RuntimeError):
     """A committed external data file is missing, unreadable, or lacks what was asked of it."""
 
@@ -110,3 +135,4 @@ def draw_model_provenance() -> dict[str, Any]:
         "sources": data["sources"],
         "caveat": data["caveat"],
     }
+

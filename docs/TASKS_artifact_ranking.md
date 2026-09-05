@@ -101,7 +101,7 @@ A.0 is the gate. **One PR per phase**, not per task — five PRs, not seventeen.
   weights** and A.2's file is.
 - **Do not:** "fix" the weights to match the export.
 
-### [ ] A.4 — Expose what the client needs to project a piece
+### [x] A.4 — Expose what the client needs to project a piece
 - **Do:** the client scorer needs, per artifact: decomposed rolls (`substat_rolls`, already
   built), `rolls_remaining` / `gains_a_substat` (`artifact_potential`, already built), the roll
   tier values for its rarity, and the draw model from A.2. Extend the inventory payload rather
