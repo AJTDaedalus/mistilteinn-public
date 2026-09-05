@@ -139,7 +139,12 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  // 19rem, up from 17. The substat row is `label | bars | roll value` with the label the only
+  // flexible column, so it is the one that pays for everything else — "Elemental Mastery 42"
+  // fitted on one card and "Elemental Mastery …" truncated on the next, which is the half of
+  // #278 that a bigger type scale makes worse rather than better. Two more rem gives the
+  // longest stat name in the game somewhere to sit.
+  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
   gap: var(--space-3);
   list-style: none;
   padding: 0;
@@ -233,8 +238,11 @@
   overflow: hidden;
 }
 
+/* The slot, and whether the piece is worn — the two facts under the set name, and the ones
+   the reader is scanning a wall of 120 cards for. They were the smallest thing on the card
+   and the dimmest (#278). */
 .card__slot {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--ink-dim);
   text-transform: capitalize;
 }
@@ -312,10 +320,12 @@
   &[data-tier='3'] { background: var(--brass); height: 12px; }
 }
 
+/* One substat's roll value. It sits in the same row as the label it competes with for width,
+   so it reads a rung down from the label rather than the two rungs it used to. */
 .card__rv {
-  min-width: 3.5rem;
+  min-width: 3.25rem;
   text-align: right;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--ink-dim);
 }
 
