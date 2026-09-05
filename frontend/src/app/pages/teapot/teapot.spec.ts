@@ -241,6 +241,94 @@ describe('TeapotPage', () => {
 
     expect(fixture.nativeElement.querySelectorAll('.chip--unowned').length).toBe(2);
   });
+  // ── Finding one set among 109 (#266) ─────────────────────────────────────
+  //
+  // *"search bar in general lmao, ctrl f to find exactly what i need to keeping track isnt
+  // that convenient"*. Ctrl-F is what these replace, so they have to be at least as good as
+  // Ctrl-F over the rendered page — which finds a character's name as readily as a set's.
+
+  const ROSTER = read({
+    suites: [
+      suite({ suite_id: 's1', name: 'Adventurer Camp', placement: 'O', available: ['a'] }),
+      suite({ suite_id: 's2', name: 'Cool Isle', placement: 'I', available: ['b'] }),
+    ],
+  });
+
+  async function withRoster(): Promise<void> {
+    suites.mockResolvedValue(ROSTER);
+    await build();
+  }
+
+  it('finds a set by name', async () => {
+    await withRoster();
+
+    fixture.componentInstance['search'].set('cool');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Cool Isle');
+    expect(fixture.nativeElement.textContent).not.toContain('Adventurer Camp');
+  });
+
+  it('finds a set by the name of a character who favours it', async () => {
+    // The chips on the row carry these names, so Ctrl-F already found them. A search that
+    // matched only the set's name would be a worse Ctrl-F than Ctrl-F.
+    await withRoster();
+
+    fixture.componentInstance['search'].set('noelle');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Adventurer Camp');
+    expect(fixture.nativeElement.textContent).not.toContain('Cool Isle');
+  });
+
+  it('narrows to indoor or outdoor sets', async () => {
+    await withRoster();
+
+    fixture.componentInstance['placementFilter'].set('I');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Cool Isle');
+    expect(fixture.nativeElement.textContent).not.toContain('Adventurer Camp');
+  });
+
+  it('narrows to the sets a chosen character favours', async () => {
+    // Any of the chosen characters, not all: *"show only sets of your selected 3 chars"* is
+    // "what should I build for this group", and requiring all three finds nothing.
+    await withRoster();
+
+    fixture.componentInstance['toggleCharacter']('a');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Adventurer Camp');
+    expect(fixture.nativeElement.textContent).not.toContain('Cool Isle');
+  });
+
+  it('offers a character chip only for characters this roster has', async () => {
+    // A chip for somebody you do not own can only narrow to sets you cannot claim, so it is
+    // a control whose every outcome is an empty list.
+    suites.mockResolvedValue(read({
+      suites: [suite({ available: ['a'], unowned: ['zzz-not-owned'] })],
+    }));
+    await build();
+
+    expect(fixture.componentInstance['characterOptions']().map((o) => o.id)).toEqual(['a']);
+  });
+
+  it('puts every filter back with one control', async () => {
+    await withRoster();
+    fixture.componentInstance['search'].set('cool');
+    fixture.componentInstance['placementFilter'].set('I');
+    fixture.componentInstance['toggleCharacter']('b');
+    fixture.detectChanges();
+
+    fixture.componentInstance['clearFilters']();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance['filtering']()).toBe(false);
+    expect(fixture.nativeElement.textContent).toContain('Adventurer Camp');
+    expect(fixture.nativeElement.textContent).toContain('Cool Isle');
+  });
+
 });
 
 

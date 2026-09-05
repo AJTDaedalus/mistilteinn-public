@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, type OnInit, computed, inject, signal } from '@angular/core';
 
 import { apiErrorMessage } from '../../api/api-error';
 import type { SuiteRow } from './teapot.service';
@@ -30,7 +30,7 @@ import { TeapotService } from './teapot.service';
   templateUrl: './teapot.html',
   styleUrl: './teapot.scss',
 })
-export class TeapotPage {
+export class TeapotPage implements OnInit {
   private readonly teapot = inject(TeapotService);
   private readonly catalogue = inject(CatalogueService);
 
@@ -41,19 +41,103 @@ export class TeapotPage {
   protected readonly hideDone = signal(false);
   /** Sets nobody on the user's roster favours — noise for most people, so folded away. */
   protected readonly hideUnreachable = signal(true);
+  /**
+   * Free text, matched against the set's name **and its characters' names**.
+   *
+   * Owner of the request: *"search bar in general lmao, ctrl f to find exactly what i need to
+   * keeping track isnt that convenient"* (#266). Ctrl-F is the thing being replaced, and
+   * Ctrl-F over this page finds a character's name as readily as a set's — every chip carries
+   * one — so the search does too. A name search that missed what the page already displays
+   * would be a worse Ctrl-F than Ctrl-F.
+   */
+  protected readonly search = signal('');
+  /** `''` either, `'I'` indoor, `'O'` outdoor — the placement values the row already carries. */
+  protected readonly placementFilter = signal('');
+  /**
+   * Show only sets favoured by *these* characters, by nanoka id.
+   *
+   * *"filters: by characters (e.g. show only sets of your selected 3 chars…)"*. A set matches
+   * if **any** of the chosen characters favours it, which is the question being asked — "what
+   * should I build for this group" — rather than all of them, which for three characters is
+   * almost always nothing.
+   */
+  protected readonly characterFilter = signal<ReadonlySet<string>>(new Set());
   protected readonly busy = signal<string | null>(null);
   /** nanoka id → name, so a chip reads "Noelle" rather than "10000027". */
   protected readonly names = signal<Map<string, string>>(new Map());
   /** nanoka id → avatar basename, so a chip carries a face rather than only a word. */
   protected readonly faces = signal<Map<string, string>>(new Map());
 
-  protected readonly visible = computed(() => this.rows().filter((row) => {
-    if (this.hideDone() && row.done) return false;
-    // A set nobody you own favours is worth nothing now and might be worth something later —
-    // hidden by default because it is noise for most rosters, never dropped.
-    const reachable = row.available.length > 0 || row.completed.length > 0;
-    return !(this.hideUnreachable() && !reachable);
-  }));
+  protected readonly visible = computed(() => {
+    const query = this.search().trim().toLowerCase();
+    const placement = this.placementFilter();
+    const chosen = this.characterFilter();
+    return this.rows().filter((row) => {
+      if (this.hideDone() && row.done) return false;
+      // A set nobody you own favours is worth nothing now and might be worth something later —
+      // hidden by default because it is noise for most rosters, never dropped.
+      const reachable = row.available.length > 0 || row.completed.length > 0;
+      if (this.hideUnreachable() && !reachable) return false;
+      if (placement && row.placement !== placement) return false;
+      if (chosen.size && !this.favourites(row).some((id) => chosen.has(id))) return false;
+      if (!query) return true;
+      // The set's name, then the names on its chips — see `search`'s own note.
+      if (row.name.toLowerCase().includes(query)) return true;
+      return this.favourites(row).some(
+        (id) => this.characterName(id).toLowerCase().includes(query),
+      );
+    });
+  });
+
+  /** Every character who favours a set, in all three states — what the row's chips show. */
+  private favourites(row: SuiteRow): string[] {
+    return [...row.available, ...row.completed, ...row.unowned];
+  }
+
+  /**
+   * One card per character who favours *something* — the character filter's options.
+   *
+   * **Only the ones this roster has**, because the filter's purpose is "show me sets for my
+   * team" and a chip for a character you do not own can only ever narrow to sets you cannot
+   * claim. Derived from the rows on screen, so a chip can never find nothing.
+   */
+  protected readonly characterOptions = computed(() => {
+    const owned = new Set<string>();
+    for (const row of this.rows()) {
+      for (const id of [...row.available, ...row.completed]) owned.add(id);
+    }
+    return [...owned]
+      .map((id) => ({ id, name: this.characterName(id), icon: this.characterIcon(id) }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  });
+
+  protected toggleCharacter(id: string): void {
+    this.characterFilter.update((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  protected isCharacterChosen(id: string): boolean {
+    return this.characterFilter().has(id);
+  }
+
+  /** Back to every set, without hunting for which of four controls is still set. */
+  protected clearFilters(): void {
+    this.search.set('');
+    this.placementFilter.set('');
+    this.characterFilter.set(new Set());
+    this.hideDone.set(false);
+    this.hideUnreachable.set(true);
+  }
+
+  protected readonly filtering = computed(
+    () => this.search().trim() !== ''
+      || this.placementFilter() !== ''
+      || this.characterFilter().size > 0,
+  );
 
   protected readonly claimable = computed(
     () => this.rows().reduce((total, row) => total + row.remaining, 0),
