@@ -56,6 +56,7 @@ from app.models.teapot import FurnishingSuite
 from app.models.weapon import Weapon
 from app.services import element_symbols, weapon_symbols
 from app.services.practice_dummies import is_practice_dummy
+from app.services.unreleased import is_unreleased_class
 
 #: Where nanoka publishes them. `gi`, not `genshin` — checked, not guessed.
 CDN = "https://static.nanoka.cc/assets/gi"
@@ -171,6 +172,13 @@ async def wanted() -> list[tuple[str, str]]:
                 # will ever draw — and their portraits are not published upstream, so
                 # `--check` reported them as missing forever.
                 if model is Character and is_practice_dummy(row.nanoka_id):
+                    continue
+                # And rows whose weapon class the game has not shipped, for the same reason
+                # plus one: these icons are *committed*, so vendoring them publishes art for
+                # unreleased content — and their basenames say more than the rows do
+                # (`UI_EquipIcon_AssaultRifle_Glacia`, three `UI_EquipIcon_Grenade_*`). Seven
+                # were in the tree before anyone looked. `app/services/unreleased.py`.
+                if model in {Character, Weapon} and is_unreleased_class(row.weapon_type):
                     continue
                 if not row.icon:
                     continue
