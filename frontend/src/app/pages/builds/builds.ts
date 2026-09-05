@@ -462,11 +462,16 @@ export class BuildsPage implements OnInit {
   /**
    * Escape and the backdrop close a native dialog without going through `closeEditor`, so the
    * page's own state is reconciled on the `close` event rather than in the button handler.
-   * Nothing is discarded — an edit in progress is kept, and reopening the same build resumes
-   * it, which is what closing a panel means everywhere else in this app.
+   *
+   * **`editing` is cleared here**, because it is what draws the brass glow on a card in the
+   * list: leaving it set marked a build as being edited while no editor was open, and the
+   * highlight then sat there until another card was clicked (#289). Nothing is lost by
+   * clearing it — `edit()` refills every field from the build it reopens, so the "resume
+   * where you left off" this used to claim was never what happened.
    */
   protected onEditorClosed(): void {
     this.actionError.set(null);
+    this.editing.set(null);
   }
 
   private readonly service = inject(BuildsService);
