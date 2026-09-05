@@ -585,8 +585,25 @@ citations in curated data — do not import that failure mode into this repo.
   Code's default "only commit when explicitly asked" behavior: on a feature/fix branch
   (never `dev`), once a logical unit of work is complete and clean, commit it right
   away. This is a standing authorization for the *timing* of ordinary commits on the current
-  branch — it does not extend to pushing, merging, force operations, or anything on
-  `dev`, all of which still require the user to ask.
+  branch — it does not extend to force operations or history rewriting, which still require
+  the user to ask.
+- **Merging a PR to `dev` is authorized once the branch is fully verified.** Owner,
+  2026-09-05: *"You can merge after you verify a branch fully."* This replaces the older rule
+  that every merge needed the user to ask.
+
+  **"Fully verified" is the gate in §Gate discipline rule 3 and nothing looser:**
+  `cd backend && python -m scripts.ci_local`, exit 0 over **every** job, **on the commit that
+  is the PR head at the moment of merging.** Check that: `git rev-parse HEAD` against the
+  PR's `headRefOid`, and a clean `git status --porcelain` if the run was made against the
+  working tree rather than after the commit. A run on an earlier commit does not clear a later
+  one, and *"only docs changed since"* is the reasoning this refuses — it is the exemption
+  that would have let #294, the commit correcting a wrong claim in this very file, merge
+  unchecked.
+
+  **A merge to `dev` deploys**, so the authorization is to merge verified work, not to decide
+  that work is ready. Scope, approach and whether a thing should ship at all are still the
+  owner's. Confirm the deploy landed afterwards — `gh run list --branch dev`, then a request
+  against the site — because a merge and a deploy are two events and git shows only one.
 - **Test before committing when the change is big enough to warrant it.** For anything that
   touches logic or more than a couple of files, run the relevant tests and `ruff check` first
   — a commit should represent a *verified* unit of work, not just a completed one.
