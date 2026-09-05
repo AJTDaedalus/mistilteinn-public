@@ -581,21 +581,32 @@ citations in curated data — do not import that failure mode into this repo.
 
 - **Commit atomically as you go — do not wait to be asked.** This project overrides Claude
   Code's default "only commit when explicitly asked" behavior: on a feature/fix branch
-  (never `dev`/`main`), once a logical unit of work is complete and clean, commit it right
+  (never `dev`), once a logical unit of work is complete and clean, commit it right
   away. This is a standing authorization for the *timing* of ordinary commits on the current
   branch — it does not extend to pushing, merging, force operations, or anything on
-  `dev`/`main`, all of which still require the user to ask.
+  `dev`, all of which still require the user to ask.
 - **Test before committing when the change is big enough to warrant it.** For anything that
   touches logic or more than a couple of files, run the relevant tests and `ruff check` first
   — a commit should represent a *verified* unit of work, not just a completed one.
 - **Commit early and often** — each commit should be atomic (one logical change)
 - **Never bundle unrelated changes** in a single commit
 - Branch naming: `feat/<short-description>`, `fix/<short-description>`, `refactor/<short-description>`
-- Feature branches off `dev`, merge to `dev` via PR. `main` is for releases only.
-- **No direct commits to `dev` or `main`.** All work happens on a feature/fix branch; `dev` is
+- Feature branches off `dev`, merge to `dev` via PR.
+- **`dev` is the trunk, the default branch, and what serves prod.** There is no `main`.
+  `deploy-prod.yml` triggers on `push: branches: [dev]`, so **a merge to `dev` deploys to
+  `https://mistilteinn.aetherus.dev`** — there is no staging step between the two.
+
+  It used to be that `main` was the default branch and *"`main` is for releases only"*. In
+  thirteen months `main` received exactly one commit — `chore: fork fairy @ 76909c4` — while
+  `dev` went 543 ahead of it and served every request prod ever answered. The line described
+  an intention nobody had acted on, and it cost something real: GitHub honours `Closes #N`
+  only on a merge into the **default** branch, so PR #292 closed 23 issues in its description
+  and none on the tracker. `main` was deleted rather than fixed, because a second branch that
+  has to be remembered is the thing that failed.
+- **No direct commits to `dev`.** All work happens on a feature/fix branch; `dev` is
   updated only by PR merge after review. Verify `git branch --show-current` before every commit.
 - **Every DESIGN doc (`docs/DESIGN_<feature>.md`) must include a "Branch policy" section** near
-  the top that names the branch, restates the no-direct-`dev`/`main` rule, lists sub-branches if
+  the top that names the branch, restates the no-direct-`dev` rule, lists sub-branches if
   the feature has parallel tracks, and points at Task 0 of its TASKS file as the branch-setup
   gate.
 - Run `ruff check` and `pytest` before every commit — code must pass lint and tests

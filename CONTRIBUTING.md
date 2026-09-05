@@ -36,10 +36,10 @@ pytest
 
 ## Branch policy
 
-- **`main` is releases only. `dev` is the integration branch.** No direct
-  commits to either — production deploys from `dev` (see
-  [`docs/DEPLOY.md`](docs/DEPLOY.md)), so a wrong commit there can ship on
-  the next deploy.
+- **`dev` is the trunk, the default branch, and what serves production.**
+  There is no `main`. No direct commits — `deploy-prod.yml` triggers on a
+  push to `dev` (see [`docs/DEPLOY.md`](docs/DEPLOY.md)), so a commit there
+  ships, with no staging step in between.
 - All work happens on a feature/fix branch off `dev`:
   `feat/<short-description>`, `fix/<short-description>`,
   `refactor/<short-description>`.
