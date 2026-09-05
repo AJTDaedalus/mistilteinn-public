@@ -69,7 +69,7 @@ A.0 is the gate. **One PR per phase**, not per task — five PRs, not seventeen.
 - **Escalate if:** the export will not import or the tab needs a live account. Do not substitute
   a reading of the source for a screenshot and call the task done.
 
-### [ ] A.2 — The substat draw constants, as a cited external snapshot
+### [x] A.2 — The substat draw constants, as a cited external snapshot
 - **Why:** §8.3 — the weights are **not** in `ReliquaryAffixExcelConfigData` (350 rows at
   `5445617e33b2`: `id / propType / group_id / propValue / depotId`, no weight) and main-stat
   probabilities are not in `ReliquaryMainPropExcelConfigData`. `ReliquaryExcelConfigData.weight`
