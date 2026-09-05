@@ -5,7 +5,10 @@ import type { CharacterSummary } from '../pages/catalogue/catalogue.service';
 
 const character = (over: Partial<CharacterSummary>): CharacterSummary => ({
   id: 'x', name: 'X', icon: null, element: 'Cryo', element_icon: null,
-  weapon_type: 'WEAPON_SWORD_ONE_HAND', weapon_type_display: 'Sword', weapon_type_icon: null,
+  // A mark by default, because five of the six classes have one. The sixth is the case the
+  // last test in this file is about.
+  weapon_type: 'WEAPON_SWORD_ONE_HAND', weapon_type_display: 'Sword',
+  weapon_type_icon: 'Skill_A_01',
   ...over,
 } as CharacterSummary);
 
@@ -37,6 +40,26 @@ describe('character cards', () => {
     ]);
 
     expect(filters[0].options.map((o) => o.value)).toEqual(['Cryo']);
+  });
+
+  it('offers no chip for a weapon class with no mark, and keeps its rows pickable', () => {
+    // `WEAPON_CROSSBOW` is carried by two unreleased Traveler variants and has no sprite, so
+    // its chip drew as the wide word CROSSBOW among five glyphs and narrowed the grid to two
+    // rows nobody wants — reported as a filter for something that is not in the game (#271).
+    // `GET /weapon-classes` publishes five of the six for the same reason.
+    const roster = [
+      character({ id: 'a', name: 'Ganyu', weapon_type: 'WEAPON_BOW',
+        weapon_type_display: 'Bow', weapon_type_icon: 'Skill_A_02' }),
+      character({ id: 't', name: 'Traveler', element: null, weapon_type: 'WEAPON_CROSSBOW',
+        weapon_type_display: 'Crossbow', weapon_type_icon: null }),
+    ];
+
+    const weapons = characterCardFilters(roster).find((f) => f.group === 'weapon');
+
+    expect(weapons?.options.map((o) => o.label)).toEqual(['Bow']);
+    // Still a card. Excluding the *row* would be a different decision from excluding the
+    // chip, and `CardPicker` only hides an option when a chip in that group is pressed.
+    expect(characterCardOptions(roster).map((o) => o.value)).toEqual(['a', 't']);
   });
 
   it('keeps a character with no vision pickable and gives it no chip', () => {

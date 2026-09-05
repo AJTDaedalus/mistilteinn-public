@@ -21,6 +21,7 @@ from app.models.character import Character
 from app.models.user import User
 from app.repositories.roster import CharacterRosterRepository
 from app.services.roster import is_mannequin
+from app.services.unreleased import is_unreleased_class
 
 router = APIRouter(prefix="/roster", tags=["roster"])
 
@@ -69,6 +70,13 @@ async def list_roster(session: _Session, user: _User) -> RosterRead:
     cannot carry one.
 
     Mannequins are excluded — `services/roster.py` says why, and by id rather than by name.
+    So are the two Traveler variants carrying a weapon class the game has not shipped: this
+    list asks *"do you own this character?"* about every row it draws, and nobody owns one that
+    does not exist. `app/services/unreleased.py`, and #271.
+
+    **This route reads `select(Character)` directly**, not `CharacterRepository`, so it does
+    not inherit the catalogue's exclusions and has to state them — which is how the mannequin
+    rule already came to be written out here twice.
     """
     characters = (await session.execute(
         select(Character).order_by(Character.name),
@@ -82,7 +90,7 @@ async def list_roster(session: _Session, user: _User) -> RosterRead:
 
     entries = []
     for character in characters:
-        if is_mannequin(character.nanoka_id):
+        if is_mannequin(character.nanoka_id) or is_unreleased_class(character.weapon_type):
             continue
         answer = answers.get(str(character.id))
         entries.append(RosterEntryRead(
@@ -125,6 +133,14 @@ async def set_owned(
         raise HTTPException(
             status_code=422,
             detail="Practice mannequins cannot be owned",
+        )
+    if is_unreleased_class(character.weapon_type):
+        # `list_roster` hides these, and a write route that accepts what the read route will
+        # not show writes a row nobody can see or undo. The mannequin rule guards both
+        # surfaces for exactly this reason; this one had guarded only the list.
+        raise HTTPException(
+            status_code=422,
+            detail="That character is not in the game",
         )
 
     repository = CharacterRosterRepository(session, str(user.id))

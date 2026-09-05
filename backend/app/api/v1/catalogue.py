@@ -51,6 +51,7 @@ from app.schemas.common import PaginatedResponse
 from app.services import gcsim_keys, kqm_weapons
 from app.services.element_symbols import all_visions
 from app.services.reactions import offered
+from app.services.unreleased import is_unreleased_class
 from app.services.weapon_symbols import all_classes
 
 router = APIRouter(tags=["catalogue"])
@@ -152,9 +153,15 @@ async def get_weapon(
     nanoka_id: int,
     repo: Annotated[WeaponRepository, Depends(get_weapon_repo)],
 ) -> WeaponRead:
-    """One weapon with its refinement rows and growth curves."""
+    """One weapon with its refinement rows and growth curves.
+
+    A row whose class the game has not shipped answers 404 like a row that is not there. The
+    list hides these eight because their **names** are datamine-only (`services/unreleased.py`,
+    #271), and a detail route that still serves the name on request publishes exactly what
+    hiding the list was for — a guessable id is not a meaningful barrier.
+    """
     weapon = await repo.get_by_nanoka_id(nanoka_id)
-    if weapon is None:
+    if weapon is None or is_unreleased_class(weapon.weapon_type):
         raise HTTPException(status_code=404, detail=f"No weapon {nanoka_id}")
     return WeaponRead.model_validate(weapon)
 

@@ -99,6 +99,13 @@
   transition: border-color var(--t-fast) var(--ease),
               transform var(--t-fast) var(--ease);
 
+  /* **Every rung, not just the top one.** Only `5` was overridden, so a 3-star weapon drew
+     the 4-star purple tint and 4-star purple stars — reported as "there's already a diff
+     between 5* and 4* in glow, 3* should also have a separate glow" (#267). The default
+     stays 4-star because that is what an uncoloured card was already showing. */
+  &[data-stars='1'] { --rarity: var(--rarity-1); }
+  &[data-stars='2'] { --rarity: var(--rarity-2); }
+  &[data-stars='3'] { --rarity: var(--rarity-3); }
   &[data-stars='5'] { --rarity: var(--rarity-5); }
 
   &:hover {
@@ -169,6 +176,8 @@
 
 .catalogue .card[data-stars='1'] .card__stars { --rarity: var(--rarity-1); }
 .catalogue .card[data-stars='2'] .card__stars { --rarity: var(--rarity-2); }
+/* Three was the one missing here too, so a 3-star's stars were drawn in the 4-star purple. */
+.catalogue .card[data-stars='3'] .card__stars { --rarity: var(--rarity-3); }
 .catalogue .card[data-stars='4'] .card__stars { --rarity: var(--rarity-4); }
 .catalogue .card[data-stars='5'] .card__stars { --rarity: var(--rarity-5); }
 

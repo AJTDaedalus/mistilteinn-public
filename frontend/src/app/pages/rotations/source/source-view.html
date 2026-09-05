@@ -1,11 +1,4 @@
 <div class="source">
-  @if (required()) {
-    <p class="source__hint">
-      This rotation uses gcsim features the builder cannot draw — a user-defined function, or
-      a condition outside the pickers. It is edited here, as text.
-    </p>
-  }
-
   <app-function-palette [functions]="declared()" (called)="addCall($event)" />
 
   <textarea
@@ -21,7 +14,7 @@
     @if (checking()) {
       <span>checking…</span>
     } @else if (draft()) {
-      <span>unsaved draft — the last readable version is still in place</span>
+      <span>unsaved draft; the last readable version is still in place</span>
     } @else {
       <span>read</span>
     }

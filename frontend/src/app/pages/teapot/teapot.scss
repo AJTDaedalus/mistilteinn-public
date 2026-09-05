@@ -13,8 +13,82 @@
    column nobody can explain reads as a bug. */
 .teapot__uncited { flex: 1 1 20rem; font-size: var(--text-xs); }
 
-.teapot__filters { display: flex; flex-wrap: wrap; gap: var(--space-3); font-size: var(--text-sm); }
+.teapot__search { width: 100%; }
+
+/* The two "how is this list arranged" controls on one line: where the sets go, and in what
+   order. The character chips below are a different question and keep their own row. */
+.teapot__refine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+}
+
+.teapot__sort {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--ink-dim);
+}
+
+.teapot__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+}
 .teapot__filters label { display: flex; align-items: center; gap: var(--space-1); }
+
+.teapot__clear { padding: var(--space-1) var(--space-3); }
+
+.teapot__count { margin: 0; }
+
+/* Folded away by default: a roster of forty characters is forty chips, and a filter row
+   taller than the list it filters is the failure `card-picker` already recorded. */
+.teapot__by-character summary {
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--ink-dim);
+}
+
+.teapot__faces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+  max-height: 11rem;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+/* The three-state chips below are `<label>`s wrapping a checkbox; these are buttons, and the
+   page's own `.chip` gives them no pressed state — it never needed one. */
+.teapot__faces .chip {
+  padding: 0 var(--space-2) 0 var(--space-1);
+  cursor: pointer;
+}
+
+.teapot__faces .chip--on {
+  border-color: var(--brass);
+  color: var(--ink);
+  background: color-mix(in srgb, var(--brass) 14%, transparent);
+}
+
+/* The placement row uses the same chip, so it needs the same pressed state — and a little
+   more room, because these are three words a reader chooses between rather than a label on a
+   checkbox. */
+.teapot__filters .chip {
+  padding: var(--space-1) var(--space-3);
+  cursor: pointer;
+}
+
+.teapot__filters .chip--on {
+  border-color: var(--brass);
+  color: var(--ink);
+  background: color-mix(in srgb, var(--brass) 14%, transparent);
+}
 
 .teapot__list { margin: 0; padding: 0; list-style: none; }
 

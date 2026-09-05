@@ -24,9 +24,17 @@ export const SCOPES = [
   'normal', 'charged', 'plunge', 'skill', 'burst', 'reaction', 'any_attack',
 ] as const;
 
-/** `elemental_burst` → `Elemental burst`. The API sends the enum value. */
-export function talentLabel(talent: string): string {
-  const words = talent.replace(/_/g, ' ');
+/**
+ * An API enum value as a label — `elemental_burst` → `Elemental burst`, `cryo` → `Cryo`.
+ *
+ * **The value itself is untouched**: these lists are the API's vocabulary and are posted back
+ * verbatim, so only what the `<option>` prints changes. It was named `talentLabel` while doing
+ * nothing talent-specific, which is why the Element and Scope selects beside the Hit picker
+ * were the last controls in the app printing a raw enum on screen — "cryo", "any_attack" —
+ * next to a picker that had read "Elemental burst" all along (#286).
+ */
+export function enumLabel(value: string): string {
+  const words = value.replace(/_/g, ' ');
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
@@ -52,7 +60,7 @@ export function talentLabel(talent: string): string {
 export class ExplainPage implements OnInit {
   protected readonly channels = CHANNELS;
   protected readonly scopes = SCOPES;
-  protected readonly talentLabel = talentLabel;
+  protected readonly enumLabel = enumLabel;
 
   protected readonly loading = signal(true);
   /** Non-null means the page failed to load. Never rendered as "you have no builds". */

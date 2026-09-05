@@ -5,7 +5,7 @@
     type="button"
     class="picker__trigger"
     [disabled]="disabled()"
-    [attr.aria-label]="label() ? label() + ' — choose' : 'Choose'"
+    [attr.aria-label]="label() ? 'Choose ' + label() : 'Choose'"
     (click)="open()"
   >
     @if (chosen().length) {

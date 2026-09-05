@@ -59,3 +59,25 @@ def test_committed_schema_names_match_the_app():
     assert sorted(committed.get("components", {}).get("schemas", {})) == sorted(
         live.get("components", {}).get("schemas", {}),
     )
+
+
+def test_committed_schemas_match_the_app_field_by_field():
+    """The names alone were not enough, and a field slipped through.
+
+    `SuiteRow` gained `nanoka_id` and all four checks above stayed green: the paths, the
+    operations and the model *names* were unchanged. `npm run codegen` builds `api.types.ts`
+    from this file, so the SPA's `SuiteRow` had no such property and a template reading it
+    would have failed the Angular compiler with the backend already serving the field — the
+    same class of drift this file was written for, one level down.
+
+    Compared whole rather than key-by-key: both sides come from the same generator, so any
+    difference at all is drift, and deciding in advance which differences are acceptable is
+    how the next one gets through.
+    """
+    live = create_app().openapi()
+    assert _committed().get("components", {}).get("schemas", {}) == live.get(
+        "components", {},
+    ).get("schemas", {}), (
+        "frontend/openapi.json describes different model fields than the app serves. "
+        "Run `cd frontend && npm run openapi:fetch` with the backend up."
+    )

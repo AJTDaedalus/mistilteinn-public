@@ -29,10 +29,13 @@ ROSTER = "/api/v1/roster"
 pytestmark = pytest.mark.asyncio
 
 
-async def _character(session, nanoka_id: str, name: str) -> Character:
+async def _character(
+    session, nanoka_id: str, name: str,
+    weapon_type: WeaponType = WeaponType.SWORD,
+) -> Character:
     row = Character(
         nanoka_id=nanoka_id, name=name, element=Element.CRYO,
-        weapon_type=WeaponType.SWORD, rarity=Rarity.FIVE_STAR,
+        weapon_type=weapon_type, rarity=Rarity.FIVE_STAR,
         base_hp=1000.0, base_atk=26.0, base_def=60.0,
         base_crit_rate=0.05, base_crit_dmg=0.5,
     )
@@ -83,6 +86,28 @@ async def test_a_mannequin_is_never_offered(
     assert [e["name"] for e in body["entries"]] == ["Ningguang"]
 
 
+async def test_a_character_of_an_unshipped_weapon_class_is_never_offered(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """Two Traveler variants carry `WEAPON_CROSSBOW`, a class the game has not shipped.
+
+    The same argument as the mannequins one line up: this list asks *"do you own this
+    character?"* about every row it draws, and nobody owns one that does not exist.
+
+    **This route reads `select(Character)` directly**, so it does not inherit the catalogue
+    repository's exclusion and had to be told separately — which is exactly how the mannequin
+    rule already came to be written out in two places. Found by reading for the second copy
+    after the first was fixed, not by anything failing.
+    """
+    await _character(db_session, "10000005-9", "Traveler", WeaponType.CROSSBOW)
+    await _character(db_session, "10000027", "Ningguang")
+    await db_session.commit()
+
+    body = (await authed_client.get(ROSTER)).json()
+
+    assert [e["name"] for e in body["entries"]] == ["Ningguang"]
+
+
 async def test_a_mannequin_cannot_be_owned_by_asking_directly(
     authed_client: AsyncClient, db_session: AsyncSession,
 ) -> None:
@@ -96,6 +121,33 @@ async def test_a_mannequin_cannot_be_owned_by_asking_directly(
     )
 
     assert response.status_code == 422
+
+
+async def test_a_character_of_an_unshipped_class_cannot_be_owned_by_asking_directly(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """The list hides these (#271, `app/services/unreleased.py`) and the write route did not.
+
+    A `PATCH` on one wrote a roster row that `list_roster` then filtered out: owned, invisible,
+    and impossible to un-own through the UI that never drew it. The mannequin rule above
+    guards both surfaces, which is the precedent this one was written from and had only half
+    copied.
+    """
+    traveler = await _character(
+        db_session, "10000005-9", "Traveler", weapon_type=WeaponType.CROSSBOW,
+    )
+    await db_session.commit()
+
+    response = await authed_client.patch(
+        f"{ROSTER}/{traveler.id}", json={"owned": True},
+    )
+
+    assert response.status_code == 422
+    # And nothing was written — a refusal that still persisted the row would be the bug with
+    # a status code on it.
+    listed = await authed_client.get(ROSTER)
+    assert all(entry["character_id"] != str(traveler.id) for entry in listed.json()["entries"])
+    assert listed.json()["owned_count"] == 0
 
 
 async def test_the_user_can_say_they_have_a_character(

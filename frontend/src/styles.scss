@@ -239,6 +239,59 @@ dialog,
 }
 
 
+// ── The filter chip ──────────────────────────────────────────────────────────
+//
+// A toggle in a filter row: pressed or not, and nothing in between.
+//
+// **This is the sixth copy, and the first one anything shared can reach.** `.chip` was
+// written out in five page stylesheets — teapot, optimize, catalogue, builds, artifacts —
+// and in none of them globally, so `shared/card-picker`, which draws a chip per element and
+// per weapon class, matched no rule at all: its chips took the plain `button` styling and
+// `.chip--on` styled nothing. A user pressed Bow and Catalyst together, the grid filtered
+// correctly to 49 characters, and **neither chip looked pressed** (#272). `optimize.scss`
+// records the identical failure happening to it once already, which is the argument for
+// putting the definition somewhere every page inherits rather than writing a sixth copy.
+//
+// A page that wants its own look still wins: a component-scoped `.chip` carries Angular's
+// `[_ngcontent-*]` attribute and so outranks this. This is the floor, not the ceiling.
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  background: var(--surface);
+  color: var(--ink-dim);
+  font-size: var(--text-sm);
+  line-height: 1.3;
+  transition:
+    color var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease);
+
+  // **A chip is not always a control.** The teapot draws one per character a set favours, and
+  // an unowned character's is a `<span>` that says so and does nothing — asserting `cursor:
+  // pointer` and a hover colour on the bare class gave that span a button's affordances.
+  // Appearance is the shared part; interactivity belongs to the element that has it.
+  //
+  // `:where()` rather than `button.chip` so the guard costs no specificity: a page that
+  // already styles its own `.chip--on` must keep outranking this hover, as it did before.
+  &:where(button, label, a) {
+    cursor: pointer;
+
+    &:hover { border-color: var(--halo-brass); color: var(--ink); }
+  }
+}
+
+.chip--on {
+  border-color: var(--brass);
+  color: var(--ink);
+  background: color-mix(in srgb, var(--brass) 14%, var(--surface));
+  box-shadow: var(--glow-brass);
+}
+
+
 // ── Status and emphasis utilities ────────────────────────────────────────────
 //
 // `.muted`, `.hint`, `.error` and `.warn` were defined nine times across the page

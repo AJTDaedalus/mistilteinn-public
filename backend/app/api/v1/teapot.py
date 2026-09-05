@@ -40,8 +40,16 @@ class SuiteRow(BaseModel):
     """One set in the tracker."""
 
     suite_id: str
+    #: nanoka's own key, `"1"` … `"109"`, ascending by release.
+    #:
+    #: Published so a client can offer release order as a sort — the nearest thing the source
+    #: supports to *"sort sets by how they appear in-game"* (#266). It is **not** the game's
+    #: own list order, and the client's control is labelled for what this actually is.
+    nanoka_id: str
     name: str
     icon: str
+    #: `"I"`/`"IG"` indoor, `"O"`/`"OG"` outdoor — see `SuiteProgress.placement` for why the
+    #: leading letter is the part a reader should match on.
     placement: str
     # **Three states per character per set** — the owner's own vocabulary. Every favouring
     # character is in exactly one, and the tracker exists for the first: which set to build
@@ -116,7 +124,8 @@ async def list_suites(session: _Session, user: _User) -> TeapotRead:
     rows = progress_for(
         [
             {
-                "id": suite.id, "name": suite.name, "icon": suite.icon,
+                "id": suite.id, "nanoka_id": suite.nanoka_id, "name": suite.name,
+                "icon": suite.icon,
                 "placement": suite.placement, "favorite": favorites.get(suite.id, []),
             }
             for suite in suites
@@ -128,7 +137,8 @@ async def list_suites(session: _Session, user: _User) -> TeapotRead:
     return TeapotRead(
         suites=[
             SuiteRow(
-                suite_id=row.suite_id, name=row.name, icon=row.icon,
+                suite_id=row.suite_id, nanoka_id=row.nanoka_id,
+                name=row.name, icon=row.icon,
                 placement=row.placement,
                 available=list(row.available), completed=list(row.completed),
                 unowned=list(row.unowned), built=row.built, done=row.done,

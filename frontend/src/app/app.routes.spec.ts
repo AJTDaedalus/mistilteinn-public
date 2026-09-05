@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { describe, expect, it, vi } from 'vitest';
 import { signal } from '@angular/core';
 
@@ -43,7 +43,7 @@ function renderedShell(): string {
 
 /** Paths that are deliberately not in the nav, and why each one is exempt. */
 const NOT_IN_NAV: Record<string, string> = {
-  '': 'the landing page is the brand link',
+  '': 'a redirect to /inventory — the brand link goes there, and the nav already links the canonical path',
   login: 'reached by being signed out, not by clicking',
   pending: 'reached by having a pending account',
   '**': 'the catch-all redirect',
@@ -56,6 +56,90 @@ const NOT_IN_NAV: Record<string, string> = {
     + 'arriving is finishing a signup, and a nav entry would offer every signed-in user a '
     + 'page that can only tell them their link is invalid',
 };
+
+/**
+ * `/` is a redirect, and redirects are the routes that fail silently.
+ *
+ * The empty path matches by **prefix** unless `pathMatch: 'full'` is set, so the difference
+ * between this working and the whole app redirecting to `/inventory` is one property. Nothing
+ * else here would notice: the config compiles either way, and every other route's own test
+ * asserts on the shell's nav rather than on navigation.
+ *
+ * So this navigates for real, through the router, with the guards live.
+ */
+describe('the front door', () => {
+  async function routerWith(status: 'approved' | 'pending' | 'unauthed') {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        {
+          provide: AuthService,
+          useValue: { status: signal(status), me: signal({ email: 't@example.com' }), logout: vi.fn() },
+        },
+      ],
+    });
+    return TestBed.inject(Router);
+  }
+
+  it('sends an approved user from / to the inventory', async () => {
+    const router = await routerWith('approved');
+
+    await router.navigateByUrl('/');
+
+    expect(router.url).toBe('/inventory');
+  });
+
+  it('leaves every other url alone', async () => {
+    // The `pathMatch: 'full'` assertion, made where it bites. Without it the empty path
+    // matches by prefix and this comes back '/inventory'.
+    const router = await routerWith('approved');
+
+    await router.navigateByUrl('/builds');
+
+    expect(router.url).toBe('/builds');
+  });
+
+  it('still sends a signed-out arrival to the login page', async () => {
+    // The redirect carries no guard of its own; `/inventory` carries `requireApproved` and
+    // that guard returns a UrlTree. Repeating the rule on the redirect would be a second copy
+    // of it, and this asserts the single copy still reaches someone arriving at `/`.
+    const router = await routerWith('unauthed');
+
+    await router.navigateByUrl('/');
+
+    expect(router.url).toBe('/login');
+  });
+
+  it('sends a pending account to the pending page', async () => {
+    const router = await routerWith('pending');
+
+    await router.navigateByUrl('/');
+
+    expect(router.url).toBe('/pending');
+  });
+
+  it('sends an approved user away from the login page', async () => {
+    // `requireUnauthed` returns a UrlTree for `/`, which is now itself a redirect. A guard
+    // redirect starts a fresh navigation, so this chain does resolve — asserted rather than
+    // assumed, because the catch-all's did not.
+    const router = await routerWith('approved');
+
+    await router.navigateByUrl('/login');
+
+    expect(router.url).toBe('/inventory');
+  });
+
+  it('resolves an unknown url rather than looping through the catch-all', async () => {
+    // `**` redirects to `''`, and `''` now redirects again. Two hops is fine and three would
+    // not be, so the chain is walked rather than assumed.
+    const router = await routerWith('approved');
+
+    await router.navigateByUrl('/no-such-page');
+
+    expect(router.url).toBe('/inventory');
+  });
+});
 
 describe('app routes', () => {
   const linkable = routes

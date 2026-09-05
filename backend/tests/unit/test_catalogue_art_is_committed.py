@@ -152,3 +152,40 @@ def test_every_symbol_the_app_asks_for_is_vendored(basename: str) -> None:
         f"{basename}.webp is named by the app but not vendored — run "
         f"`cd backend && python -m scripts.download_icons`"
     )
+
+
+#: Art for rows whose weapon class the game has not shipped. Named by basename because that is
+#: what the check can see without a database — and because these basenames are themselves the
+#: problem: `AssaultRifle`, `GrenadeLauncher`, `Grenade`.
+#:
+#: The two Traveler variants of the same class are **not** here: their portraits are
+#: `UI_AvatarIcon_PlayerBoy` / `PlayerGirl`, shared with the Travelers who have shipped.
+UNRELEASED_ART = (
+    "UI_EquipIcon_AssaultRifle_Glacia",
+    "UI_EquipIcon_AssaultRifle_Fulmen",
+    "UI_EquipIcon_GrenadeLauncher_Ignis",
+    "UI_EquipIcon_Grenade_Fire",
+    "UI_EquipIcon_Grenade_Water",
+    "UI_EquipIcon_Grenade_Electric",
+    "UI_EquipIcon_Grenade_Ice",
+)
+
+
+@pytest.mark.parametrize("basename", UNRELEASED_ART)
+def test_art_for_an_unshipped_weapon_class_is_not_vendored(basename: str) -> None:
+    """Seven of these were committed to this repository, and nobody had looked.
+
+    `download_icons.py` walks `select(Weapon)` directly, so it fetched art for the eight
+    `WEAPON_CROSSBOW` rows along with everything else, and `docs/DECISIONS.md` then made the
+    icon directory **committed** — which turns "we vendor what the catalogue names" into
+    "we publish art for unreleased content". The filenames are the louder half: the rows are
+    called `Frag Crystal`, the files are called `GrenadeLauncher` and `AssaultRifle`.
+
+    The Discord report (#271) was about a filter chip. This is the third layer under it, and
+    the only one a `git grep` can police — which is why it is asserted here rather than left
+    to the downloader's own `continue`.
+    """
+    assert not (ICONS / f"{basename}.webp").is_file(), (
+        f"{basename}.webp is art for a weapon class the game has not shipped. "
+        f"`app/services/unreleased.py` says why it is not vendored."
+    )

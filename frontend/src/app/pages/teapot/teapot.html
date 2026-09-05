@@ -1,10 +1,6 @@
 <section class="teapot">
   <header>
     <h1>Teapot sets</h1>
-    <p class="muted">
-      Furnishing sets, ordered by how many characters you have who favour them and have not
-      been invited yet.
-    </p>
   </header>
 
   @if (error(); as message) {
@@ -25,11 +21,79 @@
       <span class="muted">{{ finished() }} sets done</span>
       @if (reward() === null) {
         <span class="muted teapot__uncited">
-          Primogem totals are not shown: the server published no reward figure. The order is
-          unaffected.
+          No primogem totals: the server published no reward figure.
         </span>
       }
     </div>
+
+    <!-- 109 sets in one list, and the only way to reach one was to scroll: *"search bar in
+         general lmao, ctrl f to find exactly what i need"* (#266). Search first, because it
+         is the control that answers "where is the one I came for"; the chips below it answer
+         "which ones should I care about". -->
+    <input
+      type="search"
+      name="suite-search"
+      class="teapot__search"
+      placeholder="Find a set or a character…"
+      aria-label="Find a furnishing set"
+      [value]="search()"
+      (input)="search.set($any($event.target).value)"
+    />
+
+    <div class="teapot__refine">
+      <div class="teapot__filters" role="group" aria-label="Where the set goes">
+        @for (option of [['', 'Anywhere'], ['I', 'Indoor'], ['O', 'Outdoor']]; track option[0]) {
+          <button
+            type="button"
+            class="chip"
+            [class.chip--on]="placementFilter() === option[0]"
+            [attr.aria-pressed]="placementFilter() === option[0]"
+            (click)="placementFilter.set(option[0])"
+          >{{ option[1] }}</button>
+        }
+      </div>
+
+      <!-- **"Release order", not "in-game order".** The ask was *"sort sets by how they
+           appear in-game"*, and the source publishes no field for that — this is the set's
+           own key, ascending as sets shipped. The label says what it actually is. -->
+      <label class="teapot__sort">
+        Order
+        <select aria-label="Order the sets by" [value]="sort()"
+                (change)="sort.set($any($event.target).value)">
+          <option value="" [selected]="sort() === ''">Most to claim</option>
+          <option value="release" [selected]="sort() === 'release'">Release order</option>
+        </select>
+      </label>
+    </div>
+
+    <!-- *"show only sets of your selected 3 chars"*. Faces, because that is how a roster is
+         recognised, and the name beside each because a face is a label only to someone who
+         already knows it — `card-picker`'s rule, and the same one the chips below follow. -->
+    @if (characterOptions().length) {
+      <details class="teapot__by-character">
+        <summary>Filter by character</summary>
+        <div class="teapot__faces" role="group" aria-label="Filter by character">
+          @for (option of characterOptions(); track option.id) {
+            <button
+              type="button"
+              class="chip"
+              [class.chip--on]="isCharacterChosen(option.id)"
+              [attr.aria-pressed]="isCharacterChosen(option.id)"
+              (click)="toggleCharacter(option.id)"
+            >
+              <catalogue-icon
+                class="chip__face"
+                [icon]="option.icon"
+                [alt]="''"
+                [size]="20"
+                fit="cover"
+              />
+              {{ option.name }}
+            </button>
+          }
+        </div>
+      </details>
+    }
 
     <div class="teapot__filters">
       <label>
@@ -44,7 +108,14 @@
         />
         hide sets nobody you have favours
       </label>
+      @if (filtering()) {
+        <button type="button" class="teapot__clear" (click)="clearFilters()">Clear</button>
+      }
     </div>
+
+    <p class="muted teapot__count">
+      Showing {{ visible().length }} of {{ rows().length }} sets.
+    </p>
 
     <ul class="teapot__list">
       @for (row of visible(); track row.suite_id) {
@@ -150,7 +221,7 @@
         </li>
       } @empty {
         <li class="teapot__empty muted">
-          Nothing to show — try turning off the filters above.
+          No set matches.
         </li>
       }
     </ul>

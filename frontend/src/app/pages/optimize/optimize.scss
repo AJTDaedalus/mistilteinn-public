@@ -589,13 +589,6 @@
   cursor: pointer;
 }
 
-/* Indented under the choice so it reads as that choice's explanation rather than as the next
-   thing in the fieldset. The indent is the box plus its gap. */
-.energy-model__why {
-  display: block;
-  margin: 0.15rem 0 0 1.7rem;
-}
-
 /* A re-opened saved run. It renders from the stored snapshot and runs no gcsim — that is
    what storing the result bought. */
 .saved-run {

@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import { injectApi } from '../../api/api.client';
 import type { components } from '../../api/api.types';
@@ -21,7 +22,7 @@ export type OwnedWeapon = components['schemas']['OwnedWeaponRead'];
  */
 @Component({
   selector: 'page-weapons-inventory',
-  imports: [CatalogueIcon, WeaponMark],
+  imports: [CatalogueIcon, RouterLink, WeaponMark],
   templateUrl: './weapons-inventory.html',
   styleUrl: './weapons-inventory.scss',
 })

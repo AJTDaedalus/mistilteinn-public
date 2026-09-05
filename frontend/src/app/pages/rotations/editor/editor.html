@@ -31,6 +31,9 @@
       />
     </label>
 
+    <!-- Disabled while editing: the API has no `team_id` on PATCH, so moving a rotation would
+         reinterpret every step against a different party, and the steps that stopped resolving
+         would be found later, at compile time, far from the edit that caused it. -->
     <mist-card-picker
       label="Team"
       placeholder="Choose a team…"
@@ -39,17 +42,8 @@
       [disabled]="editing() !== null"
       (selectedChange)="pickTeam($event)"
     />
-    @if (editing()) {
-      <!-- The API has no `team_id` on PATCH: moving a rotation would reinterpret every
-           step against a different party, and the steps that stopped resolving would be
-           found later, at compile time, far from the edit that caused it. -->
-      <p class="hint">
-        A saved rotation stays on its team. Build a new one for another team.
-      </p>
-    }
-
     @if (roster().length === 0) {
-      <p class="hint">That team has no builds yet, so there is nobody to act.</p>
+      <p class="hint">That team has no builds yet.</p>
     } @else {
       <!-- Who is available to act, once, rather than re-read from every step's
            dropdown. -->
@@ -154,8 +148,11 @@
       <button type="button" (click)="copySelection()" [disabled]="selection() === null">
         Copy{{ selectedCount() > 1 ? ' ' + selectedCount() + ' steps' : '' }}
       </button>
+      <!-- The count only once there is one. It read "Paste 0" on an empty clipboard, which
+           is a button naming the number of things it cannot do (#280); the Copy button beside
+           it already had the rule and this one did not. -->
       <button type="button" (click)="pasteClipboard()" [disabled]="clipboard().length === 0">
-        Paste {{ clipboard().length }}
+        Paste{{ clipboard().length > 1 ? ' ' + clipboard().length + ' steps' : '' }}
       </button>
       @if (selectionIsGroup()) {
         <button type="button" (click)="ungroupSelection()">Ungroup</button>
@@ -288,10 +285,6 @@
           [disabled]="!configLink().trim() || fetchingLink()"
         >{{ fetchingLink() ? 'Fetching…' : 'Fetch it' }}</button>
       </div>
-      <p class="hint">
-        The run's config is fetched and read into steps, exactly as pasting it would be.
-        Nothing is simulated on gcsim's side, and once imported the steps are yours.
-      </p>
 
       <label for="gcsim-config">…or paste a gcsim config</label>
         <textarea
@@ -302,14 +295,12 @@
           [value]="configText()"
           (input)="configText.set($any($event.target).value)"
         ></textarea>
-        <p class="hint">
-          The action block, or a whole config — the rest is ignored. Anything that cannot be
-          expressed as steps is refused by line rather than dropped.
-          @if (steps().length > 0) {
+        @if (steps().length > 0) {
+          <p class="hint">
             <strong>This replaces the {{ steps().length }} step{{ steps().length === 1 ? '' : 's' }}
             below.</strong>
-          }
-        </p>
+          </p>
+        }
         <button type="button" (click)="importConfig()" [disabled]="!configText().trim()">
           Read it into steps
         </button>

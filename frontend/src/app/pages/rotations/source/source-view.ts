@@ -38,8 +38,6 @@ export class SourceView {
   readonly teamId = input.required<string>();
   /** The source to start from — usually `emit(tree)` for the rotation being edited. */
   readonly source = input<string>('');
-  /** True when the builder cannot render every node, so this surface is the only way in. */
-  readonly required = input<boolean>(false);
 
   /** A tree that parsed. Emitted only when the source is readable. */
   readonly parsed = output<RotationTree>();

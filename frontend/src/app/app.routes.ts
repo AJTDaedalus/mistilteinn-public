@@ -22,9 +22,21 @@ export const routes: Routes = [
     canMatch: [requirePending],
   },
   {
+    // **`/` is the inventory.** Owner, 2026-09-05: *"inventory is a good landing page"*, after
+    // *"honestly landing page could just be blank and be better"* — the page it replaces sat
+    // behind `requireApproved`, so its only reader was a signed-in user looking at a nav bar
+    // that already carried all eleven links. It was the nav a second time, in prose.
+    //
+    // **No guard here, on purpose.** `/inventory` carries `requireApproved`, and that guard
+    // returns a `UrlTree`, so a signed-out arrival lands on `/login` and a pending one on
+    // `/pending` exactly as before. Repeating the guard on a redirect would put the same rule
+    // in two places, and the one that drifted would be the one nobody reads.
+    //
+    // `pathMatch: 'full'` is load-bearing: an empty path matches by *prefix* by default, so
+    // without it this route would swallow every URL in the app.
     path: '',
-    loadComponent: () => import('./pages/landing/landing').then((m) => m.LandingPage),
-    canMatch: [requireApproved],
+    redirectTo: 'inventory',
+    pathMatch: 'full',
   },
   {
     // The first account surface this app has had. The header chip could sign you out and
@@ -119,7 +131,13 @@ export const routes: Routes = [
     canMatch: [requireApproved],
   },
   {
+    // **Straight to `/inventory`, not via `''`.** It pointed at `''` while `''` rendered the
+    // landing page. Now that `''` is itself a redirect, that was two hops — and Angular
+    // resolves one redirect per recognition pass, so an unknown URL landed on `/` and stopped
+    // there, on a path with no component, rendering nothing. Caught by walking the chain in a
+    // test rather than assuming it; the guards' `createUrlTree(['/'])` *does* chain, because
+    // a guard redirect starts a fresh navigation, and there is a test for that too.
     path: '**',
-    redirectTo: '',
+    redirectTo: 'inventory',
   },
 ];

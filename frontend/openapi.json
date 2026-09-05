@@ -10058,6 +10058,10 @@
             "type": "string",
             "title": "Suite Id"
           },
+          "nanoka_id": {
+            "type": "string",
+            "title": "Nanoka Id"
+          },
           "name": {
             "type": "string",
             "title": "Name"
@@ -10118,6 +10122,7 @@
         "type": "object",
         "required": [
           "suite_id",
+          "nanoka_id",
           "name",
           "icon",
           "placement",

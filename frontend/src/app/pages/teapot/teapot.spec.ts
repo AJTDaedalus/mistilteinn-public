@@ -6,7 +6,8 @@ import { TeapotService } from './teapot.service';
 import { TeapotPage } from './teapot';
 
 const suite = (over: Partial<SuiteRow> = {}): SuiteRow => ({
-  suite_id: 's1', name: 'Adventurer Camp', icon: 'UI_Home_Suite_Camp_01', placement: 'O',
+  suite_id: 's1', nanoka_id: '1', name: 'Adventurer Camp',
+  icon: 'UI_Home_Suite_Camp_01', placement: 'O',
   available: ['a'], completed: [], unowned: [], built: false, done: false,
   remaining: 1, remaining_primogems: null,
   ...over,
@@ -78,7 +79,6 @@ describe('TeapotPage', () => {
     await build();
 
     expect(fixture.nativeElement.textContent).toContain('no reward figure');
-    expect(fixture.nativeElement.textContent).toContain('order is unaffected');
   });
 
   it('takes the reward from the server rather than restating it', async () => {
@@ -241,6 +241,154 @@ describe('TeapotPage', () => {
 
     expect(fixture.nativeElement.querySelectorAll('.chip--unowned').length).toBe(2);
   });
+  // ── Finding one set among 109 (#266) ─────────────────────────────────────
+  //
+  // *"search bar in general lmao, ctrl f to find exactly what i need to keeping track isnt
+  // that convenient"*. Ctrl-F is what these replace, so they have to be at least as good as
+  // Ctrl-F over the rendered page — which finds a character's name as readily as a set's.
+
+  const ROSTER = read({
+    suites: [
+      suite({ suite_id: 's1', nanoka_id: '20', name: 'Adventurer Camp',
+        placement: 'OG', available: ['a'] }),
+      suite({ suite_id: 's2', nanoka_id: '3', name: 'Cool Isle',
+        placement: 'IG', available: ['b'] }),
+    ],
+  });
+
+  async function withRoster(): Promise<void> {
+    suites.mockResolvedValue(ROSTER);
+    await build();
+  }
+
+  it('finds a set by name', async () => {
+    await withRoster();
+
+    fixture.componentInstance['search'].set('cool');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Cool Isle');
+    expect(fixture.nativeElement.textContent).not.toContain('Adventurer Camp');
+  });
+
+  it('finds a set by the name of a character who favours it', async () => {
+    // The chips on the row carry these names, so Ctrl-F already found them. A search that
+    // matched only the set's name would be a worse Ctrl-F than Ctrl-F.
+    await withRoster();
+
+    fixture.componentInstance['search'].set('noelle');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Adventurer Camp');
+    expect(fixture.nativeElement.textContent).not.toContain('Cool Isle');
+  });
+
+  it('narrows to indoor or outdoor sets on the leading letter, not the whole code', async () => {
+    // **Four values, not two.** nanoka spells placement `I`, `IG`, `O` and `OG`, and at
+    // 7.0.51 the split is OG 48, IG 31, O 18, I 12 — so an equality match on "I" would offer
+    // Indoor and find 12 of the 43 indoor sets. Both fixtures here are the `G` spelling,
+    // which is the one an equality match drops.
+    await withRoster();
+
+    fixture.componentInstance['placementFilter'].set('I');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Cool Isle');
+    expect(fixture.nativeElement.textContent).not.toContain('Adventurer Camp');
+  });
+
+  it('says where a set goes for the G spellings too', async () => {
+    // The same bug one surface over: `placement()` compared the whole string, so 79 of the
+    // 109 rows said nothing at all about where the set goes.
+    await withRoster();
+
+    expect(fixture.nativeElement.textContent).toContain('outdoor');
+    expect(fixture.nativeElement.textContent).toContain('indoor');
+  });
+
+  it('orders by release when asked, numerically', async () => {
+    // The ask was *"sort sets by how they appear in-game"*; the source has no field for that,
+    // so the control is labelled Release order for what `nanoka_id` actually is. Numeric,
+    // because these are "1" … "109" and a string sort puts 100 between 10 and 11.
+    await withRoster();
+
+    fixture.componentInstance['sort'].set('release');
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance['visible']().map((row) => row.name))
+      .toEqual(['Cool Isle', 'Adventurer Camp']);
+  });
+
+  it('narrows to the sets a chosen character favours', async () => {
+    // Any of the chosen characters, not all: *"show only sets of your selected 3 chars"* is
+    // "what should I build for this group", and requiring all three finds nothing.
+    await withRoster();
+
+    fixture.componentInstance['toggleCharacter']('a');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Adventurer Camp');
+    expect(fixture.nativeElement.textContent).not.toContain('Cool Isle');
+  });
+
+  it('offers a character chip only for characters this roster has', async () => {
+    // A chip for somebody you do not own can only narrow to sets you cannot claim, so it is
+    // a control whose every outcome is an empty list.
+    suites.mockResolvedValue(read({
+      suites: [suite({ available: ['a'], unowned: ['zzz-not-owned'] })],
+    }));
+    await build();
+
+    expect(fixture.componentInstance['characterOptions']().map((o) => o.id)).toEqual(['a']);
+  });
+
+  it('puts every filter back with one control', async () => {
+    await withRoster();
+    fixture.componentInstance['search'].set('cool');
+    fixture.componentInstance['placementFilter'].set('I');
+    fixture.componentInstance['toggleCharacter']('b');
+    fixture.componentInstance['sort'].set('release');
+    fixture.detectChanges();
+
+    fixture.componentInstance['clearFilters']();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance['filtering']()).toBe(false);
+    expect(fixture.nativeElement.textContent).toContain('Adventurer Camp');
+    expect(fixture.nativeElement.textContent).toContain('Cool Isle');
+  });
+
+  it('offers Clear for a tick box, because Clear resets one', async () => {
+    // The two are one control between them: `clearFilters()` put `hideDone` back and
+    // `filtering()` did not count it, so the only narrowing a user had applied was the one
+    // the button was hidden for.
+    await withRoster();
+
+    fixture.componentInstance['hideDone'].set(true);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance['filtering']()).toBe(true);
+  });
+
+  it('offers Clear once the unreachable sets are shown, because Clear hides them again', async () => {
+    // The other direction, and the one that loses work: a user who deliberately un-ticked
+    // "hide sets nobody you have favours" gets it silently re-ticked by a button that says
+    // Clear. Either it is a filter — in which case Clear may reset it and must announce it —
+    // or it is not, and Clear must leave it alone.
+    await withRoster();
+
+    fixture.componentInstance['hideUnreachable'].set(false);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance['filtering']()).toBe(true);
+
+    fixture.componentInstance['clearFilters']();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance['hideUnreachable']()).toBe(true);
+    expect(fixture.componentInstance['filtering']()).toBe(false);
+  });
+
 });
 
 

@@ -1,7 +1,9 @@
 <section class="account">
   <header>
+    <!-- No subtitle. It read "Who you are here, and the face that stands in for you" under
+         a heading saying Account, above a list saying Email and an avatar picker — a sentence
+         restating three labels the reader has already reached. -->
     <h1>Account</h1>
-    <p class="muted">Who you are here, and the face that stands in for you.</p>
   </header>
 
   @if (auth.me(); as me) {
@@ -19,10 +21,6 @@
 
   <section class="account__avatar">
     <h2>Avatar</h2>
-    <p class="muted">
-      Any character in the catalogue — this is decoration, so it is not limited to the ones you
-      own.
-    </p>
 
     <div class="account__chosen">
       <!-- The headshot itself, large enough to actually see. The picker's trigger names the

@@ -347,6 +347,25 @@ jobs:
         # `--space-5` in four stylesheets.
         run: npm run check:tokens
 
+      - name: Check every dialog can still close
+        # A `<dialog>` is hidden by the UA's `dialog:not([open]) { display: none }`, and any
+        # author rule setting `display` on the same element beats it — so the dialog stays laid
+        # out in the page after `close()`, with its `open` attribute correctly absent. One such
+        # rule left the rotation editor rendered under the rotation list on every viewport over
+        # 1408px and produced two separate bug reports (#290, #284). jsdom has no
+        # `HTMLDialogElement`, so no component test in this repo can tell an open dialog from a
+        # closed one; the check that works reads the stylesheet.
+        run: npm run check:dialogs
+
+      - name: Check every routerLink resolves
+        # Angular does not error on an unknown **static** attribute, so a standalone component
+        # whose `imports` omits `RouterLink` compiles, lints, and renders
+        # `<a routerLink="/inventory">` as an anchor with no `href` — not clickable, not
+        # focusable, navigating nowhere, and saying so nowhere. That shipped on the one line an
+        # empty weapon inventory shows. The directive is the difference between a link and a
+        # word; nothing else in the toolchain checks that it is there.
+        run: npm run check:router-links
+
       - name: Unit tests
         # Re-enabled in A.2 (client-optimizer plan). It was disabled with a
         # `TODO(chunk-J)` because `npm test` and `npm run build` both failed to compile:

@@ -236,8 +236,10 @@
         <button type="button" class="editor__close" aria-label="Close" (click)="closeRanking()">×</button>
       </header>
 
+      <!-- "the higher one" was reported as ambiguous — higher *what*, and higher than what
+           (#276). It is the build's position in the list below, so the sentence names it. -->
       <p class="hint">
-        Highest first. When two builds want the same artifact, the higher one takes it.
+        Highest first.
       </p>
 
       <ol class="rank__list">
@@ -274,7 +276,7 @@
             >×</button>
           </li>
         } @empty {
-          <li class="muted">Nothing ranked yet — add a build below.</li>
+          <li class="muted">Nothing ranked yet.</li>
         }
       </ol>
 
@@ -317,12 +319,6 @@
         [disabled]="editing() !== null"
         (selectedChange)="pickCharacter($event)"
       />
-      @if (editing()) {
-        <!-- `BuildUpdate` has no `character_id` and refuses one rather than dropping it
-             silently (T.1). Changing a build's character makes it a different build. -->
-        <p class="hint">A saved build keeps its character. Make a new one to change it.</p>
-      }
-
       <!-- `clearable`, because `weapon_id` is nullable by design (OQ-T3): a build being
            assembled without one is a real state, and the damage chain refuses to run without
            a weapon, which is the right place for that refusal. -->
@@ -351,8 +347,6 @@
             />
         </p>
         <p class="hint">
-          Only {{ chosen.weapon_type_display }}s are listed — {{ chosen.name }} cannot hold
-          anything else.
         </p>
       }
 
