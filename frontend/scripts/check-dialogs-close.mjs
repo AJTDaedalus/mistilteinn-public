@@ -48,10 +48,19 @@ const files = walk(SRC);
  * day it is written and not on the day somebody remembers this file.
  */
 const dialogClasses = new Set();
+const unreadable = [];
 for (const file of files.filter((f) => f.endsWith('.html'))) {
   for (const tag of readFileSync(file, 'utf8').matchAll(/<dialog\b[^>]*>/g)) {
     const attr = /class="([^"]*)"/.exec(tag[0]);
     for (const name of attr?.[1].split(/\s+/).filter(Boolean) ?? []) dialogClasses.add(name);
+    // A conditional class is still a class the stylesheet can set `display` on, and
+    // `card-picker` has one live: `[class.picker__dialog--few]`. Reading only the static
+    // attribute left it invisible to a check written to see exactly this.
+    for (const bound of tag[0].matchAll(/\[class\.([\w-]+)\]/g)) dialogClasses.add(bound[1]);
+    // `[class]` and `[ngClass]` name no class here — the value is an expression. There is
+    // nothing to add, so say so rather than scan past it: an unreadable dialog is the one
+    // case where this file's answer would be "clean" because it could not look.
+    if (/\[(?:ngClass|class)\]=/.test(tag[0])) unreadable.push(relative(SRC, file));
   }
 }
 
@@ -70,7 +79,8 @@ const subjects = (selector) => selector
   .filter(Boolean);
 
 const isDialog = (selector) => subjects(selector)
-  .some((one) => [...dialogClasses].some((klass) => namesClass(one, klass)));
+  .some((one) => one === 'dialog' || /^dialog(?![\w-])/.test(one)
+    || [...dialogClasses].some((klass) => namesClass(one, klass)));
 
 /**
  * Every `display` declaration, with the selector chain it sits under.
@@ -99,6 +109,15 @@ function displayRules(scss) {
   return found;
 }
 
+/**
+ * Pseudo-classes a *closed* dialog cannot be in.
+ *
+ * `:modal` and `:open` are the direct statements. The interaction states are here because a
+ * closed dialog is `display: none` and so cannot be hovered, focused or targeted — a rule
+ * gated on one of them can never be the thing keeping a dialog on screen.
+ */
+const OPEN_ONLY_STATES = /:(?:modal|open|popover-open|hover|focus|focus-within|focus-visible|active|target)\b/;
+
 const stylesheets = files.filter((f) => f.endsWith('.scss'));
 const offenders = stylesheets.flatMap((file) => displayRules(readFileSync(file, 'utf8'))
   .filter(({ selector }) => {
@@ -116,12 +135,26 @@ const offenders = stylesheets.flatMap((file) => displayRules(readFileSync(file, 
     if (!isDialog(base) && !nestedOntoItself) return false;
     const chain = parts.join(' ');
     // Qualified so a closed dialog cannot match it: `[open]`, or a state it cannot be in.
-    return !chain.includes('[open]') && !chain.includes(':');
+    //
+    // **Not "any colon".** That was the first version, and `.editor-dialog:not(.compact)` —
+    // a selector a closed dialog matches perfectly well — would have passed it. `:not()`,
+    // `:where()`, `:is()` and `:has()` say nothing about whether the dialog is open, so only
+    // the states below count as a qualification.
+    return !chain.includes('[open]') && !OPEN_ONLY_STATES.test(chain);
   })
   .map(({ line, text }) => `${relative(SRC, file)}:${line}  ${text}`));
 
 // **A check that cannot fail is not a check.** If the markup scan stops finding dialogs, every
 // assertion below holds trivially — so the count is asserted before the result is trusted.
+if (unreadable.length) {
+  console.error(
+    `a <dialog> sets its class from an expression ([class] or [ngClass]) in ${[...new Set(unreadable)].join(', ')} — `
+    + 'this check reads class names out of the markup and cannot resolve one. Give the dialog '
+    + 'a static class as well, so there is a name to check.',
+  );
+  process.exit(2);
+}
+
 if (dialogClasses.size < 3) {
   console.error(
     `only ${dialogClasses.size} dialog class(es) found in the templates — the scan is broken, `
