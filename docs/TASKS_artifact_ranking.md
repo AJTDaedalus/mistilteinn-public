@@ -158,6 +158,13 @@ A.0 is the gate. **One PR per phase**, not per task — five PRs, not seventeen.
   `AUDIT_fribbels_parity.md` §2's last open row.
 
 ### [ ] A.9 — On-demand calibration for a set the build does not wear
+- **Found while driving A.8, and it is bigger than the task title:** `rank()` currently
+  calibrates **only the no-4-piece baseline**, so a build that is itself wearing a 4-piece set is
+  scored under a recipe that omits its own bonus — every number understated, and not uniformly,
+  because a set bonus interacts with the stats rather than adding to them. So A.9 covers three
+  states, not one: the build's **current** 4-piece (the honest baseline), **no** 4-piece (what a
+  set-breaking swap actually produces), and a **different** 4-piece a candidate would complete.
+  `scoreForSlot`'s `recipeAfterSwap` exists for exactly this and is still unused.
 - **Do:** OQ-A8. A candidate that would complete a different 4-piece is scored under **its own**
   recipe — `scoreForSlot` already takes `recipeAfterSwap` for exactly this. Where that recipe is
   absent, show *"needs calibration"* and a button, never a number computed under the wrong one.
