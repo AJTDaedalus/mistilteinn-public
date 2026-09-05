@@ -6,7 +6,8 @@ import { TeapotService } from './teapot.service';
 import { TeapotPage } from './teapot';
 
 const suite = (over: Partial<SuiteRow> = {}): SuiteRow => ({
-  suite_id: 's1', name: 'Adventurer Camp', icon: 'UI_Home_Suite_Camp_01', placement: 'O',
+  suite_id: 's1', nanoka_id: '1', name: 'Adventurer Camp',
+  icon: 'UI_Home_Suite_Camp_01', placement: 'O',
   available: ['a'], completed: [], unowned: [], built: false, done: false,
   remaining: 1, remaining_primogems: null,
   ...over,
@@ -249,8 +250,10 @@ describe('TeapotPage', () => {
 
   const ROSTER = read({
     suites: [
-      suite({ suite_id: 's1', name: 'Adventurer Camp', placement: 'O', available: ['a'] }),
-      suite({ suite_id: 's2', name: 'Cool Isle', placement: 'I', available: ['b'] }),
+      suite({ suite_id: 's1', nanoka_id: '20', name: 'Adventurer Camp',
+        placement: 'OG', available: ['a'] }),
+      suite({ suite_id: 's2', nanoka_id: '3', name: 'Cool Isle',
+        placement: 'IG', available: ['b'] }),
     ],
   });
 
@@ -281,7 +284,11 @@ describe('TeapotPage', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Cool Isle');
   });
 
-  it('narrows to indoor or outdoor sets', async () => {
+  it('narrows to indoor or outdoor sets on the leading letter, not the whole code', async () => {
+    // **Four values, not two.** nanoka spells placement `I`, `IG`, `O` and `OG`, and at
+    // 7.0.51 the split is OG 48, IG 31, O 18, I 12 — so an equality match on "I" would offer
+    // Indoor and find 12 of the 43 indoor sets. Both fixtures here are the `G` spelling,
+    // which is the one an equality match drops.
     await withRoster();
 
     fixture.componentInstance['placementFilter'].set('I');
@@ -289,6 +296,28 @@ describe('TeapotPage', () => {
 
     expect(fixture.nativeElement.textContent).toContain('Cool Isle');
     expect(fixture.nativeElement.textContent).not.toContain('Adventurer Camp');
+  });
+
+  it('says where a set goes for the G spellings too', async () => {
+    // The same bug one surface over: `placement()` compared the whole string, so 79 of the
+    // 109 rows said nothing at all about where the set goes.
+    await withRoster();
+
+    expect(fixture.nativeElement.textContent).toContain('outdoor');
+    expect(fixture.nativeElement.textContent).toContain('indoor');
+  });
+
+  it('orders by release when asked, numerically', async () => {
+    // The ask was *"sort sets by how they appear in-game"*; the source has no field for that,
+    // so the control is labelled Release order for what `nanoka_id` actually is. Numeric,
+    // because these are "1" … "109" and a string sort puts 100 between 10 and 11.
+    await withRoster();
+
+    fixture.componentInstance['sort'].set('release');
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance['visible']().map((row) => row.name))
+      .toEqual(['Cool Isle', 'Adventurer Camp']);
   });
 
   it('narrows to the sets a chosen character favours', async () => {
@@ -319,6 +348,7 @@ describe('TeapotPage', () => {
     fixture.componentInstance['search'].set('cool');
     fixture.componentInstance['placementFilter'].set('I');
     fixture.componentInstance['toggleCharacter']('b');
+    fixture.componentInstance['sort'].set('release');
     fixture.detectChanges();
 
     fixture.componentInstance['clearFilters']();

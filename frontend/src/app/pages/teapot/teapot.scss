@@ -15,6 +15,23 @@
 
 .teapot__search { width: 100%; }
 
+/* The two "how is this list arranged" controls on one line: where the sets go, and in what
+   order. The character chips below are a different question and keep their own row. */
+.teapot__refine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+}
+
+.teapot__sort {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--ink-dim);
+}
+
 .teapot__filters {
   display: flex;
   flex-wrap: wrap;

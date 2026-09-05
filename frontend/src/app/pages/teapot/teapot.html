@@ -45,16 +45,30 @@
       (input)="search.set($any($event.target).value)"
     />
 
-    <div class="teapot__filters" role="group" aria-label="Where the set goes">
-      @for (option of [['', 'Anywhere'], ['I', 'Indoor'], ['O', 'Outdoor']]; track option[0]) {
-        <button
-          type="button"
-          class="chip"
-          [class.chip--on]="placementFilter() === option[0]"
-          [attr.aria-pressed]="placementFilter() === option[0]"
-          (click)="placementFilter.set(option[0])"
-        >{{ option[1] }}</button>
-      }
+    <div class="teapot__refine">
+      <div class="teapot__filters" role="group" aria-label="Where the set goes">
+        @for (option of [['', 'Anywhere'], ['I', 'Indoor'], ['O', 'Outdoor']]; track option[0]) {
+          <button
+            type="button"
+            class="chip"
+            [class.chip--on]="placementFilter() === option[0]"
+            [attr.aria-pressed]="placementFilter() === option[0]"
+            (click)="placementFilter.set(option[0])"
+          >{{ option[1] }}</button>
+        }
+      </div>
+
+      <!-- **"Release order", not "in-game order".** The ask was *"sort sets by how they
+           appear in-game"*, and the source publishes no field for that — this is the set's
+           own key, ascending as sets shipped. The label says what it actually is. -->
+      <label class="teapot__sort">
+        Order
+        <select aria-label="Order the sets by" [value]="sort()"
+                (change)="sort.set($any($event.target).value)">
+          <option value="" [selected]="sort() === ''">Most to claim</option>
+          <option value="release" [selected]="sort() === 'release'">Release order</option>
+        </select>
+      </label>
     </div>
 
     <!-- *"show only sets of your selected 3 chars"*. Faces, because that is how a roster is

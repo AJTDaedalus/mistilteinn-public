@@ -51,8 +51,18 @@ export class TeapotPage implements OnInit {
    * would be a worse Ctrl-F than Ctrl-F.
    */
   protected readonly search = signal('');
-  /** `''` either, `'I'` indoor, `'O'` outdoor — the placement values the row already carries. */
+  /**
+   * `''` either, `'I'` indoor, `'O'` outdoor.
+   *
+   * Matched on the **leading letter**, because the source carries four values and not two: at
+   * 7.0.51 the split is `OG` 48, `IG` 31, `O` 18, `I` 12. A filter comparing the whole string
+   * would have offered "Indoor" and found 12 of the 43 indoor sets — a control that silently
+   * hides two thirds of its own answer. What the `G` means is not documented anywhere this
+   * repo can cite, so it is not interpreted; the first letter is the part that is legible.
+   */
   protected readonly placementFilter = signal('');
+  /** How the list is ordered: `''` keeps the server's ranking. */
+  protected readonly sort = signal('');
   /**
    * Show only sets favoured by *these* characters, by nanoka id.
    *
@@ -72,13 +82,13 @@ export class TeapotPage implements OnInit {
     const query = this.search().trim().toLowerCase();
     const placement = this.placementFilter();
     const chosen = this.characterFilter();
-    return this.rows().filter((row) => {
+    const kept = this.rows().filter((row) => {
       if (this.hideDone() && row.done) return false;
       // A set nobody you own favours is worth nothing now and might be worth something later —
       // hidden by default because it is noise for most rosters, never dropped.
       const reachable = row.available.length > 0 || row.completed.length > 0;
       if (this.hideUnreachable() && !reachable) return false;
-      if (placement && row.placement !== placement) return false;
+      if (placement && !row.placement.startsWith(placement)) return false;
       if (chosen.size && !this.favourites(row).some((id) => chosen.has(id))) return false;
       if (!query) return true;
       // The set's name, then the names on its chips — see `search`'s own note.
@@ -87,6 +97,13 @@ export class TeapotPage implements OnInit {
         (id) => this.characterName(id).toLowerCase().includes(query),
       );
     });
+    if (this.sort() !== 'release') return kept;
+    // **"Release order", not "in-game order".** The ask was *"sort sets by how they appear
+    // in-game"* (#266) and the source publishes no field for that — `nanoka_id` is the set's
+    // own key, ascending as sets shipped. Labelling it for what it is rather than for what was
+    // asked keeps it from becoming a claim nobody can check. Numeric, because these are
+    // `"1"` … `"109"` and a string sort puts 100 between 10 and 11.
+    return [...kept].sort((a, b) => Number(a.nanoka_id) - Number(b.nanoka_id));
   });
 
   /** Every character who favours a set, in all three states — what the row's chips show. */
@@ -129,6 +146,7 @@ export class TeapotPage implements OnInit {
     this.search.set('');
     this.placementFilter.set('');
     this.characterFilter.set(new Set());
+    this.sort.set('');
     this.hideDone.set(false);
     this.hideUnreachable.set(true);
   }
@@ -136,6 +154,7 @@ export class TeapotPage implements OnInit {
   protected readonly filtering = computed(
     () => this.search().trim() !== ''
       || this.placementFilter() !== ''
+      || this.sort() !== ''
       || this.characterFilter().size > 0,
   );
 
@@ -294,7 +313,14 @@ export class TeapotPage implements OnInit {
     return this.faces().get(nanokaId) ?? null;
   }
 
+  /**
+   * "indoor" or "outdoor", from the **leading letter** of nanoka's placement code.
+   *
+   * It compared the whole string, so `IG` and `OG` — 79 of the 109 sets — matched neither and
+   * the row said nothing at all about where the set goes. See `placementFilter`.
+   */
   protected placement(row: SuiteRow): string {
-    return row.placement === 'I' ? 'indoor' : row.placement === 'O' ? 'outdoor' : '';
+    const where = row.placement.charAt(0);
+    return where === 'I' ? 'indoor' : where === 'O' ? 'outdoor' : '';
   }
 }
