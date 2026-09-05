@@ -44,13 +44,17 @@ export function characterCardFilters(characters: readonly CharacterSummary[]): C
   const weapons = new Map<string, { label: string; icon: string }>();
   for (const c of characters) {
     if (c.element && !elements.has(c.element)) elements.set(c.element, c.element_icon ?? null);
-    // **A class with no mark is not offered.** `GET /weapon-classes` publishes five of the
-    // six for exactly this reason, and `weapon_symbols.py` argues it at length: the crossbow
-    // class has no sprite to draw and is carried only by two unreleased Traveler variants, so
-    // the chip rendered as the wide word CROSSBOW among five glyphs and narrowed the grid to
-    // two rows nobody is looking for. Reported as a filter for something that does not exist
-    // in the game (#271). Deriving the row from what is on screen was meant to prevent
-    // exactly this and did not, because these two rows *are* on screen.
+    // **A class with no mark is not offered**, which is the rule this line states and the
+    // whole of what it checks: a chip is a glyph, and a class with no sprite rendered as the
+    // wide word CROSSBOW among five icons. `GET /weapon-classes` publishes five of six for
+    // the same reason and `weapon_symbols.py` argues it at length.
+    //
+    // **It is not the #271 exclusion, and must not be read as one.** Hiding a class the game
+    // has not shipped is `app/services/unreleased.py`, on the server, where the fact is named
+    // once — `/characters` and the roster both filter there, so no crossbow row reaches this
+    // function any more. Leaving that job to "has an icon" would be a fact guarded by a proxy:
+    // a shipped class whose icon came back null for every row on screen would lose its whole
+    // filter with nothing raised, which is the silent narrowing #271 was about.
     if (c.weapon_type && c.weapon_type_icon && !weapons.has(c.weapon_type)) {
       weapons.set(c.weapon_type, {
         label: c.weapon_type_display, icon: c.weapon_type_icon,
