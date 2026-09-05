@@ -141,7 +141,7 @@ export class TeapotPage implements OnInit {
     return this.characterFilter().has(id);
   }
 
-  /** Back to every set, without hunting for which of four controls is still set. */
+  /** Back to every set, without hunting for which of six controls is still set. */
   protected clearFilters(): void {
     this.search.set('');
     this.placementFilter.set('');
@@ -151,11 +151,22 @@ export class TeapotPage implements OnInit {
     this.hideUnreachable.set(true);
   }
 
+  /**
+   * Whether anything is narrowing the list — which is what decides whether Clear is offered.
+   *
+   * **The two tick boxes count.** They were left out while `clearFilters()` reset them, so
+   * Clear was hidden from a user whose only narrowing was "hide finished sets", and a user
+   * who had deliberately un-ticked "hide sets nobody you have favours" got it silently
+   * ticked again by a button labelled Clear. Both are compared against their defaults, so
+   * the button appears exactly when it has something to undo.
+   */
   protected readonly filtering = computed(
     () => this.search().trim() !== ''
       || this.placementFilter() !== ''
       || this.sort() !== ''
-      || this.characterFilter().size > 0,
+      || this.characterFilter().size > 0
+      || this.hideDone()
+      || !this.hideUnreachable(),
   );
 
   protected readonly claimable = computed(

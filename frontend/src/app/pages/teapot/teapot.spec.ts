@@ -358,6 +358,37 @@ describe('TeapotPage', () => {
     expect(fixture.nativeElement.textContent).toContain('Cool Isle');
   });
 
+  it('offers Clear for a tick box, because Clear resets one', async () => {
+    // The two are one control between them: `clearFilters()` put `hideDone` back and
+    // `filtering()` did not count it, so the only narrowing a user had applied was the one
+    // the button was hidden for.
+    await withRoster();
+
+    fixture.componentInstance['hideDone'].set(true);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance['filtering']()).toBe(true);
+  });
+
+  it('offers Clear once the unreachable sets are shown, because Clear hides them again', async () => {
+    // The other direction, and the one that loses work: a user who deliberately un-ticked
+    // "hide sets nobody you have favours" gets it silently re-ticked by a button that says
+    // Clear. Either it is a filter — in which case Clear may reset it and must announce it —
+    // or it is not, and Clear must leave it alone.
+    await withRoster();
+
+    fixture.componentInstance['hideUnreachable'].set(false);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance['filtering']()).toBe(true);
+
+    fixture.componentInstance['clearFilters']();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance['hideUnreachable']()).toBe(true);
+    expect(fixture.componentInstance['filtering']()).toBe(false);
+  });
+
 });
 
 
