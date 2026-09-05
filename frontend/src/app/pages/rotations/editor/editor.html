@@ -44,12 +44,12 @@
            step against a different party, and the steps that stopped resolving would be
            found later, at compile time, far from the edit that caused it. -->
       <p class="hint">
-        A saved rotation stays on its team. Build a new one for another team.
+        A saved rotation stays on its team.
       </p>
     }
 
     @if (roster().length === 0) {
-      <p class="hint">That team has no builds yet, so there is nobody to act.</p>
+      <p class="hint">That team has no builds yet.</p>
     } @else {
       <!-- Who is available to act, once, rather than re-read from every step's
            dropdown. -->
@@ -291,10 +291,6 @@
           [disabled]="!configLink().trim() || fetchingLink()"
         >{{ fetchingLink() ? 'Fetching…' : 'Fetch it' }}</button>
       </div>
-      <p class="hint">
-        The run's config is fetched and read into steps, exactly as pasting it would be.
-        Nothing is simulated on gcsim's side, and once imported the steps are yours.
-      </p>
 
       <label for="gcsim-config">…or paste a gcsim config</label>
         <textarea
@@ -306,7 +302,7 @@
           (input)="configText.set($any($event.target).value)"
         ></textarea>
         <p class="hint">
-          The action block, or a whole config — the rest is ignored. Anything that cannot be
+          The action block, or a whole config. The rest is ignored. Anything that cannot be
           expressed as steps is refused by line rather than dropped.
           @if (steps().length > 0) {
             <strong>This replaces the {{ steps().length }} step{{ steps().length === 1 ? '' : 's' }}

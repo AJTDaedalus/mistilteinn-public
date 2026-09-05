@@ -61,7 +61,7 @@
           @if (importing()) {
             Importing…
           } @else if (confirmingReplace()) {
-            Yes — delete {{ total() }} and import
+            Yes, delete {{ total() }} and import
           } @else {
             Import
           }
@@ -75,7 +75,7 @@
 
       @if (confirmingReplace()) {
         <p class="error" role="alert">
-          Deletes all {{ total() }} artifacts. Check the count looks right.
+          Deletes all {{ total() }} artifacts.
         </p>
       }
 
@@ -136,8 +136,7 @@
                    it is information, not a problem. -->
               <p class="hint">
                 {{ builds.no_weapon_in_export.length }} character{{ builds.no_weapon_in_export.length === 1 ? '' : 's' }} had artifacts but no weapon
-                in this export. Usually they are holding a 1★ or 2★ default weapon, which
-                scanners leave out — equip something and re-scan if you want them here.
+                in this export:
               </p>
               <ul class="rejections">
                 @for (note of builds.no_weapon_in_export; track $index) { <li>{{ note }}</li> }
@@ -257,8 +256,8 @@
     <div class="count-row">
     <p class="muted count">
       @if (truncated()) {
-        Showing {{ visible().length }} of {{ matching().length }} loaded, of {{ total() }} —
-        the rest was not loaded.
+        Showing {{ visible().length }} of {{ matching().length }} loaded, of {{ total() }}.
+        The rest was not loaded.
       } @else if (matching().length !== total()) {
         Showing {{ visible().length }} of {{ matching().length }} matching, of
         {{ total() }} pieces.
@@ -349,7 +348,7 @@
         @if (total() > 0) {
           <li class="muted">Nothing matches those filters.</li>
         } @else {
-          <li class="muted">No artifacts yet — import a GOOD export above.</li>
+          <li class="muted">No artifacts yet.</li>
         }
       }
     </ul>

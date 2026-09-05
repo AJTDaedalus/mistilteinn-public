@@ -94,7 +94,7 @@ describe('NodeInspector', () => {
     build({ kind: 'action', character: 'x', action: 'charge', repeat: 1, params: { final: '1' } });
 
     expect(fixture.nativeElement.textContent).toContain('final=1');
-    expect(fixture.nativeElement.textContent).toContain('no control for these');
+    expect(fixture.nativeElement.textContent).toContain('Carried exactly as written');
   });
 
   it('says a carried node is edited elsewhere rather than looking broken', () => {

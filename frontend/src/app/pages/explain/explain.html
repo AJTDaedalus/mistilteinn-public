@@ -13,7 +13,7 @@
     <p class="muted">Loading…</p>
   } @else if (builds().length === 0) {
     <p class="muted">
-      You have no builds yet — <a routerLink="/builds">make one first</a>.
+      No builds yet. <a routerLink="/builds">Make one</a>
     </p>
   } @else {
 
@@ -101,12 +101,12 @@
     @if (hit(); as chosen) {
       <p class="hint">
         Multiplier <span class="mono">{{ chosen.multiplier | number: '1.0-4' }}</span>
-        — from {{ build()?.character?.name }}'s own table at this build's talent level.
+        from {{ build()?.character?.name }}'s own table at this build's talent level.
         @if (chosen.exclusive) { One of several alternatives. }
       </p>
     } @else {
       <p class="hint">
-        This build has no talent levels set, so there is nothing to explain yet.
+        This build has no talent levels set.
       </p>
     }
 
@@ -159,7 +159,7 @@
           <h2>Not included</h2>
           <ul class="uncited">
             @for (note of explained.uncited; track $index) {
-              <li><strong>{{ note.what }}</strong> — {{ note.why }}</li>
+              <li><strong>{{ note.what }}</strong>: {{ note.why }}</li>
             }
           </ul>
         }

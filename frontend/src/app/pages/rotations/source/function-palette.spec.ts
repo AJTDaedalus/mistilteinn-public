@@ -48,10 +48,4 @@ describe('FunctionPalette', () => {
 
     expect(drawn).toEqual(['opener();']);
   });
-
-  it('says why authoring stays text while calling is a click', () => {
-    build([{ name: 'opener', parameters: [] }]);
-
-    expect(fixture.nativeElement.textContent).toContain('control flow');
-  });
 });

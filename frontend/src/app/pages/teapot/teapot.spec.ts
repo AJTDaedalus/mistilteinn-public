@@ -79,7 +79,6 @@ describe('TeapotPage', () => {
     await build();
 
     expect(fixture.nativeElement.textContent).toContain('no reward figure');
-    expect(fixture.nativeElement.textContent).toContain('order is unaffected');
   });
 
   it('takes the reward from the server rather than restating it', async () => {

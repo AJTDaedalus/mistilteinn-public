@@ -239,8 +239,7 @@
       <!-- "the higher one" was reported as ambiguous — higher *what*, and higher than what
            (#276). It is the build's position in the list below, so the sentence names it. -->
       <p class="hint">
-        Highest first. When two builds want the same artifact, the one ranked higher in this
-        list takes it.
+        Highest first. Ties on an artifact go to the higher build.
       </p>
 
       <ol class="rank__list">
@@ -277,7 +276,7 @@
             >×</button>
           </li>
         } @empty {
-          <li class="muted">Nothing ranked yet — add a build below.</li>
+          <li class="muted">Nothing ranked yet.</li>
         }
       </ol>
 
@@ -323,7 +322,7 @@
       @if (editing()) {
         <!-- `BuildUpdate` has no `character_id` and refuses one rather than dropping it
              silently (T.1). Changing a build's character makes it a different build. -->
-        <p class="hint">A saved build keeps its character. Make a new one to change it.</p>
+        <p class="hint">A saved build keeps its character.</p>
       }
 
       <!-- `clearable`, because `weapon_id` is nullable by design (OQ-T3): a build being
@@ -354,8 +353,7 @@
             />
         </p>
         <p class="hint">
-          Only {{ chosen.weapon_type_display }}s are listed — {{ chosen.name }} cannot hold
-          anything else.
+          {{ chosen.name }} can only hold {{ chosen.weapon_type_display }}s.
         </p>
       }
 

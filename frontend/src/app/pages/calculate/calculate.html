@@ -8,12 +8,6 @@
        never repeated. The list is what you actually get back, so the wait has a shape before
        you commit to it. -->
   <div class="intro">
-    <!-- The landing card mirrors this sentence and was reworded for #270; this is the page
-         that card links to, and it kept the original for a day. Same two sentences. -->
-    <p>
-      Run a team's rotation through gcsim and take it apart: every multiplier in a hit, in
-      order, with its source. It also names the parts of the hit it does not model.
-    </p>
     <ul class="intro__what">
       <li>Damage per second for the team, with its spread over repeated runs.</li>
       <li>What each character contributed, and how long each held the field.</li>
@@ -32,7 +26,7 @@
   @if (loading()) {
     <p class="muted">Loading…</p>
   } @else if (!teams().length) {
-    <p class="muted">No teams yet — <a routerLink="/teams">build one first</a>.</p>
+    <p class="muted">No teams yet. <a routerLink="/teams">Build one</a></p>
   } @else {
     <!-- Team, then rotation. Unlike Optimize there is no build to pick: the rotation already
          says which character does what. -->
@@ -56,7 +50,7 @@
           />
         } @else {
           <p class="hint">
-            No rotations for this team — <a routerLink="/rotations">write one</a>.
+            No rotations for this team. <a routerLink="/rotations">Write one</a>
           </p>
         }
       }
@@ -243,8 +237,7 @@
 
       <!-- Stated, not implied by absence. -->
       <p class="hint not-modelled">
-        Not shown: per-iteration damage timelines and cumulative contribution, which gcsim
-        charts and this does not yet draw.
+        Not shown: per-iteration timelines, cumulative contribution.
       </p>
     }
   }

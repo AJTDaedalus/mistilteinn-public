@@ -2,8 +2,7 @@
   <header>
     <h1>Teapot sets</h1>
     <p class="muted">
-      Furnishing sets, ordered by how many characters you have who favour them and have not
-      been invited yet.
+      Ordered by what you can still claim.
     </p>
   </header>
 
@@ -25,8 +24,7 @@
       <span class="muted">{{ finished() }} sets done</span>
       @if (reward() === null) {
         <span class="muted teapot__uncited">
-          Primogem totals are not shown: the server published no reward figure. The order is
-          unaffected.
+          No primogem totals: the server published no reward figure.
         </span>
       }
     </div>
@@ -226,7 +224,7 @@
         </li>
       } @empty {
         <li class="teapot__empty muted">
-          No set matches. Try clearing the filters above.
+          No set matches.
         </li>
       }
     </ul>
