@@ -1,24 +1,22 @@
 /**
- * **Nothing in `app/` calls this module as of 2026-09-01, and that is recorded rather than
- * hidden.**
+ * What one artifact is worth to one build, over its rotation — the single-slot swap.
  *
- * Its only consumer was Optimize's per-slot "better pieces" list, removed on the owner's
- * ruling: on an *exact* search that list is provably empty, because a single-slot swap keeping
- * the same 4-piece state is a combination the walk already scored and the winner already beat.
- * Its rows were only ever set-breaking swaps, and *"there's no point calculating 'better
- * pieces' that lose the 4p bonus. That's never a thing."*
+ * **This module had no caller for four days and nearly got deleted for it.** Its header said so:
+ * *"`scoreForSlot` and `scoreArtifact` are tested, correct, and have no caller. If that is still
+ * true when someone next reads this and §5 is still unbuilt, delete them."* Its original consumer
+ * — Optimize's per-slot "better pieces" list — was removed on the owner's ruling that on an exact
+ * search that list is provably empty.
  *
- * Kept, not deleted, because the *other* half of this file is the feature
- * `DESIGN_artifact_ranking.md` and `AUDIT_fribbels_parity.md` §5 both ask for and neither has
- * built: **"is this piece any good?"** on the inventory page — a score for one artifact against
- * one build, independent of a five-piece search, with the signed delta the audit names as the
- * thing that turns a sortable list into a decidable one.
+ * `TASKS_artifact_ranking.md` built the feature the header was waiting for, and there are now
+ * four callers: the projection, the ranking, the outcome distribution, and the page's service.
  *
- * This repo's standing lesson is that a subsystem wired to nothing is found by building
- * something that needs it, never by reading — `createGpuKernel` and `POST /sim-runs` both sat
- * here. So: `scoreForSlot` and `scoreArtifact` are tested, correct, and have no caller. If that
- * is still true when someone next reads this and §5 is still unbuilt, delete them.
+ * **The note is kept rather than deleted** because it is the standing lesson working: this repo's
+ * rule is that a subsystem wired to nothing is found by building something that needs it, never
+ * by reading — `createGpuKernel` and `POST /sim-runs` both sat here — and the way that rule pays
+ * off is that the dead code either acquires a caller or gets removed on a date somebody wrote
+ * down in advance.
  */
+
 
 import { type Recipe } from './recipe';
 import { evaluateRecipe } from './recipe-eval';

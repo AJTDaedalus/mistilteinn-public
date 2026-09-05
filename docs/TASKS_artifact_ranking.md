@@ -12,11 +12,22 @@
 
 **Status key:** ` ` todo · `~` in progress · `x` done · `!` blocked (escalation in LOG)
 
-> **Status: Phase 1 in progress.** Written 2026-09-05. **A.0 and A.1 done.** A.1 found that
-> GO states the one-artifact-at-a-time limitation in its own UI, which turns
-> `DESIGN_artifact_ranking.md` §8.2 from an inference into a citation —
-> `docs/AUDIT_go_handson.md`, reproducible with
-> `cd backend && python -m scripts.audit_genshin_optimizer`.
+> **Status: all seventeen tasks done.** Written and executed 2026-09-05 on
+> `feat/artifact-ranking`. The five phases are one branch rather than five PRs — recorded rather
+> than tidied away, because the plan said one PR per phase and that is not what happened.
+>
+> **Five defects were found by driving the page and none by a test**, with 1,078 frontend tests
+> passing before and after each: a 422 from an invalid build/rotation cross-product, an empty
+> calibration target list that meant nothing was ever calibrated, every build labelled
+> `"Furina —"`, a grade scale that put every piece in the top two tiers, and a first screen of
+> `+20` pieces whose four projections are necessarily identical. `DESIGN_artifact_ranking.md`
+> §8.7 has the table.
+>
+> **Two things this plan asserted turned out to be wrong**, and both are corrected in place
+> rather than quietly replaced: `RESEARCH_pinned_search_cost.md` claimed the pinned search was
+> interactive by reasoning from a budget layer `searchRecipe` does not have (it does not finish
+> in 300 s uncapped), and DESIGN §5's *"the two cannot disagree"* holds for stats and fails for
+> damage, in the direction that makes the point estimate optimistic.
 
 **Branch policy.** All work on `feat/artifact-ranking`, off `dev`, never on `dev` or `main`.
 A.0 is the gate. **One PR per phase**, not per task — five PRs, not seventeen.
