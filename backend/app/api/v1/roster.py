@@ -134,6 +134,14 @@ async def set_owned(
             status_code=422,
             detail="Practice mannequins cannot be owned",
         )
+    if is_unreleased_class(character.weapon_type):
+        # `list_roster` hides these, and a write route that accepts what the read route will
+        # not show writes a row nobody can see or undo. The mannequin rule guards both
+        # surfaces for exactly this reason; this one had guarded only the list.
+        raise HTTPException(
+            status_code=422,
+            detail="That character is not in the game",
+        )
 
     repository = CharacterRosterRepository(session, str(user.id))
     await repository.set_owned(character_id, owned=payload.owned)

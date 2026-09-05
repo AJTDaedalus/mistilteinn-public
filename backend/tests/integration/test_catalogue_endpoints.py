@@ -166,21 +166,45 @@ async def test_a_weapon_with_no_base_atk_is_served_not_dropped(
     them and D.4 imported them visibly; a response schema that required the field would
     undo that at the last step.
 
-    Asserted on the **detail** route, because those eight rows are also the ones whose class
-    the game has not shipped and the list now hides them — see the test below. The two facts
-    are separate: nullable columns must survive serialisation whatever is listed.
+    **Asserted on a shipped class**, because the unreleased eight now 404 on the detail route
+    too — see below — and a nullability test written against them would have gone green for
+    the wrong reason the moment that landed. The two facts are separate, so they get separate
+    rows: nullable columns must survive serialisation whatever is listed.
     """
     weapon = Weapon(
-        nanoka_id=224001, name="Frag Crystal", weapon_type=WeaponType.CROSSBOW,
+        nanoka_id=11101, name="Dull Blade", weapon_type=WeaponType.SWORD,
         rarity=Rarity.ONE_STAR, base_atk=None, sub_stat_type=None,
     )
     db_session.add(weapon)
     await db_session.flush()
 
-    detail = await client.get("/api/v1/weapons/224001")
+    detail = await client.get("/api/v1/weapons/11101")
 
     assert detail.status_code == 200
     assert detail.json()["base_atk"] is None
+
+
+@pytest.mark.asyncio
+async def test_a_weapon_class_the_game_has_not_shipped_is_not_served_by_id(
+    client: AsyncClient, db_session: AsyncSession,
+):
+    """Hiding the row from the list and serving its name on request is not hiding it.
+
+    The complaint (#271) is about the **names** — `Shatanaya's Frostsilver`, the `Frag
+    Crystal` rows — which nobody but a datamine has published. `/weapons/224001` is four
+    keystrokes and an ascending integer away, so it answers 404 like a row that is not
+    there, and the list test beside this one covers the other surface.
+    """
+    db_session.add(Weapon(
+        nanoka_id=224001, name="Frag Crystal", weapon_type=WeaponType.CROSSBOW,
+        rarity=Rarity.FOUR_STAR, base_atk=None, sub_stat_type=None,
+    ))
+    await db_session.flush()
+
+    detail = await client.get("/api/v1/weapons/224001")
+
+    assert detail.status_code == 404
+    assert "Frag Crystal" not in detail.text
 
 
 @pytest.mark.asyncio
