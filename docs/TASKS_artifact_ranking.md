@@ -118,7 +118,7 @@ A.0 is the gate. **One PR per phase**, not per task — five PRs, not seventeen.
 
 *One PR. This is the sortable, whole-inventory half. It ships useful on its own.*
 
-### [ ] A.5 — `sim/artifact-projection.ts` — a piece at max level, four ways
+### [x] A.5 — `sim/artifact-projection.ts` — a piece at max level, four ways
 - **Do:** pure TS, no rendering, no network. From rolls remaining, tier values and the draw
   model, produce four stat pools for one piece: **current**, **average**, **best**, **worst**
   (§5). Follow `futureScore.ts`'s shape (`RESEARCH_fribbels_hsr.md` §4.5) — mid-tier spread
