@@ -596,13 +596,20 @@ citations in curated data — do not import that failure mode into this repo.
   `deploy-prod.yml` triggers on `push: branches: [dev]`, so **a merge to `dev` deploys to
   `https://mistilteinn.aetherus.dev`** — there is no staging step between the two.
 
-  It used to be that `main` was the default branch and *"`main` is for releases only"*. In
-  thirteen months `main` received exactly one commit — `chore: fork fairy @ 76909c4` — while
-  `dev` went 543 ahead of it and served every request prod ever answered. The line described
-  an intention nobody had acted on, and it cost something real: GitHub honours `Closes #N`
-  only on a merge into the **default** branch, so PR #292 closed 23 issues in its description
-  and none on the tracker. `main` was deleted rather than fixed, because a second branch that
-  has to be remembered is the thing that failed.
+  It used to be that `main` was the default branch and *"`main` is for releases only"*. It
+  received exactly one commit — `6e691e7 chore: fork fairy @ 76909c4`, the repo's root — and
+  never another, while `dev` served every request prod ever answered. The line described an
+  intention nobody acted on for the whole life of the repository, and it cost something real:
+  GitHub honours `Closes #N` only on a merge into the **default** branch, so PR #292 named 23
+  issues in its description and closed none of them. `main` was deleted rather than fixed,
+  because a second branch that has to be remembered is the thing that failed.
+
+  **The first draft of this paragraph said "in thirteen months", and the repo is 15 days old**
+  — root commit 2026-08-21, and a review caught it. A passage arguing that an unchecked claim
+  in a doc costs something, carrying an unchecked claim, in the file every session is told to
+  trust. Re-derive rather than quote: `git log -1 --format=%ad --reverse origin/dev` for the
+  age, `git rev-list --count 6e691e7..dev` for how far ahead the trunk ran (543 at the time of
+  writing).
 - **No direct commits to `dev`.** All work happens on a feature/fix branch; `dev` is
   updated only by PR merge after review. Verify `git branch --show-current` before every commit.
 - **Every DESIGN doc (`docs/DESIGN_<feature>.md`) must include a "Branch policy" section** near
