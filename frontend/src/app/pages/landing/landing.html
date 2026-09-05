@@ -17,13 +17,18 @@
   *is* ordered: the steps are not four equivalent entry points.
 -->
 <section class="path">
-  <h2 class="eyebrow">The way through</h2>
+  <!-- "Start here", not "The way through" — reported as wording that could be better
+       (#270). The numbers already say it is an order; the heading only has to say where a
+       reader begins. -->
+  <h2 class="eyebrow">Start here</h2>
   <ol class="rail">
     <li>
       <a class="card" routerLink="/inventory">
         <span class="card__step mono">1</span>
         <h3>Inventory</h3>
-        <p>Paste a GOOD export. Everything else searches these pieces.</p>
+        <!-- "Everything else searches these pieces" made the pieces the object of a search
+             the reader has not met yet. Same fact, said from their side. -->
+        <p>Paste a GOOD export. Every search here runs over the pieces you own.</p>
       </a>
     </li>
     <li>
@@ -51,7 +56,7 @@
       <a class="card" routerLink="/optimize">
         <span class="card__step mono">5</span>
         <h3>Optimize</h3>
-        <p>Search your own artifacts for the five that hit hardest.</p>
+        <p>Search your own artifacts for the five that do the most damage.</p>
       </a>
     </li>
   </ol>
@@ -66,9 +71,12 @@
            one a new reader meets first was the one that no longer existed. -->
       <a class="card" routerLink="/calculate">
         <h3>Calculate</h3>
+        <!-- The em dash and the trailing "and what is *not* modelled" were both reported
+             as unclear (#270): the clause named an absence without saying what kind, in the
+             one construction the sentence could least afford. Two sentences instead. -->
         <p>
-          Every multiplier in a hit, in order, with its source — and what is
-          <em>not</em> modelled.
+          Every multiplier in a hit, in order, with its source. It also names the parts of
+          the hit it does not model.
         </p>
       </a>
     </li>

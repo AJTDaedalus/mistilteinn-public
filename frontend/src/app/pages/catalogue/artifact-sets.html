@@ -35,14 +35,22 @@
         <li class="card">
           <catalogue-icon [icon]="set.icon" [alt]="set.name" [size]="44" />
           <span class="name">{{ set.name }}</span>
-          <!-- From the row, never assumed to be [2, 4]: one-piece sets exist. -->
-          <span class="meta">
-            {{ set.piece_thresholds.join('pc / ') }}pc
-          </span>
+          <!-- **Only when the list below cannot say it.** This line always printed
+               "2pc / 4pc" above a list whose two entries already begin "2pc" and "4pc" —
+               reported as redundant (#273). It still earns its place for a set whose affix
+               rows are missing, which is the case it was written for: thresholds come from
+               the row and are never assumed to be [2, 4], because one-piece sets exist. -->
+          @if (!set.affixes.length) {
+            <span class="meta">
+              {{ set.piece_thresholds.join('pc / ') }}pc
+            </span>
+          }
           <ul class="affixes">
             @for (affix of set.affixes; track affix.pieces_required) {
               <li>
-                <strong>{{ affix.pieces_required }}pc</strong>
+                <!-- The colon is the ask: "2pc Increases Elemental Mastery by 80" ran the
+                     tier straight into the sentence with nothing between them. -->
+                <strong>{{ affix.pieces_required }}pc:</strong>
                 <!-- The catalogue's own words. A paraphrase here would be the same mistake
                      D.4 refuses to make in the explanation. -->
                 @if (affix.description) {

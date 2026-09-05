@@ -2,7 +2,8 @@
   <header>
     <h1>My weapons</h1>
   </header>
-  <p class="muted">The weapons you own, imported from a GOOD export.</p>
+  <!-- No subtitle: "The weapons you own, imported from a GOOD export" said what the heading
+       says and what the empty state below already explains to the only reader who needs it. -->
 
   @if (error(); as message) {
     <p class="error" role="alert">{{ message }}</p>
@@ -66,7 +67,11 @@
             </span>
             <span class="card__facts">
               <span class="meta mono">R{{ owned.refinement }} · Lv{{ owned.level }}</span>
+              <!-- **The dot belongs here too.** "R1 · Lv20 Chongyun" read as a level-20
+                   Chongyun rather than a level-20 weapon he is holding (#277); the level and
+                   the holder are two facts and only the first two were separated. -->
               @if (owned.holder_name) {
+                <span class="meta" aria-hidden="true">·</span>
                 <span class="meta">{{ owned.holder_name }}</span>
               } @else {
                 <span class="meta muted">Spare</span>

@@ -236,8 +236,11 @@
         <button type="button" class="editor__close" aria-label="Close" (click)="closeRanking()">×</button>
       </header>
 
+      <!-- "the higher one" was reported as ambiguous — higher *what*, and higher than what
+           (#276). It is the build's position in the list below, so the sentence names it. -->
       <p class="hint">
-        Highest first. When two builds want the same artifact, the higher one takes it.
+        Highest first. When two builds want the same artifact, the one ranked higher in this
+        list takes it.
       </p>
 
       <ol class="rank__list">
