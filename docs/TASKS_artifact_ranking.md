@@ -12,7 +12,11 @@
 
 **Status key:** ` ` todo · `~` in progress · `x` done · `!` blocked (escalation in LOG)
 
-> **Status: nothing started.** Written 2026-09-05.
+> **Status: Phase 1 in progress.** Written 2026-09-05. **A.0 and A.1 done.** A.1 found that
+> GO states the one-artifact-at-a-time limitation in its own UI, which turns
+> `DESIGN_artifact_ranking.md` §8.2 from an inference into a citation —
+> `docs/AUDIT_go_handson.md`, reproducible with
+> `cd backend && python -m scripts.audit_genshin_optimizer`.
 
 **Branch policy.** All work on `feat/artifact-ranking`, off `dev`, never on `dev` or `main`.
 A.0 is the gate. **One PR per phase**, not per task — five PRs, not seventeen.
@@ -44,12 +48,12 @@ A.0 is the gate. **One PR per phase**, not per task — five PRs, not seventeen.
 
 *One PR. Backend only. Nothing here needs the frontend to exist.*
 
-### [ ] A.0 — Branch setup **(gate)**
+### [x] A.0 — Branch setup **(gate)**
 - **Do:** branch `feat/artifact-ranking` off an up-to-date `dev`.
 - **Accept:** `git branch --show-current` is `feat/artifact-ranking`; `git status --porcelain`
   clean.
 
-### [ ] A.1 — **[Planner]** Drive Genshin Optimizer, and screenshot what it shows
+### [x] A.1 — **[Planner]** Drive Genshin Optimizer, and screenshot what it shows
 - **Why:** `RESEARCH_genshin_optimizer_scoring.md`'s own honesty note says *"I did not run GO or
   view its UI. Statements about what the user sees are read off the JSX."* We are copying its
   distribution display; a plan for a chart nobody has looked at is the failure this repo names

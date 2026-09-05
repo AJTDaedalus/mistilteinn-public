@@ -300,6 +300,18 @@ So **the pinned re-search has no reference implementation in either tool** — i
 addition, and it is affordable here for a reason neither has: the recipe evaluator makes a whole
 search closed-form after one calibration.
 
+**That claim is no longer an inference.** A.1 drove Genshin Optimizer 10.38.1 against the owner's
+own export, and its Artifact Upgrader prints the limitation itself, in an info panel above the
+results:
+
+> *"The Artifact Upgrader identifies artifacts with high potential to boost the Optimization
+> Target's value, guiding you to artifacts worth leveling up. **As it only swaps one artifact at a
+> time, for the best overall build across all artifacts, use the main artifact optimizer.**"*
+
+GO has both tools and **no bridge between them** — a user who wants the best build containing a
+piece must leave the ranker and set a search up by hand. `docs/AUDIT_go_handson.md` §1. The bridge
+is the part worth building that neither reference has, and it is A.12.
+
 The parts that *are* worth copying, and are: the five-number shape (§5), the letter grades
 (`scoreFormatting.ts`, 5% steps), heat-shaded numeric cells, and the "who wants this piece" bucket
 panel across the roster. `AUDIT_fribbels_parity.md` §2's outstanding row — *a per-piece score* — is
