@@ -166,6 +166,9 @@ export class RotationEditor {
     this.selection.set(null);
     this.measured.set(null);
     this.compiled.set(null);
+    // The one refusal a team selection answers, so it goes when the team arrives rather
+    // than waiting for the next edit to schedule a compile.
+    this.previewError.set(null);
   }
 
   // ── the measured timeline (T.8) ───────────────────────────────────────────
@@ -969,7 +972,12 @@ export class RotationEditor {
   protected togglePreview(): void {
     this.previewing.update((on) => !on);
     if (this.previewing()) void this.refreshPreview();
-    else this.compiled.set(null);
+    else {
+      // The error belongs to the pane. Closing the pane and leaving "Choose a team first"
+      // on screen would be the message outliving the thing it was about.
+      this.compiled.set(null);
+      this.previewError.set(null);
+    }
   }
 
   /**
@@ -994,7 +1002,7 @@ export class RotationEditor {
       // and did nothing else — reported as exactly that (#284). A compile needs a team
       // because the config names characters, and "there is no team" is the answer.
       this.compiled.set(null);
-      this.previewError.set('Choose a team first — a config names the characters in it.');
+      this.previewError.set('Choose a team first.');
       return;
     }
     this.previewError.set(null);
