@@ -128,7 +128,7 @@ A.0 is the gate. **One PR per phase**, not per task — five PRs, not seventeen.
   upgrades, one of which creates the line) and a 5★ +0 with four (five that all deepen). A 3★
   caps at +12 and gets three. **Offline and deterministic** — this task touches no recipe.
 
-### [ ] A.6 — Five numbers per piece, and the three refusals
+### [x] A.6 — Five numbers per piece, and the three refusals
 - **Do:** join A.5's projections to the existing `scoreForSlot`. Report per piece: current,
   average, best, worst, and the **signed delta vs. what is equipped** — the column
   `AUDIT_fribbels_handson.md` names as the one that makes the list decidable. Add letter grades

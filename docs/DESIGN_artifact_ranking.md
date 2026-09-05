@@ -374,6 +374,30 @@ is not** — a piece from an uncalibrated set shows *"needs calibration"* and a 
 number computed under the wrong recipe. §6's third refusal already demands this; OQ-A8 says the
 button exists rather than the refusal being the end of it.
 
+### 8.6 §6's three refusals, revisited by building them (A.6, 2026-09-05)
+
+§6 names three things that must never be silent. Implementing them, **two dissolved and one
+moved**, and that is worth recording rather than quietly not doing:
+
+| §6 says | what building it found |
+|---|---|
+| a piece whose **rolls could not be decomposed** must report no score | Projecting *future* rolls needs the line count and the committed schedule, both exact, and **never the history**. `substat_rolls`' 85 / 11.5 / 3.5 exact / estimated / unknown split governs the roll bars on the inventory card and does not reach the projection at all. The refusal that genuinely applies is a rarity-and-level the schedule does not cover — `RankRefusal.noSchedule` — plus a rarity with no ladders. |
+| a **wrong main stat** must not be a low number that looks comparable | True of a *weights* model, which cannot represent a main stat's contribution and so collapses the grade to 0%. **Not true here.** An ATK% goblet run through the real damage chain produces its real, correctly lower damage, and that number *is* comparable. So the main stat is reported as a separate fact for filtering, never folded into the score and never used to void it. This is the clearest case so far of the engine ruling buying something a weights table cannot. |
+| a score derived against an **unmodelled passive** must carry that caveat | Names a caveat from a different subsystem: `unmodelled_passives` belongs to `weapon_comparison`, which runs the Chunk F single-hit chain. A recipe is calibrated by gcsim, which implements the kits, so it carries no unmodelled passives by construction. **The rule behind it is still right and the recipe has its own two** — `meta.unstable` and `meta.staleConversions` — and both already exist because dropping them went wrong once: they were returned beside the recipe rather than on it, a cached recipe came back with its instability forgotten, and the page then affirmatively called the ranking sound. They travel with every ranked row. |
+
+**The grade needed a denominator §5 did not specify.** A percentage has to be a percentage *of*
+something, and Fribbels' is "of an ideal relic" under its weights. Ours is the damage of a
+**synthetic ideal piece with the same main stat** — four lines chosen to maximise damage,
+enumerated rather than picked by substat weight, every roll at the top tier. Synthetic rather
+than "the best piece you own", so an *S* means the same thing on a fresh account and a finished
+one.
+
+That arithmetic went wrong on the first attempt and a test caught it: the draft spent upgrade
+rolls *creating* the four lines, when in Genshin the substats come with the artifact and all five
+upgrades are free on top — one line can reach **six** rolls. It graded a real maxed piece at
+**117 % of "ideal"**, which is the sort of number a normalisation with no ceiling test produces
+quietly.
+
 ### 8.5 What is still not settled
 
 Two things, recorded here rather than guessed at in a task:
