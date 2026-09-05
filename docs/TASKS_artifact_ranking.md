@@ -177,7 +177,7 @@ A.0 is the gate. **One PR per phase**, not per task — five PRs, not seventeen.
 
 *One PR. Measure before building — A.10 gates A.11.*
 
-### [ ] A.10 — **[Planner]** What does a pinned re-search actually cost?
+### [x] A.10 — **[Planner]** What does a pinned re-search actually cost?
 - **Why:** OQ-A9. `COMBINATION_BUDGET_SECONDS = 5` is the *ordinary* search's budget over 2,370
   pieces; pinning one slot removes a factor and constrains the 4-piece state, and nobody has
   measured what is left. `FINDINGS_shakedown.md` F2 has the unpinned figures (4.26e10 raw, 1e5
@@ -190,7 +190,7 @@ A.0 is the gate. **One PR per phase**, not per task — five PRs, not seventeen.
 - **Escalate if:** it is not interactive even as a job with progress. That changes the shape of
   A.12 and is a Planner call.
 
-### [ ] A.11 — Pin a slot in `searchRecipe`
+### [x] A.11 — Pin a slot in `searchRecipe`
 - **Do:** the smallest change that expresses "this piece is in this slot": restrict that slot's
   bucket to one candidate before the Pareto filter, leaving the other four buckets whole. The
   4-piece state walk already handles the set consequences, which is why this is the honest engine
