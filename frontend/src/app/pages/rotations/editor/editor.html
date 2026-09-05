@@ -31,6 +31,9 @@
       />
     </label>
 
+    <!-- Disabled while editing: the API has no `team_id` on PATCH, so moving a rotation would
+         reinterpret every step against a different party, and the steps that stopped resolving
+         would be found later, at compile time, far from the edit that caused it. -->
     <mist-card-picker
       label="Team"
       placeholder="Choose a team…"
@@ -39,14 +42,6 @@
       [disabled]="editing() !== null"
       (selectedChange)="pickTeam($event)"
     />
-    @if (editing()) {
-      <!-- The API has no `team_id` on PATCH: moving a rotation would reinterpret every
-           step against a different party, and the steps that stopped resolving would be
-           found later, at compile time, far from the edit that caused it. -->
-      <p class="hint">
-      </p>
-    }
-
     @if (roster().length === 0) {
       <p class="hint">That team has no builds yet.</p>
     } @else {

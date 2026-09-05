@@ -239,24 +239,3 @@
     padding-right: var(--space-4);
   }
 }
-
-/* What the page does not model, said in the same place rather than implied by absence. */
-.not-modelled { margin-top: var(--space-4); }
-
-
-/* **The page used to say nothing at all.** Before a team was chosen it was one picker and a
-   button above ~700px of empty viewport — and 700px of empty viewport under a lone control is
-   a shape this repo has shipped once already. The landing page sells this feature in a
-   sentence; the page itself did not. */
-.intro {
-  max-width: 46rem;
-  margin: 0 0 var(--space-4);
-  color: var(--ink-dim);
-}
-
-.intro__what {
-  margin: var(--space-2) 0 0;
-  padding-left: 1.1rem;
-
-  li { margin-bottom: var(--space-1); }
-}

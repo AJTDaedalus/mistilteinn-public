@@ -363,8 +363,6 @@
               />
               <span>Wait for energy instead of skipping the burst</span>
             </label>
-            <p class="hint energy-model__why">
-            </p>
           </div>
 
           <!-- §W — weapons in the search. Owner: *"Weapon should definitely be opt-in, off by
@@ -503,11 +501,6 @@
            it covers the optimized character too: the baseline is the same config in both runs,
            so the difference is energy and nothing else. -->
       <p class="error" role="alert">{{ delay }}</p>
-    }
-
-    @if (asideCaveats(); as aside) {
-      @if (aside.unstable.length || aside.staleConversions.length) {
-      }
     }
 
     <!-- Both of these are free once a rotation search has run: the page still holds the
