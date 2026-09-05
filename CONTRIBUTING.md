@@ -73,7 +73,11 @@ The final commit is the one that matters. "Only docs changed since I ran it" is
 the reasoning this requirement exists to refuse.
 
 After merging, check that the deploy actually happened — `gh run list --branch
-dev` — rather than assuming the merge was the deploy.
+dev`, then a request against the site — rather than assuming the merge was the
+deploy. `deploy-prod.yml` runs on a self-hosted runner and kept working through
+a failed-payment state that stopped every hosted job, so this is not about
+billing; it is that a merge and a deploy are two events and only one of them is
+visible in git.
 
 ## TDD and test layout
 

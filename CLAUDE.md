@@ -676,10 +676,21 @@ And one this repo learned for itself:
    green that meant nothing, then a red that meant nothing. `ci_local` closes with the honest
    posture and it is not boilerplate: *"a clean machine can still fail what this box passes."*
 
-   **After merging, confirm the deploy actually ran.** `deploy-prod.yml` is still a workflow,
-   so a billing or outage state that stops Actions stops it too — and then `dev` sits ahead of
-   what production serves with nothing on screen to say so. `gh run list --branch dev` and a
-   request against the site, rather than assuming the merge was the deploy.
+   **A failed payment stops the hosted runners and not the self-hosted one — measured, on the
+   day.** While Actions was refusing to start every `ubuntu-latest` job with *"recent account
+   payments have failed"*, the merge of #293 triggered `deploy-prod.yml` on
+   `[self-hosted, mistilteinn-prod]` and it **succeeded**, and the site served the new build.
+   This entry first said the opposite — *"whatever stops Actions stops it too"* — written
+   from reasoning about workflows in general, before the merge that could answer it had run.
+   It is corrected here rather than deleted, because the guess was plausible and the check was
+   cheap.
+
+   That is the argument for the split this repo now has: the checks are local and cost
+   nothing, and the one workflow left on GitHub runs on hardware we own.
+
+   **Confirm the deploy anyway.** Not because a billing state will stop it, but because a
+   merge is not a deploy and nothing on screen distinguishes "deployed" from "`dev` moved and
+   production did not". `gh run list --branch dev`, then a request against the site.
 
 ## Testing
 
