@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import {
   lineOutcomes,
+  meanRoll,
   quadrinomialRow,
   rollSplits,
+  rollTotals,
   tierSums,
 } from './artifact-distribution';
 
@@ -148,5 +150,52 @@ describe('lineOutcomes', () => {
     const b = byKey(lineOutcomes(reversed, 2));
     expect(a.size).toBe(b.size);
     for (const [key, p] of a) expect(b.get(key)).toBeCloseTo(p, 12);
+  });
+});
+
+
+describe('rollTotals', () => {
+  /** Exactly 70/80/90/100 % of the max, which is what `tierSums` assumes. */
+  const EXACT = [0.7, 0.8, 0.9, 1.0];
+
+  it('agrees with tierSums when the ladder is exactly spaced', () => {
+    // **This is what keeps `tierSums` honest as a description of the model.** One enumerates
+    // count-vectors over real values, the other collapses orderings via the quadrinomial; on an
+    // exactly-spaced ladder they are the same distribution, and if they ever stop agreeing one
+    // of them has stopped describing Genshin.
+    for (const rolls of [1, 2, 3, 5]) {
+      const viaTiers = new Map(
+        tierSums(rolls).map((t) => [t.multiple.toFixed(6), t.p]),
+      );
+      const merged = new Map<string, number>();
+      for (const total of rollTotals(EXACT, rolls)) {
+        const key = total.value.toFixed(6);
+        merged.set(key, (merged.get(key) ?? 0) + total.p);
+      }
+      expect(merged.size).toBe(viaTiers.size);
+      for (const [key, p] of merged) expect(viaTiers.get(key)).toBeCloseTo(p, 12);
+    }
+  });
+
+  it('does not assume the spacing, so a real ladder is exact rather than approximated', () => {
+    // The committed 5-star CRIT Rate ladder is 0.6992 of its max, not 0.7. Small, and this does
+    // not depend on it either way.
+    const real = [0.0272, 0.0311, 0.035, 0.0389];
+    const totals = rollTotals(real, 2);
+    expect(totals.reduce((a, b) => a + b.p, 0)).toBeCloseTo(1, 12);
+    expect(Math.min(...totals.map((t) => t.value))).toBeCloseTo(0.0544, 9);
+    expect(Math.max(...totals.map((t) => t.value))).toBeCloseTo(0.0778, 9);
+  });
+
+  it('enumerates C(rolls + 3, 3) count-vectors', () => {
+    expect(rollTotals(EXACT, 6)).toHaveLength(84);
+    expect(rollTotals(EXACT, 0)).toEqual([{ value: 0, p: 1 }]);
+  });
+});
+
+describe('meanRoll', () => {
+  it('is the ladder unweighted, which is what the projection uses', () => {
+    expect(meanRoll([0.0272, 0.0311, 0.035, 0.0389])).toBeCloseTo(0.03305, 9);
+    expect(meanRoll([])).toBe(0);
   });
 });

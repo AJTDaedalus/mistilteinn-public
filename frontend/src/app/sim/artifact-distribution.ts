@@ -164,3 +164,53 @@ export function lineOutcomes(
   walk([], new Set(keys), 1);
   return out;
 }
+
+
+/** One possible total for a run of rolls of one substat, in the stat's own units. */
+export interface RollTotal {
+  /** The summed value, exact — built from the committed ladder, not from a ratio of its max. */
+  value: number;
+  p: number;
+}
+
+/**
+ * Every total `rolls` rolls of one substat can reach, using the **committed roll values**.
+ *
+ * `tierSums` expresses the structure — 4ⁿ orderings collapsing to 3n+1 totals via the
+ * quadrinomial coefficients — under GO's assumption that the four tiers are exactly 70/80/90/100
+ * % of the maximum. Measured against the committed 5-star ladders that assumption holds to about
+ * one part in a thousand (`crit_rate` is 0.6992, not 0.7), **and this does not rely on it**: it
+ * enumerates count-vectors over the actual four values.
+ *
+ * `C(rolls + 3, 3)` of them — 84 at the six-roll ceiling — so exactness costs nothing. A test
+ * pins the two against each other on an exactly-spaced ladder, which is what keeps `tierSums`
+ * honest as a description of this.
+ */
+export function rollTotals(values: readonly number[], rolls: number): RollTotal[] {
+  if (rolls <= 0) return [{ value: 0, p: 1 }];
+  if (!values.length) return [{ value: 0, p: 1 }];
+
+  const out: RollTotal[] = [];
+  const counts = new Array<number>(values.length).fill(0);
+  const denominator = values.length ** rolls;
+  const walk = (index: number, left: number): void => {
+    if (index === values.length - 1) {
+      counts[index] = left;
+      const value = counts.reduce((acc, c, i) => acc + c * values[i], 0);
+      out.push({ value, p: multinomial(counts) / denominator });
+      return;
+    }
+    for (let take = 0; take <= left; take += 1) {
+      counts[index] = take;
+      walk(index + 1, left - take);
+    }
+  };
+  walk(0, rolls);
+  return out;
+}
+
+/** The mean value of one roll of a substat — the ladder unweighted, which is what GO takes. */
+export function meanRoll(values: readonly number[]): number {
+  if (!values.length) return 0;
+  return values.reduce((a, b) => a + b, 0) / values.length;
+}

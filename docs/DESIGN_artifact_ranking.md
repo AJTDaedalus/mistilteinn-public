@@ -420,6 +420,36 @@ uses rather than to write something new.
 builds can be asked about. That is one control fewer than `/optimize`'s team-then-rotation-then-
 build, and it makes the invalid combinations unrepresentable rather than merely rejected.
 
+### 8.8 §5's identity is true of stats and false of damage (A.14, 2026-09-05)
+
+§5 says the deterministic *average* is superseded by the distribution's mean, *"at which point the
+average becomes that distribution's mean rather than a separate rule, and the two cannot
+disagree."* Building it showed that is **half right, and the half that is wrong is the
+interesting one.**
+
+- **At the level of stats it holds exactly.** The expected stat total is linear in the rolls, so
+  the distribution's mean pool *is* A.5's `average` pool. A test pins them together with no
+  tolerance to argue about, and on a linear objective the two damage numbers coincide to 1e-8.
+- **At the level of damage it does not.** `E[damage]` is not `damage(E[stats])`, because damage
+  multiplies: crit rate times crit damage.
+
+**And the sign is not the one Jensen would suggest.** `cr · cd` is a saddle rather than a convex
+function, so convexity alone settles nothing. What decides it is that the rolls **compete** — a
+roll on CRIT Rate is a roll not on CRIT DMG, so their counts are negatively correlated under the
+multinomial and `E[cr·cd] < E[cr]·E[cd]`.
+
+**So A.5's `average` is optimistic**, by exactly the covariance a point estimate cannot see. Both
+numbers are therefore reported — `atAverage`, `mean`, and `curvature` as the signed difference —
+rather than one being tuned until it matched the other, or a tolerance being chosen loose enough
+to hide the disagreement.
+
+**One approximation was removed on the way.** GO's model treats the four roll tiers as exactly
+70/80/90/100 % of a substat's maximum. Measured against the committed 5-star ladders that is true
+to about one part in a thousand — `crit_rate` is 0.6992, not 0.7 — and `rollTotals` enumerates the
+**actual committed values** instead, so nothing downstream rests on the assumption. `tierSums`
+keeps the quadrinomial statement of the structure, and a test pins the two against each other on
+an exactly-spaced ladder.
+
 ### 8.5 What is still not settled
 
 Two things, recorded here rather than guessed at in a task:

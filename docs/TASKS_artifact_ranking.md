@@ -228,7 +228,7 @@ A.0 is the gate. **One PR per phase**, not per task — five PRs, not seventeen.
 - **Accept:** probabilities sum to 1 across every enumerated case; a hand-computed two-roll case
   matches; the 3-vs-4 initial split is applied. Pure and offline.
 
-### [ ] A.14 — The distribution over damage, and its verification
+### [x] A.14 — The distribution over damage, and its verification
 - **Do:** GO's shape — delta method at the coarse levels, **exact enumeration at the leaves**, no
   Monte Carlo. §5's "apparent conflict" section is the argument that our objective qualifies:
   closed-form, deterministic, ~0.05 µs/hit, smooth except for the `min(max(cr,0),1)` clamp whose
