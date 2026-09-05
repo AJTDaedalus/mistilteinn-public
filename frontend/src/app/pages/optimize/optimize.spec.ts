@@ -926,7 +926,7 @@ describe('OptimizePage caveat attribution', () => {
     }));
 
     expect(page['recipeIsShaky']()).toBe(false);
-    expect(page['asideCaveats']().unstable.map((e) => e.label))
+    expect(page['splitCaveats'](true).unstable.map((e) => e.label))
       .toEqual(['the baseline (no 4-piece bonus)']);
     expect(page['rankingCaveats']().unstable).toEqual([]);
   });
@@ -961,7 +961,7 @@ describe('OptimizePage caveat attribution', () => {
     }));
 
     expect(page['recipeIsShaky']()).toBe(false);
-    expect(page['asideCaveats']().staleConversions).toHaveLength(1);
+    expect(page['splitCaveats'](true).staleConversions).toHaveLength(1);
   });
 
   it('keeps a frozen conversion on a recipe that did score', () => {

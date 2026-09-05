@@ -1878,7 +1878,9 @@ export class OptimizePage implements OnInit {
    * the results, and printing them in one undifferentiated red block said otherwise.
    */
   protected readonly rankingCaveats = computed(() => this.splitCaveats(false));
-  protected readonly asideCaveats = computed(() => this.splitCaveats(true));
+  // The unscored half has no reader: the paragraph that rendered it was a reassurance
+  // about a baseline nobody can act on, and it went with the rest of them. The split
+  // still has to be right, so `splitCaveats(true)` is asserted directly in the spec.
 
   private splitCaveats(unscored: boolean): {
     unstable: { label: string; abilities: string[] }[];
