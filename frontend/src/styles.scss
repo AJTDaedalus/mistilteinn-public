@@ -266,12 +266,22 @@ dialog,
   color: var(--ink-dim);
   font-size: var(--text-sm);
   line-height: 1.3;
-  cursor: pointer;
   transition:
     color var(--t-fast) var(--ease),
     border-color var(--t-fast) var(--ease);
 
-  &:hover { border-color: var(--halo-brass); color: var(--ink); }
+  // **A chip is not always a control.** The teapot draws one per character a set favours, and
+  // an unowned character's is a `<span>` that says so and does nothing — asserting `cursor:
+  // pointer` and a hover colour on the bare class gave that span a button's affordances.
+  // Appearance is the shared part; interactivity belongs to the element that has it.
+  //
+  // `:where()` rather than `button.chip` so the guard costs no specificity: a page that
+  // already styles its own `.chip--on` must keep outranking this hover, as it did before.
+  &:where(button, label, a) {
+    cursor: pointer;
+
+    &:hover { border-color: var(--halo-brass); color: var(--ink); }
+  }
 }
 
 .chip--on {
