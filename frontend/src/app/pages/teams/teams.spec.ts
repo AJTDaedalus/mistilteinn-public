@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { CONTRACT } from '../../api/contract';
 import { BuildsService } from '../builds/builds.service';
+import { CatalogueService } from '../catalogue/catalogue.service';
 import { TeamsPage } from './teams';
 import { TEAM_SLOTS, TeamsService } from './teams.service';
 
@@ -22,23 +23,41 @@ const BARBARA_B = {
   character: BARBARA, weapon: null,
 };
 
-function pageWith(teams: Partial<TeamsService>, builds: Partial<BuildsService>) {
+function pageWith(
+  teams: Partial<TeamsService>,
+  builds: Partial<BuildsService>,
+  catalogue: Partial<CatalogueService> = {},
+) {
   TestBed.configureTestingModule({
     providers: [
       { provide: TeamsService, useValue: teams },
       { provide: BuildsService, useValue: builds },
+      // **The third one `load()` awaits, and it was not stubbed.** `Promise.all` here waits
+      // on `listReactions()` too, so with the real service injected every test that loads
+      // made an actual HTTP request from jsdom. CI got a refusal in milliseconds and went
+      // green; on a machine where that request instead hangs, all eleven time out at 5000ms
+      // and the failure names the test rather than the missing provider.
+      { provide: CatalogueService, useValue: catalogue },
     ],
   });
   return TestBed.runInInjectionContext(() => new TeamsPage());
 }
 
-function healthy(teams: Partial<TeamsService> = {}, builds: Partial<BuildsService> = {}) {
+function healthy(
+  teams: Partial<TeamsService> = {},
+  builds: Partial<BuildsService> = {},
+  catalogue: Partial<CatalogueService> = {},
+) {
   return pageWith(
     { list: vi.fn().mockResolvedValue([]), ...teams } as unknown as TeamsService,
     {
       list: vi.fn().mockResolvedValue([AYAKA_C0, AYAKA_C6, BARBARA_B]),
       ...builds,
     } as unknown as BuildsService,
+    {
+      listReactions: vi.fn().mockResolvedValue([]),
+      ...catalogue,
+    } as unknown as CatalogueService,
   );
 }
 
