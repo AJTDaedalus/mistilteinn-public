@@ -136,11 +136,13 @@ a job with progress, never a request that blocks.
   and recorded rather than ignored: in a repo whose rule is that a check which could not run
   is never a pass, a check that answers differently on identical input is the same problem
   wearing a different face. Re-derive rather than trust:
-  `cd backend && python -m pytest -q`, `cd frontend && npm test`. Run CI's own gates rather
-  than a remembered subset: `cd backend && python -m scripts.ci_local` reads
-  `.github/workflows/*.yml` and executes them here — 20 gates, including the WGSL kernel,
-  gcsim crossval, gitleaks and pip-audit. `--list` shows the plan; `--clean` runs from a
-  fresh clone of HEAD. **A red suite is a regression, not the size of the port** — that
+  `cd backend && python -m pytest -q`, `cd frontend && npm test`. **`cd backend && python -m
+  scripts.ci_local` is the gate, and it is required before a merge** — §Gate discipline rule 3.
+  It reads `.github/workflows/*.yml` and executes them here — **26 gates** at 2026-09-05,
+  including the WGSL kernel, gcsim crossval, gitleaks and pip-audit. (It said 20 for a while
+  and the count grows with the workflows, which is the point of parsing them; `--list` prints
+  the current plan and is the way to answer "how many".) `--clean` runs from a fresh clone of
+  HEAD. **A red suite is a regression, not the size of the port** — that
   excuse expired at B.13.
 - **`npm run check:tokens` exists because CSS fails silently.** An undefined custom property
   invalidates its whole declaration and the element keeps what it had, so `var(--accent)` — a
@@ -632,6 +634,52 @@ this "process parity":
 2. **The agent RUNS the harness; it never reasons in its place.** A model answering a
    ground-truth question from the same JSON file where the error lives will confirm the error.
    Query the DB; do not infer.
+
+And one this repo learned for itself:
+
+3. **The gate is `ci_local`, and it is required. GitHub Actions is off.** Owner, 2026-09-05:
+   *"github CI is nice, but not required"*, and then *"the tests could be removed, this
+   repository ends up using a lot and I don't think it adds much value since we can do all of
+   those tests locally. We just have to make it a **requirement** that they get ran on the
+   final version before merging."*
+
+   So `test.yml` and `security.yml` are `on: workflow_dispatch:` — seven `ubuntu-latest` jobs
+   that no longer run on push or PR. **`deploy-prod.yml` is untouched**: it is
+   `[self-hosted, mistilteinn-prod]`, it costs no hosted minutes, and it is the deploy rather
+   than a check.
+
+   **The files stay, because they are the gate list.** `scripts/ci_local.py` parses them at
+   run time (`WORKFLOWS = ("test.yml", "security.yml")`) rather than restating them, which is
+   the only reason it cannot drift from CI by omission — a step added to a workflow is a step
+   it runs the same day. Deleting the workflows would delete the local gate definition with
+   them.
+
+   **The requirement.** Before any merge to `dev`: `cd backend && python -m scripts.ci_local`,
+   exit 0 over **every** job, **on the final commit** — not on an earlier one with "only docs
+   changed since", which is the excuse this rule exists to refuse. Record the commit and the
+   gate count. `--list` prints the plan without running; `--job <id>` runs one while iterating,
+   and is never the thing that clears a merge.
+
+   **This does not soften rule 1, it sharpens it.** The distinction was always *ran* versus
+   *did not run*, never *ran on GitHub* versus *ran here*. A gate that cannot run locally
+   either is still a block. And `ci_local` reporting a step **adapted** — it does that for
+   install steps when the deps are already present — means that step's fresh-clone path was
+   not exercised; when a change could touch installing or building, use `--clean`, which runs
+   from a fresh clone of HEAD, rather than accepting the adaptation.
+
+   **Neither venue was ever the oracle, and one session had both fail in opposite
+   directions.** `teams.spec.ts` passed in CI 1030 times and timed out on this box, because
+   the spec left `CatalogueService` unstubbed and made a real HTTP request — CI got a refusal
+   in milliseconds, so **it was green for a reason unrelated to the code being right**. Hours
+   later Actions refused to start any job at all (*"recent account payments have failed"*) and
+   every check on a two-file docs commit reported `failure` with **zero steps executed**. A
+   green that meant nothing, then a red that meant nothing. `ci_local` closes with the honest
+   posture and it is not boilerplate: *"a clean machine can still fail what this box passes."*
+
+   **After merging, confirm the deploy actually ran.** `deploy-prod.yml` is still a workflow,
+   so a billing or outage state that stops Actions stops it too — and then `dev` sits ahead of
+   what production serves with nothing on screen to say so. `gh run list --branch dev` and a
+   request against the site, rather than assuming the merge was the deploy.
 
 ## Testing
 
