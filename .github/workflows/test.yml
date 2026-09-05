@@ -357,6 +357,15 @@ jobs:
         # closed one; the check that works reads the stylesheet.
         run: npm run check:dialogs
 
+      - name: Check every routerLink resolves
+        # Angular does not error on an unknown **static** attribute, so a standalone component
+        # whose `imports` omits `RouterLink` compiles, lints, and renders
+        # `<a routerLink="/inventory">` as an anchor with no `href` — not clickable, not
+        # focusable, navigating nowhere, and saying so nowhere. That shipped on the one line an
+        # empty weapon inventory shows. The directive is the difference between a link and a
+        # word; nothing else in the toolchain checks that it is there.
+        run: npm run check:router-links
+
       - name: Unit tests
         # Re-enabled in A.2 (client-optimizer plan). It was disabled with a
         # `TODO(chunk-J)` because `npm test` and `npm run build` both failed to compile:
