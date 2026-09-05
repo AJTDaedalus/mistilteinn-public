@@ -9,13 +9,13 @@
       @case ('approved') {
         <span class="eyebrow">confirmed</span>
         <h2 class="verify-card__title">You're in</h2>
-        <p class="verify-card__lede">Your email is confirmed. Taking you to Mistilteinn…</p>
+        <p class="verify-card__lede">Taking you to Mistilteinn…</p>
       }
       @case ('pending') {
         <span class="eyebrow">confirmed</span>
         <h2 class="verify-card__title">Email confirmed</h2>
         <p class="verify-card__lede">
-          Verified. Your account still needs approval before you can sign in.
+          Approval still needed.
         </p>
       }
       @case ('failed') {
@@ -24,7 +24,7 @@
           @case ('expired') {
             <h2 class="verify-card__title">This link has expired</h2>
             <p class="verify-card__lede">
-              Links are good for 24 hours. Sign in to request a new one.
+              Sign in to request a new link.
             </p>
           }
           @case ('already_used') {
@@ -36,7 +36,7 @@
           @default {
             <h2 class="verify-card__title">We couldn't read that link</h2>
             <p class="verify-card__lede">
-              Copy the full address from the email, or sign in to request a new one.
+              Copy the full address from the email.
             </p>
           }
         }

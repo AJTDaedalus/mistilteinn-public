@@ -32,7 +32,7 @@
         </header>
         @if (savedRunIsStale()) {
           <p class="saved-run__stale" role="status">
-            Gear has changed since this ran. The result below is what was measured then.
+            Gear has changed since this ran.
           </p>
         }
         <p class="saved-run__score">
@@ -257,8 +257,7 @@
                indistinguishable from "your artifacts are bad", and the user would not know
                which. -->
           <p class="error" role="alert">
-            No artifact you own matches the main stats for
-            {{ impossibleSlots().join(', ') }}.
+            No artifact matches those main stats.
           </p>
         }
       </fieldset>
@@ -306,7 +305,7 @@
                chunk. -->
           @if (unsimulableSets().length) {
             <p class="hint set-filter__caveat">
-              Not offered below: gcsim cannot simulate {{ unsimulableSets().join(', ') }}.
+              gcsim cannot simulate {{ unsimulableSets().join(', ') }}.
             </p>
           }
 
@@ -365,7 +364,6 @@
               <span>Wait for energy instead of skipping the burst</span>
             </label>
             <p class="hint energy-model__why">
-              Slower. Prices Energy Recharge far higher.
             </p>
           </div>
 
@@ -381,7 +379,6 @@
               <!-- The equipped weapon is not in this list: it is the baseline every candidate
                    is measured against, not a hypothesis to tick. -->
               <p class="hint">
-                Searching against <strong>{{ build()?.weapon?.name || 'the equipped weapon' }}</strong>.
                 About <strong>2½ minutes</strong> per weapon.
               </p>
 
@@ -397,9 +394,8 @@
 
               @if (weaponGuide(); as guide) {
                 <p class="hint">
-                  KeqingMains picks first, in their order.
-                  <a [href]="guide.url" target="_blank" rel="noopener">Their guide</a>,
-                  {{ guide.retrieved_at }}.
+                  KeqingMains picks first.
+                  <a [href]="guide.url" target="_blank" rel="noopener">Their guide</a>
                 </p>
               }
             }
@@ -410,14 +406,14 @@
                  this and three of anything" is neither, so a half-filled pair constrains
                  nothing and would quietly contribute no recipe at all. -->
             <p class="hint">
-              A 2-piece needs a partner.
+              Pick a second set.
             </p>
           }
 
     @if (!selectedSets().size && chosenPair() === null) {
             <!-- Ruling 3: nothing is preselected, so the empty state has to say what to do
                  rather than leave a disabled button unexplained. -->
-            <p class="hint">Pick at least one set. Roughly six seconds each.</p>
+            <p class="hint">Pick at least one set.</p>
           }
         </fieldset>
       }
@@ -470,7 +466,7 @@
                `BACKLOG_optimize.md` §8. The same gated rotation is unstable below 30% ER and
                performs identically every iteration at and above it. -->
           <span class="block">
-            An ability whose count varies is short of energy. More Energy Recharge settles it.
+            More Energy Recharge needed.
           </span>
         </p>
       }
@@ -511,10 +507,6 @@
 
     @if (asideCaveats(); as aside) {
       @if (aside.unstable.length || aside.staleConversions.length) {
-        <p class="hint">
-          The baseline recipe has the same trouble. It affects the off-set suggestions, not
-          the ranking.
-        </p>
       }
     }
 
@@ -530,8 +522,7 @@
       <!-- OQ-O2: reported, never swallowed. A search over an inventory quietly missing
            pieces recommends the best of what it was shown. -->
       <p class="warn" role="alert">
-        {{ unreadable().length }} artifact{{ unreadable().length === 1 ? '' : 's' }} could not be read and were left out of the
-        search:
+        {{ unreadable().length }} artifact{{ unreadable().length === 1 ? '' : 's' }} could not be read:
       </p>
       <ul class="unreadable">
         @for (piece of unreadable(); track piece.artifact_id) {
@@ -542,7 +533,7 @@
 
     @if (truncated()) {
       <p class="warn" role="alert">
-        Only part of your inventory was searched.
+Only part of your inventory was searched.
       </p>
     }
 
@@ -867,7 +858,7 @@
           </li>
         } @empty {
           <li class="muted">
-            No complete build: a search needs all five slots filled.
+            No complete build.
           </li>
         }
         <!-- **The comparator as a row, not a sentence** (owner): *"'Percentages are against

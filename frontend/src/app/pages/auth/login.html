@@ -63,15 +63,12 @@
         <span class="eyebrow">check your email</span>
         <h2>Confirm your address</h2>
         <p>
-          If that address can receive mail, a confirmation link is on its way. Good for
-          24 hours.
+          Check your email.
         </p>
         <p class="muted">
-          Nothing arrived? Check spam, then
+          Nothing arrived? Check spam or
           <button type="button" class="linkish" (click)="mode.set('signin'); registered.set(false)">
-            sign in
-          </button>
-          to request a new link.
+            request a new link</button>.
         </p>
       </div>
     } @else if (mode() === 'register') {

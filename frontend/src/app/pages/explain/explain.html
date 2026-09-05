@@ -1,7 +1,6 @@
 <section class="explain">
   <header>
     <h1>Explain</h1>
-    <p class="muted">Where every number in a hit came from.</p>
   </header>
 
   @if (error(); as message) {
@@ -101,8 +100,6 @@
     @if (hit(); as chosen) {
       <p class="hint">
         Multiplier <span class="mono">{{ chosen.multiplier | number: '1.0-4' }}</span>
-        from {{ build()?.character?.name }}'s own table at this build's talent level.
-        @if (chosen.exclusive) { One of several alternatives. }
       </p>
     } @else {
       <p class="hint">

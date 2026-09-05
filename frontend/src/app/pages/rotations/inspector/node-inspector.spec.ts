@@ -97,10 +97,10 @@ describe('NodeInspector', () => {
     expect(fixture.nativeElement.textContent).toContain('Carried exactly as written');
   });
 
-  it('says a carried node is edited elsewhere rather than looking broken', () => {
+  it('marks a carried node rather than letting it look broken', () => {
     build({ kind: 'raw', source: '999;', reason: 'unmodelled' });
 
-    expect(fixture.nativeElement.textContent).toContain('source view');
+    expect(fixture.nativeElement.textContent).toContain('Carried as written');
   });
 
   it('reads an existing condition back into its dropdowns', () => {

@@ -8,12 +8,6 @@
        never repeated. The list is what you actually get back, so the wait has a shape before
        you commit to it. -->
   <div class="intro">
-    <ul class="intro__what">
-      <li>Damage per second for the team, with its spread over repeated runs.</li>
-      <li>What each character contributed, and how long each held the field.</li>
-      <li>Reactions and aura uptime on the target.</li>
-      <li>An explicit list of what the model leaves out.</li>
-    </ul>
   </div>
 
   @if (error(); as message) {
@@ -237,7 +231,6 @@
 
       <!-- Stated, not implied by absence. -->
       <p class="hint not-modelled">
-        Not shown: per-iteration timelines, cumulative contribution.
       </p>
     }
   }

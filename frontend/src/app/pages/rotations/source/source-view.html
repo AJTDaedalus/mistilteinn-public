@@ -1,11 +1,4 @@
 <div class="source">
-  @if (required()) {
-    <p class="source__hint">
-      Uses gcsim features the builder cannot draw: a user-defined function, or a
-      condition outside the pickers.
-    </p>
-  }
-
   <app-function-palette [functions]="declared()" (called)="addCall($event)" />
 
   <textarea

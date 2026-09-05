@@ -44,7 +44,6 @@
            step against a different party, and the steps that stopped resolving would be
            found later, at compile time, far from the edit that caused it. -->
       <p class="hint">
-        A saved rotation stays on its team.
       </p>
     }
 
@@ -301,14 +300,12 @@
           [value]="configText()"
           (input)="configText.set($any($event.target).value)"
         ></textarea>
-        <p class="hint">
-          The action block, or a whole config. The rest is ignored. Anything that cannot be
-          expressed as steps is refused by line rather than dropped.
-          @if (steps().length > 0) {
+        @if (steps().length > 0) {
+          <p class="hint">
             <strong>This replaces the {{ steps().length }} step{{ steps().length === 1 ? '' : 's' }}
             below.</strong>
-          }
-        </p>
+          </p>
+        }
         <button type="button" (click)="importConfig()" [disabled]="!configText().trim()">
           Read it into steps
         </button>
