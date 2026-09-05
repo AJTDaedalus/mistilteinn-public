@@ -476,7 +476,10 @@ label {
        already made — took the wide one. The owner's reading was that the move list "is the
        biggest element and has the least important features", and adding loops and branches to
        that list would have made the imbalance worse rather than better. */
-    grid-template-columns: minmax(0, 1fr) minmax(0, 34rem);
+    /* 37rem, up from 34, to pay for the type scale's raised floor: a step row is `nowrap`
+       with its label set to shrink, so every rem the column lacks comes out of the move's
+       name — "Salon Solitaire" started ellipsising at the old width. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 37rem);
     column-gap: var(--space-4);
     align-items: start;
   }

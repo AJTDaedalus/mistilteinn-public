@@ -59,7 +59,14 @@
   background: color-mix(in srgb, var(--brass) 14%, transparent);
 }
 
-/* The placement row uses the same chip, so it needs the same pressed state. */
+/* The placement row uses the same chip, so it needs the same pressed state — and a little
+   more room, because these are three words a reader chooses between rather than a label on a
+   checkbox. */
+.teapot__filters .chip {
+  padding: var(--space-1) var(--space-3);
+  cursor: pointer;
+}
+
 .teapot__filters .chip--on {
   border-color: var(--brass);
   color: var(--ink);
