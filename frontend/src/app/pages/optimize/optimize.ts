@@ -23,7 +23,7 @@ import { EntityToken } from '../../shared/token/token';
 import { type Amplifying, type ScalingStat } from '../../sim/damage';
 import { SLOTS, type SearchResult, type Slot, search } from '../../sim/search';
 import { BuildsService, type BuildRead } from '../builds/builds.service';
-import { CHANNELS, SCOPES, talentLabel } from '../explain/explain';
+import { CHANNELS, SCOPES, enumLabel } from '../explain/explain';
 import {
   ExplainService,
   type AvailableHit,
@@ -238,7 +238,7 @@ export class OptimizePage implements OnInit {
   protected readonly channels = CHANNELS;
   private readonly runs = inject(OptimizationRunsService);
   protected readonly scopes = SCOPES;
-  protected readonly talentLabel = talentLabel;
+  protected readonly enumLabel = enumLabel;
 
   /** Where the last selection is kept. Read once: it cannot change under the page. */
   private readonly store = browserStore();
@@ -1710,6 +1710,15 @@ export class OptimizePage implements OnInit {
     this.equippedIds.set([]);
     this.actionError.set(null);
     if (!id) return;
+    // **Before the requests, not after them.** This sat at the end of the `try` below, so the
+    // Element field only caught up once the hit list *and* the whole equipped inventory had
+    // come back — reported as the field "updating itself late" (#287). The build is already
+    // in hand and its character carries the element, so nothing has to be fetched to know it.
+    const element = this.builds().find((b) => b.id === id)?.character?.element;
+    if (element) {
+      const guess = element.toLowerCase();
+      if ((CHANNELS as readonly string[]).includes(guess)) this.channel = guess;
+    }
     try {
       this.hits.set(await this.explain.hits(id));
       // What this character is wearing now — the comparator every result is a percentage of
@@ -1720,11 +1729,6 @@ export class OptimizePage implements OnInit {
         this.equippedIds.set(worn.items.map((piece) => piece.id));
       } catch {
         this.equippedIds.set([]);
-      }
-      const element = this.builds().find((b) => b.id === id)?.character?.element;
-      if (element) {
-        const guess = element.toLowerCase();
-        if ((CHANNELS as readonly string[]).includes(guess)) this.channel = guess;
       }
     } catch (err) {
       this.actionError.set(apiErrorMessage(err));

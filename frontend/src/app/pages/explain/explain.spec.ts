@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi } from 'vitest';
 
 import { BuildsService } from '../builds/builds.service';
-import { ExplainPage, talentLabel } from './explain';
+import { ExplainPage, enumLabel } from './explain';
 import { ExplainService } from './explain.service';
 
 const AYAKA_BUILD = {
@@ -46,9 +46,19 @@ function healthy(explain: Partial<ExplainService> = {}, builds: Partial<BuildsSe
   );
 }
 
-describe('talentLabel', () => {
+describe('enumLabel', () => {
   it('reads the enum value as a person would write it', () => {
-    expect(talentLabel('elemental_burst')).toBe('Elemental burst');
+    expect(enumLabel('elemental_burst')).toBe('Elemental burst');
+  });
+
+  // The Element and Scope selects print through this now, and printing the raw value is what
+  // was reported (#286).
+  it('capitalises a single-word channel', () => {
+    expect(enumLabel('cryo')).toBe('Cryo');
+  });
+
+  it('reads a two-word scope as a sentence', () => {
+    expect(enumLabel('any_attack')).toBe('Any attack');
   });
 });
 

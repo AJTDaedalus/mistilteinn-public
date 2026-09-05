@@ -131,7 +131,7 @@
           <select aria-label="Hit" [ngModel]="hitIndex()" (ngModelChange)="hitIndex.set(+$event)">
             @for (option of hits(); track $index) {
               <option [value]="$index">
-                {{ talentLabel(option.talent) }} · {{ option.label }}
+                {{ enumLabel(option.talent) }} · {{ option.label }}
               </option>
             }
           </select>
@@ -148,7 +148,7 @@
           Element
           <select aria-label="Element" [(ngModel)]="channel">
             @for (option of channels; track option) {
-              <option [value]="option">{{ option }}</option>
+              <option [value]="option">{{ enumLabel(option) }}</option>
             }
           </select>
         </label>
@@ -157,7 +157,7 @@
           Scope
           <select aria-label="Scope" [(ngModel)]="scope">
             @for (option of scopes; track option) {
-              <option [value]="option">{{ option }}</option>
+              <option [value]="option">{{ enumLabel(option) }}</option>
             }
           </select>
         </label>
@@ -267,7 +267,12 @@
 
     @if (objective() === 'rotation') {
       @if (!rotations().length) {
-        <p class="hint">No rotations authored yet — write one before searching against it.</p>
+        <!-- "searching against it" was reported as odd, and it was: the search runs the
+             rotation, it does not search it (#274). It also has an action, so it links. -->
+        <p class="hint">
+          No rotations yet. A rotation search runs one, so
+          <a routerLink="/rotations">write a rotation first</a>.
+        </p>
       }
 
       <!-- **Shortened, not removed.** The owner asked for this to go and was right that the

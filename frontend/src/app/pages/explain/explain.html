@@ -61,7 +61,7 @@
         <select aria-label="Hit" [ngModel]="hitIndex()" (ngModelChange)="hitIndex.set(+$event)">
           @for (option of hits(); track $index) {
             <option [value]="$index">
-              {{ talentLabel(option.talent) }} · {{ option.label }}
+              {{ enumLabel(option.talent) }} · {{ option.label }}
               @if (option.hits > 1) { (×{{ option.hits }}) }
             </option>
           }
@@ -74,7 +74,7 @@
              nothing about which element the hit lands as. -->
         <select aria-label="Element" [(ngModel)]="channel">
           @for (option of channels; track option) {
-            <option [value]="option">{{ option }}</option>
+            <option [value]="option">{{ enumLabel(option) }}</option>
           }
         </select>
       </label>
@@ -83,7 +83,7 @@
         Scope
         <select aria-label="Scope" [(ngModel)]="scope">
           @for (option of scopes; track option) {
-            <option [value]="option">{{ option }}</option>
+            <option [value]="option">{{ enumLabel(option) }}</option>
           }
         </select>
       </label>
