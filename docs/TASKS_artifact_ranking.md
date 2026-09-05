@@ -218,7 +218,7 @@ A.0 is the gate. **One PR per phase**, not per task — five PRs, not seventeen.
 
 *One PR. Last, per §5, and the only part with no crossvalidation oracle behind it.*
 
-### [ ] A.13 — The draw model, pure
+### [x] A.13 — The draw model, pure
 - **Do:** `RESEARCH_genshin_optimizer_scoring.md` §2, which distinguishes two mechanisms GO does
   not mix up: **which substats the piece has** is a weighted draw *without replacement* excluding
   the main stat and existing lines; **which line each upgrade enhances** is **uniform over the
