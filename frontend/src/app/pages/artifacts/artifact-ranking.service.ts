@@ -31,6 +31,7 @@ import { Injectable, inject } from '@angular/core';
 
 import { type StatPool, scoreForSlot } from '../../sim/artifact-score';
 import { type DrawModel, type Piece, projectPiece } from '../../sim/artifact-projection';
+import { type OutcomeDistribution, outcomeDistribution } from '../../sim/artifact-outcome';
 import { type RankedArtifact, idealFor, rankArtifact } from '../../sim/artifact-ranking';
 import { evaluateRecipe } from '../../sim/recipe-eval';
 import { candidateStatsFrom } from '../../sim/recipe-search';
@@ -388,6 +389,64 @@ export class ArtifactRankingService {
         staleConversions: (recipe.meta?.staleConversions ?? []).map((c) => c.term),
       },
     };
+  }
+
+  /**
+   * The distribution over what this piece could become (A.15's data).
+   *
+   * One piece at a time, like the dive: ~8,400 outcomes for a four-line piece and ~21,000 for a
+   * three-liner, each an `evaluateRecipe` call. Cheap for one piece on demand, far too much for
+   * 2,370 — which is why the column reports point estimates and this is a click.
+   *
+   * **Scored under the recipe the build is actually in**, and refused rather than approximated
+   * when a swap would change that: a piece that completes a different 4-piece has a whole set
+   * bonus this cannot see, and a distribution drawn without it would be a confident picture of
+   * the wrong build.
+   */
+  async outcomesFor(
+    request: RankingRequest & { artifactId: string },
+  ): Promise<OutcomeDistribution | null> {
+    const snapshot = await this.optimize.inventory();
+    const raw = snapshot.draw_model;
+    if (!raw) throw new Error('the server sent no draw model, so nothing can be projected');
+    const model = drawModelFrom(raw);
+
+    const target = snapshot.artifacts.find((c) => c.id === request.artifactId);
+    if (!target) throw new Error(`artifact ${request.artifactId} is not in the inventory`);
+
+    const worn = await this.artifacts.list({ build_id: request.buildId });
+    const byId = new Map(snapshot.artifacts.map((c) => [c.id, c]));
+    const wornBySlot = new Map(worn.items.map((piece) => [piece.slot, piece.id] as const));
+    const wornFour = fourPieceSetOf(setCountsOf(wornBySlot, byId));
+
+    const calibration = await this.recipes.calibrateAll(
+      request.buildId,
+      request.rotationId,
+      snapshot.version,
+      await this.targetsFor(wornFour, request.extraSets ?? []),
+      request.onProgress ?? (() => undefined),
+      undefined,
+      request.waitForEnergy ?? false,
+    );
+    const noFourPiece = calibration.noFourPiece;
+    if (!noFourPiece) throw new Error('the baseline recipe did not calibrate');
+    const recipe = wornFour === null
+      ? noFourPiece
+      : calibration.byFourPieceSet.get(wornFour) ?? noFourPiece;
+
+    const equipped: StatPool[] = SLOTS.map((slot) => {
+      const id = wornBySlot.get(slot);
+      const candidate = id ? byId.get(id) : undefined;
+      return candidate ? candidate.stats : {};
+    });
+    const slot = SLOTS.indexOf(target.slot as (typeof SLOTS)[number]);
+    if (slot < 0) return null;
+
+    return outcomeDistribution(pieceOf(target), model, (stats) => {
+      const swapped = [...equipped];
+      swapped[slot] = stats;
+      return evaluateRecipe(recipe, candidateStatsFrom(swapped));
+    });
   }
 
   /**

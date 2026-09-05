@@ -476,11 +476,90 @@
                 </span>
               </p>
 
+              <!-- A.15: what this piece could become, as a distribution. Separate from the
+                   dive because they vary different things — this holds the other four slots
+                   still and varies the piece's own rolls. -->
+              @if (rank.rollsRemaining > 0) {
+                <button
+                  type="button"
+                  class="card__ask card__ask--outcomes"
+                  [disabled]="outcomesRunning()"
+                  (click)="showOutcomes(row)"
+                >
+                  {{ outcomesRunning() && outcomesId() === row.id
+                     ? 'Enumerating…' : 'What could it become?' }}
+                </button>
+              }
+
+              @if (outcomesId() === row.id) {
+                @if (outcomesError(); as message) {
+                  <p class="error" role="alert">{{ message }}</p>
+                }
+                @if (outcomes(); as found) {
+                  <div class="card__outcomes">
+                    <p class="card__outcomes-head">
+                      <span class="mono card__rank-delta" [class.up]="found.probabilityOfUpgrade > 0">
+                        {{ (found.probabilityOfUpgrade * 100).toFixed(1) }}%
+                      </span>
+                      <span class="muted">chance it beats what it is now</span>
+                    </p>
+
+                    @if (outcomeChart(); as chart) {
+                      <svg
+                        class="card__outcomes-chart"
+                        viewBox="0 0 100 100"
+                        preserveAspectRatio="none"
+                        role="img"
+                        [attr.aria-label]="
+                          'Damage outcomes for this artifact. '
+                          + (found.probabilityOfUpgrade * 100).toFixed(1)
+                          + ' percent of them beat it as it stands.'"
+                      >
+                        <!-- The shaded mass IS the probability of an upgrade: the number above
+                             and this region are the same quantity, so they cannot disagree. -->
+                        <path class="chart__upgrade" [attr.d]="chart.upgrade" />
+                        <path class="chart__outline" [attr.d]="chart.outline" />
+                        <line
+                          class="chart__current"
+                          [attr.x1]="chart.currentX" [attr.x2]="chart.currentX"
+                          y1="0" y2="100"
+                        />
+                        <line
+                          class="chart__mean"
+                          [attr.x1]="chart.meanX" [attr.x2]="chart.meanX"
+                          y1="0" y2="100"
+                        />
+                      </svg>
+                    }
+
+                    <ul class="card__outcomes-key">
+                      <li><span class="key key--current"></span> now {{ relativeTo(found.current) }}</li>
+                      <li><span class="key key--mean"></span> expected {{ relativeTo(found.mean) }}</li>
+                      <li><span class="key key--fill"></span> better than now</li>
+                    </ul>
+
+                    <p class="hint">
+                      {{ found.outcomes }} outcomes, enumerated exactly — no sampling.
+                      <!-- A.14: the point estimate and the true mean are different numbers, and
+                           saying which is which beats tuning one to match the other. -->
+                      @if (found.curvature < -0.0005 || found.curvature > 0.0005) {
+                        The point estimate reads {{ relativeTo(found.atAverage) }}; it differs
+                        because rolls compete for the same upgrades.
+                      }
+                    </p>
+
+                    <button type="button" class="card__dive-close" (click)="closeOutcomes()">
+                      Close
+                    </button>
+                  </div>
+                }
+              }
+
               <!-- A.12 / #291: the number a single-slot swap cannot give. Deliberate and one
                    piece at a time — a pinned re-search is five seconds. -->
               <button
                 type="button"
-                class="card__dive"
+                class="card__ask card__ask--dive"
                 [disabled]="diveRunning()"
                 (click)="diveInto(row)"
               >

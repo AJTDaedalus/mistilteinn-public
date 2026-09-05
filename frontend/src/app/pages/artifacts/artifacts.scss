@@ -576,8 +576,10 @@
   }
 }
 
-/* The deep dive (A.12): one piece, re-optimized. */
-.card__dive {
+/* The two questions a card can be asked. **Distinct classes on purpose**: they were briefly
+ * one, and an index-based selector then hit the wrong control — two buttons that do different
+ * things sharing a name is the kind of thing that later reads as one thing. */
+.card__ask {
   margin-top: var(--space-1);
   font-size: 0.85em;
 }
@@ -605,4 +607,85 @@
 
 .card__dive-close {
   font-size: 0.8em;
+}
+
+/* The outcome distribution (A.15), following AUDIT_go_handson.md §2 — with §6's two
+ * corrections: one chart at a time on a stated scale, and an empty state that says which
+ * of "nothing to show" and "nothing selected" it means. */
+.card__outcomes {
+  margin-top: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--brass);
+  border-radius: var(--radius-1);
+
+  p {
+    margin: 0 0 var(--space-1);
+    font-size: 0.85em;
+  }
+}
+
+.card__outcomes-head {
+  display: flex;
+  gap: var(--space-1);
+  align-items: baseline;
+}
+
+.card__outcomes-chart {
+  width: 100%;
+  height: 5rem;
+  overflow: visible;
+
+  .chart__upgrade {
+    fill: var(--mint);
+    opacity: 0.35;
+    stroke: none;
+  }
+
+  .chart__outline {
+    fill: none;
+    stroke: var(--brass-hi);
+    stroke-width: 0.8;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .chart__current {
+    stroke: var(--danger);
+    stroke-width: 1;
+    stroke-dasharray: 3 2;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .chart__mean {
+    stroke: var(--mint-hi);
+    stroke-width: 1;
+    stroke-dasharray: 3 2;
+    vector-effect: non-scaling-stroke;
+  }
+}
+
+.card__outcomes-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  margin: 0 0 var(--space-1);
+  padding: 0;
+  list-style: none;
+  font-size: 0.8em;
+  color: var(--ink-dim);
+
+  li {
+    display: flex;
+    gap: var(--space-1);
+    align-items: center;
+  }
+
+  .key {
+    display: inline-block;
+    width: 0.9rem;
+    height: 0.2rem;
+  }
+
+  .key--current { background: var(--danger); }
+  .key--mean { background: var(--mint-hi); }
+  .key--fill { background: var(--mint); opacity: 0.55; }
 }

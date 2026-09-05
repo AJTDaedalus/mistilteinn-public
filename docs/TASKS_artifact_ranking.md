@@ -240,7 +240,7 @@ A.0 is the gate. **One PR per phase**, not per task — five PRs, not seventeen.
 - **Name the approximations** the way `RESEARCH_genshin_optimizer_scoring.md` §2 names GO's,
   in the module, not in a doc.
 
-### [ ] A.15 — The plot
+### [x] A.15 — The plot
 - **Do:** the chart from A.1's screenshots, on the piece's panel. Theme-aware, both palettes.
 - **Accept:** screenshot in light and dark; `npm run check:tokens` green; the two headline
   numbers are labelled with what they mean rather than left to be guessed.

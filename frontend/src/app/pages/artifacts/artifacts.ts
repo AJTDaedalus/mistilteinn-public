@@ -22,6 +22,7 @@ import {
   type DeepDive,
   type RankingRow,
 } from './artifact-ranking.service';
+import { type OutcomeDistribution } from '../../sim/artifact-outcome';
 import { type CalibrationProgress } from '../optimize/recipe-optimize.service';
 import {
   ArtifactsService,
@@ -395,6 +396,66 @@ export class ArtifactsPage implements OnInit {
   protected readonly diveError = signal('');
   protected readonly dive = signal<DeepDive | null>(null);
 
+  // ── The distribution (A.15) ────────────────────────────────────────────────
+  //
+  // Genshin Optimizer's Artifact Upgrader draws this and it is the best idea on their page:
+  // the shaded mass right of the current value *is* the probability of an upgrade, so the
+  // number and the picture are the same object and a reader cannot take one and misread the
+  // other. `docs/AUDIT_go_handson.md` §2.
+
+  protected readonly outcomesId = signal('');
+  protected readonly outcomesRunning = signal(false);
+  protected readonly outcomesError = signal('');
+  protected readonly outcomes = signal<OutcomeDistribution | null>(null);
+
+  /**
+   * The histogram as SVG path data, plus where the two verticals go.
+   *
+   * **A shared y-axis, deliberately.** GO fits the axis per card — 7 %, then 8 %, then 6 % — and
+   * `AUDIT_go_handson.md` §6 lists that among the things not to copy: three charts on one screen
+   * with three different scales are not comparable, and comparison is the point of a sorted list.
+   * Here there is one chart at a time, so the scale is fixed to the tallest bin and stated.
+   */
+  protected readonly outcomeChart = computed(() => {
+    const found = this.outcomes();
+    if (!found?.bins.length) return null;
+    const low = found.bins[0].from;
+    const high = found.bins[found.bins.length - 1].to;
+    const span = high - low || 1;
+    const peak = Math.max(...found.bins.map((bin) => bin.p)) || 1;
+    const x = (damage: number) => ((damage - low) / span) * 100;
+    const y = (p: number) => 100 - (p / peak) * 100;
+
+    // A step outline, the way GO draws it: a histogram read as a shape rather than as bars.
+    const steps: string[] = [`M 0 100`];
+    for (const bin of found.bins) {
+      steps.push(`L ${x(bin.from).toFixed(3)} ${y(bin.p).toFixed(3)}`);
+      steps.push(`L ${x(bin.to).toFixed(3)} ${y(bin.p).toFixed(3)}`);
+    }
+    steps.push('L 100 100');
+
+    // The upgrade mass, as its own filled path. Clipped at the current value rather than drawn
+    // over it, so the fill and `probabilityOfUpgrade` cannot disagree about where the edge is.
+    const edge = Math.min(Math.max(x(found.current), 0), 100);
+    const fill: string[] = [`M ${edge.toFixed(3)} 100`];
+    for (const bin of found.bins) {
+      if (bin.to <= found.current) continue;
+      const from = Math.max(x(bin.from), edge);
+      fill.push(`L ${from.toFixed(3)} ${y(bin.p).toFixed(3)}`);
+      fill.push(`L ${x(bin.to).toFixed(3)} ${y(bin.p).toFixed(3)}`);
+    }
+    fill.push('L 100 100 Z');
+
+    return {
+      outline: steps.join(' '),
+      upgrade: fill.join(' '),
+      currentX: edge,
+      meanX: Math.min(Math.max(x(found.mean), 0), 100),
+      averageX: Math.min(Math.max(x(found.atAverage), 0), 100),
+      peak,
+    };
+  });
+
   /**
    * Hide pieces with no upgrades left.
    *
@@ -615,6 +676,45 @@ export class ArtifactsPage implements OnInit {
     } finally {
       this.diveRunning.set(false);
     }
+  }
+
+  /**
+   * Enumerate what this piece could become.
+   *
+   * Separate from the dive because they answer different questions: the dive moves the *other*
+   * four slots, this one holds them still and varies the piece's own rolls.
+   */
+  protected async showOutcomes(row: ArtifactRow): Promise<void> {
+    if (this.outcomesRunning()) return;
+    this.outcomesId.set(row.id);
+    this.outcomes.set(null);
+    this.outcomesError.set('');
+    this.outcomesRunning.set(true);
+    try {
+      this.outcomes.set(await this.rankingService.outcomesFor({
+        buildId: this.rankBuildId(),
+        rotationId: this.rankRotationId(),
+        artifactId: row.id,
+        extraSets: this.extraSets(),
+      }));
+    } catch (err) {
+      this.outcomesError.set(apiErrorMessage(err));
+    } finally {
+      this.outcomesRunning.set(false);
+    }
+  }
+
+  protected closeOutcomes(): void {
+    this.outcomesId.set('');
+    this.outcomes.set(null);
+    this.outcomesError.set('');
+  }
+
+  /** A damage figure as a share of the build's own — the x-axis's units. */
+  protected relativeTo(damage: number): string {
+    const base = this.rankBaseline();
+    if (!base) return '';
+    return this.asPercent((damage - base) / base);
   }
 
   protected closeDive(): void {
