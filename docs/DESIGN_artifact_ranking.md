@@ -398,6 +398,28 @@ upgrades are free on top — one line can reach **six** rolls. It graded a real 
 **117 % of "ideal"**, which is the sort of number a normalisation with no ceiling test produces
 quietly.
 
+### 8.7 What driving the page found, and none of it failed a test (A.8, 2026-09-05)
+
+`CLAUDE.md`'s standing entry is that a green suite here is *"good at formulas and blind to
+wiring"*, and #240 is its worst case — a weapon picker, an integration test, unit tests on the
+search loop, and two weapons returning **1,376,712.1** to the decimal because the client never
+sent the id. This chunk reproduced the pattern three times in one afternoon, and **1,078
+frontend tests passed before and after every one of them**:
+
+| what a real run did | why nothing caught it |
+|---|---|
+| **`422 Unprocessable Entity`** from `POST /rotations/{id}/context-key`: *the build is not in the rotation's team.* The picker offered every build against every rotation — a 75 × N cross-product, most of which does not exist. | No test made that call. `/optimize` had already solved this with `buildsInTeam`, and the panel invented a second answer instead of reaching for the shared one. |
+| **The baseline recipe never calibrated**, so `noFourPiece` came back `null` and nothing could be scored. `calibrateAll` was passed `targets: []`. | The baseline is **a target, not the absence of one** — `/optimize`'s own comment says *"it is not optional and never was: every combination that reaches no 4-piece is scored against it, so a search without it can rank nothing."* The service's refusal caught it correctly; it just had no caller until a browser ran one. |
+| **Every build read `"Furina —"`**, a name followed by an em-dash and nothing. | All 84 builds in the local database have an **empty `name`**. `shared/team-scope.buildOptions` had already decided the label — character name, with `C2 · Mappa Mare · R5 · Lv90` as detail — and never uses `name`. |
+
+The third is `FINDINGS_frontend_validation.md`'s lesson exactly: **a pattern nothing owned, so
+every page decided separately.** The fix in all three cases was to use what `/optimize` already
+uses rather than to write something new.
+
+**The picker is now rotation-first**, because a rotation names a team and only that team's four
+builds can be asked about. That is one control fewer than `/optimize`'s team-then-rotation-then-
+build, and it makes the invalid combinations unrepresentable rather than merely rejected.
+
 ### 8.5 What is still not settled
 
 Two things, recorded here rather than guessed at in a task:
