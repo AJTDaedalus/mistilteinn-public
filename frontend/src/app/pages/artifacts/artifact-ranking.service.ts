@@ -53,6 +53,14 @@ export interface RankingRow extends RankedArtifact {
   rarity: number;
   /** True when this piece is one of the five the build is wearing right now. */
   equipped: boolean;
+  /**
+   * Substat rolls still to come. Zero means the four projections are necessarily identical.
+   *
+   * On the row rather than only inside `potential` because the page filters on it, and a
+   * filter reaching two levels into a nested optional is a filter that quietly matches nothing
+   * the day the shape changes.
+   */
+  rollsRemaining: number;
 }
 
 export interface RankingResult {
@@ -104,7 +112,12 @@ export class ArtifactRankingService {
       request.buildId,
       request.rotationId,
       snapshot.version,
-      [],
+      // **The baseline is a target, not the absence of one.** Passing `[]` here calibrated
+      // nothing at all and `noFourPiece` came back null — which the refusal below caught, but
+      // only after a real run in a browser. `/optimize`'s own comment says why: "it is not
+      // optional and never was: every combination that reaches no 4-piece is scored against
+      // it, so a search without it can rank nothing."
+      [{ artifactSetIds: [], setIds: [], label: 'the baseline (no 4-piece bonus)' }],
       request.onProgress ?? (() => undefined),
       undefined,
       request.waitForEnergy ?? false,
@@ -138,6 +151,14 @@ export class ArtifactRankingService {
       return evaluateRecipe(recipe, candidateStatsFrom(bare));
     });
 
+    /**
+     * Damage with only the piece's main stat in its slot — the grade's zero point.
+     *
+     * Keyed the same way the ideal is, and computed alongside it, because the two are the ends
+     * of one scale and computing them in different places is how they would drift apart.
+     */
+    const mainOnlies = new Map<string, number>();
+
     // The grade's denominator does not vary per piece — only per slot, main stat and rarity —
     // so it is computed once per distinct triple rather than 2,370 times.
     const ideals = new Map<string, number>();
@@ -148,27 +169,35 @@ export class ArtifactRankingService {
       if (slot < 0) continue;
       const piece = pieceOf(candidate);
       const key = `${slot}:${candidate.main_stat}:${candidate.rarity}`;
+      const mainStatValue = mainStatValueOf(candidate, piece.mainStatQuantity);
       let ideal = ideals.get(key);
       if (ideal === undefined) {
         ideal = idealFor(recipe, equipped, slot, {
           rarity: candidate.rarity,
           mainStatQuantity: piece.mainStatQuantity,
-          mainStatValue: mainStatValueOf(candidate, piece.mainStatQuantity),
+          mainStatValue,
           rollsTotal: candidate.potential?.rolls_total ?? 0,
         }, model);
         ideals.set(key, ideal);
+        const bare = [...equipped];
+        bare[slot] = piece.mainStatQuantity
+          ? { [piece.mainStatQuantity]: mainStatValue }
+          : {};
+        mainOnlies.set(key, evaluateRecipe(recipe, candidateStatsFrom(bare)));
       }
       rows.push({
         ...rankArtifact(recipe, equipped, slot, { ...piece, id: candidate.id }, model, {
           baseline,
           ideal,
           emptySlot: emptyBySlot[slot],
+          mainOnly: mainOnlies.get(key) ?? emptyBySlot[slot],
         }),
         slot: candidate.slot,
         setId: candidate.set_id ?? null,
         level: candidate.level,
         rarity: candidate.rarity,
         equipped: wornIds.has(candidate.id),
+        rollsRemaining: candidate.potential?.rolls_remaining ?? 0,
       });
     }
 

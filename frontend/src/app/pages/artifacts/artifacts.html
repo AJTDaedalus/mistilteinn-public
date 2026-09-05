@@ -190,30 +190,34 @@
     <section class="rank-panel" aria-labelledby="rank-heading">
       <h2 id="rank-heading" class="eyebrow">Is this any good?</h2>
       <div class="rank-panel__controls">
+        <!-- Rotation first: it names the team, and only that team's four builds can be asked
+             about. Offering all of them produced a 422 on a real run. -->
         <label>
-          <span>Build</span>
+          <span>Rotation</span>
           <select
-            [value]="rankBuildId()"
-            (change)="rankBuildId.set($any($event.target).value)"
+            [value]="rankRotationId()"
+            (change)="chooseRotation($any($event.target).value)"
             [disabled]="!!rankProgress()"
           >
-            <option value="">Choose a build…</option>
-            @for (choice of buildChoices(); track choice.id) {
+            <option value="">Choose a rotation…</option>
+            @for (choice of rotationChoices(); track choice.id) {
               <option [value]="choice.id">{{ choice.label }}</option>
             }
           </select>
         </label>
 
         <label>
-          <span>Rotation</span>
+          <span>Character</span>
           <select
-            [value]="rankRotationId()"
-            (change)="rankRotationId.set($any($event.target).value)"
-            [disabled]="!!rankProgress()"
+            [value]="rankBuildId()"
+            (change)="rankBuildId.set($any($event.target).value)"
+            [disabled]="!!rankProgress() || !rankRotationId()"
           >
-            <option value="">Choose a rotation…</option>
-            @for (choice of rotationChoices(); track choice.id) {
-              <option [value]="choice.id">{{ choice.label }}</option>
+            <option value="">
+              {{ rankRotationId() ? 'Choose a character…' : 'Pick a rotation first' }}
+            </option>
+            @for (choice of buildChoices(); track choice.id) {
+              <option [value]="choice.id">{{ choice.label }} · {{ choice.detail }}</option>
             }
           </select>
         </label>
@@ -240,6 +244,14 @@
       }
 
       @if (hasRanking()) {
+        <label class="rank-panel__only">
+          <input
+            type="checkbox"
+            [checked]="upgradableOnly()"
+            (change)="narrow(() => upgradableOnly.set($any($event.target).checked))"
+          />
+          <span>Only pieces that can still be levelled</span>
+        </label>
         <p class="hint">
           Scored in each piece's own slot, leaving the other four alone — so every number is
           <strong>at least</strong> this much. Moving the rest of the build can only do better.

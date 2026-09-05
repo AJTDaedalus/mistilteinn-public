@@ -13,8 +13,10 @@ import {
   substatReadings,
 } from '../../shared/substat-bars/substat-bars';
 import { CatalogueService } from '../catalogue/catalogue.service';
-import { BuildsService } from '../builds/builds.service';
+import { BuildsService, type BuildRead } from '../builds/builds.service';
 import { RotationsService } from '../rotations/rotations.service';
+import { TeamsService, type TeamRead } from '../teams/teams.service';
+import { buildsInTeam } from '../../shared/team-scope';
 import { ArtifactRankingService, type RankingRow } from './artifact-ranking.service';
 import { type CalibrationProgress } from '../optimize/recipe-optimize.service';
 import {
@@ -310,10 +312,44 @@ export class ArtifactsPage implements OnInit {
   // while holding a new drop. `AUDIT_fribbels_parity.md` §2 lists "a per-piece score" as the
   // last thing missing from this page, and this is it.
 
-  protected readonly buildChoices = signal<{ id: string; label: string }[]>([]);
+  /**
+   * **The rotation is chosen first, and it names the team.**
+   *
+   * The first draft offered every build against every rotation — 75 x N — and a real run
+   * returned `422: build is not in the rotation's team`. Most of that cross-product does not
+   * exist: `POST /rotations/{id}/context-key` requires the build to be one of the team's four,
+   * because a cache key for "this build running this rotation" is meaningless otherwise. So
+   * the picker offers only what can actually be asked, which is what `/optimize` already does
+   * with `buildsInTeam`.
+   */
+  private readonly allBuilds = signal<BuildRead[]>([]);
+  private readonly teams = signal<TeamRead[]>([]);
+  private readonly rotationTeam = signal<Map<string, string>>(new Map());
+
   protected readonly rotationChoices = signal<{ id: string; label: string }[]>([]);
   protected readonly rankBuildId = signal('');
   protected readonly rankRotationId = signal('');
+
+  /**
+   * The builds the chosen rotation's team actually fields.
+   *
+   * Labelled by **character**, with constellation and weapon as the detail — the decision
+   * `shared/team-scope.buildOptions` already made for `/optimize` and `/builds`. A build's own
+   * `name` is not used, and driving the page is how that was learned: all 84 builds in the
+   * local database have an empty name, so a label of `${character} — ${name}` rendered as
+   * "Furina —" seventy-five times over.
+   */
+  protected readonly buildChoices = computed(() => {
+    const teamId = this.rotationTeam().get(this.rankRotationId());
+    const team = this.teams().find((t) => t.id === teamId) ?? null;
+    if (!teamId || !team) return [];
+    return buildsInTeam(team, this.allBuilds()).map((build) => ({
+      id: build.id,
+      label: build.character?.name || 'No character',
+      detail: `C${build.constellation_level} · `
+        + `${build.weapon_display || build.weapon?.name || 'no weapon'}`,
+    }));
+  });
   /** Null when idle. A calibration is ~3.2 s of gcsim and must never block a click. */
   protected readonly rankProgress = signal<CalibrationProgress | null>(null);
   protected readonly rankError = signal('');
@@ -331,6 +367,21 @@ export class ArtifactsPage implements OnInit {
   protected readonly rankCaveats = signal<{ unstable: string[]; staleConversions: string[] }>({
     unstable: [], staleConversions: [],
   });
+
+  /**
+   * Hide pieces with no upgrades left.
+   *
+   * **Genshin Optimizer's Artifact Upgrader defaults its level filter to 0–19**, and
+   * `docs/AUDIT_go_handson.md` §4 records why: the tool is for pieces you have *not* levelled,
+   * because a +20 has no potential left to model. Driving this page confirmed the need from the
+   * other side — sorted by expected upgrade value, the whole first screen was `+20` pieces
+   * whose four numbers are necessarily identical, which reads as a broken calculation and is
+   * in fact the correct answer to a question nobody asked.
+   *
+   * Off by default, because the page is an inventory first and a ranker second, and a filter
+   * that hid two thirds of it on load would be a surprise.
+   */
+  protected readonly upgradableOnly = signal(false);
 
   protected readonly canRank = computed(
     () => !!this.rankBuildId() && !!this.rankRotationId() && !this.rankProgress(),
@@ -403,10 +454,12 @@ export class ArtifactsPage implements OnInit {
     const set = this.setFilter();
     const main = this.mainStatFilter();
     const equipped = this.equippedFilter();
+    const upgradable = this.upgradableOnly();
     const kept = this.rows().filter((row) =>
       (!set || row.setId === set)
       && (!main || row.mainStatKey === main)
-      && (!equipped || (equipped === 'yes') === row.equipped),
+      && (!equipped || (equipped === 'yes') === row.equipped)
+      && (!upgradable || (row.rank?.rollsRemaining ?? 0) > 0),
     );
     return [...kept].sort(comparator(this.sortBy()));
   });
@@ -448,6 +501,7 @@ export class ArtifactsPage implements OnInit {
   private readonly catalogue = inject(CatalogueService);
   private readonly buildsService = inject(BuildsService);
   private readonly rotationsService = inject(RotationsService);
+  private readonly teamsService = inject(TeamsService);
   private readonly rankingService = inject(ArtifactRankingService);
 
   /**
@@ -458,6 +512,14 @@ export class ArtifactsPage implements OnInit {
    * user can walk away from. A warm `recipe-cache.ts` entry — which the user already has if
    * they have optimized this build — skips it entirely.
    */
+  /** Choosing a rotation re-scopes the builds, so a stale choice must not survive it. */
+  protected chooseRotation(rotationId: string): void {
+    this.rankRotationId.set(rotationId);
+    if (!this.buildChoices().some((choice) => choice.id === this.rankBuildId())) {
+      this.rankBuildId.set('');
+    }
+  }
+
   protected async rankAgainstBuild(): Promise<void> {
     if (!this.canRank()) return;
     this.rankError.set('');
@@ -521,23 +583,22 @@ export class ArtifactsPage implements OnInit {
    */
   private async loadRankingChoices(): Promise<void> {
     try {
-      const [builds, rotations] = await Promise.all([
+      const [builds, rotations, teams] = await Promise.all([
         this.buildsService.list(),
         this.rotationsService.list(),
+        this.teamsService.list(),
       ]);
-      this.buildChoices.set(
-        builds.map((build) => ({
-          id: build.id,
-          label: build.character?.name ? `${build.character.name} — ${build.name}` : build.name,
-        })),
-      );
+      this.allBuilds.set(builds);
+      this.teams.set(teams);
+      this.rotationTeam.set(new Map(rotations.items.map((r) => [r.id, r.team_id])));
       this.rotationChoices.set(
         rotations.items.map((rotation) => ({ id: rotation.id, label: rotation.name })),
       );
     } catch {
       // Silent by design: the ranking panel simply offers nothing, and the inventory below it
       // is unaffected. Surfacing this as a page error would make a working page look broken.
-      this.buildChoices.set([]);
+      this.allBuilds.set([]);
+      this.teams.set([]);
       this.rotationChoices.set([]);
     }
   }

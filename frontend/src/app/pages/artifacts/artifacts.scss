@@ -539,3 +539,14 @@
   margin: var(--space-2) 0 0;
   font-size: 0.85em;
 }
+
+/* The upgradable-only toggle. Genshin Optimizer defaults its own level filter to 0-19 for the
+ * same reason: a +20 piece has no potential left to model. */
+.rank-panel__only {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+  margin-top: var(--space-2);
+  color: var(--ink-dim);
+  font-family: var(--font-body);
+}

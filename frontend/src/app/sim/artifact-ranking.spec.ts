@@ -77,9 +77,13 @@ function baselineOf(r: Recipe, equipped: readonly StatPool[]): number {
 function contextFor(r: Recipe, equipped: readonly StatPool[], slot: number, p: Piece) {
   const empty = [...equipped];
   empty[slot] = {};
+  const mainOnlyPools = [...equipped];
+  mainOnlyPools[slot] = p.mainStatQuantity ? { [p.mainStatQuantity]: 0.466 } : {};
   return {
     baseline: baselineOf(r, equipped),
     emptySlot: evaluateRecipe(r, candidateStatsFrom(empty)),
+    // The grade's zero point: the piece's main stat with nothing rolled on it.
+    mainOnly: evaluateRecipe(r, candidateStatsFrom(mainOnlyPools)),
     ideal: idealFor(r, equipped, slot, {
       rarity: p.rarity,
       mainStatQuantity: p.mainStatQuantity,
@@ -201,8 +205,8 @@ describe('idealFor', () => {
     expect(row.fraction).toBeGreaterThanOrEqual(0);
   });
 
-  it('grades a piece contributing nothing at the bottom of the scale', () => {
-    // The other end of the normalisation. If an empty piece did not land on F the scale would
+  it('grades a piece with nothing rolled at the bottom of the scale', () => {
+    // The other end of the normalisation. If a bare piece did not land on F the scale would
     // have no floor, and every grade above it would be measuring from somewhere unstated.
     const equipped = bare();
     const empty = piece({
@@ -217,6 +221,27 @@ describe('idealFor', () => {
     );
     expect(found.fraction).toBeCloseTo(0, 6);
     expect(found.grade).toBe('F');
+  });
+
+  it('does not let a big main stat drag every grade to the top', () => {
+    // **The regression this test exists for.** With `emptySlot` as the zero point the main stat
+    // sat in both ends of the ratio, and on the owner's real inventory every ATK% sands graded
+    // `WTF+` — 46.6% before a single substat drowns whatever was rolled. A grade that cannot
+    // separate a good piece from a poor one is not a grade.
+    const equipped = bare();
+    const poor = piece({
+      // The full main stat, and substats barely worth anything.
+      stats: { atk_pct: 0.466, crit_rate: 0.02, crit_dmg: 0.05 },
+      potential: {
+        rollsRemaining: 0, rollsTotal: 5, gainsASubstat: false,
+        substatQuantities: ['crit_rate', 'crit_dmg'],
+      },
+    });
+    const found = rankArtifact(
+      r, equipped, 2, poor, MODEL, contextFor(r, equipped, 2, poor),
+    );
+    expect(found.fraction).toBeLessThan(0.5);
+    expect(found.grade).not.toBe('AEON');
   });
 
   it('grades a maxed real piece near the top without exceeding it', () => {

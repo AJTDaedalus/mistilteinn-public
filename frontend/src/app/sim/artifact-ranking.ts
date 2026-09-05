@@ -85,10 +85,18 @@ export interface RankedArtifact {
   /** `average` minus the same baseline — whether levelling this piece is worth the resin. */
   averageDelta: number;
   /**
-   * How much of a perfect piece **with this main stat** this one is, 0–1.
+   * How good this piece's **substats** are, against the best they could have been, 0–1.
    *
-   * Normalised against a synthetic ideal rather than against the inventory, so the number means
-   * the same thing on two different accounts. See `idealFor`.
+   * **The main stat is held identical in both ends and cancels.** It was in both when this
+   * shipped, and driving the page is what showed the consequence: an ATK% sands contributes
+   * 46.6% before a single substat, so `(main + rolled) / (main + ideal)` lands near 0.8 for
+   * anything decent and **every piece in the owner's inventory graded `WTF+`**. A grade that
+   * cannot separate a good piece from a mediocre one is not a grade.
+   *
+   * Cancelling it also makes the number mean what the page already says beside it — *"what
+   * this artifact rolled, against the best it could"*, which is the roll-value line's own
+   * wording. Whether the main stat is the right one is a separate fact, reported separately,
+   * exactly as `DESIGN_artifact_ranking.md` §6 asks.
    */
   fraction: number;
   grade: string;
@@ -212,7 +220,22 @@ export function rankArtifact(
   slot: number,
   piece: Piece & { id: string },
   model: DrawModel,
-  context: { baseline: number; ideal: number; emptySlot: number },
+  context: {
+    /** The build's own damage as it stands. Every delta is measured against it. */
+    baseline: number;
+    /** The best piece that could exist in this slot with this main stat. `idealFor`. */
+    ideal: number;
+    /** Damage with the slot empty. Not the grade's zero point — see `mainOnly`. */
+    emptySlot: number;
+    /**
+     * Damage with **only this main stat** in the slot, no substats.
+     *
+     * The grade's zero point, so the main stat cancels out of `fraction`. Using `emptySlot`
+     * here instead put the main stat in both ends of the ratio and graded every piece in a real
+     * 2,370-artifact inventory `WTF+`.
+     */
+    mainOnly: number;
+  },
 ): RankedArtifact {
   const shell = {
     id: piece.id,
@@ -247,10 +270,12 @@ export function rankArtifact(
   const best = Math.max(...projection.bestCandidates.map((c) => at(c.stats)));
   const worst = Math.min(...projection.worstCandidates.map((c) => at(c.stats)));
 
-  // Zero when the ideal collapses onto an empty slot, which would otherwise divide by ~0 and
-  // produce an AEON for a piece contributing nothing.
-  const span = context.ideal - context.emptySlot;
-  const fraction = span > 0 ? (current - context.emptySlot) / span : 0;
+  // Zero when the ideal's substats are worth nothing over the bare main stat, which would
+  // otherwise divide by ~0 and produce an AEON for a piece contributing nothing.
+  const span = context.ideal - context.mainOnly;
+  const fraction = span > 0
+    ? Math.min(Math.max((current - context.mainOnly) / span, 0), 1)
+    : 0;
 
   return {
     ...shell,
