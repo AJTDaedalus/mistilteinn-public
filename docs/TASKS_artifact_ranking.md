@@ -86,7 +86,7 @@ A.0 is the gate. **One PR per phase**, not per task — five PRs, not seventeen.
   derived from the pinned capture must not sit where every other file is.
 - **Do not:** put it under `yuanshen/snapshot/` or let `build_snapshot.py` regenerate it.
 
-### [ ] A.3 — Measure the owner's export against those weights, and record that it cannot ground them
+### [x] A.3 — Measure the owner's export against those weights, and record that it cannot ground them
 - **Why:** the export is the obvious place to derive weights from and it does not work. Measured
   2026-09-05 on flowers at +0 (319 pieces, 1,061 lines): `eleMas` w=4 at 13.29%, `critDMG_` w=3 at
   12.25%, `atk` w=6 at 11.97%, `def_` w=4 at 7.82%. Inclusion probability under a weighted draw
