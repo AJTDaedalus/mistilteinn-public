@@ -1,92 +1,14 @@
-<section class="hero surface">
-  <span class="eyebrow">now playing</span>
-  <h1>Optimize your builds.</h1>
-  <p class="hero__lede">
-    Artifact optimization for Genshin Impact, with every number able to show its working.
-  </p>
-  <div class="hero__actions">
-    <a class="btn btn-primary" routerLink="/inventory">Import your artifacts</a>
-    <a class="btn" routerLink="/characters">Browse the catalogue</a>
-  </div>
-</section>
-
 <!--
-  The app has a dependency chain — a rotation needs a team, a team needs builds, a build
-  needs a character — and each page enforced it only on arrival, with a "make one first"
-  that a user reads after clicking. This says the order up front. It is numbered because it
-  *is* ordered: the steps are not four equivalent entry points.
--->
-<section class="path">
-  <!-- "Start here", not "The way through" — reported as wording that could be better
-       (#270). The numbers already say it is an order; the heading only has to say where a
-       reader begins. -->
-  <h2 class="eyebrow">Start here</h2>
-  <ol class="rail">
-    <li>
-      <a class="card" routerLink="/inventory">
-        <span class="card__step mono">1</span>
-        <h3>Inventory</h3>
-        <!-- "Everything else searches these pieces" made the pieces the object of a search
-             the reader has not met yet. Same fact, said from their side. -->
-        <p>Paste a GOOD export.</p>
-      </a>
-    </li>
-    <li>
-      <a class="card" routerLink="/builds">
-        <span class="card__step mono">2</span>
-        <h3>Builds</h3>
-        <p>A character, a weapon, and the levels. Equip artifacts here.</p>
-      </a>
-    </li>
-    <li>
-      <a class="card" routerLink="/teams">
-        <span class="card__step mono">3</span>
-        <h3>Teams</h3>
-        <p>Up to four builds, four different characters.</p>
-      </a>
-    </li>
-    <li>
-      <a class="card" routerLink="/rotations">
-        <span class="card__step mono">4</span>
-        <h3>Rotations</h3>
-        <p>What each character does, in order.</p>
-      </a>
-    </li>
-    <li>
-      <a class="card" routerLink="/optimize">
-        <span class="card__step mono">5</span>
-        <h3>Optimize</h3>
-        <p>Search your own artifacts for the five that do the most damage.</p>
-      </a>
-    </li>
-  </ol>
-</section>
+  **Blank, deliberately.** Owner, 2026-09-05: *"Landing page cards aren't very useful. 'Now
+  Playing' is an artifact from Fairy that needs to go. Honestly landing page could just be
+  blank and be better."*
 
-<section class="path">
-  <h2 class="eyebrow">Once a build exists</h2>
-  <ul class="rail">
-    <li>
-      <!-- **Named for where it goes.** This card said "Explain" while the nav said
-           "Calculate" and `/explain` redirected here — one feature under two names, and the
-           one a new reader meets first was the one that no longer existed. -->
-      <a class="card" routerLink="/calculate">
-        <h3>Calculate</h3>
-        <!-- The em dash and the trailing "and what is *not* modelled" were both reported
-             as unclear (#270): the clause named an absence without saying what kind, in the
-             one construction the sentence could least afford. Two sentences instead. -->
-        <p>Every multiplier in a hit, in order, with its source.</p>
-      </a>
-    </li>
-    <li>
-      <a class="card" routerLink="/characters">
-        <h3>Catalogue</h3>
-        @if (counts(); as n) {
-          <p>{{ n['characters'] }} characters, {{ n['weapons'] }} weapons,
-             {{ n['sets'] }} sets and {{ n['enemies'] }} enemies.</p>
-        } @else {
-          <p>Characters, weapons, artifact sets and enemies.</p>
-        }
-      </a>
-    </li>
-  </ul>
-</section>
+  The route is behind `requireApproved`, so the only person who ever reaches it is signed in
+  and looking at a nav bar carrying all eleven links. The numbered rail, the two follow-on
+  cards and the pair of buttons were that nav a second time, in prose; the hero's heading was
+  the wordmark in the header a second time; `now playing` was fairy's eyebrow, carried over
+  with the fork and never re-decided.
+
+  Nothing is left to render. If this should instead go somewhere — `/inventory` is step one —
+  that is a redirect in `app.routes.ts`, not markup here.
+-->
