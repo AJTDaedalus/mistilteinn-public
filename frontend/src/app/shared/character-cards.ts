@@ -41,12 +41,19 @@ export function characterCardOptions(characters: readonly CharacterSummary[]): C
  */
 export function characterCardFilters(characters: readonly CharacterSummary[]): CardFilter[] {
   const elements = new Map<string, string | null>();
-  const weapons = new Map<string, { label: string; icon: string | null }>();
+  const weapons = new Map<string, { label: string; icon: string }>();
   for (const c of characters) {
     if (c.element && !elements.has(c.element)) elements.set(c.element, c.element_icon ?? null);
-    if (c.weapon_type && !weapons.has(c.weapon_type)) {
+    // **A class with no mark is not offered.** `GET /weapon-classes` publishes five of the
+    // six for exactly this reason, and `weapon_symbols.py` argues it at length: the crossbow
+    // class has no sprite to draw and is carried only by two unreleased Traveler variants, so
+    // the chip rendered as the wide word CROSSBOW among five glyphs and narrowed the grid to
+    // two rows nobody is looking for. Reported as a filter for something that does not exist
+    // in the game (#271). Deriving the row from what is on screen was meant to prevent
+    // exactly this and did not, because these two rows *are* on screen.
+    if (c.weapon_type && c.weapon_type_icon && !weapons.has(c.weapon_type)) {
       weapons.set(c.weapon_type, {
-        label: c.weapon_type_display, icon: c.weapon_type_icon ?? null,
+        label: c.weapon_type_display, icon: c.weapon_type_icon,
       });
     }
   }
