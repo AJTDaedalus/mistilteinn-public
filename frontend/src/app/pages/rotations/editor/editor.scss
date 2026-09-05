@@ -458,7 +458,17 @@ label {
    *seventh* child, not the second, so any rule that assumes a row number is guessing at an
    order the markup never stated. A container per column says it once. */
 @media (min-width: 88rem) {
-  .editor-dialog {
+  /* **`[open]`, and the attribute is load-bearing.** A `<dialog>` is `display: none` by the
+     UA stylesheet until it is opened, and a bare `display: grid` here beat that rule — so a
+     closed editor stayed laid out in the page, under the rotation list, on any viewport wide
+     enough for this query. Reported twice without either report naming a dialog: once as
+     *"Rotation Edit screen is still visible on the page after closing it"* (#290), and once
+     as *"`Show/Hide gcsim config` seems to do nothing other than flip itself"* (#284) — that
+     second one was a click on the phantom, which has no team, so the preview it asked for
+     returned before making a request.
+
+     It only ever reproduced above 1408px, which is why nothing narrower ever saw it. */
+  .editor-dialog[open] {
     display: grid;
     /* **Space follows decisions, not records** — the layout inversion of Phase 9.
        This was `minmax(0, 36rem) minmax(0, 1fr)`: the picker, the only place a user makes a
@@ -474,13 +484,25 @@ label {
   .editor-dialog__head { grid-column: 1 / -1; }
 
   /* Its own scroller, so the controls beside it stay put rather than scrolling away from the
-     list they act on. */
+     list they act on.
+
+     **The padding is what stops the glow being sliced.** `overflow-y: auto` computes
+     `overflow-x` to `auto` as well, so this box clips horizontally too — and every focused or
+     selected control in here wears `--glow-brass`, which reaches 32px past its border. "Add
+     step" sat against the column's edge and its halo was cut off by a straight line with
+     nothing drawn on it: *"okay glow gets limited by some invisible boundary lol"* (#282).
+     The inset gives the halo room, and the matching negative inline margin gives that space
+     back so the column still occupies the width it did — `--space-4` exactly, because that is
+     the dialog's own side padding and anything larger would push this column out past the
+     dialog's edge. */
   .editor-dialog__aside {
     grid-column: 1;
     min-height: 0;
     overflow-y: auto;
-  scrollbar-gutter: stable;
+    scrollbar-gutter: stable;
     max-height: 78vh;
+    padding: var(--space-2) var(--space-4);
+    margin-inline: calc(var(--space-4) * -1);
   }
 
   .editor-dialog > .steps {

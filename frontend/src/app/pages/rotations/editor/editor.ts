@@ -989,7 +989,14 @@ export class RotationEditor {
 
   protected async refreshPreview(): Promise<void> {
     const teamId = this.teamId();
-    if (!teamId) return;
+    if (!teamId) {
+      // **Said, not skipped.** This returned silently, so the button flipped its own label
+      // and did nothing else — reported as exactly that (#284). A compile needs a team
+      // because the config names characters, and "there is no team" is the answer.
+      this.compiled.set(null);
+      this.previewError.set('Choose a team first — a config names the characters in it.');
+      return;
+    }
     this.previewError.set(null);
     try {
       this.compiled.set(await this.rotations.preview(teamId, this.steps()));

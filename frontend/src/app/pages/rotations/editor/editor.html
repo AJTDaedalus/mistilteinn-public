@@ -154,8 +154,11 @@
       <button type="button" (click)="copySelection()" [disabled]="selection() === null">
         Copy{{ selectedCount() > 1 ? ' ' + selectedCount() + ' steps' : '' }}
       </button>
+      <!-- The count only once there is one. It read "Paste 0" on an empty clipboard, which
+           is a button naming the number of things it cannot do (#280); the Copy button beside
+           it already had the rule and this one did not. -->
       <button type="button" (click)="pasteClipboard()" [disabled]="clipboard().length === 0">
-        Paste {{ clipboard().length }}
+        Paste{{ clipboard().length > 1 ? ' ' + clipboard().length + ' steps' : '' }}
       </button>
       @if (selectionIsGroup()) {
         <button type="button" (click)="ungroupSelection()">Ungroup</button>

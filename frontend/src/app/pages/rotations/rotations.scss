@@ -55,7 +55,9 @@
   flex-direction: column;
   min-width: 0;
 
-  .meta { font-size: var(--text-xs); color: var(--ink-dim); }
+  /* "0 rotations" under the team's name — the count is half of what the row says, so it
+     reads a rung above the smallest one on the scale (#279's screenshot). */
+  .meta { font-size: var(--text-sm); color: var(--ink-dim); }
 }
 
 .by-team__caret { margin-left: auto; color: var(--ink-dim); }
@@ -68,11 +70,12 @@
 
 /* ── The library, as a pop-up ────────────────────────────────────────────────
    Reached from inside an expanded team, because that is where the question is asked. */
+/* **No size override.** It carried `--text-xs` and was named for it — "another one with smol
+   text but esp the find rotations button" (#279). It is the last option inside an expanded
+   team and the only way into the library, which is a full-width action, not a caption; it now
+   reads at the size every other button on the page does. */
 .find {
   padding-top: var(--space-1);
 
-  button {
-    width: 100%;
-    font-size: var(--text-xs);
-  }
+  button { width: 100%; }
 }
