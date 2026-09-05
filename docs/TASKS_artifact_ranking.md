@@ -199,7 +199,7 @@ A.0 is the gate. **One PR per phase**, not per task — five PRs, not seventeen.
   pinning a piece the unpinned winner already contains returns the same winner. Tests, not a
   screenshot, for both.
 
-### [ ] A.12 — "Best build with this piece" — the panel, and the % gain
+### [x] A.12 — "Best build with this piece" — the panel, and the % gain
 - **Do:** on a piece, a deliberate action that runs A.11 **at the piece's projected max-level
   stats** and reports the resulting best build against the current one. This is #291's headline
   sentence and the number it names.
@@ -266,5 +266,5 @@ A.0 is the gate. **One PR per phase**, not per task — five PRs, not seventeen.
 
 | | |
 |---|---|
-| **OQ-A9** | Does a pinned re-search stay interactive over the whole 2,370-piece inventory? **A measurement (A.10), not a choice.** |
+| **OQ-A9** | ~~Does a pinned re-search stay interactive over the whole inventory?~~ **Answered: no, not uncapped** — 300 s without finishing. The dive searches the best 24 per slot, keeps the pin regardless, and says so on screen. `RESEARCH_pinned_search_cost.md`. |
 | **OQ-A10** | "% gain" against the current build, or against the best build without this piece? A.12 implements the first and labels it; the second is defensible and diverges exactly when the current build is not optimal. |

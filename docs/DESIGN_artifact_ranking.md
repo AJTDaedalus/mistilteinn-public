@@ -424,11 +424,17 @@ build, and it makes the invalid combinations unrepresentable rather than merely 
 
 Two things, recorded here rather than guessed at in a task:
 
-- **OQ-A9 — does the deep dive run against the whole inventory or a filtered pool?** A pinned
-  re-search still has to pick the other four pieces from somewhere, and 2,370 is the whole
-  inventory. `searchRecipe`'s Pareto filter and the 4-piece pinning are what make the ordinary
-  search finish; whether they are enough with a slot forced is a **measurement**, taken in A.10,
-  not a choice.
+- ~~**OQ-A9 — does the deep dive run against the whole inventory or a filtered pool?**~~
+  **Answered 2026-09-05: a filtered pool, because the whole inventory does not terminate.** The
+  uncapped pinned search did not finish in 300 s and the browser sat in it for seven minutes. The
+  dive trims each slot to its best 24 pieces *for this build*, keeps the pinned piece regardless
+  of where it ranks, and reports both numbers on screen — a best-of-this-pool is not a proof, and
+  `searchRecipe`'s `isExact: true` is a claim about the pool it was handed.
+
+  **`RESEARCH_pinned_search_cost.md`'s own first draft got this wrong**, by reasoning from a
+  `budgetK` layer `searchRecipe` does not have. That is §7's mistake — inferring a cost from
+  something adjacent — repeated inside the document written to avoid it. Driving the feature is
+  what caught it.
 - **OQ-A10 — what "% gain" is a percentage of.** #291 says *"vs current for the % gain"*.
   Against the build as currently equipped is the obvious reading and the one A.11 implements. It is
   written down because *against the best build without this piece* is a different and defensible

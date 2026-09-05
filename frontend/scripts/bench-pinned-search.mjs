@@ -127,8 +127,9 @@ if (!kept.size || SLOTS.some((s) => (kept.get(s)?.length ?? 0) === 0)) {
   process.exit(2);
 }
 
-for (const perSlot of [12, 20, 28]) {
-  const subset = capped(all, perSlot);
+const CAPS = process.argv.includes('--full') ? [Infinity] : [20, 24, 28];
+for (const perSlot of CAPS) {
+  const subset = Number.isFinite(perSlot) ? capped(all, perSlot) : all;
   const pin = subset.find((c) => c.slot === SLOTS[0]);
 
   const free = time(() => searchRecipe(subset, { recipes, topN: 1 }));
@@ -142,7 +143,7 @@ for (const perSlot of [12, 20, 28]) {
     process.exit(2);
   }
   console.log(
-    `${String(perSlot).padStart(2)} per slot  :`
+    `${Number.isFinite(perSlot) ? String(perSlot).padStart(2) : 'all'} per slot  :`
     + ` free ${free.result.evaluated.toLocaleString()} combos in ${free.seconds.toFixed(3)}s`
     + ` | pinned ${pinned.result.evaluated.toLocaleString()} in ${pinned.seconds.toFixed(3)}s`
     + ` | ${(free.seconds / Math.max(pinned.seconds, 1e-9)).toFixed(1)}x cheaper`,

@@ -475,6 +475,57 @@
                   {{ rank.grade }}
                 </span>
               </p>
+
+              <!-- A.12 / #291: the number a single-slot swap cannot give. Deliberate and one
+                   piece at a time — a pinned re-search is five seconds. -->
+              <button
+                type="button"
+                class="card__dive"
+                [disabled]="diveRunning()"
+                (click)="diveInto(row)"
+              >
+                {{ diveRunning() && diveId() === row.id ? 'Searching…' : 'Best build with this' }}
+              </button>
+
+              @if (diveId() === row.id) {
+                @if (diveError(); as message) {
+                  <p class="error" role="alert">{{ message }}</p>
+                }
+                @if (dive(); as found) {
+                  <div class="card__dive-result">
+                    <p class="card__dive-gain">
+                      <strong [class.up]="found.gain > 0" [class.down]="found.gain < 0">
+                        {{ asPercent(found.gain) }}
+                      </strong>
+                      <span class="muted">vs your build as it stands</span>
+                    </p>
+                    <p class="muted">
+                      @if (movedCount(found) === 1) {
+                        Moves 1 slot.
+                      } @else {
+                        Moves {{ movedCount(found) }} slots.
+                      }
+                      <!-- OQ-A10: the other defensible reading, labelled rather than chosen
+                           silently. The two diverge exactly when the current build is not
+                           optimal, which for a piece someone is asking about is most of the
+                           time. -->
+                      Best build without it is
+                      {{ asPercent((found.bestWithout - found.before) / found.before) }}.
+                    </p>
+                    <!-- **The dive is a best-of-this-pool, not a proof.** The uncapped search
+                         did not finish in five minutes, so each slot is trimmed to its best
+                         candidates for this build. Saying so is the difference between a
+                         result and a claim. -->
+                    <p class="hint">
+                      Searched the best {{ found.searchedPerSlot }} pieces per slot of
+                      {{ found.inventorySize }}.
+                    </p>
+                    <button type="button" class="card__dive-close" (click)="closeDive()">
+                      Close
+                    </button>
+                  </div>
+                }
+              }
             }
           }
 

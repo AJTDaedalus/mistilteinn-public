@@ -17,7 +17,11 @@ import { BuildsService, type BuildRead } from '../builds/builds.service';
 import { RotationsService } from '../rotations/rotations.service';
 import { TeamsService, type TeamRead } from '../teams/teams.service';
 import { buildsInTeam } from '../../shared/team-scope';
-import { ArtifactRankingService, type RankingRow } from './artifact-ranking.service';
+import {
+  ArtifactRankingService,
+  type DeepDive,
+  type RankingRow,
+} from './artifact-ranking.service';
 import { type CalibrationProgress } from '../optimize/recipe-optimize.service';
 import {
   ArtifactsService,
@@ -379,6 +383,18 @@ export class ArtifactsPage implements OnInit {
   /** Sets the user has asked for, carried into the next ranking run. */
   private readonly extraSets = signal<{ uuid: string; setId: number; name: string }[]>([]);
 
+  // ── The deep dive (A.12) ───────────────────────────────────────────────────
+  //
+  // #291's headline: "the best build with this artifact levelled up vs current for the % gain".
+  // One piece at a time and deliberately — 2,370 pinned searches at five seconds each is three
+  // hours, which is why the column above finds the candidates and this settles them.
+
+  /** The artifact currently being asked about, or `''`. */
+  protected readonly diveId = signal('');
+  protected readonly diveRunning = signal(false);
+  protected readonly diveError = signal('');
+  protected readonly dive = signal<DeepDive | null>(null);
+
   /**
    * Hide pieces with no upgrades left.
    *
@@ -573,6 +589,49 @@ export class ArtifactsPage implements OnInit {
       ...chosen, { uuid: set.uuid, setId: set.setId, name: set.name },
     ]);
     await this.rankAgainstBuild();
+  }
+
+  /**
+   * Re-optimize the whole build around one piece, at its projected max level.
+   *
+   * The number issue #291 actually asks for. The column's delta is a **lower bound** on this,
+   * because a re-search may keep the same four neighbours and never does worse.
+   */
+  protected async diveInto(row: ArtifactRow): Promise<void> {
+    if (this.diveRunning()) return;
+    this.diveId.set(row.id);
+    this.dive.set(null);
+    this.diveError.set('');
+    this.diveRunning.set(true);
+    try {
+      this.dive.set(await this.rankingService.deepDive({
+        buildId: this.rankBuildId(),
+        rotationId: this.rankRotationId(),
+        artifactId: row.id,
+        extraSets: this.extraSets(),
+      }));
+    } catch (err) {
+      this.diveError.set(apiErrorMessage(err));
+    } finally {
+      this.diveRunning.set(false);
+    }
+  }
+
+  protected closeDive(): void {
+    this.diveId.set('');
+    this.dive.set(null);
+    this.diveError.set('');
+  }
+
+  /** A signed percentage, for a number that is a share of the build's own damage. */
+  protected asPercent(fraction: number): string {
+    const pct = fraction * 100;
+    return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+  }
+
+  /** How the winning build differs from what is worn, in slots. */
+  protected movedCount(dive: DeepDive): number {
+    return dive.moved.filter((piece) => piece.changed).length;
   }
 
   /** `delta` as a share of the build's own damage — #291's "% gain". */

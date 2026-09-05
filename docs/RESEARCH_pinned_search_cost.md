@@ -57,25 +57,59 @@ Two things worth reading off this rather than assuming:
   the walk evaluated **nothing** — while still reporting a perfectly plausible time. The script
   now exits non-zero rather than timing an empty loop.
 
-## The answer to OQ-A9: yes, and it is *better* than the free search, not merely cheaper
+## The answer to OQ-A9: **no, not uncapped** — and the first version of this section was wrong
 
-The page already ships a `COMBINATION_BUDGET_SECONDS = 5` walk, and `budgetK` trims buckets to fit
-it. At ~1e-4 s per combination that budget buys about **50,000 evaluated combinations**.
+**Measured: an uncapped pinned search over the real inventory does not finish in 300 seconds.**
+`--full`, killed by its own timeout at exit 143. Pinning removes one slot's factor and leaves
+~3.0e8 combinations, which is further than the branch-and-bound prunes.
 
-The pinned walk scales cleanly as the fourth power of the bucket size — 20 → 28 is 1.4× per slot
-and 1,608 → 6,114 is 3.8×, against 1.4⁴ = 3.84 — so 50,000 combinations is reached at roughly
-**47 candidates per remaining slot**, against the free search's ~28 for the same money.
+### What the first draft of this document claimed, and why it was wrong
 
-**So pinning does not make the search faster; it makes it deeper at the same budget.** That is the
-useful framing for A.12: the deep dive is not a slower version of the optimizer, it is the same
-five-second job asking a narrower question and therefore answering it better.
+It said *"at the shipped 5-second budget a pinned search reaches ~47 candidates per remaining
+slot"* — reasoning from `COMBINATION_BUDGET_SECONDS` and `budgetK`. **`searchRecipe` has no
+budget layer.** It is exhaustive with branch-and-bound and says so in its own return value:
+`isExact: true`, `effectiveK: null`, `prefiltered: 0`. The bound is what makes it tractable, not
+a cap. So that paragraph described a mechanism this search does not have, and inferred an
+interaction from it.
 
-**It is still a job with progress, not a blocking request.** Five seconds is well past the
-threshold where a frozen button is a bug, and `RESEARCH_recipe_cost.md`'s standing ruling —
-*"a job with progress, never a request that blocks"* — applies unchanged.
+That is **the same mistake §7 of the DESIGN records** — a cost inferred from a measurement of
+something adjacent rather than measured directly — made again, in the document written to avoid
+it, two hours later. It was caught by driving the feature: the browser sat in the search for
+seven minutes.
+
+### What the deep dive does instead
+
+Trim each slot to its best `DIVE_PER_SLOT` pieces **for this build** — the same single-slot swap
+the column already computes, 12 µs a piece, ~28 ms for the whole inventory — and keep the pinned
+piece regardless of where it ranks. Both searches run over that pool, and the **free** one
+(`bestWithout`, OQ-A10's alternative reading) is the expensive half:
+
+| per slot | free | pinned |
+|---:|---:|---:|
+| 20 | 0.93 s | 0.11 s |
+| **24** | **3.31 s** | **0.21 s** |
+| 28 | 5.40 s | 0.33 s |
+| 40 | 28.4 s | 1.29 s |
+
+**24 per slot**, so the pair costs ~3.5 s. They share a pool deliberately: `bestWithout` is only
+comparable to `after` if both were chosen from the same candidates.
+
+### What that costs in honesty, and how it is paid
+
+The dive is now **the best build in a trimmed pool**, not a proof about the inventory.
+`searchRecipe` still reports `isExact: true`, and that claim is true *of the pool* — so trimming
+silently would convert it into a claim about the inventory that is false. `DeepDive` therefore
+carries `searchedPerSlot` and `inventorySize`, and the panel says which.
+
+**It remains a job with progress, not a blocking request** — `RESEARCH_recipe_cost.md`'s standing
+ruling, unchanged.
 
 ## What this does not say
 
+- **The trim is a heuristic.** Ranking by single-slot value is not a proof that the best
+  five-piece build lives in the top 24 of each slot — a piece that is mediocre alone and
+  excellent in a set could fall outside. It is the same shape of compromise `applyBudgetK` makes
+  for the single-hit search, and it is stated rather than hidden.
 - **Node, not a browser.** `bench-search.mjs`'s argument carries over — this hot loop has no WASM,
   no DOM, and one small allocation per combination — but it is an argument, not a measurement, and
   the figures above should be read as an order of magnitude rather than pasted into a constant.

@@ -29,16 +29,17 @@
 
 import { Injectable, inject } from '@angular/core';
 
-import { type StatPool } from '../../sim/artifact-score';
-import { type DrawModel, type Piece } from '../../sim/artifact-projection';
+import { type StatPool, scoreForSlot } from '../../sim/artifact-score';
+import { type DrawModel, type Piece, projectPiece } from '../../sim/artifact-projection';
 import { type RankedArtifact, idealFor, rankArtifact } from '../../sim/artifact-ranking';
 import { evaluateRecipe } from '../../sim/recipe-eval';
 import { candidateStatsFrom } from '../../sim/recipe-search';
-import { SLOTS } from '../../sim/search';
-import { fourPieceSetOf } from '../../sim/recipe-search';
+import { SLOTS, type Candidate } from '../../sim/search';
+import { fourPieceSetOf, searchRecipe } from '../../sim/recipe-search';
 import { type Recipe } from '../../sim/recipe';
 import {
   type CalibrationProgress,
+  type CalibrationTarget,
   RecipeOptimizeService,
 } from '../optimize/recipe-optimize.service';
 import {
@@ -85,6 +86,46 @@ export interface RankingResult {
   caveats: { unstable: string[]; staleConversions: string[] };
 }
 
+/** One slot's before-and-after in a deep dive's winning build. */
+export interface MovedPiece {
+  slot: string;
+  fromId: string | null;
+  toId: string;
+  changed: boolean;
+}
+
+/** What "the best build with this artifact levelled up" came out to. */
+export interface DeepDive {
+  /** The build's damage as it stands today — what the percentage is *of*. */
+  before: number;
+  /** The best build that contains this piece, at the piece's projected max-level stats. */
+  after: number;
+  /** `(after - before) / before`. Issue #291's "% gain". */
+  gain: number;
+  /**
+   * The best build that does **not** contain it, over the same inventory and budget.
+   *
+   * OQ-A10 names this the other defensible reading of "% gain", and the two diverge exactly
+   * when the current build is not optimal — which, for a piece someone is asking about, is most
+   * of the time. Both are reported and labelled rather than one being chosen silently.
+   */
+  bestWithout: number;
+  /** Which slots the winning build changed, so a four-slot answer reads as one. */
+  moved: MovedPiece[];
+  /** The pinned piece's projected stats, so the panel can say what it assumed. */
+  projectedFrom: 'average' | 'current';
+  /**
+   * How many candidates per slot the search actually considered.
+   *
+   * **Reported because the answer is a best-of-this-pool, not a proof.** `searchRecipe` is
+   * exhaustive over what it is given and says `isExact: true` — which is true of the *pool* and
+   * would be a lie about the inventory if the pool were silently trimmed. See `trimForDive`.
+   */
+  searchedPerSlot: number;
+  /** The inventory it was trimmed from, so the panel can say what fraction that was. */
+  inventorySize: number;
+}
+
 /** What `rank` needs to know before it can start. */
 export interface RankingRequest {
   buildId: string;
@@ -102,6 +143,41 @@ export interface RankingRequest {
 
 @Injectable({ providedIn: 'root' })
 export class ArtifactRankingService {
+  /**
+   * The calibration targets for a build: the baseline, its own 4-piece, and anything asked for.
+   *
+   * **The build's own set is not optional.** `/optimize` says the same of the baseline — *"it is
+   * not optional and never was"* — and this is the second half of that: a build wearing a
+   * 4-piece has to have that state calibrated before its own damage can be measured, and
+   * without it the whole ranking refuses. Driving the page is how that was learned.
+   *
+   * A set with no catalogue entry is skipped rather than guessed at: `calibrateAll` resolves the
+   * **uuid**, and a target built from the nanoka id alone calibrates nothing.
+   */
+  private async targetsFor(
+    wornFourPiece: number | null,
+    extras: readonly { uuid: string; setId: number; name: string }[],
+  ): Promise<CalibrationTarget[]> {
+    const targets: CalibrationTarget[] = [
+      { artifactSetIds: [], setIds: [], label: 'the baseline (no 4-piece bonus)' },
+    ];
+    const wanted = new Map<number, { uuid: string; setId: number; name: string }>();
+    if (wornFourPiece !== null) {
+      const catalogue = await this.optimize.artifactSets();
+      const entry = catalogue.get(wornFourPiece);
+      if (entry) {
+        wanted.set(wornFourPiece, {
+          uuid: entry.id, setId: wornFourPiece, name: entry.name,
+        });
+      }
+    }
+    for (const set of extras) if (!wanted.has(set.setId)) wanted.set(set.setId, set);
+    for (const set of wanted.values()) {
+      targets.push({ artifactSetIds: [set.uuid], setIds: [set.setId], label: set.name });
+    }
+    return targets;
+  }
+
   /**
    * Put a name and a uuid on each refused set, so the page can offer the calibration.
    *
@@ -157,6 +233,16 @@ export class ArtifactRankingService {
       );
     }
 
+    const worn = await this.artifacts.list({ build_id: request.buildId });
+    const byId = new Map(snapshot.artifacts.map((c) => [c.id, c]));
+    const wornBySlot = new Map(worn.items.map((piece) => [piece.slot, piece.id] as const));
+
+    // **What the build wears has to be calibrated before anything can be scored**, and it is
+    // not an "extra" set — it is the state the baseline is measured in. Driving the page found
+    // this: the refusal below fired on a Nahida build wearing 4-piece Blizzard Strayer, which
+    // is what a real build looks like. Calibrating only the no-4-piece baseline made the
+    // feature unusable for most of them.
+    const wornFourPiece = fourPieceSetOf(setCountsOf(wornBySlot, byId));
     const calibration = await this.recipes.calibrateAll(
       request.buildId,
       request.rotationId,
@@ -166,12 +252,7 @@ export class ArtifactRankingService {
       // only after a real run in a browser. `/optimize`'s own comment says why: "it is not
       // optional and never was: every combination that reaches no 4-piece is scored against
       // it, so a search without it can rank nothing."
-      [
-        { artifactSetIds: [], setIds: [], label: 'the baseline (no 4-piece bonus)' },
-        ...(request.extraSets ?? []).map((set) => ({
-          artifactSetIds: [set.uuid], setIds: [set.setId], label: set.name,
-        })),
-      ],
+      await this.targetsFor(wornFourPiece, request.extraSets ?? []),
       request.onProgress ?? (() => undefined),
       undefined,
       request.waitForEnergy ?? false,
@@ -186,30 +267,19 @@ export class ArtifactRankingService {
     }
     const model = drawModelFrom(raw);
 
-    const worn = await this.artifacts.list({ build_id: request.buildId });
     const wornIds = new Set(worn.items.map((piece) => piece.id));
-    const byId = new Map(snapshot.artifacts.map((c) => [c.id, c]));
 
     // The five slots the build is wearing, as the evaluator reads them. A slot with nothing in
     // it contributes an empty pool rather than being absent: the kernel takes five.
     const equipped: StatPool[] = SLOTS.map((slot) => {
-      const found = worn.items.find((piece) => piece.slot === slot);
-      const candidate = found ? byId.get(found.id) : undefined;
+      const id = wornBySlot.get(slot);
+      const candidate = id ? byId.get(id) : undefined;
       return candidate ? candidate.stats : {};
     });
-    // What the build is *actually* wearing decides which recipe describes it. Counting the
-    // worn pieces rather than assuming no-4-piece is the whole of A.9's first state.
-    const wornSetCounts: Record<number, number> = {};
-    for (const slot of SLOTS) {
-      const found = worn.items.find((piece) => piece.slot === slot);
-      const candidate = found ? byId.get(found.id) : undefined;
-      const setId = candidate?.set_id;
-      if (setId != null) wornSetCounts[setId] = (wornSetCounts[setId] ?? 0) + 1;
-    }
-    const wornFourPiece = fourPieceSetOf(wornSetCounts);
-    // `undefined` from the map means "the build wears a 4-piece nobody calibrated", which is
-    // only reachable if the caller did not pass it in `extraSets`. Falling back to
-    // `noFourPiece` there would understate the build by its own set bonus, so it refuses.
+    const wornSetCounts = setCountsOf(wornBySlot, byId);
+    // `undefined` from the map means the build's own 4-piece did not calibrate — a gcsim
+    // failure rather than an omission, now that `targetsFor` always asks for it. Falling back
+    // to `noFourPiece` would understate the build by its own set bonus, so it refuses.
     const recipe = wornFourPiece === null
       ? noFourPiece
       : calibration.byFourPieceSet.get(wornFourPiece);
@@ -319,6 +389,233 @@ export class ArtifactRankingService {
       },
     };
   }
+
+  /**
+   * **The best build containing this piece, at its projected max level.** Issue #291's headline.
+   *
+   * This is the half a single-slot swap cannot answer. *"Assume that you can move other
+   * artifacts"* is a re-optimization with the piece nailed down, not a substitution — and the
+   * two are five orders of magnitude apart per piece, which is why the column triages and this
+   * settles (`DESIGN_artifact_ranking.md` §8.1).
+   *
+   * **Neither Fribbels nor Genshin Optimizer offers it.** All five of Fribbels' per-relic
+   * columns are single-piece scores against a weights vector, and GO's Artifact Upgrader says so
+   * in its own UI: *"as it only swaps one artifact at a time, for the best overall build across
+   * all artifacts, use the main artifact optimizer."* Both ship the two tools and no bridge
+   * between them. This is the bridge.
+   *
+   * ## What it costs
+   *
+   * A pinned search, measured in `RESEARCH_pinned_search_cost.md`: the same
+   * `COMBINATION_BUDGET_SECONDS = 5` walk the optimizer already runs, reaching ~47 candidates
+   * per remaining slot against a free search's ~28. **Pinning does not make it faster, it makes
+   * it deeper for the same money** — so this is not a slower optimizer, it is the same job asked
+   * a narrower question. One piece at a time, deliberately: 2,370 of them would be three hours.
+   */
+  async deepDive(request: RankingRequest & { artifactId: string }): Promise<DeepDive> {
+    const snapshot = await this.optimize.inventory();
+    const raw = snapshot.draw_model;
+    if (!raw) throw new Error('the server sent no draw model, so nothing can be projected');
+    const model = drawModelFrom(raw);
+
+    const target = snapshot.artifacts.find((c) => c.id === request.artifactId);
+    if (!target) {
+      throw new Error(`artifact ${request.artifactId} is not in the inventory snapshot`);
+    }
+
+    const worn = await this.artifacts.list({ build_id: request.buildId });
+    const byId = new Map(snapshot.artifacts.map((c) => [c.id, c]));
+    const wornBySlot = new Map(
+      worn.items.map((piece) => [piece.slot, piece.id] as const),
+    );
+    const wornFour = fourPieceSetOf(setCountsOf(wornBySlot, byId));
+
+    const calibration = await this.recipes.calibrateAll(
+      request.buildId,
+      request.rotationId,
+      snapshot.version,
+      await this.targetsFor(wornFour, request.extraSets ?? []),
+      request.onProgress ?? (() => undefined),
+      undefined,
+      request.waitForEnergy ?? false,
+    );
+    const noFourPiece = calibration.noFourPiece;
+    if (!noFourPiece) throw new Error('the baseline recipe did not calibrate');
+    const equipped: StatPool[] = SLOTS.map((slot) => {
+      const id = wornBySlot.get(slot);
+      const candidate = id ? byId.get(id) : undefined;
+      return candidate ? candidate.stats : {};
+    });
+
+    // The build's own 4-piece state decides which recipe describes it today — A.9's first
+    // state, and the number every percentage below is *of*.
+    const current = wornFour === null
+      ? noFourPiece
+      : calibration.byFourPieceSet.get(wornFour) ?? noFourPiece;
+    const before = evaluateRecipe(current, candidateStatsFrom(equipped));
+
+    // **Pinned at the piece's projected max-level stats**, because #291 asks about the artifact
+    // "at max level". `average` rather than `best`: the expected outcome is the honest thing to
+    // plan a resin spend around, and the ceiling is already on the card.
+    const piece = pieceOf(target);
+    const projection = projectPiece(piece, model);
+    const projected = projection?.average ?? target.stats;
+
+    // **Pieces in a slot the kernel does not search are dropped, not coerced.** The five slot
+    // names are a closed set; a payload carrying a sixth is a piece this walk cannot place, and
+    // casting it in would put it in whichever bucket the string happened to match.
+    const searchable = new Set<string>(SLOTS);
+    const all: Candidate[] = snapshot.artifacts
+      .filter((c) => searchable.has(c.slot))
+      .map((c) => ({
+        id: c.id,
+        slot: c.slot as (typeof SLOTS)[number],
+        setId: c.set_id ?? 0,
+        stats: c.stats,
+      }));
+    const candidates = trimForDive(all, target.id, current, equipped);
+    const recipes = {
+      noFourPiece,
+      byFourPieceSet: calibration.byFourPieceSet,
+      byPair: calibration.byPair,
+    };
+
+    const withPiece = searchRecipe(candidates, {
+      recipes,
+      topN: 1,
+      pinned: {
+        id: target.id,
+        slot: target.slot as (typeof SLOTS)[number],
+        setId: target.set_id ?? 0,
+        stats: projected,
+      },
+    });
+    // OQ-A10's other reading. Same inventory minus this piece, same budget.
+    const without = searchRecipe(
+      candidates.filter((c) => c.id !== target.id),
+      { recipes, topN: 1 },
+    );
+
+    const winner = withPiece.builds[0];
+    if (!winner) {
+      throw new Error(
+        'the pinned search found no build. That is a refusal rather than a zero: it means no '
+        + '4-piece state containing this piece was calibrated, and a percentage computed from '
+        + 'nothing would look like a real answer.',
+      );
+    }
+
+    const moved: MovedPiece[] = SLOTS.map((slot, index) => {
+      const toId = winner.artifactIds[index];
+      const fromId = wornBySlot.get(slot) ?? null;
+      return { slot, fromId, toId, changed: fromId !== toId };
+    });
+
+    return {
+      before,
+      after: winner.damage,
+      gain: before > 0 ? (winner.damage - before) / before : 0,
+      bestWithout: without.builds[0]?.damage ?? before,
+      moved,
+      projectedFrom: projection ? 'average' : 'current',
+      searchedPerSlot: DIVE_PER_SLOT,
+      inventorySize: all.length,
+    };
+  }
+}
+
+/**
+ * Candidates per slot the deep dive searches.
+ *
+ * **Measured, not chosen**, and the first attempt at this had no cap at all.
+ * `RESEARCH_pinned_search_cost.md`: the uncapped pinned search over the owner's real
+ * 2,369-piece inventory **did not finish in 300 seconds**. After the Pareto filter the space is
+ * 130 × 103 × 135 × 149 × 147, and pinning one slot still leaves ~3e8 combinations — further
+ * than branch-and-bound prunes.
+ *
+ * Both searches run over the same pool, and the **free** one is the expensive half:
+ *
+ * | per slot | free | pinned |
+ * |---:|---:|---:|
+ * | 20 | 0.93 s | 0.11 s |
+ * | **24** | **3.31 s** | **0.21 s** |
+ * | 28 | 5.40 s | 0.33 s |
+ * | 40 | 28.4 s | 1.29 s |
+ *
+ * 24 keeps the pair at ~3.5 s. They share a pool deliberately: `bestWithout` is only comparable
+ * to `after` if both were chosen from the same candidates.
+ *
+ * **This makes the dive a best-of-this-pool rather than a proof**, which is why `DeepDive`
+ * reports the number to the page. `searchRecipe` is still exhaustive over what it is handed and
+ * still says `isExact: true` — that claim is about the pool, and trimming silently would turn it
+ * into a claim about the inventory that is not true.
+ */
+const DIVE_PER_SLOT = 24;
+
+/**
+ * The best `DIVE_PER_SLOT` pieces per slot for this build, plus the pinned one whatever it is.
+ *
+ * Ranked by what each piece is worth **in this build**, which is the same single-slot swap the
+ * column already computes — 12 µs a piece, so trimming the whole inventory costs about 28 ms
+ * against a search that would otherwise not terminate.
+ *
+ * **The pinned piece is kept unconditionally.** It is very often not in the top 40 — that is
+ * usually the whole reason someone is asking about it — and dropping it here would produce a
+ * search that silently answered a different question, which is the same failure the pin's own
+ * placement after the Pareto filter exists to avoid.
+ */
+function trimForDive(
+  candidates: readonly Candidate[],
+  pinnedId: string,
+  recipe: Recipe,
+  equipped: readonly StatPool[],
+): Candidate[] {
+  const bySlot = new Map<string, Candidate[]>();
+  for (const candidate of candidates) {
+    const bucket = bySlot.get(candidate.slot) ?? [];
+    bucket.push(candidate);
+    bySlot.set(candidate.slot, bucket);
+  }
+
+  const out: Candidate[] = [];
+  for (const [slot, bucket] of bySlot) {
+    const index = SLOTS.indexOf(slot as (typeof SLOTS)[number]);
+    if (index < 0) continue;
+    const scored = scoreForSlot(
+      recipe,
+      equipped,
+      bucket.map((c) => ({ id: c.id, stats: c.stats })),
+      index,
+    );
+    const rank = new Map(scored.map((row) => [row.id, row.score.damage]));
+    const kept = [...bucket]
+      .sort((a, b) => (rank.get(b.id) ?? 0) - (rank.get(a.id) ?? 0))
+      .slice(0, DIVE_PER_SLOT);
+    if (!kept.some((c) => c.id === pinnedId)) {
+      const pinned = bucket.find((c) => c.id === pinnedId);
+      if (pinned) kept.push(pinned);
+    }
+    out.push(...kept);
+  }
+  return out;
+}
+
+/**
+ * How many pieces of each set a build is wearing.
+ *
+ * One definition, used by both `rank` and `deepDive`. It was written twice first, and the two
+ * copies are exactly the sort that drift into disagreeing about what a build is wearing.
+ */
+function setCountsOf(
+  wornBySlot: ReadonlyMap<string, string>,
+  byId: ReadonlyMap<string, KernelCandidate>,
+): Record<number, number> {
+  const counts: Record<number, number> = {};
+  for (const slot of SLOTS) {
+    const setId = byId.get(wornBySlot.get(slot) ?? '')?.set_id;
+    if (setId != null) counts[setId] = (counts[setId] ?? 0) + 1;
+  }
+  return counts;
 }
 
 /**

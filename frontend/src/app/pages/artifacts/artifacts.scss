@@ -575,3 +575,34 @@
     margin-top: var(--space-1);
   }
 }
+
+/* The deep dive (A.12): one piece, re-optimized. */
+.card__dive {
+  margin-top: var(--space-1);
+  font-size: 0.85em;
+}
+
+.card__dive-result {
+  margin-top: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--brass);
+  border-radius: var(--radius-1);
+
+  p {
+    margin: 0 0 var(--space-1);
+    font-size: 0.85em;
+  }
+}
+
+.card__dive-gain {
+  strong {
+    font-family: var(--font-display);
+
+    &.up { color: var(--mint-hi); }
+    &.down { color: var(--danger); }
+  }
+}
+
+.card__dive-close {
+  font-size: 0.8em;
+}
