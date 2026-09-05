@@ -36,10 +36,10 @@ pytest
 
 ## Branch policy
 
-- **`main` is releases only. `dev` is the integration branch.** No direct
-  commits to either — production deploys from `dev` (see
-  [`docs/DEPLOY.md`](docs/DEPLOY.md)), so a wrong commit there can ship on
-  the next deploy.
+- **`dev` is the trunk, the default branch, and what serves production.**
+  There is no `main`. No direct commits — `deploy-prod.yml` triggers on a
+  push to `dev` (see [`docs/DEPLOY.md`](docs/DEPLOY.md)), so a commit there
+  ships, with no staging step in between.
 - All work happens on a feature/fix branch off `dev`:
   `feat/<short-description>`, `fix/<short-description>`,
   `refactor/<short-description>`.
@@ -49,6 +49,31 @@ pytest
   `docs/DESIGN_<feature>.md` states its own branch policy near the top —
   check it before starting work on an in-flight feature.
 - Verify `git branch --show-current` before every commit.
+
+## The gate: run CI yourself
+
+**GitHub Actions does not run the checks.** `test.yml` and `security.yml` are
+`on: workflow_dispatch:` — their seven `ubuntu-latest` jobs were billed on every
+push and everything they do can be done here. `deploy-prod.yml` still runs
+automatically; it is on a self-hosted runner and it is the deploy, not a check.
+
+**Before any merge to `dev`, on the final commit:**
+
+```bash
+cd backend && python -m scripts.ci_local     # exit 0 over every job
+```
+
+It parses `.github/workflows/*.yml` at run time and runs the steps it finds, so
+it is CI rather than a stand-in for it — a gate added to a workflow is a gate it
+runs the same day. `--list` shows the plan, `--job <id>` runs one job while
+iterating, and `--clean` runs from a fresh clone of HEAD when a change could
+touch installing or building.
+
+The final commit is the one that matters. "Only docs changed since I ran it" is
+the reasoning this requirement exists to refuse.
+
+After merging, check that the deploy actually happened — `gh run list --branch
+dev` — rather than assuming the merge was the deploy.
 
 ## TDD and test layout
 

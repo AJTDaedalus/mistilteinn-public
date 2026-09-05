@@ -19,11 +19,28 @@ name: Tests
 # state this workflow does not create", not "no database".
 # ---------------------------------------------------------------------------
 
+# **Not run on push or PR — this file is the gate list, not a billed job.**
+#
+# Owner, 2026-09-05: *"github CI is nice, but not required... the tests could be removed, this
+# repository ends up using a lot and I don't think it adds much value since we can do all of
+# those tests locally. We just have to make it a requirement that they get ran on the final
+# version before merging."*
+#
+# The four jobs below are `ubuntu-latest`, so every push billed them. `deploy-prod.yml` is
+# `[self-hosted, mistilteinn-prod]` and is the one that has to keep running automatically —
+# it is the deploy, not a check.
+#
+# **The file stays because it IS the gate definition.** `scripts/ci_local.py` parses this YAML
+# at run time (`WORKFLOWS = ("test.yml", "security.yml")`) and runs the steps it finds, which
+# is why it cannot drift from CI by being a remembered subset. Deleting this file would delete
+# the local gate list with it. `workflow_dispatch` keeps it runnable by hand if Actions is
+# ever worth using again — one line, reversible.
+#
+# The requirement that replaces the automatic run is in CLAUDE.md §Gate discipline: **all of
+# `python -m scripts.ci_local` green on the final commit, before any merge.**
+
 on:
-  push:
-    branches: [dev, main]
-  pull_request:
-    branches: [dev, main]
+  workflow_dispatch:
 
 concurrency:
   group: tests-${{ github.ref }}
