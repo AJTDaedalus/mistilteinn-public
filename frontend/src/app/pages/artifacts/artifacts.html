@@ -269,8 +269,37 @@
             {{ rankCaveats().staleConversions.join(', ') }}.
           </p>
         }
+        @if (uncalibratedSets().length) {
+          <!-- OQ-A8: calibrate the other set on demand rather than scoring under the wrong
+               recipe. Most-refused first, so one click unlocks the most of the inventory. -->
+          <div class="rank-panel__sets">
+            <p class="hint">
+              Some pieces would complete a set nothing has calibrated, so they have no score.
+              Each set is about three seconds of simulation.
+            </p>
+            <div class="chips">
+              @for (set of uncalibratedSets(); track set.setId) {
+                <button
+                  type="button"
+                  class="chip chip--text"
+                  [disabled]="!!rankProgress()"
+                  (click)="calibrateSet(set)"
+                >{{ set.name }} ({{ set.pieces }})</button>
+              }
+            </div>
+          </div>
+        }
+
         @if (rankCaveat(); as caveat) {
-          <p class="hint">Upgrade odds use published draw weights. {{ caveat }}</p>
+          <!-- **Collapsed, because the full text is a paragraph of research prose.** It was
+               rendered inline first and took five lines of the panel to explain monotonicity
+               under a weighted draw — true, load-bearing, and not what someone ranking their
+               artifacts is reading right then. The one-line claim stays visible; the argument
+               is one click away. -->
+          <details class="rank-panel__caveat">
+            <summary>Upgrade odds use published draw weights, which we could not verify.</summary>
+            <p class="hint">{{ caveat }}</p>
+          </details>
         }
       }
     </section>

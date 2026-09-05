@@ -367,6 +367,17 @@ export class ArtifactsPage implements OnInit {
   protected readonly rankCaveats = signal<{ unstable: string[]; staleConversions: string[] }>({
     unstable: [], staleConversions: [],
   });
+  /**
+   * Sets whose pieces were refused because nothing calibrated them (OQ-A8).
+   *
+   * Offered rather than silently calibrated: each is ~3.2 s of gcsim, and calibrating all 65
+   * because one piece asked would be a three-minute wait nobody requested.
+   */
+  protected readonly uncalibratedSets = signal<
+    { setId: number; uuid: string; name: string; pieces: number }[]
+  >([]);
+  /** Sets the user has asked for, carried into the next ranking run. */
+  private readonly extraSets = signal<{ uuid: string; setId: number; name: string }[]>([]);
 
   /**
    * Hide pieces with no upgrades left.
@@ -529,8 +540,10 @@ export class ArtifactsPage implements OnInit {
         buildId: this.rankBuildId(),
         rotationId: this.rankRotationId(),
         onProgress: (progress) => this.rankProgress.set(progress),
+        extraSets: this.extraSets(),
       });
       this.ranked.set(new Map(result.rows.map((row) => [row.id, row])));
+      this.uncalibratedSets.set(result.uncalibratedSets);
       this.rankBaseline.set(result.baseline);
       this.rankCaveat.set(result.weightsCaveat);
       this.rankCaveats.set(result.caveats);
@@ -541,9 +554,25 @@ export class ArtifactsPage implements OnInit {
     } catch (err) {
       this.rankError.set(apiErrorMessage(err));
       this.ranked.set(new Map());
+      this.uncalibratedSets.set([]);
     } finally {
       this.rankProgress.set(null);
     }
+  }
+
+  /**
+   * Calibrate one more 4-piece set and rank again (OQ-A8).
+   *
+   * The set is **added** to what has already been asked for rather than replacing it, so
+   * unlocking a second set does not silently re-refuse the first — and `recipe-cache.ts` means
+   * the ones already calibrated cost nothing the second time.
+   */
+  protected async calibrateSet(set: { setId: number; uuid: string; name: string }): Promise<void> {
+    if (this.extraSets().some((chosen) => chosen.setId === set.setId)) return;
+    this.extraSets.update((chosen) => [
+      ...chosen, { uuid: set.uuid, setId: set.setId, name: set.name },
+    ]);
+    await this.rankAgainstBuild();
   }
 
   /** `delta` as a share of the build's own damage — #291's "% gain". */
@@ -564,6 +593,8 @@ export class ArtifactsPage implements OnInit {
         return 'no upgrade schedule for this rarity and level';
       case 'noLadders':
         return 'no roll data for this rarity';
+      case 'needsCalibration':
+        return 'would complete an uncalibrated set — see above';
       default:
         return '';
     }

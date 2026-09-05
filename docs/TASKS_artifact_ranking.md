@@ -148,7 +148,7 @@ A.0 is the gate. **One PR per phase**, not per task — five PRs, not seventeen.
   progress and can leave. `npm run check:tokens` green. Reuse `shared/{icon,token,element,combobox}`
   rather than deciding again — `FINDINGS_frontend_validation.md`'s lesson.
 
-### [~] A.8 — The columns: sort, filter, heat shading
+### [x] A.8 — The columns: sort, filter, heat shading
 - **Do:** the five numbers as sortable columns on the existing card/list, heat-shaded so the
   shape reads before the numbers do (`AUDIT_fribbels_handson.md` §2). Respect the existing
   120-piece render cap and "show more" — the page held all 2,370 in the DOM once already.
@@ -157,7 +157,7 @@ A.0 is the gate. **One PR per phase**, not per task — five PRs, not seventeen.
   upgrade at the top; sorting a fresh +0 by *best* does not bury it. Closes
   `AUDIT_fribbels_parity.md` §2's last open row.
 
-### [ ] A.9 — On-demand calibration for a set the build does not wear
+### [x] A.9 — On-demand calibration for a set the build does not wear
 - **Found while driving A.8, and it is bigger than the task title:** `rank()` currently
   calibrates **only the no-4-piece baseline**, so a build that is itself wearing a 4-piece set is
   scored under a recipe that omits its own bonus — every number understated, and not uniformly,

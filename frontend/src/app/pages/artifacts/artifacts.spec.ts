@@ -515,7 +515,7 @@ describe('comparator', () => {
     fraction: 0, grade: 'F', refusal: null,
     caveats: { unstable: [], staleConversions: [] },
     slot: 'equip_bracer', setId: null, level: 0, rarity: 5, equipped: false,
-    rollsRemaining: 5, ...over,
+    rollsRemaining: 5, needsSet: null, ...over,
   });
 
   it('orders by roll value, best first', () => {

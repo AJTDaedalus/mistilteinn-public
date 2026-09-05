@@ -35,6 +35,8 @@ import { type RankedArtifact, idealFor, rankArtifact } from '../../sim/artifact-
 import { evaluateRecipe } from '../../sim/recipe-eval';
 import { candidateStatsFrom } from '../../sim/recipe-search';
 import { SLOTS } from '../../sim/search';
+import { fourPieceSetOf } from '../../sim/recipe-search';
+import { type Recipe } from '../../sim/recipe';
 import {
   type CalibrationProgress,
   RecipeOptimizeService,
@@ -71,6 +73,15 @@ export interface RankingResult {
   weightsCaveat: string;
   /** Pieces the server could not translate at all — never silently dropped. */
   unreadable: { artifactId: string; reason: string }[];
+  /**
+   * Sets that rows were refused for, most-refused first, so the page can offer the calibration
+   * that would unlock the most of the inventory rather than an arbitrary one.
+   *
+   * Carries the catalogue **uuid** as well as the nanoka id, because `calibrateAll` resolves the
+   * uuid and the search counts pieces by the id — two different numbers for two different jobs,
+   * and a target given only one of them calibrates nothing.
+   */
+  uncalibratedSets: { setId: number; uuid: string; name: string; pieces: number }[];
   caveats: { unstable: string[]; staleConversions: string[] };
 }
 
@@ -80,10 +91,38 @@ export interface RankingRequest {
   rotationId: string;
   onProgress?: (progress: CalibrationProgress) => void;
   waitForEnergy?: boolean;
+  /**
+   * Extra 4-piece sets to calibrate, as catalogue **uuids** paired with their nanoka ids.
+   *
+   * OQ-A8's "calibrate the other set on demand". Each costs ~3.2 s of gcsim, so this is opt-in
+   * and driven by the user asking about a specific set rather than by calibrating all 65.
+   */
+  extraSets?: readonly { uuid: string; setId: number; name: string }[];
 }
 
 @Injectable({ providedIn: 'root' })
 export class ArtifactRankingService {
+  /**
+   * Put a name and a uuid on each refused set, so the page can offer the calibration.
+   *
+   * A set with no catalogue entry is **dropped rather than offered**: without its uuid nothing
+   * could calibrate it, and a button that cannot work is worse than an absent one.
+   */
+  private async nameSets(
+    counts: readonly (readonly [number, number])[],
+  ): Promise<{ setId: number; uuid: string; name: string; pieces: number }[]> {
+    if (!counts.length) return [];
+    const catalogue = await this.optimize.artifactSets();
+    return counts
+      .map(([setId, pieces]) => {
+        const entry = catalogue.get(setId);
+        return entry ? { setId, uuid: entry.id, name: entry.name, pieces } : null;
+      })
+      .filter((row): row is { setId: number; uuid: string; name: string; pieces: number } =>
+        row !== null)
+      .sort((a, b) => b.pieces - a.pieces);
+  }
+
   private readonly optimize = inject(OptimizeService);
   private readonly artifacts = inject(ArtifactsService);
   private readonly recipes = inject(RecipeOptimizeService);
@@ -91,11 +130,21 @@ export class ArtifactRankingService {
   /**
    * Score every owned piece against one build, in its own slot.
    *
-   * **Only the no-four-piece recipe is calibrated here.** A candidate that would complete a
-   * different set is a different *recipe*, not different stats, and A.9 is where that gets its
-   * own calibration on demand. Scoring a cross-set piece under this recipe would credit a bonus
-   * the swapped build would not have — the failure `artifact-score.ts` documents and
-   * `scoreForSlot`'s `recipeAfterSwap` exists to discharge.
+   * ## Three 4-piece states, not one
+   *
+   * A.9, and it is bigger than "handle cross-set pieces". Swapping a piece changes **which
+   * recipe applies**, not just the stats fed to one, and there are three states in play:
+   *
+   * - **the build's current 4-piece**, if it has one. This is the honest baseline. The first
+   *   draft calibrated only the no-4-piece state, so a build wearing 4-piece Emblem was scored
+   *   under a recipe missing its own bonus — and not uniformly, because a set bonus interacts
+   *   with the stats rather than adding to them.
+   * - **no 4-piece**, which is what a set-breaking swap actually produces.
+   * - **a different 4-piece** the candidate would complete. Calibrated on demand when the
+   *   caller asks (`extraSets`); refused with `needsCalibration` when it has not been.
+   *
+   * `scoreForSlot`'s `recipeAfterSwap` parameter was written for exactly this and had no caller
+   * until now.
    */
   async rank(request: RankingRequest): Promise<RankingResult> {
     const snapshot = await this.optimize.inventory();
@@ -117,13 +166,18 @@ export class ArtifactRankingService {
       // only after a real run in a browser. `/optimize`'s own comment says why: "it is not
       // optional and never was: every combination that reaches no 4-piece is scored against
       // it, so a search without it can rank nothing."
-      [{ artifactSetIds: [], setIds: [], label: 'the baseline (no 4-piece bonus)' }],
+      [
+        { artifactSetIds: [], setIds: [], label: 'the baseline (no 4-piece bonus)' },
+        ...(request.extraSets ?? []).map((set) => ({
+          artifactSetIds: [set.uuid], setIds: [set.setId], label: set.name,
+        })),
+      ],
       request.onProgress ?? (() => undefined),
       undefined,
       request.waitForEnergy ?? false,
     );
-    const recipe = calibration.noFourPiece;
-    if (!recipe) {
+    const noFourPiece = calibration.noFourPiece;
+    if (!noFourPiece) {
       throw new Error(
         'the baseline recipe did not calibrate, so there is nothing to score against. This is '
         + 'a refusal rather than a fallback: a ranking computed off a recipe that is not this '
@@ -143,6 +197,30 @@ export class ArtifactRankingService {
       const candidate = found ? byId.get(found.id) : undefined;
       return candidate ? candidate.stats : {};
     });
+    // What the build is *actually* wearing decides which recipe describes it. Counting the
+    // worn pieces rather than assuming no-4-piece is the whole of A.9's first state.
+    const wornSetCounts: Record<number, number> = {};
+    for (const slot of SLOTS) {
+      const found = worn.items.find((piece) => piece.slot === slot);
+      const candidate = found ? byId.get(found.id) : undefined;
+      const setId = candidate?.set_id;
+      if (setId != null) wornSetCounts[setId] = (wornSetCounts[setId] ?? 0) + 1;
+    }
+    const wornFourPiece = fourPieceSetOf(wornSetCounts);
+    // `undefined` from the map means "the build wears a 4-piece nobody calibrated", which is
+    // only reachable if the caller did not pass it in `extraSets`. Falling back to
+    // `noFourPiece` there would understate the build by its own set bonus, so it refuses.
+    const recipe = wornFourPiece === null
+      ? noFourPiece
+      : calibration.byFourPieceSet.get(wornFourPiece);
+    if (!recipe) {
+      throw new Error(
+        `the build wears a 4-piece set (${wornFourPiece}) that was not calibrated, so its own `
+        + 'damage cannot be measured. Ranking against a recipe missing the build\'s own set '
+        + 'bonus would understate every piece, and not uniformly.',
+      );
+    }
+
     const baseline = evaluateRecipe(recipe, candidateStatsFrom(equipped));
 
     const emptyBySlot = SLOTS.map((_slot, index) => {
@@ -163,10 +241,34 @@ export class ArtifactRankingService {
     // so it is computed once per distinct triple rather than 2,370 times.
     const ideals = new Map<string, number>();
 
+    const uncalibrated = new Map<number, number>();
     const rows: RankingRow[] = [];
     for (const candidate of snapshot.artifacts) {
       const slot = SLOTS.indexOf(candidate.slot as (typeof SLOTS)[number]);
       if (slot < 0) continue;
+
+      // Which 4-piece state the build would be in with this piece equipped.
+      const swappedCounts = { ...wornSetCounts };
+      const outgoing = worn.items.find((piece) => piece.slot === candidate.slot);
+      const outgoingSet = outgoing ? byId.get(outgoing.id)?.set_id : undefined;
+      if (outgoingSet != null) swappedCounts[outgoingSet] = (swappedCounts[outgoingSet] ?? 1) - 1;
+      if (candidate.set_id != null) {
+        swappedCounts[candidate.set_id] = (swappedCounts[candidate.set_id] ?? 0) + 1;
+      }
+      const swappedFourPiece = fourPieceSetOf(swappedCounts);
+      let afterSwap: Recipe | null | undefined;
+      let needsSet: number | null = null;
+      if (swappedFourPiece === wornFourPiece) {
+        afterSwap = undefined;
+      } else if (swappedFourPiece === null) {
+        afterSwap = noFourPiece;
+      } else {
+        afterSwap = calibration.byFourPieceSet.get(swappedFourPiece) ?? null;
+        if (afterSwap === null) {
+          needsSet = swappedFourPiece;
+          uncalibrated.set(swappedFourPiece, (uncalibrated.get(swappedFourPiece) ?? 0) + 1);
+        }
+      }
       const piece = pieceOf(candidate);
       const key = `${slot}:${candidate.main_stat}:${candidate.rarity}`;
       const mainStatValue = mainStatValueOf(candidate, piece.mainStatQuantity);
@@ -191,6 +293,8 @@ export class ArtifactRankingService {
           ideal,
           emptySlot: emptyBySlot[slot],
           mainOnly: mainOnlies.get(key) ?? emptyBySlot[slot],
+          afterSwap,
+          needsSet,
         }),
         slot: candidate.slot,
         setId: candidate.set_id ?? null,
@@ -208,6 +312,7 @@ export class ArtifactRankingService {
       unreadable: snapshot.unreadable.map((row) => ({
         artifactId: row.artifact_id, reason: row.reason,
       })),
+      uncalibratedSets: await this.nameSets([...uncalibrated]),
       caveats: {
         unstable: recipe.meta?.unstable ?? [],
         staleConversions: (recipe.meta?.staleConversions ?? []).map((c) => c.term),

@@ -161,6 +161,35 @@ describe('rankArtifact', () => {
     expect(found.caveats.staleConversions).toEqual(['hp_to_atk']);
   });
 
+  describe('the swapped build gets its own recipe (A.9)', () => {
+    it('refuses a piece whose 4-piece state nothing calibrated', () => {
+      // **Not a fallback.** Scoring it under the build's own recipe would credit a set bonus
+      // the swapped build would not have, in a row that looks like every other row.
+      const found = rankArtifact(r, equipped, 2, p, MODEL, {
+        ...ctx, afterSwap: null, needsSet: 15025,
+      });
+      expect(found.refusal).toBe('needsCalibration');
+      expect(found.needsSet).toBe(15025);
+      expect(Number.isNaN(found.current)).toBe(true);
+    });
+
+    it('evaluates the swap under the given recipe while the baseline keeps its own', () => {
+      // A weaker recipe for the swapped state must drag the score down even though the piece
+      // itself is unchanged — that is the whole point of scoring across two recipes.
+      // An empty recipe is unambiguously worth less. `calibratedScaling: 100` was tried first
+      // and moved nothing, which is correct and worth knowing: `evaluateHit` scales off the
+      // candidate's own stat total, and `calibratedScaling` feeds `predictedDamage` — the
+      // cross-check against gcsim — rather than the evaluator. `gcsimAverageDamage` is
+      // likewise read only for `!hit.mine`, a teammate's damage that no artifact can move.
+      const weaker: Recipe = { ...recipe(), hits: [] };
+      const found = rankArtifact(r, equipped, 2, p, MODEL, { ...ctx, afterSwap: weaker });
+      const same = rankArtifact(r, equipped, 2, p, MODEL, ctx);
+      expect(found.current).toBeLessThan(same.current);
+      // The baseline is untouched: the build as it stands really does have what it has.
+      expect(found.delta).toBeCloseTo(found.current - ctx.baseline, 6);
+    });
+  });
+
   describe('refusals — never a zero standing in for a number', () => {
     it('refuses a piece the committed schedule cannot answer for', () => {
       const found = rankArtifact(

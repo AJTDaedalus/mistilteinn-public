@@ -550,3 +550,28 @@
   color: var(--ink-dim);
   font-family: var(--font-body);
 }
+
+/* The draw-weight caveat, collapsed. The claim is always visible; the argument behind it is a
+ * paragraph and belongs behind a disclosure. */
+.rank-panel__caveat {
+  margin-top: var(--space-2);
+  color: var(--ink-dim);
+  font-family: var(--font-body);
+
+  summary {
+    cursor: pointer;
+  }
+
+  p {
+    margin: var(--space-1) 0 0;
+  }
+}
+
+/* The on-demand calibration offer (OQ-A8). */
+.rank-panel__sets {
+  margin-top: var(--space-2);
+
+  .chips {
+    margin-top: var(--space-1);
+  }
+}

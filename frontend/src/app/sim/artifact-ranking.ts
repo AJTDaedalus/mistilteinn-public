@@ -61,7 +61,17 @@ export type RankRefusal =
   /** The committed upgrade schedule does not cover this rarity and level. */
   | 'noSchedule'
   /** The rarity has no roll ladders in the draw model, so nothing can be projected. */
-  | 'noLadders';
+  | 'noLadders'
+  /**
+   * Equipping this piece would complete a 4-piece set nothing has calibrated.
+   *
+   * **A refusal, not a fallback.** Scoring it under the build's own recipe would credit a set
+   * bonus the swapped build would not have — or omit one it would — and either way produce a
+   * number that looks comparable to the rows around it. `DESIGN_artifact_ranking.md` OQ-A8
+   * answers this with "calibrate the other set on demand", so the row carries the set id and
+   * the page offers the calibration.
+   */
+  | 'needsCalibration';
 
 export interface RankedArtifact {
   id: string;
@@ -102,6 +112,12 @@ export interface RankedArtifact {
   grade: string;
   /** Non-null when no number could honestly be produced. The caller shows nothing, not a zero. */
   refusal: RankRefusal | null;
+  /**
+   * The 4-piece set this piece would complete, when that is why it was refused.
+   *
+   * Carried so the page can offer to calibrate exactly what is missing rather than everything.
+   */
+  needsSet: number | null;
   /**
    * Caveats carried from the recipe these numbers came out of.
    *
@@ -235,10 +251,26 @@ export function rankArtifact(
      * 2,370-artifact inventory `WTF+`.
      */
     mainOnly: number;
+    /**
+     * The recipe the **swapped** build should be evaluated under, when it differs.
+     *
+     * `recipe` stays the build as it stands — that is what `baseline` was measured with, and
+     * the build really does have whatever set bonus it has. This is the state the build would
+     * be *in* with the piece equipped, and the comparison is deliberately across two recipes
+     * because the two builds are genuinely in two different 4-piece states.
+     *
+     * `undefined` means "the same recipe". **`null` means refuse** — the swapped state has no
+     * calibration, and scoring it under the wrong one would credit or omit a whole set bonus
+     * while looking like every other row.
+     */
+    afterSwap?: Recipe | null;
+    /** The set that would need calibrating, when `afterSwap` is `null` because of one. */
+    needsSet?: number | null;
   },
 ): RankedArtifact {
   const shell = {
     id: piece.id,
+    needsSet: null as number | null,
     mainStatQuantity: piece.mainStatQuantity,
     caveats: {
       unstable: recipe.meta?.unstable ?? [],
@@ -255,12 +287,19 @@ export function rankArtifact(
   if (!(model.rollTiers[String(piece.rarity)] ?? []).length) {
     return { ...nothing, refusal: 'noLadders' };
   }
+  if (context.afterSwap === null) {
+    return { ...nothing, refusal: 'needsCalibration', needsSet: context.needsSet ?? null };
+  }
 
   const projection = projectPiece(piece, model) as Projection;
+  // The swapped build is evaluated under the state it would actually be in. `recipe` is still
+  // what `context.baseline` was measured with, which is correct: the build as it stands really
+  // does have whatever set bonus it has.
+  const after = context.afterSwap ?? recipe;
   const at = (stats: StatPool): number => {
     const swapped = [...equipped];
     swapped[slot] = stats;
-    return evaluateRecipe(recipe, candidateStatsFrom(swapped));
+    return evaluateRecipe(after, candidateStatsFrom(swapped));
   };
 
   const current = at(projection.current);
