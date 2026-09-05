@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { ArtifactRow } from './artifacts';
 import { ArtifactsPage, comparator, totalRollValue } from './artifacts';
+import type { RankingRow } from './artifact-ranking.service';
 import { formatStat } from '../../shared/stat-label';
 import { ArtifactsService } from './artifacts.service';
 
@@ -504,7 +505,16 @@ describe('comparator', () => {
   const row = (over: Partial<ArtifactRow>): ArtifactRow => ({
     id: 'x', setName: 'Set', setIcon: null, slot: 'Flower', stars: 5, level: 20,
     mainStat: 'HP', substats: [], equipped: false, setId: 's', mainStatKey: 'hp',
-    slotKey: 'flower', rollValue: 1, ...over,
+    slotKey: 'flower', rollValue: 1, rank: null, ...over,
+  });
+
+  /** A ranked row, with only the fields the orderings read. */
+  const ranked = (over: Partial<RankingRow>): RankingRow => ({
+    id: 'x', mainStatQuantity: 'flat_hp',
+    current: 0, average: 0, best: 0, worst: 0, delta: 0, averageDelta: 0,
+    fraction: 0, grade: 'F', refusal: null,
+    caveats: { unstable: [], staleConversions: [] },
+    slot: 'equip_bracer', setId: null, level: 0, rarity: 5, equipped: false, ...over,
   });
 
   it('orders by roll value, best first', () => {
@@ -533,6 +543,49 @@ describe('comparator', () => {
     ].sort(comparator('rollValue'));
 
     expect(sorted.map((r) => r.id)).toEqual(['high', 'low']);
+  });
+
+  it('orders by expected upgrade value, best first', () => {
+    const sorted = [
+      row({ id: 'meh', rank: ranked({ averageDelta: 10 }) }),
+      row({ id: 'great', rank: ranked({ averageDelta: 900 }) }),
+      row({ id: 'worse', rank: ranked({ averageDelta: -50 }) }),
+    ].sort(comparator('averageDelta'));
+
+    expect(sorted.map((r) => r.id)).toEqual(['great', 'meh', 'worse']);
+  });
+
+  it('sinks an unranked piece rather than floating it above measured ones', () => {
+    // **The one that matters here.** Deltas are signed, so an unranked row treated as zero
+    // would sort *above* every piece that is genuinely a downgrade — presenting an unmeasured
+    // artifact as better than measured ones, which is the opposite of what it knows.
+    const sorted = [
+      row({ id: 'unranked', rank: null }),
+      row({ id: 'downgrade', rank: ranked({ averageDelta: -500 }) }),
+      row({ id: 'upgrade', rank: ranked({ averageDelta: 500 }) }),
+    ].sort(comparator('averageDelta'));
+
+    expect(sorted.map((r) => r.id)).toEqual(['upgrade', 'downgrade', 'unranked']);
+  });
+
+  it('sinks a refused piece too, which carries NaN rather than a number', () => {
+    const sorted = [
+      row({ id: 'refused', rank: ranked({ averageDelta: Number.NaN, refusal: 'noSchedule' }) }),
+      row({ id: 'scored', rank: ranked({ averageDelta: -1 }) }),
+    ].sort(comparator('averageDelta'));
+
+    expect(sorted.map((r) => r.id)).toEqual(['scored', 'refused']);
+  });
+
+  it('offers today and the ceiling as their own orderings', () => {
+    expect([
+      row({ id: 'a', rank: ranked({ delta: 1 }) }),
+      row({ id: 'b', rank: ranked({ delta: 5 }) }),
+    ].sort(comparator('delta')).map((r) => r.id)).toEqual(['b', 'a']);
+    expect([
+      row({ id: 'a', rank: ranked({ best: 1 }) }),
+      row({ id: 'b', rank: ranked({ best: 5 }) }),
+    ].sort(comparator('best')).map((r) => r.id)).toEqual(['b', 'a']);
   });
 
   it('orders by level, rarity and set on their own keys', () => {

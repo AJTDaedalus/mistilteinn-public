@@ -84,25 +84,25 @@ describe('projectPiece', () => {
       // Five rolls over four lines is 1.25 each; mid tier on a 1/2/3/4 ladder is 2.5.
       // Uniform per line, NOT weighted: which line an upgrade enhances is uniform over the
       // four, and only the *creation* draw is weighted.
-      expect(projected.average.crit_dmg).toBeCloseTo(100 + 1.25 * 2.5, 10);
-      expect(projected.average.crit_rate).toBeCloseTo(50 + 1.25 * 2.5, 10);
+      expect(projected.average['crit_dmg']).toBeCloseTo(100 + 1.25 * 2.5, 10);
+      expect(projected.average['crit_rate']).toBeCloseTo(50 + 1.25 * 2.5, 10);
       // The flat ladder is ten times the others, and the same 1.25 rolls apply to it.
-      expect(projected.average.flat_atk).toBeCloseTo(200 + 1.25 * 25, 10);
+      expect(projected.average['flat_atk']).toBeCloseTo(200 + 1.25 * 25, 10);
     });
 
     it('offers one best candidate per line, each with every roll at top tier', () => {
       expect(projected.bestCandidates).toHaveLength(4);
       expect(projected.bestCandidates.every((c) => c.newLine === null)).toBe(true);
       const onCritDmg = projected.bestCandidates.find((c) => c.target === 'crit_dmg')!;
-      expect(onCritDmg.stats.crit_dmg).toBe(100 + 5 * 4);
+      expect(onCritDmg.stats['crit_dmg']).toBe(100 + 5 * 4);
       // Nothing else moved. A candidate that quietly improved another line would make every
       // "best" flattering by the same invisible amount.
-      expect(onCritDmg.stats.crit_rate).toBe(50);
+      expect(onCritDmg.stats['crit_rate']).toBe(50);
     });
 
     it('mirrors the worst case at the bottom tier', () => {
       const onCritDmg = projected.worstCandidates.find((c) => c.target === 'crit_dmg')!;
-      expect(onCritDmg.stats.crit_dmg).toBe(100 + 5 * 1);
+      expect(onCritDmg.stats['crit_dmg']).toBe(100 + 5 * 1);
     });
 
     it('brackets the average between worst and best on every line', () => {
@@ -139,14 +139,14 @@ describe('projectPiece', () => {
         (c) => c.newLine === 'atk_pct' && c.target === 'atk_pct',
       )!;
       // One roll makes the line, the four free ones pile onto it: five top-tier rolls.
-      expect(best.stats.atk_pct).toBe(5 * 4);
+      expect(best.stats['atk_pct']).toBe(5 * 4);
 
       const elsewhere = projected.bestCandidates.find(
         (c) => c.newLine === 'atk_pct' && c.target === 'crit_dmg',
       )!;
       // The line still appears and still costs its roll, even when nothing else lands there.
-      expect(elsewhere.stats.atk_pct).toBe(4);
-      expect(elsewhere.stats.crit_dmg).toBe(100 + 4 * 4);
+      expect(elsewhere.stats['atk_pct']).toBe(4);
+      expect(elsewhere.stats['crit_dmg']).toBe(100 + 4 * 4);
     });
 
     it('enumerates every fourth line crossed with every target', () => {
@@ -161,10 +161,10 @@ describe('projectPiece', () => {
       // creating roll plus its share of the four free ones spread over four lines.
       const expected = (weight: number, mid: number) =>
         (weight / 14) * mid * (1 + 4 / 4);
-      expect(projected.average.atk_pct).toBeCloseTo(expected(4, 2.5), 10);
-      expect(projected.average.flat_hp).toBeCloseTo(expected(6, 2.5), 10);
+      expect(projected.average['atk_pct']).toBeCloseTo(expected(4, 2.5), 10);
+      expect(projected.average['flat_hp']).toBeCloseTo(expected(6, 2.5), 10);
       // Heavier stat, larger expected contribution — the ordering the weights exist to produce.
-      expect(projected.average.flat_hp!).toBeGreaterThan(projected.average.atk_pct!);
+      expect(projected.average['flat_hp']!).toBeGreaterThan(projected.average['atk_pct']!);
     });
 
     it('is worth more than the same piece frozen at three lines', () => {
@@ -177,13 +177,13 @@ describe('projectPiece', () => {
         MODEL,
       )!;
       const projected = projectPiece(threeLiner, MODEL)!;
-      expect(frozen.average.atk_pct ?? 0).toBe(0);
-      expect(projected.average.atk_pct!).toBeGreaterThan(0);
+      expect(frozen.average['atk_pct'] ?? 0).toBe(0);
+      expect(projected.average['atk_pct']!).toBeGreaterThan(0);
       // And the free rolls spread over the lines that exist, not over a hardcoded four. Five
       // rolls over three lines is 5/3 each, not 5/4 — a mutation to the divisor survived every
       // other assertion here, which is why this one is spelled out.
-      expect(frozen.average.crit_dmg).toBeCloseTo(100 + (5 / 3) * 2.5, 10);
-      expect(frozen.average.flat_atk).toBeCloseTo(200 + (5 / 3) * 25, 10);
+      expect(frozen.average['crit_dmg']).toBeCloseTo(100 + (5 / 3) * 2.5, 10);
+      expect(frozen.average['flat_atk']).toBeCloseTo(200 + (5 / 3) * 25, 10);
     });
   });
 
@@ -202,7 +202,7 @@ describe('projectPiece', () => {
       }),
       { ...MODEL, rollTiers: { '3': [{ quantity: 'crit_dmg', values: [1, 2, 3, 4] }] } },
     )!;
-    expect(projected.bestCandidates[0].stats.crit_dmg).toBe(10 + 3 * 4);
+    expect(projected.bestCandidates[0].stats['crit_dmg']).toBe(10 + 3 * 4);
   });
 
   it('skips a line with no ladder rather than treating it as worth zero', () => {
@@ -221,6 +221,6 @@ describe('projectPiece', () => {
       MODEL,
     )!;
     expect(projected.bestCandidates.map((c) => c.target)).toEqual(['crit_dmg']);
-    expect(projected.average.shield_strength).toBe(5);
+    expect(projected.average['shield_strength']).toBe(5);
   });
 });

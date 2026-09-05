@@ -184,6 +184,85 @@
   } @else if (loading()) {
     <p class="muted">Loading…</p>
   } @else {
+    <!-- **Ranking against a build.** The question a player is holding a new drop to ask, on
+         the page they are already on. `AUDIT_fribbels_parity.md` §2 listed a per-piece score
+         as the last thing missing here. -->
+    <section class="rank-panel" aria-labelledby="rank-heading">
+      <h2 id="rank-heading" class="eyebrow">Is this any good?</h2>
+      <div class="rank-panel__controls">
+        <label>
+          <span>Build</span>
+          <select
+            [value]="rankBuildId()"
+            (change)="rankBuildId.set($any($event.target).value)"
+            [disabled]="!!rankProgress()"
+          >
+            <option value="">Choose a build…</option>
+            @for (choice of buildChoices(); track choice.id) {
+              <option [value]="choice.id">{{ choice.label }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
+          <span>Rotation</span>
+          <select
+            [value]="rankRotationId()"
+            (change)="rankRotationId.set($any($event.target).value)"
+            [disabled]="!!rankProgress()"
+          >
+            <option value="">Choose a rotation…</option>
+            @for (choice of rotationChoices(); track choice.id) {
+              <option [value]="choice.id">{{ choice.label }}</option>
+            }
+          </select>
+        </label>
+
+        <button type="button" [disabled]="!canRank()" (click)="rankAgainstBuild()">
+          {{ hasRanking() ? 'Rank again' : 'Rank my artifacts' }}
+        </button>
+      </div>
+
+      @if (rankProgress(); as progress) {
+        <!-- A job with progress, never a request that blocks: a cold calibration is gcsim in
+             this tab. -->
+        <p class="muted" role="status">
+          @if (progress.loading) {
+            Loading the simulator…
+          } @else {
+            Calibrating {{ progress.current }} ({{ progress.done }} of {{ progress.total }})…
+          }
+        </p>
+      }
+
+      @if (rankError(); as message) {
+        <p class="error" role="alert">{{ message }}</p>
+      }
+
+      @if (hasRanking()) {
+        <p class="hint">
+          Scored in each piece's own slot, leaving the other four alone — so every number is
+          <strong>at least</strong> this much. Moving the rest of the build can only do better.
+        </p>
+        @if (rankCaveats().unstable.length) {
+          <p class="warn">
+            The rotation did not run the same way every iteration:
+            {{ rankCaveats().unstable.join(', ') }}. These numbers are less certain than they
+            look.
+          </p>
+        }
+        @if (rankCaveats().staleConversions.length) {
+          <p class="warn">
+            Conversions baked into the calibration that these stats would have moved:
+            {{ rankCaveats().staleConversions.join(', ') }}.
+          </p>
+        }
+        @if (rankCaveat(); as caveat) {
+          <p class="hint">Upgrade odds use published draw weights. {{ caveat }}</p>
+        }
+      }
+    </section>
+
     <div class="filters">
       <button type="button" [class.active]="slotFilter === ''" (click)="filterBySlot('')">
         All
@@ -239,6 +318,13 @@
       <label class="refine__sort">
         <span>Sort</span>
         <select [value]="sortBy()" (change)="narrow(() => sortBy.set($any($event.target).value))">
+          @if (hasRanking()) {
+            <!-- Offered only once there is something to sort by. An ordering that silently
+                 does nothing is worse than an absent one. -->
+            <option value="averageDelta">Upgrade value (expected)</option>
+            <option value="delta">Upgrade value (today)</option>
+            <option value="best">Upgrade value (ceiling)</option>
+          }
           <option value="rollValue">Roll value</option>
           <option value="level">Level</option>
           <option value="stars">Rarity</option>
@@ -327,6 +413,29 @@
               </li>
             }
           </ul>
+
+          @if (row.rank; as rank) {
+            @if (rank.refusal) {
+              <!-- Ranked and honestly unscoreable. Not a zero, and not silence either: a blank
+                   card is indistinguishable from one the ranking never reached. -->
+              <p class="card__rank card__rank--none muted">{{ refusalText(row) }}</p>
+            } @else {
+              <p class="card__rank">
+                <span class="eyebrow">Levelled</span>
+                <span
+                  class="mono card__rank-delta"
+                  [class.up]="rank.averageDelta > 0"
+                  [class.down]="rank.averageDelta < 0"
+                >{{ deltaPercent(row, 'averageDelta') }}</span>
+                <span class="mono muted card__rank-band">
+                  now {{ deltaPercent(row, 'delta') }} · up to {{ deltaPercent(row, 'best') }}
+                </span>
+                <span class="card__rank-grade" [attr.title]="'Against a perfect piece with this main stat'">
+                  {{ rank.grade }}
+                </span>
+              </p>
+            }
+          }
 
           @if (totalRollValue(row); as total) {
             <p class="card__total" title="What this artifact rolled, against the best it could">

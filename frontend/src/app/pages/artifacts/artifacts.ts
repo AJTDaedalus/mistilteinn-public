@@ -13,6 +13,10 @@ import {
   substatReadings,
 } from '../../shared/substat-bars/substat-bars';
 import { CatalogueService } from '../catalogue/catalogue.service';
+import { BuildsService } from '../builds/builds.service';
+import { RotationsService } from '../rotations/rotations.service';
+import { ArtifactRankingService, type RankingRow } from './artifact-ranking.service';
+import { type CalibrationProgress } from '../optimize/recipe-optimize.service';
 import {
   ArtifactsService,
   type ArtifactOptions,
@@ -67,6 +71,12 @@ export interface ArtifactRow {
   /** The piece's total roll value, or null when its rolls could not be decomposed.
    *  Null sorts last rather than as zero — "unknown" is not "worst". */
   rollValue: number | null;
+  /**
+   * What this piece is worth to the build the page was last ranked against, or `null` when it
+   * has not been ranked. `rank.refusal` non-null means it was ranked and honestly could not be
+   * scored — a different state from "no build chosen", and the card says which.
+   */
+  rank: RankingRow | null;
 }
 
 /** How many cards are rendered before "show more", and how many each press adds. */
@@ -87,7 +97,17 @@ const MORE_ROWS = 120;
  */
 const PAGE_SIZES = [120, 300, 600, Infinity] as const;
 
-export type SortKey = 'rollValue' | 'level' | 'set' | 'slot' | 'stars';
+export type SortKey =
+  | 'rollValue' | 'level' | 'set' | 'slot' | 'stars'
+  /** Signed damage change against the build as it stands, with this piece in its slot today. */
+  | 'delta'
+  /** The same, once the remaining rolls land at their expected values. The upgrade queue. */
+  | 'averageDelta'
+  /** The ceiling: what this piece could be worth if every remaining roll went the right way. */
+  | 'best';
+
+/** The three orderings that only mean anything once a build has been ranked against. */
+export const RANK_SORTS: readonly SortKey[] = ['delta', 'averageDelta', 'best'];
 
 /**
  * A piece's total roll value, or null when any substat could not be decomposed.
@@ -108,9 +128,36 @@ export function totalRollValue(
   return total;
 }
 
+/**
+ * Sort by a ranked number, sinking every row that does not have one.
+ *
+ * **A refused or unranked piece is not a bad piece.** Sorting it as zero would bury a real
+ * artifact among the junk, or — worse, on a descending delta — float it above pieces that were
+ * actually measured. `rollValue` already sinks undecomposable pieces for the same reason, and
+ * this is that rule applied to the ranking columns.
+ */
+function byRanked(pick: (row: ArtifactRow) => number | null | undefined) {
+  return (a: ArtifactRow, b: ArtifactRow): number => {
+    const left = pick(a);
+    const right = pick(b);
+    const leftOk = typeof left === 'number' && Number.isFinite(left);
+    const rightOk = typeof right === 'number' && Number.isFinite(right);
+    if (!leftOk && !rightOk) return b.level - a.level;
+    if (!leftOk) return 1;
+    if (!rightOk) return -1;
+    return right - left;
+  };
+}
+
 /** Orderings, each descending in the direction a player cares about. */
 export function comparator(key: SortKey): (a: ArtifactRow, b: ArtifactRow) => number {
   switch (key) {
+    case 'delta':
+      return byRanked((row) => row.rank?.delta);
+    case 'averageDelta':
+      return byRanked((row) => row.rank?.averageDelta);
+    case 'best':
+      return byRanked((row) => row.rank?.best);
     case 'level':
       return (a, b) => b.level - a.level || a.setName.localeCompare(b.setName);
     case 'set':
@@ -220,6 +267,7 @@ export class ArtifactsPage implements OnInit {
     const slots = new Map(opts.slots.map((s) => [s.key, s.display]));
     const stars = new Map(opts.rarities.map((r) => [r.key, r.stars]));
     const setArt = this.setIcons();
+    const ranked = this.ranked();
     return this.artifacts().map((piece) => ({
       id: piece.id,
       setName: piece.set_name ?? 'No set',
@@ -241,6 +289,7 @@ export class ArtifactsPage implements OnInit {
       mainStatKey: piece.main_stat_type,
       slotKey: piece.slot,
       rollValue: totalRollValue(piece.substat_analysis),
+      rank: ranked.get(piece.id) ?? null,
     }));
   });
 
@@ -254,6 +303,39 @@ export class ArtifactsPage implements OnInit {
   protected readonly mainStatFilter = signal('');
   protected readonly equippedFilter = signal<'' | 'yes' | 'no'>('');
   protected readonly sortBy = signal<SortKey>('rollValue');
+
+  // ── Ranking against a build (A.7) ──────────────────────────────────────────
+  //
+  // The picker lives here rather than on /optimize because this is the page a player is on
+  // while holding a new drop. `AUDIT_fribbels_parity.md` §2 lists "a per-piece score" as the
+  // last thing missing from this page, and this is it.
+
+  protected readonly buildChoices = signal<{ id: string; label: string }[]>([]);
+  protected readonly rotationChoices = signal<{ id: string; label: string }[]>([]);
+  protected readonly rankBuildId = signal('');
+  protected readonly rankRotationId = signal('');
+  /** Null when idle. A calibration is ~3.2 s of gcsim and must never block a click. */
+  protected readonly rankProgress = signal<CalibrationProgress | null>(null);
+  protected readonly rankError = signal('');
+  /**
+   * What the last ranking said, keyed by artifact id.
+   *
+   * A map rather than a field written onto each row, because the rows are rebuilt whenever the
+   * inventory reloads and a ranking outlives that. `rows()` reads it back in.
+   */
+  protected readonly ranked = signal<Map<string, RankingRow>>(new Map());
+  /** The build's own damage, so the page can express a delta as a percentage of something. */
+  protected readonly rankBaseline = signal(0);
+  /** Carried from the draw model: these weights are cited, not measured. */
+  protected readonly rankCaveat = signal('');
+  protected readonly rankCaveats = signal<{ unstable: string[]; staleConversions: string[] }>({
+    unstable: [], staleConversions: [],
+  });
+
+  protected readonly canRank = computed(
+    () => !!this.rankBuildId() && !!this.rankRotationId() && !this.rankProgress(),
+  );
+  protected readonly hasRanking = computed(() => this.ranked().size > 0);
 
   /**
    * How many cards are actually put in the DOM.
@@ -364,9 +446,100 @@ export class ArtifactsPage implements OnInit {
 
   private readonly service = inject(ArtifactsService);
   private readonly catalogue = inject(CatalogueService);
+  private readonly buildsService = inject(BuildsService);
+  private readonly rotationsService = inject(RotationsService);
+  private readonly rankingService = inject(ArtifactRankingService);
+
+  /**
+   * Rank every owned piece against the chosen build and rotation.
+   *
+   * **A job with progress, never a request that blocks.** A cold calibration is ~3.2 s of gcsim
+   * in this tab; `RESEARCH_recipe_cost.md` is explicit that anything in this area is a job the
+   * user can walk away from. A warm `recipe-cache.ts` entry — which the user already has if
+   * they have optimized this build — skips it entirely.
+   */
+  protected async rankAgainstBuild(): Promise<void> {
+    if (!this.canRank()) return;
+    this.rankError.set('');
+    this.rankProgress.set({ done: 0, total: 1, current: 'starting', loading: true });
+    try {
+      const result = await this.rankingService.rank({
+        buildId: this.rankBuildId(),
+        rotationId: this.rankRotationId(),
+        onProgress: (progress) => this.rankProgress.set(progress),
+      });
+      this.ranked.set(new Map(result.rows.map((row) => [row.id, row])));
+      this.rankBaseline.set(result.baseline);
+      this.rankCaveat.set(result.weightsCaveat);
+      this.rankCaveats.set(result.caveats);
+      // Sorting by the thing just computed, because leaving the list in roll-value order after
+      // a 3-second job would make the result invisible — the defect this page already shipped
+      // once, with a page-size control eleven screens down.
+      this.narrow(() => this.sortBy.set('averageDelta'));
+    } catch (err) {
+      this.rankError.set(apiErrorMessage(err));
+      this.ranked.set(new Map());
+    } finally {
+      this.rankProgress.set(null);
+    }
+  }
+
+  /** `delta` as a share of the build's own damage — #291's "% gain". */
+  protected deltaPercent(row: ArtifactRow, which: 'delta' | 'averageDelta' | 'best'): string {
+    const base = this.rankBaseline();
+    const rank = row.rank;
+    if (!rank || rank.refusal || !base) return '';
+    const value = which === 'best' ? rank.best - base : rank[which];
+    if (!Number.isFinite(value)) return '';
+    const pct = (value / base) * 100;
+    return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+  }
+
+  /** Why a ranked piece has no number, in words a user can act on. */
+  protected refusalText(row: ArtifactRow): string {
+    switch (row.rank?.refusal) {
+      case 'noSchedule':
+        return 'no upgrade schedule for this rarity and level';
+      case 'noLadders':
+        return 'no roll data for this rarity';
+      default:
+        return '';
+    }
+  }
 
   ngOnInit(): void {
     void this.load();
+    void this.loadRankingChoices();
+  }
+
+  /**
+   * The builds and rotations the ranking picker offers.
+   *
+   * Not awaited by `load` and not inside its `Promise.all`: the inventory is the page, and a
+   * list of cards that will not render until an unrelated endpoint answers is the same mistake
+   * the set art already avoids here.
+   */
+  private async loadRankingChoices(): Promise<void> {
+    try {
+      const [builds, rotations] = await Promise.all([
+        this.buildsService.list(),
+        this.rotationsService.list(),
+      ]);
+      this.buildChoices.set(
+        builds.map((build) => ({
+          id: build.id,
+          label: build.character?.name ? `${build.character.name} — ${build.name}` : build.name,
+        })),
+      );
+      this.rotationChoices.set(
+        rotations.items.map((rotation) => ({ id: rotation.id, label: rotation.name })),
+      );
+    } catch {
+      // Silent by design: the ranking panel simply offers nothing, and the inventory below it
+      // is unaffected. Surfacing this as a page error would make a working page look broken.
+      this.buildChoices.set([]);
+      this.rotationChoices.set([]);
+    }
   }
 
   protected async load(): Promise<void> {

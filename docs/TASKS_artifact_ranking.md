@@ -140,7 +140,7 @@ A.0 is the gate. **One PR per phase**, not per task — five PRs, not seventeen.
 - **Label the bound:** a single-slot delta is a **lower bound** on the pinned re-search (§8.1).
   The number ships as *"at least +N%"*, not as *"+N%"*.
 
-### [ ] A.7 — `/artifacts` gets a build picker and a calibration
+### [x] A.7 — `/artifacts` gets a build picker and a calibration
 - **Do:** OQ-A7. A build/team selector on the inventory page; on selection, resolve the recipe
   through `recipe-cache.ts` and only calibrate what is missing. Calibration is **a job with
   progress, never a request that blocks** — `RESEARCH_recipe_cost.md`'s standing ruling.
@@ -148,7 +148,7 @@ A.0 is the gate. **One PR per phase**, not per task — five PRs, not seventeen.
   progress and can leave. `npm run check:tokens` green. Reuse `shared/{icon,token,element,combobox}`
   rather than deciding again — `FINDINGS_frontend_validation.md`'s lesson.
 
-### [ ] A.8 — The columns: sort, filter, heat shading
+### [~] A.8 — The columns: sort, filter, heat shading
 - **Do:** the five numbers as sortable columns on the existing card/list, heat-shaded so the
   shape reads before the numbers do (`AUDIT_fribbels_handson.md` §2). Respect the existing
   120-piece render cap and "show more" — the page held all 2,370 in the DOM once already.

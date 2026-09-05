@@ -57,6 +57,20 @@ function walk(dir, out = []) {
 const found = (pattern, text) =>
   new Set([...text.matchAll(new RegExp(pattern))].map((m) => m[1]));
 
+/**
+ * Strip comments before scanning.
+ *
+ * A token named in prose is not a token used, and this check flagged one that was: a comment
+ * documenting the historical `var(--accent)` bug — the whole reason this script exists — was
+ * reported as a live undefined token. A checker that punishes writing down the defect it
+ * guards against teaches people to stop writing it down.
+ *
+ * Block comments only, and that is deliberate. `//` in a `.ts` or `.html` file can appear
+ * inside a string or a URL, and stripping to end-of-line there would silently delete real
+ * code from the scan — which fails the other way, by hiding a token that *is* used.
+ */
+const withoutComments = (text) => text.replace(/\/\*[\s\S]*?\*\//g, ' ');
+
 const palette = found(DEFINITION, readFileSync(PALETTE, 'utf8'));
 if (palette.size === 0) {
   console.error(`no tokens parsed from ${PALETTE}; this check would pass vacuously`);
@@ -66,7 +80,7 @@ if (palette.size === 0) {
 const missing = new Map();
 let scanned = 0;
 for (const file of walk(SRC)) {
-  const text = readFileSync(file, 'utf8');
+  const text = withoutComments(readFileSync(file, 'utf8'));
   scanned += 1;
   // A file may define its own. `--element` is set inline by a component and read by its own
   // stylesheet: a local variable, not a palette entry.
