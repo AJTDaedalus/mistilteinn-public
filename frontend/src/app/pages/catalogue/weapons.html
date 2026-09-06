@@ -15,11 +15,13 @@
     />
     <button type="button" (click)="load()">Search</button>
     @if (!list.loading() && !list.error()) {
+      <!-- The noun, not a bare number. This read as an unlabelled `132` floating a thousand
+           pixels from the search box it counts; nothing said what had been counted. -->
       <span class="count muted">
         @if (list.truncated()) {
-          {{ list.items().length }} of {{ list.total() }}
+          {{ list.items().length }} of {{ list.total() }} weapons
         } @else {
-          {{ list.total() }}
+          {{ list.total() }} weapons
         }
       </span>
     }

@@ -6,6 +6,9 @@
      visible in a screenshot, invisible to every test. */
   header {
     display: flex;
+    /* Wraps, so the action buttons drop below the title on a narrow screen rather than
+       squeezing it — "New build" was breaking across two lines to stay on the row. */
+    flex-wrap: wrap;
     align-items: baseline;
     gap: var(--space-3);
     margin-bottom: var(--space-3);
@@ -104,15 +107,15 @@
 /* ── Saved teams, as cards ──────────────────────────────────────────────────
    Wider than a build card because four characters and their gear will not fit a column. The
    audit asks for rows of these; the layout below gives the pane its width back. */
-.team-visions {
-  display: flex;
-  gap: 0.15rem;
+/* The filter row itself is `.chips` in the global sheet now; only its spacing below the
+   reaction select belongs to this page. */
+.chips {
   margin-bottom: var(--space-2);
 }
 
 .party--detailed {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
   gap: var(--space-2);
   width: 100%;
 }

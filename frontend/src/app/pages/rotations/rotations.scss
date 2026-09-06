@@ -6,6 +6,9 @@
 
   header {
     display: flex;
+    /* Wraps, so the action buttons drop below the title on a narrow screen rather than
+       squeezing it — "New build" was breaking across two lines to stay on the row. */
+    flex-wrap: wrap;
     align-items: baseline;
     gap: var(--space-3);
     margin-bottom: 1rem;

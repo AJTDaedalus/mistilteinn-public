@@ -32,7 +32,27 @@
       </div>
     </div>
 
-    <p class="muted count">Showing {{ visible().length }} of {{ total() }}.</p>
+    <!-- The count and the page-size chips on one line, exactly as `/artifacts` draws them:
+         the sentence says how many of how many, and the control beside it is how you change
+         that. This page had only the SHOW MORE button at the bottom of a 6,662px page. -->
+    <div class="count-row">
+      <p class="muted count">Showing {{ visible().length }} of {{ total() }}.</p>
+
+      @if (matching().length > 120) {
+        <div class="chips page-size" role="group" aria-label="How many to show">
+          <span class="page-size__name">Show</span>
+          @for (size of pageSizes; track size) {
+            <button
+              type="button"
+              class="chip chip--text"
+              [class.chip--on]="isPageSize(size)"
+              [attr.aria-pressed]="isPageSize(size)"
+              (click)="setPageSize(size)"
+            >{{ sizeLabel(size) }}</button>
+          }
+        </div>
+      }
+    </div>
 
     <ul class="grid">
       @for (owned of visible(); track owned.id) {

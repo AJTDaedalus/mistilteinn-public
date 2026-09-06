@@ -291,6 +291,81 @@ dialog,
   box-shadow: var(--glow-brass);
 }
 
+// A row of chips, and the text inside one. Both lived only in `builds.scss` while `/teams`
+// drew the same filter with `.vision` and `.vision--on` — **classes with no rule anywhere**,
+// so its six element buttons were unstyled and pressing one produced no pressed state at all.
+// That is the identical failure the comment above records as #272, on a different page, found
+// again because the pattern was owned by a page rather than by the app.
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+.chip__label {
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  line-height: 1.4;
+}
+
+/* "Showing N of M" and the control that changes N, on one line. Global because
+   `/artifacts` had it and `/my-weapons` — the same list, the same cap, the same 6,000px
+   page — did not.
+
+   The count and the page-size control on one line: the sentence says how many of how many,
+   and the chips beside it are how you change that. Separated, the sentence reads as a fact
+   about the page rather than as the label on a control. */
+.count-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.count { margin: 0; }
+
+.page-size {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.page-size__name {
+  font-size: var(--text-xs);
+  color: var(--ink-dim);
+  letter-spacing: 0.06em;
+}
+
+/* The same bordered tile the builds filters use, so "narrow this list" looks like one control
+   across the app rather than being redecided per page. */
+.page-size .chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem var(--space-2);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  background: var(--surface);
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  cursor: pointer;
+  transition:
+    color var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease);
+
+  &:hover { border-color: var(--halo-brass); color: var(--ink); }
+
+  &.chip--on {
+    border-color: var(--brass);
+    color: var(--brass);
+    box-shadow: var(--glow-brass);
+  }
+}
+
 
 // ── Status and emphasis utilities ────────────────────────────────────────────
 //

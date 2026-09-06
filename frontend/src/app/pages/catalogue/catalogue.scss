@@ -12,7 +12,7 @@
 
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr));
     gap: 0.5rem;
     list-style: none;
     padding: 0;
@@ -35,7 +35,7 @@
 /* Sets and enemies carry more per row than a name and two facts, so their grid gets wider
    columns rather than a taller card that clips. */
 .grid.wide {
-  grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr));
 }
 
 .affixes {
@@ -67,11 +67,14 @@
    below it, and a control in a title row reads as decoration. */
 .toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
   margin-bottom: var(--space-4);
 
-  input[type='search'] { flex: 0 1 22rem; }
+  /* `min-width: 0` so the box may shrink below 22rem before the row wraps — without it the
+     search field held the toolbar wider than a phone and pushed the count off the edge. */
+  input[type='search'] { flex: 1 1 22rem; min-width: 0; }
   .count { margin-left: auto; font-size: var(--text-sm); }
 }
 
@@ -82,7 +85,7 @@
    11rem "Cryo" and "Claymore" wrapped onto separate lines on some cards and not others, so
    the row heights went ragged. A card wide enough for what is on it. */
 .catalogue--portraits .grid {
-  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(12rem, 100%), 1fr));
   gap: var(--space-3);
 }
 
@@ -248,7 +251,7 @@
    crops to fill, which on a portrait trims a shoulder and on a polearm cuts the blade off —
    the part that identifies it. */
 .catalogue--weapons .grid {
-  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(10rem, 100%), 1fr));
 }
 
 .catalogue--weapons .card__art {

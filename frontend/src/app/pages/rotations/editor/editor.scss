@@ -188,7 +188,7 @@ label {
   /* A grid rather than a wrapping flex row: with the picker in the wide column the tiles have
      room to line up, and a ragged right edge in the primary surface reads as an afterthought. */
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(9rem, 100%), 1fr));
   gap: var(--space-1);
   margin: var(--space-1) 0 0;
   padding: 0;
