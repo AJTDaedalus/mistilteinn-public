@@ -51,3 +51,11 @@
 
 .account__name { font-size: var(--text-lg); }
 .account__none { font-size: var(--text-sm); }
+
+/* At rest — a state, not a control, so no pointer and no hover. */
+.account__status {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: default;
+}

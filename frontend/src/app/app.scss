@@ -207,13 +207,15 @@
 .shell__nav {
   flex-wrap: wrap;
   row-gap: var(--space-3);
-  /* `flex: 1 1 auto` alone is not enough: a flex item's automatic minimum size is its
-     content, so without `min-width: 0` the nav refuses to go narrower than its widest group
-     and wrapping never gets a chance to happen. */
-  flex: 1 1 auto;
-  min-width: 0;
-
+  /* **Only below `$lap`.** A flex item's automatic minimum size is its content, so without
+     `min-width: 0` the nav refuses to go narrower than its widest group and wrapping never
+     gets a chance to happen. Applied at every width, though, it also made the nav *wider*
+     than its content on a desktop — the two link groups then fitted one row and pushed the
+     identity chip onto its own, changing a layout that was not the problem. Above `$lap` the
+     nav keeps sizing to its content exactly as it did. */
   @media (max-width: bp.$lap) {
+    flex: 1 1 auto;
+    min-width: 0;
     width: 100%;
   }
 }
