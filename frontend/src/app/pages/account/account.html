@@ -15,7 +15,10 @@
         <dd>{{ me.label }}</dd>
       }
       <dt>Status</dt>
-      <dd>{{ me.status }}</dd>
+      <!-- A chip, not bare text. "approved" set in the same weight and colour as an email
+           address reads as another field's value rather than as a state, and the app already
+           has a chip for exactly this. -->
+      <dd><span class="chip account__status" [class.chip--on]="me.status === 'approved'">{{ me.status }}</span></dd>
     </dl>
   }
 

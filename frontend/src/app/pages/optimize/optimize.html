@@ -290,7 +290,7 @@
 
       @if (fourPieceChoices().length) {
         <fieldset class="set-filter">
-          <legend>Artifact Sets</legend>
+          <legend>Artifact sets</legend>
 
           <!-- **Inside the fieldset it is about.** This sat above it, flush to the page edge as
                plain muted body text, so it warned you about sets before you had opened the
@@ -303,8 +303,12 @@
                the line makes a set the user owns four of vanish from the picker, which looks
                exactly like not owning four of it. The fix is a gcsim pin bump, which is its own
                chunk. -->
-          @if (unsimulableSets().length) {
-            <p class="hint set-filter__caveat">
+          <!-- **`.warn`, and only once a set is chosen.** This was `.hint` — plain muted body
+               text, indistinguishable from a caption — and it appeared before you had picked
+               anything, warning about something you had not done. It is a real limitation and
+               it should look like one, at the moment it applies. -->
+          @if (unsimulableSets().length && selectedSets().size) {
+            <p class="warn set-filter__caveat">
               gcsim cannot simulate {{ unsimulableSets().join(', ') }}.
             </p>
           }
@@ -334,10 +338,15 @@
                  seconds each, and nobody would wait for that. "None" undid a selection the
                  picker already clears. -->
             <div class="filter-actions">
-              <span class="muted mono">
-                {{ calibrationCount() }} calibration{{ calibrationCount() === 1 ? '' : 's' }}
+              <!-- **Say what is being counted.** This read as a bare `1 calibration` floating
+                   beside the 2-piece picker, in mono, with nothing saying what a calibration
+                   is or why the number matters. It is the work the search is about to do. -->
+              <span class="muted filter-actions__cost">
+                This search needs
+                <span class="mono">{{ calibrationCount() }}</span>
+                calibration{{ calibrationCount() === 1 ? '' : 's' }}
                 @if (selectedWeapons().size) {
-                  · about {{ estimatedMinutes() }} min
+                  · about <span class="mono">{{ estimatedMinutes() }}</span> min
                 }
               </span>
             </div>

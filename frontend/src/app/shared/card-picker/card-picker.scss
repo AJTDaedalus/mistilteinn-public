@@ -30,6 +30,14 @@
 /* The chosen thing, on the closed control. It is the only place the current choice is
    written, so it is not a caption — reported at `--text-xs` as a team name too small to read
    on the rotations page (#283). */
+/* **The chosen value is data, and the trigger is a `<button>`.** The global button rule sets
+   the display face, wide tracking and `text-transform: uppercase` — right for a label like
+   SAVE CHANGES, wrong for a proper noun. So every picker in the app shouted its selection:
+   `NAHIDA` here while the catalogue, the build card and the team card all say `Nahida`, and
+   on `/account` both spellings sat 100px apart in the same column.
+
+   Reset to the body face on the pill only. The trigger's own chrome — its border, its caret,
+   its placeholder — keeps the button styling it should have. */
 .picker__pill {
   display: inline-flex;
   align-items: center;
@@ -37,7 +45,10 @@
   padding: 0 var(--space-1);
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--brass) 12%, transparent);
+  font-family: var(--font-body);
   font-size: var(--text-sm);
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .picker__caret { margin-left: auto; color: var(--ink-dim); }
@@ -108,7 +119,7 @@
 
 .picker__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(7.5rem, 100%), 1fr));
   gap: var(--space-2);
   list-style: none;
   margin: 0;

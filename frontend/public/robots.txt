@@ -1,0 +1,22 @@
+# mistilteinn is invite only. Every route sits behind `requireApproved`, `/` redirects to
+# `/inventory`, and a signed-out visitor lands on `/login` — so the whole crawlable surface
+# of this site is one login card, and there is nothing here worth a search result.
+#
+# **Crawling is allowed on purpose, and that is not a contradiction.** The instruction that
+# actually keeps this site out of an index is `<meta name="robots" content="noindex">` in
+# index.html. A crawler has to fetch the page to read it. `Disallow: /` would prevent the
+# fetch, the `noindex` would never be seen, and the URL could still be listed — bare, with no
+# description — on the strength of inbound links alone. Allowing the fetch is what makes the
+# noindex effective.
+#
+# Note that production sits behind Cloudflare, which synthesises its own managed robots.txt
+# (content signals, plus a block list of AI crawlers). Whether this file or that one is what
+# `https://mistilteinn.aetherus.dev/robots.txt` actually serves has to be checked against
+# prod after a deploy rather than assumed from this file existing.
+
+User-agent: *
+Allow: /
+
+# No sitemap. There are no public URLs to list, and `/sitemap.xml` currently resolves through
+# the SPA fallback to index.html — HTTP 200, `text/html` — which is the same trap the icons
+# hit: a path that exists and one that does not are distinguishable only by content type.

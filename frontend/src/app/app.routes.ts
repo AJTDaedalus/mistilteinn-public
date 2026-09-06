@@ -5,6 +5,7 @@ import { requireApproved, requirePending, requireUnauthed } from './api/auth.gua
 export const routes: Routes = [
   {
     path: 'login',
+    title: 'Sign in',
     loadComponent: () => import('./pages/auth/login').then((m) => m.LoginPage),
     canMatch: [requireUnauthed],
   },
@@ -14,10 +15,12 @@ export const routes: Routes = [
     // device already, or pending, and every one of those is a legitimate arrival. A
     // `requireUnauthed` here would bounce the exact user the link was sent to.
     path: 'verify',
+    title: 'Verify your email',
     loadComponent: () => import('./pages/auth/verify').then((m) => m.VerifyPage),
   },
   {
     path: 'pending',
+    title: 'Awaiting approval',
     loadComponent: () => import('./pages/auth/pending').then((m) => m.PendingPage),
     canMatch: [requirePending],
   },
@@ -42,17 +45,20 @@ export const routes: Routes = [
     // The first account surface this app has had. The header chip could sign you out and
     // nothing else — your own email appeared only inside it, truncated at 16 characters.
     path: 'account',
+    title: 'Account',
     loadComponent: () => import('./pages/account/account').then((m) => m.AccountPage),
     canMatch: [requireApproved],
   },
   {
     path: 'characters',
+    title: 'Characters',
     loadComponent: () =>
       import('./pages/catalogue/characters').then((m) => m.CharactersPage),
     canMatch: [requireApproved],
   },
   {
     path: 'weapons',
+    title: 'Weapons',
     loadComponent: () => import('./pages/catalogue/weapons').then((m) => m.WeaponsPage),
     canMatch: [requireApproved],
   },
@@ -60,12 +66,14 @@ export const routes: Routes = [
     // **Your** weapons, not the catalogue's. `/weapons` lists all 260 in the game; this lists
     // what the export says you own, with the holder's face on each and equipped ones first.
     path: 'my-weapons',
+    title: 'My weapons',
     loadComponent: () =>
       import('./pages/weapons-inventory/weapons-inventory').then((m) => m.WeaponsInventoryPage),
     canMatch: [requireApproved],
   },
   {
     path: 'artifact-sets',
+    title: 'Artifact sets',
     loadComponent: () =>
       import('./pages/catalogue/artifact-sets').then((m) => m.ArtifactSetsPage),
     canMatch: [requireApproved],
@@ -76,6 +84,7 @@ export const routes: Routes = [
     // only way to tell them apart was to click one. Renaming the label alone would leave a
     // path that disagrees with it.
     path: 'inventory',
+    title: 'Inventory',
     loadComponent: () => import('./pages/artifacts/artifacts').then((m) => m.ArtifactsPage),
     canMatch: [requireApproved],
   },
@@ -89,16 +98,19 @@ export const routes: Routes = [
   },
   {
     path: 'builds',
+    title: 'Builds',
     loadComponent: () => import('./pages/builds/builds').then((m) => m.BuildsPage),
     canMatch: [requireApproved],
   },
   {
     path: 'teams',
+    title: 'Teams',
     loadComponent: () => import('./pages/teams/teams').then((m) => m.TeamsPage),
     canMatch: [requireApproved],
   },
   {
     path: 'optimize',
+    title: 'Optimize',
     loadComponent: () => import('./pages/optimize/optimize').then((m) => m.OptimizePage),
     canMatch: [requireApproved],
   },
@@ -107,11 +119,13 @@ export const routes: Routes = [
     // where the old one explained one hit for one build. `/explain` still resolves so a
     // bookmark does not 404 — a rename that breaks links is a rename that loses readers.
     path: 'calculate',
+    title: 'Calculate',
     loadComponent: () => import('./pages/calculate/calculate').then((m) => m.CalculatePage),
     canMatch: [requireApproved],
   },
   {
     path: 'rotations',
+    title: 'Rotations',
     loadComponent: () => import('./pages/rotations/rotations').then((m) => m.RotationsPage),
     canMatch: [requireApproved],
   },
@@ -122,11 +136,13 @@ export const routes: Routes = [
   },
   {
     path: 'teapot',
+    title: 'Teapot sets',
     loadComponent: () => import('./pages/teapot/teapot').then((m) => m.TeapotPage),
     canMatch: [requireApproved],
   },
   {
     path: 'enemies',
+    title: 'Enemies',
     loadComponent: () => import('./pages/catalogue/enemies').then((m) => m.EnemiesPage),
     canMatch: [requireApproved],
   },

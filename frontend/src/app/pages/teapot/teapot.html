@@ -99,7 +99,7 @@
     <div class="teapot__filters">
       <label>
         <input type="checkbox" [checked]="hideDone()" (change)="hideDone.set(!hideDone())" />
-        hide finished
+        Hide finished
       </label>
       @if (filtering()) {
         <button type="button" class="teapot__clear" (click)="clearFilters()">Clear</button>
@@ -108,6 +108,22 @@
 
     <p class="muted teapot__count">
       Showing {{ visible().length }} of {{ rows().length }} sets.
+    </p>
+
+    <!-- **A key, because the page draws three chip states and explained none of them.** A
+         character you do not own is greyed, italic and has no checkbox — all three are
+         correct and none of them said so, so the grey read as "broken" rather than as
+         "you cannot invite them yet". The states are named here once instead of a tooltip
+         per chip, which is only discoverable by hovering the thing you did not understand. -->
+    <p class="muted teapot__key">
+      <!-- **Its own modifiers, not `chip--completed` / `chip--unowned`.** Reusing the state
+           classes made the key answer to the same selectors as the real chips, so
+           `querySelector('.chip--completed')` found the legend on a page with nothing
+           invited — two specs caught it. The appearance is shared in the stylesheet instead,
+           which is where sharing an appearance belongs. -->
+      <span class="chip teapot__key-chip">Not invited</span>
+      <span class="chip teapot__key-chip teapot__key-chip--invited">Invited</span>
+      <span class="chip teapot__key-chip teapot__key-chip--unowned">You do not have them</span>
     </p>
 
     <ul class="teapot__list">
@@ -124,7 +140,7 @@
                 (change)="toggleBuilt(row)"
                 [attr.aria-label]="'Mark ' + row.name + ' as built'"
               />
-              built
+              Built
             </label>
             <catalogue-icon
               class="teapot__art"

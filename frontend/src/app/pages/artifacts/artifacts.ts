@@ -71,6 +71,8 @@ export interface ArtifactRow {
   mainStat: string;
   substats: ArtifactSubstat[];
   equipped: boolean;
+  /** The character wearing it, when it is equipped. */
+  holder: string | null;
   /** Sort keys, kept beside the display strings so a comparator never re-parses one. */
   setId: string;
   mainStatKey: string;
@@ -279,6 +281,12 @@ export class ArtifactsPage implements OnInit {
     const stars = new Map(opts.rarities.map((r) => [r.key, r.stars]));
     const setArt = this.setIcons();
     const ranked = this.ranked();
+    // build id -> who wears it, for the "Equipped" line on each card.
+    const holders = new Map(
+      this.allBuilds()
+        .filter((build) => build.character?.name)
+        .map((build) => [build.id, build.character!.name] as const),
+    );
     return this.artifacts().map((piece) => ({
       id: piece.id,
       setName: piece.set_name ?? 'No set',
@@ -296,6 +304,10 @@ export class ArtifactsPage implements OnInit {
         (stat, value) => describe(stat, value, stats),
       ),
       equipped: piece.build_id !== null,
+      // **Who is wearing it.** The card said "Equipped" and stopped there, so the one
+      // question that state raises — equipped to whom? — needed a trip to `/builds`. The
+      // builds are already loaded on this page for the ranking picker.
+      holder: holders.get(piece.build_id ?? '') ?? null,
       setId: piece.artifact_set_id ?? '',
       mainStatKey: piece.main_stat_type,
       slotKey: piece.slot,

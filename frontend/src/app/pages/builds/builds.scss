@@ -8,6 +8,9 @@
 
   header {
     display: flex;
+    /* Wraps, so the action buttons drop below the title on a narrow screen rather than
+       squeezing it — "New build" was breaking across two lines to stay on the row. */
+    flex-wrap: wrap;
     align-items: baseline;
     gap: var(--space-3);
     margin-bottom: var(--space-3);
@@ -28,10 +31,22 @@
     align-items: center;
   }
 
+  /* **The inputs have to line up, and they did not.** A `<label>` is inline by default, so
+     each cell placed its input immediately after its own text — "Character level" and
+     "Refinement" are different lengths, so row 1's inputs sat at x=419/616/881 and row 2's at
+     x=390/640. Two columns inside each cell puts every input on the cell's right edge, so the
+     rows agree. */
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
     gap: var(--space-1) var(--space-3);
+
+    > label {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: var(--space-2);
+    }
 
     input { width: 4.5rem; }
   }
@@ -84,12 +99,6 @@
   margin-bottom: var(--space-2);
 }
 
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  align-items: center;
-}
 
 /* **A drawn tile, not a bare glyph.** These were 20px icons with a transparent border at
    opacity 0.5, and the weapon-type row in particular then read as *disabled*: those glyphs are
@@ -135,11 +144,6 @@
   line-height: 1.4;
 }
 
-.chip__label {
-  font-size: var(--text-xs);
-  letter-spacing: 0.06em;
-  line-height: 1.4;
-}
 
 .saved-count {
   margin: 0 0 var(--space-2);
@@ -152,7 +156,7 @@
    the class of defect only looking at the page catches. */
 .saved {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(9.5rem, 100%), 1fr));
   gap: var(--space-2);
   margin: 0;
   padding: 0;
@@ -249,8 +253,12 @@
     border: none;
     border-radius: var(--radius-1);
     background: none;
-    color: var(--ink-faint);
+    /* `--ink-dim`: this deletes a build, and at `--ink-faint` on a portrait it was the
+       least visible thing on the card. */
+    color: var(--ink-dim);
     line-height: 1.2;
+    min-width: 1.5rem;
+    min-height: 1.5rem;
     cursor: pointer;
     transition: opacity var(--t-fast) var(--ease);
 

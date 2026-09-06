@@ -7,6 +7,9 @@
   @if (selectedIcon(); as art) {
     <catalogue-icon class="cb__art" [icon]="art" [alt]="''" [size]="22" />
   }
+  <!-- `aria-controls` **only while the listbox exists.** The popup is rendered on open, so a
+       permanent one pointed at an id that was not in the document — an ARIA reference to
+       nothing, on every collapsed combobox on `/builds`, `/teams` and `/optimize`. -->
   <input
     class="cb__input mono"
     type="text"
@@ -14,7 +17,7 @@
     autocomplete="off"
     [attr.aria-label]="ariaLabel() || null"
     [attr.aria-expanded]="open()"
-    [attr.aria-controls]="listId"
+    [attr.aria-controls]="open() ? listId : null"
     [attr.aria-activedescendant]="activeId()"
     aria-autocomplete="list"
     [value]="displayValue()"

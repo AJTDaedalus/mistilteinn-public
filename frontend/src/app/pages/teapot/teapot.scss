@@ -152,8 +152,16 @@
 }
 
 .chip--available { color: var(--ink); border-color: var(--brass); }
-.chip--completed { color: var(--ink-dim); text-decoration: line-through; }
-.chip--unowned { color: var(--ink-faint); font-style: italic; }
+.chip--completed,
+.teapot__key-chip--invited { color: var(--ink-dim); text-decoration: line-through; }
+/* **`--ink-dim`, not `--ink-faint`.** This chip carries a character's name — content, not
+   decoration — and `--ink-faint` is 3.51:1 on this surface where 4.5 is the floor for text
+   this size. It was the only WCAG contrast failure in the app. The token itself is right as
+   it stands: its own comment calls it "the quietest rung" at 2.8:1 to 3.5:1, which is a fine
+   thing to be and a wrong thing to set a name in. The state still reads at a glance from the
+   italic and the greyed face below, and the key above the list now says what it means. */
+.chip--unowned,
+.teapot__key-chip--unowned { color: var(--ink-dim); font-style: italic; }
 
 /* Finished sets sink rather than disappear — a user has to be able to undo a tick, and that
    means being able to see it. */
@@ -177,3 +185,18 @@
 /* An unowned character is greyed *and* their face is dimmed, so the state survives being
    read at a glance rather than depending on the italic alone. */
 .chip--unowned .chip__face { opacity: 0.45; filter: grayscale(1); }
+
+/* The key above the list. Chips at rest — no pointer, no hover — because these are labels
+   for the states below rather than controls. */
+.teapot__key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+}
+
+.teapot__key-chip {
+  font-size: var(--text-xs);
+  cursor: default;
+}

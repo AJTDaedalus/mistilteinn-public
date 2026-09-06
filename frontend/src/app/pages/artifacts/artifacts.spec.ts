@@ -504,7 +504,7 @@ describe('totalRollValue', () => {
 describe('comparator', () => {
   const row = (over: Partial<ArtifactRow>): ArtifactRow => ({
     id: 'x', setName: 'Set', setIcon: null, slot: 'Flower', stars: 5, level: 20,
-    mainStat: 'HP', substats: [], equipped: false, setId: 's', mainStatKey: 'hp',
+    mainStat: 'HP', substats: [], equipped: false, holder: null, setId: 's', mainStatKey: 'hp',
     slotKey: 'flower', rollValue: 1, rank: null, ...over,
   });
 
