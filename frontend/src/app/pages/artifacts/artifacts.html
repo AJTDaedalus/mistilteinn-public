@@ -418,7 +418,12 @@
                      piece are brass — the same brass a 5-star card is already tinted with —
                      so on the rarity that matters most the one state worth a halo was
                      conveyed by colour alone, and by a colour it shares with its neighbour. -->
-                @if (row.equipped) { <span class="card__worn">· equipped</span> }
+                @if (row.equipped) {
+                  <!-- **Who is wearing it**, not merely that someone is. "Equipped" raised
+                       exactly one question and answered none of it; the holder is a lookup
+                       away from builds this page already has loaded. -->
+                  <span class="card__worn">· {{ row.holder || 'equipped' }}</span>
+                }
               </span>
             </div>
             <catalogue-icon class="card__art" [icon]="row.setIcon" [alt]="''" [size]="72" />
