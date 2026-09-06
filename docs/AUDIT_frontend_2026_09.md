@@ -416,6 +416,42 @@ above — "nothing truncated" — was the check that caught it.
 
 ## Full screenshot audit — 2026-09-06 (second pass)
 
+> **Status: every finding below is addressed, plus SEO, across nine commits.**
+>
+> | finding | what changed |
+> |---|---|
+> | 1 · one `<title>` for 14 routes | a `TitleStrategy`, a title per route, and `page-title.spec.ts` — the guard nothing visual could provide |
+> | 2 · 947px minimum width, no breakpoint | the shell header wraps, `.shell` takes `minmax(0, 1fr)`, twelve grid minimums take `min(Nrem, 100%)`, `h1` clamps. **No overflow on any of 14 routes at 1440, 1024, 768 or 390** |
+> | 3 · four label casings | one `.field-label`, and a stated rule: stacked labels are the uppercase eyebrow, inline labels stay sentence case |
+> | 4 · native and custom controls mixed | `appearance: none` and the app's own chevron. **The selects stay native** — reversing that would reverse a recorded decision that is stronger now the app works on a phone |
+> | 5 · fixes applied to one page not its sibling | `/my-weapons` gets the page-size chips; `/teams`' filters get the shared chip — they were `.vision`/`.vision--on`, **classes with no rule anywhere**, so pressing one showed nothing |
+> | 6 · `/teapot`'s unowned chip | `--ink-dim`, and a key naming all three states. **Zero contrast failures app-wide** |
+> | 7 · `/calculate` says nothing at rest | it says what it does, and what to do next |
+> | 8 · build editor hides SAVE CHANGES | a shared `.editor__foot`, mirroring the head that was already sticky; the field grid lines up; no caret on a disabled picker; the preview card moved under CHARACTER |
+> | 9 · new-team dialog | element chips and the reactions they could produce, as you pick |
+> | 10 · `/enemies` all-alike cards | the value that differs from *that enemy's own* baseline holds its weight, the rest sink |
+> | 11 · catalogue cards stretched | `align-items: start` on the wide grids; the portrait grids stay stretched on purpose |
+> | 12 · smaller items | delete `×` legible and 24px, `aria-controls` bound to `open()`, calibration line says what it counts, gcsim caveat is `.warn` and only once it applies, `/account` status is a chip, main-stat fieldsets align, inventory says **who** wears a piece |
+> | 13 · harness filed Inventory under other names | a signed-out pass, and every route's landing URL checked against the requested one |
+>
+> **Two findings were declined rather than implemented, both because a recorded
+> decision says otherwise and neither had been consulted when the finding was written:**
+> the catalogue's emblem-only filters (owner, 2026-08-31 — "remove the element name and just
+> make the icon bigger"), and converting the native `<select>`s
+> (`FINDINGS_frontend_validation.md` §5). `/builds` and `/teams` carry labels and the
+> catalogue does not, on purpose.
+>
+> **One more was withdrawn during the work**: the checkboxes flagged against the 24x24
+> pointer-target minimum are each wrapped in a `<label>` 98px to 544px wide, which is the
+> real target. A transparent `outline` was tried first to grow the hit area and does nothing
+> at all — an outline takes no part in hit testing.
+>
+> **Also done, from a question asked mid-pass**: link previews. There is no SSR, so a scraper
+> gets `index.html` and nothing else, and a mistilteinn URL unfurled as a naked URL. It now
+> carries description, Open Graph and Twitter tags and a 1200x630 card. `noindex` sits in the
+> page rather than `Disallow: /` in robots.txt, because `Disallow` stops the crawler fetching
+> the page and so stops it ever reading the `noindex`.
+
 Owner: *"do a full screenshot-based audit of the pages for front-end best practices, beauty,
 and user friendliness"* — the same day as the legibility pass above, after it.
 
