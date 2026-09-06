@@ -9,10 +9,20 @@
 # description — on the strength of inbound links alone. Allowing the fetch is what makes the
 # noindex effective.
 #
-# Note that production sits behind Cloudflare, which synthesises its own managed robots.txt
-# (content signals, plus a block list of AI crawlers). Whether this file or that one is what
-# `https://mistilteinn.aetherus.dev/robots.txt` actually serves has to be checked against
-# prod after a deploy rather than assumed from this file existing.
+# **Production does not serve this file, and that was checked rather than assumed.**
+# Measured against prod on 2026-09-06, immediately after the deploy that added it: the
+# response is Cloudflare's own managed robots.txt — the content-signals preamble plus a block
+# list of AI crawlers — and nothing from this repository reaches a visitor.
+#
+# It is kept anyway, and the outcome is still the one intended. Cloudflare's file says
+# `User-agent: * / Allow: /`, which is exactly what the noindex needs: the crawler is
+# permitted to fetch the page, so it reads the `<meta name="robots" content="noindex">` that
+# actually keeps the site out of an index. The two agree by luck rather than by design,
+# though, so changing that Cloudflare setting is the only way to make this file authoritative
+# — a dashboard change, outside this repository.
+#
+# The sentence that stood here said this "has to be checked against prod after a deploy".
+# It has been. Leaving a settled question written as an open one is its own kind of stale.
 
 User-agent: *
 Allow: /
