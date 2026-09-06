@@ -138,6 +138,9 @@
 }
 
 .party__meta {
+  /* Stays at `--text-xs` while the face beside it grew to 44px: at `--text-sm` the column is
+     narrow enough that "Fleuve Cendre Ferryman · R5" ellipsised away its own refinement, and
+     a bigger font that deletes a fact is not more legible. */
   font-size: var(--text-xs);
   color: var(--ink-dim);
   white-space: nowrap;
