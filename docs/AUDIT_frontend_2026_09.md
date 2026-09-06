@@ -446,6 +446,22 @@ above — "nothing truncated" — was the check that caught it.
 > real target. A transparent `outline` was tried first to grow the hit area and does nothing
 > at all — an outline takes no part in hit testing.
 >
+> **Confirmed against prod after the deploy, 2026-09-06**, because two of the notes above
+> were predictions:
+>
+> - the per-route title is live (`Sign in · mistilteinn`), the Open Graph tags and the card
+>   serve, and **there is no horizontal overflow at 1440 or 390 on the live site**;
+> - **Cloudflare's managed robots.txt wins** — the committed one never reaches a visitor. The
+>   intended behaviour still holds, because Cloudflare's file allows the fetch and the
+>   `noindex` in the page does the work, but the two agree by luck rather than by design.
+>   Making the repo's file authoritative is a Cloudflare dashboard change, outside this tree.
+> - **A console error on the live site that is nobody's code here**: Cloudflare injects
+>   `static.cloudflareinsights.com/beacon.min.js`, and the site's own CSP (`script-src 'self'
+>   'wasm-unsafe-eval' https://challenges.cloudflare.com`) blocks it. Cloudflare Web Analytics
+>   is therefore collecting nothing. Either allowlist that host or turn the feature off; a
+>   blocked beacon on every page load is a permanent console error that will be re-diagnosed
+>   by whoever next opens devtools.
+>
 > **Also done, from a question asked mid-pass**: link previews. There is no SSR, so a scraper
 > gets `index.html` and nothing else, and a mistilteinn URL unfurled as a naked URL. It now
 > carries description, Open Graph and Twitter tags and a 1200x630 card. `noindex` sits in the
