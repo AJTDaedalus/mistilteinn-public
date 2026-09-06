@@ -38,7 +38,13 @@ function shell(me: Record<string, unknown> = { label: 'Tester', email: 't@exampl
 
 function renderedShell(): string {
   const el = shell().nativeElement as HTMLElement;
-  return el.querySelector('.shell__nav')?.innerHTML ?? '';
+  // **The header, not `.shell__nav`.** The property these assertions are about is that every
+  // linkable route is reachable from the shell chrome. `/account` is reached through the
+  // identity chip, which now sits beside the brand rather than inside `<nav>` — the header is
+  // two rows that way at every width, instead of three whenever the sign-in email is long.
+  // Scoping to the nav would have made this a test of where the markup puts a link rather
+  // than of whether the link is there.
+  return el.querySelector('.shell__header')?.innerHTML ?? '';
 }
 
 /** Paths that are deliberately not in the nav, and why each one is exempt. */

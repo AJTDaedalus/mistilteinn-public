@@ -47,6 +47,8 @@ export interface OutcomeEstimate {
   /** Damage with the piece exactly as it stands. */
   current: number;
   /** `P(damage > current)` under the Gaussian. Issue #291's number, for every piece. */
+  /** The damage to beat. See `OutcomeDistribution.reference`. */
+  reference: number;
   probabilityOfUpgrade: number;
 }
 
@@ -75,6 +77,12 @@ export function estimateOutcome(
   piece: Piece,
   model: DrawModel,
   evaluate: (stats: StatPool) => number,
+  /**
+   * The damage to beat. Defaults to the piece's own current damage, which asks whether
+   * levelling beats the *same piece unlevelled* — almost always yes, and not the question.
+   * See `OutcomeDistribution.reference`.
+   */
+  reference?: number,
 ): OutcomeEstimate | null {
   const potential = piece.potential;
   if (!potential || potential.rollsRemaining <= 0) return null;
@@ -83,6 +91,7 @@ export function estimateOutcome(
     (model.rollTiers[String(piece.rarity)] ?? []).map((row) => [row.quantity, row.values]),
   );
   const current = evaluate(piece.stats);
+  const bar = reference ?? current;
   const gains = potential.gainsASubstat;
   const free = gains ? Math.max(potential.rollsRemaining - 1, 0) : potential.rollsRemaining;
 
@@ -149,7 +158,8 @@ export function estimateOutcome(
     const sd = Math.sqrt(Math.max(f_cov, 0));
     mean += branch.p * atMean;
     variance += branch.p * (f_cov + atMean * atMean);
-    upgrade += branch.p * (sd > 0 ? 1 - normalCdf((current - atMean) / sd) : (atMean > current ? 1 : 0));
+    upgrade += branch.p
+      * (sd > 0 ? 1 - normalCdf((bar - atMean) / sd) : (atMean > bar ? 1 : 0));
   }
 
   return {
@@ -158,6 +168,7 @@ export function estimateOutcome(
     // them as one Gaussian around a shared mean would understate the spread.
     sd: Math.sqrt(Math.max(variance - mean * mean, 0)),
     current,
+    reference: bar,
     probabilityOfUpgrade: upgrade,
   };
 }

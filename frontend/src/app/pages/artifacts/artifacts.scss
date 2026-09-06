@@ -248,8 +248,19 @@
 }
 
 .card__worn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
   color: var(--brass-hi);
   font-weight: 600;
+}
+
+/* Round, because a character headshot is drawn as one everywhere else in this app and a
+   square crop of a round portrait reads as a mistake. */
+.card__worn-face {
+  border-radius: 50%;
+  overflow: hidden;
+  flex: 0 0 auto;
 }
 
 .card__art {
@@ -649,4 +660,19 @@
 
   .key--current { background: var(--danger); }
   .key--mean { background: var(--mint-hi); }
+}
+
+/* The three deltas, each with its key. Named because bare percentages in a row read as a
+   scale — avg / min / max — and the middle one is the piece's value today, which can sit
+   either side of the third. */
+.card__rank-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.card__rank-key {
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
 }

@@ -187,7 +187,14 @@
     <!-- **Ranking against a build.** The question a player is holding a new drop to ask, on
          the page they are already on. `AUDIT_fribbels_parity.md` §2 listed a per-piece score
          as the last thing missing here. -->
-    <section class="rank-panel" aria-label="Rank artifacts against a build">
+    <!-- **`aria-labelledby`, not `aria-label`.** The panel had the label and drew nothing:
+         a screen reader was told "Rank artifacts against a build" while a sighted reader got
+         a gold box holding two dropdowns, and had to infer the feature from the button. The
+         stylesheet had carried a `.rank-panel h2` rule the whole time for a heading the
+         template never had. Pointing the accessible name at the visible heading means there
+         is one string rather than two that can drift apart. -->
+    <section class="rank-panel" aria-labelledby="rank-panel-title">
+      <h2 id="rank-panel-title">Rank</h2>
       <div class="rank-panel__controls">
         <!-- Rotation first: it names the team, and only that team's four builds can be asked
              about. Offering all of them produced a 422 on a real run. -->
@@ -421,8 +428,25 @@
                 @if (row.equipped) {
                   <!-- **Who is wearing it**, not merely that someone is. "Equipped" raised
                        exactly one question and answered none of it; the holder is a lookup
-                       away from builds this page already has loaded. -->
-                  <span class="card__worn">· {{ row.holder || 'equipped' }}</span>
+                       away from builds this page already has loaded.
+
+                       The face beside the name because that is what a reader scanning a grid
+                       of 120 cards actually recognises — the same argument `entity-token`
+                       makes everywhere else. The name stays: a portrait is never the only
+                       label, which is `element-chip`'s rule too. -->
+                  <span class="card__worn">
+                    ·
+                    @if (row.holderIcon) {
+                      <catalogue-icon
+                        class="card__worn-face"
+                        [icon]="row.holderIcon"
+                        [alt]="''"
+                        [size]="22"
+                        fit="cover"
+                      />
+                    }
+                    {{ row.holder || 'equipped' }}
+                  </span>
                 }
               </span>
             </div>
@@ -460,27 +484,47 @@
                    card is indistinguishable from one the ranking never reached. -->
               <p class="card__rank card__rank--none muted">{{ refusalText(row) }}</p>
             } @else {
-              <p class="card__rank" title="Mean change vs current, once levelled">
+              <!-- **Named, because the middle one is not what it looks like.** These read as
+                   avg / min / max and they are not: the second is the piece's value *today*,
+                   unlevelled, which can sit above or below the third. Three bare percentages
+                   in a row invite the reader to guess a scale, and the guess was wrong. -->
+              <p class="card__rank" title="Change vs the equipped piece">
                 <span class="eyebrow">Levelled</span>
-                <span
-                  class="mono card__rank-delta"
-                  [class.up]="rank.averageDelta > 0"
-                  [class.down]="rank.averageDelta < 0"
-                >{{ deltaPercent(row, 'averageDelta') }}</span>
-                <span
-                  class="mono muted card__rank-band"
-                  [attr.title]="'Now ' + deltaPercent(row, 'delta') + ', ceiling '
-                    + deltaPercent(row, 'best')"
-                >{{ deltaPercent(row, 'delta') }} · {{ deltaPercent(row, 'best') }}</span>
+                <span class="card__rank-stat" title="Expected value once fully levelled">
+                  <span class="card__rank-key">avg</span>
+                  <span
+                    class="mono card__rank-delta"
+                    [class.up]="rank.averageDelta > 0"
+                    [class.down]="rank.averageDelta < 0"
+                  >{{ deltaPercent(row, 'averageDelta') }}</span>
+                </span>
+                <span class="card__rank-stat muted" title="What it is worth as it stands today">
+                  <span class="card__rank-key">now</span>
+                  <span class="mono">{{ deltaPercent(row, 'delta') }}</span>
+                </span>
+                <span class="card__rank-stat muted" title="The best it could possibly roll into">
+                  <span class="card__rank-key">max</span>
+                  <span class="mono">{{ deltaPercent(row, 'best') }}</span>
+                </span>
                 <span class="card__rank-grade" title="Against a perfect piece with this main stat">
                   {{ rank.grade }}
                 </span>
               </p>
 
               @if (rank.upgradeOdds !== null) {
-                <p class="card__rank" title="Chance it beats this piece as it stands, once levelled">
+                <!-- **`~`, because this one is estimated.** The list uses a delta-method
+                     normal approximation so it can price 2,370 pieces; the distribution panel
+                     enumerates every outcome exactly. They agree closely and not exactly —
+                     61% against 58.9% on the card this note was written from — and two
+                     different numbers under one identical label is how that reads as a bug
+                     rather than as the difference between a sketch and a count. -->
+                <p
+                  class="card__rank"
+                  title="Chance it beats the equipped piece, once fully levelled. Estimated —
+                         open the distribution for the exact count."
+                >
                   <span class="eyebrow">Upgrade odds</span>
-                  <span class="mono">{{ (rank.upgradeOdds * 100).toFixed(0) }}%</span>
+                  <span class="mono">~{{ (rank.upgradeOdds * 100).toFixed(0) }}%</span>
                 </p>
               }
 
@@ -495,7 +539,7 @@
                   (click)="showOutcomes(row)"
                 >
                   {{ outcomesRunning() && outcomesId() === row.id
-                     ? 'Enumerating…' : 'What could it become?' }}
+                     ? 'Enumerating…' : 'Upgrade distribution' }}
                 </button>
               }
 
@@ -505,7 +549,7 @@
                 }
                 @if (outcomes(); as found) {
                   <div class="card__outcomes">
-                    <p class="card__outcomes-head" title="Chance it beats this piece as it stands today">
+                    <p class="card__outcomes-head" title="Chance it beats the equipped piece, once fully levelled">
                       <span class="eyebrow">Upgrade odds</span>
                       <span class="mono card__rank-delta" [class.up]="found.probabilityOfUpgrade > 0">
                         {{ (found.probabilityOfUpgrade * 100).toFixed(1) }}%
@@ -521,15 +565,16 @@
                         [attr.aria-label]="
                           'Damage outcomes for this artifact. '
                           + (found.probabilityOfUpgrade * 100).toFixed(1)
-                          + ' percent of them beat it as it stands.'"
+                          + ' percent of them beat the equipped piece.'"
                       >
                         <!-- The shaded mass IS the probability of an upgrade: the number above
                              and this region are the same quantity, so they cannot disagree. -->
                         <path class="chart__upgrade" [attr.d]="chart.upgrade" />
                         <path class="chart__outline" [attr.d]="chart.outline" />
+                        <!-- The bar to clear, where the shading starts. -->
                         <line
                           class="chart__current"
-                          [attr.x1]="chart.currentX" [attr.x2]="chart.currentX"
+                          [attr.x1]="chart.referenceX" [attr.x2]="chart.referenceX"
                           y1="0" y2="100"
                         />
                         <line
@@ -543,9 +588,9 @@
                     <!-- Two keys, no legend sentence: the shaded region needs no gloss once
                          the odds above it are named, and the two verticals do. -->
                     <ul class="card__outcomes-key">
-                      <li title="This piece as it stands">
+                      <li title="The equipped piece — the bar this has to clear">
                         <span class="key key--current"></span>
-                        <span class="mono">{{ relativeTo(found.current) }}</span>
+                        <span class="mono">equipped</span>
                       </li>
                       <li
                         [attr.title]="'Expected once levelled. Point estimate reads '
@@ -582,7 +627,7 @@
                   + 'best 24 pieces per slot, not the whole inventory.'"
                 (click)="diveInto(row)"
               >
-                {{ diveRunning() && diveId() === row.id ? 'Searching…' : 'Best build with this' }}
+                {{ diveRunning() && diveId() === row.id ? 'Searching…' : 'Optimal build' }}
               </button>
 
               @if (diveId() === row.id) {

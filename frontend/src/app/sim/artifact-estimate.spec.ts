@@ -151,3 +151,49 @@ describe('estimateOutcome', () => {
     expect(cheap.mean).toBeCloseTo(exact.mean, 4);
   });
 });
+
+/**
+ * **The bar the probability is measured against.**
+ *
+ * `probabilityOfUpgrade` used the piece's own current damage, which asks whether levelling a
+ * piece beats *the same piece unlevelled* — a question whose answer is nearly always yes,
+ * because levelling adds rolls. A +0 flower reported "upgrade odds 99.9%" beside an expected
+ * gain of +0.2% over the piece actually equipped, and the two looked contradictory because
+ * they were answering different questions. Owner, 2026-09-06: it should be the probability
+ * that the artifact, fully levelled, is an upgrade.
+ */
+describe('the reference the upgrade probability is measured against', () => {
+  it('defaults to the piece itself, where levelling is nearly certain to help', () => {
+    const found = estimateOutcome(piece(), MODEL, linear)!;
+    expect(found.reference).toBeCloseTo(linear(piece().stats), 6);
+    // Every remaining roll adds to a strictly increasing objective, so it cannot get worse.
+    expect(found.probabilityOfUpgrade).toBeGreaterThan(0.99);
+  });
+
+  it('reports near-zero against a bar the piece cannot reach', () => {
+    // A bar far above anything four more rolls could produce.
+    const found = estimateOutcome(piece(), MODEL, linear, 1e6)!;
+    expect(found.reference).toBe(1e6);
+    expect(found.probabilityOfUpgrade).toBeLessThan(0.01);
+  });
+
+  it('reports near-certainty against a bar the piece already clears', () => {
+    const found = estimateOutcome(piece(), MODEL, linear, 0)!;
+    expect(found.probabilityOfUpgrade).toBeGreaterThan(0.99);
+  });
+
+  it('agrees with the exact enumeration on the same bar', () => {
+    // Half way between the piece as it stands and its ceiling — a bar that genuinely splits
+    // the distribution, so a probability of 0 or 1 cannot pass this by accident.
+    const p = piece();
+    const exact = outcomeDistribution(p, MODEL, linear)!;
+    const bar = (exact.bins[0].from + exact.bins[exact.bins.length - 1].to) / 2;
+
+    const cheap = estimateOutcome(p, MODEL, linear, bar)!;
+    const enumerated = outcomeDistribution(p, MODEL, linear, bar)!;
+
+    expect(enumerated.probabilityOfUpgrade).toBeGreaterThan(0.05);
+    expect(enumerated.probabilityOfUpgrade).toBeLessThan(0.95);
+    expect(cheap.probabilityOfUpgrade).toBeCloseTo(enumerated.probabilityOfUpgrade, 1);
+  });
+});
