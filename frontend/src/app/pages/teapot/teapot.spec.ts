@@ -62,7 +62,7 @@ describe('TeapotPage', () => {
     expect(fixture.nativeElement.textContent).toContain('1 to invite');
   });
 
-  it('shows the primogems still on the table', async () => {
+  it('shows the primos still available', async () => {
     suites.mockResolvedValue(read({
       suites: [suite({ remaining: 2, remaining_primogems: 40 })],
       reward_per_character: 20,
@@ -70,7 +70,7 @@ describe('TeapotPage', () => {
     await build();
 
     expect(fixture.nativeElement.textContent).toContain('40');
-    expect(fixture.nativeElement.textContent).toContain('primogems still on the table');
+    expect(fixture.nativeElement.textContent).toContain('primos available');
   });
 
   it('explains a missing reward rather than showing a blank', async () => {
@@ -196,7 +196,10 @@ describe('TeapotPage', () => {
     expect(fixture.nativeElement.textContent).toContain('zzz');
   });
 
-  it('hides sets nobody on your roster favours, by default', async () => {
+  it('lists a set nobody on your roster favours', async () => {
+    // Owner ruling, 2026-09-06: the tick box that hid these is gone and the hiding went with
+    // it. Search has to find every set, so every set is on the page; search and the character
+    // chips are what narrow it now.
     suites.mockResolvedValue(read({
       suites: [suite(), suite({
         suite_id: 's2', name: 'Nobody Wants This',
@@ -204,21 +207,6 @@ describe('TeapotPage', () => {
       })],
     }));
     await build();
-
-    expect(fixture.nativeElement.textContent).not.toContain('Nobody Wants This');
-  });
-
-  it('shows them when asked', async () => {
-    suites.mockResolvedValue(read({
-      suites: [suite({
-        suite_id: 's2', name: 'Nobody Wants This',
-        available: [], completed: [], unowned: ['x'], remaining: 0,
-      })],
-    }));
-    await build();
-
-    fixture.nativeElement.querySelectorAll('.teapot__filters input')[1].click();
-    fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Nobody Wants This');
   });
@@ -368,25 +356,6 @@ describe('TeapotPage', () => {
     fixture.detectChanges();
 
     expect(fixture.componentInstance['filtering']()).toBe(true);
-  });
-
-  it('offers Clear once the unreachable sets are shown, because Clear hides them again', async () => {
-    // The other direction, and the one that loses work: a user who deliberately un-ticked
-    // "hide sets nobody you have favours" gets it silently re-ticked by a button that says
-    // Clear. Either it is a filter — in which case Clear may reset it and must announce it —
-    // or it is not, and Clear must leave it alone.
-    await withRoster();
-
-    fixture.componentInstance['hideUnreachable'].set(false);
-    fixture.detectChanges();
-
-    expect(fixture.componentInstance['filtering']()).toBe(true);
-
-    fixture.componentInstance['clearFilters']();
-    fixture.detectChanges();
-
-    expect(fixture.componentInstance['hideUnreachable']()).toBe(true);
-    expect(fixture.componentInstance['filtering']()).toBe(false);
   });
 
 });
