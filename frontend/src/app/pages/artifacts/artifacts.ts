@@ -6,12 +6,7 @@ import { CardPicker, type CardOption } from '../../shared/card-picker/card-picke
 import { isFilterableMainStat, sortMainStats } from '../../shared/stat-order';
 import { CatalogueIcon } from '../../shared/icon/icon';
 import { describeStat as describe } from '../../shared/stat-label';
-import {
-  barsTitle,
-  rollBars,
-  rollValuePercent,
-  substatReadings,
-} from '../../shared/substat-bars/substat-bars';
+import { SubstatBars, substatReadings } from '../../shared/substat-bars/substat-bars';
 import { CatalogueService } from '../catalogue/catalogue.service';
 import { BuildsService, type BuildRead } from '../builds/builds.service';
 import { RotationsService } from '../rotations/rotations.service';
@@ -218,7 +213,7 @@ export function comparator(key: SortKey): (a: ArtifactRow, b: ArtifactRow) => nu
  */
 @Component({
   selector: 'page-artifacts',
-  imports: [FormsModule, CatalogueIcon, CardPicker],
+  imports: [FormsModule, CatalogueIcon, CardPicker, SubstatBars],
   templateUrl: './artifacts.html',
   styleUrl: './artifacts.scss',
 })
@@ -870,18 +865,6 @@ export class ArtifactsPage implements OnInit {
   protected starList(stars: number): number[] {
     return Array.from({ length: Math.max(0, stars) }, (_, i) => i + 1);
   }
-
-  /**
-   * The bars, the tooltip and the roll-value column all come from `shared/substat-bars`.
-   *
-   * They were defined here first and the optimize page needed the same three (§16). What is
-   * shared is not the markup but **what a bar claims** — an unknown tier is not tier zero, an
-   * estimated count is not a fact, a tie is weaker than an estimate — and a second copy would
-   * have kept the colours and quietly lost the caveats.
-   */
-  protected readonly rollBars = rollBars;
-  protected readonly barsTitle = barsTitle;
-  protected readonly rollValuePercent = rollValuePercent;
 
   /**
    * The piece's roll value as **what it got out of what those rolls could have been**.

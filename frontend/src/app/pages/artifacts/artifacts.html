@@ -461,19 +461,15 @@
 
           <ul class="card__subs">
             @for (sub of row.substats; track $index) {
-              <li class="card__sub">
-                <span class="card__sub-label mono">{{ sub.label }}</span>
-                <!-- One bar per roll, coloured by that roll's tier. A bar of unknown tier
-                     (`-1`) renders neutral: "worst roll" and "we do not know which roll"
-                     are different claims. Nothing at all when even the count is unsettled. -->
-                <span class="card__bars" [attr.title]="barsTitle(sub)">
-                  @for (tier of rollBars(sub); track $index) {
-                    <i class="bar" [attr.data-tier]="tier"></i>
-                  }
-                </span>
-                <span class="card__rv mono">
-                  @if (rollValuePercent(sub); as rv) { {{ rv }}% } @else { — }
-                </span>
+              <!-- **`shared/substat-bars`, not a fourth hand-rolled copy.** This page drew
+                   its own bars and its own three-column row, byte-identical to the shared
+                   component's — which that component's own docstring says it was extracted to
+                   prevent. The copies had already drifted apart in the way that matters: a
+                   fix to how a roll is drawn changed the optimize cards and left the
+                   inventory, which is the surface anyone actually compares against Genshin
+                   Optimizer, untouched. -->
+              <li>
+                <substat-bars [sub]="sub" />
               </li>
             }
           </ul>
