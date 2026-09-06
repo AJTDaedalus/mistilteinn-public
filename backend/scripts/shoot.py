@@ -39,6 +39,11 @@ import asyncio
 import json
 import re
 from pathlib import Path
+from typing import TYPE_CHECKING
+from urllib.parse import urlparse
+
+if TYPE_CHECKING:  # pragma: no cover — playwright is an optional dependency, see `shoot`
+    from playwright.async_api import Browser, Page
 
 import httpx
 
@@ -106,6 +111,17 @@ def _routes() -> tuple[str, ...]:
 
 
 ROUTES = _routes()
+
+#: Routes whose guards bounce an *authenticated* caller somewhere else.
+#:
+#: `login.png` and `pending.png` were byte-identical photographs of `/inventory`, because the
+#: harness signs in and these three redirect for a signed-in session. That is precisely the
+#: fault `_routes()` above exists to prevent — "a visual harness that silently photographs the
+#: wrong page is worse than one that errors" — reported by an audit and left standing.
+#:
+#: These are shot in a second browser context with no token, which is the only state in which
+#: they are the page they are named after.
+SIGNED_OUT = ("/login", "/verify", "/pending")
 
 VIEWPORT = {"width": 1440, "height": 1000}
 
@@ -220,6 +236,62 @@ async def _seed(client: httpx.AsyncClient, token: str) -> None:
     print(f"seeded from {export.name}: {body['inserted']} artifacts, {built} builds")
 
 
+def _watch(page: Page, errors: list[str]) -> None:
+    """Collect page errors, failed responses and console errors into `errors`.
+
+    Registered **once per page**, appending into a list the caller clears per route.
+    Registering inside the route loop bound `errors` late, so every listener wrote into
+    whichever list the last iteration had made, and route three reported route one's errors.
+    """
+    page.on("pageerror", lambda exc: errors.append(str(exc)))
+    # A bare "Failed to load resource: 404" names nothing, and on a 150-card grid the
+    # question is always *which* one. The console message genuinely does not carry the
+    # URL, so it is taken from the response instead.
+    page.on(
+        "response",
+        lambda r: errors.append(f"HTTP {r.status} {r.url}") if r.status >= _HTTP_ERROR else None,
+    )
+    page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
+
+
+async def _shoot_signed_out(
+    browser: Browser, routes: tuple[str, ...], *, full_page: bool,
+) -> int:
+    """Shoot the auth screens in a context with no token. Returns the console-error count.
+
+    Everything else in this harness runs signed in, and these routes redirect for an
+    authenticated session — which is how `login.png` and `pending.png` came to be two
+    byte-identical photographs of `/inventory`, filed under the names of pages nobody had
+    looked at. Signed out is the only state in which they are the page they are named after.
+    """
+    wanted = [r for r in routes if r in SIGNED_OUT]
+    if not wanted:
+        return 0
+
+    broken = 0
+    context = await browser.new_context(viewport=VIEWPORT)
+    page = await context.new_page()
+    errors: list[str] = []
+    _watch(page, errors)
+
+    for route in wanted:
+        errors.clear()
+        await page.goto(f"{FRONTEND}{route}", wait_until="networkidle")
+        landed = urlparse(page.url).path or "/"
+        if landed.rstrip("/") != route.rstrip("/"):
+            print(f"{route:16} -> REDIRECTED to {landed} signed out; not shot")
+            continue
+        name = (route.strip("/") or "landing").replace("/", "-")
+        await page.screenshot(path=str(OUT / f"{name}.png"), full_page=full_page, timeout=90_000)
+        flag = f"  [{len(errors)} console error(s)]" if errors else ""
+        if errors:
+            broken += 1
+        print(f"{route:16} -> screenshots/{name}.png  [signed out]{flag}")
+
+    await context.close()
+    return broken
+
+
 async def shoot(routes: tuple[str, ...], *, seed: bool, full_page: bool) -> int:
     """Screenshot each route. Returns the number of pages that logged a console error."""
     _refuse_remote()
@@ -258,24 +330,21 @@ async def shoot(routes: tuple[str, ...], *, seed: bool, full_page: bool) -> int:
         # iteration had made — and removing them with a fresh lambda removed nothing, since
         # Playwright matches listeners by identity. Route three reported route one's errors.
         errors: list[str] = []
-        page.on("pageerror", lambda exc: errors.append(str(exc)))
-        # A bare "Failed to load resource: 404" names nothing, and on a 150-card grid the
-        # question is always *which* one. The console message genuinely does not carry the
-        # URL, so it is taken from the response instead.
-        page.on(
-            "response",
-            lambda r: errors.append(f"HTTP {r.status} {r.url}")
-            if r.status >= _HTTP_ERROR
-            else None,
-        )
-        page.on(
-            "console",
-            lambda msg: errors.append(msg.text) if msg.type == "error" else None,
-        )
+        _watch(page, errors)
 
         for route in routes:
+            if route in SIGNED_OUT:
+                continue  # shot below, without a token
             errors.clear()
             await page.goto(f"{FRONTEND}{route}", wait_until="networkidle")
+            # **Where it landed, not where it was sent.** A guard or a `redirectTo` can move
+            # the browser somewhere else, and the picture is then of a page under another
+            # page's name — the whole defect `_routes()` guards against, arriving by a route
+            # `_routes()` cannot see because the redirect happens at run time.
+            landed = urlparse(page.url).path or "/"
+            if landed.rstrip("/") != route.rstrip("/"):
+                print(f"{route:16} -> REDIRECTED to {landed}; not shot")
+                continue
             name = (route.strip("/") or "landing").replace("/", "-")
             # **One slow page must not end the run.** A full-page shot of `/artifacts` — 2,370
             # rows, tens of thousands of pixels tall — exceeds Playwright's 30s default, and
@@ -317,6 +386,8 @@ async def shoot(routes: tuple[str, ...], *, seed: bool, full_page: bool) -> int:
             for message in dict.fromkeys(errors):
                 first = message.strip().splitlines()[0]
                 print(f"{'':16}    ! {first[:160]}")
+
+        broken += await _shoot_signed_out(browser, routes, full_page=full_page)
 
         await browser.close()
     return broken

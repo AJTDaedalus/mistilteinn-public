@@ -2,6 +2,9 @@
 
 .login-wrap {
   display: flex;
+  /* A column, since the pitch sits *above* the card rather than beside it — as a row, the
+     two became side-by-side halves of the viewport. */
+  flex-direction: column;
   justify-content: center;
   // Centred, not pinned to the top. `.shell` is a `100vh` grid whose main row takes the
   // `1fr`, so a card anchored at `flex-start` sat under the header with the rest of the
@@ -202,4 +205,13 @@
   cursor: pointer;
 
   &:hover { color: var(--brass-hi); box-shadow: none; }
+}
+
+/* Above the card, bounded to a reading measure and centred with it. */
+.login-pitch {
+  max-width: 32rem;
+  margin: 0 auto var(--space-6);
+  text-align: center;
+  color: var(--ink-dim);
+  line-height: 1.6;
 }
