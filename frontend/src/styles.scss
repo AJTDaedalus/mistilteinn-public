@@ -126,6 +126,34 @@ textarea {
   }
 }
 
+/* **The closed control, not the picker.** The box above already matched the house style, so
+   the thing that still made a `<select>` read as a different product beside a `card-picker`
+   was the platform's own chevron — a grey OS triangle next to the app's `▾`. `appearance:
+   none` replaces the drawn control and leaves the *dropdown* entirely alone: tapping one
+   still opens the native sheet, which is the whole reason these were never converted to
+   comboboxes (`docs/FINDINGS_frontend_validation.md` §5 — "a native `<select>` is better on
+   a phone than anything hand-rolled"). That decision stands; this is only about how the
+   control looks while it is shut.
+
+   The chevron's colour is a literal because a `data:` URI resolves no custom properties —
+   the same exception, for the same reason, that `public/favicon.svg` records. It is
+   `--ink-dim`, and `check:tokens` cannot see it, so it is named here: **#a9acc2**. */
+select {
+  appearance: none;
+  padding-right: var(--space-8);
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%23a9acc2' d='M1 1.5 6 6.5l5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+  background-size: 0.6rem;
+
+  /* A dark page and a light OS menu: the options are drawn by the platform, and only these
+     two properties reach them. */
+  option {
+    color: var(--ink);
+    background: var(--bg);
+  }
+}
+
 /* **Drawn, not left to the platform.** `accent-color` only tints the *checked* state, so an
    unchecked box stayed a bright white square on a dark panel — the single lightest thing on
    the page, and on `/optimize` it drew the eye harder than the search button. These are drawn
@@ -317,6 +345,24 @@ dialog,
   font-size: var(--text-xs);
   letter-spacing: 0.06em;
   line-height: 1.4;
+}
+
+/* **The small label that sits above a control**, defined once.
+   `.picker__label`, `.refine label span`, `.rank-panel__controls label span` and two
+   different `legend` rules on `/optimize` were five copies of this, and they had drifted into
+   four casings — `TEAM` beside `Rotation` beside `Artifact Sets` beside `built`.
+
+   The rule the app follows now, and the reason this is a class rather than a blanket
+   `label span`: **a label stacked above its control is this; a label sitting inline beside
+   one stays sentence case.** "Character level [70]" reads as a sentence and should; "SET"
+   over a dropdown is an eyebrow. Uppercasing the inline ones would make the build editor
+   harder to read, not more consistent. */
+.field-label {
+  display: block;
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
 }
 
 /* "Showing N of M" and the control that changes N, on one line. Global because

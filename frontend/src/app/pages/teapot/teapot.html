@@ -99,7 +99,7 @@
     <div class="teapot__filters">
       <label>
         <input type="checkbox" [checked]="hideDone()" (change)="hideDone.set(!hideDone())" />
-        hide finished
+        Hide finished
       </label>
       @if (filtering()) {
         <button type="button" class="teapot__clear" (click)="clearFilters()">Clear</button>
@@ -140,7 +140,7 @@
                 (change)="toggleBuilt(row)"
                 [attr.aria-label]="'Mark ' + row.name + ' as built'"
               />
-              built
+              Built
             </label>
             <catalogue-icon
               class="teapot__art"

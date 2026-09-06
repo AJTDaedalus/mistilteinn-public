@@ -440,6 +440,15 @@
   gap: var(--space-3);
   align-items: flex-end;
 
+  /* The same eyebrow `.refine` uses directly below it. "Rotation" and "Character" were
+     sentence case, sitting two rows above "SET", "MAIN STAT", "EQUIPPED" and "SORT". */
+  label span {
+    font-size: var(--text-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+
   label {
     display: flex;
     flex-direction: column;
