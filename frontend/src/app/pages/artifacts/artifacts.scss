@@ -551,29 +551,22 @@
   font-family: var(--font-body);
 }
 
-/* The draw-weight caveat, collapsed. The claim is always visible; the argument behind it is a
- * paragraph and belongs behind a disclosure. */
+/* The draw-weight caveat as a mark rather than a paragraph. */
 .rank-panel__caveat {
   margin-top: var(--space-2);
-  color: var(--ink-dim);
+  color: var(--ink-faint);
   font-family: var(--font-body);
-
-  summary {
-    cursor: pointer;
-  }
-
-  p {
-    margin: var(--space-1) 0 0;
-  }
+  font-size: 0.8em;
+  text-decoration: underline dotted;
+  cursor: help;
 }
 
-/* The on-demand calibration offer (OQ-A8). */
+/* The on-demand calibration offer (OQ-A8): a label and the chips, nothing else. */
 .rank-panel__sets {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
   margin-top: var(--space-2);
-
-  .chips {
-    margin-top: var(--space-1);
-  }
 }
 
 /* The two questions a card can be asked. **Distinct classes on purpose**: they were briefly
@@ -597,9 +590,11 @@
 }
 
 .card__dive-gain {
-  strong {
-    font-family: var(--font-display);
+  display: flex;
+  gap: var(--space-1);
+  align-items: baseline;
 
+  strong {
     &.up { color: var(--mint-hi); }
     &.down { color: var(--danger); }
   }
@@ -663,6 +658,12 @@
   }
 }
 
+.card__outcomes-count {
+  display: flex;
+  gap: var(--space-1);
+  align-items: baseline;
+}
+
 .card__outcomes-key {
   display: flex;
   flex-wrap: wrap;
@@ -687,5 +688,4 @@
 
   .key--current { background: var(--danger); }
   .key--mean { background: var(--mint-hi); }
-  .key--fill { background: var(--mint); opacity: 0.55; }
 }

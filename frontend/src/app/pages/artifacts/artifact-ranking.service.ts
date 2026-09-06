@@ -31,7 +31,11 @@ import { Injectable, inject } from '@angular/core';
 
 import { type StatPool, scoreForSlot } from '../../sim/artifact-score';
 import { type DrawModel, type Piece, projectPiece } from '../../sim/artifact-projection';
-import { type OutcomeDistribution, outcomeDistribution } from '../../sim/artifact-outcome';
+import {
+  type OutcomeDistribution,
+  outcomeDistributionAsync,
+} from '../../sim/artifact-outcome';
+import { estimateOutcome } from '../../sim/artifact-estimate';
 import { type RankedArtifact, idealFor, rankArtifact } from '../../sim/artifact-ranking';
 import { evaluateRecipe } from '../../sim/recipe-eval';
 import { candidateStatsFrom } from '../../sim/recipe-search';
@@ -57,6 +61,15 @@ export interface RankingRow extends RankedArtifact {
   rarity: number;
   /** True when this piece is one of the five the build is wearing right now. */
   equipped: boolean;
+  /**
+   * `P(this piece at max level beats itself as it stands)`, from the cheap Gaussian pass.
+   *
+   * **Issue #291's sentence, for every piece rather than on click.** Genshin Optimizer ships
+   * exactly this shape — a delta-method estimate for the whole list, with the exact enumeration
+   * reserved for the candidate on screen — and `RESEARCH_genshin_optimizer_scoring.md` §1 named
+   * it as the pattern to copy. `null` for a piece with nothing left to roll.
+   */
+  upgradeOdds: number | null;
   /**
    * Substat rolls still to come. Zero means the four projections are necessarily identical.
    *
@@ -373,6 +386,11 @@ export class ArtifactRankingService {
         rarity: candidate.rarity,
         equipped: wornIds.has(candidate.id),
         rollsRemaining: candidate.potential?.rolls_remaining ?? 0,
+        upgradeOdds: estimateOutcome(piece, model, (stats) => {
+          const swapped = [...equipped];
+          swapped[slot] = stats;
+          return evaluateRecipe(recipe, candidateStatsFrom(swapped));
+        })?.probabilityOfUpgrade ?? null,
       });
     }
 
@@ -404,7 +422,11 @@ export class ArtifactRankingService {
    * the wrong build.
    */
   async outcomesFor(
-    request: RankingRequest & { artifactId: string },
+    request: RankingRequest & {
+      artifactId: string;
+      /** Aborts the walk — the caller passes a check that flips when the user pages away. */
+      shouldCancel?: () => boolean;
+    },
   ): Promise<OutcomeDistribution | null> {
     const snapshot = await this.optimize.inventory();
     const raw = snapshot.draw_model;
@@ -442,11 +464,19 @@ export class ArtifactRankingService {
     const slot = SLOTS.indexOf(target.slot as (typeof SLOTS)[number]);
     if (slot < 0) return null;
 
-    return outcomeDistribution(pieceOf(target), model, (stats) => {
-      const swapped = [...equipped];
-      swapped[slot] = stats;
-      return evaluateRecipe(recipe, candidateStatsFrom(swapped));
-    });
+    // **Chunked, not synchronous.** The blocking version froze the page for about a second on
+    // a +0 five-star — the defect `BACKLOG_frontend.md` §12 records and #175 already fixed once
+    // for the single-hit search.
+    return outcomeDistributionAsync(
+      pieceOf(target),
+      model,
+      (stats) => {
+        const swapped = [...equipped];
+        swapped[slot] = stats;
+        return evaluateRecipe(recipe, candidateStatsFrom(swapped));
+      },
+      { shouldCancel: request.shouldCancel },
+    );
   }
 
   /**

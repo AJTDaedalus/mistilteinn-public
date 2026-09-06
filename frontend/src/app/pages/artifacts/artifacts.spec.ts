@@ -515,7 +515,7 @@ describe('comparator', () => {
     fraction: 0, grade: 'F', refusal: null,
     caveats: { unstable: [], staleConversions: [] },
     slot: 'equip_bracer', setId: null, level: 0, rarity: 5, equipped: false,
-    rollsRemaining: 5, needsSet: null, ...over,
+    rollsRemaining: 5, needsSet: null, upgradeOdds: 0.5, ...over,
   });
 
   it('orders by roll value, best first', () => {
@@ -576,6 +576,18 @@ describe('comparator', () => {
     ].sort(comparator('averageDelta'));
 
     expect(sorted.map((r) => r.id)).toEqual(['scored', 'refused']);
+  });
+
+  it('orders by upgrade odds, which is #291\'s own sentence', () => {
+    const sorted = [
+      row({ id: 'unlikely', rank: ranked({ upgradeOdds: 0.12 }) }),
+      row({ id: 'likely', rank: ranked({ upgradeOdds: 0.83 }) }),
+      row({ id: 'maxed', rank: ranked({ upgradeOdds: null }) }),
+    ].sort(comparator('odds'));
+
+    // A maxed piece has no odds — it sinks rather than sorting as zero, which would put it
+    // among the worst pieces owned rather than outside the question.
+    expect(sorted.map((r) => r.id)).toEqual(['likely', 'unlikely', 'maxed']);
   });
 
   it('offers today and the ceiling as their own orderings', () => {

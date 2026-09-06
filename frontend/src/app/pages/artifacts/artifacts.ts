@@ -111,10 +111,12 @@ export type SortKey =
   /** The same, once the remaining rolls land at their expected values. The upgrade queue. */
   | 'averageDelta'
   /** The ceiling: what this piece could be worth if every remaining roll went the right way. */
-  | 'best';
+  | 'best'
+  /** Probability it beats itself once levelled — #291's own sentence, per piece. */
+  | 'odds';
 
 /** The three orderings that only mean anything once a build has been ranked against. */
-export const RANK_SORTS: readonly SortKey[] = ['delta', 'averageDelta', 'best'];
+export const RANK_SORTS: readonly SortKey[] = ['odds', 'delta', 'averageDelta', 'best'];
 
 /**
  * A piece's total roll value, or null when any substat could not be decomposed.
@@ -165,6 +167,8 @@ export function comparator(key: SortKey): (a: ArtifactRow, b: ArtifactRow) => nu
       return byRanked((row) => row.rank?.averageDelta);
     case 'best':
       return byRanked((row) => row.rank?.best);
+    case 'odds':
+      return byRanked((row) => row.rank?.upgradeOdds);
     case 'level':
       return (a, b) => b.level - a.level || a.setName.localeCompare(b.setName);
     case 'set':
@@ -696,6 +700,9 @@ export class ArtifactsPage implements OnInit {
         rotationId: this.rankRotationId(),
         artifactId: row.id,
         extraSets: this.extraSets(),
+        // Paging away, or asking about another piece, aborts the walk rather than leaving it
+        // to finish into a panel nobody is looking at.
+        shouldCancel: () => this.outcomesId() !== row.id,
       }));
     } catch (err) {
       this.outcomesError.set(apiErrorMessage(err));

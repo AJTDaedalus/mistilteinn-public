@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { DrawModel, Piece } from './artifact-projection';
 import { projectPiece } from './artifact-projection';
-import { outcomeDistribution } from './artifact-outcome';
+import { outcomeDistribution, outcomeDistributionAsync } from './artifact-outcome';
 
 /**
  * `TASKS_artifact_ranking.md` A.14 — the distribution over damage, and the identity that checks
@@ -184,5 +184,56 @@ describe('outcomeDistribution', () => {
       expect(wider.outcomes).toBeGreaterThan(narrow.outcomes);
       expect(wider.bins.reduce((a, b) => a + b.p, 0)).toBeCloseTo(1, 10);
     });
+  });
+});
+
+
+describe('outcomeDistributionAsync', () => {
+  /**
+   * The chunked pass exists so the page does not freeze — it must not also be a second model.
+   * These pin it to the synchronous one it delegates to.
+   */
+
+  it('agrees with the synchronous walk on a four-line piece', async () => {
+    const p = piece();
+    const sync = outcomeDistribution(p, MODEL, linear)!;
+    const async_ = (await outcomeDistributionAsync(p, MODEL, linear))!;
+    expect(async_.mean).toBeCloseTo(sync.mean, 9);
+    expect(async_.probabilityOfUpgrade).toBeCloseTo(sync.probabilityOfUpgrade, 9);
+    expect(async_.outcomes).toBe(sync.outcomes);
+  });
+
+  it('agrees on a three-liner, where it splits the walk per candidate line', async () => {
+    // **The case that could silently drift.** The async pass narrows the pool to one line at a
+    // time and reapplies the weight itself; getting that wrong would still produce a plausible
+    // distribution that no longer sums the mixture correctly.
+    const threeLiner = piece({
+      stats: { atk_pct: 0.466, crit_rate: 0.039, crit_dmg: 0.078 },
+      potential: {
+        rollsRemaining: 3, rollsTotal: 5, gainsASubstat: true,
+        substatQuantities: ['crit_rate', 'crit_dmg'],
+      },
+    });
+    const sync = outcomeDistribution(threeLiner, MODEL, linear)!;
+    const async_ = (await outcomeDistributionAsync(threeLiner, MODEL, linear))!;
+    expect(async_.mean).toBeCloseTo(sync.mean, 6);
+    expect(async_.probabilityOfUpgrade).toBeCloseTo(sync.probabilityOfUpgrade, 6);
+    expect(async_.bins.reduce((a, b) => a + b.p, 0)).toBeCloseTo(1, 9);
+  });
+
+  it('stops when told to, and reports nothing rather than a partial answer', async () => {
+    const found = await outcomeDistributionAsync(piece(), MODEL, linear, {
+      shouldCancel: () => true,
+    });
+    // Null, not a truncated distribution: half an enumeration is not a probability model.
+    expect(found).toBeNull();
+  });
+
+  it('reports progress per candidate line', async () => {
+    const seen: number[] = [];
+    await outcomeDistributionAsync(piece(), MODEL, linear, {
+      onProgress: (done, total) => seen.push(done / total),
+    });
+    expect(seen.at(-1)).toBe(1);
   });
 });

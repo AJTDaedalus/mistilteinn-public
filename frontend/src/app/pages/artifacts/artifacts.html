@@ -187,8 +187,7 @@
     <!-- **Ranking against a build.** The question a player is holding a new drop to ask, on
          the page they are already on. `AUDIT_fribbels_parity.md` §2 listed a per-piece score
          as the last thing missing here. -->
-    <section class="rank-panel" aria-labelledby="rank-heading">
-      <h2 id="rank-heading" class="eyebrow">Is this any good?</h2>
+    <section class="rank-panel" aria-label="Rank artifacts against a build">
       <div class="rank-panel__controls">
         <!-- Rotation first: it names the team, and only that team's four builds can be asked
              about. Offering all of them produced a 422 on a real run. -->
@@ -244,39 +243,37 @@
       }
 
       @if (hasRanking()) {
-        <label class="rank-panel__only">
+        <label
+          class="rank-panel__only"
+          title="Hide pieces with no upgrades left, the way Genshin Optimizer's level filter does"
+        >
           <input
             type="checkbox"
             [checked]="upgradableOnly()"
             (change)="narrow(() => upgradableOnly.set($any($event.target).checked))"
           />
-          <span>Only pieces that can still be levelled</span>
+          <span>Upgradable</span>
         </label>
-        <p class="hint">
-          Scored in each piece's own slot, leaving the other four alone — so every number is
-          <strong>at least</strong> this much. Moving the rest of the build can only do better.
-        </p>
         @if (rankCaveats().unstable.length) {
-          <p class="warn">
-            The rotation did not run the same way every iteration:
-            {{ rankCaveats().unstable.join(', ') }}. These numbers are less certain than they
-            look.
+          <p class="warn" title="The rotation did not run the same way every iteration, so these numbers are less certain than they look">
+            <span class="eyebrow">Unstable</span>
+            <span class="mono">{{ rankCaveats().unstable.join(', ') }}</span>
           </p>
         }
         @if (rankCaveats().staleConversions.length) {
-          <p class="warn">
-            Conversions baked into the calibration that these stats would have moved:
-            {{ rankCaveats().staleConversions.join(', ') }}.
+          <p class="warn" title="Conversions baked into the calibration that these stats would have moved">
+            <span class="eyebrow">Stale</span>
+            <span class="mono">{{ rankCaveats().staleConversions.join(', ') }}</span>
           </p>
         }
         @if (uncalibratedSets().length) {
           <!-- OQ-A8: calibrate the other set on demand rather than scoring under the wrong
                recipe. Most-refused first, so one click unlocks the most of the inventory. -->
-          <div class="rank-panel__sets">
-            <p class="hint">
-              Some pieces would complete a set nothing has calibrated, so they have no score.
-              Each set is about three seconds of simulation.
-            </p>
+          <div
+            class="rank-panel__sets"
+            title="These sets are not calibrated, so pieces completing them have no score. About three seconds of simulation each."
+          >
+            <span class="eyebrow">Calibrate</span>
             <div class="chips">
               @for (set of uncalibratedSets(); track set.setId) {
                 <button
@@ -291,15 +288,11 @@
         }
 
         @if (rankCaveat(); as caveat) {
-          <!-- **Collapsed, because the full text is a paragraph of research prose.** It was
-               rendered inline first and took five lines of the panel to explain monotonicity
-               under a weighted draw — true, load-bearing, and not what someone ranking their
-               artifacts is reading right then. The one-line claim stays visible; the argument
-               is one click away. -->
-          <details class="rank-panel__caveat">
-            <summary>Upgrade odds use published draw weights, which we could not verify.</summary>
-            <p class="hint">{{ caveat }}</p>
-          </details>
+          <!-- **A mark, not a paragraph.** The caveat is real and load-bearing — the draw
+               weights are cited and could not be confirmed against this inventory — and it is
+               still not what someone ranking artifacts is reading right now. The claim lives on
+               hover; the argument lives in docs/RESEARCH_substat_draw_weights.md. -->
+          <abbr class="rank-panel__caveat" [attr.title]="caveat">Draw weights unverified</abbr>
         }
       }
     </section>
@@ -362,6 +355,7 @@
           @if (hasRanking()) {
             <!-- Offered only once there is something to sort by. An ordering that silently
                  does nothing is worse than an absent one. -->
+            <option value="odds">Upgrade odds</option>
             <option value="averageDelta">Upgrade value (expected)</option>
             <option value="delta">Upgrade value (today)</option>
             <option value="best">Upgrade value (ceiling)</option>
@@ -461,20 +455,29 @@
                    card is indistinguishable from one the ranking never reached. -->
               <p class="card__rank card__rank--none muted">{{ refusalText(row) }}</p>
             } @else {
-              <p class="card__rank">
+              <p class="card__rank" title="Mean change vs current, once levelled">
                 <span class="eyebrow">Levelled</span>
                 <span
                   class="mono card__rank-delta"
                   [class.up]="rank.averageDelta > 0"
                   [class.down]="rank.averageDelta < 0"
                 >{{ deltaPercent(row, 'averageDelta') }}</span>
-                <span class="mono muted card__rank-band">
-                  now {{ deltaPercent(row, 'delta') }} · up to {{ deltaPercent(row, 'best') }}
-                </span>
-                <span class="card__rank-grade" [attr.title]="'Against a perfect piece with this main stat'">
+                <span
+                  class="mono muted card__rank-band"
+                  [attr.title]="'Now ' + deltaPercent(row, 'delta') + ', ceiling '
+                    + deltaPercent(row, 'best')"
+                >{{ deltaPercent(row, 'delta') }} · {{ deltaPercent(row, 'best') }}</span>
+                <span class="card__rank-grade" title="Against a perfect piece with this main stat">
                   {{ rank.grade }}
                 </span>
               </p>
+
+              @if (rank.upgradeOdds !== null) {
+                <p class="card__rank" title="Chance it beats this piece as it stands, once levelled">
+                  <span class="eyebrow">Upgrade odds</span>
+                  <span class="mono">{{ (rank.upgradeOdds * 100).toFixed(0) }}%</span>
+                </p>
+              }
 
               <!-- A.15: what this piece could become, as a distribution. Separate from the
                    dive because they vary different things — this holds the other four slots
@@ -497,11 +500,11 @@
                 }
                 @if (outcomes(); as found) {
                   <div class="card__outcomes">
-                    <p class="card__outcomes-head">
+                    <p class="card__outcomes-head" title="Chance it beats this piece as it stands today">
+                      <span class="eyebrow">Upgrade odds</span>
                       <span class="mono card__rank-delta" [class.up]="found.probabilityOfUpgrade > 0">
                         {{ (found.probabilityOfUpgrade * 100).toFixed(1) }}%
                       </span>
-                      <span class="muted">chance it beats what it is now</span>
                     </p>
 
                     @if (outcomeChart(); as chart) {
@@ -532,20 +535,29 @@
                       </svg>
                     }
 
+                    <!-- Two keys, no legend sentence: the shaded region needs no gloss once
+                         the odds above it are named, and the two verticals do. -->
                     <ul class="card__outcomes-key">
-                      <li><span class="key key--current"></span> now {{ relativeTo(found.current) }}</li>
-                      <li><span class="key key--mean"></span> expected {{ relativeTo(found.mean) }}</li>
-                      <li><span class="key key--fill"></span> better than now</li>
+                      <li title="This piece as it stands">
+                        <span class="key key--current"></span>
+                        <span class="mono">{{ relativeTo(found.current) }}</span>
+                      </li>
+                      <li
+                        [attr.title]="'Expected once levelled. Point estimate reads '
+                          + relativeTo(found.atAverage)
+                          + ', which differs because rolls compete for the same upgrades.'"
+                      >
+                        <span class="key key--mean"></span>
+                        <span class="mono">{{ relativeTo(found.mean) }}</span>
+                      </li>
                     </ul>
 
-                    <p class="hint">
-                      {{ found.outcomes }} outcomes, enumerated exactly — no sampling.
-                      <!-- A.14: the point estimate and the true mean are different numbers, and
-                           saying which is which beats tuning one to match the other. -->
-                      @if (found.curvature < -0.0005 || found.curvature > 0.0005) {
-                        The point estimate reads {{ relativeTo(found.atAverage) }}; it differs
-                        because rolls compete for the same upgrades.
-                      }
+                    <p
+                      class="card__outcomes-count"
+                      title="Every way the remaining rolls can land, enumerated exactly — no sampling"
+                    >
+                      <span class="eyebrow">Outcomes</span>
+                      <span class="mono">{{ found.outcomes.toLocaleString() }}</span>
                     </p>
 
                     <button type="button" class="card__dive-close" (click)="closeOutcomes()">
@@ -572,32 +584,25 @@
                 }
                 @if (dive(); as found) {
                   <div class="card__dive-result">
-                    <p class="card__dive-gain">
-                      <strong [class.up]="found.gain > 0" [class.down]="found.gain < 0">
-                        {{ asPercent(found.gain) }}
-                      </strong>
-                      <span class="muted">vs your build as it stands</span>
-                    </p>
-                    <p class="muted">
-                      @if (movedCount(found) === 1) {
-                        Moves 1 slot.
-                      } @else {
-                        Moves {{ movedCount(found) }} slots.
-                      }
-                      <!-- OQ-A10: the other defensible reading, labelled rather than chosen
-                           silently. The two diverge exactly when the current build is not
-                           optimal, which for a piece someone is asking about is most of the
-                           time. -->
-                      Best build without it is
-                      {{ asPercent((found.bestWithout - found.before) / found.before) }}.
-                    </p>
-                    <!-- **The dive is a best-of-this-pool, not a proof.** The uncapped search
-                         did not finish in five minutes, so each slot is trimmed to its best
-                         candidates for this build. Saying so is the difference between a
-                         result and a claim. -->
-                    <p class="hint">
-                      Searched the best {{ found.searchedPerSlot }} pieces per slot of
-                      {{ found.inventorySize }}.
+                    <!-- **A max, not a mean** — the best build found containing this piece, so
+                         "mean change" would be the wrong words for it. OQ-A10's other reading
+                         and the pool it searched both ride in the title: true, load-bearing,
+                         and not what someone is reading at a glance. -->
+                    <p
+                      class="card__dive-gain"
+                      [attr.title]="'Best build containing this piece, vs your build now. '
+                        + 'Moves ' + movedCount(found) + ' slots. '
+                        + 'Best build without it: '
+                        + asPercent((found.bestWithout - found.before) / found.before) + '. '
+                        + 'Searched the best ' + found.searchedPerSlot + ' pieces per slot of '
+                        + found.inventorySize + '.'"
+                    >
+                      <span class="eyebrow">Best build</span>
+                      <strong
+                        class="mono"
+                        [class.up]="found.gain > 0"
+                        [class.down]="found.gain < 0"
+                      >{{ asPercent(found.gain) }}</strong>
                     </p>
                     <button type="button" class="card__dive-close" (click)="closeDive()">
                       Close

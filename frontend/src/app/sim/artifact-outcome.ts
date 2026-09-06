@@ -15,8 +15,21 @@
  * is a few hundred milliseconds.
  *
  * A 5-star with four lines and five upgrades enumerates ~8,400 outcomes; a three-liner, which
- * also sums over which substat the fourth turns out to be, ~21,000. **One piece at a time**, on
- * the panel — the same shape as the deep dive, and for the same reason.
+ * also sums over which substat the fourth turns out to be, tens of thousands — a real +0 flower
+ * measured **66,816**. **One piece at a time**, on the panel.
+ *
+ * ## It yields, because it once did not
+ *
+ * `outcomeDistributionAsync` chunks the walk and hands the browser back the thread every
+ * `YIELD_MS`, and takes a `shouldCancel` so paging away aborts it. That is GO's
+ * `expandRollsLevelAsync` shape — `uiYieldBudgetMs = 12`, a `shouldCancel` callback, calls
+ * serialised — which `RESEARCH_genshin_optimizer_scoring.md` named as *"the pattern worth
+ * copying"* before this module shipped without it.
+ *
+ * The synchronous version froze the page for about a second on a +0 five-star. That is the
+ * defect `BACKLOG_frontend.md` §12 already records and #175 already fixed once, for the
+ * single-hit search. `outcomeDistribution` stays for tests and for callers that are already off
+ * the main thread; **the page uses the async one**.
  *
  * ## What "the mean" is, and the plan's acceptance criterion was wrong
  *
@@ -198,4 +211,111 @@ function histogram(
     bins[index].p += weights[i] / total;
   }
   return bins;
+}
+
+
+/** How long the async walk may hold the thread before handing it back. GO's `uiYieldBudgetMs`. */
+const YIELD_MS = 12;
+
+/**
+ * `outcomeDistribution`, chunked so the page stays responsive.
+ *
+ * Identical arithmetic — it delegates, one branch of the enumeration at a time — so there is no
+ * second implementation of the model to drift. What it adds is a yield between branches and a
+ * cancellation check, which is the whole difference between a feature and a freeze.
+ *
+ * Resolves `null` if cancelled, the same as for a piece that cannot be answered: the caller
+ * shows nothing either way, and a partial distribution is not a distribution.
+ */
+export async function outcomeDistributionAsync(
+  piece: Piece,
+  model: DrawModel,
+  evaluate: (stats: StatPool) => number,
+  options: {
+    shouldCancel?: () => boolean;
+    onProgress?: (done: number, total: number) => void;
+  } = {},
+): Promise<OutcomeDistribution | null> {
+  const potential = piece.potential;
+  if (!potential) return null;
+
+  // Split on the fourth line's identity — the outermost loop, and the one that makes a
+  // three-liner expensive. A four-liner has exactly one branch and yields once, which costs
+  // nothing and keeps one code path.
+  const branches = potential.gainsASubstat
+    ? eligibleNewLines(piece, model).filter(
+        (q) => (model.rollTiers[String(piece.rarity)] ?? []).some((r) => r.quantity === q),
+      )
+    : [null];
+  if (!branches.length) return outcomeDistribution(piece, model, evaluate);
+
+  const parts: { found: OutcomeDistribution; weight: number }[] = [];
+  let clock = Date.now();
+
+  for (const [index, line] of branches.entries()) {
+    if (options.shouldCancel?.()) return null;
+
+    // One branch at a time, by narrowing the model's pool to the single line under
+    // consideration. `lineOutcomes` then returns that line with probability 1, so the weight has
+    // to be reapplied here — from the *full* pool, or the mixture would not sum to one.
+    const narrowed: DrawModel = line === null ? model : {
+      ...model,
+      substatWeights: { [line]: model.substatWeights[line] ?? 1 },
+    };
+    const found = outcomeDistribution(piece, narrowed, evaluate);
+    if (found) parts.push({ found, weight: weightOf(piece, model, line) });
+
+    options.onProgress?.(index + 1, branches.length);
+    if (Date.now() - clock > YIELD_MS) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      clock = Date.now();
+    }
+  }
+
+  if (!parts.length) return null;
+  return combine(parts);
+}
+
+/** One candidate fourth line's share of the draw, from the **full** eligible pool. */
+function weightOf(piece: Piece, model: DrawModel, line: string | null): number {
+  if (line === null) return 1;
+  const pool = eligibleNewLines(piece, model).filter(
+    (q) => (model.rollTiers[String(piece.rarity)] ?? []).some((r) => r.quantity === q),
+  );
+  const total = pool.reduce((sum, q) => sum + (model.substatWeights[q] ?? 0), 0);
+  return total > 0 ? (model.substatWeights[line] ?? 0) / total : 1 / Math.max(pool.length, 1);
+}
+
+/** Fold per-branch distributions into one, re-binned over their combined range. */
+function combine(parts: readonly { found: OutcomeDistribution; weight: number }[]): OutcomeDistribution {
+  const total = parts.reduce((sum, part) => sum + part.weight, 0) || 1;
+  const low = Math.min(...parts.map((p) => p.found.bins[0].from));
+  const high = Math.max(...parts.map((p) => p.found.bins[p.found.bins.length - 1].to));
+  const width = (high - low) / BINS || 1;
+
+  const bins: OutcomeBin[] = Array.from({ length: BINS }, (_, i) => ({
+    from: low + i * width, to: low + (i + 1) * width, p: 0,
+  }));
+  for (const { found, weight } of parts) {
+    for (const bin of found.bins) {
+      const mid = (bin.from + bin.to) / 2;
+      const index = Math.min(Math.max(Math.floor((mid - low) / width), 0), BINS - 1);
+      bins[index].p += (bin.p * weight) / total;
+    }
+  }
+
+  const share = (pick: (d: OutcomeDistribution) => number) =>
+    parts.reduce((sum, part) => sum + (part.weight / total) * pick(part.found), 0);
+  const mean = share((d) => d.mean);
+  const atAverage = share((d) => d.atAverage);
+
+  return {
+    bins,
+    mean,
+    atAverage,
+    curvature: atAverage > 0 ? (mean - atAverage) / atAverage : 0,
+    current: parts[0].found.current,
+    probabilityOfUpgrade: share((d) => d.probabilityOfUpgrade),
+    outcomes: parts.reduce((sum, part) => sum + part.found.outcomes, 0),
+  };
 }
