@@ -588,4 +588,26 @@ dialog,
 }
 
 /* The dialog's own children need the column a pane used to give them. */
+/* **The mirror of `.editor__head`, and it did not exist.** The head has been sticky all
+   along; the primary action was not, so it scrolled away with the content. Measured on the
+   build editor at 1280x720: 927px of content in a 632px box, the third artifact row sliced
+   through the middle of its own text, and SAVE CHANGES ~295px below the visible edge with
+   nothing saying it was there. The slice was the only cue that anything scrolled.
+
+   A scrollbar would help and does not settle it — the dialog reserves no width for one here,
+   and a thin overlay thumb that fades is a weak thing to hang "your work is saved by a button
+   you cannot see" on. Keeping the action in view does settle it.
+
+   `bottom: -1 * padding` so the bar sits flush with the dialog's floor rather than floating a
+   gap above it, matching the head's negative side margins. */
+.editor__foot {
+  position: sticky;
+  bottom: calc(var(--space-4) * -1);
+  z-index: 1;
+  margin: var(--space-3) calc(var(--space-4) * -1) calc(var(--space-4) * -1);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--surface-rule);
+  background: var(--surface);
+}
+
 .editor > *:not(.editor__head) { margin-bottom: var(--space-2); }
