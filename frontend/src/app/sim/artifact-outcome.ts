@@ -20,16 +20,25 @@
  *
  * ## It yields, because it once did not
  *
- * `outcomeDistributionAsync` chunks the walk and hands the browser back the thread every
- * `YIELD_MS`, and takes a `shouldCancel` so paging away aborts it. That is GO's
- * `expandRollsLevelAsync` shape — `uiYieldBudgetMs = 12`, a `shouldCancel` callback, calls
- * serialised — which `RESEARCH_genshin_optimizer_scoring.md` named as *"the pattern worth
- * copying"* before this module shipped without it.
+ * `outcomeDistributionAsync` yields the thread and takes a `shouldCancel`, after GO's
+ * `expandRollsLevelAsync` — `uiYieldBudgetMs = 12`, a cancel callback, calls serialised — which
+ * `RESEARCH_genshin_optimizer_scoring.md` named as *"the pattern worth copying"* before this
+ * module shipped without it. The synchronous version froze the page for about a second on a +0
+ * five-star, which is the defect `BACKLOG_frontend.md` §12 records and #175 already fixed once
+ * for the single-hit search.
  *
- * The synchronous version froze the page for about a second on a +0 five-star. That is the
- * defect `BACKLOG_frontend.md` §12 already records and #175 already fixed once, for the
- * single-hit search. `outcomeDistribution` stays for tests and for callers that are already off
- * the main thread; **the page uses the async one**.
+ * **It yields between branches, not inside them, and that is a real limit.** A branch is one
+ * candidate identity for the fourth substat, so a **three-liner** splits into as many chunks as
+ * its pool has members, while a **four-line piece has exactly one branch and never yields
+ * inside it**. GO chunks one level deeper, inside the roll expansion itself.
+ *
+ * Measured on the owner's inventory: main-thread lag **max 223 ms, median 5–12 ms** across two
+ * runs, against ~1,000 ms for the synchronous version. Below the threshold that reads as a
+ * freeze, above the 16 ms that reads as nothing. Written down rather than rounded to "chunked",
+ * because the next person to enlarge the model will hit the four-line case first.
+ *
+ * `outcomeDistribution` stays for tests and for callers already off the main thread; **the page
+ * uses the async one**.
  *
  * ## What "the mean" is, and the plan's acceptance criterion was wrong
  *
