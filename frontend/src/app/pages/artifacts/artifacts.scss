@@ -637,3 +637,10 @@
   letter-spacing: 0.06em;
   color: var(--ink-faint);
 }
+
+/* Why this number is bigger than the card's `max` two lines above it. */
+.card__dive-note {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+}
