@@ -117,14 +117,19 @@ export interface DeepDive {
   /** `(after - before) / before`. Issue #291's "% gain". */
   gain: number;
   /**
-   * The best build that does **not** contain it, over the same inventory and budget.
+   * The best build that does **not** contain it, over the same pool.
    *
-   * OQ-A10 names this the other defensible reading of "% gain", and the two diverge exactly
-   * when the current build is not optimal — which, for a piece someone is asking about, is most
-   * of the time. Both are reported and labelled rather than one being chosen silently.
+   * OQ-A10's other defensible reading of "% gain" — the two diverge exactly when the current
+   * build is not optimal, which for a piece someone is asking about is most of the time.
+   *
+   * **Computed and not currently displayed** (2026-09-05). The card shows `gain` alone, because
+   * the page's standard is a named column and a bare number rather than a sentence. Recorded
+   * here rather than left to be noticed: this repo's standing lesson is that a value nothing
+   * reads is found by building something that needs it, never by reading. If OQ-A10 is still
+   * unsurfaced when someone next touches this, either give it a column or delete it.
    */
   bestWithout: number;
-  /** Which slots the winning build changed, so a four-slot answer reads as one. */
+  /** Which slots the winning build changed. **Also computed and not displayed** — see above. */
   moved: MovedPiece[];
   /** The pinned piece's projected stats, so the panel can say what it assumed. */
   projectedFrom: 'average' | 'current';

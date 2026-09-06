@@ -736,11 +736,6 @@ export class ArtifactsPage implements OnInit {
     return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
   }
 
-  /** How the winning build differs from what is worn, in slots. */
-  protected movedCount(dive: DeepDive): number {
-    return dive.moved.filter((piece) => piece.changed).length;
-  }
-
   /** `delta` as a share of the build's own damage — #291's "% gain". */
   protected deltaPercent(row: ArtifactRow, which: 'delta' | 'averageDelta' | 'best'): string {
     const base = this.rankBaseline();

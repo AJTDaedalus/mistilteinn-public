@@ -573,6 +573,8 @@
                 type="button"
                 class="card__ask card__ask--dive"
                 [disabled]="diveRunning()"
+                [attr.title]="'Re-optimizes the whole build around this piece. Searches the '
+                  + 'best 24 pieces per slot, not the whole inventory.'"
                 (click)="diveInto(row)"
               >
                 {{ diveRunning() && diveId() === row.id ? 'Searching…' : 'Best build with this' }}
@@ -584,19 +586,8 @@
                 }
                 @if (dive(); as found) {
                   <div class="card__dive-result">
-                    <!-- **A max, not a mean** — the best build found containing this piece, so
-                         "mean change" would be the wrong words for it. OQ-A10's other reading
-                         and the pool it searched both ride in the title: true, load-bearing,
-                         and not what someone is reading at a glance. -->
-                    <p
-                      class="card__dive-gain"
-                      [attr.title]="'Best build containing this piece, vs your build now. '
-                        + 'Moves ' + movedCount(found) + ' slots. '
-                        + 'Best build without it: '
-                        + asPercent((found.bestWithout - found.before) / found.before) + '. '
-                        + 'Searched the best ' + found.searchedPerSlot + ' pieces per slot of '
-                        + found.inventorySize + '.'"
-                    >
+                    <!-- **A max, not a mean**, which is why the title is not "mean change". -->
+                    <p class="card__dive-gain" title="Max improvement">
                       <span class="eyebrow">Best build</span>
                       <strong
                         class="mono"
