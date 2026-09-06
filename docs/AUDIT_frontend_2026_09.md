@@ -339,9 +339,12 @@ triggered like a dropdown.
   percentage (`292%`), plus `ROLL VALUE 842% / 900%` — three encodings of one idea, no legend,
   quality carried by colour alone.
 - **Inventory cards** say "Equipped" but never say *to whom*.
-- **`/teapot`** greys out some character chips in italics with no legend saying what grey means,
-  and runs three statistics together on one line separated only by spaces
-  (`2,920 primogems still on the table  146 characters still to invite  0 sets done`).
+- **`/teapot`** greys out some character chips in italics with no legend saying what grey means.
+  ~~and runs three statistics together on one line separated only by spaces
+  (`2,920 primogems still on the table  146 characters still to invite  0 sets done`)~~ —
+  **fixed 2026-09-06** to the owner's own wording, one sentence:
+  `2,920 primos available, 146 characters left, 0 sets complete`. The double space was the
+  flex row's gap rather than markup, so the three spans became one.
 - **`1 calibration`** floats unlabelled beside the 2-PIECE select on `/optimize`, and
   `Pick at least one set. Roughly six seconds each.` appears *below* the button it constrains.
 - **`1,419,857 combinations scored`** on the optimize result is underlined like a link.

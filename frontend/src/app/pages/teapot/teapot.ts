@@ -39,8 +39,6 @@ export class TeapotPage implements OnInit {
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
   protected readonly hideDone = signal(false);
-  /** Sets nobody on the user's roster favours — noise for most people, so folded away. */
-  protected readonly hideUnreachable = signal(true);
   /**
    * Free text, matched against the set's name **and its characters' names**.
    *
@@ -84,10 +82,6 @@ export class TeapotPage implements OnInit {
     const chosen = this.characterFilter();
     const kept = this.rows().filter((row) => {
       if (this.hideDone() && row.done) return false;
-      // A set nobody you own favours is worth nothing now and might be worth something later —
-      // hidden by default because it is noise for most rosters, never dropped.
-      const reachable = row.available.length > 0 || row.completed.length > 0;
-      if (this.hideUnreachable() && !reachable) return false;
       if (placement && !row.placement.startsWith(placement)) return false;
       if (chosen.size && !this.favourites(row).some((id) => chosen.has(id))) return false;
       if (!query) return true;
@@ -141,38 +135,35 @@ export class TeapotPage implements OnInit {
     return this.characterFilter().has(id);
   }
 
-  /** Back to every set, without hunting for which of six controls is still set. */
+  /** Back to every set, without hunting for which of five controls is still set. */
   protected clearFilters(): void {
     this.search.set('');
     this.placementFilter.set('');
     this.characterFilter.set(new Set());
     this.sort.set('');
     this.hideDone.set(false);
-    this.hideUnreachable.set(true);
   }
 
   /**
    * Whether anything is narrowing the list — which is what decides whether Clear is offered.
    *
-   * **The two tick boxes count.** They were left out while `clearFilters()` reset them, so
-   * Clear was hidden from a user whose only narrowing was "hide finished sets", and a user
-   * who had deliberately un-ticked "hide sets nobody you have favours" got it silently
-   * ticked again by a button labelled Clear. Both are compared against their defaults, so
-   * the button appears exactly when it has something to undo.
+   * **The tick box counts.** It was left out while `clearFilters()` reset it, so Clear was
+   * hidden from a user whose only narrowing was "hide finished sets". Every control is
+   * compared against its default, so the button appears exactly when it has something to
+   * undo.
    */
   protected readonly filtering = computed(
     () => this.search().trim() !== ''
       || this.placementFilter() !== ''
       || this.sort() !== ''
       || this.characterFilter().size > 0
-      || this.hideDone()
-      || !this.hideUnreachable(),
+      || this.hideDone(),
   );
 
   protected readonly claimable = computed(
     () => this.rows().reduce((total, row) => total + row.remaining, 0),
   );
-  /** Primogems still on the table, or `null` when the server did not publish a reward. */
+  /** Primogems still available, or `null` when the server did not publish a reward. */
   protected readonly primogems = computed(() => {
     const reward = this.reward();
     return reward === null ? null : this.claimable() * reward;
