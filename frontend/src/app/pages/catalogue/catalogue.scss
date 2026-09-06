@@ -33,9 +33,19 @@
 }
 
 /* Sets and enemies carry more per row than a name and two facts, so their grid gets wider
-   columns rather than a taller card that clips. */
+   columns rather than a taller card that clips.
+
+   **`align-items: start`, because a grid item stretches by default.** These cards hold raw
+   game text of wildly uneven length — one set's 4-piece description runs eight lines while
+   its neighbour's runs two — and every card in a row was drawn as tall as the tallest.
+   Measured on `/artifact-sets` row 1: one card to y=600 while two neighbours ended at y=332
+   and y=350, so each carried ~260px of empty bordered box.
+
+   Left stretched on the portrait grids on purpose: a character card is mostly picture and
+   its heights already agree, so ragged bottoms there would be a cost with no saving. */
 .grid.wide {
   grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr));
+  align-items: start;
 }
 
 .affixes {
@@ -58,8 +68,21 @@
   opacity: 0.85;
 
   /* A negative resistance means the target takes *more* damage, which is worth seeing at a
-     glance rather than reading off a minus sign. */
-  .negative { color: #ff9b6b; }
+     glance rather than reading off a minus sign. `--warning`, not a hand-written `#ff9b6b`:
+     the conventions say never hardcode a colour, and this was one of the last that did. */
+  .negative { color: var(--warning); }
+
+  /* **The value that differs from the rest of this card.** Eight channels at one number and
+     one at another, all drawn identically, is a page where nothing tells one enemy from the
+     next. The baseline sinks, the outlier holds its weight — so the eye lands on the only
+     figure on the card worth reading. */
+  li { opacity: 0.62; }
+
+  .res--notable {
+    opacity: 1;
+    color: var(--ink);
+    font-weight: 600;
+  }
 }
 
 /* ── The toolbar ────────────────────────────────────────────────────────────
@@ -73,8 +96,10 @@
   margin-bottom: var(--space-4);
 
   /* `min-width: 0` so the box may shrink below 22rem before the row wraps — without it the
-     search field held the toolbar wider than a phone and pushed the count off the edge. */
-  input[type='search'] { flex: 1 1 22rem; min-width: 0; }
+     search field held the toolbar wider than a phone and pushed the count off the edge.
+     `0 1`, not `1 1`: allowed to shrink, not to grow. Growing stretched a 22rem box across
+     1,140px of a desktop toolbar, which is a search field that looks like a text editor. */
+  input[type='search'] { flex: 0 1 22rem; min-width: 0; }
   .count { margin-left: auto; font-size: var(--text-sm); }
 }
 

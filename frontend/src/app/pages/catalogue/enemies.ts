@@ -22,7 +22,7 @@ const CHANNELS = [
 
 /** One profile with its resistances already shaped for the template. */
 type EnemyRow = EnemyProfileRead & {
-  resistances: { channel: string; percent: number }[];
+  resistances: { channel: string; percent: number; notable: boolean }[];
 };
 
 /**
@@ -79,9 +79,41 @@ export class EnemiesPage implements OnInit {
  */
 export function resistancesOf(
   enemy: EnemyProfileRead,
-): { channel: string; percent: number }[] {
-  return CHANNELS.map(([channel, field]) => ({
+): { channel: string; percent: number; notable: boolean }[] {
+  const rows = CHANNELS.map(([channel, field]) => ({
     channel,
     percent: (enemy[field] ?? 0) * 100,
   }));
+  const baseline = modal(rows.map((row) => row.percent));
+  return rows.map((row) => ({ ...row, notable: row.percent !== baseline }));
+}
+
+/**
+ * The most common value in a list; the first one on a tie.
+ *
+ * **This is what makes an enemy card readable.** Nearly every profile is eight channels at
+ * one shared number and one or two that differ — `physical 70%` on the Aeonblight Drake,
+ * `hydro 70%` on the Narwhal — and all nine were drawn in the same size, weight and colour.
+ * On a 13,000px page of near-identical cards, the one value worth reading was hidden among
+ * eight that were not.
+ *
+ * Taken from the enemy's own values rather than assuming 10% is the baseline: 10% is merely
+ * the *usual* baseline, and an enemy whose floor is something else would otherwise have all
+ * nine channels flagged, which is the same as flagging none.
+ *
+ * When every channel agrees, the mode is that value and nothing is notable — correct, because
+ * nothing about that enemy's resistances distinguishes it.
+ */
+function modal(values: number[]): number | undefined {
+  const counts = new Map<number, number>();
+  for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1);
+  let best: number | undefined;
+  let bestCount = 0;
+  for (const [value, count] of counts) {
+    if (count > bestCount) {
+      best = value;
+      bestCount = count;
+    }
+  }
+  return best;
 }

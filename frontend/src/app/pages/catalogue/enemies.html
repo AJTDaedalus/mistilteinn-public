@@ -44,7 +44,10 @@
                something other than what it says. -->
           <ul class="res">
             @for (entry of enemy.resistances; track entry.channel) {
-              <li [class.negative]="entry.percent < 0">
+              <li
+                [class.negative]="entry.percent < 0"
+                [class.res--notable]="entry.notable"
+              >
                 {{ entry.channel }} {{ entry.percent | number: '1.0-1' }}%
               </li>
             }
