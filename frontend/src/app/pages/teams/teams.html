@@ -60,6 +60,25 @@
           }
         </ol>
 
+        <!-- **What you have assembled, while you assemble it.** The dialog used to give no
+             feedback at all on composition — four dropdowns labelled 1 to 4, and you learned
+             what the team was after saving it, on a page whose saved list filters by
+             reaction. -->
+        @if (chosenElements().length) {
+          <div class="composition">
+            <span class="composition__elements">
+              @for (e of chosenElements(); track e.element) {
+                <element-chip compact [size]="20" [element]="e.element" [icon]="e.icon" />
+              }
+            </span>
+            @if (chosenReactions().length) {
+              <span class="composition__reactions muted">
+                can produce {{ chosenReactionNames() }}
+              </span>
+            }
+          </div>
+        }
+
         <!-- The "first slot must be filled" line is gone: `canSave()` already greys the
              button out until there is a name and a first member, which says the same thing
              without a sentence. -->

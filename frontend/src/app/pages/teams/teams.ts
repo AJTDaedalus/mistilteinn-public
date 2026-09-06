@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { apiErrorMessage } from '../../api/api-error';
+import { ElementChip } from '../../shared/element/element';
 import { Combobox, type ComboboxOption } from '../../shared/combobox/combobox';
 import { CatalogueService, type ReactionRead } from '../catalogue/catalogue.service';
 import { CatalogueIcon } from '../../shared/icon/icon';
@@ -47,7 +48,7 @@ interface TeamMember {
  */
 @Component({
   selector: 'page-teams',
-  imports: [FormsModule, RouterLink, CatalogueIcon, Combobox],
+  imports: [FormsModule, RouterLink, CatalogueIcon, Combobox, ElementChip],
   templateUrl: './teams.html',
   styleUrl: './teams.scss',
 })
@@ -304,6 +305,39 @@ export class TeamsPage implements OnInit {
       (reaction) => parties.some((elements) => this.canReact(elements, reaction)),
     );
   });
+
+  /**
+   * The elements the team being edited currently holds, and the reactions they could produce.
+   *
+   * **The dialog gave no feedback on the thing the list filters by.** You picked four names
+   * from four dropdowns labelled `1 2 3 4`, saved, and only then found out what the team was
+   * — while the saved list beside it offers a *reaction* filter. The composition is knowable
+   * the moment a second member is chosen, so it is shown there.
+   *
+   * "Could", not "will": whether a rotation actually triggers one is the simulator's
+   * question, which is the same caveat `reactionsPresent` carries.
+   */
+  protected readonly chosenElements = computed(() => {
+    const seen = new Map<string, string | null>();
+    for (const slot of TEAM_SLOTS) {
+      const character = this.build(this.picked()[slot])?.character;
+      if (character?.element && !seen.has(character.element)) {
+        seen.set(character.element, character.element_icon ?? null);
+      }
+    }
+    return [...seen].map(([element, icon]) => ({ element, icon }));
+  });
+
+  protected readonly chosenReactions = computed(() => {
+    const elements = new Set(this.chosenElements().map((e) => e.element));
+    if (elements.size < 2) return [];
+    return this.reactions().filter((reaction) => this.canReact(elements, reaction));
+  });
+
+  /** Their names, joined — a template cannot write the callback `map` needs. */
+  protected readonly chosenReactionNames = computed(() =>
+    this.chosenReactions().map((reaction) => reaction.name).join(', '),
+  );
 
   protected readonly elementsPresent = computed(() => {
     const seen = new Map<string, string | null>();
