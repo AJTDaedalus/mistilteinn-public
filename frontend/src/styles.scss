@@ -131,12 +131,22 @@ textarea {
    the page, and on `/optimize` it drew the eye harder than the search button. These are drawn
    from the palette in both states, which is the same argument every other control on the site
    already makes. `appearance: none` means the check mark is ours too. */
+/* 1.15rem rather than 0.95: the box measured 15x15, which is small to aim at and smaller to
+   read a tick in.
+
+   **It is not the click target, though, and an audit finding here was mine to withdraw.** A
+   DOM sweep flagged these against the 24x24 WCAG 2.2 asks of a pointer target — but every
+   checkbox in this app is wrapped in its own `<label>`, and the label is what you click:
+   98px to 544px wide and 23px to 30px tall, measured. A transparent `outline` was tried first
+   to grow the target and does nothing at all, because an outline is painted outside the
+   border box and takes no part in hit testing. The size below is a legibility change and is
+   not claimed as anything more. */
 input[type='checkbox'],
 input[type='radio'] {
   appearance: none;
   flex: 0 0 auto;
-  width: 0.95rem;
-  height: 0.95rem;
+  width: 1.15rem;
+  height: 1.15rem;
   margin: 0;
   border: 1px solid var(--surface-rule);
   border-radius: var(--radius-1);
@@ -488,16 +498,23 @@ dialog,
   //
   // Pinned to the top with `.pick`'s own top padding, so it sits on the title it acts on. Found
   // by rendering `/teams` and looking at it; no test asserts on where a glyph lands.
+  /* `--ink-dim`, not `--ink-faint`: this button deletes a team or a rotation and it was the
+     lowest-contrast thing on the row. Still quiet — a destructive action should not shout —
+     but legible enough to be found on purpose rather than discovered by accident. */
   .drop {
     flex: 0 0 auto;
     display: flex;
     align-items: flex-start;
+    justify-content: center;
+    min-width: 1.5rem;
+    min-height: 1.5rem;
     padding: var(--space-3);
-    color: var(--ink-faint);
+    color: var(--ink-dim);
     font-size: var(--text-md);
     line-height: 1;
 
-    &:hover {
+    &:hover,
+    &:focus-visible {
       color: var(--danger);
     }
   }

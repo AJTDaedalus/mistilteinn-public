@@ -253,8 +253,12 @@
     border: none;
     border-radius: var(--radius-1);
     background: none;
-    color: var(--ink-faint);
+    /* `--ink-dim`: this deletes a build, and at `--ink-faint` on a portrait it was the
+       least visible thing on the card. */
+    color: var(--ink-dim);
     line-height: 1.2;
+    min-width: 1.5rem;
+    min-height: 1.5rem;
     cursor: pointer;
     transition: opacity var(--t-fast) var(--ease);
 

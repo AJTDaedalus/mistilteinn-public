@@ -639,3 +639,10 @@
 .controls select {
   max-width: 22rem;
 }
+
+/* The calibration cost sentence. Prose, not a readout, so it takes the body face and lets
+   only the numbers inside it be mono — a bare `1 calibration` in mono read as a stat with no
+   label. */
+.filter-actions__cost {
+  font-size: var(--text-sm);
+}

@@ -148,16 +148,19 @@
   white-space: nowrap;
 }
 
+/* 50x19 measured, against the 24px minimum a pointer target should offer. The padding buys
+   the height without moving anything: the chip is a flex row and the text stays where it was. */
 .identity-chip__signout {
   font-family: var(--font-display);
   font-size: var(--text-sm);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ink-faint);
+  color: var(--ink-dim);
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0;
+  padding: var(--space-1) 0;
+  min-height: 1.5rem;
   transition: color var(--t-fast) var(--ease);
 
   &:hover {
