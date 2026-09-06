@@ -632,14 +632,25 @@
                 }
                 @if (dive(); as found) {
                   <div class="card__dive-result">
-                    <!-- **A max, not a mean**, which is why the title is not "mean change". -->
-                    <p class="card__dive-gain" title="Max improvement">
+                    <!-- **A max, not a mean**, which is why the title is not "mean change".
+
+                         **And it says what it moved.** This sat beside the card's own `max`
+                         with nothing to separate them: one varies this piece's rolls in the
+                         build as it stands, the other re-picks all four other slots around it.
+                         `+6.8%` under `max +3.2%` reads as a contradiction until you know
+                         that, and nothing on the card said it — the explanation was in the
+                         button's `title`, which is gone the moment you click it. -->
+                    <p class="card__dive-gain" title="Max improvement, over the build as it stands">
                       <span class="eyebrow">Best build</span>
                       <strong
                         class="mono"
                         [class.up]="found.gain > 0"
                         [class.down]="found.gain < 0"
                       >{{ asPercent(found.gain) }}</strong>
+                    </p>
+                    <p class="card__dive-note muted">
+                      with the other four slots re-picked — the card's
+                      <span class="mono">max</span> keeps them as they are
                     </p>
                     <button type="button" class="card__dive-close" (click)="closeDive()">
                       Close

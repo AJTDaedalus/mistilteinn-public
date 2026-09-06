@@ -614,7 +614,9 @@ export class ArtifactRankingService {
         setId: c.set_id ?? 0,
         stats: c.stats,
       }));
-    const candidates = trimForDive(all, target.id, current, equipped);
+    const candidates = trimForDive(
+      all, target.id, current, equipped, new Set(wornBySlot.values()),
+    );
     const recipes = {
       noFourPiece,
       byFourPieceSet: calibration.byFourPieceSet,
@@ -691,7 +693,7 @@ export class ArtifactRankingService {
  * still says `isExact: true` — that claim is about the pool, and trimming silently would turn it
  * into a claim about the inventory that is not true.
  */
-const DIVE_PER_SLOT = 24;
+export const DIVE_PER_SLOT = 24;
 
 /**
  * The best `DIVE_PER_SLOT` pieces per slot for this build, plus the pinned one whatever it is.
@@ -704,12 +706,22 @@ const DIVE_PER_SLOT = 24;
  * usually the whole reason someone is asking about it — and dropping it here would produce a
  * search that silently answered a different question, which is the same failure the pin's own
  * placement after the Pareto filter exists to avoid.
+ *
+ * **And so are the pieces the build is already wearing**, for exactly the same reason, which
+ * this function argued for the pin and then did not do for the status quo. A slot where two
+ * dozen pieces each beat the equipped one drops that equipped piece out of the top 24 — and
+ * then the search cannot reconstruct the build it is being measured against, so its "gain"
+ * can come out *below* a plain single-slot swap of the pinned piece. Observed: a sands whose
+ * own card read `+2.9%` reported a best build of `+1.1%`, which is not a worse recommendation
+ * so much as an incoherent one. Keeping five pieces costs nothing and makes the search's
+ * answer a floor rather than a coin toss.
  */
-function trimForDive(
+export function trimForDive(
   candidates: readonly Candidate[],
   pinnedId: string,
   recipe: Recipe,
   equipped: readonly StatPool[],
+  wornIds: ReadonlySet<string>,
 ): Candidate[] {
   const bySlot = new Map<string, Candidate[]>();
   for (const candidate of candidates) {
@@ -732,10 +744,14 @@ function trimForDive(
     const kept = [...bucket]
       .sort((a, b) => (rank.get(b.id) ?? 0) - (rank.get(a.id) ?? 0))
       .slice(0, DIVE_PER_SLOT);
-    if (!kept.some((c) => c.id === pinnedId)) {
-      const pinned = bucket.find((c) => c.id === pinnedId);
-      if (pinned) kept.push(pinned);
-    }
+    const keepAnyway = (id: string) => {
+      if (kept.some((c) => c.id === id)) return;
+      const found = bucket.find((c) => c.id === id);
+      if (found) kept.push(found);
+    };
+    keepAnyway(pinnedId);
+    // The status quo has to be reachable, or the search can report a loss it invented.
+    for (const id of wornIds) keepAnyway(id);
     out.push(...kept);
   }
   return out;
