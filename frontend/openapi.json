@@ -897,7 +897,7 @@
           "catalogue"
         ],
         "summary": "Get Weapon",
-        "description": "One weapon with its refinement rows and growth curves.",
+        "description": "One weapon with its refinement rows and growth curves.\n\nA row whose class the game has not shipped answers 404 like a row that is not there. The\nlist hides these eight because their **names** are datamine-only (`services/unreleased.py`,\n#271), and a detail route that still serves the name on request publishes exactly what\nhiding the list was for \u2014 a guessable id is not a meaningful barrier.",
         "operationId": "get_weapon_api_v1_weapons__nanoka_id__get",
         "parameters": [
           {
@@ -3705,7 +3705,7 @@
           "roster"
         ],
         "summary": "List Roster",
-        "description": "Every character that can be owned, with this user's answer where they have given one.\n\n**The catalogue left-joined to the roster**, rather than the roster alone: the tab has to\noffer a toggle for a character the user has never touched, and a row that does not exist\ncannot carry one.\n\nMannequins are excluded \u2014 `services/roster.py` says why, and by id rather than by name.",
+        "description": "Every character that can be owned, with this user's answer where they have given one.\n\n**The catalogue left-joined to the roster**, rather than the roster alone: the tab has to\noffer a toggle for a character the user has never touched, and a row that does not exist\ncannot carry one.\n\nMannequins are excluded \u2014 `services/roster.py` says why, and by id rather than by name.\nSo are the two Traveler variants carrying a weapon class the game has not shipped: this\nlist asks *\"do you own this character?\"* about every row it draws, and nobody owns one that\ndoes not exist. `app/services/unreleased.py`, and #271.\n\n**This route reads `select(Character)` directly**, not `CharacterRepository`, so it does\nnot inherit the catalogue's exclusions and has to state them \u2014 which is how the mannequin\nrule already came to be written out here twice.",
         "operationId": "list_roster_api_v1_roster_get",
         "responses": {
           "200": {
@@ -6387,6 +6387,39 @@
         "title": "DivergenceRead",
         "description": "How much substituting a neighbouring bucket appears to cost, and the noise under it.\n\nBoth numbers, never one verdict. `docs/RESEARCH_er_bucketing.md` records the significance\ntest that flagged a bucket where no context change was possible \u2014 burst casts are\ndiscrete, so per-iteration DPS is a multi-modal mixture and `sd/\u221an` understates it. A test\nthat misfired on its first dataset is not a test to hide a number behind."
       },
+      "DrawModel": {
+        "properties": {
+          "roll_tiers": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/RollLadder"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Roll Tiers"
+          },
+          "substat_weights": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Substat Weights"
+          },
+          "weights_caveat": {
+            "type": "string",
+            "title": "Weights Caveat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "roll_tiers",
+          "substat_weights",
+          "weights_caveat"
+        ],
+        "title": "DrawModel",
+        "description": "Everything a projection needs that is the same for every piece.\n\nSent once on the snapshot. Per piece it would be 2,370 copies of two small tables."
+      },
       "Element": {
         "type": "string",
         "enum": [
@@ -7192,6 +7225,16 @@
             "type": "array",
             "title": "Unreadable",
             "default": []
+          },
+          "draw_model": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DrawModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -7234,6 +7277,24 @@
           "main_stat": {
             "type": "string",
             "title": "Main Stat"
+          },
+          "rarity": {
+            "type": "integer",
+            "title": "Rarity"
+          },
+          "level": {
+            "type": "integer",
+            "title": "Level"
+          },
+          "potential": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectionInputs"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -7241,7 +7302,9 @@
           "id",
           "slot",
           "stats",
-          "main_stat"
+          "main_stat",
+          "rarity",
+          "level"
         ],
         "title": "KernelCandidate",
         "description": "One artifact, as `search.ts`'s `Candidate` reads it.\n\nO.2. Smaller than `ArtifactRead` and translated: `stats` is keyed by **kernel quantity**,\nwith the main stat and every substat summed into one map, because the kernel takes one\nnumber per quantity.\n\nThe translation is `stat_calculator._quantity_for_prop`, which decides what every stat\nmeans and refuses rather than guessing. Doing it in TypeScript would be a second\ndefinition of the vocabulary with a silent failure mode \u2014 a mis-mapped substat produces a\nbuild optimal for a stat the character does not have, presented as the answer."
@@ -8451,6 +8514,38 @@
         ],
         "title": "PaginatedResponse[WeaponSummary]"
       },
+      "ProjectionInputs": {
+        "properties": {
+          "rolls_remaining": {
+            "type": "integer",
+            "title": "Rolls Remaining"
+          },
+          "rolls_total": {
+            "type": "integer",
+            "title": "Rolls Total"
+          },
+          "gains_a_substat": {
+            "type": "boolean",
+            "title": "Gains A Substat"
+          },
+          "substat_quantities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Substat Quantities"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rolls_remaining",
+          "rolls_total",
+          "gains_a_substat",
+          "substat_quantities"
+        ],
+        "title": "ProjectionInputs",
+        "description": "What the client needs to project one piece forward to its maximum level.\n\n`TASKS_artifact_ranking.md` A.4. The projection itself lives in `sim/artifact-projection.ts`,\nnext to the evaluator that consumes it; this is only the per-piece half of its input. The\nparts shared by every piece \u2014 the roll ladders and the draw weights \u2014 ride on\n`InventorySnapshot` once rather than 2,370 times.\n\n**`substat_quantities` exists because `KernelCandidate.stats` cannot answer it.** That map\nis summed, so a CRIT DMG circlet carrying a CRIT DMG substat is indistinguishable from one\nthat does not, and \"which lines does this piece have\" is exactly what decides whether an\nupgrade deepens a line or creates one.\n\n**Nothing here is a decomposition of the rolls the piece has already had.** That was the\nfirst draft's assumption and it was wrong: projecting *future* rolls needs the line count\nand the schedule, both exact, and never the history. `substat_rolls`' 85/11.5/3.5 exact /\nestimated / unknown split governs the roll bars on the inventory card and does not reach\nthis. Recorded because `DESIGN_artifact_ranking.md` \u00a76 names an undecomposable piece as a\nreason to refuse a score, and for the projection it is not one."
+      },
       "Rarity": {
         "type": "string",
         "enum": [
@@ -8751,6 +8846,28 @@
         ],
         "title": "RetrievalRead",
         "description": "A run, and everything needed to judge whether it should have been used."
+      },
+      "RollLadder": {
+        "properties": {
+          "quantity": {
+            "type": "string",
+            "title": "Quantity"
+          },
+          "values": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Values"
+          }
+        },
+        "type": "object",
+        "required": [
+          "quantity",
+          "values"
+        ],
+        "title": "RollLadder",
+        "description": "The values one substat can roll, at one rarity."
       },
       "RosterCharacter": {
         "properties": {

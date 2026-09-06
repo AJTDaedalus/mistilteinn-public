@@ -13,6 +13,17 @@ import {
   substatReadings,
 } from '../../shared/substat-bars/substat-bars';
 import { CatalogueService } from '../catalogue/catalogue.service';
+import { BuildsService, type BuildRead } from '../builds/builds.service';
+import { RotationsService } from '../rotations/rotations.service';
+import { TeamsService, type TeamRead } from '../teams/teams.service';
+import { buildsInTeam } from '../../shared/team-scope';
+import {
+  ArtifactRankingService,
+  type DeepDive,
+  type RankingRow,
+} from './artifact-ranking.service';
+import { type OutcomeDistribution } from '../../sim/artifact-outcome';
+import { type CalibrationProgress } from '../optimize/recipe-optimize.service';
 import {
   ArtifactsService,
   type ArtifactOptions,
@@ -67,6 +78,12 @@ export interface ArtifactRow {
   /** The piece's total roll value, or null when its rolls could not be decomposed.
    *  Null sorts last rather than as zero — "unknown" is not "worst". */
   rollValue: number | null;
+  /**
+   * What this piece is worth to the build the page was last ranked against, or `null` when it
+   * has not been ranked. `rank.refusal` non-null means it was ranked and honestly could not be
+   * scored — a different state from "no build chosen", and the card says which.
+   */
+  rank: RankingRow | null;
 }
 
 /** How many cards are rendered before "show more", and how many each press adds. */
@@ -87,7 +104,19 @@ const MORE_ROWS = 120;
  */
 const PAGE_SIZES = [120, 300, 600, Infinity] as const;
 
-export type SortKey = 'rollValue' | 'level' | 'set' | 'slot' | 'stars';
+export type SortKey =
+  | 'rollValue' | 'level' | 'set' | 'slot' | 'stars'
+  /** Signed damage change against the build as it stands, with this piece in its slot today. */
+  | 'delta'
+  /** The same, once the remaining rolls land at their expected values. The upgrade queue. */
+  | 'averageDelta'
+  /** The ceiling: what this piece could be worth if every remaining roll went the right way. */
+  | 'best'
+  /** Probability it beats itself once levelled — #291's own sentence, per piece. */
+  | 'odds';
+
+/** The three orderings that only mean anything once a build has been ranked against. */
+export const RANK_SORTS: readonly SortKey[] = ['odds', 'delta', 'averageDelta', 'best'];
 
 /**
  * A piece's total roll value, or null when any substat could not be decomposed.
@@ -108,9 +137,38 @@ export function totalRollValue(
   return total;
 }
 
+/**
+ * Sort by a ranked number, sinking every row that does not have one.
+ *
+ * **A refused or unranked piece is not a bad piece.** Sorting it as zero would bury a real
+ * artifact among the junk, or — worse, on a descending delta — float it above pieces that were
+ * actually measured. `rollValue` already sinks undecomposable pieces for the same reason, and
+ * this is that rule applied to the ranking columns.
+ */
+function byRanked(pick: (row: ArtifactRow) => number | null | undefined) {
+  return (a: ArtifactRow, b: ArtifactRow): number => {
+    const left = pick(a);
+    const right = pick(b);
+    const leftOk = typeof left === 'number' && Number.isFinite(left);
+    const rightOk = typeof right === 'number' && Number.isFinite(right);
+    if (!leftOk && !rightOk) return b.level - a.level;
+    if (!leftOk) return 1;
+    if (!rightOk) return -1;
+    return right - left;
+  };
+}
+
 /** Orderings, each descending in the direction a player cares about. */
 export function comparator(key: SortKey): (a: ArtifactRow, b: ArtifactRow) => number {
   switch (key) {
+    case 'delta':
+      return byRanked((row) => row.rank?.delta);
+    case 'averageDelta':
+      return byRanked((row) => row.rank?.averageDelta);
+    case 'best':
+      return byRanked((row) => row.rank?.best);
+    case 'odds':
+      return byRanked((row) => row.rank?.upgradeOdds);
     case 'level':
       return (a, b) => b.level - a.level || a.setName.localeCompare(b.setName);
     case 'set':
@@ -220,6 +278,7 @@ export class ArtifactsPage implements OnInit {
     const slots = new Map(opts.slots.map((s) => [s.key, s.display]));
     const stars = new Map(opts.rarities.map((r) => [r.key, r.stars]));
     const setArt = this.setIcons();
+    const ranked = this.ranked();
     return this.artifacts().map((piece) => ({
       id: piece.id,
       setName: piece.set_name ?? 'No set',
@@ -241,6 +300,7 @@ export class ArtifactsPage implements OnInit {
       mainStatKey: piece.main_stat_type,
       slotKey: piece.slot,
       rollValue: totalRollValue(piece.substat_analysis),
+      rank: ranked.get(piece.id) ?? null,
     }));
   });
 
@@ -254,6 +314,171 @@ export class ArtifactsPage implements OnInit {
   protected readonly mainStatFilter = signal('');
   protected readonly equippedFilter = signal<'' | 'yes' | 'no'>('');
   protected readonly sortBy = signal<SortKey>('rollValue');
+
+  // ── Ranking against a build (A.7) ──────────────────────────────────────────
+  //
+  // The picker lives here rather than on /optimize because this is the page a player is on
+  // while holding a new drop. `AUDIT_fribbels_parity.md` §2 lists "a per-piece score" as the
+  // last thing missing from this page, and this is it.
+
+  /**
+   * **The rotation is chosen first, and it names the team.**
+   *
+   * The first draft offered every build against every rotation — 75 x N — and a real run
+   * returned `422: build is not in the rotation's team`. Most of that cross-product does not
+   * exist: `POST /rotations/{id}/context-key` requires the build to be one of the team's four,
+   * because a cache key for "this build running this rotation" is meaningless otherwise. So
+   * the picker offers only what can actually be asked, which is what `/optimize` already does
+   * with `buildsInTeam`.
+   */
+  private readonly allBuilds = signal<BuildRead[]>([]);
+  private readonly teams = signal<TeamRead[]>([]);
+  private readonly rotationTeam = signal<Map<string, string>>(new Map());
+
+  protected readonly rotationChoices = signal<{ id: string; label: string }[]>([]);
+  protected readonly rankBuildId = signal('');
+  protected readonly rankRotationId = signal('');
+
+  /**
+   * The builds the chosen rotation's team actually fields.
+   *
+   * Labelled by **character**, with constellation and weapon as the detail — the decision
+   * `shared/team-scope.buildOptions` already made for `/optimize` and `/builds`. A build's own
+   * `name` is not used, and driving the page is how that was learned: all 84 builds in the
+   * local database have an empty name, so a label of `${character} — ${name}` rendered as
+   * "Furina —" seventy-five times over.
+   */
+  protected readonly buildChoices = computed(() => {
+    const teamId = this.rotationTeam().get(this.rankRotationId());
+    const team = this.teams().find((t) => t.id === teamId) ?? null;
+    if (!teamId || !team) return [];
+    return buildsInTeam(team, this.allBuilds()).map((build) => ({
+      id: build.id,
+      label: build.character?.name || 'No character',
+      detail: `C${build.constellation_level} · `
+        + `${build.weapon_display || build.weapon?.name || 'no weapon'}`,
+    }));
+  });
+  /** Null when idle. A calibration is ~3.2 s of gcsim and must never block a click. */
+  protected readonly rankProgress = signal<CalibrationProgress | null>(null);
+  protected readonly rankError = signal('');
+  /**
+   * What the last ranking said, keyed by artifact id.
+   *
+   * A map rather than a field written onto each row, because the rows are rebuilt whenever the
+   * inventory reloads and a ranking outlives that. `rows()` reads it back in.
+   */
+  protected readonly ranked = signal<Map<string, RankingRow>>(new Map());
+  /** The build's own damage, so the page can express a delta as a percentage of something. */
+  protected readonly rankBaseline = signal(0);
+  /** Carried from the draw model: these weights are cited, not measured. */
+  protected readonly rankCaveat = signal('');
+  protected readonly rankCaveats = signal<{ unstable: string[]; staleConversions: string[] }>({
+    unstable: [], staleConversions: [],
+  });
+  /**
+   * Sets whose pieces were refused because nothing calibrated them (OQ-A8).
+   *
+   * Offered rather than silently calibrated: each is ~3.2 s of gcsim, and calibrating all 65
+   * because one piece asked would be a three-minute wait nobody requested.
+   */
+  protected readonly uncalibratedSets = signal<
+    { setId: number; uuid: string; name: string; pieces: number }[]
+  >([]);
+  /** Sets the user has asked for, carried into the next ranking run. */
+  private readonly extraSets = signal<{ uuid: string; setId: number; name: string }[]>([]);
+
+  // ── The deep dive (A.12) ───────────────────────────────────────────────────
+  //
+  // #291's headline: "the best build with this artifact levelled up vs current for the % gain".
+  // One piece at a time and deliberately — 2,370 pinned searches at five seconds each is three
+  // hours, which is why the column above finds the candidates and this settles them.
+
+  /** The artifact currently being asked about, or `''`. */
+  protected readonly diveId = signal('');
+  protected readonly diveRunning = signal(false);
+  protected readonly diveError = signal('');
+  protected readonly dive = signal<DeepDive | null>(null);
+
+  // ── The distribution (A.15) ────────────────────────────────────────────────
+  //
+  // Genshin Optimizer's Artifact Upgrader draws this and it is the best idea on their page:
+  // the shaded mass right of the current value *is* the probability of an upgrade, so the
+  // number and the picture are the same object and a reader cannot take one and misread the
+  // other. `docs/AUDIT_go_handson.md` §2.
+
+  protected readonly outcomesId = signal('');
+  protected readonly outcomesRunning = signal(false);
+  protected readonly outcomesError = signal('');
+  protected readonly outcomes = signal<OutcomeDistribution | null>(null);
+
+  /**
+   * The histogram as SVG path data, plus where the two verticals go.
+   *
+   * **A shared y-axis, deliberately.** GO fits the axis per card — 7 %, then 8 %, then 6 % — and
+   * `AUDIT_go_handson.md` §6 lists that among the things not to copy: three charts on one screen
+   * with three different scales are not comparable, and comparison is the point of a sorted list.
+   * Here there is one chart at a time, so the scale is fixed to the tallest bin and stated.
+   */
+  protected readonly outcomeChart = computed(() => {
+    const found = this.outcomes();
+    if (!found?.bins.length) return null;
+    const low = found.bins[0].from;
+    const high = found.bins[found.bins.length - 1].to;
+    const span = high - low || 1;
+    const peak = Math.max(...found.bins.map((bin) => bin.p)) || 1;
+    const x = (damage: number) => ((damage - low) / span) * 100;
+    const y = (p: number) => 100 - (p / peak) * 100;
+
+    // A step outline, the way GO draws it: a histogram read as a shape rather than as bars.
+    const steps: string[] = [`M 0 100`];
+    for (const bin of found.bins) {
+      steps.push(`L ${x(bin.from).toFixed(3)} ${y(bin.p).toFixed(3)}`);
+      steps.push(`L ${x(bin.to).toFixed(3)} ${y(bin.p).toFixed(3)}`);
+    }
+    steps.push('L 100 100');
+
+    // The upgrade mass, as its own filled path. Clipped at the current value rather than drawn
+    // over it, so the fill and `probabilityOfUpgrade` cannot disagree about where the edge is.
+    const edge = Math.min(Math.max(x(found.current), 0), 100);
+    const fill: string[] = [`M ${edge.toFixed(3)} 100`];
+    for (const bin of found.bins) {
+      if (bin.to <= found.current) continue;
+      const from = Math.max(x(bin.from), edge);
+      fill.push(`L ${from.toFixed(3)} ${y(bin.p).toFixed(3)}`);
+      fill.push(`L ${x(bin.to).toFixed(3)} ${y(bin.p).toFixed(3)}`);
+    }
+    fill.push('L 100 100 Z');
+
+    return {
+      outline: steps.join(' '),
+      upgrade: fill.join(' '),
+      currentX: edge,
+      meanX: Math.min(Math.max(x(found.mean), 0), 100),
+      averageX: Math.min(Math.max(x(found.atAverage), 0), 100),
+      peak,
+    };
+  });
+
+  /**
+   * Hide pieces with no upgrades left.
+   *
+   * **Genshin Optimizer's Artifact Upgrader defaults its level filter to 0–19**, and
+   * `docs/AUDIT_go_handson.md` §4 records why: the tool is for pieces you have *not* levelled,
+   * because a +20 has no potential left to model. Driving this page confirmed the need from the
+   * other side — sorted by expected upgrade value, the whole first screen was `+20` pieces
+   * whose four numbers are necessarily identical, which reads as a broken calculation and is
+   * in fact the correct answer to a question nobody asked.
+   *
+   * Off by default, because the page is an inventory first and a ranker second, and a filter
+   * that hid two thirds of it on load would be a surprise.
+   */
+  protected readonly upgradableOnly = signal(false);
+
+  protected readonly canRank = computed(
+    () => !!this.rankBuildId() && !!this.rankRotationId() && !this.rankProgress(),
+  );
+  protected readonly hasRanking = computed(() => this.ranked().size > 0);
 
   /**
    * How many cards are actually put in the DOM.
@@ -321,10 +546,12 @@ export class ArtifactsPage implements OnInit {
     const set = this.setFilter();
     const main = this.mainStatFilter();
     const equipped = this.equippedFilter();
+    const upgradable = this.upgradableOnly();
     const kept = this.rows().filter((row) =>
       (!set || row.setId === set)
       && (!main || row.mainStatKey === main)
-      && (!equipped || (equipped === 'yes') === row.equipped),
+      && (!equipped || (equipped === 'yes') === row.equipped)
+      && (!upgradable || (row.rank?.rollsRemaining ?? 0) > 0),
     );
     return [...kept].sort(comparator(this.sortBy()));
   });
@@ -364,9 +591,208 @@ export class ArtifactsPage implements OnInit {
 
   private readonly service = inject(ArtifactsService);
   private readonly catalogue = inject(CatalogueService);
+  private readonly buildsService = inject(BuildsService);
+  private readonly rotationsService = inject(RotationsService);
+  private readonly teamsService = inject(TeamsService);
+  private readonly rankingService = inject(ArtifactRankingService);
+
+  /**
+   * Rank every owned piece against the chosen build and rotation.
+   *
+   * **A job with progress, never a request that blocks.** A cold calibration is ~3.2 s of gcsim
+   * in this tab; `RESEARCH_recipe_cost.md` is explicit that anything in this area is a job the
+   * user can walk away from. A warm `recipe-cache.ts` entry — which the user already has if
+   * they have optimized this build — skips it entirely.
+   */
+  /** Choosing a rotation re-scopes the builds, so a stale choice must not survive it. */
+  protected chooseRotation(rotationId: string): void {
+    this.rankRotationId.set(rotationId);
+    if (!this.buildChoices().some((choice) => choice.id === this.rankBuildId())) {
+      this.rankBuildId.set('');
+    }
+  }
+
+  protected async rankAgainstBuild(): Promise<void> {
+    if (!this.canRank()) return;
+    this.rankError.set('');
+    this.rankProgress.set({ done: 0, total: 1, current: 'starting', loading: true });
+    try {
+      const result = await this.rankingService.rank({
+        buildId: this.rankBuildId(),
+        rotationId: this.rankRotationId(),
+        onProgress: (progress) => this.rankProgress.set(progress),
+        extraSets: this.extraSets(),
+      });
+      this.ranked.set(new Map(result.rows.map((row) => [row.id, row])));
+      this.uncalibratedSets.set(result.uncalibratedSets);
+      this.rankBaseline.set(result.baseline);
+      this.rankCaveat.set(result.weightsCaveat);
+      this.rankCaveats.set(result.caveats);
+      // Sorting by the thing just computed, because leaving the list in roll-value order after
+      // a 3-second job would make the result invisible — the defect this page already shipped
+      // once, with a page-size control eleven screens down.
+      this.narrow(() => this.sortBy.set('averageDelta'));
+    } catch (err) {
+      this.rankError.set(apiErrorMessage(err));
+      this.ranked.set(new Map());
+      this.uncalibratedSets.set([]);
+    } finally {
+      this.rankProgress.set(null);
+    }
+  }
+
+  /**
+   * Calibrate one more 4-piece set and rank again (OQ-A8).
+   *
+   * The set is **added** to what has already been asked for rather than replacing it, so
+   * unlocking a second set does not silently re-refuse the first — and `recipe-cache.ts` means
+   * the ones already calibrated cost nothing the second time.
+   */
+  protected async calibrateSet(set: { setId: number; uuid: string; name: string }): Promise<void> {
+    if (this.extraSets().some((chosen) => chosen.setId === set.setId)) return;
+    this.extraSets.update((chosen) => [
+      ...chosen, { uuid: set.uuid, setId: set.setId, name: set.name },
+    ]);
+    await this.rankAgainstBuild();
+  }
+
+  /**
+   * Re-optimize the whole build around one piece, at its projected max level.
+   *
+   * The number issue #291 actually asks for. The column's delta is a **lower bound** on this,
+   * because a re-search may keep the same four neighbours and never does worse.
+   */
+  protected async diveInto(row: ArtifactRow): Promise<void> {
+    if (this.diveRunning()) return;
+    this.diveId.set(row.id);
+    this.dive.set(null);
+    this.diveError.set('');
+    this.diveRunning.set(true);
+    try {
+      this.dive.set(await this.rankingService.deepDive({
+        buildId: this.rankBuildId(),
+        rotationId: this.rankRotationId(),
+        artifactId: row.id,
+        extraSets: this.extraSets(),
+      }));
+    } catch (err) {
+      this.diveError.set(apiErrorMessage(err));
+    } finally {
+      this.diveRunning.set(false);
+    }
+  }
+
+  /**
+   * Enumerate what this piece could become.
+   *
+   * Separate from the dive because they answer different questions: the dive moves the *other*
+   * four slots, this one holds them still and varies the piece's own rolls.
+   */
+  protected async showOutcomes(row: ArtifactRow): Promise<void> {
+    if (this.outcomesRunning()) return;
+    this.outcomesId.set(row.id);
+    this.outcomes.set(null);
+    this.outcomesError.set('');
+    this.outcomesRunning.set(true);
+    try {
+      this.outcomes.set(await this.rankingService.outcomesFor({
+        buildId: this.rankBuildId(),
+        rotationId: this.rankRotationId(),
+        artifactId: row.id,
+        extraSets: this.extraSets(),
+        // Paging away, or asking about another piece, aborts the walk rather than leaving it
+        // to finish into a panel nobody is looking at.
+        shouldCancel: () => this.outcomesId() !== row.id,
+      }));
+    } catch (err) {
+      this.outcomesError.set(apiErrorMessage(err));
+    } finally {
+      this.outcomesRunning.set(false);
+    }
+  }
+
+  protected closeOutcomes(): void {
+    this.outcomesId.set('');
+    this.outcomes.set(null);
+    this.outcomesError.set('');
+  }
+
+  /** A damage figure as a share of the build's own — the x-axis's units. */
+  protected relativeTo(damage: number): string {
+    const base = this.rankBaseline();
+    if (!base) return '';
+    return this.asPercent((damage - base) / base);
+  }
+
+  protected closeDive(): void {
+    this.diveId.set('');
+    this.dive.set(null);
+    this.diveError.set('');
+  }
+
+  /** A signed percentage, for a number that is a share of the build's own damage. */
+  protected asPercent(fraction: number): string {
+    const pct = fraction * 100;
+    return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+  }
+
+  /** `delta` as a share of the build's own damage — #291's "% gain". */
+  protected deltaPercent(row: ArtifactRow, which: 'delta' | 'averageDelta' | 'best'): string {
+    const base = this.rankBaseline();
+    const rank = row.rank;
+    if (!rank || rank.refusal || !base) return '';
+    const value = which === 'best' ? rank.best - base : rank[which];
+    if (!Number.isFinite(value)) return '';
+    const pct = (value / base) * 100;
+    return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+  }
+
+  /** Why a ranked piece has no number, in words a user can act on. */
+  protected refusalText(row: ArtifactRow): string {
+    switch (row.rank?.refusal) {
+      case 'noSchedule':
+        return 'no upgrade schedule for this rarity and level';
+      case 'noLadders':
+        return 'no roll data for this rarity';
+      case 'needsCalibration':
+        return 'would complete an uncalibrated set — see above';
+      default:
+        return '';
+    }
+  }
 
   ngOnInit(): void {
     void this.load();
+    void this.loadRankingChoices();
+  }
+
+  /**
+   * The builds and rotations the ranking picker offers.
+   *
+   * Not awaited by `load` and not inside its `Promise.all`: the inventory is the page, and a
+   * list of cards that will not render until an unrelated endpoint answers is the same mistake
+   * the set art already avoids here.
+   */
+  private async loadRankingChoices(): Promise<void> {
+    try {
+      const [builds, rotations, teams] = await Promise.all([
+        this.buildsService.list(),
+        this.rotationsService.list(),
+        this.teamsService.list(),
+      ]);
+      this.allBuilds.set(builds);
+      this.teams.set(teams);
+      this.rotationTeam.set(new Map(rotations.items.map((r) => [r.id, r.team_id])));
+      this.rotationChoices.set(
+        rotations.items.map((rotation) => ({ id: rotation.id, label: rotation.name })),
+      );
+    } catch {
+      // Silent by design: the ranking panel simply offers nothing, and the inventory below it
+      // is unaffected. Surfacing this as a page error would make a working page look broken.
+      this.allBuilds.set([]);
+      this.teams.set([]);
+      this.rotationChoices.set([]);
+    }
   }
 
   protected async load(): Promise<void> {

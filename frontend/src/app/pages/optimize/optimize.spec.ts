@@ -167,8 +167,14 @@ describe('describePieces', () => {
     const named = describePieces(
       ['a', 'b'],
       [
-        { id: 'a', slot: 'equip_bracer', set_id: 1, stats: {}, main_stat: 'FIGHT_PROP_HP' },
-        { id: 'b', slot: 'equip_dress', set_id: 1, stats: {}, main_stat: 'FIGHT_PROP_CRITICAL' },
+        {
+          id: 'a', slot: 'equip_bracer', set_id: 1, stats: {},
+          main_stat: 'FIGHT_PROP_HP', rarity: 5, level: 20,
+        },
+        {
+          id: 'b', slot: 'equip_dress', set_id: 1, stats: {},
+          main_stat: 'FIGHT_PROP_CRITICAL', rarity: 5, level: 20,
+        },
       ],
       (slot) => ({ equip_bracer: 'Flower', equip_dress: 'Circlet' })[slot] ?? slot,
     );

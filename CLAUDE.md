@@ -34,7 +34,7 @@ this list.
 | `TASKS_optimizer.md` | the search surface (#78–#82) |
 | `TASKS_loose_ends.md` | icons, and the stale-marker sweep (#84–#89) |
 | `TASKS_weapon_passives.md` | weapon comparison's gcsim second tier (#92, and one push straight to `dev` its own banner refuses to tidy away) |
-| `DESIGN_artifact_ranking.md` | scoring one artifact against a build, on the rotation engine |
+| `TASKS_artifact_ranking.md` | scoring one artifact against a build, its whole outcome distribution, and the pinned re-search #291 asked for |
 | `BACKLOG_frontend.md` | the owner's manual audit, §§1–12 (#162–#181) |
 | `TASKS_rotation_library.md` | publishing, finding, liking and copying a rotation (#177–#180) |
 | `DESIGN_rotation_builder.md` | the builder's design pass and every surface item (#181, #184) |

@@ -93,7 +93,16 @@ async def test_a_candidate_is_what_the_kernel_reads(
 
     assert len(snapshot["artifacts"]) == 1
     candidate = snapshot["artifacts"][0]
-    assert set(candidate) == {"id", "slot", "set_id", "stats", "main_stat"}
+    assert set(candidate) == {
+        "id", "slot", "set_id", "stats", "main_stat",
+        # A.4 added three, and this is the decision that test's docstring asks for. They are
+        # paid 2,370 times and earn it: `rarity` and `level` were already hashed into the
+        # inventory version and deliberately not emitted — see `_inventory_version`, which
+        # called itself "a superset of what the payload carries" — so emitting them narrows an
+        # over-hash rather than widening a risk. `potential` is the artifact ranker's input and
+        # is four small numbers, not a second copy of the piece.
+        "rarity", "level", "potential",
+    }
     assert candidate["slot"] == "equip_dress"
     # **Carried even though it is already summed into `stats`.** The kernel wants one number
     # per quantity and does not care which was the main stat; a user cares enormously, and it
@@ -379,3 +388,102 @@ async def test_equipping_a_piece_invalidates_the_snapshot(
 
     assert after["version"] != before["version"]
     assert after["artifacts"] == before["artifacts"], "the payload itself did not change"
+
+
+# ── A.4: what the artifact ranker projects from ──────────────────────────────
+
+
+async def test_a_candidate_carries_what_a_projection_needs(
+    authed_client: AsyncClient, db_session: AsyncSession, piece: str,
+):
+    """`TASKS_artifact_ranking.md` A.4. The fixture is a 5-star at +20: nothing left."""
+    db_session.expire_all()
+
+    candidate = (await authed_client.get(INVENTORY)).json()["artifacts"][0]
+
+    assert candidate["rarity"] == 5
+    assert candidate["level"] == 20
+    potential = candidate["potential"]
+    assert potential["rolls_remaining"] == 0, "a +20 five-star has no upgrades left"
+    assert potential["rolls_total"] == 5
+    assert potential["gains_a_substat"] is False
+
+
+async def test_the_lines_are_named_because_the_summed_pool_cannot_name_them(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user, piece: str,
+):
+    """The reason `substat_quantities` exists at all.
+
+    A CRIT DMG circlet with a CRIT DMG **substat** has one entry in `stats` for both, so the
+    summed pool cannot say whether the piece has a CRIT DMG line — and that is exactly what
+    decides whether a future roll deepens a line or creates one.
+    """
+    user, _ = authed_user
+    artifact = Artifact(
+        owner_id=str(user.id), slot=ArtifactSlot.CIRCLET, rarity=Rarity.FIVE_STAR, level=0,
+        main_stat_type=StatType.CRIT_DMG, main_stat_value=0.078,
+        substats=[
+            {"stat": "FIGHT_PROP_CRITICAL_HURT", "value": 0.078},
+            {"stat": "FIGHT_PROP_CRITICAL", "value": 0.039},
+            {"stat": "FIGHT_PROP_ATTACK_PERCENT", "value": 0.047},
+        ],
+    )
+    db_session.add(artifact)
+    await db_session.flush()
+    db_session.expire_all()
+
+    body = (await authed_client.get(INVENTORY)).json()
+    card = next(c for c in body["artifacts"] if c["id"] == str(artifact.id))
+
+    # One entry in the pool for two sources — which is the whole problem.
+    assert "crit_dmg" in card["stats"]
+    assert card["potential"]["substat_quantities"] == ["crit_dmg", "crit_rate", "atk_pct"]
+    # Three lines at +0: five upgrades ahead, one of which creates the fourth.
+    assert card["potential"]["rolls_remaining"] == 5
+    assert card["potential"]["gains_a_substat"] is True
+
+
+def ladders_of(model: dict) -> dict[str, list[float]]:
+    """The five-star roll ladders, keyed by quantity."""
+    return {row["quantity"]: row["values"] for row in model["roll_tiers"]["5"]}
+
+
+async def test_the_draw_model_ships_once_and_carries_its_caveat(
+    authed_client: AsyncClient, db_session: AsyncSession, piece: str,
+):
+    """The shared half of the projection input, and the citation that has to travel with it."""
+    db_session.expire_all()
+
+    model = (await authed_client.get(INVENTORY)).json()["draw_model"]
+
+    # Kernel quantities, not GO's own spelling: these have to join `roll_tiers` below without
+    # the client holding two vocabularies and a mapping between them.
+    assert set(model["substat_weights"]) == set(ladders_of(model))
+    assert model["substat_weights"]["flat_hp"] > model["substat_weights"]["crit_rate"]
+    # Only the rarities actually held. The fixture inventory is five-star.
+    assert set(model["roll_tiers"]) == {"5"}
+    ladders = ladders_of(model)
+    assert len(ladders["crit_dmg"]) == 4, "four roll tiers at five-star"
+    assert ladders["crit_dmg"] == sorted(ladders["crit_dmg"])
+    # The weights are cited rather than derived, and a number computed from them has to be
+    # able to say so on screen — not in a comment nobody reading it will see.
+    assert "cannot" in model["weights_caveat"] or "could not" in model["weights_caveat"]
+
+
+async def test_a_ladder_is_never_the_unupgradable_fixed_value(
+    authed_client: AsyncClient, db_session: AsyncSession, piece: str,
+):
+    """`_tiers_for` filters depots that publish one fixed value; `roll_tiers` inherits that.
+
+    It went wrong once — a single `0.1943` merged beside 5-star CRIT DMG's real
+    `0.0544-0.0777` ladder divided `roll_value` by the wrong maximum, scoring a 24.9% CRIT DMG
+    substat 1.28 instead of 3.20. A projection reading that ladder would overstate every
+    remaining roll by the same factor.
+    """
+    db_session.expire_all()
+
+    ladders = ladders_of((await authed_client.get(INVENTORY)).json()["draw_model"])
+
+    assert max(ladders["crit_dmg"]) < 0.1, ladders["crit_dmg"]
+    for quantity, values in ladders.items():
+        assert len(set(values)) == len(values) > 1, f"{quantity} is not a ladder: {values}"

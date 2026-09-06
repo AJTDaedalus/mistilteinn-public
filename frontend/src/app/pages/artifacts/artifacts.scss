@@ -461,3 +461,231 @@
 /* The set picker replaced a `<select>` and needs its width back — a card trigger sizes to its
    content, and an empty one would otherwise be narrower than the label above it. */
 .refine__set { flex: 0 1 16rem; min-width: 10rem; }
+
+/* ── Ranking against a build (A.7) ────────────────────────────────────────────
+ *
+ * Every colour here is a token. `npm run check:tokens` exists because an undefined custom
+ * property invalidates its whole declaration silently and the element keeps what it had —
+ * which is how `var(--accent)` once drew a badge as dark text on a dark tile with a clean
+ * build, a passing lint and a unit test asserting its content.
+ */
+
+.rank-panel {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--brass);
+  border-radius: var(--radius-2);
+  background: var(--bg-deep);
+
+  h2 {
+    margin: 0 0 var(--space-2);
+  }
+}
+
+.rank-panel__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-end;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    font-family: var(--font-body);
+    color: var(--ink-dim);
+  }
+
+  select {
+    min-width: 14rem;
+  }
+}
+
+/* One line per card. Deliberately compact: it sits inside a grid of 120 cards, and a block
+ * that doubled a card's height would push the list back to the eleven-screen page the
+ * page-size control was added to fix. */
+.card__rank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  align-items: baseline;
+  margin: var(--space-2) 0 0;
+}
+
+.card__rank-delta {
+  font-weight: 600;
+
+  /* The two colours the app uses to say something is better or worse, from the palette rather
+   * than written out by hand — the defect FINDINGS_frontend_validation.md found in nine
+   * stylesheets at once. */
+  &.up { color: var(--mint-hi); }
+  &.down { color: var(--danger); }
+}
+
+.card__rank-band {
+  font-size: 0.85em;
+}
+
+.card__rank-grade {
+  margin-left: auto;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--brass);
+  border-radius: var(--radius-pill);
+  color: var(--brass-hi);
+  font-family: var(--font-display);
+}
+
+.card__rank--none {
+  margin: var(--space-2) 0 0;
+  font-size: 0.85em;
+}
+
+/* The upgradable-only toggle. Genshin Optimizer defaults its own level filter to 0-19 for the
+ * same reason: a +20 piece has no potential left to model. */
+.rank-panel__only {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+  margin-top: var(--space-2);
+  color: var(--ink-dim);
+  font-family: var(--font-body);
+}
+
+/* The draw-weight caveat as a mark rather than a paragraph. */
+.rank-panel__caveat {
+  margin-top: var(--space-2);
+  color: var(--ink-faint);
+  font-family: var(--font-body);
+  font-size: 0.8em;
+  text-decoration: underline dotted;
+  cursor: help;
+}
+
+/* The on-demand calibration offer (OQ-A8): a label and the chips, nothing else. */
+.rank-panel__sets {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  margin-top: var(--space-2);
+}
+
+/* The two questions a card can be asked. **Distinct classes on purpose**: they were briefly
+ * one, and an index-based selector then hit the wrong control — two buttons that do different
+ * things sharing a name is the kind of thing that later reads as one thing. */
+.card__ask {
+  margin-top: var(--space-1);
+  font-size: 0.85em;
+}
+
+.card__dive-result {
+  margin-top: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--brass);
+  border-radius: var(--radius-1);
+
+  p {
+    margin: 0 0 var(--space-1);
+    font-size: 0.85em;
+  }
+}
+
+.card__dive-gain {
+  display: flex;
+  gap: var(--space-1);
+  align-items: baseline;
+
+  strong {
+    &.up { color: var(--mint-hi); }
+    &.down { color: var(--danger); }
+  }
+}
+
+.card__dive-close {
+  font-size: 0.8em;
+}
+
+/* The outcome distribution (A.15), following AUDIT_go_handson.md §2 — with §6's two
+ * corrections: one chart at a time on a stated scale, and an empty state that says which
+ * of "nothing to show" and "nothing selected" it means. */
+.card__outcomes {
+  margin-top: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--brass);
+  border-radius: var(--radius-1);
+
+  p {
+    margin: 0 0 var(--space-1);
+    font-size: 0.85em;
+  }
+}
+
+.card__outcomes-head {
+  display: flex;
+  gap: var(--space-1);
+  align-items: baseline;
+}
+
+.card__outcomes-chart {
+  width: 100%;
+  height: 5rem;
+  overflow: visible;
+
+  .chart__upgrade {
+    fill: var(--mint);
+    opacity: 0.35;
+    stroke: none;
+  }
+
+  .chart__outline {
+    fill: none;
+    stroke: var(--brass-hi);
+    stroke-width: 0.8;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .chart__current {
+    stroke: var(--danger);
+    stroke-width: 1;
+    stroke-dasharray: 3 2;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .chart__mean {
+    stroke: var(--mint-hi);
+    stroke-width: 1;
+    stroke-dasharray: 3 2;
+    vector-effect: non-scaling-stroke;
+  }
+}
+
+.card__outcomes-count {
+  display: flex;
+  gap: var(--space-1);
+  align-items: baseline;
+}
+
+.card__outcomes-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  margin: 0 0 var(--space-1);
+  padding: 0;
+  list-style: none;
+  font-size: 0.8em;
+  color: var(--ink-dim);
+
+  li {
+    display: flex;
+    gap: var(--space-1);
+    align-items: center;
+  }
+
+  .key {
+    display: inline-block;
+    width: 0.9rem;
+    height: 0.2rem;
+  }
+
+  .key--current { background: var(--danger); }
+  .key--mean { background: var(--mint-hi); }
+}

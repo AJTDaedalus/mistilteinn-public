@@ -184,6 +184,119 @@
   } @else if (loading()) {
     <p class="muted">Loading…</p>
   } @else {
+    <!-- **Ranking against a build.** The question a player is holding a new drop to ask, on
+         the page they are already on. `AUDIT_fribbels_parity.md` §2 listed a per-piece score
+         as the last thing missing here. -->
+    <section class="rank-panel" aria-label="Rank artifacts against a build">
+      <div class="rank-panel__controls">
+        <!-- Rotation first: it names the team, and only that team's four builds can be asked
+             about. Offering all of them produced a 422 on a real run. -->
+        <label>
+          <span>Rotation</span>
+          <select
+            [value]="rankRotationId()"
+            (change)="chooseRotation($any($event.target).value)"
+            [disabled]="!!rankProgress()"
+          >
+            <option value="">Choose a rotation…</option>
+            @for (choice of rotationChoices(); track choice.id) {
+              <option [value]="choice.id">{{ choice.label }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
+          <span>Character</span>
+          <select
+            [value]="rankBuildId()"
+            (change)="rankBuildId.set($any($event.target).value)"
+            [disabled]="!!rankProgress() || !rankRotationId()"
+          >
+            <option value="">
+              {{ rankRotationId() ? 'Choose a character…' : 'Pick a rotation first' }}
+            </option>
+            @for (choice of buildChoices(); track choice.id) {
+              <option [value]="choice.id">{{ choice.label }} · {{ choice.detail }}</option>
+            }
+          </select>
+        </label>
+
+        <button type="button" [disabled]="!canRank()" (click)="rankAgainstBuild()">
+          {{ hasRanking() ? 'Rank again' : 'Rank my artifacts' }}
+        </button>
+      </div>
+
+      @if (rankProgress(); as progress) {
+        <!-- A job with progress, never a request that blocks: a cold calibration is gcsim in
+             this tab. -->
+        <p class="muted" role="status">
+          @if (progress.loading) {
+            Loading the simulator…
+          } @else {
+            Calibrating {{ progress.current }} ({{ progress.done }} of {{ progress.total }})…
+          }
+        </p>
+      }
+
+      @if (rankError(); as message) {
+        <p class="error" role="alert">{{ message }}</p>
+      }
+
+      @if (hasRanking()) {
+        <label
+          class="rank-panel__only"
+          title="Hide pieces with no upgrades left, the way Genshin Optimizer's level filter does"
+        >
+          <input
+            type="checkbox"
+            [checked]="upgradableOnly()"
+            (change)="narrow(() => upgradableOnly.set($any($event.target).checked))"
+          />
+          <span>Upgradable</span>
+        </label>
+        @if (rankCaveats().unstable.length) {
+          <p class="warn" title="The rotation did not run the same way every iteration, so these numbers are less certain than they look">
+            <span class="eyebrow">Unstable</span>
+            <span class="mono">{{ rankCaveats().unstable.join(', ') }}</span>
+          </p>
+        }
+        @if (rankCaveats().staleConversions.length) {
+          <p class="warn" title="Conversions baked into the calibration that these stats would have moved">
+            <span class="eyebrow">Stale</span>
+            <span class="mono">{{ rankCaveats().staleConversions.join(', ') }}</span>
+          </p>
+        }
+        @if (uncalibratedSets().length) {
+          <!-- OQ-A8: calibrate the other set on demand rather than scoring under the wrong
+               recipe. Most-refused first, so one click unlocks the most of the inventory. -->
+          <div
+            class="rank-panel__sets"
+            title="These sets are not calibrated, so pieces completing them have no score. About three seconds of simulation each."
+          >
+            <span class="eyebrow">Calibrate</span>
+            <div class="chips">
+              @for (set of uncalibratedSets(); track set.setId) {
+                <button
+                  type="button"
+                  class="chip chip--text"
+                  [disabled]="!!rankProgress()"
+                  (click)="calibrateSet(set)"
+                >{{ set.name }} ({{ set.pieces }})</button>
+              }
+            </div>
+          </div>
+        }
+
+        @if (rankCaveat(); as caveat) {
+          <!-- **A mark, not a paragraph.** The caveat is real and load-bearing — the draw
+               weights are cited and could not be confirmed against this inventory — and it is
+               still not what someone ranking artifacts is reading right now. The claim lives on
+               hover; the argument lives in docs/RESEARCH_substat_draw_weights.md. -->
+          <abbr class="rank-panel__caveat" [attr.title]="caveat">Draw weights unverified</abbr>
+        }
+      }
+    </section>
+
     <div class="filters">
       <button type="button" [class.active]="slotFilter === ''" (click)="filterBySlot('')">
         All
@@ -239,6 +352,14 @@
       <label class="refine__sort">
         <span>Sort</span>
         <select [value]="sortBy()" (change)="narrow(() => sortBy.set($any($event.target).value))">
+          @if (hasRanking()) {
+            <!-- Offered only once there is something to sort by. An ordering that silently
+                 does nothing is worse than an absent one. -->
+            <option value="odds">Upgrade odds</option>
+            <option value="averageDelta">Upgrade value (expected)</option>
+            <option value="delta">Upgrade value (today)</option>
+            <option value="best">Upgrade value (ceiling)</option>
+          }
           <option value="rollValue">Roll value</option>
           <option value="level">Level</option>
           <option value="stars">Rarity</option>
@@ -327,6 +448,161 @@
               </li>
             }
           </ul>
+
+          @if (row.rank; as rank) {
+            @if (rank.refusal) {
+              <!-- Ranked and honestly unscoreable. Not a zero, and not silence either: a blank
+                   card is indistinguishable from one the ranking never reached. -->
+              <p class="card__rank card__rank--none muted">{{ refusalText(row) }}</p>
+            } @else {
+              <p class="card__rank" title="Mean change vs current, once levelled">
+                <span class="eyebrow">Levelled</span>
+                <span
+                  class="mono card__rank-delta"
+                  [class.up]="rank.averageDelta > 0"
+                  [class.down]="rank.averageDelta < 0"
+                >{{ deltaPercent(row, 'averageDelta') }}</span>
+                <span
+                  class="mono muted card__rank-band"
+                  [attr.title]="'Now ' + deltaPercent(row, 'delta') + ', ceiling '
+                    + deltaPercent(row, 'best')"
+                >{{ deltaPercent(row, 'delta') }} · {{ deltaPercent(row, 'best') }}</span>
+                <span class="card__rank-grade" title="Against a perfect piece with this main stat">
+                  {{ rank.grade }}
+                </span>
+              </p>
+
+              @if (rank.upgradeOdds !== null) {
+                <p class="card__rank" title="Chance it beats this piece as it stands, once levelled">
+                  <span class="eyebrow">Upgrade odds</span>
+                  <span class="mono">{{ (rank.upgradeOdds * 100).toFixed(0) }}%</span>
+                </p>
+              }
+
+              <!-- A.15: what this piece could become, as a distribution. Separate from the
+                   dive because they vary different things — this holds the other four slots
+                   still and varies the piece's own rolls. -->
+              @if (rank.rollsRemaining > 0) {
+                <button
+                  type="button"
+                  class="card__ask card__ask--outcomes"
+                  [disabled]="outcomesRunning()"
+                  (click)="showOutcomes(row)"
+                >
+                  {{ outcomesRunning() && outcomesId() === row.id
+                     ? 'Enumerating…' : 'What could it become?' }}
+                </button>
+              }
+
+              @if (outcomesId() === row.id) {
+                @if (outcomesError(); as message) {
+                  <p class="error" role="alert">{{ message }}</p>
+                }
+                @if (outcomes(); as found) {
+                  <div class="card__outcomes">
+                    <p class="card__outcomes-head" title="Chance it beats this piece as it stands today">
+                      <span class="eyebrow">Upgrade odds</span>
+                      <span class="mono card__rank-delta" [class.up]="found.probabilityOfUpgrade > 0">
+                        {{ (found.probabilityOfUpgrade * 100).toFixed(1) }}%
+                      </span>
+                    </p>
+
+                    @if (outcomeChart(); as chart) {
+                      <svg
+                        class="card__outcomes-chart"
+                        viewBox="0 0 100 100"
+                        preserveAspectRatio="none"
+                        role="img"
+                        [attr.aria-label]="
+                          'Damage outcomes for this artifact. '
+                          + (found.probabilityOfUpgrade * 100).toFixed(1)
+                          + ' percent of them beat it as it stands.'"
+                      >
+                        <!-- The shaded mass IS the probability of an upgrade: the number above
+                             and this region are the same quantity, so they cannot disagree. -->
+                        <path class="chart__upgrade" [attr.d]="chart.upgrade" />
+                        <path class="chart__outline" [attr.d]="chart.outline" />
+                        <line
+                          class="chart__current"
+                          [attr.x1]="chart.currentX" [attr.x2]="chart.currentX"
+                          y1="0" y2="100"
+                        />
+                        <line
+                          class="chart__mean"
+                          [attr.x1]="chart.meanX" [attr.x2]="chart.meanX"
+                          y1="0" y2="100"
+                        />
+                      </svg>
+                    }
+
+                    <!-- Two keys, no legend sentence: the shaded region needs no gloss once
+                         the odds above it are named, and the two verticals do. -->
+                    <ul class="card__outcomes-key">
+                      <li title="This piece as it stands">
+                        <span class="key key--current"></span>
+                        <span class="mono">{{ relativeTo(found.current) }}</span>
+                      </li>
+                      <li
+                        [attr.title]="'Expected once levelled. Point estimate reads '
+                          + relativeTo(found.atAverage)
+                          + ', which differs because rolls compete for the same upgrades.'"
+                      >
+                        <span class="key key--mean"></span>
+                        <span class="mono">{{ relativeTo(found.mean) }}</span>
+                      </li>
+                    </ul>
+
+                    <p
+                      class="card__outcomes-count"
+                      title="Every way the remaining rolls can land, enumerated exactly — no sampling"
+                    >
+                      <span class="eyebrow">Outcomes</span>
+                      <span class="mono">{{ found.outcomes.toLocaleString() }}</span>
+                    </p>
+
+                    <button type="button" class="card__dive-close" (click)="closeOutcomes()">
+                      Close
+                    </button>
+                  </div>
+                }
+              }
+
+              <!-- A.12 / #291: the number a single-slot swap cannot give. Deliberate and one
+                   piece at a time — a pinned re-search is five seconds. -->
+              <button
+                type="button"
+                class="card__ask card__ask--dive"
+                [disabled]="diveRunning()"
+                [attr.title]="'Re-optimizes the whole build around this piece. Searches the '
+                  + 'best 24 pieces per slot, not the whole inventory.'"
+                (click)="diveInto(row)"
+              >
+                {{ diveRunning() && diveId() === row.id ? 'Searching…' : 'Best build with this' }}
+              </button>
+
+              @if (diveId() === row.id) {
+                @if (diveError(); as message) {
+                  <p class="error" role="alert">{{ message }}</p>
+                }
+                @if (dive(); as found) {
+                  <div class="card__dive-result">
+                    <!-- **A max, not a mean**, which is why the title is not "mean change". -->
+                    <p class="card__dive-gain" title="Max improvement">
+                      <span class="eyebrow">Best build</span>
+                      <strong
+                        class="mono"
+                        [class.up]="found.gain > 0"
+                        [class.down]="found.gain < 0"
+                      >{{ asPercent(found.gain) }}</strong>
+                    </p>
+                    <button type="button" class="card__dive-close" (click)="closeDive()">
+                      Close
+                    </button>
+                  </div>
+                }
+              }
+            }
+          }
 
           @if (totalRollValue(row); as total) {
             <p class="card__total" title="What this artifact rolled, against the best it could">
