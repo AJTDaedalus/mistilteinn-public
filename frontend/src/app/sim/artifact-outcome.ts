@@ -78,9 +78,22 @@ export interface OutcomeDistribution {
   atAverage: number;
   /** `(mean - atAverage) / atAverage`. The damage function's curvature, not an error. */
   curvature: number;
-  /** Damage with the piece exactly as it stands. The reference the shading is measured from. */
+  /** Damage with the piece exactly as it stands. Drawn as the "now" marker on the chart. */
   current: number;
-  /** `P(damage > current)` — the number issue #291 names. */
+  /**
+   * The damage this has to beat to be worth equipping — the build as it stands, with whatever
+   * is in this slot today.
+   *
+   * **Separate from `current`, and it was not.** `probabilityOfUpgrade` measured
+   * `P(damage > current)`, which asks whether levelling the piece beats *the same piece
+   * unlevelled* — a question whose answer is almost always yes, because levelling adds five
+   * rolls. A +0 flower reported "upgrade odds 99.9%" while its expected gain over the piece
+   * actually equipped was +0.2%, and the two numbers looked like they contradicted each other
+   * because they were answering different questions. Owner, 2026-09-06: the number should be
+   * "the probability that, if fully levelled, that artifact provides an upgrade".
+   */
+  reference: number;
+  /** `P(damage > reference)` — the number issue #291 names. */
   probabilityOfUpgrade: number;
   /** How many distinct outcomes were enumerated, so the panel can say it enumerated them. */
   outcomes: number;
@@ -103,6 +116,8 @@ export function outcomeDistribution(
   piece: Piece,
   model: DrawModel,
   evaluate: (stats: StatPool) => number,
+  /** The damage to beat. Defaults to the piece's own current damage — see `reference`. */
+  reference?: number,
 ): OutcomeDistribution | null {
   const potential = piece.potential;
   if (!potential) return null;
@@ -184,8 +199,9 @@ export function outcomeDistribution(
   const total = weights.reduce((a, b) => a + b, 0);
   const mean = damages.reduce((acc, d, i) => acc + d * weights[i], 0) / total;
   const atAverage = evaluate(meanStats);
+  const bar = reference ?? current;
   const upgrade = damages.reduce(
-    (acc, d, i) => acc + (d > current ? weights[i] : 0), 0,
+    (acc, d, i) => acc + (d > bar ? weights[i] : 0), 0,
   ) / total;
 
   return {
@@ -194,6 +210,7 @@ export function outcomeDistribution(
     atAverage,
     curvature: atAverage > 0 ? (mean - atAverage) / atAverage : 0,
     current,
+    reference: bar,
     probabilityOfUpgrade: upgrade,
     outcomes: damages.length,
   };
@@ -243,6 +260,8 @@ export async function outcomeDistributionAsync(
   options: {
     shouldCancel?: () => boolean;
     onProgress?: (done: number, total: number) => void;
+    /** The damage to beat. Defaults to the piece's own current damage — see `reference`. */
+    reference?: number;
   } = {},
 ): Promise<OutcomeDistribution | null> {
   const potential = piece.potential;
@@ -256,7 +275,7 @@ export async function outcomeDistributionAsync(
         (q) => (model.rollTiers[String(piece.rarity)] ?? []).some((r) => r.quantity === q),
       )
     : [null];
-  if (!branches.length) return outcomeDistribution(piece, model, evaluate);
+  if (!branches.length) return outcomeDistribution(piece, model, evaluate, options.reference);
 
   const parts: { found: OutcomeDistribution; weight: number }[] = [];
   let clock = Date.now();
@@ -271,7 +290,7 @@ export async function outcomeDistributionAsync(
       ...model,
       substatWeights: { [line]: model.substatWeights[line] ?? 1 },
     };
-    const found = outcomeDistribution(piece, narrowed, evaluate);
+    const found = outcomeDistribution(piece, narrowed, evaluate, options.reference);
     if (found) parts.push({ found, weight: weightOf(piece, model, line) });
 
     options.onProgress?.(index + 1, branches.length);
@@ -324,6 +343,9 @@ function combine(parts: readonly { found: OutcomeDistribution; weight: number }[
     atAverage,
     curvature: atAverage > 0 ? (mean - atAverage) / atAverage : 0,
     current: parts[0].found.current,
+    // The bar is the same for every branch — it is a property of the build, not of which
+    // fourth line the piece happens to roll.
+    reference: parts[0].found.reference,
     probabilityOfUpgrade: share((d) => d.probabilityOfUpgrade),
     outcomes: parts.reduce((sum, part) => sum + part.found.outcomes, 0),
   };

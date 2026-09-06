@@ -6,12 +6,7 @@ import { CardPicker, type CardOption } from '../../shared/card-picker/card-picke
 import { isFilterableMainStat, sortMainStats } from '../../shared/stat-order';
 import { CatalogueIcon } from '../../shared/icon/icon';
 import { describeStat as describe } from '../../shared/stat-label';
-import {
-  barsTitle,
-  rollBars,
-  rollValuePercent,
-  substatReadings,
-} from '../../shared/substat-bars/substat-bars';
+import { SubstatBars, substatReadings } from '../../shared/substat-bars/substat-bars';
 import { CatalogueService } from '../catalogue/catalogue.service';
 import { BuildsService, type BuildRead } from '../builds/builds.service';
 import { RotationsService } from '../rotations/rotations.service';
@@ -73,6 +68,8 @@ export interface ArtifactRow {
   equipped: boolean;
   /** The character wearing it, when it is equipped. */
   holder: string | null;
+  /** Their portrait, so the wearer is recognisable without reading. */
+  holderIcon: string | null;
   /** Sort keys, kept beside the display strings so a comparator never re-parses one. */
   setId: string;
   mainStatKey: string;
@@ -216,7 +213,7 @@ export function comparator(key: SortKey): (a: ArtifactRow, b: ArtifactRow) => nu
  */
 @Component({
   selector: 'page-artifacts',
-  imports: [FormsModule, CatalogueIcon, CardPicker],
+  imports: [FormsModule, CatalogueIcon, CardPicker, SubstatBars],
   templateUrl: './artifacts.html',
   styleUrl: './artifacts.scss',
 })
@@ -285,7 +282,10 @@ export class ArtifactsPage implements OnInit {
     const holders = new Map(
       this.allBuilds()
         .filter((build) => build.character?.name)
-        .map((build) => [build.id, build.character!.name] as const),
+        .map((build) => [
+          build.id,
+          { name: build.character!.name, icon: build.character!.icon ?? null },
+        ] as const),
     );
     return this.artifacts().map((piece) => ({
       id: piece.id,
@@ -307,7 +307,8 @@ export class ArtifactsPage implements OnInit {
       // **Who is wearing it.** The card said "Equipped" and stopped there, so the one
       // question that state raises — equipped to whom? — needed a trip to `/builds`. The
       // builds are already loaded on this page for the ranking picker.
-      holder: holders.get(piece.build_id ?? '') ?? null,
+      holder: holders.get(piece.build_id ?? '')?.name ?? null,
+      holderIcon: holders.get(piece.build_id ?? '')?.icon ?? null,
       setId: piece.artifact_set_id ?? '',
       mainStatKey: piece.main_stat_type,
       slotKey: piece.slot,
@@ -450,12 +451,15 @@ export class ArtifactsPage implements OnInit {
     }
     steps.push('L 100 100');
 
-    // The upgrade mass, as its own filled path. Clipped at the current value rather than drawn
-    // over it, so the fill and `probabilityOfUpgrade` cannot disagree about where the edge is.
-    const edge = Math.min(Math.max(x(found.current), 0), 100);
+    // The upgrade mass, as its own filled path. Clipped at **the bar the probability uses**
+    // rather than drawn over it, so the fill and `probabilityOfUpgrade` cannot disagree about
+    // where the edge is. That bar is `reference` — the equipped build — not `current`, which
+    // is only where this piece sits today; shading from `current` drew the mass that beats
+    // the piece's own unlevelled self while the number beside it said something else.
+    const edge = Math.min(Math.max(x(found.reference), 0), 100);
     const fill: string[] = [`M ${edge.toFixed(3)} 100`];
     for (const bin of found.bins) {
-      if (bin.to <= found.current) continue;
+      if (bin.to <= found.reference) continue;
       const from = Math.max(x(bin.from), edge);
       fill.push(`L ${from.toFixed(3)} ${y(bin.p).toFixed(3)}`);
       fill.push(`L ${x(bin.to).toFixed(3)} ${y(bin.p).toFixed(3)}`);
@@ -465,7 +469,10 @@ export class ArtifactsPage implements OnInit {
     return {
       outline: steps.join(' '),
       upgrade: fill.join(' '),
-      currentX: edge,
+      // Where this piece sits today, still drawn — it is the "now" marker in the key.
+      currentX: Math.min(Math.max(x(found.current), 0), 100),
+      // The bar to clear: the build as equipped.
+      referenceX: edge,
       meanX: Math.min(Math.max(x(found.mean), 0), 100),
       averageX: Math.min(Math.max(x(found.atAverage), 0), 100),
       peak,
@@ -858,18 +865,6 @@ export class ArtifactsPage implements OnInit {
   protected starList(stars: number): number[] {
     return Array.from({ length: Math.max(0, stars) }, (_, i) => i + 1);
   }
-
-  /**
-   * The bars, the tooltip and the roll-value column all come from `shared/substat-bars`.
-   *
-   * They were defined here first and the optimize page needed the same three (§16). What is
-   * shared is not the markup but **what a bar claims** — an unknown tier is not tier zero, an
-   * estimated count is not a fact, a tie is weaker than an estimate — and a second copy would
-   * have kept the colours and quietly lost the caveats.
-   */
-  protected readonly rollBars = rollBars;
-  protected readonly barsTitle = barsTitle;
-  protected readonly rollValuePercent = rollValuePercent;
 
   /**
    * The piece's roll value as **what it got out of what those rolls could have been**.

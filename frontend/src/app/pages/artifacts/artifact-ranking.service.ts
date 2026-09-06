@@ -391,11 +391,22 @@ export class ArtifactRankingService {
         rarity: candidate.rarity,
         equipped: wornIds.has(candidate.id),
         rollsRemaining: candidate.potential?.rolls_remaining ?? 0,
-        upgradeOdds: estimateOutcome(piece, model, (stats) => {
+        // **`baseline` is the bar, not the piece's own current damage.** Measured against
+        // itself, "upgrade odds" asks whether levelling a piece beats the same piece
+        // unlevelled — nearly always yes, and never the question anyone is holding a drop to
+        // ask. It is the chance this piece, fully levelled, beats what is equipped now.
+        //
+        // **And `afterSwap`, not `recipe`**, for the candidate's own damage — the same
+        // distinction `rankArtifact` beside it already makes. Evaluating the candidate under
+        // the worn recipe keeps a 4-piece bonus that equipping it would break, which is how a
+        // piece whose own card said `max -6.7%` reported "upgrade odds 100%": the odds were
+        // computed for a build the swap does not produce. `null` when the set it would
+        // complete has not been calibrated, which is the refusal the row already carries.
+        upgradeOdds: afterSwap === null ? null : estimateOutcome(piece, model, (stats) => {
           const swapped = [...equipped];
           swapped[slot] = stats;
-          return evaluateRecipe(recipe, candidateStatsFrom(swapped));
-        })?.probabilityOfUpgrade ?? null,
+          return evaluateRecipe(afterSwap ?? recipe, candidateStatsFrom(swapped));
+        }, baseline)?.probabilityOfUpgrade ?? null,
       });
     }
 
@@ -469,6 +480,42 @@ export class ArtifactRankingService {
     const slot = SLOTS.indexOf(target.slot as (typeof SLOTS)[number]);
     if (slot < 0) return null;
 
+    // The build as it stands, which is what a candidate has to beat. Under the **worn**
+    // recipe, because that is the state the build is in today.
+    const baseline = evaluateRecipe(recipe, candidateStatsFrom(equipped));
+
+    /**
+     * The recipe the build would be under **with this piece equipped**, which is not always
+     * the worn one.
+     *
+     * **This panel used the worn recipe for both sides and the list did not.** Equipping a
+     * piece from another set can break the worn 4-piece, and the ranked list has always
+     * accounted for that (`afterSwap` in the loop above). The panel did not, so it valued the
+     * candidate while keeping a set bonus it would actually lose: one +0 flower read
+     * `avg -7.5%` on its card and `+1.5%` inside its own distribution — the same piece, the
+     * same build, nine points apart, and the panel was the optimistic one.
+     */
+    const swappedCounts = { ...setCountsOf(wornBySlot, byId) };
+    const outgoingId = wornBySlot.get(target.slot);
+    const outgoingSet = outgoingId ? byId.get(outgoingId)?.set_id : undefined;
+    if (outgoingSet != null) swappedCounts[outgoingSet] = (swappedCounts[outgoingSet] ?? 1) - 1;
+    if (target.set_id != null) {
+      swappedCounts[target.set_id] = (swappedCounts[target.set_id] ?? 0) + 1;
+    }
+    const swappedFour = fourPieceSetOf(swappedCounts);
+    const withPiece = swappedFour === wornFour
+      ? recipe
+      : swappedFour === null
+        ? noFourPiece
+        : calibration.byFourPieceSet.get(swappedFour) ?? null;
+    if (!withPiece) {
+      // Refused rather than answered with the wrong recipe — the same call the list makes.
+      throw new Error(
+        'that piece would complete a set this build has not been calibrated for, so its '
+        + 'outcomes cannot be scored yet',
+      );
+    }
+
     // **Chunked, not synchronous.** The blocking version froze the page for about a second on
     // a +0 five-star — the defect `BACKLOG_frontend.md` §12 records and #175 already fixed once
     // for the single-hit search.
@@ -478,9 +525,9 @@ export class ArtifactRankingService {
       (stats) => {
         const swapped = [...equipped];
         swapped[slot] = stats;
-        return evaluateRecipe(recipe, candidateStatsFrom(swapped));
+        return evaluateRecipe(withPiece, candidateStatsFrom(swapped));
       },
-      { shouldCancel: request.shouldCancel },
+      { shouldCancel: request.shouldCancel, reference: baseline },
     );
   }
 

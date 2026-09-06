@@ -248,8 +248,19 @@
 }
 
 .card__worn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
   color: var(--brass-hi);
   font-weight: 600;
+}
+
+/* Round, because a character headshot is drawn as one everywhere else in this app and a
+   square crop of a round portrait reads as a mistake. */
+.card__worn-face {
+  border-radius: 50%;
+  overflow: hidden;
+  flex: 0 0 auto;
 }
 
 .card__art {
@@ -283,51 +294,12 @@
   border-top: 1px solid var(--surface-rule);
 }
 
-.card__sub {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-sm);
-  color: var(--ink-dim);
-}
 
-.card__sub-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 // One bar per roll, coloured by tier — GO's idea, this palette. Tier 3 is a max roll and
 // gets the brass; `-1` is "count known, tier not" and stays deliberately neutral.
-.card__bars {
-  display: flex;
-  gap: 2px;
-  align-items: flex-end;
-  height: 12px;
-}
 
-.bar {
-  width: 4px;
-  height: 12px;
-  border-radius: 1px;
-  background: var(--ink-faint);
 
-  &[data-tier='0'] { background: var(--periwinkle); height: 6px; }
-  &[data-tier='1'] { background: var(--azure); height: 8px; }
-  &[data-tier='2'] { background: var(--mint); height: 10px; }
-  &[data-tier='3'] { background: var(--brass); height: 12px; }
-}
-
-/* One substat's roll value. It sits in the same row as the label it competes with for width,
-   so it reads a rung down from the label rather than the two rungs it used to. */
-.card__rv {
-  min-width: 3.25rem;
-  text-align: right;
-  font-size: var(--text-sm);
-  color: var(--ink-dim);
-}
 
 .card__total {
   display: flex;
@@ -649,4 +621,19 @@
 
   .key--current { background: var(--danger); }
   .key--mean { background: var(--mint-hi); }
+}
+
+/* The three deltas, each with its key. Named because bare percentages in a row read as a
+   scale — avg / min / max — and the middle one is the piece's value today, which can sit
+   either side of the third. */
+.card__rank-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.card__rank-key {
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
 }

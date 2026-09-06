@@ -1,4 +1,9 @@
 import { TestBed } from '@angular/core/testing';
+import {
+  barsTitle,
+  rollBars,
+  rollValuePercent,
+} from '../../shared/substat-bars/substat-bars';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { ArtifactRow } from './artifacts';
@@ -346,7 +351,7 @@ describe('a row the data does not fit', () => {
     // The label survives; the analysis is simply absent for a row the tables cannot read.
     expect(rows[0].substats[0].label).toContain('CRIT Rate');
     expect(rows[0].substats[0].rolls).toBeNull();
-    expect(page['rollBars'](rows[0].substats[0])).toEqual([]);
+    expect(rollBars(rows[0].substats[0])).toEqual([]);
   });
 
   it('does not throw on a non-numeric value', () => {
@@ -379,8 +384,8 @@ describe('ArtifactsPage potential', () => {
     await page['load']();
     const sub = page['rows']()[0].substats[0];
 
-    expect(page['rollBars'](sub)).toEqual([0, 3]);
-    expect(page['barsTitle'](sub)).toBe('2 rolls, shaded by one reading of several that fit');
+    expect(rollBars(sub)).toEqual([0, 3]);
+    expect(barsTitle(sub)).toBe('2 rolls, shaded by one reading of several that fit');
   });
 
   it('carries the roll analysis onto each substat', async () => {
@@ -402,8 +407,8 @@ describe('ArtifactsPage potential', () => {
 
     expect(sub.rolls).toBe(2);
     expect(sub.tiers).toEqual([2, 3]);
-    expect(page['rollBars'](sub)).toEqual([2, 3]);
-    expect(page['rollValuePercent'](sub)).toBe(190);
+    expect(rollBars(sub)).toEqual([2, 3]);
+    expect(rollValuePercent(sub)).toBe(190);
   });
 
   it('draws undifferentiated bars when only the count is known', async () => {
@@ -428,7 +433,7 @@ describe('ArtifactsPage potential', () => {
 
     await page['load']();
 
-    expect(page['rollBars'](page['rows']()[0].substats[0])).toEqual([-1, -1]);
+    expect(rollBars(page['rows']()[0].substats[0])).toEqual([-1, -1]);
   });
 
   it('draws no bars at all when the count itself is unsettled', async () => {
@@ -446,9 +451,9 @@ describe('ArtifactsPage potential', () => {
     await page['load']();
     const sub = page['rows']()[0].substats[0];
 
-    expect(page['rollBars'](sub)).toEqual([]);
+    expect(rollBars(sub)).toEqual([]);
     // The ratio needs no decomposition, so it survives the ambiguity.
-    expect(page['rollValuePercent'](sub)).toBe(290);
+    expect(rollValuePercent(sub)).toBe(290);
   });
 
   it('withholds the total roll value when any line is missing one', async () => {
@@ -504,7 +509,7 @@ describe('totalRollValue', () => {
 describe('comparator', () => {
   const row = (over: Partial<ArtifactRow>): ArtifactRow => ({
     id: 'x', setName: 'Set', setIcon: null, slot: 'Flower', stars: 5, level: 20,
-    mainStat: 'HP', substats: [], equipped: false, holder: null, setId: 's', mainStatKey: 'hp',
+    mainStat: 'HP', substats: [], equipped: false, holder: null, holderIcon: null, setId: 's', mainStatKey: 'hp',
     slotKey: 'flower', rollValue: 1, rank: null, ...over,
   });
 

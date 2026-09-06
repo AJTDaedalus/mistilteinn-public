@@ -210,30 +210,30 @@
 .shell__nav {
   flex-wrap: wrap;
   row-gap: var(--space-3);
-  /* **Only below `$lap`.** A flex item's automatic minimum size is its content, so without
-     `min-width: 0` the nav refuses to go narrower than its widest group and wrapping never
-     gets a chance to happen. Applied at every width, though, it also made the nav *wider*
-     than its content on a desktop — the two link groups then fitted one row and pushed the
-     identity chip onto its own, changing a layout that was not the problem. Above `$lap` the
-     nav keeps sizing to its content exactly as it did. */
-  @media (max-width: bp.$lap) {
-    flex: 1 1 auto;
-    min-width: 0;
-    width: 100%;
-  }
+  /* **Its own row, always, by `order` rather than by luck.**
+     The links and the identity chip together are 1,365px against 1,392 of header — they fit
+     beside each other by five pixels, and a longer sign-in email or one more nav link takes
+     that away. Depending on a five-pixel margin for whether the header is two rows or three
+     is not a layout, it is a coincidence.
+     So: brand and identity share the top row (`order` puts the chip second), and the nav
+     takes the full width below them. Two rows at every width, whatever the email says.
+     `min-width: 0` because a flex item's automatic minimum size is its content, and without
+     it the nav refuses to go narrower than its widest group and never wraps on a phone. */
+  order: 3;
+  width: 100%;
+  min-width: 0;
 }
 
 /* The reference group's rule and the identity chip's rule are vertical dividers between
    things sitting side by side. Once the header has wrapped they divide a row from nothing,
    so they come off rather than hanging in space. */
+/* Second in the row, so it rides at the top right beside the brand. */
+.identity-chip { order: 2; }
+
 @media (max-width: bp.$lap) {
   .shell__group--reference,
   .identity-chip {
     padding-left: 0;
     border-left: none;
-  }
-
-  .identity-chip {
-    margin-left: 0;
   }
 }
