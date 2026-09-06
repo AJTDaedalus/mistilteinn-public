@@ -360,3 +360,54 @@ triggered like a dropdown.
 - **`/optimize`'s** empty state ("No saved runs yet — finish a search and save it to see it here")
   and the calculate result's closing caveat are both models of how the rest of the app should
   explain itself.
+
+---
+
+## Legibility pass — 2026-09-06
+
+Owner: *"Teapot still has a lot of AI slop stuff… the set images are way too small, and the
+character icons/names should be a little bigger too. Also review the teapot site especially,
+but all pages for visibility."*
+
+Same method as above and nothing else: `python -m scripts.shoot` over every route, then read
+the images. **Every picture below was measured off a crop at 1:1**, not chosen from the
+template.
+
+### Changed
+
+| where | was | is | why |
+|---|---|---|---|
+| `/teapot` set screenshot | 44px | **80px** | a 4:3 room shot at 44 is smaller than the face beside it and shows nothing recognisable |
+| `/teapot` character chips | 20px, `--text-xs` | **28px, `--text-sm`** | the page's most-clicked label was its smallest text |
+| `/teapot` "indoor/outdoor", "built" | `--text-xs` | `--text-sm` | a row where every label but two grew reads as a mistake, not a hierarchy |
+| `/rotations` team faces | 28px | **36px** | the only thing telling one collapsed row from another |
+| `/teams` member faces | 34px | **40px** | — |
+| `/my-weapons` holder face | 30px | **38px** | — |
+| `/artifact-sets` set emblem | 44px | **60px** | the one picture on the card |
+
+**`/teams` stopped at 40 rather than 44, and that is a measurement rather than a preference.**
+At 44 the four-column row is narrow enough that *"Fleuve Cendre Ferryman · R5"* ellipsised its
+own refinement away; `.party__meta` was tried at `--text-sm` first and lost the same fact. A
+bigger picture that deletes a fact is not more legible. The line under *Pages that are fine*
+above — "nothing truncated" — was the check that caught it.
+
+### Looked at and left alone
+
+- **`/inventory`, `/characters`, `/enemies`, `/builds`** read cleanly at 1440. `/characters`
+  is still the best-looking page in the app.
+- **`/optimize`'s main-stat chips** are `--text-xs` uppercase, twelve to a row
+  (`ELEMENTAL MASTERY`, `PHYSICAL DMG BONUS`). Dense, but the row is a set of buttons a reader
+  scans once and then clicks; growing the type wraps it to three lines. A rethink, not a size
+  bump — left for whoever takes §1's altitude question.
+- **`/builds` truncates long weapon names** in the card grid (`Flame-Forged In…`,
+  `Ash-Graven Dri…`). The full name is one hover away and the grid is eight cards wide; the fix
+  is a wider card, which changes the page's shape rather than its type size.
+
+### Found while looking, not a type size
+
+- **`/artifact-sets` logs two console 404s**: `UI_RelicIcon_15004_4.webp` and its four
+  siblings. The set is **Glacier and Snowfield** (nanoka 15004) and the art is genuinely absent
+  upstream — `download_icons.py` records that as `absent_upstream` rather than a failure, and
+  `CatalogueIcon` hides the broken image exactly as designed. The card therefore renders with
+  no emblem and no explanation. Not a regression; recorded because a console error nobody has
+  written down is one somebody re-investigates.
