@@ -13,8 +13,12 @@ nanoka since Chunk C. Nothing new is imported; this module classifies what is th
   is published and **"a portion" is not**, in any table in the pinned dump. Reported so the
   user knows the character helps, never applied, because inventing the portion would move a
   real number by an invented amount.
-* **bonus regional material** — Yae Miko 25%, Prune 10%. Needs the regional family modelled
-  and is out of scope; reported, not applied.
+**A third shape is deliberately not classified at all.** Yae Miko and Prune have a chance at
+*1 regional Character Talent Material*, which would need the regional material family modelled
+to price. Owner ruling: that modelling is not wanted, so these are not planner-relevant
+passives and `classify` returns `None` for them — the same answer it gives a cooking passive.
+They were reported-but-never-applied for a while, which put two rows a user could do nothing
+with at the top of a column, above the ones they could.
 
 Cooking, furnishing and weapon-forging passives match the same vocabulary and are **not**
 planner-relevant. Diluc's "refunds 15% of the ore used when crafting Claymore-type weapons" is
@@ -50,7 +54,6 @@ class Effect(StrEnum):
 
     DOUBLE = "double"
     REFUND = "refund"
-    BONUS_MATERIAL = "bonus_material"
 
 
 @dataclass(frozen=True)
@@ -63,8 +66,8 @@ class CraftingBonus:
     effect: Effect
     chance: float
     classes: frozenset[MaterialClass]
-    #: False for `REFUND` and `BONUS_MATERIAL`: the chance is published and the *size* is not,
-    #: so applying them would move a real number by an invented amount.
+    #: False for `REFUND`: the chance is published and the *size* is not, so applying it would
+    #: move a real number by an invented amount.
     applicable: bool
     description: str
 
@@ -100,10 +103,11 @@ def classify(
             classes.add(MaterialClass.TALENT)
         if _WEAPON.search(text):
             classes.add(MaterialClass.WEAPON_ASCENSION)
+    # **Not planner-relevant**, and refused before the effect branches so a description
+    # carrying both shapes cannot fall through to one of them. See the module docstring.
     if _BONUS.search(text):
-        effect, applicable = Effect.BONUS_MATERIAL, False
-        classes = classes or {MaterialClass.TALENT}
-    elif _DOUBLE.search(text):
+        return None
+    if _DOUBLE.search(text):
         effect, applicable = Effect.DOUBLE, True
     elif _REFUND.search(text):
         effect, applicable = Effect.REFUND, False

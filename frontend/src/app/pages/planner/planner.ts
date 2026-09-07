@@ -265,10 +265,10 @@ export class PlannerPage implements OnInit {
       { key: 'talent', label: 'Talent crafting' },
     ].map((group) => ({
       ...group,
-      // `bonus_material` sits with `double` because both *add* to what a batch yields; a
-      // refund gives materials back. Neither of the two non-applicable effects is applied —
-      // the chance is published and the size is not — so they are listed, never checkable.
-      bonus: of(group.key, ['double', 'bonus_material']),
+      // Only `double`. A bonus *regional* material would need the regional family modelled,
+      // which the owner ruled out, so the backend no longer classifies those passives at all
+      // — they are not planner-relevant, the way a cooking passive is not.
+      bonus: of(group.key, ['double']),
       refund: of(group.key, ['refund']),
     })).filter((group) => group.bonus.length > 0 || group.refund.length > 0);
   });
