@@ -53,5 +53,18 @@ fail the day a patch adds a source nobody has costed.
 | `ley_line_mora` | **60,000** mora per 20 resin, flat |
 | `mora_per_exp.character` / `.weapon` | **0**. *"there is no more per exp point conversion"* — Genshin stopped charging mora for feeding EXP material. **Not the same as levelling being free**: ascension and talent mora still come from the payload's own `cost` fields |
 
-**One world-level assumption is now load-bearing and stated on the page**: the ley-line yields
-are World Level 9 figures.
+## Reconciled against the wiki, 2026-09-07
+
+The owner pointed at [Loot System](https://genshin-impact.fandom.com/wiki/Loot_System) and its
+Material Drop Distribution tab.
+
+| | |
+|---|---|
+| ley lines | **confirmed exactly** — 6-7 blue and 4-5 purple, 122,500 EXP average, 60,000 mora, 20 resin, and **flat across WL6-9** rather than a WL9-only figure |
+| world bosses | **confirmed** — the wiki's 2.5556 matches the 2.556 our snapshot reads from the game's own preview, which is independent evidence that those fractional counts are expected values |
+| domains | **wrong, 4.6× and 7.6×.** A domain has a guaranteed 2-star roll *and* variable drop packs; the preview publishes only the first. Fixed |
+| weekly bosses | **disputed.** Owner 2.2, wiki 2.4 at WL8. Owner's stands, conflict recorded |
+| trounce resin | 60, halved to 30 only three times a week — our 30 is the optimistic price |
+
+**World Level 9 is missing from the wiki's weekly-boss and elite-boss tables**, which is what
+the owner spotted. The ley-line table does carry it.
