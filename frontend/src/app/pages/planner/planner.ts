@@ -197,16 +197,20 @@ export class PlannerPage implements OnInit {
   }
 
   /**
-   * Which of the two a phase is, in the words a player would use.
+   * A phase written the way the game writes it: `A6 80/90`.
    *
-   * The number alone does not answer the question being asked: at level 80, "5" and "6" are
-   * *before* and *after* the same ascension, and only one of them can reach 90.
+   * The number alone does not answer the question being asked — at level 80, "5" and "6" are
+   * *before* and *after* the same ascension — and the cap is what separates them: `A5 80/80`
+   * is capped where it stands, `A6 80/90` has ninety levels of headroom.
+   *
+   * **The game's own `current/max` shorthand**, which is what the character screen shows, so
+   * the answer is read rather than translated. The long form this replaced spelled it out in
+   * words (*"A6 — ascended, can reach 90"*) and said less: it named the ceiling without
+   * showing the gap to it.
    */
   protected ascensionLabel(phase: number, level: number): string {
     const caps = this.options()?.level_caps ?? FALLBACK_CAPS;
-    return caps[phase] === level
-      ? `A${phase} — not ascended, capped at ${level}`
-      : `A${phase} — ascended, can reach ${caps[phase] ?? 90}`;
+    return `A${phase} ${level}/${caps[phase] ?? 90}`;
   }
 
   /**

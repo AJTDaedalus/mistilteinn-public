@@ -53,13 +53,6 @@
     </div>
 
     <div class="controls">
-      @if (!characterId()) {
-        <p class="empty">
-          Pick a character to start. The planner prices levels, ascension, talents and a
-          weapon separately, then adds them up — against the materials your last GOOD import
-          says you already hold.
-        </p>
-      }
       @if (characterId()) {
         <fieldset>
           <legend>Character</legend>
@@ -113,8 +106,8 @@
           </div>
           <!-- The whole reason level and phase are two controls. -->
           <p class="hint hint--note">
-            Ascension and level move independently. Set the level to 80 and answer
-            <em>ascended</em> to ascend without levelling any further.
+            Ascension and level move independently. Set the level to 80 and pick
+            <em>A6 80/90</em> to ascend without levelling any further.
           </p>
         </fieldset>
 

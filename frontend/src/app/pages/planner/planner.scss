@@ -107,10 +107,11 @@
 
   /* **Capped, not `1fr 1fr`.** Now the setup is one column wide, a free-growing pair drew a
      700px-wide box to hold the number 80. A control should be about as wide as the thing it
-     holds; the phase answer is a sentence, so it gets more room than the level. */
+     holds — and the phase answer is `A5 80/80` now, not a sentence, so its column shrank with
+     the label rather than staying at the width the prose needed. */
   .pair {
     display: grid;
-    grid-template-columns: minmax(0, 9rem) minmax(0, 24rem);
+    grid-template-columns: minmax(0, 9rem) minmax(0, 11rem);
     justify-content: start;
     gap: 0.6rem;
     margin-bottom: 0.5rem;
@@ -207,15 +208,6 @@
     align-items: center;
     gap: 0.4rem;
     color: var(--ink);
-  }
-
-  .empty {
-    color: var(--ink-dim);
-    max-width: var(--measure, 60ch);
-    border: 1px dashed var(--surface-rule);
-    border-radius: var(--radius-1);
-    padding: 1rem 1.25rem;
-    margin: 0;
   }
 
   .run {
