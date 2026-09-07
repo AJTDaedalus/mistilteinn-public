@@ -58,6 +58,8 @@ def test_every_resin_source_is_now_priced() -> None:
     [
         # 2.4 items per trounce run split across the boss's three materials.
         (113018, "Bloodjade Branch", 30, 0.8),
+        # World Level 9: three guaranteed with a 10% chance of a fourth.
+        (113023, "Perpetual Heart", 40, 3.1),
         (202, "Mora", 20, 60_000),
         # 6.5 blue x 5,000 + 4.5 purple x 20,000, at World Level 9.
         (104003, "Hero's Wit", 20, 122_500),
@@ -71,6 +73,25 @@ def test_the_curated_sources_carry_the_owners_numbers(
     assert rate.resin == resin
     assert rate.expected_per_run == pytest.approx(expected_per_run)
     assert rate.curated is True
+
+
+def test_a_curated_source_outranks_the_published_one() -> None:
+    """The world-boss rate is curated **over** a number the game data publishes.
+
+    `RewardPreviewExcelConfigData` gives 2.556 for every world boss — one value across all 101
+    previews, with no world-level variants, because the scaling is server-side. That figure
+    matches the wiki's **World Level 8** row to four decimals and is the old one: World Level
+    9 guarantees three materials against two. A published number is not automatically a
+    current one, and `overrides_published` records that this entry knows it is overriding.
+    """
+    eco = economy()
+    rate = eco.rate(113023)
+    assert rate is not None
+    assert rate.curated is True
+    assert rate.expected_per_run == 3.1
+    assert rate.expected_per_run != pytest.approx(2.556)
+    # Three or four, never fewer — the guarantee is what changed at World Level 9.
+    assert [value for value, _ in rate.distribution] == [3.0, 4.0]
 
 
 def test_feeding_exp_material_costs_no_mora() -> None:

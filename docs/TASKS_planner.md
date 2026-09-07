@@ -68,3 +68,34 @@ Material Drop Distribution tab.
 
 **World Level 9 is missing from the wiki's weekly-boss and elite-boss tables**, which is what
 the owner spotted. The ley-line table does carry it.
+
+## World Level 9 did change world bosses — researched 2026-09-07
+
+The owner asked whether it had, expecting not. It did, and our number is the old one.
+
+`WorldLevelExcelConfigData` (primary) puts WL8 at monster level 90 and **WL9 at 100**. The
+wiki's *Adventure Rank* page — a different page from the drop tables — gives the WL9 row the
+note **"Normal Bosses guarantees at least Character Level-Up Material × 3"**, against ×2 since
+WL4, and puts the normal-boss level at 103. Coverage of the 5.0 announcement says all world
+bosses drop three with a low chance of four.
+
+**Two things hid it, and both are the same shape as bugs this feature already had.** The
+wiki's Material Drop Distribution page stops at WL8 and its formula caps `Ratio = 1` above
+reward tier 18 — a table that stops reads exactly like a table that plateaus.
+`RewardPreviewExcelConfigData` carries **one** value across all 101 boss previews (2.556, the
+WL8 figure to four decimals), with no world-level variants, so the game data cannot show the
+change either.
+
+**The exact WL9 split is not published** — how often the fourth drops — and the two published
+claims disagree. *"Three with a low chance of four"* caps the mean below 4; the separately
+reported *"50% increase in ascension materials"* would give 2.5556 × 1.5 = **3.8333**, which
+is also exactly 46 materials in 12 runs against WL8's 46 in 18. A mean of 3.8333 needs the
+fourth to land 83% of the time, which is not a low chance.
+
+**Owner's call: 3.1**, the conservative reading (a 10% fourth). If the 50% figure turns out to
+be literal this is 24% low and one number changes. A full ascension goes from 720 resin to
+594.
+
+**Weekly bosses did not change** — confirmed by the owner, and consistent with the wiki: the
+WL9 row carries no weekly-boss note and the by-enemy-level table already gives 2.4 for levels
+100–104.

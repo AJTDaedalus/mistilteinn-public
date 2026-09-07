@@ -113,7 +113,9 @@ def _per_run_distribution(
                     * (1.0 - 1.0 / kinds) ** (count - hits)
                 )
                 outcomes[float(hits)] = outcomes.get(float(hits), 0.0) + weight * probability
-        return tuple(sorted(outcomes.items()))
+        # A zero-probability outcome is not an outcome. `split_across: 1` produces three of
+        # them for a world boss, because Binomial(n, 1) puts all its mass on n.
+        return tuple(sorted((v, p) for v, p in outcomes.items() if p > 0))
 
     return None
 
@@ -444,10 +446,15 @@ class Economy:
             curated = self._domain_rate(material_id)
             if curated is not None:
                 return curated
-        rate = self._rates.get(material_id)
-        if rate is not None:
-            return rate
-        return self._source_default(material_id)
+        # **A curated source default outranks the published one.** The game's own preview is
+        # not always current: it gives 2.556 for every world boss, which is the World Level 8
+        # figure — one value across all 101 previews, no world-level variants, because the
+        # scaling is server-side. An entry here is a human saying the published number is
+        # stale, and `overrides_published` records that intent in the file.
+        curated_default = self._source_default(material_id)
+        if curated_default is not None:
+            return curated_default
+        return self._rates.get(material_id)
 
     def _source_default(self, material_id: int) -> DropRate | None:
         """A rate curated per *source* rather than per material.
