@@ -137,6 +137,11 @@ export class CalculatePage implements OnInit {
     })),
   );
 
+  /** The chosen team's name, for the resting state's next-step line. Empty when none is. */
+  protected readonly teamName = computed(
+    () => this.teams().find((team) => team.id === this.teamId())?.name ?? 'this team',
+  );
+
   /** Only rotations for the chosen team — a rotation is validated against one. */
   protected readonly rotationOptions = computed<CardOption[]>(() =>
     this.rotations()

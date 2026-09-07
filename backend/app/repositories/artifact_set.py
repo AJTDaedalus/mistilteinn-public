@@ -11,7 +11,7 @@ from app.models.artifact import ArtifactSet
 from app.repositories.base import BaseRepository, ilike_contains
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterable, Sequence
 
     from sqlalchemy import Select
 
@@ -52,6 +52,18 @@ class ArtifactSetRepository(BaseRepository[ArtifactSet]):
             select(func.count()).select_from(self._filtered(name=name).subquery()),
         )
         return int(result.scalar_one())
+
+    async def ids_by_nanoka_ids(self, nanoka_ids: Iterable[int]) -> dict[int, str]:
+        """`{nanoka id: row id}` for the ids this pin has. See `WeaponRepository`'s twin."""
+        ids = list(dict.fromkeys(nanoka_ids))
+        if not ids:
+            return {}
+        result = await self.session.execute(
+            select(ArtifactSet.nanoka_id, ArtifactSet.id).where(
+                ArtifactSet.nanoka_id.in_(ids),
+            ),
+        )
+        return dict(result.all())  # type: ignore[arg-type]
 
     async def get_by_nanoka_id(self, nanoka_id: int) -> ArtifactSet | None:
         """One set by its source id, with its affixes."""

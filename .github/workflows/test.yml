@@ -19,11 +19,28 @@ name: Tests
 # state this workflow does not create", not "no database".
 # ---------------------------------------------------------------------------
 
+# **Not run on push or PR — this file is the gate list, not a billed job.**
+#
+# Owner, 2026-09-05: *"github CI is nice, but not required... the tests could be removed, this
+# repository ends up using a lot and I don't think it adds much value since we can do all of
+# those tests locally. We just have to make it a requirement that they get ran on the final
+# version before merging."*
+#
+# The four jobs below are `ubuntu-latest`, so every push billed them. `deploy-prod.yml` is
+# `[self-hosted, mistilteinn-prod]` and is the one that has to keep running automatically —
+# it is the deploy, not a check.
+#
+# **The file stays because it IS the gate definition.** `scripts/ci_local.py` parses this YAML
+# at run time (`WORKFLOWS = ("test.yml", "security.yml")`) and runs the steps it finds, which
+# is why it cannot drift from CI by being a remembered subset. Deleting this file would delete
+# the local gate list with it. `workflow_dispatch` keeps it runnable by hand if Actions is
+# ever worth using again — one line, reversible.
+#
+# The requirement that replaces the automatic run is in CLAUDE.md §Gate discipline: **all of
+# `python -m scripts.ci_local` green on the final commit, before any merge.**
+
 on:
-  push:
-    branches: [dev, main]
-  pull_request:
-    branches: [dev, main]
+  workflow_dispatch:
 
 concurrency:
   group: tests-${{ github.ref }}
@@ -33,6 +50,39 @@ permissions:
   contents: read
 
 jobs:
+  discord-triage:
+    name: Discord triage tool — lint + tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/discord-triage
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # `tools/discord-triage` is not part of the app — no backend route, no frontend page,
+      # its own venv and systemd unit on the prod box. It lives outside `backend/`, so neither
+      # the lane below nor `python -m scripts.ci_local` could see it, and **its 71 tests ran
+      # nowhere at all** for two merged PRs. In a repository whose standing rule is that a
+      # check which could not run is never a pass, an untested tool that writes to the issue
+      # tracker is exactly the wrong thing to leave uncovered. (OQ-D3.)
+      #
+      # `discord.py` is the only dependency; `pytest` and `ruff` are pinned to the same
+      # versions the backend uses so this lane is the same program, not a lookalike.
+      - name: Install
+        run: pip install -r requirements.txt pytest ruff==0.16.1
+
+      - name: Ruff
+        run: ruff check .
+
+      - name: Tests
+        # No network and no Discord connection: the parts worth testing are pure, and were
+        # pulled out of the gateway client for exactly that reason.
+        run: pytest tests/ -q
+
   backend:
     name: Backend — lint + unit tests
     runs-on: ubuntu-latest
@@ -68,7 +118,8 @@ jobs:
           scripts/seed_db.py scripts/verify_seed.py scripts/capture_nanoka_fixtures.py
           scripts/yuanshen/ scripts/bench_optimizer.py scripts/gcsim/ scripts/kernel/
           scripts/inject.py scripts/ci_local.py scripts/download_icons.py
-          scripts/shoot.py
+          scripts/shoot.py scripts/audit_genshin_optimizer.py
+          scripts/measure_substat_frequencies.py
 
       - name: Unit tests
         # Unit only. Integration runs in its own job below so this lane stays fast
@@ -313,6 +364,25 @@ jobs:
         # It was found by taking a screenshot. The same sweep found the toast's border and
         # `--space-5` in four stylesheets.
         run: npm run check:tokens
+
+      - name: Check every dialog can still close
+        # A `<dialog>` is hidden by the UA's `dialog:not([open]) { display: none }`, and any
+        # author rule setting `display` on the same element beats it — so the dialog stays laid
+        # out in the page after `close()`, with its `open` attribute correctly absent. One such
+        # rule left the rotation editor rendered under the rotation list on every viewport over
+        # 1408px and produced two separate bug reports (#290, #284). jsdom has no
+        # `HTMLDialogElement`, so no component test in this repo can tell an open dialog from a
+        # closed one; the check that works reads the stylesheet.
+        run: npm run check:dialogs
+
+      - name: Check every routerLink resolves
+        # Angular does not error on an unknown **static** attribute, so a standalone component
+        # whose `imports` omits `RouterLink` compiles, lints, and renders
+        # `<a routerLink="/inventory">` as an anchor with no `href` — not clickable, not
+        # focusable, navigating nowhere, and saying so nowhere. That shipped on the one line an
+        # empty weapon inventory shows. The directive is the difference between a link and a
+        # word; nothing else in the toolchain checks that it is there.
+        run: npm run check:router-links
 
       - name: Unit tests
         # Re-enabled in A.2 (client-optimizer plan). It was disabled with a

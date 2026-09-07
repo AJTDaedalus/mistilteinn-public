@@ -157,6 +157,17 @@ def _denoise(value: float) -> float:
     return float(f"{value:.{_TIER_FIGURES}g}")
 
 
+def roll_tiers(stars: int) -> dict[str, tuple[float, ...]]:
+    """The four values each substat can roll at this rarity, keyed by raw property.
+
+    The public face of `_tiers_for`, added for the artifact ranker: projecting a piece to max
+    level needs the ladder, and a second reader of the depot tables would be a second chance to
+    get the roll-depot filter wrong — which `_tiers_for`'s own docstring records going wrong
+    once already, by 2.5x on CRIT DMG.
+    """
+    return _tiers_for(stars)
+
+
 @lru_cache(maxsize=16)
 def _tiers_for(stars: int) -> dict[str, tuple[float, ...]]:
     """`{FIGHT_PROP_*: the values that stat can roll}` at this rarity.

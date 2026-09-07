@@ -37,8 +37,13 @@
 
   // -- Ink (his hair, and two steps down it)
   --ink: #d5d6e1;
-  --ink-dim: #9a9db4;
-  --ink-faint: #6b6f8a;
+  // **Lifted from `#9a9db4`.** It cleared AA on `--surface` at 5.15:1 and was still the thing
+  // reported as hard to read (#278), because almost everything wearing it is also the small
+  // end of the type scale — a card's set name, a piece's slot, a chip's label. 6.1:1 is the
+  // same role, read at the size it is actually drawn at. `--ink-faint` moves with it,
+  // 2.8:1 to 3.5:1, staying the quietest rung rather than becoming a second `--ink-dim`.
+  --ink-dim: #a9acc2;
+  --ink-faint: #7b7f9c;
 
   // -- Coat
   --violet-deep: #2f2145;
@@ -72,8 +77,20 @@
   --font-body: system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   // -- Type scale (modular, 1.25)
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
+  //
+  // **The bottom two rungs were raised on 2026-09-05, and this is why.** Six separate reports
+  // in one sitting said the same thing about six different screens — the rotations team
+  // label, the "find rotations for this team" button, the team picker's card names, the
+  // inventory's card subtitles, the optimize page's notes, the filter chips — and none of
+  // them was a layout fault. `--text-xs` was 12px and carried real content on 72 rules, not
+  // captions: a card's whole identity, a button's whole label. 13px and 15px keep the
+  // hierarchy the scale was built for while putting the small end back inside what a person
+  // reads comfortably at arm's length.
+  //
+  // The ratio between the rungs is what makes a scale, not the absolute values, so raising
+  // the floor is a change to the whole app on purpose rather than 72 local overrides.
+  --text-xs: 0.8125rem;
+  --text-sm: 0.9375rem;
   --text-base: 1rem;
   --text-md: 1.125rem;
   --text-lg: 1.5rem;

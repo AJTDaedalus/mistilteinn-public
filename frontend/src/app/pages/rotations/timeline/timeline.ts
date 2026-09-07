@@ -110,7 +110,9 @@ export interface MeasuredRun {
       } @else {
         <!-- Labelled in both states, because they are one component in two conditions and the
              difference matters: one is what you wrote, the other is what happened. -->
-        <p class="timeline__eyebrow">As written · {{ steps().length }} steps</p>
+        <p class="timeline__eyebrow">
+          As written · {{ steps().length }} step{{ steps().length === 1 ? '' : 's' }}
+        </p>
         <ol class="runs" role="list">
           @for (run of runs(); track $index) {
             <li class="run" [style.--element]="elementVar(run.element)">

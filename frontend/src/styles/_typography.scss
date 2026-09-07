@@ -18,6 +18,11 @@ h1 {
   font-size: var(--text-3xl);
   letter-spacing: 0.06em;
   text-shadow: var(--text-glow);
+
+  /* 60px is a sixth of a 390px screen, and "Artifact sets" at that size sets a min-content
+     width wider than the phone. `clamp` rather than a breakpoint because the heading should
+     track the viewport continuously — there is no width at which 60px is suddenly right. */
+  font-size: clamp(2.25rem, 1.2rem + 5vw, var(--text-3xl));
 }
 
 /* ── The orbit rule ─────────────────────────────────────────────────────────

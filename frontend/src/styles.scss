@@ -126,17 +126,55 @@ textarea {
   }
 }
 
+/* **The closed control, not the picker.** The box above already matched the house style, so
+   the thing that still made a `<select>` read as a different product beside a `card-picker`
+   was the platform's own chevron — a grey OS triangle next to the app's `▾`. `appearance:
+   none` replaces the drawn control and leaves the *dropdown* entirely alone: tapping one
+   still opens the native sheet, which is the whole reason these were never converted to
+   comboboxes (`docs/FINDINGS_frontend_validation.md` §5 — "a native `<select>` is better on
+   a phone than anything hand-rolled"). That decision stands; this is only about how the
+   control looks while it is shut.
+
+   The chevron's colour is a literal because a `data:` URI resolves no custom properties —
+   the same exception, for the same reason, that `public/favicon.svg` records. It is
+   `--ink-dim`, and `check:tokens` cannot see it, so it is named here: **#a9acc2**. */
+select {
+  appearance: none;
+  padding-right: var(--space-8);
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%23a9acc2' d='M1 1.5 6 6.5l5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+  background-size: 0.6rem;
+
+  /* A dark page and a light OS menu: the options are drawn by the platform, and only these
+     two properties reach them. */
+  option {
+    color: var(--ink);
+    background: var(--bg);
+  }
+}
+
 /* **Drawn, not left to the platform.** `accent-color` only tints the *checked* state, so an
    unchecked box stayed a bright white square on a dark panel — the single lightest thing on
    the page, and on `/optimize` it drew the eye harder than the search button. These are drawn
    from the palette in both states, which is the same argument every other control on the site
    already makes. `appearance: none` means the check mark is ours too. */
+/* 1.15rem rather than 0.95: the box measured 15x15, which is small to aim at and smaller to
+   read a tick in.
+
+   **It is not the click target, though, and an audit finding here was mine to withdraw.** A
+   DOM sweep flagged these against the 24x24 WCAG 2.2 asks of a pointer target — but every
+   checkbox in this app is wrapped in its own `<label>`, and the label is what you click:
+   98px to 544px wide and 23px to 30px tall, measured. A transparent `outline` was tried first
+   to grow the target and does nothing at all, because an outline is painted outside the
+   border box and takes no part in hit testing. The size below is a legibility change and is
+   not claimed as anything more. */
 input[type='checkbox'],
 input[type='radio'] {
   appearance: none;
   flex: 0 0 auto;
-  width: 0.95rem;
-  height: 0.95rem;
+  width: 1.15rem;
+  height: 1.15rem;
   margin: 0;
   border: 1px solid var(--surface-rule);
   border-radius: var(--radius-1);
@@ -236,6 +274,152 @@ dialog,
 ::selection {
   background: var(--violet);
   color: var(--ink);
+}
+
+
+// ── The filter chip ──────────────────────────────────────────────────────────
+//
+// A toggle in a filter row: pressed or not, and nothing in between.
+//
+// **This is the sixth copy, and the first one anything shared can reach.** `.chip` was
+// written out in five page stylesheets — teapot, optimize, catalogue, builds, artifacts —
+// and in none of them globally, so `shared/card-picker`, which draws a chip per element and
+// per weapon class, matched no rule at all: its chips took the plain `button` styling and
+// `.chip--on` styled nothing. A user pressed Bow and Catalyst together, the grid filtered
+// correctly to 49 characters, and **neither chip looked pressed** (#272). `optimize.scss`
+// records the identical failure happening to it once already, which is the argument for
+// putting the definition somewhere every page inherits rather than writing a sixth copy.
+//
+// A page that wants its own look still wins: a component-scoped `.chip` carries Angular's
+// `[_ngcontent-*]` attribute and so outranks this. This is the floor, not the ceiling.
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  background: var(--surface);
+  color: var(--ink-dim);
+  font-size: var(--text-sm);
+  line-height: 1.3;
+  transition:
+    color var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease);
+
+  // **A chip is not always a control.** The teapot draws one per character a set favours, and
+  // an unowned character's is a `<span>` that says so and does nothing — asserting `cursor:
+  // pointer` and a hover colour on the bare class gave that span a button's affordances.
+  // Appearance is the shared part; interactivity belongs to the element that has it.
+  //
+  // `:where()` rather than `button.chip` so the guard costs no specificity: a page that
+  // already styles its own `.chip--on` must keep outranking this hover, as it did before.
+  &:where(button, label, a) {
+    cursor: pointer;
+
+    &:hover { border-color: var(--halo-brass); color: var(--ink); }
+  }
+}
+
+.chip--on {
+  border-color: var(--brass);
+  color: var(--ink);
+  background: color-mix(in srgb, var(--brass) 14%, var(--surface));
+  box-shadow: var(--glow-brass);
+}
+
+// A row of chips, and the text inside one. Both lived only in `builds.scss` while `/teams`
+// drew the same filter with `.vision` and `.vision--on` — **classes with no rule anywhere**,
+// so its six element buttons were unstyled and pressing one produced no pressed state at all.
+// That is the identical failure the comment above records as #272, on a different page, found
+// again because the pattern was owned by a page rather than by the app.
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+.chip__label {
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  line-height: 1.4;
+}
+
+/* **The small label that sits above a control**, defined once.
+   `.picker__label`, `.refine label span`, `.rank-panel__controls label span` and two
+   different `legend` rules on `/optimize` were five copies of this, and they had drifted into
+   four casings — `TEAM` beside `Rotation` beside `Artifact Sets` beside `built`.
+
+   The rule the app follows now, and the reason this is a class rather than a blanket
+   `label span`: **a label stacked above its control is this; a label sitting inline beside
+   one stays sentence case.** "Character level [70]" reads as a sentence and should; "SET"
+   over a dropdown is an eyebrow. Uppercasing the inline ones would make the build editor
+   harder to read, not more consistent. */
+.field-label {
+  display: block;
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+/* "Showing N of M" and the control that changes N, on one line. Global because
+   `/artifacts` had it and `/my-weapons` — the same list, the same cap, the same 6,000px
+   page — did not.
+
+   The count and the page-size control on one line: the sentence says how many of how many,
+   and the chips beside it are how you change that. Separated, the sentence reads as a fact
+   about the page rather than as the label on a control. */
+.count-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.count { margin: 0; }
+
+.page-size {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.page-size__name {
+  font-size: var(--text-xs);
+  color: var(--ink-dim);
+  letter-spacing: 0.06em;
+}
+
+/* The same bordered tile the builds filters use, so "narrow this list" looks like one control
+   across the app rather than being redecided per page. */
+.page-size .chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem var(--space-2);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  background: var(--surface);
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  cursor: pointer;
+  transition:
+    color var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease);
+
+  &:hover { border-color: var(--halo-brass); color: var(--ink); }
+
+  &.chip--on {
+    border-color: var(--brass);
+    color: var(--brass);
+    box-shadow: var(--glow-brass);
+  }
 }
 
 
@@ -360,16 +544,23 @@ dialog,
   //
   // Pinned to the top with `.pick`'s own top padding, so it sits on the title it acts on. Found
   // by rendering `/teams` and looking at it; no test asserts on where a glyph lands.
+  /* `--ink-dim`, not `--ink-faint`: this button deletes a team or a rotation and it was the
+     lowest-contrast thing on the row. Still quiet — a destructive action should not shout —
+     but legible enough to be found on purpose rather than discovered by accident. */
   .drop {
     flex: 0 0 auto;
     display: flex;
     align-items: flex-start;
+    justify-content: center;
+    min-width: 1.5rem;
+    min-height: 1.5rem;
     padding: var(--space-3);
-    color: var(--ink-faint);
+    color: var(--ink-dim);
     font-size: var(--text-md);
     line-height: 1;
 
-    &:hover {
+    &:hover,
+    &:focus-visible {
       color: var(--danger);
     }
   }
@@ -460,4 +651,26 @@ dialog,
 }
 
 /* The dialog's own children need the column a pane used to give them. */
+/* **The mirror of `.editor__head`, and it did not exist.** The head has been sticky all
+   along; the primary action was not, so it scrolled away with the content. Measured on the
+   build editor at 1280x720: 927px of content in a 632px box, the third artifact row sliced
+   through the middle of its own text, and SAVE CHANGES ~295px below the visible edge with
+   nothing saying it was there. The slice was the only cue that anything scrolled.
+
+   A scrollbar would help and does not settle it — the dialog reserves no width for one here,
+   and a thin overlay thumb that fades is a weak thing to hang "your work is saved by a button
+   you cannot see" on. Keeping the action in view does settle it.
+
+   `bottom: -1 * padding` so the bar sits flush with the dialog's floor rather than floating a
+   gap above it, matching the head's negative side margins. */
+.editor__foot {
+  position: sticky;
+  bottom: calc(var(--space-4) * -1);
+  z-index: 1;
+  margin: var(--space-3) calc(var(--space-4) * -1) calc(var(--space-4) * -1);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--surface-rule);
+  background: var(--surface);
+}
+
 .editor > *:not(.editor__head) { margin-bottom: var(--space-2); }

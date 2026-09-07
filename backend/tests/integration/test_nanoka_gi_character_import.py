@@ -133,6 +133,10 @@ async def test_a_reworked_kit_leaves_no_orphaned_children(db_session: AsyncSessi
     trimmed = json.loads((_FIX / "character_10000002.json").read_text())
     removed = trimmed["constellations"].pop()
     trimmed["skills"] = trimmed["skills"][:2]
+    # `materials.talents` is parallel to `skills` with no key to join on, so the importer
+    # refuses a payload where the two disagree. Trim it alongside, because nanoka publishes
+    # them consistently and a fixture that does not is testing a shape upstream cannot emit.
+    trimmed["materials"]["talents"] = trimmed["materials"]["talents"][:2]
     await NanokaGIImporter(
         db_session, transport=_transport("10000002", payloads={"10000002": trimmed}),
     ).import_characters()

@@ -3,23 +3,6 @@
     <h1>Calculate</h1>
   </header>
 
-  <!-- **What this page is for**, said on the page. It was one picker and a button above ~700px
-       of empty viewport, while the landing page sold the feature in a sentence the page itself
-       never repeated. The list is what you actually get back, so the wait has a shape before
-       you commit to it. -->
-  <div class="intro">
-    <p>
-      Run a team's rotation through gcsim and take it apart: every multiplier in a hit, in
-      order, with its source — and what is <em>not</em> modelled.
-    </p>
-    <ul class="intro__what">
-      <li>Damage per second for the team, with its spread over repeated runs.</li>
-      <li>What each character contributed, and how long each held the field.</li>
-      <li>Reactions and aura uptime on the target.</li>
-      <li>An explicit list of what the model leaves out.</li>
-    </ul>
-  </div>
-
   @if (error(); as message) {
     <p class="error" role="alert">
       {{ message }}
@@ -30,7 +13,7 @@
   @if (loading()) {
     <p class="muted">Loading…</p>
   } @else if (!teams().length) {
-    <p class="muted">No teams yet — <a routerLink="/teams">build one first</a>.</p>
+    <p class="muted">No teams yet. <a routerLink="/teams">Build one</a></p>
   } @else {
     <!-- Team, then rotation. Unlike Optimize there is no build to pick: the rotation already
          says which character does what. -->
@@ -54,7 +37,7 @@
           />
         } @else {
           <p class="hint">
-            No rotations for this team — <a routerLink="/rotations">write one</a>.
+            No rotations for this team. <a routerLink="/rotations">Write one</a>
           </p>
         }
       }
@@ -69,6 +52,37 @@
            entirely the former. Naming who is being calibrated makes it a queue rather than
            a hang. -->
       <p class="muted" role="status">{{ note }}</p>
+    }
+
+    <!-- **The resting state of this page said nothing at all.** There were empty states for
+         *no teams* and *no rotations for this team* — and none for the common case, teams
+         saved and none picked yet, which is what a returning user sees every time. The page
+         was one select and one disabled button above ~700px of blank viewport, which is the
+         exact shape of a defect this repo has shipped once already.
+
+         It matters more here than on another page because the landing copy that used to
+         explain this screen went away with the landing page (owner, 2026-09-05), so this was
+         the only place left that could say what Calculate does, and it did not. -->
+    @if (!stats() && !running() && !progress()) {
+      <section class="intro">
+        <h2 class="intro__title">Every multiplier in a hit, in order, with its source</h2>
+        <p class="intro__body">
+          Pick a team and one of its rotations. Calculate runs it in gcsim and reports the
+          damage each character contributed, the reactions that fired, and how long the
+          rotation took — with the numbers that went into each figure, and an honest note
+          about what is <em>not</em> modelled.
+        </p>
+        <p class="intro__body muted">
+          @if (!teamId()) {
+            Start with a team above.
+          } @else if (!rotationId()) {
+            Now pick a rotation for {{ teamName() }}.
+          } @else {
+            Ready — press Calculate.
+          }
+          Runs take about six seconds per character the first time, while each is calibrated.
+        </p>
+      </section>
     }
 
     @if (stats(); as report) {
@@ -238,12 +252,6 @@
           }
         </div>
       }
-
-      <!-- Stated, not implied by absence. -->
-      <p class="hint not-modelled">
-        Not shown: per-iteration damage timelines and cumulative contribution, which gcsim
-        charts and this does not yet draw.
-      </p>
     }
   }
 </section>

@@ -1177,3 +1177,71 @@ can be edited at all.
 2026-09-03 gcsim-database corpus that define a function, **41 have control flow in the body and
 30 take a parameter**. There is no "simple function" case a form could have covered, and
 inlining them as macros — the obvious shortcut — does not exist.
+
+---
+
+## 33. Artifact ranking has two engines, and the second one is what #291 asked for (2026-09-05)
+
+Issue [#291](https://github.com/AJTDaedalus/mistilteinn/issues/291), filed from Discord:
+
+> *"Add an 'artifact ranker' alongside the optimizer, like Fribbles, that calculates and presents
+> the probability an artifact, at max level, would be an upgrade for the selected
+> team/rotation/build. Potential challenge: this should assume that you can move other artifacts,
+> so the 'best build with this artifact leveled up' vs current for the % gain."*
+
+`DESIGN_artifact_ranking.md` §§1–7 planned the **first** half of that and not the second. Four
+rulings, and one measurement that changed a task:
+
+| | ruling |
+|---|---|
+| **OQ-A5** | **Both engines.** A single-slot delta for every piece (~12 µs, 28 ms for 2,370) *and* a pinned re-search for one piece on demand (~5 s). |
+| **OQ-A6** | The **distribution is in this plan**, not a later one. |
+| **OQ-A7** | It lives on **`/artifacts`**, with its own build picker, reusing the warm recipe cache. |
+| **OQ-A8** | A candidate from an uncalibrated set gets **its set calibrated on demand**, never a number under the wrong recipe. |
+
+**The five-orders-of-magnitude fact is the decision.** *"Assume that you can move other
+artifacts"* is not a slot swap, it is a re-optimization with the piece pinned, and the two cost
+~12 µs and ~5 s per piece. A sortable whole-inventory column can only ever be the first; the
+number the issue names can only ever be the second, spent deliberately on one piece. So the
+column **triages** and the deep dive **settles**, and the column's number is published as a
+**lower bound** — a re-search may keep the same four neighbours, so it never does worse.
+
+**Fribbels does not offer the second half, and saying so is the point.** All five of its
+per-relic columns are single-piece scores against a weights vector; its own optimizer on the
+owner's 1,712-relic export quoted *"10:42:43 left"*. The pinned re-search has no reference
+implementation in either tool. It is affordable here for a reason neither has: after one
+calibration the evaluator is closed-form.
+
+**gcsim stays the engine and stays outside the loop.** Owner, same day: *"We should aim, like we
+did for optimize, to do what Fribbels/GO do but with gcsim as the engine."* That is OQ-A1
+unchanged — the loop replays gcsim's own published per-hit decomposition closed-form, and gcsim
+itself runs only to calibrate. Anything reaching for gcsim *inside* the ranking loop has left the
+design.
+
+### The measurement: the draw weights have no primary source, and the owner's export cannot supply one
+
+Checked rather than assumed, against the pinned AnimeGameData capture `5445617e33b2`:
+`ReliquaryAffixExcelConfigData` (350 rows) has **no weight field**;
+`ReliquaryMainPropExcelConfigData` (66 rows) has none either; and
+`ReliquaryExcelConfigData.weight` — the one field whose name matches — is an **item-drop weight**
+on the artifact entry. A plan that grabbed it because the key matched would have been confidently
+wrong.
+
+So the substat appearance weights are a **named secondary source** (GO's
+`libs/gi/upopt/src/consts.ts`, citing the fandom *Artifact/Distribution* page), shipped openly the
+way `gcsim_config.ENERGY_DRIP` already is.
+
+Deriving them from the owner's own 2,370-piece export was the attractive alternative and it does
+not work. On flowers at +0 — the least-selected cut, 319 pieces, 1,061 lines — `eleMas` (w=4)
+reads 13.29%, `critDMG_` (w=3) 12.25%, `atk` (w=6) 11.97%, `def_` (w=4) 7.82%. Inclusion
+probability under a weighted draw without replacement is **monotone in weight**, so w=3 above w=6
+is not a sampling wobble: either a kept inventory is still selected at +0, or the published table
+is wrong. Either way that corpus is not the source, and `TASKS_artifact_ranking.md` A.3 records it
+in a script and a findings doc rather than leaving the next reader to rediscover it.
+
+**Two questions stay open and neither blocks.** **OQ-A9** — whether a pinned re-search stays
+interactive over the whole inventory — is a measurement (A.10), and the DESIGN's §7 note exists
+because the last time someone inferred a cost here instead of measuring it they were wrong by a
+factor of thirty. **OQ-A10** — whether "% gain" is against the current build or against the best
+build without the piece — is answered *current* and labelled, because the two diverge exactly when
+the current build is not optimal, which for a piece someone is asking about is most of the time.

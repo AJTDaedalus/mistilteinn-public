@@ -31,12 +31,12 @@
     <p class="runs__note">Loading…</p>
   } @else if (failed()) {
     <p class="runs__note">
-      Could not load previous runs. You can still start a new search.
+      Could not load previous runs.
     </p>
   } @else if (empty()) {
     <p class="runs__note">
       @if (scope() === 'mine') {
-        No saved runs yet — finish a search and save it to see it here.
+        No saved runs yet.
       } @else {
         Nobody has shared a run yet.
       }

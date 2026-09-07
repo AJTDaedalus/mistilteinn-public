@@ -467,7 +467,17 @@ class WeaponRecommendationRead(BaseModel):
     #: Where it appears in KQM's list. **Not a rank**: the table carries an order and no rank
     #: numbers, and publishing it as a rank would put words in the source's mouth.
     position: int
-    weapon_id: str
+    #: The catalogue row, resolved from `weapon_nanoka_id` at read time.
+    #:
+    #: **Null when this pin does not have the weapon**, rather than the row being dropped:
+    #: KQM's sentence and their ordering are still true, and what is missing is a card to hang
+    #: them on. A client marks such a row unlisted; shortening a cited list quietly would be
+    #: worse than showing one entry it cannot link.
+    weapon_id: str | None = None
+    #: The game's id, which is what the snapshot stores — see `services/kqm_weapons.py`.
+    #: Published so a client that already works in nanoka ids (the optimizer's set catalogue
+    #: does) can join without a second lookup.
+    weapon_nanoka_id: int
     weapon_name: str
     #: KQM's own sentence, verbatim. Summarising it would be this repo asserting a judgement
     #: it did not make.
@@ -500,7 +510,11 @@ class SetRecommendationRead(BaseModel):
     as_written: str
     #: KQM's own sentence about it. Verbatim.
     note: str
+    #: The catalogue row, resolved at read time; null on a `stat` row and on a set this pin
+    #: does not have.
     set_id: str | None = None
+    #: The game's id. Null on a `stat` row, which names no set.
+    set_nanoka_id: int | None = None
     set_name: str | None = None
     #: `"4pc"`, `"2pc"`, or `"2pc/4pc"` when KQM wrote a piece count in front of the name.
     pieces: str = ""

@@ -290,6 +290,29 @@ describe('BuildsPage', () => {
  * owner's account — against a column that shows about nine at a time, so this is the
  * difference between a list and a scroll.
  */
+describe('BuildsPage editor lifecycle', () => {
+  const BUILD = {
+    id: 'b1', character_id: 'char-ayaka', weapon_id: null, character_level: 90,
+    ascension_phase: 6, weapon_level: 90, refinement: 1, constellation_level: 0,
+    name: null, talent_levels: {}, notes: '', character: AYAKA,
+  } as never;
+
+  it('stops calling a build "being edited" once the editor is closed', async () => {
+    // `editing` is what draws the brass glow on a card in the saved list, and closing the
+    // dialog left it set — so the highlight sat on a build nobody was editing until another
+    // card was clicked (#289). The dialog's own `close` event is the only path here: Escape
+    // and the backdrop never go through the close button.
+    const page = healthy({ list: vi.fn().mockResolvedValue([BUILD]) } as unknown as BuildsService);
+    await page['load']();
+    await page['edit'](BUILD);
+    expect(page['editing']()?.id).toBe('b1');
+
+    page['onEditorClosed']();
+
+    expect(page['editing']()).toBeNull();
+  });
+});
+
 describe('matchesBuild', () => {
   const build = (
     name: string, element: string | null, weapon: string | null,

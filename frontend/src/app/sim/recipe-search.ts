@@ -113,6 +113,18 @@ export interface RecipeSearchContext {
    * `C(35, 2) = 595` of them are not searchable. Empty by default.
    */
   twoPiecePairs?: readonly (readonly [number, number])[];
+  /**
+   * Force one slot to hold exactly this piece, and search the other four around it.
+   *
+   * `TASKS_artifact_ranking.md` A.11 — the engine behind issue #291's *"assume that you can
+   * move other artifacts, so the best build with this artifact levelled up vs current"*. That
+   * is **not** a single-slot swap: it is this search, with the piece nailed down.
+   *
+   * The candidate is used as given, so a caller ranking a *projected* piece passes the
+   * projected stats rather than the ones the artifact has today. `id` still identifies the real
+   * piece, so the result names something the user owns.
+   */
+  pinned?: Candidate;
 }
 
 /** Sum one quantity across every stat pool, in f32 to match the GPU kernel. */
@@ -336,6 +348,21 @@ export function searchRecipe(
   );
   const { kept, removed } = paretoFilter(bucketBySlot(candidates), live);
   const slotBuckets = SLOTS.map((s) => kept.get(s) ?? []);
+
+  // **Pinned after the Pareto filter, never before.** The filter drops candidates dominated
+  // within their own set, and a pinned piece is very often one of them — that is usually the
+  // whole reason someone is asking about it. Restricting the bucket first and filtering second
+  // would let the pin be thrown away and the search would quietly answer a different question.
+  if (context.pinned) {
+    const slot = SLOTS.indexOf(context.pinned.slot);
+    if (slot < 0) {
+      throw new Error(
+        `pinned piece is in slot ${context.pinned.slot}, which is not one of the five the `
+        + 'kernel searches; a pin the walk cannot place would silently be ignored',
+      );
+    }
+    slotBuckets[slot] = [context.pinned];
+  }
 
   const states: readonly (number | null)[] =
     context.fourPieceSets ?? [null, ...context.recipes.byFourPieceSet.keys()];

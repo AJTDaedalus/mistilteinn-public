@@ -14,25 +14,50 @@
   white-space: nowrap;
 }
 
-// One bar per roll, coloured by tier — GO's idea, this palette. Tier 3 is a max roll and
-// gets the brass; `-1` is "count known, tier not" and stays deliberately neutral.
+/* One bar per roll, coloured by tier — GO's idea, this palette. Tier 3 is a max roll and
+   gets the brass; `-1` is "count known, tier not" and stays deliberately neutral.
+
+   **A full-height track, filled to the tier — not a bar whose own height is the tier.**
+   Both encodings were on the height, so a low roll drew a 6px stub and a line with four
+   poor rolls looked like a line with fewer rolls: the count, which is the first thing anyone
+   reads off these, was the thing hardest to see. Genshin Optimizer draws every roll the same
+   size and carries tier in colour alone, which reads far better and is the comparison the
+   owner made.
+
+   Colour alone is the one thing this palette will not do (`element-chip` argues it at
+   length), so the track keeps the second channel: the slot says *a roll happened*, the fill
+   says *how high it went*. Count is legible at a glance and tier survives without colour. */
 .sub__bars {
   display: flex;
   gap: 2px;
   align-items: flex-end;
-  height: 12px;
+  height: 14px;
 }
 
 .bar {
-  width: 4px;
-  height: 12px;
-  border-radius: 1px;
-  background: var(--ink-faint);
+  position: relative;
+  width: 6px;
+  height: 14px;
+  border-radius: 2px;
+  /* The track. Every roll is the same size, so four bars look like four bars.
+     `--surface-rule` rather than a faded `--ink-faint`: at 30% opacity the empty part of a
+     low roll was indistinguishable from the card behind it, so the track was doing nothing
+     and a tier-1 bar still read as a short one. Checked by zooming the rendered page. */
+  background: var(--surface-rule);
 
-  &[data-tier='0'] { background: var(--periwinkle); height: 6px; }
-  &[data-tier='1'] { background: var(--azure); height: 8px; }
-  &[data-tier='2'] { background: var(--mint); height: 10px; }
-  &[data-tier='3'] { background: var(--brass); height: 12px; }
+  &::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 100%;
+    border-radius: 2px;
+    background: var(--ink-faint);
+  }
+
+  &[data-tier='0']::after { background: var(--periwinkle); height: 40%; }
+  &[data-tier='1']::after { background: var(--azure); height: 60%; }
+  &[data-tier='2']::after { background: var(--mint); height: 80%; }
+  &[data-tier='3']::after { background: var(--brass); height: 100%; }
 }
 
 .sub__rv {

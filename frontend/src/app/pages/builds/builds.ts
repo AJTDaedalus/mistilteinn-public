@@ -8,6 +8,7 @@ import { ElementChip } from '../../shared/element/element';
 import { CatalogueIcon } from '../../shared/icon/icon';
 import { Combobox, type ComboboxOption } from '../../shared/combobox/combobox';
 import { EntityToken } from '../../shared/token/token';
+import { KQM_FILTER, listedFirst, weaponCard, weaponsById } from '../../shared/kqm/kqm';
 import { allPages } from '../../api/all-pages';
 import { ArtifactPanel } from './artifact-panel';
 import {
@@ -264,51 +265,19 @@ export class BuildsPage implements OnInit {
    */
   protected readonly weaponGuide = signal<CharacterWeaponGuideRead | null>(null);
 
-  /** `weapon id -> position in KQM's list`, for marking and ordering the picker. */
-  private readonly recommended = computed(() => {
-    const guide = this.weaponGuide();
-    return new Map((guide?.weapons ?? []).map((w) => [w.weapon_id, w]));
-  });
+  /** `weapon id -> what KQM said`, for marking and ordering the picker. */
+  private readonly recommended = computed(() => weaponsById(this.weaponGuide()));
 
   protected readonly weaponOptions = computed<CardOption[]>(() => {
     const listed = this.recommended();
-    return this.weapons()
-      .map((w) => {
-        const kqm = listed.get(w.id);
-        return {
-          value: w.id,
-          label: w.name,
-          icon: w.icon,
-          // The position, not a rank — KQM's table carries an order and no rank numbers.
-          //
-          // **The refinement is gone from this line** (owner): it is read off the weapon the
-          // user owns, so KQM's `R5` was somebody else's account's number shown against this
-          // user's inventory. What replaced it is `relative_dps` where KQM published one — a
-          // full guide states each weapon against a baseline, and that is their comparison
-          // rather than a figure this app derived.
-          detail: kqm
-            ? [
-                `KQM #${kqm.position}`,
-                kqm.relative_dps,
-                kqm.playstyle,
-                `${w.stars}★`,
-              ].filter(Boolean).join(' · ')
-            : `${w.stars}★ · ${w.sub_stat_display || 'no substat'}`,
-          // KQM's own sentence, verbatim, on hover. Summarising it here would be this page
-          // asserting a judgement it did not make, under someone else's name.
-          tooltip: kqm?.note,
-          recommended: Boolean(kqm),
-          tags: { stars: String(w.stars), kqm: kqm ? 'listed' : '' },
-        };
-      })
-      // Listed weapons first, in KQM's order; everything else after, as before. A weapon KQM
-      // did not list is not thereby *bad* — it is unlisted, which is why the rest keep their
-      // order rather than being pushed into a "not recommended" bucket.
-      .sort((a, b) => {
-        const left = listed.get(a.value)?.position ?? Number.MAX_SAFE_INTEGER;
-        const right = listed.get(b.value)?.position ?? Number.MAX_SAFE_INTEGER;
-        return left - right;
-      });
+    // **The refinement is not on this line** (owner): it is read off the weapon the user owns,
+    // so KQM's `R5` would be somebody else's account's number shown against this user's
+    // inventory. `relative_dps` took its place where KQM published one.
+    const cards = this.weapons().map((w) => weaponCard(w, listed.get(w.id)));
+    // Listed weapons first, in KQM's order; everything else after, as before. A weapon KQM did
+    // not list is not thereby *bad* — it is unlisted, which is why the rest keep their order
+    // rather than being pushed into a "not recommended" bucket.
+    return listedFirst(cards, (card) => listed.get(card.value)?.position);
   });
 
   protected readonly weaponFilters = computed<CardFilter[]>(() => {
@@ -320,11 +289,7 @@ export class BuildsPage implements OnInit {
     if (listed) {
       // Offered only when there is a guide, for the same reason the chips elsewhere are drawn
       // from what is on screen: a filter whose only outcome is an empty grid is not a filter.
-      filters.push({
-        group: 'kqm',
-        label: 'KeqingMains',
-        options: [{ value: 'listed', label: 'KQM lists it' }],
-      });
+      filters.push(KQM_FILTER);
     }
     if (stars.length > 1) filters.push({ group: 'stars', label: 'Rarity', options: stars });
     return filters;
@@ -462,11 +427,16 @@ export class BuildsPage implements OnInit {
   /**
    * Escape and the backdrop close a native dialog without going through `closeEditor`, so the
    * page's own state is reconciled on the `close` event rather than in the button handler.
-   * Nothing is discarded — an edit in progress is kept, and reopening the same build resumes
-   * it, which is what closing a panel means everywhere else in this app.
+   *
+   * **`editing` is cleared here**, because it is what draws the brass glow on a card in the
+   * list: leaving it set marked a build as being edited while no editor was open, and the
+   * highlight then sat there until another card was clicked (#289). Nothing is lost by
+   * clearing it — `edit()` refills every field from the build it reopens, so the "resume
+   * where you left off" this used to claim was never what happened.
    */
   protected onEditorClosed(): void {
     this.actionError.set(null);
+    this.editing.set(null);
   }
 
   private readonly service = inject(BuildsService);

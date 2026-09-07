@@ -20,8 +20,16 @@ judgement it did not make.
 ## Absent means absent
 
 A character with no guide captured has **no** entry, and callers get an empty list rather than
-a fabricated one. Three characters are captured today, which is the owner's *"manual, cited,
-small first"* — the shape proved before it is scaled.
+a fabricated one. **102 characters are captured**; the owner's *"manual, cited, small first"*
+started at three and the shape held. Re-derive rather than trust this number:
+`python -c "import json;print(len(json.load(open('app/data/kqm/weapons.json'))['characters']))"`.
+
+## The ids here are the game's, never this database's
+
+`weapon_nanoka_id` and `set_nanoka_id` are nanoka's, and the endpoint resolves them against the
+live catalogue on the way out. They were row ids until 2026-09-04, which made the whole snapshot
+meaningless outside the one database it was captured against —
+`docs/RESEARCH_kqm_not_reaching_the_ui.md` has the measurement.
 """
 
 from __future__ import annotations
@@ -40,7 +48,18 @@ class Recommendation:
 
     #: Where it appears in KQM's list. **Not a rank** — see the module docstring.
     position: int
-    weapon_id: str
+    #: The **game's** id for the weapon, not this database's row id.
+    #:
+    #: It was the row id until 2026-09-04, and that made the snapshot a set of pointers into
+    #: whichever database happened to be seeded when the capture ran. `models/base.py` mints a
+    #: `uuid7` per insert, so a fresh seed mints different ones — **zero of the 205 captured
+    #: ids existed in production**, and every recommendation was silently dropped by a client
+    #: joining on them. `docs/RESEARCH_kqm_not_reaching_the_ui.md`.
+    #:
+    #: `nanoka_id` is the game's own key and means the same thing in every environment, which
+    #: is what a committed snapshot has to do. It is also what this module's *character* keys
+    #: always were; the asymmetry was the bug.
+    weapon_nanoka_id: int
     weapon_name: str
     #: KQM's own words. Verbatim.
     note: str
@@ -71,7 +90,9 @@ class SetRecommendation:
     kind: str
     as_written: str
     note: str
-    set_id: str | None = None
+    #: The game's id for the set. `None` on a `stat` row, which names no set.
+    #: Portable for the reason `Recommendation.weapon_nanoka_id` documents at length.
+    set_nanoka_id: int | None = None
     set_name: str | None = None
     pieces: str = ""
     playstyle: str = ""
@@ -108,7 +129,7 @@ def _loaded() -> dict[str, CharacterGuide]:
             weapons=tuple(
                 Recommendation(
                     position=int(w["position"]),
-                    weapon_id=str(w["weapon_id"]),
+                    weapon_nanoka_id=int(w["weapon_nanoka_id"]),
                     weapon_name=str(w["weapon_name"]),
                     note=str(w["note"]),
                     playstyle=str(w.get("playstyle", "")),
@@ -122,7 +143,9 @@ def _loaded() -> dict[str, CharacterGuide]:
                     kind=str(e.get("kind", "stat")),
                     as_written=str(e.get("as_written", "")),
                     note=str(e.get("note", "")),
-                    set_id=e.get("set_id"),
+                    set_nanoka_id=(
+                        int(e["set_nanoka_id"]) if e.get("set_nanoka_id") is not None else None
+                    ),
                     set_name=e.get("set_name"),
                     pieces=str(e.get("pieces", "")),
                     playstyle=str(e.get("playstyle", "")),

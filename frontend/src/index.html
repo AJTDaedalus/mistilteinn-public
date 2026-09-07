@@ -10,6 +10,49 @@
        the app, where no CSS custom property exists to resolve. -->
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <meta name="theme-color" content="#1c2334">
+
+  <!-- ── Link previews, and deliberately no search indexing ──────────────────────────────
+       **Everything here is behind `requireApproved`.** `/` redirects to `/inventory`, which
+       bounces a signed-out visitor to `/login`, so the entire crawlable surface of this site
+       is one login card. Ranking it would be ranking a door.
+
+       So: `noindex`, and the tags that make a *pasted link* render properly, because those
+       are two different jobs. A mistilteinn URL in Discord — where the bug-report workflow
+       lives — used to unfurl as a naked URL with no title, description or image.
+
+       **`noindex` here rather than `Disallow: /` in robots.txt**, and the distinction is the
+       whole reason this comment is long. `Disallow` stops a crawler *fetching* the page, so
+       it never reads the `noindex` — and a disallowed URL can still be listed, URL-only,
+       from inbound links alone. Allowing the fetch is what lets the `noindex` be obeyed.
+       `public/robots.txt` says the same thing from the other side.
+
+       These are static because there is nothing per-page worth previewing: every route needs
+       a session, so every shared link resolves to the same login card. The per-route
+       `<title>` is set by `PageTitle` at runtime, which no scraper executes — and does not
+       need to, for the same reason. -->
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description"
+        content="Artifact optimization and rotation simulation for Genshin Impact, with every number able to show its working. Invite only.">
+  <link rel="canonical" href="https://mistilteinn.aetherus.dev/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="mistilteinn">
+  <meta property="og:title" content="mistilteinn — Genshin Research Institute">
+  <meta property="og:description"
+        content="Artifact optimization and rotation simulation for Genshin Impact, with every number able to show its working. Invite only.">
+  <meta property="og:url" content="https://mistilteinn.aetherus.dev/">
+  <!-- Absolute, because a scraper resolves this against nothing. 1200x630 is the size every
+       unfurler crops from; the art is the same emblem the favicon and the app header use. -->
+  <meta property="og:image" content="https://mistilteinn.aetherus.dev/og-card.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The mistilteinn orbital emblem beside the wordmark">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="mistilteinn — Genshin Research Institute">
+  <meta name="twitter:description"
+        content="Artifact optimization and rotation simulation for Genshin Impact, with every number able to show its working. Invite only.">
+  <meta name="twitter:image" content="https://mistilteinn.aetherus.dev/og-card.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link

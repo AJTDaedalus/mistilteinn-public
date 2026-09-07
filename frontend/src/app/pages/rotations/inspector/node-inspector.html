@@ -1,11 +1,10 @@
 <section class="inspector" aria-label="Selected step">
   @if (!node()) {
-    <p class="inspector__empty">Select a step to see its settings.</p>
+    <p class="inspector__empty">Select a step.</p>
   } @else {
     @if (carried()) {
       <p class="inspector__carried">
-        Carried as written. gcsim runs this exactly as typed, and it is edited in the source
-        view rather than here.
+Carried as written.
       </p>
     }
 
@@ -38,8 +37,7 @@
             }
           </ul>
           <p class="inspector__hint">
-            Carried exactly as written. This builder offers no control for these, and changing
-            one would be a different move.
+            Carried exactly as written.
           </p>
         </div>
       }
