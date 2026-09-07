@@ -1,0 +1,5292 @@
+{
+ "sources": [
+  "MaterialExcelConfigData",
+  "AvatarPromoteExcelConfigData",
+  "WeaponPromoteExcelConfigData",
+  "CombineExcelConfigData",
+  "RewardPreviewExcelConfigData",
+  "DungeonExcelConfigData",
+  "InvestigationMonsterConfigData",
+  "BlossomChestExcelConfigData",
+  "DailyDungeonConfigData"
+ ],
+ "note": "Everything the leveling planner needs that nanoka does not publish. `expected_per_run` is taken ONLY from fractional counts in the reward previews -- a whole number there is a fixed reward, not an expected drop. Coverage is partial by design: a material with no entry here is priced from app/data/planner/curated_rates.json or reported as resin-unknown, never guessed. See docs/RESEARCH_leveling_planner_data.md sections 9-10.",
+ "mora_item_id": 202,
+ "resin_item_id": 106,
+ "level_caps": {
+  "character": {
+   "0": 20,
+   "1": 40,
+   "2": 50,
+   "3": 60,
+   "4": 70,
+   "5": 80,
+   "6": 90
+  },
+  "weapon": {
+   "0": 20,
+   "1": 40,
+   "2": 50,
+   "3": 60,
+   "4": 70,
+   "5": 80,
+   "6": 90
+  }
+ },
+ "exp_items": {
+  "character": [
+   {
+    "id": 104003,
+    "exp": 20000,
+    "rarity": 4
+   },
+   {
+    "id": 104002,
+    "exp": 5000,
+    "rarity": 3
+   },
+   {
+    "id": 104001,
+    "exp": 1000,
+    "rarity": 2
+   }
+  ],
+  "weapon": [
+   {
+    "id": 104013,
+    "exp": 10000,
+    "rarity": 3
+   },
+   {
+    "id": 104012,
+    "exp": 2000,
+    "rarity": 2
+   },
+   {
+    "id": 104011,
+    "exp": 400,
+    "rarity": 1
+   }
+  ]
+ },
+ "ley_line_resin": {
+  "BLOSSOM_REFRESH_SCOIN": 20,
+  "BLOSSOM_REFRESH_EXP": 20
+ },
+ "material_meta": {
+  "100011": {
+   "icon": "UI_ItemIcon_100011",
+   "rarity": 0
+  },
+  "100012": {
+   "icon": "UI_ItemIcon_100012",
+   "rarity": 0
+  },
+  "100013": {
+   "icon": "UI_ItemIcon_100013",
+   "rarity": 0
+  },
+  "100014": {
+   "icon": "UI_ItemIcon_100014",
+   "rarity": 0
+  },
+  "100015": {
+   "icon": "UI_ItemIcon_100015",
+   "rarity": 0
+  },
+  "100016": {
+   "icon": "UI_ItemIcon_100016",
+   "rarity": 0
+  },
+  "100017": {
+   "icon": "UI_ItemIcon_100017",
+   "rarity": 0
+  },
+  "100018": {
+   "icon": "UI_ItemIcon_100018",
+   "rarity": 0
+  },
+  "100019": {
+   "icon": "UI_ItemIcon_100019",
+   "rarity": 0
+  },
+  "100020": {
+   "icon": "UI_ItemIcon_100020",
+   "rarity": 0
+  },
+  "100021": {
+   "icon": "UI_ItemIcon_100021",
+   "rarity": 0
+  },
+  "100022": {
+   "icon": "UI_ItemIcon_100022",
+   "rarity": 0
+  },
+  "100023": {
+   "icon": "UI_ItemIcon_100023",
+   "rarity": 0
+  },
+  "100024": {
+   "icon": "UI_ItemIcon_100024",
+   "rarity": 0
+  },
+  "100025": {
+   "icon": "UI_ItemIcon_100025",
+   "rarity": 0
+  },
+  "100026": {
+   "icon": "UI_ItemIcon_100026",
+   "rarity": 0
+  },
+  "100027": {
+   "icon": "UI_ItemIcon_100027",
+   "rarity": 0
+  },
+  "100028": {
+   "icon": "UI_ItemIcon_100028",
+   "rarity": 0
+  },
+  "100029": {
+   "icon": "UI_ItemIcon_100029",
+   "rarity": 0
+  },
+  "100030": {
+   "icon": "UI_ItemIcon_100030",
+   "rarity": 0
+  },
+  "100031": {
+   "icon": "UI_ItemIcon_100031",
+   "rarity": 0
+  },
+  "100032": {
+   "icon": "UI_ItemIcon_100032",
+   "rarity": 0
+  },
+  "100033": {
+   "icon": "UI_ItemIcon_100033",
+   "rarity": 0
+  },
+  "100034": {
+   "icon": "UI_ItemIcon_100034",
+   "rarity": 0
+  },
+  "100051": {
+   "icon": "UI_ItemIcon_100051",
+   "rarity": 0
+  },
+  "100052": {
+   "icon": "UI_ItemIcon_100052",
+   "rarity": 0
+  },
+  "100053": {
+   "icon": "UI_ItemIcon_100053",
+   "rarity": 0
+  },
+  "100054": {
+   "icon": "UI_ItemIcon_100054",
+   "rarity": 0
+  },
+  "100055": {
+   "icon": "UI_ItemIcon_100055",
+   "rarity": 0
+  },
+  "100056": {
+   "icon": "UI_ItemIcon_100056",
+   "rarity": 0
+  },
+  "100057": {
+   "icon": "UI_ItemIcon_100057",
+   "rarity": 0
+  },
+  "100058": {
+   "icon": "UI_ItemIcon_100058",
+   "rarity": 0
+  },
+  "100061": {
+   "icon": "UI_ItemIcon_100061",
+   "rarity": 0
+  },
+  "100062": {
+   "icon": "UI_ItemIcon_100062",
+   "rarity": 0
+  },
+  "100063": {
+   "icon": "UI_ItemIcon_100063",
+   "rarity": 0
+  },
+  "100064": {
+   "icon": "UI_ItemIcon_100064",
+   "rarity": 0
+  },
+  "100072": {
+   "icon": "UI_ItemIcon_100072",
+   "rarity": 0
+  },
+  "100073": {
+   "icon": "UI_ItemIcon_100073",
+   "rarity": 0
+  },
+  "100074": {
+   "icon": "UI_ItemIcon_110007",
+   "rarity": 0
+  },
+  "100075": {
+   "icon": "UI_ItemIcon_100075",
+   "rarity": 0
+  },
+  "100076": {
+   "icon": "UI_ItemIcon_100076",
+   "rarity": 0
+  },
+  "100077": {
+   "icon": "UI_ItemIcon_100077",
+   "rarity": 0
+  },
+  "100078": {
+   "icon": "UI_ItemIcon_100078",
+   "rarity": 0
+  },
+  "100079": {
+   "icon": "UI_ItemIcon_100079",
+   "rarity": 0
+  },
+  "100080": {
+   "icon": "UI_ItemIcon_100080",
+   "rarity": 0
+  },
+  "100081": {
+   "icon": "UI_ItemIcon_100081",
+   "rarity": 0
+  },
+  "100082": {
+   "icon": "UI_ItemIcon_100082",
+   "rarity": 0
+  },
+  "100083": {
+   "icon": "UI_ItemIcon_100083",
+   "rarity": 0
+  },
+  "100084": {
+   "icon": "UI_ItemIcon_100084",
+   "rarity": 0
+  },
+  "100085": {
+   "icon": "UI_ItemIcon_100085",
+   "rarity": 0
+  },
+  "100086": {
+   "icon": "UI_ItemIcon_100061",
+   "rarity": 0
+  },
+  "100087": {
+   "icon": "UI_ItemIcon_100064",
+   "rarity": 0
+  },
+  "100088": {
+   "icon": "UI_ItemIcon_100088",
+   "rarity": 0
+  },
+  "100089": {
+   "icon": "UI_ItemIcon_100089",
+   "rarity": 0
+  },
+  "100090": {
+   "icon": "UI_ItemIcon_100090",
+   "rarity": 0
+  },
+  "100091": {
+   "icon": "UI_ItemIcon_100091",
+   "rarity": 0
+  },
+  "100092": {
+   "icon": "UI_ItemIcon_100092",
+   "rarity": 0
+  },
+  "100093": {
+   "icon": "UI_ItemIcon_100093",
+   "rarity": 0
+  },
+  "100094": {
+   "icon": "UI_ItemIcon_100094",
+   "rarity": 0
+  },
+  "100095": {
+   "icon": "UI_ItemIcon_100095",
+   "rarity": 0
+  },
+  "100096": {
+   "icon": "UI_ItemIcon_100096",
+   "rarity": 0
+  },
+  "100097": {
+   "icon": "UI_ItemIcon_100097",
+   "rarity": 0
+  },
+  "100098": {
+   "icon": "UI_ItemIcon_100098",
+   "rarity": 0
+  },
+  "100099": {
+   "icon": "UI_ItemIcon_100099",
+   "rarity": 0
+  },
+  "100100": {
+   "icon": "UI_ItemIcon_101268",
+   "rarity": 0
+  },
+  "100618": {
+   "icon": "UI_ItemIcon_100618",
+   "rarity": 0
+  },
+  "100619": {
+   "icon": "UI_ItemIcon_100619",
+   "rarity": 0
+  },
+  "101001": {
+   "icon": "UI_ItemIcon_101001",
+   "rarity": 0
+  },
+  "101002": {
+   "icon": "UI_ItemIcon_101002",
+   "rarity": 0
+  },
+  "101003": {
+   "icon": "UI_ItemIcon_101003",
+   "rarity": 0
+  },
+  "101004": {
+   "icon": "UI_ItemIcon_101004",
+   "rarity": 0
+  },
+  "101006": {
+   "icon": "UI_ItemIcon_101006",
+   "rarity": 0
+  },
+  "101008": {
+   "icon": "UI_ItemIcon_101008",
+   "rarity": 0
+  },
+  "101009": {
+   "icon": "UI_ItemIcon_101009",
+   "rarity": 0
+  },
+  "101010": {
+   "icon": "UI_ItemIcon_101258",
+   "rarity": 0
+  },
+  "101101": {
+   "icon": "UI_ItemIcon_101101",
+   "rarity": 4
+  },
+  "101102": {
+   "icon": "UI_ItemIcon_101102",
+   "rarity": 4
+  },
+  "101103": {
+   "icon": "UI_ItemIcon_101103",
+   "rarity": 4
+  },
+  "101104": {
+   "icon": "UI_ItemIcon_101104",
+   "rarity": 4
+  },
+  "101105": {
+   "icon": "UI_ItemIcon_101105",
+   "rarity": 4
+  },
+  "101111": {
+   "icon": "UI_ItemIcon_101111",
+   "rarity": 4
+  },
+  "101112": {
+   "icon": "UI_ItemIcon_101112",
+   "rarity": 4
+  },
+  "101113": {
+   "icon": "UI_ItemIcon_101113",
+   "rarity": 4
+  },
+  "101114": {
+   "icon": "UI_ItemIcon_101114",
+   "rarity": 4
+  },
+  "101115": {
+   "icon": "UI_ItemIcon_101115",
+   "rarity": 4
+  },
+  "101116": {
+   "icon": "UI_ItemIcon_101116",
+   "rarity": 4
+  },
+  "101117": {
+   "icon": "UI_ItemIcon_101117",
+   "rarity": 4
+  },
+  "101118": {
+   "icon": "UI_ItemIcon_101118",
+   "rarity": 4
+  },
+  "101119": {
+   "icon": "UI_ItemIcon_101119",
+   "rarity": 4
+  },
+  "101120": {
+   "icon": "UI_ItemIcon_101120",
+   "rarity": 4
+  },
+  "101201": {
+   "icon": "UI_ItemIcon_101201",
+   "rarity": 0
+  },
+  "101202": {
+   "icon": "UI_ItemIcon_101202",
+   "rarity": 0
+  },
+  "101203": {
+   "icon": "UI_ItemIcon_101203",
+   "rarity": 0
+  },
+  "101204": {
+   "icon": "UI_ItemIcon_101204",
+   "rarity": 0
+  },
+  "101205": {
+   "icon": "UI_ItemIcon_101205",
+   "rarity": 0
+  },
+  "101206": {
+   "icon": "UI_ItemIcon_101206",
+   "rarity": 0
+  },
+  "101207": {
+   "icon": "UI_ItemIcon_101207",
+   "rarity": 0
+  },
+  "101208": {
+   "icon": "UI_ItemIcon_101208",
+   "rarity": 0
+  },
+  "101209": {
+   "icon": "UI_ItemIcon_101209",
+   "rarity": 0
+  },
+  "101210": {
+   "icon": "UI_ItemIcon_101210",
+   "rarity": 0
+  },
+  "101211": {
+   "icon": "UI_ItemIcon_101211",
+   "rarity": 0
+  },
+  "101213": {
+   "icon": "UI_ItemIcon_101213",
+   "rarity": 0
+  },
+  "101214": {
+   "icon": "UI_ItemIcon_101214",
+   "rarity": 0
+  },
+  "101215": {
+   "icon": "UI_ItemIcon_101215",
+   "rarity": 0
+  },
+  "101216": {
+   "icon": "UI_ItemIcon_101216",
+   "rarity": 0
+  },
+  "101217": {
+   "icon": "UI_ItemIcon_101217",
+   "rarity": 0
+  },
+  "101218": {
+   "icon": "UI_ItemIcon_101218",
+   "rarity": 0
+  },
+  "101219": {
+   "icon": "UI_ItemIcon_101219",
+   "rarity": 0
+  },
+  "101220": {
+   "icon": "UI_ItemIcon_101220",
+   "rarity": 0
+  },
+  "101221": {
+   "icon": "UI_ItemIcon_101221",
+   "rarity": 0
+  },
+  "101222": {
+   "icon": "UI_ItemIcon_101222",
+   "rarity": 0
+  },
+  "101223": {
+   "icon": "UI_ItemIcon_101223",
+   "rarity": 0
+  },
+  "101224": {
+   "icon": "UI_ItemIcon_101224",
+   "rarity": 0
+  },
+  "101225": {
+   "icon": "UI_ItemIcon_101225",
+   "rarity": 0
+  },
+  "101228": {
+   "icon": "UI_ItemIcon_101228",
+   "rarity": 0
+  },
+  "101229": {
+   "icon": "UI_ItemIcon_101229",
+   "rarity": 0
+  },
+  "101231": {
+   "icon": "UI_ItemIcon_101231",
+   "rarity": 0
+  },
+  "101232": {
+   "icon": "UI_ItemIcon_101232",
+   "rarity": 0
+  },
+  "101233": {
+   "icon": "UI_ItemIcon_101233",
+   "rarity": 0
+  },
+  "101234": {
+   "icon": "UI_ItemIcon_101234",
+   "rarity": 0
+  },
+  "101235": {
+   "icon": "UI_ItemIcon_101235",
+   "rarity": 0
+  },
+  "101236": {
+   "icon": "UI_ItemIcon_101236",
+   "rarity": 0
+  },
+  "101237": {
+   "icon": "UI_ItemIcon_101237",
+   "rarity": 0
+  },
+  "101238": {
+   "icon": "UI_ItemIcon_101238",
+   "rarity": 0
+  },
+  "101239": {
+   "icon": "UI_ItemIcon_101239",
+   "rarity": 0
+  },
+  "101240": {
+   "icon": "UI_ItemIcon_101240",
+   "rarity": 0
+  },
+  "101241": {
+   "icon": "UI_ItemIcon_101241",
+   "rarity": 0
+  },
+  "101242": {
+   "icon": "UI_ItemIcon_101242",
+   "rarity": 0
+  },
+  "101243": {
+   "icon": "UI_ItemIcon_101243",
+   "rarity": 0
+  },
+  "101245": {
+   "icon": "UI_ItemIcon_101245",
+   "rarity": 0
+  },
+  "101246": {
+   "icon": "UI_ItemIcon_101246",
+   "rarity": 0
+  },
+  "101247": {
+   "icon": "UI_ItemIcon_101247",
+   "rarity": 0
+  },
+  "101248": {
+   "icon": "UI_ItemIcon_101248",
+   "rarity": 0
+  },
+  "101249": {
+   "icon": "UI_ItemIcon_101249",
+   "rarity": 0
+  },
+  "101250": {
+   "icon": "UI_ItemIcon_101250",
+   "rarity": 0
+  },
+  "101251": {
+   "icon": "UI_ItemIcon_101251",
+   "rarity": 0
+  },
+  "101252": {
+   "icon": "UI_ItemIcon_101252",
+   "rarity": 0
+  },
+  "101253": {
+   "icon": "UI_ItemIcon_101253",
+   "rarity": 0
+  },
+  "101254": {
+   "icon": "UI_ItemIcon_101254",
+   "rarity": 0
+  },
+  "101255": {
+   "icon": "UI_ItemIcon_101255",
+   "rarity": 0
+  },
+  "101256": {
+   "icon": "UI_ItemIcon_101256",
+   "rarity": 0
+  },
+  "101257": {
+   "icon": "UI_ItemIcon_101257",
+   "rarity": 0
+  },
+  "101259": {
+   "icon": "UI_ItemIcon_101259",
+   "rarity": 0
+  },
+  "101261": {
+   "icon": "UI_ItemIcon_101261",
+   "rarity": 0
+  },
+  "101262": {
+   "icon": "UI_ItemIcon_101262",
+   "rarity": 0
+  },
+  "101263": {
+   "icon": "UI_ItemIcon_101263",
+   "rarity": 0
+  },
+  "101264": {
+   "icon": "UI_ItemIcon_101264",
+   "rarity": 0
+  },
+  "101265": {
+   "icon": "UI_ItemIcon_101265",
+   "rarity": 0
+  },
+  "101268": {
+   "icon": "UI_ItemIcon_101266",
+   "rarity": 0
+  },
+  "101269": {
+   "icon": "UI_ItemIcon_101269",
+   "rarity": 0
+  },
+  "101270": {
+   "icon": "UI_ItemIcon_101270",
+   "rarity": 0
+  },
+  "101271": {
+   "icon": "UI_ItemIcon_101271",
+   "rarity": 0
+  },
+  "101272": {
+   "icon": "UI_ItemIcon_101272",
+   "rarity": 0
+  },
+  "101275": {
+   "icon": "UI_ItemIcon_101275",
+   "rarity": 0
+  },
+  "101276": {
+   "icon": "UI_ItemIcon_101276",
+   "rarity": 0
+  },
+  "101277": {
+   "icon": "UI_ItemIcon_101277",
+   "rarity": 0
+  },
+  "101278": {
+   "icon": "UI_ItemIcon_101278",
+   "rarity": 0
+  },
+  "101279": {
+   "icon": "UI_ItemIcon_101279",
+   "rarity": 0
+  },
+  "101280": {
+   "icon": "UI_ItemIcon_101280",
+   "rarity": 0
+  },
+  "101281": {
+   "icon": "UI_ItemIcon_101281",
+   "rarity": 0
+  },
+  "101282": {
+   "icon": "UI_ItemIcon_101282",
+   "rarity": 0
+  },
+  "101401": {
+   "icon": "UI_ItemIcon_101401",
+   "rarity": 0
+  },
+  "101402": {
+   "icon": "UI_ItemIcon_101402",
+   "rarity": 0
+  },
+  "101403": {
+   "icon": "UI_ItemIcon_101403",
+   "rarity": 0
+  },
+  "101404": {
+   "icon": "UI_ItemIcon_101404",
+   "rarity": 0
+  },
+  "104001": {
+   "icon": "UI_ItemIcon_104001",
+   "rarity": 2
+  },
+  "104002": {
+   "icon": "UI_ItemIcon_104002",
+   "rarity": 3
+  },
+  "104003": {
+   "icon": "UI_ItemIcon_104003",
+   "rarity": 4
+  },
+  "104011": {
+   "icon": "UI_ItemIcon_104011",
+   "rarity": 1
+  },
+  "104012": {
+   "icon": "UI_ItemIcon_104012",
+   "rarity": 2
+  },
+  "104013": {
+   "icon": "UI_ItemIcon_104013",
+   "rarity": 3
+  },
+  "104101": {
+   "icon": "UI_ItemIcon_104101",
+   "rarity": 2
+  },
+  "104102": {
+   "icon": "UI_ItemIcon_104102",
+   "rarity": 3
+  },
+  "104103": {
+   "icon": "UI_ItemIcon_104103",
+   "rarity": 4
+  },
+  "104104": {
+   "icon": "UI_ItemIcon_104104",
+   "rarity": 5
+  },
+  "104111": {
+   "icon": "UI_ItemIcon_104111",
+   "rarity": 2
+  },
+  "104112": {
+   "icon": "UI_ItemIcon_104112",
+   "rarity": 3
+  },
+  "104113": {
+   "icon": "UI_ItemIcon_104113",
+   "rarity": 4
+  },
+  "104114": {
+   "icon": "UI_ItemIcon_104114",
+   "rarity": 5
+  },
+  "104121": {
+   "icon": "UI_ItemIcon_104121",
+   "rarity": 2
+  },
+  "104122": {
+   "icon": "UI_ItemIcon_104122",
+   "rarity": 3
+  },
+  "104123": {
+   "icon": "UI_ItemIcon_104123",
+   "rarity": 4
+  },
+  "104124": {
+   "icon": "UI_ItemIcon_104124",
+   "rarity": 5
+  },
+  "104131": {
+   "icon": "UI_ItemIcon_104131",
+   "rarity": 2
+  },
+  "104132": {
+   "icon": "UI_ItemIcon_104132",
+   "rarity": 3
+  },
+  "104133": {
+   "icon": "UI_ItemIcon_104133",
+   "rarity": 4
+  },
+  "104134": {
+   "icon": "UI_ItemIcon_104134",
+   "rarity": 5
+  },
+  "104141": {
+   "icon": "UI_ItemIcon_104141",
+   "rarity": 2
+  },
+  "104142": {
+   "icon": "UI_ItemIcon_104142",
+   "rarity": 3
+  },
+  "104143": {
+   "icon": "UI_ItemIcon_104143",
+   "rarity": 4
+  },
+  "104144": {
+   "icon": "UI_ItemIcon_104144",
+   "rarity": 5
+  },
+  "104151": {
+   "icon": "UI_ItemIcon_104151",
+   "rarity": 2
+  },
+  "104152": {
+   "icon": "UI_ItemIcon_104152",
+   "rarity": 3
+  },
+  "104153": {
+   "icon": "UI_ItemIcon_104153",
+   "rarity": 4
+  },
+  "104154": {
+   "icon": "UI_ItemIcon_104154",
+   "rarity": 5
+  },
+  "104161": {
+   "icon": "UI_ItemIcon_104161",
+   "rarity": 2
+  },
+  "104162": {
+   "icon": "UI_ItemIcon_104162",
+   "rarity": 3
+  },
+  "104163": {
+   "icon": "UI_ItemIcon_104163",
+   "rarity": 4
+  },
+  "104164": {
+   "icon": "UI_ItemIcon_104164",
+   "rarity": 5
+  },
+  "104171": {
+   "icon": "UI_ItemIcon_104171",
+   "rarity": 2
+  },
+  "104172": {
+   "icon": "UI_ItemIcon_104172",
+   "rarity": 3
+  },
+  "104173": {
+   "icon": "UI_ItemIcon_104173",
+   "rarity": 4
+  },
+  "104174": {
+   "icon": "UI_ItemIcon_104174",
+   "rarity": 5
+  },
+  "104301": {
+   "icon": "UI_ItemIcon_104301",
+   "rarity": 2
+  },
+  "104302": {
+   "icon": "UI_ItemIcon_104302",
+   "rarity": 3
+  },
+  "104303": {
+   "icon": "UI_ItemIcon_104303",
+   "rarity": 4
+  },
+  "104304": {
+   "icon": "UI_ItemIcon_104304",
+   "rarity": 2
+  },
+  "104305": {
+   "icon": "UI_ItemIcon_104305",
+   "rarity": 3
+  },
+  "104306": {
+   "icon": "UI_ItemIcon_104306",
+   "rarity": 4
+  },
+  "104307": {
+   "icon": "UI_ItemIcon_104307",
+   "rarity": 2
+  },
+  "104308": {
+   "icon": "UI_ItemIcon_104308",
+   "rarity": 3
+  },
+  "104309": {
+   "icon": "UI_ItemIcon_104309",
+   "rarity": 4
+  },
+  "104310": {
+   "icon": "UI_ItemIcon_104310",
+   "rarity": 2
+  },
+  "104311": {
+   "icon": "UI_ItemIcon_104311",
+   "rarity": 3
+  },
+  "104312": {
+   "icon": "UI_ItemIcon_104312",
+   "rarity": 4
+  },
+  "104313": {
+   "icon": "UI_ItemIcon_104313",
+   "rarity": 2
+  },
+  "104314": {
+   "icon": "UI_ItemIcon_104314",
+   "rarity": 3
+  },
+  "104315": {
+   "icon": "UI_ItemIcon_104315",
+   "rarity": 4
+  },
+  "104316": {
+   "icon": "UI_ItemIcon_104316",
+   "rarity": 2
+  },
+  "104317": {
+   "icon": "UI_ItemIcon_104317",
+   "rarity": 3
+  },
+  "104318": {
+   "icon": "UI_ItemIcon_104318",
+   "rarity": 4
+  },
+  "104319": {
+   "icon": "UI_ItemIcon_104319",
+   "rarity": 5
+  },
+  "104320": {
+   "icon": "UI_ItemIcon_104320",
+   "rarity": 2
+  },
+  "104321": {
+   "icon": "UI_ItemIcon_104321",
+   "rarity": 3
+  },
+  "104322": {
+   "icon": "UI_ItemIcon_104322",
+   "rarity": 4
+  },
+  "104323": {
+   "icon": "UI_ItemIcon_104323",
+   "rarity": 2
+  },
+  "104324": {
+   "icon": "UI_ItemIcon_104324",
+   "rarity": 3
+  },
+  "104325": {
+   "icon": "UI_ItemIcon_104325",
+   "rarity": 4
+  },
+  "104326": {
+   "icon": "UI_ItemIcon_104326",
+   "rarity": 2
+  },
+  "104327": {
+   "icon": "UI_ItemIcon_104327",
+   "rarity": 3
+  },
+  "104328": {
+   "icon": "UI_ItemIcon_104328",
+   "rarity": 4
+  },
+  "104329": {
+   "icon": "UI_ItemIcon_104329",
+   "rarity": 2
+  },
+  "104330": {
+   "icon": "UI_ItemIcon_104330",
+   "rarity": 3
+  },
+  "104331": {
+   "icon": "UI_ItemIcon_104331",
+   "rarity": 4
+  },
+  "104332": {
+   "icon": "UI_ItemIcon_104332",
+   "rarity": 2
+  },
+  "104333": {
+   "icon": "UI_ItemIcon_104333",
+   "rarity": 3
+  },
+  "104334": {
+   "icon": "UI_ItemIcon_104334",
+   "rarity": 4
+  },
+  "104335": {
+   "icon": "UI_ItemIcon_104335",
+   "rarity": 2
+  },
+  "104336": {
+   "icon": "UI_ItemIcon_104336",
+   "rarity": 3
+  },
+  "104337": {
+   "icon": "UI_ItemIcon_104337",
+   "rarity": 4
+  },
+  "104338": {
+   "icon": "UI_ItemIcon_104338",
+   "rarity": 2
+  },
+  "104339": {
+   "icon": "UI_ItemIcon_104339",
+   "rarity": 3
+  },
+  "104340": {
+   "icon": "UI_ItemIcon_104340",
+   "rarity": 4
+  },
+  "104341": {
+   "icon": "UI_ItemIcon_104341",
+   "rarity": 2
+  },
+  "104342": {
+   "icon": "UI_ItemIcon_104342",
+   "rarity": 3
+  },
+  "104343": {
+   "icon": "UI_ItemIcon_104343",
+   "rarity": 4
+  },
+  "104344": {
+   "icon": "UI_ItemIcon_104344",
+   "rarity": 2
+  },
+  "104345": {
+   "icon": "UI_ItemIcon_104345",
+   "rarity": 3
+  },
+  "104346": {
+   "icon": "UI_ItemIcon_104346",
+   "rarity": 4
+  },
+  "104347": {
+   "icon": "UI_ItemIcon_104347",
+   "rarity": 2
+  },
+  "104348": {
+   "icon": "UI_ItemIcon_104348",
+   "rarity": 3
+  },
+  "104349": {
+   "icon": "UI_ItemIcon_104349",
+   "rarity": 4
+  },
+  "104350": {
+   "icon": "UI_ItemIcon_104350",
+   "rarity": 2
+  },
+  "104351": {
+   "icon": "UI_ItemIcon_104351",
+   "rarity": 3
+  },
+  "104352": {
+   "icon": "UI_ItemIcon_104352",
+   "rarity": 4
+  },
+  "104353": {
+   "icon": "UI_ItemIcon_104353",
+   "rarity": 2
+  },
+  "104354": {
+   "icon": "UI_ItemIcon_104354",
+   "rarity": 3
+  },
+  "104355": {
+   "icon": "UI_ItemIcon_104355",
+   "rarity": 4
+  },
+  "104356": {
+   "icon": "UI_ItemIcon_104356",
+   "rarity": 2
+  },
+  "104357": {
+   "icon": "UI_ItemIcon_104357",
+   "rarity": 3
+  },
+  "104358": {
+   "icon": "UI_ItemIcon_104358",
+   "rarity": 4
+  },
+  "104359": {
+   "icon": "UI_ItemIcon_104359",
+   "rarity": 2
+  },
+  "104360": {
+   "icon": "UI_ItemIcon_104360",
+   "rarity": 3
+  },
+  "104361": {
+   "icon": "UI_ItemIcon_104361",
+   "rarity": 4
+  },
+  "104362": {
+   "icon": "UI_ItemIcon_104362",
+   "rarity": 2
+  },
+  "104363": {
+   "icon": "UI_ItemIcon_104363",
+   "rarity": 3
+  },
+  "104364": {
+   "icon": "UI_ItemIcon_104364",
+   "rarity": 4
+  },
+  "104365": {
+   "icon": "UI_ItemIcon_104365",
+   "rarity": 2
+  },
+  "104366": {
+   "icon": "UI_ItemIcon_104366",
+   "rarity": 3
+  },
+  "104367": {
+   "icon": "UI_ItemIcon_104367",
+   "rarity": 4
+  },
+  "104368": {
+   "icon": "UI_ItemIcon_104368",
+   "rarity": 2
+  },
+  "104369": {
+   "icon": "UI_ItemIcon_104369",
+   "rarity": 3
+  },
+  "104370": {
+   "icon": "UI_ItemIcon_104370",
+   "rarity": 4
+  },
+  "104371": {
+   "icon": "UI_ItemIcon_104371",
+   "rarity": 2
+  },
+  "104372": {
+   "icon": "UI_ItemIcon_104372",
+   "rarity": 3
+  },
+  "104373": {
+   "icon": "UI_ItemIcon_104373",
+   "rarity": 4
+  },
+  "110000": {
+   "icon": "UI_ItemIcon_110000",
+   "rarity": 0
+  },
+  "110001": {
+   "icon": "UI_ItemIcon_110001",
+   "rarity": 0
+  },
+  "110002": {
+   "icon": "UI_ItemIcon_110002",
+   "rarity": 0
+  },
+  "110003": {
+   "icon": "UI_ItemIcon_110003",
+   "rarity": 0
+  },
+  "110004": {
+   "icon": "UI_ItemIcon_110004",
+   "rarity": 0
+  },
+  "110005": {
+   "icon": "UI_ItemIcon_110005",
+   "rarity": 0
+  },
+  "110006": {
+   "icon": "UI_ItemIcon_110006",
+   "rarity": 0
+  },
+  "110008": {
+   "icon": "UI_ItemIcon_110008",
+   "rarity": 0
+  },
+  "110009": {
+   "icon": "UI_ItemIcon_110009",
+   "rarity": 0
+  },
+  "110010": {
+   "icon": "UI_ItemIcon_110010",
+   "rarity": 0
+  },
+  "110011": {
+   "icon": "UI_ItemIcon_110011",
+   "rarity": 0
+  },
+  "110012": {
+   "icon": "UI_ItemIcon_110012",
+   "rarity": 0
+  },
+  "110013": {
+   "icon": "UI_ItemIcon_110013",
+   "rarity": 0
+  },
+  "110014": {
+   "icon": "UI_ItemIcon_110014",
+   "rarity": 0
+  },
+  "110015": {
+   "icon": "UI_ItemIcon_110015",
+   "rarity": 0
+  },
+  "110016": {
+   "icon": "UI_ItemIcon_110016",
+   "rarity": 0
+  },
+  "110017": {
+   "icon": "UI_ItemIcon_110017",
+   "rarity": 0
+  },
+  "112001": {
+   "icon": "UI_ItemIcon_112001",
+   "rarity": 2
+  },
+  "112002": {
+   "icon": "UI_ItemIcon_112002",
+   "rarity": 1
+  },
+  "112003": {
+   "icon": "UI_ItemIcon_112003",
+   "rarity": 2
+  },
+  "112004": {
+   "icon": "UI_ItemIcon_112004",
+   "rarity": 3
+  },
+  "112005": {
+   "icon": "UI_ItemIcon_112005",
+   "rarity": 1
+  },
+  "112006": {
+   "icon": "UI_ItemIcon_112006",
+   "rarity": 2
+  },
+  "112007": {
+   "icon": "UI_ItemIcon_112007",
+   "rarity": 3
+  },
+  "112008": {
+   "icon": "UI_ItemIcon_112008",
+   "rarity": 1
+  },
+  "112009": {
+   "icon": "UI_ItemIcon_112009",
+   "rarity": 2
+  },
+  "112010": {
+   "icon": "UI_ItemIcon_112010",
+   "rarity": 3
+  },
+  "112011": {
+   "icon": "UI_ItemIcon_112011",
+   "rarity": 1
+  },
+  "112012": {
+   "icon": "UI_ItemIcon_112012",
+   "rarity": 2
+  },
+  "112013": {
+   "icon": "UI_ItemIcon_112013",
+   "rarity": 3
+  },
+  "112014": {
+   "icon": "UI_ItemIcon_112014",
+   "rarity": 2
+  },
+  "112015": {
+   "icon": "UI_ItemIcon_112015",
+   "rarity": 3
+  },
+  "112016": {
+   "icon": "UI_ItemIcon_112016",
+   "rarity": 4
+  },
+  "112017": {
+   "icon": "UI_ItemIcon_112017",
+   "rarity": 2
+  },
+  "112018": {
+   "icon": "UI_ItemIcon_112018",
+   "rarity": 3
+  },
+  "112019": {
+   "icon": "UI_ItemIcon_112019",
+   "rarity": 4
+  },
+  "112020": {
+   "icon": "UI_ItemIcon_112020",
+   "rarity": 2
+  },
+  "112021": {
+   "icon": "UI_ItemIcon_112021",
+   "rarity": 3
+  },
+  "112022": {
+   "icon": "UI_ItemIcon_112022",
+   "rarity": 4
+  },
+  "112023": {
+   "icon": "UI_ItemIcon_112023",
+   "rarity": 2
+  },
+  "112024": {
+   "icon": "UI_ItemIcon_112024",
+   "rarity": 3
+  },
+  "112025": {
+   "icon": "UI_ItemIcon_112025",
+   "rarity": 4
+  },
+  "112026": {
+   "icon": "UI_ItemIcon_112026",
+   "rarity": 2
+  },
+  "112027": {
+   "icon": "UI_ItemIcon_112027",
+   "rarity": 3
+  },
+  "112028": {
+   "icon": "UI_ItemIcon_112028",
+   "rarity": 4
+  },
+  "112029": {
+   "icon": "UI_ItemIcon_112029",
+   "rarity": 2
+  },
+  "112030": {
+   "icon": "UI_ItemIcon_112030",
+   "rarity": 3
+  },
+  "112031": {
+   "icon": "UI_ItemIcon_112031",
+   "rarity": 4
+  },
+  "112032": {
+   "icon": "UI_ItemIcon_112032",
+   "rarity": 1
+  },
+  "112033": {
+   "icon": "UI_ItemIcon_112033",
+   "rarity": 2
+  },
+  "112034": {
+   "icon": "UI_ItemIcon_112034",
+   "rarity": 3
+  },
+  "112035": {
+   "icon": "UI_ItemIcon_112035",
+   "rarity": 1
+  },
+  "112036": {
+   "icon": "UI_ItemIcon_112036",
+   "rarity": 2
+  },
+  "112037": {
+   "icon": "UI_ItemIcon_112037",
+   "rarity": 3
+  },
+  "112038": {
+   "icon": "UI_ItemIcon_112038",
+   "rarity": 1
+  },
+  "112039": {
+   "icon": "UI_ItemIcon_112039",
+   "rarity": 2
+  },
+  "112040": {
+   "icon": "UI_ItemIcon_112040",
+   "rarity": 3
+  },
+  "112041": {
+   "icon": "UI_ItemIcon_112041",
+   "rarity": 2
+  },
+  "112042": {
+   "icon": "UI_ItemIcon_112042",
+   "rarity": 3
+  },
+  "112043": {
+   "icon": "UI_ItemIcon_112043",
+   "rarity": 4
+  },
+  "112044": {
+   "icon": "UI_ItemIcon_112044",
+   "rarity": 1
+  },
+  "112045": {
+   "icon": "UI_ItemIcon_112045",
+   "rarity": 2
+  },
+  "112046": {
+   "icon": "UI_ItemIcon_112046",
+   "rarity": 3
+  },
+  "112047": {
+   "icon": "UI_ItemIcon_112047",
+   "rarity": 2
+  },
+  "112048": {
+   "icon": "UI_ItemIcon_112048",
+   "rarity": 3
+  },
+  "112049": {
+   "icon": "UI_ItemIcon_112049",
+   "rarity": 4
+  },
+  "112050": {
+   "icon": "UI_ItemIcon_112050",
+   "rarity": 2
+  },
+  "112051": {
+   "icon": "UI_ItemIcon_112051",
+   "rarity": 3
+  },
+  "112052": {
+   "icon": "UI_ItemIcon_112052",
+   "rarity": 4
+  },
+  "112053": {
+   "icon": "UI_ItemIcon_112053",
+   "rarity": 1
+  },
+  "112054": {
+   "icon": "UI_ItemIcon_112054",
+   "rarity": 2
+  },
+  "112055": {
+   "icon": "UI_ItemIcon_112055",
+   "rarity": 3
+  },
+  "112056": {
+   "icon": "UI_ItemIcon_112056",
+   "rarity": 2
+  },
+  "112057": {
+   "icon": "UI_ItemIcon_112057",
+   "rarity": 3
+  },
+  "112058": {
+   "icon": "UI_ItemIcon_112058",
+   "rarity": 4
+  },
+  "112059": {
+   "icon": "UI_ItemIcon_112059",
+   "rarity": 1
+  },
+  "112060": {
+   "icon": "UI_ItemIcon_112060",
+   "rarity": 2
+  },
+  "112061": {
+   "icon": "UI_ItemIcon_112061",
+   "rarity": 3
+  },
+  "112062": {
+   "icon": "UI_ItemIcon_112062",
+   "rarity": 2
+  },
+  "112063": {
+   "icon": "UI_ItemIcon_112063",
+   "rarity": 3
+  },
+  "112064": {
+   "icon": "UI_ItemIcon_112064",
+   "rarity": 4
+  },
+  "112065": {
+   "icon": "UI_ItemIcon_112065",
+   "rarity": 1
+  },
+  "112066": {
+   "icon": "UI_ItemIcon_112066",
+   "rarity": 2
+  },
+  "112067": {
+   "icon": "UI_ItemIcon_112067",
+   "rarity": 3
+  },
+  "112068": {
+   "icon": "UI_ItemIcon_112068",
+   "rarity": 2
+  },
+  "112069": {
+   "icon": "UI_ItemIcon_112069",
+   "rarity": 3
+  },
+  "112070": {
+   "icon": "UI_ItemIcon_112070",
+   "rarity": 4
+  },
+  "112071": {
+   "icon": "UI_ItemIcon_112071",
+   "rarity": 2
+  },
+  "112072": {
+   "icon": "UI_ItemIcon_112072",
+   "rarity": 3
+  },
+  "112073": {
+   "icon": "UI_ItemIcon_112073",
+   "rarity": 4
+  },
+  "112074": {
+   "icon": "UI_ItemIcon_112074",
+   "rarity": 2
+  },
+  "112075": {
+   "icon": "UI_ItemIcon_112075",
+   "rarity": 3
+  },
+  "112076": {
+   "icon": "UI_ItemIcon_112076",
+   "rarity": 4
+  },
+  "112077": {
+   "icon": "UI_ItemIcon_112077",
+   "rarity": 2
+  },
+  "112078": {
+   "icon": "UI_ItemIcon_112078",
+   "rarity": 3
+  },
+  "112079": {
+   "icon": "UI_ItemIcon_112079",
+   "rarity": 4
+  },
+  "112080": {
+   "icon": "UI_ItemIcon_112080",
+   "rarity": 1
+  },
+  "112081": {
+   "icon": "UI_ItemIcon_112081",
+   "rarity": 2
+  },
+  "112082": {
+   "icon": "UI_ItemIcon_112082",
+   "rarity": 3
+  },
+  "112083": {
+   "icon": "UI_ItemIcon_112083",
+   "rarity": 1
+  },
+  "112084": {
+   "icon": "UI_ItemIcon_112084",
+   "rarity": 2
+  },
+  "112085": {
+   "icon": "UI_ItemIcon_112085",
+   "rarity": 3
+  },
+  "112086": {
+   "icon": "UI_ItemIcon_112086",
+   "rarity": 2
+  },
+  "112087": {
+   "icon": "UI_ItemIcon_112087",
+   "rarity": 3
+  },
+  "112088": {
+   "icon": "UI_ItemIcon_112088",
+   "rarity": 4
+  },
+  "112089": {
+   "icon": "UI_ItemIcon_112089",
+   "rarity": 2
+  },
+  "112090": {
+   "icon": "UI_ItemIcon_112090",
+   "rarity": 3
+  },
+  "112091": {
+   "icon": "UI_ItemIcon_112091",
+   "rarity": 4
+  },
+  "112092": {
+   "icon": "UI_ItemIcon_112092",
+   "rarity": 2
+  },
+  "112093": {
+   "icon": "UI_ItemIcon_112093",
+   "rarity": 3
+  },
+  "112094": {
+   "icon": "UI_ItemIcon_112094",
+   "rarity": 4
+  },
+  "112095": {
+   "icon": "UI_ItemIcon_112095",
+   "rarity": 2
+  },
+  "112096": {
+   "icon": "UI_ItemIcon_112096",
+   "rarity": 3
+  },
+  "112097": {
+   "icon": "UI_ItemIcon_112097",
+   "rarity": 4
+  },
+  "112098": {
+   "icon": "UI_ItemIcon_112098",
+   "rarity": 2
+  },
+  "112099": {
+   "icon": "UI_ItemIcon_112099",
+   "rarity": 3
+  },
+  "112100": {
+   "icon": "UI_ItemIcon_112100",
+   "rarity": 4
+  },
+  "112101": {
+   "icon": "UI_ItemIcon_112101",
+   "rarity": 1
+  },
+  "112102": {
+   "icon": "UI_ItemIcon_112102",
+   "rarity": 2
+  },
+  "112103": {
+   "icon": "UI_ItemIcon_112103",
+   "rarity": 3
+  },
+  "112104": {
+   "icon": "UI_ItemIcon_112104",
+   "rarity": 1
+  },
+  "112105": {
+   "icon": "UI_ItemIcon_112105",
+   "rarity": 2
+  },
+  "112106": {
+   "icon": "UI_ItemIcon_112106",
+   "rarity": 3
+  },
+  "112107": {
+   "icon": "UI_ItemIcon_112107",
+   "rarity": 2
+  },
+  "112108": {
+   "icon": "UI_ItemIcon_112108",
+   "rarity": 3
+  },
+  "112109": {
+   "icon": "UI_ItemIcon_112109",
+   "rarity": 4
+  },
+  "112110": {
+   "icon": "UI_ItemIcon_112110",
+   "rarity": 2
+  },
+  "112111": {
+   "icon": "UI_ItemIcon_112111",
+   "rarity": 3
+  },
+  "112112": {
+   "icon": "UI_ItemIcon_112112",
+   "rarity": 4
+  },
+  "112113": {
+   "icon": "UI_ItemIcon_112113",
+   "rarity": 2
+  },
+  "112114": {
+   "icon": "UI_ItemIcon_112114",
+   "rarity": 3
+  },
+  "112115": {
+   "icon": "UI_ItemIcon_112115",
+   "rarity": 4
+  },
+  "112116": {
+   "icon": "UI_ItemIcon_112116",
+   "rarity": 2
+  },
+  "112117": {
+   "icon": "UI_ItemIcon_112117",
+   "rarity": 3
+  },
+  "112118": {
+   "icon": "UI_ItemIcon_112118",
+   "rarity": 4
+  },
+  "112119": {
+   "icon": "UI_ItemIcon_112119",
+   "rarity": 2
+  },
+  "112120": {
+   "icon": "UI_ItemIcon_112120",
+   "rarity": 3
+  },
+  "112121": {
+   "icon": "UI_ItemIcon_112121",
+   "rarity": 4
+  },
+  "112122": {
+   "icon": "UI_ItemIcon_112122",
+   "rarity": 1
+  },
+  "112123": {
+   "icon": "UI_ItemIcon_112123",
+   "rarity": 2
+  },
+  "112124": {
+   "icon": "UI_ItemIcon_112124",
+   "rarity": 3
+  },
+  "112125": {
+   "icon": "UI_ItemIcon_112125",
+   "rarity": 1
+  },
+  "112126": {
+   "icon": "UI_ItemIcon_112126",
+   "rarity": 2
+  },
+  "112127": {
+   "icon": "UI_ItemIcon_112127",
+   "rarity": 3
+  },
+  "112128": {
+   "icon": "UI_ItemIcon_112128",
+   "rarity": 2
+  },
+  "112129": {
+   "icon": "UI_ItemIcon_112129",
+   "rarity": 3
+  },
+  "112130": {
+   "icon": "UI_ItemIcon_112130",
+   "rarity": 4
+  },
+  "112131": {
+   "icon": "UI_ItemIcon_112131",
+   "rarity": 2
+  },
+  "112132": {
+   "icon": "UI_ItemIcon_112132",
+   "rarity": 3
+  },
+  "112133": {
+   "icon": "UI_ItemIcon_112133",
+   "rarity": 4
+  },
+  "112134": {
+   "icon": "UI_ItemIcon_112134",
+   "rarity": 2
+  },
+  "112135": {
+   "icon": "UI_ItemIcon_112135",
+   "rarity": 3
+  },
+  "112136": {
+   "icon": "UI_ItemIcon_112136",
+   "rarity": 4
+  },
+  "112137": {
+   "icon": "UI_ItemIcon_112137",
+   "rarity": 2
+  },
+  "112138": {
+   "icon": "UI_ItemIcon_112138",
+   "rarity": 3
+  },
+  "112139": {
+   "icon": "UI_ItemIcon_112139",
+   "rarity": 4
+  },
+  "112140": {
+   "icon": "UI_ItemIcon_112140",
+   "rarity": 2
+  },
+  "112141": {
+   "icon": "UI_ItemIcon_112141",
+   "rarity": 3
+  },
+  "112142": {
+   "icon": "UI_ItemIcon_112142",
+   "rarity": 4
+  },
+  "112143": {
+   "icon": "UI_ItemIcon_112143",
+   "rarity": 2
+  },
+  "112144": {
+   "icon": "UI_ItemIcon_112144",
+   "rarity": 3
+  },
+  "112145": {
+   "icon": "UI_ItemIcon_112145",
+   "rarity": 4
+  },
+  "112146": {
+   "icon": "UI_ItemIcon_112146",
+   "rarity": 1
+  },
+  "112147": {
+   "icon": "UI_ItemIcon_112147",
+   "rarity": 2
+  },
+  "112148": {
+   "icon": "UI_ItemIcon_112148",
+   "rarity": 3
+  },
+  "112149": {
+   "icon": "UI_ItemIcon_112149",
+   "rarity": 1
+  },
+  "112150": {
+   "icon": "UI_ItemIcon_112150",
+   "rarity": 2
+  },
+  "112151": {
+   "icon": "UI_ItemIcon_112151",
+   "rarity": 3
+  },
+  "112152": {
+   "icon": "UI_ItemIcon_112152",
+   "rarity": 2
+  },
+  "112153": {
+   "icon": "UI_ItemIcon_112153",
+   "rarity": 3
+  },
+  "112154": {
+   "icon": "UI_ItemIcon_112154",
+   "rarity": 4
+  },
+  "112155": {
+   "icon": "UI_ItemIcon_112155",
+   "rarity": 2
+  },
+  "112156": {
+   "icon": "UI_ItemIcon_112156",
+   "rarity": 3
+  },
+  "112157": {
+   "icon": "UI_ItemIcon_112157",
+   "rarity": 4
+  },
+  "113001": {
+   "icon": "UI_ItemIcon_113001",
+   "rarity": 4
+  },
+  "113002": {
+   "icon": "UI_ItemIcon_113002",
+   "rarity": 4
+  },
+  "113003": {
+   "icon": "UI_ItemIcon_113003",
+   "rarity": 5
+  },
+  "113004": {
+   "icon": "UI_ItemIcon_113004",
+   "rarity": 5
+  },
+  "113005": {
+   "icon": "UI_ItemIcon_113005",
+   "rarity": 5
+  },
+  "113006": {
+   "icon": "UI_ItemIcon_113006",
+   "rarity": 5
+  },
+  "113007": {
+   "icon": "UI_ItemIcon_113007",
+   "rarity": 5
+  },
+  "113008": {
+   "icon": "UI_ItemIcon_113008",
+   "rarity": 5
+  },
+  "113009": {
+   "icon": "UI_ItemIcon_113009",
+   "rarity": 4
+  },
+  "113010": {
+   "icon": "UI_ItemIcon_113010",
+   "rarity": 4
+  },
+  "113011": {
+   "icon": "UI_ItemIcon_113011",
+   "rarity": 4
+  },
+  "113012": {
+   "icon": "UI_ItemIcon_113012",
+   "rarity": 4
+  },
+  "113013": {
+   "icon": "UI_ItemIcon_113013",
+   "rarity": 5
+  },
+  "113014": {
+   "icon": "UI_ItemIcon_113014",
+   "rarity": 5
+  },
+  "113015": {
+   "icon": "UI_ItemIcon_113015",
+   "rarity": 5
+  },
+  "113016": {
+   "icon": "UI_ItemIcon_113016",
+   "rarity": 4
+  },
+  "113017": {
+   "icon": "UI_ItemIcon_113017",
+   "rarity": 5
+  },
+  "113018": {
+   "icon": "UI_ItemIcon_113018",
+   "rarity": 5
+  },
+  "113019": {
+   "icon": "UI_ItemIcon_113019",
+   "rarity": 5
+  },
+  "113020": {
+   "icon": "UI_ItemIcon_113020",
+   "rarity": 4
+  },
+  "113022": {
+   "icon": "UI_ItemIcon_113022",
+   "rarity": 4
+  },
+  "113023": {
+   "icon": "UI_ItemIcon_113023",
+   "rarity": 4
+  },
+  "113024": {
+   "icon": "UI_ItemIcon_113024",
+   "rarity": 4
+  },
+  "113025": {
+   "icon": "UI_ItemIcon_113025",
+   "rarity": 5
+  },
+  "113026": {
+   "icon": "UI_ItemIcon_113026",
+   "rarity": 5
+  },
+  "113027": {
+   "icon": "UI_ItemIcon_113027",
+   "rarity": 5
+  },
+  "113028": {
+   "icon": "UI_ItemIcon_113028",
+   "rarity": 4
+  },
+  "113029": {
+   "icon": "UI_ItemIcon_113029",
+   "rarity": 4
+  },
+  "113030": {
+   "icon": "UI_ItemIcon_113030",
+   "rarity": 4
+  },
+  "113031": {
+   "icon": "UI_ItemIcon_113031",
+   "rarity": 4
+  },
+  "113032": {
+   "icon": "UI_ItemIcon_113032",
+   "rarity": 5
+  },
+  "113033": {
+   "icon": "UI_ItemIcon_113033",
+   "rarity": 5
+  },
+  "113034": {
+   "icon": "UI_ItemIcon_113034",
+   "rarity": 5
+  },
+  "113035": {
+   "icon": "UI_ItemIcon_113035",
+   "rarity": 4
+  },
+  "113036": {
+   "icon": "UI_ItemIcon_113036",
+   "rarity": 4
+  },
+  "113037": {
+   "icon": "UI_ItemIcon_113037",
+   "rarity": 4
+  },
+  "113038": {
+   "icon": "UI_ItemIcon_113038",
+   "rarity": 4
+  },
+  "113039": {
+   "icon": "UI_ItemIcon_113039",
+   "rarity": 4
+  },
+  "113040": {
+   "icon": "UI_ItemIcon_113040",
+   "rarity": 4
+  },
+  "113041": {
+   "icon": "UI_ItemIcon_113041",
+   "rarity": 5
+  },
+  "113042": {
+   "icon": "UI_ItemIcon_113042",
+   "rarity": 5
+  },
+  "113043": {
+   "icon": "UI_ItemIcon_113043",
+   "rarity": 5
+  },
+  "113044": {
+   "icon": "UI_ItemIcon_113044",
+   "rarity": 4
+  },
+  "113045": {
+   "icon": "UI_ItemIcon_113045",
+   "rarity": 4
+  },
+  "113046": {
+   "icon": "UI_ItemIcon_113046",
+   "rarity": 5
+  },
+  "113047": {
+   "icon": "UI_ItemIcon_113047",
+   "rarity": 5
+  },
+  "113048": {
+   "icon": "UI_ItemIcon_113048",
+   "rarity": 5
+  },
+  "113049": {
+   "icon": "UI_ItemIcon_113049",
+   "rarity": 4
+  },
+  "113050": {
+   "icon": "UI_ItemIcon_113050",
+   "rarity": 4
+  },
+  "113051": {
+   "icon": "UI_ItemIcon_113051",
+   "rarity": 4
+  },
+  "113052": {
+   "icon": "UI_ItemIcon_113052",
+   "rarity": 4
+  },
+  "113053": {
+   "icon": "UI_ItemIcon_113053",
+   "rarity": 4
+  },
+  "113054": {
+   "icon": "UI_ItemIcon_113054",
+   "rarity": 5
+  },
+  "113055": {
+   "icon": "UI_ItemIcon_113055",
+   "rarity": 5
+  },
+  "113056": {
+   "icon": "UI_ItemIcon_113056",
+   "rarity": 5
+  },
+  "113057": {
+   "icon": "UI_ItemIcon_113057",
+   "rarity": 4
+  },
+  "113058": {
+   "icon": "UI_ItemIcon_113058",
+   "rarity": 4
+  },
+  "113059": {
+   "icon": "UI_ItemIcon_113059",
+   "rarity": 4
+  },
+  "113060": {
+   "icon": "UI_ItemIcon_113060",
+   "rarity": 5
+  },
+  "113061": {
+   "icon": "UI_ItemIcon_113061",
+   "rarity": 5
+  },
+  "113062": {
+   "icon": "UI_ItemIcon_113062",
+   "rarity": 5
+  },
+  "113063": {
+   "icon": "UI_ItemIcon_113063",
+   "rarity": 5
+  },
+  "113064": {
+   "icon": "UI_ItemIcon_113064",
+   "rarity": 4
+  },
+  "113065": {
+   "icon": "UI_ItemIcon_113065",
+   "rarity": 4
+  },
+  "113066": {
+   "icon": "UI_ItemIcon_113066",
+   "rarity": 4
+  },
+  "113067": {
+   "icon": "UI_ItemIcon_113067",
+   "rarity": 4
+  },
+  "113068": {
+   "icon": "UI_ItemIcon_113068",
+   "rarity": 5
+  },
+  "113069": {
+   "icon": "UI_ItemIcon_113069",
+   "rarity": 5
+  },
+  "113070": {
+   "icon": "UI_ItemIcon_113070",
+   "rarity": 5
+  },
+  "113071": {
+   "icon": "UI_ItemIcon_113071",
+   "rarity": 4
+  },
+  "113072": {
+   "icon": "UI_ItemIcon_113072",
+   "rarity": 4
+  },
+  "113073": {
+   "icon": "UI_ItemIcon_113073",
+   "rarity": 5
+  },
+  "113074": {
+   "icon": "UI_ItemIcon_113074",
+   "rarity": 5
+  },
+  "113075": {
+   "icon": "UI_ItemIcon_113075",
+   "rarity": 5
+  },
+  "113076": {
+   "icon": "UI_ItemIcon_113076",
+   "rarity": 4
+  },
+  "113077": {
+   "icon": "UI_ItemIcon_113077",
+   "rarity": 4
+  },
+  "113078": {
+   "icon": "UI_ItemIcon_113078",
+   "rarity": 4
+  },
+  "113079": {
+   "icon": "UI_ItemIcon_113079",
+   "rarity": 4
+  },
+  "113080": {
+   "icon": "UI_ItemIcon_113080",
+   "rarity": 4
+  },
+  "113081": {
+   "icon": "UI_ItemIcon_113081",
+   "rarity": 5
+  },
+  "113082": {
+   "icon": "UI_ItemIcon_113082",
+   "rarity": 5
+  },
+  "113083": {
+   "icon": "UI_ItemIcon_113083",
+   "rarity": 5
+  },
+  "113084": {
+   "icon": "UI_ItemIcon_113084",
+   "rarity": 4
+  },
+  "113085": {
+   "icon": "UI_ItemIcon_113085",
+   "rarity": 4
+  },
+  "113086": {
+   "icon": "UI_ItemIcon_113086",
+   "rarity": 4
+  },
+  "113087": {
+   "icon": "UI_ItemIcon_113087",
+   "rarity": 5
+  },
+  "113088": {
+   "icon": "UI_ItemIcon_113088",
+   "rarity": 5
+  },
+  "113089": {
+   "icon": "UI_ItemIcon_113089",
+   "rarity": 5
+  },
+  "113090": {
+   "icon": "UI_ItemIcon_113090",
+   "rarity": 4
+  },
+  "113091": {
+   "icon": "UI_ItemIcon_113091",
+   "rarity": 4
+  },
+  "113092": {
+   "icon": "UI_ItemIcon_113092",
+   "rarity": 4
+  },
+  "114001": {
+   "icon": "UI_ItemIcon_114001",
+   "rarity": 2
+  },
+  "114002": {
+   "icon": "UI_ItemIcon_114002",
+   "rarity": 3
+  },
+  "114003": {
+   "icon": "UI_ItemIcon_114003",
+   "rarity": 4
+  },
+  "114004": {
+   "icon": "UI_ItemIcon_114004",
+   "rarity": 5
+  },
+  "114005": {
+   "icon": "UI_ItemIcon_114005",
+   "rarity": 2
+  },
+  "114006": {
+   "icon": "UI_ItemIcon_114006",
+   "rarity": 3
+  },
+  "114007": {
+   "icon": "UI_ItemIcon_114007",
+   "rarity": 4
+  },
+  "114008": {
+   "icon": "UI_ItemIcon_114008",
+   "rarity": 5
+  },
+  "114009": {
+   "icon": "UI_ItemIcon_114009",
+   "rarity": 2
+  },
+  "114010": {
+   "icon": "UI_ItemIcon_114010",
+   "rarity": 3
+  },
+  "114011": {
+   "icon": "UI_ItemIcon_114011",
+   "rarity": 4
+  },
+  "114012": {
+   "icon": "UI_ItemIcon_114012",
+   "rarity": 5
+  },
+  "114013": {
+   "icon": "UI_ItemIcon_114013",
+   "rarity": 2
+  },
+  "114014": {
+   "icon": "UI_ItemIcon_114014",
+   "rarity": 3
+  },
+  "114015": {
+   "icon": "UI_ItemIcon_114015",
+   "rarity": 4
+  },
+  "114016": {
+   "icon": "UI_ItemIcon_114016",
+   "rarity": 5
+  },
+  "114017": {
+   "icon": "UI_ItemIcon_114017",
+   "rarity": 2
+  },
+  "114018": {
+   "icon": "UI_ItemIcon_114018",
+   "rarity": 3
+  },
+  "114019": {
+   "icon": "UI_ItemIcon_114019",
+   "rarity": 4
+  },
+  "114020": {
+   "icon": "UI_ItemIcon_114020",
+   "rarity": 5
+  },
+  "114021": {
+   "icon": "UI_ItemIcon_114021",
+   "rarity": 2
+  },
+  "114022": {
+   "icon": "UI_ItemIcon_114022",
+   "rarity": 3
+  },
+  "114023": {
+   "icon": "UI_ItemIcon_114023",
+   "rarity": 4
+  },
+  "114024": {
+   "icon": "UI_ItemIcon_114024",
+   "rarity": 5
+  },
+  "114025": {
+   "icon": "UI_ItemIcon_114025",
+   "rarity": 2
+  },
+  "114026": {
+   "icon": "UI_ItemIcon_114026",
+   "rarity": 3
+  },
+  "114027": {
+   "icon": "UI_ItemIcon_114027",
+   "rarity": 4
+  },
+  "114028": {
+   "icon": "UI_ItemIcon_114028",
+   "rarity": 5
+  },
+  "114029": {
+   "icon": "UI_ItemIcon_114029",
+   "rarity": 2
+  },
+  "114030": {
+   "icon": "UI_ItemIcon_114030",
+   "rarity": 3
+  },
+  "114031": {
+   "icon": "UI_ItemIcon_114031",
+   "rarity": 4
+  },
+  "114032": {
+   "icon": "UI_ItemIcon_114032",
+   "rarity": 5
+  },
+  "114033": {
+   "icon": "UI_ItemIcon_114033",
+   "rarity": 2
+  },
+  "114034": {
+   "icon": "UI_ItemIcon_114034",
+   "rarity": 3
+  },
+  "114035": {
+   "icon": "UI_ItemIcon_114035",
+   "rarity": 4
+  },
+  "114036": {
+   "icon": "UI_ItemIcon_114036",
+   "rarity": 5
+  },
+  "114037": {
+   "icon": "UI_ItemIcon_114037",
+   "rarity": 2
+  },
+  "114038": {
+   "icon": "UI_ItemIcon_114038",
+   "rarity": 3
+  },
+  "114039": {
+   "icon": "UI_ItemIcon_114039",
+   "rarity": 4
+  },
+  "114040": {
+   "icon": "UI_ItemIcon_114040",
+   "rarity": 5
+  },
+  "114041": {
+   "icon": "UI_ItemIcon_114041",
+   "rarity": 2
+  },
+  "114042": {
+   "icon": "UI_ItemIcon_114042",
+   "rarity": 3
+  },
+  "114043": {
+   "icon": "UI_ItemIcon_114043",
+   "rarity": 4
+  },
+  "114044": {
+   "icon": "UI_ItemIcon_114044",
+   "rarity": 5
+  },
+  "114045": {
+   "icon": "UI_ItemIcon_114045",
+   "rarity": 2
+  },
+  "114046": {
+   "icon": "UI_ItemIcon_114046",
+   "rarity": 3
+  },
+  "114047": {
+   "icon": "UI_ItemIcon_114047",
+   "rarity": 4
+  },
+  "114048": {
+   "icon": "UI_ItemIcon_114048",
+   "rarity": 5
+  },
+  "114049": {
+   "icon": "UI_ItemIcon_114049",
+   "rarity": 2
+  },
+  "114050": {
+   "icon": "UI_ItemIcon_114050",
+   "rarity": 3
+  },
+  "114051": {
+   "icon": "UI_ItemIcon_114051",
+   "rarity": 4
+  },
+  "114052": {
+   "icon": "UI_ItemIcon_114052",
+   "rarity": 5
+  },
+  "114053": {
+   "icon": "UI_ItemIcon_114053",
+   "rarity": 2
+  },
+  "114054": {
+   "icon": "UI_ItemIcon_114054",
+   "rarity": 3
+  },
+  "114055": {
+   "icon": "UI_ItemIcon_114055",
+   "rarity": 4
+  },
+  "114056": {
+   "icon": "UI_ItemIcon_114056",
+   "rarity": 5
+  },
+  "114057": {
+   "icon": "UI_ItemIcon_114057",
+   "rarity": 2
+  },
+  "114058": {
+   "icon": "UI_ItemIcon_114058",
+   "rarity": 3
+  },
+  "114059": {
+   "icon": "UI_ItemIcon_114059",
+   "rarity": 4
+  },
+  "114060": {
+   "icon": "UI_ItemIcon_114060",
+   "rarity": 5
+  },
+  "114061": {
+   "icon": "UI_ItemIcon_114061",
+   "rarity": 2
+  },
+  "114062": {
+   "icon": "UI_ItemIcon_114062",
+   "rarity": 3
+  },
+  "114063": {
+   "icon": "UI_ItemIcon_114063",
+   "rarity": 4
+  },
+  "114064": {
+   "icon": "UI_ItemIcon_114064",
+   "rarity": 5
+  },
+  "114065": {
+   "icon": "UI_ItemIcon_114065",
+   "rarity": 2
+  },
+  "114066": {
+   "icon": "UI_ItemIcon_114066",
+   "rarity": 3
+  },
+  "114067": {
+   "icon": "UI_ItemIcon_114067",
+   "rarity": 4
+  },
+  "114068": {
+   "icon": "UI_ItemIcon_114068",
+   "rarity": 5
+  },
+  "114069": {
+   "icon": "UI_ItemIcon_114069",
+   "rarity": 2
+  },
+  "114070": {
+   "icon": "UI_ItemIcon_114070",
+   "rarity": 3
+  },
+  "114071": {
+   "icon": "UI_ItemIcon_114071",
+   "rarity": 4
+  },
+  "114072": {
+   "icon": "UI_ItemIcon_114072",
+   "rarity": 5
+  },
+  "114073": {
+   "icon": "UI_ItemIcon_114073",
+   "rarity": 2
+  },
+  "114074": {
+   "icon": "UI_ItemIcon_114074",
+   "rarity": 3
+  },
+  "114075": {
+   "icon": "UI_ItemIcon_114075",
+   "rarity": 4
+  },
+  "114076": {
+   "icon": "UI_ItemIcon_114076",
+   "rarity": 5
+  },
+  "114077": {
+   "icon": "UI_ItemIcon_114077",
+   "rarity": 2
+  },
+  "114078": {
+   "icon": "UI_ItemIcon_114078",
+   "rarity": 3
+  },
+  "114079": {
+   "icon": "UI_ItemIcon_114079",
+   "rarity": 4
+  },
+  "114080": {
+   "icon": "UI_ItemIcon_114080",
+   "rarity": 5
+  },
+  "114081": {
+   "icon": "UI_ItemIcon_114081",
+   "rarity": 2
+  },
+  "114082": {
+   "icon": "UI_ItemIcon_114082",
+   "rarity": 3
+  },
+  "114083": {
+   "icon": "UI_ItemIcon_114083",
+   "rarity": 4
+  },
+  "114084": {
+   "icon": "UI_ItemIcon_114084",
+   "rarity": 5
+  },
+  "114085": {
+   "icon": "UI_ItemIcon_114085",
+   "rarity": 2
+  },
+  "114086": {
+   "icon": "UI_ItemIcon_114086",
+   "rarity": 3
+  },
+  "114087": {
+   "icon": "UI_ItemIcon_114087",
+   "rarity": 4
+  },
+  "114088": {
+   "icon": "UI_ItemIcon_114088",
+   "rarity": 5
+  },
+  "114089": {
+   "icon": "UI_ItemIcon_114089",
+   "rarity": 2
+  },
+  "114090": {
+   "icon": "UI_ItemIcon_114090",
+   "rarity": 3
+  },
+  "114091": {
+   "icon": "UI_ItemIcon_114091",
+   "rarity": 4
+  },
+  "114092": {
+   "icon": "UI_ItemIcon_114092",
+   "rarity": 5
+  },
+  "114093": {
+   "icon": "UI_ItemIcon_114093",
+   "rarity": 2
+  },
+  "114094": {
+   "icon": "UI_ItemIcon_114094",
+   "rarity": 3
+  },
+  "114095": {
+   "icon": "UI_ItemIcon_114095",
+   "rarity": 4
+  },
+  "114096": {
+   "icon": "UI_ItemIcon_114096",
+   "rarity": 5
+  },
+  "131000": {
+   "icon": "UI_ItemIcon_131000",
+   "rarity": 3
+  },
+  "131001": {
+   "icon": "UI_ItemIcon_131001",
+   "rarity": 3
+  },
+  "131002": {
+   "icon": "UI_ItemIcon_131002",
+   "rarity": 3
+  },
+  "131003": {
+   "icon": "UI_ItemIcon_131003",
+   "rarity": 3
+  },
+  "131004": {
+   "icon": "UI_ItemIcon_131004",
+   "rarity": 3
+  },
+  "131005": {
+   "icon": "UI_ItemIcon_131005",
+   "rarity": 3
+  },
+  "131006": {
+   "icon": "UI_ItemIcon_131006",
+   "rarity": 3
+  },
+  "131007": {
+   "icon": "UI_ItemIcon_131007",
+   "rarity": 3
+  },
+  "131008": {
+   "icon": "UI_ItemIcon_131008",
+   "rarity": 3
+  },
+  "131009": {
+   "icon": "UI_ItemIcon_131009",
+   "rarity": 3
+  },
+  "131010": {
+   "icon": "UI_ItemIcon_131010",
+   "rarity": 3
+  },
+  "131011": {
+   "icon": "UI_ItemIcon_131011",
+   "rarity": 3
+  },
+  "131012": {
+   "icon": "UI_ItemIcon_131012",
+   "rarity": 3
+  },
+  "131013": {
+   "icon": "UI_ItemIcon_131013",
+   "rarity": 3
+  },
+  "131014": {
+   "icon": "UI_ItemIcon_131014",
+   "rarity": 3
+  },
+  "131015": {
+   "icon": "UI_ItemIcon_131015",
+   "rarity": 3
+  },
+  "131016": {
+   "icon": "UI_ItemIcon_131016",
+   "rarity": 3
+  },
+  "131017": {
+   "icon": "UI_ItemIcon_131017",
+   "rarity": 3
+  },
+  "131019": {
+   "icon": "UI_ItemIcon_131019",
+   "rarity": 3
+  },
+  "131020": {
+   "icon": "UI_ItemIcon_131020",
+   "rarity": 3
+  },
+  "131021": {
+   "icon": "UI_ItemIcon_131021",
+   "rarity": 3
+  },
+  "131022": {
+   "icon": "UI_ItemIcon_131022",
+   "rarity": 3
+  },
+  "131023": {
+   "icon": "UI_ItemIcon_131023",
+   "rarity": 3
+  },
+  "131024": {
+   "icon": "UI_ItemIcon_131024",
+   "rarity": 3
+  },
+  "131025": {
+   "icon": "UI_ItemIcon_131025",
+   "rarity": 3
+  },
+  "131026": {
+   "icon": "UI_ItemIcon_131026",
+   "rarity": 3
+  },
+  "131027": {
+   "icon": "UI_ItemIcon_131027",
+   "rarity": 3
+  },
+  "131028": {
+   "icon": "UI_ItemIcon_131028",
+   "rarity": 3
+  },
+  "131029": {
+   "icon": "UI_ItemIcon_131029",
+   "rarity": 3
+  },
+  "131030": {
+   "icon": "UI_ItemIcon_131030",
+   "rarity": 3
+  },
+  "131031": {
+   "icon": "UI_ItemIcon_131031",
+   "rarity": 3
+  },
+  "131032": {
+   "icon": "UI_ItemIcon_131032",
+   "rarity": 3
+  },
+  "131033": {
+   "icon": "UI_ItemIcon_131033",
+   "rarity": 3
+  },
+  "131034": {
+   "icon": "UI_ItemIcon_131034",
+   "rarity": 3
+  },
+  "131035": {
+   "icon": "UI_ItemIcon_131035",
+   "rarity": 3
+  },
+  "131036": {
+   "icon": "UI_ItemIcon_131036",
+   "rarity": 3
+  },
+  "131037": {
+   "icon": "UI_ItemIcon_131037",
+   "rarity": 3
+  },
+  "131038": {
+   "icon": "UI_ItemIcon_131038",
+   "rarity": 3
+  },
+  "131039": {
+   "icon": "UI_ItemIcon_131039",
+   "rarity": 3
+  },
+  "131040": {
+   "icon": "UI_ItemIcon_131040",
+   "rarity": 3
+  },
+  "131041": {
+   "icon": "UI_ItemIcon_131041",
+   "rarity": 3
+  },
+  "131042": {
+   "icon": "UI_ItemIcon_131042",
+   "rarity": 3
+  },
+  "131043": {
+   "icon": "UI_ItemIcon_131043",
+   "rarity": 3
+  },
+  "131044": {
+   "icon": "UI_ItemIcon_131044",
+   "rarity": 3
+  },
+  "131045": {
+   "icon": "UI_ItemIcon_131045",
+   "rarity": 3
+  },
+  "131046": {
+   "icon": "UI_ItemIcon_131046",
+   "rarity": 3
+  },
+  "131047": {
+   "icon": "UI_ItemIcon_131047",
+   "rarity": 3
+  },
+  "131048": {
+   "icon": "UI_ItemIcon_131048",
+   "rarity": 3
+  },
+  "131049": {
+   "icon": "UI_ItemIcon_131049",
+   "rarity": 3
+  },
+  "131050": {
+   "icon": "UI_ItemIcon_131050",
+   "rarity": 3
+  },
+  "131051": {
+   "icon": "UI_ItemIcon_131051",
+   "rarity": 3
+  },
+  "131052": {
+   "icon": "UI_ItemIcon_131052",
+   "rarity": 3
+  },
+  "131053": {
+   "icon": "UI_ItemIcon_131053",
+   "rarity": 3
+  },
+  "131054": {
+   "icon": "UI_ItemIcon_131054",
+   "rarity": 3
+  },
+  "131055": {
+   "icon": "UI_ItemIcon_131055",
+   "rarity": 3
+  },
+  "131056": {
+   "icon": "UI_ItemIcon_131056",
+   "rarity": 3
+  },
+  "131057": {
+   "icon": "UI_ItemIcon_131057",
+   "rarity": 3
+  },
+  "131058": {
+   "icon": "UI_ItemIcon_131058",
+   "rarity": 3
+  },
+  "131059": {
+   "icon": "UI_ItemIcon_131059",
+   "rarity": 3
+  },
+  "200001": {
+   "icon": "UI_ItemIcon_200001",
+   "rarity": 3
+  },
+  "200002": {
+   "icon": "UI_ItemIcon_200002",
+   "rarity": 3
+  },
+  "200003": {
+   "icon": "UI_ItemIcon_200003",
+   "rarity": 3
+  },
+  "200103": {
+   "icon": "UI_ItemIcon_200103",
+   "rarity": 4
+  },
+  "200104": {
+   "icon": "UI_ItemIcon_200104",
+   "rarity": 4
+  },
+  "200105": {
+   "icon": "UI_ItemIcon_200105",
+   "rarity": 4
+  },
+  "200106": {
+   "icon": "UI_ItemIcon_200106",
+   "rarity": 4
+  },
+  "200107": {
+   "icon": "UI_ItemIcon_200107",
+   "rarity": 4
+  },
+  "200108": {
+   "icon": "UI_ItemIcon_200108",
+   "rarity": 4
+  },
+  "200109": {
+   "icon": "UI_ItemIcon_200109",
+   "rarity": 4
+  },
+  "200110": {
+   "icon": "UI_ItemIcon_200110",
+   "rarity": 4
+  },
+  "200111": {
+   "icon": "UI_ItemIcon_200111",
+   "rarity": 4
+  },
+  "200112": {
+   "icon": "UI_ItemIcon_200112",
+   "rarity": 4
+  },
+  "200113": {
+   "icon": "UI_ItemIcon_200113",
+   "rarity": 4
+  },
+  "200114": {
+   "icon": "UI_ItemIcon_200114",
+   "rarity": 4
+  },
+  "200115": {
+   "icon": "UI_ItemIcon_200115",
+   "rarity": 4
+  },
+  "200116": {
+   "icon": "UI_ItemIcon_200116",
+   "rarity": 4
+  },
+  "200117": {
+   "icon": "UI_ItemIcon_200117",
+   "rarity": 4
+  },
+  "200118": {
+   "icon": "UI_ItemIcon_200118",
+   "rarity": 4
+  },
+  "200119": {
+   "icon": "UI_ItemIcon_200119",
+   "rarity": 4
+  },
+  "200120": {
+   "icon": "UI_ItemIcon_200120",
+   "rarity": 4
+  },
+  "200121": {
+   "icon": "UI_ItemIcon_200121",
+   "rarity": 4
+  },
+  "200122": {
+   "icon": "UI_ItemIcon_200122",
+   "rarity": 4
+  },
+  "200123": {
+   "icon": "UI_ItemIcon_200123",
+   "rarity": 4
+  },
+  "200124": {
+   "icon": "UI_ItemIcon_200124",
+   "rarity": 4
+  },
+  "200125": {
+   "icon": "UI_ItemIcon_200125",
+   "rarity": 4
+  },
+  "200126": {
+   "icon": "UI_ItemIcon_200126",
+   "rarity": 4
+  },
+  "200127": {
+   "icon": "UI_ItemIcon_200127",
+   "rarity": 4
+  },
+  "200128": {
+   "icon": "UI_ItemIcon_200128",
+   "rarity": 4
+  },
+  "200129": {
+   "icon": "UI_ItemIcon_200129",
+   "rarity": 4
+  }
+ },
+ "combine": {
+  "101401": {
+   "input": 100029,
+   "input_count": 1,
+   "output_count": 10,
+   "mora": 0
+  },
+  "101402": {
+   "input": 101251,
+   "input_count": 1,
+   "output_count": 1,
+   "mora": 0
+  },
+  "101403": {
+   "input": 101231,
+   "input_count": 1,
+   "output_count": 1,
+   "mora": 0
+  },
+  "101404": {
+   "input": 101249,
+   "input_count": 1,
+   "output_count": 1,
+   "mora": 0
+  },
+  "104112": {
+   "input": 104111,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 300
+  },
+  "104113": {
+   "input": 104112,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 900
+  },
+  "104114": {
+   "input": 104113,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 2700
+  },
+  "104122": {
+   "input": 104121,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 300
+  },
+  "104123": {
+   "input": 104122,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 900
+  },
+  "104124": {
+   "input": 104123,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 2700
+  },
+  "104132": {
+   "input": 104131,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 300
+  },
+  "104133": {
+   "input": 104132,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 900
+  },
+  "104134": {
+   "input": 104133,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 2700
+  },
+  "104142": {
+   "input": 104141,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 300
+  },
+  "104143": {
+   "input": 104142,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 900
+  },
+  "104144": {
+   "input": 104143,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 2700
+  },
+  "104152": {
+   "input": 104151,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 300
+  },
+  "104153": {
+   "input": 104152,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 900
+  },
+  "104154": {
+   "input": 104153,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 2700
+  },
+  "104162": {
+   "input": 104161,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 300
+  },
+  "104163": {
+   "input": 104162,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 900
+  },
+  "104164": {
+   "input": 104163,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 2700
+  },
+  "104172": {
+   "input": 104171,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 300
+  },
+  "104173": {
+   "input": 104172,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 900
+  },
+  "104174": {
+   "input": 104173,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 2700
+  },
+  "104302": {
+   "input": 104301,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104303": {
+   "input": 104302,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104305": {
+   "input": 104304,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104306": {
+   "input": 104305,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104308": {
+   "input": 104307,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104309": {
+   "input": 104308,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104311": {
+   "input": 104310,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104312": {
+   "input": 104311,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104314": {
+   "input": 104313,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104315": {
+   "input": 104314,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104317": {
+   "input": 104316,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104318": {
+   "input": 104317,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104321": {
+   "input": 104320,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104322": {
+   "input": 104321,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104324": {
+   "input": 104323,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104325": {
+   "input": 104324,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104327": {
+   "input": 104326,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104328": {
+   "input": 104327,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104330": {
+   "input": 104329,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104331": {
+   "input": 104330,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104333": {
+   "input": 104332,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104334": {
+   "input": 104333,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104336": {
+   "input": 104335,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104337": {
+   "input": 104336,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104339": {
+   "input": 104338,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104340": {
+   "input": 104339,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104342": {
+   "input": 104341,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104343": {
+   "input": 104342,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104345": {
+   "input": 104344,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104346": {
+   "input": 104345,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104348": {
+   "input": 104347,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104349": {
+   "input": 104348,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104351": {
+   "input": 104350,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104352": {
+   "input": 104351,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104354": {
+   "input": 104353,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104355": {
+   "input": 104354,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104357": {
+   "input": 104356,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104358": {
+   "input": 104357,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104360": {
+   "input": 104359,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104361": {
+   "input": 104360,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104363": {
+   "input": 104362,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104364": {
+   "input": 104363,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104366": {
+   "input": 104365,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104367": {
+   "input": 104366,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104369": {
+   "input": 104368,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104370": {
+   "input": 104369,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104372": {
+   "input": 104371,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104373": {
+   "input": 104372,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "112003": {
+   "input": 112002,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112004": {
+   "input": 112003,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112006": {
+   "input": 112005,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112007": {
+   "input": 112006,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112009": {
+   "input": 112008,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112010": {
+   "input": 112009,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112012": {
+   "input": 112011,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112013": {
+   "input": 112012,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112015": {
+   "input": 112014,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112016": {
+   "input": 112015,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112018": {
+   "input": 112017,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112019": {
+   "input": 112018,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112021": {
+   "input": 112020,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112022": {
+   "input": 112021,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112024": {
+   "input": 112023,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112025": {
+   "input": 112024,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112027": {
+   "input": 112026,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112028": {
+   "input": 112027,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112030": {
+   "input": 112029,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112031": {
+   "input": 112030,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112033": {
+   "input": 112032,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112034": {
+   "input": 112033,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112036": {
+   "input": 112035,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112037": {
+   "input": 112036,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112039": {
+   "input": 112038,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112040": {
+   "input": 112039,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112042": {
+   "input": 112041,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112043": {
+   "input": 112042,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112045": {
+   "input": 112044,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112046": {
+   "input": 112045,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112048": {
+   "input": 112047,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112049": {
+   "input": 112048,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112051": {
+   "input": 112050,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112052": {
+   "input": 112051,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112054": {
+   "input": 112053,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112055": {
+   "input": 112054,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112057": {
+   "input": 112056,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112058": {
+   "input": 112057,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112060": {
+   "input": 112059,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112061": {
+   "input": 112060,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112063": {
+   "input": 112062,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112064": {
+   "input": 112063,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112066": {
+   "input": 112065,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112067": {
+   "input": 112066,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112069": {
+   "input": 112068,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112070": {
+   "input": 112069,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112072": {
+   "input": 112071,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112073": {
+   "input": 112072,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112075": {
+   "input": 112074,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112076": {
+   "input": 112075,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112078": {
+   "input": 112077,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112079": {
+   "input": 112078,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112081": {
+   "input": 112080,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112082": {
+   "input": 112081,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112084": {
+   "input": 112083,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112085": {
+   "input": 112084,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112087": {
+   "input": 112086,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112088": {
+   "input": 112087,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112090": {
+   "input": 112089,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112091": {
+   "input": 112090,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112093": {
+   "input": 112092,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112094": {
+   "input": 112093,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112096": {
+   "input": 112095,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112097": {
+   "input": 112096,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112099": {
+   "input": 112098,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112100": {
+   "input": 112099,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112102": {
+   "input": 112101,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112103": {
+   "input": 112102,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112105": {
+   "input": 112104,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112106": {
+   "input": 112105,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112108": {
+   "input": 112107,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112109": {
+   "input": 112108,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112111": {
+   "input": 112110,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112112": {
+   "input": 112111,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112114": {
+   "input": 112113,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112115": {
+   "input": 112114,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112117": {
+   "input": 112116,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112118": {
+   "input": 112117,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112120": {
+   "input": 112119,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112121": {
+   "input": 112120,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112123": {
+   "input": 112122,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112124": {
+   "input": 112123,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112126": {
+   "input": 112125,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112127": {
+   "input": 112126,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112129": {
+   "input": 112128,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112130": {
+   "input": 112129,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112132": {
+   "input": 112131,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112133": {
+   "input": 112132,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112135": {
+   "input": 112134,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112136": {
+   "input": 112135,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112138": {
+   "input": 112137,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112139": {
+   "input": 112138,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112141": {
+   "input": 112140,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112142": {
+   "input": 112141,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112144": {
+   "input": 112143,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112145": {
+   "input": 112144,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112147": {
+   "input": 112146,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112148": {
+   "input": 112147,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112150": {
+   "input": 112149,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112151": {
+   "input": 112150,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112153": {
+   "input": 112152,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112154": {
+   "input": 112153,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112156": {
+   "input": 112155,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112157": {
+   "input": 112156,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114002": {
+   "input": 114001,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114003": {
+   "input": 114002,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114004": {
+   "input": 114003,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114006": {
+   "input": 114005,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114007": {
+   "input": 114006,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114008": {
+   "input": 114007,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114010": {
+   "input": 114009,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114011": {
+   "input": 114010,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114012": {
+   "input": 114011,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114014": {
+   "input": 114013,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114015": {
+   "input": 114014,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114016": {
+   "input": 114015,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114018": {
+   "input": 114017,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114019": {
+   "input": 114018,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114020": {
+   "input": 114019,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114022": {
+   "input": 114021,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114023": {
+   "input": 114022,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114024": {
+   "input": 114023,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114026": {
+   "input": 114025,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114027": {
+   "input": 114026,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114028": {
+   "input": 114027,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114030": {
+   "input": 114029,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114031": {
+   "input": 114030,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114032": {
+   "input": 114031,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114034": {
+   "input": 114033,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114035": {
+   "input": 114034,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114036": {
+   "input": 114035,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114038": {
+   "input": 114037,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114039": {
+   "input": 114038,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114040": {
+   "input": 114039,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114042": {
+   "input": 114041,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114043": {
+   "input": 114042,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114044": {
+   "input": 114043,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114046": {
+   "input": 114045,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114047": {
+   "input": 114046,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114048": {
+   "input": 114047,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114050": {
+   "input": 114049,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114051": {
+   "input": 114050,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114052": {
+   "input": 114051,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114054": {
+   "input": 114053,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114055": {
+   "input": 114054,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114056": {
+   "input": 114055,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114058": {
+   "input": 114057,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114059": {
+   "input": 114058,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114060": {
+   "input": 114059,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114062": {
+   "input": 114061,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114063": {
+   "input": 114062,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114064": {
+   "input": 114063,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114066": {
+   "input": 114065,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114067": {
+   "input": 114066,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114068": {
+   "input": 114067,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114070": {
+   "input": 114069,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114071": {
+   "input": 114070,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114072": {
+   "input": 114071,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114074": {
+   "input": 114073,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114075": {
+   "input": 114074,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114076": {
+   "input": 114075,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114078": {
+   "input": 114077,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114079": {
+   "input": 114078,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114080": {
+   "input": 114079,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114082": {
+   "input": 114081,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114083": {
+   "input": 114082,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114084": {
+   "input": 114083,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114086": {
+   "input": 114085,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114087": {
+   "input": 114086,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114088": {
+   "input": 114087,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114090": {
+   "input": 114089,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114091": {
+   "input": 114090,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114092": {
+   "input": 114091,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114094": {
+   "input": 114093,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114095": {
+   "input": 114094,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114096": {
+   "input": 114095,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  }
+ },
+ "drop_rates": {
+  "104301": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4213
+  },
+  "104304": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4223
+  },
+  "104307": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4233
+  },
+  "104310": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 5257
+  },
+  "104313": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 5261
+  },
+  "104316": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 5265
+  },
+  "104320": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4403
+  },
+  "104323": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4413
+  },
+  "104326": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4423
+  },
+  "104329": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4433
+  },
+  "104332": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4443
+  },
+  "104335": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4453
+  },
+  "104338": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4463
+  },
+  "104341": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4493
+  },
+  "104344": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4497
+  },
+  "104347": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4437
+  },
+  "104350": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4447
+  },
+  "104353": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4457
+  },
+  "104356": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4654
+  },
+  "104359": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4658
+  },
+  "104362": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4662
+  },
+  "104365": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4694
+  },
+  "104368": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4698
+  },
+  "104371": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4702
+  },
+  "112053": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.1,
+   "boss_id": 34
+  },
+  "112054": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 0.56,
+   "boss_id": 34
+  },
+  "112055": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 0.14,
+   "boss_id": 34
+  },
+  "113001": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 7
+  },
+  "113002": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 6
+  },
+  "113009": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 13
+  },
+  "113010": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 8
+  },
+  "113011": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 15
+  },
+  "113012": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 14
+  },
+  "113020": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 25
+  },
+  "113021": {
+   "source": "boss",
+   "resin": 60,
+   "expected_per_run": 0.33,
+   "boss_id": 9
+  },
+  "113022": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 26
+  },
+  "113023": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 28
+  },
+  "113024": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 27
+  },
+  "113028": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 32
+  },
+  "113029": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 33
+  },
+  "113030": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 36
+  },
+  "113031": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 37
+  },
+  "113035": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 39
+  },
+  "113036": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 42
+  },
+  "113037": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 41
+  },
+  "113038": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 46
+  },
+  "113039": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 47
+  },
+  "113040": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 49
+  },
+  "113044": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 50
+  },
+  "113049": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.5556,
+   "boss_id": 58
+  },
+  "113050": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.5556,
+   "boss_id": 58
+  },
+  "113051": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 59
+  },
+  "113052": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 61
+  },
+  "113053": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 62
+  },
+  "113057": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 63
+  },
+  "113058": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 64
+  },
+  "113059": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 66
+  },
+  "113067": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 77
+  },
+  "113071": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 78
+  },
+  "113072": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 79
+  },
+  "113076": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 81
+  },
+  "113077": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 87
+  },
+  "113078": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 88
+  },
+  "113079": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 89
+  },
+  "113080": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 90
+  },
+  "113084": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 92
+  },
+  "113085": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 93
+  },
+  "113086": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 94
+  },
+  "113090": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 97
+  },
+  "113091": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 98
+  },
+  "113092": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 103
+  },
+  "114001": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4313
+  },
+  "114005": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4323
+  },
+  "114009": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4333
+  },
+  "114013": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 5217
+  },
+  "114017": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 5221
+  },
+  "114021": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 5225
+  },
+  "114025": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4343
+  },
+  "114029": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4353
+  },
+  "114033": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4363
+  },
+  "114037": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4373
+  },
+  "114041": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4377
+  },
+  "114045": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4381
+  },
+  "114049": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4473
+  },
+  "114053": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4503
+  },
+  "114057": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4507
+  },
+  "114061": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4385
+  },
+  "114065": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4389
+  },
+  "114069": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4393
+  },
+  "114073": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4674
+  },
+  "114077": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4678
+  },
+  "114081": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4682
+  },
+  "114085": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4710
+  },
+  "114089": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4714
+  },
+  "114093": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4718
+  }
+ },
+ "domain_days": {
+  "104301": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "104304": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "104307": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "104310": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "104313": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "104316": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "104320": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "104323": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "104326": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "104329": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "104332": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "104335": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "104338": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "104341": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "104344": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "104347": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "104350": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "104353": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "104356": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "104359": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "104362": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "104365": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "104368": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "104371": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "114001": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "114005": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "114009": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "114013": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "114017": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "114021": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "114025": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "114029": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "114033": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "114037": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "114041": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "114045": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "114049": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "114053": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "114057": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "114061": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "114065": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "114069": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "114073": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "114077": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "114081": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "114085": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "114089": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "114093": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ]
+ }
+}

@@ -1,0 +1,115 @@
+{
+ "note": "The numbers the leveling planner needs that NO table in the pinned YuanShen dump publishes. Everything else it uses is derived into app/data/yuanshen/snapshot/planner_economy.json. This file is hand-maintained, which is why it lives outside snapshot/ -- that directory means 'derived from the pinned dump' and these are not.\n\nRULE: an entry with a non-null value MUST carry a non-empty `source` naming where the number came from. tests/unit/test_planner_curated_rates.py enforces it. A null value is not a bug -- the planner reports that material's resin as unknown rather than guessing, which is the same discipline as 'a skipped check is never a pass'.\n\nWhy these specific entries: a world boss publishes an expected drop for its boss-specific material and NOTHING for the elemental gem branch, and the weekly-boss drops are absent for the same reason. Each gem Sliver below carries a family of four through the published 3:1 crafting tree, so one number prices four materials. See docs/RESEARCH_leveling_planner_data.md section 10.",
+ "mora_per_exp": {
+  "character": {
+   "divisor": null,
+   "source": "",
+   "needs_curation": true,
+   "comment": "Mora charged per point of character EXP fed. Not in any of the 1,935 tables."
+  },
+  "weapon": {
+   "divisor": null,
+   "source": "",
+   "needs_curation": true,
+   "comment": "Mora charged per point of weapon EXP fed."
+  }
+ },
+ "drop_rates": {
+  "104111": {
+   "name": "Agnidus Agate Sliver",
+   "source_type": "boss",
+   "resin": 40,
+   "expected_per_run": null,
+   "source": "",
+   "needs_curation": true
+  },
+  "113045": {
+   "name": "Evergloom Ring",
+   "source_type": "boss",
+   "resin": 40,
+   "expected_per_run": null,
+   "source": "",
+   "needs_curation": true
+  },
+  "113016": {
+   "name": "Juvenile Jade",
+   "source_type": "boss",
+   "resin": 40,
+   "expected_per_run": null,
+   "source": "",
+   "needs_curation": true
+  },
+  "104131": {
+   "name": "Nagadus Emerald Sliver",
+   "source_type": "boss",
+   "resin": 40,
+   "expected_per_run": null,
+   "source": "",
+   "needs_curation": true
+  },
+  "104171": {
+   "name": "Prithiva Topaz Sliver",
+   "source_type": "boss",
+   "resin": 40,
+   "expected_per_run": null,
+   "source": "",
+   "needs_curation": true
+  },
+  "113007": {
+   "name": "Ring of Boreas",
+   "source_type": "boss",
+   "resin": 60,
+   "expected_per_run": null,
+   "source": "",
+   "needs_curation": true
+  },
+  "104161": {
+   "name": "Shivada Jade Sliver",
+   "source_type": "boss",
+   "resin": 40,
+   "expected_per_run": null,
+   "source": "",
+   "needs_curation": true
+  },
+  "113008": {
+   "name": "Spirit Locket of Boreas",
+   "source_type": "boss",
+   "resin": 60,
+   "expected_per_run": null,
+   "source": "",
+   "needs_curation": true
+  },
+  "113006": {
+   "name": "Tail of Boreas",
+   "source_type": "boss",
+   "resin": 60,
+   "expected_per_run": null,
+   "source": "",
+   "needs_curation": true
+  },
+  "104141": {
+   "name": "Vajrada Amethyst Sliver",
+   "source_type": "boss",
+   "resin": 40,
+   "expected_per_run": null,
+   "source": "",
+   "needs_curation": true
+  },
+  "104121": {
+   "name": "Varunada Lazurite Sliver",
+   "source_type": "boss",
+   "resin": 40,
+   "expected_per_run": null,
+   "source": "",
+   "needs_curation": true
+  },
+  "104151": {
+   "name": "Vayuda Turquoise Sliver",
+   "source_type": "boss",
+   "resin": 40,
+   "expected_per_run": null,
+   "source": "",
+   "needs_curation": true
+  }
+ }
+}

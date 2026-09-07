@@ -580,12 +580,274 @@ def build_roll_schedule(sha: str | None = None) -> dict[str, Any]:
     }
 
 
+
+# -- Planner economy ----------------------------------------------------------------
+
+#: Material types the planner prices. The 508 materials every character and weapon in the
+#: catalogue asks for are **exactly** `MATERIAL_AVATAR_MATERIAL` (448) and
+#: `MATERIAL_EXCHANGE` (60) — measured, not assumed. The two EXP types are added because
+#: levelling spends them and nothing else names them.
+PLANNER_MATERIAL_TYPES = (
+    "MATERIAL_AVATAR_MATERIAL",
+    "MATERIAL_EXCHANGE",
+    "MATERIAL_EXP_FRUIT",
+    "MATERIAL_WEAPON_EXP_STONE",
+)
+
+#: Mora. Every ascension and every talent level charges it, and it is the one cost a GOOD
+#: export cannot tell us the balance of.
+MORA_ITEM_ID = 202
+
+#: Original Resin, as `DungeonExcelConfigData.statueCostID` names it.
+RESIN_ITEM_ID = 106
+
+#: Weekday keys in `DailyDungeonConfigData`, in the order a week runs.
+WEEKDAYS = (
+    "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+)
+
+
+def _exp_items(rows: list[dict[str, Any]], use_op: str) -> list[dict[str, Any]]:
+    """The EXP denominations for one target, read off `itemUse`.
+
+    `ITEM_USE_ADD_EXP` gives 1,000 / 5,000 / 20,000 (Wanderer's Advice, Adventurer's
+    Experience, Hero's Wit) and `ITEM_USE_ADD_WEAPON_EXP` gives 400 / 2,000 / 10,000. Read
+    rather than recalled: these are the numbers the whole levelling estimate divides by.
+    """
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        for use in row.get("itemUse") or []:
+            if use.get("useOp") != use_op:
+                continue
+            params = [p for p in use.get("useParam") or [] if p]
+            if not params:
+                continue
+            out.append({"id": row["id"], "exp": int(params[0]), "rarity": row.get("rankLevel", 0)})
+    if not out:
+        msg = f"no items found for {use_op}"
+        raise SnapshotError(msg)
+    return sorted(out, key=lambda item: item["exp"], reverse=True)
+
+
+def _level_caps(rows: list[dict[str, Any]], key: str) -> dict[str, int]:
+    """Ascension phase -> the level it unlocks, from a promote table.
+
+    Every promote group agrees, so the ladder is taken from the union and asserted to be
+    single-valued. This is the 20/40/50/60/70/80/90 constant that decides what "ascend but
+    stay at 80" costs, and it has never been cited in this repo before.
+    """
+    caps: dict[int, set[int]] = {}
+    for row in rows:
+        if key not in row:
+            continue
+        phase = int(row.get("promoteLevel", 0))
+        unlock = row.get("unlockMaxLevel")
+        if unlock is None:
+            continue
+        caps.setdefault(phase, set()).add(int(unlock))
+    disagreeing = {phase: sorted(v) for phase, v in caps.items() if len(v) > 1}
+    if disagreeing:
+        msg = f"promote table disagrees on the level cap per phase: {disagreeing}"
+        raise SnapshotError(msg)
+    return {str(phase): next(iter(v)) for phase, v in sorted(caps.items())}
+
+
+def _preview_yields(
+    previews: dict[int, dict[str, Any]], preview_id: Any,
+) -> list[tuple[int, float]]:
+    """The (material id, expected count) pairs a reward preview publishes.
+
+    **Only fractional counts are taken.** A whole number in this table is a fixed reward
+    (adventure EXP, companionship, mora); a fractional one is an expected drop per run, and
+    that distinction is the entire reason this function exists. `RESEARCH` §10 records the
+    first reading of these previews, which was that every count was an expected value — it
+    is not, and most preview items carry no count at all.
+    """
+    preview = previews.get(preview_id) if preview_id is not None else None
+    if not preview:
+        return []
+    out = []
+    for item in preview.get("previewItems") or []:
+        if not item or "count" not in item:
+            continue
+        count = str(item["count"])
+        if "." not in count:
+            continue
+        out.append((int(item["id"]), float(count)))
+    return out
+
+
+def _drop_rates(
+    previews: dict[int, dict[str, Any]],
+    dungeons: list[dict[str, Any]],
+    bosses: list[dict[str, Any]],
+    sha: str | None,
+) -> tuple[dict[str, dict[str, Any]], dict[str, list[str]]]:
+    """Expected drops per resin run, and the weekdays each domain is open."""
+    drop_rates: dict[str, dict[str, Any]] = {}
+    dungeon_materials: dict[int, set[int]] = {}
+    for row in dungeons:
+        resin = row.get("statueCostCount")
+        if not resin:
+            continue
+        if row.get("statueCostID") != RESIN_ITEM_ID:
+            msg = f"dungeon {row.get('id')} charges item {row.get('statueCostID')}, not resin"
+            raise SnapshotError(msg)
+        yields = _preview_yields(previews, row.get("passRewardPreviewID"))
+        dungeon_materials[int(row["id"])] = {mid for mid, _ in yields}
+        for material_id, expected in yields:
+            drop_rates[str(material_id)] = {
+                "source": "domain",
+                "resin": int(resin),
+                "expected_per_run": expected,
+                "dungeon_id": int(row["id"]),
+            }
+    for row in bosses:
+        resin = row.get("resinCost")
+        if not resin:
+            continue
+        for material_id, expected in _preview_yields(previews, row.get("rewardPreviewId")):
+            drop_rates.setdefault(
+                str(material_id),
+                {
+                    "source": "boss",
+                    "resin": int(resin),
+                    "expected_per_run": expected,
+                    "boss_id": int(row["id"]),
+                },
+            )
+
+    return drop_rates, _domain_days(dungeon_materials, sha)
+
+
+def _domain_days(
+    dungeon_materials: dict[int, set[int]], sha: str | None,
+) -> dict[str, list[str]]:
+    """Material id -> the weekdays its domain is open.
+
+    `DailyDungeonConfigData` is keyed by weekday name with a list of dungeon ids, and each of
+    those dungeons publishes what it drops -- so "you can only farm this book on Tue/Fri/Sun"
+    is derived, never curated.
+    """
+    domain_days: dict[str, list[str]] = {}
+    for row in fetch_json("ExcelBinOutput/DailyDungeonConfigData.json", sha):
+        for day in WEEKDAYS:
+            for dungeon_id in row.get(day) or []:
+                for material_id in dungeon_materials.get(int(dungeon_id), ()):
+                    days = domain_days.setdefault(str(material_id), [])
+                    if day not in days:
+                        days.append(day)
+    for days in domain_days.values():
+        days.sort(key=WEEKDAYS.index)
+    return domain_days
+
+
+def build_planner_economy(sha: str | None = None) -> dict[str, Any]:
+    """Everything the planner needs that nanoka does not publish.
+
+    Material icons and rarities, the ascension level caps, the EXP denominations, the
+    crafting tree with its mora, what each resin source costs, which weekday a domain runs,
+    and the expected drops that are published. What is *not* published — the drop
+    distribution, and the mora charged per EXP point — is not invented here; it lives in
+    `app/data/planner/curated_rates.json` where every entry has to cite a source.
+    """
+    materials = [
+        row
+        for row in fetch_json("ExcelBinOutput/MaterialExcelConfigData.json", sha)
+        if row.get("materialType") in PLANNER_MATERIAL_TYPES and "id" in row
+    ]
+    material_meta = {
+        str(row["id"]): {"icon": row.get("icon", ""), "rarity": row.get("rankLevel", 0)}
+        for row in materials
+    }
+    missing_icon = sorted(k for k, v in material_meta.items() if not v["icon"])
+    if missing_icon:
+        msg = f"{len(missing_icon)} planner materials have no icon: {missing_icon[:5]}"
+        raise SnapshotError(msg)
+
+    combine: dict[str, dict[str, Any]] = {}
+    for row in fetch_json("ExcelBinOutput/CombineExcelConfigData.json", sha):
+        inputs = [item for item in row.get("materialItems") or [] if item]
+        result = row.get("resultItemId")
+        if len(inputs) != 1 or result is None:
+            continue
+        if str(result) not in material_meta or str(inputs[0].get("id")) not in material_meta:
+            continue
+        combine[str(result)] = {
+            "input": int(inputs[0]["id"]),
+            "input_count": int(inputs[0]["count"]),
+            "output_count": int(row.get("resultItemCount", 1)),
+            "mora": int(row.get("scoinCost", 0)),
+        }
+
+    previews = {
+        row["id"]: row
+        for row in fetch_json("ExcelBinOutput/RewardPreviewExcelConfigData.json", sha)
+        if "id" in row
+    }
+    dungeons = fetch_json("ExcelBinOutput/DungeonExcelConfigData.json", sha)
+    bosses = fetch_json("ExcelBinOutput/InvestigationMonsterConfigData.json", sha)
+    blossoms = fetch_json("ExcelBinOutput/BlossomChestExcelConfigData.json", sha)
+
+    drop_rates, domain_days = _drop_rates(previews, dungeons, bosses, sha)
+
+    ley_line = {
+        row.get("refreshType", ""): int(row["resin"])
+        for row in blossoms
+        if row.get("resin")
+    }
+
+    return {
+        "sources": [
+            "MaterialExcelConfigData",
+            "AvatarPromoteExcelConfigData",
+            "WeaponPromoteExcelConfigData",
+            "CombineExcelConfigData",
+            "RewardPreviewExcelConfigData",
+            "DungeonExcelConfigData",
+            "InvestigationMonsterConfigData",
+            "BlossomChestExcelConfigData",
+            "DailyDungeonConfigData",
+        ],
+        "note": (
+            "Everything the leveling planner needs that nanoka does not publish. "
+            "`expected_per_run` is taken ONLY from fractional counts in the reward "
+            "previews -- a whole number there is a fixed reward, not an expected drop. "
+            "Coverage is partial by design: a material with no entry here is priced from "
+            "app/data/planner/curated_rates.json or reported as resin-unknown, never "
+            "guessed. See docs/RESEARCH_leveling_planner_data.md sections 9-10."
+        ),
+        "mora_item_id": MORA_ITEM_ID,
+        "resin_item_id": RESIN_ITEM_ID,
+        "level_caps": {
+            "character": _level_caps(
+                fetch_json("ExcelBinOutput/AvatarPromoteExcelConfigData.json", sha),
+                "avatarPromoteId",
+            ),
+            "weapon": _level_caps(
+                fetch_json("ExcelBinOutput/WeaponPromoteExcelConfigData.json", sha),
+                "weaponPromoteId",
+            ),
+        },
+        "exp_items": {
+            "character": _exp_items(materials, "ITEM_USE_ADD_EXP"),
+            "weapon": _exp_items(materials, "ITEM_USE_ADD_WEAPON_EXP"),
+        },
+        "ley_line_resin": ley_line,
+        "material_meta": dict(sorted(material_meta.items(), key=lambda kv: int(kv[0]))),
+        "combine": dict(sorted(combine.items(), key=lambda kv: int(kv[0]))),
+        "drop_rates": dict(sorted(drop_rates.items(), key=lambda kv: int(kv[0]))),
+        "domain_days": dict(sorted(domain_days.items(), key=lambda kv: int(kv[0]))),
+    }
+
+
 BUILDERS = {
     "artifact_main_stat_pools": derive_main_stat_pools,
     "artifact_main_stat_values": build_main_stat_values,
     "artifact_substat_values": build_substat_values,
     "growth_curves": build_growth_curves,
     "artifact_roll_schedule": build_roll_schedule,
+    "planner_economy": build_planner_economy,
 }
 
 
