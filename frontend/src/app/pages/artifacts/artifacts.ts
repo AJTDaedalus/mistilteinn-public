@@ -382,6 +382,29 @@ export class ArtifactsPage implements OnInit {
    * inventory reloads and a ranking outlives that. `rows()` reads it back in.
    */
   protected readonly ranked = signal<Map<string, RankingRow>>(new Map());
+
+  /**
+   * The broadened gain per piece: the best build containing it, with the other four re-picked.
+   *
+   * **Separate from `ranked` rather than written into the row**, because the two are different
+   * claims arriving at different times — the single-slot number is closed-form and instant,
+   * this one costs ~0.76 s a piece in a browser. A row with no entry here has not been swept,
+   * which the card says rather than showing a stale or invented number.
+   */
+  protected readonly broadened = signal<Map<string, number>>(new Map());
+  protected readonly sweepProgress = signal<{ done: number; total: number } | null>(null);
+  /** Flipped to stop the walk — read between pieces by `sweepBestBuilds`. */
+  private sweepCancelled = false;
+
+  /**
+   * How many pieces the sweep settles by default.
+   *
+   * **Measured, not chosen.** Five real dives in Chromium averaged 12.73 s against Node's
+   * 3.52 s for the same pair, so a pinned search costs ~0.76 s here and all 2,369 pieces is
+   * ~30 minutes. 200 is ~2.5 minutes and is far past anything the sorted list puts in front of
+   * anyone; "sweep the rest" is a button rather than a wait nobody asked for.
+   */
+  protected readonly SWEEP_DEFAULT = 200;
   /** The build's own damage, so the page can express a delta as a percentage of something. */
   protected readonly rankBaseline = signal(0);
   /** Carried from the draw model: these weights are cited, not measured. */
@@ -651,6 +674,9 @@ export class ArtifactsPage implements OnInit {
       // a 3-second job would make the result invisible — the defect this page already shipped
       // once, with a page-size control eleven screens down.
       this.narrow(() => this.sortBy.set('averageDelta'));
+      // The broad pass, over the top of the ordering the fast one just produced. Not awaited:
+      // the page is usable with the single-slot numbers while these refine.
+      void this.sweepBroadened(this.SWEEP_DEFAULT);
     } catch (err) {
       this.rankError.set(apiErrorMessage(err));
       this.ranked.set(new Map());
@@ -659,6 +685,55 @@ export class ArtifactsPage implements OnInit {
       this.rankProgress.set(null);
     }
   }
+
+  /**
+   * Settle the top `limit` rows with a pinned search, so their topline agrees with Best build.
+   *
+   * `Infinity` sweeps everything. The order is the list's own — the fast column is the triage
+   * and this is the settlement, which is the division `DESIGN_artifact_ranking.md` §8.1 draws.
+   */
+  protected async sweepBroadened(limit: number): Promise<void> {
+    const ids = this.matching()
+      .filter((row) => row.rank && !row.rank.refusal)
+      .slice(0, Number.isFinite(limit) ? limit : undefined)
+      .map((row) => row.id);
+    if (!ids.length) return;
+
+    this.sweepCancelled = false;
+    this.sweepProgress.set({ done: 0, total: ids.length });
+    try {
+      await this.rankingService.sweepBestBuilds({
+        buildId: this.rankBuildId(),
+        rotationId: this.rankRotationId(),
+        extraSets: this.extraSets(),
+        artifactIds: ids,
+        onSweepProgress: (done, total) => this.sweepProgress.set({ done, total }),
+        // **Each piece as it settles**, not the whole map at the end. Merged rather than
+        // replaced, so settling the rest does not discard the first pass.
+        onSettled: (id, gain) => this.broadened.update((prev) => new Map(prev).set(id, gain)),
+        shouldCancel: () => this.sweepCancelled,
+      });
+    } catch (err) {
+      // The single-slot numbers still stand, so this is a note rather than a failure.
+      this.rankError.set(apiErrorMessage(err));
+    } finally {
+      this.sweepProgress.set(null);
+    }
+  }
+
+  /** Settle every remaining row. ~30 minutes on a 2,369-piece inventory, hence a button. */
+  protected sweepAll(): Promise<void> {
+    // A template cannot name `Infinity`, and a literal cap here would be a second number to
+    // keep in step with the list.
+    return this.sweepBroadened(Number.POSITIVE_INFINITY);
+  }
+
+  protected cancelSweep(): void {
+    this.sweepCancelled = true;
+  }
+
+  /** How many rows have a settled number, for the line that offers to settle the rest. */
+  protected readonly sweptCount = computed(() => this.broadened().size);
 
   /**
    * Calibrate one more 4-piece set and rank again (OQ-A8).

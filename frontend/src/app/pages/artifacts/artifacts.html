@@ -381,6 +381,26 @@
          full-page scrolls away and the end was twenty, with nothing near the top saying more
          existed. The button below stays — it is the right control once you are already at the
          bottom — but it is no longer the only one. -->
+    <!-- **The broad pass, and the offer to finish it.** A pinned search is ~0.76 s in a
+         browser — measured, not carried over from Node — so all 2,369 pieces is ~30 minutes
+         and the top 200 is ~2.5. The fast numbers are on screen throughout; this only
+         upgrades them, so it is progress rather than a wait. -->
+    @if (sweepProgress(); as sweep) {
+      <p class="sweep" role="status">
+        <span class="eyebrow">Settling best builds</span>
+        <span class="mono">{{ sweep.done }} / {{ sweep.total }}</span>
+        <button type="button" class="sweep__stop" (click)="cancelSweep()">Stop</button>
+      </p>
+    } @else if (sweptCount() && sweptCount() < matching().length) {
+      <p class="sweep muted">
+        <span class="mono">{{ sweptCount() }}</span> of
+        <span class="mono">{{ matching().length }}</span> settled against the whole build.
+        <button type="button" class="sweep__more" (click)="sweepAll()">
+          Settle the rest
+        </button>
+      </p>
+    }
+
     <div class="count-row">
     <p class="muted count">
       @if (truncated()) {
@@ -484,9 +504,27 @@
                    avg / min / max and they are not: the second is the piece's value *today*,
                    unlevelled, which can sit above or below the third. Three bare percentages
                    in a row invite the reader to guess a scale, and the guess was wrong. -->
-              <p class="card__rank" title="Change vs the equipped piece">
+              <!-- **The broad number, when this piece has been settled.** Owner ruling: the
+                   topline should not be "other four locked". This is the same quantity Best
+                   build reports — the whole build re-picked around this piece — so the two
+                   agree rather than looking like a contradiction. The single-slot triple stays
+                   below it: it is what says whether *levelling* is worth resin, which a
+                   whole-build number cannot answer. -->
+              @if (broadened().get(row.id); as best) {
+                <p class="card__rank card__rank--best" title="Best build containing this piece,
+                   with the other four slots re-picked — the same number Best build reports">
+                  <span class="eyebrow">Best build</span>
+                  <span
+                    class="mono card__rank-delta"
+                    [class.up]="best > 0"
+                    [class.down]="best < 0"
+                  >{{ asPercent(best) }}</span>
+                </p>
+              }
+
+              <p class="card__rank" title="Change vs the equipped piece, other four slots as they are">
                 <span class="eyebrow">Levelled</span>
-                <span class="card__rank-stat" title="Expected value once fully levelled">
+                <span class="card__rank-stat" title="Expected value once fully levelled, in the build as it stands">
                   <span class="card__rank-key">avg</span>
                   <span
                     class="mono card__rank-delta"
