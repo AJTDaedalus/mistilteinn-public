@@ -82,14 +82,22 @@ whether a run gets billed once or twice.
 **A Trounce Blossom is 60 resin** and only three a week are halved to 30, so the curated 30 is
 the optimistic price.
 
-**The world-boss rate of 2.556 is the World Level 8 figure and World Level 9 changed it** —
-`curated_rates.json:known_stale`. WL9 shipped with 5.0 and guarantees three boss materials
-against WL8's two, so the planner is at least 17% pessimistic there. It looked unchanged for
-two reasons worth knowing: the wiki's Material Drop Distribution page stops at WL8 and its
-scaling formula caps at reward tier 18, and `RewardPreviewExcelConfigData` holds **one** value
-across all 101 boss previews with no world-level variants — the scaling is server-side. Only a
-note on the wiki's *Adventure Rank* page records the change. `weekly_boss`, the ley lines and
-the domains are unaffected, each for a reason the entry gives.
+**The world-boss rate is curated at 3.1, deliberately overriding the 2.556 the game data
+publishes.** That 2.556 is one value across all 101 boss previews with no world-level
+variants — the scaling is server-side — and it matches the wiki's **World Level 8** row to
+four decimals. WL9 (version 5.0) guarantees three materials against two, so the published
+figure is simply old. **A published number is not automatically a current one**, and
+`overrides_published` in `curated_rates.json` records that the entry knows what it is doing.
+
+It looked unchanged for two reasons worth carrying: the wiki's Material Drop Distribution
+page stops at WL8 and its scaling formula caps at reward tier 18 — **a table that stops reads
+exactly like a table that plateaus** — and the game data cannot show it at all. Only a note on
+the wiki's *Adventure Rank* page records the change. A full six-phase ascension is **46 boss
+materials for every character in the catalogue** (verified against `character_ascension_costs`),
+so this moves one from 720 resin to 594.
+
+`weekly_boss`, the ley lines and the domains are unaffected, each for a reason the entry gives
+— the owner confirmed weekly bosses did not change.
 
 **Five numbers are curated, all supplied by the owner on 2026-09-07**
 (`app/data/planner/curated_rates.json`), and the planner refuses to guess any it lacks.

@@ -65,6 +65,26 @@
    "source": "owner ruling, 2026-09-07: \"For Mora it's 60,000 flat\", per 20 resin, at World Level 9.",
    "needs_curation": false,
    "comment": "Mora per Blossom of Wealth. **Flat, not a distribution** -- it does not vary, so no `yields` or `per_run` is declared and the run count is genuinely deterministic. That is a fact about the source rather than a gap in the model. Confirmed against the wiki's Ley Line Outcrop table, which gives 60,000 for World Levels 6-9 inclusive — flat across the top of the range, not a WL9-only figure."
+  },
+  "world_boss": {
+   "resin": 40,
+   "per_run": {
+    "values": [
+     3,
+     4
+    ],
+    "weights": [
+     0.9,
+     0.1
+    ]
+   },
+   "split_across": 1,
+   "expected_per_run": 3.1,
+   "overrides_published": true,
+   "source": "owner ruling, 2026-09-07: \"go with 3.1 for world bosses\". World Level 9 (version 5.0) guarantees three boss materials with a low chance of a fourth; 3.1 reads that as a 10% chance of the fourth. The wiki's Adventure Rank page records the change -- its WL9 row notes \"Normal Bosses guarantees at least Character Level-Up Material x 3\" against x2 since WL4 -- and WorldLevelExcelConfigData puts WL9 at monster level 100 against WL8's 90.",
+   "needs_curation": false,
+   "comment": "**This deliberately overrides a number the game data publishes**, which is why it carries `overrides_published`. RewardPreviewExcelConfigData gives 2.556 for every world boss -- one value across all 101 previews, with no world-level variants, because the scaling happens server-side -- and that 2.556 matches the wiki's **World Level 8** row to four decimals. It is the old figure, not a current one.\n\n`split_across: 1` because a world boss drops its own single material, unlike a trounce domain which splits across three.\n\n**The two published claims about WL9 do not agree and 3.1 follows one of them.** \"Three with a low chance of four\" caps the mean below 4; the separately reported \"50% increase in ascension materials\" would put it at 2.5556 x 1.5 = 3.8333, which is also exactly 46 materials in 12 runs (a full six-phase ascension needs 46 -- verified against this repo's own character_ascension_costs, all 148 characters) against WL8's 46 in 18. A mean of 3.8333 needs the fourth to drop 83% of the time, which is not a low chance. The owner chose the conservative reading; if the 50% figure turns out to be the literal one, this is 24% low and one number changes.",
+   "supersedes": "**Our world-boss rate of 2.556 is the World Level 8 figure, and World Level 9 changed it.** Not curated here because nothing publishes the new number; recorded so it is not mistaken for current.\n\nWHAT CHANGED. World Level 9 shipped with 5.0. The wiki's Adventure Rank page, World Level and Ascension table, gives the WL9 row the note \"Normal Bosses guarantees at least Character Level-Up Material x 3\" against x2 from WL4, and puts the normal-boss level at 103. Coverage of the 5.0 announcement says all world bosses drop three materials with a low chance of four. So the mean is at least 3 against our 2.556 -- we are at least 17% pessimistic on every world-boss material, and more if the chance of a fourth is material.\n\nWHY IT LOOKED UNCHANGED. Two things, and both are worth knowing. The wiki's Material Drop Distribution page -- the one with the actual drop means -- stops at World Level 8 and its scaling formula caps `Ratio = 1` for reward tier > 18; it has not been updated for 5.0. And `RewardPreviewExcelConfigData` carries exactly ONE value across all 101 boss previews (2.556, matching the wiki's WL8 row precisely), with no world-level variants -- it is a static display base and the scaling happens server-side. So neither the game data nor the wiki table shows the change; only a note on a different wiki page does.\n\nWHAT IS NOT PUBLISHED. The exact WL9 split -- how often the fourth drops. Setting this needs a number a human is willing to stand behind, like every other entry in this file.\n\nNOT AFFECTED. `weekly_boss` at 2.4 already covers WL9: the wiki's by-enemy-level table gives 2.4 for levels 93-99 and 100-104, and a WL9 weekly boss is level 104. The WL9 row carries no note about weekly bosses. `ley_line_exp` and `ley_line_mora` have an explicit WL9 row and are flat from WL6. Domains are fixed-level and do not scale with world level at all."
   }
  },
  "domain_yields": {
@@ -147,8 +167,5 @@
    "source": "Genshin Impact Wiki, Loot System/Material Drop Distribution, Domain Level IV (community-gathered; the page says so). Read 2026-09-07. Weapon Ascension Materials: 2-Star roll mean 2.2; drop packs mean 3.1, each 78% 3-star, 20% 4-star, 2% 5-star. Overall averages 2.2 / 2.418 / 0.62 / 0.062, and 2.2 + 2.418x3 + 0.62x9 + 0.062x27 = 16.708 base-tier equivalents.",
    "comment": "As `talent`, but the family runs to 5-star so the multipliers reach 27."
   }
- },
- "known_stale": {
-  "world_boss": "**Our world-boss rate of 2.556 is the World Level 8 figure, and World Level 9 changed it.** Not curated here because nothing publishes the new number; recorded so it is not mistaken for current.\n\nWHAT CHANGED. World Level 9 shipped with 5.0. The wiki's Adventure Rank page, World Level and Ascension table, gives the WL9 row the note \"Normal Bosses guarantees at least Character Level-Up Material x 3\" against x2 from WL4, and puts the normal-boss level at 103. Coverage of the 5.0 announcement says all world bosses drop three materials with a low chance of four. So the mean is at least 3 against our 2.556 -- we are at least 17% pessimistic on every world-boss material, and more if the chance of a fourth is material.\n\nWHY IT LOOKED UNCHANGED. Two things, and both are worth knowing. The wiki's Material Drop Distribution page -- the one with the actual drop means -- stops at World Level 8 and its scaling formula caps `Ratio = 1` for reward tier > 18; it has not been updated for 5.0. And `RewardPreviewExcelConfigData` carries exactly ONE value across all 101 boss previews (2.556, matching the wiki's WL8 row precisely), with no world-level variants -- it is a static display base and the scaling happens server-side. So neither the game data nor the wiki table shows the change; only a note on a different wiki page does.\n\nWHAT IS NOT PUBLISHED. The exact WL9 split -- how often the fourth drops. Setting this needs a number a human is willing to stand behind, like every other entry in this file.\n\nNOT AFFECTED. `weekly_boss` at 2.4 already covers WL9: the wiki's by-enemy-level table gives 2.4 for levels 93-99 and 100-104, and a WL9 weekly boss is level 104. The WL9 row carries no note about weekly bosses. `ley_line_exp` and `ley_line_mora` have an explicit WL9 row and are flat from WL6. Domains are fixed-level and do not scale with world level at all."
  }
 }

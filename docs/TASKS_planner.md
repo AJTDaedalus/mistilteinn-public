@@ -86,5 +86,16 @@ reward tier 18 — a table that stops reads exactly like a table that plateaus.
 WL8 figure to four decimals), with no world-level variants, so the game data cannot show the
 change either.
 
-**The exact WL9 split is not published** — how often the fourth drops. Recorded in
-`curated_rates.json:known_stale` rather than guessed.
+**The exact WL9 split is not published** — how often the fourth drops — and the two published
+claims disagree. *"Three with a low chance of four"* caps the mean below 4; the separately
+reported *"50% increase in ascension materials"* would give 2.5556 × 1.5 = **3.8333**, which
+is also exactly 46 materials in 12 runs against WL8's 46 in 18. A mean of 3.8333 needs the
+fourth to land 83% of the time, which is not a low chance.
+
+**Owner's call: 3.1**, the conservative reading (a 10% fourth). If the 50% figure turns out to
+be literal this is 24% low and one number changes. A full ascension goes from 720 resin to
+594.
+
+**Weekly bosses did not change** — confirmed by the owner, and consistent with the wiki: the
+WL9 row carries no weekly-boss note and the by-enemy-level table already gives 2.4 for levels
+100–104.
