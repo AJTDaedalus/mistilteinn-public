@@ -52,6 +52,7 @@ from app.database import async_session_factory
 from app.models.artifact import ArtifactSet
 from app.models.build import EnemyProfile
 from app.models.character import Character, Talent
+from app.models.planner import Material
 from app.models.teapot import FurnishingSuite
 from app.models.weapon import Weapon
 from app.services import element_symbols, weapon_symbols
@@ -102,6 +103,11 @@ SOURCES = (
     # nginx's SPA fallback both answer 200 and this repo has already shipped a site with
     # no art and no symptom because of it. ~50-60 KB each, so about 6 MB.
     (FurnishingSuite, "furnishing suite"),
+    # Every levelling material the planner can put on a row. `materials.icon` is cited to
+    # `MaterialExcelConfigData.icon` through the committed snapshot rather than assembled
+    # from the id, because this script's own rule is that it does not invent a basename.
+    # ~510 rows at 5-21 KB each, so about 6 MB.
+    (Material, "material"),
 )
 
 #: Characters have a second image: the half-body gacha portrait, ~118 KB against the 22 KB
@@ -116,10 +122,28 @@ SOURCES = (
 #: than a failure: the catalogue carries unreleased entries whose art is not published.
 PORTRAIT_OF = ("UI_AvatarIcon_", "UI_Gacha_AvatarIcon_")
 
+#: The **full splash**, `UI_Gacha_AvatarImg_Ayaka` — the whole standing figure, not the
+#: half-body portrait above.
+#:
+#: Measured across six characters: mean **449 KB** (Ayaka 639, Furina 627, Yelan 440, Nahida
+#: 440, Diluc 395, Klee 150), so roughly **64 MB** for the catalogue. That is about **6.7x the
+#: entire icon tree** as it stood, and `docs/DECISIONS.md` §4 committed the icons on the
+#: argument that this set was *lighter* than the one fairy already ships. That argument does
+#: not survive the increase, so the owner re-made the call rather than inheriting it
+#: (2026-09-07): full splash, committed as-is, because the planner is a page you sit and look
+#: at and the half-body portrait reads as a thumbnail at that size.
+SPLASH_OF = ("UI_AvatarIcon_", "UI_Gacha_AvatarImg_")
+
 
 def portrait_name(icon: str) -> str | None:
     """The gacha portrait for an avatar icon basename, or None if it is not one."""
     prefix, replacement = PORTRAIT_OF
+    return icon.replace(prefix, replacement, 1) if icon.startswith(prefix) else None
+
+
+def splash_name(icon: str) -> str | None:
+    """The full splash for an avatar icon basename, or None if it is not one."""
+    prefix, replacement = SPLASH_OF
     return icon.replace(prefix, replacement, 1) if icon.startswith(prefix) else None
 
 
@@ -186,6 +210,9 @@ async def wanted() -> list[tuple[str, str]]:
                 portrait = portrait_name(row.icon) if model is Character else None
                 if portrait:
                     found.append((portrait, f"{label} {row.name} portrait"))
+                splash = splash_name(row.icon) if model is Character else None
+                if splash:
+                    found.append((splash, f"{label} {row.name} splash"))
                 # **A set has five pieces and five pictures.** `artifact_sets.icon` is the
                 # *flower* — nanoka's representative icon — so vendoring only that left every
                 # plume, sands, goblet and circlet in the app drawing a flower. The other four
