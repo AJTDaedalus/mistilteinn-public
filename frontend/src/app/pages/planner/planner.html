@@ -18,6 +18,15 @@
       />
       <p class="splash__name">{{ character()?.display_name }}</p>
     </div>
+    <!-- **Under the banner, not beside the name.** A caveat about the *numbers* belongs where
+         the numbers are about to appear; on the card it would read as a label on the
+         character. The figures below are real and priced from the same tables as anyone
+         else's — what is uncertain is whether the game ships them unchanged. -->
+    @if (isBeta()) {
+      <p class="hint hint--warn beta-note" role="status">
+        {{ character()?.display_name }} is in beta — materials may change throughout beta.
+      </p>
+    }
   }
 
   <div class="setup">
@@ -131,10 +140,6 @@
                 </select>
               </div>
             }
-            <p class="hint hint--note">
-              Levels 11–15 come free from C3 and C5 and have no materials at all, so the
-              planner stops at 10.
-            </p>
           </fieldset>
         }
 
@@ -206,11 +211,6 @@
         @if (craftGroups().length) {
           <fieldset>
             <legend>Crafting help</legend>
-            <p class="hint hint--note">
-              Characters whose passive changes what crafting costs. Only one character crafts a
-              given batch, so the best applicable bonus is used rather than all of them.
-            </p>
-
             <!-- **Two tables of two columns, because a passive is two facts.** Which materials
                  it touches, and what it does to them — and the flat list encoded both in a
                  sentence, so twelve rows all read the same. A character appears twice when

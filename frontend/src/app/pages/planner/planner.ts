@@ -100,6 +100,9 @@ export class PlannerPage implements OnInit {
     this.characters().find((row) => row.id === this.characterId()) ?? null,
   );
 
+  /** Whether the chosen character is datamined ahead of release. */
+  protected readonly isBeta = computed(() => this.character()?.is_beta ?? false);
+
   protected readonly weapon = computed(() =>
     this.weapons().find((row) => row.id === this.weaponId()) ?? null,
   );
@@ -265,10 +268,10 @@ export class PlannerPage implements OnInit {
       { key: 'talent', label: 'Talent crafting' },
     ].map((group) => ({
       ...group,
-      // `bonus_material` sits with `double` because both *add* to what a batch yields; a
-      // refund gives materials back. Neither of the two non-applicable effects is applied —
-      // the chance is published and the size is not — so they are listed, never checkable.
-      bonus: of(group.key, ['double', 'bonus_material']),
+      // Only `double`. A bonus *regional* material would need the regional family modelled,
+      // which the owner ruled out, so the backend no longer classifies those passives at all
+      // — they are not planner-relevant, the way a cooking passive is not.
+      bonus: of(group.key, ['double']),
       refund: of(group.key, ['refund']),
     })).filter((group) => group.bonus.length > 0 || group.refund.length > 0);
   });
@@ -299,7 +302,13 @@ export class PlannerPage implements OnInit {
     // class that character can hold — a bow on a sword user is not a plan anyone can act on,
     // and it was 260 rows in a `<select>` offering mostly that.
     const [characters, options] = await Promise.all([
-      allPages((offset, limit) => this.catalogue.listCharacters({ offset, limit })),
+      // **The one caller that opts in.** Beta characters are seeded and marked, and hidden
+      // from every list that does not ask — so the build editor never offers one, no build can
+      // hold one, and the optimizer cannot reach one. Pricing an upcoming character is the
+      // whole reason the owner reopened the beta ruling.
+      allPages((offset, limit) =>
+        this.catalogue.listCharacters({ include_beta: true, offset, limit }),
+      ),
       this.planner.options(),
     ]);
     this.characters.set(characters.items);

@@ -28,8 +28,13 @@ export function characterCardOptions(characters: readonly CharacterSummary[]): C
     // the only signal that exists. `app/services/traveler.py`.
     label: c.display_name,
     icon: c.icon,
-    detail: c.weapon_type_display,
-    tags: { element: c.element ?? '', weapon: c.weapon_type ?? '' },
+    // **The flag rides on the card, not on the page that drew it.** Only `/planner` asks for
+    // beta rows today, and putting the marker here means the next surface that opts in gets
+    // it without deciding again — which is this file's whole reason for existing.
+    detail: c.is_beta ? `${c.weapon_type_display} · beta` : c.weapon_type_display,
+    tags: {
+      element: c.element ?? '', weapon: c.weapon_type ?? '', beta: c.is_beta ? 'beta' : '',
+    },
   }));
 }
 

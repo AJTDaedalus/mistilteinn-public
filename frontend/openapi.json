@@ -550,7 +550,7 @@
           "catalogue"
         ],
         "summary": "List Characters",
-        "description": "List characters, filtered by element, weapon type, rarity or name substring.",
+        "description": "List characters, filtered by element, weapon type, rarity or name substring.\n\n**`include_beta` defaults to false, and that default is the feature.** Characters the\nmanifest names as unreleased are seeded and marked rather than withheld (owner, 2026-09-07)\nso `/planner` can price an upcoming one. Every other caller keeps the old list without\nchanging a line \u2014 and because the build editor never lists them, a beta character cannot\nreach a build and so cannot reach the optimizer, which is the exclusion that was asked for.",
         "operationId": "list_characters_api_v1_characters_get",
         "parameters": [
           {
@@ -615,6 +615,16 @@
                 }
               ],
               "title": "Name"
+            }
+          },
+          {
+            "name": "include_beta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Beta"
             }
           },
           {
@@ -5928,6 +5938,11 @@
               }
             ]
           },
+          "is_beta": {
+            "type": "boolean",
+            "title": "Is Beta",
+            "default": false
+          },
           "rarity": {
             "$ref": "#/components/schemas/Rarity"
           },
@@ -6139,6 +6154,11 @@
                 "type": "null"
               }
             ]
+          },
+          "is_beta": {
+            "type": "boolean",
+            "title": "Is Beta",
+            "default": false
           },
           "rarity": {
             "$ref": "#/components/schemas/Rarity"

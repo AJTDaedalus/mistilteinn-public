@@ -82,9 +82,12 @@ SEEDED: tuple[tuple[str, str, str], ...] = (
     ),
 )
 
-#: What each one must resolve to. Seven apply and five are reported only — see the module
-#: docstring in `crafting.py` for why a refund's *size* is not published.
-EXPECTED = {
+#: What each one must resolve to, or `None` for a passive that is not planner-relevant.
+#: Seven apply, three are reported only — see `crafting.py` for why a refund's *size* is not
+#: published — and two classify to nothing at all: a bonus *regional* material would need the
+#: regional family modelled, which the owner ruled out, so they are refused the same way a
+#: cooking passive is.
+EXPECTED: dict[str, tuple[Effect, set[MaterialClass], bool] | None] = {
     "Albedo": (Effect.DOUBLE, {MaterialClass.WEAPON_ASCENSION}, True),
     "Alhaitham": (Effect.DOUBLE, {MaterialClass.WEAPON_ASCENSION}, True),
     "Dori": (Effect.REFUND, {MaterialClass.TALENT, MaterialClass.WEAPON_ASCENSION}, False),
@@ -92,11 +95,11 @@ EXPECTED = {
     "Kamisato Ayaka": (Effect.DOUBLE, {MaterialClass.WEAPON_ASCENSION}, True),
     "Layla": (Effect.DOUBLE, {MaterialClass.TALENT}, True),
     "Mona": (Effect.REFUND, {MaterialClass.WEAPON_ASCENSION}, False),
-    "Prune": (Effect.BONUS_MATERIAL, {MaterialClass.TALENT}, False),
+    "Prune": None,
     "Sucrose": (Effect.DOUBLE, {MaterialClass.TALENT, MaterialClass.WEAPON_ASCENSION}, True),
     "Wriothesley": (Effect.DOUBLE, {MaterialClass.WEAPON_ASCENSION}, True),
     "Xingqiu": (Effect.REFUND, {MaterialClass.TALENT}, False),
-    "Yae Miko": (Effect.BONUS_MATERIAL, {MaterialClass.TALENT}, False),
+    "Yae Miko": None,
 }
 
 
@@ -105,8 +108,15 @@ def test_every_seeded_crafting_passive_still_classifies(
     character: str, passive: str, description: str,
 ) -> None:
     bonus = classify("id", character, passive, description)
+    expected = EXPECTED[character]
+    if expected is None:
+        # **Refused, and the description is still pinned.** These two are held here rather than
+        # deleted so a reworded passive that started matching `_DOUBLE` would fail loudly
+        # instead of quietly reappearing in the planner.
+        assert bonus is None, f"{character}'s {passive!r} is not planner-relevant"
+        return
     assert bonus is not None, f"{character}'s {passive!r} no longer classifies"
-    effect, classes, applicable = EXPECTED[character]
+    effect, classes, applicable = expected
     assert bonus.effect is effect
     assert set(bonus.classes) == classes
     assert bonus.applicable is applicable

@@ -50,6 +50,12 @@
   /* The two colours this app uses to say something is wrong live in the palette, because
      nine stylesheets once wrote them out by hand. `FINDINGS_frontend_validation.md`. */
   .hint--warn { color: var(--warning); }
+
+  /* Sits directly under the banner it qualifies, tight to it rather than floating between the
+     art and the controls where it would read as a caption for neither. */
+  .beta-note {
+    margin: -0.6rem 0 var(--space-4, 1rem);
+  }
   .error { color: var(--danger); }
 
   .setup {

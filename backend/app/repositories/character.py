@@ -37,6 +37,7 @@ class CharacterRepository(BaseRepository[Character]):
         weapon_type: WeaponType | None,
         rarity: Rarity | None,
         name: str | None,
+        include_beta: bool = False,
     ) -> Select[tuple[Character]]:
         stmt = select(Character)
         # The practice mannequins are 14 of the 150 rows and are never used in combat, so
@@ -52,6 +53,18 @@ class CharacterRepository(BaseRepository[Character]):
         # catalogue page is the leak the report was about — `app/services/unreleased.py`.
         # `weapon_type` is non-nullable, so `notin_` cannot swallow a NULL row here.
         stmt = stmt.where(Character.weapon_type.notin_(UNRELEASED_WEAPON_CLASSES))
+        # **Beta characters are seeded and hidden by default.** The owner reopened the "beta
+        # content must not reach the app" ruling on 2026-09-07 for `/planner` only: what an
+        # upcoming character costs to level is what a player wants before they pull.
+        #
+        # **Default-off is what keeps the exclusion the owner asked for.** Every existing
+        # caller — the catalogue browser, the build editor — keeps its behaviour without
+        # knowing the column exists, and because a build cannot be made for a character the
+        # build editor never lists, a beta character cannot reach the optimizer either. The
+        # optimizer needs no rule of its own, which is the point: a rule it had to remember
+        # is a rule it could forget.
+        if not include_beta:
+            stmt = stmt.where(Character.is_beta.is_(False))
         if element is not None:
             stmt = stmt.where(Character.element == element)
         if weapon_type is not None:
@@ -69,6 +82,7 @@ class CharacterRepository(BaseRepository[Character]):
         weapon_type: WeaponType | None = None,
         rarity: Rarity | None = None,
         name: str | None = None,
+        include_beta: bool = False,
         offset: int = 0,
         limit: int = 100,
     ) -> Sequence[Character]:
@@ -76,6 +90,7 @@ class CharacterRepository(BaseRepository[Character]):
         stmt = (
             self._filtered(
                 element=element, weapon_type=weapon_type, rarity=rarity, name=name,
+                include_beta=include_beta,
             )
             .order_by(Character.name, Character.nanoka_id)
             .offset(offset)
@@ -91,6 +106,7 @@ class CharacterRepository(BaseRepository[Character]):
         weapon_type: WeaponType | None = None,
         rarity: Rarity | None = None,
         name: str | None = None,
+        include_beta: bool = False,
     ) -> int:
         """Total matching `search`'s filters.
 
@@ -100,6 +116,7 @@ class CharacterRepository(BaseRepository[Character]):
         """
         stmt = self._filtered(
             element=element, weapon_type=weapon_type, rarity=rarity, name=name,
+            include_beta=include_beta,
         )
         result = await self.session.execute(
             select(func.count()).select_from(stmt.subquery()),

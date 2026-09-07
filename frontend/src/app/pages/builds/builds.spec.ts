@@ -407,11 +407,14 @@ describe('BuildsPage pickers', () => {
     expect(page['characterOptions']()).toEqual([
       {
         value: 'char-ayaka', label: 'Kamisato Ayaka', icon: 'UI_AvatarIcon_Ayaka',
-        detail: 'Sword', tags: { element: 'Cryo', weapon: 'WEAPON_SWORD_ONE_HAND' },
+        detail: 'Sword',
+        tags: { element: 'Cryo', weapon: 'WEAPON_SWORD_ONE_HAND', beta: '' },
       },
       {
         value: 'char-ganyu', label: 'Ganyu', icon: 'UI_AvatarIcon_Ganyu',
-        detail: 'Bow', tags: { element: 'Cryo', weapon: 'WEAPON_BOW' },
+        // `beta: ''` on both — this page never asks for beta rows, so it never sees one, and
+        // the empty tag is what says "not beta" rather than "unknown".
+        detail: 'Bow', tags: { element: 'Cryo', weapon: 'WEAPON_BOW', beta: '' },
       },
     ]);
   });

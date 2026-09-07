@@ -85,6 +85,24 @@ describe('character cards', () => {
 
     expect(characterCardFilters(unaligned)[0].options).toEqual([]);
     expect(characterCardOptions(unaligned)[0].tags)
-      .toEqual({ element: '', weapon: 'WEAPON_SWORD_ONE_HAND' });
+      .toEqual({ element: '', weapon: 'WEAPON_SWORD_ONE_HAND', beta: '' });
+  });
+});
+
+describe('beta characters', () => {
+  it('marks a beta row on the card, and leaves every other row alone', () => {
+    // Only `/planner` asks for these, but the marker lives on the card rather than on that
+    // page — so the next surface that opts in inherits it instead of deciding again.
+    const [ordinary, beta] = characterCardOptions([
+      character({ id: 'a', name: 'Ayaka' }),
+      character({ id: 'v', name: 'Vesna', is_beta: true }),
+    ]);
+
+    expect(beta.detail).toContain('beta');
+    expect(beta.tags?.['beta']).toBe('beta');
+    // **Empty, not absent.** A card with no `beta` key at all is a third state, and the tag
+    // vocabulary `CardPicker` filters on cannot tell it from "not beta".
+    expect(ordinary.tags?.['beta']).toBe('');
+    expect(ordinary.detail).not.toContain('beta');
   });
 });

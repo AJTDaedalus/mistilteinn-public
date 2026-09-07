@@ -33,6 +33,14 @@ export class CatalogueService {
     // so a page could not offer a filter the server already implemented.
     rarity?: CharacterSummary['rarity'];
     weapon_type?: CharacterSummary['weapon_type'];
+    /**
+     * Include characters datamined ahead of release. **Off unless asked.**
+     *
+     * Only `/planner` asks. Leaving it off is what keeps a beta character out of the build
+     * editor, and so out of any build, and so out of the optimizer — the exclusion the owner
+     * asked for is a default rather than a rule each page has to remember.
+     */
+    include_beta?: boolean;
     offset?: number;
     limit?: number;
   } = {}) {
