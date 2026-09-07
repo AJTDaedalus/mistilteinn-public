@@ -34,6 +34,10 @@ TEACHINGS = 104301
 #: Shivada Jade Sliver — an elemental gem, which costs **no resin**: gems drop from a world
 #: boss alongside the boss's own material, in a run that is already paid for.
 SLIVER = 104161
+#: 60,000 mora per 20-resin Blossom of Wealth, and 122,500 character EXP per 20-resin Blossom
+#: of Revelation, both at World Level 9 (owner, 2026-09-07). Restated here so a test that
+#: prices mora reads as arithmetic rather than as a magic number.
+MORA_PER_RUN, EXP_PER_RUN, LEY_LINE_RESIN = 60_000, 122_500, 20
 #: Bloodjade Branch — a trounce-domain drop. Costs resin at a yield nobody publishes.
 WEEKLY = 113018
 #: Sakura Bloom — a local specialty. Costs no resin at all, which is a different thing.
@@ -170,14 +174,14 @@ async def test_owned_stock_is_subtracted(
 
 
 @pytest.mark.asyncio
-async def test_resin_distinguishes_unknown_from_not_farmable(
+async def test_resin_distinguishes_no_cost_from_a_real_one(
     client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
 ) -> None:
-    """A specialty and a gem cost no resin; a weekly boss drop costs it at an unknown rate.
+    """A specialty and a gem cost no resin; a weekly-boss drop costs 30 a run.
 
-    One field for all three would say the specialties are an unknown farming cost and the
-    weekly bosses are free — wrong in opposite directions. Gems sit with the specialties
-    because they drop alongside a world-boss material in a run already paid for.
+    One field for all three would say the specialties are a farming cost and the weekly
+    bosses are free — wrong in opposite directions. Gems sit with the specialties because
+    they drop alongside a world-boss material in a run already paid for.
     """
     character, talent, _ = await _catalogue(db_session)
     await db_session.commit()
@@ -189,8 +193,11 @@ async def test_resin_distinguishes_unknown_from_not_farmable(
     by_id = {line["material_id"]: line for line in ascension["materials"]}
     assert by_id[SLIVER]["resin_status"] == "not_farmable"
     assert by_id[SPECIALTY]["resin_status"] == "not_farmable"
-    assert by_id[WEEKLY]["resin_status"] == "unknown"
-    assert ascension["resin"]["unpriced"] == [WEEKLY]
+    assert by_id[WEEKLY]["resin_status"] == "priced"
+    # 2.2 items a run split across the boss's three materials, at 30 resin a run.
+    assert by_id[WEEKLY]["resin"]["expected_per_run"] == pytest.approx(2.2 / 3)
+    assert by_id[WEEKLY]["resin"]["resin_per_run"] == 30
+    assert ascension["resin"]["unpriced"] == []
     assert ascension["resin"]["not_farmable"] == [SPECIALTY, SLIVER]
 
 
@@ -206,18 +213,24 @@ async def test_resin_is_priced_and_carries_a_histogram(
     )
     body = response.json()
     talents = next(s for s in body["sections"] if s["key"] == "talents")
-    # 18 Teachings at 2.2 per 20-resin run.
-    assert talents["resin"]["expected"] == pytest.approx(18 / 2.2 * 20)
+    # 18 Teachings at 2.2 per 20-resin domain run, plus the section's 9,000 mora at a
+    # 20-resin Blossom of Wealth. Mora is resin too.
+    expected = 18 / 2.2 * 20 + 9_000 / MORA_PER_RUN * LEY_LINE_RESIN
+    assert talents["resin"]["expected"] == pytest.approx(expected)
     mass = sum(b["probability"] for b in talents["resin"]["histogram"])
     assert mass == pytest.approx(1.0, abs=1e-3)
     assert "narrowest distribution" in body["histogram_note"]
 
 
 @pytest.mark.asyncio
-async def test_levelling_mora_is_null_not_zero_while_the_divisor_is_uncurated(
+async def test_feeding_exp_material_charges_no_mora(
     client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
 ) -> None:
-    """`None` means "we do not know", and a UI must not render it as free."""
+    """Zero, and it is a fact rather than a gap.
+
+    Owner, 2026-09-07: *"there is no more per exp point conversion"*. The total still charges
+    mora, because ascension and talent levels do — this is the levelling half only.
+    """
     character, talent, _ = await _catalogue(db_session)
     await db_session.commit()
 
@@ -226,8 +239,9 @@ async def test_levelling_mora_is_null_not_zero_while_the_divisor_is_uncurated(
     )
     body = response.json()
     levels = next(s for s in body["sections"] if s["key"] == "levels")
-    assert levels["mora"] is None
-    assert body["total"]["mora"] is None
+    assert levels["mora"] == 0
+    # 20,000 for the ascension phase and 9,000 for the nine talent steps.
+    assert body["total"]["mora"] == 29_000
 
 
 @pytest.mark.asyncio
@@ -342,7 +356,9 @@ async def test_the_total_does_not_bill_one_domain_twice(
         line for line in body["total"]["materials"] if line["material_id"] == TEACHINGS
     )
     assert total_line["required"] == 23  # 18 talent + 5 weapon
-    assert body["total"]["resin"]["expected"] == pytest.approx(23 / 2.2 * 20)
+    # Priced as one run of 23, not as two runs of 18 and 5. The section resin totals also
+    # carry mora and EXP, so the merge is asserted on this line rather than on the sum.
+    assert total_line["resin"]["expected_resin"] == pytest.approx(23 / 2.2 * 20)
 
 
 @pytest.mark.asyncio
@@ -365,7 +381,9 @@ async def test_options_offer_only_levelable_talents(
     body = response.json()
     assert [t["talent_id"] for t in body["talents"]] == [talent.id]
     assert body["level_caps"] == {"0": 20, "1": 40, "2": 50, "3": 60, "4": 70, "5": 80, "6": 90}
-    assert body["uncurated_sources"] == ["ley_line_exp", "ley_line_mora", "weekly_boss"]
+    # All five curated numbers arrived on 2026-09-07, so nothing is left unpriced. This
+    # should start failing the day a patch adds a resin source nobody has costed.
+    assert body["uncurated_sources"] == []
 
 
 @pytest.mark.asyncio

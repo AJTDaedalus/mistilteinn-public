@@ -1,40 +1,40 @@
 {
- "note": "The numbers the leveling planner needs that NO table in the pinned YuanShen dump publishes. Everything else it uses is derived into app/data/yuanshen/snapshot/planner_economy.json. Hand-maintained, which is why it lives outside snapshot/ -- that directory means 'derived from the pinned dump' and these are not.\n\nRULE: an entry with a non-null value MUST carry a non-empty `source` naming where the number came from. tests/unit/test_planner_economy.py enforces it. A null value is not a bug -- the planner reports that source's resin as unknown rather than guessing, which is the same discipline as 'a skipped check is never a pass'.\n\nThese are keyed by SOURCE, not by material. Every trounce domain yields its materials the same way, so one number prices all 47 weekly-boss drops rather than 47 hand-typed entries -- and the rate genuinely is a property of the activity, not of the item.\n\nWhat is NOT here, and why: elemental gems, common enemy drops and local specialties cost no resin at all (owner, 2026-09-07), so they need no rate. Gems in particular drop from a world boss alongside the boss material in the same 40-resin run, so charging for both would bill that run twice. See MaterialSource in app/services/planner/economy.py.",
+ "note": "The numbers the leveling planner needs that NO table in the pinned YuanShen dump publishes. Everything else it uses is derived into app/data/yuanshen/snapshot/planner_economy.json. Hand-maintained, which is why it lives outside snapshot/ -- that directory means 'derived from the pinned dump' and these are not.\n\nAll five are now filled (owner, 2026-09-07). RULE: an entry with a non-null value MUST carry a non-empty `source` naming where the number came from. tests/unit/test_planner_economy.py enforces it. A null value is not a bug -- the planner reports that source's resin as unknown rather than guessing, which is the same discipline as 'a skipped check is never a pass'.\n\nThese are keyed by SOURCE, not by material. Every trounce domain yields its materials the same way, so one number prices all 47 weekly-boss drops rather than 47 hand-typed entries -- and the rate genuinely is a property of the activity, not of the item.\n\nWhat is NOT here, and why: elemental gems, common enemy drops and local specialties cost no resin at all (owner, 2026-09-07), so they need no rate. Gems in particular drop from a world boss alongside the boss material in the same 40-resin run, so charging for both would bill that run twice. See MaterialSource in app/services/planner/economy.py.",
  "mora_per_exp": {
   "character": {
-   "divisor": null,
-   "source": "",
-   "needs_curation": true,
-   "comment": "Mora charged per point of character EXP fed. Not in any of the 1,935 tables. Set this to the number of EXP points one mora buys."
+   "mora_per_point": 0,
+   "source": "owner ruling, 2026-09-07: \"there is no more per exp point conversion\" — Genshin no longer charges mora for feeding EXP material.",
+   "needs_curation": false,
+   "comment": "Feeding EXP books costs no mora. This is NOT the same as saying levelling is free: ascension and talent levels still charge mora, and those figures come from the payload's own `cost` fields rather than from here."
   },
   "weapon": {
-   "divisor": null,
-   "source": "",
-   "needs_curation": true,
-   "comment": "Mora charged per point of weapon EXP fed."
+   "mora_per_point": 0,
+   "source": "owner ruling, 2026-09-07: the same ruling covers Enhancement Ore.",
+   "needs_curation": false,
+   "comment": "Feeding Enhancement Ore costs no mora."
   }
  },
  "source_defaults": {
   "weekly_boss": {
    "resin": 30,
-   "expected_per_run": null,
-   "source": "",
-   "needs_curation": true,
-   "comment": "Expected drops of ONE named weekly-boss material per trounce-domain run. A boss carries three materials and drops a random one, so this is the per-material expectation, not the total. `resin` is the current trounce cost and also needs confirming -- DungeonExcelConfigData does not price trounce domains, and the one 60-resin row in InvestigationMonsterConfigData is Andrius."
+   "expected_per_run": 0.733333,
+   "source": "owner ruling, 2026-09-07: \"2.2 named materials per run on average (always 2 or 3), randomly selected between 3 options for each boss\". A boss carries three materials and each drop is one of them, so a NAMED material's expectation is 2.2 / 3.",
+   "needs_curation": false,
+   "comment": "**2.2 is the run's total across all three of the boss's materials; this field is one named material, so it is 2.2/3 = 0.733333.** Getting that split wrong scales every weekly-boss resin figure by three. `resin: 30` is the trounce cost and is still the least-confirmed number here — DungeonExcelConfigData does not price trounce domains."
   },
   "ley_line_exp": {
    "resin": 20,
-   "expected_per_run": null,
-   "source": "",
-   "needs_curation": true,
-   "comment": "Expected character EXP **points** per Blossom of Revelation run. `resin` is derived -- BlossomChestExcelConfigData publishes 20 for BLOSSOM_REFRESH_EXP -- but the yield is not published anywhere."
+   "expected_per_run": 122500,
+   "source": "owner ruling, 2026-09-07: at World Level 9, \"6-7 blue xp books per ley line and 4-5 purple books\", per 20 resin. Midpoints: 6.5 blue x 5,000 + 4.5 purple x 20,000 = 122,500 EXP.",
+   "needs_curation": false,
+   "comment": "Character EXP **points** per Blossom of Revelation, not books. Blue is Adventurer's Experience (5,000) and purple is Hero's Wit (20,000); both values are read from MaterialExcelConfigData.itemUse rather than recalled. **Assumes World Level 9**, which the planner states rather than hides — yields scale with world level and this is one figure."
   },
   "ley_line_mora": {
    "resin": 20,
-   "expected_per_run": null,
-   "source": "",
-   "needs_curation": true,
-   "comment": "Expected **mora** per Blossom of Wealth run. `resin` is derived from BlossomChestExcelConfigData (BLOSSOM_REFRESH_SCOIN); the yield is not published."
+   "expected_per_run": 60000,
+   "source": "owner ruling, 2026-09-07: \"For Mora it's 60,000 flat\", per 20 resin, at World Level 9.",
+   "needs_curation": false,
+   "comment": "Mora per Blossom of Wealth. Flat, not a distribution — it does not vary."
   }
  }
 }

@@ -47,9 +47,12 @@ job on the exact commit that is the PR head. There are no parallel sub-branches.
 
 ## 3. The two things that are not derivable, and how they are handled
 
-**Five curated numbers, in one file, each with a `source` string.** Keyed by **source**, not
-by material: the weekly-boss yield, the two ley-line yields, and the two mora-per-EXP
-divisors. They live in `app/data/planner/curated_rates.json` — **not** under
+**Five curated numbers, in one file, each with a `source` string — all supplied by the owner
+on 2026-09-07.** Keyed by **source**, not by material: the weekly-boss yield (0.733333 of a
+named material per 30-resin run, being 2.2 items split across the boss's three), the two
+ley-line yields (122,500 EXP and 60,000 mora per 20 resin at World Level 9), and the two
+mora-per-EXP rates, which are **zero** — Genshin no longer charges mora for feeding EXP
+material. They live in `app/data/planner/curated_rates.json` — **not** under
 `app/data/yuanshen/snapshot/`, because that directory means *derived from the pinned dump* and
 these are not. A test asserts every filled entry carries a non-empty `source`.
 
@@ -62,7 +65,9 @@ boss's own material in the same 40-resin run — and it removed seven of the twe
 The rest became per-source, because a trounce domain's yield is a property of the activity and
 not of the item, so one number prices all 47 weekly-boss drops.
 
-**Anything without a rate reports `resin: null`, never a guess.** The calculator does not fall
+**Anything without a rate reports `resin: null`, never a guess.** Nothing does today; the
+mechanism exists for the next patch that adds a source, and a test asserts the list is empty
+so its arrival is visible. The calculator does not fall
 back to an average, and the UI says *"resin unknown for this material"*. A skipped check is
 never a pass; an unpriced material is not free.
 

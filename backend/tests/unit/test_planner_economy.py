@@ -40,24 +40,49 @@ def test_every_curated_value_cites_a_source(curated: dict) -> None:
         "report that source as resin-unknown."
     )
     for target, rec in curated["mora_per_exp"].items():
-        if rec.get("divisor") is not None:
+        if rec.get("mora_per_point") is not None:
             assert rec.get("source", "").strip(), f"mora_per_exp.{target} has no source"
 
 
-def test_the_curated_file_prices_sources_the_dump_leaves_out() -> None:
-    """Trounce domains and ley lines. Everything else is derived or costs no resin."""
-    assert set(economy().uncurated_sources()) == {
-        "weekly_boss", "ley_line_exp", "ley_line_mora",
-    }
+def test_every_resin_source_is_now_priced() -> None:
+    """All five curated numbers arrived on 2026-09-07, so nothing is left unpriced.
+
+    This is the test that should fail when a new patch adds a source nobody has costed —
+    which is the moment the planner would otherwise start reporting it as free.
+    """
+    assert economy().uncurated_sources() == []
 
 
-def test_an_uncurated_source_reports_none_rather_than_a_guess() -> None:
+@pytest.mark.parametrize(
+    ("material_id", "name", "resin", "expected_per_run"),
+    [
+        # 2.2 items per trounce run split across the boss's three materials.
+        (113018, "Bloodjade Branch", 30, 0.733333),
+        (202, "Mora", 20, 60_000),
+        # 6.5 blue x 5,000 + 4.5 purple x 20,000, at World Level 9.
+        (104003, "Hero's Wit", 20, 122_500),
+    ],
+)
+def test_the_curated_sources_carry_the_owners_numbers(
+    material_id, name, resin, expected_per_run,
+) -> None:
+    rate = economy().rate(material_id)
+    assert rate is not None, name
+    assert rate.resin == resin
+    assert rate.expected_per_run == pytest.approx(expected_per_run)
+    assert rate.curated is True
+
+
+def test_feeding_exp_material_costs_no_mora() -> None:
+    """Zero, and zero is a fact rather than a gap.
+
+    Owner, 2026-09-07: *"there is no more per exp point conversion"*. Ascension and talent
+    levels still charge mora from the payload's own `cost` fields, so this is the levelling
+    half only.
+    """
     eco = economy()
-    # Bloodjade Branch is a trounce-domain drop; Mora and Hero's Wit are ley-line yields.
-    for material_id in (113018, 202, 104003):
-        assert eco.rate(material_id) is None, (
-            f"{material_id} belongs to an uncurated source but resolved to a rate"
-        )
+    assert eco.mora_per_exp("character") == 0.0
+    assert eco.mora_per_exp("weapon") == 0.0
 
 
 @pytest.mark.parametrize(

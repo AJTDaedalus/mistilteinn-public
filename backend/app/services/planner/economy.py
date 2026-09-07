@@ -311,9 +311,15 @@ class Economy:
         )
 
     def mora_per_exp(self, target: str) -> float | None:
-        """Mora charged per point of EXP fed, or `None` while the divisor is uncurated."""
-        divisor = self._curated["mora_per_exp"][target].get("divisor")
-        return None if divisor is None else 1.0 / float(divisor)
+        """Mora charged per point of EXP fed, or `None` if the rate is missing.
+
+        **This is zero, and zero is a fact rather than a gap.** Owner, 2026-09-07: *"there is
+        no more per exp point conversion"* — Genshin stopped charging mora for feeding EXP
+        material. Ascension and talent levels still charge it, from the payload's own `cost`
+        fields, so a plan is very far from mora-free; only the levelling half is.
+        """
+        rate = self._curated["mora_per_exp"][target].get("mora_per_point")
+        return None if rate is None else float(rate)
 
 
 @lru_cache(maxsize=1)

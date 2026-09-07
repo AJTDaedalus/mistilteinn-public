@@ -40,15 +40,18 @@ Six things a green suite could not see. Each is recorded because the shape repea
 6. **`Spectral Husk` was priced at 40 resin a run**, because an elite enemy's reward preview
    lists it. It is an ordinary overworld mob drop and costs nothing.
 
-## Still curated, and the whole list is five numbers
+## The five curated numbers, answered 2026-09-07
 
-`app/data/planner/curated_rates.json`. Until they are filled the planner reports those costs
-as unknown rather than guessing, which is visible on the page.
+All filled by the owner, each carrying its `source` in `app/data/planner/curated_rates.json`.
+`uncurated_sources` is now `[]`, and `test_every_resin_source_is_now_priced` is what should
+fail the day a patch adds a source nobody has costed.
 
 | | |
 |---|---|
-| `source_defaults.weekly_boss.expected_per_run` | drops of one named material per trounce run (its `resin: 30` also wants confirming) |
-| `source_defaults.ley_line_exp.expected_per_run` | character EXP **points** per Blossom of Revelation |
-| `source_defaults.ley_line_mora.expected_per_run` | mora per Blossom of Wealth |
-| `mora_per_exp.character.divisor` | mora charged per point of character EXP |
-| `mora_per_exp.weapon.divisor` | mora charged per point of weapon EXP |
+| `weekly_boss` | **0.733333** per 20… per **30** resin. *"2.2 named materials per run on average (always 2 or 3), randomly selected between 3 options for each boss"* — 2.2 is the run's **total across the boss's three materials**, so one named material is 2.2/3. Getting that split wrong scales every weekly-boss figure by three |
+| `ley_line_exp` | **122,500** EXP points per 20 resin. *"6-7 blue xp books per ley line and 4-5 purple books"* at World Level 9 → 6.5 × 5,000 + 4.5 × 20,000 |
+| `ley_line_mora` | **60,000** mora per 20 resin, flat |
+| `mora_per_exp.character` / `.weapon` | **0**. *"there is no more per exp point conversion"* — Genshin stopped charging mora for feeding EXP material. **Not the same as levelling being free**: ascension and talent mora still come from the payload's own `cost` fields |
+
+**One world-level assumption is now load-bearing and stated on the page**: the ley-line yields
+are World Level 9 figures.

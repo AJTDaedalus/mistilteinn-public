@@ -18,7 +18,7 @@ from app.services.planner.crafting import (
     classify,
     craft_multiplier,
 )
-from app.services.planner.economy import economy
+from app.services.planner.economy import Economy, economy
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "nanoka_gi" / "detail"
 
@@ -76,10 +76,15 @@ def test_exp_denominations_do_not_craft_into_one_another(eco) -> None:
         assert eco.craft_root(material_id) == material_id
 
 
-def test_uncurated_mora_divisor_reports_none_not_zero(eco) -> None:
-    """`None` is "we do not know", and a UI must not render it as free."""
+def test_feeding_exp_material_charges_no_mora(eco) -> None:
+    """Zero, and it is a fact rather than a gap.
+
+    Owner, 2026-09-07: *"there is no more per exp point conversion"*. The distinction still
+    matters — `None` would mean "we do not know" and a UI must not render that as free — but
+    this particular number is genuinely zero now.
+    """
     bill = costs.exp_bill(eco, 1_000_000, {}, "character")
-    assert bill.mora is None
+    assert bill.mora == 0
 
 
 # -- ascension, including ascending without levelling --------------------------------
@@ -150,17 +155,41 @@ def test_shared_families_are_summed_before_runs_are_counted(eco) -> None:
     assert len(combined._roots) == 1
 
 
-def test_no_resin_cost_and_no_known_rate_are_different_answers(eco) -> None:
-    """One field for both would be wrong in opposite directions.
-
-    A Sakura Bloom is picked off the ground and a Shivada Jade Sliver rides along with a boss
-    run already paid for -- both genuinely cost no resin. A Bloodjade Branch costs resin at a
-    trounce domain whose yield nobody publishes. Folding them together would tell the user
-    their specialties are an unknown farming cost and their weekly bosses are free.
-    """
-    total = resin.total(eco, {104161: 20, 101202: 5, 112053: 5, 113018: 9})
+def test_materials_with_no_resin_cost_are_named_and_charged_nothing(eco) -> None:
+    """A Sakura Bloom is picked up, and a gem rides along with a boss run already paid for."""
+    total = resin.total(eco, {104161: 20, 101202: 5, 112053: 5})
     assert total.not_farmable == [101202, 104161, 112053]
+    assert total.unpriced == []
+    assert total.expected == 0.0
+
+
+def test_a_source_nobody_has_costed_is_named_rather_than_treated_as_free() -> None:
+    """The branch that fires when a *new* patch adds a resin source with no rate.
+
+    Every source is curated today, so nothing reaches this path through the real files — and
+    that is exactly why it is exercised against a stripped economy instead. Without it the
+    only test of "we do not know" would be one that can no longer fail, which is the
+    can-only-return-one-answer shape this repo keeps finding.
+    """
+    derived = json.loads(
+        (
+            Path(__file__).resolve().parents[2]
+            / "app" / "data" / "yuanshen" / "snapshot" / "planner_economy.json"
+        ).read_text(encoding="utf-8"),
+    )
+    curated = json.loads(
+        (
+            Path(__file__).resolve().parents[2]
+            / "app" / "data" / "planner" / "curated_rates.json"
+        ).read_text(encoding="utf-8"),
+    )
+    curated["source_defaults"]["weekly_boss"]["expected_per_run"] = None
+    stripped = Economy(derived, curated)
+
+    total = resin.total(stripped, {113018: 9})
+
     assert total.unpriced == [113018]
+    assert total.not_farmable == []
     assert total.expected == 0.0
     assert total.has_unpriced
 
@@ -168,11 +197,14 @@ def test_no_resin_cost_and_no_known_rate_are_different_answers(eco) -> None:
 def test_mora_and_exp_are_resin_too(eco) -> None:
     """Both are ley-line farmed at 20 resin a run, so a plan's mora bill has a resin price.
 
-    Reported as unpriced sources while the blossom yields are uncurated -- never as zero.
+    60,000 mora and 122,500 character EXP per 20-resin blossom at World Level 9.
     """
-    total = resin.total(eco, {}, mora=500_000, character_exp=100_000)
-    assert total.unpriced_sources == ["character EXP", "mora"]
-    assert total.expected == 0.0
+    mora_only = resin.total(eco, {}, mora=600_000)
+    assert mora_only.expected == pytest.approx(600_000 / 60_000 * 20)
+    assert mora_only.unpriced_sources == []
+
+    exp_only = resin.total(eco, {}, character_exp=1_225_000)
+    assert exp_only.expected == pytest.approx(1_225_000 / 122_500 * 20)
 
 
 def test_the_histogram_is_a_distribution(eco) -> None:

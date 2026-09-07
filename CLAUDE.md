@@ -66,12 +66,19 @@ lists it; it is an ordinary overworld mob drop. `MaterialSource` in
 `app/services/planner/economy.py` is the classifier and each branch is a decision about
 whether a run gets billed once or twice.
 
-**Five numbers are curated and the planner refuses to guess them**
-(`app/data/planner/curated_rates.json`): the trounce-domain yield, the two ley-line yields,
-and the two mora-per-EXP divisors. Until they are filled those costs render as unknown on the
-page rather than as zero — `resin_status` distinguishes *priced*, *satisfied*, *not_farmable*
-and *unknown*, because three of those look identical if you collapse them and two of the
-collapses are wrong in opposite directions.
+**Five numbers are curated, all supplied by the owner on 2026-09-07**
+(`app/data/planner/curated_rates.json`), and the planner refuses to guess any it lacks.
+`uncurated_sources` is `[]` today and a test asserts it, so the next patch that adds an
+uncosted source is visible rather than silently free. Two of the five are worth knowing:
+**feeding EXP material costs no mora at all** — which is not the same as levelling being free,
+since ascension and talent mora still come from the payload's own `cost` fields — and the
+weekly-boss rate is **2.2 items a run split across the boss's three materials**, so one named
+material is 2.2/3 and reading that as 2.2 would scale every trounce figure by three. The
+ley-line yields assume **World Level 9**.
+
+`resin_status` distinguishes *priced*, *satisfied*, *not_farmable* and *unknown*, because
+three of those look identical if you collapse them and two of the collapses are wrong in
+opposite directions.
 
 **The app is walkable end to end**: import a GOOD export, equip pieces to a build, assemble a
 team, author a rotation, compile it to gcsim, search your own artifacts for the best five, and

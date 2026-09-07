@@ -153,7 +153,7 @@ the hand-written probe did. Weapon ore is there too — `MysticEnhancementOre` 1
 `FineEnhancementOre` 635, `EnhancementOre` 25.
 
 **The one real gap is Mora.** GOOD has no currency field, and every ascension and every talent
-level costs it — 120,000 mora for a single 5→6 ascension, 700,000 for one talent 9→10. The
+level costs it — *levelling* no longer does, but ascension and talents still do — 120,000 mora for a single 5→6 ascension, 700,000 for one talent 9→10. The
 planner can compute and total the mora cost, and **can never tell you whether you can afford
 it**. That asymmetry should be visible in the UI rather than papered over: material rows can
 say *still need*, the mora row can only say *costs*.
