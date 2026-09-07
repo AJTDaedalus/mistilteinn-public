@@ -287,7 +287,7 @@ FETCH_DELAY_SECONDS = 1.0
 _SUGGEST_RATIO = 0.6
 
 
-def _why(name: str, matches: list[tuple[str, str]], pool: dict[str, tuple[str, str]]) -> str:
+def _why(name: str, matches: list[tuple[int, str]], pool: dict[str, tuple[int, str]]) -> str:
     """Why one cell could not be resolved, in the form its answer takes.
 
     Ambiguity and absence are different questions and get different sentences: one asks *which
@@ -299,7 +299,7 @@ def _why(name: str, matches: list[tuple[str, str]], pool: dict[str, tuple[str, s
     return _nearest(name, pool)
 
 
-def _nearest(name: str, known: dict[str, tuple[str, str]]) -> str:
+def _nearest(name: str, known: dict[str, tuple[int, str]]) -> str:
     """A refusal that names the closest catalogue entry, so it can be answered rather than chased.
 
     **The suggestion is never applied.** Owner, 2026-09-02: *"If you really can't resolve any
@@ -377,8 +377,8 @@ async def set_catalogue() -> dict[str, tuple[int, str]]:
     return {gcsim_keys.normalise(s.name): (s.nanoka_id, s.name) for s in rows}
 
 
-async def catalogue() -> dict[str, dict[str, tuple[str, str]]]:
-    """`weapon type -> normalised name -> (weapon id, name)`.
+async def catalogue() -> dict[str, dict[str, tuple[int, str]]]:
+    """`weapon type -> normalised name -> (nanoka id, name)`.
 
     Split by class because a recommendation is for a character, and a character holds one
     class. Matching against all 260 weapons is what made `Blackcliff` ambiguous and
@@ -386,7 +386,7 @@ async def catalogue() -> dict[str, dict[str, tuple[str, str]]]:
     """
     async with async_session_factory() as session:
         rows = (await session.execute(select(Weapon))).scalars().all()
-    by_type: dict[str, dict[str, tuple[str, str]]] = {}
+    by_type: dict[str, dict[str, tuple[int, str]]] = {}
     for weapon in rows:
         key = str(getattr(weapon.weapon_type, "value", weapon.weapon_type))
         # **The game's id, not the row's.** A row id is minted per insert, so capturing one
@@ -427,7 +427,7 @@ def split_target(argument: str) -> tuple[str, str]:
 
 
 def _entries_of(
-    table: str, pool: dict[str, tuple[str, str]], section: str = "",
+    table: str, pool: dict[str, tuple[int, str]], section: str = "",
 ) -> tuple[list[dict[str, Any]], list[str]]:
     """One guide's weapons table, resolved — and every row it could not resolve.
 
@@ -485,7 +485,7 @@ def _entries_of(
 
 
 def _sets_of(
-    table: str, pool: dict[str, tuple[str, str]], section: str = "",
+    table: str, pool: dict[str, tuple[int, str]], section: str = "",
 ) -> tuple[list[dict[str, Any]], list[str]]:
     """One guide's artifact-set table, resolved — and every row it could not name.
 
