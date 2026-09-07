@@ -162,7 +162,13 @@
     min-width: 0;
   }
 
-  .field__name { color: var(--ink-dim); }
+  /* Stacked above its combobox, so it is the eyebrow rather than a sentence. */
+  .field__name {
+    font-size: var(--text-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
 
   .rotation-picker {
     flex: 1 1 auto;
@@ -182,7 +188,16 @@
     border: 1px solid rgb(255 255 255 / 12%);
     border-radius: 0.4rem;
 
-    legend { padding: 0 0.4rem; font-size: 0.85rem; opacity: 0.85; }
+    /* The same eyebrow the main-stats fieldset uses. This was `0.85rem` and sentence
+       case, so one page drew two different legends — "Artifact Sets" plain beside
+       "MAIN STATS" — and the odd size was a hardcoded value besides. */
+    legend {
+      padding: 0 var(--space-2);
+      font-size: var(--text-xs);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+    }
 
     /* The two pickers on one row, the actions after them. The scrolling checkbox list this
        replaced capped itself at 14rem so 35 sets would not push the results off the page;
@@ -225,6 +240,16 @@
   }
 
   .hint { margin: 0 0 var(--space-2); }
+
+  /* KQM's stat-described two-pieces — sentences rather than cards, so they read as a list
+     of somebody's advice and not as things to click. */
+  .kqm-advice {
+    margin: 0 0 var(--space-2);
+    padding-left: var(--space-3);
+    list-style: disc;
+
+    li + li { margin-top: 0.15rem; }
+  }
 }
 
 .main-stats__row {
@@ -289,8 +314,12 @@
 
 /* Main stats: several per slot, as chips. A `<select multiple>` needs a modifier key nobody
    discovers and cannot say "any" without an option meaning "clear the others". */
+/* **A row each, all the same width.** These are flex items that sized to their contents, so
+   Sands came out 450px, Goblet 1290 and Circlet 590 — three bordered boxes stacked with a
+   ragged right edge, which reads as a layout that gave up rather than as three groups. */
 .slot-stats {
   display: flex;
+  flex: 1 0 100%;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1);
@@ -389,7 +418,7 @@
 // scroll sideways.
 .explanation__pieces {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
   gap: var(--space-2);
   margin-bottom: var(--space-3);
 }
@@ -589,13 +618,6 @@
   cursor: pointer;
 }
 
-/* Indented under the choice so it reads as that choice's explanation rather than as the next
-   thing in the fieldset. The indent is the box plus its gap. */
-.energy-model__why {
-  display: block;
-  margin: 0.15rem 0 0 1.7rem;
-}
-
 /* A re-opened saved run. It renders from the stored snapshot and runs no gcsim — that is
    what storing the result bought. */
 .saved-run {
@@ -645,4 +667,11 @@
    width sixteen-fold when you use it makes the panel feel unstable; it truncates now instead. */
 .controls select {
   max-width: 22rem;
+}
+
+/* The calibration cost sentence. Prose, not a readout, so it takes the body face and lets
+   only the numbers inside it be mono — a bare `1 calibration` in mono read as a stat with no
+   label. */
+.filter-actions__cost {
+  font-size: var(--text-sm);
 }

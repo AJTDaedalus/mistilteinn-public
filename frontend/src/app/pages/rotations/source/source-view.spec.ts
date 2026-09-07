@@ -168,11 +168,4 @@ describe('SourceView', () => {
       fixture.nativeElement.querySelector('.source__editor');
     expect(area.value).toContain('opener();');
   });
-
-  it('says why the source view is the only way in, when it is', () => {
-    fixture.componentRef.setInput('required', true);
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.textContent).toContain('user-defined function');
-  });
 });

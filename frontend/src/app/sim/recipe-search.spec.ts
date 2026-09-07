@@ -715,3 +715,74 @@ describe('2+2 pair search', () => {
     expect(withBonuses.builds[0].damage).toBeCloseTo(plain.builds[0].damage, 6);
   });
 });
+
+
+describe('searchRecipe with a pinned slot', () => {
+  /**
+   * `TASKS_artifact_ranking.md` A.11 — the engine behind issue #291's *"assume that you can move
+   * other artifacts, so the best build with this artifact levelled up vs current"*. Pinning
+   * forces one slot and searches the other four around it, which is a different question from
+   * the single-slot swap `artifact-score.ts` answers.
+   */
+  // **A distinct set per slot, so no 4-piece state can form.** The default state list is
+  // `[null, ...byFourPieceSet.keys()]`, so five pieces of one set would reach a 4-piece state
+  // with no recipe for it and the search would return nothing — which is what the first draft
+  // of this fixture did.
+  const pieces: Candidate[] = SLOTS.flatMap((slot, index) => [
+    { id: `${slot}-good`, slot, setId: index + 1, stats: { atk_pct: 0.5 } } as Candidate,
+    { id: `${slot}-mid`, slot, setId: index + 1, stats: { atk_pct: 0.3 } } as Candidate,
+  ]);
+  const recipes = only(recipe([hit({ scaling: 'atk' })]));
+
+  it('returns the same winner when the pin is a piece the winner already contains', () => {
+    // The identity case. If pinning something the search would have chosen anyway changed the
+    // answer, the pin would be perturbing the walk rather than constraining it.
+    const free = searchRecipe(pieces, { recipes, topN: 1 });
+    const chosen = pieces.find((c) => c.id === free.builds[0].artifactIds[0])!;
+
+    const pinned = searchRecipe(pieces, { recipes, topN: 1, pinned: chosen });
+
+    expect(pinned.builds[0].damage).toBeCloseTo(free.builds[0].damage, 9);
+    expect(pinned.builds[0].artifactIds).toEqual(free.builds[0].artifactIds);
+  });
+
+  it('forces a worse piece into its slot and keeps the best of the rest', () => {
+    const weak = pieces.find((c) => c.id === 'equip_bracer-mid')!;
+
+    const found = searchRecipe(pieces, { recipes, topN: 1, pinned: weak });
+
+    expect(found.builds[0].artifactIds).toContain('equip_bracer-mid');
+    // Every other slot still took its best. That is the "you can move other artifacts" half.
+    expect(found.builds[0].artifactIds.filter((id) => id.endsWith('-good'))).toHaveLength(4);
+    // And it is genuinely worse than the free search, or the pin did nothing.
+    expect(found.builds[0].damage)
+      .toBeLessThan(searchRecipe(pieces, { recipes, topN: 1 }).builds[0].damage);
+  });
+
+  it('keeps a pinned piece the Pareto filter would have dropped', () => {
+    // **The reason the pin is applied after the filter, not before.** The filter discards
+    // candidates dominated within their own set, and a dominated piece is exactly the kind
+    // someone asks about — that is usually the whole reason they are asking. Restricting the
+    // bucket first and filtering second would throw the pin away and answer a different
+    // question in silence.
+    const dominated: Candidate = {
+      id: 'strictly-worse', slot: 'equip_bracer', setId: 1, stats: { atk_pct: 0.01 },
+    } as Candidate;
+    // Same set as the other bracers, so the filter compares them and drops this one.
+
+    const found = searchRecipe([...pieces, dominated], {
+      recipes, topN: 1, pinned: dominated,
+    });
+
+    expect(found.builds[0].artifactIds).toContain('strictly-worse');
+  });
+
+  it('refuses a pin in a slot the kernel does not search', () => {
+    // A pin the walk cannot place would otherwise be silently ignored, and the caller would
+    // read a free search as an answer about their piece.
+    expect(() => searchRecipe(pieces, {
+      recipes,
+      pinned: { id: 'x', slot: 'equip_nothing', setId: 1, stats: {} } as unknown as Candidate,
+    })).toThrow(/not one of the five/);
+  });
+});

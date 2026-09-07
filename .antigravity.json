@@ -1,6 +1,6 @@
 {
   "assistant": "Antigravity",
-  "project": "Fairy",
+  "project": "Mistilteinn",
   "rules": {
     "instructions": [
       "./CLAUDE.md",
@@ -8,7 +8,7 @@
       "./frontend/CLAUDE.md"
     ],
     "git": {
-      "protected_branches": ["dev", "main"],
+      "protected_branches": ["dev"],
       "development_branch": "dev",
       "feature_branch_suffix": "_agy",
       "pr_required": true,

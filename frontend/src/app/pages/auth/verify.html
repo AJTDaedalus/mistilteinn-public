@@ -9,14 +9,13 @@
       @case ('approved') {
         <span class="eyebrow">confirmed</span>
         <h2 class="verify-card__title">You're in</h2>
-        <p class="verify-card__lede">Your email is confirmed. Taking you to Mistilteinn…</p>
+        <p class="verify-card__lede">Taking you to Mistilteinn…</p>
       }
       @case ('pending') {
         <span class="eyebrow">confirmed</span>
         <h2 class="verify-card__title">Email confirmed</h2>
         <p class="verify-card__lede">
-          Thanks — your address is verified. Your account still needs approval before you
-          can sign in. There's nothing else to do on your end.
+          Approval still needed.
         </p>
       }
       @case ('failed') {
@@ -25,21 +24,19 @@
           @case ('expired') {
             <h2 class="verify-card__title">This link has expired</h2>
             <p class="verify-card__lede">
-              Confirmation links are valid for 24 hours. Sign in to request a new one —
-              nothing is wrong with your account.
+              Sign in to request a new link.
             </p>
           }
           @case ('already_used') {
             <h2 class="verify-card__title">This link was already used</h2>
             <p class="verify-card__lede">
-              Your address is confirmed. You can sign in normally.
+              Your address is confirmed.
             </p>
           }
           @default {
             <h2 class="verify-card__title">We couldn't read that link</h2>
             <p class="verify-card__lede">
-              It may have been cut in half by your email client. Try copying the full
-              address from the email, or sign in to request a new one.
+              Copy the full address from the email.
             </p>
           }
         }

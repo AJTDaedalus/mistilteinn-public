@@ -5,7 +5,7 @@
     type="button"
     class="picker__trigger"
     [disabled]="disabled()"
-    [attr.aria-label]="label() ? label() + ' — choose' : 'Choose'"
+    [attr.aria-label]="label() ? 'Choose ' + label() : 'Choose'"
     (click)="open()"
   >
     @if (chosen().length) {
@@ -29,7 +29,12 @@
     } @else {
       <span class="muted">{{ placeholder() }}</span>
     }
-    <span class="picker__caret" aria-hidden="true">▾</span>
+    <!-- **Not when disabled.** A caret is the promise that this opens; on the build editor's
+         character field — disabled because a saved build keeps its character — it drew one
+         and did nothing, which reads as a broken control rather than a settled one. -->
+    @if (!disabled()) {
+      <span class="picker__caret" aria-hidden="true">▾</span>
+    }
   </button>
 </div>
 

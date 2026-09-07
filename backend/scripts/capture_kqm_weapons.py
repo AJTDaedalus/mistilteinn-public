@@ -105,6 +105,10 @@ _WEAPON_HEADERS = frozenset({"weapon", "weapons"})
 #: first roster-wide run — 167 of them, every one a name that matches perfectly without it.
 _RARITY = re.compile("^[1-5]\\s*[\u2605*\u2606]\\s*")
 _PIECES = re.compile(r"^((?:[24]pc)(?:\s*/\s*[24]pc)?)\s+", re.I)
+
+#: A trailing `(EoSF)`, `(1 Stack)`, `(4Husk)` — KQM's qualifier, not part of the set's name.
+#: Stripped only after the name as written fails to resolve; `as_written` keeps it verbatim.
+_QUALIFIER = re.compile(r"\s*\([^)]*\)\s*$")
 _SET_HEADERS = frozenset({"artifact", "artifacts", "artifact set", "artifact sets", "set"})
 #: `A Thousand Floating Dreams (TFD)` — the parenthetical is KQM's abbreviation, not a name.
 #: Anywhere, not only at the end. `Staff of (T)Homa` puts KQM's aside in the middle of the
@@ -283,7 +287,7 @@ FETCH_DELAY_SECONDS = 1.0
 _SUGGEST_RATIO = 0.6
 
 
-def _why(name: str, matches: list[tuple[str, str]], pool: dict[str, tuple[str, str]]) -> str:
+def _why(name: str, matches: list[tuple[int, str]], pool: dict[str, tuple[int, str]]) -> str:
     """Why one cell could not be resolved, in the form its answer takes.
 
     Ambiguity and absence are different questions and get different sentences: one asks *which
@@ -295,7 +299,7 @@ def _why(name: str, matches: list[tuple[str, str]], pool: dict[str, tuple[str, s
     return _nearest(name, pool)
 
 
-def _nearest(name: str, known: dict[str, tuple[str, str]]) -> str:
+def _nearest(name: str, known: dict[str, tuple[int, str]]) -> str:
     """A refusal that names the closest catalogue entry, so it can be answered rather than chased.
 
     **The suggestion is never applied.** Owner, 2026-09-02: *"If you really can't resolve any
@@ -319,7 +323,7 @@ def _tokens(name: str) -> list[str]:
     return [word for word in re.split(r"[^A-Za-z0-9]+", name.lower()) if word]
 
 
-def resolve(name: str, pool: dict[str, tuple[str, str]]) -> list[tuple[str, str]]:
+def resolve(name: str, pool: dict[str, tuple[int, str]]) -> list[tuple[int, str]]:
     """Every weapon in *pool* that *name* can mean. One is a resolution; more is a refusal.
 
     **The pool is the character's own weapon class**, and that is most of the work. `Blackcliff`
@@ -348,7 +352,7 @@ def resolve(name: str, pool: dict[str, tuple[str, str]]) -> list[tuple[str, str]
     if not wanted:
         return []
     matches = []
-    for weapon_id, canonical in pool.values():
+    for nanoka_id, canonical in pool.values():
         have = _tokens(canonical)
         index = 0
         for word in wanted:
@@ -358,23 +362,23 @@ def resolve(name: str, pool: dict[str, tuple[str, str]]) -> list[tuple[str, str]
                 break
             index += 1
         else:
-            matches.append((weapon_id, canonical))
+            matches.append((nanoka_id, canonical))
     return matches
 
 
-async def set_catalogue() -> dict[str, tuple[str, str]]:
-    """`normalised name -> (set id, name)` for every artifact set this repo knows.
+async def set_catalogue() -> dict[str, tuple[int, str]]:
+    """`normalised name -> (nanoka id, name)` for every artifact set this repo knows.
 
     Not split by class the way weapons are: a set has no weapon type, and any character can
-    wear any of them.
+    wear any of them. The **nanoka** id for the reason `weapon_catalogue` gives.
     """
     async with async_session_factory() as session:
         rows = (await session.execute(select(ArtifactSet))).scalars().all()
-    return {gcsim_keys.normalise(s.name): (str(s.id), s.name) for s in rows}
+    return {gcsim_keys.normalise(s.name): (s.nanoka_id, s.name) for s in rows}
 
 
-async def catalogue() -> dict[str, dict[str, tuple[str, str]]]:
-    """`weapon type -> normalised name -> (weapon id, name)`.
+async def catalogue() -> dict[str, dict[str, tuple[int, str]]]:
+    """`weapon type -> normalised name -> (nanoka id, name)`.
 
     Split by class because a recommendation is for a character, and a character holds one
     class. Matching against all 260 weapons is what made `Blackcliff` ambiguous and
@@ -382,11 +386,15 @@ async def catalogue() -> dict[str, dict[str, tuple[str, str]]]:
     """
     async with async_session_factory() as session:
         rows = (await session.execute(select(Weapon))).scalars().all()
-    by_type: dict[str, dict[str, tuple[str, str]]] = {}
+    by_type: dict[str, dict[str, tuple[int, str]]] = {}
     for weapon in rows:
         key = str(getattr(weapon.weapon_type, "value", weapon.weapon_type))
+        # **The game's id, not the row's.** A row id is minted per insert, so capturing one
+        # would make this snapshot a set of pointers into whichever database the capture ran
+        # against — which is exactly what it was until 2026-09-04, and zero of the 205 ids
+        # existed in production. `docs/RESEARCH_kqm_not_reaching_the_ui.md`.
         by_type.setdefault(key, {})[gcsim_keys.normalise(weapon.name)] = (
-            str(weapon.id), weapon.name,
+            weapon.nanoka_id, weapon.name,
         )
     return by_type
 
@@ -419,7 +427,7 @@ def split_target(argument: str) -> tuple[str, str]:
 
 
 def _entries_of(
-    table: str, pool: dict[str, tuple[str, str]], section: str = "",
+    table: str, pool: dict[str, tuple[int, str]], section: str = "",
 ) -> tuple[list[dict[str, Any]], list[str]]:
     """One guide's weapons table, resolved — and every row it could not resolve.
 
@@ -447,7 +455,7 @@ def _entries_of(
             refusals.append(f"{cell!r} — KQM's note cell is empty, so there is nothing to cite")
             continue
         for _name, matches in found:
-            weapon_id, canonical = matches[0]
+            weapon_nanoka_id, canonical = matches[0]
             # **The refinement is stripped and not stored.** Owner, 2026-09-02: *"you can strip
             # out refinement, the user can specify the refinement they have."* It is read off
             # the weapon they own, so a captured `R5` would be a number from somebody else's
@@ -455,7 +463,7 @@ def _entries_of(
             # `note`, where it is a citation rather than a claim about this user's inventory.
             entries.append({
                 "position": position,
-                "weapon_id": weapon_id,
+                "weapon_nanoka_id": weapon_nanoka_id,
                 "weapon_name": canonical,
                 "as_written": _name,
                 "note": note,
@@ -470,14 +478,14 @@ def _entries_of(
     # `Deathmatch R5` high and `Deathmatch R1` lower — which was two rows while the refinement
     # was part of the name and is one weapon now that it is not. The earlier row wins, because
     # KQM's order is the recommendation.
-    seen: dict[str, dict[str, Any]] = {}
+    seen: dict[int, dict[str, Any]] = {}
     for entry in entries:
-        seen.setdefault(entry["weapon_id"], entry)
+        seen.setdefault(entry["weapon_nanoka_id"], entry)
     return list(seen.values()), refusals
 
 
 def _sets_of(
-    table: str, pool: dict[str, tuple[str, str]], section: str = "",
+    table: str, pool: dict[str, tuple[int, str]], section: str = "",
 ) -> tuple[list[dict[str, Any]], list[str]]:
     """One guide's artifact-set table, resolved — and every row it could not name.
 
@@ -500,6 +508,21 @@ def _sets_of(
         pieces_match = _PIECES.match(cell.strip())
         bare = _PIECES.sub("", cell.strip()) if pieces_match else cell.strip()
         matches = resolve(bare, pool)
+        if not matches:
+            # **A trailing qualifier is not part of the name.** `resolve` requires every word
+            # KQM wrote to match a word of the catalogue name, which is right — it is what
+            # stops a shorthand being stretched onto the wrong weapon — and it means an
+            # abbreviation or a stack count in brackets sinks the whole row:
+            #
+            #     4pc Emblem of Severed Fate (EoSF)      4pc Gilded Dreams (3 Stack EM)
+            #     4pc Crimson Witch of Flames (1 Stack)  4pc Husk of Opulent Dreams (4Husk)
+            #
+            # **47 rows across the captured guides were filed as stat descriptions for this**,
+            # so a quarter of the set half named a set and did not say so. Tried second, never
+            # instead: a row that resolves as written is never re-read, and `resolve` still
+            # refuses ambiguity, so this widens what can be recognised without loosening what
+            # counts as a match.
+            matches = resolve(_QUALIFIER.sub("", bare).strip(), pool)
         entry: dict[str, Any] = {
             "position": position,
             "as_written": cell.strip(),
@@ -509,8 +532,10 @@ def _sets_of(
             **({"playstyle": section} if section else {}),
         }
         if len(matches) == 1:
-            set_id, canonical = matches[0]
-            entry |= {"kind": "set", "set_id": set_id, "set_name": canonical}
+            set_nanoka_id, canonical = matches[0]
+            entry |= {
+                "kind": "set", "set_nanoka_id": set_nanoka_id, "set_name": canonical,
+            }
         else:
             # Not a name this catalogue holds, and not treated as one. The text is the claim.
             entry |= {"kind": "stat"}

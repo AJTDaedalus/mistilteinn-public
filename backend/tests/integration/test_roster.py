@@ -29,10 +29,13 @@ ROSTER = "/api/v1/roster"
 pytestmark = pytest.mark.asyncio
 
 
-async def _character(session, nanoka_id: str, name: str) -> Character:
+async def _character(
+    session, nanoka_id: str, name: str,
+    weapon_type: WeaponType = WeaponType.SWORD,
+) -> Character:
     row = Character(
         nanoka_id=nanoka_id, name=name, element=Element.CRYO,
-        weapon_type=WeaponType.SWORD, rarity=Rarity.FIVE_STAR,
+        weapon_type=weapon_type, rarity=Rarity.FIVE_STAR,
         base_hp=1000.0, base_atk=26.0, base_def=60.0,
         base_crit_rate=0.05, base_crit_dmg=0.5,
     )
@@ -83,6 +86,28 @@ async def test_a_mannequin_is_never_offered(
     assert [e["name"] for e in body["entries"]] == ["Ningguang"]
 
 
+async def test_a_character_of_an_unshipped_weapon_class_is_never_offered(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """Two Traveler variants carry `WEAPON_CROSSBOW`, a class the game has not shipped.
+
+    The same argument as the mannequins one line up: this list asks *"do you own this
+    character?"* about every row it draws, and nobody owns one that does not exist.
+
+    **This route reads `select(Character)` directly**, so it does not inherit the catalogue
+    repository's exclusion and had to be told separately — which is exactly how the mannequin
+    rule already came to be written out in two places. Found by reading for the second copy
+    after the first was fixed, not by anything failing.
+    """
+    await _character(db_session, "10000005-9", "Traveler", WeaponType.CROSSBOW)
+    await _character(db_session, "10000027", "Ningguang")
+    await db_session.commit()
+
+    body = (await authed_client.get(ROSTER)).json()
+
+    assert [e["name"] for e in body["entries"]] == ["Ningguang"]
+
+
 async def test_a_mannequin_cannot_be_owned_by_asking_directly(
     authed_client: AsyncClient, db_session: AsyncSession,
 ) -> None:
@@ -96,6 +121,33 @@ async def test_a_mannequin_cannot_be_owned_by_asking_directly(
     )
 
     assert response.status_code == 422
+
+
+async def test_a_character_of_an_unshipped_class_cannot_be_owned_by_asking_directly(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """The list hides these (#271, `app/services/unreleased.py`) and the write route did not.
+
+    A `PATCH` on one wrote a roster row that `list_roster` then filtered out: owned, invisible,
+    and impossible to un-own through the UI that never drew it. The mannequin rule above
+    guards both surfaces, which is the precedent this one was written from and had only half
+    copied.
+    """
+    traveler = await _character(
+        db_session, "10000005-9", "Traveler", weapon_type=WeaponType.CROSSBOW,
+    )
+    await db_session.commit()
+
+    response = await authed_client.patch(
+        f"{ROSTER}/{traveler.id}", json={"owned": True},
+    )
+
+    assert response.status_code == 422
+    # And nothing was written — a refusal that still persisted the row would be the bug with
+    # a status code on it.
+    listed = await authed_client.get(ROSTER)
+    assert all(entry["character_id"] != str(traveler.id) for entry in listed.json()["entries"])
+    assert listed.json()["owned_count"] == 0
 
 
 async def test_the_user_can_say_they_have_a_character(
@@ -234,11 +286,16 @@ async def test_the_import_does_not_put_a_mannequin_on_the_roster(
 
 async def _traveler(
     session, nanoka_id: str, icon: str, element: Element | None,
+    weapon_type: WeaponType = WeaponType.SWORD,
 ) -> Character:
-    """One of the sixteen rows named `Traveler`. The name is identical by design."""
+    """One of the sixteen rows named `Traveler`. The name is identical by design.
+
+    The class is a parameter because the two unreleased bodies carry `WEAPON_CROSSBOW`, which
+    is what `is_unreleased_class` reads — see `app/services/unreleased.py` and #271.
+    """
     row = Character(
         nanoka_id=nanoka_id, name="Traveler", element=element,
-        weapon_type=WeaponType.SWORD, rarity=Rarity.FIVE_STAR, icon=icon,
+        weapon_type=weapon_type, rarity=Rarity.FIVE_STAR, icon=icon,
         base_hp=1000.0, base_atk=26.0, base_def=60.0,
         base_crit_rate=0.05, base_crit_dmg=0.5,
     )
@@ -299,8 +356,15 @@ async def test_an_unreleased_body_is_withheld_and_counted(
 
     **Counted rather than silently dropped.** Withholding is the one thing this endpoint does
     that a user cannot see, so a rule that misfired would empty the roster with no symptom.
+
+    Selected by **weapon class**, not by talent count: #271 landed `is_unreleased_class` while
+    this branch was open, and `WEAPON_CROSSBOW` is the stronger signal — it also hides eight
+    unreleased weapon *names*, which a talent count never touched. Both rules pick out the
+    same two rows at nanoka 7.0.51.
     """
-    await _traveler(db_session, "10000134", "UI_AvatarIcon_PlayerBoy", None)
+    await _traveler(
+        db_session, "10000134", "UI_AvatarIcon_PlayerBoy", None, WeaponType.CROSSBOW,
+    )
     await _character(db_session, "10000027", "Ningguang")
     await db_session.commit()
 
@@ -313,12 +377,16 @@ async def test_an_unreleased_body_is_withheld_and_counted(
 async def test_a_real_character_whose_talents_failed_to_import_is_kept(
     authed_client: AsyncClient, db_session: AsyncSession,
 ) -> None:
-    """**The reason the rule is a conjunction and not "has no talents".**
+    """**A talentless row is still a character, and the roster keeps it.**
 
     Element is read from the index row and talents from the detail fetch, so a seed whose
     detail pass failed leaves real characters talentless. Dropping them would be the quiet,
     one-directional failure this whole design exists to fix — a roster missing a character —
     and it would look exactly like success.
+
+    This test argued for a conjunction when the exclusion was `element is None and no talents`.
+    The exclusion is by weapon class now (#271), so a talent count cannot exclude anyone at
+    all — which makes the property here easier to hold, not less worth pinning.
     """
     await _character(db_session, "10000027", "Ningguang")  # element set, no talents
     await db_session.commit()
@@ -336,14 +404,19 @@ async def test_an_unreleased_body_cannot_be_owned_by_hand_either(
     yet" are different facts, and a user waiting for a character learns nothing from the first.
 
     A silent no-op would leave a toggle that appears to work and does not.
+
+    A write route that accepts what the read route will not show writes a row nobody can see
+    or undo, which is why both surfaces carry the guard.
     """
-    row = await _traveler(db_session, "10000135", "UI_AvatarIcon_PlayerGirl", None)
+    row = await _traveler(
+        db_session, "10000135", "UI_AvatarIcon_PlayerGirl", None, WeaponType.CROSSBOW,
+    )
     await db_session.commit()
 
     answer = await authed_client.patch(f"{ROSTER}/{row.id}", json={"owned": True})
 
     assert answer.status_code == 422
-    assert "no talents" in answer.json()["detail"]
+    assert "not in the game" in answer.json()["detail"]
 
 
 async def test_the_correction_route_returns_the_row_the_list_would_have(

@@ -339,9 +339,12 @@ triggered like a dropdown.
   percentage (`292%`), plus `ROLL VALUE 842% / 900%` — three encodings of one idea, no legend,
   quality carried by colour alone.
 - **Inventory cards** say "Equipped" but never say *to whom*.
-- **`/teapot`** greys out some character chips in italics with no legend saying what grey means,
-  and runs three statistics together on one line separated only by spaces
-  (`2,920 primogems still on the table  146 characters still to invite  0 sets done`).
+- **`/teapot`** greys out some character chips in italics with no legend saying what grey means.
+  ~~and runs three statistics together on one line separated only by spaces
+  (`2,920 primogems still on the table  146 characters still to invite  0 sets done`)~~ —
+  **fixed 2026-09-06** to the owner's own wording, one sentence:
+  `2,920 primos available, 146 characters left, 0 sets complete`. The double space was the
+  flex row's gap rather than markup, so the three spans became one.
 - **`1 calibration`** floats unlabelled beside the 2-PIECE select on `/optimize`, and
   `Pick at least one set. Roughly six seconds each.` appears *below* the button it constrains.
 - **`1,419,857 combinations scored`** on the optimize result is underlined like a link.
@@ -357,3 +360,335 @@ triggered like a dropdown.
 - **`/optimize`'s** empty state ("No saved runs yet — finish a search and save it to see it here")
   and the calculate result's closing caveat are both models of how the rest of the app should
   explain itself.
+
+---
+
+## Legibility pass — 2026-09-06
+
+Owner: *"Teapot still has a lot of AI slop stuff… the set images are way too small, and the
+character icons/names should be a little bigger too. Also review the teapot site especially,
+but all pages for visibility."*
+
+Same method as above and nothing else: `python -m scripts.shoot` over every route, then read
+the images. **Every picture below was measured off a crop at 1:1**, not chosen from the
+template.
+
+### Changed
+
+| where | was | is | why |
+|---|---|---|---|
+| `/teapot` set screenshot | 44px | **80px** | a 4:3 room shot at 44 is smaller than the face beside it and shows nothing recognisable |
+| `/teapot` character chips | 20px, `--text-xs` | **28px, `--text-sm`** | the page's most-clicked label was its smallest text |
+| `/teapot` "indoor/outdoor", "built" | `--text-xs` | `--text-sm` | a row where every label but two grew reads as a mistake, not a hierarchy |
+| `/rotations` team faces | 28px | **36px** | the only thing telling one collapsed row from another |
+| `/teams` member faces | 34px | **40px** | — |
+| `/my-weapons` holder face | 30px | **38px** | — |
+| `/artifact-sets` set emblem | 44px | **60px** | the one picture on the card |
+
+**`/teams` stopped at 40 rather than 44, and that is a measurement rather than a preference.**
+At 44 the four-column row is narrow enough that *"Fleuve Cendre Ferryman · R5"* ellipsised its
+own refinement away; `.party__meta` was tried at `--text-sm` first and lost the same fact. A
+bigger picture that deletes a fact is not more legible. The line under *Pages that are fine*
+above — "nothing truncated" — was the check that caught it.
+
+### Looked at and left alone
+
+- **`/inventory`, `/characters`, `/enemies`, `/builds`** read cleanly at 1440. `/characters`
+  is still the best-looking page in the app.
+- **`/optimize`'s main-stat chips** are `--text-xs` uppercase, twelve to a row
+  (`ELEMENTAL MASTERY`, `PHYSICAL DMG BONUS`). Dense, but the row is a set of buttons a reader
+  scans once and then clicks; growing the type wraps it to three lines. A rethink, not a size
+  bump — left for whoever takes §1's altitude question.
+- **`/builds` truncates long weapon names** in the card grid (`Flame-Forged In…`,
+  `Ash-Graven Dri…`). The full name is one hover away and the grid is eight cards wide; the fix
+  is a wider card, which changes the page's shape rather than its type size.
+
+### Found while looking, not a type size
+
+- **`/artifact-sets` logs two console 404s**: `UI_RelicIcon_15004_4.webp` and its four
+  siblings. The set is **Glacier and Snowfield** (nanoka 15004) and the art is genuinely absent
+  upstream — `download_icons.py` records that as `absent_upstream` rather than a failure, and
+  `CatalogueIcon` hides the broken image exactly as designed. The card therefore renders with
+  no emblem and no explanation. Not a regression; recorded because a console error nobody has
+  written down is one somebody re-investigates.
+
+---
+
+## Full screenshot audit — 2026-09-06 (second pass)
+
+> **Status: every finding below is addressed, plus SEO, across nine commits.**
+>
+> | finding | what changed |
+> |---|---|
+> | 1 · one `<title>` for 14 routes | a `TitleStrategy`, a title per route, and `page-title.spec.ts` — the guard nothing visual could provide |
+> | 2 · 947px minimum width, no breakpoint | the shell header wraps, `.shell` takes `minmax(0, 1fr)`, twelve grid minimums take `min(Nrem, 100%)`, `h1` clamps. **No overflow on any of 14 routes at 1440, 1024, 768 or 390** |
+> | 3 · four label casings | one `.field-label`, and a stated rule: stacked labels are the uppercase eyebrow, inline labels stay sentence case |
+> | 4 · native and custom controls mixed | `appearance: none` and the app's own chevron. **The selects stay native** — reversing that would reverse a recorded decision that is stronger now the app works on a phone |
+> | 5 · fixes applied to one page not its sibling | `/my-weapons` gets the page-size chips; `/teams`' filters get the shared chip — they were `.vision`/`.vision--on`, **classes with no rule anywhere**, so pressing one showed nothing |
+> | 6 · `/teapot`'s unowned chip | `--ink-dim`, and a key naming all three states. **Zero contrast failures app-wide** |
+> | 7 · `/calculate` says nothing at rest | it says what it does, and what to do next |
+> | 8 · build editor hides SAVE CHANGES | a shared `.editor__foot`, mirroring the head that was already sticky; the field grid lines up; no caret on a disabled picker; the preview card moved under CHARACTER |
+> | 9 · new-team dialog | element chips and the reactions they could produce, as you pick |
+> | 10 · `/enemies` all-alike cards | the value that differs from *that enemy's own* baseline holds its weight, the rest sink |
+> | 11 · catalogue cards stretched | `align-items: start` on the wide grids; the portrait grids stay stretched on purpose |
+> | 12 · smaller items | delete `×` legible and 24px, `aria-controls` bound to `open()`, calibration line says what it counts, gcsim caveat is `.warn` and only once it applies, `/account` status is a chip, main-stat fieldsets align, inventory says **who** wears a piece |
+> | 13 · harness filed Inventory under other names | a signed-out pass, and every route's landing URL checked against the requested one |
+>
+> **Two findings were declined rather than implemented, both because a recorded
+> decision says otherwise and neither had been consulted when the finding was written:**
+> the catalogue's emblem-only filters (owner, 2026-08-31 — "remove the element name and just
+> make the icon bigger"), and converting the native `<select>`s
+> (`FINDINGS_frontend_validation.md` §5). `/builds` and `/teams` carry labels and the
+> catalogue does not, on purpose.
+>
+> **One more was withdrawn during the work**: the checkboxes flagged against the 24x24
+> pointer-target minimum are each wrapped in a `<label>` 98px to 544px wide, which is the
+> real target. A transparent `outline` was tried first to grow the hit area and does nothing
+> at all — an outline takes no part in hit testing.
+>
+> **Confirmed against prod after the deploy, 2026-09-06**, because two of the notes above
+> were predictions:
+>
+> - the per-route title is live (`Sign in · mistilteinn`), the Open Graph tags and the card
+>   serve, and **there is no horizontal overflow at 1440 or 390 on the live site**;
+> - **Cloudflare's managed robots.txt wins** — the committed one never reaches a visitor. The
+>   intended behaviour still holds, because Cloudflare's file allows the fetch and the
+>   `noindex` in the page does the work, but the two agree by luck rather than by design.
+>   Making the repo's file authoritative is a Cloudflare dashboard change, outside this tree.
+> - **A console error on the live site that is nobody's code here**: Cloudflare injects
+>   `static.cloudflareinsights.com/beacon.min.js`, and the site's own CSP (`script-src 'self'
+>   'wasm-unsafe-eval' https://challenges.cloudflare.com`) blocks it. Cloudflare Web Analytics
+>   is therefore collecting nothing. Either allowlist that host or turn the feature off; a
+>   blocked beacon on every page load is a permanent console error that will be re-diagnosed
+>   by whoever next opens devtools.
+>
+> **Also done, from a question asked mid-pass**: link previews. There is no SSR, so a scraper
+> gets `index.html` and nothing else, and a mistilteinn URL unfurled as a naked URL. It now
+> carries description, Open Graph and Twitter tags and a 1200x630 card. `noindex` sits in the
+> page rather than `Disallow: /` in robots.txt, because `Disallow` stops the crawler fetching
+> the page and so stops it ever reading the `noindex`.
+
+Owner: *"do a full screenshot-based audit of the pages for front-end best practices, beauty,
+and user friendliness"* — the same day as the legibility pass above, after it.
+
+### Method
+
+Two harnesses, because half of what "best practices" means cannot be photographed.
+
+- `cd backend && python -m scripts.shoot` — all 16 routes, full-page, 1440×1000.
+- A DOM audit written for this pass (`screenshots/audit2/dom_audit.json`): page title, `lang`,
+  landmarks, heading order, `alt`, accessible names, duplicate ids, dangling `aria-*`,
+  **computed WCAG contrast for every visible text node**, touch-target size, and horizontal
+  overflow — run at **1440×1000, 1024×768, 768×900 and 390×844**, plus the signed-out screens
+  the previous pass could not reach.
+- A keyboard pass that presses **real Tab** through every focus stop on 13 routes.
+- Dialogs driven open (build editor at two sizes, set picker, new-team) with their scroll
+  geometry measured rather than eyeballed.
+
+Everything below names the image or the measurement it came from. Where a candidate finding
+did not survive a check, it is listed under *Withdrawn* rather than dropped.
+
+### What is clean — and it is worth stating, because it was measured
+
+- **Accessibility hygiene is genuinely good.** Across all 14 signed-in routes: **zero**
+  unlabelled form controls, **zero** images without `alt`, **zero** duplicate ids, **zero**
+  heading-level skips, `lang="en"`, exactly one `<main>` and one `<nav>` per page.
+- **Exactly one WCAG AA text-contrast failure in the whole app** (finding 6). Every other
+  visible text node on every page passes at its own size and weight. For a hand-built dark
+  palette that is a strong result.
+- **Every keyboard focus stop is visibly marked** — 13 routes, real Tab presses, **0**
+  unmarked. The brass `:focus-visible` outline works everywhere it is needed.
+- **One console error app-wide**, the already-documented `UI_RelicIcon_15004_4.webp`.
+- **Five earlier findings are genuinely fixed, verified not assumed**: the artifact picker's
+  five 360-option native selects are gone (the build editor now has **0** `<select>`);
+  `/inventory` has a page-size control; `/builds`' filters carry labels; disabled buttons are
+  visibly disabled; the catalogue no longer prints nanoka ids.
+
+### Findings
+
+#### 1. Every route shares one `<title>`: `mistilteinn`
+**All 14 routes** · `screenshots/audit2/dom_audit.json`
+
+Tab labels, bookmarks, browser history and the screen-reader page announcement are identical
+whether you are on Inventory, Optimize or Enemies. Angular's route `title` property sets this
+per route; nothing else in the app has to change. This is the cheapest legibility fix
+available and it is invisible in every screenshot, which is why two visual audits missed it.
+
+#### 2. The app has a hard minimum width of 947px, and no breakpoint anywhere
+**All 14 routes** · `screenshots/audit2/overflow_390_*.png`
+
+At 768px and 390px **every page** reports `scrollWidth` **947** against the viewport —
+identical everywhere, because the cause is the shell, not the pages. `nav.shell__nav` is
+640px and does not wrap; `.identity-chip` is 249px; with the brand that forces 947, and
+`header`, `main` and `footer` all inherit 923. At 390px the viewport shows 41% of the layout,
+the nav runs off the right edge, and there is no hamburger and no wrap.
+
+**There are two `@media` rules in 33 stylesheets and neither is a layout breakpoint** —
+`min-width: 88rem` (widening the rotation editor) and `(hover: hover)`. So this is not
+broken responsiveness, it is absent responsiveness.
+
+Worth a ruling rather than a fix-on-sight: no doc records "desktop only" as a decision, and
+two design docs reason explicitly about phone users (*"Ctrl+C/Ctrl+V are invisible and
+unavailable on a phone"*, *"`<select>` is better on a phone than anything hand-rolled"*). The
+code and the design docs currently disagree about whether this app has mobile users.
+
+#### 3. Four label casings coexist, often inside one panel
+**`/optimize`, `/inventory`, `/account`, `/teapot`, build editor**
+
+On `/optimize` alone: `TEAM`, `BUILD`, `MAIN STATS`, `4-PIECE` (uppercase); `Enemy level`,
+`Rotation`, `Sands`, `Goblet`, `Circlet` (sentence); `Artifact Sets` (title); and on
+`/teapot`, `built`, `hide finished`, `indoor`, `120 primos` (lowercase). Field labels and
+fieldset legends are also drawn identically, so there is no hierarchy between "this is a
+group" and "this is a field".
+
+The sharpest instance is `/account`, which renders the same character as **`Nahida`** in the
+preview card and **`NAHIDA`** in the select 100px below it.
+
+#### 4. Native and custom controls still mix inside single panels
+**`/inventory`, `/teapot`, `/teams`, `/optimize`** · `screenshots/inventory.png`
+
+The `/inventory` filter band alone contains four control vocabularies: pill buttons
+(`ALL/FLOWER/…`), a custom combobox (`SET`), **three native `<select>`s** (`MAIN STAT`,
+`EQUIPPED`, `SORT`), and chip buttons (`Show 120/300/600`). The panel above it adds two more
+native selects. `SORT` is still flung ~620px right of the group it belongs to, splitting one
+row into two unrelated clusters. `/teapot` pairs uppercase pills with a native `Order`
+select; `/teams`' "Any reaction" is a third dropdown style again.
+
+This is the prior audit's §11, unfixed, and it remains the most visible inconsistency in the
+app.
+
+#### 5. Three fixes were applied to one page and not to its sibling
+Each of these was a finding that got fixed once, in one place, where the same defect exists
+in two:
+
+- **Page size** — `/inventory` got `Show 120/300/600/ALL`. **`/my-weapons` did not**: it
+  still offers only `Show more (200 left)` at the bottom of a **6,662px** page, which is the
+  exact shape §5 identified.
+- **Filter labels** — `/builds`' weapon and element filters now carry names. **`/teams`' six
+  element filters are still bare 60px icon tiles with no labels**, which is the state §10
+  called illegible.
+- **Search** — the four catalogue pages (`/characters`, `/weapons`, `/artifact-sets`,
+  `/enemies`) require pressing a **SEARCH button**; the four user-data pages (`/builds`,
+  `/rotations`, `/teapot`, `/my-weapons`) filter **live**. The boxes look identical. The
+  split is defensible in the code (server query vs in-memory) and invisible to the reader.
+
+#### 6. `/teapot`'s unowned chips are the app's only contrast failure, and carry no legend
+**`/teapot`** · `screenshots/teapot.png`, `dom_audit.json`
+
+`.chip--unowned` measures **3.51:1** where 4.5 is required — `rgb(123,127,156)` on
+`rgb(38,44,68)` at 15px. The same chips are italic and have no checkbox, and **nothing on the
+page says what grey means**. Two defects on one element: it is the hardest thing on the page
+to read, and the reader is not told why it looks different.
+
+#### 7. `/calculate` is still a lone control above ~700px of empty viewport
+**`/calculate`** · `screenshots/calculate.png`, and `calculate.html:14-46`
+
+The prior pass recorded §14 as fixed in #256. Read against the template, the empty-state
+branches that exist are **`!teams().length`** ("No teams yet") and **no rotations for this
+team**. There is no branch for *teams exist, none chosen* — which is what every returning
+user sees. The resting page is one picker, one disabled button, and nothing else.
+
+The landing page that used to explain this page was deliberately removed (`''` now redirects
+to `/inventory`, owner ruling 2026-09-05), so the sentence selling `/calculate` — "every
+multiplier in a hit, in order, with its source" — no longer exists anywhere in the app.
+`/account` has the same shape at ~600px.
+
+#### 8. The build editor hides its primary action below the fold, with a mid-row slice as the cue
+**build editor** · `screenshots/audit2/dlg_build_editor_1280x720.png`
+
+At **1280×720** the dialog is 632px tall holding 927px of content. The third artifact row is
+cut **through the middle of its text**, and **SAVE CHANGES sits ~295px below the visible
+edge** with nothing indicating it exists. Measured on the live element:
+`offsetWidth - clientWidth = 2px`, which is the 1px border on each side — **the scrollbar
+reserves no width**, and `scrollbar-gutter` computes to `auto` here (the components that were
+given `stable` are combobox, card-picker, artifacts, calculate, optimize, teapot and the
+rotation editor — this dialog is not among them).
+
+*Caveat, stated because it changes the fix:* headless Chromium may draw an overlay scrollbar
+where a desktop browser draws a classic one, so "no scrollbar visible" is not proven for a
+real user. **A sticky footer holding the primary action is the fix that does not depend on
+that question**, and the mid-row slice is a weak affordance either way.
+
+Three prior findings are unfixed in the same dialog: the field grid does not form columns
+(row 1 inputs at x=419/616/881, row 2 at x=390/640 with a hole where column 3 would be); the
+disabled character field still draws a **▼** caret; and the unlabelled character preview card
+sits directly under **WEAPON**, so it reads as belonging to the weapon.
+
+#### 9. The new-team dialog is unchanged
+**`/teams` → New team** · `screenshots/audit2/dlg_newteam.png`
+
+Still four rows labelled `1 2 3 4` with "Select" placeholders — no portraits, no element
+preview, no composition feedback — on a page whose saved list filters **by reaction**. The
+controls were rebuilt as custom pickers, so the styling complaint is gone and the usability
+one is not.
+
+#### 10. On `/enemies`, the only informative number is styled exactly like the eight that are not
+**`/enemies`** · `screenshots/enemies.png` (13,354px)
+
+Every card lists nine resistances, almost all `10%`. The one value that differs —
+`physical 70%`, `hydro 70%`, `anemo 50%` — is set in the **same size, weight and colour** as
+the eight that do not. Nothing on a 13,000px page distinguishes one enemy from another at a
+glance, and there is still no filter beyond the name box. Two cards named *Angelic Sea Hare*
+still sit side by side.
+
+Compounding it: the icon is vertically centred against a title that wraps between one and
+four lines, so both the icon's y-position and the start of the resistance block move from
+card to card within a single row.
+
+#### 11. Catalogue grids still stretch every card to the tallest in its row
+**`/artifact-sets`, `/weapons`, `/my-weapons`** · `screenshots/artifact-sets.png`
+
+§13, unfixed. On `/artifact-sets` row 1, one card runs to y≈600 while two neighbours end at
+y≈332 and y≈350 — ~260px of dead space each. On `/my-weapons`, a holder name that wraps to a
+second line drops that card's meta line 20px below its row-mates.
+
+#### 12. Smaller, still open
+- **Destructive `×` glyphs** on team cards and artifact cards remain tiny, low-contrast and
+  identical in weight to a dialog close button (§7, partly unfixed).
+- **`1 calibration`** still floats unlabelled beside the 2-PIECE select on `/optimize`.
+- **"gcsim cannot simulate: Heart of the Furnace, Scarlet Proof."** is still unstyled muted
+  body text at the top of the Artifact Sets fieldset, shown *before* you have picked any set.
+- **`/optimize`'s three main-stat fieldsets** shrink to their content — 450px, 1290px and
+  590px stacked — so the panel's right edge is ragged.
+- **Inventory substat rows** still carry three encodings of one idea (`DEF% 13.1%`, a coloured
+  bar, and an unlabelled `180%`), with `ROLL VALUE 842% / 900%` below and no legend anywhere.
+- **Inventory cards say "Equipped" but never to whom.**
+- **`/account`** shows the same character twice 100px apart, prints `approved` as plain text
+  where the app has chip styles, and offers no save affordance.
+- **`aria-controls`** on the combobox input references a listbox id that does not exist while
+  the popup is closed (`/builds`, `/teams` ×5, `/optimize`). Real, minor: set it only while
+  expanded.
+
+#### 13. The screenshot harness files two pictures of Inventory under other pages' names
+**`screenshots/login.png`, `pending.png`** — **byte-identical to each other** (md5
+`dd80b292…`) and both are `/inventory`, because each route redirects for an authenticated
+session. `landing.png` is stale from before `''` became a redirect and shows a page that no
+longer exists.
+
+This is the exact defect `shoot.py`'s own `_routes()` docstring calls *worse than erroring*,
+it was flagged in the previous pass, and it is unfixed. The fix is to shoot those routes with
+a cleared token — `screenshots/audit2/signedout_*.png` in this pass does that, and the
+signed-out login, pending and verify screens are photographed properly there for the first
+time.
+
+### Withdrawn after checking
+
+Both of these were written down as findings and then failed their own verification.
+
+- **"`.chip` buttons have no focus indicator"** — the first pass called `el.focus()`
+  programmatically, which **does not match `:focus-visible`** in Chromium, and reported 21 of
+  40 stops unmarked on `/teapot`. Pressing real Tab reports **0 unmarked on all 13 routes**.
+  The check could only ever have returned one answer for `:focus-visible` styling, which is
+  the trap; the second harness exists because of it.
+- **"The orbit rule collides with PREVIOUS RUNS on `/optimize`"** — it looks tight at 3×
+  magnification. Measured, the gap is **15px**, identical to `/calculate`, `/characters`,
+  `/weapons`, `/artifact-sets` and `/enemies`. The rule is a documented ornament
+  (`_typography.scss:23-57`, the emblem's brass arc and azure gem) working as designed.
+
+### Could not reach
+
+- **A driven `/optimize` run** — ~7.7 minutes for a rotation search, so the results table and
+  the DETAILS pane were not re-checked this pass. §1 of the previous audit is the standing
+  record there.
+- **First-run empty states** for a brand-new account (no artifacts, no builds, no teams). The
+  screenshot account is seeded, so every list had content.

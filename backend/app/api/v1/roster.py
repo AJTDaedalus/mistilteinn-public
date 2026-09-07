@@ -13,15 +13,16 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_current_user, get_db
-from app.models.character import Character, Talent
+from app.models.character import Character
 from app.models.user import User
 from app.repositories.roster import CharacterRosterRepository
 from app.services import gcsim_keys, traveler
-from app.services.roster import is_mannequin, is_unreleased
+from app.services.roster import is_mannequin
+from app.services.unreleased import is_unreleased_class
 
 router = APIRouter(prefix="/roster", tags=["roster"])
 
@@ -129,16 +130,23 @@ async def list_roster(session: _Session, user: _User) -> RosterRead:
     cannot carry one.
 
     **Two exclusions, for two different reasons.** Mannequins are never characters and go by
-    nanoka id prefix; the unreleased bodies will be characters and go by having no talents.
-    `services/roster.py` argues both, and keeps them apart on purpose.
+    nanoka id prefix; the unreleased Traveler bodies will be characters and go by carrying a
+    weapon class the game has not shipped. `services/roster.py` and `services/unreleased.py`
+    argue them separately.
+
+    **The second was by talent count on this branch and is by weapon class now**, because #271
+    landed the same exclusion for a stronger reason while this was open: `WEAPON_CROSSBOW` also
+    carries eight unreleased *weapon* names, so hiding the class hides a leak the talent-count
+    rule never touched. Both rules select the same two Traveler rows at nanoka 7.0.51.
+
+    **This route reads `select(Character)` directly**, not `CharacterRepository`, so it does
+    not inherit the catalogue's exclusions and has to state them — which is how the mannequin
+    rule already came to be written out here twice.
 
     Ordered by `display_name`, not `name` — sixteen rows sharing one `name` have no order
     among themselves under the latter, so the Travelers appeared in whatever order the database
     returned and could shuffle between requests.
     """
-    counts = dict((await session.execute(
-        select(Talent.character_id, func.count(Talent.id)).group_by(Talent.character_id),
-    )).all())
     characters = (await session.execute(
         select(Character).order_by(Character.name),
     )).scalars().all()
@@ -152,9 +160,13 @@ async def list_roster(session: _Session, user: _User) -> RosterRead:
     entries = []
     withheld = 0
     for character in characters:
+        # **Kept apart, because only one of them is counted.** A mannequin is not a
+        # character and never will be, so its absence is not news; an unreleased body is a
+        # character the game has not shipped, and `withheld` is how a rule that started
+        # over-matching becomes visible instead of quietly emptying the roster.
         if is_mannequin(character.nanoka_id):
             continue
-        if is_unreleased(character.element, counts.get(str(character.id), 0)):
+        if is_unreleased_class(character.weapon_type):
             withheld += 1
             continue
         answer = answers.get(str(character.id))
@@ -196,20 +208,13 @@ async def set_owned(
             status_code=422,
             detail="Practice mannequins cannot be owned",
         )
-
-    talents = (await session.execute(
-        select(func.count(Talent.id)).where(Talent.character_id == character_id),
-    )).scalar_one()
-    if is_unreleased(character.element, talents):
-        # Refused by name for the same reason, and with a *different* message: "cannot be
-        # owned" and "is not in the game yet" are different facts, and a user who reads the
-        # first about a character they are waiting for learns nothing.
+    if is_unreleased_class(character.weapon_type):
+        # `list_roster` hides these, and a write route that accepts what the read route will
+        # not show writes a row nobody can see or undo. The mannequin rule guards both
+        # surfaces for exactly this reason; this one had guarded only the list.
         raise HTTPException(
             status_code=422,
-            detail=(
-                "This character has no element and no talents at the pinned patch, so they "
-                "cannot be built, simulated, or owned yet."
-            ),
+            detail="That character is not in the game",
         )
 
     repository = CharacterRosterRepository(session, str(user.id))

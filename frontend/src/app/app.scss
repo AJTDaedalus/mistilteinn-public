@@ -1,8 +1,20 @@
+@use '../styles/breakpoints' as bp;
+
 .shell {
   display: grid;
   grid-template-rows: auto 1fr auto;
+  /* **`minmax(0, 1fr)`, not `1fr`.** A grid item's automatic minimum size is its content, so
+     a single wide descendant anywhere in `main` widened the column — and with it the header
+     and the footer, which is why all three rows measured the same too-wide number on every
+     page. The column may now be narrower than its contents; anything that then overflows is
+     that element's own problem to solve, and is findable rather than global. */
+  grid-template-columns: minmax(0, 1fr);
   min-height: 100vh;
   padding: 0 var(--space-6);
+
+  @media (max-width: bp.$palm) {
+    padding: 0 var(--space-4);
+  }
 }
 
 /* Content stops widening past a comfortable measure. Unbounded, a card grid on a wide
@@ -19,13 +31,24 @@
   margin-inline: auto;
 }
 
+/* **This row set the app's minimum width, and nothing else did.** It is a flex row whose
+   items default to `min-width: auto`, so the 640px nav could not shrink and the header could
+   not wrap: every page reported `scrollWidth` 947 at every viewport below it, identically,
+   because `main` and `footer` inherit the widest row. Wrapping here is the whole fix for the
+   page-level overflow; the per-page rules below only tidy what is then reflowed. */
 .shell__header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
   gap: var(--space-8);
   padding: var(--space-6) 0;
   border-bottom: 1px solid var(--surface-rule);
+
+  @media (max-width: bp.$lap) {
+    align-items: flex-start;
+    gap: var(--space-4);
+  }
 }
 
 .brand {
@@ -125,16 +148,19 @@
   white-space: nowrap;
 }
 
+/* 50x19 measured, against the 24px minimum a pointer target should offer. The padding buys
+   the height without moving anything: the chip is a flex row and the text stays where it was. */
 .identity-chip__signout {
   font-family: var(--font-display);
   font-size: var(--text-sm);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ink-faint);
+  color: var(--ink-dim);
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0;
+  padding: var(--space-1) 0;
+  min-height: 1.5rem;
   transition: color var(--t-fast) var(--ease);
 
   &:hover {
@@ -158,7 +184,9 @@
 // one row is a list rather than a menu, and it read as one.
 .shell__group {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-4);
+  row-gap: var(--space-2);
 }
 
 .shell__group--reference {
@@ -182,4 +210,30 @@
 .shell__nav {
   flex-wrap: wrap;
   row-gap: var(--space-3);
+  /* **Its own row, always, by `order` rather than by luck.**
+     The links and the identity chip together are 1,365px against 1,392 of header — they fit
+     beside each other by five pixels, and a longer sign-in email or one more nav link takes
+     that away. Depending on a five-pixel margin for whether the header is two rows or three
+     is not a layout, it is a coincidence.
+     So: brand and identity share the top row (`order` puts the chip second), and the nav
+     takes the full width below them. Two rows at every width, whatever the email says.
+     `min-width: 0` because a flex item's automatic minimum size is its content, and without
+     it the nav refuses to go narrower than its widest group and never wraps on a phone. */
+  order: 3;
+  width: 100%;
+  min-width: 0;
+}
+
+/* The reference group's rule and the identity chip's rule are vertical dividers between
+   things sitting side by side. Once the header has wrapped they divide a row from nothing,
+   so they come off rather than hanging in space. */
+/* Second in the row, so it rides at the top right beside the brand. */
+.identity-chip { order: 2; }
+
+@media (max-width: bp.$lap) {
+  .shell__group--reference,
+  .identity-chip {
+    padding-left: 0;
+    border-left: none;
+  }
 }

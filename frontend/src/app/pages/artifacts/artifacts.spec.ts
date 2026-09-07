@@ -1,8 +1,14 @@
 import { TestBed } from '@angular/core/testing';
+import {
+  barsTitle,
+  rollBars,
+  rollValuePercent,
+} from '../../shared/substat-bars/substat-bars';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { ArtifactRow } from './artifacts';
 import { ArtifactsPage, comparator, totalRollValue } from './artifacts';
+import type { RankingRow } from './artifact-ranking.service';
 import { formatStat } from '../../shared/stat-label';
 import { ArtifactsService } from './artifacts.service';
 
@@ -345,7 +351,7 @@ describe('a row the data does not fit', () => {
     // The label survives; the analysis is simply absent for a row the tables cannot read.
     expect(rows[0].substats[0].label).toContain('CRIT Rate');
     expect(rows[0].substats[0].rolls).toBeNull();
-    expect(page['rollBars'](rows[0].substats[0])).toEqual([]);
+    expect(rollBars(rows[0].substats[0])).toEqual([]);
   });
 
   it('does not throw on a non-numeric value', () => {
@@ -378,8 +384,8 @@ describe('ArtifactsPage potential', () => {
     await page['load']();
     const sub = page['rows']()[0].substats[0];
 
-    expect(page['rollBars'](sub)).toEqual([0, 3]);
-    expect(page['barsTitle'](sub)).toBe('2 rolls, shaded by one reading of several that fit');
+    expect(rollBars(sub)).toEqual([0, 3]);
+    expect(barsTitle(sub)).toBe('2 rolls, shaded by one reading of several that fit');
   });
 
   it('carries the roll analysis onto each substat', async () => {
@@ -401,8 +407,8 @@ describe('ArtifactsPage potential', () => {
 
     expect(sub.rolls).toBe(2);
     expect(sub.tiers).toEqual([2, 3]);
-    expect(page['rollBars'](sub)).toEqual([2, 3]);
-    expect(page['rollValuePercent'](sub)).toBe(190);
+    expect(rollBars(sub)).toEqual([2, 3]);
+    expect(rollValuePercent(sub)).toBe(190);
   });
 
   it('draws undifferentiated bars when only the count is known', async () => {
@@ -427,7 +433,7 @@ describe('ArtifactsPage potential', () => {
 
     await page['load']();
 
-    expect(page['rollBars'](page['rows']()[0].substats[0])).toEqual([-1, -1]);
+    expect(rollBars(page['rows']()[0].substats[0])).toEqual([-1, -1]);
   });
 
   it('draws no bars at all when the count itself is unsettled', async () => {
@@ -445,9 +451,9 @@ describe('ArtifactsPage potential', () => {
     await page['load']();
     const sub = page['rows']()[0].substats[0];
 
-    expect(page['rollBars'](sub)).toEqual([]);
+    expect(rollBars(sub)).toEqual([]);
     // The ratio needs no decomposition, so it survives the ambiguity.
-    expect(page['rollValuePercent'](sub)).toBe(290);
+    expect(rollValuePercent(sub)).toBe(290);
   });
 
   it('withholds the total roll value when any line is missing one', async () => {
@@ -503,8 +509,18 @@ describe('totalRollValue', () => {
 describe('comparator', () => {
   const row = (over: Partial<ArtifactRow>): ArtifactRow => ({
     id: 'x', setName: 'Set', setIcon: null, slot: 'Flower', stars: 5, level: 20,
-    mainStat: 'HP', substats: [], equipped: false, setId: 's', mainStatKey: 'hp',
-    slotKey: 'flower', rollValue: 1, ...over,
+    mainStat: 'HP', substats: [], equipped: false, holder: null, holderIcon: null, setId: 's', mainStatKey: 'hp',
+    slotKey: 'flower', rollValue: 1, rank: null, ...over,
+  });
+
+  /** A ranked row, with only the fields the orderings read. */
+  const ranked = (over: Partial<RankingRow>): RankingRow => ({
+    id: 'x', mainStatQuantity: 'flat_hp',
+    current: 0, average: 0, best: 0, worst: 0, delta: 0, averageDelta: 0,
+    fraction: 0, grade: 'F', refusal: null,
+    caveats: { unstable: [], staleConversions: [] },
+    slot: 'equip_bracer', setId: null, level: 0, rarity: 5, equipped: false,
+    rollsRemaining: 5, needsSet: null, upgradeOdds: 0.5, ...over,
   });
 
   it('orders by roll value, best first', () => {
@@ -533,6 +549,61 @@ describe('comparator', () => {
     ].sort(comparator('rollValue'));
 
     expect(sorted.map((r) => r.id)).toEqual(['high', 'low']);
+  });
+
+  it('orders by expected upgrade value, best first', () => {
+    const sorted = [
+      row({ id: 'meh', rank: ranked({ averageDelta: 10 }) }),
+      row({ id: 'great', rank: ranked({ averageDelta: 900 }) }),
+      row({ id: 'worse', rank: ranked({ averageDelta: -50 }) }),
+    ].sort(comparator('averageDelta'));
+
+    expect(sorted.map((r) => r.id)).toEqual(['great', 'meh', 'worse']);
+  });
+
+  it('sinks an unranked piece rather than floating it above measured ones', () => {
+    // **The one that matters here.** Deltas are signed, so an unranked row treated as zero
+    // would sort *above* every piece that is genuinely a downgrade — presenting an unmeasured
+    // artifact as better than measured ones, which is the opposite of what it knows.
+    const sorted = [
+      row({ id: 'unranked', rank: null }),
+      row({ id: 'downgrade', rank: ranked({ averageDelta: -500 }) }),
+      row({ id: 'upgrade', rank: ranked({ averageDelta: 500 }) }),
+    ].sort(comparator('averageDelta'));
+
+    expect(sorted.map((r) => r.id)).toEqual(['upgrade', 'downgrade', 'unranked']);
+  });
+
+  it('sinks a refused piece too, which carries NaN rather than a number', () => {
+    const sorted = [
+      row({ id: 'refused', rank: ranked({ averageDelta: Number.NaN, refusal: 'noSchedule' }) }),
+      row({ id: 'scored', rank: ranked({ averageDelta: -1 }) }),
+    ].sort(comparator('averageDelta'));
+
+    expect(sorted.map((r) => r.id)).toEqual(['scored', 'refused']);
+  });
+
+  it('orders by upgrade odds, which is #291\'s own sentence', () => {
+    const sorted = [
+      row({ id: 'unlikely', rank: ranked({ upgradeOdds: 0.12 }) }),
+      row({ id: 'likely', rank: ranked({ upgradeOdds: 0.83 }) }),
+      row({ id: 'maxed', rank: ranked({ upgradeOdds: null }) }),
+    ].sort(comparator('odds'));
+
+    // A maxed piece has no odds — it sinks rather than sorting as zero, which would put it
+    // among the worst pieces owned rather than outside the question.
+    expect(sorted.map((r) => r.id)).toEqual(['likely', 'unlikely', 'maxed']);
+  });
+
+  it('offers today and the ceiling as their own orderings', () => {
+    expect([
+      row({ id: 'a', rank: ranked({ delta: 1 }) }),
+      row({ id: 'b', rank: ranked({ delta: 5 }) }),
+    ].sort(comparator('delta')).map((r) => r.id)).toEqual(['b', 'a']);
+    expect([
+      row({ id: 'a', rank: ranked({ best: 1 }) }),
+      row({ id: 'b', rank: ranked({ best: 5 }) }),
+    ].sort(comparator('best')).map((r) => r.id)).toEqual(['b', 'a']);
   });
 
   it('orders by level, rarity and set on their own keys', () => {

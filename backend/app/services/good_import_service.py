@@ -46,6 +46,7 @@ from sqlalchemy import delete, select
 
 from app.data.snapshot import artifact_main_stat_value
 from app.models.artifact import Artifact, ArtifactSet
+from app.models.planner import Material, UserMaterial
 from app.models.user import User
 from app.services.substat_rolls import analyse
 
@@ -88,6 +89,14 @@ class StoredImport:
     #: export, each named. Never silent: a user who sold an artifact should be told the slot
     #: emptied, not discover it later from a damage number.
     unequipped: tuple[str, ...] = ()
+    #: How many `user_materials` rows the export's `materials` map produced. Zero is a
+    #: legitimate outcome — plenty of scanners write artifacts only — and is reported rather
+    #: than inferred, because "your scanner does not export materials" and "you hold none"
+    #: look identical to a planner otherwise.
+    materials_written: int = 0
+    #: Material keys in the export that this catalogue could not name. Reported for the same
+    #: reason `unresolved_weapons` is: usually the export is newer than the seeded patch.
+    materials_unresolved: tuple[str, ...] = ()
     #: `{source_index: row}` for everything written, so build reconstitution can equip the
     #: exact piece the export named. Not part of what a client sees.
     rows_by_source: dict[int, Artifact] = field(default_factory=dict)
@@ -201,6 +210,10 @@ async def store_good_import(
     # inventory wholesale, and this is what later tells a user whether a saved optimization
     # result predates their last farming session — the commonest reason a stored number
     # stops being true. Setting it before the write would date an import that failed.
+    materials_written, materials_unresolved = await _store_materials(
+        session, owner_id, parsed.materials,
+    )
+
     owner = await session.get(User, owner_id)
     if owner is not None:
         owner.gear_imported_at = datetime.now(UTC)
@@ -214,8 +227,58 @@ async def store_good_import(
         deleted=deleted,
         rejected=tuple(sorted(rejected)),
         unequipped=unequipped,
+        materials_written=materials_written,
+        materials_unresolved=materials_unresolved,
         rows_by_source=rows_by_source,
     )
+
+
+async def _store_materials(
+    session: AsyncSession,
+    owner_id: str,
+    counts: dict[str, int] | None,
+) -> tuple[int, tuple[str, ...]]:
+    """Replace this account's material stock from the export's `materials` map.
+
+    **Always a replace, never a merge, and only when the export carried the section at all.**
+    A GOOD export is a snapshot of an inventory, so merging would leave a user holding
+    materials they have since spent. `None` — no `materials` key — leaves the stored stock
+    untouched, because that is a scanner which does not report materials rather than an
+    account that emptied; `{}` clears it, because that is an account reporting nothing.
+
+    **This replaces even in `append` mode**, and that is deliberate rather than an oversight:
+    `append` exists because GOOD carries no stable per-artifact id, so adding an export twice
+    would duplicate an inventory. Materials are keyed by material, so a re-import is
+    idempotent and the snapshot reading is the right one for them either way.
+
+    Binding is by `set_lookup_key`, the normalisation artifact sets already use, which is
+    injective over every planner material — measured across all 508. Unresolvable keys are
+    counted and returned rather than dropped: an export newer than the seeded patch is the
+    usual cause and the user can act on being told.
+    """
+    if counts is None:
+        return 0, ()
+
+    materials = (await session.execute(select(Material.id, Material.name))).all()
+    by_key: dict[str, int] = {set_lookup_key(name): material_id for material_id, name in materials}
+
+    resolved: dict[int, int] = {}
+    unresolved: list[str] = []
+    for key, count in counts.items():
+        material_id = by_key.get(set_lookup_key(key))
+        if material_id is None:
+            unresolved.append(key)
+            continue
+        resolved[material_id] = count
+
+    await session.execute(delete(UserMaterial).where(UserMaterial.owner_id == owner_id))
+    await session.flush()
+    for material_id, count in resolved.items():
+        session.add(
+            UserMaterial(owner_id=owner_id, material_id=material_id, count=count),
+        )
+    await session.flush()
+    return len(resolved), tuple(sorted(unresolved))
 
 
 def _fingerprint(artifact: Artifact) -> tuple:
@@ -301,14 +364,19 @@ def _impossible_substats(artifact: ParsedArtifact) -> list[tuple[str, float]]:
     """Substats whose value no combination of rolls can produce, at any legal count.
 
     **Not a rounding complaint.** `substat_rolls` compares the *displayed* value, the way the
-    game rounds it, so a legitimate roll matches even on a boundary — that fix took the
-    undetermined share of a real 2,370-piece inventory from 3.5% to 0.04%. What is left is a
-    value the game could not have produced.
+    game rounds it, so a legitimate roll matches even on a boundary. What is left is a value
+    the game could not have produced.
 
-    Exactly one piece in that inventory has one: a CRIT DMG substat of **25.7%**, where the
-    nearest reachable four-roll sums are 25.6 and 26.4. It is present verbatim in the GOOD
-    file, so it came from the scanner rather than from us — a one-digit slip is the likely
-    story, and `elixerCrafted` is false, so no game mechanic explains it.
+    **That claim was false twice, and both times this check refused real pieces.** The first
+    was single-roll boundaries; the second was multi-roll ones — a CRIT DMG line of **25.7%**
+    is `6.22 x3 + 6.99`, and two users had their pieces dropped for it before `_denoise` moved
+    the float32 correction onto the table where it belongs. The sentence that used to stand
+    here named 25.7 as the one genuine scanner error in a 2,370-piece inventory, and it was
+    this bug's own symptom written down as evidence.
+
+    So the standard for adding to the "impossible" story is a piece re-checked against the
+    tables *after* the arithmetic is right, not a value that looked odd once.
+    `docs/RESEARCH_substat_rounding.md`.
     """
     # `rarity` is a `Rarity` enum and `substats` is a tuple of dicts — not an int and not
     # pairs. Getting that wrong flagged all 2,370 pieces as impossible, which is why this ran

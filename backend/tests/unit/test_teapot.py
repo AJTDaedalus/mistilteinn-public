@@ -89,9 +89,13 @@ def test_finished_sets_sink_rather_than_disappear() -> None:
 
 def test_ties_break_on_name_so_the_list_does_not_shuffle() -> None:
     """An order that changes between loads is one a reader stops trusting."""
+    # Keyword arguments, so the row gaining a field is a compile error in this file rather
+    # than a silent reshuffle of what each position means.
     rows = rank([
-        SuiteProgress("2", "Beta", "", "I", ("a",), (), ()),
-        SuiteProgress("1", "Alpha", "", "I", ("a",), (), ()),
+        SuiteProgress(suite_id="2", nanoka_id="2", name="Beta", icon="", placement="I",
+                      available=("a",), completed=(), unowned=()),
+        SuiteProgress(suite_id="1", nanoka_id="1", name="Alpha", icon="", placement="I",
+                      available=("a",), completed=(), unowned=()),
     ])
 
     assert [row.name for row in rows] == ["Alpha", "Beta"]

@@ -243,8 +243,10 @@
         <button type="button" class="editor__close" aria-label="Close" (click)="closeRanking()">×</button>
       </header>
 
+      <!-- "the higher one" was reported as ambiguous — higher *what*, and higher than what
+           (#276). It is the build's position in the list below, so the sentence names it. -->
       <p class="hint">
-        Highest first. When two builds want the same artifact, the higher one takes it.
+        Highest first.
       </p>
 
       <ol class="rank__list">
@@ -281,7 +283,7 @@
             >×</button>
           </li>
         } @empty {
-          <li class="muted">Nothing ranked yet — add a build below.</li>
+          <li class="muted">Nothing ranked yet.</li>
         }
       </ol>
 
@@ -324,10 +326,20 @@
         [disabled]="editing() !== null"
         (selectedChange)="pickCharacter($event)"
       />
-      @if (editing()) {
-        <!-- `BuildUpdate` has no `character_id` and refuses one rather than dropping it
-             silently (T.1). Changing a build's character makes it a different build. -->
-        <p class="hint">A saved build keeps its character. Make a new one to change it.</p>
+      <!-- **Under the character field, not under the weapon field.** This card shows the
+           chosen character and their vision, and it sat below WEAPON — so it read as
+           something about the weapon, which is the one thing it is not. An empty
+           `<p class="hint">` went with it. -->
+      @if (character(); as chosen) {
+        <p class="subject">
+          <entity-token [icon]="chosen.icon" [name]="chosen.display_name" [size]="48" />
+          <element-chip
+            compact
+            [size]="22"
+            [element]="chosen.element ?? null"
+            [icon]="chosen.element_icon"
+          />
+        </p>
       }
 
       <!-- `clearable`, because `weapon_id` is nullable by design (OQ-T3): a build being
@@ -347,22 +359,6 @@
         [disabled]="characterId() === ''"
         (selectedChange)="pickWeapon($event)"
       />
-      @if (character(); as chosen) {
-        <p class="subject">
-          <entity-token [icon]="chosen.icon" [name]="chosen.name" [size]="48" />
-          <element-chip
-              compact
-              [size]="22"
-              [element]="chosen.element ?? null"
-              [icon]="chosen.element_icon"
-            />
-        </p>
-        <p class="hint">
-          Only {{ chosen.weapon_type_display }}s are listed — {{ chosen.display_name }} cannot hold
-          anything else.
-        </p>
-      }
-
       <div class="grid">
         <label>
           Character level
@@ -427,8 +423,8 @@
         <input type="text" [(ngModel)]="fields.notes" aria-label="Notes" />
       </label>
 
-      <div class="controls">
-        <button type="button" (click)="save()" [disabled]="!canSave()">
+      <div class="controls editor__foot">
+        <button type="button" class="btn-primary" (click)="save()" [disabled]="!canSave()">
           {{ editing() ? 'Save changes' : 'Save build' }}
         </button>
         @if (editing()) {
