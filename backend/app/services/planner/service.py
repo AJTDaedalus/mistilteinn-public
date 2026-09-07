@@ -85,6 +85,9 @@ class Section:
     materials: list[MaterialLine] = field(default_factory=list)
     resin: resin.ResinTotal = field(default_factory=resin.ResinTotal)
     exp: costs.ExpBill | None = None
+    #: `(material id, count, catalogue row)` for the EXP denominations the shortfall needs.
+    #: Resolved here rather than in the API so the route does not re-query for names.
+    exp_books: list[tuple[int, int, Material]] = field(default_factory=list)
 
 
 @dataclass
@@ -125,6 +128,16 @@ async def _load_stock(session: AsyncSession, owner_id: str) -> dict[int, int]:
     return dict(result.all())
 
 
+def _book_ids(*bills: costs.ExpBill | None) -> set[int]:
+    """The EXP denominations any bill names, so their icons and names can be looked up."""
+    return {
+        material_id
+        for bill in bills
+        if bill is not None
+        for material_id, _ in bill.books
+    }
+
+
 async def _load_catalogue(session: AsyncSession, ids: set[int]) -> dict[int, Material]:
     if not ids:
         return {}
@@ -141,9 +154,17 @@ def _build_section(
     catalogue: Mapping[int, Material],
     *,
     exp: costs.ExpBill | None = None,
-    resin_exp: int | None = None,
+    character_exp: int = 0,
+    craft_multipliers: Mapping[int, float] | None = None,
 ) -> Section:
-    """Turn `{material id: required}` into a rendered section, net of what is held."""
+    """Turn `{material id: required}` into a rendered section, net of what is held.
+
+    **EXP denominations are never in `needs`.** They are a pool, not per-item stock, and
+    `exp_bill` has already netted them off — so listing the books it returned as material rows
+    subtracted the same stock a second time and reported "satisfied" for books the user still
+    had to farm. They are rendered from `exp.books` instead, and priced through
+    `character_exp`, which is the unit a ley line actually yields.
+    """
     eco = economy()
     section = Section(key=key, label=label, mora=mora, exp=exp)
     outstanding: dict[int, int] = {}
@@ -152,7 +173,8 @@ def _build_section(
         still = max(0, required - owned)
         row = catalogue.get(material_id)
         outstanding[material_id] = still
-        estimate = resin.estimate(eco, material_id, still)
+        multiplier = (craft_multipliers or {}).get(material_id, 1.0)
+        estimate = resin.estimate(eco, material_id, still, craft_multiplier=multiplier)
         if estimate is not None:
             status = "priced"
         elif still == 0:
@@ -177,37 +199,50 @@ def _build_section(
                 domain_days=eco.domain_days(material_id),
             ),
         )
+    if exp is not None:
+        for material_id, count in exp.books:
+            row = catalogue.get(material_id)
+            section.exp_books.append(
+                (
+                    material_id,
+                    count,
+                    row
+                    or Material(
+                        id=material_id,
+                        name=eco.name(material_id) or str(material_id),
+                        icon=eco.icon(material_id),
+                        rarity=eco.rarity(material_id) or 0,
+                    ),
+                ),
+            )
     section.resin = resin.total(
-        eco,
-        outstanding,
-        mora=mora or 0,
-        character_exp=(
-            resin_exp if resin_exp is not None else (exp.exp_short if exp is not None else 0)
-        ),
+        eco, outstanding, mora=mora or 0, character_exp=character_exp,
+        craft_multipliers=dict(craft_multipliers or {}),
     )
     return section
 
 
-def _apply_bonuses(
-    needs: dict[int, int], bonuses: list[CraftingBonus], *, in_talent_bill: bool,
-) -> dict[int, int]:
-    """Reduce crafted-material requirements by the selected characters' double-product odds.
+def _craft_multipliers(
+    needs: Mapping[int, int], bonuses: list[CraftingBonus], *, in_talent_bill: bool,
+) -> dict[int, float]:
+    """`{material id: what one crafting batch is worth}` for the selected characters.
 
-    A 10% chance of a double batch makes each batch worth 1.10, so the *inputs* a plan needs
-    fall by that factor. Only materials that are actually crafted from a lower tier are
-    affected; a base-tier drop is farmed, not crafted, and no passive touches it.
+    **Never applied to the requirement.** The game still wants six Philosophies; the passive
+    only means you craft them from fewer inputs. An earlier version reduced `required` itself,
+    so a plan needing six reported five and a user holding exactly five was told they were
+    done.
     """
     if not bonuses:
-        return dict(needs)
+        return {}
     eco = economy()
-    out: dict[int, int] = {}
-    for material_id, count in needs.items():
+    out: dict[int, float] = {}
+    for material_id in needs:
         material_class = _class_of(material_id, in_talent_bill)
         if material_class is None or eco.craft_step(material_id) is None:
-            out[material_id] = count
             continue
         multiplier = craft_multiplier(bonuses, material_class)
-        out[material_id] = max(1, round(count / multiplier)) if count else 0
+        if multiplier > 1.0:
+            out[material_id] = multiplier
     return out
 
 
@@ -229,14 +264,14 @@ async def _weapon_bill(
     weapon_id: str | None,
     weapon_from: Progress | None,
     weapon_to: Progress | None,
-) -> tuple[Weapon | None, dict[int, int], int | None, costs.ExpBill | None]:
+) -> tuple[Weapon | None, dict[int, int], int | None, costs.ExpBill | None, dict[int, float]]:
     """The weapon's whole bill: its phases and its ore, or empties when none was asked for.
 
     Levels and ascension are one section for a weapon because nobody thinks of them apart —
     unlike a character, where "ascend but stay at 80" is a decision worth its own row.
     """
     if not (weapon_id and weapon_from and weapon_to):
-        return None, {}, 0, None
+        return None, {}, 0, None, {}
     eco = economy()
     weapon = await session.get(Weapon, weapon_id)
     if weapon is None:
@@ -250,18 +285,17 @@ async def _weapon_bill(
     ).scalars().all()
     needs, phase_mora = costs.ascension_bill(
         _rows_by_key(rows, "phase"), weapon_from.ascension, weapon_to.ascension,
+        what=weapon.name,
     )
-    needs = _apply_bonuses(needs, selected, in_talent_bill=False)
+    multipliers = _craft_multipliers(needs, selected, in_talent_bill=False)
     exp = costs.exp_bill(
         eco,
         costs.weapon_exp_between(weapon.xp_requirements or {}, weapon_from.level, weapon_to.level),
         stock,
         "weapon",
     )
-    for material_id, count in exp.books:
-        needs[material_id] = needs.get(material_id, 0) + count
     mora = None if exp.mora is None else phase_mora + exp.mora
-    return weapon, needs, mora, exp
+    return weapon, needs, mora, exp, multipliers
 
 
 async def build_plan(
@@ -301,7 +335,6 @@ async def build_plan(
     )
     stock = await _load_stock(session, owner_id)
     exp = costs.exp_bill(eco, exp_required, stock, "character")
-    level_needs = dict(exp.books)
 
     # -- ascension
     ascension_rows = (
@@ -313,6 +346,7 @@ async def build_plan(
     ).scalars().all()
     ascension_needs, ascension_mora = costs.ascension_bill(
         _rows_by_key(ascension_rows, "phase"), character_from.ascension, character_to.ascension,
+        what=character.name,
     )
 
     # -- talents
@@ -336,38 +370,50 @@ async def build_plan(
         talent_mora += mora
         for material_id, count in items.items():
             talent_needs[material_id] = talent_needs.get(material_id, 0) + count
-    talent_needs = _apply_bonuses(talent_needs, selected, in_talent_bill=True)
+    talent_multipliers = _craft_multipliers(talent_needs, selected, in_talent_bill=True)
 
     # -- weapon
-    weapon, weapon_needs, weapon_mora, weapon_exp = await _weapon_bill(
+    weapon, weapon_needs, weapon_mora, weapon_exp, weapon_multipliers = await _weapon_bill(
         session, stock, selected, weapon_id, weapon_from, weapon_to,
     )
 
     catalogue = await _load_catalogue(
         session,
-        set(level_needs) | set(ascension_needs) | set(talent_needs) | set(weapon_needs),
+        set(ascension_needs)
+        | set(talent_needs)
+        | set(weapon_needs)
+        | _book_ids(exp, weapon_exp),
     )
 
     sections = [
         _build_section(
-            "levels", "Character levels", level_needs, exp.mora, stock, catalogue, exp=exp,
+            "levels", "Character levels", {}, exp.mora, stock, catalogue,
+            exp=exp, character_exp=exp.exp_short,
         ),
         _build_section(
             "ascension", "Character ascension", ascension_needs, ascension_mora, stock, catalogue,
         ),
-        _build_section("talents", "Talents", talent_needs, talent_mora, stock, catalogue),
+        _build_section(
+            "talents", "Talents", talent_needs, talent_mora, stock, catalogue,
+            craft_multipliers=talent_multipliers,
+        ),
     ]
     if weapon is not None:
         sections.append(
+            # **No `character_exp` here.** Weapon levelling spends Enhancement Ore, which
+            # `MaterialSource` classifies as costing no resin at all; feeding its shortfall
+            # into the ley-line rate invented 163 resin out of a Blossom of Revelation that
+            # yields *character* EXP.
             _build_section(
-                "weapon", "Weapon", weapon_needs, weapon_mora, stock, catalogue, exp=weapon_exp,
+                "weapon", "Weapon", weapon_needs, weapon_mora, stock, catalogue,
+                exp=weapon_exp, craft_multipliers=weapon_multipliers,
             ),
         )
 
     # The cumulative summary merges the *needs* and re-prices them, rather than adding the
     # sections' resin. Two sections wanting the same book family are farming one domain.
     merged: dict[int, int] = {}
-    for source in (level_needs, ascension_needs, talent_needs, weapon_needs):
+    for source in (ascension_needs, talent_needs, weapon_needs):
         for material_id, count in source.items():
             merged[material_id] = merged.get(material_id, 0) + count
     mora_values = [section.mora for section in sections]
@@ -381,7 +427,8 @@ async def build_plan(
     # carried here, because that is a real ley-line cost the total should price once.
     total = _build_section(
         "total", "Everything", merged, total_mora, stock, catalogue,
-        resin_exp=exp.exp_short,
+        character_exp=exp.exp_short,
+        craft_multipliers={**talent_multipliers, **weapon_multipliers},
     )
 
     return Plan(

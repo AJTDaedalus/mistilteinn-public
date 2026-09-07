@@ -215,7 +215,9 @@ def _mean_only_distribution(target: int, steps: list[tuple[int, float]]) -> list
     return [0.0] * runs + [1.0]
 
 
-def estimate(economy: Economy, material_id: int, needed: int) -> ResinEstimate | None:
+def estimate(
+    economy: Economy, material_id: int, needed: int, *, craft_multiplier: float = 1.0,
+) -> ResinEstimate | None:
     """Expected resin for `needed` of a material, or `None` when nothing prices it.
 
     The need is reduced to its craft root first, so a Gemstone is priced as the 27 Slivers it
@@ -223,7 +225,9 @@ def estimate(economy: Economy, material_id: int, needed: int) -> ResinEstimate |
     """
     if needed <= 0:
         return None
-    root_id, root_needed, _mora = economy.reduce_to_root(material_id, needed)
+    root_id, root_needed, _mora = economy.reduce_to_root(
+        material_id, needed, craft_multiplier=craft_multiplier,
+    )
     rate = economy.rate(root_id)
     if rate is None or rate.expected_per_run <= 0:
         return None
@@ -248,6 +252,7 @@ def total(
     *,
     mora: int = 0,
     character_exp: int = 0,
+    craft_multipliers: dict[int, float] | None = None,
 ) -> ResinTotal:
     """Price a whole set of `{material id: count}` needs together, plus mora and EXP.
 
@@ -272,7 +277,9 @@ def total(
         if source is MaterialSource.NONE:
             out.not_farmable.append(material_id)
             continue
-        root_id, root_needed, _mora = economy.reduce_to_root(material_id, count)
+        root_id, root_needed, _mora = economy.reduce_to_root(
+            material_id, count, craft_multiplier=(craft_multipliers or {}).get(material_id, 1.0),
+        )
         rate = economy.rate(root_id)
         if rate is None or rate.expected_per_run <= 0:
             out.unpriced.append(material_id)

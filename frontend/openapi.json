@@ -5364,7 +5364,14 @@
             "title": "Weapon Level"
           },
           "weapon_ascension": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Weapon Ascension"
           }
         },
@@ -5374,8 +5381,7 @@
           "character_level",
           "ascension_phase",
           "talent_levels",
-          "weapon_level",
-          "weapon_ascension"
+          "weapon_level"
         ],
         "title": "BuildOption",
         "description": "A build the user could read a starting state from.\n\n**A build may be hypothetical** \u2014 this app lets you gear a character you do not own \u2014 so\nthe planner names which build it read and shows the levels it took, rather than quietly\ntreating a scenario as the account's truth."
@@ -6909,15 +6915,31 @@
           "count": {
             "type": "integer",
             "title": "Count"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon"
           }
         },
         "type": "object",
         "required": [
           "material_id",
-          "count"
+          "count",
+          "name"
         ],
         "title": "ExpBookRead",
-        "description": "One EXP denomination and how many of it the shortfall needs."
+        "description": "One EXP denomination and how many of it the shortfall needs.\n\nCarries its own name and icon because these are **not** material rows: EXP is a pool that\n`exp_bill` has already netted against stock, so listing them in the materials table\nsubtracted the same stock twice. They are rendered from the EXP line instead, and need\ntheir own art to do it."
       },
       "ExplainRequest": {
         "properties": {
@@ -7311,6 +7333,19 @@
             },
             "type": "array",
             "title": "Weapons Unresolved",
+            "default": []
+          },
+          "materials_written": {
+            "type": "integer",
+            "title": "Materials Written",
+            "default": 0
+          },
+          "materials_unresolved": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Materials Unresolved",
             "default": []
           },
           "rejected": {

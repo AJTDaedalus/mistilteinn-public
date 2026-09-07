@@ -163,18 +163,30 @@ def ascension_bill(
     costs: Mapping[int, tuple[int, Sequence[Mapping[str, int]]]],
     current: int,
     target: int,
+    *,
+    what: str = "this",
 ) -> tuple[dict[int, int], int]:
     """`({material id: count}, mora)` for the phases strictly after `current` up to `target`.
 
     Phase `n`'s row is the cost of *reaching* phase `n`, so a character already at phase 2
     going to 4 pays rows 3 and 4.
+
+    **A phase with no cost row raises.** It used to be skipped, which priced it at zero — and
+    that is reachable, not theoretical: `weapon_level_caps` is the 5-star ladder for every
+    weapon, but a 1-star weapon publishes only four phases, so planning one to 90/6 charged
+    nothing for phases 5 and 6 and billed ore for levels it cannot reach. A skipped check is
+    never a pass, and neither is a skipped bill.
     """
     items: dict[int, int] = {}
     mora = 0
     for phase in range(current + 1, target + 1):
         row = costs.get(phase)
         if row is None:
-            continue
+            msg = (
+                f"{what} has no ascension phase {phase} — it publishes "
+                f"{sorted(costs) or 'none'}. Pick a target within that."
+            )
+            raise PlanError(msg)
         phase_mora, entries = row
         mora += phase_mora
         for entry in entries:

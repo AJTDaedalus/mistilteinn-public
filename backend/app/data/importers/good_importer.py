@@ -190,7 +190,11 @@ class GoodImportResult:
     #: normalisation artifact sets use. It is injective over all 508 planner materials —
     #: measured — which is what makes binding by name safe. Note it strips the apostrophe
     #: without capitalising the next letter: `Hero's Wit` is `HerosWit`, not `HeroSWit`.
-    materials: dict[str, int] = field(default_factory=dict)
+    #: `None` when the export carries no `materials` key at all — a scanner that does not
+    #: report them — against `{}` for one that carries the section and nothing usable in it.
+    #: The two mean different things to the importer and it could not tell them apart while
+    #: both were `{}`.
+    materials: dict[str, int] | None = None
 
     @property
     def ok(self) -> bool:
@@ -220,19 +224,22 @@ def parse_good(payload: dict[str, Any]) -> GoodImportResult:
         version=int(payload["version"]),
         characters=tuple(_parse_characters(payload.get("characters") or [])),
         weapons=tuple(_parse_weapons(payload.get("weapons") or [])),
-        materials=_parse_materials(payload.get("materials") or {}),
+        materials=_parse_materials(payload.get("materials")),
     )
 
 
-def _parse_materials(record: Any) -> dict[str, int]:
+def _parse_materials(record: Any) -> dict[str, int] | None:
     """The export's `materials` map, keeping only sane positive counts.
 
     Non-integer and non-positive values are dropped rather than refused: this map is a
     convenience for the planner, and a single odd entry must not cost the user an import of
     2,370 artifacts. A dropped entry reads as "none held", which is the same as absent.
+
+    Returns `None` when the key is missing entirely, so a scanner that reports no materials
+    leaves stored stock alone while one that reports an empty inventory clears it.
     """
     if not isinstance(record, dict):
-        return {}
+        return None
     return {
         str(key): int(value)
         for key, value in record.items()

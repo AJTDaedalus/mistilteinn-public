@@ -311,11 +311,22 @@ class Economy:
             current = self._combine[current].input
         return current
 
-    def reduce_to_root(self, material_id: int, count: int) -> tuple[int, int, int]:
+    def reduce_to_root(
+        self, material_id: int, count: int, *, craft_multiplier: float = 1.0,
+    ) -> tuple[int, int, int]:
         """`(root id, count in root units, mora spent crafting)` for `count` of a material.
 
         Ratios come from `CombineExcelConfigData`, never assumed to be 3:1 — a few recipes
         are not.
+
+        `craft_multiplier` is what a double-product passive is worth per batch: a 10% chance
+        of a double batch makes each batch worth 1.1, so the inputs fall by that factor.
+
+        **It applies here, at every rung, rather than to the requirement.** Shrinking the
+        requirement made `required` a number the game does not agree with — a plan needing 6
+        Philosophies reported 5, so a user holding exactly 5 was told they were done and could
+        not reach the talent level. Applying it to the inputs also compounds across a
+        three-tier family for free, which shrinking one rung did not.
         """
         mora = 0
         current, needed = material_id, count
@@ -324,6 +335,8 @@ class Economy:
             seen.add(current)
             step = self._combine[current]
             batches = -(-needed // step.output_count)
+            if craft_multiplier > 1.0:
+                batches = max(1, math.ceil(batches / craft_multiplier))
             mora += batches * step.mora
             needed = batches * step.input_count
             current = step.input

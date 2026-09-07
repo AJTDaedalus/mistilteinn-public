@@ -183,6 +183,28 @@
     color: var(--ink-dim);
   }
 
+  .books {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1rem;
+    list-style: none;
+    margin: 0 0 0.6rem;
+    padding: 0;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: var(--text-sm);
+      color: var(--ink-dim);
+    }
+
+    .book-count {
+      font-family: var(--font-mono);
+      color: var(--ink);
+    }
+  }
+
   /* Wide content scrolls inside its own box; the page never scrolls sideways. */
   table {
     width: 100%;

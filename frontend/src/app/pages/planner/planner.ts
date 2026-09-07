@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import type { WritableSignal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { CatalogueIcon } from '../../shared/icon/icon';
@@ -99,6 +100,27 @@ export class PlannerPage implements OnInit {
       : icon;
   });
 
+  /**
+   * Clamp a level into the range its ascension phase allows.
+   *
+   * **The paired control must move with it.** Setting "from ascension" to 6 while the level
+   * signal still held 1 rendered an empty `<select>` — no option matched — while `run()`
+   * happily posted `level: 1`. The user saw a blank box and got a bill for levelling 1→90
+   * instead of 80→90, and nothing rejected it because 1/6 is a legal state.
+   */
+  protected setAscension(
+    phase: number,
+    ascension: WritableSignal<number>,
+    level: WritableSignal<number>,
+  ): void {
+    ascension.set(phase);
+    const allowed = this.levelsFor(phase);
+    const current = level();
+    if (!allowed.includes(current)) {
+      level.set(current < allowed[0] ? allowed[0] : allowed[allowed.length - 1]);
+    }
+  }
+
   /** Levels a character may legally reach, given the ascension phase asked for. */
   protected levelsFor(phase: number): number[] {
     const cap = (this.options()?.level_caps ?? FALLBACK_CAPS)[phase] ?? 90;
@@ -158,7 +180,15 @@ export class PlannerPage implements OnInit {
     if (build.weapon_id) {
       this.weaponId.set(build.weapon_id);
       this.weaponFromLevel.set(build.weapon_level);
-      this.weaponFromAscension.set(build.weapon_ascension);
+      // **Null when this account holds no physical copy**, and then it is left alone rather
+      // than filled from the character's phase — which is what the API used to send, so a
+      // level-20 weapon on a 90/6 character prefilled "20/6" and every weapon ascension bill
+      // silently vanished from the plan.
+      if (build.weapon_ascension !== null && build.weapon_ascension !== undefined) {
+        this.setAscension(
+          build.weapon_ascension, this.weaponFromAscension, this.weaponFromLevel,
+        );
+      }
     }
   }
 

@@ -57,7 +57,13 @@ class BuildOption(BaseModel):
     talent_levels: dict[str, int]
     weapon_id: str | None = None
     weapon_level: int
-    weapon_ascension: int
+    #: **Null when this account holds no physical copy for the build.** `builds` has a
+    #: `weapon_level` and no weapon ascension column, and an earlier version substituted the
+    #: *character's* phase here — so a build at 90/6 holding a level-20 weapon prefilled
+    #: "weapon from 20/6", `ascension_bill(6, 6)` charged nothing, and all six weapon
+    #: ascension bills vanished from the plan without a word. The real value lives on
+    #: `owned_weapons`; when there is no row, the page asks rather than guesses.
+    weapon_ascension: int | None = None
 
 
 class OwnedWeaponOption(BaseModel):
@@ -182,10 +188,18 @@ class MaterialLineRead(BaseModel):
 
 
 class ExpBookRead(BaseModel):
-    """One EXP denomination and how many of it the shortfall needs."""
+    """One EXP denomination and how many of it the shortfall needs.
+
+    Carries its own name and icon because these are **not** material rows: EXP is a pool that
+    `exp_bill` has already netted against stock, so listing them in the materials table
+    subtracted the same stock twice. They are rendered from the EXP line instead, and need
+    their own art to do it.
+    """
 
     material_id: int
     count: int
+    name: str
+    icon: str | None = None
 
 
 class ExpBillRead(BaseModel):
@@ -270,13 +284,28 @@ async def planner_options(
             )
             for talent in await service.talents_of(session, character_id)
         ]
-        rows = (
-            await session.execute(
-                select(Build).where(
-                    Build.owner_id == user.id, Build.character_id == character_id,
-                ),
-            )
-        ).scalars()
+        rows = list(
+            (
+                await session.execute(
+                    select(Build).where(
+                        Build.owner_id == user.id, Build.character_id == character_id,
+                    ),
+                )
+            ).scalars(),
+        )
+        # The physical copy equipped to each build, which is where a weapon's ascension phase
+        # actually lives. One query for all of them rather than one per build.
+        equipped = {
+            row.build_id: row
+            for row in (
+                await session.execute(
+                    select(OwnedWeapon).where(
+                        OwnedWeapon.owner_id == user.id,
+                        OwnedWeapon.build_id.in_([build.id for build in rows] or [""]),
+                    ),
+                )
+            ).scalars()
+        }
         builds = [
             BuildOption(
                 build_id=build.id,
@@ -286,7 +315,9 @@ async def planner_options(
                 talent_levels=build.talent_levels or {},
                 weapon_id=build.weapon_id,
                 weapon_level=build.weapon_level,
-                weapon_ascension=build.ascension_phase,
+                weapon_ascension=(
+                    equipped[build.id].ascension if build.id in equipped else None
+                ),
             )
             for build in rows
         ]
@@ -396,8 +427,13 @@ def _section_read(section: service.Section) -> SectionRead:
                 exp_owned=section.exp.exp_owned,
                 exp_short=section.exp.exp_short,
                 books=[
-                    ExpBookRead(material_id=material_id, count=count)
-                    for material_id, count in section.exp.books
+                    ExpBookRead(
+                        material_id=material_id,
+                        count=count,
+                        name=book.name,
+                        icon=book.icon,
+                    )
+                    for material_id, count, book in section.exp_books
                 ],
                 mora=section.exp.mora,
             )

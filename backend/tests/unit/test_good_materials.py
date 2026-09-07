@@ -22,9 +22,15 @@ def test_materials_are_parsed_when_present() -> None:
     assert result.materials == {"HerosWit": 204, "CrownOfInsight": 23}
 
 
-def test_an_export_without_materials_is_still_valid() -> None:
-    """Plenty of scanners write artifacts only; that is a GOOD file, not a broken one."""
-    assert parse_good(_envelope()).materials == {}
+def test_a_missing_section_and_an_empty_one_are_told_apart() -> None:
+    """Plenty of scanners write artifacts only; that is a GOOD file, not a broken one.
+
+    `None` means the scanner does not report materials and stored stock is left alone; `{}`
+    means the account reports holding none and stock is cleared. While both were `{}` the
+    importer could not make the distinction its own docstring claimed.
+    """
+    assert parse_good(_envelope()).materials is None
+    assert parse_good(_envelope(materials={})).materials == {}
 
 
 @pytest.mark.parametrize("value", [0, -3, "12", 1.5, True, None])

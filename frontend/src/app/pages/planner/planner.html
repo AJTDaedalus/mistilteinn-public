@@ -65,7 +65,7 @@
             </label>
             <label>
               Ascension
-              <select [(ngModel)]="fromAscension">
+              <select [ngModel]="fromAscension()" (ngModelChange)="setAscension($event, fromAscension, fromLevel)">
                 @for (phase of phases(); track phase.phase) {
                   <option [ngValue]="phase.phase">{{ phase.phase }} — max {{ phase.cap }}</option>
                 }
@@ -83,7 +83,7 @@
             </label>
             <label>
               Ascension
-              <select [(ngModel)]="toAscension">
+              <select [ngModel]="toAscension()" (ngModelChange)="setAscension($event, toAscension, toLevel)">
                 @for (phase of phases(); track phase.phase) {
                   <option [ngValue]="phase.phase">{{ phase.phase }} — max {{ phase.cap }}</option>
                 }
@@ -147,7 +147,7 @@
               </label>
               <label>
                 Ascension
-                <select [(ngModel)]="weaponFromAscension">
+                <select [ngModel]="weaponFromAscension()" (ngModelChange)="setAscension($event, weaponFromAscension, weaponFromLevel)">
                   @for (phase of phases(); track phase.phase) {
                     <option [ngValue]="phase.phase">{{ phase.phase }} — max {{ phase.cap }}</option>
                   }
@@ -165,7 +165,7 @@
               </label>
               <label>
                 Ascension
-                <select [(ngModel)]="weaponToAscension">
+                <select [ngModel]="weaponToAscension()" (ngModelChange)="setAscension($event, weaponToAscension, weaponToLevel)">
                   @for (phase of phases(); track phase.phase) {
                     <option [ngValue]="phase.phase">{{ phase.phase }} — max {{ phase.cap }}</option>
                   }
@@ -243,6 +243,21 @@
                   enough already.
                 }
               </p>
+              <!-- Rendered here rather than as material rows: EXP is a pool, and `exp_bill`
+                   has already netted it against stock. Listing these in the table subtracted
+                   the same stock a second time and reported "satisfied" for books the user
+                   still had to farm. -->
+              @if (exp.books.length) {
+                <ul class="books">
+                  @for (book of exp.books; track book.material_id) {
+                    <li>
+                      <catalogue-icon [icon]="book.icon" [alt]="book.name" [size]="24" />
+                      <span class="book-count">{{ number(book.count) }}</span>
+                      <span>{{ book.name }}</span>
+                    </li>
+                  }
+                </ul>
+              }
             }
           }
 

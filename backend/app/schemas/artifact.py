@@ -480,6 +480,12 @@ class GoodImportResponse(BaseModel):
     #: with no catalogue match has no name, rarity or icon, so it would appear in the inventory
     #: as a blank the user could neither identify nor act on.
     weapons_unresolved: list[str] = []
+    #: Material stock rows written from the export's optional `materials` map, and the keys
+    #: this catalogue could not name. Surfaced because the planner's whole "still need" column
+    #: depends on them, and because "your scanner does not export materials" and "you hold
+    #: none" are indistinguishable otherwise.
+    materials_written: int = 0
+    materials_unresolved: list[str] = []
     rejected: list[ImportRejection] = []
     ok: bool
     #: Builds left with an empty slot because the piece that filled it is not in the new

@@ -458,6 +458,8 @@ async def import_good(
         weapons_unresolved=weapons_unresolved,
         inserted=stored.inserted,
         deleted=stored.deleted,
+        materials_written=stored.materials_written,
+        materials_unresolved=list(stored.materials_unresolved),
         builds=builds,
         rejected=[
             ImportRejection(index=index, reason=reason) for index, reason in stored.rejected

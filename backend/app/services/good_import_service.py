@@ -236,22 +236,27 @@ async def store_good_import(
 async def _store_materials(
     session: AsyncSession,
     owner_id: str,
-    counts: dict[str, int],
+    counts: dict[str, int] | None,
 ) -> tuple[int, tuple[str, ...]]:
     """Replace this account's material stock from the export's `materials` map.
 
     **Always a replace, never a merge, and only when the export carried the section at all.**
     A GOOD export is a snapshot of an inventory, so merging would leave a user holding
-    materials they have since spent. An export with no `materials` key leaves the stored
-    stock untouched — that is a scanner that does not report materials, not an account that
-    emptied.
+    materials they have since spent. `None` — no `materials` key — leaves the stored stock
+    untouched, because that is a scanner which does not report materials rather than an
+    account that emptied; `{}` clears it, because that is an account reporting nothing.
+
+    **This replaces even in `append` mode**, and that is deliberate rather than an oversight:
+    `append` exists because GOOD carries no stable per-artifact id, so adding an export twice
+    would duplicate an inventory. Materials are keyed by material, so a re-import is
+    idempotent and the snapshot reading is the right one for them either way.
 
     Binding is by `set_lookup_key`, the normalisation artifact sets already use, which is
     injective over every planner material — measured across all 508. Unresolvable keys are
     counted and returned rather than dropped: an export newer than the seeded patch is the
     usual cause and the user can act on being told.
     """
-    if not counts:
+    if counts is None:
         return 0, ()
 
     materials = (await session.execute(select(Material.id, Material.name))).all()

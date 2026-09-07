@@ -23,8 +23,12 @@ forging a weapon, not ascending one. Filter by effect, never by "has a crafting 
 ## Why this is a parse and not a table of ids
 
 Matching English descriptions is fragile, so it is not trusted: the set is small and fixed,
-and `tests/unit/test_planner_crafting.py` asserts the expected characters still resolve. A
-patch that rewories a passive fails that test rather than silently dropping a bonus.
+and `tests/unit/test_planner_crafting.py` holds all twelve descriptions **verbatim** from the
+seeded catalogue and asserts each still resolves to the same effect. A patch that rewords a
+passive fails that test rather than silently dropping a bonus from every plan.
+
+That file was cited here before it existed — this paragraph was the argument that the fragile
+parse was safe, and the thing it pointed at was not written. Found by review.
 """
 
 from __future__ import annotations

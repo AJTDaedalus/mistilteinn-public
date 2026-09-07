@@ -62,6 +62,53 @@ describe('PlannerPage', () => {
     );
   });
 
+  it('drags the paired level along when the ascension changes', async () => {
+    // Setting "from ascension" to 6 while the level signal still held 1 rendered an empty
+    // <select> — no option matched — while run() happily posted level: 1. The user saw a
+    // blank box and got a bill for 1→90 instead of 80→90, and nothing rejected it because
+    // 1/6 is a legal state.
+    const page = makePage();
+    await page.ngOnInit();
+
+    page['setAscension'](6, page['fromAscension'], page['fromLevel']);
+
+    expect(page['fromAscension']()).toBe(6);
+    expect(page['levelsFor'](6)).toContain(page['fromLevel']());
+    expect(page['fromLevel']()).toBe(80);
+  });
+
+  it('leaves a level alone when it is already inside the new range', async () => {
+    // Phase 3 spans 50-60: it starts where phase 2 topped out. A level below that floor is
+    // pulled up, which is why this picks one inside the band rather than below it.
+    const page = makePage();
+    await page.ngOnInit();
+    page['fromLevel'].set(55);
+
+    page['setAscension'](3, page['fromAscension'], page['fromLevel']);
+
+    expect(page['fromLevel']()).toBe(55);
+  });
+
+  it('pushes a too-low level up to the floor of the new phase', async () => {
+    const page = makePage();
+    await page.ngOnInit();
+    page['fromLevel'].set(45);
+
+    page['setAscension'](3, page['fromAscension'], page['fromLevel']);
+
+    expect(page['fromLevel']()).toBe(50);
+  });
+
+  it('pulls a too-high level down to the new cap', async () => {
+    const page = makePage();
+    await page.ngOnInit();
+    page['toLevel'].set(90);
+
+    page['setAscension'](1, page['toAscension'], page['toLevel']);
+
+    expect(page['toLevel']()).toBe(40);
+  });
+
   it('turns an avatar icon into the full splash basename', async () => {
     const page = makePage();
     page['characters'].set([{ id: 'c1', name: 'Ayaka', icon: 'UI_AvatarIcon_Ayaka' } as never]);
