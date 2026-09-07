@@ -22,7 +22,9 @@ const ELEMENTS: readonly { value: string; icon: string | null }[] = [
 ].map((value) => ({ value, icon: null }));
 
 /**
- * The seeded character catalogue — 150 entries including all 28 Traveler variants.
+ * The seeded character catalogue — 150 entries including all **16** Traveler variants.
+ *
+ * It said 28, which is the count of *dashed keys* and includes the 14 practice mannequins.
  *
  * Filtering is server-side (G.6a): the endpoint's `total` is computed with the same `WHERE`
  * the page used, so the count under the list is the count of *matches*, not of the table.

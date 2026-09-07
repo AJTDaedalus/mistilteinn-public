@@ -46,9 +46,9 @@ export class CatalogueService {
   /**
    * One character, by its source key.
    *
-   * The key is a **string**: 28 of the 150 characters are Traveler variants spelled
-   * `10000005-2`. Typing this as a number would 404 — or worse, silently truncate — on
-   * every one of them.
+   * The key is a **string**: 28 of the 150 characters are spelled `10000005-2` — 14 Traveler
+   * variants and 14 practice mannequins, not 28 Travelers. Typing this as a number would 404
+   * — or worse, silently truncate — on every one of them.
    */
   async getCharacter(nanokaId: string) {
     const { data, error } = await this.api.GET('/api/v1/characters/{nanoka_id}', {

@@ -109,3 +109,30 @@ def test_no_other_character_in_the_capture_carries_a_traveler_icon() -> None:
     }
 
     assert wearing == {"Traveler"}
+
+
+def test_the_dashed_keys_are_half_travelers_and_half_mannequins() -> None:
+    """**28 was the right number with the wrong explanation, in six places at once.**
+
+    Six docstrings said "28 of the 150 characters are Traveler variants". 28 *is* the number of
+    keys spelled `10000005-2` and needing a string column — but they are **14 Travelers and 14
+    practice mannequins**: `10000117` is Manekin and `10000118` Manekina, and somebody counted
+    four Traveler bodies x seven elements.
+
+    So the count was load-bearing and correct while the sentence around it was wrong, which is
+    why every one of the six survived review — a reader checking the number would have found
+    it right. This pins the composition rather than the total.
+    """
+    catalogue = _catalogue()
+    dashed = [key for key in catalogue if "-" in key]
+    travelers = [key for key, row in catalogue.items() if row.get("en") == "Traveler"]
+    mannequins = [
+        key for key, row in catalogue.items() if row.get("en") in {"Manekin", "Manekina"}
+    ]
+
+    assert len(dashed) == 28
+    assert len([k for k in dashed if k in travelers]) == 14
+    assert len([k for k in dashed if k in mannequins]) == 14
+    # And the two the suffix rule misses, which is why 16 != 14.
+    assert len(travelers) == 16
+    assert len(catalogue) - len(travelers) - len(mannequins) == 120

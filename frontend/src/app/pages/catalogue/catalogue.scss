@@ -151,7 +151,7 @@
   overflow: hidden;
   /* A stacking context, so the fallback's negative z-index stays *inside the card art*.
      Without it the fallback joined the page's stacking context and painted beneath `.card`'s
-     opaque background — invisible, on all 28 Traveler rows and the mannequins, whose
+     opaque background — invisible, on all 16 Traveler rows and the 14 mannequins, whose
      portraits upstream does not publish. */
   isolation: isolate;
   background: radial-gradient(circle at 50% 35%,

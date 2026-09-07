@@ -90,8 +90,10 @@ async def get_character(
 ) -> CharacterRead:
     """One character with its talents, constellations and ascension passives.
 
-    The path parameter is a **string**: 28 of the 150 characters are Traveler variants
-    keyed `10000005-2` … `10000005-8`. Typing it as an int would 422 on all of them.
+    The path parameter is a **string**: 28 of the 150 characters are keyed `10000005-2` …
+    `10000005-8`, and they are **14 Traveler variants plus 14 practice mannequins**
+    (`10000117`/`10000118` are Manekin and Manekina, not Traveler bodies). Typing it as an int
+    would 422 on all of them.
     """
     character = await repo.get_by_nanoka_id(nanoka_id)
     if character is None:

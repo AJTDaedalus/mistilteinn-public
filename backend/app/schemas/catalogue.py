@@ -145,8 +145,10 @@ class CharacterSummary(WeaponClassed):
     """A character as a list entry."""
 
     id: str
-    #: The source key verbatim — a **string**, because 28 of the 150 are Traveler variants
-    #: spelled `10000005-2`. An int here would drop them.
+    #: The source key verbatim — a **string**, because 28 of the 150 carry a body-and-element
+    #: key spelled `10000005-2`: **14 Traveler variants and 14 practice mannequins**. An int
+    #: here would drop them. (The catalogue holds **16** Travelers, not 28 — the other two are
+    #: the unreleased crossbow bodies, whose keys have no suffix.)
     nanoka_id: str
     name: str
     #: Null for the two entries whose payload element is the literal `"None"`.

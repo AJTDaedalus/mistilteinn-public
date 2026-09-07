@@ -156,7 +156,8 @@ async def test_the_character_key_downgrade_drops_the_rows_it_cannot_represent(
 ):
     """D.3's downgrade deletes data, so it needs testing against data.
 
-    `characters.nanoka_id` widened to `String(24)` for the 28 Traveler keys like
+    `characters.nanoka_id` widened to `String(24)` for the 28 dashed keys (14 Traveler
+    variants and 14 practice mannequins) like
     `10000005-2`, which have no integer form at all. The downgrade therefore deletes those
     rows rather than failing halfway through the cast — and the same for the
     condition-gated passives whose `unlock_ascension` is NULL. Every other migration test
