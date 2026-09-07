@@ -150,12 +150,29 @@ def test_shared_families_are_summed_before_runs_are_counted(eco) -> None:
     assert len(combined._roots) == 1
 
 
-def test_an_unpriced_material_is_named_not_counted_as_free(eco) -> None:
-    """Shivada Jade Sliver is one of the twelve with no published rate."""
-    total = resin.total(eco, {104161: 20})
-    assert total.unpriced == [104161]
+def test_no_resin_cost_and_no_known_rate_are_different_answers(eco) -> None:
+    """One field for both would be wrong in opposite directions.
+
+    A Sakura Bloom is picked off the ground and a Shivada Jade Sliver rides along with a boss
+    run already paid for -- both genuinely cost no resin. A Bloodjade Branch costs resin at a
+    trounce domain whose yield nobody publishes. Folding them together would tell the user
+    their specialties are an unknown farming cost and their weekly bosses are free.
+    """
+    total = resin.total(eco, {104161: 20, 101202: 5, 112053: 5, 113018: 9})
+    assert total.not_farmable == [101202, 104161, 112053]
+    assert total.unpriced == [113018]
     assert total.expected == 0.0
     assert total.has_unpriced
+
+
+def test_mora_and_exp_are_resin_too(eco) -> None:
+    """Both are ley-line farmed at 20 resin a run, so a plan's mora bill has a resin price.
+
+    Reported as unpriced sources while the blossom yields are uncurated -- never as zero.
+    """
+    total = resin.total(eco, {}, mora=500_000, character_exp=100_000)
+    assert total.unpriced_sources == ["character EXP", "mora"]
+    assert total.expected == 0.0
 
 
 def test_the_histogram_is_a_distribution(eco) -> None:

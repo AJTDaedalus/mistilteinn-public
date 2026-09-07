@@ -32,6 +32,8 @@ import math
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from app.services.planner.economy import MaterialSource
+
 if TYPE_CHECKING:
     from app.services.planner.economy import Economy
 
@@ -46,6 +48,11 @@ _MAX_RUNS = 20_000
 
 #: How many bars the rendered histogram carries. Enough to show a shape, few enough to read.
 _BINS = 12
+
+#: Stand-in id for "character EXP points" when pricing a ley line. Hero's Wit is the largest
+#: denomination and classifies as `LEY_LINE_EXP`, so asking the economy for *its* rate returns
+#: the blossom's rate — which is published per EXP point, not per book.
+_EXP_PROBE = 104003
 
 
 @dataclass(frozen=True)
@@ -91,9 +98,12 @@ class ResinTotal:
     #: Resin-farmable, but at a rate no table publishes and `curated_rates.json` has not been
     #: given. Named, never folded into the total as zero.
     unpriced: list[int] = field(default_factory=list)
-    #: Not obtainable with resin at all — overworld drops and local specialties. Their resin
-    #: cost really is zero, and saying so is not a guess.
+    #: Not obtainable with resin at all — elemental gems, common enemy drops and local
+    #: specialties. Their resin cost really is zero, and saying so is not a guess.
     not_farmable: list[int] = field(default_factory=list)
+    #: Non-material costs with no rate: `"mora"`, `"character EXP"`. Same meaning as
+    #: `unpriced` — resin-farmable, rate not supplied.
+    unpriced_sources: list[str] = field(default_factory=list)
     histogram: list[HistogramBin] = field(default_factory=list)
     #: `(runs distribution, resin per run)` per craft root, kept so a caller can combine
     #: sections without re-deriving them.
@@ -181,27 +191,54 @@ def estimate(economy: Economy, material_id: int, needed: int) -> ResinEstimate |
     )
 
 
-def total(economy: Economy, needs: dict[int, int]) -> ResinTotal:
-    """Price a whole set of `{material id: count}` needs together.
+def total(
+    economy: Economy,
+    needs: dict[int, int],
+    *,
+    mora: int = 0,
+    character_exp: int = 0,
+) -> ResinTotal:
+    """Price a whole set of `{material id: count}` needs together, plus mora and EXP.
 
     Needs sharing a craft root are **summed before any run is counted**, because a domain run
     that drops three tiers of one book family satisfies all of them at once. Pricing them
-    separately would bill the same run more than once.
+    apart would bill the same run more than once.
+
+    **Mora and character EXP are resin too.** Both are farmed at ley-line blossoms at 20 resin
+    a run (`BlossomChestExcelConfigData`), so a plan's mora bill has a resin price like
+    anything else. EXP is priced in *points* rather than in books, because that is the unit a
+    blossom yields -- so the EXP denominations are skipped in the material loop and accounted
+    here instead, or they would be counted twice in the wrong unit.
     """
     out = ResinTotal()
     by_root: dict[int, int] = {}
     for material_id, count in needs.items():
         if count <= 0:
             continue
+        source = economy.source_of(material_id)
+        if source is MaterialSource.LEY_LINE_EXP:
+            continue  # priced from `character_exp`, in points
+        if source is MaterialSource.NONE:
+            out.not_farmable.append(material_id)
+            continue
         root_id, root_needed, _mora = economy.reduce_to_root(material_id, count)
         rate = economy.rate(root_id)
         if rate is None or rate.expected_per_run <= 0:
-            if root_id in set(economy.uncurated()):
-                out.unpriced.append(material_id)
-            else:
-                out.not_farmable.append(material_id)
+            out.unpriced.append(material_id)
             continue
         by_root[root_id] = by_root.get(root_id, 0) + root_needed
+
+    for amount, probe, label in (
+        (mora, economy.mora_item_id, "mora"),
+        (character_exp, _EXP_PROBE, "character EXP"),
+    ):
+        if amount <= 0:
+            continue
+        rate = economy.rate(probe)
+        if rate is None or rate.expected_per_run <= 0:
+            out.unpriced_sources.append(label)
+            continue
+        by_root[probe] = by_root.get(probe, 0) + amount
 
     for root_id, root_needed in by_root.items():
         rate = economy.rate(root_id)
@@ -213,6 +250,7 @@ def total(economy: Economy, needs: dict[int, int]) -> ResinTotal:
             out._roots[root_id] = (distribution, rate.resin)  # noqa: SLF001
     out.unpriced.sort()
     out.not_farmable.sort()
+    out.unpriced_sources.sort()
     out.histogram = histogram(out._roots)  # noqa: SLF001
     return out
 

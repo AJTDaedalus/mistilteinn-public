@@ -1,11 +1,11 @@
 {
- "note": "The numbers the leveling planner needs that NO table in the pinned YuanShen dump publishes. Everything else it uses is derived into app/data/yuanshen/snapshot/planner_economy.json. This file is hand-maintained, which is why it lives outside snapshot/ -- that directory means 'derived from the pinned dump' and these are not.\n\nRULE: an entry with a non-null value MUST carry a non-empty `source` naming where the number came from. tests/unit/test_planner_curated_rates.py enforces it. A null value is not a bug -- the planner reports that material's resin as unknown rather than guessing, which is the same discipline as 'a skipped check is never a pass'.\n\nWhy these specific entries: a world boss publishes an expected drop for its boss-specific material and NOTHING for the elemental gem branch, and the weekly-boss drops are absent for the same reason. Each gem Sliver below carries a family of four through the published 3:1 crafting tree, so one number prices four materials. See docs/RESEARCH_leveling_planner_data.md section 10.",
+ "note": "The numbers the leveling planner needs that NO table in the pinned YuanShen dump publishes. Everything else it uses is derived into app/data/yuanshen/snapshot/planner_economy.json. Hand-maintained, which is why it lives outside snapshot/ -- that directory means 'derived from the pinned dump' and these are not.\n\nRULE: an entry with a non-null value MUST carry a non-empty `source` naming where the number came from. tests/unit/test_planner_economy.py enforces it. A null value is not a bug -- the planner reports that source's resin as unknown rather than guessing, which is the same discipline as 'a skipped check is never a pass'.\n\nThese are keyed by SOURCE, not by material. Every trounce domain yields its materials the same way, so one number prices all 47 weekly-boss drops rather than 47 hand-typed entries -- and the rate genuinely is a property of the activity, not of the item.\n\nWhat is NOT here, and why: elemental gems, common enemy drops and local specialties cost no resin at all (owner, 2026-09-07), so they need no rate. Gems in particular drop from a world boss alongside the boss material in the same 40-resin run, so charging for both would bill that run twice. See MaterialSource in app/services/planner/economy.py.",
  "mora_per_exp": {
   "character": {
    "divisor": null,
    "source": "",
    "needs_curation": true,
-   "comment": "Mora charged per point of character EXP fed. Not in any of the 1,935 tables."
+   "comment": "Mora charged per point of character EXP fed. Not in any of the 1,935 tables. Set this to the number of EXP points one mora buys."
   },
   "weapon": {
    "divisor": null,
@@ -14,102 +14,27 @@
    "comment": "Mora charged per point of weapon EXP fed."
   }
  },
- "drop_rates": {
-  "104111": {
-   "name": "Agnidus Agate Sliver",
-   "source_type": "boss",
-   "resin": 40,
+ "source_defaults": {
+  "weekly_boss": {
+   "resin": 30,
    "expected_per_run": null,
    "source": "",
-   "needs_curation": true
+   "needs_curation": true,
+   "comment": "Expected drops of ONE named weekly-boss material per trounce-domain run. A boss carries three materials and drops a random one, so this is the per-material expectation, not the total. `resin` is the current trounce cost and also needs confirming -- DungeonExcelConfigData does not price trounce domains, and the one 60-resin row in InvestigationMonsterConfigData is Andrius."
   },
-  "113045": {
-   "name": "Evergloom Ring",
-   "source_type": "boss",
-   "resin": 40,
+  "ley_line_exp": {
+   "resin": 20,
    "expected_per_run": null,
    "source": "",
-   "needs_curation": true
+   "needs_curation": true,
+   "comment": "Expected character EXP **points** per Blossom of Revelation run. `resin` is derived -- BlossomChestExcelConfigData publishes 20 for BLOSSOM_REFRESH_EXP -- but the yield is not published anywhere."
   },
-  "113016": {
-   "name": "Juvenile Jade",
-   "source_type": "boss",
-   "resin": 40,
+  "ley_line_mora": {
+   "resin": 20,
    "expected_per_run": null,
    "source": "",
-   "needs_curation": true
-  },
-  "104131": {
-   "name": "Nagadus Emerald Sliver",
-   "source_type": "boss",
-   "resin": 40,
-   "expected_per_run": null,
-   "source": "",
-   "needs_curation": true
-  },
-  "104171": {
-   "name": "Prithiva Topaz Sliver",
-   "source_type": "boss",
-   "resin": 40,
-   "expected_per_run": null,
-   "source": "",
-   "needs_curation": true
-  },
-  "113007": {
-   "name": "Ring of Boreas",
-   "source_type": "boss",
-   "resin": 60,
-   "expected_per_run": null,
-   "source": "",
-   "needs_curation": true
-  },
-  "104161": {
-   "name": "Shivada Jade Sliver",
-   "source_type": "boss",
-   "resin": 40,
-   "expected_per_run": null,
-   "source": "",
-   "needs_curation": true
-  },
-  "113008": {
-   "name": "Spirit Locket of Boreas",
-   "source_type": "boss",
-   "resin": 60,
-   "expected_per_run": null,
-   "source": "",
-   "needs_curation": true
-  },
-  "113006": {
-   "name": "Tail of Boreas",
-   "source_type": "boss",
-   "resin": 60,
-   "expected_per_run": null,
-   "source": "",
-   "needs_curation": true
-  },
-  "104141": {
-   "name": "Vajrada Amethyst Sliver",
-   "source_type": "boss",
-   "resin": 40,
-   "expected_per_run": null,
-   "source": "",
-   "needs_curation": true
-  },
-  "104121": {
-   "name": "Varunada Lazurite Sliver",
-   "source_type": "boss",
-   "resin": 40,
-   "expected_per_run": null,
-   "source": "",
-   "needs_curation": true
-  },
-  "104151": {
-   "name": "Vayuda Turquoise Sliver",
-   "source_type": "boss",
-   "resin": 40,
-   "expected_per_run": null,
-   "source": "",
-   "needs_curation": true
+   "needs_curation": true,
+   "comment": "Expected **mora** per Blossom of Wealth run. `resin` is derived from BlossomChestExcelConfigData (BLOSSOM_REFRESH_SCOIN); the yield is not published."
   }
  }
 }

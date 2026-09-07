@@ -31,7 +31,7 @@ from app.models.weapon import Weapon
 from app.services.planner import costs, resin
 from app.services.planner.costs import PlanError, Progress
 from app.services.planner.crafting import CraftingBonus, MaterialClass, classify, craft_multiplier
-from app.services.planner.economy import economy
+from app.services.planner.economy import MaterialSource, economy
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -137,7 +137,6 @@ def _build_section(
 ) -> Section:
     """Turn `{material id: required}` into a rendered section, net of what is held."""
     eco = economy()
-    uncurated = set(eco.uncurated())
     section = Section(key=key, label=label, mora=mora, exp=exp)
     outstanding: dict[int, int] = {}
     for material_id, required in sorted(needs.items()):
@@ -148,10 +147,12 @@ def _build_section(
         estimate = resin.estimate(eco, material_id, still)
         if estimate is not None:
             status = "priced"
-        elif eco.craft_root(material_id) in uncurated:
-            status = "unknown"
-        else:
+        elif eco.source_of(material_id) is MaterialSource.NONE:
+            # Elemental gems, common enemy drops and local specialties. Their resin cost is
+            # genuinely zero — the gems ride along with a world-boss run already paid for.
             status = "not_farmable"
+        else:
+            status = "unknown"
         section.materials.append(
             MaterialLine(
                 material_id=material_id,
@@ -166,7 +167,12 @@ def _build_section(
                 domain_days=eco.domain_days(material_id),
             ),
         )
-    section.resin = resin.total(eco, outstanding)
+    section.resin = resin.total(
+        eco,
+        outstanding,
+        mora=mora or 0,
+        character_exp=exp.exp_short if exp is not None else 0,
+    )
     return section
 
 
@@ -353,13 +359,17 @@ async def build_plan(
         for material_id, count in source.items():
             merged[material_id] = merged.get(material_id, 0) + count
     mora_values = [section.mora for section in sections]
+    total_mora = (
+        None if any(value is None for value in mora_values) else sum(mora_values)  # type: ignore[arg-type]
+    )
+    # The whole plan's EXP shortfall, so the summary prices the ley-line farming once rather
+    # than per section.
+    total_exp = costs.ExpBill(
+        exp_required=exp.exp_required + (weapon_exp.exp_required if weapon_exp else 0),
+        exp_owned=exp.exp_owned,
+    )
     total = _build_section(
-        "total",
-        "Everything",
-        merged,
-        None if any(value is None for value in mora_values) else sum(mora_values),  # type: ignore[arg-type]
-        stock,
-        catalogue,
+        "total", "Everything", merged, total_mora, stock, catalogue, exp=total_exp,
     )
 
     return Plan(

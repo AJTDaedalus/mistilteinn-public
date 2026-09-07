@@ -93,9 +93,10 @@ class PlannerOptions(BaseModel):
     builds: list[BuildOption] = Field(default_factory=list)
     owned_weapons: list[OwnedWeaponOption] = Field(default_factory=list)
     bonuses: list[CraftingBonusRead] = Field(default_factory=list)
-    #: Material ids that are resin-farmable at a rate nobody publishes. Surfaced so the page
-    #: can explain a blank resin cell rather than leaving the user to guess.
-    uncurated_material_ids: list[int] = Field(default_factory=list)
+    #: Sources that cost resin at a rate nobody publishes — `weekly_boss`, `ley_line_exp`,
+    #: `ley_line_mora`. Surfaced so the page can explain a blank resin cell rather than
+    #: leaving the user to guess.
+    uncurated_sources: list[str] = Field(default_factory=list)
 
 
 # -- plan ------------------------------------------------------------------------------
@@ -156,8 +157,12 @@ class ResinTotalRead(BaseModel):
     """A section's resin: the average, the shape, and everything with no number."""
 
     expected: float
+    #: Resin-farmable, rate not supplied.
     unpriced: list[int]
+    #: No resin cost at all — gems, common enemy drops, local specialties.
     not_farmable: list[int]
+    #: Non-material costs with no rate: `"mora"`, `"character EXP"`.
+    unpriced_sources: list[str]
     histogram: list[HistogramBinRead]
 
 
@@ -294,7 +299,7 @@ async def planner_options(
             for row in owned
         ],
         bonuses=[_bonus_read(b) for b in await service.available_bonuses(session)],
-        uncurated_material_ids=eco.uncurated(),
+        uncurated_sources=eco.uncurated_sources(),
     )
 
 
@@ -369,6 +374,7 @@ def _section_read(section: service.Section) -> SectionRead:
             expected=section.resin.expected,
             unpriced=section.resin.unpriced,
             not_farmable=section.resin.not_farmable,
+            unpriced_sources=section.resin.unpriced_sources,
             histogram=[
                 HistogramBinRead(low=b.low, high=b.high, probability=b.probability)
                 for b in section.resin.histogram

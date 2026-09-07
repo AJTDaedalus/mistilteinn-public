@@ -19,12 +19,58 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 _SNAPSHOT = Path(__file__).resolve().parents[2] / "data" / "yuanshen" / "snapshot"
 _CURATED = Path(__file__).resolve().parents[2] / "data" / "planner"
+
+
+class MaterialSource(StrEnum):
+    """Where a material is actually obtained, and therefore whether it costs resin.
+
+    Owner, 2026-09-07: *"Mora, talent books, weapon ascension mats, world boss drops,
+    character xp books, and weekly boss mats are the only things that should have a
+    [resin] cost"*, and separately *"gems and overworld drops don't have a resin cost, same
+    with the local specialties like flowers"*.
+
+    **The gem rule is not an omission, it is a double-counting fix.** Elemental gems drop from
+    a world boss *alongside* the boss's own material, in the same 40-resin run. Pricing both
+    would bill that run twice, so the resin is attributed to the boss material and the gems
+    ride along free. A first pass charged for both.
+
+    Classification is by material family, derived from which cost table each family appears in
+    (`docs/RESEARCH_leveling_planner_data.md` §10) rather than from whether some reward preview
+    happens to mention it. That distinction caught a real bug: an elite enemy's preview lists
+    Spectral Husk, Heart and Nucleus with expected counts, so they were being priced at 40
+    resin a run — but Specters are ordinary overworld mobs and cost nothing.
+    """
+
+    DOMAIN = "domain"
+    WORLD_BOSS = "world_boss"
+    WEEKLY_BOSS = "weekly_boss"
+    LEY_LINE_EXP = "ley_line_exp"
+    LEY_LINE_MORA = "ley_line_mora"
+    #: Free of resin: elemental gems, common enemy drops, local specialties, the Enhancement
+    #: Ores, and Crown of Insight.
+    NONE = "none"
+
+
+#: Material id families, measured against the seeded catalogue at 7.0.54. Each is a prefix of
+#: the game's own item id, and the counts behind them are in the research doc:
+#: `1041` is 32 elemental gems (8 elements x 4 tiers), `1043` is 72 talent books plus the
+#: Crown, `1140` is 96 weapon ascension materials, `1130` is 89 boss drops, `112x` are common
+#: enemy drops, and `1000`/`1012` are local specialties.
+_GEMS = "1041"
+_TALENT_BOOKS = "1043"
+_WEAPON_MATERIALS = "114"
+_BOSS_DROPS = "113"
+
+#: Crown of Insight. In the talent-book family by id and **not** a domain drop — it comes from
+#: events, the Battle Pass and Offerings. The only member of `1043` that is not a book.
+CROWN_OF_INSIGHT = 104319
 
 
 @dataclass(frozen=True)
@@ -94,6 +140,9 @@ class Economy:
         self._domain_days: dict[int, list[str]] = {
             int(k): v for k, v in derived["domain_days"].items()
         }
+        #: Ids the game itself published an expected drop for. Used to split world bosses
+        #: (which have previews) from trounce domains (which do not).
+        self._published_rates: set[int] = {int(k) for k in derived["drop_rates"]}
         self._rates: dict[int, DropRate] = {}
         for key, rec in derived["drop_rates"].items():
             self._rates[int(key)] = DropRate(
@@ -102,19 +151,6 @@ class Economy:
                 resin=rec["resin"],
                 expected_per_run=rec["expected_per_run"],
                 curated=False,
-            )
-        for key, rec in curated["drop_rates"].items():
-            if rec.get("expected_per_run") is None:
-                continue
-            self._rates.setdefault(
-                int(key),
-                DropRate(
-                    material_id=int(key),
-                    source_type=rec["source_type"],
-                    resin=rec["resin"],
-                    expected_per_run=float(rec["expected_per_run"]),
-                    curated=True,
-                ),
             )
 
     # -- materials ------------------------------------------------------------------
@@ -198,16 +234,80 @@ class Economy:
 
     # -- resin ----------------------------------------------------------------------
 
-    def rate(self, material_id: int) -> DropRate | None:
-        """The drop rate for a material, or `None` when nothing prices it."""
-        return self._rates.get(material_id)
+    def source_of(self, material_id: int) -> MaterialSource:
+        """Which resin activity yields this material, if any.
 
-    def uncurated(self) -> list[int]:
-        """Material ids the curated file lists but has not been given a number for."""
+        Read the enum's docstring before changing a rule here — every branch is a decision
+        about whether a run gets billed once or twice.
+        """
+        singles = {
+            self.mora_item_id: MaterialSource.LEY_LINE_MORA,
+            # Rides along with the world-boss run its boss material already pays for.
+            CROWN_OF_INSIGHT: MaterialSource.NONE,
+        }
+        if material_id in singles:
+            return singles[material_id]
+        if material_id in {item.id for item in self.character_exp_items}:
+            return MaterialSource.LEY_LINE_EXP
+        text = str(material_id)
+        if text.startswith(_GEMS):
+            return MaterialSource.NONE
+        if text.startswith((_TALENT_BOOKS, _WEAPON_MATERIALS)):
+            return MaterialSource.DOMAIN
+        if text.startswith(_BOSS_DROPS):
+            # A published expected drop means the game's own preview priced it, which it does
+            # for world bosses and not for trounce domains. That split is the classifier.
+            return (
+                MaterialSource.WORLD_BOSS
+                if material_id in self._published_rates
+                else MaterialSource.WEEKLY_BOSS
+            )
+        return MaterialSource.NONE
+
+    def rate(self, material_id: int) -> DropRate | None:
+        """The drop rate for a material, or `None` when nothing prices it.
+
+        `None` has two meanings and `source_of` tells them apart: a material with source
+        `NONE` costs no resin at all, and one with a real source but no rate is a gap in the
+        data. A caller that folds them together tells the user their local specialties are an
+        unknown farming cost and their weekly bosses are free.
+        """
+        if self.source_of(material_id) is MaterialSource.NONE:
+            return None
+        rate = self._rates.get(material_id)
+        if rate is not None:
+            return rate
+        return self._source_default(material_id)
+
+    def _source_default(self, material_id: int) -> DropRate | None:
+        """A rate curated per *source* rather than per material.
+
+        Every trounce domain yields its materials the same way, so one number prices all 47
+        weekly-boss drops instead of 47 hand-typed entries. The same shape carries the ley
+        lines, whose yields no preview publishes either.
+        """
+        source = self.source_of(material_id)
+        record = self._curated.get("source_defaults", {}).get(source.value)
+        if not record or record.get("expected_per_run") is None:
+            return None
+        return DropRate(
+            material_id=material_id,
+            source_type=source.value,
+            resin=int(record["resin"]),
+            expected_per_run=float(record["expected_per_run"]),
+            curated=True,
+        )
+
+    def source_resin(self, source: MaterialSource) -> int | None:
+        """Resin per run at a source, from the curated defaults."""
+        record = self._curated.get("source_defaults", {}).get(source.value)
+        return None if record is None else int(record["resin"])
+
+    def uncurated_sources(self) -> list[str]:
+        """Sources that cost resin at a rate nobody has supplied yet."""
+        defaults = self._curated.get("source_defaults", {})
         return sorted(
-            int(k)
-            for k, v in self._curated["drop_rates"].items()
-            if v.get("expected_per_run") is None
+            name for name, rec in defaults.items() if rec.get("expected_per_run") is None
         )
 
     def mora_per_exp(self, target: str) -> float | None:

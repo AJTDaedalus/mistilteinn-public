@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from app.services.planner.economy import economy
+from app.services.planner.economy import MaterialSource, economy
 
 CURATED = Path(__file__).resolve().parents[2] / "app" / "data" / "planner" / "curated_rates.json"
 
@@ -31,41 +31,65 @@ def test_every_curated_value_cites_a_source(curated: dict) -> None:
     """A number without a provenance string is the failure mode fairy shipped."""
     uncited = [
         key
-        for key, rec in curated["drop_rates"].items()
+        for key, rec in curated["source_defaults"].items()
         if rec.get("expected_per_run") is not None and not rec.get("source", "").strip()
     ]
     assert uncited == [], (
-        f"{len(uncited)} curated drop rate(s) carry a value but no source: {uncited}. "
+        f"{len(uncited)} curated source rate(s) carry a value but no source: {uncited}. "
         "Name where the number came from, or set it back to null and let the planner "
-        "report the material as resin-unknown."
+        "report that source as resin-unknown."
     )
     for target, rec in curated["mora_per_exp"].items():
         if rec.get("divisor") is not None:
             assert rec.get("source", "").strip(), f"mora_per_exp.{target} has no source"
 
 
-def test_curated_entries_are_the_ones_the_dump_cannot_price() -> None:
-    """Every curated id is genuinely absent from the derived rates, not a duplicate of one."""
-    eco = economy()
-    derived = json.loads(
-        (
-            Path(__file__).resolve().parents[2]
-            / "app" / "data" / "yuanshen" / "snapshot" / "planner_economy.json"
-        ).read_text(encoding="utf-8"),
-    )
-    overlap = set(derived["drop_rates"]) & {str(i) for i in eco.uncurated()}
-    assert overlap == set(), (
-        f"{overlap} appear in both the derived snapshot and the curated file. The curated "
-        "file exists only for what the dump does not publish."
-    )
+def test_the_curated_file_prices_sources_the_dump_leaves_out() -> None:
+    """Trounce domains and ley lines. Everything else is derived or costs no resin."""
+    assert set(economy().uncurated_sources()) == {
+        "weekly_boss", "ley_line_exp", "ley_line_mora",
+    }
 
 
-def test_an_unpriced_material_reports_none_rather_than_a_guess() -> None:
+def test_an_uncurated_source_reports_none_rather_than_a_guess() -> None:
     eco = economy()
-    for material_id in eco.uncurated():
+    # Bloodjade Branch is a trounce-domain drop; Mora and Hero's Wit are ley-line yields.
+    for material_id in (113018, 202, 104003):
         assert eco.rate(material_id) is None, (
-            f"{material_id} is listed as needing curation but resolved to a rate"
+            f"{material_id} belongs to an uncurated source but resolved to a rate"
         )
+
+
+@pytest.mark.parametrize(
+    ("material_id", "name", "expected"),
+    [
+        (104161, "Shivada Jade Sliver", MaterialSource.NONE),
+        (101202, "Sakura Bloom", MaterialSource.NONE),
+        (112053, "Spectral Husk", MaterialSource.NONE),
+        (104013, "Mystic Enhancement Ore", MaterialSource.NONE),
+        (104319, "Crown of Insight", MaterialSource.NONE),
+        (104301, "Teachings of Freedom", MaterialSource.DOMAIN),
+        (114001, "Tile of Decarabian's Tower", MaterialSource.DOMAIN),
+        (113023, "Perpetual Heart", MaterialSource.WORLD_BOSS),
+        (113018, "Bloodjade Branch", MaterialSource.WEEKLY_BOSS),
+        (104003, "Hero's Wit", MaterialSource.LEY_LINE_EXP),
+        (202, "Mora", MaterialSource.LEY_LINE_MORA),
+    ],
+)
+def test_only_the_owners_six_sources_cost_resin(material_id, name, expected) -> None:
+    """Owner, 2026-09-07: mora, talent books, weapon ascension mats, world boss drops,
+    character XP books and weekly boss mats -- and nothing else.
+
+    **Gems are the interesting one.** They drop from a world boss *alongside* the boss's own
+    material in the same 40-resin run, so charging for both bills that run twice. A first pass
+    listed all seven gem Slivers as needing a curated rate; they need none, because their
+    resin cost is zero.
+
+    **Spectral Husk is the bug this test would have caught.** An elite enemy's reward preview
+    lists it with an expected count, so classifying by "does a preview mention it" priced an
+    ordinary overworld mob drop at 40 resin a run.
+    """
+    assert economy().source_of(material_id) is expected, name
 
 
 def test_level_caps_are_the_published_ladder() -> None:

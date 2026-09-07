@@ -31,8 +31,11 @@ if TYPE_CHECKING:
 #: Teachings of Freedom — a real domain drop with a published expected yield of 2.2 per
 #: 20-resin run, so the resin arithmetic in these tests is checkable by hand.
 TEACHINGS = 104301
-#: Shivada Jade Sliver — resin-farmable at a rate **nobody publishes**. One of the twelve.
+#: Shivada Jade Sliver — an elemental gem, which costs **no resin**: gems drop from a world
+#: boss alongside the boss's own material, in a run that is already paid for.
 SLIVER = 104161
+#: Bloodjade Branch — a trounce-domain drop. Costs resin at a yield nobody publishes.
+WEEKLY = 113018
 #: Sakura Bloom — a local specialty. Costs no resin at all, which is a different thing.
 SPECIALTY = 101202
 
@@ -48,6 +51,7 @@ async def _catalogue(db_session: AsyncSession) -> tuple[Character, Talent, Weapo
         (TEACHINGS, "Teachings of Freedom"),
         (SLIVER, "Shivada Jade Sliver"),
         (SPECIALTY, "Sakura Bloom"),
+        (WEEKLY, "Bloodjade Branch"),
     ):
         db_session.add(
             Material(
@@ -74,7 +78,11 @@ async def _catalogue(db_session: AsyncSession) -> tuple[Character, Talent, Weapo
     db_session.add(
         CharacterAscensionCost(
             character_id=character.id, phase=1, mora=20000,
-            items=[{"id": SPECIALTY, "count": 3}, {"id": SLIVER, "count": 1}],
+            items=[
+                {"id": SPECIALTY, "count": 3},
+                {"id": SLIVER, "count": 1},
+                {"id": WEEKLY, "count": 2},
+            ],
         ),
     )
     await db_session.flush()
@@ -165,10 +173,11 @@ async def test_owned_stock_is_subtracted(
 async def test_resin_distinguishes_unknown_from_not_farmable(
     client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
 ) -> None:
-    """A local specialty is free; a gem costs resin at a rate nobody publishes.
+    """A specialty and a gem cost no resin; a weekly boss drop costs it at an unknown rate.
 
-    One field for both would say the specialties are an unknown farming cost and the gems are
-    free — wrong in opposite directions.
+    One field for all three would say the specialties are an unknown farming cost and the
+    weekly bosses are free — wrong in opposite directions. Gems sit with the specialties
+    because they drop alongside a world-boss material in a run already paid for.
     """
     character, talent, _ = await _catalogue(db_session)
     await db_session.commit()
@@ -178,10 +187,11 @@ async def test_resin_distinguishes_unknown_from_not_farmable(
     )
     ascension = next(s for s in response.json()["sections"] if s["key"] == "ascension")
     by_id = {line["material_id"]: line for line in ascension["materials"]}
-    assert by_id[SLIVER]["resin_status"] == "unknown"
+    assert by_id[SLIVER]["resin_status"] == "not_farmable"
     assert by_id[SPECIALTY]["resin_status"] == "not_farmable"
-    assert ascension["resin"]["unpriced"] == [SLIVER]
-    assert ascension["resin"]["not_farmable"] == [SPECIALTY]
+    assert by_id[WEEKLY]["resin_status"] == "unknown"
+    assert ascension["resin"]["unpriced"] == [WEEKLY]
+    assert ascension["resin"]["not_farmable"] == [SPECIALTY, SLIVER]
 
 
 @pytest.mark.asyncio
@@ -355,4 +365,4 @@ async def test_options_offer_only_levelable_talents(
     body = response.json()
     assert [t["talent_id"] for t in body["talents"]] == [talent.id]
     assert body["level_caps"] == {"0": 20, "1": 40, "2": 50, "3": 60, "4": 70, "5": 80, "6": 90}
-    assert SLIVER in body["uncurated_material_ids"]
+    assert body["uncurated_sources"] == ["ley_line_exp", "ley_line_mora", "weekly_boss"]

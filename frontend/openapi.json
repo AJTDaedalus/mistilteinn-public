@@ -9110,12 +9110,12 @@
             "type": "array",
             "title": "Bonuses"
           },
-          "uncurated_material_ids": {
+          "uncurated_sources": {
             "items": {
-              "type": "integer"
+              "type": "string"
             },
             "type": "array",
-            "title": "Uncurated Material Ids"
+            "title": "Uncurated Sources"
           }
         },
         "type": "object",
@@ -9445,6 +9445,13 @@
             "type": "array",
             "title": "Not Farmable"
           },
+          "unpriced_sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unpriced Sources"
+          },
           "histogram": {
             "items": {
               "$ref": "#/components/schemas/HistogramBinRead"
@@ -9458,6 +9465,7 @@
           "expected",
           "unpriced",
           "not_farmable",
+          "unpriced_sources",
           "histogram"
         ],
         "title": "ResinTotalRead",
