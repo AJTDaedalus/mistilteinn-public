@@ -254,7 +254,13 @@ def test_batched_preserves_order_and_the_final_short_window():
 
 
 def test_every_committed_character_index_key_survives_the_sort():
-    """No key is dropped or collapsed — 150 in, 150 out, including all 28 Traveler kits."""
+    """No key is dropped or collapsed — 150 in, 150 out, including all 28 dashed keys.
+
+    **28 is the count of body-and-element keys, not of Travelers.** It is 14 Traveler variants
+    and 14 practice mannequins (`10000117` is Manekin, `10000118` Manekina), and reading it as
+    28 Travelers put the wrong explanation beside the right number in six places. There are
+    **16** Travelers: these 14 plus two unreleased crossbow bodies whose keys have no suffix.
+    """
     index = FixtureTransport.from_committed_fixtures().indexes["character"]
 
     keys = _index_keys(index)

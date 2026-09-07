@@ -30,8 +30,10 @@ happened to have equipped. Deleting the build is the way to ask for a fresh one.
 ## The Traveler
 
 `characters[]` names them by element (`TravelerCryo`), but `artifacts[].location` says only
-`Traveler` — no element, and never a gender. The catalogue holds 28 variants: seven elements
-for each of two Travelers.
+`Traveler` — no element, and never a gender. The catalogue holds **16** variants: seven
+elements for each of two bodies, plus the two unreleased crossbow bodies. (This said 28, which
+was the mannequins counted in; seven for each of two is fourteen, and the line contradicted
+itself.)
 
 Owner ruling: place them rather than refuse. The element comes from the `characters` entry;
 the gender cannot be recovered from the export at all, so the **lowest `nanoka_id`** is taken

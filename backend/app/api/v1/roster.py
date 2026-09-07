@@ -20,6 +20,7 @@ from app.dependencies import get_current_user, get_db
 from app.models.character import Character
 from app.models.user import User
 from app.repositories.roster import CharacterRosterRepository
+from app.services import gcsim_keys, traveler
 from app.services.roster import is_mannequin
 from app.services.unreleased import is_unreleased_class
 
@@ -34,6 +35,14 @@ class RosterEntryRead(BaseModel):
 
     character_id: str
     name: str
+    #: The name to put on the row, which for sixteen characters is not `name`.
+    #:
+    #: Every `Traveler` row is *named* `Traveler`, so this tab drew Aether Pyro and Lumine Pyro
+    #: as the same row twice and the two unreleased bodies — no element, so no chip —
+    #: identically. Sixteen checkboxes all announcing "I have Traveler", on the one tab whose
+    #: whole purpose is letting a user correct ownership by hand.
+    #: `app/services/traveler.py`, `docs/RESEARCH_traveler_identity.md`.
+    display_name: str
     icon: str | None = None
     element: str | None = None
     weapon_type: str | None = None
@@ -45,6 +54,50 @@ class RosterEntryRead(BaseModel):
     #: `"import"`, `"manual"`, or null when there is no row. Lets the tab show which answers
     #: came from a scan and which the user gave.
     source: str | None = None
+    #: Whether gcsim implements this character at the pinned commit.
+    #:
+    #: **Owning them and being able to search them are different questions**, and this tab was
+    #: answering only the first. gcsim has six Traveler elements, not seven — there is no Cryo
+    #: Traveler — so the one Traveler on the owner's account is the one element that cannot be
+    #: compiled, and nothing said so until a search failed. `character_key` has always refused
+    #: it correctly; what was missing was anybody asking before offering the build.
+    simulatable: bool = True
+    #: Why not, in gcsim's own terms, when `simulatable` is false. Null otherwise.
+    unsimulatable_reason: str | None = None
+
+
+def _entry(
+    character: Character, *, owned: bool | None, source: str | None,
+) -> RosterEntryRead:
+    """One row, built the same way on both routes.
+
+    They were built separately, and `PATCH` therefore returned a row shaped slightly unlike the
+    one `GET` had produced — harmless while the fields were few and exactly the kind of drift
+    that puts a name on one route and not the other.
+    """
+    element = getattr(character.element, "value", None)
+    try:
+        gcsim_keys.character_key(character.nanoka_id, character.name, element)
+    except gcsim_keys.GcsimKeyError as refusal:
+        simulatable, reason = False, str(refusal)
+    else:
+        simulatable, reason = True, None
+
+    return RosterEntryRead(
+        character_id=str(character.id),
+        name=character.name,
+        display_name=traveler.display_name(
+            name=character.name, icon=character.icon, element=element,
+        ),
+        icon=character.icon,
+        element=element,
+        weapon_type=getattr(character.weapon_type, "value", None),
+        rarity=getattr(character.rarity, "value", None),
+        owned=owned,
+        source=source,
+        simulatable=simulatable,
+        unsimulatable_reason=reason,
+    )
 
 
 class RosterRead(BaseModel):
@@ -53,6 +106,13 @@ class RosterRead(BaseModel):
     entries: list[RosterEntryRead]
     #: Counted server-side so the client does not have to agree with it separately.
     owned_count: int
+    #: Catalogue rows this response left out because the game has not shipped them.
+    #:
+    #: **Published rather than silent**, and that is the point of the number. Withholding rows
+    #: is the one thing this endpoint does that a user cannot see, so a rule that misfired
+    #: would empty the roster with no symptom at all. Two at nanoka 7.0.51; anything else is a
+    #: seed to look at.
+    withheld: int = 0
 
 
 class RosterEntryUpdate(BaseModel):
@@ -69,14 +129,23 @@ async def list_roster(session: _Session, user: _User) -> RosterRead:
     offer a toggle for a character the user has never touched, and a row that does not exist
     cannot carry one.
 
-    Mannequins are excluded — `services/roster.py` says why, and by id rather than by name.
-    So are the two Traveler variants carrying a weapon class the game has not shipped: this
-    list asks *"do you own this character?"* about every row it draws, and nobody owns one that
-    does not exist. `app/services/unreleased.py`, and #271.
+    **Two exclusions, for two different reasons.** Mannequins are never characters and go by
+    nanoka id prefix; the unreleased Traveler bodies will be characters and go by carrying a
+    weapon class the game has not shipped. `services/roster.py` and `services/unreleased.py`
+    argue them separately.
+
+    **The second was by talent count on this branch and is by weapon class now**, because #271
+    landed the same exclusion for a stronger reason while this was open: `WEAPON_CROSSBOW` also
+    carries eight unreleased *weapon* names, so hiding the class hides a leak the talent-count
+    rule never touched. Both rules select the same two Traveler rows at nanoka 7.0.51.
 
     **This route reads `select(Character)` directly**, not `CharacterRepository`, so it does
     not inherit the catalogue's exclusions and has to state them — which is how the mannequin
     rule already came to be written out here twice.
+
+    Ordered by `display_name`, not `name` — sixteen rows sharing one `name` have no order
+    among themselves under the latter, so the Travelers appeared in whatever order the database
+    returned and could shuffle between requests.
     """
     characters = (await session.execute(
         select(Character).order_by(Character.name),
@@ -89,23 +158,28 @@ async def list_roster(session: _Session, user: _User) -> RosterRead:
     }
 
     entries = []
+    withheld = 0
     for character in characters:
-        if is_mannequin(character.nanoka_id) or is_unreleased_class(character.weapon_type):
+        # **Kept apart, because only one of them is counted.** A mannequin is not a
+        # character and never will be, so its absence is not news; an unreleased body is a
+        # character the game has not shipped, and `withheld` is how a rule that started
+        # over-matching becomes visible instead of quietly emptying the roster.
+        if is_mannequin(character.nanoka_id):
+            continue
+        if is_unreleased_class(character.weapon_type):
+            withheld += 1
             continue
         answer = answers.get(str(character.id))
-        entries.append(RosterEntryRead(
-            character_id=str(character.id),
-            name=character.name,
-            icon=character.icon,
-            element=getattr(character.element, "value", None),
-            weapon_type=getattr(character.weapon_type, "value", None),
-            rarity=getattr(character.rarity, "value", None),
+        entries.append(_entry(
+            character,
             owned=answer[0] if answer else None,
             source=answer[1] if answer else None,
         ))
+    entries.sort(key=lambda entry: entry.display_name)
     return RosterRead(
         entries=entries,
         owned_count=sum(1 for entry in entries if entry.owned),
+        withheld=withheld,
     )
 
 
@@ -147,13 +221,4 @@ async def set_owned(
     await repository.set_owned(character_id, owned=payload.owned)
     await session.commit()
 
-    return RosterEntryRead(
-        character_id=character_id,
-        name=character.name,
-        icon=character.icon,
-        element=getattr(character.element, "value", None),
-        weapon_type=getattr(character.weapon_type, "value", None),
-        rarity=getattr(character.rarity, "value", None),
-        owned=payload.owned,
-        source="manual",
-    )
+    return _entry(character, owned=payload.owned, source="manual")

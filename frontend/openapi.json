@@ -671,7 +671,7 @@
           "catalogue"
         ],
         "summary": "Get Character",
-        "description": "One character with its talents, constellations and ascension passives.\n\nThe path parameter is a **string**: 28 of the 150 characters are Traveler variants\nkeyed `10000005-2` \u2026 `10000005-8`. Typing it as an int would 422 on all of them.",
+        "description": "One character with its talents, constellations and ascension passives.\n\nThe path parameter is a **string**: 28 of the 150 characters are keyed `10000005-2` \u2026\n`10000005-8`, and they are **14 Traveler variants plus 14 practice mannequins**\n(`10000117`/`10000118` are Manekin and Manekina, not Traveler bodies). Typing it as an int\nwould 422 on all of them.",
         "operationId": "get_character_api_v1_characters__nanoka_id__get",
         "parameters": [
           {
@@ -3705,7 +3705,7 @@
           "roster"
         ],
         "summary": "List Roster",
-        "description": "Every character that can be owned, with this user's answer where they have given one.\n\n**The catalogue left-joined to the roster**, rather than the roster alone: the tab has to\noffer a toggle for a character the user has never touched, and a row that does not exist\ncannot carry one.\n\nMannequins are excluded \u2014 `services/roster.py` says why, and by id rather than by name.\nSo are the two Traveler variants carrying a weapon class the game has not shipped: this\nlist asks *\"do you own this character?\"* about every row it draws, and nobody owns one that\ndoes not exist. `app/services/unreleased.py`, and #271.\n\n**This route reads `select(Character)` directly**, not `CharacterRepository`, so it does\nnot inherit the catalogue's exclusions and has to state them \u2014 which is how the mannequin\nrule already came to be written out here twice.",
+        "description": "Every character that can be owned, with this user's answer where they have given one.\n\n**The catalogue left-joined to the roster**, rather than the roster alone: the tab has to\noffer a toggle for a character the user has never touched, and a row that does not exist\ncannot carry one.\n\n**Two exclusions, for two different reasons.** Mannequins are never characters and go by\nnanoka id prefix; the unreleased Traveler bodies will be characters and go by carrying a\nweapon class the game has not shipped. `services/roster.py` and `services/unreleased.py`\nargue them separately.\n\n**The second was by talent count on this branch and is by weapon class now**, because #271\nlanded the same exclusion for a stronger reason while this was open: `WEAPON_CROSSBOW` also\ncarries eight unreleased *weapon* names, so hiding the class hides a leak the talent-count\nrule never touched. Both rules select the same two Traveler rows at nanoka 7.0.51.\n\n**This route reads `select(Character)` directly**, not `CharacterRepository`, so it does\nnot inherit the catalogue's exclusions and has to state them \u2014 which is how the mannequin\nrule already came to be written out here twice.\n\nOrdered by `display_name`, not `name` \u2014 sixteen rows sharing one `name` have no order\namong themselves under the latter, so the Travelers appeared in whatever order the database\nreturned and could shuffle between requests.",
         "operationId": "list_roster_api_v1_roster_get",
         "responses": {
           "200": {
@@ -6078,6 +6078,12 @@
             "description": "The vision emblem's basename \u2014 the flame, the droplet, the snowflake.\n\nPublished rather than derived client-side, for the same reason `weapon_type_icon` is:\na page building `f\"{element}.webp\"` would request art nobody vendored the moment a\npatch adds a vision, and would render a broken mark instead of nothing.\n\n`None` for the two rows whose element is the literal `\"None\"`.",
             "readOnly": true
           },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name",
+            "description": "The name to put on a card, which for sixteen characters is not `name`.\n\nEvery `Traveler` row is *named* `Traveler` \u2014 no gender column, no title, and upstream\npublishes one `en` value for all sixteen. So the roster tab drew Aether Pyro and Lumine\nPyro as the same row twice, and the two unreleased bodies, which have no element and so\nno chip, drew *identically*.\n\n**Computed rather than stored**, like `element_icon` and `stars` beside it: a display\nname is presentation, and storing it would mean a migration whenever a body or element\nis added plus a second copy of the truth to keep in step.\n\n`app/services/traveler.py` says why it is keyed on the icon \u2014 it is the only signal\nthat exists \u2014 and `docs/RESEARCH_traveler_identity.md` has the rest.",
+            "readOnly": true
+          },
           "stars": {
             "type": "integer",
             "title": "Stars",
@@ -6101,6 +6107,7 @@
           "weapon_type_display",
           "weapon_type_icon",
           "element_icon",
+          "display_name",
           "stars"
         ],
         "title": "CharacterRead",
@@ -6190,6 +6197,12 @@
             "description": "The vision emblem's basename \u2014 the flame, the droplet, the snowflake.\n\nPublished rather than derived client-side, for the same reason `weapon_type_icon` is:\na page building `f\"{element}.webp\"` would request art nobody vendored the moment a\npatch adds a vision, and would render a broken mark instead of nothing.\n\n`None` for the two rows whose element is the literal `\"None\"`.",
             "readOnly": true
           },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name",
+            "description": "The name to put on a card, which for sixteen characters is not `name`.\n\nEvery `Traveler` row is *named* `Traveler` \u2014 no gender column, no title, and upstream\npublishes one `en` value for all sixteen. So the roster tab drew Aether Pyro and Lumine\nPyro as the same row twice, and the two unreleased bodies, which have no element and so\nno chip, drew *identically*.\n\n**Computed rather than stored**, like `element_icon` and `stars` beside it: a display\nname is presentation, and storing it would mean a migration whenever a body or element\nis added plus a second copy of the truth to keep in step.\n\n`app/services/traveler.py` says why it is keyed on the icon \u2014 it is the only signal\nthat exists \u2014 and `docs/RESEARCH_traveler_identity.md` has the rest.",
+            "readOnly": true
+          },
           "stars": {
             "type": "integer",
             "title": "Stars",
@@ -6207,6 +6220,7 @@
           "weapon_type_display",
           "weapon_type_icon",
           "element_icon",
+          "display_name",
           "stars"
         ],
         "title": "CharacterSummary",
@@ -9725,6 +9739,10 @@
             "type": "string",
             "title": "Name"
           },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
           "icon": {
             "anyOf": [
               {
@@ -9790,12 +9808,29 @@
               }
             ],
             "title": "Source"
+          },
+          "simulatable": {
+            "type": "boolean",
+            "title": "Simulatable",
+            "default": true
+          },
+          "unsimulatable_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unsimulatable Reason"
           }
         },
         "type": "object",
         "required": [
           "character_id",
-          "name"
+          "name",
+          "display_name"
         ],
         "title": "RosterEntryRead",
         "description": "One catalogue character and this user's answer about them."
@@ -9827,6 +9862,11 @@
           "owned_count": {
             "type": "integer",
             "title": "Owned Count"
+          },
+          "withheld": {
+            "type": "integer",
+            "title": "Withheld",
+            "default": 0
           }
         },
         "type": "object",

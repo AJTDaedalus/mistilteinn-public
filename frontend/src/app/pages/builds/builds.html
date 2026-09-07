@@ -135,16 +135,23 @@
           >
             <label class="roster__pick">
               <catalogue-icon class="face" [icon]="entry.icon" [alt]="''" [size]="72" />
-              <span class="name">{{ entry.name }}</span>
+              <span class="name">{{ entry.display_name }}</span>
               <span class="marks">
                 <element-chip compact [size]="22" [element]="entry.element ?? null" />
+                <!-- Said on the row rather than at the end of a seven-minute search. gcsim
+                     implements six Traveler elements, not seven. -->
+                @if (!entry.simulatable) {
+                  <span class="roster__nosim" [title]="entry.unsimulatable_reason ?? ''">
+                    no gcsim
+                  </span>
+                }
               </span>
               <span class="roster__say">
                 <input
                   type="checkbox"
                   [checked]="entry.owned === true"
                   [disabled]="savingCharacter() === entry.character_id"
-                  [attr.aria-label]="'I have ' + entry.name"
+                  [attr.aria-label]="'I have ' + entry.display_name"
                   (change)="toggleOwned(entry, $any($event.target).checked)"
                 />
                 <span>I have them</span>
@@ -177,7 +184,7 @@
               [alt]="''"
               [size]="72"
             />
-            <span class="name">{{ build.character?.name || 'No character' }}</span>
+            <span class="name">{{ build.character?.display_name || 'No character' }}</span>
             <span class="marks">
               <element-chip
               compact
@@ -196,7 +203,7 @@
           <button
             type="button"
             class="drop"
-            [attr.aria-label]="'Delete ' + (build.character?.name || 'build')"
+            [attr.aria-label]="'Delete ' + (build.character?.display_name || 'build')"
             (click)="remove(build)"
           >×</button>
         </li>
@@ -216,7 +223,7 @@
         <li class="unbuilt">
           <button type="button" class="pick" (click)="buildFor(entry)">
             <catalogue-icon class="face" [icon]="entry.icon" [alt]="''" [size]="72" />
-            <span class="name">{{ entry.name }}</span>
+            <span class="name">{{ entry.display_name }}</span>
             <span class="marks">
               <element-chip compact [size]="22" [element]="entry.element ?? null" />
             </span>
@@ -253,17 +260,17 @@
           >
             <span class="rank__n mono">{{ i + 1 }}</span>
             <catalogue-icon [icon]="build.character?.icon || ''" [alt]="''" [size]="28" />
-            <span class="rank__who">{{ build.character?.name || 'Unnamed build' }}</span>
+            <span class="rank__who">{{ build.character?.display_name || 'Unnamed build' }}</span>
             <span class="reorder">
               <button
                 type="button"
-                [attr.aria-label]="'Move ' + (build.character?.name || 'build') + ' up'"
+                [attr.aria-label]="'Move ' + (build.character?.display_name || 'build') + ' up'"
                 [disabled]="$first"
                 (click)="moveRank(i, -1)"
               >↑</button>
               <button
                 type="button"
-                [attr.aria-label]="'Move ' + (build.character?.name || 'build') + ' down'"
+                [attr.aria-label]="'Move ' + (build.character?.display_name || 'build') + ' down'"
                 [disabled]="$last"
                 (click)="moveRank(i, 1)"
               >↓</button>
@@ -271,7 +278,7 @@
             <button
               type="button"
               class="drop"
-              [attr.aria-label]="'Remove ' + (build.character?.name || 'build') + ' from the ranking'"
+              [attr.aria-label]="'Remove ' + (build.character?.display_name || 'build') + ' from the ranking'"
               (click)="removeFromRanking(build.id)"
             >×</button>
           </li>
@@ -306,7 +313,7 @@
 
     <dialog #editor class="editor" (close)="onEditorClosed()">
       <header class="editor__head">
-        <h2>{{ editing() ? 'Editing ' + (editing()?.character?.name || 'build') : 'New build' }}</h2>
+        <h2>{{ editing() ? 'Editing ' + (editing()?.character?.display_name || 'build') : 'New build' }}</h2>
         <button type="button" class="editor__close" aria-label="Close" (click)="closeEditor()">×</button>
       </header>
 
@@ -325,7 +332,7 @@
            `<p class="hint">` went with it. -->
       @if (character(); as chosen) {
         <p class="subject">
-          <entity-token [icon]="chosen.icon" [name]="chosen.name" [size]="48" />
+          <entity-token [icon]="chosen.icon" [name]="chosen.display_name" [size]="48" />
           <element-chip
             compact
             [size]="22"

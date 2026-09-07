@@ -247,8 +247,9 @@ a job with progress, never a request that blocks.
   Regenerate it in-process — `create_app().openapi()` — rather than by curling a running
   backend; the contract test builds the app the same way and needs no server.
 - **The catalogue is seeded.** 19 tables across 14 migrations. `cd backend && python -m
-  scripts.seed_db` fills them from nanoka GI **7.0.51** in ~10s (150 characters including all
-  28 Traveler variants, 260 weapons, 65 artifact sets, 360 enemy profiles) and `python -m
+  scripts.seed_db` fills them from nanoka GI **7.0.51** in ~10s (150 characters — **16**
+  Traveler variants, 14 practice mannequins and 120 ordinary characters — 260 weapons, 65
+  artifact sets, 360 enemy profiles) and `python -m
   scripts.verify_seed` checks the result against the committed indexes and nine hand-read
   anchors. Readable at `/api/v1/{characters,weapons,artifact-sets,enemies}`; a GOOD export
   imports at `/api/v1/artifacts/import/good`; `/api/v1/builds/{id}/explain` and

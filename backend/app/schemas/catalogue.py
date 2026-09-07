@@ -40,7 +40,7 @@ from typing import Any
 from pydantic import BaseModel, computed_field
 
 from app.models.enums import Element, Rarity, StatType, WeaponType
-from app.services import element_symbols, weapon_symbols
+from app.services import element_symbols, traveler, weapon_symbols
 
 _FROM_ORM = {"from_attributes": True}
 
@@ -145,8 +145,10 @@ class CharacterSummary(WeaponClassed):
     """A character as a list entry."""
 
     id: str
-    #: The source key verbatim — a **string**, because 28 of the 150 are Traveler variants
-    #: spelled `10000005-2`. An int here would drop them.
+    #: The source key verbatim — a **string**, because 28 of the 150 carry a body-and-element
+    #: key spelled `10000005-2`: **14 Traveler variants and 14 practice mannequins**. An int
+    #: here would drop them. (The catalogue holds **16** Travelers, not 28 — the other two are
+    #: the unreleased crossbow bodies, whose keys have no suffix.)
     nanoka_id: str
     name: str
     #: Null for the two entries whose payload element is the literal `"None"`.
@@ -169,6 +171,29 @@ class CharacterSummary(WeaponClassed):
         `None` for the two rows whose element is the literal `"None"`.
         """
         return element_symbols.symbol_for(self.element)
+
+    @computed_field
+    @property
+    def display_name(self) -> str:
+        """The name to put on a card, which for sixteen characters is not `name`.
+
+        Every `Traveler` row is *named* `Traveler` — no gender column, no title, and upstream
+        publishes one `en` value for all sixteen. So the roster tab drew Aether Pyro and Lumine
+        Pyro as the same row twice, and the two unreleased bodies, which have no element and so
+        no chip, drew *identically*.
+
+        **Computed rather than stored**, like `element_icon` and `stars` beside it: a display
+        name is presentation, and storing it would mean a migration whenever a body or element
+        is added plus a second copy of the truth to keep in step.
+
+        `app/services/traveler.py` says why it is keyed on the icon — it is the only signal
+        that exists — and `docs/RESEARCH_traveler_identity.md` has the rest.
+        """
+        return traveler.display_name(
+            name=self.name,
+            icon=self.icon,
+            element=getattr(self.element, "value", self.element),
+        )
 
     @computed_field
     @property

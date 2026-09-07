@@ -37,10 +37,12 @@ class Character(TimestampMixin, Base):
 
     * The payload key → `nanoka_id`, **verbatim and as a string**. 28 of the 150 entries in
       the 7.0.51 index are `"{body}-{element}"` — `10000005-2` … `10000005-8`, and the same
-      for 10000007, 10000117 and 10000118: four Traveler bodies × seven elements, each a
-      genuinely different kit, and the bare `10000005` is not in the index at all. This
-      column was `Integer` until D.3; `int(key)` raises on the first Traveler and
-      skip-on-parse-failure loses all 28. See `_index_keys` in the nanoka importer.
+      for 10000007, 10000117 and 10000118 — but those are **not** four Traveler bodies.
+      `10000005` and `10000007` are Aether and Lumine; `10000117` and `10000118` are
+      **Manekin and Manekina**, the practice mannequins. Two bodies x seven elements each,
+      twice over, and the bare `10000005` is not in the index at all. This column was
+      `Integer` until D.3; `int(key)` raises on the first of them and skip-on-parse-failure
+      loses all 28. See `_index_keys` in the nanoka importer.
     * `element` → `element`, via `Element.parse` — **nullable**, because two of the 150
       entries carry the literal `"None"`.
     * `weapon` → `weapon_type`; `rarity` → `rarity` via `Rarity.parse`.

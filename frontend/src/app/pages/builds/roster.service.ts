@@ -13,6 +13,15 @@ import { injectApi } from '../../api/api.client';
 export interface RosterEntry {
   character_id: string;
   name: string;
+  /**
+   * The name to put on the row, which for sixteen characters is not `name`.
+   *
+   * Every `Traveler` row is *named* `Traveler`, so this tab drew Aether Pyro and Lumine Pyro as
+   * the same row twice, and the two unreleased bodies — no element, so no chip — identically.
+   * Sixteen checkboxes all announcing "I have Traveler", on the one tab whose whole purpose is
+   * letting a user correct ownership by hand.
+   */
+  display_name: string;
   icon: string | null;
   element: string | null;
   weapon_type: string | null;
@@ -20,11 +29,23 @@ export interface RosterEntry {
   owned: boolean | null;
   /** `"import"`, `"manual"`, or null when nobody has said. */
   source: string | null;
+  /**
+   * Whether gcsim implements this character at the pinned commit.
+   *
+   * **Owning them and being able to search them are different questions.** gcsim has six
+   * Traveler elements, not seven, so the one Traveler on the owner's account is the one that
+   * cannot be compiled — and nothing said so until a search failed several minutes in.
+   */
+  simulatable: boolean;
+  /** gcsim's own words, when `simulatable` is false. */
+  unsimulatable_reason: string | null;
 }
 
 export interface RosterRead {
   entries: RosterEntry[];
   owned_count: number;
+  /** Catalogue rows the server left out because the game has not shipped them. */
+  withheld: number;
 }
 
 /**

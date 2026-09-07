@@ -219,8 +219,10 @@ class ContextKeyRequest(BaseModel):
     #: in `gcsim_config.target_fields` rather than restated here.
     #:
     #: An **int**, unlike a character's `nanoka_id`. `EnemyProfile.nanoka_id` is an Integer
-    #: column; characters need a string because 28 Traveler variants are spelled
-    #: `10000005-2`. Typed as a string here it reached asyncpg as text for an integer column
+    #: column; characters need a string because 28 rows are spelled `10000005-2` — **14
+    #: Traveler variants and 14 practice mannequins**, not 28 Travelers, which is what this
+    #: line and five others said until it was counted. Typed as a string here it reached
+    #: asyncpg as text for an integer column
     #: and the whole branch raised — found in the R.6 self-review, untested until then.
     enemy_nanoka_id: int | None = None
 

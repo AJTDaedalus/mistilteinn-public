@@ -7,13 +7,16 @@ import { BuildsPage, matchesBuild } from './builds';
 import { BuildsService } from './builds.service';
 import { RosterService } from './roster.service';
 
+// `display_name` is a server-computed field, equal to `name` for everyone but the sixteen
+// Traveler rows. These fixtures carry it because the pickers render it.
 const AYAKA = {
-  id: 'char-ayaka', nanoka_id: '10000002', name: 'Kamisato Ayaka', element: 'Cryo',
+  id: 'char-ayaka', nanoka_id: '10000002', name: 'Kamisato Ayaka',
+  display_name: 'Kamisato Ayaka', element: 'Cryo',
   weapon_type: 'WEAPON_SWORD_ONE_HAND', weapon_type_display: 'Sword', rarity: 5, stars: 5,
   icon: 'UI_AvatarIcon_Ayaka', element_icon: 'Cryo', weapon_type_icon: 'Skill_A_01',
 };
 const GANYU = {
-  id: 'char-ganyu', nanoka_id: '10000037', name: 'Ganyu', element: 'Cryo',
+  id: 'char-ganyu', nanoka_id: '10000037', name: 'Ganyu', display_name: 'Ganyu', element: 'Cryo',
   weapon_type: 'WEAPON_BOW', weapon_type_display: 'Bow', rarity: 5, stars: 5,
   icon: 'UI_AvatarIcon_Ganyu', element_icon: 'Cryo', weapon_type_icon: 'Skill_A_02',
 };
@@ -609,12 +612,54 @@ describe('BuildsPage weapon recommendations', () => {
  * wrong answer would look like a right one.
  */
 const OWNED = (over: Record<string, unknown> = {}) => ({
-  character_id: 'char-ayaka', name: 'Kamisato Ayaka', icon: null, element: 'Cryo',
+  character_id: 'char-ayaka', name: 'Kamisato Ayaka',
+  // Equal to `name` for everyone but the sixteen Traveler rows, which is what the server
+  // computes. The tab renders this, never `name`.
+  display_name: 'Kamisato Ayaka', icon: null, element: 'Cryo',
   weapon_type: 'WEAPON_SWORD_ONE_HAND', rarity: 'five_star',
-  owned: true, source: 'import', ...over,
+  owned: true, source: 'import', simulatable: true, unsimulatable_reason: null, ...over,
 });
 
 describe('BuildsPage roster tab', () => {
+  it('tells the sixteen Travelers apart, and reads the display name to a screen reader', () => {
+    // **The bug.** Every `Traveler` row is *named* `Traveler`, so this tab drew sixteen rows
+    // with one name and one element chip — Aether Pyro and Lumine Pyro identical apart from a
+    // 72px face — and sixteen checkboxes all labelled "I have Traveler", on the one tab whose
+    // whole purpose is letting a user correct ownership by hand.
+    const rows = [
+      OWNED({ character_id: 'a', name: 'Traveler',
+              display_name: 'Traveler (Aether · Pyro)' }),
+      OWNED({ character_id: 'b', name: 'Traveler',
+              display_name: 'Traveler (Lumine · Pyro)' }),
+    ];
+
+    expect(new Set(rows.map((r) => r.display_name)).size).toBe(2);
+    expect(new Set(rows.map((r) => r.name)).size).toBe(1);
+  });
+
+  it('marks a character gcsim cannot run, on the row rather than after a search', async () => {
+    // gcsim implements six Traveler elements, not seven. The owner's only Traveler is the
+    // Cryo one — the row the roster offered and the builds tab offered to build, with the
+    // first sign of trouble being a search that failed minutes in.
+    const page = healthy({}, {}, {
+      list: vi.fn().mockResolvedValue({
+        entries: [OWNED({
+          name: 'Traveler', display_name: 'Traveler (Aether · Cryo)',
+          simulatable: false,
+          unsimulatable_reason: "gcsim has no 'aethercryo' … there is no Cryo Traveler.",
+        })],
+        owned_count: 1,
+        withheld: 0,
+      }),
+    } as unknown as RosterService);
+
+    await page['load']();
+
+    expect(page['roster']()[0].simulatable).toBe(false);
+    expect(page['roster']()[0].unsimulatable_reason).toContain('Cryo Traveler');
+  });
+
+
   it('losing the roster does not take the build editor down with it', async () => {
     // A second view of this page must not be able to break the first one. It resolves to an
     // empty roster rather than rejecting the whole `Promise.all`.

@@ -279,3 +279,155 @@ async def test_the_import_does_not_put_a_mannequin_on_the_roster(
     )
 
     assert report.roster_written == 0
+
+
+# ── the Travelers ────────────────────────────────────────────────────────────
+
+
+async def _traveler(
+    session, nanoka_id: str, icon: str, element: Element | None,
+    weapon_type: WeaponType = WeaponType.SWORD,
+) -> Character:
+    """One of the sixteen rows named `Traveler`. The name is identical by design.
+
+    The class is a parameter because the two unreleased bodies carry `WEAPON_CROSSBOW`, which
+    is what `is_unreleased_class` reads — see `app/services/unreleased.py` and #271.
+    """
+    row = Character(
+        nanoka_id=nanoka_id, name="Traveler", element=element,
+        weapon_type=weapon_type, rarity=Rarity.FIVE_STAR, icon=icon,
+        base_hp=1000.0, base_atk=26.0, base_def=60.0,
+        base_crit_rate=0.05, base_crit_dmg=0.5,
+    )
+    session.add(row)
+    await session.flush()
+    return row
+
+
+async def test_two_travelers_of_one_element_are_two_different_rows(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """**The bug.** Every Traveler row is *named* `Traveler`, so this tab drew Aether Dendro and
+    Lumine Dendro as the same row twice — same name, same element chip, differing only in a
+    72px face — on the one tab whose whole purpose is letting a user correct ownership by hand.
+    """
+    await _traveler(db_session, "10000005-8", "UI_AvatarIcon_PlayerBoy", Element.DENDRO)
+    await _traveler(db_session, "10000007-8", "UI_AvatarIcon_PlayerGirl", Element.DENDRO)
+    await db_session.commit()
+
+    body = (await authed_client.get(ROSTER)).json()
+
+    assert [e["display_name"] for e in body["entries"]] == [
+        "Traveler (Aether · Dendro)", "Traveler (Lumine · Dendro)",
+    ]
+    # `name` is untouched: it is what the catalogue says, and a client that wants to search or
+    # group by the character rather than the variant still needs it.
+    assert {e["name"] for e in body["entries"]} == {"Traveler"}
+
+
+async def test_a_character_gcsim_cannot_run_says_so_on_the_row(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """**gcsim implements six Traveler elements, not seven.**
+
+    The owner's account holds exactly one Traveler — Cryo — which is the one that cannot be
+    compiled. `character_key` has always refused it correctly; nothing above it asked before
+    the roster offered the row and the builds tab offered to build it, so the first sign was a
+    search failing after several minutes.
+    """
+    await _traveler(db_session, "10000005-5", "UI_AvatarIcon_PlayerBoy", Element.CRYO)
+    await _traveler(db_session, "10000005-4", "UI_AvatarIcon_PlayerBoy", Element.ANEMO)
+    await db_session.commit()
+
+    rows = {e["display_name"]: e for e in (await authed_client.get(ROSTER)).json()["entries"]}
+
+    assert rows["Traveler (Aether · Anemo)"]["simulatable"] is True
+    assert rows["Traveler (Aether · Anemo)"]["unsimulatable_reason"] is None
+    assert rows["Traveler (Aether · Cryo)"]["simulatable"] is False
+    # gcsim's own terms, not a sentence this repo composed about somebody else's engine.
+    assert "Cryo Traveler" in rows["Traveler (Aether · Cryo)"]["unsimulatable_reason"]
+
+
+async def test_an_unreleased_body_is_withheld_and_counted(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """`10000134` and `10000135` have no element and no talents, so they rendered as two
+    *identical* blank rows — no name to tell them apart and no chip either.
+
+    **Counted rather than silently dropped.** Withholding is the one thing this endpoint does
+    that a user cannot see, so a rule that misfired would empty the roster with no symptom.
+
+    Selected by **weapon class**, not by talent count: #271 landed `is_unreleased_class` while
+    this branch was open, and `WEAPON_CROSSBOW` is the stronger signal — it also hides eight
+    unreleased weapon *names*, which a talent count never touched. Both rules pick out the
+    same two rows at nanoka 7.0.51.
+    """
+    await _traveler(
+        db_session, "10000134", "UI_AvatarIcon_PlayerBoy", None, WeaponType.CROSSBOW,
+    )
+    await _character(db_session, "10000027", "Ningguang")
+    await db_session.commit()
+
+    body = (await authed_client.get(ROSTER)).json()
+
+    assert [e["name"] for e in body["entries"]] == ["Ningguang"]
+    assert body["withheld"] == 1
+
+
+async def test_a_real_character_whose_talents_failed_to_import_is_kept(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """**A talentless row is still a character, and the roster keeps it.**
+
+    Element is read from the index row and talents from the detail fetch, so a seed whose
+    detail pass failed leaves real characters talentless. Dropping them would be the quiet,
+    one-directional failure this whole design exists to fix — a roster missing a character —
+    and it would look exactly like success.
+
+    This test argued for a conjunction when the exclusion was `element is None and no talents`.
+    The exclusion is by weapon class now (#271), so a talent count cannot exclude anyone at
+    all — which makes the property here easier to hold, not less worth pinning.
+    """
+    await _character(db_session, "10000027", "Ningguang")  # element set, no talents
+    await db_session.commit()
+
+    body = (await authed_client.get(ROSTER)).json()
+
+    assert [e["name"] for e in body["entries"]] == ["Ningguang"]
+    assert body["withheld"] == 0
+
+
+async def test_an_unreleased_body_cannot_be_owned_by_hand_either(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """Refused **by name**, and with its own message: "cannot be owned" and "is not in the game
+    yet" are different facts, and a user waiting for a character learns nothing from the first.
+
+    A silent no-op would leave a toggle that appears to work and does not.
+
+    A write route that accepts what the read route will not show writes a row nobody can see
+    or undo, which is why both surfaces carry the guard.
+    """
+    row = await _traveler(
+        db_session, "10000135", "UI_AvatarIcon_PlayerGirl", None, WeaponType.CROSSBOW,
+    )
+    await db_session.commit()
+
+    answer = await authed_client.patch(f"{ROSTER}/{row.id}", json={"owned": True})
+
+    assert answer.status_code == 422
+    assert "not in the game" in answer.json()["detail"]
+
+
+async def test_the_correction_route_returns_the_row_the_list_would_have(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """Both routes build a row through `_entry`. They did not, and the drift was the kind that
+    puts a name on one route and not the other."""
+    row = await _traveler(db_session, "10000007-4", "UI_AvatarIcon_PlayerGirl", Element.ANEMO)
+    await db_session.commit()
+
+    patched = (await authed_client.patch(f"{ROSTER}/{row.id}", json={"owned": True})).json()
+    listed = (await authed_client.get(ROSTER)).json()["entries"][0]
+
+    assert patched == listed
