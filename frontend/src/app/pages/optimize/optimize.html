@@ -408,6 +408,38 @@
             }
           </div>
 
+          <!-- The set half of the guide. Captured since 2026-09-02 and read by nothing until
+               2026-09-04 — 346 rows served to no caller. -->
+          @if (weaponGuide(); as guide) {
+            @if (guide.sets.length) {
+              <p class="hint">
+                Sets KeqingMains lists for {{ guide.character }} are marked and shown first, in
+                their order —
+                <a [href]="guide.url" target="_blank" rel="noopener">their guide</a>,
+                retrieved {{ guide.retrieved_at }}.
+              </p>
+            }
+          }
+
+          <!-- **Sentences, not cards.** `2pc HP% / ER / Hydro%` names every set whose
+               two-piece grants that stat, so resolving it to a card would invent a name KQM
+               never wrote. Shown as they wrote it, with their note. -->
+          @if (setAdvice().length) {
+            <ul class="hint kqm-advice">
+              <!-- **`$index`, because a position is not unique here.** KQM lists a stat row
+                   under each playstyle it applies to and the position is per-section, so nine
+                   of the 102 captured guides repeat one — Hu Tao has 16 stat rows across 8
+                   positions. Tracking by it throws NG0955 and the panel does not render. -->
+              @for (advice of setAdvice(); track $index) {
+                <li>
+                  <strong>{{ advice.as_written }}</strong>
+                  @if (advice.playstyle) { <span class="muted"> · {{ advice.playstyle }}</span> }
+                  <span class="muted"> — {{ advice.note }}</span>
+                </li>
+              }
+            </ul>
+          }
+
           @if (pairSelected().length === 1) {
             <!-- Said rather than searched. This page enumerates a 4-piece or a 2+2; "two of
                  this and three of anything" is neither, so a half-filled pair constrains

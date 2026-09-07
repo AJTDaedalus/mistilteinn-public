@@ -15,6 +15,14 @@ import { OptimizationRunsService } from './runs/optimization-runs.service';
 import { PreviousRuns } from './runs/previous-runs';
 import { CardPicker, type CardOption } from '../../shared/card-picker/card-picker';
 import { Combobox } from '../../shared/combobox/combobox';
+import {
+  listedFirst,
+  marked,
+  setsByNanokaId,
+  statAdvice,
+  weaponCard,
+  weaponsById,
+} from '../../shared/kqm/kqm';
 import { buildOptions, buildsInTeam, teamOptions } from '../../shared/team-scope';
 import { ElementChip } from '../../shared/element/element';
 import { CatalogueIcon } from '../../shared/icon/icon';
@@ -540,44 +548,33 @@ export class OptimizePage implements OnInit {
    */
   protected readonly weaponGuide = signal<CharacterWeaponGuideRead | null>(null);
 
-  private readonly recommendedWeapons = computed(() => {
-    // **Annotated, because the inference is wrong here and only Angular's compiler says so.**
-    // `new Map(list.map((w) => [w.weapon_id, w]))` gives TypeScript a `(string | Rec)[]` rather
-    // than a tuple, so the value type collapsed to `{}` and `.position` did not exist on it.
-    // `npx tsc` passed; the container build failed — which is why the browser is the check.
-    const listed = new Map<string, CharacterWeaponGuideRead['weapons'][number]>();
-    for (const weapon of this.weaponGuide()?.weapons ?? []) {
-      listed.set(weapon.weapon_id, weapon);
-    }
-    return listed;
-  });
+  private readonly recommendedWeapons = computed(() => weaponsById(this.weaponGuide()));
+
+  /**
+   * What KQM says about each **set**, keyed by nanoka id — which is what this page's set
+   * catalogue is already keyed by, so the two join with no translation.
+   *
+   * The set half of the guide was served by the backend and read by nobody until 2026-09-04:
+   * 346 captured rows, no caller. `docs/RESEARCH_kqm_not_reaching_the_ui.md`.
+   */
+  private readonly recommendedSets = computed(() => setsByNanokaId(this.weaponGuide()));
+
+  /**
+   * The rows KQM wrote as a *stat* rather than a set — `2pc HP% / ER`.
+   *
+   * Shown as their own sentences above the grid, never as cards: such a row names every set
+   * whose two-piece grants that stat, and resolving it to one would invent a name KQM did not
+   * write.
+   */
+  protected readonly setAdvice = computed(() => statAdvice(this.weaponGuide()));
 
   protected readonly weaponOptions = computed<CardOption[]>(() => {
     const listed = this.recommendedWeapons();
     const equipped = this.build()?.weapon?.id;
-    return this.weapons()
+    const cards = this.weapons()
       .filter((w) => w.id !== equipped)
-      .map((w) => {
-        const kqm = listed.get(w.id);
-        return {
-          value: w.id,
-          label: w.name,
-          icon: w.icon,
-          detail: kqm
-            ? [`KQM #${kqm.position}`, kqm.relative_dps, kqm.playstyle, `${w.stars}★`]
-              .filter(Boolean).join(' · ')
-            : `${w.stars}★ · ${w.sub_stat_display || 'no substat'}`,
-          // KQM's own sentence, verbatim. Summarising it would be this page asserting a
-          // judgement it did not make, under someone else's name.
-          tooltip: kqm?.note,
-          recommended: Boolean(kqm),
-          tags: { stars: String(w.stars), kqm: kqm ? 'listed' : '' },
-        };
-      })
-      // KQM's order first; everything else keeps the order it came in. A weapon KQM did not
-      // list is not thereby bad — it is unlisted.
-      .sort((a, b) => (listed.get(a.value)?.position ?? Number.MAX_SAFE_INTEGER)
-        - (listed.get(b.value)?.position ?? Number.MAX_SAFE_INTEGER));
+      .map((w) => weaponCard(w, listed.get(w.id)));
+    return listedFirst(cards, (card) => listed.get(card.value)?.position);
   });
 
   protected readonly weaponsSelected = computed(() => [...this.selectedWeapons()]);
@@ -770,16 +767,24 @@ export class OptimizePage implements OnInit {
 
   protected readonly fourPieceOptions = computed<CardOption[]>(() => {
     const inPair = new Set([this.pairFirst(), this.pairSecond()]);
-    return this.fourPieceChoices()
+    const listed = this.recommendedSets();
+    const cards = this.fourPieceChoices()
       .filter((choice) => !inPair.has(choice.setId))
-      .map((choice) => this.cardFor(choice.setId, choice.slots));
+      .map((choice) => marked(
+        this.cardFor(choice.setId, choice.slots), listed.get(choice.setId),
+      ));
+    return listedFirst(cards, (card) => listed.get(Number(card.value))?.position);
   });
 
-  protected readonly pairOptions = computed<CardOption[]>(() =>
-    this.fourPieceChoices()
+  protected readonly pairOptions = computed<CardOption[]>(() => {
+    const listed = this.recommendedSets();
+    const cards = this.fourPieceChoices()
       .filter((choice) => !this.selectedSets().has(choice.setId))
-      .map((choice) => this.pairCardFor(choice.setId, choice.slots)),
-  );
+      .map((choice) => marked(
+        this.pairCardFor(choice.setId, choice.slots), listed.get(choice.setId),
+      ));
+    return listedFirst(cards, (card) => listed.get(Number(card.value))?.position);
+  });
 
   protected readonly fourPieceSelected = computed(() =>
     [...this.selectedSets()].map(String),

@@ -240,6 +240,16 @@
   }
 
   .hint { margin: 0 0 var(--space-2); }
+
+  /* KQM's stat-described two-pieces — sentences rather than cards, so they read as a list
+     of somebody's advice and not as things to click. */
+  .kqm-advice {
+    margin: 0 0 var(--space-2);
+    padding-left: var(--space-3);
+    list-style: disc;
+
+    li + li { margin-top: 0.15rem; }
+  }
 }
 
 .main-stats__row {

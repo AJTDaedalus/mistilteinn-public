@@ -490,3 +490,44 @@ async def test_one_artifact_set_answers_simulable_the_same_way_the_list_does(
     body = (await client.get("/api/v1/artifact-sets/15003")).json()
 
     assert body["simulable"] is True
+
+
+async def test_the_weapon_guide_resolves_its_ids_against_this_database(
+    client: AsyncClient, db_session: AsyncSession,
+):
+    """**The endpoint's half of the portability fix.**
+
+    The snapshot stores the game's ids; the route turns them into this database's row ids, so
+    a client joining on `weapon_id` keeps working. Hu Tao's guide opens with Staff of Homa
+    (nanoka `13501`), and the row id it resolves to is whatever *this* database minted —
+    which is the whole point, because the previous snapshot carried one particular database's
+    and matched nothing anywhere else.
+    """
+    homa = Weapon(
+        nanoka_id=13501, name="Staff of Homa", weapon_type=WeaponType.POLEARM,
+        rarity=Rarity.FIVE_STAR, base_atk=46.0,
+    )
+    db_session.add(homa)
+    await db_session.flush()
+
+    body = (await client.get("/api/v1/characters/10000046/weapons")).json()
+    listed = {row["weapon_nanoka_id"]: row for row in body["weapons"]}
+
+    assert listed[13501]["weapon_id"] == str(homa.id)
+    assert listed[13501]["weapon_name"] == "Staff of Homa"
+
+
+async def test_a_weapon_this_pin_lacks_keeps_its_citation_and_loses_only_its_id(
+    client: AsyncClient,
+):
+    """**Null rather than dropped.** A cited list that quietly shortens itself is worse than
+    one carrying a row a client cannot link to a card: KQM's ordering and their sentence are
+    still true, and what is missing is a catalogue row, which is a fact about the pin.
+
+    Nothing is seeded here, so every row is in that state.
+    """
+    body = (await client.get("/api/v1/characters/10000046/weapons")).json()
+
+    assert body["weapons"], "the guide is still published in full"
+    assert all(row["weapon_id"] is None for row in body["weapons"])
+    assert all(row["note"] and row["weapon_nanoka_id"] for row in body["weapons"])

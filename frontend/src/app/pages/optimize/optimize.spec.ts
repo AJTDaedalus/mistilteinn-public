@@ -1903,6 +1903,58 @@ describe('OptimizePage set filter', () => {
     expect(card.tooltip).toBe('Bonus from ER');
   });
 
+  it('marks the sets KeqingMains lists and shows them first', () => {
+    // **The set half of the guide had no caller at all until 2026-09-04.** 346 rows captured,
+    // cited and served, read by nothing — the same shape as `/compare-weapons` and
+    // `createGpuKernel` before it. `docs/RESEARCH_kqm_not_reaching_the_ui.md`.
+    const page = withThreeSets();
+    (page['weaponGuide'] as unknown as { set: (v: unknown) => void }).set({
+      character: 'Hu Tao', url: 'https://keqingmains.com/hutao/', retrieved_at: '2026-09-02',
+      weapons: [],
+      sets: [{
+        position: 1, kind: 'set', as_written: '4pc Noblesse Oblige (4NO)', note: '101%',
+        set_id: 'u3', set_nanoka_id: 3, set_name: 'Noblesse', pieces: '4pc',
+        playstyle: '', relative_dps: '',
+      }],
+    });
+
+    const options = (page['fourPieceOptions'] as unknown as () => readonly {
+      label: string; detail?: string; tooltip?: string; recommended?: boolean;
+    }[])();
+
+    // Listed first, ahead of the alphabetical tie-break the rest keep.
+    expect(options[0].label).toBe('Noblesse');
+    expect(options[0].recommended).toBe(true);
+    expect(options[0].detail).toContain('KQM #1');
+    // KQM's sentence and the set's own bonus, both kept.
+    expect(options[0].tooltip).toBe('101%\n\n+20% party ATK');
+    // And nothing is claimed about the two they did not list.
+    expect(options[1].recommended).toBe(false);
+  });
+
+  it('shows a stat-described two-piece as KQM sentence, never as a card', () => {
+    // `2pc HP% / ER` names every set whose two-piece grants HP%, not a set. Turning it into a
+    // card would invent a name KQM never wrote.
+    const page = withThreeSets();
+    (page['weaponGuide'] as unknown as { set: (v: unknown) => void }).set({
+      character: 'Hu Tao', url: 'https://keqingmains.com/hutao/', retrieved_at: '2026-09-02',
+      weapons: [],
+      sets: [{
+        position: 1, kind: 'stat', as_written: '2pc HP% / ER', note: 'Flexible.',
+        set_id: null, set_nanoka_id: null, set_name: null, pieces: '2pc',
+        playstyle: '', relative_dps: '',
+      }],
+    });
+
+    const advice = (page['setAdvice'] as unknown as () => readonly { as_written: string }[])();
+    const options = (page['fourPieceOptions'] as unknown as () => readonly {
+      recommended?: boolean;
+    }[])();
+
+    expect(advice.map((row) => row.as_written)).toEqual(['2pc HP% / ER']);
+    expect(options.every((card) => card.recommended === false)).toBe(true);
+  });
+
   it('does not offer a 4-piece set as half of a pair', () => {
     // Both are configurations of the same five slots, so a set can only be one of them in any
     // build the search returns. Offering it in both offers a choice the answer cannot honour.
