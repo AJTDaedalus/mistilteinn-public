@@ -67,12 +67,21 @@ async def list_characters(
     weapon_type: WeaponType | None = None,
     rarity: Rarity | None = None,
     name: str | None = None,
+    include_beta: bool = False,
     offset: _Offset = 0,
     limit: _Limit = 50,
 ) -> PaginatedResponse[CharacterSummary]:
-    """List characters, filtered by element, weapon type, rarity or name substring."""
+    """List characters, filtered by element, weapon type, rarity or name substring.
+
+    **`include_beta` defaults to false, and that default is the feature.** Characters the
+    manifest names as unreleased are seeded and marked rather than withheld (owner, 2026-09-07)
+    so `/planner` can price an upcoming one. Every other caller keeps the old list without
+    changing a line — and because the build editor never lists them, a beta character cannot
+    reach a build and so cannot reach the optimizer, which is the exclusion that was asked for.
+    """
     filters = {
         "element": element, "weapon_type": weapon_type, "rarity": rarity, "name": name,
+        "include_beta": include_beta,
     }
     rows = await repo.search(**filters, offset=offset, limit=limit)
     return PaginatedResponse(

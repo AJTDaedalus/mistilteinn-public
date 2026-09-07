@@ -153,6 +153,13 @@ class CharacterSummary(WeaponClassed):
     name: str
     #: Null for the two entries whose payload element is the literal `"None"`.
     element: Element | None = None
+    #: Datamined ahead of release, and **absent from this list unless asked for**: the
+    #: endpoint's `include_beta` defaults to false, so a caller that does not know about beta
+    #: characters never receives one. `/planner` asks; nothing else does.
+    #:
+    #: Published so a caller that opts in can *say so* on screen. A beta row that arrived
+    #: looking like any other would be the worst of both: shown, and shown as settled.
+    is_beta: bool = False
     rarity: Rarity
     region: str | None = None
     icon: str | None = None

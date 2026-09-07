@@ -250,6 +250,13 @@ class EntityResult:
     #: all four entities). Excluded here rather than filtered in the API, so an unreleased row
     #: never reaches the database in the first place.
     unreleased: list[str] = field(default_factory=list)
+    #: Ids seeded but **marked** rather than held back — characters only.
+    #:
+    #: The ruling above still stands for weapons, artifacts and enemies. The owner reopened it
+    #: for characters on 2026-09-07 so `/planner` can price an upcoming one, and a marked row
+    #: is a different thing from an absent one: `CharacterRepository.list` hides these unless a
+    #: caller opts in, so nothing that did not ask sees them.
+    beta: list[str] = field(default_factory=list)
     pruned: int = 0
     failed: list[str] = field(default_factory=list)
     #: Detail payloads pulled by `dry_run` to prove the detail URL grammar. Separate from
@@ -280,10 +287,11 @@ class EntityResult:
         # Reported, never silent: a seed that quietly drops rows is indistinguishable from one
         # whose upstream lost them, and this one drops rows *on purpose*.
         held = f", {len(self.unreleased)} unreleased" if self.unreleased else ""
+        beta = f", {len(self.beta)} beta" if self.beta else ""
         return (
             f"{self.entity}: {self.imported}/{self.total} imported, "
             f"{self.skipped} skipped, {self.pruned} pruned, "
-            f"{len(self.failed)} failed{held}"
+            f"{len(self.failed)} failed{held}{beta}"
         )
 
 
@@ -312,6 +320,8 @@ class NanokaGIImporter(BaseImporter):
         )
         #: `{entity: unreleased ids}`, read from the manifest once per run.
         self._unreleased_ids: dict[str, frozenset[str]] | None = None
+        #: Index keys of the current pass that are beta. Only ever non-empty for characters.
+        self._beta_keys: set[str] = set()
         self._concurrency = max(1, concurrency)
         #: One `EntityResult` per completed pass, in the order the passes ran. `seed_db`
         #: (D.7) reports these and exits non-zero if any pass has failures.
@@ -365,6 +375,10 @@ class NanokaGIImporter(BaseImporter):
     async def _map_character(self, key: str, payload: dict[str, Any]) -> bool:
         """One character row plus its four child tables. Always writes; never skips."""
         fields = character_fields(key, payload)
+        # **Set from the manifest, every run, in both branches.** An upsert that only set this
+        # on insert would leave a character marked beta forever after it shipped — the flag has
+        # to be able to go false again, and release is exactly when it should.
+        fields["is_beta"] = key in self._beta_keys
         character = await self._get_existing(Character, key)
         if character is None:
             character = Character(**fields)
@@ -660,7 +674,17 @@ class NanokaGIImporter(BaseImporter):
         index = await self.transport.fetch_index(entity)
         keys = _index_keys(index)
         held = await self._unreleased(entity)
-        kept = [key for key in keys if _base_id(key) not in held]
+        # **Characters are marked, everything else is still withheld.** Owner, 2026-09-07: the
+        # planner may price an upcoming character. `_map_character` reads this set and sets
+        # `is_beta`; the repository hides those rows from every caller that does not ask, so a
+        # beta character cannot reach a build and therefore cannot reach the optimizer.
+        #
+        # Weapons, artifacts and enemies keep the original ruling. That asymmetry is
+        # deliberate and narrow: a beta *character* is a thing to plan for, and a beta weapon
+        # in the build editor's picker is the leak #271 was reported about.
+        marking = entity == "character"
+        self._beta_keys = {key for key in keys if _base_id(key) in held} if marking else set()
+        kept = keys if marking else [key for key in keys if _base_id(key) not in held]
         # **`total` stays the whole index**, and the held-back ids are counted beside it. It
         # is what `verify_seed` compares against the committed index to detect "the database
         # is from a different patch" — a detector that a deliberate exclusion must not trip,
@@ -669,6 +693,7 @@ class NanokaGIImporter(BaseImporter):
             entity=entity,
             total=len(keys),
             unreleased=sorted(set(keys) - set(kept)),
+            beta=sorted(self._beta_keys),
         )
         keys = kept
 

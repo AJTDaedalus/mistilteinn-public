@@ -268,6 +268,48 @@ async def test_a_character_of_an_unshipped_class_is_not_listed(
 
 
 @pytest.mark.asyncio
+async def test_a_beta_character_is_hidden_unless_the_caller_asks(
+    client: AsyncClient, db_session: AsyncSession,
+):
+    """**The default is the exclusion.** Owner, 2026-09-07: beta characters may be planned for,
+    and must stay out of the optimizer.
+
+    Rather than teach the optimizer a rule, this hides them from every list that does not ask —
+    so the build editor never offers one, no build can hold one, and nothing downstream of a
+    build can reach one. A rule the optimizer had to remember is a rule it could forget; a
+    default it never overrides cannot be forgotten.
+
+    `total` is asserted with the rows because a count computed without the same filter is the
+    exact bug `count_filtered`'s docstring exists about — it would say two and hand back one.
+    """
+    await _character(db_session, nanoka_id="10000143", name="Vesna", is_beta=True)
+    await _character(db_session)
+
+    listed = (await client.get("/api/v1/characters")).json()
+    with_beta = (await client.get("/api/v1/characters?include_beta=true")).json()
+
+    assert {item["nanoka_id"] for item in listed["items"]} == {"10000002"}
+    assert listed["total"] == 1
+    assert {item["nanoka_id"] for item in with_beta["items"]} == {"10000002", "10000143"}
+    assert with_beta["total"] == 2
+
+
+@pytest.mark.asyncio
+async def test_the_beta_flag_is_published_so_a_caller_can_say_so(
+    client: AsyncClient, db_session: AsyncSession,
+):
+    """A beta row that arrived looking like any other would be the worst of both — shown, and
+    shown as settled. The planner draws its warning off this field."""
+    await _character(db_session, nanoka_id="10000143", name="Vesna", is_beta=True)
+    await _character(db_session)
+
+    items = (await client.get("/api/v1/characters?include_beta=true")).json()["items"]
+    flags = {item["name"]: item["is_beta"] for item in items}
+
+    assert flags == {"Vesna": True, "Ayaka": False}
+
+
+@pytest.mark.asyncio
 async def test_a_weapon_detail_carries_its_curves_and_refinements(
     client: AsyncClient, db_session: AsyncSession,
 ):

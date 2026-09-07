@@ -18,7 +18,15 @@
       />
       <p class="splash__name">{{ character()?.display_name }}</p>
     </div>
-  }
+    <!-- **Under the banner, not beside the name.** A caveat about the *numbers* belongs where
+         the numbers are about to appear; on the card it would read as a label on the
+         character. The figures below are real and priced from the same tables as anyone
+         else's — what is uncertain is whether the game ships them unchanged. -->
+    @if (isBeta()) {
+      <p class="hint hint--warn beta-note" role="status">
+        {{ character()?.display_name }} is in beta — materials may change throughout beta.
+      </p>
+    }
   }
 
   <div class="setup">

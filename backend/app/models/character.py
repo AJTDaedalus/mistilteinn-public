@@ -14,6 +14,7 @@ does not have to re-derive it.
 from __future__ import annotations
 
 from sqlalchemy import (
+    Boolean,
     Float,
     ForeignKey,
     Index,
@@ -124,6 +125,22 @@ class Character(TimestampMixin, Base):
 
     icon: Mapped[str | None] = mapped_column(String(128), nullable=True)
     release_date: Mapped[str | None] = mapped_column(String(32), nullable=True)
+
+    #: Datamined ahead of release — in the manifest's `gi.new` at seed time.
+    #:
+    #: **These rows used to be refused entry**, under a standing ruling that beta content must
+    #: not reach the app. The owner reopened it (2026-09-07) for the planner specifically: what
+    #: an upcoming character will cost to level is exactly what a player wants before they pull,
+    #: and it is the one surface where being wrong is cheap — nothing is simulated, nothing is
+    #: ranked, and the numbers are a shopping list you check against your own inventory.
+    #:
+    #: **It stays opt-in per query, not per page.** `CharacterRepository.list` hides these
+    #: unless asked, so every existing caller — the catalogue browser, the build editor, and
+    #: through it the optimizer — keeps the old behaviour without knowing this column exists.
+    #: The planner asks. That is also what keeps a beta character out of a build and therefore
+    #: out of the optimizer, which is the exclusion the owner asked for.
+    is_beta: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False,
+                                          server_default="false")
 
     talents: Mapped[list[Talent]] = relationship(
         lazy=GUARDED_LAZY,
