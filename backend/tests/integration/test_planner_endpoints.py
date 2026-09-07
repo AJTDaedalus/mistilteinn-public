@@ -366,3 +366,65 @@ async def test_options_offer_only_levelable_talents(
     assert [t["talent_id"] for t in body["talents"]] == [talent.id]
     assert body["level_caps"] == {"0": 20, "1": 40, "2": 50, "3": 60, "4": 70, "5": 80, "6": 90}
     assert body["uncurated_sources"] == ["ley_line_exp", "ley_line_mora", "weekly_boss"]
+
+
+@pytest.mark.asyncio
+async def test_the_summary_does_not_merge_two_different_exp_pools(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """Character EXP books and weapon Enhancement Ore are different currencies.
+
+    Driving the real page caught this: the summary added both requirements while crediting
+    only the character's stock, and reported a shortfall of 9,047,100 EXP when each half was
+    separately covered. Each section shows its own bill; the summary shows none.
+    """
+    character, talent, weapon = await _catalogue(db_session)
+    await db_session.commit()
+
+    body = (
+        await client.post(
+            "/api/v1/planner/plan",
+            json=_request(
+                character, talent,
+                weapon_id=weapon.id,
+                weapon_from={"level": 1, "ascension": 0},
+                weapon_to={"level": 20, "ascension": 1},
+            ),
+            headers=_auth(authed_user),
+        )
+    ).json()
+    sections = {section["key"]: section for section in body["sections"]}
+    assert sections["levels"]["exp"]["exp_required"] == 19_000
+    assert sections["weapon"]["exp"]["exp_required"] == 9_500
+    assert body["total"]["exp"] is None
+
+
+@pytest.mark.asyncio
+async def test_a_material_you_already_hold_is_satisfied_not_unknown(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """Nothing to farm is not the same as a rate nobody publishes.
+
+    Found by looking at the rendered page: a domain material with nothing outstanding fell
+    through to `unknown` and drew a "?", which says the rate is not known -- false, and about
+    the one row the user least needs to worry about.
+    """
+    user, _ = authed_user
+    character, talent, _ = await _catalogue(db_session)
+    db_session.add(UserMaterial(owner_id=user.id, material_id=TEACHINGS, count=999))
+    await db_session.commit()
+
+    body = (
+        await client.post(
+            "/api/v1/planner/plan", json=_request(character, talent), headers=_auth(authed_user),
+        )
+    ).json()
+    line = next(
+        line
+        for section in body["sections"]
+        if section["key"] == "talents"
+        for line in section["materials"]
+        if line["material_id"] == TEACHINGS
+    )
+    assert line["still_needed"] == 0
+    assert line["resin_status"] == "satisfied"

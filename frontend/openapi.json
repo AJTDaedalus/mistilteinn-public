@@ -6872,17 +6872,7 @@
           },
           "books": {
             "items": {
-              "prefixItems": [
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "integer"
-                }
-              ],
-              "type": "array",
-              "maxItems": 2,
-              "minItems": 2
+              "$ref": "#/components/schemas/ExpBookRead"
             },
             "type": "array",
             "title": "Books"
@@ -6909,6 +6899,25 @@
         ],
         "title": "ExpBillRead",
         "description": "The EXP half of levelling. `mora` is null while the divisor is uncurated \u2014 not zero."
+      },
+      "ExpBookRead": {
+        "properties": {
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "material_id",
+          "count"
+        ],
+        "title": "ExpBookRead",
+        "description": "One EXP denomination and how many of it the shortfall needs."
       },
       "ExplainRequest": {
         "properties": {

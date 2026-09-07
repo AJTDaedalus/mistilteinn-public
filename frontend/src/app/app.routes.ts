@@ -50,6 +50,14 @@ export const routes: Routes = [
     canMatch: [requireApproved],
   },
   {
+    // What it costs to take a character and a weapon where you want them.
+    // `docs/DESIGN_planner.md`.
+    path: 'planner',
+    title: 'Planner',
+    loadComponent: () => import('./pages/planner/planner').then((m) => m.PlannerPage),
+    canMatch: [requireApproved],
+  },
+  {
     path: 'characters',
     title: 'Characters',
     loadComponent: () =>

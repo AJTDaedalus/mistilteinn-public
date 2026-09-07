@@ -181,13 +181,23 @@ class MaterialLineRead(BaseModel):
     domain_days: list[str]
 
 
+class ExpBookRead(BaseModel):
+    """One EXP denomination and how many of it the shortfall needs."""
+
+    material_id: int
+    count: int
+
+
 class ExpBillRead(BaseModel):
     """The EXP half of levelling. `mora` is null while the divisor is uncurated — not zero."""
 
     exp_required: int
     exp_owned: int
     exp_short: int
-    books: list[tuple[int, int]]
+    #: An object list rather than a positional pair: a `[number, number]` tuple in the schema
+    #: generates a fixed-length client type that a JSON array cannot satisfy, and the names
+    #: are worth having anyway.
+    books: list[ExpBookRead]
     mora: int | None
 
 
@@ -385,7 +395,10 @@ def _section_read(section: service.Section) -> SectionRead:
                 exp_required=section.exp.exp_required,
                 exp_owned=section.exp.exp_owned,
                 exp_short=section.exp.exp_short,
-                books=section.exp.books,
+                books=[
+                    ExpBookRead(material_id=material_id, count=count)
+                    for material_id, count in section.exp.books
+                ],
                 mora=section.exp.mora,
             )
             if section.exp

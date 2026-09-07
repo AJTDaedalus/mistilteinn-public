@@ -58,9 +58,16 @@ class MaterialLine:
     owned: int
     still_needed: int
     resin: resin.ResinEstimate | None
-    #: `"priced"`, `"unknown"` (resin-farmable at an unpublished rate) or `"not_farmable"`
-    #: (overworld or a local specialty — genuinely zero resin). The UI must render the last
-    #: two differently: one is a gap in our data, the other is a fact about the game.
+    #: One of four, and they mean genuinely different things:
+    #:
+    #: * `"priced"` — `resin` carries a number.
+    #: * `"satisfied"` — you already hold enough; there is nothing to farm.
+    #: * `"not_farmable"` — no resin cost at all (a gem, a common drop, a local specialty).
+    #: * `"unknown"` — it costs resin at a rate nobody publishes.
+    #:
+    #: **`satisfied` exists because looking at the page found it missing.** A material with
+    #: nothing outstanding fell through to `unknown` and rendered a "?", which claims the rate
+    #: is not known — false, and about the one row the user least needs to worry about.
     resin_status: str
     #: Weekdays this material's domain is open, `[]` when it is not a domain drop.
     domain_days: list[str]
@@ -134,6 +141,7 @@ def _build_section(
     catalogue: Mapping[int, Material],
     *,
     exp: costs.ExpBill | None = None,
+    resin_exp: int | None = None,
 ) -> Section:
     """Turn `{material id: required}` into a rendered section, net of what is held."""
     eco = economy()
@@ -147,6 +155,8 @@ def _build_section(
         estimate = resin.estimate(eco, material_id, still)
         if estimate is not None:
             status = "priced"
+        elif still == 0:
+            status = "satisfied"
         elif eco.source_of(material_id) is MaterialSource.NONE:
             # Elemental gems, common enemy drops and local specialties. Their resin cost is
             # genuinely zero — the gems ride along with a world-boss run already paid for.
@@ -171,7 +181,9 @@ def _build_section(
         eco,
         outstanding,
         mora=mora or 0,
-        character_exp=exp.exp_short if exp is not None else 0,
+        character_exp=(
+            resin_exp if resin_exp is not None else (exp.exp_short if exp is not None else 0)
+        ),
     )
     return section
 
@@ -362,14 +374,14 @@ async def build_plan(
     total_mora = (
         None if any(value is None for value in mora_values) else sum(mora_values)  # type: ignore[arg-type]
     )
-    # The whole plan's EXP shortfall, so the summary prices the ley-line farming once rather
-    # than per section.
-    total_exp = costs.ExpBill(
-        exp_required=exp.exp_required + (weapon_exp.exp_required if weapon_exp else 0),
-        exp_owned=exp.exp_owned,
-    )
+    # **The summary carries no EXP line, and that is deliberate.** Character EXP and weapon
+    # EXP are different pools -- books against Enhancement Ore -- and adding them produced a
+    # summary claiming a shortfall of 9,047,100 while both halves were separately covered.
+    # Each section shows its own bill; only the *resin* for the character-EXP shortfall is
+    # carried here, because that is a real ley-line cost the total should price once.
     total = _build_section(
-        "total", "Everything", merged, total_mora, stock, catalogue, exp=total_exp,
+        "total", "Everything", merged, total_mora, stock, catalogue,
+        resin_exp=exp.exp_short,
     )
 
     return Plan(
