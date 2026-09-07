@@ -17,22 +17,21 @@
  "source_defaults": {
   "weekly_boss": {
    "resin": 30,
-   "expected_per_run": 0.733333,
-   "source": "owner ruling, 2026-09-07: \"2.2 named materials per run on average (always 2 or 3), randomly selected between 3 options for each boss\". A boss carries three materials and each drop is one of them, so a NAMED material's expectation is 2.2 / 3.",
+   "expected_per_run": 0.8,
+   "source": "Genshin Impact Wiki, Loot System/Material Drop Distribution, Weekly Talent Level-Up Materials: drop mean 2.4 at World Level 8, and 2.4 for enemy levels 93-104 which covers World Level 9. Confirmed by the owner 2026-09-07 (\"2.4 is right, I forgot WL9\") after they had first given 2.2 from the WL8-and-below part of the table. A boss carries three materials and each drop is one of them, so a NAMED material's expectation is 2.4 / 3.",
    "needs_curation": false,
-   "comment": "**2.2 is the run's total across all three of the boss's materials; expected_per_run is one named material, so it is 2.2/3 = 0.733333.** Getting that split wrong scales every weekly-boss resin figure by three. `per_run` carries the SHAPE as well as the mean -- always 2 or 3 items, weighted 0.8/0.2 to average 2.2 -- and `split_across: 3` makes a named material Binomial(n, 1/3). Without the shape the histogram would have to assume one. `resin: 30` is the trounce cost and is still the least-confirmed number here: DungeonExcelConfigData does not price trounce domains.",
+   "comment": "**2.4 is the run's total across all three of the boss's materials; expected_per_run is one named material, so it is 2.4/3 = 0.8.** Getting that split wrong scales every weekly-boss resin figure by three. `per_run` carries the SHAPE as well as the mean -- always 2 or 3 items, weighted 0.6/0.4 to average 2.4 -- and `split_across: 3` makes a named material Binomial(n, 1/3). Without the shape the histogram would have to assume one; 41% of runs yield none of the material you came for, and that run still costs resin.\n\n**This was 2.2 for a day.** The wiki's World Level table stops at 8, which is one of the gaps the owner spotted, and the 2.2 came from reading it short. Recorded because the correction arrived from checking a number against a source rather than from anything failing.",
    "per_run": {
     "values": [
      2,
      3
     ],
     "weights": [
-     0.8,
-     0.2
+     0.6,
+     0.4
     ]
    },
    "split_across": 3,
-   "conflict": "**UNRESOLVED, and the active value is the owner's.** The owner gave 2.2 items per run (2026-09-07). The Genshin Impact Wiki's Loot System/Material Drop Distribution, Weekly Talent Level-Up Materials, gives a drop mean of **2.4** at World Level 8 — and its by-enemy-level table gives 2.4 for levels 93-104, which covers World Level 9 too. Its World Level table stops at 8, which is one of the gaps the owner flagged.\n\nIf 2.4 is right, `expected_per_run` is 2.4/3 = 0.8 and every weekly-boss resin figure here is about 9% too high. Left at the owner's number rather than changed silently, because overriding an explicit instruction from a wiki page is not a decision this file gets to make on its own.",
    "resin_note": "A Trounce Blossom costs **60** Original Resin; three opportunities a week halve it to 30 (Adventurer Handbook, quoted on the wiki's Trounce Domain page). 30 is the discounted price and therefore the optimistic one — a fourth weekly boss in a week costs double what this says."
   },
   "ley_line_exp": {

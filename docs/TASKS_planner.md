@@ -48,7 +48,7 @@ fail the day a patch adds a source nobody has costed.
 
 | | |
 |---|---|
-| `weekly_boss` | **0.733333** per 20… per **30** resin. *"2.2 named materials per run on average (always 2 or 3), randomly selected between 3 options for each boss"* — 2.2 is the run's **total across the boss's three materials**, so one named material is 2.2/3. Getting that split wrong scales every weekly-boss figure by three |
+| `weekly_boss` | **0.8** per **30** resin. 2.4 items a run (always 2 or 3), each randomly one of the boss's three materials, so a named one is 2.4/3. Getting that split wrong scales every weekly-boss figure by three |
 | `ley_line_exp` | **122,500** EXP points per 20 resin. *"6-7 blue xp books per ley line and 4-5 purple books"* at World Level 9 → 6.5 × 5,000 + 4.5 × 20,000 |
 | `ley_line_mora` | **60,000** mora per 20 resin, flat |
 | `mora_per_exp.character` / `.weapon` | **0**. *"there is no more per exp point conversion"* — Genshin stopped charging mora for feeding EXP material. **Not the same as levelling being free**: ascension and talent mora still come from the payload's own `cost` fields |
@@ -63,7 +63,7 @@ Material Drop Distribution tab.
 | ley lines | **confirmed exactly** — 6-7 blue and 4-5 purple, 122,500 EXP average, 60,000 mora, 20 resin, and **flat across WL6-9** rather than a WL9-only figure |
 | world bosses | **confirmed** — the wiki's 2.5556 matches the 2.556 our snapshot reads from the game's own preview, which is independent evidence that those fractional counts are expected values |
 | domains | **wrong, 4.6× and 7.6×.** A domain has a guaranteed 2-star roll *and* variable drop packs; the preview publishes only the first. Fixed |
-| weekly bosses | **disputed.** Owner 2.2, wiki 2.4 at WL8. Owner's stands, conflict recorded |
+| weekly bosses | **corrected to 2.4.** The owner first gave 2.2, read off the part of the wiki's table that stops at World Level 8, then confirmed 2.4 — *"I forgot WL9"* |
 | trounce resin | 60, halved to 30 only three times a week — our 30 is the optimistic price |
 
 **World Level 9 is missing from the wiki's weekly-boss and elite-boss tables**, which is what

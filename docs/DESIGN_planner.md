@@ -48,8 +48,8 @@ job on the exact commit that is the PR head. There are no parallel sub-branches.
 ## 3. The two things that are not derivable, and how they are handled
 
 **Five curated numbers, in one file, each with a `source` string — all supplied by the owner
-on 2026-09-07.** Keyed by **source**, not by material: the weekly-boss yield (0.733333 of a
-named material per 30-resin run, being 2.2 items split across the boss's three), the two
+on 2026-09-07.** Keyed by **source**, not by material: the weekly-boss yield (0.8 of a
+named material per 30-resin run, being 2.4 items split across the boss's three), the two
 ley-line yields (122,500 EXP and 60,000 mora per 20 resin at World Level 9), and the two
 mora-per-EXP rates, which are **zero** — Genshin no longer charges mora for feeding EXP
 material. They live in `app/data/planner/curated_rates.json` — **not** under

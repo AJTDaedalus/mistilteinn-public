@@ -183,18 +183,19 @@ def test_a_declared_shape_is_used_rather_than_the_mean(eco) -> None:
 
 
 def test_a_run_that_drops_none_of_your_material_still_costs_resin(eco) -> None:
-    """41% of trounce runs yield none of the one material you came for.
+    """39% of trounce runs yield none of the one material you came for.
 
     Filtering those outcomes out leaked their probability from the walk, and an 18-material
     plan came back needing **0.01 runs**.
     """
     rate = eco.rate(113018)
     zero = next(p for value, p in rate.distribution if value == 0)
-    assert zero == pytest.approx(0.4148, abs=1e-3)
+    assert zero == pytest.approx(0.3852, abs=1e-3)
 
     distribution = resin.runs_distribution(18, rate)
     assert sum(distribution) == pytest.approx(1.0, abs=1e-5)
-    assert sum(index * p for index, p in enumerate(distribution)) == pytest.approx(24.8, abs=1)
+    expected_runs = sum(index * p for index, p in enumerate(distribution))
+    assert expected_runs == pytest.approx(18 / rate.expected_per_run, rel=0.05)
 
 
 def test_a_genuinely_flat_source_stays_deterministic(eco) -> None:
