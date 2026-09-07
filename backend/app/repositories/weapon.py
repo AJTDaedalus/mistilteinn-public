@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.weapon import Weapon
 from app.repositories.base import BaseRepository, ilike_contains
+from app.services.unreleased import UNRELEASED_WEAPON_CLASSES
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -31,6 +32,11 @@ class WeaponRepository(BaseRepository[Weapon]):
         name: str | None,
     ) -> Select[tuple[Weapon]]:
         stmt = select(Weapon)
+        # Eight rows at this pin carry a weapon class the game has not shipped, and unlike the
+        # two Traveler variants they have **names** — `Shatanaya's Frostsilver`, three `Frag
+        # Crystal` rows and four more, published by nobody but a datamine. That is the larger
+        # half of #271 and the half nobody had noticed. `app/services/unreleased.py`.
+        stmt = stmt.where(Weapon.weapon_type.notin_(UNRELEASED_WEAPON_CLASSES))
         if weapon_type is not None:
             stmt = stmt.where(Weapon.weapon_type == weapon_type)
         if rarity is not None:

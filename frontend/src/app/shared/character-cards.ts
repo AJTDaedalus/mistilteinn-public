@@ -41,12 +41,23 @@ export function characterCardOptions(characters: readonly CharacterSummary[]): C
  */
 export function characterCardFilters(characters: readonly CharacterSummary[]): CardFilter[] {
   const elements = new Map<string, string | null>();
-  const weapons = new Map<string, { label: string; icon: string | null }>();
+  const weapons = new Map<string, { label: string; icon: string }>();
   for (const c of characters) {
     if (c.element && !elements.has(c.element)) elements.set(c.element, c.element_icon ?? null);
-    if (c.weapon_type && !weapons.has(c.weapon_type)) {
+    // **A class with no mark is not offered**, which is the rule this line states and the
+    // whole of what it checks: a chip is a glyph, and a class with no sprite rendered as the
+    // wide word CROSSBOW among five icons. `GET /weapon-classes` publishes five of six for
+    // the same reason and `weapon_symbols.py` argues it at length.
+    //
+    // **It is not the #271 exclusion, and must not be read as one.** Hiding a class the game
+    // has not shipped is `app/services/unreleased.py`, on the server, where the fact is named
+    // once — `/characters` and the roster both filter there, so no crossbow row reaches this
+    // function any more. Leaving that job to "has an icon" would be a fact guarded by a proxy:
+    // a shipped class whose icon came back null for every row on screen would lose its whole
+    // filter with nothing raised, which is the silent narrowing #271 was about.
+    if (c.weapon_type && c.weapon_type_icon && !weapons.has(c.weapon_type)) {
       weapons.set(c.weapon_type, {
-        label: c.weapon_type_display, icon: c.weapon_type_icon ?? null,
+        label: c.weapon_type_display, icon: c.weapon_type_icon,
       });
     }
   }

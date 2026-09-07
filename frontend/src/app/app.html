@@ -3,7 +3,7 @@
     <a class="brand" routerLink="/">
       <app-emblem class="brand__emblem" [size]="44" label="" />
       <span class="brand__wordmark">mistilteinn</span>
-      <span class="brand__sub eyebrow">Genshin Optimizer</span>
+      <span class="brand__sub eyebrow">Genshin Research Institute</span>
     </a>
     @if (auth.status() === 'approved') {
       <nav class="shell__nav">
@@ -19,6 +19,7 @@
           <a routerLink="/teams" routerLinkActive="active">Teams</a>
           <a routerLink="/rotations" routerLinkActive="active">Rotations</a>
           <a routerLink="/optimize" routerLinkActive="active">Optimize</a>
+          <a routerLink="/planner" routerLinkActive="active">Planner</a>
           <a routerLink="/calculate" routerLinkActive="active">Calculate</a>
           <a routerLink="/teapot" routerLinkActive="active">Teapot sets</a>
         </span>
@@ -29,19 +30,26 @@
           <a routerLink="/artifact-sets" routerLinkActive="active">Artifact sets</a>
           <a routerLink="/enemies" routerLinkActive="active">Enemies</a>
         </span>
-        <span class="identity-chip">
-          <!-- The name is the link, and the face rides beside it. `CatalogueIcon` renders
-               nothing at all when there is no avatar or its art is missing, so the chip
-               degrades to exactly what it was before this feature. -->
-          <a class="identity-chip__you" routerLink="/account" routerLinkActive="active">
-            @if (auth.me()?.avatar; as avatar) {
-              <catalogue-icon [icon]="avatar.icon" [alt]="avatar.name" [size]="28" />
-            }
-            <span class="identity-chip__name mono">{{ auth.me()?.label || auth.me()?.email }}</span>
-          </a>
-          <button class="identity-chip__signout" (click)="signOut()">Sign out</button>
-        </span>
       </nav>
+
+      <!-- **A header child, not a nav child.** Inside `<nav>` it was a third flex item
+           competing with the two link groups for the row, so the nav could not size to its
+           links: with the chip's 249px included, the nav was too wide to sit beside the brand
+           and dropped to its own row, which then left the chip stranded on a third. Out here
+           the nav sizes to its links and the header is two rows again. Who you are signed in
+           as is also not site navigation. -->
+      <span class="identity-chip">
+        <!-- The name is the link, and the face rides beside it. `CatalogueIcon` renders
+             nothing at all when there is no avatar or its art is missing, so the chip
+             degrades to exactly what it was before this feature. -->
+        <a class="identity-chip__you" routerLink="/account" routerLinkActive="active">
+          @if (auth.me()?.avatar; as avatar) {
+            <catalogue-icon [icon]="avatar.icon" [alt]="avatar.name" [size]="28" />
+          }
+          <span class="identity-chip__name mono">{{ auth.me()?.label || auth.me()?.email }}</span>
+        </a>
+        <button class="identity-chip__signout" (click)="signOut()">Sign out</button>
+        </span>
     }
   </header>
 

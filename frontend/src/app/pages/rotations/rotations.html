@@ -17,7 +17,7 @@
     <!-- A team is what a rotation's steps are validated against, so there is nothing to
          author until one exists. Saying so beats an editor whose every control is inert. -->
     <p class="muted">
-      No teams yet — <a routerLink="/teams">build one first</a>.
+      No teams yet. <a routerLink="/teams">Build one</a>
     </p>
   } @else {
 
@@ -45,7 +45,7 @@
               >
                 <span class="party">
                   @for (member of group.team.characters; track member.nanoka_id) {
-                    <catalogue-icon [icon]="member.icon" [alt]="member.name" [size]="28" />
+                    <catalogue-icon [icon]="member.icon" [alt]="member.name" [size]="36" />
                   }
                 </span>
                 <span class="by-team__who">
@@ -76,7 +76,7 @@
                       >×</button>
                     </li>
                   } @empty {
-                    <li class="muted">No rotations for this team yet.</li>
+                    <li class="muted">No rotations yet.</li>
                   }
                   <!-- The last option inside an expanded team (owner's audit §5). A library
                        reached from here is asking "what do people run on *this*", which is why

@@ -54,8 +54,13 @@ Absent, and each is ordinary in this class of tool:
 
 **Closed since this was written** (#144): sorting by roll value / level / rarity / set / slot,
 and set, main-stat and equipped filters. The render cap is the same change — the page held all
-2,370 in the DOM, and now holds 120 with an explicit "show more". Still open from that table:
-multi-select and bulk delete, equipped-*by-whom*, and the per-piece score.
+2,370 in the DOM, and now holds 120 with an explicit "show more".
+
+**The per-piece score is closed too**, by `TASKS_artifact_ranking.md`: pick a rotation and a
+character, and every piece carries what it is worth to that build now, once levelled, and at its
+ceiling — plus three orderings on those. Still open from that table: **multi-select and bulk
+delete**, and **equipped-*by-whom*** (the card says *"Equipped"* without saying by whom, which
+Genshin Optimizer's own card does say — `AUDIT_go_handson.md` §5).
 
 ## 3. `/optimize` — the controls exist and are invisible
 
@@ -121,6 +126,29 @@ exist is the weighting: a roll's worth depends on the character, and nothing in 
 says how much CRIT DMG is worth to Ayaka relative to ATK%.
 
 **This is task #3 and gets its own plan**, not a paragraph here.
+
+---
+
+**Closed 2026-09-05** by `docs/DESIGN_artifact_ranking.md` and `docs/TASKS_artifact_ranking.md`.
+Both questions are answered, and the second one twice over:
+
+1. *"Is this piece any good?"* — a per-piece score against a chosen build and rotation, on the
+   optimizer's own engine, with a signed delta against what is equipped.
+2. *"Is this +0 worth levelling?"* — the expected value once the remaining rolls land, its
+   ceiling, and **the whole distribution**: 66,816 outcomes enumerated exactly for a +0 five-star,
+   with the probability it beats itself.
+
+**And one thing neither Fribbels nor Genshin Optimizer offers**, which is what issue #291 actually
+asked for: *"the best build with this artifact levelled up"* — a re-search with the piece pinned,
+moving the other four slots. Both reference tools ship a per-piece scorer and a separate
+optimizer with no bridge between them; GO says so in its own UI (`AUDIT_go_handson.md` §1).
+
+**The weighting problem this section named is solved differently than it expected.** It says
+*"nothing in the repo yet says how much CRIT DMG is worth to Ayaka relative to ATK%"* — and
+nothing does, because there is no weights table. The engine is the rotation, so the question is
+answered by evaluating the real damage function rather than by curating 150 characters' weights.
+That is `DECISIONS.md` §22's ruling and it is the reason two of `DESIGN_artifact_ranking.md` §6's
+three refusals turned out to be artifacts of the weights approach.
 
 ## 6. Design — the Mitya palette is thinner than the logo
 

@@ -1,0 +1,337 @@
+<section class="planner">
+  <header>
+    <h1>Planner</h1>
+    <p class="hint">
+      What it costs to take one character and one weapon where you want them — materials,
+      mora and resin, by section and in total.
+    </p>
+  </header>
+
+  <div class="setup">
+    <!-- The character column. The splash is the point of the layout: it is the thing you
+         are looking at while you decide what to spend a fortnight of resin on. -->
+    <div class="figure">
+      @if (splash(); as art) {
+        <catalogue-icon [icon]="art" [alt]="character()?.name ?? ''" [size]="360" fit="contain" />
+      }
+      <label>
+        Character
+        <select [ngModel]="characterId()" (ngModelChange)="pickCharacter($event)">
+          <option [ngValue]="null" disabled>Pick a character…</option>
+          @for (row of characters(); track row.id) {
+            <option [ngValue]="row.id">{{ row.name }}</option>
+          }
+        </select>
+      </label>
+
+      @if ((options()?.builds ?? []).length) {
+        <label>
+          Start from a build
+          <select (ngModelChange)="applyBuild($event)" [ngModel]="null">
+            <option [ngValue]="null">Enter levels by hand…</option>
+            @for (build of options()!.builds; track build.build_id) {
+              <option [ngValue]="build.build_id">
+                {{ build.name || 'Unnamed' }} — Lv{{ build.character_level }}/{{ build.ascension_phase }}
+              </option>
+            }
+          </select>
+        </label>
+        <p class="hint hint--note">
+          A build can be hypothetical — this app lets you gear a character you do not own — so
+          picking one fills these controls and leaves them editable.
+        </p>
+      }
+    </div>
+
+    <div class="controls">
+      @if (!characterId()) {
+        <p class="empty">
+          Pick a character to start. The planner prices levels, ascension, talents and a
+          weapon separately, then adds them up — against the materials your last GOOD import
+          says you already hold.
+        </p>
+      }
+      @if (characterId()) {
+        <fieldset>
+          <legend>Character</legend>
+          <div class="pair">
+            <label>
+              From level
+              <select [(ngModel)]="fromLevel">
+                @for (level of levelsFor(fromAscension()); track level) {
+                  <option [ngValue]="level">{{ level }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              Ascension
+              <select [ngModel]="fromAscension()" (ngModelChange)="setAscension($event, fromAscension, fromLevel)">
+                @for (phase of phases(); track phase.phase) {
+                  <option [ngValue]="phase.phase">{{ phase.phase }} — max {{ phase.cap }}</option>
+                }
+              </select>
+            </label>
+          </div>
+          <div class="pair">
+            <label>
+              To level
+              <select [(ngModel)]="toLevel">
+                @for (level of levelsFor(toAscension()); track level) {
+                  <option [ngValue]="level">{{ level }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              Ascension
+              <select [ngModel]="toAscension()" (ngModelChange)="setAscension($event, toAscension, toLevel)">
+                @for (phase of phases(); track phase.phase) {
+                  <option [ngValue]="phase.phase">{{ phase.phase }} — max {{ phase.cap }}</option>
+                }
+              </select>
+            </label>
+          </div>
+          <!-- The whole reason level and phase are two controls. -->
+          <p class="hint hint--note">
+            Ascension and level move independently: pick phase 6 and leave the level at 80 to
+            ascend without levelling any further.
+          </p>
+        </fieldset>
+
+        @if (talentRows().length) {
+          <fieldset>
+            <legend>Talents</legend>
+            @for (row of talentRows(); track row.talent.talent_id; let i = $index) {
+              <div class="talent">
+                <catalogue-icon [icon]="row.talent.icon" [alt]="row.talent.name" [size]="28" />
+                <span class="talent-name">{{ row.talent.name }}</span>
+                <select [ngModel]="row.current" (ngModelChange)="setTalent(i, 'current', $event)">
+                  @for (level of talentLevels; track level) {
+                    <option [ngValue]="level">{{ level }}</option>
+                  }
+                </select>
+                <span aria-hidden="true">→</span>
+                <select [ngModel]="row.target" (ngModelChange)="setTalent(i, 'target', $event)">
+                  @for (level of talentLevels; track level) {
+                    <option [ngValue]="level">{{ level }}</option>
+                  }
+                </select>
+              </div>
+            }
+            <p class="hint hint--note">
+              Levels 11–15 come free from C3 and C5 and have no materials at all, so the
+              planner stops at 10.
+            </p>
+          </fieldset>
+        }
+
+        <fieldset>
+          <legend>Weapon</legend>
+          <label>
+            Weapon
+            <select [(ngModel)]="weaponId">
+              <option [ngValue]="null">No weapon in this plan</option>
+              @for (row of weapons(); track row.id) {
+                <option [ngValue]="row.id">{{ row.name }}</option>
+              }
+            </select>
+          </label>
+          @if (weaponId()) {
+            <div class="pair">
+              <label>
+                From level
+                <select [(ngModel)]="weaponFromLevel">
+                  @for (level of levelsFor(weaponFromAscension()); track level) {
+                    <option [ngValue]="level">{{ level }}</option>
+                  }
+                </select>
+              </label>
+              <label>
+                Ascension
+                <select [ngModel]="weaponFromAscension()" (ngModelChange)="setAscension($event, weaponFromAscension, weaponFromLevel)">
+                  @for (phase of phases(); track phase.phase) {
+                    <option [ngValue]="phase.phase">{{ phase.phase }} — max {{ phase.cap }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+            <div class="pair">
+              <label>
+                To level
+                <select [(ngModel)]="weaponToLevel">
+                  @for (level of levelsFor(weaponToAscension()); track level) {
+                    <option [ngValue]="level">{{ level }}</option>
+                  }
+                </select>
+              </label>
+              <label>
+                Ascension
+                <select [ngModel]="weaponToAscension()" (ngModelChange)="setAscension($event, weaponToAscension, weaponToLevel)">
+                  @for (phase of phases(); track phase.phase) {
+                    <option [ngValue]="phase.phase">{{ phase.phase }} — max {{ phase.cap }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+            <p class="hint hint--note">
+              Any weapon in the catalogue, owned or not — including a second copy of one you
+              already have.
+            </p>
+          }
+        </fieldset>
+
+        @if (bonusesApplicable().length) {
+          <fieldset>
+            <legend>Crafting help</legend>
+            <p class="hint hint--note">
+              Characters whose passive can double a crafted batch. Only one character crafts a
+              given batch, so the best applicable bonus is used rather than all of them.
+            </p>
+            <div class="bonuses">
+              @for (bonus of bonusesApplicable(); track bonus.character_id) {
+                <label class="check">
+                  <input
+                    type="checkbox"
+                    [checked]="selectedBonuses().has(bonus.character_id)"
+                    (change)="toggleBonus(bonus.character_id)"
+                  />
+                  {{ bonusLabel(bonus) }}
+                </label>
+              }
+            </div>
+            @if (bonusesReported().length) {
+              <details>
+                <summary>{{ bonusesReported().length }} more that cannot be applied</summary>
+                <ul class="reported">
+                  @for (bonus of bonusesReported(); track bonus.character_id) {
+                    <li>{{ bonusLabel(bonus) }} — {{ bonus.effect === 'refund' ? 'the chance is published, the size of the refund is not' : 'needs the regional material family modelled' }}</li>
+                  }
+                </ul>
+              </details>
+            }
+          </fieldset>
+        }
+
+        <button type="button" class="run" (click)="run()" [disabled]="busy()">
+          {{ busy() ? 'Pricing…' : 'Price this plan' }}
+        </button>
+        @if (error(); as message) {
+          <p class="error" role="alert">{{ message }}</p>
+        }
+      }
+    </div>
+  </div>
+
+  @if (plan(); as result) {
+    <div class="results">
+      @for (section of result.sections.concat([result.total]); track section.key) {
+        <section class="bill" [class.bill--total]="section.key === 'total'">
+          <h2>
+            {{ section.label }}
+            <span class="totals">
+              <span class="mora">Mora {{ number(section.mora) }}</span>
+              <span class="resin">Resin {{ sectionResin(section) }}</span>
+            </span>
+          </h2>
+
+          @if (section.exp; as exp) {
+            @if (exp.exp_required > 0) {
+              <p class="exp">
+                {{ number(exp.exp_required) }} EXP — you hold {{ number(exp.exp_owned) }},
+                @if (exp.exp_short > 0) {
+                  still need {{ number(exp.exp_short) }}.
+                } @else {
+                  enough already.
+                }
+              </p>
+              <!-- Rendered here rather than as material rows: EXP is a pool, and `exp_bill`
+                   has already netted it against stock. Listing these in the table subtracted
+                   the same stock a second time and reported "satisfied" for books the user
+                   still had to farm. -->
+              @if (exp.books.length) {
+                <ul class="books">
+                  @for (book of exp.books; track book.material_id) {
+                    <li>
+                      <catalogue-icon [icon]="book.icon" [alt]="book.name" [size]="24" />
+                      <span class="book-count">{{ number(book.count) }}</span>
+                      <span>{{ book.name }}</span>
+                    </li>
+                  }
+                </ul>
+              }
+            }
+          }
+
+          @if (rowsToShow(section).length) {
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col" colspan="2">Material</th>
+                  <th scope="col" class="num">Need</th>
+                  <th scope="col" class="num">Have</th>
+                  <th scope="col" class="num">Short</th>
+                  <th scope="col" class="num">Resin each</th>
+                  <th scope="col">Domain</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (line of rowsToShow(section); track line.material_id) {
+                  <tr [class.done]="line.still_needed === 0">
+                    <td class="art"><catalogue-icon [icon]="line.icon" [alt]="line.name" [size]="32" /></td>
+                    <td class="name" [attr.data-rarity]="line.rarity">{{ line.name }}</td>
+                    <td class="num">{{ number(line.required) }}</td>
+                    <td class="num">{{ number(line.owned) }}</td>
+                    <td class="num">{{ number(line.still_needed) }}</td>
+                    <td class="num">
+                      @if (line.resin) {
+                        {{ line.resin.resin_per_unit.toFixed(1) }}
+                      } @else if (line.resin_status === 'satisfied') {
+                        <span class="muted" title="You already hold enough">—</span>
+                      } @else if (line.resin_status === 'not_farmable') {
+                        <span class="muted" title="Not obtained with resin">—</span>
+                      } @else {
+                        <span class="unknown" title="Costs resin at a rate nobody publishes">?</span>
+                      }
+                    </td>
+                    <td class="days">{{ days(line) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+
+          @if (gaps(section); as note) {
+            <p class="hint hint--warn">{{ note }}</p>
+          }
+
+          @if (section.resin.histogram.length > 1) {
+            <figure class="histogram">
+              <figcaption>How much resin this is likely to take</figcaption>
+              <div class="bars">
+                @for (bin of section.resin.histogram; track bin.low) {
+                  <div
+                    class="bar"
+                    [style.height.%]="barHeight(section, bin.probability)"
+                    [title]="round(bin.low) + '–' + round(bin.high) + ' resin: ' + (bin.probability * 100).toFixed(1) + '%'"
+                  ></div>
+                }
+              </div>
+              <div class="axis">
+                <span>{{ round(section.resin.histogram[0].low) }}</span>
+                <span>{{ round(section.resin.histogram[section.resin.histogram.length - 1].high) }}</span>
+              </div>
+            </figure>
+          }
+        </section>
+      }
+
+      <p class="hint hint--note model-note">{{ result.histogram_note }}</p>
+
+      @if (result.talent_free_levels) {
+        <p class="hint hint--note">
+          Talent levels above 10 were asked for. Those come free from C3 and C5 and cost no
+          materials, so nothing is listed for them.
+        </p>
+      }
+    </div>
+  }
+</section>

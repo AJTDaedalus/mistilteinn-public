@@ -12,7 +12,7 @@
     <p class="muted">Loading…</p>
   } @else if (builds().length === 0) {
     <p class="muted">
-      You have no builds yet — <a routerLink="/builds">make one first</a>.
+      No builds yet. <a routerLink="/builds">Make one</a>
     </p>
   } @else {
 
@@ -32,8 +32,7 @@
         </header>
         @if (savedRunIsStale()) {
           <p class="saved-run__stale" role="status">
-            Your gear has changed since this ran. The result below is what was measured then,
-            not what this build would score now.
+            Gear has changed since this ran.
           </p>
         }
         <p class="saved-run__score">
@@ -131,7 +130,7 @@
           <select aria-label="Hit" [ngModel]="hitIndex()" (ngModelChange)="hitIndex.set(+$event)">
             @for (option of hits(); track $index) {
               <option [value]="$index">
-                {{ talentLabel(option.talent) }} · {{ option.label }}
+                {{ enumLabel(option.talent) }} · {{ option.label }}
               </option>
             }
           </select>
@@ -148,7 +147,7 @@
           Element
           <select aria-label="Element" [(ngModel)]="channel">
             @for (option of channels; track option) {
-              <option [value]="option">{{ option }}</option>
+              <option [value]="option">{{ enumLabel(option) }}</option>
             }
           </select>
         </label>
@@ -157,7 +156,7 @@
           Scope
           <select aria-label="Scope" [(ngModel)]="scope">
             @for (option of scopes; track option) {
-              <option [value]="option">{{ option }}</option>
+              <option [value]="option">{{ enumLabel(option) }}</option>
             }
           </select>
         </label>
@@ -177,7 +176,7 @@
       <p class="hint">This build has no talent levels set.</p>
     }
     @if (!buildId() && objective() === 'hit') {
-      <p class="hint">Choose a build to pick the hit to optimize.</p>
+      <p class="hint">Choose a build first.</p>
     }
 
     <!-- The rotation objective (R.8/R.9).
@@ -258,8 +257,7 @@
                indistinguishable from "your artifacts are bad", and the user would not know
                which. -->
           <p class="error" role="alert">
-            No artifact you own matches the main stats chosen for
-            {{ impossibleSlots().join(', ') }} — the search would return nothing.
+            No artifact matches those main stats.
           </p>
         }
       </fieldset>
@@ -267,7 +265,11 @@
 
     @if (objective() === 'rotation') {
       @if (!rotations().length) {
-        <p class="hint">No rotations authored yet — write one before searching against it.</p>
+        <!-- "searching against it" was reported as odd, and it was: the search runs the
+             rotation, it does not search it (#274). It also has an action, so it links. -->
+        <p class="hint">
+          No rotations yet. <a routerLink="/rotations">Write one</a>
+        </p>
       }
 
       <!-- **Shortened, not removed.** The owner asked for this to go and was right that the
@@ -282,14 +284,13 @@
              an inventory that can field no 4-piece, or a filter load that failed, left a
              disabled button and nothing on screen accounting for it. -->
         <p class="hint">
-          None of your artifacts can field four of one set yet, so there is nothing to
-          calibrate against — optimize for a single hit instead, or import more pieces.
+          No four-piece set in your inventory yet.
         </p>
       }
 
       @if (fourPieceChoices().length) {
         <fieldset class="set-filter">
-          <legend>Artifact Sets</legend>
+          <legend>Artifact sets</legend>
 
           <!-- **Inside the fieldset it is about.** This sat above it, flush to the page edge as
                plain muted body text, so it warned you about sets before you had opened the
@@ -302,9 +303,13 @@
                the line makes a set the user owns four of vanish from the picker, which looks
                exactly like not owning four of it. The fix is a gcsim pin bump, which is its own
                chunk. -->
-          @if (unsimulableSets().length) {
-            <p class="hint set-filter__caveat">
-              Not offered below — gcsim cannot simulate {{ unsimulableSets().join(', ') }}.
+          <!-- **`.warn`, and only once a set is chosen.** This was `.hint` — plain muted body
+               text, indistinguishable from a caption — and it appeared before you had picked
+               anything, warning about something you had not done. It is a real limitation and
+               it should look like one, at the moment it applies. -->
+          @if (unsimulableSets().length && selectedSets().size) {
+            <p class="warn set-filter__caveat">
+              gcsim cannot simulate {{ unsimulableSets().join(', ') }}.
             </p>
           }
 
@@ -333,10 +338,15 @@
                  seconds each, and nobody would wait for that. "None" undid a selection the
                  picker already clears. -->
             <div class="filter-actions">
-              <span class="muted mono">
-                {{ calibrationCount() }} calibration{{ calibrationCount() === 1 ? '' : 's' }}
+              <!-- **Say what is being counted.** This read as a bare `1 calibration` floating
+                   beside the 2-piece picker, in mono, with nothing saying what a calibration
+                   is or why the number matters. It is the work the search is about to do. -->
+              <span class="muted filter-actions__cost">
+                This search needs
+                <span class="mono">{{ calibrationCount() }}</span>
+                calibration{{ calibrationCount() === 1 ? '' : 's' }}
                 @if (selectedWeapons().size) {
-                  · about {{ estimatedMinutes() }} min
+                  · about <span class="mono">{{ estimatedMinutes() }}</span> min
                 }
               </span>
             </div>
@@ -362,11 +372,6 @@
               />
               <span>Wait for energy instead of skipping the burst</span>
             </label>
-            <p class="hint energy-model__why">
-              A character who cannot pay for a burst holds the rotation up rather than
-              dropping it — which is what a player does, and prices Energy Recharge far
-              higher. Slower, and assumes a standard rate of incoming energy.
-            </p>
           </div>
 
           <!-- §W — weapons in the search. Owner: *"Weapon should definitely be opt-in, off by
@@ -381,10 +386,7 @@
               <!-- The equipped weapon is not in this list: it is the baseline every candidate
                    is measured against, not a hypothesis to tick. -->
               <p class="hint">
-                Searching against <strong>{{ build()?.weapon?.name || 'the equipped weapon' }}</strong>.
-                Each weapon added is a full artifact search of its own — a weapon that wants
-                different pieces would lose a comparison it should win — so each costs about
-                <strong>2½ minutes</strong>.
+                About <strong>2½ minutes</strong> per weapon.
               </p>
 
               <mist-card-picker
@@ -399,10 +401,8 @@
 
               @if (weaponGuide(); as guide) {
                 <p class="hint">
-                  Weapons KeqingMains lists for {{ guide.character }} are marked and shown
-                  first, in their order —
-                  <a [href]="guide.url" target="_blank" rel="noopener">their guide</a>,
-                  retrieved {{ guide.retrieved_at }}.
+                  KeqingMains picks first.
+                  <a [href]="guide.url" target="_blank" rel="noopener">Their guide</a>
                 </p>
               }
             }
@@ -441,14 +441,14 @@
                  this and three of anything" is neither, so a half-filled pair constrains
                  nothing and would quietly contribute no recipe at all. -->
             <p class="hint">
-              A 2-piece needs a partner — pick a second set, or clear this one.
+              Pick a second set.
             </p>
           }
 
     @if (!selectedSets().size && chosenPair() === null) {
             <!-- Ruling 3: nothing is preselected, so the empty state has to say what to do
                  rather than leave a disabled button unexplained. -->
-            <p class="hint">Pick at least one set. Roughly six seconds each.</p>
+            <p class="hint">Pick at least one set.</p>
           }
         </fieldset>
       }
@@ -473,7 +473,7 @@
         @if (progress.loading) {
           Loading gcsim (41 MB)…
         } @else {
-          Calibrating {{ progress.current }} — {{ progress.done }} of {{ progress.total }}
+          Calibrating {{ progress.current }} · {{ progress.done }} of {{ progress.total }}
         }
       </p>
     }
@@ -491,18 +491,17 @@
              varies is almost always energy: a burst gated on `.ready` fires in some iterations
              and not others when the build is marginal on ER — `BACKLOG_optimize.md` §8. -->
         <p class="warn" role="alert">
-          The rotation did not run the same way every iteration, so no recipe describes it.
+          The rotation did not run the same way every iteration.
           @for (entry of notes.unstable; track entry.label) {
             <span class="block">
-              {{ entry.label }} — varied: <span class="mono">{{ entry.abilities.join(', ') }}</span>
+              {{ entry.label }} varied: <span class="mono">{{ entry.abilities.join(', ') }}</span>
             </span>
           }
           <!-- **Measured, not guessed** — `npm run probe:energy`, recorded in
                `BACKLOG_optimize.md` §8. The same gated rotation is unstable below 30% ER and
                performs identically every iteration at and above it. -->
           <span class="block">
-            An ability whose count varies is short of energy: it fires on some iterations and
-            not others. More Energy Recharge, or a rotation that bursts less often, settles it.
+            More Energy Recharge needed.
           </span>
         </p>
       }
@@ -526,7 +525,7 @@
         <span class="mono">{{ gap.has | percent: '1.0-1' }}</span>
         Energy Recharge and the rotation needs
         <span class="mono">{{ gap.needs | percent: '1.0-1' }}</span>
-        to run the same way every time —
+        to run the same way every time:
         <span class="mono">{{ gap.shortfall | percent: '1.0-1' }}</span> more.
       </p>
     }
@@ -541,15 +540,6 @@
       <p class="error" role="alert">{{ delay }}</p>
     }
 
-    @if (asideCaveats(); as aside) {
-      @if (aside.unstable.length || aside.staleConversions.length) {
-        <p class="hint">
-          The baseline recipe has the same trouble. It does not affect the ranking — no result
-          was scored with it — but the off-set suggestions under Details rest on it.
-        </p>
-      }
-    }
-
     <!-- Both of these are free once a rotation search has run: the page still holds the
          calibrated recipe, and an evaluation is 0.048 µs per hit. Calibration was the
          expensive part and it is already paid for. -->
@@ -562,19 +552,18 @@
       <!-- OQ-O2: reported, never swallowed. A search over an inventory quietly missing
            pieces recommends the best of what it was shown. -->
       <p class="warn" role="alert">
-        {{ unreadable().length }} artifact{{ unreadable().length === 1 ? '' : 's' }} could not be read and were left out of the
-        search:
+        {{ unreadable().length }} artifact{{ unreadable().length === 1 ? '' : 's' }} could not be read:
       </p>
       <ul class="unreadable">
         @for (piece of unreadable(); track piece.artifact_id) {
-          <li><span class="mono">{{ piece.artifact_id }}</span> — {{ piece.reason }}</li>
+          <li><span class="mono">{{ piece.artifact_id }}</span>: {{ piece.reason }}</li>
         }
       </ul>
     }
 
     @if (truncated()) {
       <p class="warn" role="alert">
-        Your inventory was larger than one snapshot holds, so this searched only part of it.
+Only part of your inventory was searched.
       </p>
     }
 
@@ -636,7 +625,7 @@
              here, hit again by writing the two spans on separate lines and assuming the
              newline would survive. -->
         @if (recipeIsShaky()) {
-          <strong class="warn-inline">&nbsp;· Scoring unreliable — see above.</strong>
+          <strong class="warn-inline">&nbsp;· Scoring unreliable. See above.</strong>
         }
       </p>
 
@@ -889,7 +878,7 @@
                     <h3>Not included</h3>
                     <ul class="uncited">
                       @for (note of paired.shown.result.uncited; track $index) {
-                        <li><strong>{{ note.what }}</strong> — {{ note.why }}</li>
+                        <li><strong>{{ note.what }}</strong>: {{ note.why }}</li>
                       }
                     </ul>
                   }
@@ -899,7 +888,7 @@
           </li>
         } @empty {
           <li class="muted">
-            No complete build could be made — a search needs a piece in all five slots.
+            No complete build.
           </li>
         }
         <!-- **The comparator as a row, not a sentence** (owner): *"'Percentages are against

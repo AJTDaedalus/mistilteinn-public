@@ -1,0 +1,19 @@
+// Layout breakpoints.
+//
+// **The app had none.** Two `@media` rules existed in 33 stylesheets and neither was a layout
+// breakpoint — `min-width: 88rem` widening the rotation editor, and `(hover: hover)`. Every
+// page reported the same 947px `scrollWidth` at both 768px and 390px, because the cause was
+// the shell rather than any page: a 640px non-wrapping nav plus a 249px identity chip.
+//
+// Custom properties cannot be used in a media query, so these are Sass variables and have to
+// be `@use`d by any stylesheet that needs them.
+//
+// Two, deliberately. `$lap` is where the header's two rows stop fitting beside the brand;
+// `$palm` is where multi-column content has to become one column. A third breakpoint is a
+// third thing to keep in agreement, and nothing here has yet needed one.
+
+/// Below this, the header stacks and content grids drop columns.
+$lap: 60rem;   // 960px
+
+/// Below this, assume one column and a thumb.
+$palm: 34rem;  // 544px

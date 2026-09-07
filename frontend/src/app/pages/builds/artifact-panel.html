@@ -1,7 +1,7 @@
 @if (!hasBuild()) {
   <!-- A piece is equipped to a build, so there is nothing to attach it to yet. Said, rather
        than shown as five inert slots. -->
-  <p class="hint">Save this build to equip artifacts to it.</p>
+  <p class="hint">Save this build first.</p>
 } @else if (error(); as message) {
   <p class="error" role="alert">{{ message }}</p>
 } @else if (loading()) {

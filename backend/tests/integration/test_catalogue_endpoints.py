@@ -164,19 +164,107 @@ async def test_a_weapon_with_no_base_atk_is_served_not_dropped(
 ):
     """The eight `ITEM_TPS_WEAPON` rows publish `atk: null` and `sub: null`. C.1 recorded
     them and D.4 imported them visibly; a response schema that required the field would
-    undo that at the last step."""
+    undo that at the last step.
+
+    **Asserted on a shipped class**, because the unreleased eight now 404 on the detail route
+    too — see below — and a nullability test written against them would have gone green for
+    the wrong reason the moment that landed. The two facts are separate, so they get separate
+    rows: nullable columns must survive serialisation whatever is listed.
+    """
     weapon = Weapon(
-        nanoka_id=224001, name="Frag Crystal", weapon_type=WeaponType.CROSSBOW,
+        nanoka_id=11101, name="Dull Blade", weapon_type=WeaponType.SWORD,
         rarity=Rarity.ONE_STAR, base_atk=None, sub_stat_type=None,
     )
     db_session.add(weapon)
     await db_session.flush()
 
-    listed = (await client.get("/api/v1/weapons", params={"name": "Frag"})).json()
+    detail = await client.get("/api/v1/weapons/11101")
 
-    assert listed["total"] == 1
-    assert listed["items"][0]["base_atk"] is None
-    assert (await client.get("/api/v1/weapons/224001")).status_code == 200
+    assert detail.status_code == 200
+    assert detail.json()["base_atk"] is None
+
+
+@pytest.mark.asyncio
+async def test_a_weapon_class_the_game_has_not_shipped_is_not_served_by_id(
+    client: AsyncClient, db_session: AsyncSession,
+):
+    """Hiding the row from the list and serving its name on request is not hiding it.
+
+    The complaint (#271) is about the **names** — `Shatanaya's Frostsilver`, the `Frag
+    Crystal` rows — which nobody but a datamine has published. `/weapons/224001` is four
+    keystrokes and an ascending integer away, so it answers 404 like a row that is not
+    there, and the list test beside this one covers the other surface.
+    """
+    db_session.add(Weapon(
+        nanoka_id=224001, name="Frag Crystal", weapon_type=WeaponType.CROSSBOW,
+        rarity=Rarity.FOUR_STAR, base_atk=None, sub_stat_type=None,
+    ))
+    await db_session.flush()
+
+    detail = await client.get("/api/v1/weapons/224001")
+
+    assert detail.status_code == 404
+    assert "Frag Crystal" not in detail.text
+
+
+@pytest.mark.asyncio
+async def test_a_weapon_class_the_game_has_not_shipped_is_not_listed(
+    client: AsyncClient, db_session: AsyncSession,
+):
+    """Eight rows at nanoka 7.0.51 carry `WEAPON_CROSSBOW`, and unlike the two Traveler
+    variants of the same class they have **names** — `Shatanaya's Frostsilver`, three `Frag
+    Crystal` rows, four more — published by nobody but a datamine.
+
+    Reported from Discord (#271): *"crossbow doesnt actually exist anyway and also could be
+    kinda leaks touching which is a no no for you"*. That arrived about a filter chip, which
+    is the surface a player noticed; these eight names sitting on `/weapons` are the larger
+    half and nobody had noticed them at all.
+
+    Hidden at read time rather than unseeded, for the reason `app/services/unreleased.py`
+    gives: `verify_seed` counts rows against the source index, and a seeder that dropped ten
+    would have to explain the gap to every count downstream.
+    """
+    db_session.add_all([
+        Weapon(
+            nanoka_id=224001, name="Frag Crystal", weapon_type=WeaponType.CROSSBOW,
+            rarity=Rarity.FOUR_STAR, base_atk=None, sub_stat_type=None,
+        ),
+        Weapon(
+            nanoka_id=11101, name="Dull Blade", weapon_type=WeaponType.SWORD,
+            rarity=Rarity.ONE_STAR, base_atk=23.0, sub_stat_type=None,
+        ),
+    ])
+    await db_session.flush()
+
+    listed = (await client.get("/api/v1/weapons")).json()
+
+    names = [item["name"] for item in listed["items"]]
+    assert "Frag Crystal" not in names
+    assert "Dull Blade" in names
+    # The count goes with it. A `total` that includes what the page cannot show is the same
+    # class of lie as a total that ignores the filter — see the test above it.
+    assert listed["total"] == len([n for n in names if n])
+
+
+@pytest.mark.asyncio
+async def test_a_character_of_an_unshipped_class_is_not_listed(
+    client: AsyncClient, db_session: AsyncSession,
+):
+    """The other half of #271. Two Traveler variants carry `WEAPON_CROSSBOW`, which put a
+    `CROSSBOW` chip in every character filter bar — a control for something not in the game,
+    naming a class only a datamine has published."""
+    await _character(
+        db_session, nanoka_id="10000005-9", name="Traveler",
+        element=None, weapon_type=WeaponType.CROSSBOW,
+    )
+    await _character(db_session)
+
+    listed = (await client.get("/api/v1/characters")).json()
+
+    names = {item["nanoka_id"] for item in listed["items"]}
+    assert "10000005-9" not in names
+    assert "10000002" in names
+    assert listed["total"] == len(listed["items"])
 
 
 @pytest.mark.asyncio

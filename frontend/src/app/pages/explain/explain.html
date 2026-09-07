@@ -1,7 +1,6 @@
 <section class="explain">
   <header>
     <h1>Explain</h1>
-    <p class="muted">Where every number in a hit came from.</p>
   </header>
 
   @if (error(); as message) {
@@ -13,7 +12,7 @@
     <p class="muted">Loading…</p>
   } @else if (builds().length === 0) {
     <p class="muted">
-      You have no builds yet — <a routerLink="/builds">make one first</a>.
+      No builds yet. <a routerLink="/builds">Make one</a>
     </p>
   } @else {
 
@@ -61,7 +60,7 @@
         <select aria-label="Hit" [ngModel]="hitIndex()" (ngModelChange)="hitIndex.set(+$event)">
           @for (option of hits(); track $index) {
             <option [value]="$index">
-              {{ talentLabel(option.talent) }} · {{ option.label }}
+              {{ enumLabel(option.talent) }} · {{ option.label }}
               @if (option.hits > 1) { (×{{ option.hits }}) }
             </option>
           }
@@ -74,7 +73,7 @@
              nothing about which element the hit lands as. -->
         <select aria-label="Element" [(ngModel)]="channel">
           @for (option of channels; track option) {
-            <option [value]="option">{{ option }}</option>
+            <option [value]="option">{{ enumLabel(option) }}</option>
           }
         </select>
       </label>
@@ -83,7 +82,7 @@
         Scope
         <select aria-label="Scope" [(ngModel)]="scope">
           @for (option of scopes; track option) {
-            <option [value]="option">{{ option }}</option>
+            <option [value]="option">{{ enumLabel(option) }}</option>
           }
         </select>
       </label>
@@ -101,12 +100,10 @@
     @if (hit(); as chosen) {
       <p class="hint">
         Multiplier <span class="mono">{{ chosen.multiplier | number: '1.0-4' }}</span>
-        — from {{ build()?.character?.name }}'s own table at this build's talent level.
-        @if (chosen.exclusive) { One of several alternatives. }
       </p>
     } @else {
       <p class="hint">
-        This build has no talent levels set, so there is nothing to explain yet.
+        This build has no talent levels set.
       </p>
     }
 
@@ -159,7 +156,7 @@
           <h2>Not included</h2>
           <ul class="uncited">
             @for (note of explained.uncited; track $index) {
-              <li><strong>{{ note.what }}</strong> — {{ note.why }}</li>
+              <li><strong>{{ note.what }}</strong>: {{ note.why }}</li>
             }
           </ul>
         }

@@ -1,0 +1,69 @@
+{
+  "note": "The artifact draw model: which substats a piece is created with, and which main stat a slot rolls. THIS IS NOT DERIVED FROM THE PINNED GAME DATA, and that is why it lives in app/data/external/ rather than app/data/yuanshen/snapshot/. Measured 2026-09-05 against the AnimeGameData capture at 5445617e33b2: ReliquaryAffixExcelConfigData (350 rows) carries id/propType/group_id/propValue/depotId and no weight; ReliquaryMainPropExcelConfigData (66 rows) carries id/propDepotId/propType/affixName and no weight. ReliquaryExcelConfigData does have a `weight`, and it is an item-drop weight on the artifact entry (weight: 1) -- taking it because the key matched would be confidently wrong. So these numbers are a NAMED SECONDARY SOURCE, shipped openly the way gcsim_config.ENERGY_DRIP already is. See docs/DESIGN_artifact_ranking.md section 8.3 and docs/RESEARCH_substat_draw_weights.md.",
+  "sources": [
+    {
+      "what": "substat_weights and main_stat_probabilities, verbatim",
+      "repo": "frzyc/genshin-optimizer",
+      "path": "libs/gi/upopt/src/consts.ts",
+      "pinned_commit_sha": "14d534d5910dac500f3198073741a54b4ec1832f",
+      "url": "https://raw.githubusercontent.com/frzyc/genshin-optimizer/14d534d5910dac500f3198073741a54b4ec1832f/libs/gi/upopt/src/consts.ts",
+      "fetched_at": "2026-09-05"
+    },
+    {
+      "what": "the origin that file itself cites, in its own first comment",
+      "url": "https://genshin-impact.fandom.com/wiki/Artifact/Distribution",
+      "note": "Community-maintained. Not independently verified here; see the caveat field."
+    }
+  ],
+  "caveat": "These weights could not be confirmed against the owner's own 2,370-artifact export. Inclusion probability under a weighted draw without replacement is monotone in weight, and on flowers at +0 the observed ordering violates that -- critDMG_ (w=3) above atk (w=6), with hp_ and def_ (w=4) last. Either a kept inventory is still selected at +0 or the published table is wrong. That is a measurement, not a correction: nothing here is adjusted to fit the export. docs/RESEARCH_substat_draw_weights.md.",
+  "substat_weights": {
+    "hp": 6,
+    "atk": 6,
+    "def": 6,
+    "hp_": 4,
+    "atk_": 4,
+    "def_": 4,
+    "eleMas": 4,
+    "enerRech_": 4,
+    "critRate_": 3,
+    "critDMG_": 3
+  },
+  "main_stat_probabilities": {
+    "flower": {
+      "hp": 1
+    },
+    "plume": {
+      "atk": 1
+    },
+    "sands": {
+      "hp_": 0.26666666666666666,
+      "atk_": 0.26666666666666666,
+      "def_": 0.26666666666666666,
+      "eleMas": 0.1,
+      "enerRech_": 0.1
+    },
+    "goblet": {
+      "hp_": 0.1925,
+      "def_": 0.19,
+      "atk_": 0.1925,
+      "eleMas": 0.025,
+      "physical_dmg_": 0.05,
+      "anemo_dmg_": 0.05,
+      "geo_dmg_": 0.05,
+      "electro_dmg_": 0.05,
+      "hydro_dmg_": 0.05,
+      "pyro_dmg_": 0.05,
+      "cryo_dmg_": 0.05,
+      "dendro_dmg_": 0.05
+    },
+    "circlet": {
+      "hp_": 0.22,
+      "def_": 0.22,
+      "atk_": 0.22,
+      "eleMas": 0.04,
+      "critRate_": 0.1,
+      "critDMG_": 0.1,
+      "heal_": 0.1
+    }
+  }
+}

@@ -22,7 +22,9 @@ from fastapi import (
 )
 from sqlalchemy.exc import IntegrityError
 
+from app.data.external import ExternalDataUnavailableError, draw_model_provenance
 from app.data.importers.good_importer import GoodImportError, parse_good
+from app.data.snapshot import SnapshotUnavailableError
 from app.dependencies import (
     CurrentUser,
     DBSession,
@@ -38,12 +40,15 @@ from app.schemas.artifact import (
     ArtifactOptions,
     ArtifactRead,
     BuildImportSummary,
+    DrawModel,
     GoodImportRequest,
     GoodImportResponse,
     ImportRejection,
     InventorySnapshot,
     KernelCandidate,
+    ProjectionInputs,
     RarityVocabularyEntry,
+    RollLadder,
     SlotVocabularyEntry,
     StatVocabularyEntry,
     UnreadableArtifact,
@@ -51,10 +56,15 @@ from app.schemas.artifact import (
 from app.schemas.build import KernelSetBonus
 from app.schemas.common import PaginatedResponse
 from app.services import build_assembler
+from app.services.artifact_potential import (
+    substat_weights_by_quantity,
+    upgrade_potential,
+)
 from app.services.good_build_service import rebuild_builds as rebuild_from_export
 from app.services.good_import_service import ReplaceRefusedError, store_good_import
 from app.services.good_weapon_service import store_owned_weapons
 from app.services.stat_calculator import StatInputError, _quantity_for_prop
+from app.services.substat_rolls import roll_tiers
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -178,6 +188,7 @@ async def get_inventory(
         total=len(candidates),
         truncated=truncated,
         unreadable=unreadable,
+        draw_model=_draw_model({c.rarity for c in candidates}),
     )
 
 
@@ -212,9 +223,79 @@ def _kernel_candidates(
                 set_id=row.artifact_set.nanoka_id if row.artifact_set is not None else None,
                 stats=stats,
                 main_stat=row.main_stat_type.value,
+                rarity=row.rarity.stars,
+                level=row.level,
+                potential=_projection_inputs(row),
             ),
         )
     return candidates, unreadable
+
+
+def _projection_inputs(artifact: Artifact) -> ProjectionInputs | None:
+    """What A.5 needs to project this piece to its maximum level.
+
+    **Null when the committed schedule cannot answer for this piece** — a rarity it does not
+    cover, or a level that rarity cannot reach. The same rule `UpgradePotentialRead.potential`
+    already follows, and for the same reason: zero rolls remaining is the honest answer for a
+    maxed piece, so collapsing "no answer" into it would hide a broken row behind a plausible
+    number that a projection would then treat as *finished*.
+
+    **The lines, not the rolls that made them.** A projection spends rolls it has not had yet,
+    which needs the line count and the schedule — both exact — and never the decomposition of
+    the piece's history. `substat_rolls.analyse` reaches 85% exact / 11.5% estimated / 3.5%
+    unknown, and none of that uncertainty reaches this.
+    """
+    lines: list[str] = []
+    for substat in artifact.substats or []:
+        if not isinstance(substat, dict):
+            continue
+        quantity = _quantity_for_prop(substat.get("stat"), allow_absent=True)
+        # Distinct, in payload order. The game does not produce two lines of one stat, and a
+        # duplicate here would let a projection deepen the same line twice.
+        if quantity is not None and quantity not in lines:
+            lines.append(quantity)
+
+    try:
+        found = upgrade_potential(
+            stars=artifact.rarity.stars, level=artifact.level, substats=len(lines),
+        )
+    except (SnapshotUnavailableError, ValueError):
+        return None
+    return ProjectionInputs(
+        rolls_remaining=found.rolls_remaining,
+        rolls_total=found.rolls_total,
+        # `upgrade_potential` returns `None` only when it was not told the line count, and it
+        # always is here.
+        gains_a_substat=bool(found.gains_a_substat),
+        substat_quantities=lines,
+    )
+
+
+def _draw_model(rarities: set[int]) -> DrawModel | None:
+    """The projection inputs every piece shares, sent once rather than 2,370 times.
+
+    **Null when the committed data cannot be read**, which makes ranking unavailable rather
+    than approximate. A draw model with an empty weight table would still produce a
+    distribution — a uniform one, confidently wrong — and that is the failure this returns
+    null to avoid.
+
+    Only the rarities actually present are sent. A 5-star-only account has no use for the
+    3-star ladder, and a table nobody reads is a table nobody notices is wrong.
+    """
+    try:
+        weights = substat_weights_by_quantity()
+        caveat = draw_model_provenance()["caveat"]
+        ladders = {
+            str(stars): [
+                RollLadder(quantity=quantity, values=list(values))
+                for prop, values in sorted(roll_tiers(stars).items())
+                if (quantity := _quantity_for_prop(prop, allow_absent=True)) is not None
+            ]
+            for stars in sorted(rarities)
+        }
+    except (ExternalDataUnavailableError, SnapshotUnavailableError):
+        return None
+    return DrawModel(roll_tiers=ladders, substat_weights=weights, weights_caveat=caveat)
 
 
 def _kernel_stats(artifact: Artifact) -> dict[str, float]:
@@ -377,6 +458,8 @@ async def import_good(
         weapons_unresolved=weapons_unresolved,
         inserted=stored.inserted,
         deleted=stored.deleted,
+        materials_written=stored.materials_written,
+        materials_unresolved=list(stored.materials_unresolved),
         builds=builds,
         rejected=[
             ImportRejection(index=index, reason=reason) for index, reason in stored.rejected

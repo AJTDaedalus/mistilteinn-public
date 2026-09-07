@@ -80,6 +80,9 @@ _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     ("GET", "/api/v1/teams/00000000-0000-0000-0000-000000000001", None),
     ("PATCH", "/api/v1/teams/00000000-0000-0000-0000-000000000001", {}),
     ("DELETE", "/api/v1/teams/00000000-0000-0000-0000-000000000001", None),
+    # the leveling planner — DESIGN_planner.md
+    ("GET", "/api/v1/planner/options", None),
+    ("POST", "/api/v1/planner/plan", {}),
     # builds — G.6c
     ("GET", "/api/v1/builds", None),
     ("GET", "/api/v1/builds/options", None),  # T.3

@@ -167,8 +167,14 @@ describe('describePieces', () => {
     const named = describePieces(
       ['a', 'b'],
       [
-        { id: 'a', slot: 'equip_bracer', set_id: 1, stats: {}, main_stat: 'FIGHT_PROP_HP' },
-        { id: 'b', slot: 'equip_dress', set_id: 1, stats: {}, main_stat: 'FIGHT_PROP_CRITICAL' },
+        {
+          id: 'a', slot: 'equip_bracer', set_id: 1, stats: {},
+          main_stat: 'FIGHT_PROP_HP', rarity: 5, level: 20,
+        },
+        {
+          id: 'b', slot: 'equip_dress', set_id: 1, stats: {},
+          main_stat: 'FIGHT_PROP_CRITICAL', rarity: 5, level: 20,
+        },
       ],
       (slot) => ({ equip_bracer: 'Flower', equip_dress: 'Circlet' })[slot] ?? slot,
     );
@@ -926,7 +932,7 @@ describe('OptimizePage caveat attribution', () => {
     }));
 
     expect(page['recipeIsShaky']()).toBe(false);
-    expect(page['asideCaveats']().unstable.map((e) => e.label))
+    expect(page['splitCaveats'](true).unstable.map((e) => e.label))
       .toEqual(['the baseline (no 4-piece bonus)']);
     expect(page['rankingCaveats']().unstable).toEqual([]);
   });
@@ -961,7 +967,7 @@ describe('OptimizePage caveat attribution', () => {
     }));
 
     expect(page['recipeIsShaky']()).toBe(false);
-    expect(page['asideCaveats']().staleConversions).toHaveLength(1);
+    expect(page['splitCaveats'](true).staleConversions).toHaveLength(1);
   });
 
   it('keeps a frozen conversion on a recipe that did score', () => {
@@ -1269,6 +1275,28 @@ describe('OptimizePage defaults', () => {
     await page['selectBuild']('b1');
 
     expect(localStorage.getItem('mistilteinn:optimize:buildId')).toBe('b1');
+  });
+
+  it('sets Element from the build before it waits on any request', async () => {
+    // It used to be the *last* thing in `selectBuild`'s `try`, after the hit list and after
+    // the whole equipped inventory — so on a real account the field visibly caught up a beat
+    // later, reported as "the element field seems to update itself late" (#287). Nothing has
+    // to be fetched to know it: the build is already in hand and carries its character.
+    //
+    // The stub never resolves, so this asserts the value is there while both requests are
+    // still outstanding. That is the state the report was about.
+    // `load()` selects the remembered build through this same method, so the stub has to
+    // answer once before it is made to hang — otherwise the page never finishes loading and
+    // the test times out rather than failing on the assertion.
+    const hits = vi.fn().mockResolvedValue(HITS);
+    const page = pageWith({ explain: { hits } as unknown as ExplainService });
+    await page['load']();
+    page['channel'] = 'physical';
+    hits.mockReturnValue(new Promise<never>(() => undefined));
+
+    void page['selectBuild']('b1');
+
+    expect(page['channel']).toBe('cryo');
   });
 });
 

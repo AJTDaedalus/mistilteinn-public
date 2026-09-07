@@ -1,6 +1,9 @@
 # DESIGN: ranking one artifact
 
-**Status: open questions answered 2026-08-29 (`DECISIONS.md` §22); nothing built.** Owner request (2026-08-29): *"make a plan for implementing
+**Status: replanned 2026-09-05 against issue #291; nothing built yet.** The 2026-08-29 rulings
+(`DECISIONS.md` §22) stand unchanged. Four further questions were answered on 2026-09-05 —
+**§8** — and they widen the feature: the issue asks for a number this document did not plan for.
+`docs/TASKS_artifact_ranking.md` is the task list. Owner request (2026-08-29): *"make a plan for implementing
 artifact ranking like they do for relics. It's similar to optimization, but has more to do with
 [artifact] potential for a rotation than picking the best set of 5 artifacts, and applies to
 lower level artifacts too (like the probability a lvl 0 artifact will be an upgrade if
@@ -223,3 +226,247 @@ Three failure modes, each with a required behaviour:
 
 Nothing is blocked on a decision. What remains unknown is a **measurement** — Task 1 — not a
 choice.
+
+
+---
+
+# The 2026-09-05 replan — issue #291
+
+Filed from Discord by `discord-triage` and read at
+[#291](https://github.com/AJTDaedalus/mistilteinn/issues/291):
+
+> *"Add an 'artifact ranker' alongside the optimizer, like Fribbles, that calculates and
+> presents the probability an artifact, at max level, would be an upgrade for the selected
+> team/rotation/build. Potential challenge: this should assume that you can move other
+> artifacts, so the 'best build with this artifact leveled up' vs current for the % gain."*
+
+## 8. Four rulings, and the one that widens the plan
+
+| | ruling (owner, 2026-09-05) |
+|---|---|
+| **OQ-A5** | **Both engines.** A fast single-slot delta for every piece, *and* a pinned re-search for one piece on demand. |
+| **OQ-A6** | **Through the distribution.** OQ-A4 is in this plan rather than a later one. |
+| **OQ-A7** | **`/artifacts`**, with its own build picker, calibrating on demand and reusing the warm recipe cache. |
+| **OQ-A8** | **Calibrate the other set on demand** when a candidate would complete a 4-piece the build does not wear. |
+
+And a standing restatement, owner 2026-09-05: *"We should aim, like we did for optimize, to do
+what Fribbels/GO do but with gcsim as the engine."* That is OQ-A1 unchanged, and §4's closing
+sentence is the guard on it: the loop runs the **recipe** — gcsim's own published per-hit
+decomposition, replayed closed-form — and gcsim itself runs only to calibrate. Anything that
+reaches for gcsim *inside* the ranking loop has left the design.
+
+### 8.1 OQ-A5 is the one this document did not plan for
+
+Everything in §§1–7 scores a piece by **substituting it into its slot and leaving the other four
+alone**. `frontend/src/app/sim/artifact-score.ts` already implements exactly that — `scoreArtifact`
+and `scoreForSlot`, tested, and with **no caller**, carrying a header comment that says to delete
+them if this feature stayed unbuilt. They are the fast half and they survive.
+
+**The issue asks for something else.** *"Assume that you can move other artifacts"* is a
+**re-optimization with the piece pinned**: the best five-piece build that contains this artifact,
+against the best five-piece build that does not. The two differ by orders of magnitude:
+
+| question | mechanism | cost |
+|---|---|---|
+| "what is this piece worth in its slot?" | one `evaluateRecipe` per candidate | **~12 µs** per piece — 28 ms for 2,370 |
+| "what is the best build containing this piece?" | `searchRecipe` with that slot pinned | **~5 s** per piece (`COMBINATION_BUDGET_SECONDS`) |
+
+Five orders of magnitude. A sortable inventory column can only be the first; the second can only
+be a deliberate act on one piece. **So the feature is both**, and the relationship between them is
+the design:
+
+- the **column** triages — it is complete, sortable, and understates any piece that would only pay
+  off if the rest of the build moved;
+- the **deep dive** settles — it is the number #291 actually asks for, and it is spent one piece at
+  a time, on a piece the column already made a case for.
+
+**The column's understatement is directional and must be labelled as such.** A single-slot delta is
+a *lower bound* on the pinned-re-search delta, because the re-search may keep the same four
+neighbours — it never does worse. That is a fact worth printing next to the number rather than a
+caveat to bury: *"at least +N%; ask for the full search to see if it is more."*
+
+### 8.2 What Fribbels offers, and the half it does not
+
+Both audits are committed and were read at the source pin — `docs/RESEARCH_fribbels_hsr.md`
+(`futureScore.ts`, `estTbp.ts`, `scoreFormatting.ts`) and `docs/AUDIT_fribbels_handson.md` (driven
+against the owner's own 1,712-relic HSR export, 27 grid columns, five score columns). Their five
+per-relic columns — *Score · Avg Potential · Max Potential · Reroll Avg · Δ Reroll Avg* — map onto
+§5's four numbers plus a delta, and `AUDIT_fribbels_handson.md` names **Δ Reroll Avg** as the one
+that turns a sortable list into a decidable one.
+
+**But every one of those five is a single-piece score against a weights vector.** Fribbels does not
+re-run its optimizer per relic, and its own optimizer on that inventory quoted *"10:42:43 left"*.
+So **the pinned re-search has no reference implementation in either tool** — it is this repo's
+addition, and it is affordable here for a reason neither has: the recipe evaluator makes a whole
+search closed-form after one calibration.
+
+**That claim is no longer an inference.** A.1 drove Genshin Optimizer 10.38.1 against the owner's
+own export, and its Artifact Upgrader prints the limitation itself, in an info panel above the
+results:
+
+> *"The Artifact Upgrader identifies artifacts with high potential to boost the Optimization
+> Target's value, guiding you to artifacts worth leveling up. **As it only swaps one artifact at a
+> time, for the best overall build across all artifacts, use the main artifact optimizer.**"*
+
+GO has both tools and **no bridge between them** — a user who wants the best build containing a
+piece must leave the ranker and set a search up by hand. `docs/AUDIT_go_handson.md` §1. The bridge
+is the part worth building that neither reference has, and it is A.12.
+
+The parts that *are* worth copying, and are: the five-number shape (§5), the letter grades
+(`scoreFormatting.ts`, 5% steps), heat-shaded numeric cells, and the "who wants this piece" bucket
+panel across the roster. `AUDIT_fribbels_parity.md` §2's outstanding row — *a per-piece score* — is
+closed by the same work.
+
+### 8.3 The distribution, and where its numbers come from
+
+OQ-A6 puts `docs/RESEARCH_genshin_optimizer_scoring.md`'s model in scope. GO's method is a
+**delta method** over a three-level lazily-expanded tree with **exact enumeration at the leaves**
+and no Monte Carlo — §5's "apparent conflict" section is the argument that our objective satisfies
+what that method assumes.
+
+**Its inputs are not all in a committed primary source, and this was checked rather than assumed.**
+Measured 2026-09-05 against the pinned AnimeGameData capture:
+
+- `ReliquaryAffixExcelConfigData` (350 rows, at `5445617e33b2`) carries
+  `id / propType / group_id / propValue / depotId` — **no weight field.**
+- `ReliquaryMainPropExcelConfigData` (66 rows) carries `id / propDepotId / propType / affixName` —
+  **no weight field.**
+- `ReliquaryExcelConfigData` does have a `weight`, and it is an **item-drop weight on the artifact
+  entry** (`weight: 1`), not a substat appearance weight. A plan that grabbed it because the key
+  matched would be confidently wrong.
+
+So the **substat appearance weights** (`hp/atk/def 6`, `hp_/atk_/def_/eleMas/enerRech_ 4`,
+`critRate_/critDMG_ 3`) and the **main-stat probabilities** are, in GO too, quoted from
+`libs/gi/upopt/src/consts.ts`, whose own comment cites the fandom *Artifact/Distribution* page.
+They are a **named secondary source**, and this repo already has a precedent for shipping one
+openly rather than pretending otherwise: `gcsim_config.ENERGY_DRIP`, five community configs, cited
+in place.
+
+**And the owner's export cannot be used to ground them.** That was the attractive alternative, and
+it was tested before being written into a task. Restricted to flowers at +0 — the least-selected
+cut available, 319 pieces, 1,061 lines — the observed line frequencies are:
+
+| stat | published weight | observed |
+|---|---:|---:|
+| `eleMas` | 4 | 13.29% |
+| `enerRech_` | 4 | 13.10% |
+| `critDMG_` | 3 | 12.25% |
+| `atk` | 6 | 11.97% |
+| `critRate_` | 3 | 11.78% |
+| `def` | 6 | 11.40% |
+| `atk_` | 4 | 10.27% |
+| `hp_` | 4 | 8.11% |
+| `def_` | 4 | 7.82% |
+
+Inclusion probability under a weighted draw without replacement is **monotone in weight** — it is
+not proportional to it, which is why a naive percentage comparison would be the wrong test, but the
+*ordering* is forced. Weight 3 above weight 6, and `hp_` and `def_` (weight 4) at the bottom,
+violates that ordering. So either the inventory is still selected at +0 — a kept +0 is a kept piece
+— or the published table is wrong. **Either way this corpus cannot be the source**, and A.9 exists
+to say so in a test rather than leave the next reader to rediscover it.
+
+### 8.4 OQ-A8 and the cost it admits
+
+Calibrating a set on demand is ~3.2 s of gcsim per 4-piece state, cached client-side by
+`recipe-cache.ts` under a key that already names the gcsim pin, build, rotation, set, ER, seed and
+probe. So the honest shape is: **the column scores what is calibrated, and offers to calibrate what
+is not** — a piece from an uncalibrated set shows *"needs calibration"* and a button, never a
+number computed under the wrong recipe. §6's third refusal already demands this; OQ-A8 says the
+button exists rather than the refusal being the end of it.
+
+### 8.6 §6's three refusals, revisited by building them (A.6, 2026-09-05)
+
+§6 names three things that must never be silent. Implementing them, **two dissolved and one
+moved**, and that is worth recording rather than quietly not doing:
+
+| §6 says | what building it found |
+|---|---|
+| a piece whose **rolls could not be decomposed** must report no score | Projecting *future* rolls needs the line count and the committed schedule, both exact, and **never the history**. `substat_rolls`' 85 / 11.5 / 3.5 exact / estimated / unknown split governs the roll bars on the inventory card and does not reach the projection at all. The refusal that genuinely applies is a rarity-and-level the schedule does not cover — `RankRefusal.noSchedule` — plus a rarity with no ladders. |
+| a **wrong main stat** must not be a low number that looks comparable | True of a *weights* model, which cannot represent a main stat's contribution and so collapses the grade to 0%. **Not true here.** An ATK% goblet run through the real damage chain produces its real, correctly lower damage, and that number *is* comparable. So the main stat is reported as a separate fact for filtering, never folded into the score and never used to void it. This is the clearest case so far of the engine ruling buying something a weights table cannot. |
+| a score derived against an **unmodelled passive** must carry that caveat | Names a caveat from a different subsystem: `unmodelled_passives` belongs to `weapon_comparison`, which runs the Chunk F single-hit chain. A recipe is calibrated by gcsim, which implements the kits, so it carries no unmodelled passives by construction. **The rule behind it is still right and the recipe has its own two** — `meta.unstable` and `meta.staleConversions` — and both already exist because dropping them went wrong once: they were returned beside the recipe rather than on it, a cached recipe came back with its instability forgotten, and the page then affirmatively called the ranking sound. They travel with every ranked row. |
+
+**The grade needed a denominator §5 did not specify.** A percentage has to be a percentage *of*
+something, and Fribbels' is "of an ideal relic" under its weights. Ours is the damage of a
+**synthetic ideal piece with the same main stat** — four lines chosen to maximise damage,
+enumerated rather than picked by substat weight, every roll at the top tier. Synthetic rather
+than "the best piece you own", so an *S* means the same thing on a fresh account and a finished
+one.
+
+That arithmetic went wrong on the first attempt and a test caught it: the draft spent upgrade
+rolls *creating* the four lines, when in Genshin the substats come with the artifact and all five
+upgrades are free on top — one line can reach **six** rolls. It graded a real maxed piece at
+**117 % of "ideal"**, which is the sort of number a normalisation with no ceiling test produces
+quietly.
+
+### 8.7 What driving the page found, and none of it failed a test (A.8, 2026-09-05)
+
+`CLAUDE.md`'s standing entry is that a green suite here is *"good at formulas and blind to
+wiring"*, and #240 is its worst case — a weapon picker, an integration test, unit tests on the
+search loop, and two weapons returning **1,376,712.1** to the decimal because the client never
+sent the id. This chunk reproduced the pattern three times in one afternoon, and **1,078
+frontend tests passed before and after every one of them**:
+
+| what a real run did | why nothing caught it |
+|---|---|
+| **`422 Unprocessable Entity`** from `POST /rotations/{id}/context-key`: *the build is not in the rotation's team.* The picker offered every build against every rotation — a 75 × N cross-product, most of which does not exist. | No test made that call. `/optimize` had already solved this with `buildsInTeam`, and the panel invented a second answer instead of reaching for the shared one. |
+| **The baseline recipe never calibrated**, so `noFourPiece` came back `null` and nothing could be scored. `calibrateAll` was passed `targets: []`. | The baseline is **a target, not the absence of one** — `/optimize`'s own comment says *"it is not optional and never was: every combination that reaches no 4-piece is scored against it, so a search without it can rank nothing."* The service's refusal caught it correctly; it just had no caller until a browser ran one. |
+| **Every build read `"Furina —"`**, a name followed by an em-dash and nothing. | All 84 builds in the local database have an **empty `name`**. `shared/team-scope.buildOptions` had already decided the label — character name, with `C2 · Mappa Mare · R5 · Lv90` as detail — and never uses `name`. |
+
+The third is `FINDINGS_frontend_validation.md`'s lesson exactly: **a pattern nothing owned, so
+every page decided separately.** The fix in all three cases was to use what `/optimize` already
+uses rather than to write something new.
+
+**The picker is now rotation-first**, because a rotation names a team and only that team's four
+builds can be asked about. That is one control fewer than `/optimize`'s team-then-rotation-then-
+build, and it makes the invalid combinations unrepresentable rather than merely rejected.
+
+### 8.8 §5's identity is true of stats and false of damage (A.14, 2026-09-05)
+
+§5 says the deterministic *average* is superseded by the distribution's mean, *"at which point the
+average becomes that distribution's mean rather than a separate rule, and the two cannot
+disagree."* Building it showed that is **half right, and the half that is wrong is the
+interesting one.**
+
+- **At the level of stats it holds exactly.** The expected stat total is linear in the rolls, so
+  the distribution's mean pool *is* A.5's `average` pool. A test pins them together with no
+  tolerance to argue about, and on a linear objective the two damage numbers coincide to 1e-8.
+- **At the level of damage it does not.** `E[damage]` is not `damage(E[stats])`, because damage
+  multiplies: crit rate times crit damage.
+
+**And the sign is not the one Jensen would suggest.** `cr · cd` is a saddle rather than a convex
+function, so convexity alone settles nothing. What decides it is that the rolls **compete** — a
+roll on CRIT Rate is a roll not on CRIT DMG, so their counts are negatively correlated under the
+multinomial and `E[cr·cd] < E[cr]·E[cd]`.
+
+**So A.5's `average` is optimistic**, by exactly the covariance a point estimate cannot see. Both
+numbers are therefore reported — `atAverage`, `mean`, and `curvature` as the signed difference —
+rather than one being tuned until it matched the other, or a tolerance being chosen loose enough
+to hide the disagreement.
+
+**One approximation was removed on the way.** GO's model treats the four roll tiers as exactly
+70/80/90/100 % of a substat's maximum. Measured against the committed 5-star ladders that is true
+to about one part in a thousand — `crit_rate` is 0.6992, not 0.7 — and `rollTotals` enumerates the
+**actual committed values** instead, so nothing downstream rests on the assumption. `tierSums`
+keeps the quadrinomial statement of the structure, and a test pins the two against each other on
+an exactly-spaced ladder.
+
+### 8.5 What is still not settled
+
+Two things, recorded here rather than guessed at in a task:
+
+- ~~**OQ-A9 — does the deep dive run against the whole inventory or a filtered pool?**~~
+  **Answered 2026-09-05: a filtered pool, because the whole inventory does not terminate.** The
+  uncapped pinned search did not finish in 300 s and the browser sat in it for seven minutes. The
+  dive trims each slot to its best 24 pieces *for this build*, keeps the pinned piece regardless
+  of where it ranks, and reports both numbers on screen — a best-of-this-pool is not a proof, and
+  `searchRecipe`'s `isExact: true` is a claim about the pool it was handed.
+
+  **`RESEARCH_pinned_search_cost.md`'s own first draft got this wrong**, by reasoning from a
+  `budgetK` layer `searchRecipe` does not have. That is §7's mistake — inferring a cost from
+  something adjacent — repeated inside the document written to avoid it. Driving the feature is
+  what caught it.
+- **OQ-A10 — what "% gain" is a percentage of.** #291 says *"vs current for the % gain"*.
+  Against the build as currently equipped is the obvious reading and the one A.11 implements. It is
+  written down because *against the best build without this piece* is a different and defensible
+  number, and the two diverge exactly when the current build is not optimal — which for a piece
+  someone is asking about is most of the time.

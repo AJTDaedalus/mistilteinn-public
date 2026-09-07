@@ -25,6 +25,8 @@
     "gcsim:verify-recipe": "node --import ./scripts/ts-resolve.mjs scripts/verify-gcsim-recipe.mjs",
     "verify": "npm run typecheck && npm run lint && npm test",
     "check:tokens": "node scripts/check-css-tokens.mjs",
+    "check:dialogs": "node scripts/check-dialogs-close.mjs",
+    "check:router-links": "node scripts/check-router-links.mjs",
     "probe:energy": "node --import ./scripts/ts-resolve.mjs scripts/probe-energy-stability.mjs"
   },
   "private": true,

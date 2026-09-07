@@ -15,6 +15,7 @@ from sqlalchemy.orm import selectinload
 from app.models.character import Character, Talent
 from app.repositories.base import BaseRepository, ilike_contains
 from app.services.practice_dummies import DUMMY_BODIES
+from app.services.unreleased import UNRELEASED_WEAPON_CLASSES
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -46,6 +47,11 @@ class CharacterRepository(BaseRepository[Character]):
         stmt = stmt.where(
             func.split_part(Character.nanoka_id, "-", 1).notin_(DUMMY_BODIES),
         )
+        # And the two Traveler variants carrying a weapon class the game has not shipped.
+        # Their names are generic but the class is not, and a datamined class name on a public
+        # catalogue page is the leak the report was about — `app/services/unreleased.py`.
+        # `weapon_type` is non-nullable, so `notin_` cannot swallow a NULL row here.
+        stmt = stmt.where(Character.weapon_type.notin_(UNRELEASED_WEAPON_CLASSES))
         if element is not None:
             stmt = stmt.where(Character.element == element)
         if weapon_type is not None:

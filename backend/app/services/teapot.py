@@ -54,8 +54,20 @@ class SuiteProgress:
     """One row of the tracker."""
 
     suite_id: str
+    #: nanoka's own key for the set — `"1"` … `"109"`, ascending by release.
+    #:
+    #: Published so a client can offer release order as a sort. It is **not** the game's own
+    #: list order and nothing here claims it is: the source carries no field for that, and
+    #: labelling this "in-game order" would be a citation-shaped claim with no citation.
+    nanoka_id: str
     name: str
     icon: str
+    #: `"I"` / `"IG"` indoor, `"O"` / `"OG"` outdoor — nanoka's own spelling, uninterpreted.
+    #:
+    #: **Four values, not two.** At 7.0.51 the split is OG 48, IG 31, O 18, I 12, so a reader
+    #: that matches `"I"` and `"O"` exactly sees 30 of 109 sets and silently mislabels the
+    #: rest. What the `G` means is not documented anywhere this repo can cite, so it is carried
+    #: through rather than interpreted; the leading letter is the part that is legible.
     placement: str
     # **Three states per character per set**, owner's own vocabulary, 2026-09-03. Every
     # character who favours this set is in exactly one of them, and the whole point of the
@@ -153,6 +165,7 @@ def progress_for(
         already = {c for c in owned if (suite_id, c) in invited}
         rows.append(SuiteProgress(
             suite_id=suite_id,
+            nanoka_id=str(suite.get("nanoka_id") or ""),
             name=str(suite["name"]),
             icon=str(suite.get("icon") or ""),
             placement=str(suite.get("placement") or ""),

@@ -194,6 +194,51 @@ describe('EnemiesPage', () => {
     expect(rows).toHaveLength(8);
     expect(rows[1].percent).toBe(0);
   });
+
+  // **The value that differs is the only one on the card worth reading**, and all eight were
+  // drawn identically. `notable` is what the template emphasises.
+  it('marks the resistances that differ from the rest of the same enemy', () => {
+    const rows = resistancesOf({
+      physical_res: 0.7,
+      anemo_res: 0.1,
+      cryo_res: 0.1,
+      dendro_res: 0.1,
+      electro_res: 0.1,
+      geo_res: 0.1,
+      hydro_res: 0.1,
+      pyro_res: 0.1,
+    } as never);
+
+    expect(rows.filter((r) => r.notable).map((r) => r.channel)).toEqual(['physical']);
+  });
+
+  it('marks nothing when every channel agrees', () => {
+    // Nothing about this enemy's resistances distinguishes it, so emphasising all eight
+    // would be the same as emphasising none — and louder.
+    const flat = Object.fromEntries(
+      ['physical', 'anemo', 'cryo', 'dendro', 'electro', 'geo', 'hydro', 'pyro']
+        .map((c) => [`${c}_res`, 0.1]),
+    );
+
+    expect(resistancesOf(flat as never).some((r) => r.notable)).toBe(false);
+  });
+
+  it('takes the baseline from the enemy rather than assuming 10%', () => {
+    // An enemy whose floor is 50% would otherwise have all eight flagged, which is the same
+    // as flagging none. Only the channel that departs from *this* enemy's own baseline is.
+    const rows = resistancesOf({
+      physical_res: 0.5,
+      anemo_res: 0.5,
+      cryo_res: 0.5,
+      dendro_res: 0.5,
+      electro_res: 0.5,
+      geo_res: 0.5,
+      hydro_res: 0.5,
+      pyro_res: -0.2,
+    } as never);
+
+    expect(rows.filter((r) => r.notable).map((r) => r.channel)).toEqual(['pyro']);
+  });
 });
 
 

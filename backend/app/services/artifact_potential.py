@@ -23,12 +23,19 @@ the same answer in a worse form. What this adds is rolls and levels, and nothing
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import cache
 
+from app.data.external import (
+    GO_KEY_TO_PROPERTY,
+    ExternalDataUnavailableError,
+    substat_weights,
+)
 from app.data.snapshot import (
     artifact_max_level,
     artifact_rolls_remaining,
     artifact_upgrade_levels,
 )
+from app.services.stat_calculator import _quantity_for_prop
 
 #: Genshin gives an artifact four substats at most. Stated rather than derived: the committed
 #: schedule describes *levels*, not line counts, and this is the shape of the game.
@@ -94,3 +101,36 @@ def upgrade_potential(
         level=level,
         max_level=artifact_max_level(stars),
     )
+
+
+@cache
+def substat_weights_by_quantity() -> dict[str, int]:
+    """The draw weights, rekeyed into the vocabulary the rest of the app reads.
+
+    Lives in the service layer rather than beside the data: `app/data/` importing
+    `app/services/` is the wrong way round, and the translation needs
+    `stat_calculator._quantity_for_prop` — which stays the **single** definition of what a
+    property means. `GO_KEY_TO_PROPERTY` maps only GO's spelling onto a raw property; a second
+    key-to-quantity table would be a second chance to place `critRate_` on the wrong stat,
+    silently optimising for something nobody has.
+
+    The API emits this rather than GO's raw keys. A client handed `critRate_` beside roll
+    ladders keyed `crit_rate` would have to hold both spellings and join them, and a join
+    written twice is a join that disagrees with itself once.
+
+    **Refuses on a key it cannot place.** A dropped weight is not a smaller model — it is a
+    stat the draw treats as impossible, which hands its probability to the others.
+    """
+    out: dict[str, int] = {}
+    for key, weight in substat_weights().items():
+        prop = GO_KEY_TO_PROPERTY.get(key)
+        quantity = _quantity_for_prop(prop) if prop else None
+        if quantity is None:
+            msg = (
+                f"{key!r} in the draw model maps to no known property. A weight that cannot "
+                f"be placed must not be dropped: the draw would then treat that stat as "
+                f"impossible and hand its probability to the others."
+            )
+            raise ExternalDataUnavailableError(msg)
+        out[quantity] = weight
+    return out

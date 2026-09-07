@@ -110,6 +110,13 @@ class Character(TimestampMixin, Base):
     #: individual phase. The prop keys are **lower_case** in this payload, unlike everywhere
     #: else — `enums.stat_type_for` is case-insensitive for exactly this reason.
     ascension_stats: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    #: `level_exp` verbatim: 89 usable entries, **per level and not cumulative** — entry `i`
+    #: is the EXP to go from level `i+1` to `i+2`, and the first 89 sum to 8,362,650, the
+    #: published total to level 90. The 90th entry exists in the payload and is unreachable.
+    #: Read whole by the planner, so JSONB rather than a row per level.
+    level_exp: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"),
+    )
 
     burst_energy_cost: Mapped[int | None] = mapped_column(Integer, nullable=True)
 

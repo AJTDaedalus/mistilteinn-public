@@ -246,6 +246,71 @@ class ArtifactRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ProjectionInputs(BaseModel):
+    """What the client needs to project one piece forward to its maximum level.
+
+    `TASKS_artifact_ranking.md` A.4. The projection itself lives in `sim/artifact-projection.ts`,
+    next to the evaluator that consumes it; this is only the per-piece half of its input. The
+    parts shared by every piece — the roll ladders and the draw weights — ride on
+    `InventorySnapshot` once rather than 2,370 times.
+
+    **`substat_quantities` exists because `KernelCandidate.stats` cannot answer it.** That map
+    is summed, so a CRIT DMG circlet carrying a CRIT DMG substat is indistinguishable from one
+    that does not, and "which lines does this piece have" is exactly what decides whether an
+    upgrade deepens a line or creates one.
+
+    **Nothing here is a decomposition of the rolls the piece has already had.** That was the
+    first draft's assumption and it was wrong: projecting *future* rolls needs the line count
+    and the schedule, both exact, and never the history. `substat_rolls`' 85/11.5/3.5 exact /
+    estimated / unknown split governs the roll bars on the inventory card and does not reach
+    this. Recorded because `DESIGN_artifact_ranking.md` §6 names an undecomposable piece as a
+    reason to refuse a score, and for the projection it is not one.
+    """
+
+    #: Substat rolls still to come, from the committed schedule for this rarity.
+    rolls_remaining: int
+    #: How many that rarity gets in total — the denominator that makes the first meaningful.
+    rolls_total: int
+    #: True when one of those rolls will **create** the fourth substat rather than deepen an
+    #: existing one. Most of why a three-line piece is a lottery ticket.
+    gains_a_substat: bool
+    #: The kernel quantities this piece already has a line in, in payload order. Distinct: two
+    #: lines of one stat is not a thing the game produces, and a duplicate here would let a
+    #: projection spend rolls twice on the same line.
+    substat_quantities: list[str]
+
+
+class RollLadder(BaseModel):
+    """The values one substat can roll, at one rarity."""
+
+    #: Kernel quantity, matching `KernelCandidate.stats`' keys rather than the raw property —
+    #: the client already thinks in these and a second vocabulary is a second mapping to get
+    #: wrong.
+    quantity: str
+    #: Ascending, four values at 5-star. `substat_rolls.roll_tiers` is the one reader.
+    values: list[float]
+
+
+class DrawModel(BaseModel):
+    """Everything a projection needs that is the same for every piece.
+
+    Sent once on the snapshot. Per piece it would be 2,370 copies of two small tables.
+    """
+
+    #: Keyed by rarity as a string, because JSON object keys are strings and a client that had
+    #: to remember which of its dictionaries used numbers would eventually forget.
+    roll_tiers: dict[str, list[RollLadder]]
+    #: Unnormalised appearance weights for the substat draw, keyed by **kernel quantity** so
+    #: they join `roll_tiers` without a second vocabulary. **Cited, not derived** — no primary
+    #: source publishes them; see `app/data/external.py` and
+    #: `artifact_potential.substat_weights_by_quantity`.
+    substat_weights: dict[str, int]
+    #: Why the weights are a citation, and what they could not be checked against. Carried to
+    #: the client so a probability derived from them can say so on screen rather than in a
+    #: comment nobody reading the number will see.
+    weights_caveat: str
+
+
 class KernelCandidate(BaseModel):
     """One artifact, as `search.ts`'s `Candidate` reads it.
 
@@ -277,6 +342,14 @@ class KernelCandidate(BaseModel):
     #: The raw key rather than a display string: the client filters by identity and asks
     #: `/artifacts/options` for the label, which is the one place stat names are spelled.
     main_stat: str
+    #: Star rating. Hashed into the inventory version since O.2 and only now emitted — see
+    #: `_inventory_version`, which called that gap "deliberately a superset".
+    rarity: int
+    level: int
+    #: `None` when the committed schedule does not cover this rarity and level. **Null, not a
+    #: zeroed object**: no rolls remaining and no answer are different facts, and a projection
+    #: handed the first would report a confident "this piece is finished".
+    potential: ProjectionInputs | None = None
 
 
 class UnreadableArtifact(BaseModel):
@@ -324,6 +397,9 @@ class InventorySnapshot(BaseModel):
     #: Pieces left out because their stats did not resolve, each with its reason (OQ-O2).
     #: Never silently omitted — see `UnreadableArtifact`.
     unreadable: list[UnreadableArtifact] = []
+    #: The parts of the projection model every piece shares. `None` when the committed data
+    #: could not be read, which makes the whole ranking unavailable rather than approximate.
+    draw_model: DrawModel | None = None
 
 
 class GoodImportRequest(BaseModel):
@@ -404,6 +480,12 @@ class GoodImportResponse(BaseModel):
     #: with no catalogue match has no name, rarity or icon, so it would appear in the inventory
     #: as a blank the user could neither identify nor act on.
     weapons_unresolved: list[str] = []
+    #: Material stock rows written from the export's optional `materials` map, and the keys
+    #: this catalogue could not name. Surfaced because the planner's whole "still need" column
+    #: depends on them, and because "your scanner does not export materials" and "you hold
+    #: none" are indistinguishable otherwise.
+    materials_written: int = 0
+    materials_unresolved: list[str] = []
     rejected: list[ImportRejection] = []
     ok: bool
     #: Builds left with an empty slot because the piece that filled it is not in the new

@@ -13,7 +13,7 @@ Antigravity automatically references and adheres to the following instructions f
 ## 2. Git & Branching Strategy
 To maintain a safe, reviewable development environment, the following git rules are strictly enforced for Antigravity:
 
-* **Protected Branches**: `dev` and `main` are strictly read-only for Antigravity. Direct commits to these branches are prohibited.
+* **Protected Branch**: `dev` is strictly read-only for Antigravity — it is the default branch and deploys straight to production. Direct commits to it are prohibited. (There is no `main`; it was deleted once `dev` was made the default.)
 * **Feature Branches**: All feature development, refactoring, and bug fixes must occur on a new branch branched off `dev`.
 * **Branch Suffix**: All Antigravity feature branches **must** end with the `_agy` suffix (e.g., `feat/add-disc-sorting_agy`, `fix/damage-calc-crit_agy`).
 * **Pull Requests & Code Review**: Once changes are complete and verified (tests and lints passing), the branch will be pushed for you to review and merge into `dev`.

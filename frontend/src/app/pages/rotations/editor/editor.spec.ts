@@ -294,6 +294,35 @@ describe('RotationEditor reorder and preview', () => {
     expect(page['previewError']()).toContain('10000037');
   });
 
+  it('takes the no-team refusal away with the pane that showed it', async () => {
+    // The message belongs to the pane. Closing the pane and leaving "Choose a team first."
+    // behind is the error outliving the thing it was about.
+    const page = await withSteps(editorWith(), 'skill');
+    page['teamId'].set('');
+
+    page['togglePreview']();
+    await Promise.resolve();
+    expect(page['previewError']()).toContain('Choose a team');
+
+    page['togglePreview']();
+
+    expect(page['previewError']()).toBeNull();
+  });
+
+  it('takes the no-team refusal away when a team is chosen', async () => {
+    // And the other way out of it. `schedulePreview()` returns early while the pane is
+    // closed, so nothing else would have cleared this until the next edit with it open.
+    const page = await withSteps(editorWith(), 'skill');
+    page['teamId'].set('');
+
+    await page['refreshPreview']();
+    expect(page['previewError']()).toContain('Choose a team');
+
+    page['selectTeam']('team-1');
+
+    expect(page['previewError']()).toBeNull();
+  });
+
   it('does not call the server while the preview is closed', async () => {
     const preview = vi.fn().mockResolvedValue('');
     const page = await withSteps(

@@ -113,10 +113,12 @@ describe('PreviousRuns', () => {
 
   it('a failed list does not stop a new search', async () => {
     // This panel sits above the optimizer. A dead list that blocked the page would turn a
-    // convenience into an outage.
+    // convenience into an outage. The panel used to add *"You can still start a new search"*;
+    // the optimizer is visibly still on the page below it, so the sentence told the reader
+    // what they could already see.
     mine.mockRejectedValue(new Error('nope'));
     await build();
 
-    expect(fixture.nativeElement.textContent).toContain('still start a new search');
+    expect(fixture.nativeElement.textContent).toContain('Could not load previous runs');
   });
 });

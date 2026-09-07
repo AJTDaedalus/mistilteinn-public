@@ -30,15 +30,34 @@ def _targets(command: str) -> set[str]:
     return {tok for tok in flat[2:] if not tok.startswith("-")}
 
 
+#: The job this test is about. **Scoped, because CI now lints more than the backend.**
+#:
+#: It used to scan every job and assert exactly one `ruff check` step existed anywhere — which
+#: was true until `tools/discord-triage` gained a lane of its own, and then this failed on a
+#: branch that had not touched `backend/` at all. The assertion was a proxy for "find the
+#: backend's ruff step" and it stopped meaning that the moment a second Python thing was
+#: linted.
+#:
+#: Naming the job keeps the check exact rather than widening it: a third lane may lint whatever
+#: it likes, and `backend/CLAUDE.md` still has to match **this** one.
+BACKEND_JOB = "backend"
+
+
 def _ci_lint_command() -> str:
     workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    job = workflow["jobs"].get(BACKEND_JOB)
+    assert job is not None, (
+        f"no {BACKEND_JOB!r} job in the workflow — this test has drifted from CI's layout, "
+        f"which is the exact failure it exists to catch"
+    )
     found = [
         step["run"]
-        for job in workflow["jobs"].values()
         for step in job.get("steps", [])
         if "run" in step and step["run"].strip().startswith("ruff check")
     ]
-    assert len(found) == 1, f"expected exactly one ruff step in CI, found {len(found)}"
+    assert len(found) == 1, (
+        f"expected exactly one ruff step in the {BACKEND_JOB!r} job, found {len(found)}"
+    )
     return found[0]
 
 
