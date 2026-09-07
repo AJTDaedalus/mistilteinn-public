@@ -32,7 +32,7 @@ const ICON_BASE = '/icons';
         [attr.width]="size()"
         [attr.height]="size()"
         [style.object-fit]="fit()"
-        [style.object-position]="fit() === 'cover' ? 'center 8%' : null"
+        [style.object-position]="fit() === 'cover' ? position() : null"
         loading="lazy"
         (error)="hide()"
       />
@@ -100,6 +100,22 @@ export class CatalogueIcon {
    * about row 5% and closes it near 47% — head and shoulders, which is what a card wants.
    */
   readonly fit = input<'contain' | 'cover'>('contain');
+
+  /**
+   * Where a `cover` crop opens its window. Ignored for `contain`.
+   *
+   * **The default is measured for a 320x1024 portrait in a 3:4 card**, which is what the
+   * paragraph above works out, and it is wrong for anything shaped differently. The planner's
+   * splash banner is the case: `UI_Gacha_AvatarImg_*` is **2048x1024** and the frame is nearer
+   * 6:1, so `8%` opens on the empty air above the character and closes before their face.
+   *
+   * An input rather than a second hardcoded number because the crop is a property of the
+   * *frame*, which only the caller knows — and a page cannot reach in and set it: the rule
+   * lives on `:host(.fill) img` here for the unreachable-selector reason the paragraph above
+   * gives, so a parent stylesheet targeting this `img` compiles to a selector that matches
+   * nothing and fails silently.
+   */
+  readonly position = input('center 8%');
 
   /**
    * Reset whenever the basename changes: a new image deserves its own attempt.

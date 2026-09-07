@@ -1,28 +1,37 @@
 <section class="planner">
   <header>
-    <h1>Planner</h1>
-    <p class="hint">
-      What it costs to take one character and one weapon where you want them — materials,
-      mora and resin, by section and in total.
-    </p>
+    <h1>Upgrade Planner</h1>
   </header>
 
+  <!-- **The splash is a banner, not a portrait in a column.** It was drawn at 360px beside
+       the controls, which made the one image on the page the smallest thing on it. Wide and
+       cropped under the title, it reads as a header for what you are planning — and it is the
+       thing you are looking at while deciding what to spend a fortnight of resin on. -->
+  @if (splash(); as art) {
+    <div class="splash">
+      <catalogue-icon
+        class="fill"
+        [icon]="art"
+        [alt]="character()?.name ?? ''"
+        fit="cover"
+        position="center 38%"
+      />
+      <p class="splash__name">{{ character()?.display_name }}</p>
+    </div>
+  }
+
   <div class="setup">
-    <!-- The character column. The splash is the point of the layout: it is the thing you
-         are looking at while you decide what to spend a fortnight of resin on. -->
-    <div class="figure">
-      @if (splash(); as art) {
-        <catalogue-icon [icon]="art" [alt]="character()?.name ?? ''" [size]="360" fit="contain" />
-      }
-      <label>
-        Character
-        <select [ngModel]="characterId()" (ngModelChange)="pickCharacter($event)">
-          <option [ngValue]="null" disabled>Pick a character…</option>
-          @for (row of characters(); track row.id) {
-            <option [ngValue]="row.id">{{ row.name }}</option>
-          }
-        </select>
-      </label>
+    <!-- **One column now.** The left column existed to hold the splash; with that promoted to
+         a banner it held one control and ~900px of nothing beside a very tall right column. -->
+    <div class="chooser">
+      <mist-card-picker
+        label="Character"
+        placeholder="Choose a character…"
+        [options]="characterOptions()"
+        [filters]="characterFilters()"
+        [selected]="characterId() ? [characterId()!] : []"
+        (selectedChange)="pickCharacter($event)"
+      />
 
       @if ((options()?.builds ?? []).length) {
         <label>
@@ -57,43 +66,55 @@
           <div class="pair">
             <label>
               From level
-              <select [(ngModel)]="fromLevel">
-                @for (level of levelsFor(fromAscension()); track level) {
+              <select [ngModel]="fromLevel()" (ngModelChange)="setLevel($event, fromLevel, fromAscension)">
+                @for (level of levels; track level) {
                   <option [ngValue]="level">{{ level }}</option>
                 }
               </select>
             </label>
-            <label>
-              Ascension
-              <select [ngModel]="fromAscension()" (ngModelChange)="setAscension($event, fromAscension, fromLevel)">
-                @for (phase of phases(); track phase.phase) {
-                  <option [ngValue]="phase.phase">{{ phase.phase }} — max {{ phase.cap }}</option>
-                }
-              </select>
-            </label>
+            <!-- **Only where the answer is not already known.** Every level but an ascension
+                 cap sits in exactly one phase; 80 sits in two, and only one of them can go on
+                 to 90. So the control appears at 20/40/50/60/70/80 and nowhere else, offering
+                 the two that are real rather than all seven. -->
+            @if (ascensionAmbiguous(fromLevel())) {
+              <label>
+                Ascended?
+                <select [ngModel]="fromAscension()" (ngModelChange)="fromAscension.set($event)">
+                  @for (phase of ascensionsAt(fromLevel()); track phase.phase) {
+                    <option [ngValue]="phase.phase">{{ ascensionLabel(phase.phase, fromLevel()) }}</option>
+                  }
+                </select>
+              </label>
+            }
           </div>
           <div class="pair">
             <label>
               To level
-              <select [(ngModel)]="toLevel">
-                @for (level of levelsFor(toAscension()); track level) {
+              <select [ngModel]="toLevel()" (ngModelChange)="setLevel($event, toLevel, toAscension)">
+                @for (level of levels; track level) {
                   <option [ngValue]="level">{{ level }}</option>
                 }
               </select>
             </label>
-            <label>
-              Ascension
-              <select [ngModel]="toAscension()" (ngModelChange)="setAscension($event, toAscension, toLevel)">
-                @for (phase of phases(); track phase.phase) {
-                  <option [ngValue]="phase.phase">{{ phase.phase }} — max {{ phase.cap }}</option>
-                }
-              </select>
-            </label>
+            <!-- **Only where the answer is not already known.** Every level but an ascension
+                 cap sits in exactly one phase; 80 sits in two, and only one of them can go on
+                 to 90. So the control appears at 20/40/50/60/70/80 and nowhere else, offering
+                 the two that are real rather than all seven. -->
+            @if (ascensionAmbiguous(toLevel())) {
+              <label>
+                Ascended?
+                <select [ngModel]="toAscension()" (ngModelChange)="toAscension.set($event)">
+                  @for (phase of ascensionsAt(toLevel()); track phase.phase) {
+                    <option [ngValue]="phase.phase">{{ ascensionLabel(phase.phase, toLevel()) }}</option>
+                  }
+                </select>
+              </label>
+            }
           </div>
           <!-- The whole reason level and phase are two controls. -->
           <p class="hint hint--note">
-            Ascension and level move independently: pick phase 6 and leave the level at 80 to
-            ascend without levelling any further.
+            Ascension and level move independently. Set the level to 80 and answer
+            <em>ascended</em> to ascend without levelling any further.
           </p>
         </fieldset>
 
@@ -126,51 +147,61 @@
 
         <fieldset>
           <legend>Weapon</legend>
-          <label>
-            Weapon
-            <select [(ngModel)]="weaponId">
-              <option [ngValue]="null">No weapon in this plan</option>
-              @for (row of weapons(); track row.id) {
-                <option [ngValue]="row.id">{{ row.name }}</option>
-              }
-            </select>
-          </label>
+          <!-- **Ranked, not alphabetical.** This page prices a weapon's ascension at roughly
+               900 resin, so "which weapon" is the expensive half of the question, and KQM's
+               order is the same one the build editor and the optimizer already show. The grid
+               holds only the class this character can hold. -->
+          <mist-card-picker
+            label="Weapon"
+            placeholder="No weapon in this plan"
+            clearable
+            ordered
+            [options]="weaponOptions()"
+            [filters]="weaponFilters()"
+            [selected]="weaponId() ? [weaponId()!] : []"
+            (selectedChange)="pickWeapon($event)"
+          />
           @if (weaponId()) {
             <div class="pair">
               <label>
                 From level
-                <select [(ngModel)]="weaponFromLevel">
-                  @for (level of levelsFor(weaponFromAscension()); track level) {
+                <select [ngModel]="weaponFromLevel()" (ngModelChange)="setLevel($event, weaponFromLevel, weaponFromAscension)">
+                  @for (level of levels; track level) {
                     <option [ngValue]="level">{{ level }}</option>
                   }
                 </select>
               </label>
-              <label>
-                Ascension
-                <select [ngModel]="weaponFromAscension()" (ngModelChange)="setAscension($event, weaponFromAscension, weaponFromLevel)">
-                  @for (phase of phases(); track phase.phase) {
-                    <option [ngValue]="phase.phase">{{ phase.phase }} — max {{ phase.cap }}</option>
-                  }
-                </select>
-              </label>
+              <!-- Same rule as the character's: the phase question is asked only at a cap. -->
+              @if (ascensionAmbiguous(weaponFromLevel())) {
+                <label>
+                  Ascended?
+                  <select [ngModel]="weaponFromAscension()" (ngModelChange)="weaponFromAscension.set($event)">
+                    @for (phase of ascensionsAt(weaponFromLevel()); track phase.phase) {
+                      <option [ngValue]="phase.phase">{{ ascensionLabel(phase.phase, weaponFromLevel()) }}</option>
+                    }
+                  </select>
+                </label>
+              }
             </div>
             <div class="pair">
               <label>
                 To level
-                <select [(ngModel)]="weaponToLevel">
-                  @for (level of levelsFor(weaponToAscension()); track level) {
+                <select [ngModel]="weaponToLevel()" (ngModelChange)="setLevel($event, weaponToLevel, weaponToAscension)">
+                  @for (level of levels; track level) {
                     <option [ngValue]="level">{{ level }}</option>
                   }
                 </select>
               </label>
-              <label>
-                Ascension
-                <select [ngModel]="weaponToAscension()" (ngModelChange)="setAscension($event, weaponToAscension, weaponToLevel)">
-                  @for (phase of phases(); track phase.phase) {
-                    <option [ngValue]="phase.phase">{{ phase.phase }} — max {{ phase.cap }}</option>
-                  }
-                </select>
-              </label>
+              @if (ascensionAmbiguous(weaponToLevel())) {
+                <label>
+                  Ascended?
+                  <select [ngModel]="weaponToAscension()" (ngModelChange)="weaponToAscension.set($event)">
+                    @for (phase of ascensionsAt(weaponToLevel()); track phase.phase) {
+                      <option [ngValue]="phase.phase">{{ ascensionLabel(phase.phase, weaponToLevel()) }}</option>
+                    }
+                  </select>
+                </label>
+              }
             </div>
             <p class="hint hint--note">
               Any weapon in the catalogue, owned or not — including a second copy of one you
@@ -179,34 +210,81 @@
           }
         </fieldset>
 
-        @if (bonusesApplicable().length) {
+        @if (craftGroups().length) {
           <fieldset>
             <legend>Crafting help</legend>
             <p class="hint hint--note">
-              Characters whose passive can double a crafted batch. Only one character crafts a
+              Characters whose passive changes what crafting costs. Only one character crafts a
               given batch, so the best applicable bonus is used rather than all of them.
             </p>
-            <div class="bonuses">
-              @for (bonus of bonusesApplicable(); track bonus.character_id) {
-                <label class="check">
-                  <input
-                    type="checkbox"
-                    [checked]="selectedBonuses().has(bonus.character_id)"
-                    (change)="toggleBonus(bonus.character_id)"
-                  />
-                  {{ bonusLabel(bonus) }}
-                </label>
-              }
-            </div>
-            @if (bonusesReported().length) {
-              <details>
-                <summary>{{ bonusesReported().length }} more that cannot be applied</summary>
-                <ul class="reported">
-                  @for (bonus of bonusesReported(); track bonus.character_id) {
-                    <li>{{ bonusLabel(bonus) }} — {{ bonus.effect === 'refund' ? 'the chance is published, the size of the refund is not' : 'needs the regional material family modelled' }}</li>
-                  }
-                </ul>
-              </details>
+
+            <!-- **Two tables of two columns, because a passive is two facts.** Which materials
+                 it touches, and what it does to them — and the flat list encoded both in a
+                 sentence, so twelve rows all read the same. A character appears twice when
+                 their passive names both classes (Sucrose doubles either, Dori refunds
+                 either); that is duplication and it is correct, because each table answers
+                 "what can help *this* class". -->
+            @for (group of craftGroups(); track group.key) {
+              <div class="craft">
+                <h3 class="craft__title">{{ group.label }}</h3>
+                <div class="craft__cols">
+                  <div class="craft__col">
+                    <h4>Bonus crafting</h4>
+                    @if (group.bonus.length) {
+                      <ul>
+                        @for (bonus of group.bonus; track bonus.character_id) {
+                          <li>
+                            @if (bonus.applicable) {
+                              <label class="check">
+                                <input
+                                  type="checkbox"
+                                  [checked]="selectedBonuses().has(bonus.character_id)"
+                                  (change)="toggleBonus(bonus.character_id)"
+                                />
+                                <span class="craft__who">{{ bonus.character_name }}</span>
+                                <span class="craft__rate">{{ bonus.chance * 100 | number:'1.0-0' }}%</span>
+                              </label>
+                            } @else {
+                              <!-- Listed, never checkable: the chance is published and the
+                                   size of the effect is not, so applying it would move a real
+                                   number by an invented amount. -->
+                              <span class="craft__who muted">{{ bonus.character_name }}</span>
+                              <span class="craft__rate muted">{{ bonus.chance * 100 | number:'1.0-0' }}%</span>
+                            }
+                          </li>
+                        }
+                      </ul>
+                      <!-- **Once per column, not once per row.** The same sentence under every
+                           greyed name was four copies of one fact in a panel meant to be
+                           skimmed. -->
+                      @if (unappliedNote(group.bonus); as why) {
+                        <p class="craft__why">Greyed: {{ why }}.</p>
+                      }
+                    } @else {
+                      <p class="craft__none">None</p>
+                    }
+                  </div>
+
+                  <div class="craft__col">
+                    <h4>Material refund</h4>
+                    @if (group.refund.length) {
+                      <ul>
+                        @for (bonus of group.refund; track bonus.character_id) {
+                          <li>
+                            <span class="craft__who muted">{{ bonus.character_name }}</span>
+                            <span class="craft__rate muted">{{ bonus.chance * 100 | number:'1.0-0' }}%</span>
+                          </li>
+                        }
+                      </ul>
+                      @if (unappliedNote(group.refund); as why) {
+                        <p class="craft__why">Greyed: {{ why }}.</p>
+                      }
+                    } @else {
+                      <p class="craft__none">None</p>
+                    }
+                  </div>
+                </div>
+              </div>
             }
           </fieldset>
         }

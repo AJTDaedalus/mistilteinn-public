@@ -1,9 +1,18 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import type { WritableSignal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 import { CatalogueIcon } from '../../shared/icon/icon';
-import { CatalogueService, type CharacterSummary, type WeaponSummary } from '../catalogue/catalogue.service';
+import { CardPicker, type CardFilter, type CardOption } from '../../shared/card-picker/card-picker';
+import { characterCardFilters, characterCardOptions } from '../../shared/character-cards';
+import { KQM_FILTER, listedFirst, weaponCard, weaponsById } from '../../shared/kqm/kqm';
+import {
+  CatalogueService,
+  type CharacterSummary,
+  type CharacterWeaponGuideRead,
+  type WeaponSummary,
+} from '../catalogue/catalogue.service';
 import { allPages } from '../../api/all-pages';
 
 import {
@@ -22,6 +31,16 @@ const FALLBACK_CAPS: Record<number, number> = { 0: 20, 1: 40, 2: 50, 3: 60, 4: 7
 /** Where a talent can be taken. Materials stop at 10; 11-15 come free from C3 and C5. */
 const TALENT_LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
+/**
+ * Every level, offered whole.
+ *
+ * **The level picker used to be a function of the ascension picker**, listing only the levels
+ * the chosen phase allows. That put the derived control in front: a user thinking "I am level
+ * 62" had to work out that 62 means phase 4 before the page would offer 62 at all. Level is
+ * the thing a player reads off their screen, so it leads, and the phase follows from it.
+ */
+const ALL_LEVELS = Array.from({ length: 90 }, (_, index) => index + 1);
+
 interface TalentRow {
   talent: TalentOption;
   current: number;
@@ -38,7 +57,7 @@ interface TalentRow {
  */
 @Component({
   selector: 'page-planner',
-  imports: [FormsModule, CatalogueIcon],
+  imports: [FormsModule, DecimalPipe, CatalogueIcon, CardPicker],
   templateUrl: './planner.html',
   styleUrl: './planner.scss',
 })
@@ -86,6 +105,55 @@ export class PlannerPage implements OnInit {
   );
 
   /**
+   * The character grid, built by the same helper the build editor and the account page use.
+   *
+   * **A `<select>` of 150 names was the wrong control for the one decision this page exists
+   * for.** You choose who to spend a fortnight of resin on by looking at them, and the rest of
+   * the app already agreed: the owner's audit asked for picture grids *"everywhere"*, and
+   * `shared/character-cards` exists precisely so the third page to draw this grid does not
+   * decide for itself what a character card looks like.
+   */
+  protected readonly characterOptions = computed(() => characterCardOptions(this.characters()));
+
+  protected readonly characterFilters = computed(() => characterCardFilters(this.characters()));
+
+  /**
+   * What KeqingMains lists for the chosen character, or null when no guide was captured.
+   *
+   * **Null is not an empty list.** "Nobody has captured this character" and "KQM recommends
+   * nothing for them" are different statements, and a card marked *not recommended* on the
+   * strength of the first would be a claim about KQM that nobody made.
+   */
+  protected readonly weaponGuide = signal<CharacterWeaponGuideRead | null>(null);
+
+  private readonly recommendedWeapons = computed(() => weaponsById(this.weaponGuide()));
+
+  /**
+   * The weapon grid, ranked by the same guide the build editor and the optimizer rank by.
+   *
+   * Ranking matters more here than anywhere else in the app: this page prices a weapon at
+   * roughly 900 resin of ascension materials, so "which weapon" is the expensive half of the
+   * question and picking it off an alphabetical list of 260 names is the worst way to answer.
+   */
+  protected readonly weaponOptions = computed<CardOption[]>(() => {
+    const listed = this.recommendedWeapons();
+    const cards = this.weapons().map((row) => weaponCard(row, listed.get(row.id)));
+    return listedFirst(cards, (card) => listed.get(card.value)?.position);
+  });
+
+  protected readonly weaponFilters = computed<CardFilter[]>(() => {
+    const filters: CardFilter[] = [];
+    // Offered only when there is a guide — a filter whose only outcome is an empty grid is not
+    // a filter. Same rule as the build editor's.
+    if (this.recommendedWeapons().size > 0) filters.push(KQM_FILTER);
+    const stars = [...new Set(this.weapons().map((row) => row.stars))]
+      .sort((a, b) => b - a)
+      .map((value) => ({ value: String(value), label: `${value}\u2605` }));
+    if (stars.length > 1) filters.push({ group: 'stars', label: 'Rarity', options: stars });
+    return filters;
+  });
+
+  /**
    * The full splash for the selected character.
    *
    * `UI_AvatarIcon_Ayaka` → `UI_Gacha_AvatarImg_Ayaka`, the substitution
@@ -100,64 +168,175 @@ export class PlannerPage implements OnInit {
       : icon;
   });
 
+  protected readonly levels = ALL_LEVELS;
+
   /**
-   * Clamp a level into the range its ascension phase allows.
+   * The ascension phases a level can legally be in — one, or exactly two.
+   *
+   * **Two only at a cap.** Phase 5 tops out at 80 and phase 6 begins there, so a character at
+   * 80 is either ascended or not and both are real states the game distinguishes. Every other
+   * level sits inside exactly one phase and there is nothing to ask.
+   *
+   * That is why the phase control is not a seven-item list any more. Offering all seven made
+   * every combination look available while five of them were states the game cannot produce,
+   * and the backend rejected them after the fact — *"level 50 is outside 1-20, which is what
+   * ascension phase 0 unlocks"*. A control that can express an impossible thing and relies on
+   * the server to say no is a control that should not have offered it.
+   */
+  protected ascensionsAt(level: number): { phase: number; cap: number }[] {
+    const caps = this.options()?.level_caps ?? FALLBACK_CAPS;
+    return this.phases().filter(({ phase, cap }) => {
+      const floor = phase === 0 ? 1 : (caps[phase - 1] ?? 1);
+      return level >= floor && level <= cap;
+    });
+  }
+
+  /** Whether this level is one the user has to answer a question about. */
+  protected ascensionAmbiguous(level: number): boolean {
+    return this.ascensionsAt(level).length > 1;
+  }
+
+  /**
+   * Which of the two a phase is, in the words a player would use.
+   *
+   * The number alone does not answer the question being asked: at level 80, "5" and "6" are
+   * *before* and *after* the same ascension, and only one of them can reach 90.
+   */
+  protected ascensionLabel(phase: number, level: number): string {
+    const caps = this.options()?.level_caps ?? FALLBACK_CAPS;
+    return caps[phase] === level
+      ? `A${phase} — not ascended, capped at ${level}`
+      : `A${phase} — ascended, can reach ${caps[phase] ?? 90}`;
+  }
+
+  /**
+   * Set a level and keep its phase legal.
    *
    * **The paired control must move with it.** Setting "from ascension" to 6 while the level
    * signal still held 1 rendered an empty `<select>` — no option matched — while `run()`
    * happily posted `level: 1`. The user saw a blank box and got a bill for levelling 1→90
    * instead of 80→90, and nothing rejected it because 1/6 is a legal state.
+   *
+   * Now that level leads, the same hazard runs the other way and is closed here: a phase left
+   * over from the previous level is silently replaced rather than posted.
    */
-  protected setAscension(
-    phase: number,
+  protected setLevel(
+    level: number,
+    levelSignal: WritableSignal<number>,
     ascension: WritableSignal<number>,
-    level: WritableSignal<number>,
   ): void {
-    ascension.set(phase);
-    const allowed = this.levelsFor(phase);
-    const current = level();
-    if (!allowed.includes(current)) {
-      level.set(current < allowed[0] ? allowed[0] : allowed[allowed.length - 1]);
-    }
+    levelSignal.set(level);
+    const allowed = this.ascensionsAt(level).map((entry) => entry.phase);
+    // **The lower phase when the old one no longer fits**, because "I am level 62" means not
+    // yet ascended past what 62 needs. The user can say otherwise wherever there is a choice.
+    if (!allowed.includes(ascension())) ascension.set(allowed[0] ?? 0);
   }
 
-  /** Levels a character may legally reach, given the ascension phase asked for. */
-  protected levelsFor(phase: number): number[] {
-    const cap = (this.options()?.level_caps ?? FALLBACK_CAPS)[phase] ?? 90;
-    const floor = phase === 0 ? 1 : ((this.options()?.level_caps ?? FALLBACK_CAPS)[phase - 1] ?? 1);
-    const out: number[] = [];
-    for (let level = floor; level <= cap; level += 1) out.push(level);
-    return out;
+  /**
+   * Crafting help as two tables of two columns: what each material class can gain.
+   *
+   * **The flat checkbox list read as one undifferentiated pile of twelve.** A passive is
+   * really two facts — *which materials* it touches and *what it does to them* — and the list
+   * encoded both in a sentence, so telling apart "Albedo doubles weapon ascension materials"
+   * from "Xingqiu refunds some talent materials" meant reading every row.
+   *
+   * A character appears in both tables when their passive names both classes: Sucrose doubles
+   * either and Dori refunds either. That is duplication on screen and it is **correct** — the
+   * question each table answers is "what can help *this* class", and the honest answer names
+   * them twice.
+   */
+  protected readonly craftGroups = computed(() => {
+    const all = this.options()?.bonuses ?? [];
+    const of = (materialClass: string, effects: readonly string[]) =>
+      all
+        .filter((bonus) => bonus.classes.includes(materialClass)
+          && effects.includes(bonus.effect))
+        // **Checkable first.** Talent crafting's bonus column listed Prune and Yae Miko —
+        // neither of which can be applied — above Eula, Layla and Sucrose, which can. A
+        // column whose actionable rows are buried under its unactionable ones is read as
+        // decoration.
+        .sort((a, b) => Number(b.applicable) - Number(a.applicable));
+    return [
+      { key: 'weapon_ascension', label: 'Weapon crafting' },
+      { key: 'talent', label: 'Talent crafting' },
+    ].map((group) => ({
+      ...group,
+      // `bonus_material` sits with `double` because both *add* to what a batch yields; a
+      // refund gives materials back. Neither of the two non-applicable effects is applied —
+      // the chance is published and the size is not — so they are listed, never checkable.
+      bonus: of(group.key, ['double', 'bonus_material']),
+      refund: of(group.key, ['refund']),
+    })).filter((group) => group.bonus.length > 0 || group.refund.length > 0);
+  });
+
+  /**
+   * One sentence for a column's greyed rows, or null when it has none.
+   *
+   * **Null rather than an empty string**, so a column whose every row is checkable renders no
+   * footnote at all rather than a stray "Greyed:" with nothing after it.
+   *
+   * The two reasons are different facts and are not collapsed: a refund's *size* is
+   * unpublished, and a bonus regional material needs a family this app has not modelled. A
+   * column holding both says both.
+   */
+  protected unappliedNote(bonuses: readonly CraftingBonusRead[]): string | null {
+    const reasons = new Set(
+      bonuses.filter((bonus) => !bonus.applicable).map((bonus) => (
+        bonus.effect === 'refund'
+          ? 'the chance is published, the size of the refund is not'
+          : 'needs the regional material family modelled'
+      )),
+    );
+    return reasons.size ? [...reasons].join('; ') : null;
   }
-
-  protected readonly bonusesApplicable = computed(
-    () => (this.options()?.bonuses ?? []).filter((bonus) => bonus.applicable),
-  );
-
-  protected readonly bonusesReported = computed(
-    () => (this.options()?.bonuses ?? []).filter((bonus) => !bonus.applicable),
-  );
 
   async ngOnInit(): Promise<void> {
-    const [characters, weapons, options] = await Promise.all([
+    // **Weapons are no longer loaded here.** They are loaded per character, filtered to the
+    // class that character can hold — a bow on a sword user is not a plan anyone can act on,
+    // and it was 260 rows in a `<select>` offering mostly that.
+    const [characters, options] = await Promise.all([
       allPages((offset, limit) => this.catalogue.listCharacters({ offset, limit })),
-      allPages((offset, limit) => this.catalogue.listWeapons({ offset, limit })),
       this.planner.options(),
     ]);
     this.characters.set(characters.items);
-    this.weapons.set(weapons.items);
     this.options.set(options);
   }
 
-  /** Load the talents (and any builds) for a newly picked character. */
-  protected async pickCharacter(id: string): Promise<void> {
+  protected pickCharacter(ids: readonly string[]): void {
+    void this.selectCharacter(ids[0] ?? null);
+  }
+
+  protected pickWeapon(ids: readonly string[]): void {
+    this.weaponId.set(ids[0] ?? null);
+  }
+
+  /** Load the talents, the weapons of this character's class, and KQM's guide. */
+  protected async selectCharacter(id: string | null): Promise<void> {
     this.characterId.set(id);
     this.plan.set(null);
+    this.weaponId.set(null);
+    this.weapons.set([]);
+    this.weaponGuide.set(null);
+    if (!id) return;
     const options = await this.planner.options(id);
     this.options.set(options);
     this.talentRows.set(
       (options.talents ?? []).map((talent) => ({ talent, current: 1, target: 10 })),
     );
+    const chosen = this.characters().find((row) => row.id === id);
+    if (!chosen) return;
+    try {
+      const page = await allPages((offset, limit) =>
+        this.catalogue.listWeapons({ weapon_type: chosen.weapon_type, offset, limit }),
+      );
+      this.weapons.set(page.items as WeaponSummary[]);
+      // Never fatal. The picker works without a guide, and a page that refused to open
+      // because a recommendation could not be fetched would be worse than one that marks
+      // nothing.
+      this.weaponGuide.set(await this.catalogue.weaponGuide(chosen.nanoka_id));
+    } catch {
+      this.error.set('Could not load weapons for that character.');
+    }
   }
 
   /**
@@ -169,7 +348,7 @@ export class PlannerPage implements OnInit {
   protected applyBuild(buildId: string): void {
     const build = (this.options()?.builds ?? []).find((row) => row.build_id === buildId);
     if (!build) return;
-    this.fromLevel.set(build.character_level);
+    this.setLevel(build.character_level, this.fromLevel, this.fromAscension);
     this.fromAscension.set(build.ascension_phase);
     this.talentRows.update((rows) =>
       rows.map((row) => ({
@@ -185,9 +364,10 @@ export class PlannerPage implements OnInit {
       // level-20 weapon on a 90/6 character prefilled "20/6" and every weapon ascension bill
       // silently vanished from the plan.
       if (build.weapon_ascension !== null && build.weapon_ascension !== undefined) {
-        this.setAscension(
-          build.weapon_ascension, this.weaponFromAscension, this.weaponFromLevel,
-        );
+        this.setLevel(build.weapon_level, this.weaponFromLevel, this.weaponFromAscension);
+        // The build's own phase wins over the one `setLevel` inferred, which is the whole
+        // point of reading it: at a cap level both are legal and only the build knows which.
+        this.weaponFromAscension.set(build.weapon_ascension);
       }
     }
   }
@@ -298,10 +478,5 @@ export class PlannerPage implements OnInit {
     return line.domain_days
       .map((day) => day.slice(0, 1).toUpperCase() + day.slice(1, 3))
       .join('/');
-  }
-
-  protected bonusLabel(bonus: CraftingBonusRead): string {
-    const what = bonus.classes.map((name) => name.replace('_', ' ')).join(' and ');
-    return `${bonus.character_name} — ${Math.round(bonus.chance * 100)}% on ${what}`;
   }
 }
