@@ -78,11 +78,22 @@ class HistogramBin:
 
 @dataclass
 class ResinTotal:
-    """Everything resin-priced in a section, plus everything that could not be."""
+    """Everything resin-priced in a section, plus everything that could not be.
+
+    **Two different kinds of "no number" and they must not be one field.** A Sakura Bloom
+    costs no resin because you walk around picking it; a Shivada Jade Sliver costs resin at a
+    rate nobody publishes. Folding those together would tell a user their local specialties
+    are an unknown farming cost, and tell them the gems are free — both wrong, in opposite
+    directions.
+    """
 
     expected: float = 0.0
-    #: Material ids with no rate at any tier. Named, never folded into the total as zero.
+    #: Resin-farmable, but at a rate no table publishes and `curated_rates.json` has not been
+    #: given. Named, never folded into the total as zero.
     unpriced: list[int] = field(default_factory=list)
+    #: Not obtainable with resin at all — overworld drops and local specialties. Their resin
+    #: cost really is zero, and saying so is not a guess.
+    not_farmable: list[int] = field(default_factory=list)
     histogram: list[HistogramBin] = field(default_factory=list)
     #: `(runs distribution, resin per run)` per craft root, kept so a caller can combine
     #: sections without re-deriving them.
@@ -90,7 +101,7 @@ class ResinTotal:
 
     @property
     def has_unpriced(self) -> bool:
-        """True when some material in this section carries no rate."""
+        """True when some resin-farmable material in this section carries no rate."""
         return bool(self.unpriced)
 
 
@@ -185,7 +196,10 @@ def total(economy: Economy, needs: dict[int, int]) -> ResinTotal:
         root_id, root_needed, _mora = economy.reduce_to_root(material_id, count)
         rate = economy.rate(root_id)
         if rate is None or rate.expected_per_run <= 0:
-            out.unpriced.append(material_id)
+            if root_id in set(economy.uncurated()):
+                out.unpriced.append(material_id)
+            else:
+                out.not_farmable.append(material_id)
             continue
         by_root[root_id] = by_root.get(root_id, 0) + root_needed
 
@@ -198,6 +212,7 @@ def total(economy: Economy, needs: dict[int, int]) -> ResinTotal:
         if distribution:
             out._roots[root_id] = (distribution, rate.resin)  # noqa: SLF001
     out.unpriced.sort()
+    out.not_farmable.sort()
     out.histogram = histogram(out._roots)  # noqa: SLF001
     return out
 

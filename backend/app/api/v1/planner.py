@@ -1,0 +1,388 @@
+"""The leveling planner: what it costs to take a character and weapon where you want them.
+
+`docs/DESIGN_planner.md`. Two routes — the options a plan can be built from, and the plan.
+
+**A plan is a `POST` that writes nothing.** It carries a nested body (per-talent targets, a
+list of crafting characters) that would not survive a query string, and it is expensive enough
+to be worth not putting in a URL a browser will pre-fetch. Nothing is stored.
+"""
+
+from __future__ import annotations
+
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.dependencies import get_current_user, get_db
+from app.models.build import Build
+from app.models.user import User
+from app.models.weapon import OwnedWeapon
+from app.services.planner import service
+from app.services.planner.costs import PlanError, Progress
+from app.services.planner.economy import economy
+
+router = APIRouter(prefix="/planner", tags=["planner"])
+
+_Session = Annotated[AsyncSession, Depends(get_db)]
+_User = Annotated[User, Depends(get_current_user)]
+
+
+# -- options ---------------------------------------------------------------------------
+
+
+class TalentOption(BaseModel):
+    """One levelable talent. An alternate sprint has no cost ladder and is not offered."""
+
+    talent_id: str
+    name: str
+    talent_type: str
+    icon: str | None = None
+
+
+class BuildOption(BaseModel):
+    """A build the user could read a starting state from.
+
+    **A build may be hypothetical** — this app lets you gear a character you do not own — so
+    the planner names which build it read and shows the levels it took, rather than quietly
+    treating a scenario as the account's truth.
+    """
+
+    build_id: str
+    name: str | None = None
+    character_level: int
+    ascension_phase: int
+    talent_levels: dict[str, int]
+    weapon_id: str | None = None
+    weapon_level: int
+    weapon_ascension: int
+
+
+class OwnedWeaponOption(BaseModel):
+    """One physical copy the user owns. Duplicates are separate rows, as the game has them."""
+
+    owned_weapon_id: str
+    weapon_id: str | None
+    level: int
+    ascension: int
+    refinement: int
+
+
+class CraftingBonusRead(BaseModel):
+    """A character whose passive changes what crafting costs."""
+
+    character_id: str
+    character_name: str
+    passive_name: str
+    effect: str
+    chance: float
+    classes: list[str]
+    #: False for refunds and bonus materials: the chance is published and the size is not, so
+    #: applying them would move a real number by an invented amount.
+    applicable: bool
+    description: str
+
+
+class PlannerOptions(BaseModel):
+    """Everything the page needs to build a request."""
+
+    level_caps: dict[int, int]
+    talents: list[TalentOption] = Field(default_factory=list)
+    builds: list[BuildOption] = Field(default_factory=list)
+    owned_weapons: list[OwnedWeaponOption] = Field(default_factory=list)
+    bonuses: list[CraftingBonusRead] = Field(default_factory=list)
+    #: Material ids that are resin-farmable at a rate nobody publishes. Surfaced so the page
+    #: can explain a blank resin cell rather than leaving the user to guess.
+    uncurated_material_ids: list[int] = Field(default_factory=list)
+
+
+# -- plan ------------------------------------------------------------------------------
+
+
+class ProgressIn(BaseModel):
+    """A level and an ascension phase. They move independently."""
+
+    level: int = Field(ge=1, le=90)
+    ascension: int = Field(ge=0, le=6)
+
+
+class TalentTargetIn(BaseModel):
+    """Where one talent is and where it should end up."""
+
+    talent_id: str
+    current: int = Field(ge=1, le=15)
+    target: int = Field(ge=1, le=15)
+
+
+class PlanRequest(BaseModel):
+    """One character, optionally one weapon, and where each should end up."""
+
+    character_id: str
+    character_from: ProgressIn
+    character_to: ProgressIn
+    talents: list[TalentTargetIn] = Field(default_factory=list)
+    weapon_id: str | None = None
+    weapon_from: ProgressIn | None = None
+    weapon_to: ProgressIn | None = None
+    #: Characters whose crafting passive should be applied. Only double-product ones move a
+    #: number; the rest are reported by `/options` so the user knows they help.
+    bonus_character_ids: list[str] = Field(default_factory=list)
+
+
+class ResinEstimateRead(BaseModel):
+    """Expected resin for one material, and the tier it is actually farmed at."""
+
+    root_id: int
+    source_type: str
+    resin_per_run: int
+    expected_per_run: float
+    expected_runs: float
+    expected_resin: float
+    resin_per_unit: float
+    curated: bool
+
+
+class HistogramBinRead(BaseModel):
+    """One bar of the resin distribution: `[low, high)` holding `probability`."""
+
+    low: int
+    high: int
+    probability: float
+
+
+class ResinTotalRead(BaseModel):
+    """A section's resin: the average, the shape, and everything with no number."""
+
+    expected: float
+    unpriced: list[int]
+    not_farmable: list[int]
+    histogram: list[HistogramBinRead]
+
+
+class MaterialLineRead(BaseModel):
+    """One material row."""
+
+    material_id: int
+    name: str
+    icon: str | None
+    rarity: int
+    required: int
+    owned: int
+    still_needed: int
+    resin: ResinEstimateRead | None
+    resin_status: str
+    domain_days: list[str]
+
+
+class ExpBillRead(BaseModel):
+    """The EXP half of levelling. `mora` is null while the divisor is uncurated — not zero."""
+
+    exp_required: int
+    exp_owned: int
+    exp_short: int
+    books: list[tuple[int, int]]
+    mora: int | None
+
+
+class SectionRead(BaseModel):
+    """One bill."""
+
+    key: str
+    label: str
+    mora: int | None
+    materials: list[MaterialLineRead]
+    resin: ResinTotalRead
+    exp: ExpBillRead | None
+
+
+class PlanRead(BaseModel):
+    """A whole plan."""
+
+    character_name: str
+    character_icon: str | None
+    weapon_name: str | None
+    weapon_icon: str | None
+    sections: list[SectionRead]
+    total: SectionRead
+    bonuses_applied: list[CraftingBonusRead]
+    #: True when a talent target above 10 was asked for. Those levels come free from C3/C5,
+    #: and the page says so rather than rendering an empty list.
+    talent_free_levels: bool
+    #: The two-point per-run model behind `histogram`, restated for whoever renders it.
+    histogram_note: str
+
+
+_HISTOGRAM_NOTE = (
+    "The average is derived from the drop rates the game publishes. The spread is modelled: "
+    "no table resolves a drop id, so a run is assumed to yield floor or ceil of its mean. "
+    "That is the narrowest distribution with the right average, so real farming varies more "
+    "than this shows."
+)
+
+
+def _bonus_read(bonus: object) -> CraftingBonusRead:
+    return CraftingBonusRead(
+        character_id=bonus.character_id,  # type: ignore[attr-defined]
+        character_name=bonus.character_name,  # type: ignore[attr-defined]
+        passive_name=bonus.passive_name,  # type: ignore[attr-defined]
+        effect=bonus.effect.value,  # type: ignore[attr-defined]
+        chance=bonus.chance,  # type: ignore[attr-defined]
+        classes=sorted(c.value for c in bonus.classes),  # type: ignore[attr-defined]
+        applicable=bonus.applicable,  # type: ignore[attr-defined]
+        description=bonus.description,  # type: ignore[attr-defined]
+    )
+
+
+@router.get("/options", response_model=PlannerOptions)
+async def planner_options(
+    session: _Session,
+    user: _User,
+    character_id: Annotated[str | None, Query()] = None,
+) -> PlannerOptions:
+    """What a plan can be built from, optionally narrowed to one character's talents."""
+    eco = economy()
+    talents: list[TalentOption] = []
+    builds: list[BuildOption] = []
+    if character_id:
+        talents = [
+            TalentOption(
+                talent_id=talent.id,
+                name=talent.name,
+                talent_type=talent.talent_type.value,
+                icon=talent.icon,
+            )
+            for talent in await service.talents_of(session, character_id)
+        ]
+        rows = (
+            await session.execute(
+                select(Build).where(
+                    Build.owner_id == user.id, Build.character_id == character_id,
+                ),
+            )
+        ).scalars()
+        builds = [
+            BuildOption(
+                build_id=build.id,
+                name=build.name,
+                character_level=build.character_level,
+                ascension_phase=build.ascension_phase,
+                talent_levels=build.talent_levels or {},
+                weapon_id=build.weapon_id,
+                weapon_level=build.weapon_level,
+                weapon_ascension=build.ascension_phase,
+            )
+            for build in rows
+        ]
+
+    owned = (
+        await session.execute(select(OwnedWeapon).where(OwnedWeapon.owner_id == user.id))
+    ).scalars()
+    return PlannerOptions(
+        level_caps=eco.character_level_caps,
+        talents=talents,
+        builds=builds,
+        owned_weapons=[
+            OwnedWeaponOption(
+                owned_weapon_id=row.id,
+                weapon_id=row.weapon_id,
+                level=row.level,
+                ascension=row.ascension,
+                refinement=row.refinement,
+            )
+            for row in owned
+        ],
+        bonuses=[_bonus_read(b) for b in await service.available_bonuses(session)],
+        uncurated_material_ids=eco.uncurated(),
+    )
+
+
+@router.post("/plan", response_model=PlanRead)
+async def create_plan(payload: PlanRequest, session: _Session, user: _User) -> PlanRead:
+    """Price a plan. Writes nothing."""
+    try:
+        plan = await service.build_plan(
+            session,
+            user.id,
+            character_id=payload.character_id,
+            character_from=Progress(**payload.character_from.model_dump()),
+            character_to=Progress(**payload.character_to.model_dump()),
+            talents={t.talent_id: (t.current, t.target) for t in payload.talents},
+            weapon_id=payload.weapon_id,
+            weapon_from=(
+                Progress(**payload.weapon_from.model_dump()) if payload.weapon_from else None
+            ),
+            weapon_to=Progress(**payload.weapon_to.model_dump()) if payload.weapon_to else None,
+            bonus_character_ids=payload.bonus_character_ids,
+        )
+    except PlanError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return PlanRead(
+        character_name=plan.character_name,
+        character_icon=plan.character_icon,
+        weapon_name=plan.weapon_name,
+        weapon_icon=plan.weapon_icon,
+        sections=[_section_read(s) for s in plan.sections],
+        total=_section_read(plan.total),
+        bonuses_applied=[_bonus_read(b) for b in plan.bonuses_applied],
+        talent_free_levels=plan.talent_free_levels,
+        histogram_note=_HISTOGRAM_NOTE,
+    )
+
+
+def _section_read(section: service.Section) -> SectionRead:
+    return SectionRead(
+        key=section.key,
+        label=section.label,
+        mora=section.mora,
+        materials=[
+            MaterialLineRead(
+                material_id=line.material_id,
+                name=line.name,
+                icon=line.icon,
+                rarity=line.rarity,
+                required=line.required,
+                owned=line.owned,
+                still_needed=line.still_needed,
+                resin=(
+                    ResinEstimateRead(
+                        root_id=line.resin.root_id,
+                        source_type=line.resin.source_type,
+                        resin_per_run=line.resin.resin_per_run,
+                        expected_per_run=line.resin.expected_per_run,
+                        expected_runs=line.resin.expected_runs,
+                        expected_resin=line.resin.expected_resin,
+                        resin_per_unit=line.resin.resin_per_unit,
+                        curated=line.resin.curated,
+                    )
+                    if line.resin
+                    else None
+                ),
+                resin_status=line.resin_status,
+                domain_days=line.domain_days,
+            )
+            for line in section.materials
+        ],
+        resin=ResinTotalRead(
+            expected=section.resin.expected,
+            unpriced=section.resin.unpriced,
+            not_farmable=section.resin.not_farmable,
+            histogram=[
+                HistogramBinRead(low=b.low, high=b.high, probability=b.probability)
+                for b in section.resin.histogram
+            ],
+        ),
+        exp=(
+            ExpBillRead(
+                exp_required=section.exp.exp_required,
+                exp_owned=section.exp.exp_owned,
+                exp_short=section.exp.exp_short,
+                books=section.exp.books,
+                mora=section.exp.mora,
+            )
+            if section.exp
+            else None
+        ),
+    )
