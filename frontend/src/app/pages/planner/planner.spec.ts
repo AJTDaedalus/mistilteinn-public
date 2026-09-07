@@ -75,14 +75,32 @@ describe('PlannerPage', () => {
     expect(page['ascensionAmbiguous'](90)).toBe(false);
   });
 
-  it('names the two so the number is not the whole question', async () => {
-    // "5" and "6" at level 80 are before and after the same ascension. The digit alone does
-    // not say which is which, and only one of them can reach 90.
+  it('writes a phase the way the game does, current over max', async () => {
+    // "5" and "6" at level 80 are before and after the same ascension, and the cap is what
+    // separates them: A5 is capped where it stands, A6 has ninety levels of headroom. The
+    // game's own `current/max` shorthand, so the answer is read rather than translated.
     const page = makePage();
     await page.ngOnInit();
 
-    expect(page['ascensionLabel'](5, 80)).toContain('not ascended');
-    expect(page['ascensionLabel'](6, 80)).toContain('ascended, can reach 90');
+    expect(page['ascensionLabel'](5, 80)).toBe('A5 80/80');
+    expect(page['ascensionLabel'](6, 80)).toBe('A6 80/90');
+  });
+
+  it('follows that shape at every ascension boundary', async () => {
+    // The boundaries are not evenly spaced — 20, 40, then 50/60/70/80 ten apart — so a rule
+    // checked only at 80 would pass while saying nothing about the two that differ.
+    const page = makePage();
+    await page.ngOnInit();
+
+    const at = (level: number) => page['ascensionsAt'](level)
+      .map((entry) => page['ascensionLabel'](entry.phase, level));
+
+    expect(at(20)).toEqual(['A0 20/20', 'A1 20/40']);
+    expect(at(40)).toEqual(['A1 40/40', 'A2 40/50']);
+    expect(at(50)).toEqual(['A2 50/50', 'A3 50/60']);
+    expect(at(60)).toEqual(['A3 60/60', 'A4 60/70']);
+    expect(at(70)).toEqual(['A4 70/70', 'A5 70/80']);
+    expect(at(80)).toEqual(['A5 80/80', 'A6 80/90']);
   });
 
   it('replaces a phase the new level cannot be in', async () => {
