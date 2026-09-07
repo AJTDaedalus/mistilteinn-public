@@ -181,3 +181,110 @@ say *still need*, the mora row can only say *costs*.
 - **Traveler.** 28 variants share `Brilliant Diamond`, which cannot be held. Their plans will
   always read *still need: all of it*. Probably wants special-casing.
 - **Domain weekdays** (`MaterialSourceDataExcelConfigData`) — not asked for, available.
+
+---
+
+# Part II — the resin calculator
+
+Asked 2026-09-07: resin cost for the full plan and per section, a **per-item** resin figure,
+the drop distribution behind it, and the character crafting bonuses. Scoped below with the
+same rule as Part I — derived, not recalled. Answers to the settled points first:
+**Mora is a total only, never imported** (§6 already said GOOD cannot supply a balance);
+**talents stop at 10**, since 11–15 are free from C3/C5 and have no material rows at all.
+
+## 9. Resin costs are published, in full
+
+| source | table | field | value |
+|---|---|---|---|
+| domains (talent / weapon / artifact) | `DungeonExcelConfigData` | `statueCostCount`, `statueCostID` | **20**, item **106** (Original Resin) — uniform across all **307** rows that charge |
+| world bosses | `InvestigationMonsterConfigData` | `resinCost` | **40** (44 bosses), **60** (1) |
+| ley-line blossoms | `BlossomChestExcelConfigData` | `resin`, `world_resin` | **20**, with `refreshType` separating `BLOSSOM_REFRESH_SCOIN` (mora) from `BLOSSOM_REFRESH_EXP` (EXP books) |
+
+`DailyDungeonConfigData` gives the weekday rotation (which domain is open Mon/Thu/Sun), and
+`DungeonEntryExcelConfigData.descriptionCycleRewardList` gives it as **material ids per day**
+— e.g. `[[104301,104302,104303], [104304,104305,104306], [104307,104308,104309], [all nine]]`.
+So "you can only farm this book on Tue/Fri/Sun" is derivable, not curated.
+
+**This half needs no curation at all.**
+
+## 10. Drop yields are half-published, and the shortfall is small
+
+`RewardPreviewExcelConfigData` carries **fractional** counts — `2.2`, `5.252`, `0.35`,
+`2.556` — which are per-run expected values, not item counts. Across all previews: 10,763
+preview items, 4,163 with a count, **615 fractional**, of which **524 are planner materials
+covering 252 distinct ones**.
+
+**A first reading of this was wrong and is corrected here.** Seeing `2.2` on a talent domain
+I took the previews to be a complete EV table. They are not: in most previews **only one item
+carries a number and the rest are blank**, and the talent-domain figures do not scale sensibly
+with domain level (lv38 → 2.2, lv54 → 2.5, lv71 → 1.8, lv88 → 2.2). A world boss publishes an
+EV for its boss-specific drop and **nothing for the gems**, which are half of what you came
+for. Had that first reading stood, the calculator would have been confidently wrong on every
+gem in the game.
+
+Classifying all 508 against resin sources and the crafting tree:
+
+| | count |
+|---|---|
+| planner materials | **508** |
+| reachable with resin | **247** (domain 168, boss 79) |
+| craftable via `CombineExcelConfigData` | 294 |
+| resin **or** craft | 388 |
+| neither — overworld drops, local specialties | 120 |
+| resin-reachable **with** a published expected count | **94** |
+| resin-reachable **without** one | 153 |
+
+**The 153 is not the curation bill.** `CombineExcelConfigData` publishes the whole conversion
+tree — 3× lower tier → 1 higher, with its own `scoinCost` mora — so a family's EV follows from
+its base tier. Collapsing the 153 by craft root: **60 roots, 48 of which already have a
+published EV**, deriving 120 of the 153.
+
+### The curation list is 12 numbers
+
+| what | why it is missing |
+|---|---|
+| 7 elemental gem **Slivers** — Agnidus Agate, Nagadus Emerald, Prithiva Topaz, Shivada Jade, Vajrada Amethyst, Varunada Lazurite, Vayuda Turquoise | world bosses publish an EV for their boss drop and none for the gem branch. Each Sliver carries a family of 4 (Sliver/Fragment/Chunk/Gemstone) through the 3:1 tree |
+| 5 weekly-boss drops — Ring of Boreas, Spirit Locket of Boreas, Tail of Boreas, Juvenile Jade, Evergloom Ring | family of 1 each |
+
+Brilliant Diamond is correctly absent: it is the Traveler's gem and cannot be obtained at all,
+which is the same signal §6 got from the GOOD join.
+
+**One assumption has to be stated in the UI, not buried.** These EVs are a single figure per
+source; real yields scale with **World Level** (`WorldLevelExcelConfigData` exists but was not
+chased). Either the calculator declares "assumes AR55+/WL8" on its face, or the 12 numbers
+become 12 × world levels. Recommend the former for a first cut — a resin estimate that quietly
+assumes an account level the user does not have is the kind of wrong that looks right.
+
+## 11. Crafting bonuses are already in our own database
+
+`ascension_passives` holds **485 rows**, and querying their descriptions found **26** that
+change crafting yield — no new import, no text scraped from anywhere. Three distinct effects:
+
+| effect | example | usable? |
+|---|---|---|
+| **double the product**, stated % | Sucrose — *"crafts Character and Weapon Enhancement Materials … 10% chance to obtain double the product"*; Ayaka, Albedo, Alhaitham, Wriothesley (Weapon Ascension, 10%); Eula, Layla (Character Talent, 10%) | **yes** — exact, EV is ×(1+p) |
+| **refund a portion**, stated % | Xingqiu — *"25% chance to refund a portion of the crafting materials used"*; Mona, Dori | **partly** — the *chance* is published, **"a portion" is not**. Unfixable from any table here |
+| **bonus regional material** | Yae Miko 25%, Prune 10% — *"get 1 regional Character Talent Material (base material excluded)"* | yes, but needs the regional family modelled |
+
+Cooking and furnishing bonuses (Jean, Barbara, Noelle, Xinyan, Yun Jin, Nilou, Yoimiya, Kaveh)
+and the ore-refund ones (Diluc, Zhongli, Ganyu — *"15% of the ore used when crafting
+Claymore-type weapons"*, which is weapon *forging*, not ascension) are in the same 26 and are
+**not** planner-relevant. Filter by effect, not by "has a crafting passive".
+
+Parsing these is text-matching against a description field, which is fragile. It is a small
+fixed set, so a **curated id→effect table with a test asserting all 26 still parse** is the
+honest shape — the same discipline `gcsim_keys` uses.
+
+## 12. Verdict on punting
+
+**Do not punt it.** The expensive half — resin costs, domain weekday rotation, the crafting
+tree with its mora, and the crafting-bonus passives — is fully published or already seeded.
+The gap is **12 hand-supplied numbers**, each the best-documented figure in the game, plus one
+stated world-level assumption.
+
+What genuinely is not available anywhere: the **full probability distribution**. Nothing in
+`ExcelBinOutput` resolves a `drop_id` — `BlossomRefreshExcelConfigData.dropVec` references
+ids like `207000400` and no table in the 1,935 defines them; the randomised tables are
+server-side. So a per-item resin figure is an **expected cost**, and the honest UI says
+*"≈ 320 resin"*, never a guarantee, and cannot offer a confidence interval without community
+sample data this repo would have to source and cite separately.
