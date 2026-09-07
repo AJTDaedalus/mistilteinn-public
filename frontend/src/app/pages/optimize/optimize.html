@@ -426,7 +426,11 @@
                never wrote. Shown as they wrote it, with their note. -->
           @if (setAdvice().length) {
             <ul class="hint kqm-advice">
-              @for (advice of setAdvice(); track advice.position) {
+              <!-- **`$index`, because a position is not unique here.** KQM lists a stat row
+                   under each playstyle it applies to and the position is per-section, so nine
+                   of the 102 captured guides repeat one — Hu Tao has 16 stat rows across 8
+                   positions. Tracking by it throws NG0955 and the panel does not render. -->
+              @for (advice of setAdvice(); track $index) {
                 <li>
                   <strong>{{ advice.as_written }}</strong>
                   @if (advice.playstyle) { <span class="muted"> · {{ advice.playstyle }}</span> }

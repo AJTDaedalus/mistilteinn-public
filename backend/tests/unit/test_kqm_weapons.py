@@ -262,3 +262,36 @@ def test_every_captured_character_carries_its_citation() -> None:
         assert guide.url.startswith("https://keqingmains.com/"), guide.character
         assert guide.retrieved_at, guide.character
         assert guide.weapons, guide.character
+
+
+def test_a_set_row_position_is_not_a_unique_key() -> None:
+    """`position` repeats within a character's set rows, and a client keying on it breaks.
+
+    **This asserts the mess rather than tidying it, because the mess is KQM's and correct.**
+    A guide lists the same advice under each playstyle it applies to and the position is
+    per-section, so Hu Tao carries 16 stat rows across 8 positions. That is their table read
+    faithfully; renumbering it here would be this repo imposing an order on someone else's
+    page.
+
+    It exists because the optimizer's advice list was written as
+    `@for (advice of setAdvice(); track advice.position)`, and Angular throws **NG0955** on a
+    duplicated track key — so the panel rendered for the 93 characters whose positions happen
+    not to collide and threw for the other 9. No unit test saw it: every spec on that page
+    reads the computed and none render the template.
+
+    So the guard is here, on the property that made it possible, rather than on a template
+    nothing in this suite renders.
+    """
+    repeated = []
+    for nanoka_id in kqm_weapons.captured_characters():
+        guide = kqm_weapons.for_character(nanoka_id)
+        assert guide is not None
+        positions = [entry.position for entry in guide.sets]
+        if len(positions) != len(set(positions)):
+            repeated.append(guide.character)
+
+    assert repeated, (
+        "No captured guide repeats a set-row position any more. If a re-capture really did "
+        "make them unique, this test should be deleted deliberately rather than relaxed — and "
+        "the clients that track by index are still correct."
+    )
