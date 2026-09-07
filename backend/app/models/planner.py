@@ -80,10 +80,14 @@ class CharacterAscensionCost(TimestampMixin, Base):
 class CharacterTalentCost(TimestampMixin, Base):
     """The bill for taking one talent from `level` to `level + 1`.
 
-    **Keyed per talent, not per character**, and that is load-bearing. Ayaka's payload holds
-    four talent cost lists carrying **two distinct** sets, so a single per-character row would
-    price three of her talents off the fourth's bill. Rosaria's and Venti's are uniform, which
-    is exactly why assuming uniformity would have survived a spot check.
+    **Keyed per talent, not per character**, for two reasons, neither of which is the one the
+    first draft of this docstring gave. It claimed Ayaka's four cost lists hold two distinct
+    sets and that a per-character row would misprice her; measured, her three levelable talents
+    carry **identical** bills and the second signature is the **empty** list belonging to
+    `Kamisato Art: Senho`, her alternate sprint. What is actually true: the list is positional
+    against `skills[]`, so a per-character schema has to guess which entry is "the" cost and
+    would be picking the empty one whenever the sprint sorts first; and per-talent rows are
+    what let the planner take Burst to 10 and Skill to 8 independently.
 
     `level` runs 1..9 — the nine steps to talent level 10. Levels 11-15 come free from C3/C5
     and have no material rows at all, which the planner states rather than rendering empty.

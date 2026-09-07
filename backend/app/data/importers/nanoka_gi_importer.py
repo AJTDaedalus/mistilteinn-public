@@ -35,22 +35,34 @@ from sqlalchemy import delete, select
 
 from app.data.importers.base_importer import BaseImporter
 from app.data.importers.nanoka_gi_mappings import (
+    NanokaMappingError,
     artifact_affix_rows,
     artifact_set_fields,
+    character_ascension_cost_rows,
     character_fields,
     constellation_rows,
     enemy_profile_fields,
     is_statless_monster,
     is_weapon_skin,
+    material_rows,
     passive_rows,
     refinement_rows,
+    talent_cost_rows,
     talent_rows,
+    weapon_ascension_cost_rows,
     weapon_fields,
 )
 from app.models.artifact import ArtifactSet, ArtifactSetAffix
 from app.models.build import EnemyProfile
 from app.models.character import AscensionPassive, Character, Constellation, Talent, TalentScaling
+from app.models.planner import (
+    CharacterAscensionCost,
+    CharacterTalentCost,
+    Material,
+    WeaponAscensionCost,
+)
 from app.models.weapon import Weapon, WeaponRefinement
+from app.services.planner.economy import economy
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Iterable, Sequence
@@ -379,7 +391,75 @@ class NanokaGIImporter(BaseImporter):
             self.session.add(Constellation(character_id=character.id, **row))
         for row in passive_rows(payload):
             self.session.add(AscensionPassive(character_id=character.id, **row))
+
+        await self._write_materials(payload)
+        for row in character_ascension_cost_rows(payload):
+            self.session.add(CharacterAscensionCost(character_id=character.id, **row))
+        # The talent's own row is looked up by `nanoka_id` rather than reusing the loop
+        # above, because a talent with no cost levels — an alternate sprint — contributes
+        # no rows and would desynchronise a parallel walk.
+        await self.session.flush()
+        talent_ids = dict(
+            (
+                await self.session.execute(
+                    select(Talent.nanoka_id, Talent.id).where(
+                        Talent.character_id == character.id,
+                    ),
+                )
+            ).all(),
+        )
+        for row in talent_cost_rows(key, payload):
+            talent_id = talent_ids.get(row["nanoka_id"])
+            if talent_id is None:
+                msg = f"character {key}: talent cost names unknown skill {row['nanoka_id']}"
+                raise NanokaMappingError(msg)
+            self.session.add(
+                CharacterTalentCost(
+                    character_id=character.id,
+                    talent_id=talent_id,
+                    level=row["level"],
+                    mora=row["mora"],
+                    items=row["items"],
+                ),
+            )
         return True
+
+    async def _write_materials(self, payload: dict[str, Any]) -> None:
+        """Upsert every material this payload names.
+
+        Materials are shared across the whole catalogue, so they are upserted rather than
+        rebuilt — a character's import must not delete a material a weapon still bills for.
+        `icon` comes from the committed snapshot and is left null when the snapshot does not
+        carry the material, because that is a *seeding* gap and hiding it here would paper
+        over the importer, exactly as `download_icons.py` refuses to.
+        """
+        eco = economy()
+        seen = material_rows(payload)
+        if not seen:
+            return
+        existing = {
+            row.id: row
+            for row in (
+                await self.session.execute(
+                    select(Material).where(Material.id.in_(seen.keys())),
+                )
+            ).scalars()
+        }
+        for material_id, fields in seen.items():
+            row = existing.get(material_id)
+            if row is None:
+                self.session.add(
+                    Material(
+                        id=material_id,
+                        name=fields["name"],
+                        rarity=fields["rarity"],
+                        icon=eco.icon(material_id),
+                    ),
+                )
+            else:
+                row.name = fields["name"]
+                row.rarity = fields["rarity"]
+                row.icon = eco.icon(material_id)
 
     async def _delete_children(self, character_id: str) -> None:
         """Drop a character's talents, constellations and passives.
@@ -388,7 +468,13 @@ class NanokaGIImporter(BaseImporter):
         DELETE below is emitted as SQL rather than through the ORM's cascade, so the
         database is what removes them.
         """
-        for model in (Talent, Constellation, AscensionPassive):
+        for model in (
+            Talent,
+            Constellation,
+            AscensionPassive,
+            CharacterAscensionCost,
+            CharacterTalentCost,
+        ):
             await self.session.execute(
                 delete(model).where(model.character_id == character_id),
             )
@@ -421,8 +507,15 @@ class NanokaGIImporter(BaseImporter):
             delete(WeaponRefinement).where(WeaponRefinement.weapon_id == weapon.id),
         )
         await self.session.flush()
+        await self.session.execute(
+            delete(WeaponAscensionCost).where(WeaponAscensionCost.weapon_id == weapon.id),
+        )
+        await self.session.flush()
         for row in refinement_rows(payload):
             self.session.add(WeaponRefinement(weapon_id=weapon.id, **row))
+        await self._write_materials(payload)
+        for row in weapon_ascension_cost_rows(payload):
+            self.session.add(WeaponAscensionCost(weapon_id=weapon.id, **row))
         return True
 
     async def import_artifact_sets(self) -> int:

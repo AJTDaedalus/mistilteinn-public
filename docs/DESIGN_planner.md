@@ -87,8 +87,14 @@ single source for game data, and the nanoka importer already runs.
 - `materials` — `id` (game id, PK), `name`, `icon`, `rarity`.
 - `character_ascension_costs` — `character_id`, `phase` 1–6, `mora`, `items` JSONB.
 - `character_talent_costs` — `character_id`, **`talent_id`**, `level` 1–9, `mora`, `items` JSONB.
-  **Keyed per talent, not per character**: Ayaka's four entries hold *two* distinct cost sets,
-  so a single per-character row would silently price three of her talents off the fourth's bill.
+  **Keyed per talent, not per character.** An earlier draft justified this by saying Ayaka's
+  four cost lists hold two distinct sets; that is true of the *bytes* and false in substance —
+  measured, her three levelable talents carry **identical** bills and the second signature is
+  the **empty** list belonging to `Kamisato Art: Senho`, her alternate sprint, which has no
+  talent levels at all. The real reasons are that the list is positional against `skills[]` so
+  a per-character schema would have to guess which entry is "the" cost, and that per-talent
+  keying is what lets the planner take Burst to 10 and Skill to 8 independently — which is
+  the feature.
 - `weapon_ascension_costs` — `weapon_id`, `phase` 1–6, `mora`, `items` JSONB.
 - `user_materials` — `owner_id`, `material_id`, `count`. Written by the GOOD import.
 
