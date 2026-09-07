@@ -42,6 +42,7 @@ this list.
 | `DESIGN_weapons_in_the_optimizer.md` | weapons in the search, KQM tiering for 102 characters (#237, #240) |
 | `DESIGN_conditional_steps.md` | a guarded block a rotation can hold, and the import that reads one (#238) |
 | `TASKS_planner.md` | `/planner` — what levelling a character and a weapon costs, in materials, mora and resin |
+| — | the four branches that had gone stale behind the trunk, reviewed and landed (#260, #262, #263, #264) |
 
 **The levelling costs were in the pinned payloads from Chunk D and nobody read them until
 `TASKS_planner.md`.** `materials.ascensions`, `materials.talents` and the weapon's `materials`
@@ -158,6 +159,15 @@ burst costs no time. Waiting only terminates because of a cited energy drip
 — without one gcsim retries the frame forever and the run grows to 2.4 GB.
 `docs/DESIGN_waiting_for_energy.md`.
 
+**The branch and issue backlog is empty as of 2026-09-07.** No open PRs, no open issues, and
+`origin/dev` is the only remote branch. Three of the seven unmerged branches were deleted
+rather than landed — `docs/t1a-stands`, `fix/deploy-checks-the-edge` and
+`fix/optimize-honest-about-its-recipe` had each been superseded by work that reached `dev`
+another way, verified line by line before deleting. The other four were reviewed and merged.
+**A branch that is 118 commits behind is not a branch that is nearly done**, and two of these
+carried the same trap: their conflicts were textual and the real question underneath was which
+of two implementations of the same idea should survive.
+
 **What is left is waiting on the owner, not on effort.** Four questions, each recorded where
 someone will find it:
 
@@ -180,6 +190,14 @@ library reports `your_dps` from it.
 built, tested, and reachable from no caller at all until #237 put weapons in the optimizer.
 That one was found by the **owner going to use a feature**, not by anybody reading the code.
 
+**A fourth was the KQM guide's set half** — `SetRecommendation`, `SetRecommendationRead` and
+the endpoint's `sets` array, all populated with 346 cited rows and read by **no frontend file
+at all**, until #263. Its weapon half had a second, quieter version of the same shape: the
+snapshot stored `str(weapon.id)`, the `uuid7` *row* id of whichever database the capture ran
+against, so **zero of 205 ids resolved in production** and every recommendation missed
+silently — `recommended: Boolean(kqm)` cannot tell an empty guide from a guide that did not
+join. Both pickers just looked like pickers with no guide.
+
 **And #237 then shipped its own version of the same failure**: the weapon picker worked, the
 backend substitution had an integration test, the search loop and the energy-ladder grouping
 had unit tests, and a real two-weapon run came back **flat** — both weapons at 1,376,712.1, to
@@ -199,11 +217,13 @@ browser build, a 100-iteration 90-second rotation is **7.84 s single-threaded** 
 candidates is **~7.7 minutes**. The decision holds; the interaction it implies does not. It is
 a job with progress, never a request that blocks.
 
-- **Both suites pass, with nothing skipped.** **1699 backend tests, 0 skipped**; **896
-  frontend tests** over 52 files; `create_app()` serves **51 paths**; the SPA has **14 routes, 2 redirects
-  and a catch-all** — the redirects are `/artifacts`→`/inventory` and `/explain`→`/calculate`,
+- **Both suites pass, with nothing skipped.** **2424 backend tests, 0 skipped**; **1174
+  frontend tests** over 72 files; `create_app()` serves **70 paths**; the SPA has **17 routes, 3 redirects
+  and a catch-all** — the redirects are `/`→`/inventory`, `/artifacts`→`/inventory` and
+  `/explain`→`/calculate`, with `**` also landing on `/inventory`,
   and a screenshot harness that followed one was how the count came to be re-derived at all. (Every figure here has been stale at least once — 1273 / 255 / 40, then
-  1439 / 450 / 39, then 1549 / 544 / 51, then 1567 / 565, then 1647 / 802 / 49. **The number is not the point; the command underneath
+  1439 / 450 / 39, then 1549 / 544 / 51, then 1567 / 565, then 1647 / 802 / 49, then
+  1699 / 896 / 51. **The number is not the point; the command underneath
   it is**, and the honest reading of this line is "roughly this many, re-derive before citing
   it".) **One integration test has been seen to fail once and pass on re-run** —
   `test_a_talent_with_no_level_set_is_not_offered`, once in four full-suite runs, passing in
