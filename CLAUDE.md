@@ -79,12 +79,8 @@ lists it; it is an ordinary overworld mob drop. `MaterialSource` in
 `app/services/planner/economy.py` is the classifier and each branch is a decision about
 whether a run gets billed once or twice.
 
-**One number is disputed and the owner's stands.** They gave 2.2 items per weekly-boss run;
-the wiki gives **2.4** at WL8, and for enemy levels 93-104 which covers WL9. If 2.4 is right
-every weekly-boss figure is ~9% high. Recorded in `curated_rates.json` under `conflict` rather
-than changed, because a wiki page does not silently override an explicit instruction. Also
-there: a Trounce Blossom is **60** resin and only three a week are halved to 30, so the
-curated 30 is the optimistic price.
+**A Trounce Blossom is 60 resin** and only three a week are halved to 30, so the curated 30 is
+the optimistic price.
 
 **Five numbers are curated, all supplied by the owner on 2026-09-07**
 (`app/data/planner/curated_rates.json`), and the planner refuses to guess any it lacks.
@@ -92,8 +88,11 @@ curated 30 is the optimistic price.
 uncosted source is visible rather than silently free. Two of the five are worth knowing:
 **feeding EXP material costs no mora at all** — which is not the same as levelling being free,
 since ascension and talent mora still come from the payload's own `cost` fields — and the
-weekly-boss rate is **2.2 items a run split across the boss's three materials**, so one named
-material is 2.2/3 and reading that as 2.2 would scale every trounce figure by three. The
+weekly-boss rate is **2.4 items a run split across the boss's three materials**, so one named
+material is 2.4/3 and reading that as 2.4 would scale every trounce figure by three. It was
+2.2 for a day: the wiki's World Level table stops at 8, and the owner corrected it —
+*"2.4 is right, I forgot WL9"* — after checking a number against a source rather than after
+anything failed. The
 ley-line yields hold for **World Level 6 and above** — the wiki gives one row spanning WL6-9 —
 so they are not the single-world-level assumption an earlier draft of this entry called them.
 

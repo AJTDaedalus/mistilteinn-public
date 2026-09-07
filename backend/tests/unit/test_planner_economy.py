@@ -56,8 +56,8 @@ def test_every_resin_source_is_now_priced() -> None:
 @pytest.mark.parametrize(
     ("material_id", "name", "resin", "expected_per_run"),
     [
-        # 2.2 items per trounce run split across the boss's three materials.
-        (113018, "Bloodjade Branch", 30, 0.733333),
+        # 2.4 items per trounce run split across the boss's three materials.
+        (113018, "Bloodjade Branch", 30, 0.8),
         (202, "Mora", 20, 60_000),
         # 6.5 blue x 5,000 + 4.5 purple x 20,000, at World Level 9.
         (104003, "Hero's Wit", 20, 122_500),

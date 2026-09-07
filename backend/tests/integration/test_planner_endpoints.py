@@ -197,8 +197,8 @@ async def test_resin_distinguishes_no_cost_from_a_real_one(
     assert by_id[SLIVER]["resin_status"] == "not_farmable"
     assert by_id[SPECIALTY]["resin_status"] == "not_farmable"
     assert by_id[WEEKLY]["resin_status"] == "priced"
-    # 2.2 items a run split across the boss's three materials, at 30 resin a run.
-    assert by_id[WEEKLY]["resin"]["expected_per_run"] == pytest.approx(2.2 / 3)
+    # 2.4 items a run split across the boss's three materials, at 30 resin a run.
+    assert by_id[WEEKLY]["resin"]["expected_per_run"] == pytest.approx(2.4 / 3)
     assert by_id[WEEKLY]["resin"]["resin_per_run"] == 30
     assert ascension["resin"]["unpriced"] == []
     assert ascension["resin"]["not_farmable"] == [SPECIALTY, SLIVER]
