@@ -41,6 +41,37 @@ this list.
 | — | the run corpus's first producer, and the owner's four rulings (#183, #185) |
 | `DESIGN_weapons_in_the_optimizer.md` | weapons in the search, KQM tiering for 102 characters (#237, #240) |
 | `DESIGN_conditional_steps.md` | a guarded block a rotation can hold, and the import that reads one (#238) |
+| `TASKS_planner.md` | `/planner` — what levelling a character and a weapon costs, in materials, mora and resin |
+
+**The levelling costs were in the pinned payloads from Chunk D and nobody read them until
+`TASKS_planner.md`.** `materials.ascensions`, `materials.talents` and the weapon's `materials`
+map are in every nanoka detail fixture; `level_exp` appeared in `app/` only inside a comment.
+`/planner` prices them, subtracting the `materials` map that a GOOD export has always carried
+and `good_importer` always ignored — 1,384 entries in the owner's own file.
+
+**Its resin figures are an average and a modelled spread, and the difference is load-bearing.**
+The average comes from `RewardPreviewExcelConfigData`'s **fractional** counts — a whole number
+there is a fixed reward, not an expected drop, and reading every count as an EV was this
+feature's first mistake. The spread is assumed: nothing in the 1,935 tables resolves a
+`drop_id`, so a run is modelled as yielding floor or ceil of its mean. That is the
+*minimum-variance* distribution with the right average, so **the histogram is narrower than
+reality** and every surface that draws it says so.
+
+**Only six things cost resin** (owner, 2026-09-07): mora, talent books, weapon ascension
+materials, world-boss drops, character EXP books and weekly-boss materials. **Elemental gems
+do not**, and that is a double-counting fix rather than an omission — a gem drops from a world
+boss *alongside* the boss's own material in the same 40-resin run. Classifying by "does a
+reward preview mention it" priced Spectral Husk at 40 resin because an elite enemy's preview
+lists it; it is an ordinary overworld mob drop. `MaterialSource` in
+`app/services/planner/economy.py` is the classifier and each branch is a decision about
+whether a run gets billed once or twice.
+
+**Five numbers are curated and the planner refuses to guess them**
+(`app/data/planner/curated_rates.json`): the trounce-domain yield, the two ley-line yields,
+and the two mora-per-EXP divisors. Until they are filled those costs render as unknown on the
+page rather than as zero — `resin_status` distinguishes *priced*, *satisfied*, *not_farmable*
+and *unknown*, because three of those look identical if you collapse them and two of the
+collapses are wrong in opposite directions.
 
 **The app is walkable end to end**: import a GOOD export, equip pieces to a build, assemble a
 team, author a rotation, compile it to gcsim, search your own artifacts for the best five, and

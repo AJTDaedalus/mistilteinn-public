@@ -47,11 +47,20 @@ job on the exact commit that is the PR head. There are no parallel sub-branches.
 
 ## 3. The two things that are not derivable, and how they are handled
 
-**14 curated numbers, in one file, each with a `source` string.** Seven elemental gem Slivers,
-five weekly-boss drops, and the two mora-per-EXP divisors. They live in
-`app/data/planner/curated_rates.json` — **not** under `app/data/yuanshen/snapshot/`, because
-that directory means *derived from the pinned dump* and these are not. A test asserts every
-entry carries a non-empty `source`.
+**Five curated numbers, in one file, each with a `source` string.** Keyed by **source**, not
+by material: the weekly-boss yield, the two ley-line yields, and the two mora-per-EXP
+divisors. They live in `app/data/planner/curated_rates.json` — **not** under
+`app/data/yuanshen/snapshot/`, because that directory means *derived from the pinned dump* and
+these are not. A test asserts every filled entry carries a non-empty `source`.
+
+**It began as twelve per-material numbers and shrank, on the owner's ruling (2026-09-07):**
+*"gems and overworld drops don't have a resin cost, same with the local specialties"*, and
+*"Mora, talent books, weapon ascension mats, world boss drops, character xp books, and weekly
+boss mats are the only things that should have a [resin] cost"*. The gem rule is a
+double-counting fix rather than an omission — a gem drops from a world boss alongside the
+boss's own material in the same 40-resin run — and it removed seven of the twelve outright.
+The rest became per-source, because a trounce domain's yield is a property of the activity and
+not of the item, so one number prices all 47 weekly-boss drops.
 
 **Anything without a rate reports `resin: null`, never a guess.** The calculator does not fall
 back to an average, and the UI says *"resin unknown for this material"*. A skipped check is
