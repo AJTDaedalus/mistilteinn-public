@@ -46,6 +46,7 @@ from sqlalchemy import delete, select
 
 from app.data.snapshot import artifact_main_stat_value
 from app.models.artifact import Artifact, ArtifactSet
+from app.models.planner import Material, UserMaterial
 from app.models.user import User
 from app.services.substat_rolls import analyse
 
@@ -88,6 +89,14 @@ class StoredImport:
     #: export, each named. Never silent: a user who sold an artifact should be told the slot
     #: emptied, not discover it later from a damage number.
     unequipped: tuple[str, ...] = ()
+    #: How many `user_materials` rows the export's `materials` map produced. Zero is a
+    #: legitimate outcome — plenty of scanners write artifacts only — and is reported rather
+    #: than inferred, because "your scanner does not export materials" and "you hold none"
+    #: look identical to a planner otherwise.
+    materials_written: int = 0
+    #: Material keys in the export that this catalogue could not name. Reported for the same
+    #: reason `unresolved_weapons` is: usually the export is newer than the seeded patch.
+    materials_unresolved: tuple[str, ...] = ()
     #: `{source_index: row}` for everything written, so build reconstitution can equip the
     #: exact piece the export named. Not part of what a client sees.
     rows_by_source: dict[int, Artifact] = field(default_factory=dict)
@@ -201,6 +210,10 @@ async def store_good_import(
     # inventory wholesale, and this is what later tells a user whether a saved optimization
     # result predates their last farming session — the commonest reason a stored number
     # stops being true. Setting it before the write would date an import that failed.
+    materials_written, materials_unresolved = await _store_materials(
+        session, owner_id, parsed.materials,
+    )
+
     owner = await session.get(User, owner_id)
     if owner is not None:
         owner.gear_imported_at = datetime.now(UTC)
@@ -214,8 +227,53 @@ async def store_good_import(
         deleted=deleted,
         rejected=tuple(sorted(rejected)),
         unequipped=unequipped,
+        materials_written=materials_written,
+        materials_unresolved=materials_unresolved,
         rows_by_source=rows_by_source,
     )
+
+
+async def _store_materials(
+    session: AsyncSession,
+    owner_id: str,
+    counts: dict[str, int],
+) -> tuple[int, tuple[str, ...]]:
+    """Replace this account's material stock from the export's `materials` map.
+
+    **Always a replace, never a merge, and only when the export carried the section at all.**
+    A GOOD export is a snapshot of an inventory, so merging would leave a user holding
+    materials they have since spent. An export with no `materials` key leaves the stored
+    stock untouched — that is a scanner that does not report materials, not an account that
+    emptied.
+
+    Binding is by `set_lookup_key`, the normalisation artifact sets already use, which is
+    injective over every planner material — measured across all 508. Unresolvable keys are
+    counted and returned rather than dropped: an export newer than the seeded patch is the
+    usual cause and the user can act on being told.
+    """
+    if not counts:
+        return 0, ()
+
+    materials = (await session.execute(select(Material.id, Material.name))).all()
+    by_key: dict[str, int] = {set_lookup_key(name): material_id for material_id, name in materials}
+
+    resolved: dict[int, int] = {}
+    unresolved: list[str] = []
+    for key, count in counts.items():
+        material_id = by_key.get(set_lookup_key(key))
+        if material_id is None:
+            unresolved.append(key)
+            continue
+        resolved[material_id] = count
+
+    await session.execute(delete(UserMaterial).where(UserMaterial.owner_id == owner_id))
+    await session.flush()
+    for material_id, count in resolved.items():
+        session.add(
+            UserMaterial(owner_id=owner_id, material_id=material_id, count=count),
+        )
+    await session.flush()
+    return len(resolved), tuple(sorted(unresolved))
 
 
 def _fingerprint(artifact: Artifact) -> tuple:

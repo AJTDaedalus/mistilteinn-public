@@ -316,6 +316,9 @@ class NanokaGIImporter(BaseImporter):
         #: One `EntityResult` per completed pass, in the order the passes ran. `seed_db`
         #: (D.7) reports these and exits non-zero if any pass has failures.
         self.results: list[EntityResult] = []
+        #: The six EXP denominations are created once per run rather than per character —
+        #: they are the same six for everybody and no bill names them.
+        self._exp_materials_written = False
 
     async def close(self) -> None:
         """Release the transport. Safe to call more than once."""
@@ -392,6 +395,7 @@ class NanokaGIImporter(BaseImporter):
         for row in passive_rows(payload):
             self.session.add(AscensionPassive(character_id=character.id, **row))
 
+        await self._ensure_exp_materials()
         await self._write_materials(payload)
         for row in character_ascension_cost_rows(payload):
             self.session.add(CharacterAscensionCost(character_id=character.id, **row))
@@ -423,6 +427,46 @@ class NanokaGIImporter(BaseImporter):
                 ),
             )
         return True
+
+    async def _ensure_exp_materials(self) -> None:
+        """Create the six EXP denominations, which no bill names.
+
+        Hero's Wit and Mystic Enhancement Ore are spent through `level_exp` and
+        `xp_requirements`, never listed as materials, so `_write_materials` never meets them.
+        Without these rows a GOOD export's `HerosWit: 204` binds to nothing and the planner
+        prices the levelling as though the user held none — a wrong answer that looks exactly
+        like a right one.
+        """
+        if self._exp_materials_written:
+            return
+        eco = economy()
+        wanted = eco.exp_material_ids()
+        existing = set(
+            (
+                await self.session.execute(
+                    select(Material.id).where(Material.id.in_(wanted)),
+                )
+            )
+            .scalars()
+            .all(),
+        )
+        for material_id in wanted:
+            if material_id in existing:
+                continue
+            name = eco.name(material_id)
+            if not name:
+                msg = f"EXP material {material_id} has no name in the snapshot"
+                raise NanokaMappingError(msg)
+            self.session.add(
+                Material(
+                    id=material_id,
+                    name=name,
+                    rarity=eco.rarity(material_id) or 0,
+                    icon=eco.icon(material_id),
+                ),
+            )
+        await self.session.flush()
+        self._exp_materials_written = True
 
     async def _write_materials(self, payload: dict[str, Any]) -> None:
         """Upsert every material this payload names.

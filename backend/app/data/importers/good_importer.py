@@ -179,6 +179,18 @@ class GoodImportResult:
     #: artifacts only, and that is a valid GOOD file rather than a broken one.
     characters: tuple[ParsedCharacter, ...] = ()
     weapons: tuple[ParsedWeapon, ...] = ()
+    #: `{GOOD material key: count}`, straight from the export's optional `materials` map.
+    #:
+    #: **An absent key means zero**, and that is what the export means too — measured on a
+    #: real Irminsul export carrying 1,384 entries with *no* zero-valued one (minimum 1,
+    #: maximum 11,250). So a material the file omits is one the account has none of, not one
+    #: the scanner failed to read.
+    #:
+    #: Keys are bound to the catalogue by `good_build_service.lookup_key`, the same
+    #: normalisation artifact sets use. It is injective over all 508 planner materials —
+    #: measured — which is what makes binding by name safe. Note it strips the apostrophe
+    #: without capitalising the next letter: `Hero's Wit` is `HerosWit`, not `HeroSWit`.
+    materials: dict[str, int] = field(default_factory=dict)
 
     @property
     def ok(self) -> bool:
@@ -208,7 +220,24 @@ def parse_good(payload: dict[str, Any]) -> GoodImportResult:
         version=int(payload["version"]),
         characters=tuple(_parse_characters(payload.get("characters") or [])),
         weapons=tuple(_parse_weapons(payload.get("weapons") or [])),
+        materials=_parse_materials(payload.get("materials") or {}),
     )
+
+
+def _parse_materials(record: Any) -> dict[str, int]:
+    """The export's `materials` map, keeping only sane positive counts.
+
+    Non-integer and non-positive values are dropped rather than refused: this map is a
+    convenience for the planner, and a single odd entry must not cost the user an import of
+    2,370 artifacts. A dropped entry reads as "none held", which is the same as absent.
+    """
+    if not isinstance(record, dict):
+        return {}
+    return {
+        str(key): int(value)
+        for key, value in record.items()
+        if isinstance(value, int) and not isinstance(value, bool) and value > 0
+    }
 
 
 def _check_envelope(payload: dict[str, Any]) -> None:

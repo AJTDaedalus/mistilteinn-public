@@ -129,6 +129,26 @@ class Economy:
         meta = self._meta.get(material_id)
         return meta["icon"] if meta else None
 
+    def name(self, material_id: int) -> str | None:
+        """The material's English display name, from the TextMap.
+
+        Carried because **the EXP denominations are named nowhere else** — Hero's Wit and
+        Mystic Enhancement Ore never appear in an ascension bill, so nanoka never names them,
+        and without a name they cannot bind to a GOOD export's `HerosWit` key.
+        """
+        meta = self._meta.get(material_id)
+        return meta.get("name") or None if meta else None
+
+    def exp_material_ids(self) -> tuple[int, ...]:
+        """Every EXP denomination, character and weapon.
+
+        These are materials the planner *spends* but no bill *names*, so the seed has to
+        create their rows explicitly or a user's 204 Hero's Wit are invisible to it.
+        """
+        return tuple(
+            item.id for item in (*self.character_exp_items, *self.weapon_exp_items)
+        )
+
     def rarity(self, material_id: int) -> int | None:
         """The material's star rating, cross-checked against nanoka's `rank` at seed time."""
         meta = self._meta.get(material_id)

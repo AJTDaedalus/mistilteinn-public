@@ -30,7 +30,7 @@ import sys
 from typing import Any
 
 from scripts.yuanshen.build_table_catalog import table_names
-from scripts.yuanshen.fetch import SNAPSHOT_DIR, fetch_json, pinned_sha
+from scripts.yuanshen.fetch import SNAPSHOT_DIR, fetch_json, load_textmap, pinned_sha
 
 #: Slot key → the `equipType` the config tables use. The keys are the values of
 #: `app.models.enums.ArtifactSlot`, which are nanoka's `parts` keys — so this file is also
@@ -756,14 +756,35 @@ def build_planner_economy(sha: str | None = None) -> dict[str, Any]:
         for row in fetch_json("ExcelBinOutput/MaterialExcelConfigData.json", sha)
         if row.get("materialType") in PLANNER_MATERIAL_TYPES and "id" in row
     ]
+    # Names come from the TextMap because **the EXP denominations are named nowhere else**.
+    # Hero's Wit and Mystic Enhancement Ore never appear in an ascension or talent bill —
+    # they are spent through `level_exp`, not listed as materials — so nanoka never names
+    # them, and without a name they cannot be bound to a GOOD export's `HerosWit` key. The
+    # planner would then price the levelling and silently ignore the 204 books the user
+    # already holds.
+    names = load_textmap("en", sha)
     material_meta = {
-        str(row["id"]): {"icon": row.get("icon", ""), "rarity": row.get("rankLevel", 0)}
+        str(row["id"]): {
+            "name": names.get(str(row.get("nameTextMapHash", "")), ""),
+            "icon": row.get("icon", ""),
+            "rarity": row.get("rankLevel", 0),
+        }
         for row in materials
     }
     missing_icon = sorted(k for k, v in material_meta.items() if not v["icon"])
     if missing_icon:
         msg = f"{len(missing_icon)} planner materials have no icon: {missing_icon[:5]}"
         raise SnapshotError(msg)
+    exp_uses = (("character", "ITEM_USE_ADD_EXP"), ("weapon", "ITEM_USE_ADD_WEAPON_EXP"))
+    for target, use_op in exp_uses:
+        for item in _exp_items(materials, use_op):
+            if not material_meta[str(item["id"])]["name"]:
+                msg = (
+                    f"{target} EXP item {item['id']} resolved to no name. It cannot then be "
+                    "bound to a GOOD export key, and the planner would ignore the stock the "
+                    "user holds."
+                )
+                raise SnapshotError(msg)
 
     combine: dict[str, dict[str, Any]] = {}
     for row in fetch_json("ExcelBinOutput/CombineExcelConfigData.json", sha):
