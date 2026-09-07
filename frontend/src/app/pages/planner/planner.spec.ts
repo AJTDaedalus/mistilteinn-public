@@ -47,66 +47,118 @@ function section(over: Partial<SectionRead['resin']> = {}): SectionRead {
 }
 
 describe('PlannerPage', () => {
-  it('offers the levels a phase actually unlocks, not 1-90', async () => {
-    // The rule the backend refuses a plan on: level 50 at ascension 0 is not a state the
-    // game has. Offering it in the dropdown would make the page's own control produce a 422.
+  it('offers every level, because level is what a player reads off their screen', async () => {
+    // The control used to list only the levels the *chosen phase* allowed, which put the
+    // derived value in front: someone at level 62 had to work out that 62 means phase 4
+    // before the page would offer 62 at all.
     const page = makePage();
     await page.ngOnInit();
 
-    const phaseZero = page['levelsFor'](0);
-    expect(phaseZero[0]).toBe(1);
-    expect(phaseZero.at(-1)).toBe(20);
-    // Phase 5 starts where phase 4 left off, so "ascend and stop" is reachable at either end.
-    expect(page['levelsFor'](5)).toEqual(
-      Array.from({ length: 11 }, (_, index) => 70 + index),
-    );
+    expect(page['levels'][0]).toBe(1);
+    expect(page['levels'].at(-1)).toBe(90);
+    expect(page['levels']).toHaveLength(90);
   });
 
-  it('drags the paired level along when the ascension changes', async () => {
-    // Setting "from ascension" to 6 while the level signal still held 1 rendered an empty
-    // <select> — no option matched — while run() happily posted level: 1. The user saw a
-    // blank box and got a bill for 1→90 instead of 80→90, and nothing rejected it because
-    // 1/6 is a legal state.
+  it('asks about ascension only at a cap, and then offers exactly two', async () => {
+    // 80 is the top of phase 5 and the floor of phase 6, and both are real states the game
+    // distinguishes — only one of them can go on to 90. Every other level sits in exactly one
+    // phase and there is nothing to ask.
     const page = makePage();
     await page.ngOnInit();
 
-    page['setAscension'](6, page['fromAscension'], page['fromLevel']);
-
-    expect(page['fromAscension']()).toBe(6);
-    expect(page['levelsFor'](6)).toContain(page['fromLevel']());
-    expect(page['fromLevel']()).toBe(80);
+    expect(page['ascensionsAt'](80).map((entry) => entry.phase)).toEqual([5, 6]);
+    expect(page['ascensionAmbiguous'](80)).toBe(true);
+    expect(page['ascensionsAt'](55).map((entry) => entry.phase)).toEqual([3]);
+    expect(page['ascensionAmbiguous'](55)).toBe(false);
+    // The two ends are unambiguous, which is why the page's own defaults ask nothing.
+    expect(page['ascensionAmbiguous'](1)).toBe(false);
+    expect(page['ascensionAmbiguous'](90)).toBe(false);
   });
 
-  it('leaves a level alone when it is already inside the new range', async () => {
-    // Phase 3 spans 50-60: it starts where phase 2 topped out. A level below that floor is
-    // pulled up, which is why this picks one inside the band rather than below it.
+  it('names the two so the number is not the whole question', async () => {
+    // "5" and "6" at level 80 are before and after the same ascension. The digit alone does
+    // not say which is which, and only one of them can reach 90.
     const page = makePage();
     await page.ngOnInit();
-    page['fromLevel'].set(55);
 
-    page['setAscension'](3, page['fromAscension'], page['fromLevel']);
+    expect(page['ascensionLabel'](5, 80)).toContain('not ascended');
+    expect(page['ascensionLabel'](6, 80)).toContain('ascended, can reach 90');
+  });
+
+  it('replaces a phase the new level cannot be in', async () => {
+    // The hazard the old model had, running the other way. A phase left over from the
+    // previous level would be posted against a level it does not contain — and 1/6 is exactly
+    // the pair that billed a user for 1→90 instead of 80→90 without anything rejecting it.
+    const page = makePage();
+    await page.ngOnInit();
+    page['fromAscension'].set(6);
+
+    page['setLevel'](55, page['fromLevel'], page['fromAscension']);
 
     expect(page['fromLevel']()).toBe(55);
+    expect(page['fromAscension']()).toBe(3);
   });
 
-  it('pushes a too-low level up to the floor of the new phase', async () => {
+  it('keeps a phase that is still legal at the new level', async () => {
+    // Moving the target from 90 to 80 leaves phase 6 legal — that is "ascend but stop at 80",
+    // the case the two controls exist for. Clamping to the lower phase here would silently
+    // delete the plan the user was expressing.
     const page = makePage();
     await page.ngOnInit();
-    page['fromLevel'].set(45);
 
-    page['setAscension'](3, page['fromAscension'], page['fromLevel']);
+    page['setLevel'](80, page['toLevel'], page['toAscension']);
 
-    expect(page['fromLevel']()).toBe(50);
+    expect(page['toAscension']()).toBe(6);
   });
 
-  it('pulls a too-high level down to the new cap', async () => {
+  it('cannot produce a level and phase the backend would refuse', async () => {
+    // **The property, rather than the instance.** The backend rejects a pair the game cannot
+    // produce — "level 50 is outside 1-20, which is what ascension phase 0 unlocks" — and a
+    // control that can express such a pair and leaves the server to say no is a control that
+    // should not have offered it. This walks every level the picker lists and every phase it
+    // would offer at that level.
     const page = makePage();
     await page.ngOnInit();
-    page['toLevel'].set(90);
+    const caps = page['options']()!.level_caps as Record<number, number>;
 
-    page['setAscension'](1, page['toAscension'], page['toLevel']);
+    for (const level of page['levels']) {
+      const offered = page['ascensionsAt'](level);
+      expect(offered.length).toBeGreaterThan(0);
+      for (const { phase } of offered) {
+        const floor = phase === 0 ? 1 : caps[phase - 1];
+        expect(level).toBeGreaterThanOrEqual(floor);
+        expect(level).toBeLessThanOrEqual(caps[phase]);
+      }
+    }
+  });
 
-    expect(page['toLevel']()).toBe(40);
+  it('groups crafting help by material class and by what the passive does', async () => {
+    // Two facts per passive — which materials it touches and what it does to them — and the
+    // flat list encoded both in one sentence, so twelve rows all read the same.
+    const page = makePage();
+    await page.ngOnInit();
+    page['options'].set({
+      ...page['options']()!,
+      bonuses: [
+        { character_id: 'a', character_name: 'Albedo', effect: 'double', chance: 0.1,
+          classes: ['weapon_ascension'], applicable: true } as never,
+        { character_id: 'x', character_name: 'Xingqiu', effect: 'refund', chance: 0.25,
+          classes: ['talent'], applicable: false } as never,
+        // Sucrose names both classes, so she belongs in both tables. That is duplication on
+        // screen and it is right: each table answers "what can help *this* class".
+        { character_id: 's', character_name: 'Sucrose', effect: 'double', chance: 0.1,
+          classes: ['weapon_ascension', 'talent'], applicable: true } as never,
+      ],
+    });
+
+    const groups = page['craftGroups']();
+    const weapon = groups.find((g) => g.key === 'weapon_ascension')!;
+    const talent = groups.find((g) => g.key === 'talent')!;
+
+    expect(weapon.bonus.map((b) => b.character_name)).toEqual(['Albedo', 'Sucrose']);
+    expect(weapon.refund).toEqual([]);
+    expect(talent.bonus.map((b) => b.character_name)).toEqual(['Sucrose']);
+    expect(talent.refund.map((b) => b.character_name)).toEqual(['Xingqiu']);
   });
 
   it('turns an avatar icon into the full splash basename', async () => {

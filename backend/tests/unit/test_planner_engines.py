@@ -114,6 +114,36 @@ def test_ascension_charges_only_the_phases_crossed() -> None:
     assert mora == 7000
 
 
+def test_an_unseeded_table_says_so_rather_than_blaming_the_character() -> None:
+    """**Reported as a bug about Albedo, who publishes all six phases.**
+
+    The user saw *"Albedo has no ascension phase 1 — it publishes none"*. Both faults produced
+    that shape, and the empty-table one is the common one: these tables are created by a
+    migration and filled by `seed_db`, so between the two every character answers this and the
+    sentence names whichever one the user happened to pick.
+
+    Naming the real cause is the difference between a five-minute fix and hunting a character's
+    data. The message is asserted, not just the exception, because the message *was* the bug.
+    """
+    with pytest.raises(PlanError, match="No ascension costs are seeded at all") as raised:
+        costs.ascension_bill({}, 0, 6, what="Albedo")
+
+    assert "seed_db" in str(raised.value)
+    # And it must not go on to accuse the character of publishing a short ladder.
+    assert "has no ascension phase" not in str(raised.value)
+
+
+def test_a_genuinely_short_ladder_still_names_what_it_does_publish() -> None:
+    """The other fault is real and keeps its own sentence — a 1-star weapon publishes four
+    phases, so planning one to 90/6 has to refuse rather than charge zero for 5 and 6."""
+    four = {n: (n * 1000, [{"id": 100 + n, "count": n}]) for n in range(1, 5)}
+
+    with pytest.raises(PlanError, match=r"has no ascension phase 5") as raised:
+        costs.ascension_bill(four, 0, 6, what="a 1-star weapon")
+
+    assert "[1, 2, 3, 4]" in str(raised.value)
+
+
 # -- talents --------------------------------------------------------------------------
 
 

@@ -182,9 +182,22 @@ def ascension_bill(
     for phase in range(current + 1, target + 1):
         row = costs.get(phase)
         if row is None:
+            # **An empty table is a different fault from a missing phase, and saying so is the
+            # whole point of this branch.** Both used to produce "X has no ascension phase 1",
+            # which reads as a fact about X — and it was reported that way: *"Albedo has no
+            # ascension phase 1"*, about a character that publishes all six. What had actually
+            # happened is that the planner's cost tables were created by a migration and never
+            # seeded, so *every* character answered this and the sentence named whichever one
+            # the user happened to pick.
+            #
+            # The rest of the app cannot show the difference either: a plan for an unseeded
+            # database and a plan for a genuinely short ladder both come back as one 422.
             msg = (
+                f"No ascension costs are seeded at all, so {what} cannot be priced. "
+                f"The catalogue needs re-seeding: `python -m scripts.seed_db --version <pin>`."
+            ) if not costs else (
                 f"{what} has no ascension phase {phase} — it publishes "
-                f"{sorted(costs) or 'none'}. Pick a target within that."
+                f"{sorted(costs)}. Pick a target within that."
             )
             raise PlanError(msg)
         phase_mora, entries = row

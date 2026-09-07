@@ -7,6 +7,36 @@
     h1 { margin: 0 0 0.25rem; }
   }
 
+  /* **A banner, not a portrait.** The splash was 360px in a sidebar, which made the one
+     image on the page the smallest thing on it. `object-fit: cover` with a short, wide box
+     crops to the face — `catalogue-icon` biases `object-position` to `center 8%` for exactly
+     this, so a full-body gacha render reads as a header rather than a pair of boots. */
+  .splash {
+    position: relative;
+    height: clamp(11rem, 26vw, 20rem);
+    margin-bottom: var(--space-4, 1rem);
+    border-radius: var(--radius-1);
+    overflow: hidden;
+    border: 1px solid var(--surface-rule);
+    background: var(--bg-deep);
+  }
+
+  .splash__name {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    padding: 2.5rem 1rem 0.6rem;
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    color: var(--ink);
+    /* The name has to stay readable over whatever the art happens to be, and the art is
+       different for every character. A gradient scrim is the only thing that holds for all
+       of them; a flat tint fails on the pale ones. */
+    background: linear-gradient(to top, var(--bg-deep) 15%, transparent);
+  }
+
   .hint {
     color: var(--ink-dim);
     font-size: var(--text-sm);
@@ -23,18 +53,18 @@
   .error { color: var(--danger); }
 
   .setup {
-    display: grid;
-    grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
-    gap: var(--space-6, 1.5rem);
-    align-items: start;
-  }
-
-  .figure {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    position: sticky;
-    top: var(--space-4, 1rem);
+    gap: var(--space-4, 1rem);
+  }
+
+  /* The character choice leads, then everything that depends on it. Two columns wide enough
+     to sit side by side, one when they are not. */
+  .chooser {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+    gap: 0.5rem 1.5rem;
+    align-items: end;
   }
 
   .controls {
@@ -75,9 +105,13 @@
     padding: 0.3rem 0.4rem;
   }
 
+  /* **Capped, not `1fr 1fr`.** Now the setup is one column wide, a free-growing pair drew a
+     700px-wide box to hold the number 80. A control should be about as wide as the thing it
+     holds; the phase answer is a sentence, so it gets more room than the level. */
   .pair {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 9rem) minmax(0, 24rem);
+    justify-content: start;
     gap: 0.6rem;
     margin-bottom: 0.5rem;
   }
@@ -96,10 +130,76 @@
     }
   }
 
-  .bonuses {
+  /* Two tables of two columns. They collapse to one column under ~34rem rather than letting
+     a name and its percentage wrap apart from each other. */
+  .craft {
+    margin-top: 0.75rem;
+
+    &:first-of-type { margin-top: 0.25rem; }
+  }
+
+  .craft__title {
+    margin: 0 0 0.35rem;
+    font-family: var(--font-display);
+    font-size: var(--text-sm);
+    color: var(--ink);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .craft__cols {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(18rem, 100%), 1fr));
-    gap: 0.25rem 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
+    gap: 0.5rem 1.5rem;
+  }
+
+  .craft__col {
+    min-width: 0;
+
+    h4 {
+      margin: 0 0 0.3rem;
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--ink-dim);
+      border-bottom: 1px solid var(--surface-rule);
+      padding-bottom: 0.2rem;
+    }
+
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    li {
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      padding: 0.12rem 0;
+      font-size: var(--text-sm);
+    }
+  }
+
+  .craft__who { color: var(--ink); }
+
+  /* Tabular, so a column of percentages lines up rather than drifting with the name above. */
+  .craft__rate {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--mint);
+  }
+
+  .craft__why {
+    color: var(--ink-dim);
+    font-size: var(--text-xs);
+    flex-basis: 100%;
+  }
+
+  .craft__none {
+    margin: 0;
+    color: var(--ink-dim);
+    font-size: var(--text-sm);
   }
 
   .check {
@@ -107,13 +207,6 @@
     align-items: center;
     gap: 0.4rem;
     color: var(--ink);
-  }
-
-  .reported {
-    margin: 0.4rem 0 0;
-    padding-left: 1.1rem;
-    color: var(--ink-dim);
-    font-size: var(--text-sm);
   }
 
   .empty {
