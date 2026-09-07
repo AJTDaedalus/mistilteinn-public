@@ -644,3 +644,23 @@
   font-size: var(--text-xs);
   line-height: 1.4;
 }
+
+/* The broad pass's progress, and the offer to finish it. Above the grid rather than beside the
+   count: it describes the numbers on every card below, not the size of the list. */
+.sweep {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.sweep__stop,
+.sweep__more {
+  padding: 0.15rem var(--space-2);
+  font-size: var(--text-xs);
+}
+
+/* The settled number leads, because it is the one the dive agrees with. */
+.card__rank--best .card__rank-delta { font-weight: 700; }

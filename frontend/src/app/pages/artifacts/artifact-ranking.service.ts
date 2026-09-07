@@ -532,6 +532,99 @@ export class ArtifactRankingService {
   }
 
   /**
+   * The best-build gain for many pieces, over one shared setup.
+   *
+   * **Owner, 2026-09-06: the topline should not be "other four locked".** The card's
+   * `avg / now / max` come from a single-slot swap into the build as it stands, while
+   * `Best build` re-picks all four other slots — so the two disagreed by construction. This
+   * computes the broad number for a list of pieces, so column and dive answer one question.
+   *
+   * ## Why it is capped, and why the cap is the caller's
+   *
+   * **Measured in the browser, not carried over from Node.**
+   * `RESEARCH_pinned_search_cost.md` reports 0.21 s per pinned search and says plainly its
+   * figures are Node's. Five real dives timed in Chromium on the owner's 2,369-piece
+   * inventory averaged **12.73 s** against Node's 3.52 s for the same pair — **3.6× slower**.
+   * So a pin costs ~0.76 s here and a whole-inventory sweep is **~30 minutes**, not the ~8 the
+   * Node figure implies. That is the mistake `DESIGN_artifact_ranking.md` §7 records, and it
+   * was avoided this time only by measuring where the code actually runs.
+   *
+   * `DESIGN_artifact_ranking.md` §8.1 already assigns the roles: the fast column finds the
+   * candidates, the expensive search settles them. The caller passes the pieces it wants
+   * settled — the top of the fast ordering — and may ask for all of them.
+   *
+   * ## Shape
+   *
+   * A job with progress, never a request that blocks (`RESEARCH_recipe_cost.md`'s standing
+   * ruling). It yields between pieces so progress paints and `shouldCancel` is read. **One pin
+   * still blocks for its ~0.76 s**, which is the honest limit of doing this on the main
+   * thread; a worker is the fix if this ever needs to run while someone is typing.
+   */
+  async sweepBestBuilds(
+    request: RankingRequest & {
+      /** Which pieces to settle, in the order they should be settled. */
+      artifactIds: readonly string[];
+      onSweepProgress?: (done: number, total: number) => void;
+      /**
+       * One settled piece, as it settles.
+       *
+       * **Streamed rather than returned in a batch**, which the first version did — the page
+       * then showed nothing at all until the whole 200-piece sweep finished two and a half
+       * minutes later, so the "progressive" refinement refined nothing until it was over.
+       * Caught by driving it: a 120-second wait for the first settled card timed out.
+       */
+      onSettled?: (artifactId: string, gain: number) => void;
+      shouldCancel?: () => boolean;
+    },
+  ): Promise<Map<string, number>> {
+    const { model, byId, current, before, equipped, wornIds, recipes, all } =
+      await this.diveContext(request);
+
+    // One pool for every pin, built with **no** pinned exemption — each piece is swapped in as
+    // it comes up. Rebuilding it per piece would repeat a whole-inventory scoring pass for
+    // every one of them.
+    const base = trimForDive(all, null, current, equipped, wornIds);
+
+    const out = new Map<string, number>();
+    let done = 0;
+    for (const id of request.artifactIds) {
+      if (request.shouldCancel?.()) break;
+      const target = byId.get(id);
+
+      if (target && SLOTS.includes(target.slot as (typeof SLOTS)[number])) {
+        const slot = target.slot as (typeof SLOTS)[number];
+        // The same projection the dive pins at, so the two produce the same number.
+        const projection = projectPiece(pieceOf(target), model);
+        const pinned = {
+          id,
+          slot,
+          setId: target.set_id ?? 0,
+          stats: projection?.average ?? target.stats,
+        };
+        const found = searchRecipe(
+          [...base.filter((c) => c.id !== id), pinned],
+          { recipes, topN: 1, pinned },
+        );
+        const winner = found.builds[0];
+        // No build means no calibrated 4-piece state contains this piece. Left *out* of the
+        // map rather than written as zero: the row then keeps its single-slot number, and a
+        // zero would read as "this piece is worth nothing" rather than "not asked".
+        if (winner && before > 0) {
+          const gain = (winner.damage - before) / before;
+          out.set(id, gain);
+          request.onSettled?.(id, gain);
+        }
+      }
+
+      done += 1;
+      request.onSweepProgress?.(done, request.artifactIds.length);
+      // The same `setTimeout(0)` yield the outcome walk uses, for the same reason.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    return out;
+  }
+
+  /**
    * **The best build containing this piece, at its projected max level.** Issue #291's headline.
    *
    * This is the half a single-slot swap cannot answer. *"Assume that you can move other
@@ -553,16 +646,20 @@ export class ArtifactRankingService {
    * it deeper for the same money** — so this is not a slower optimizer, it is the same job asked
    * a narrower question. One piece at a time, deliberately: 2,370 of them would be three hours.
    */
-  async deepDive(request: RankingRequest & { artifactId: string }): Promise<DeepDive> {
+  /**
+   * Everything a pinned search needs that does not depend on *which* piece is pinned.
+   *
+   * Extracted because `sweepBestBuilds` runs hundreds of pins and rebuilding this per piece
+   * would repeat a calibration lookup, an inventory walk and a whole-inventory scoring pass
+   * for each one. It is also the third place this preamble would otherwise have been written
+   * — `rank` has its own, and two copies of "what is this build wearing" is exactly the pair
+   * `setCountsOf` was extracted to stop drifting apart.
+   */
+  private async diveContext(request: RankingRequest) {
     const snapshot = await this.optimize.inventory();
     const raw = snapshot.draw_model;
     if (!raw) throw new Error('the server sent no draw model, so nothing can be projected');
     const model = drawModelFrom(raw);
-
-    const target = snapshot.artifacts.find((c) => c.id === request.artifactId);
-    if (!target) {
-      throw new Error(`artifact ${request.artifactId} is not in the inventory snapshot`);
-    }
 
     const worn = await this.artifacts.list({ build_id: request.buildId });
     const byId = new Map(snapshot.artifacts.map((c) => [c.id, c]));
@@ -595,13 +692,6 @@ export class ArtifactRankingService {
       : calibration.byFourPieceSet.get(wornFour) ?? noFourPiece;
     const before = evaluateRecipe(current, candidateStatsFrom(equipped));
 
-    // **Pinned at the piece's projected max-level stats**, because #291 asks about the artifact
-    // "at max level". `average` rather than `best`: the expected outcome is the honest thing to
-    // plan a resin spend around, and the ceiling is already on the card.
-    const piece = pieceOf(target);
-    const projection = projectPiece(piece, model);
-    const projected = projection?.average ?? target.stats;
-
     // **Pieces in a slot the kernel does not search are dropped, not coerced.** The five slot
     // names are a closed set; a payload carrying a sixth is a piece this walk cannot place, and
     // casting it in would put it in whichever bucket the string happened to match.
@@ -614,14 +704,38 @@ export class ArtifactRankingService {
         setId: c.set_id ?? 0,
         stats: c.stats,
       }));
-    const candidates = trimForDive(
-      all, target.id, current, equipped, new Set(wornBySlot.values()),
-    );
-    const recipes = {
-      noFourPiece,
-      byFourPieceSet: calibration.byFourPieceSet,
-      byPair: calibration.byPair,
+
+    return {
+      snapshot, model, byId, wornBySlot, wornFour, calibration,
+      current, before, equipped, all,
+      wornIds: new Set(wornBySlot.values()),
+      recipes: {
+        noFourPiece,
+        byFourPieceSet: calibration.byFourPieceSet,
+        byPair: calibration.byPair,
+      },
     };
+  }
+
+  async deepDive(request: RankingRequest & { artifactId: string }): Promise<DeepDive> {
+    const context = await this.diveContext(request);
+    const {
+      snapshot, model, wornBySlot, current, before, equipped, all, wornIds, recipes,
+    } = context;
+
+    const target = snapshot.artifacts.find((c) => c.id === request.artifactId);
+    if (!target) {
+      throw new Error(`artifact ${request.artifactId} is not in the inventory snapshot`);
+    }
+
+    // **Pinned at the piece's projected max-level stats**, because #291 asks about the artifact
+    // "at max level". `average` rather than `best`: the expected outcome is the honest thing to
+    // plan a resin spend around, and the ceiling is already on the card.
+    const piece = pieceOf(target);
+    const projection = projectPiece(piece, model);
+    const projected = projection?.average ?? target.stats;
+
+    const candidates = trimForDive(all, target.id, current, equipped, wornIds);
 
     const withPiece = searchRecipe(candidates, {
       recipes,
@@ -718,7 +832,8 @@ export const DIVE_PER_SLOT = 24;
  */
 export function trimForDive(
   candidates: readonly Candidate[],
-  pinnedId: string,
+  /** The piece to keep whatever it ranks, or `null` when the caller pins many over one pool. */
+  pinnedId: string | null,
   recipe: Recipe,
   equipped: readonly StatPool[],
   wornIds: ReadonlySet<string>,
@@ -749,7 +864,7 @@ export function trimForDive(
       const found = bucket.find((c) => c.id === id);
       if (found) kept.push(found);
     };
-    keepAnyway(pinnedId);
+    if (pinnedId !== null) keepAnyway(pinnedId);
     // The status quo has to be reachable, or the search can report a loss it invented.
     for (const id of wornIds) keepAnyway(id);
     out.push(...kept);
