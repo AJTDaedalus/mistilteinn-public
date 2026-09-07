@@ -7,16 +7,24 @@ for 94 of the materials a plan can need, and the published 3:1 crafting tree car
 120 more. Twelve rates are curated with citations; anything else has no rate and is reported
 as unknown rather than guessed.
 
-**The spread is modelled, and the model is stated.** Nothing in the pinned dump resolves a
-`drop_id` — the randomised drop tables are server-side — so the true per-run distribution is
-not available at any price. This module assumes the **two-point integer distribution matching
-the published mean**: a run yields `floor(mu)` or `ceil(mu)`, the latter with probability
-`mu - floor(mu)`.
+**The spread comes from the source's own shape where one is known, and is modelled where it
+is not.** Nothing in the pinned dump resolves a `drop_id` — the randomised drop tables are
+server-side — so the game publishes means and nothing else. A curated source may declare its
+shape instead, and three do: a ley-line run gives 6-7 blue books and 4-5 purple (four
+outcomes), a trounce run gives 2 or 3 items each randomly one of the boss's three (so a named
+material is a binomial mixture, and 41% of runs yield none of it), and a Blossom of Wealth
+gives a flat 60,000 mora with no variation at all.
 
-That is the *minimum-variance* distribution with that mean, so **the histogram it draws is
-narrower than reality**. It is a floor on the spread, not a prediction, and every surface that
-renders it has to say so. The alternative — drawing nothing — hides that farming variance
-exists at all, which is the thing a resin estimate is most often wrong about.
+Everything else falls back to the **two-point integer distribution matching the published
+mean** — `floor(mu)` or `ceil(mu)`, the latter with probability `mu - floor(mu)`. That is the
+*minimum-variance* distribution with that mean, so a histogram drawn from it is **narrower
+than reality**; it is a floor on the spread, not a prediction, and every surface that renders
+it says so.
+
+**The fallback is not universally safe and that is why shapes exist.** For a domain it is
+exactly right: a run really does give 2 or 3 books, so a published mean of 2.2 is `{2: 0.8,
+3: 0.2}`. For a mean that is already a whole number it collapses — 122,500 EXP has
+`floor == ceil`, so the ley line became a point mass and its run count came out certain.
 
 ## Why runs are counted against the craft root
 
@@ -35,7 +43,7 @@ from typing import TYPE_CHECKING
 from app.services.planner.economy import MaterialSource
 
 if TYPE_CHECKING:
-    from app.services.planner.economy import Economy
+    from app.services.planner.economy import DropRate, Economy
 
 #: Tail mass to discard per root when turning a run-count distribution into a finite one.
 #: A negative-binomial tail is infinite; 1e-6 keeps the histogram honest to six figures while
@@ -45,6 +53,10 @@ _TAIL = 1e-6
 #: Ceiling on runs considered for one material. A plan needing more than this is not a plan,
 #: and an unbounded loop on a malformed rate must not hang a request.
 _MAX_RUNS = 20_000
+
+#: Largest first-passage state space walked exactly, after scaling by the common divisor.
+#: Above this the mean survives and the shape does not, which is said rather than hidden.
+_MAX_STATES = 100_000
 
 #: How many bars the rendered histogram carries. Enough to show a shape, few enough to read.
 _BINS = 12
@@ -115,53 +127,92 @@ class ResinTotal:
         return bool(self.unpriced)
 
 
-def _binomial_tail_below(n: int, p: float, threshold: int) -> float:
-    """`P(Binomial(n, p) < threshold)`, computed directly.
+def per_run_outcomes(rate: DropRate) -> tuple[tuple[float, float], ...]:
+    """The per-run yield distribution to count runs against.
 
-    Small `n` and no SciPy, so the sum is exact rather than approximated. `threshold <= 0`
-    means the requirement is already met and the probability of falling short is zero.
+    A curated source that declares its shape gets that shape. Everything else — the domain
+    and world-boss rates, which come from the game's own reward previews and are means with
+    no published shape — falls back to the **two-point integer distribution matching the
+    mean**: `floor(mu)` or `ceil(mu)`, the latter with probability `mu - floor(mu)`.
+
+    That fallback is the *minimum-variance* distribution with the right average, so a
+    histogram drawn from it is **narrower than reality**. For a domain it happens to be
+    exactly right — a run really does give 2 or 3 books, and a published mean of 2.2 is
+    `{2: 0.8, 3: 0.2}` — which is why it was not obviously wrong until a source arrived whose
+    mean was a large integer. A mean of 122,500 EXP has `floor == ceil`, so the fallback
+    collapsed to a point mass and the run count came out certain.
     """
-    if threshold <= 0:
-        return 0.0
-    if threshold > n:
-        return 1.0
-    if p <= 0.0:
-        return 1.0
-    if p >= 1.0:
-        return 0.0
-    total = 0.0
-    for k in range(threshold):
-        total += math.comb(n, k) * (p**k) * ((1 - p) ** (n - k))
-    return min(1.0, total)
+    if rate.distribution:
+        return rate.distribution
+    mean = rate.expected_per_run
+    low = math.floor(mean)
+    remainder = mean - low
+    if remainder <= 0:
+        return ((float(low), 1.0),)
+    return ((float(low), 1.0 - remainder), (float(low + 1), remainder))
 
 
-def runs_distribution(needed: int, expected_per_run: float) -> list[float]:
+def runs_distribution(needed: int, rate: DropRate) -> list[float]:
     """`P(N = n)` for the number of runs to obtain `needed` units, index `n` from 0.
 
-    With the two-point model a run yields `a = floor(mu)` plus a Bernoulli(`p`) bonus, so the
-    total after `n` runs is `n*a + Binomial(n, p)` and
+    A first-passage time over the per-run distribution, computed by walking the accumulated
+    total forward one run at a time and absorbing the mass that crosses the requirement.
 
-        P(N > n) = P(n*a + Bin(n, p) < needed)
-
-    which is a binomial tail. The distribution is truncated once its remaining mass falls
-    below `_TAIL`.
+    **Values are scaled by their common divisor first.** A ley-line run yields EXP in
+    multiples of 5,000 against a requirement in the millions; without scaling the state space
+    would be the requirement itself. With it, the same problem is a few hundred states.
     """
     if needed <= 0:
         return [1.0]
-    if expected_per_run <= 0:
+    outcomes = [
+        (value, probability)
+        for value, probability in per_run_outcomes(rate)
+        if probability > 0
+    ]
+    positive = [int(value) for value, _ in outcomes if value > 0]
+    if not positive:
         return []
-    floor_yield = math.floor(expected_per_run)
-    bonus_p = expected_per_run - floor_yield
 
-    probabilities: list[float] = []
-    survive_previous = 1.0  # P(N > n-1), starting at P(N > -1) = 1
-    for n in range(_MAX_RUNS + 1):
-        survive = _binomial_tail_below(n, bonus_p, needed - n * floor_yield)
-        probabilities.append(max(0.0, survive_previous - survive))
-        survive_previous = survive
-        if survive < _TAIL:
+    # **Zero-yield outcomes are kept.** A trounce run drops one of the boss's three materials,
+    # so 41% of runs yield none of the one you came for — and that run still costs 30 resin.
+    # Dropping those outcomes leaks their probability out of the walk, which showed up as a
+    # weekly-boss plan needing 0.01 runs.
+    divisor = math.gcd(*positive, needed) or 1
+    target = -(-needed // divisor)
+    steps = [(int(value) // divisor, probability) for value, probability in outcomes]
+    if target > _MAX_STATES:
+        # Too fine-grained to walk exactly. The mean is still right; only the shape is lost,
+        # and saying so beats spending a second on a histogram nobody asked to be exact.
+        return _mean_only_distribution(target, steps)
+
+    probabilities: list[float] = [0.0]
+    live: dict[int, float] = {0: 1.0}
+    for _ in range(_MAX_RUNS):
+        nxt: dict[int, float] = {}
+        finished = 0.0
+        for total, carried in live.items():
+            for step, probability in steps:
+                moved = carried * probability
+                if total + step >= target:
+                    finished += moved
+                else:
+                    nxt[total + step] = nxt.get(total + step, 0.0) + moved
+        probabilities.append(finished)
+        # **Not pruned per state.** Dropping individual low-probability states would shed
+        # mass from a long tail a little at a time; only the total decides when to stop.
+        live = nxt
+        if sum(live.values()) < _TAIL:
             break
     return probabilities
+
+
+def _mean_only_distribution(target: int, steps: list[tuple[int, float]]) -> list[float]:
+    """A point mass at the expected number of runs, for a state space too large to walk."""
+    mean = sum(step * probability for step, probability in steps)
+    if mean <= 0:
+        return []
+    runs = max(1, round(target / mean))
+    return [0.0] * runs + [1.0]
 
 
 def estimate(economy: Economy, material_id: int, needed: int) -> ResinEstimate | None:
@@ -245,7 +296,7 @@ def total(
         if rate is None:  # pragma: no cover - filtered above
             continue
         out.expected += (root_needed / rate.expected_per_run) * rate.resin
-        distribution = runs_distribution(root_needed, rate.expected_per_run)
+        distribution = runs_distribution(root_needed, rate)
         if distribution:
             out._roots[root_id] = (distribution, rate.resin)  # noqa: SLF001
     out.unpriced.sort()

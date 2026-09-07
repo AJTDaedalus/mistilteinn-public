@@ -128,12 +128,99 @@ def test_talent_levels_above_ten_charge_nothing() -> None:
 # -- resin -----------------------------------------------------------------------------
 
 
-def test_expected_runs_are_at_least_the_continuous_ratio() -> None:
+def test_expected_runs_are_at_least_the_continuous_ratio(eco) -> None:
     """You cannot farm a fraction of a run, so the discrete answer sits above `need/mu`."""
-    distribution = resin.runs_distribution(100, 2.2)
+    rate = eco.rate(104301)
+    distribution = resin.runs_distribution(100, rate)
     expected = sum(index * p for index, p in enumerate(distribution))
-    assert sum(distribution) == pytest.approx(1.0, abs=1e-6)
-    assert expected >= 100 / 2.2
+    assert sum(distribution) == pytest.approx(1.0, abs=1e-5)
+    assert expected >= 100 / rate.expected_per_run
+
+
+def test_a_domain_run_is_priced_on_both_of_its_rolls(eco) -> None:
+    """The bug the wiki's own tables exposed, and the biggest error this feature had.
+
+    `RewardPreviewExcelConfigData` publishes a fractional count for the **guaranteed 2-star
+    roll** and nothing for the drop packs, so a rate built from the preview alone counted a
+    fraction of what a run really gives: 2.2 base-tier equivalents against 10.12 for a talent
+    domain and 16.708 for a weapon one — 4.6x and 7.6x too pessimistic.
+
+    The guaranteed roll's own mean is still 2.2, and that agreement is what says the curated
+    table and the game's data are describing the same domain.
+    """
+    talent = eco.rate(104301)
+    assert talent.expected_per_run == pytest.approx(10.12)
+    assert eco.rate(114001).expected_per_run == pytest.approx(16.708)
+
+    # A single 4-star book is worth nine 2-star ones, so the spread is wide and lumpy: the
+    # best run is 3 guaranteed plus three 4-star packs, and the worst is 2 plus two 3-star.
+    values = [value for value, _ in talent.distribution]
+    assert (min(values), max(values)) == (8.0, 30.0)
+    # And that lumpiness is the thing a mean cannot express — nearly a 4x spread.
+    assert max(values) / min(values) > 3
+
+
+def test_family_multipliers_come_from_the_crafting_tree(eco) -> None:
+    """Read, not assumed to be 3:1 — a few recipes are not."""
+    assert eco.family_multipliers(104301) == {0: 1, 1: 3, 2: 9}
+    assert eco.family_multipliers(114001) == {0: 1, 1: 3, 2: 9, 3: 27}
+
+
+def test_a_declared_shape_is_used_rather_than_the_mean(eco) -> None:
+    """The bug this whole mechanism exists for.
+
+    A ley-line run gives 6-7 blue books and 4-5 purple, which is four outcomes between
+    110,000 and 135,000 EXP. Collapsed to its mean of 122,500 the fallback two-point model
+    has `floor == ceil`, so it became a **point mass** and the run count came out certain —
+    nine runs, probability 1.0, a histogram with one bar and no information in it.
+    """
+    rate = eco.rate(104003)
+    assert rate.distribution is not None
+    assert [value for value, _ in rate.distribution] == [110_000, 115_000, 130_000, 135_000]
+
+    distribution = resin.runs_distribution(1_000_000, rate)
+    assert sum(1 for p in distribution if p > 1e-6) > 1
+
+
+def test_a_run_that_drops_none_of_your_material_still_costs_resin(eco) -> None:
+    """41% of trounce runs yield none of the one material you came for.
+
+    Filtering those outcomes out leaked their probability from the walk, and an 18-material
+    plan came back needing **0.01 runs**.
+    """
+    rate = eco.rate(113018)
+    zero = next(p for value, p in rate.distribution if value == 0)
+    assert zero == pytest.approx(0.4148, abs=1e-3)
+
+    distribution = resin.runs_distribution(18, rate)
+    assert sum(distribution) == pytest.approx(1.0, abs=1e-5)
+    assert sum(index * p for index, p in enumerate(distribution)) == pytest.approx(24.8, abs=1)
+
+
+def test_a_genuinely_flat_source_stays_deterministic(eco) -> None:
+    """Mora is 60,000 a run, full stop. One outcome is the right answer, not a missing shape."""
+    distribution = resin.runs_distribution(600_000, eco.rate(202))
+    assert distribution.count(1.0) == 1
+    assert len(distribution) == 11  # index 10 == exactly ten runs
+
+
+def test_a_declared_shape_must_average_to_its_stated_mean() -> None:
+    """Two ways to say the same thing, and the file must not let them disagree."""
+    derived = json.loads(
+        (
+            Path(__file__).resolve().parents[2]
+            / "app" / "data" / "yuanshen" / "snapshot" / "planner_economy.json"
+        ).read_text(encoding="utf-8"),
+    )
+    curated = json.loads(
+        (
+            Path(__file__).resolve().parents[2]
+            / "app" / "data" / "planner" / "curated_rates.json"
+        ).read_text(encoding="utf-8"),
+    )
+    curated["source_defaults"]["ley_line_exp"]["expected_per_run"] = 99_999
+    with pytest.raises(ValueError, match="declared shape averages"):
+        Economy(derived, curated).rate(104003)
 
 
 def test_a_crafted_tier_is_priced_as_the_tier_actually_farmed(eco) -> None:
@@ -141,7 +228,7 @@ def test_a_crafted_tier_is_priced_as_the_tier_actually_farmed(eco) -> None:
     estimate = resin.estimate(eco, 104303, 9)
     assert estimate is not None
     assert estimate.root_id == 104301
-    assert estimate.expected_runs == pytest.approx(81 / 2.2)
+    assert estimate.expected_runs == pytest.approx(81 / eco.rate(104301).expected_per_run)
 
 
 def test_shared_families_are_summed_before_runs_are_counted(eco) -> None:

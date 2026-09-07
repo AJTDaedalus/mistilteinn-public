@@ -18,14 +18,104 @@ which is the failure this repository keeps a whole section of `CLAUDE.md` about.
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass
 from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 _SNAPSHOT = Path(__file__).resolve().parents[2] / "data" / "yuanshen" / "snapshot"
 _CURATED = Path(__file__).resolve().parents[2] / "data" / "planner"
+
+
+def _weighted(record: dict[str, Any]) -> tuple[tuple[float, float], ...]:
+    """`{"values": [...], "weights": [...]}` as `((value, probability), ...)`."""
+    values = [float(v) for v in record["values"]]
+    weights = [float(w) for w in record["weights"]]
+    total = sum(weights)
+    return tuple(zip(values, [w / total for w in weights], strict=True))
+
+
+def _compound(
+    guaranteed: tuple[tuple[float, float], ...],
+    packs: tuple[tuple[float, float], ...],
+    pack_value: tuple[tuple[float, float], ...],
+) -> tuple[tuple[float, float], ...]:
+    """One domain run's yield in base-tier equivalents.
+
+    The guaranteed 2-star roll, plus a random number of drop packs, each worth a random tier.
+    A compound distribution rather than a mean, so the histogram reflects that a single 4-star
+    book is worth nine 2-star ones and lands rarely.
+    """
+    outcomes: dict[float, float] = {}
+    for base, base_p in guaranteed:
+        for count, count_p in packs:
+            totals: dict[float, float] = {base: base_p * count_p}
+            for _ in range(int(count)):
+                nxt: dict[float, float] = {}
+                for total, probability in totals.items():
+                    for value, value_p in pack_value:
+                        key = total + value
+                        nxt[key] = nxt.get(key, 0.0) + probability * value_p
+                totals = nxt
+            for total, probability in totals.items():
+                outcomes[total] = outcomes.get(total, 0.0) + probability
+    return tuple(sorted(outcomes.items()))
+
+
+def _per_run_distribution(
+    record: dict[str, Any], exp_value: Callable[[int], int],
+) -> tuple[tuple[float, float], ...] | None:
+    """The per-run shape a curated source declares, or `None` if it declares only a mean.
+
+    Two shapes, because the two sources that have one are genuinely different:
+
+    * **`yields`** — a run hands you several things at once, each within its own range. A ley
+      line gives *"6-7 blue xp books and 4-5 purple"*, so the run's EXP is the sum over the
+      cartesian product of those ranges, uniform within each. Written as components rather
+      than as four pre-multiplied totals so the file says what the owner said, and the
+      arithmetic is the code's job rather than a transcription anyone has to re-check.
+    * **`per_run` + `split_across`** — a run hands you `n` items and each is uniformly one of
+      `split_across` kinds, so a *named* kind follows `Binomial(n, 1/split_across)`. A trounce
+      domain gives *"2 or 3, randomly selected between 3 options"*.
+
+    Both derive a mean, and `_source_default` refuses the entry if that mean disagrees with
+    the stated `expected_per_run`.
+    """
+    if "yields" in record:
+        outcomes: dict[float, float] = {0.0: 1.0}
+        for component in record["yields"]:
+            per_item = exp_value(int(component["item"])) if component.get("as_exp") else 1
+            counts = [int(count) for count in component["counts"]]
+            share = 1.0 / len(counts)
+            nxt: dict[float, float] = {}
+            for total, probability in outcomes.items():
+                for count in counts:
+                    key = total + count * per_item
+                    nxt[key] = nxt.get(key, 0.0) + probability * share
+            outcomes = nxt
+        return tuple(sorted(outcomes.items()))
+
+    if "per_run" in record:
+        values = [int(v) for v in record["per_run"]["values"]]
+        weights = [float(w) for w in record["per_run"]["weights"]]
+        kinds = int(record.get("split_across", 1))
+        outcomes = {}
+        for count, weight in zip(values, weights, strict=True):
+            for hits in range(count + 1):
+                probability = (
+                    math.comb(count, hits)
+                    * (1.0 / kinds) ** hits
+                    * (1.0 - 1.0 / kinds) ** (count - hits)
+                )
+                outcomes[float(hits)] = outcomes.get(float(hits), 0.0) + weight * probability
+        return tuple(sorted(outcomes.items()))
+
+    return None
 
 
 class MaterialSource(StrEnum):
@@ -84,11 +174,17 @@ class ExpItem:
 
 @dataclass(frozen=True)
 class DropRate:
-    """What one resin run is expected to yield of a material.
+    """What one resin run yields of a material.
 
-    `expected_per_run` is a **mean**, never a guarantee: nothing in the pinned dump resolves
-    a `drop_id`, so the true distribution is not available at any price. `curated` says
-    whether the number came from the game's own reward preview or from a human.
+    `expected_per_run` is a **mean**. `distribution` is the per-run *shape* when one is
+    known — `((value, probability), ...)` — and `None` when only the mean is.
+
+    **The two are not interchangeable and the difference is visible on screen.** A mean alone
+    forces the histogram to assume a shape; a source that publishes 6-7 of one book and 4-5 of
+    another has a real spread, and collapsing it to 122,500 EXP made the run count a point
+    mass — nine runs, probability 1.0, no distribution at all. The game's own reward previews
+    give only means, so `distribution` is populated from `curated_rates.json` where a human
+    knew the shape.
     """
 
     material_id: int
@@ -96,6 +192,7 @@ class DropRate:
     resin: int
     expected_per_run: float
     curated: bool
+    distribution: tuple[tuple[float, float], ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -264,6 +361,61 @@ class Economy:
             )
         return MaterialSource.NONE
 
+    def family_multipliers(self, root_id: int) -> dict[int, int]:
+        """`{tier above the root: how many roots it is worth}`, from the crafting tree.
+
+        `{0: 1, 1: 3, 2: 9}` for a talent book family. Read from
+        `CombineExcelConfigData` rather than assumed to be 3:1, because a few recipes are not.
+        """
+        out = {0: 1}
+        for material_id in self._combine:
+            if self.craft_root(material_id) != root_id:
+                continue
+            depth, current = 0, material_id
+            seen: set[int] = set()
+            while current in self._combine and current not in seen:
+                seen.add(current)
+                depth += 1
+                current = self._combine[current].input
+            out[depth] = self.reduce_to_root(material_id, 1)[1]
+        return out
+
+    def _domain_rate(self, root_id: int) -> DropRate | None:
+        """A domain's yield in base-tier equivalents, from the curated two-roll model.
+
+        The game publishes only the guaranteed 2-star roll, so a rate built from the reward
+        preview alone counts that and ignores every drop pack. See
+        `curated_rates.json:domain_yields._why`.
+        """
+        for record in self._curated.get("domain_yields", {}).values():
+            if not isinstance(record, dict) or not str(root_id).startswith(record["prefix"]):
+                continue
+            multipliers = self.family_multipliers(root_id)
+            pack_value = tuple(
+                (float(multipliers.get(int(entry["tier"]), 0)), float(entry["probability"]))
+                for entry in record["pack_tiers"]
+            )
+            distribution = _compound(
+                _weighted(record["guaranteed"]), _weighted(record["packs"]), pack_value,
+            )
+            mean = sum(value * probability for value, probability in distribution)
+            stated = float(record["expected_per_run"])
+            if abs(mean - stated) > max(1e-6, abs(stated) * 1e-4):
+                msg = (
+                    f"domain yield for {root_id} states expected_per_run={stated} but its "
+                    f"declared rolls average {mean}."
+                )
+                raise ValueError(msg)
+            return DropRate(
+                material_id=root_id,
+                source_type=MaterialSource.DOMAIN.value,
+                resin=int(record["resin"]),
+                expected_per_run=mean,
+                curated=True,
+                distribution=distribution,
+            )
+        return None
+
     def rate(self, material_id: int) -> DropRate | None:
         """The drop rate for a material, or `None` when nothing prices it.
 
@@ -272,8 +424,13 @@ class Economy:
         data. A caller that folds them together tells the user their local specialties are an
         unknown farming cost and their weekly bosses are free.
         """
-        if self.source_of(material_id) is MaterialSource.NONE:
+        source = self.source_of(material_id)
+        if source is MaterialSource.NONE:
             return None
+        if source is MaterialSource.DOMAIN:
+            curated = self._domain_rate(material_id)
+            if curated is not None:
+                return curated
         rate = self._rates.get(material_id)
         if rate is not None:
             return rate
@@ -290,13 +447,33 @@ class Economy:
         record = self._curated.get("source_defaults", {}).get(source.value)
         if not record or record.get("expected_per_run") is None:
             return None
+        distribution = _per_run_distribution(record, self._exp_value)
+        if distribution is not None:
+            mean = sum(value * probability for value, probability in distribution)
+            stated = float(record["expected_per_run"])
+            if abs(mean - stated) > max(1e-6, abs(stated) * 1e-6):
+                msg = (
+                    f"curated source {source.value!r} states expected_per_run={stated} but its "
+                    f"declared shape averages {mean}. One of the two is wrong, and the mean is "
+                    "what every resin figure is built on."
+                )
+                raise ValueError(msg)
         return DropRate(
             material_id=material_id,
             source_type=source.value,
             resin=int(record["resin"]),
             expected_per_run=float(record["expected_per_run"]),
             curated=True,
+            distribution=distribution,
         )
+
+    def _exp_value(self, material_id: int) -> int:
+        """A denomination's EXP, so a ley-line yield in *books* becomes one in points."""
+        for item in (*self.character_exp_items, *self.weapon_exp_items):
+            if item.id == material_id:
+                return item.exp
+        msg = f"material {material_id} is not an EXP denomination"
+        raise ValueError(msg)
 
     def source_resin(self, source: MaterialSource) -> int | None:
         """Resin per run at a source, from the curated defaults."""

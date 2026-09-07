@@ -38,6 +38,9 @@ SLIVER = 104161
 #: of Revelation, both at World Level 9 (owner, 2026-09-07). Restated here so a test that
 #: prices mora reads as arithmetic rather than as a magic number.
 MORA_PER_RUN, EXP_PER_RUN, LEY_LINE_RESIN = 60_000, 122_500, 20
+#: Base-tier equivalents a talent domain yields per 20-resin run, across **both** of its
+#: rolls. The game's own preview publishes only the guaranteed 2-star roll's 2.2.
+TALENT_DOMAIN_PER_RUN, DOMAIN_RESIN = 10.12, 20
 #: Bloodjade Branch — a trounce-domain drop. Costs resin at a yield nobody publishes.
 WEEKLY = 113018
 #: Sakura Bloom — a local specialty. Costs no resin at all, which is a different thing.
@@ -213,9 +216,12 @@ async def test_resin_is_priced_and_carries_a_histogram(
     )
     body = response.json()
     talents = next(s for s in body["sections"] if s["key"] == "talents")
-    # 18 Teachings at 2.2 per 20-resin domain run, plus the section's 9,000 mora at a
-    # 20-resin Blossom of Wealth. Mora is resin too.
-    expected = 18 / 2.2 * 20 + 9_000 / MORA_PER_RUN * LEY_LINE_RESIN
+    # 18 Teachings at 10.12 base-equivalents per 20-resin domain run, plus the section's
+    # 9,000 mora at a 20-resin Blossom of Wealth. Mora is resin too.
+    expected = (
+        18 / TALENT_DOMAIN_PER_RUN * DOMAIN_RESIN
+        + 9_000 / MORA_PER_RUN * LEY_LINE_RESIN
+    )
     assert talents["resin"]["expected"] == pytest.approx(expected)
     mass = sum(b["probability"] for b in talents["resin"]["histogram"])
     assert mass == pytest.approx(1.0, abs=1e-3)
@@ -358,7 +364,9 @@ async def test_the_total_does_not_bill_one_domain_twice(
     assert total_line["required"] == 23  # 18 talent + 5 weapon
     # Priced as one run of 23, not as two runs of 18 and 5. The section resin totals also
     # carry mora and EXP, so the merge is asserted on this line rather than on the sum.
-    assert total_line["resin"]["expected_resin"] == pytest.approx(23 / 2.2 * 20)
+    assert total_line["resin"]["expected_resin"] == pytest.approx(
+        23 / TALENT_DOMAIN_PER_RUN * DOMAIN_RESIN,
+    )
 
 
 @pytest.mark.asyncio
