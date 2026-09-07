@@ -30,6 +30,13 @@ from app.models.enums import (
     WeaponType,
 )
 from app.models.optimization_run import OptimizationRun
+from app.models.planner import (
+    CharacterAscensionCost,
+    CharacterTalentCost,
+    Material,
+    UserMaterial,
+    WeaponAscensionCost,
+)
 from app.models.roster import CharacterRosterEntry
 from app.models.rotation import Rotation
 from app.models.seed_provenance import SeedRun
@@ -58,13 +65,16 @@ __all__ = [
     "BuffPreset",
     "Build",
     "Character",
+    "CharacterAscensionCost",
     "CharacterRosterEntry",
+    "CharacterTalentCost",
     "Constellation",
     "DamageType",
     "Element",
     "EnemyProfile",
     "FurnishingSuite",
     "FurnishingSuiteFavorite",
+    "Material",
     "OptimizationRun",
     "OwnedWeapon",
     "Rarity",
@@ -81,8 +91,10 @@ __all__ = [
     "TeapotProgress",
     "TimestampMixin",
     "User",
+    "UserMaterial",
     "UserStatus",
     "Weapon",
+    "WeaponAscensionCost",
     "WeaponRefinement",
     "WeaponType",
     "main_stats_for",

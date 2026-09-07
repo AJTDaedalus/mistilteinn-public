@@ -41,6 +41,65 @@ this list.
 | — | the run corpus's first producer, and the owner's four rulings (#183, #185) |
 | `DESIGN_weapons_in_the_optimizer.md` | weapons in the search, KQM tiering for 102 characters (#237, #240) |
 | `DESIGN_conditional_steps.md` | a guarded block a rotation can hold, and the import that reads one (#238) |
+| `TASKS_planner.md` | `/planner` — what levelling a character and a weapon costs, in materials, mora and resin |
+
+**The levelling costs were in the pinned payloads from Chunk D and nobody read them until
+`TASKS_planner.md`.** `materials.ascensions`, `materials.talents` and the weapon's `materials`
+map are in every nanoka detail fixture; `level_exp` appeared in `app/` only inside a comment.
+`/planner` prices them, subtracting the `materials` map that a GOOD export has always carried
+and `good_importer` always ignored — 1,384 entries in the owner's own file.
+
+**Its resin figures are an average and a spread, and the difference is load-bearing.**
+`RewardPreviewExcelConfigData`'s **fractional** counts are expected values — a whole number
+there is a fixed reward — and reading every count as an EV was this feature's first mistake.
+That reading is independently confirmed: the wiki's community-gathered world-boss mean of
+2.5556 matches the 2.556 the preview publishes.
+
+**But a domain reward has two rolls and the preview publishes only one.** A guaranteed part
+drops directly and is 2-star only; a variable part of "drop packs" can be any rarity. Pricing
+a domain off the preview alone counted **2.2** base-tier equivalents where a talent domain
+gives **10.12** and a weapon domain **16.708** — 4.6× and 7.6× too pessimistic, and it made a
+full build read as 14,992 resin instead of 5,033. The two-roll model is curated in
+`app/data/planner/curated_rates.json:domain_yields`, and the tier multipliers are read from
+`CombineExcelConfigData` rather than assumed to be 3:1.
+
+Where a source declares its shape the histogram uses it; where only a mean is known it falls
+back to the **two-point integer distribution** matching that mean, which is
+*minimum-variance*, so **the histogram is narrower than reality** and every surface that draws
+it says so. That fallback is not universally safe — for a mean that is already a whole number
+it collapses to a point mass, which is how 122,500 EXP a ley-line run became a certainty of
+nine runs.
+
+**Only six things cost resin** (owner, 2026-09-07): mora, talent books, weapon ascension
+materials, world-boss drops, character EXP books and weekly-boss materials. **Elemental gems
+do not**, and that is a double-counting fix rather than an omission — a gem drops from a world
+boss *alongside* the boss's own material in the same 40-resin run. Classifying by "does a
+reward preview mention it" priced Spectral Husk at 40 resin because an elite enemy's preview
+lists it; it is an ordinary overworld mob drop. `MaterialSource` in
+`app/services/planner/economy.py` is the classifier and each branch is a decision about
+whether a run gets billed once or twice.
+
+**One number is disputed and the owner's stands.** They gave 2.2 items per weekly-boss run;
+the wiki gives **2.4** at WL8, and for enemy levels 93-104 which covers WL9. If 2.4 is right
+every weekly-boss figure is ~9% high. Recorded in `curated_rates.json` under `conflict` rather
+than changed, because a wiki page does not silently override an explicit instruction. Also
+there: a Trounce Blossom is **60** resin and only three a week are halved to 30, so the
+curated 30 is the optimistic price.
+
+**Five numbers are curated, all supplied by the owner on 2026-09-07**
+(`app/data/planner/curated_rates.json`), and the planner refuses to guess any it lacks.
+`uncurated_sources` is `[]` today and a test asserts it, so the next patch that adds an
+uncosted source is visible rather than silently free. Two of the five are worth knowing:
+**feeding EXP material costs no mora at all** — which is not the same as levelling being free,
+since ascension and talent mora still come from the payload's own `cost` fields — and the
+weekly-boss rate is **2.2 items a run split across the boss's three materials**, so one named
+material is 2.2/3 and reading that as 2.2 would scale every trounce figure by three. The
+ley-line yields hold for **World Level 6 and above** — the wiki gives one row spanning WL6-9 —
+so they are not the single-world-level assumption an earlier draft of this entry called them.
+
+`resin_status` distinguishes *priced*, *satisfied*, *not_farmable* and *unknown*, because
+three of those look identical if you collapse them and two of the collapses are wrong in
+opposite directions.
 
 **The app is walkable end to end**: import a GOOD export, equip pieces to a build, assemble a
 team, author a rotation, compile it to gcsim, search your own artifacts for the best five, and

@@ -1,0 +1,6018 @@
+{
+ "sources": [
+  "MaterialExcelConfigData",
+  "AvatarPromoteExcelConfigData",
+  "WeaponPromoteExcelConfigData",
+  "CombineExcelConfigData",
+  "RewardPreviewExcelConfigData",
+  "DungeonExcelConfigData",
+  "InvestigationMonsterConfigData",
+  "BlossomChestExcelConfigData",
+  "DailyDungeonConfigData"
+ ],
+ "note": "Everything the leveling planner needs that nanoka does not publish. `expected_per_run` is taken ONLY from fractional counts in the reward previews -- a whole number there is a fixed reward, not an expected drop. Coverage is partial by design: a material with no entry here is priced from app/data/planner/curated_rates.json or reported as resin-unknown, never guessed. See docs/RESEARCH_leveling_planner_data.md sections 9-10.",
+ "mora_item_id": 202,
+ "resin_item_id": 106,
+ "level_caps": {
+  "character": {
+   "0": 20,
+   "1": 40,
+   "2": 50,
+   "3": 60,
+   "4": 70,
+   "5": 80,
+   "6": 90
+  },
+  "weapon": {
+   "0": 20,
+   "1": 40,
+   "2": 50,
+   "3": 60,
+   "4": 70,
+   "5": 80,
+   "6": 90
+  }
+ },
+ "exp_items": {
+  "character": [
+   {
+    "id": 104003,
+    "exp": 20000,
+    "rarity": 4
+   },
+   {
+    "id": 104002,
+    "exp": 5000,
+    "rarity": 3
+   },
+   {
+    "id": 104001,
+    "exp": 1000,
+    "rarity": 2
+   }
+  ],
+  "weapon": [
+   {
+    "id": 104013,
+    "exp": 10000,
+    "rarity": 3
+   },
+   {
+    "id": 104012,
+    "exp": 2000,
+    "rarity": 2
+   },
+   {
+    "id": 104011,
+    "exp": 400,
+    "rarity": 1
+   }
+  ]
+ },
+ "ley_line_resin": {
+  "BLOSSOM_REFRESH_SCOIN": 20,
+  "BLOSSOM_REFRESH_EXP": 20
+ },
+ "material_meta": {
+  "100011": {
+   "name": "Mushroom",
+   "icon": "UI_ItemIcon_100011",
+   "rarity": 0
+  },
+  "100012": {
+   "name": "Sweet Flower",
+   "icon": "UI_ItemIcon_100012",
+   "rarity": 0
+  },
+  "100013": {
+   "name": "Carrot",
+   "icon": "UI_ItemIcon_100013",
+   "rarity": 0
+  },
+  "100014": {
+   "name": "Radish",
+   "icon": "UI_ItemIcon_100014",
+   "rarity": 0
+  },
+  "100015": {
+   "name": "Snapdragon",
+   "icon": "UI_ItemIcon_100015",
+   "rarity": 0
+  },
+  "100016": {
+   "name": "Mint",
+   "icon": "UI_ItemIcon_100016",
+   "rarity": 0
+  },
+  "100017": {
+   "name": "Wheat",
+   "icon": "UI_ItemIcon_100017",
+   "rarity": 0
+  },
+  "100018": {
+   "name": "Cabbage",
+   "icon": "UI_ItemIcon_100018",
+   "rarity": 0
+  },
+  "100019": {
+   "name": "Silver Lotus",
+   "icon": "UI_ItemIcon_100019",
+   "rarity": 0
+  },
+  "100020": {
+   "name": "Pinecone",
+   "icon": "UI_ItemIcon_100020",
+   "rarity": 0
+  },
+  "100021": {
+   "name": "Wolfhook",
+   "icon": "UI_ItemIcon_100021",
+   "rarity": 0
+  },
+  "100022": {
+   "name": "Valberry",
+   "icon": "UI_ItemIcon_100022",
+   "rarity": 0
+  },
+  "100023": {
+   "name": "Cecilia",
+   "icon": "UI_ItemIcon_100023",
+   "rarity": 0
+  },
+  "100024": {
+   "name": "Windwheel Aster",
+   "icon": "UI_ItemIcon_100024",
+   "rarity": 0
+  },
+  "100025": {
+   "name": "Philanemo Mushroom",
+   "icon": "UI_ItemIcon_100025",
+   "rarity": 0
+  },
+  "100026": {
+   "name": "Lotus Head",
+   "icon": "UI_ItemIcon_100026",
+   "rarity": 0
+  },
+  "100027": {
+   "name": "Jueyun Chili",
+   "icon": "UI_ItemIcon_100027",
+   "rarity": 0
+  },
+  "100028": {
+   "name": "Noctilucous Jade",
+   "icon": "UI_ItemIcon_100028",
+   "rarity": 0
+  },
+  "100029": {
+   "name": "Silk Flower",
+   "icon": "UI_ItemIcon_100029",
+   "rarity": 0
+  },
+  "100030": {
+   "name": "Glaze Lily",
+   "icon": "UI_ItemIcon_100030",
+   "rarity": 0
+  },
+  "100031": {
+   "name": "Qingxin",
+   "icon": "UI_ItemIcon_100031",
+   "rarity": 0
+  },
+  "100032": {
+   "name": "Horsetail",
+   "icon": "UI_ItemIcon_100032",
+   "rarity": 0
+  },
+  "100033": {
+   "name": "Starconch",
+   "icon": "UI_ItemIcon_100033",
+   "rarity": 0
+  },
+  "100034": {
+   "name": "Violetgrass",
+   "icon": "UI_ItemIcon_100034",
+   "rarity": 0
+  },
+  "100051": {
+   "name": "Berry",
+   "icon": "UI_ItemIcon_100051",
+   "rarity": 0
+  },
+  "100052": {
+   "name": "Mist Flower Corolla",
+   "icon": "UI_ItemIcon_100052",
+   "rarity": 0
+  },
+  "100053": {
+   "name": "Flaming Flower Stamen",
+   "icon": "UI_ItemIcon_100053",
+   "rarity": 0
+  },
+  "100054": {
+   "name": "Electro Crystal",
+   "icon": "UI_ItemIcon_100054",
+   "rarity": 0
+  },
+  "100055": {
+   "name": "Small Lamp Grass",
+   "icon": "UI_ItemIcon_100055",
+   "rarity": 0
+  },
+  "100056": {
+   "name": "Calla Lily",
+   "icon": "UI_ItemIcon_100056",
+   "rarity": 0
+  },
+  "100057": {
+   "name": "Dandelion Seed",
+   "icon": "UI_ItemIcon_100057",
+   "rarity": 0
+  },
+  "100058": {
+   "name": "Cor Lapis",
+   "icon": "UI_ItemIcon_100058",
+   "rarity": 0
+  },
+  "100061": {
+   "name": "Raw Meat",
+   "icon": "UI_ItemIcon_100061",
+   "rarity": 0
+  },
+  "100062": {
+   "name": "Bird Egg",
+   "icon": "UI_ItemIcon_100062",
+   "rarity": 0
+  },
+  "100063": {
+   "name": "Matsutake",
+   "icon": "UI_ItemIcon_100063",
+   "rarity": 0
+  },
+  "100064": {
+   "name": "Fowl",
+   "icon": "UI_ItemIcon_100064",
+   "rarity": 0
+  },
+  "100072": {
+   "name": "Butterfly Wings",
+   "icon": "UI_ItemIcon_100072",
+   "rarity": 0
+  },
+  "100073": {
+   "name": "Crab",
+   "icon": "UI_ItemIcon_100073",
+   "rarity": 0
+  },
+  "100074": {
+   "name": "Crab Roe",
+   "icon": "UI_ItemIcon_110007",
+   "rarity": 0
+  },
+  "100075": {
+   "name": "Salt",
+   "icon": "UI_ItemIcon_100075",
+   "rarity": 0
+  },
+  "100076": {
+   "name": "Onion",
+   "icon": "UI_ItemIcon_100076",
+   "rarity": 0
+  },
+  "100077": {
+   "name": "Pepper",
+   "icon": "UI_ItemIcon_100077",
+   "rarity": 0
+  },
+  "100078": {
+   "name": "Milk",
+   "icon": "UI_ItemIcon_100078",
+   "rarity": 0
+  },
+  "100079": {
+   "name": "Tomato",
+   "icon": "UI_ItemIcon_100079",
+   "rarity": 0
+  },
+  "100080": {
+   "name": "Potato",
+   "icon": "UI_ItemIcon_100080",
+   "rarity": 0
+  },
+  "100081": {
+   "name": "Frog",
+   "icon": "UI_ItemIcon_100081",
+   "rarity": 0
+  },
+  "100082": {
+   "name": "Luminescent Spine",
+   "icon": "UI_ItemIcon_100082",
+   "rarity": 0
+  },
+  "100083": {
+   "name": "Lizard Tail",
+   "icon": "UI_ItemIcon_100083",
+   "rarity": 0
+  },
+  "100084": {
+   "name": "Fish",
+   "icon": "UI_ItemIcon_100084",
+   "rarity": 0
+  },
+  "100085": {
+   "name": "Crystal Core",
+   "icon": "UI_ItemIcon_100085",
+   "rarity": 0
+  },
+  "100086": {
+   "name": "Raw Meat (S)",
+   "icon": "UI_ItemIcon_100061",
+   "rarity": 0
+  },
+  "100087": {
+   "name": "Fowl (S)",
+   "icon": "UI_ItemIcon_100064",
+   "rarity": 0
+  },
+  "100088": {
+   "name": "Tofu",
+   "icon": "UI_ItemIcon_100088",
+   "rarity": 0
+  },
+  "100089": {
+   "name": "Almond",
+   "icon": "UI_ItemIcon_100089",
+   "rarity": 0
+  },
+  "100090": {
+   "name": "Loach Pearl",
+   "icon": "UI_ItemIcon_100090",
+   "rarity": 0
+  },
+  "100091": {
+   "name": "Bamboo Shoot",
+   "icon": "UI_ItemIcon_100091",
+   "rarity": 0
+  },
+  "100092": {
+   "name": "Rice",
+   "icon": "UI_ItemIcon_100092",
+   "rarity": 0
+  },
+  "100093": {
+   "name": "Shrimp Meat",
+   "icon": "UI_ItemIcon_100093",
+   "rarity": 0
+  },
+  "100094": {
+   "name": "Chilled Meat",
+   "icon": "UI_ItemIcon_100094",
+   "rarity": 0
+  },
+  "100095": {
+   "name": "Eel Meat",
+   "icon": "UI_ItemIcon_100095",
+   "rarity": 0
+  },
+  "100096": {
+   "name": "Glabrous Beans",
+   "icon": "UI_ItemIcon_100096",
+   "rarity": 0
+  },
+  "100097": {
+   "name": "Mysterious Meat",
+   "icon": "UI_ItemIcon_100097",
+   "rarity": 0
+  },
+  "100098": {
+   "name": "Coffee Beans",
+   "icon": "UI_ItemIcon_100098",
+   "rarity": 0
+  },
+  "100099": {
+   "name": "Fermented Juice",
+   "icon": "UI_ItemIcon_100099",
+   "rarity": 0
+  },
+  "100100": {
+   "name": "Rye",
+   "icon": "UI_ItemIcon_101268",
+   "rarity": 0
+  },
+  "100618": {
+   "name": "Strange Tooth",
+   "icon": "UI_ItemIcon_100618",
+   "rarity": 0
+  },
+  "100619": {
+   "name": "Empowered Dragontooth",
+   "icon": "UI_ItemIcon_100619",
+   "rarity": 0
+  },
+  "101001": {
+   "name": "Iron Chunk",
+   "icon": "UI_ItemIcon_101001",
+   "rarity": 0
+  },
+  "101002": {
+   "name": "White Iron Chunk",
+   "icon": "UI_ItemIcon_101002",
+   "rarity": 0
+  },
+  "101003": {
+   "name": "Crystal Chunk",
+   "icon": "UI_ItemIcon_101003",
+   "rarity": 0
+  },
+  "101004": {
+   "name": "Magical Crystal Chunk",
+   "icon": "UI_ItemIcon_101004",
+   "rarity": 0
+  },
+  "101006": {
+   "name": "Starsilver",
+   "icon": "UI_ItemIcon_101006",
+   "rarity": 0
+  },
+  "101008": {
+   "name": "Amethyst Lump",
+   "icon": "UI_ItemIcon_101008",
+   "rarity": 0
+  },
+  "101009": {
+   "name": "Condessence Crystal",
+   "icon": "UI_ItemIcon_101009",
+   "rarity": 0
+  },
+  "101010": {
+   "name": "Rainbowdrop Crystal",
+   "icon": "UI_ItemIcon_101258",
+   "rarity": 0
+  },
+  "101101": {
+   "name": "Northlander Sword Billet",
+   "icon": "UI_ItemIcon_101101",
+   "rarity": 4
+  },
+  "101102": {
+   "name": "Northlander Bow Billet",
+   "icon": "UI_ItemIcon_101102",
+   "rarity": 4
+  },
+  "101103": {
+   "name": "Northlander Claymore Billet",
+   "icon": "UI_ItemIcon_101103",
+   "rarity": 4
+  },
+  "101104": {
+   "name": "Northlander Catalyst Billet",
+   "icon": "UI_ItemIcon_101104",
+   "rarity": 4
+  },
+  "101105": {
+   "name": "Northlander Polearm Billet",
+   "icon": "UI_ItemIcon_101105",
+   "rarity": 4
+  },
+  "101111": {
+   "name": "Midlander Sword Billet",
+   "icon": "UI_ItemIcon_101111",
+   "rarity": 4
+  },
+  "101112": {
+   "name": "Midlander Bow Billet",
+   "icon": "UI_ItemIcon_101112",
+   "rarity": 4
+  },
+  "101113": {
+   "name": "Midlander Claymore Billet",
+   "icon": "UI_ItemIcon_101113",
+   "rarity": 4
+  },
+  "101114": {
+   "name": "Midlander Catalyst Billet",
+   "icon": "UI_ItemIcon_101114",
+   "rarity": 4
+  },
+  "101115": {
+   "name": "Midlander Polearm Billet",
+   "icon": "UI_ItemIcon_101115",
+   "rarity": 4
+  },
+  "101116": {
+   "name": "Borderland Sword Billet",
+   "icon": "UI_ItemIcon_101116",
+   "rarity": 4
+  },
+  "101117": {
+   "name": "Borderland Bow Billet",
+   "icon": "UI_ItemIcon_101117",
+   "rarity": 4
+  },
+  "101118": {
+   "name": "Borderland Claymore Billet",
+   "icon": "UI_ItemIcon_101118",
+   "rarity": 4
+  },
+  "101119": {
+   "name": "Borderland Catalyst Billet",
+   "icon": "UI_ItemIcon_101119",
+   "rarity": 4
+  },
+  "101120": {
+   "name": "Borderland Polearm Billet",
+   "icon": "UI_ItemIcon_101120",
+   "rarity": 4
+  },
+  "101201": {
+   "name": "Onikabuto",
+   "icon": "UI_ItemIcon_101201",
+   "rarity": 0
+  },
+  "101202": {
+   "name": "Sakura Bloom",
+   "icon": "UI_ItemIcon_101202",
+   "rarity": 0
+  },
+  "101203": {
+   "name": "Crystal Marrow",
+   "icon": "UI_ItemIcon_101203",
+   "rarity": 0
+  },
+  "101204": {
+   "name": "Dendrobium",
+   "icon": "UI_ItemIcon_101204",
+   "rarity": 0
+  },
+  "101205": {
+   "name": "Naku Weed",
+   "icon": "UI_ItemIcon_101205",
+   "rarity": 0
+  },
+  "101206": {
+   "name": "Sea Ganoderma",
+   "icon": "UI_ItemIcon_101206",
+   "rarity": 0
+  },
+  "101207": {
+   "name": "Sango Pearl",
+   "icon": "UI_ItemIcon_101207",
+   "rarity": 0
+  },
+  "101208": {
+   "name": "Amakumo Fruit",
+   "icon": "UI_ItemIcon_101208",
+   "rarity": 0
+  },
+  "101209": {
+   "name": "Fluorescent Fungus",
+   "icon": "UI_ItemIcon_101209",
+   "rarity": 0
+  },
+  "101210": {
+   "name": "Seagrass",
+   "icon": "UI_ItemIcon_101210",
+   "rarity": 0
+  },
+  "101211": {
+   "name": "Lavender Melon",
+   "icon": "UI_ItemIcon_101211",
+   "rarity": 0
+  },
+  "101213": {
+   "name": "Rukkhashava Mushrooms",
+   "icon": "UI_ItemIcon_101213",
+   "rarity": 0
+  },
+  "101214": {
+   "name": "Padisarah",
+   "icon": "UI_ItemIcon_101214",
+   "rarity": 0
+  },
+  "101215": {
+   "name": "Nilotpala Lotus",
+   "icon": "UI_ItemIcon_101215",
+   "rarity": 0
+  },
+  "101216": {
+   "name": "Harra Fruit",
+   "icon": "UI_ItemIcon_101216",
+   "rarity": 0
+  },
+  "101217": {
+   "name": "Kalpalata Lotus",
+   "icon": "UI_ItemIcon_101217",
+   "rarity": 0
+  },
+  "101218": {
+   "name": "Zaytun Peach",
+   "icon": "UI_ItemIcon_101218",
+   "rarity": 0
+  },
+  "101219": {
+   "name": "Sumeru Rose",
+   "icon": "UI_ItemIcon_101219",
+   "rarity": 0
+  },
+  "101220": {
+   "name": "Henna Berry",
+   "icon": "UI_ItemIcon_101220",
+   "rarity": 0
+  },
+  "101221": {
+   "name": "Ajilenakh Nut",
+   "icon": "UI_ItemIcon_101221",
+   "rarity": 0
+  },
+  "101222": {
+   "name": "Sand Grease Pupa",
+   "icon": "UI_ItemIcon_101222",
+   "rarity": 0
+  },
+  "101223": {
+   "name": "Mourning Flower",
+   "icon": "UI_ItemIcon_101223",
+   "rarity": 0
+  },
+  "101224": {
+   "name": "Trishiraite",
+   "icon": "UI_ItemIcon_101224",
+   "rarity": 0
+  },
+  "101225": {
+   "name": "Scarab",
+   "icon": "UI_ItemIcon_101225",
+   "rarity": 0
+  },
+  "101228": {
+   "name": "Viparyas",
+   "icon": "UI_ItemIcon_101228",
+   "rarity": 0
+  },
+  "101229": {
+   "name": "Pluie Lotus",
+   "icon": "UI_ItemIcon_101229",
+   "rarity": 0
+  },
+  "101231": {
+   "name": "Marcotte",
+   "icon": "UI_ItemIcon_101231",
+   "rarity": 0
+  },
+  "101232": {
+   "name": "Beryl Conch",
+   "icon": "UI_ItemIcon_101232",
+   "rarity": 0
+  },
+  "101233": {
+   "name": "Romaritime Flower",
+   "icon": "UI_ItemIcon_101233",
+   "rarity": 0
+  },
+  "101234": {
+   "name": "Tidalga",
+   "icon": "UI_ItemIcon_101234",
+   "rarity": 0
+  },
+  "101235": {
+   "name": "Lumidouce Bell",
+   "icon": "UI_ItemIcon_101235",
+   "rarity": 0
+  },
+  "101236": {
+   "name": "Rainbow Rose",
+   "icon": "UI_ItemIcon_101236",
+   "rarity": 0
+  },
+  "101237": {
+   "name": "Lumitoile",
+   "icon": "UI_ItemIcon_101237",
+   "rarity": 0
+  },
+  "101238": {
+   "name": "Lakelight Lily",
+   "icon": "UI_ItemIcon_101238",
+   "rarity": 0
+  },
+  "101239": {
+   "name": "Subdetection Unit",
+   "icon": "UI_ItemIcon_101239",
+   "rarity": 0
+  },
+  "101240": {
+   "name": "Spring of the First Dewdrop",
+   "icon": "UI_ItemIcon_101240",
+   "rarity": 0
+  },
+  "101241": {
+   "name": "Clearwater Jade",
+   "icon": "UI_ItemIcon_101241",
+   "rarity": 0
+  },
+  "101242": {
+   "name": "Chenyu Adeptea",
+   "icon": "UI_ItemIcon_101242",
+   "rarity": 0
+  },
+  "101243": {
+   "name": "Grainfruit",
+   "icon": "UI_ItemIcon_101243",
+   "rarity": 0
+  },
+  "101245": {
+   "name": "Spinel Fruit",
+   "icon": "UI_ItemIcon_101245",
+   "rarity": 0
+  },
+  "101246": {
+   "name": "Cacahuatl",
+   "icon": "UI_ItemIcon_101246",
+   "rarity": 0
+  },
+  "101247": {
+   "name": "Sprayfeather Gill",
+   "icon": "UI_ItemIcon_101247",
+   "rarity": 0
+  },
+  "101248": {
+   "name": "Brilliant Chrysanthemum",
+   "icon": "UI_ItemIcon_101248",
+   "rarity": 0
+  },
+  "101249": {
+   "name": "Quenepa Berry",
+   "icon": "UI_ItemIcon_101249",
+   "rarity": 0
+  },
+  "101250": {
+   "name": "Saurian Claw Succulent",
+   "icon": "UI_ItemIcon_101250",
+   "rarity": 0
+  },
+  "101251": {
+   "name": "Embercore Flower",
+   "icon": "UI_ItemIcon_101251",
+   "rarity": 0
+  },
+  "101252": {
+   "name": "Glowing Hornshroom",
+   "icon": "UI_ItemIcon_101252",
+   "rarity": 0
+  },
+  "101253": {
+   "name": "Withering Purpurbloom",
+   "icon": "UI_ItemIcon_101253",
+   "rarity": 0
+  },
+  "101254": {
+   "name": "Skysplit Gembloom",
+   "icon": "UI_ItemIcon_101254",
+   "rarity": 0
+  },
+  "101255": {
+   "name": "Dracolite",
+   "icon": "UI_ItemIcon_101255",
+   "rarity": 0
+  },
+  "101256": {
+   "name": "Red Berryshroom",
+   "icon": "UI_ItemIcon_101256",
+   "rarity": 0
+  },
+  "101257": {
+   "name": "Portable Bearing",
+   "icon": "UI_ItemIcon_101257",
+   "rarity": 0
+  },
+  "101259": {
+   "name": "Icy Pebble",
+   "icon": "UI_ItemIcon_101259",
+   "rarity": 0
+  },
+  "101261": {
+   "name": "Frostlamp Flower",
+   "icon": "UI_ItemIcon_101261",
+   "rarity": 0
+  },
+  "101262": {
+   "name": "Nocturnal Blossom",
+   "icon": "UI_ItemIcon_101262",
+   "rarity": 0
+  },
+  "101263": {
+   "name": "Moonfall Silver",
+   "icon": "UI_ItemIcon_101263",
+   "rarity": 0
+  },
+  "101264": {
+   "name": "Lakkaberry",
+   "icon": "UI_ItemIcon_101264",
+   "rarity": 0
+  },
+  "101265": {
+   "name": "Midsommar Berry",
+   "icon": "UI_ItemIcon_101265",
+   "rarity": 0
+  },
+  "101268": {
+   "name": "Winter Icelea",
+   "icon": "UI_ItemIcon_101266",
+   "rarity": 0
+  },
+  "101269": {
+   "name": "Pine Amber",
+   "icon": "UI_ItemIcon_101269",
+   "rarity": 0
+  },
+  "101270": {
+   "name": "Teardrop of the Moon",
+   "icon": "UI_ItemIcon_101270",
+   "rarity": 0
+  },
+  "101271": {
+   "name": "Windrest Flower",
+   "icon": "UI_ItemIcon_101271",
+   "rarity": 0
+  },
+  "101272": {
+   "name": "Etherwing Moth",
+   "icon": "UI_ItemIcon_101272",
+   "rarity": 0
+  },
+  "101275": {
+   "name": "Frostfairy Flower",
+   "icon": "UI_ItemIcon_101275",
+   "rarity": 0
+  },
+  "101276": {
+   "name": "Flockingweed",
+   "icon": "UI_ItemIcon_101276",
+   "rarity": 0
+  },
+  "101277": {
+   "name": "Golden Fern",
+   "icon": "UI_ItemIcon_101277",
+   "rarity": 0
+  },
+  "101278": {
+   "name": "Red Beet",
+   "icon": "UI_ItemIcon_101278",
+   "rarity": 0
+  },
+  "101279": {
+   "name": "Glaciafruit",
+   "icon": "UI_ItemIcon_101279",
+   "rarity": 0
+  },
+  "101280": {
+   "name": "Snowball Flower",
+   "icon": "UI_ItemIcon_101280",
+   "rarity": 0
+  },
+  "101281": {
+   "name": "Rimecurrant",
+   "icon": "UI_ItemIcon_101281",
+   "rarity": 0
+  },
+  "101282": {
+   "name": "Lumifluorite",
+   "icon": "UI_ItemIcon_101282",
+   "rarity": 0
+  },
+  "101401": {
+   "name": "Fabric",
+   "icon": "UI_ItemIcon_101401",
+   "rarity": 0
+  },
+  "101402": {
+   "name": "Red Dye",
+   "icon": "UI_ItemIcon_101402",
+   "rarity": 0
+  },
+  "101403": {
+   "name": "Yellow Dye",
+   "icon": "UI_ItemIcon_101403",
+   "rarity": 0
+  },
+  "101404": {
+   "name": "Blue Dye",
+   "icon": "UI_ItemIcon_101404",
+   "rarity": 0
+  },
+  "104001": {
+   "name": "Wanderer's Advice",
+   "icon": "UI_ItemIcon_104001",
+   "rarity": 2
+  },
+  "104002": {
+   "name": "Adventurer's Experience",
+   "icon": "UI_ItemIcon_104002",
+   "rarity": 3
+  },
+  "104003": {
+   "name": "Hero's Wit",
+   "icon": "UI_ItemIcon_104003",
+   "rarity": 4
+  },
+  "104011": {
+   "name": "Enhancement Ore",
+   "icon": "UI_ItemIcon_104011",
+   "rarity": 1
+  },
+  "104012": {
+   "name": "Fine Enhancement Ore",
+   "icon": "UI_ItemIcon_104012",
+   "rarity": 2
+  },
+  "104013": {
+   "name": "Mystic Enhancement Ore",
+   "icon": "UI_ItemIcon_104013",
+   "rarity": 3
+  },
+  "104101": {
+   "name": "Brilliant Diamond Sliver",
+   "icon": "UI_ItemIcon_104101",
+   "rarity": 2
+  },
+  "104102": {
+   "name": "Brilliant Diamond Fragment",
+   "icon": "UI_ItemIcon_104102",
+   "rarity": 3
+  },
+  "104103": {
+   "name": "Brilliant Diamond Chunk",
+   "icon": "UI_ItemIcon_104103",
+   "rarity": 4
+  },
+  "104104": {
+   "name": "Brilliant Diamond Gemstone",
+   "icon": "UI_ItemIcon_104104",
+   "rarity": 5
+  },
+  "104111": {
+   "name": "Agnidus Agate Sliver",
+   "icon": "UI_ItemIcon_104111",
+   "rarity": 2
+  },
+  "104112": {
+   "name": "Agnidus Agate Fragment",
+   "icon": "UI_ItemIcon_104112",
+   "rarity": 3
+  },
+  "104113": {
+   "name": "Agnidus Agate Chunk",
+   "icon": "UI_ItemIcon_104113",
+   "rarity": 4
+  },
+  "104114": {
+   "name": "Agnidus Agate Gemstone",
+   "icon": "UI_ItemIcon_104114",
+   "rarity": 5
+  },
+  "104121": {
+   "name": "Varunada Lazurite Sliver",
+   "icon": "UI_ItemIcon_104121",
+   "rarity": 2
+  },
+  "104122": {
+   "name": "Varunada Lazurite Fragment",
+   "icon": "UI_ItemIcon_104122",
+   "rarity": 3
+  },
+  "104123": {
+   "name": "Varunada Lazurite Chunk",
+   "icon": "UI_ItemIcon_104123",
+   "rarity": 4
+  },
+  "104124": {
+   "name": "Varunada Lazurite Gemstone",
+   "icon": "UI_ItemIcon_104124",
+   "rarity": 5
+  },
+  "104131": {
+   "name": "Nagadus Emerald Sliver",
+   "icon": "UI_ItemIcon_104131",
+   "rarity": 2
+  },
+  "104132": {
+   "name": "Nagadus Emerald Fragment",
+   "icon": "UI_ItemIcon_104132",
+   "rarity": 3
+  },
+  "104133": {
+   "name": "Nagadus Emerald Chunk",
+   "icon": "UI_ItemIcon_104133",
+   "rarity": 4
+  },
+  "104134": {
+   "name": "Nagadus Emerald Gemstone",
+   "icon": "UI_ItemIcon_104134",
+   "rarity": 5
+  },
+  "104141": {
+   "name": "Vajrada Amethyst Sliver",
+   "icon": "UI_ItemIcon_104141",
+   "rarity": 2
+  },
+  "104142": {
+   "name": "Vajrada Amethyst Fragment",
+   "icon": "UI_ItemIcon_104142",
+   "rarity": 3
+  },
+  "104143": {
+   "name": "Vajrada Amethyst Chunk",
+   "icon": "UI_ItemIcon_104143",
+   "rarity": 4
+  },
+  "104144": {
+   "name": "Vajrada Amethyst Gemstone",
+   "icon": "UI_ItemIcon_104144",
+   "rarity": 5
+  },
+  "104151": {
+   "name": "Vayuda Turquoise Sliver",
+   "icon": "UI_ItemIcon_104151",
+   "rarity": 2
+  },
+  "104152": {
+   "name": "Vayuda Turquoise Fragment",
+   "icon": "UI_ItemIcon_104152",
+   "rarity": 3
+  },
+  "104153": {
+   "name": "Vayuda Turquoise Chunk",
+   "icon": "UI_ItemIcon_104153",
+   "rarity": 4
+  },
+  "104154": {
+   "name": "Vayuda Turquoise Gemstone",
+   "icon": "UI_ItemIcon_104154",
+   "rarity": 5
+  },
+  "104161": {
+   "name": "Shivada Jade Sliver",
+   "icon": "UI_ItemIcon_104161",
+   "rarity": 2
+  },
+  "104162": {
+   "name": "Shivada Jade Fragment",
+   "icon": "UI_ItemIcon_104162",
+   "rarity": 3
+  },
+  "104163": {
+   "name": "Shivada Jade Chunk",
+   "icon": "UI_ItemIcon_104163",
+   "rarity": 4
+  },
+  "104164": {
+   "name": "Shivada Jade Gemstone",
+   "icon": "UI_ItemIcon_104164",
+   "rarity": 5
+  },
+  "104171": {
+   "name": "Prithiva Topaz Sliver",
+   "icon": "UI_ItemIcon_104171",
+   "rarity": 2
+  },
+  "104172": {
+   "name": "Prithiva Topaz Fragment",
+   "icon": "UI_ItemIcon_104172",
+   "rarity": 3
+  },
+  "104173": {
+   "name": "Prithiva Topaz Chunk",
+   "icon": "UI_ItemIcon_104173",
+   "rarity": 4
+  },
+  "104174": {
+   "name": "Prithiva Topaz Gemstone",
+   "icon": "UI_ItemIcon_104174",
+   "rarity": 5
+  },
+  "104301": {
+   "name": "Teachings of Freedom",
+   "icon": "UI_ItemIcon_104301",
+   "rarity": 2
+  },
+  "104302": {
+   "name": "Guide to Freedom",
+   "icon": "UI_ItemIcon_104302",
+   "rarity": 3
+  },
+  "104303": {
+   "name": "Philosophies of Freedom",
+   "icon": "UI_ItemIcon_104303",
+   "rarity": 4
+  },
+  "104304": {
+   "name": "Teachings of Resistance",
+   "icon": "UI_ItemIcon_104304",
+   "rarity": 2
+  },
+  "104305": {
+   "name": "Guide to Resistance",
+   "icon": "UI_ItemIcon_104305",
+   "rarity": 3
+  },
+  "104306": {
+   "name": "Philosophies of Resistance",
+   "icon": "UI_ItemIcon_104306",
+   "rarity": 4
+  },
+  "104307": {
+   "name": "Teachings of Ballad",
+   "icon": "UI_ItemIcon_104307",
+   "rarity": 2
+  },
+  "104308": {
+   "name": "Guide to Ballad",
+   "icon": "UI_ItemIcon_104308",
+   "rarity": 3
+  },
+  "104309": {
+   "name": "Philosophies of Ballad",
+   "icon": "UI_ItemIcon_104309",
+   "rarity": 4
+  },
+  "104310": {
+   "name": "Teachings of Prosperity",
+   "icon": "UI_ItemIcon_104310",
+   "rarity": 2
+  },
+  "104311": {
+   "name": "Guide to Prosperity",
+   "icon": "UI_ItemIcon_104311",
+   "rarity": 3
+  },
+  "104312": {
+   "name": "Philosophies of Prosperity",
+   "icon": "UI_ItemIcon_104312",
+   "rarity": 4
+  },
+  "104313": {
+   "name": "Teachings of Diligence",
+   "icon": "UI_ItemIcon_104313",
+   "rarity": 2
+  },
+  "104314": {
+   "name": "Guide to Diligence",
+   "icon": "UI_ItemIcon_104314",
+   "rarity": 3
+  },
+  "104315": {
+   "name": "Philosophies of Diligence",
+   "icon": "UI_ItemIcon_104315",
+   "rarity": 4
+  },
+  "104316": {
+   "name": "Teachings of Gold",
+   "icon": "UI_ItemIcon_104316",
+   "rarity": 2
+  },
+  "104317": {
+   "name": "Guide to Gold",
+   "icon": "UI_ItemIcon_104317",
+   "rarity": 3
+  },
+  "104318": {
+   "name": "Philosophies of Gold",
+   "icon": "UI_ItemIcon_104318",
+   "rarity": 4
+  },
+  "104319": {
+   "name": "Crown of Insight",
+   "icon": "UI_ItemIcon_104319",
+   "rarity": 5
+  },
+  "104320": {
+   "name": "Teachings of Transience",
+   "icon": "UI_ItemIcon_104320",
+   "rarity": 2
+  },
+  "104321": {
+   "name": "Guide to Transience",
+   "icon": "UI_ItemIcon_104321",
+   "rarity": 3
+  },
+  "104322": {
+   "name": "Philosophies of Transience",
+   "icon": "UI_ItemIcon_104322",
+   "rarity": 4
+  },
+  "104323": {
+   "name": "Teachings of Elegance",
+   "icon": "UI_ItemIcon_104323",
+   "rarity": 2
+  },
+  "104324": {
+   "name": "Guide to Elegance",
+   "icon": "UI_ItemIcon_104324",
+   "rarity": 3
+  },
+  "104325": {
+   "name": "Philosophies of Elegance",
+   "icon": "UI_ItemIcon_104325",
+   "rarity": 4
+  },
+  "104326": {
+   "name": "Teachings of Light",
+   "icon": "UI_ItemIcon_104326",
+   "rarity": 2
+  },
+  "104327": {
+   "name": "Guide to Light",
+   "icon": "UI_ItemIcon_104327",
+   "rarity": 3
+  },
+  "104328": {
+   "name": "Philosophies of Light",
+   "icon": "UI_ItemIcon_104328",
+   "rarity": 4
+  },
+  "104329": {
+   "name": "Teachings of Admonition",
+   "icon": "UI_ItemIcon_104329",
+   "rarity": 2
+  },
+  "104330": {
+   "name": "Guide to Admonition",
+   "icon": "UI_ItemIcon_104330",
+   "rarity": 3
+  },
+  "104331": {
+   "name": "Philosophies of Admonition",
+   "icon": "UI_ItemIcon_104331",
+   "rarity": 4
+  },
+  "104332": {
+   "name": "Teachings of Ingenuity",
+   "icon": "UI_ItemIcon_104332",
+   "rarity": 2
+  },
+  "104333": {
+   "name": "Guide to Ingenuity",
+   "icon": "UI_ItemIcon_104333",
+   "rarity": 3
+  },
+  "104334": {
+   "name": "Philosophies of Ingenuity",
+   "icon": "UI_ItemIcon_104334",
+   "rarity": 4
+  },
+  "104335": {
+   "name": "Teachings of Praxis",
+   "icon": "UI_ItemIcon_104335",
+   "rarity": 2
+  },
+  "104336": {
+   "name": "Guide to Praxis",
+   "icon": "UI_ItemIcon_104336",
+   "rarity": 3
+  },
+  "104337": {
+   "name": "Philosophies of Praxis",
+   "icon": "UI_ItemIcon_104337",
+   "rarity": 4
+  },
+  "104338": {
+   "name": "Teachings of Equity",
+   "icon": "UI_ItemIcon_104338",
+   "rarity": 2
+  },
+  "104339": {
+   "name": "Guide to Equity",
+   "icon": "UI_ItemIcon_104339",
+   "rarity": 3
+  },
+  "104340": {
+   "name": "Philosophies of Equity",
+   "icon": "UI_ItemIcon_104340",
+   "rarity": 4
+  },
+  "104341": {
+   "name": "Teachings of Justice",
+   "icon": "UI_ItemIcon_104341",
+   "rarity": 2
+  },
+  "104342": {
+   "name": "Guide to Justice",
+   "icon": "UI_ItemIcon_104342",
+   "rarity": 3
+  },
+  "104343": {
+   "name": "Philosophies of Justice",
+   "icon": "UI_ItemIcon_104343",
+   "rarity": 4
+  },
+  "104344": {
+   "name": "Teachings of Order",
+   "icon": "UI_ItemIcon_104344",
+   "rarity": 2
+  },
+  "104345": {
+   "name": "Guide to Order",
+   "icon": "UI_ItemIcon_104345",
+   "rarity": 3
+  },
+  "104346": {
+   "name": "Philosophies of Order",
+   "icon": "UI_ItemIcon_104346",
+   "rarity": 4
+  },
+  "104347": {
+   "name": "Teachings of Contention",
+   "icon": "UI_ItemIcon_104347",
+   "rarity": 2
+  },
+  "104348": {
+   "name": "Guide to Contention",
+   "icon": "UI_ItemIcon_104348",
+   "rarity": 3
+  },
+  "104349": {
+   "name": "Philosophies of Contention",
+   "icon": "UI_ItemIcon_104349",
+   "rarity": 4
+  },
+  "104350": {
+   "name": "Teachings of Kindling",
+   "icon": "UI_ItemIcon_104350",
+   "rarity": 2
+  },
+  "104351": {
+   "name": "Guide to Kindling",
+   "icon": "UI_ItemIcon_104351",
+   "rarity": 3
+  },
+  "104352": {
+   "name": "Philosophies of Kindling",
+   "icon": "UI_ItemIcon_104352",
+   "rarity": 4
+  },
+  "104353": {
+   "name": "Teachings of Conflict",
+   "icon": "UI_ItemIcon_104353",
+   "rarity": 2
+  },
+  "104354": {
+   "name": "Guide to Conflict",
+   "icon": "UI_ItemIcon_104354",
+   "rarity": 3
+  },
+  "104355": {
+   "name": "Philosophies of Conflict",
+   "icon": "UI_ItemIcon_104355",
+   "rarity": 4
+  },
+  "104356": {
+   "name": "Teachings of Moonlight",
+   "icon": "UI_ItemIcon_104356",
+   "rarity": 2
+  },
+  "104357": {
+   "name": "Guide to Moonlight",
+   "icon": "UI_ItemIcon_104357",
+   "rarity": 3
+  },
+  "104358": {
+   "name": "Philosophies of Moonlight",
+   "icon": "UI_ItemIcon_104358",
+   "rarity": 4
+  },
+  "104359": {
+   "name": "Teachings of Elysium",
+   "icon": "UI_ItemIcon_104359",
+   "rarity": 2
+  },
+  "104360": {
+   "name": "Guide to Elysium",
+   "icon": "UI_ItemIcon_104360",
+   "rarity": 3
+  },
+  "104361": {
+   "name": "Philosophies of Elysium",
+   "icon": "UI_ItemIcon_104361",
+   "rarity": 4
+  },
+  "104362": {
+   "name": "Teachings of Vagrancy",
+   "icon": "UI_ItemIcon_104362",
+   "rarity": 2
+  },
+  "104363": {
+   "name": "Guide to Vagrancy",
+   "icon": "UI_ItemIcon_104363",
+   "rarity": 3
+  },
+  "104364": {
+   "name": "Philosophies of Vagrancy",
+   "icon": "UI_ItemIcon_104364",
+   "rarity": 4
+  },
+  "104365": {
+   "name": "Teachings of Charity",
+   "icon": "UI_ItemIcon_104365",
+   "rarity": 2
+  },
+  "104366": {
+   "name": "Guide to Charity",
+   "icon": "UI_ItemIcon_104366",
+   "rarity": 3
+  },
+  "104367": {
+   "name": "Philosophies of Charity",
+   "icon": "UI_ItemIcon_104367",
+   "rarity": 4
+  },
+  "104368": {
+   "name": "Teachings of Fortitude",
+   "icon": "UI_ItemIcon_104368",
+   "rarity": 2
+  },
+  "104369": {
+   "name": "Guide to Fortitude",
+   "icon": "UI_ItemIcon_104369",
+   "rarity": 3
+  },
+  "104370": {
+   "name": "Philosophies of Fortitude",
+   "icon": "UI_ItemIcon_104370",
+   "rarity": 4
+  },
+  "104371": {
+   "name": "Teachings of Glory",
+   "icon": "UI_ItemIcon_104371",
+   "rarity": 2
+  },
+  "104372": {
+   "name": "Guide to Glory",
+   "icon": "UI_ItemIcon_104372",
+   "rarity": 3
+  },
+  "104373": {
+   "name": "Philosophies of Glory",
+   "icon": "UI_ItemIcon_104373",
+   "rarity": 4
+  },
+  "110000": {
+   "name": "Crafted Items",
+   "icon": "UI_ItemIcon_110000",
+   "rarity": 0
+  },
+  "110001": {
+   "name": "Flour",
+   "icon": "UI_ItemIcon_110001",
+   "rarity": 0
+  },
+  "110002": {
+   "name": "Cream",
+   "icon": "UI_ItemIcon_110002",
+   "rarity": 0
+  },
+  "110003": {
+   "name": "Smoked Fowl",
+   "icon": "UI_ItemIcon_110003",
+   "rarity": 0
+  },
+  "110004": {
+   "name": "Butter",
+   "icon": "UI_ItemIcon_110004",
+   "rarity": 0
+  },
+  "110005": {
+   "name": "Ham",
+   "icon": "UI_ItemIcon_110005",
+   "rarity": 0
+  },
+  "110006": {
+   "name": "Sugar",
+   "icon": "UI_ItemIcon_110006",
+   "rarity": 0
+  },
+  "110008": {
+   "name": "Jam",
+   "icon": "UI_ItemIcon_110008",
+   "rarity": 0
+  },
+  "110009": {
+   "name": "Cheese",
+   "icon": "UI_ItemIcon_110009",
+   "rarity": 0
+  },
+  "110010": {
+   "name": "Bacon",
+   "icon": "UI_ItemIcon_110010",
+   "rarity": 0
+  },
+  "110011": {
+   "name": "Sausage",
+   "icon": "UI_ItemIcon_110011",
+   "rarity": 0
+  },
+  "110012": {
+   "name": "Smoked Fish",
+   "icon": "UI_ItemIcon_110012",
+   "rarity": 0
+  },
+  "110013": {
+   "name": "Dried Fish",
+   "icon": "UI_ItemIcon_110013",
+   "rarity": 0
+  },
+  "110014": {
+   "name": "Spice",
+   "icon": "UI_ItemIcon_110014",
+   "rarity": 0
+  },
+  "110015": {
+   "name": "Smetana",
+   "icon": "UI_ItemIcon_110015",
+   "rarity": 0
+  },
+  "110016": {
+   "name": "Rye Flour",
+   "icon": "UI_ItemIcon_110016",
+   "rarity": 0
+  },
+  "110017": {
+   "name": "Honey",
+   "icon": "UI_ItemIcon_110017",
+   "rarity": 0
+  },
+  "112001": {
+   "name": "Primordial Essence",
+   "icon": "UI_ItemIcon_112001",
+   "rarity": 2
+  },
+  "112002": {
+   "name": "Slime Condensate",
+   "icon": "UI_ItemIcon_112002",
+   "rarity": 1
+  },
+  "112003": {
+   "name": "Slime Secretions",
+   "icon": "UI_ItemIcon_112003",
+   "rarity": 2
+  },
+  "112004": {
+   "name": "Slime Concentrate",
+   "icon": "UI_ItemIcon_112004",
+   "rarity": 3
+  },
+  "112005": {
+   "name": "Damaged Mask",
+   "icon": "UI_ItemIcon_112005",
+   "rarity": 1
+  },
+  "112006": {
+   "name": "Stained Mask",
+   "icon": "UI_ItemIcon_112006",
+   "rarity": 2
+  },
+  "112007": {
+   "name": "Ominous Mask",
+   "icon": "UI_ItemIcon_112007",
+   "rarity": 3
+  },
+  "112008": {
+   "name": "Divining Scroll",
+   "icon": "UI_ItemIcon_112008",
+   "rarity": 1
+  },
+  "112009": {
+   "name": "Sealed Scroll",
+   "icon": "UI_ItemIcon_112009",
+   "rarity": 2
+  },
+  "112010": {
+   "name": "Forbidden Curse Scroll",
+   "icon": "UI_ItemIcon_112010",
+   "rarity": 3
+  },
+  "112011": {
+   "name": "Firm Arrowhead",
+   "icon": "UI_ItemIcon_112011",
+   "rarity": 1
+  },
+  "112012": {
+   "name": "Sharp Arrowhead",
+   "icon": "UI_ItemIcon_112012",
+   "rarity": 2
+  },
+  "112013": {
+   "name": "Weathered Arrowhead",
+   "icon": "UI_ItemIcon_112013",
+   "rarity": 3
+  },
+  "112014": {
+   "name": "Heavy Horn",
+   "icon": "UI_ItemIcon_112014",
+   "rarity": 2
+  },
+  "112015": {
+   "name": "Black Bronze Horn",
+   "icon": "UI_ItemIcon_112015",
+   "rarity": 3
+  },
+  "112016": {
+   "name": "Black Crystal Horn",
+   "icon": "UI_ItemIcon_112016",
+   "rarity": 4
+  },
+  "112017": {
+   "name": "Gloomy Statuette",
+   "icon": "UI_ItemIcon_112017",
+   "rarity": 2
+  },
+  "112018": {
+   "name": "Dark Statuette",
+   "icon": "UI_ItemIcon_112018",
+   "rarity": 3
+  },
+  "112019": {
+   "name": "Deathly Statuette",
+   "icon": "UI_ItemIcon_112019",
+   "rarity": 4
+  },
+  "112020": {
+   "name": "Dead Ley Line Branch",
+   "icon": "UI_ItemIcon_112020",
+   "rarity": 2
+  },
+  "112021": {
+   "name": "Dead Ley Line Leaves",
+   "icon": "UI_ItemIcon_112021",
+   "rarity": 3
+  },
+  "112022": {
+   "name": "Ley Line Sprout",
+   "icon": "UI_ItemIcon_112022",
+   "rarity": 4
+  },
+  "112023": {
+   "name": "Chaos Device",
+   "icon": "UI_ItemIcon_112023",
+   "rarity": 2
+  },
+  "112024": {
+   "name": "Chaos Circuit",
+   "icon": "UI_ItemIcon_112024",
+   "rarity": 3
+  },
+  "112025": {
+   "name": "Chaos Core",
+   "icon": "UI_ItemIcon_112025",
+   "rarity": 4
+  },
+  "112026": {
+   "name": "Mist Grass Pollen",
+   "icon": "UI_ItemIcon_112026",
+   "rarity": 2
+  },
+  "112027": {
+   "name": "Mist Grass",
+   "icon": "UI_ItemIcon_112027",
+   "rarity": 3
+  },
+  "112028": {
+   "name": "Mist Grass Wick",
+   "icon": "UI_ItemIcon_112028",
+   "rarity": 4
+  },
+  "112029": {
+   "name": "Hunter's Sacrificial Knife",
+   "icon": "UI_ItemIcon_112029",
+   "rarity": 2
+  },
+  "112030": {
+   "name": "Agent's Sacrificial Knife",
+   "icon": "UI_ItemIcon_112030",
+   "rarity": 3
+  },
+  "112031": {
+   "name": "Inspector's Sacrificial Knife",
+   "icon": "UI_ItemIcon_112031",
+   "rarity": 4
+  },
+  "112032": {
+   "name": "Recruit's Insignia",
+   "icon": "UI_ItemIcon_112032",
+   "rarity": 1
+  },
+  "112033": {
+   "name": "Sergeant's Insignia",
+   "icon": "UI_ItemIcon_112033",
+   "rarity": 2
+  },
+  "112034": {
+   "name": "Lieutenant's Insignia",
+   "icon": "UI_ItemIcon_112034",
+   "rarity": 3
+  },
+  "112035": {
+   "name": "Treasure Hoarder Insignia",
+   "icon": "UI_ItemIcon_112035",
+   "rarity": 1
+  },
+  "112036": {
+   "name": "Silver Raven Insignia",
+   "icon": "UI_ItemIcon_112036",
+   "rarity": 2
+  },
+  "112037": {
+   "name": "Golden Raven Insignia",
+   "icon": "UI_ItemIcon_112037",
+   "rarity": 3
+  },
+  "112038": {
+   "name": "Whopperflower Nectar",
+   "icon": "UI_ItemIcon_112038",
+   "rarity": 1
+  },
+  "112039": {
+   "name": "Shimmering Nectar",
+   "icon": "UI_ItemIcon_112039",
+   "rarity": 2
+  },
+  "112040": {
+   "name": "Energy Nectar",
+   "icon": "UI_ItemIcon_112040",
+   "rarity": 3
+  },
+  "112041": {
+   "name": "Fragile Bone Shard",
+   "icon": "UI_ItemIcon_112041",
+   "rarity": 2
+  },
+  "112042": {
+   "name": "Sturdy Bone Shard",
+   "icon": "UI_ItemIcon_112042",
+   "rarity": 3
+  },
+  "112043": {
+   "name": "Fossilized Bone Shard",
+   "icon": "UI_ItemIcon_112043",
+   "rarity": 4
+  },
+  "112044": {
+   "name": "Old Handguard",
+   "icon": "UI_ItemIcon_112044",
+   "rarity": 1
+  },
+  "112045": {
+   "name": "Kageuchi Handguard",
+   "icon": "UI_ItemIcon_112045",
+   "rarity": 2
+  },
+  "112046": {
+   "name": "Famed Handguard",
+   "icon": "UI_ItemIcon_112046",
+   "rarity": 3
+  },
+  "112047": {
+   "name": "Chaos Gear",
+   "icon": "UI_ItemIcon_112047",
+   "rarity": 2
+  },
+  "112048": {
+   "name": "Chaos Axis",
+   "icon": "UI_ItemIcon_112048",
+   "rarity": 3
+  },
+  "112049": {
+   "name": "Chaos Oculus",
+   "icon": "UI_ItemIcon_112049",
+   "rarity": 4
+  },
+  "112050": {
+   "name": "Dismal Prism",
+   "icon": "UI_ItemIcon_112050",
+   "rarity": 2
+  },
+  "112051": {
+   "name": "Crystal Prism",
+   "icon": "UI_ItemIcon_112051",
+   "rarity": 3
+  },
+  "112052": {
+   "name": "Polarizing Prism",
+   "icon": "UI_ItemIcon_112052",
+   "rarity": 4
+  },
+  "112053": {
+   "name": "Spectral Husk",
+   "icon": "UI_ItemIcon_112053",
+   "rarity": 1
+  },
+  "112054": {
+   "name": "Spectral Heart",
+   "icon": "UI_ItemIcon_112054",
+   "rarity": 2
+  },
+  "112055": {
+   "name": "Spectral Nucleus",
+   "icon": "UI_ItemIcon_112055",
+   "rarity": 3
+  },
+  "112056": {
+   "name": "Concealed Claw",
+   "icon": "UI_ItemIcon_112056",
+   "rarity": 2
+  },
+  "112057": {
+   "name": "Concealed Unguis",
+   "icon": "UI_ItemIcon_112057",
+   "rarity": 3
+  },
+  "112058": {
+   "name": "Concealed Talon",
+   "icon": "UI_ItemIcon_112058",
+   "rarity": 4
+  },
+  "112059": {
+   "name": "Fungal Spores",
+   "icon": "UI_ItemIcon_112059",
+   "rarity": 1
+  },
+  "112060": {
+   "name": "Luminescent Pollen",
+   "icon": "UI_ItemIcon_112060",
+   "rarity": 2
+  },
+  "112061": {
+   "name": "Crystalline Cyst Dust",
+   "icon": "UI_ItemIcon_112061",
+   "rarity": 3
+  },
+  "112062": {
+   "name": "Inactivated Fungal Nucleus",
+   "icon": "UI_ItemIcon_112062",
+   "rarity": 2
+  },
+  "112063": {
+   "name": "Dormant Fungal Nucleus",
+   "icon": "UI_ItemIcon_112063",
+   "rarity": 3
+  },
+  "112064": {
+   "name": "Robust Fungal Nucleus",
+   "icon": "UI_ItemIcon_112064",
+   "rarity": 4
+  },
+  "112065": {
+   "name": "Faded Red Satin",
+   "icon": "UI_ItemIcon_112065",
+   "rarity": 1
+  },
+  "112066": {
+   "name": "Trimmed Red Silk",
+   "icon": "UI_ItemIcon_112066",
+   "rarity": 2
+  },
+  "112067": {
+   "name": "Rich Red Brocade",
+   "icon": "UI_ItemIcon_112067",
+   "rarity": 3
+  },
+  "112068": {
+   "name": "Chaos Storage",
+   "icon": "UI_ItemIcon_112068",
+   "rarity": 2
+  },
+  "112069": {
+   "name": "Chaos Module",
+   "icon": "UI_ItemIcon_112069",
+   "rarity": 3
+  },
+  "112070": {
+   "name": "Chaos Bolt",
+   "icon": "UI_ItemIcon_112070",
+   "rarity": 4
+  },
+  "112071": {
+   "name": "Damaged Prism",
+   "icon": "UI_ItemIcon_112071",
+   "rarity": 2
+  },
+  "112072": {
+   "name": "Turbid Prism",
+   "icon": "UI_ItemIcon_112072",
+   "rarity": 3
+  },
+  "112073": {
+   "name": "Radiant Prism",
+   "icon": "UI_ItemIcon_112073",
+   "rarity": 4
+  },
+  "112074": {
+   "name": "Desiccated Shell",
+   "icon": "UI_ItemIcon_112074",
+   "rarity": 2
+  },
+  "112075": {
+   "name": "Sturdy Shell",
+   "icon": "UI_ItemIcon_112075",
+   "rarity": 3
+  },
+  "112076": {
+   "name": "Marked Shell",
+   "icon": "UI_ItemIcon_112076",
+   "rarity": 4
+  },
+  "112077": {
+   "name": "A Flower Yet to Bloom",
+   "icon": "UI_ItemIcon_112077",
+   "rarity": 2
+  },
+  "112078": {
+   "name": "Treasured Flower",
+   "icon": "UI_ItemIcon_112078",
+   "rarity": 3
+  },
+  "112079": {
+   "name": "Wanderer's Blooming Flower",
+   "icon": "UI_ItemIcon_112079",
+   "rarity": 4
+  },
+  "112080": {
+   "name": "Transoceanic Pearl",
+   "icon": "UI_ItemIcon_112080",
+   "rarity": 1
+  },
+  "112081": {
+   "name": "Transoceanic Chunk",
+   "icon": "UI_ItemIcon_112081",
+   "rarity": 2
+  },
+  "112082": {
+   "name": "Xenochromatic Crystal",
+   "icon": "UI_ItemIcon_112082",
+   "rarity": 3
+  },
+  "112083": {
+   "name": "Meshing Gear",
+   "icon": "UI_ItemIcon_112083",
+   "rarity": 1
+  },
+  "112084": {
+   "name": "Mechanical Spur Gear",
+   "icon": "UI_ItemIcon_112084",
+   "rarity": 2
+  },
+  "112085": {
+   "name": "Artificed Dynamic Gear",
+   "icon": "UI_ItemIcon_112085",
+   "rarity": 3
+  },
+  "112086": {
+   "name": "Drop of Tainted Water",
+   "icon": "UI_ItemIcon_112086",
+   "rarity": 2
+  },
+  "112087": {
+   "name": "Scoop of Tainted Water",
+   "icon": "UI_ItemIcon_112087",
+   "rarity": 3
+  },
+  "112088": {
+   "name": "Newborn Tainted Hydro Phantasm",
+   "icon": "UI_ItemIcon_112088",
+   "rarity": 4
+  },
+  "112089": {
+   "name": "Rift Core",
+   "icon": "UI_ItemIcon_112089",
+   "rarity": 2
+  },
+  "112090": {
+   "name": "Foreign Synapse",
+   "icon": "UI_ItemIcon_112090",
+   "rarity": 3
+  },
+  "112091": {
+   "name": "Alien Life Core",
+   "icon": "UI_ItemIcon_112091",
+   "rarity": 4
+  },
+  "112092": {
+   "name": "Old Operative's Pocket Watch",
+   "icon": "UI_ItemIcon_112092",
+   "rarity": 2
+  },
+  "112093": {
+   "name": "Operative's Standard Pocket Watch",
+   "icon": "UI_ItemIcon_112093",
+   "rarity": 3
+  },
+  "112094": {
+   "name": "Operative's Constancy",
+   "icon": "UI_ItemIcon_112094",
+   "rarity": 4
+  },
+  "112095": {
+   "name": "Feathery Fin",
+   "icon": "UI_ItemIcon_112095",
+   "rarity": 2
+  },
+  "112096": {
+   "name": "Lunar Fin",
+   "icon": "UI_ItemIcon_112096",
+   "rarity": 3
+  },
+  "112097": {
+   "name": "Chasmlight Fin",
+   "icon": "UI_ItemIcon_112097",
+   "rarity": 4
+  },
+  "112098": {
+   "name": "Ruined Hilt",
+   "icon": "UI_ItemIcon_112098",
+   "rarity": 2
+  },
+  "112099": {
+   "name": "Splintered Hilt",
+   "icon": "UI_ItemIcon_112099",
+   "rarity": 3
+  },
+  "112100": {
+   "name": "Still-Smoldering Hilt",
+   "icon": "UI_ItemIcon_112100",
+   "rarity": 4
+  },
+  "112101": {
+   "name": "Juvenile Fang",
+   "icon": "UI_ItemIcon_112101",
+   "rarity": 1
+  },
+  "112102": {
+   "name": "Seasoned Fang",
+   "icon": "UI_ItemIcon_112102",
+   "rarity": 2
+  },
+  "112103": {
+   "name": "Tyrant's Fang",
+   "icon": "UI_ItemIcon_112103",
+   "rarity": 3
+  },
+  "112104": {
+   "name": "Sentry's Wooden Whistle",
+   "icon": "UI_ItemIcon_112104",
+   "rarity": 1
+  },
+  "112105": {
+   "name": "Warrior's Metal Whistle",
+   "icon": "UI_ItemIcon_112105",
+   "rarity": 2
+  },
+  "112106": {
+   "name": "Saurian-Crowned Warrior's Golden Whistle",
+   "icon": "UI_ItemIcon_112106",
+   "rarity": 3
+  },
+  "112107": {
+   "name": "Shard of a Shattered Will",
+   "icon": "UI_ItemIcon_112107",
+   "rarity": 2
+  },
+  "112108": {
+   "name": "Locus of a Clear Will",
+   "icon": "UI_ItemIcon_112108",
+   "rarity": 3
+  },
+  "112109": {
+   "name": "Sigil of a Striding Will",
+   "icon": "UI_ItemIcon_112109",
+   "rarity": 4
+  },
+  "112110": {
+   "name": "Ignited Stone",
+   "icon": "UI_ItemIcon_112110",
+   "rarity": 2
+  },
+  "112111": {
+   "name": "Ignited Seed of Life",
+   "icon": "UI_ItemIcon_112111",
+   "rarity": 3
+  },
+  "112112": {
+   "name": "Ignited Seeing Eye",
+   "icon": "UI_ItemIcon_112112",
+   "rarity": 4
+  },
+  "112113": {
+   "name": "Axis of the Secret Source",
+   "icon": "UI_ItemIcon_112113",
+   "rarity": 2
+  },
+  "112114": {
+   "name": "Sheath of the Secret Source",
+   "icon": "UI_ItemIcon_112114",
+   "rarity": 3
+  },
+  "112115": {
+   "name": "Heart of the Secret Source",
+   "icon": "UI_ItemIcon_112115",
+   "rarity": 4
+  },
+  "112116": {
+   "name": "Refractive Bud",
+   "icon": "UI_ItemIcon_112116",
+   "rarity": 2
+  },
+  "112117": {
+   "name": "Bewildering Broadleaf",
+   "icon": "UI_ItemIcon_112117",
+   "rarity": 3
+  },
+  "112118": {
+   "name": "Illusory Leafcoil",
+   "icon": "UI_ItemIcon_112118",
+   "rarity": 4
+  },
+  "112119": {
+   "name": "Cold-Cracked Shellshard",
+   "icon": "UI_ItemIcon_112119",
+   "rarity": 2
+  },
+  "112120": {
+   "name": "Warm Back-Shell",
+   "icon": "UI_ItemIcon_112120",
+   "rarity": 3
+  },
+  "112121": {
+   "name": "Blazing Prismshell",
+   "icon": "UI_ItemIcon_112121",
+   "rarity": 4
+  },
+  "112122": {
+   "name": "Broken Drive Shaft",
+   "icon": "UI_ItemIcon_112122",
+   "rarity": 1
+  },
+  "112123": {
+   "name": "Reinforced Drive Shaft",
+   "icon": "UI_ItemIcon_112123",
+   "rarity": 2
+  },
+  "112124": {
+   "name": "Precision Drive Shaft",
+   "icon": "UI_ItemIcon_112124",
+   "rarity": 3
+  },
+  "112125": {
+   "name": "Tattered Warrant",
+   "icon": "UI_ItemIcon_112125",
+   "rarity": 1
+  },
+  "112126": {
+   "name": "Immaculate Warrant",
+   "icon": "UI_ItemIcon_112126",
+   "rarity": 2
+  },
+  "112127": {
+   "name": "Frost-Etched Warrant",
+   "icon": "UI_ItemIcon_112127",
+   "rarity": 3
+  },
+  "112128": {
+   "name": "Frostnight's Glimmer",
+   "icon": "UI_ItemIcon_112128",
+   "rarity": 2
+  },
+  "112129": {
+   "name": "Frostnight's Glow",
+   "icon": "UI_ItemIcon_112129",
+   "rarity": 3
+  },
+  "112130": {
+   "name": "Frostnight's Glory",
+   "icon": "UI_ItemIcon_112130",
+   "rarity": 4
+  },
+  "112131": {
+   "name": "Lightless Bone",
+   "icon": "UI_ItemIcon_112131",
+   "rarity": 2
+  },
+  "112132": {
+   "name": "Glowing Remains",
+   "icon": "UI_ItemIcon_112132",
+   "rarity": 3
+  },
+  "112133": {
+   "name": "Radiant Exoskeleton",
+   "icon": "UI_ItemIcon_112133",
+   "rarity": 4
+  },
+  "112134": {
+   "name": "Mistshroud Manifestation",
+   "icon": "UI_ItemIcon_112134",
+   "rarity": 2
+  },
+  "112135": {
+   "name": "Mistshroud Plate",
+   "icon": "UI_ItemIcon_112135",
+   "rarity": 3
+  },
+  "112136": {
+   "name": "Mistshroud Helmet",
+   "icon": "UI_ItemIcon_112136",
+   "rarity": 4
+  },
+  "112137": {
+   "name": "Fractured Eye of the Deep Shadow",
+   "icon": "UI_ItemIcon_112137",
+   "rarity": 2
+  },
+  "112138": {
+   "name": "Aberrant Core of the Deep Shadow",
+   "icon": "UI_ItemIcon_112138",
+   "rarity": 3
+  },
+  "112139": {
+   "name": "Hooked Beak of the Deep Shadow",
+   "icon": "UI_ItemIcon_112139",
+   "rarity": 4
+  },
+  "112140": {
+   "name": "Faded Flaming Hilt",
+   "icon": "UI_ItemIcon_112140",
+   "rarity": 2
+  },
+  "112141": {
+   "name": "Fractured Flaming Hilt",
+   "icon": "UI_ItemIcon_112141",
+   "rarity": 3
+  },
+  "112142": {
+   "name": "Jeweled Flaming Hilt",
+   "icon": "UI_ItemIcon_112142",
+   "rarity": 4
+  },
+  "112143": {
+   "name": "Fractured Lunar Iron",
+   "icon": "UI_ItemIcon_112143",
+   "rarity": 2
+  },
+  "112144": {
+   "name": "Depleted Lunar Iron",
+   "icon": "UI_ItemIcon_112144",
+   "rarity": 3
+  },
+  "112145": {
+   "name": "Unblemished Lunar Iron",
+   "icon": "UI_ItemIcon_112145",
+   "rarity": 4
+  },
+  "112146": {
+   "name": "Ethereal Glimmershard",
+   "icon": "UI_ItemIcon_112146",
+   "rarity": 1
+  },
+  "112147": {
+   "name": "Ethereal Crystal",
+   "icon": "UI_ItemIcon_112147",
+   "rarity": 2
+  },
+  "112148": {
+   "name": "Ethereal Crystalscale Stone",
+   "icon": "UI_ItemIcon_112148",
+   "rarity": 3
+  },
+  "112149": {
+   "name": "Chimeric Core",
+   "icon": "UI_ItemIcon_112149",
+   "rarity": 1
+  },
+  "112150": {
+   "name": "Symbiotic Chimeric Nucleus",
+   "icon": "UI_ItemIcon_112150",
+   "rarity": 2
+  },
+  "112151": {
+   "name": "Prime Chimeric Nexus",
+   "icon": "UI_ItemIcon_112151",
+   "rarity": 3
+  },
+  "112152": {
+   "name": "Accreted Fragment",
+   "icon": "UI_ItemIcon_112152",
+   "rarity": 2
+  },
+  "112153": {
+   "name": "Accreted Mass",
+   "icon": "UI_ItemIcon_112153",
+   "rarity": 3
+  },
+  "112154": {
+   "name": "Accreted Growth",
+   "icon": "UI_ItemIcon_112154",
+   "rarity": 4
+  },
+  "112155": {
+   "name": "Hollow Root of Life",
+   "icon": "UI_ItemIcon_112155",
+   "rarity": 2
+  },
+  "112156": {
+   "name": "Sprout Node of Life",
+   "icon": "UI_ItemIcon_112156",
+   "rarity": 3
+  },
+  "112157": {
+   "name": "Coiled Core of Life",
+   "icon": "UI_ItemIcon_112157",
+   "rarity": 4
+  },
+  "113001": {
+   "name": "Hurricane Seed",
+   "icon": "UI_ItemIcon_113001",
+   "rarity": 4
+  },
+  "113002": {
+   "name": "Lightning Prism",
+   "icon": "UI_ItemIcon_113002",
+   "rarity": 4
+  },
+  "113003": {
+   "name": "Dvalin's Plume",
+   "icon": "UI_ItemIcon_113003",
+   "rarity": 5
+  },
+  "113004": {
+   "name": "Dvalin's Claw",
+   "icon": "UI_ItemIcon_113004",
+   "rarity": 5
+  },
+  "113005": {
+   "name": "Dvalin's Sigh",
+   "icon": "UI_ItemIcon_113005",
+   "rarity": 5
+  },
+  "113006": {
+   "name": "Tail of Boreas",
+   "icon": "UI_ItemIcon_113006",
+   "rarity": 5
+  },
+  "113007": {
+   "name": "Ring of Boreas",
+   "icon": "UI_ItemIcon_113007",
+   "rarity": 5
+  },
+  "113008": {
+   "name": "Spirit Locket of Boreas",
+   "icon": "UI_ItemIcon_113008",
+   "rarity": 5
+  },
+  "113009": {
+   "name": "Basalt Pillar",
+   "icon": "UI_ItemIcon_113009",
+   "rarity": 4
+  },
+  "113010": {
+   "name": "Hoarfrost Core",
+   "icon": "UI_ItemIcon_113010",
+   "rarity": 4
+  },
+  "113011": {
+   "name": "Everflame Seed",
+   "icon": "UI_ItemIcon_113011",
+   "rarity": 4
+  },
+  "113012": {
+   "name": "Cleansing Heart",
+   "icon": "UI_ItemIcon_113012",
+   "rarity": 4
+  },
+  "113013": {
+   "name": "Tusk of Monoceros Caeli",
+   "icon": "UI_ItemIcon_113013",
+   "rarity": 5
+  },
+  "113014": {
+   "name": "Shard of a Foul Legacy",
+   "icon": "UI_ItemIcon_113014",
+   "rarity": 5
+  },
+  "113015": {
+   "name": "Shadow of the Warrior",
+   "icon": "UI_ItemIcon_113015",
+   "rarity": 5
+  },
+  "113016": {
+   "name": "Juvenile Jade",
+   "icon": "UI_ItemIcon_113016",
+   "rarity": 4
+  },
+  "113017": {
+   "name": "Dragon Lord's Crown",
+   "icon": "UI_ItemIcon_113017",
+   "rarity": 5
+  },
+  "113018": {
+   "name": "Bloodjade Branch",
+   "icon": "UI_ItemIcon_113018",
+   "rarity": 5
+  },
+  "113019": {
+   "name": "Gilded Scale",
+   "icon": "UI_ItemIcon_113019",
+   "rarity": 5
+  },
+  "113020": {
+   "name": "Crystalline Bloom",
+   "icon": "UI_ItemIcon_113020",
+   "rarity": 4
+  },
+  "113022": {
+   "name": "Marionette Core",
+   "icon": "UI_ItemIcon_113022",
+   "rarity": 4
+  },
+  "113023": {
+   "name": "Perpetual Heart",
+   "icon": "UI_ItemIcon_113023",
+   "rarity": 4
+  },
+  "113024": {
+   "name": "Smoldering Pearl",
+   "icon": "UI_ItemIcon_113024",
+   "rarity": 4
+  },
+  "113025": {
+   "name": "Molten Moment",
+   "icon": "UI_ItemIcon_113025",
+   "rarity": 5
+  },
+  "113026": {
+   "name": "Hellfire Butterfly",
+   "icon": "UI_ItemIcon_113026",
+   "rarity": 5
+  },
+  "113027": {
+   "name": "Ashen Heart",
+   "icon": "UI_ItemIcon_113027",
+   "rarity": 5
+  },
+  "113028": {
+   "name": "Dew of Repudiation",
+   "icon": "UI_ItemIcon_113028",
+   "rarity": 4
+  },
+  "113029": {
+   "name": "Storm Beads",
+   "icon": "UI_ItemIcon_113029",
+   "rarity": 4
+  },
+  "113030": {
+   "name": "Riftborn Regalia",
+   "icon": "UI_ItemIcon_113030",
+   "rarity": 4
+  },
+  "113031": {
+   "name": "Dragonheir's False Fin",
+   "icon": "UI_ItemIcon_113031",
+   "rarity": 4
+  },
+  "113032": {
+   "name": "Mudra of the Malefic General",
+   "icon": "UI_ItemIcon_113032",
+   "rarity": 5
+  },
+  "113033": {
+   "name": "Tears of the Calamitous God",
+   "icon": "UI_ItemIcon_113033",
+   "rarity": 5
+  },
+  "113034": {
+   "name": "The Meaning of Aeons",
+   "icon": "UI_ItemIcon_113034",
+   "rarity": 5
+  },
+  "113035": {
+   "name": "Runic Fang",
+   "icon": "UI_ItemIcon_113035",
+   "rarity": 4
+  },
+  "113036": {
+   "name": "Majestic Hooked Beak",
+   "icon": "UI_ItemIcon_113036",
+   "rarity": 4
+  },
+  "113037": {
+   "name": "Thunderclap Fruitcore",
+   "icon": "UI_ItemIcon_113037",
+   "rarity": 4
+  },
+  "113038": {
+   "name": "Perpetual Caliber",
+   "icon": "UI_ItemIcon_113038",
+   "rarity": 4
+  },
+  "113039": {
+   "name": "Light Guiding Tetrahedron",
+   "icon": "UI_ItemIcon_113039",
+   "rarity": 4
+  },
+  "113040": {
+   "name": "Quelled Creeper",
+   "icon": "UI_ItemIcon_113040",
+   "rarity": 4
+  },
+  "113041": {
+   "name": "Puppet Strings",
+   "icon": "UI_ItemIcon_113041",
+   "rarity": 5
+  },
+  "113042": {
+   "name": "Mirror of Mushin",
+   "icon": "UI_ItemIcon_113042",
+   "rarity": 5
+  },
+  "113043": {
+   "name": "Daka's Bell",
+   "icon": "UI_ItemIcon_113043",
+   "rarity": 5
+  },
+  "113044": {
+   "name": "Pseudo-Stamens",
+   "icon": "UI_ItemIcon_113044",
+   "rarity": 4
+  },
+  "113045": {
+   "name": "Evergloom Ring",
+   "icon": "UI_ItemIcon_113045",
+   "rarity": 4
+  },
+  "113046": {
+   "name": "Worldspan Fern",
+   "icon": "UI_ItemIcon_113046",
+   "rarity": 5
+  },
+  "113047": {
+   "name": "Primordial Greenbloom",
+   "icon": "UI_ItemIcon_113047",
+   "rarity": 5
+  },
+  "113048": {
+   "name": "Everamber",
+   "icon": "UI_ItemIcon_113048",
+   "rarity": 5
+  },
+  "113049": {
+   "name": "Artificed Spare Clockwork Component — Coppelia",
+   "icon": "UI_ItemIcon_113049",
+   "rarity": 4
+  },
+  "113050": {
+   "name": "Artificed Spare Clockwork Component — Coppelius",
+   "icon": "UI_ItemIcon_113050",
+   "rarity": 4
+  },
+  "113051": {
+   "name": "Emperor's Resolution",
+   "icon": "UI_ItemIcon_113051",
+   "rarity": 4
+  },
+  "113052": {
+   "name": "\"Tourbillon Device\"",
+   "icon": "UI_ItemIcon_113052",
+   "rarity": 4
+  },
+  "113053": {
+   "name": "Fontemer Unihorn",
+   "icon": "UI_ItemIcon_113053",
+   "rarity": 4
+  },
+  "113054": {
+   "name": "Lightless Silk String",
+   "icon": "UI_ItemIcon_113054",
+   "rarity": 5
+  },
+  "113055": {
+   "name": "Lightless Eye of the Maelstrom",
+   "icon": "UI_ItemIcon_113055",
+   "rarity": 5
+  },
+  "113056": {
+   "name": "Lightless Mass",
+   "icon": "UI_ItemIcon_113056",
+   "rarity": 5
+  },
+  "113057": {
+   "name": "Water That Failed To Transcend",
+   "icon": "UI_ItemIcon_113057",
+   "rarity": 4
+  },
+  "113058": {
+   "name": "Cloudseam Scale",
+   "icon": "UI_ItemIcon_113058",
+   "rarity": 4
+  },
+  "113059": {
+   "name": "Fragment of a Golden Melody",
+   "icon": "UI_ItemIcon_113059",
+   "rarity": 4
+  },
+  "113060": {
+   "name": "Fading Candle",
+   "icon": "UI_ItemIcon_113060",
+   "rarity": 5
+  },
+  "113061": {
+   "name": "Silken Feather",
+   "icon": "UI_ItemIcon_113061",
+   "rarity": 5
+  },
+  "113062": {
+   "name": "Denial and Judgment",
+   "icon": "UI_ItemIcon_113062",
+   "rarity": 5
+  },
+  "113063": {
+   "name": "The Cornerstone of Stars and Flames",
+   "icon": "UI_ItemIcon_113063",
+   "rarity": 5
+  },
+  "113064": {
+   "name": "Mark of the Binding Blessing",
+   "icon": "UI_ItemIcon_113064",
+   "rarity": 4
+  },
+  "113065": {
+   "name": "Overripe Flamegranate",
+   "icon": "UI_ItemIcon_113065",
+   "rarity": 4
+  },
+  "113066": {
+   "name": "Gold-Inscribed Secret Source Core",
+   "icon": "UI_ItemIcon_113066",
+   "rarity": 4
+  },
+  "113067": {
+   "name": "Ensnaring Gaze",
+   "icon": "UI_ItemIcon_113067",
+   "rarity": 4
+  },
+  "113068": {
+   "name": "Eroded Horn",
+   "icon": "UI_ItemIcon_113068",
+   "rarity": 5
+  },
+  "113069": {
+   "name": "Eroded Sunfire",
+   "icon": "UI_ItemIcon_113069",
+   "rarity": 5
+  },
+  "113070": {
+   "name": "Eroded Scale-Feather",
+   "icon": "UI_ItemIcon_113070",
+   "rarity": 5
+  },
+  "113071": {
+   "name": "Talisman of the Enigmatic Land",
+   "icon": "UI_ItemIcon_113071",
+   "rarity": 4
+  },
+  "113072": {
+   "name": "Sparkless Statue Core",
+   "icon": "UI_ItemIcon_113072",
+   "rarity": 4
+  },
+  "113073": {
+   "name": "Ascended Sample: Knight",
+   "icon": "UI_ItemIcon_113073",
+   "rarity": 5
+  },
+  "113074": {
+   "name": "Ascended Sample: Rook",
+   "icon": "UI_ItemIcon_113074",
+   "rarity": 5
+  },
+  "113075": {
+   "name": "Ascended Sample: Queen",
+   "icon": "UI_ItemIcon_113075",
+   "rarity": 5
+  },
+  "113076": {
+   "name": "Secret Source Airflow Accumulator",
+   "icon": "UI_ItemIcon_113076",
+   "rarity": 4
+  },
+  "113077": {
+   "name": "Precision Kuuvahki Stamping Die",
+   "icon": "UI_ItemIcon_113077",
+   "rarity": 4
+  },
+  "113078": {
+   "name": "Lightbearing Scale-Feather",
+   "icon": "UI_ItemIcon_113078",
+   "rarity": 4
+  },
+  "113079": {
+   "name": "Radiant Antler",
+   "icon": "UI_ItemIcon_113079",
+   "rarity": 4
+  },
+  "113080": {
+   "name": "Cyclic Military Kuuvahki Core",
+   "icon": "UI_ItemIcon_113080",
+   "rarity": 4
+  },
+  "113081": {
+   "name": "Mask of the Virtuous Doctor",
+   "icon": "UI_ItemIcon_113081",
+   "rarity": 5
+  },
+  "113082": {
+   "name": "Madman's Restraint",
+   "icon": "UI_ItemIcon_113082",
+   "rarity": 5
+  },
+  "113083": {
+   "name": "Elixir of the Heretic",
+   "icon": "UI_ItemIcon_113083",
+   "rarity": 5
+  },
+  "113084": {
+   "name": "Remnant of the Dreadwing",
+   "icon": "UI_ItemIcon_113084",
+   "rarity": 4
+  },
+  "113085": {
+   "name": "Prismatic Severed Tail",
+   "icon": "UI_ItemIcon_113085",
+   "rarity": 4
+  },
+  "113086": {
+   "name": "Plume of the Fallen Watcher",
+   "icon": "UI_ItemIcon_113086",
+   "rarity": 4
+  },
+  "113087": {
+   "name": "Counterfeit Resin",
+   "icon": "UI_ItemIcon_113087",
+   "rarity": 5
+  },
+  "113088": {
+   "name": "Twisted Withered Branch",
+   "icon": "UI_ItemIcon_113088",
+   "rarity": 5
+  },
+  "113089": {
+   "name": "Profaned Sprout",
+   "icon": "UI_ItemIcon_113089",
+   "rarity": 5
+  },
+  "113090": {
+   "name": "Unscorched Blossom Branch",
+   "icon": "UI_ItemIcon_113090",
+   "rarity": 4
+  },
+  "113091": {
+   "name": "Severed Tail of the Sky-Roamer",
+   "icon": "UI_ItemIcon_113091",
+   "rarity": 4
+  },
+  "113092": {
+   "name": "Vagabond's Cracked Armor",
+   "icon": "UI_ItemIcon_113092",
+   "rarity": 4
+  },
+  "114001": {
+   "name": "Tile of Decarabian's Tower",
+   "icon": "UI_ItemIcon_114001",
+   "rarity": 2
+  },
+  "114002": {
+   "name": "Debris of Decarabian's City",
+   "icon": "UI_ItemIcon_114002",
+   "rarity": 3
+  },
+  "114003": {
+   "name": "Fragment of Decarabian's Epic",
+   "icon": "UI_ItemIcon_114003",
+   "rarity": 4
+  },
+  "114004": {
+   "name": "Scattered Piece of Decarabian's Dream",
+   "icon": "UI_ItemIcon_114004",
+   "rarity": 5
+  },
+  "114005": {
+   "name": "Boreal Wolf's Milk Tooth",
+   "icon": "UI_ItemIcon_114005",
+   "rarity": 2
+  },
+  "114006": {
+   "name": "Boreal Wolf's Cracked Tooth",
+   "icon": "UI_ItemIcon_114006",
+   "rarity": 3
+  },
+  "114007": {
+   "name": "Boreal Wolf's Broken Fang",
+   "icon": "UI_ItemIcon_114007",
+   "rarity": 4
+  },
+  "114008": {
+   "name": "Boreal Wolf's Nostalgia",
+   "icon": "UI_ItemIcon_114008",
+   "rarity": 5
+  },
+  "114009": {
+   "name": "Fetters of the Dandelion Gladiator",
+   "icon": "UI_ItemIcon_114009",
+   "rarity": 2
+  },
+  "114010": {
+   "name": "Chains of the Dandelion Gladiator",
+   "icon": "UI_ItemIcon_114010",
+   "rarity": 3
+  },
+  "114011": {
+   "name": "Shackles of the Dandelion Gladiator",
+   "icon": "UI_ItemIcon_114011",
+   "rarity": 4
+  },
+  "114012": {
+   "name": "Dream of the Dandelion Gladiator",
+   "icon": "UI_ItemIcon_114012",
+   "rarity": 5
+  },
+  "114013": {
+   "name": "Luminous Sands from Guyun",
+   "icon": "UI_ItemIcon_114013",
+   "rarity": 2
+  },
+  "114014": {
+   "name": "Lustrous Stone from Guyun",
+   "icon": "UI_ItemIcon_114014",
+   "rarity": 3
+  },
+  "114015": {
+   "name": "Relic from Guyun",
+   "icon": "UI_ItemIcon_114015",
+   "rarity": 4
+  },
+  "114016": {
+   "name": "Divine Body from Guyun",
+   "icon": "UI_ItemIcon_114016",
+   "rarity": 5
+  },
+  "114017": {
+   "name": "Mist Veiled Lead Elixir",
+   "icon": "UI_ItemIcon_114017",
+   "rarity": 2
+  },
+  "114018": {
+   "name": "Mist Veiled Mercury Elixir",
+   "icon": "UI_ItemIcon_114018",
+   "rarity": 3
+  },
+  "114019": {
+   "name": "Mist Veiled Gold Elixir",
+   "icon": "UI_ItemIcon_114019",
+   "rarity": 4
+  },
+  "114020": {
+   "name": "Mist Veiled Primo Elixir",
+   "icon": "UI_ItemIcon_114020",
+   "rarity": 5
+  },
+  "114021": {
+   "name": "Grain of Aerosiderite",
+   "icon": "UI_ItemIcon_114021",
+   "rarity": 2
+  },
+  "114022": {
+   "name": "Piece of Aerosiderite",
+   "icon": "UI_ItemIcon_114022",
+   "rarity": 3
+  },
+  "114023": {
+   "name": "Bit of Aerosiderite",
+   "icon": "UI_ItemIcon_114023",
+   "rarity": 4
+  },
+  "114024": {
+   "name": "Chunk of Aerosiderite",
+   "icon": "UI_ItemIcon_114024",
+   "rarity": 5
+  },
+  "114025": {
+   "name": "Coral Branch of a Distant Sea",
+   "icon": "UI_ItemIcon_114025",
+   "rarity": 2
+  },
+  "114026": {
+   "name": "Jeweled Branch of a Distant Sea",
+   "icon": "UI_ItemIcon_114026",
+   "rarity": 3
+  },
+  "114027": {
+   "name": "Jade Branch of a Distant Sea",
+   "icon": "UI_ItemIcon_114027",
+   "rarity": 4
+  },
+  "114028": {
+   "name": "Golden Branch of a Distant Sea",
+   "icon": "UI_ItemIcon_114028",
+   "rarity": 5
+  },
+  "114029": {
+   "name": "Narukami's Wisdom",
+   "icon": "UI_ItemIcon_114029",
+   "rarity": 2
+  },
+  "114030": {
+   "name": "Narukami's Joy",
+   "icon": "UI_ItemIcon_114030",
+   "rarity": 3
+  },
+  "114031": {
+   "name": "Narukami's Affection",
+   "icon": "UI_ItemIcon_114031",
+   "rarity": 4
+  },
+  "114032": {
+   "name": "Narukami's Valor",
+   "icon": "UI_ItemIcon_114032",
+   "rarity": 5
+  },
+  "114033": {
+   "name": "Mask of the Wicked Lieutenant",
+   "icon": "UI_ItemIcon_114033",
+   "rarity": 2
+  },
+  "114034": {
+   "name": "Mask of the Tiger's Bite",
+   "icon": "UI_ItemIcon_114034",
+   "rarity": 3
+  },
+  "114035": {
+   "name": "Mask of the One-Horned",
+   "icon": "UI_ItemIcon_114035",
+   "rarity": 4
+  },
+  "114036": {
+   "name": "Mask of the Kijin",
+   "icon": "UI_ItemIcon_114036",
+   "rarity": 5
+  },
+  "114037": {
+   "name": "Copper Talisman of the Forest Dew",
+   "icon": "UI_ItemIcon_114037",
+   "rarity": 2
+  },
+  "114038": {
+   "name": "Iron Talisman of the Forest Dew",
+   "icon": "UI_ItemIcon_114038",
+   "rarity": 3
+  },
+  "114039": {
+   "name": "Silver Talisman of the Forest Dew",
+   "icon": "UI_ItemIcon_114039",
+   "rarity": 4
+  },
+  "114040": {
+   "name": "Golden Talisman of the Forest Dew",
+   "icon": "UI_ItemIcon_114040",
+   "rarity": 5
+  },
+  "114041": {
+   "name": "Oasis Garden's Reminiscence",
+   "icon": "UI_ItemIcon_114041",
+   "rarity": 2
+  },
+  "114042": {
+   "name": "Oasis Garden's Kindness",
+   "icon": "UI_ItemIcon_114042",
+   "rarity": 3
+  },
+  "114043": {
+   "name": "Oasis Garden's Mourning",
+   "icon": "UI_ItemIcon_114043",
+   "rarity": 4
+  },
+  "114044": {
+   "name": "Oasis Garden's Truth",
+   "icon": "UI_ItemIcon_114044",
+   "rarity": 5
+  },
+  "114045": {
+   "name": "Echo of Scorching Might",
+   "icon": "UI_ItemIcon_114045",
+   "rarity": 2
+  },
+  "114046": {
+   "name": "Remnant Glow of Scorching Might",
+   "icon": "UI_ItemIcon_114046",
+   "rarity": 3
+  },
+  "114047": {
+   "name": "Dream of Scorching Might",
+   "icon": "UI_ItemIcon_114047",
+   "rarity": 4
+  },
+  "114048": {
+   "name": "Olden Days of Scorching Might",
+   "icon": "UI_ItemIcon_114048",
+   "rarity": 5
+  },
+  "114049": {
+   "name": "Fragment of an Ancient Chord",
+   "icon": "UI_ItemIcon_114049",
+   "rarity": 2
+  },
+  "114050": {
+   "name": "Chapter of an Ancient Chord",
+   "icon": "UI_ItemIcon_114050",
+   "rarity": 3
+  },
+  "114051": {
+   "name": "Movement of an Ancient Chord",
+   "icon": "UI_ItemIcon_114051",
+   "rarity": 4
+  },
+  "114052": {
+   "name": "Echo of an Ancient Chord",
+   "icon": "UI_ItemIcon_114052",
+   "rarity": 5
+  },
+  "114053": {
+   "name": "Dross of Pure Sacred Dewdrop",
+   "icon": "UI_ItemIcon_114053",
+   "rarity": 2
+  },
+  "114054": {
+   "name": "Sublimation of Pure Sacred Dewdrop",
+   "icon": "UI_ItemIcon_114054",
+   "rarity": 3
+  },
+  "114055": {
+   "name": "Spring of Pure Sacred Dewdrop",
+   "icon": "UI_ItemIcon_114055",
+   "rarity": 4
+  },
+  "114056": {
+   "name": "Essence of Pure Sacred Dewdrop",
+   "icon": "UI_ItemIcon_114056",
+   "rarity": 5
+  },
+  "114057": {
+   "name": "Broken Goblet of the Pristine Sea",
+   "icon": "UI_ItemIcon_114057",
+   "rarity": 2
+  },
+  "114058": {
+   "name": "Wine Goblet of the Pristine Sea",
+   "icon": "UI_ItemIcon_114058",
+   "rarity": 3
+  },
+  "114059": {
+   "name": "Silver Goblet of the Pristine Sea",
+   "icon": "UI_ItemIcon_114059",
+   "rarity": 4
+  },
+  "114060": {
+   "name": "Golden Goblet of the Pristine Sea",
+   "icon": "UI_ItemIcon_114060",
+   "rarity": 5
+  },
+  "114061": {
+   "name": "Blazing Sacrificial Heart's Terror",
+   "icon": "UI_ItemIcon_114061",
+   "rarity": 2
+  },
+  "114062": {
+   "name": "Blazing Sacrificial Heart's Hesitance",
+   "icon": "UI_ItemIcon_114062",
+   "rarity": 3
+  },
+  "114063": {
+   "name": "Blazing Sacrificial Heart's Resolve",
+   "icon": "UI_ItemIcon_114063",
+   "rarity": 4
+  },
+  "114064": {
+   "name": "Blazing Sacrificial Heart's Splendor",
+   "icon": "UI_ItemIcon_114064",
+   "rarity": 5
+  },
+  "114065": {
+   "name": "Delirious Decadence of the Sacred Lord",
+   "icon": "UI_ItemIcon_114065",
+   "rarity": 2
+  },
+  "114066": {
+   "name": "Delirious Desolation of the Sacred Lord",
+   "icon": "UI_ItemIcon_114066",
+   "rarity": 3
+  },
+  "114067": {
+   "name": "Delirious Demeanor of the Sacred Lord",
+   "icon": "UI_ItemIcon_114067",
+   "rarity": 4
+  },
+  "114068": {
+   "name": "Delirious Divinity of the Sacred Lord",
+   "icon": "UI_ItemIcon_114068",
+   "rarity": 5
+  },
+  "114069": {
+   "name": "Night-Wind's Mystic Consideration",
+   "icon": "UI_ItemIcon_114069",
+   "rarity": 2
+  },
+  "114070": {
+   "name": "Night-Wind's Mystic Premonition",
+   "icon": "UI_ItemIcon_114070",
+   "rarity": 3
+  },
+  "114071": {
+   "name": "Night-Wind's Mystic Augury",
+   "icon": "UI_ItemIcon_114071",
+   "rarity": 4
+  },
+  "114072": {
+   "name": "Night-Wind's Mystic Revelation",
+   "icon": "UI_ItemIcon_114072",
+   "rarity": 5
+  },
+  "114073": {
+   "name": "Artful Device Fragment",
+   "icon": "UI_ItemIcon_114073",
+   "rarity": 2
+  },
+  "114074": {
+   "name": "Artful Device Replica",
+   "icon": "UI_ItemIcon_114074",
+   "rarity": 3
+  },
+  "114075": {
+   "name": "Artful Device Inheritance",
+   "icon": "UI_ItemIcon_114075",
+   "rarity": 4
+  },
+  "114076": {
+   "name": "Artful Device Wish",
+   "icon": "UI_ItemIcon_114076",
+   "rarity": 5
+  },
+  "114077": {
+   "name": "Ember of Long Night Flint",
+   "icon": "UI_ItemIcon_114077",
+   "rarity": 2
+  },
+  "114078": {
+   "name": "Afterglow of Long Night Flint",
+   "icon": "UI_ItemIcon_114078",
+   "rarity": 3
+  },
+  "114079": {
+   "name": "Flare of Long Night Flint",
+   "icon": "UI_ItemIcon_114079",
+   "rarity": 4
+  },
+  "114080": {
+   "name": "Blaze of Long Night Flint",
+   "icon": "UI_ItemIcon_114080",
+   "rarity": 5
+  },
+  "114081": {
+   "name": "Sundered Glory of the Far-North Scions",
+   "icon": "UI_ItemIcon_114081",
+   "rarity": 2
+  },
+  "114082": {
+   "name": "Unyielding Delusion of the Far-North Scions",
+   "icon": "UI_ItemIcon_114082",
+   "rarity": 3
+  },
+  "114083": {
+   "name": "Oblation of the Far-North Scions",
+   "icon": "UI_ItemIcon_114083",
+   "rarity": 4
+  },
+  "114084": {
+   "name": "Aureate Radiance of the Far-North Scions",
+   "icon": "UI_ItemIcon_114084",
+   "rarity": 5
+  },
+  "114085": {
+   "name": "Rise of the Pale Star Army",
+   "icon": "UI_ItemIcon_114085",
+   "rarity": 2
+  },
+  "114086": {
+   "name": "Muster of the Pale Star Army",
+   "icon": "UI_ItemIcon_114086",
+   "rarity": 3
+  },
+  "114087": {
+   "name": "Clarion of the Pale Star Army",
+   "icon": "UI_ItemIcon_114087",
+   "rarity": 4
+  },
+  "114088": {
+   "name": "Triumph of the Pale Star Army",
+   "icon": "UI_ItemIcon_114088",
+   "rarity": 5
+  },
+  "114089": {
+   "name": "Measured Pour of the Cellared Spiritual Nectar",
+   "icon": "UI_ItemIcon_114089",
+   "rarity": 2
+  },
+  "114090": {
+   "name": "Intoxication of the Cellared Spiritual Nectar",
+   "icon": "UI_ItemIcon_114090",
+   "rarity": 3
+  },
+  "114091": {
+   "name": "Exhilaration of the Cellared Spiritual Nectar",
+   "icon": "UI_ItemIcon_114091",
+   "rarity": 4
+  },
+  "114092": {
+   "name": "Revelry of the Cellared Spiritual Nectar",
+   "icon": "UI_ItemIcon_114092",
+   "rarity": 5
+  },
+  "114093": {
+   "name": "The Frost Emperor's Revival",
+   "icon": "UI_ItemIcon_114093",
+   "rarity": 2
+  },
+  "114094": {
+   "name": "The Frost Emperor's Ceremony",
+   "icon": "UI_ItemIcon_114094",
+   "rarity": 3
+  },
+  "114095": {
+   "name": "The Frost Emperor's Lament",
+   "icon": "UI_ItemIcon_114095",
+   "rarity": 4
+  },
+  "114096": {
+   "name": "The Frost Emperor's Farewell",
+   "icon": "UI_ItemIcon_114096",
+   "rarity": 5
+  },
+  "131000": {
+   "name": "Medaka",
+   "icon": "UI_ItemIcon_131000",
+   "rarity": 3
+  },
+  "131001": {
+   "name": "Glaze Medaka",
+   "icon": "UI_ItemIcon_131001",
+   "rarity": 3
+  },
+  "131002": {
+   "name": "Sweet-Flower Medaka",
+   "icon": "UI_ItemIcon_131002",
+   "rarity": 3
+  },
+  "131003": {
+   "name": "Aizen Medaka",
+   "icon": "UI_ItemIcon_131003",
+   "rarity": 3
+  },
+  "131004": {
+   "name": "Dawncatcher",
+   "icon": "UI_ItemIcon_131004",
+   "rarity": 3
+  },
+  "131005": {
+   "name": "Crystalfish",
+   "icon": "UI_ItemIcon_131005",
+   "rarity": 3
+  },
+  "131006": {
+   "name": "Lunged Stickleback",
+   "icon": "UI_ItemIcon_131006",
+   "rarity": 3
+  },
+  "131007": {
+   "name": "Betta",
+   "icon": "UI_ItemIcon_131007",
+   "rarity": 3
+  },
+  "131008": {
+   "name": "Venomspine Fish",
+   "icon": "UI_ItemIcon_131008",
+   "rarity": 3
+  },
+  "131009": {
+   "name": "Akai Maou",
+   "icon": "UI_ItemIcon_131009",
+   "rarity": 3
+  },
+  "131010": {
+   "name": "Snowstrider",
+   "icon": "UI_ItemIcon_131010",
+   "rarity": 3
+  },
+  "131011": {
+   "name": "Golden Koi",
+   "icon": "UI_ItemIcon_131011",
+   "rarity": 3
+  },
+  "131012": {
+   "name": "Rusty Koi",
+   "icon": "UI_ItemIcon_131012",
+   "rarity": 3
+  },
+  "131013": {
+   "name": "Brown Shirakodai",
+   "icon": "UI_ItemIcon_131013",
+   "rarity": 3
+  },
+  "131014": {
+   "name": "Purple Shirakodai",
+   "icon": "UI_ItemIcon_131014",
+   "rarity": 3
+  },
+  "131015": {
+   "name": "Tea-Colored Shirakodai",
+   "icon": "UI_ItemIcon_131015",
+   "rarity": 3
+  },
+  "131016": {
+   "name": "Abiding Angelfish",
+   "icon": "UI_ItemIcon_131016",
+   "rarity": 3
+  },
+  "131017": {
+   "name": "Raimei Angelfish",
+   "icon": "UI_ItemIcon_131017",
+   "rarity": 3
+  },
+  "131019": {
+   "name": "Pufferfish",
+   "icon": "UI_ItemIcon_131019",
+   "rarity": 3
+  },
+  "131020": {
+   "name": "Bitter Pufferfish",
+   "icon": "UI_ItemIcon_131020",
+   "rarity": 3
+  },
+  "131021": {
+   "name": "Divda Ray",
+   "icon": "UI_ItemIcon_131021",
+   "rarity": 3
+  },
+  "131022": {
+   "name": "Formalo Ray",
+   "icon": "UI_ItemIcon_131022",
+   "rarity": 3
+  },
+  "131023": {
+   "name": "True Fruit Angler",
+   "icon": "UI_ItemIcon_131023",
+   "rarity": 3
+  },
+  "131024": {
+   "name": "Peach of the Deep Waves",
+   "icon": "UI_ItemIcon_131024",
+   "rarity": 3
+  },
+  "131025": {
+   "name": "Sandstorm Angler",
+   "icon": "UI_ItemIcon_131025",
+   "rarity": 3
+  },
+  "131026": {
+   "name": "Sunset Cloud Angler",
+   "icon": "UI_ItemIcon_131026",
+   "rarity": 3
+  },
+  "131027": {
+   "name": "Lazurite Axe Marlin",
+   "icon": "UI_ItemIcon_131027",
+   "rarity": 3
+  },
+  "131028": {
+   "name": "Halcyon Jade Axe Marlin",
+   "icon": "UI_ItemIcon_131028",
+   "rarity": 3
+  },
+  "131029": {
+   "name": "Streaming Axe Marlin",
+   "icon": "UI_ItemIcon_131029",
+   "rarity": 3
+  },
+  "131030": {
+   "name": "Rippling Heartfeather Bass",
+   "icon": "UI_ItemIcon_131030",
+   "rarity": 3
+  },
+  "131031": {
+   "name": "Blazing Heartfeather Bass",
+   "icon": "UI_ItemIcon_131031",
+   "rarity": 3
+  },
+  "131032": {
+   "name": "Maintenance Mek: Initial Configuration",
+   "icon": "UI_ItemIcon_131032",
+   "rarity": 3
+  },
+  "131033": {
+   "name": "Maintenance Mek: Water Body Cleaner",
+   "icon": "UI_ItemIcon_131033",
+   "rarity": 3
+  },
+  "131034": {
+   "name": "Maintenance Mek: Situation Controller",
+   "icon": "UI_ItemIcon_131034",
+   "rarity": 3
+  },
+  "131035": {
+   "name": "Maintenance Mek: Platinum Collection",
+   "icon": "UI_ItemIcon_131035",
+   "rarity": 3
+  },
+  "131036": {
+   "name": "Maintenance Mek: Gold Leader",
+   "icon": "UI_ItemIcon_131036",
+   "rarity": 3
+  },
+  "131037": {
+   "name": "Jade Heartfeather Bass",
+   "icon": "UI_ItemIcon_131037",
+   "rarity": 3
+  },
+  "131038": {
+   "name": "Floral Rapidfighting Fish",
+   "icon": "UI_ItemIcon_131038",
+   "rarity": 3
+  },
+  "131039": {
+   "name": "Diving Rapidfighting Fish",
+   "icon": "UI_ItemIcon_131039",
+   "rarity": 3
+  },
+  "131040": {
+   "name": "Magma Rapidfighting Fish",
+   "icon": "UI_ItemIcon_131040",
+   "rarity": 3
+  },
+  "131041": {
+   "name": "Greenwave Sunfish",
+   "icon": "UI_ItemIcon_131041",
+   "rarity": 3
+  },
+  "131042": {
+   "name": "Dusk Sunfish",
+   "icon": "UI_ItemIcon_131042",
+   "rarity": 3
+  },
+  "131043": {
+   "name": "Phony Phlogiston Unihornfish",
+   "icon": "UI_ItemIcon_131043",
+   "rarity": 3
+  },
+  "131044": {
+   "name": "Pseudoshark Unihornfish",
+   "icon": "UI_ItemIcon_131044",
+   "rarity": 3
+  },
+  "131045": {
+   "name": "Secret Source Scout Sweeper",
+   "icon": "UI_ItemIcon_131045",
+   "rarity": 3
+  },
+  "131046": {
+   "name": "Common Axehead Fish",
+   "icon": "UI_ItemIcon_131046",
+   "rarity": 3
+  },
+  "131047": {
+   "name": "Frosted Axehead Fish",
+   "icon": "UI_ItemIcon_131047",
+   "rarity": 3
+  },
+  "131048": {
+   "name": "Blazing Axehead Fish",
+   "icon": "UI_ItemIcon_131048",
+   "rarity": 3
+  },
+  "131049": {
+   "name": "Veggie Mauler Shark",
+   "icon": "UI_ItemIcon_131049",
+   "rarity": 3
+  },
+  "131050": {
+   "name": "Neon Mauler Shark",
+   "icon": "UI_ItemIcon_131050",
+   "rarity": 3
+  },
+  "131051": {
+   "name": "Azuregaze Crystal-Eye",
+   "icon": "UI_ItemIcon_131051",
+   "rarity": 3
+  },
+  "131052": {
+   "name": "Nightgaze Crystal-Eye",
+   "icon": "UI_ItemIcon_131052",
+   "rarity": 3
+  },
+  "131053": {
+   "name": "Cerulean Doppeldrake",
+   "icon": "UI_ItemIcon_131053",
+   "rarity": 3
+  },
+  "131054": {
+   "name": "Charcoal Snowfin",
+   "icon": "UI_ItemIcon_131054",
+   "rarity": 3
+  },
+  "131055": {
+   "name": "Cream Snowfin",
+   "icon": "UI_ItemIcon_131055",
+   "rarity": 3
+  },
+  "131056": {
+   "name": "Moonlight Snowfin",
+   "icon": "UI_ItemIcon_131056",
+   "rarity": 3
+  },
+  "131057": {
+   "name": "Ruby Starbloom Fish",
+   "icon": "UI_ItemIcon_131057",
+   "rarity": 3
+  },
+  "131058": {
+   "name": "Frostpetal Starbloom Fish",
+   "icon": "UI_ItemIcon_131058",
+   "rarity": 3
+  },
+  "131059": {
+   "name": "Iridescent Starbloom Fish",
+   "icon": "UI_ItemIcon_131059",
+   "rarity": 3
+  },
+  "200001": {
+   "name": "Lantern Fiber",
+   "icon": "UI_ItemIcon_200001",
+   "rarity": 3
+  },
+  "200002": {
+   "name": "Wick Material",
+   "icon": "UI_ItemIcon_200002",
+   "rarity": 3
+  },
+  "200003": {
+   "name": "Plaustrite Shard",
+   "icon": "UI_ItemIcon_200003",
+   "rarity": 3
+  },
+  "200103": {
+   "name": "Festering Dragon Marrow",
+   "icon": "UI_ItemIcon_200103",
+   "rarity": 4
+  },
+  "200104": {
+   "name": "\"The Visible Winds\"",
+   "icon": "UI_ItemIcon_200104",
+   "rarity": 4
+  },
+  "200105": {
+   "name": "\"Fragments of Innocence\"",
+   "icon": "UI_ItemIcon_200105",
+   "rarity": 4
+  },
+  "200106": {
+   "name": "Emperor's Balsam",
+   "icon": "UI_ItemIcon_200106",
+   "rarity": 4
+  },
+  "200107": {
+   "name": "Ako's Sake Vessel",
+   "icon": "UI_ItemIcon_200107",
+   "rarity": 4
+  },
+  "200108": {
+   "name": "Alkahest",
+   "icon": "UI_ItemIcon_200108",
+   "rarity": 4
+  },
+  "200109": {
+   "name": "Ointment of Sight",
+   "icon": "UI_ItemIcon_200109",
+   "rarity": 4
+  },
+  "200110": {
+   "name": "Glowing Gem",
+   "icon": "UI_ItemIcon_200110",
+   "rarity": 4
+  },
+  "200111": {
+   "name": "Original Fish Ointment",
+   "icon": "UI_ItemIcon_200111",
+   "rarity": 4
+  },
+  "200112": {
+   "name": "Plume of the Changing Winds",
+   "icon": "UI_ItemIcon_200112",
+   "rarity": 4
+  },
+  "200113": {
+   "name": "Parasol Talcum",
+   "icon": "UI_ItemIcon_200113",
+   "rarity": 4
+  },
+  "200114": {
+   "name": "Unfading Silky Grace",
+   "icon": "UI_ItemIcon_200114",
+   "rarity": 4
+  },
+  "200115": {
+   "name": "Congealed Pupa Wax",
+   "icon": "UI_ItemIcon_200115",
+   "rarity": 4
+  },
+  "200116": {
+   "name": "Martens' Omni-Fix",
+   "icon": "UI_ItemIcon_200116",
+   "rarity": 4
+  },
+  "200117": {
+   "name": "Dandelion Bookmark",
+   "icon": "UI_ItemIcon_200117",
+   "rarity": 4
+  },
+  "200118": {
+   "name": "Surging Sacred Chalice",
+   "icon": "UI_ItemIcon_200118",
+   "rarity": 4
+  },
+  "200119": {
+   "name": "Super-Duper Invincible Shining Sparkly Magic Crystal",
+   "icon": "UI_ItemIcon_200119",
+   "rarity": 4
+  },
+  "200120": {
+   "name": "\"Exalted Earth\"",
+   "icon": "UI_ItemIcon_200120",
+   "rarity": 4
+  },
+  "200121": {
+   "name": "Cam and Cables of Law",
+   "icon": "UI_ItemIcon_200121",
+   "rarity": 4
+  },
+  "200122": {
+   "name": "\"The Sea's Silent Shade\"",
+   "icon": "UI_ItemIcon_200122",
+   "rarity": 4
+  },
+  "200123": {
+   "name": "Shuttle of Odara",
+   "icon": "UI_ItemIcon_200123",
+   "rarity": 4
+  },
+  "200124": {
+   "name": "Smoldering Phosphorescent Flame",
+   "icon": "UI_ItemIcon_200124",
+   "rarity": 4
+  },
+  "200125": {
+   "name": "Composite Bow Tuning Kit",
+   "icon": "UI_ItemIcon_200125",
+   "rarity": 4
+  },
+  "200126": {
+   "name": "Drifter's Crystal Marrow",
+   "icon": "UI_ItemIcon_200126",
+   "rarity": 4
+  },
+  "200127": {
+   "name": "Golden Strings",
+   "icon": "UI_ItemIcon_200127",
+   "rarity": 4
+  },
+  "200128": {
+   "name": "Refined Heart",
+   "icon": "UI_ItemIcon_200128",
+   "rarity": 4
+  },
+  "200129": {
+   "name": "",
+   "icon": "UI_ItemIcon_200129",
+   "rarity": 4
+  }
+ },
+ "combine": {
+  "101401": {
+   "input": 100029,
+   "input_count": 1,
+   "output_count": 10,
+   "mora": 0
+  },
+  "101402": {
+   "input": 101251,
+   "input_count": 1,
+   "output_count": 1,
+   "mora": 0
+  },
+  "101403": {
+   "input": 101231,
+   "input_count": 1,
+   "output_count": 1,
+   "mora": 0
+  },
+  "101404": {
+   "input": 101249,
+   "input_count": 1,
+   "output_count": 1,
+   "mora": 0
+  },
+  "104112": {
+   "input": 104111,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 300
+  },
+  "104113": {
+   "input": 104112,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 900
+  },
+  "104114": {
+   "input": 104113,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 2700
+  },
+  "104122": {
+   "input": 104121,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 300
+  },
+  "104123": {
+   "input": 104122,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 900
+  },
+  "104124": {
+   "input": 104123,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 2700
+  },
+  "104132": {
+   "input": 104131,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 300
+  },
+  "104133": {
+   "input": 104132,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 900
+  },
+  "104134": {
+   "input": 104133,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 2700
+  },
+  "104142": {
+   "input": 104141,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 300
+  },
+  "104143": {
+   "input": 104142,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 900
+  },
+  "104144": {
+   "input": 104143,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 2700
+  },
+  "104152": {
+   "input": 104151,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 300
+  },
+  "104153": {
+   "input": 104152,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 900
+  },
+  "104154": {
+   "input": 104153,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 2700
+  },
+  "104162": {
+   "input": 104161,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 300
+  },
+  "104163": {
+   "input": 104162,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 900
+  },
+  "104164": {
+   "input": 104163,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 2700
+  },
+  "104172": {
+   "input": 104171,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 300
+  },
+  "104173": {
+   "input": 104172,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 900
+  },
+  "104174": {
+   "input": 104173,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 2700
+  },
+  "104302": {
+   "input": 104301,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104303": {
+   "input": 104302,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104305": {
+   "input": 104304,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104306": {
+   "input": 104305,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104308": {
+   "input": 104307,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104309": {
+   "input": 104308,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104311": {
+   "input": 104310,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104312": {
+   "input": 104311,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104314": {
+   "input": 104313,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104315": {
+   "input": 104314,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104317": {
+   "input": 104316,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104318": {
+   "input": 104317,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104321": {
+   "input": 104320,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104322": {
+   "input": 104321,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104324": {
+   "input": 104323,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104325": {
+   "input": 104324,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104327": {
+   "input": 104326,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104328": {
+   "input": 104327,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104330": {
+   "input": 104329,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104331": {
+   "input": 104330,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104333": {
+   "input": 104332,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104334": {
+   "input": 104333,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104336": {
+   "input": 104335,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104337": {
+   "input": 104336,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104339": {
+   "input": 104338,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104340": {
+   "input": 104339,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104342": {
+   "input": 104341,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104343": {
+   "input": 104342,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104345": {
+   "input": 104344,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104346": {
+   "input": 104345,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104348": {
+   "input": 104347,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104349": {
+   "input": 104348,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104351": {
+   "input": 104350,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104352": {
+   "input": 104351,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104354": {
+   "input": 104353,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104355": {
+   "input": 104354,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104357": {
+   "input": 104356,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104358": {
+   "input": 104357,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104360": {
+   "input": 104359,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104361": {
+   "input": 104360,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104363": {
+   "input": 104362,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104364": {
+   "input": 104363,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104366": {
+   "input": 104365,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104367": {
+   "input": 104366,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104369": {
+   "input": 104368,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104370": {
+   "input": 104369,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "104372": {
+   "input": 104371,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 175
+  },
+  "104373": {
+   "input": 104372,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 550
+  },
+  "112003": {
+   "input": 112002,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112004": {
+   "input": 112003,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112006": {
+   "input": 112005,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112007": {
+   "input": 112006,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112009": {
+   "input": 112008,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112010": {
+   "input": 112009,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112012": {
+   "input": 112011,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112013": {
+   "input": 112012,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112015": {
+   "input": 112014,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112016": {
+   "input": 112015,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112018": {
+   "input": 112017,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112019": {
+   "input": 112018,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112021": {
+   "input": 112020,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112022": {
+   "input": 112021,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112024": {
+   "input": 112023,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112025": {
+   "input": 112024,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112027": {
+   "input": 112026,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112028": {
+   "input": 112027,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112030": {
+   "input": 112029,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112031": {
+   "input": 112030,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112033": {
+   "input": 112032,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112034": {
+   "input": 112033,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112036": {
+   "input": 112035,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112037": {
+   "input": 112036,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112039": {
+   "input": 112038,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112040": {
+   "input": 112039,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112042": {
+   "input": 112041,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112043": {
+   "input": 112042,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112045": {
+   "input": 112044,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112046": {
+   "input": 112045,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112048": {
+   "input": 112047,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112049": {
+   "input": 112048,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112051": {
+   "input": 112050,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112052": {
+   "input": 112051,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112054": {
+   "input": 112053,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112055": {
+   "input": 112054,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112057": {
+   "input": 112056,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112058": {
+   "input": 112057,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112060": {
+   "input": 112059,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112061": {
+   "input": 112060,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112063": {
+   "input": 112062,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112064": {
+   "input": 112063,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112066": {
+   "input": 112065,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112067": {
+   "input": 112066,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112069": {
+   "input": 112068,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112070": {
+   "input": 112069,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112072": {
+   "input": 112071,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112073": {
+   "input": 112072,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112075": {
+   "input": 112074,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112076": {
+   "input": 112075,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112078": {
+   "input": 112077,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112079": {
+   "input": 112078,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112081": {
+   "input": 112080,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112082": {
+   "input": 112081,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112084": {
+   "input": 112083,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112085": {
+   "input": 112084,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112087": {
+   "input": 112086,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112088": {
+   "input": 112087,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112090": {
+   "input": 112089,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112091": {
+   "input": 112090,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112093": {
+   "input": 112092,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112094": {
+   "input": 112093,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112096": {
+   "input": 112095,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112097": {
+   "input": 112096,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112099": {
+   "input": 112098,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112100": {
+   "input": 112099,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112102": {
+   "input": 112101,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112103": {
+   "input": 112102,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112105": {
+   "input": 112104,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112106": {
+   "input": 112105,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112108": {
+   "input": 112107,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112109": {
+   "input": 112108,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112111": {
+   "input": 112110,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112112": {
+   "input": 112111,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112114": {
+   "input": 112113,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112115": {
+   "input": 112114,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112117": {
+   "input": 112116,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112118": {
+   "input": 112117,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112120": {
+   "input": 112119,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112121": {
+   "input": 112120,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112123": {
+   "input": 112122,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112124": {
+   "input": 112123,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112126": {
+   "input": 112125,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112127": {
+   "input": 112126,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112129": {
+   "input": 112128,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112130": {
+   "input": 112129,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112132": {
+   "input": 112131,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112133": {
+   "input": 112132,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112135": {
+   "input": 112134,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112136": {
+   "input": 112135,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112138": {
+   "input": 112137,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112139": {
+   "input": 112138,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112141": {
+   "input": 112140,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112142": {
+   "input": 112141,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112144": {
+   "input": 112143,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112145": {
+   "input": 112144,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112147": {
+   "input": 112146,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112148": {
+   "input": 112147,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112150": {
+   "input": 112149,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 25
+  },
+  "112151": {
+   "input": 112150,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112153": {
+   "input": 112152,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112154": {
+   "input": 112153,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "112156": {
+   "input": 112155,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112157": {
+   "input": 112156,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114002": {
+   "input": 114001,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114003": {
+   "input": 114002,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114004": {
+   "input": 114003,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114006": {
+   "input": 114005,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114007": {
+   "input": 114006,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114008": {
+   "input": 114007,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114010": {
+   "input": 114009,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114011": {
+   "input": 114010,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114012": {
+   "input": 114011,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114014": {
+   "input": 114013,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114015": {
+   "input": 114014,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114016": {
+   "input": 114015,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114018": {
+   "input": 114017,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114019": {
+   "input": 114018,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114020": {
+   "input": 114019,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114022": {
+   "input": 114021,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114023": {
+   "input": 114022,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114024": {
+   "input": 114023,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114026": {
+   "input": 114025,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114027": {
+   "input": 114026,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114028": {
+   "input": 114027,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114030": {
+   "input": 114029,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114031": {
+   "input": 114030,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114032": {
+   "input": 114031,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114034": {
+   "input": 114033,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114035": {
+   "input": 114034,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114036": {
+   "input": 114035,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114038": {
+   "input": 114037,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114039": {
+   "input": 114038,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114040": {
+   "input": 114039,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114042": {
+   "input": 114041,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114043": {
+   "input": 114042,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114044": {
+   "input": 114043,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114046": {
+   "input": 114045,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114047": {
+   "input": 114046,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114048": {
+   "input": 114047,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114050": {
+   "input": 114049,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114051": {
+   "input": 114050,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114052": {
+   "input": 114051,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114054": {
+   "input": 114053,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114055": {
+   "input": 114054,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114056": {
+   "input": 114055,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114058": {
+   "input": 114057,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114059": {
+   "input": 114058,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114060": {
+   "input": 114059,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114062": {
+   "input": 114061,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114063": {
+   "input": 114062,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114064": {
+   "input": 114063,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114066": {
+   "input": 114065,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114067": {
+   "input": 114066,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114068": {
+   "input": 114067,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114070": {
+   "input": 114069,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114071": {
+   "input": 114070,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114072": {
+   "input": 114071,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114074": {
+   "input": 114073,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114075": {
+   "input": 114074,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114076": {
+   "input": 114075,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114078": {
+   "input": 114077,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114079": {
+   "input": 114078,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114080": {
+   "input": 114079,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114082": {
+   "input": 114081,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114083": {
+   "input": 114082,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114084": {
+   "input": 114083,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114086": {
+   "input": 114085,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114087": {
+   "input": 114086,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114088": {
+   "input": 114087,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114090": {
+   "input": 114089,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114091": {
+   "input": 114090,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114092": {
+   "input": 114091,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  },
+  "114094": {
+   "input": 114093,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
+  "114095": {
+   "input": 114094,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 350
+  },
+  "114096": {
+   "input": 114095,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 1075
+  }
+ },
+ "drop_rates": {
+  "104301": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4213
+  },
+  "104304": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4223
+  },
+  "104307": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4233
+  },
+  "104310": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 5257
+  },
+  "104313": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 5261
+  },
+  "104316": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 5265
+  },
+  "104320": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4403
+  },
+  "104323": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4413
+  },
+  "104326": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4423
+  },
+  "104329": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4433
+  },
+  "104332": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4443
+  },
+  "104335": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4453
+  },
+  "104338": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4463
+  },
+  "104341": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4493
+  },
+  "104344": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4497
+  },
+  "104347": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4437
+  },
+  "104350": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4447
+  },
+  "104353": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4457
+  },
+  "104356": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4654
+  },
+  "104359": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4658
+  },
+  "104362": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4662
+  },
+  "104365": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4694
+  },
+  "104368": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4698
+  },
+  "104371": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4702
+  },
+  "112053": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.1,
+   "boss_id": 34
+  },
+  "112054": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 0.56,
+   "boss_id": 34
+  },
+  "112055": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 0.14,
+   "boss_id": 34
+  },
+  "113001": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 7
+  },
+  "113002": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 6
+  },
+  "113009": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 13
+  },
+  "113010": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 8
+  },
+  "113011": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 15
+  },
+  "113012": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 14
+  },
+  "113020": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 25
+  },
+  "113021": {
+   "source": "boss",
+   "resin": 60,
+   "expected_per_run": 0.33,
+   "boss_id": 9
+  },
+  "113022": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 26
+  },
+  "113023": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 28
+  },
+  "113024": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 27
+  },
+  "113028": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 32
+  },
+  "113029": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 33
+  },
+  "113030": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 36
+  },
+  "113031": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 37
+  },
+  "113035": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 39
+  },
+  "113036": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 42
+  },
+  "113037": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 41
+  },
+  "113038": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 46
+  },
+  "113039": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 47
+  },
+  "113040": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 49
+  },
+  "113044": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 50
+  },
+  "113049": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.5556,
+   "boss_id": 58
+  },
+  "113050": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.5556,
+   "boss_id": 58
+  },
+  "113051": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 59
+  },
+  "113052": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 61
+  },
+  "113053": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 62
+  },
+  "113057": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 63
+  },
+  "113058": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 64
+  },
+  "113059": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 66
+  },
+  "113067": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 77
+  },
+  "113071": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 78
+  },
+  "113072": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 79
+  },
+  "113076": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 81
+  },
+  "113077": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 87
+  },
+  "113078": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 88
+  },
+  "113079": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 89
+  },
+  "113080": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 90
+  },
+  "113084": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 92
+  },
+  "113085": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 93
+  },
+  "113086": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 94
+  },
+  "113090": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 97
+  },
+  "113091": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 98
+  },
+  "113092": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 103
+  },
+  "114001": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4313
+  },
+  "114005": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4323
+  },
+  "114009": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4333
+  },
+  "114013": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 5217
+  },
+  "114017": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 5221
+  },
+  "114021": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 5225
+  },
+  "114025": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4343
+  },
+  "114029": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4353
+  },
+  "114033": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4363
+  },
+  "114037": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4373
+  },
+  "114041": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4377
+  },
+  "114045": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4381
+  },
+  "114049": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4473
+  },
+  "114053": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4503
+  },
+  "114057": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4507
+  },
+  "114061": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4385
+  },
+  "114065": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4389
+  },
+  "114069": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4393
+  },
+  "114073": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4674
+  },
+  "114077": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4678
+  },
+  "114081": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4682
+  },
+  "114085": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4710
+  },
+  "114089": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4714
+  },
+  "114093": {
+   "source": "domain",
+   "resin": 20,
+   "expected_per_run": 2.2,
+   "dungeon_id": 4718
+  }
+ },
+ "domain_days": {
+  "104301": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "104304": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "104307": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "104310": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "104313": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "104316": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "104320": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "104323": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "104326": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "104329": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "104332": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "104335": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "104338": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "104341": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "104344": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "104347": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "104350": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "104353": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "104356": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "104359": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "104362": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "104365": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "104368": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "104371": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "114001": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "114005": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "114009": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "114013": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "114017": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "114021": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "114025": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "114029": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "114033": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "114037": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "114041": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "114045": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "114049": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "114053": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "114057": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "114061": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "114065": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "114069": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "114073": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "114077": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "114081": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ],
+  "114085": [
+   "monday",
+   "thursday",
+   "sunday"
+  ],
+  "114089": [
+   "tuesday",
+   "friday",
+   "sunday"
+  ],
+  "114093": [
+   "wednesday",
+   "saturday",
+   "sunday"
+  ]
+ }
+}

@@ -4222,6 +4222,108 @@
           }
         }
       }
+    },
+    "/api/v1/planner/options": {
+      "get": {
+        "tags": [
+          "planner"
+        ],
+        "summary": "Planner Options",
+        "description": "What a plan can be built from, optionally narrowed to one character's talents.",
+        "operationId": "planner_options_api_v1_planner_options_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "character_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Character Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlannerOptions"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/planner/plan": {
+      "post": {
+        "tags": [
+          "planner"
+        ],
+        "summary": "Create Plan",
+        "description": "Price a plan. Writes nothing.",
+        "operationId": "create_plan_api_v1_planner_plan_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -5213,6 +5315,76 @@
         "type": "object",
         "title": "BuildImportSummary",
         "description": "What reconstituting builds from the export did, and did not do."
+      },
+      "BuildOption": {
+        "properties": {
+          "build_id": {
+            "type": "string",
+            "title": "Build Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "character_level": {
+            "type": "integer",
+            "title": "Character Level"
+          },
+          "ascension_phase": {
+            "type": "integer",
+            "title": "Ascension Phase"
+          },
+          "talent_levels": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Talent Levels"
+          },
+          "weapon_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weapon Id"
+          },
+          "weapon_level": {
+            "type": "integer",
+            "title": "Weapon Level"
+          },
+          "weapon_ascension": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weapon Ascension"
+          }
+        },
+        "type": "object",
+        "required": [
+          "build_id",
+          "character_level",
+          "ascension_phase",
+          "talent_levels",
+          "weapon_level"
+        ],
+        "title": "BuildOption",
+        "description": "A build the user could read a starting state from.\n\n**A build may be hypothetical** \u2014 this app lets you gear a character you do not own \u2014 so\nthe planner names which build it read and shows the levels it took, rather than quietly\ntreating a scenario as the account's truth."
       },
       "BuildOptions": {
         "properties": {
@@ -6291,6 +6463,58 @@
         "title": "ContributionRead",
         "description": "One value and where it came from."
       },
+      "CraftingBonusRead": {
+        "properties": {
+          "character_id": {
+            "type": "string",
+            "title": "Character Id"
+          },
+          "character_name": {
+            "type": "string",
+            "title": "Character Name"
+          },
+          "passive_name": {
+            "type": "string",
+            "title": "Passive Name"
+          },
+          "effect": {
+            "type": "string",
+            "title": "Effect"
+          },
+          "chance": {
+            "type": "number",
+            "title": "Chance"
+          },
+          "classes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Classes"
+          },
+          "applicable": {
+            "type": "boolean",
+            "title": "Applicable"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "character_id",
+          "character_name",
+          "passive_name",
+          "effect",
+          "chance",
+          "classes",
+          "applicable",
+          "description"
+        ],
+        "title": "CraftingBonusRead",
+        "description": "A character whose passive changes what crafting costs."
+      },
       "DeclaredFunction": {
         "properties": {
           "name": {
@@ -6637,6 +6861,85 @@
         "type": "object",
         "title": "EquippedStatsRead",
         "description": "One build's equipped artifacts, summed into the kernel's own quantities.\n\n**Narrow on purpose.** The browser already has a translation-free path to *every* artifact\nvia `/artifacts/inventory`, and widening that payload with a build binding would be paid\nfor across a 2,370-piece inventory to answer a question about five pieces. This is the five.\n\nSummed rather than listed, because every consumer wants the total: `evaluateRecipe` takes\none number per quantity, and a caller re-summing five pools is a second place for the\nvocabulary to be got wrong.\n\nThe translation is `stat_calculator._quantity_for_prop`, the same one `/artifacts/inventory`\nuses \u2014 which is the reason this is computed here rather than in TypeScript. A client-side\nmapping would be a second definition of what every stat means, with a silent failure mode: a\nmis-mapped substat produces a build optimal for a stat the character does not have."
+      },
+      "ExpBillRead": {
+        "properties": {
+          "exp_required": {
+            "type": "integer",
+            "title": "Exp Required"
+          },
+          "exp_owned": {
+            "type": "integer",
+            "title": "Exp Owned"
+          },
+          "exp_short": {
+            "type": "integer",
+            "title": "Exp Short"
+          },
+          "books": {
+            "items": {
+              "$ref": "#/components/schemas/ExpBookRead"
+            },
+            "type": "array",
+            "title": "Books"
+          },
+          "mora": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mora"
+          }
+        },
+        "type": "object",
+        "required": [
+          "exp_required",
+          "exp_owned",
+          "exp_short",
+          "books",
+          "mora"
+        ],
+        "title": "ExpBillRead",
+        "description": "The EXP half of levelling. `mora` is null while the divisor is uncurated \u2014 not zero."
+      },
+      "ExpBookRead": {
+        "properties": {
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon"
+          }
+        },
+        "type": "object",
+        "required": [
+          "material_id",
+          "count",
+          "name"
+        ],
+        "title": "ExpBookRead",
+        "description": "One EXP denomination and how many of it the shortfall needs.\n\nCarries its own name and icon because these are **not** material rows: EXP is a pool that\n`exp_bill` has already netted against stock, so listing them in the materials table\nsubtracted the same stock twice. They are rendered from the EXP line instead, and need\ntheir own art to do it."
       },
       "ExplainRequest": {
         "properties": {
@@ -7032,6 +7335,19 @@
             "title": "Weapons Unresolved",
             "default": []
           },
+          "materials_written": {
+            "type": "integer",
+            "title": "Materials Written",
+            "default": 0
+          },
+          "materials_unresolved": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Materials Unresolved",
+            "default": []
+          },
           "rejected": {
             "items": {
               "$ref": "#/components/schemas/ImportRejection"
@@ -7094,6 +7410,30 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HistogramBinRead": {
+        "properties": {
+          "low": {
+            "type": "integer",
+            "title": "Low"
+          },
+          "high": {
+            "type": "integer",
+            "title": "High"
+          },
+          "probability": {
+            "type": "number",
+            "title": "Probability"
+          }
+        },
+        "type": "object",
+        "required": [
+          "low",
+          "high",
+          "probability"
+        ],
+        "title": "HistogramBinRead",
+        "description": "One bar of the resin distribution: `[low, high)` holding `probability`."
       },
       "HitSpec": {
         "properties": {
@@ -7757,6 +8097,81 @@
         "title": "LoopNode",
         "description": "A `for` with a bound, or a `while` with a guard."
       },
+      "MaterialLineRead": {
+        "properties": {
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon"
+          },
+          "rarity": {
+            "type": "integer",
+            "title": "Rarity"
+          },
+          "required": {
+            "type": "integer",
+            "title": "Required"
+          },
+          "owned": {
+            "type": "integer",
+            "title": "Owned"
+          },
+          "still_needed": {
+            "type": "integer",
+            "title": "Still Needed"
+          },
+          "resin": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResinEstimateRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resin_status": {
+            "type": "string",
+            "title": "Resin Status"
+          },
+          "domain_days": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Domain Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "material_id",
+          "name",
+          "icon",
+          "rarity",
+          "required",
+          "owned",
+          "still_needed",
+          "resin",
+          "resin_status",
+          "domain_days"
+        ],
+        "title": "MaterialLineRead",
+        "description": "One material row."
+      },
       "MeResponse": {
         "properties": {
           "email": {
@@ -8131,6 +8546,47 @@
         "type": "object",
         "title": "OptimizationRunUpdate",
         "description": "Body for `PATCH /optimization-runs/{id}` \u2014 the two things a user changes afterwards.\n\nNot the result. A saved run records what happened, and editing that would make the\nlibrary a place where numbers are asserted rather than measured."
+      },
+      "OwnedWeaponOption": {
+        "properties": {
+          "owned_weapon_id": {
+            "type": "string",
+            "title": "Owned Weapon Id"
+          },
+          "weapon_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weapon Id"
+          },
+          "level": {
+            "type": "integer",
+            "title": "Level"
+          },
+          "ascension": {
+            "type": "integer",
+            "title": "Ascension"
+          },
+          "refinement": {
+            "type": "integer",
+            "title": "Refinement"
+          }
+        },
+        "type": "object",
+        "required": [
+          "owned_weapon_id",
+          "weapon_id",
+          "level",
+          "ascension",
+          "refinement"
+        ],
+        "title": "OwnedWeaponOption",
+        "description": "One physical copy the user owns. Duplicates are separate rows, as the game has them."
       },
       "OwnedWeaponRead": {
         "properties": {
@@ -8514,6 +8970,228 @@
         ],
         "title": "PaginatedResponse[WeaponSummary]"
       },
+      "PlanRead": {
+        "properties": {
+          "character_name": {
+            "type": "string",
+            "title": "Character Name"
+          },
+          "character_icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Icon"
+          },
+          "weapon_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weapon Name"
+          },
+          "weapon_icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weapon Icon"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/SectionRead"
+            },
+            "type": "array",
+            "title": "Sections"
+          },
+          "total": {
+            "$ref": "#/components/schemas/SectionRead"
+          },
+          "bonuses_applied": {
+            "items": {
+              "$ref": "#/components/schemas/CraftingBonusRead"
+            },
+            "type": "array",
+            "title": "Bonuses Applied"
+          },
+          "talent_free_levels": {
+            "type": "boolean",
+            "title": "Talent Free Levels"
+          },
+          "histogram_note": {
+            "type": "string",
+            "title": "Histogram Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "character_name",
+          "character_icon",
+          "weapon_name",
+          "weapon_icon",
+          "sections",
+          "total",
+          "bonuses_applied",
+          "talent_free_levels",
+          "histogram_note"
+        ],
+        "title": "PlanRead",
+        "description": "A whole plan."
+      },
+      "PlanRequest": {
+        "properties": {
+          "character_id": {
+            "type": "string",
+            "title": "Character Id"
+          },
+          "character_from": {
+            "$ref": "#/components/schemas/ProgressIn"
+          },
+          "character_to": {
+            "$ref": "#/components/schemas/ProgressIn"
+          },
+          "talents": {
+            "items": {
+              "$ref": "#/components/schemas/TalentTargetIn"
+            },
+            "type": "array",
+            "title": "Talents"
+          },
+          "weapon_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weapon Id"
+          },
+          "weapon_from": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProgressIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "weapon_to": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProgressIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bonus_character_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Bonus Character Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "character_id",
+          "character_from",
+          "character_to"
+        ],
+        "title": "PlanRequest",
+        "description": "One character, optionally one weapon, and where each should end up."
+      },
+      "PlannerOptions": {
+        "properties": {
+          "level_caps": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Level Caps"
+          },
+          "talents": {
+            "items": {
+              "$ref": "#/components/schemas/TalentOption"
+            },
+            "type": "array",
+            "title": "Talents"
+          },
+          "builds": {
+            "items": {
+              "$ref": "#/components/schemas/BuildOption"
+            },
+            "type": "array",
+            "title": "Builds"
+          },
+          "owned_weapons": {
+            "items": {
+              "$ref": "#/components/schemas/OwnedWeaponOption"
+            },
+            "type": "array",
+            "title": "Owned Weapons"
+          },
+          "bonuses": {
+            "items": {
+              "$ref": "#/components/schemas/CraftingBonusRead"
+            },
+            "type": "array",
+            "title": "Bonuses"
+          },
+          "uncurated_sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Uncurated Sources"
+          }
+        },
+        "type": "object",
+        "required": [
+          "level_caps"
+        ],
+        "title": "PlannerOptions",
+        "description": "Everything the page needs to build a request."
+      },
+      "ProgressIn": {
+        "properties": {
+          "level": {
+            "type": "integer",
+            "maximum": 90.0,
+            "minimum": 1.0,
+            "title": "Level"
+          },
+          "ascension": {
+            "type": "integer",
+            "maximum": 6.0,
+            "minimum": 0.0,
+            "title": "Ascension"
+          }
+        },
+        "type": "object",
+        "required": [
+          "level",
+          "ascension"
+        ],
+        "title": "ProgressIn",
+        "description": "A level and an ascension phase. They move independently."
+      },
       "ProjectionInputs": {
         "properties": {
           "rolls_remaining": {
@@ -8741,6 +9419,101 @@
         "type": "object",
         "title": "ResendVerificationResponse",
         "description": "Response for `POST /auth/resend-verification` \u2014 identical for every address.\n\nAnswering differently for a known and an unknown address would make this endpoint the\naccount-enumeration oracle that `register` just stopped being."
+      },
+      "ResinEstimateRead": {
+        "properties": {
+          "root_id": {
+            "type": "integer",
+            "title": "Root Id"
+          },
+          "source_type": {
+            "type": "string",
+            "title": "Source Type"
+          },
+          "resin_per_run": {
+            "type": "integer",
+            "title": "Resin Per Run"
+          },
+          "expected_per_run": {
+            "type": "number",
+            "title": "Expected Per Run"
+          },
+          "expected_runs": {
+            "type": "number",
+            "title": "Expected Runs"
+          },
+          "expected_resin": {
+            "type": "number",
+            "title": "Expected Resin"
+          },
+          "resin_per_unit": {
+            "type": "number",
+            "title": "Resin Per Unit"
+          },
+          "curated": {
+            "type": "boolean",
+            "title": "Curated"
+          }
+        },
+        "type": "object",
+        "required": [
+          "root_id",
+          "source_type",
+          "resin_per_run",
+          "expected_per_run",
+          "expected_runs",
+          "expected_resin",
+          "resin_per_unit",
+          "curated"
+        ],
+        "title": "ResinEstimateRead",
+        "description": "Expected resin for one material, and the tier it is actually farmed at."
+      },
+      "ResinTotalRead": {
+        "properties": {
+          "expected": {
+            "type": "number",
+            "title": "Expected"
+          },
+          "unpriced": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Unpriced"
+          },
+          "not_farmable": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Not Farmable"
+          },
+          "unpriced_sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unpriced Sources"
+          },
+          "histogram": {
+            "items": {
+              "$ref": "#/components/schemas/HistogramBinRead"
+            },
+            "type": "array",
+            "title": "Histogram"
+          }
+        },
+        "type": "object",
+        "required": [
+          "expected",
+          "unpriced",
+          "not_farmable",
+          "unpriced_sources",
+          "histogram"
+        ],
+        "title": "ResinTotalRead",
+        "description": "A section's resin: the average, the shape, and everything with no number."
       },
       "RetrievalOutcome": {
         "properties": {
@@ -9599,6 +10372,60 @@
         "title": "SearchContextRead",
         "description": "Everything `search.ts`'s `SearchContext` needs except the inventory.\n\nO.1. The inventory has its own home \u2014 `/artifacts/inventory`, which is ETag'd because the\nbrowser holds it across searches (OQ-S3). This is the per-build, per-hit half.\n\n**Published, not recomputed.** Every figure here is one the server already works out for\n`/explain`: the base from `build_assembler.base_contributions`, set bonuses from the same\nmodule, the hit through `resolve_talent_hit`. A second assembly of \"what a build starts\nfrom\" is how two definitions of it begin \u2014 which `build_assembler` records having already\nhappened once.\n\n`base` is keyed by **kernel quantity**, which is the reason this endpoint exists at all:\nthe kernel reads `base_atk` and the source spells it `FIGHT_PROP_BASE_ATTACK`, and the\nmapping between them decides what every stat means."
       },
+      "SectionRead": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "mora": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mora"
+          },
+          "materials": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialLineRead"
+            },
+            "type": "array",
+            "title": "Materials"
+          },
+          "resin": {
+            "$ref": "#/components/schemas/ResinTotalRead"
+          },
+          "exp": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExpBillRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "mora",
+          "materials",
+          "resin",
+          "exp"
+        ],
+        "title": "SectionRead",
+        "description": "One bill."
+      },
       "SetAvatarRequest": {
         "properties": {
           "character_id": {
@@ -10275,6 +11102,41 @@
         "title": "SwapNode",
         "description": "An explicit `x swap;`. gcsim also inserts one implicitly; this is the written kind."
       },
+      "TalentOption": {
+        "properties": {
+          "talent_id": {
+            "type": "string",
+            "title": "Talent Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "talent_type": {
+            "type": "string",
+            "title": "Talent Type"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon"
+          }
+        },
+        "type": "object",
+        "required": [
+          "talent_id",
+          "name",
+          "talent_type"
+        ],
+        "title": "TalentOption",
+        "description": "One levelable talent. An alternate sprint has no cost ladder and is not offered."
+      },
       "TalentRead": {
         "properties": {
           "nanoka_id": {
@@ -10374,6 +11236,34 @@
         ],
         "title": "TalentScalingRead",
         "description": "One level's row of a talent's published multiplier table."
+      },
+      "TalentTargetIn": {
+        "properties": {
+          "talent_id": {
+            "type": "string",
+            "title": "Talent Id"
+          },
+          "current": {
+            "type": "integer",
+            "maximum": 15.0,
+            "minimum": 1.0,
+            "title": "Current"
+          },
+          "target": {
+            "type": "integer",
+            "maximum": 15.0,
+            "minimum": 1.0,
+            "title": "Target"
+          }
+        },
+        "type": "object",
+        "required": [
+          "talent_id",
+          "current",
+          "target"
+        ],
+        "title": "TalentTargetIn",
+        "description": "Where one talent is and where it should end up."
       },
       "TalentType": {
         "type": "string",

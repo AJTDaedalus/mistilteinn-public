@@ -51,6 +51,11 @@ _ASCENSION_BASE_KEYS = frozenset(
 _ENERGY_COST_LABEL = "Energy Cost"
 _PARAM_REF = re.compile(r"\{param(\d+)[:}]")
 
+#: Ascension phases a character or weapon has. Six, from `AvatarPromoteExcelConfigData`
+#: and the payload alike — asserted rather than trusted, so a patch that adds a seventh
+#: fails loudly instead of renumbering the ladder in silence.
+ASCENSION_PHASES = 6
+
 #: A real talent publishes 15 levels. The only 1-level entries at 7.0.51 are Ayaka's
 #: "Kamisato Art: Senho" and Mona's "Illusory Torrent" — the two alternate sprints, which
 #: carry a `Skill_S_*` icon exactly like an elemental skill does. Icon prefix alone
@@ -99,6 +104,10 @@ def character_fields(key: str, payload: dict[str, Any]) -> dict[str, Any]:
         "base_crit_dmg": payload.get("crit_dmg", 0.0) or 0.0,
         "burst_energy_cost": burst_energy_cost(payload),
         "icon": payload.get("icon"),
+        # **Per level, not cumulative** — entry `i` is the EXP to go from level `i+1` to
+        # `i+2`, and the first 89 sum to 8,362,650, the published total to level 90. Stored
+        # verbatim; the planner is the only reader and it reads the whole list.
+        "level_exp": list(payload.get("level_exp") or []),
     }
 
 
@@ -365,6 +374,10 @@ def weapon_fields(key: str, payload: dict[str, Any]) -> dict[str, Any]:
         "ascension_atk": payload.get("ascension") or {},
         "icon": payload.get("icon"),
         "description": payload.get("desc", "") or "",
+        # `{"1": 600, ... "90": 666050}` — the EXP to leave each level. Per weapon, so the
+        # five parallel curves `WeaponLevelExcelConfigData` publishes are already resolved
+        # to the right one by rarity.
+        "xp_requirements": dict(payload.get("xp_requirements") or {}),
     }
 
 
@@ -629,3 +642,125 @@ def _stat_curves(variant: dict[str, Any]) -> dict[str, str]:
         if prop.get("grow_curve") not in (None, "", _NO_CURVE)
         and prop.get("type") not in (None, "", "FIGHT_PROP_NONE")
     }
+
+
+# -- Levelling costs ------------------------------------------------------------------
+#
+# `materials.ascensions`, `materials.talents` and the weapon's `materials` map have been in
+# every pinned payload since Chunk D and were never read. `docs/RESEARCH_leveling_planner_data.md`
+# §1 records that; these functions are what finally read them.
+
+
+def _cost_items(entry: dict[str, Any]) -> list[dict[str, int]]:
+    """`{"mats": [...], "cost": n}` → the material list, as `[{"id":…, "count":…}]`.
+
+    Names and ranks are dropped here on purpose: they belong to the material, not to the
+    bill, and `material_rows` collects them separately so one material has one row.
+    """
+    return [
+        {"id": int(mat["id"]), "count": int(mat["count"])}
+        for mat in entry.get("mats") or []
+        if mat and mat.get("id") is not None
+    ]
+
+
+def character_ascension_cost_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    """One row per ascension phase, `phase` 1-6.
+
+    The payload lists six entries in ladder order and `phase` is their 1-based position —
+    which is positional, and the only thing available: nothing in the entry names its phase.
+    The six-ness is asserted rather than trusted, because a payload that grew a seventh
+    entry would otherwise renumber the whole ladder in silence.
+    """
+    entries = (payload.get("materials") or {}).get("ascensions") or []
+    if entries and len(entries) != ASCENSION_PHASES:
+        msg = f"expected {ASCENSION_PHASES} ascension cost entries, found {len(entries)}"
+        raise NanokaMappingError(msg)
+    return [
+        {"phase": index, "mora": int(entry.get("cost", 0)), "items": _cost_items(entry)}
+        for index, entry in enumerate(entries, start=1)
+    ]
+
+
+def talent_cost_rows(key: str, payload: dict[str, Any]) -> list[dict[str, Any]]:
+    """One row per talent per upgrade step, carrying the talent's `nanoka_id`.
+
+    **`materials.talents` is parallel to `skills[]` and there is no key to join on**, so this
+    is positional and says so. The lengths are asserted to match, which is the only check
+    available and is a real one: Ayaka has four skills and four cost lists holding **two
+    distinct** sets, so a mismatch here would silently price her talents off each other's
+    bills. Rosaria and Venti are uniform, which is why a spot check would have missed it.
+
+    Nine steps take a talent from level 1 to 10. Levels 11-15 come from constellations and
+    have no rows at all.
+    """
+    talent_costs = (payload.get("materials") or {}).get("talents") or []
+    skills = payload.get("skills") or []
+    if talent_costs and len(talent_costs) != len(skills):
+        msg = (
+            f"character {key}: {len(talent_costs)} talent cost lists against {len(skills)} "
+            "skills — the two are joined by position and cannot be paired"
+        )
+        raise NanokaMappingError(msg)
+    rows: list[dict[str, Any]] = []
+    for skill, levels in zip(skills, talent_costs, strict=False):
+        for level, entry in enumerate(levels, start=1):
+            rows.append(
+                {
+                    "nanoka_id": int(skill["id"]),
+                    "level": level,
+                    "mora": int(entry.get("cost", 0)),
+                    "items": _cost_items(entry),
+                },
+            )
+    return rows
+
+
+def weapon_ascension_cost_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    """One row per weapon ascension phase, from the `"1".."6"`-keyed `materials` map.
+
+    Keyed rather than positional here — the weapon payload spells the phase out — so this
+    one reads the key instead of counting.
+    """
+    materials = payload.get("materials") or {}
+    rows = []
+    for raw_phase, entry in materials.items():
+        try:
+            phase = int(raw_phase)
+        except (TypeError, ValueError):
+            continue
+        if not 1 <= phase <= ASCENSION_PHASES:
+            msg = f"weapon ascension phase {raw_phase!r} is outside 1-{ASCENSION_PHASES}"
+            raise NanokaMappingError(msg)
+        rows.append(
+            {"phase": phase, "mora": int(entry.get("cost", 0)), "items": _cost_items(entry)},
+        )
+    return sorted(rows, key=lambda row: row["phase"])
+
+
+def material_rows(payload: dict[str, Any]) -> dict[int, dict[str, Any]]:
+    """Every material this payload mentions, as `{id: {"name":…, "rarity":…}}`.
+
+    Collected from both shapes — the character's `ascensions`/`talents` and the weapon's
+    numbered map — so one function serves both importers. `rarity` is nanoka's `rank`; the
+    seed cross-checks it against YuanShen's `rankLevel`, and at 7.0.51 all 508 agree.
+    """
+    materials = payload.get("materials") or {}
+    groups: list[Any] = []
+    if isinstance(materials, dict):
+        groups.extend(materials.get("ascensions") or [])
+        for levels in materials.get("talents") or []:
+            groups.extend(levels)
+        for raw_phase, entry in materials.items():
+            if raw_phase not in {"ascensions", "talents"} and isinstance(entry, dict):
+                groups.append(entry)
+    out: dict[int, dict[str, Any]] = {}
+    for entry in groups:
+        for mat in (entry or {}).get("mats") or []:
+            if not mat or mat.get("id") is None:
+                continue
+            out[int(mat["id"])] = {
+                "name": str(mat.get("name", "")),
+                "rarity": int(mat.get("rank", 0)),
+            }
+    return out

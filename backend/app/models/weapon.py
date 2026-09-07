@@ -78,6 +78,12 @@ class Weapon(TimestampMixin, Base):
 
     #: `ascension` verbatim — per-phase base-ATK bumps, read as one unit.
     ascension_atk: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    #: `xp_requirements` verbatim: `{"1": 600, ... "90": 666050}`, the EXP to leave each
+    #: level. Per weapon, so rarity is already baked in — `WeaponLevelExcelConfigData`
+    #: publishes five parallel curves and this payload has already picked the right one.
+    xp_requirements: Mapped[dict] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb"),
+    )
 
     icon: Mapped[str | None] = mapped_column(String(128), nullable=True)
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
