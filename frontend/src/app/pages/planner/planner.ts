@@ -1,6 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import type { WritableSignal } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 import { CatalogueIcon } from '../../shared/icon/icon';
@@ -41,6 +40,33 @@ const TALENT_LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
  */
 const ALL_LEVELS = Array.from({ length: 90 }, (_, index) => index + 1);
 
+/** viewBox geometry for the resin histogram. Units are arbitrary; the SVG scales to fit. */
+const PLOT = { width: 360, height: 148, left: 34, right: 6, top: 10, bottom: 24 } as const;
+
+/** Surface showing between neighbouring bars, so twelve bins read as twelve. */
+const BAR_GAP = 2;
+
+/**
+ * Round numbers the probability axis is allowed to top out at.
+ *
+ * A scale that ends exactly at the tallest bar makes every chart look equally peaked, which is
+ * the thing this histogram exists to distinguish: a narrow distribution and a broad one should
+ * not draw the same picture.
+ */
+const NICE_CEILINGS = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1];
+
+interface HistogramPlot {
+  bars: { x: number; y: number; width: number; height: number; title: string }[];
+  yTicks: { y: number; label: string }[];
+  xTicks: { x: number; label: string }[];
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+  width: number;
+  height: number;
+}
+
 interface TalentRow {
   talent: TalentOption;
   current: number;
@@ -57,7 +83,7 @@ interface TalentRow {
  */
 @Component({
   selector: 'page-planner',
-  imports: [FormsModule, DecimalPipe, CatalogueIcon, CardPicker],
+  imports: [FormsModule, CatalogueIcon, CardPicker],
   templateUrl: './planner.html',
   styleUrl: './planner.scss',
 })
@@ -463,10 +489,66 @@ export class PlannerPage implements OnInit {
     return nothingPriced ? '—' : `\u2248 ${this.round(section.resin.expected)}`;
   }
 
-  /** Bar height as a percentage of the tallest bin, so a flat histogram still reads. */
-  protected barHeight(section: SectionRead, probability: number): number {
-    const peak = Math.max(...section.resin.histogram.map((bin) => bin.probability), 0.0001);
-    return Math.max(2, (probability / peak) * 100);
+  /**
+   * The resin histogram as SVG geometry: bars, and both axes' ticks.
+   *
+   * **Computed here rather than in the template.** The old chart was a flex row of `<div>`s
+   * with a percentage height, which can draw bars and cannot draw an axis: there is nowhere to
+   * hang a tick, and the bar heights were relative to the tallest bar rather than to a scale,
+   * so two sections' charts looked alike while meaning different things.
+   *
+   * One series, so no legend — the caption names it. Sizes are viewBox units; the SVG scales
+   * to its column.
+   */
+  protected plot(section: SectionRead): HistogramPlot {
+    const bins = section.resin.histogram;
+    const peak = Math.max(...bins.map((bin) => bin.probability), 0.0001);
+    const yMax = NICE_CEILINGS.find((step) => step >= peak) ?? 1;
+
+    const left = PLOT.left;
+    const right = PLOT.width - PLOT.right;
+    const top = PLOT.top;
+    const bottom = PLOT.height - PLOT.bottom;
+    const span = right - left;
+    const slot = span / bins.length;
+
+    const bars = bins.map((bin, index) => {
+      const height = ((bin.probability / yMax) * (bottom - top)) || 0;
+      return {
+        // **A 2px gap between neighbours**, not a bar per slot: contiguous fills read as one
+        // block and the eye cannot count them.
+        x: left + index * slot + BAR_GAP / 2,
+        width: Math.max(1, slot - BAR_GAP),
+        y: bottom - height,
+        height,
+        title: `${this.round(bin.low)}–${this.round(bin.high)} resin: `
+          + `${(bin.probability * 100).toFixed(1)}%`,
+      };
+    });
+
+    // Three is enough to read a scale off and few enough not to crowd a chart this size.
+    const yTicks = [0, 0.5, 1].map((fraction) => ({
+      y: bottom - fraction * (bottom - top),
+      label: `${Math.round(yMax * fraction * 100)}%`,
+    }));
+
+    // Ticks on bin *edges*, so a label names a real boundary rather than a bar's middle. The
+    // last one is the final bin's `high`, which is the only edge no bin starts at.
+    const edges = [0, Math.floor(bins.length / 2), bins.length];
+    const xTicks = [...new Set(edges)].map((index) => ({
+      x: left + index * slot,
+      label: this.round(
+        index === bins.length ? bins[bins.length - 1].high : bins[index].low,
+      ),
+    }));
+
+    // **Not `...PLOT`.** `PLOT.right` is the right *padding* (6) and `right` is the computed
+    // right *edge* (354); spreading it last silently replaced one with the other, which the
+    // typecheck caught and a chart would have shown as every bar crushed against the y axis.
+    return {
+      bars, yTicks, xTicks, left, right, top, bottom,
+      width: PLOT.width, height: PLOT.height,
+    };
   }
 
   protected rowsToShow(section: SectionRead): MaterialLineRead[] {
