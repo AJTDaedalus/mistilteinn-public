@@ -249,3 +249,66 @@ describe('PlannerPage', () => {
     expect(page['busy']()).toBe(false);
   });
 });
+
+describe('the resin histogram', () => {
+  const section = (probabilities: number[]) => ({
+    resin: {
+      histogram: probabilities.map((probability, index) => ({
+        low: index * 10, high: (index + 1) * 10, probability,
+      })),
+    },
+  }) as never;
+
+  it('scales bars against a round ceiling, not against the tallest bar', async () => {
+    // **The bug this replaces.** Every bar used to be a percentage of the peak, so the tallest
+    // bar was full height in every chart — a distribution spread over a wide range and one
+    // concentrated in a single bin drew the same picture, which is the one thing this chart
+    // exists to tell apart.
+    const page = makePage();
+    await page.ngOnInit();
+
+    const flat = page['plot'](section([0.2, 0.2, 0.2, 0.2, 0.2]));
+    const peaked = page['plot'](section([0.02, 0.06, 0.84, 0.06, 0.02]));
+
+    // The flat chart tops out at 20% of a 20% axis: full height. The peaked one is 84% of a
+    // 100% axis. Under the old rule both would have been full height.
+    const tallest = (p: typeof flat) => Math.max(...p.bars.map((b) => b.height));
+    expect(tallest(flat)).toBeCloseTo(flat.bottom - flat.top, 5);
+    expect(tallest(peaked)).toBeLessThan(peaked.bottom - peaked.top);
+    expect(peaked.yTicks.at(-1)!.label).toBe('100%');
+    expect(flat.yTicks.at(-1)!.label).toBe('20%');
+  });
+
+  it('anchors every bar to the baseline and keeps them inside the plot', () => {
+    const page = makePage();
+    const chart = page['plot'](section([0.1, 0.3, 0.05, 0.0]));
+
+    for (const bar of chart.bars) {
+      expect(bar.y + bar.height).toBeCloseTo(chart.bottom, 5);
+      expect(bar.y).toBeGreaterThanOrEqual(chart.top - 0.001);
+      expect(bar.x).toBeGreaterThanOrEqual(chart.left);
+      expect(bar.x + bar.width).toBeLessThanOrEqual(chart.right + 0.001);
+    }
+    // A zero-probability bin draws nothing, so "impossible" does not look like "unlikely".
+    expect(chart.bars.at(-1)!.height).toBe(0);
+  });
+
+  it('labels the x axis on bin edges, ending at the last bin high', () => {
+    // A tick in the middle of a bar names a number no boundary has. The final edge is the one
+    // no bin starts at, which is why it is taken from `high` rather than from another `low`.
+    const page = makePage();
+    const chart = page['plot'](section([0.25, 0.25, 0.25, 0.25]));
+
+    expect(chart.xTicks.map((tick) => tick.label)).toEqual(['0', '20', '40']);
+    expect(chart.xTicks[0].x).toBe(chart.left);
+    expect(chart.xTicks.at(-1)!.x).toBeCloseTo(chart.right, 5);
+  });
+
+  it('leaves a gap between neighbouring bars', () => {
+    // Contiguous fills read as one block and the eye cannot count them.
+    const page = makePage();
+    const chart = page['plot'](section([0.5, 0.5]));
+
+    expect(chart.bars[1].x - (chart.bars[0].x + chart.bars[0].width)).toBeCloseTo(2, 5);
+  });
+});

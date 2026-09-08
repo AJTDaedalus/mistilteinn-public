@@ -328,28 +328,47 @@
       margin-bottom: 0.3rem;
     }
 
-    .bars {
-      display: flex;
-      align-items: flex-end;
-      gap: 2px;
-      height: 4.5rem;
+    svg {
+      display: block;
+      width: 100%;
+      max-width: 40rem;
+      height: auto;
+      overflow: visible;
     }
 
-    .bar {
-      flex: 1 1 0;
-      background: var(--azure);
-      border-radius: var(--radius-0) var(--radius-0) 0 0;
-      min-height: 2px;
+    /* One series, so one hue. It is the app's data accent, the same colour the mint/azure
+       half of the palette is reserved for. */
+    .bar { fill: var(--azure); }
+
+    /* Recessive: the grid is a reading aid, not data. */
+    .grid {
+      stroke: var(--surface-rule);
+      stroke-width: 1;
     }
 
-    .axis {
-      display: flex;
-      justify-content: space-between;
+    .axis-line {
+      stroke: var(--surface-rule);
+      stroke-width: 1;
+    }
+
+    /* Tabular figures so the axis labels line up rather than drifting with their digits. */
+    /* **`--ink-dim`, not `--ink-faint`.** Recessive is right for the grid and wrong for the
+       numbers: faint measures 3.57:1 on this surface, under AA for text this size, and these
+       labels are the thing the axis exists to provide. Dim clears it at 6.6:1. */
+    .tick {
       font-family: var(--font-mono);
-      font-size: var(--text-xs);
-      color: var(--ink-faint);
-      margin-top: 0.2rem;
+      font-variant-numeric: tabular-nums;
+      font-size: 9px;
+      fill: var(--ink-dim);
     }
+
+    .tick--y {
+      text-anchor: end;
+      dominant-baseline: middle;
+    }
+
+    .tick--x { text-anchor: middle; }
+
   }
 
   .model-note {

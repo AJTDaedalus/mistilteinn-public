@@ -387,22 +387,55 @@
           }
 
           @if (section.resin.histogram.length > 1) {
-            <figure class="histogram">
-              <figcaption>How much resin this is likely to take</figcaption>
-              <div class="bars">
-                @for (bin of section.resin.histogram; track bin.low) {
-                  <div
-                    class="bar"
-                    [style.height.%]="barHeight(section, bin.probability)"
-                    [title]="round(bin.low) + '–' + round(bin.high) + ' resin: ' + (bin.probability * 100).toFixed(1) + '%'"
-                  ></div>
-                }
-              </div>
-              <div class="axis">
-                <span>{{ round(section.resin.histogram[0].low) }}</span>
-                <span>{{ round(section.resin.histogram[section.resin.histogram.length - 1].high) }}</span>
-              </div>
-            </figure>
+            <!-- **SVG, because the old chart could not carry an axis.** It was a flex row of
+                 divs with a percentage height: nowhere to hang a tick, and each bar measured
+                 against the tallest bar rather than a scale, so a narrow distribution and a
+                 broad one drew the same picture. One series, so the caption is the legend. -->
+            @if (plot(section); as chart) {
+              <figure class="histogram">
+                <figcaption>Resin cost probability distribution</figcaption>
+                <svg
+                  [attr.viewBox]="'0 0 ' + chart.width + ' ' + chart.height"
+                  role="img"
+                  aria-label="Resin cost probability distribution"
+                  preserveAspectRatio="xMidYMid meet"
+                >
+                  <!-- Gridlines first, so bars paint over them rather than through them. -->
+                  @for (tick of chart.yTicks; track tick.label) {
+                    <line
+                      class="grid"
+                      [attr.x1]="chart.left" [attr.x2]="chart.right"
+                      [attr.y1]="tick.y" [attr.y2]="tick.y"
+                    />
+                    <text class="tick tick--y" [attr.x]="chart.left - 6" [attr.y]="tick.y">
+                      {{ tick.label }}
+                    </text>
+                  }
+
+                  @for (bar of chart.bars; track bar.x) {
+                    <!-- `rx` rounds the data end. A zero-probability bin draws nothing rather
+                         than a stub, so "impossible" and "unlikely" do not look alike. -->
+                    <rect
+                      class="bar"
+                      [attr.x]="bar.x" [attr.y]="bar.y"
+                      [attr.width]="bar.width" [attr.height]="bar.height"
+                      rx="2"
+                    ><title>{{ bar.title }}</title></rect>
+                  }
+
+                  <line
+                    class="axis-line"
+                    [attr.x1]="chart.left" [attr.x2]="chart.right"
+                    [attr.y1]="chart.bottom" [attr.y2]="chart.bottom"
+                  />
+                  @for (tick of chart.xTicks; track tick.x) {
+                    <text class="tick tick--x" [attr.x]="tick.x" [attr.y]="chart.bottom + 12">
+                      {{ tick.label }}
+                    </text>
+                  }
+                </svg>
+              </figure>
+            }
           }
         </section>
       }
