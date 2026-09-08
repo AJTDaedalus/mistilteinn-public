@@ -360,7 +360,7 @@ def test_nothing_to_farm_draws_no_histogram(eco) -> None:
             ),
             Effect.REFUND,
             {MaterialClass.TALENT, MaterialClass.WEAPON_ASCENSION},
-            False,
+            True,
         ),
         (
             "Flash of Genius",
@@ -370,7 +370,7 @@ def test_nothing_to_farm_draws_no_histogram(eco) -> None:
             ),
             Effect.REFUND,
             {MaterialClass.TALENT},
-            False,
+            True,
         ),
     ],
 )
@@ -416,11 +416,22 @@ def test_only_the_best_double_applies_because_one_character_crafts_a_batch() -> 
     assert craft_multiplier([], MaterialClass.TALENT) == 1.0
 
 
-def test_a_refund_bonus_never_moves_a_number() -> None:
-    """The chance is published; "a portion" is not. Reported, never applied."""
+def test_a_refund_bonus_moves_the_number_by_the_derived_amount() -> None:
+    """**This asserted the opposite until 2026-09-07**, on the grounds that "a portion" left
+    the size unstated. The description states it — one count of one material — and the owner
+    supplied the derivation that turns it into a figure:
+    https://genshin-impact.fandom.com/wiki/Crafting#Efficiency
+
+    A craft eats three, so a 25% chance of one back is `3 / (3 - 0.25)`, not 1.25 and not 1.0.
+    Both of those wrong answers are round numbers a reader could believe, which is why the
+    value is asserted rather than just "greater than one".
+    """
     mona = classify(
         "c", "Mona", "Principium of Astrology",
         "When Mona crafts Weapon Ascension Materials, she has a 25% chance to refund a "
         "portion of the crafting materials used.",
     )
-    assert craft_multiplier([mona], MaterialClass.WEAPON_ASCENSION) == 1.0
+
+    assert craft_multiplier([mona], MaterialClass.WEAPON_ASCENSION) == pytest.approx(3 / 2.75)
+    # And still nothing for the class she does not name.
+    assert craft_multiplier([mona], MaterialClass.TALENT) == 1.0

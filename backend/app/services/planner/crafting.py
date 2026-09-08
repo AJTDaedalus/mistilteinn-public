@@ -9,10 +9,11 @@ nanoka since Chunk C. Nothing new is imported; this module classifies what is th
   Albedo / Alhaitham / Wriothesley 10% on weapon ascension materials, Eula / Layla 10% on
   character talent materials. Exact: expected output per batch is `1 + p`, so the inputs a
   plan needs fall by that factor. **Applied.**
-* **refund a portion**, with a stated chance — Xingqiu 25%, Mona 25%, Dori 25%. The *chance*
-  is published and **"a portion" is not**, in any table in the pinned dump. Reported so the
-  user knows the character helps, never applied, because inventing the portion would move a
-  real number by an invented amount.
+* **refund a portion**, with a stated chance. Xingqiu 25%, Mona 25%, Dori 25%. **Applied**,
+  since 2026-09-07. This was reported-but-never-applied on the grounds that "a portion" was
+  unquantified; it is quantified, and the description says so: the refund is *one count of one
+  material used*. The owner supplied the source, and the derivation is on the wiki's
+  [Crafting page](https://genshin-impact.fandom.com/wiki/Crafting#Efficiency).
 **A third shape is deliberately not classified at all.** Yae Miko and Prune have a chance at
 *1 regional Character Talent Material*, which would need the regional material family modelled
 to price. Owner ruling: that modelling is not wanted, so these are not planner-relevant
@@ -66,8 +67,8 @@ class CraftingBonus:
     effect: Effect
     chance: float
     classes: frozenset[MaterialClass]
-    #: False for `REFUND`: the chance is published and the *size* is not, so applying it would
-    #: move a real number by an invented amount.
+    #: Whether the effect can be priced. True for both live effects since 2026-09-07 — see
+    #: `craft_multiplier` for the refund's arithmetic and why it was withheld before.
     applicable: bool
     description: str
 
@@ -110,7 +111,7 @@ def classify(
     if _DOUBLE.search(text):
         effect, applicable = Effect.DOUBLE, True
     elif _REFUND.search(text):
-        effect, applicable = Effect.REFUND, False
+        effect, applicable = Effect.REFUND, True
     else:
         return None
     if not classes:
@@ -130,19 +131,48 @@ def classify(
     )
 
 
+#: Materials one craft consumes, for the refund arithmetic below.
+#:
+#: **Measured, not assumed.** `CombineExcelConfigData` holds 249 recipes the planner can walk
+#: and 245 are 3-in-1-out; the four that are not are Fabric and the three Dyes, furnishing
+#: recipes that no crafting passive names and no plan bills.
+#: `tests/unit/test_planner_crafting.py` pins that, so a patch adding a talent book on a
+#: different ratio fails a test instead of quietly mispricing the refund.
+INPUTS_PER_CRAFT = 3
+
+
 def craft_multiplier(bonuses: list[CraftingBonus], material_class: MaterialClass) -> float:
     """How many outputs one crafting batch is worth, given the selected characters.
 
-    A 10% chance of double output makes a batch worth `1.10` on average, so the inputs a plan
-    needs are divided by this. Only one character crafts a given batch, so the **best**
-    applicable bonus is taken rather than the product of several — stacking them would invent
-    an interaction the game does not have.
+    The inputs a plan needs are divided by this, so a larger number is a cheaper plan.
+
+    **Double is the simple arm.** A 10% chance of double output makes a batch worth `1.10`.
+
+    **Refund is not, and reading it as one is the trap.** "25% chance to refund a portion"
+    does *not* mean a quarter of the materials come back. The description says one count of
+    one material, and a craft consumes three, so the expected return is `p/3` per material —
+    about 8.3% at p=25%, not 25%. Those refunds are themselves craftable, so the true figure
+    is the sum of a geometric series:
+
+        x0[p/3 + (p/3)^2 + ...] = x0 / (1 - p/3)  materials usable
+                                = x0 / (3 - p)    products
+
+    so a batch is worth `3 / (3 - p)`, which is **1.0909** at 25%. That is why a 10% double
+    beats a 25% refund, a result the source states outright and which reads backwards until
+    the arithmetic is done.
+
+    Derivation and both figures:
+    https://genshin-impact.fandom.com/wiki/Crafting#Efficiency
+
+    Only one character crafts a given batch, so the **best** bonus is taken rather than the
+    product of several — stacking them would invent an interaction the game does not have.
     """
-    applicable = [
-        bonus.chance
-        for bonus in bonuses
-        if bonus.applicable
-        and bonus.effect is Effect.DOUBLE
-        and material_class in bonus.classes
-    ]
-    return 1.0 + max(applicable, default=0.0)
+    best = 1.0
+    for bonus in bonuses:
+        if not bonus.applicable or material_class not in bonus.classes:
+            continue
+        if bonus.effect is Effect.DOUBLE:
+            best = max(best, 1.0 + bonus.chance)
+        elif bonus.effect is Effect.REFUND:
+            best = max(best, INPUTS_PER_CRAFT / (INPUTS_PER_CRAFT - bonus.chance))
+    return best

@@ -261,11 +261,27 @@
                   <div class="craft__col">
                     <h4>Material refund</h4>
                     @if (group.refund.length) {
+                      <!-- **Checkable since the refund was priced.** These were greyed while
+                           "a portion" looked unquantified; it is one count of one material per
+                           three-material craft, so the column is now as actionable as its
+                           neighbour. `services/planner/crafting.py`. -->
                       <ul>
                         @for (bonus of group.refund; track bonus.character_id) {
                           <li>
-                            <span class="craft__who muted">{{ bonus.character_name }}</span>
-                            <span class="craft__rate muted">{{ bonus.chance * 100 | number:'1.0-0' }}%</span>
+                            @if (bonus.applicable) {
+                              <label class="check">
+                                <input
+                                  type="checkbox"
+                                  [checked]="selectedBonuses().has(bonus.character_id)"
+                                  (change)="toggleBonus(bonus.character_id)"
+                                />
+                                <span class="craft__who">{{ bonus.character_name }}</span>
+                                <span class="craft__rate">{{ bonus.chance * 100 | number:'1.0-0' }}%</span>
+                              </label>
+                            } @else {
+                              <span class="craft__who muted">{{ bonus.character_name }}</span>
+                              <span class="craft__rate muted">{{ bonus.chance * 100 | number:'1.0-0' }}%</span>
+                            }
                           </li>
                         }
                       </ul>
