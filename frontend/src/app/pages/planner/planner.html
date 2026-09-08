@@ -235,14 +235,12 @@
                                   (change)="toggleBonus(bonus.character_id)"
                                 />
                                 <span class="craft__who">{{ bonus.character_name }}</span>
-                                <span class="craft__rate">{{ bonus.chance * 100 | number:'1.0-0' }}%</span>
                               </label>
                             } @else {
-                              <!-- Listed, never checkable: the chance is published and the
-                                   size of the effect is not, so applying it would move a real
-                                   number by an invented amount. -->
+                              <!-- Listed, never checkable. No effect is in this state
+                                   today; the branch stays because `applicable` is a real
+                                   field and a future one could be. -->
                               <span class="craft__who muted">{{ bonus.character_name }}</span>
-                              <span class="craft__rate muted">{{ bonus.chance * 100 | number:'1.0-0' }}%</span>
                             }
                           </li>
                         }
@@ -276,11 +274,9 @@
                                   (change)="toggleBonus(bonus.character_id)"
                                 />
                                 <span class="craft__who">{{ bonus.character_name }}</span>
-                                <span class="craft__rate">{{ bonus.chance * 100 | number:'1.0-0' }}%</span>
                               </label>
                             } @else {
                               <span class="craft__who muted">{{ bonus.character_name }}</span>
-                              <span class="craft__rate muted">{{ bonus.chance * 100 | number:'1.0-0' }}%</span>
                             }
                           </li>
                         }

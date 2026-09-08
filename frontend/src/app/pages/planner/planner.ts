@@ -1,6 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import type { WritableSignal } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 import { CatalogueIcon } from '../../shared/icon/icon';
@@ -57,7 +56,7 @@ interface TalentRow {
  */
 @Component({
   selector: 'page-planner',
-  imports: [FormsModule, DecimalPipe, CatalogueIcon, CardPicker],
+  imports: [FormsModule, CatalogueIcon, CardPicker],
   templateUrl: './planner.html',
   styleUrl: './planner.scss',
 })

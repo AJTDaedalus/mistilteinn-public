@@ -190,13 +190,6 @@
 
   .craft__who { color: var(--ink); }
 
-  /* Tabular, so a column of percentages lines up rather than drifting with the name above. */
-  .craft__rate {
-    font-family: var(--font-mono);
-    font-variant-numeric: tabular-nums;
-    color: var(--mint);
-  }
-
   .craft__why {
     color: var(--ink-dim);
     font-size: var(--text-xs);
