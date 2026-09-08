@@ -8174,6 +8174,11 @@
             "type": "integer",
             "title": "Owned"
           },
+          "from_surplus": {
+            "type": "integer",
+            "title": "From Surplus",
+            "default": 0
+          },
           "still_needed": {
             "type": "integer",
             "title": "Still Needed"

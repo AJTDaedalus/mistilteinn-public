@@ -541,3 +541,4 @@ async def test_enough_mora_reports_no_shortfall(
     )).json()["mora"]
 
     assert mora["short"] == 0
+

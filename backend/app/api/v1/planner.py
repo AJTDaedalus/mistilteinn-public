@@ -189,6 +189,12 @@ class MaterialLineRead(BaseModel):
     rarity: int
     required: int
     owned: int
+    #: Units craftable from surplus lower in the same family, 3:1 in almost every recipe.
+    #:
+    #: **Separate from `owned`, and the separation is the honesty.** Holding three Philosophies
+    #: and being able to make nine more from spare Teachings is not the same as holding twelve:
+    #: the nine cost mora and a bench, and the section's mora already includes that.
+    from_surplus: int = 0
     still_needed: int
     resin: ResinEstimateRead | None
     resin_status: str
@@ -432,6 +438,7 @@ def _section_read(section: service.Section) -> SectionRead:
                 rarity=line.rarity,
                 required=line.required,
                 owned=line.owned,
+                from_surplus=line.from_surplus,
                 still_needed=line.still_needed,
                 resin=(
                     ResinEstimateRead(

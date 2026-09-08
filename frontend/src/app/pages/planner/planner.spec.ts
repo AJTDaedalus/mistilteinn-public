@@ -368,3 +368,63 @@ describe('crafting help is one pick per class', () => {
     expect(page['selectedBonusIds']()).toEqual([]);
   });
 });
+
+describe('start clean or use existing', () => {
+  const withBuilds = async (builds: unknown[]) => {
+    const page = makePage();
+    await page.ngOnInit();
+    page['options'].set({ ...page['options']()!, builds } as never);
+    return page;
+  };
+
+  it('offers nothing when no build has been levelled', async () => {
+    // A build at level 1 says the same thing as starting clean, so a picker offering both is a
+    // question with one answer. Asking it on every character would be noise on most of them.
+    const page = await withBuilds([
+      { build_id: 'b1', name: 'Fresh', character_level: 1, ascension_phase: 0, talent_levels: {} },
+    ]);
+
+    expect(page['startOptions']()).toEqual([]);
+  });
+
+  it('offers clean first, then each levelled build', async () => {
+    const page = await withBuilds([
+      { build_id: 'b1', name: 'Fresh', character_level: 1, ascension_phase: 0, talent_levels: {} },
+      { build_id: 'b2', name: 'Main', character_level: 80, ascension_phase: 6, talent_levels: {} },
+    ]);
+
+    const options = page['startOptions']();
+    expect(options.map((o) => o.value)).toEqual(['clean', 'b2']);
+    expect(options[1].detail).toBe('Lv80 · A6');
+  });
+
+  it('counts an ascended level-1 build as levelled', async () => {
+    // Ascending without levelling is a real state the two controls exist for, so "level 1"
+    // alone is the wrong test for "same as clean".
+    const page = await withBuilds([
+      { build_id: 'b1', name: 'Odd', character_level: 1, ascension_phase: 2, talent_levels: {} },
+    ]);
+
+    expect(page['startOptions']().map((o) => o.value)).toEqual(['clean', 'b1']);
+  });
+
+  it('goes back to a fresh character when clean is picked again', async () => {
+    // The picker has to be reversible. Reading a build in and then having no way back would
+    // make the choice one-way, which is the thing a radio-shaped control must not be.
+    const page = await withBuilds([
+      { build_id: 'b2', name: 'Main', character_level: 80, ascension_phase: 6, talent_levels: {} },
+    ]);
+    page['talentRows'].set([
+      { talent: { talent_id: 't', talent_type: 'burst' }, current: 1, target: 10 },
+    ] as never);
+
+    page['pickStart'](['b2']);
+    expect(page['fromLevel']()).toBe(80);
+    expect(page['fromAscension']()).toBe(6);
+
+    page['pickStart'](['clean']);
+    expect(page['fromLevel']()).toBe(1);
+    expect(page['fromAscension']()).toBe(0);
+    expect(page['talentRows']()[0].current).toBe(1);
+  });
+});
