@@ -315,7 +315,7 @@
         </fieldset>
 
         <button type="button" class="run" (click)="run()" [disabled]="busy()">
-          {{ busy() ? 'Calculating…' : 'Calculate cost' }}
+          {{ busy() ? 'Calculating…' : 'Calculate' }}
         </button>
         @if (error(); as message) {
           <p class="error" role="alert">{{ message }}</p>
