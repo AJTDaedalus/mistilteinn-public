@@ -353,7 +353,9 @@
                   <th scope="col" colspan="2">Material</th>
                   <th scope="col" class="num">Required</th>
                   <th scope="col" class="num">Owned</th>
-                  <th scope="col" class="num">Crafted</th>
+                  @if (showsCrafted(section)) {
+                    <th scope="col" class="num">Crafted</th>
+                  }
                   <th scope="col" class="num">Remaining needed</th>
                 </tr>
               </thead>
@@ -364,16 +366,18 @@
                     <td class="name" [attr.data-rarity]="line.rarity">{{ line.name }}</td>
                     <td class="num">{{ number(line.required) }}</td>
                     <td class="num">{{ number(line.owned) }}</td>
-                    <!-- Its own column now, rather than an annotation on Owned: crafting three
+                    <!-- Its own column, rather than an annotation on Owned: crafting three
                          into one is a thing you do, and it belongs beside what you hold rather
-                         than inside it. -->
-                    <td class="num">
-                      @if (line.from_surplus) {
-                        {{ number(line.from_surplus) }}
-                      } @else {
-                        <span class="muted">—</span>
-                      }
-                    </td>
+                         than inside it. Absent entirely where nothing in the section crafts. -->
+                    @if (showsCrafted(section)) {
+                      <td class="num">
+                        @if (line.from_surplus) {
+                          {{ number(line.from_surplus) }}
+                        } @else {
+                          <span class="muted">—</span>
+                        }
+                      </td>
+                    }
                     <td class="num">{{ number(line.still_needed) }}</td>
                   </tr>
                 }
