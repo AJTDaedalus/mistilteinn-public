@@ -77,6 +77,14 @@ BASE_URL = "https://static.nanoka.cc"
 #: index nanoka publishes: `item`, `gcg`, `furniture` and the rest have no model here.
 ENTITIES: tuple[str, ...] = ("character", "weapon", "artifact", "monster")
 
+#: Entities whose unreleased rows are **marked** rather than held out of the database.
+#:
+#: Artifacts and enemies are not here because nothing prices them: the planner bills a
+#: character's ascension, their talents and a weapon's ascension, and an artifact set has no
+#: levelling cost to ask about. Adding one would put a datamined name on a page for no gain,
+#: which is the trade #271 was about.
+_MARKED_NOT_WITHHELD = frozenset({"character", "weapon"})
+
 #: How many detail payloads to fetch concurrently. A full run is ~1,100 detail requests
 #: (150 characters, 286 weapons, 65 artifact sets, 585 monsters at 7.0.51); sequentially
 #: that is minutes of round-trips. Batched-and-gathered keeps the mapping strictly in index
@@ -550,6 +558,9 @@ class NanokaGIImporter(BaseImporter):
             return False
 
         fields = weapon_fields(key, payload)
+        # Set every run and in both branches, so a weapon stops being beta when it ships.
+        # `_map_character` carries the same line and the same reason.
+        fields["is_beta"] = key in self._beta_keys
         weapon = await self._get_existing(Weapon, int(key))
         if weapon is None:
             weapon = Weapon(**fields)
@@ -674,15 +685,17 @@ class NanokaGIImporter(BaseImporter):
         index = await self.transport.fetch_index(entity)
         keys = _index_keys(index)
         held = await self._unreleased(entity)
-        # **Characters are marked, everything else is still withheld.** Owner, 2026-09-07: the
-        # planner may price an upcoming character. `_map_character` reads this set and sets
-        # `is_beta`; the repository hides those rows from every caller that does not ask, so a
-        # beta character cannot reach a build and therefore cannot reach the optimizer.
+        # **Marked, not withheld** for the entities the planner prices. Owner, 2026-09-07: an
+        # upcoming character and their weapon are one decision, and pricing half of it is not
+        # much use. The mapper reads this set and sets `is_beta`; the repositories hide those
+        # rows from every caller that does not ask, so neither can reach a build and therefore
+        # neither can reach the optimizer.
         #
-        # Weapons, artifacts and enemies keep the original ruling. That asymmetry is
-        # deliberate and narrow: a beta *character* is a thing to plan for, and a beta weapon
-        # in the build editor's picker is the leak #271 was reported about.
-        marking = entity == "character"
+        # **The picker is the line, not the database.** #271 was a report about a beta weapon
+        # name on a public page, and that is still honoured: what changed is where the rule
+        # lives. Hiding at read time keeps the row available to the one surface that was
+        # granted it, where hiding at import time made it available to nothing.
+        marking = entity in _MARKED_NOT_WITHHELD
         self._beta_keys = {key for key in keys if _base_id(key) in held} if marking else set()
         kept = keys if marking else [key for key in keys if _base_id(key) not in held]
         # **`total` stays the whole index**, and the held-back ids are counted beside it. It

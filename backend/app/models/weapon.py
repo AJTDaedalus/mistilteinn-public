@@ -13,6 +13,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
+    Boolean,
     Float,
     ForeignKey,
     Index,
@@ -66,6 +67,18 @@ class Weapon(TimestampMixin, Base):
 
     weapon_type: Mapped[WeaponType] = mapped_column(enum_column(WeaponType, 32), nullable=False)
     rarity: Mapped[Rarity] = mapped_column(enum_column(Rarity, 16), nullable=False)
+
+    #: Datamined ahead of release, the twin of `Character.is_beta`.
+    #:
+    #: Weapons were held back when characters stopped being (2026-09-07), because a beta weapon
+    #: in the build editor's picker is the leak #271 was reported about. The owner extended the
+    #: planner exception to them the same day: a character and their signature weapon are one
+    #: decision, and pricing half of it is not much use.
+    #:
+    #: **The picker is still the line, not the database.** `WeaponRepository` hides these unless
+    #: a caller asks, and only the planner asks, so the build editor never offers one.
+    is_beta: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False,
+                                          server_default="false")
 
     base_atk: Mapped[float | None] = mapped_column(Float, nullable=True)
     base_atk_curve: Mapped[str | None] = mapped_column(String(48), nullable=True)

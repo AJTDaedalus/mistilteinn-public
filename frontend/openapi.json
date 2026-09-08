@@ -724,7 +724,7 @@
           "catalogue"
         ],
         "summary": "List Weapons",
-        "description": "List weapons, filtered by type, rarity or name substring.",
+        "description": "List weapons, filtered by type, rarity or name substring.\n\n**`include_beta` defaults to false**, the twin of the character list's. Only `/planner`\nasks, so the build editor never offers a beta weapon and no build can hold one.\n\nIt does **not** reach the eight rows carrying an unshipped weapon class: those are a\ndifferent exclusion and no flag turns them on.",
         "operationId": "list_weapons_api_v1_weapons_get",
         "parameters": [
           {
@@ -773,6 +773,16 @@
                 }
               ],
               "title": "Name"
+            }
+          },
+          {
+            "name": "include_beta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Beta"
             }
           },
           {
@@ -11961,6 +11971,11 @@
             "type": "string",
             "title": "Name"
           },
+          "is_beta": {
+            "type": "boolean",
+            "title": "Is Beta",
+            "default": false
+          },
           "rarity": {
             "$ref": "#/components/schemas/Rarity"
           },
@@ -12246,6 +12261,11 @@
           "name": {
             "type": "string",
             "title": "Name"
+          },
+          "is_beta": {
+            "type": "boolean",
+            "title": "Is Beta",
+            "default": false
           },
           "rarity": {
             "$ref": "#/components/schemas/Rarity"

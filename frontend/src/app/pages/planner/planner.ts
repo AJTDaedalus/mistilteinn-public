@@ -340,7 +340,9 @@ export class PlannerPage implements OnInit {
     if (!chosen) return;
     try {
       const page = await allPages((offset, limit) =>
-        this.catalogue.listWeapons({ weapon_type: chosen.weapon_type, offset, limit }),
+        this.catalogue.listWeapons({
+          weapon_type: chosen.weapon_type, include_beta: true, offset, limit,
+        }),
       );
       this.weapons.set(page.items as WeaponSummary[]);
       // Never fatal. The picker works without a guide, and a page that refused to open

@@ -16,7 +16,15 @@ from __future__ import annotations
 
 import pytest
 
-from app.services.planner.crafting import Effect, MaterialClass, classify
+from app.services.planner.crafting import (
+    INPUTS_PER_CRAFT,
+    CraftingBonus,
+    Effect,
+    MaterialClass,
+    classify,
+    craft_multiplier,
+)
+from app.services.planner.economy import MaterialSource, economy
 
 #: `(character, passive, description)` for every passive the planner acts on, verbatim.
 SEEDED: tuple[tuple[str, str, str], ...] = (
@@ -83,22 +91,21 @@ SEEDED: tuple[tuple[str, str, str], ...] = (
 )
 
 #: What each one must resolve to, or `None` for a passive that is not planner-relevant.
-#: Seven apply, three are reported only — see `crafting.py` for why a refund's *size* is not
-#: published — and two classify to nothing at all: a bonus *regional* material would need the
+#: Ten apply, and two classify to nothing at all: a bonus *regional* material would need the
 #: regional family modelled, which the owner ruled out, so they are refused the same way a
 #: cooking passive is.
 EXPECTED: dict[str, tuple[Effect, set[MaterialClass], bool] | None] = {
     "Albedo": (Effect.DOUBLE, {MaterialClass.WEAPON_ASCENSION}, True),
     "Alhaitham": (Effect.DOUBLE, {MaterialClass.WEAPON_ASCENSION}, True),
-    "Dori": (Effect.REFUND, {MaterialClass.TALENT, MaterialClass.WEAPON_ASCENSION}, False),
+    "Dori": (Effect.REFUND, {MaterialClass.TALENT, MaterialClass.WEAPON_ASCENSION}, True),
     "Eula": (Effect.DOUBLE, {MaterialClass.TALENT}, True),
     "Kamisato Ayaka": (Effect.DOUBLE, {MaterialClass.WEAPON_ASCENSION}, True),
     "Layla": (Effect.DOUBLE, {MaterialClass.TALENT}, True),
-    "Mona": (Effect.REFUND, {MaterialClass.WEAPON_ASCENSION}, False),
+    "Mona": (Effect.REFUND, {MaterialClass.WEAPON_ASCENSION}, True),
     "Prune": None,
     "Sucrose": (Effect.DOUBLE, {MaterialClass.TALENT, MaterialClass.WEAPON_ASCENSION}, True),
     "Wriothesley": (Effect.DOUBLE, {MaterialClass.WEAPON_ASCENSION}, True),
-    "Xingqiu": (Effect.REFUND, {MaterialClass.TALENT}, False),
+    "Xingqiu": (Effect.REFUND, {MaterialClass.TALENT}, True),
     "Yae Miko": None,
 }
 
@@ -137,3 +144,81 @@ def test_dori_needs_the_looser_wording() -> None:
     assert "Ascension" not in dori[2]
     bonus = classify("id", *dori)
     assert set(bonus.classes) == {MaterialClass.TALENT, MaterialClass.WEAPON_ASCENSION}
+
+
+# -- the refund arithmetic ------------------------------------------------------------
+
+
+def _bonus(effect: Effect, chance: float) -> CraftingBonus:
+    return CraftingBonus(
+        character_id="i", character_name="n", passive_name="p", effect=effect,
+        chance=chance, classes=frozenset({MaterialClass.TALENT}), applicable=True,
+        description="",
+    )
+
+
+def test_a_refund_is_worth_less_than_it_reads() -> None:
+    """**"25% refund" is not a quarter of the materials back**, and reading it that way is the
+    whole reason this needs a test rather than a constant.
+
+    The description says one count of one material, and a craft eats three, so the expected
+    return is `p/3` per material — 8.3%, not 25%. Compounding those refunds gives
+    `3 / (3 - p)` = 1.0909.
+
+    Simulated to confirm the closed form, not merely transcribed:
+    crafting 3->1 from 3000 materials with a 25% refund yields ~1090 products against the
+    formula's 1090.91, the gap being materials left over too few to craft.
+
+    https://genshin-impact.fandom.com/wiki/Crafting#Efficiency
+    """
+    assert craft_multiplier([_bonus(Effect.REFUND, 0.25)], MaterialClass.TALENT) == pytest.approx(
+        3 / 2.75,
+    )
+
+
+def test_a_ten_percent_double_beats_a_twenty_five_percent_refund() -> None:
+    """The source states it outright, and it reads backwards until the arithmetic is done —
+    which is exactly why the best-bonus rule must compare the *values* and not the chances.
+
+    Picking by `chance` would take the 25% and quietly cost the user materials.
+    """
+    double = craft_multiplier([_bonus(Effect.DOUBLE, 0.10)], MaterialClass.TALENT)
+    refund = craft_multiplier([_bonus(Effect.REFUND, 0.25)], MaterialClass.TALENT)
+
+    assert double > refund
+    assert craft_multiplier(
+        [_bonus(Effect.DOUBLE, 0.10), _bonus(Effect.REFUND, 0.25)], MaterialClass.TALENT,
+    ) == double
+
+
+def test_a_bonus_for_another_class_does_nothing() -> None:
+    """Mona refunds weapon ascension materials and must not cheapen a talent book."""
+    weapon_only = CraftingBonus(
+        character_id="i", character_name="Mona", passive_name="p", effect=Effect.REFUND,
+        chance=0.25, classes=frozenset({MaterialClass.WEAPON_ASCENSION}), applicable=True,
+        description="",
+    )
+
+    assert craft_multiplier([weapon_only], MaterialClass.TALENT) == 1.0
+
+
+def test_every_recipe_a_bonus_can_touch_is_three_to_one() -> None:
+    """**The constant `INPUTS_PER_CRAFT` is only safe while this holds.**
+
+    The refund arithmetic divides by three because a craft consumes three. Measured over
+    `CombineExcelConfigData`: 245 of the 249 recipes the planner can walk are 3-in-1-out, and
+    the four that are not are Fabric and the three Dyes — furnishing recipes that no crafting
+    passive names and no plan bills.
+
+    Asserted against the talent-book and weapon-material families specifically, so a patch that
+    adds one on a different ratio fails here rather than silently mispricing every refund.
+    """
+    eco = economy()
+    off_ratio = [
+        (material_id, step)
+        for material_id, step in eco._combine.items()
+        if step.input_count != INPUTS_PER_CRAFT
+        and eco.source_of(material_id) is MaterialSource.DOMAIN
+    ]
+
+    assert off_ratio == []

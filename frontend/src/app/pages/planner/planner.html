@@ -21,10 +21,10 @@
     <!-- **Under the banner, not beside the name.** A caveat about the *numbers* belongs where
          the numbers are about to appear; on the card it would read as a label on the
          character. The figures below are real and priced from the same tables as anyone
-         else's — what is uncertain is whether the game ships them unchanged. -->
+         else's. What is uncertain is whether the game ships them unchanged. -->
     @if (isBeta()) {
       <p class="hint hint--warn beta-note" role="status">
-        {{ character()?.display_name }} is in beta — materials may change throughout beta.
+        Beta characters are subject to change until release.
       </p>
     }
   }
@@ -261,11 +261,27 @@
                   <div class="craft__col">
                     <h4>Material refund</h4>
                     @if (group.refund.length) {
+                      <!-- **Checkable since the refund was priced.** These were greyed while
+                           "a portion" looked unquantified; it is one count of one material per
+                           three-material craft, so the column is now as actionable as its
+                           neighbour. `services/planner/crafting.py`. -->
                       <ul>
                         @for (bonus of group.refund; track bonus.character_id) {
                           <li>
-                            <span class="craft__who muted">{{ bonus.character_name }}</span>
-                            <span class="craft__rate muted">{{ bonus.chance * 100 | number:'1.0-0' }}%</span>
+                            @if (bonus.applicable) {
+                              <label class="check">
+                                <input
+                                  type="checkbox"
+                                  [checked]="selectedBonuses().has(bonus.character_id)"
+                                  (change)="toggleBonus(bonus.character_id)"
+                                />
+                                <span class="craft__who">{{ bonus.character_name }}</span>
+                                <span class="craft__rate">{{ bonus.chance * 100 | number:'1.0-0' }}%</span>
+                              </label>
+                            } @else {
+                              <span class="craft__who muted">{{ bonus.character_name }}</span>
+                              <span class="craft__rate muted">{{ bonus.chance * 100 | number:'1.0-0' }}%</span>
+                            }
                           </li>
                         }
                       </ul>

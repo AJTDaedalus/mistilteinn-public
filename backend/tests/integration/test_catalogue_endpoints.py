@@ -310,6 +310,37 @@ async def test_the_beta_flag_is_published_so_a_caller_can_say_so(
 
 
 @pytest.mark.asyncio
+async def test_a_beta_weapon_is_hidden_unless_the_caller_asks(
+    client: AsyncClient, db_session: AsyncSession,
+):
+    """The twin of the character rule. Owner, 2026-09-07: an upcoming character and their
+    weapon are one decision, and pricing half of it is not much use.
+
+    Default-off is still what honours #271: the build editor never asks, so a datamined weapon
+    name never reaches the picker that report was about.
+    """
+    for nanoka_id, name, beta in ((11509, "Mistsplitter", False), (11522, "Weapon: Sword", True)):
+        db_session.add(Weapon(
+            nanoka_id=nanoka_id, name=name, weapon_type=WeaponType.SWORD,
+            rarity=Rarity.FIVE_STAR, base_atk=48.0, base_atk_curve="GROW_CURVE_ATTACK_101",
+            sub_stat_base_value=0.096, sub_stat_curve="GROW_CURVE_CRITICAL_101",
+            is_beta=beta,
+        ))
+    await db_session.flush()
+
+    listed = (await client.get("/api/v1/weapons")).json()
+    with_beta = (await client.get("/api/v1/weapons?include_beta=true")).json()
+
+    assert {item["nanoka_id"] for item in listed["items"]} == {11509}
+    assert listed["total"] == 1
+    assert {item["nanoka_id"] for item in with_beta["items"]} == {11509, 11522}
+    assert with_beta["total"] == 2
+    assert {item["name"]: item["is_beta"] for item in with_beta["items"]} == {
+        "Mistsplitter": False, "Weapon: Sword": True,
+    }
+
+
+@pytest.mark.asyncio
 async def test_a_weapon_detail_carries_its_curves_and_refinements(
     client: AsyncClient, db_session: AsyncSession,
 ):
