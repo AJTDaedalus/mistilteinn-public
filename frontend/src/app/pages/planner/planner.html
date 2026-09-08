@@ -61,10 +61,10 @@
           <legend>Character</legend>
           <div class="pair">
             <label>
-              From level
+              From
               <select [ngModel]="fromLevel()" (ngModelChange)="setLevel($event, fromLevel, fromAscension)">
                 @for (level of levels; track level) {
-                  <option [ngValue]="level">{{ level }}</option>
+                  <option [ngValue]="level">Lv. {{ level }}</option>
                 }
               </select>
             </label>
@@ -85,10 +85,10 @@
           </div>
           <div class="pair">
             <label>
-              To level
+              To
               <select [ngModel]="toLevel()" (ngModelChange)="setLevel($event, toLevel, toAscension)">
                 @for (level of levels; track level) {
-                  <option [ngValue]="level">{{ level }}</option>
+                  <option [ngValue]="level">Lv. {{ level }}</option>
                 }
               </select>
             </label>
@@ -107,11 +107,6 @@
               </label>
             }
           </div>
-          <!-- The whole reason level and phase are two controls. -->
-          <p class="hint hint--note">
-            Ascension and level move independently. Set the level to 80 and pick
-            <em>A6 80/90</em> to ascend without levelling any further.
-          </p>
         </fieldset>
 
         @if (talentRows().length) {
@@ -156,10 +151,10 @@
           @if (weaponId()) {
             <div class="pair">
               <label>
-                From level
+                From
                 <select [ngModel]="weaponFromLevel()" (ngModelChange)="setLevel($event, weaponFromLevel, weaponFromAscension)">
                   @for (level of levels; track level) {
-                    <option [ngValue]="level">{{ level }}</option>
+                    <option [ngValue]="level">Lv. {{ level }}</option>
                   }
                 </select>
               </label>
@@ -177,10 +172,10 @@
             </div>
             <div class="pair">
               <label>
-                To level
+                To
                 <select [ngModel]="weaponToLevel()" (ngModelChange)="setLevel($event, weaponToLevel, weaponToAscension)">
                   @for (level of levels; track level) {
-                    <option [ngValue]="level">{{ level }}</option>
+                    <option [ngValue]="level">Lv. {{ level }}</option>
                   }
                 </select>
               </label>
@@ -313,7 +308,6 @@
               min="0"
               step="1000"
               inputmode="numeric"
-              placeholder="Leave blank if you would rather not say"
               [ngModel]="moraOwned()"
               (ngModelChange)="moraOwned.set($event === null || $event === '' ? null : +$event)"
             />
@@ -321,7 +315,7 @@
         </fieldset>
 
         <button type="button" class="run" (click)="run()" [disabled]="busy()">
-          {{ busy() ? 'Pricing…' : 'Price this plan' }}
+          {{ busy() ? 'Calculating…' : 'Calculate cost' }}
         </button>
         @if (error(); as message) {
           <p class="error" role="alert">{{ message }}</p>
@@ -339,8 +333,9 @@
            about the character EXP books. -->
       @if (result.stock_is_empty) {
         <p class="hint hint--warn" role="status">
-          No materials are stored for this account, so everything below counts as owned: 0.
-          Import a GOOD export on the inventory page to net this bill against what you hold.
+          No materials are stored for this account, so everything below shows as owned: 0.
+          Import a GOOD export on the inventory page and this will subtract what you already
+          have.
         </p>
       }
 
