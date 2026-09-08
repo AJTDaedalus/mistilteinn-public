@@ -162,7 +162,10 @@ export class PlannerPage implements OnInit {
     if (!levelled.length) return [];
     const icon = this.character()?.icon;
     return [
-      { value: CLEAN, label: 'Start clean', detail: 'Level 1, talents at 1' },
+      // **The same art as the builds beside it.** Both cards are this character at a
+      // different starting point, so a face on one and a blank on the other read as two kinds
+      // of thing rather than two states of one.
+      { value: CLEAN, label: 'Start clean', icon, detail: 'Level 1, talents at 1' },
       ...levelled.map((build) => ({
         value: build.build_id,
         label: build.name || 'Unnamed build',
@@ -648,6 +651,18 @@ export class PlannerPage implements OnInit {
       bars, yTicks, xTicks, left, right, top, bottom,
       width: PLOT.width, height: PLOT.height,
     };
+  }
+
+  /**
+   * Whether this section has anything to put in a `Crafted` column.
+   *
+   * **Character levels never do.** EXP books and mora convert into nothing, so the column was
+   * a row of dashes taking width from four columns that carry numbers (owner, 2026-09-08).
+   * Asked per section rather than per page, because the ascension and talent tables genuinely
+   * do craft.
+   */
+  protected showsCrafted(section: SectionRead): boolean {
+    return this.rowsToShow(section).some((line) => line.from_surplus > 0);
   }
 
   protected rowsToShow(section: SectionRead): MaterialLineRead[] {

@@ -219,6 +219,7 @@ def _line(
     eco: Economy,
     *,
     name: str,
+    icon: str | None = None,
     required: int,
     owned: int,
     still: int,
@@ -233,7 +234,7 @@ def _line(
     return MaterialLine(
         material_id=material_id,
         name=row.name if row else (eco.name(material_id) or name),
-        icon=row.icon if row else eco.icon(material_id),
+        icon=row.icon if row else (eco.icon(material_id) or icon),
         rarity=row.rarity if row else (eco.rarity(material_id) or 0),
         required=required,
         owned=owned,
@@ -252,47 +253,50 @@ def _append_exp_rows(
     stock: Mapping[int, int],
     catalogue: Mapping[int, Material],
 ) -> None:
-    """EXP as books in the materials table, rather than a sentence of its own.
+    """EXP as books in the materials table, on the same three columns as everything else.
 
-    **Owner, 2026-09-08: stop dealing with EXP separately from materials.** It was a paragraph
-    — "8,362,650 EXP, you hold 8,380,000" — which is a currency nobody's inventory is counted
-    in. What a player actually holds is Hero's Wit and Adventurer's Experience, so those are
-    the rows.
+    **The books you already hold are spent first, largest denomination down.** That is the one
+    thing that makes the row arithmetic true: `Remaining = Required - Owned`.
 
-    `books_for` already splits largest-denomination-first and rounds the smallest up to cover
-    the remainder, which is the "favour the higher rarity, fill the gap with lower" the owner
-    described and also what the game leaves you doing.
+    The first version split the *whole* requirement from scratch and put your stock beside it,
+    which produced "Required 418, Owned 204, Remaining 0" and was reported as a bug — correctly.
+    It was defensible only by explaining that EXP is a pool and the two numbers were different
+    decompositions, and a row that needs a paragraph to stop looking wrong is wrong.
 
-    **`required` and `still_needed` are two separate splits, and they do not subtract.** The
-    books needed for the whole bill and the books needed for what is left after your stock are
-    different decompositions: 419 Hero's Wit against 204 held does not leave 215 Hero's Wit, it
-    leaves whatever covers the remaining EXP. Netting them per row would invent an arithmetic
-    the pool does not have.
-
-    Not added to `outstanding`: the resin for EXP is already priced as a pool by `resin.total`,
-    and a second per-book estimate would bill the same ley lines twice.
+    Allocating held books first gives 204 Hero's Wit against 204 owned and 857 Adventurer's
+    Experience against 860, which needs no explanation. Only what is genuinely short is topped
+    up, by `books_for`, which is where "favour the higher rarity, fill the gap with lower"
+    still applies.
     """
     if exp is None or not exp_items or exp.exp_required <= 0:
         return
-    required = dict(costs.books_for(exp.exp_required, exp_items))
-    short = dict(costs.books_for(exp.exp_short, exp_items))
-    for item in sorted(exp_items, key=lambda entry: entry.exp, reverse=True):
-        count = required.get(item.id, 0)
+    ordered = sorted(exp_items, key=lambda entry: entry.exp, reverse=True)
+
+    outstanding = exp.exp_required
+    used: dict[int, int] = {}
+    for item in ordered:
         held = stock.get(item.id, 0)
-        # **A book you hold but the split did not ask for still gets a row.** Without it the
-        # table reads as broken arithmetic: 418 Hero's Wit required against 204 owned and 0
-        # remaining, with the 860 Adventurer's Experience that closes the gap nowhere on
-        # screen. EXP is a pool, so a row can be short while the pool is not, and the only way
-        # for that to make sense is to show the rest of the pool.
-        if count <= 0 and held <= 0:
+        if outstanding <= 0 or held <= 0:
+            continue
+        # Ceiling, because a book is spent whole: the last one covers whatever is left and the
+        # overflow is wasted, which is what happens at the altar too.
+        wanted = -(-outstanding // item.exp)
+        take = min(held, wanted)
+        used[item.id] = take
+        outstanding -= take * item.exp
+
+    extra = dict(costs.books_for(max(0, outstanding), exp_items))
+    for item in ordered:
+        required = used.get(item.id, 0) + extra.get(item.id, 0)
+        if required <= 0:
             continue
         section.materials.append(
             _line(
                 item.id, catalogue, eco,
                 name=str(item.id),
-                required=count,
+                required=required,
                 owned=stock.get(item.id, 0),
-                still=short.get(item.id, 0),
+                still=extra.get(item.id, 0),
             ),
         )
 
@@ -319,8 +323,16 @@ def _append_mora_row(
         _line(
             eco.mora_item_id, catalogue, eco,
             name="Mora",
+            # The snapshot carries no name or icon for mora — it is a currency rather than a
+            # drop — so the row supplies both instead of rendering a nameless gap.
+            icon="UI_ItemIcon_202",
             required=mora,
-            owned=min(owned, mora),
+            # **Not clamped to `required`.** It was `min(owned, mora)`, which kept the
+            # subtraction non-negative by reporting a balance the user does not have: told
+            # eleven million against a bill of five, the row said they owned five. The
+            # shortfall is already floored at zero, so the clamp bought nothing and cost the
+            # one number on the row the user supplied themselves.
+            owned=owned,
             still=max(0, mora - owned),
         ),
     )
@@ -600,6 +612,10 @@ async def build_plan(
         for material_id, count in items.items():
             talent_needs[material_id] = talent_needs.get(material_id, 0) + count
     talent_multipliers = _craft_multipliers(talent_needs, selected, in_talent_bill=True)
+    # **Ascension gets them too, and did not before.** A character's ascension bill is mostly
+    # monster drops, which are the "Character and Weapon Enhancement Materials" class — so
+    # Sucrose and Dori apply here. Nothing claimed them while that class did not exist.
+    ascension_multipliers = _craft_multipliers(ascension_needs, selected, in_talent_bill=False)
 
     # -- weapon
     weapon, weapon_needs, weapon_mora, weapon_exp, weapon_multipliers = await _weapon_bill(
@@ -614,18 +630,23 @@ async def build_plan(
         | _book_ids(exp, weapon_exp),
     )
 
+    # **Levels and ascension are one section**, the way the weapon's already were. Owner:
+    # "it's a little odd we lump weapon levels and ascension together but not characters".
+    # Nobody thinks of them apart — you take a character to 90 and ascend on the way — and
+    # splitting them put an EXP-only table with no materials beside a materials-only table
+    # with no EXP.
+    advancement_mora = (
+        None if exp.mora is None or ascension_mora is None else exp.mora + ascension_mora
+    )
     sections = [
         _build_section(
-            "levels", "Character levels", {}, exp.mora, stock, catalogue,
-            exp=exp, exp_items=eco.character_exp_items, character_exp=exp.exp_short,
+            "advancement", "Character advancement", ascension_needs, advancement_mora, stock,
+            catalogue, exp=exp, exp_items=eco.character_exp_items,
+            character_exp=exp.exp_short, craft_multipliers=ascension_multipliers,
             mora_owned=mora_owned,
         ),
         _build_section(
-            "ascension", "Character ascension", ascension_needs, ascension_mora, stock,
-            catalogue, mora_owned=mora_owned,
-        ),
-        _build_section(
-            "talents", "Talents", talent_needs, talent_mora, stock, catalogue,
+            "talents", "Character talents", talent_needs, talent_mora, stock, catalogue,
             craft_multipliers=talent_multipliers, mora_owned=mora_owned,
         ),
     ]
@@ -636,7 +657,7 @@ async def build_plan(
             # into the ley-line rate invented 163 resin out of a Blossom of Revelation that
             # yields *character* EXP.
             _build_section(
-                "weapon", "Weapon", weapon_needs, weapon_mora, stock, catalogue,
+                "weapon", "Weapon advancement", weapon_needs, weapon_mora, stock, catalogue,
                 exp=weapon_exp, exp_items=eco.weapon_exp_items,
                 craft_multipliers=weapon_multipliers, mora_owned=mora_owned,
             ),
@@ -660,7 +681,7 @@ async def build_plan(
     total = _build_section(
         "total", "Everything", merged, total_mora, stock, catalogue,
         character_exp=exp.exp_short,
-        craft_multipliers={**talent_multipliers, **weapon_multipliers},
+        craft_multipliers={**ascension_multipliers, **talent_multipliers, **weapon_multipliers},
         mora_owned=mora_owned,
     )
 

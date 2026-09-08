@@ -396,6 +396,8 @@ describe('start clean or use existing', () => {
     const options = page['startOptions']();
     expect(options.map((o) => o.value)).toEqual(['clean', 'b2']);
     expect(options[1].detail).toBe('Lv80 · A6');
+    // Both cards are this character at a different starting point, so both wear their face.
+    expect(options[0].icon).toBe(options[1].icon);
   });
 
   it('counts an ascended level-1 build as levelled', async () => {

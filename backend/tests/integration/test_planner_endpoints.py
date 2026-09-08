@@ -142,16 +142,19 @@ async def test_a_plan_prices_each_section_separately(
     body = response.json()
 
     sections = {section["key"]: section for section in body["sections"]}
-    assert set(sections) == {"levels", "ascension", "talents"}
+    # **Two sections, not three.** Levels and ascension are one "Character advancement", the
+    # way the weapon's always were: nobody takes a character to 90 and thinks of the ascending
+    # as a separate errand.
+    assert set(sections) == {"advancement", "talents"}
     # Nine talent steps at two Teachings each.
     talent_line = next(
         line for line in sections["talents"]["materials"] if line["material_id"] == TEACHINGS
     )
     assert talent_line["required"] == 18
     assert sections["talents"]["mora"] == 9000
-    assert sections["ascension"]["mora"] == 20000
+    assert sections["advancement"]["mora"] == 20000 + sections["advancement"]["exp"]["mora"]
     # 19,000 EXP from level 1 to 20 at 1,000 a level.
-    assert sections["levels"]["exp"]["exp_required"] == 19_000
+    assert sections["advancement"]["exp"]["exp_required"] == 19_000
 
 
 @pytest.mark.asyncio
@@ -192,7 +195,7 @@ async def test_resin_distinguishes_no_cost_from_a_real_one(
     response = await client.post(
         "/api/v1/planner/plan", json=_request(character, talent), headers=_auth(authed_user),
     )
-    ascension = next(s for s in response.json()["sections"] if s["key"] == "ascension")
+    ascension = next(s for s in response.json()["sections"] if s["key"] == "advancement")
     by_id = {line["material_id"]: line for line in ascension["materials"]}
     assert by_id[SLIVER]["resin_status"] == "not_farmable"
     assert by_id[SPECIALTY]["resin_status"] == "not_farmable"
@@ -244,8 +247,11 @@ async def test_feeding_exp_material_charges_no_mora(
         "/api/v1/planner/plan", json=_request(character, talent), headers=_auth(authed_user),
     )
     body = response.json()
-    levels = next(s for s in body["sections"] if s["key"] == "levels")
-    assert levels["mora"] == 0
+    advancement = next(s for s in body["sections"] if s["key"] == "advancement")
+    # **Asserted on the EXP bill, not the section.** Levels and ascension are one section now,
+    # and ascension does charge mora — so the section total is no longer the levelling half on
+    # its own. `exp.mora` still is, which is the number this test was ever about.
+    assert advancement["exp"]["mora"] == 0
     # 20,000 for the ascension phase and 9,000 for the nine talent steps.
     assert body["total"]["mora"] == 29_000
 
@@ -268,7 +274,7 @@ async def test_ascending_without_levelling_is_accepted(
         headers=_auth(authed_user),
     )
     assert response.status_code == 200, response.text
-    levels = next(s for s in response.json()["sections"] if s["key"] == "levels")
+    levels = next(s for s in response.json()["sections"] if s["key"] == "advancement")
     assert levels["exp"]["exp_required"] == 0
 
 
@@ -420,7 +426,7 @@ async def test_the_summary_does_not_merge_two_different_exp_pools(
         )
     ).json()
     sections = {section["key"]: section for section in body["sections"]}
-    assert sections["levels"]["exp"]["exp_required"] == 19_000
+    assert sections["advancement"]["exp"]["exp_required"] == 19_000
     assert sections["weapon"]["exp"]["exp_required"] == 9_500
     assert body["total"]["exp"] is None
 
@@ -542,3 +548,67 @@ async def test_enough_mora_reports_no_shortfall(
 
     assert mora["short"] == 0
 
+
+
+@pytest.mark.asyncio
+async def test_exp_rows_spend_the_books_you_hold_before_asking_for_more(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """**Reported as a bug, and it was one**: "Required 418, Owned 204, Remaining 0".
+
+    The first version split the whole EXP requirement from scratch and set your stock beside
+    it, so the three numbers on a row came from two different decompositions and did not
+    subtract. Holding books first is what makes `Remaining = Required - Owned` true, and a row
+    that needs a paragraph to stop looking wrong is wrong.
+    """
+    user, _ = authed_user
+    character, talent, _ = await _catalogue(db_session)
+    # The fixture's character is 1,000 EXP a level, so 1 to 90 is 89,000.
+    for material_id, name, count in (
+        (104003, "Hero's Wit", 4), (104002, "Adventurer's Experience", 20),
+    ):
+        db_session.add(Material(id=material_id, name=name, icon=None, rarity=4))
+        db_session.add(UserMaterial(owner_id=user.id, material_id=material_id, count=count))
+    await db_session.commit()
+
+    body = (await client.post(
+        "/api/v1/planner/plan", json=_request(character, talent), headers=_auth(authed_user),
+    )).json()
+    levels = next(s for s in body["sections"] if s["key"] == "advancement")
+    rows = {line["material_id"]: line for line in levels["materials"]}
+
+    assert rows, "the levels section should carry EXP books as material rows"
+    for line in rows.values():
+        # The property the report was about. It must hold on every row, every time.
+        assert line["still_needed"] == max(0, line["required"] - line["owned"]), line["name"]
+        # And a book is never asked for beyond what is actually spent.
+        assert line["required"] > 0
+
+
+@pytest.mark.asyncio
+async def test_mora_owned_is_reported_as_given_not_clamped_to_the_bill(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """Reported: telling the planner you hold more mora than the plan needs showed Owned equal
+    to Required. It was `min(owned, required)`, keeping the subtraction non-negative by
+    misreporting the one number on the row the user typed themselves. The shortfall is floored
+    at zero anyway, so the clamp bought nothing."""
+    character, talent, _ = await _catalogue(db_session)
+    await db_session.commit()
+
+    body = (await client.post(
+        "/api/v1/planner/plan",
+        json={**_request(character, talent), "mora_owned": 99_000_000},
+        headers=_auth(authed_user),
+    )).json()
+    rows = [
+        line
+        for section in body["sections"]
+        for line in section["materials"]
+        if line["name"] == "Mora"
+    ]
+
+    assert rows, "every section with a mora cost should carry a Mora row"
+    for line in rows:
+        assert line["owned"] == 99_000_000
+        assert line["still_needed"] == 0
