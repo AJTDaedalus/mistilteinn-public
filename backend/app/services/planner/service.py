@@ -31,7 +31,7 @@ from app.models.weapon import Weapon
 from app.services.planner import costs, resin
 from app.services.planner.costs import PlanError, Progress
 from app.services.planner.crafting import CraftingBonus, MaterialClass, classify, craft_multiplier
-from app.services.planner.economy import MaterialSource, economy
+from app.services.planner.economy import Economy, MaterialSource, economy
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -77,6 +77,12 @@ class MaterialLine:
     resin_status: str
     #: Weekdays this material's domain is open, `[]` when it is not a domain drop.
     domain_days: list[str]
+    #: Units of this material craftable from surplus **below** it in the same family.
+    #:
+    #: Kept apart from `owned` on purpose: folding them together would tell a user they hold
+    #: twelve Philosophies when they hold three and can make nine, and the nine cost mora and a
+    #: trip to a crafting bench.
+    from_surplus: int = 0
 
 
 @dataclass
@@ -132,6 +138,81 @@ def _class_of(material_id: int, in_talent_bill: bool) -> MaterialClass | None:
     return None
 
 
+def _family_chain(eco: Economy, material_id: int) -> list[int]:
+    """The crafting ladder under `material_id`, root first, ending at it.
+
+    Cycle-safe for the same reason `craft_root` is: a malformed tree must not hang a request.
+    """
+    chain = [material_id]
+    seen = {material_id}
+    current = material_id
+    while (step := eco.craft_step(current)) is not None and step.input not in seen:
+        chain.append(step.input)
+        seen.add(step.input)
+        current = step.input
+    chain.reverse()
+    return chain
+
+
+def _convert_surplus(
+    eco: Economy,
+    needs: Mapping[int, int],
+    stock: Mapping[int, int],
+    craft_multipliers: Mapping[int, float],
+) -> tuple[dict[int, int], int]:
+    """`({material id: extra units craftable from surplus below it}, mora that costs)`.
+
+    **Excess of a lower rarity is not dead stock.** Gems, monster drops, talent books and
+    weapon ascension materials all convert upward 3:1, so a player holding thirty Teachings and
+    needing six Philosophies is not short six Philosophies. Netting each tier against its own
+    stock and stopping there — which is what this did — bills them for materials they can make
+    from what is already in the bag.
+
+    **Bottom-up, once per family.** A tier's own requirement is satisfied before anything flows
+    up, because spending Guides on Philosophies you do not need in order to be short of Guides
+    you do is not a trade anybody would make. Two needed materials in one family share a single
+    pass, so no unit of stock is spent twice.
+
+    Only upward: the game publishes no recipe that breaks a higher tier down, so a surplus of
+    Philosophies cannot pay for Teachings.
+    """
+    extra: dict[int, int] = {}
+    mora = 0
+    # One pass per family, keyed by root, so two needed tiers of one ladder cannot both spend
+    # the same lower-tier stock.
+    families: dict[int, list[int]] = {}
+    for material_id in needs:
+        chain = _family_chain(eco, material_id)
+        root = chain[0]
+        # The longest chain wins: it is the one that reaches every tier the others do.
+        if len(chain) > len(families.get(root, ())):
+            families[root] = chain
+
+    for chain in families.values():
+        carried = 0
+        for index, material_id in enumerate(chain):
+            available = stock.get(material_id, 0) + carried
+            if carried:
+                extra[material_id] = extra.get(material_id, 0) + carried
+            spent = min(available, needs.get(material_id, 0))
+            surplus = available - spent
+            if index + 1 >= len(chain) or surplus <= 0:
+                carried = 0
+                continue
+            step = eco.craft_step(chain[index + 1])
+            if step is None or step.input_count <= 0:
+                carried = 0
+                continue
+            batches = surplus // step.input_count
+            mora += batches * step.mora
+            # The crafting passive applies to a conversion exactly as it does to farming: a
+            # batch is worth `craft_multiplier` outputs. Floored, because a fractional
+            # Philosophy is not a thing you can hold.
+            multiplier = craft_multipliers.get(chain[index + 1], 1.0)
+            carried = int(batches * step.output_count * multiplier)
+    return extra, mora
+
+
 def _rows_by_key(rows: Sequence[Any], key: str) -> dict[int, tuple[int, list]]:
     return {getattr(row, key): (row.mora, row.items) for row in rows}
 
@@ -184,10 +265,16 @@ def _build_section(
     """
     eco = economy()
     section = Section(key=key, label=label, mora=mora, exp=exp)
+    # **Excess of a lower rarity converts upward 3:1** — gems, monster drops, talent books and
+    # weapon ascension materials all do — so a tier's shortfall is not `required - owned`.
+    craftable, craft_mora = _convert_surplus(eco, needs, stock, craft_multipliers or {})
+    if craft_mora and mora is not None:
+        section.mora = mora + craft_mora
     outstanding: dict[int, int] = {}
     for material_id, required in sorted(needs.items()):
         owned = stock.get(material_id, 0)
-        still = max(0, required - owned)
+        made = craftable.get(material_id, 0)
+        still = max(0, required - owned - made)
         row = catalogue.get(material_id)
         outstanding[material_id] = still
         multiplier = (craft_multipliers or {}).get(material_id, 1.0)
@@ -210,6 +297,7 @@ def _build_section(
                 rarity=row.rarity if row else (eco.rarity(material_id) or 0),
                 required=required,
                 owned=owned,
+                from_surplus=made,
                 still_needed=still,
                 resin=estimate,
                 resin_status=status,

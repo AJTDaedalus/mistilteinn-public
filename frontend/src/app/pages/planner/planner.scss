@@ -234,6 +234,13 @@
     flex-basis: 100%;
   }
 
+  /* Reads as an annotation on the held count, not as a second number in its own right. */
+  .from-surplus {
+    margin-left: 0.3rem;
+    color: var(--mint);
+    font-size: var(--text-xs);
+  }
+
   .craft__none {
     margin: 0;
     color: var(--ink-dim);

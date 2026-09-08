@@ -435,3 +435,77 @@ def test_a_refund_bonus_moves_the_number_by_the_derived_amount() -> None:
     assert craft_multiplier([mona], MaterialClass.WEAPON_ASCENSION) == pytest.approx(3 / 2.75)
     # And still nothing for the class she does not name.
     assert craft_multiplier([mona], MaterialClass.TALENT) == 1.0
+
+
+# -- crafting surplus upward ------------------------------------------------------------
+
+#: The Freedom talent ladder, a real 3:1 family: Teachings -> Guide -> Philosophies.
+TEACHINGS, GUIDE, PHILOSOPHIES = 104301, 104302, 104303
+
+
+def test_surplus_of_a_lower_tier_is_crafted_up() -> None:
+    """**Excess of a lower rarity is not dead stock** (owner, 2026-09-08). Gems, monster drops,
+    talent books and weapon ascension materials all convert upward 3:1, so a player sitting on
+    Teachings is not short the Guides they can make from them.
+
+    Nine spare Teachings are three Guides, at 175 mora a batch.
+    """
+    from app.services.planner.economy import economy
+    from app.services.planner.service import _convert_surplus
+
+    extra, mora = _convert_surplus(economy(), {GUIDE: 5}, {TEACHINGS: 9}, {})
+
+    assert extra == {GUIDE: 3}
+    assert mora == 3 * 175
+
+
+def test_conversion_compounds_up_a_three_tier_family() -> None:
+    """Twenty-seven Teachings are nine Guides are three Philosophies. A model that converted
+    one rung would have said "no Philosophies" to somebody holding the makings of three."""
+    from app.services.planner.economy import economy
+    from app.services.planner.service import _convert_surplus
+
+    extra, _ = _convert_surplus(economy(), {PHILOSOPHIES: 3}, {TEACHINGS: 27}, {})
+
+    assert extra[PHILOSOPHIES] == 3
+
+
+def test_a_tier_keeps_what_it_needs_before_anything_flows_up() -> None:
+    """Spending Teachings on Guides you do not need, in order to be short of Teachings you do,
+    is not a trade anybody would make."""
+    from app.services.planner.economy import economy
+    from app.services.planner.service import _convert_surplus
+
+    # Ten held, six wanted here: four are spare, which is one Guide with one left over.
+    extra, _ = _convert_surplus(economy(), {TEACHINGS: 6, GUIDE: 2}, {TEACHINGS: 10}, {})
+
+    assert extra == {GUIDE: 1}
+
+
+def test_nothing_flows_downward() -> None:
+    """The game publishes no recipe that breaks a higher tier down, so a pile of Philosophies
+    cannot pay for Teachings. Asserted because the bottom-up pass would be easy to write in a
+    way that quietly did."""
+    from app.services.planner.economy import economy
+    from app.services.planner.service import _convert_surplus
+
+    extra, mora = _convert_surplus(economy(), {TEACHINGS: 99}, {PHILOSOPHIES: 99}, {})
+
+    assert extra == {}
+    assert mora == 0
+
+
+def test_two_needed_tiers_of_one_family_do_not_both_spend_the_same_stock() -> None:
+    """One pass per family, keyed by root. Two independent walks would each see the whole pile
+    and hand out the same Teachings twice."""
+    from app.services.planner.economy import economy
+    from app.services.planner.service import _convert_surplus
+
+    extra, _ = _convert_surplus(
+        economy(), {GUIDE: 10, PHILOSOPHIES: 10}, {TEACHINGS: 9}, {},
+    )
+
+    # Nine Teachings are three Guides. Those three are spent on the Guide requirement, so
+    # nothing is left to become a Philosophy.
+    assert extra.get(GUIDE) == 3
+    assert extra.get(PHILOSOPHIES, 0) == 0

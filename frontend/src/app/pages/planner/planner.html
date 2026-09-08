@@ -42,22 +42,16 @@
         (selectedChange)="pickCharacter($event)"
       />
 
-      @if ((options()?.builds ?? []).length) {
-        <label>
-          Start from a build
-          <select (ngModelChange)="applyBuild($event)" [ngModel]="null">
-            <option [ngValue]="null">Enter levels by hand…</option>
-            @for (build of options()!.builds; track build.build_id) {
-              <option [ngValue]="build.build_id">
-                {{ build.name || 'Unnamed' }} — Lv{{ build.character_level }}/{{ build.ascension_phase }}
-              </option>
-            }
-          </select>
-        </label>
-        <p class="hint hint--note">
-          A build can be hypothetical — this app lets you gear a character you do not own — so
-          picking one fills these controls and leaves them editable.
-        </p>
+      <!-- **Only when a build has been levelled.** A build at level 1 says the same thing as
+           starting clean, so offering both would be a question with one answer. -->
+      @if (startOptions().length) {
+        <mist-card-picker
+          label="Start clean or use existing"
+          ordered
+          [options]="startOptions()"
+          [selected]="[startFrom()]"
+          (selectedChange)="pickStart($event)"
+        />
       }
     </div>
 
@@ -201,10 +195,6 @@
                 </label>
               }
             </div>
-            <p class="hint hint--note">
-              Any weapon in the catalogue, owned or not — including a second copy of one you
-              already have.
-            </p>
           }
         </fieldset>
 
@@ -424,7 +414,18 @@
                     <td class="art"><catalogue-icon [icon]="line.icon" [alt]="line.name" [size]="32" /></td>
                     <td class="name" [attr.data-rarity]="line.rarity">{{ line.name }}</td>
                     <td class="num">{{ number(line.required) }}</td>
-                    <td class="num">{{ number(line.owned) }}</td>
+                    <!-- **Beside what is held, never added into it.** Holding three and being
+                         able to craft nine more is not holding twelve: the nine cost mora and
+                         a bench, and the section's mora already bills that. -->
+                    <td class="num">
+                      {{ number(line.owned) }}
+                      @if (line.from_surplus) {
+                        <span
+                          class="from-surplus"
+                          [title]="line.from_surplus + ' craftable from surplus lower in this family, 3:1'"
+                        >+{{ number(line.from_surplus) }}</span>
+                      }
+                    </td>
                     <td class="num">{{ number(line.still_needed) }}</td>
                     <td class="num">
                       @if (line.resin) {
