@@ -40,6 +40,9 @@ const TALENT_LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
  */
 const ALL_LEVELS = Array.from({ length: 90 }, (_, index) => index + 1);
 
+/** The "no build" card's value. Not a build id, and never sent anywhere. */
+const CLEAN = 'clean';
+
 /** viewBox geometry for the resin histogram. Units are arbitrary; the SVG scales to fit. */
 const PLOT = { width: 360, height: 148, left: 34, right: 6, top: 10, bottom: 24 } as const;
 
@@ -139,6 +142,55 @@ export class PlannerPage implements OnInit {
   protected readonly character = computed(() =>
     this.characters().find((row) => row.id === this.characterId()) ?? null,
   );
+
+  /**
+   * "Start clean" against each build worth starting from, as cards.
+   *
+   * **Offered only when a build has actually been levelled.** A build sitting at level 1 says
+   * the same thing as starting clean, so a picker offering both is a question with one answer,
+   * and asking it on every character would be noise on most of them.
+   *
+   * This replaces a `<select>` plus two sentences of prose explaining that a build may be
+   * hypothetical and that picking one leaves the controls editable. The control now says that
+   * by being a choice between two named starting points, which is what the prose was
+   * describing.
+   */
+  protected readonly startOptions = computed<CardOption[]>(() => {
+    const levelled = (this.options()?.builds ?? []).filter(
+      (build) => build.character_level > 1 || build.ascension_phase > 0,
+    );
+    if (!levelled.length) return [];
+    const icon = this.character()?.icon;
+    return [
+      { value: CLEAN, label: 'Start clean', detail: 'Level 1, talents at 1' },
+      ...levelled.map((build) => ({
+        value: build.build_id,
+        label: build.name || 'Unnamed build',
+        icon,
+        detail: `Lv${build.character_level} · A${build.ascension_phase}`,
+      })),
+    ];
+  });
+
+  /** Which starting point is chosen. `CLEAN` until the user says otherwise. */
+  protected readonly startFrom = signal<string>(CLEAN);
+
+  protected pickStart(ids: readonly string[]): void {
+    const chosen = ids[0] ?? CLEAN;
+    this.startFrom.set(chosen);
+    if (chosen === CLEAN) {
+      this.resetToClean();
+      return;
+    }
+    this.applyBuild(chosen);
+  }
+
+  /** Back to a fresh character: level 1, unascended, every talent at 1. */
+  private resetToClean(): void {
+    this.fromLevel.set(1);
+    this.fromAscension.set(0);
+    this.talentRows.update((rows) => rows.map((row) => ({ ...row, current: 1 })));
+  }
 
   /** Whether the chosen character is datamined ahead of release. */
   protected readonly isBeta = computed(() => this.character()?.is_beta ?? false);
@@ -381,6 +433,8 @@ export class PlannerPage implements OnInit {
     this.talentRows.set(
       (options.talents ?? []).map((talent) => ({ talent, current: 1, target: 10 })),
     );
+    // The builds are this character's, so a choice made for the last one means nothing here.
+    this.startFrom.set(CLEAN);
     const chosen = this.characters().find((row) => row.id === id);
     if (!chosen) return;
     try {

@@ -19,7 +19,12 @@
               @for (art of option.icons; track $index) {
                 <catalogue-icon [icon]="art" [alt]="''" [size]="18" />
               }
-            } @else {
+            } @else if (option.icon) {
+              <!-- **Guarded, for the same reason the `icons` branch above is.** A card with no
+                   art at all — the planner's "Start clean" — drew a reserved 20px box in the
+                   pill and read as a picture that failed to load. Reserving space is right in
+                   the *grid*, where a missing icon would otherwise shorten one card against
+                   its neighbours; a pill is inline and has nothing to stay aligned with. -->
               <catalogue-icon [icon]="option.icon" [alt]="''" [size]="20" />
             }
             <span>{{ option.label }}</span>
