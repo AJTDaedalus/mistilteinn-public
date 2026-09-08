@@ -490,6 +490,21 @@ export class PlannerPage implements OnInit {
     this.craftPick.update((current) => ({ ...current, [materialClass]: characterId }));
   }
 
+  /**
+   * Pick this crafter, or clear the class if they were already picked.
+   *
+   * **This is what replaced a "No one" radio.** A radio cannot be unchecked by clicking it, so
+   * the escape hatch had to be modelled as an option — a third choice on screen that is really
+   * the absence of a choice. Owner: clicking a selected talent should deselect them.
+   *
+   * On `click` rather than `change`, because `change` does not fire when the already-checked
+   * radio is clicked, which is precisely the event this needs.
+   */
+  protected toggleCraft(materialClass: string, characterId: string): void {
+    const same = this.crafterFor(materialClass) === characterId;
+    this.pickCraft(materialClass, same ? null : characterId);
+  }
+
   protected crafterFor(materialClass: string): string | null {
     return this.craftPick()[materialClass] ?? null;
   }

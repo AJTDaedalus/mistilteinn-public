@@ -35,7 +35,7 @@
     <div class="chooser">
       <mist-card-picker
         label="Character"
-        placeholder="Choose a character…"
+        placeholder="None"
         [options]="characterOptions()"
         [filters]="characterFilters()"
         [selected]="characterId() ? [characterId()!] : []"
@@ -57,6 +57,27 @@
 
     <div class="controls">
       @if (characterId()) {
+        <fieldset>
+          <legend>Mora</legend>
+          <!-- **Typed, because no scanner exports it.** Every other quantity on this page
+               comes from a GOOD import; a mora balance is in no export format, so the only
+               way to subtract it is to be told. Left blank, the plan reports the cost and
+               claims nothing about a shortfall.
+
+               **First, because it is the one thing here the user has to supply.** It sat last,
+               after four fieldsets of things the app already knew. -->
+          <label>
+            Current Mora
+            <input
+              type="number"
+              min="0"
+              step="1000"
+              inputmode="numeric"
+              [ngModel]="moraOwned()"
+              (ngModelChange)="moraOwned.set($event === null || $event === '' ? null : +$event)"
+            />
+          </label>
+        </fieldset>
         <fieldset>
           <legend>Character</legend>
           <div class="pair">
@@ -140,7 +161,7 @@
                holds only the class this character can hold. -->
           <mist-card-picker
             label="Weapon"
-            placeholder="No weapon in this plan"
+            placeholder="None"
             clearable
             ordered
             [options]="weaponOptions()"
@@ -195,7 +216,7 @@
 
         @if (craftGroups().length) {
           <fieldset>
-            <legend>Crafting help</legend>
+            <legend>Crafting talents</legend>
             <!-- **Two tables of two columns, because a passive is two facts.** Which materials
                  it touches, and what it does to them — and the flat list encoded both in a
                  sentence, so twelve rows all read the same. A character appears twice when
@@ -204,21 +225,7 @@
                  "what can help *this* class". -->
             @for (group of craftGroups(); track group.key) {
               <div class="craft">
-                <div class="craft__head">
-                  <h3 class="craft__title">{{ group.label }}</h3>
-                  <!-- **A radio cannot be unchecked by clicking it**, so "nobody" has to be an
-                       option rather than an absence. Without it the first pick would be
-                       permanent. -->
-                  <label class="check craft__none-pick">
-                    <input
-                      type="radio"
-                      [name]="'craft-' + group.key"
-                      [checked]="crafterFor(group.key) === null"
-                      (change)="pickCraft(group.key, null)"
-                    />
-                    <span>No one</span>
-                  </label>
-                </div>
+                <h3 class="craft__title">{{ group.label }}</h3>
                 <div class="craft__cols">
                   <div class="craft__col">
                     <h4>Bonus crafting</h4>
@@ -232,7 +239,7 @@
                                   type="radio"
                                   [name]="'craft-' + group.key"
                                   [checked]="crafterFor(group.key) === bonus.character_id"
-                                  (change)="pickCraft(group.key, bonus.character_id)"
+                                  (click)="toggleCraft(group.key, bonus.character_id)"
                                   />
                                 <span class="craft__who">{{ bonus.character_name }}</span>
                               </label>
@@ -272,7 +279,7 @@
                                   type="radio"
                                   [name]="'craft-' + group.key"
                                   [checked]="crafterFor(group.key) === bonus.character_id"
-                                  (change)="pickCraft(group.key, bonus.character_id)"
+                                  (click)="toggleCraft(group.key, bonus.character_id)"
                                   />
                                 <span class="craft__who">{{ bonus.character_name }}</span>
                               </label>
@@ -295,24 +302,6 @@
           </fieldset>
         }
 
-        <fieldset>
-          <legend>Mora</legend>
-          <!-- **Typed, because no scanner exports it.** Every other quantity on this page
-               comes from a GOOD import; a mora balance is in no export format, so the only
-               way to net the bill against what you hold is to be told. Left blank it reports
-               the cost and claims nothing about a shortfall. -->
-          <label>
-            Mora you hold
-            <input
-              type="number"
-              min="0"
-              step="1000"
-              inputmode="numeric"
-              [ngModel]="moraOwned()"
-              (ngModelChange)="moraOwned.set($event === null || $event === '' ? null : +$event)"
-            />
-          </label>
-        </fieldset>
 
         <button type="button" class="run" (click)="run()" [disabled]="busy()">
           {{ busy() ? 'Calculating…' : 'Calculate' }}
@@ -339,20 +328,6 @@
         </p>
       }
 
-      @if (result.mora; as mora) {
-        <p class="mora-line">
-          <span class="mora-line__label">Mora</span>
-          <span class="mono">{{ number(mora.required) }}</span>
-          @if (mora.owned !== null && mora.owned !== undefined) {
-            <span class="muted">of your {{ number(mora.owned) }}</span>
-            @if (mora.short) {
-              <strong class="warn">{{ number(mora.short) }} short</strong>
-            } @else {
-              <span class="muted">— enough</span>
-            }
-          }
-        </p>
-      }
       @for (section of result.sections.concat([result.total]); track section.key) {
         <section class="bill" [class.bill--total]="section.key === 'total'">
           <h2>
@@ -363,44 +338,23 @@
             </span>
           </h2>
 
-          @if (section.exp; as exp) {
-            @if (exp.exp_required > 0) {
-              <p class="exp">
-                {{ number(exp.exp_required) }} EXP — you hold {{ number(exp.exp_owned) }},
-                @if (exp.exp_short > 0) {
-                  still need {{ number(exp.exp_short) }}.
-                } @else {
-                  enough already.
-                }
-              </p>
-              <!-- Rendered here rather than as material rows: EXP is a pool, and `exp_bill`
-                   has already netted it against stock. Listing these in the table subtracted
-                   the same stock a second time and reported "satisfied" for books the user
-                   still had to farm. -->
-              @if (exp.books.length) {
-                <ul class="books">
-                  @for (book of exp.books; track book.material_id) {
-                    <li>
-                      <catalogue-icon [icon]="book.icon" [alt]="book.name" [size]="24" />
-                      <span class="book-count">{{ number(book.count) }}</span>
-                      <span>{{ book.name }}</span>
-                    </li>
-                  }
-                </ul>
-              }
-            }
-          }
-
+          <!-- **EXP is rows in the table below, not a paragraph.** It used to read
+               "8,362,650 EXP, you hold 8,380,000", which is a currency nobody's inventory is
+               counted in: what a player holds is Hero's Wit and Adventurer's Experience. -->
           @if (rowsToShow(section).length) {
             <table>
+              <!-- **Two columns removed rather than renamed.** "Resin each" priced a single
+                   unit, which is not a quantity anybody acts on, and the resin that matters is
+                   already the section total and the distribution below it. "Domain" named the
+                   days a domain runs, which is a fact about the domain rather than about this
+                   plan. -->
               <thead>
                 <tr>
                   <th scope="col" colspan="2">Material</th>
-                  <th scope="col" class="num">Need</th>
-                  <th scope="col" class="num">Have</th>
-                  <th scope="col" class="num">Short</th>
-                  <th scope="col" class="num">Resin each</th>
-                  <th scope="col">Domain</th>
+                  <th scope="col" class="num">Required</th>
+                  <th scope="col" class="num">Owned</th>
+                  <th scope="col" class="num">Crafted</th>
+                  <th scope="col" class="num">Remaining needed</th>
                 </tr>
               </thead>
               <tbody>
@@ -409,31 +363,18 @@
                     <td class="art"><catalogue-icon [icon]="line.icon" [alt]="line.name" [size]="32" /></td>
                     <td class="name" [attr.data-rarity]="line.rarity">{{ line.name }}</td>
                     <td class="num">{{ number(line.required) }}</td>
-                    <!-- **Beside what is held, never added into it.** Holding three and being
-                         able to craft nine more is not holding twelve: the nine cost mora and
-                         a bench, and the section's mora already bills that. -->
+                    <td class="num">{{ number(line.owned) }}</td>
+                    <!-- Its own column now, rather than an annotation on Owned: crafting three
+                         into one is a thing you do, and it belongs beside what you hold rather
+                         than inside it. -->
                     <td class="num">
-                      {{ number(line.owned) }}
                       @if (line.from_surplus) {
-                        <span
-                          class="from-surplus"
-                          [title]="line.from_surplus + ' craftable from surplus lower in this family, 3:1'"
-                        >+{{ number(line.from_surplus) }}</span>
+                        {{ number(line.from_surplus) }}
+                      } @else {
+                        <span class="muted">—</span>
                       }
                     </td>
                     <td class="num">{{ number(line.still_needed) }}</td>
-                    <td class="num">
-                      @if (line.resin) {
-                        {{ line.resin.resin_per_unit.toFixed(1) }}
-                      } @else if (line.resin_status === 'satisfied') {
-                        <span class="muted" title="You already hold enough">—</span>
-                      } @else if (line.resin_status === 'not_farmable') {
-                        <span class="muted" title="Not obtained with resin">—</span>
-                      } @else {
-                        <span class="unknown" title="Costs resin at a rate nobody publishes">?</span>
-                      }
-                    </td>
-                    <td class="days">{{ days(line) }}</td>
                   </tr>
                 }
               </tbody>
@@ -497,8 +438,6 @@
           }
         </section>
       }
-
-      <p class="hint hint--note model-note">{{ result.histogram_note }}</p>
 
       @if (result.talent_free_levels) {
         <p class="hint hint--note">

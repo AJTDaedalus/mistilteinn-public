@@ -213,6 +213,119 @@ def _convert_surplus(
     return extra, mora
 
 
+def _line(
+    material_id: int,
+    catalogue: Mapping[int, Material],
+    eco: Economy,
+    *,
+    name: str,
+    required: int,
+    owned: int,
+    still: int,
+) -> MaterialLine:
+    """A material row for something that is not farmed per-unit: EXP books, mora.
+
+    `resin` is null and the status is `not_farmable` **not because they cost nothing** — both
+    come off ley lines — but because their resin is already priced as a pool by
+    `resin.total`, and a per-unit estimate here would bill it a second time.
+    """
+    row = catalogue.get(material_id)
+    return MaterialLine(
+        material_id=material_id,
+        name=row.name if row else (eco.name(material_id) or name),
+        icon=row.icon if row else eco.icon(material_id),
+        rarity=row.rarity if row else (eco.rarity(material_id) or 0),
+        required=required,
+        owned=owned,
+        still_needed=still,
+        resin=None,
+        resin_status="satisfied" if still == 0 else "not_farmable",
+        domain_days=[],
+    )
+
+
+def _append_exp_rows(
+    section: Section,
+    eco: Economy,
+    exp: costs.ExpBill | None,
+    exp_items: Sequence[costs.ExpItem],
+    stock: Mapping[int, int],
+    catalogue: Mapping[int, Material],
+) -> None:
+    """EXP as books in the materials table, rather than a sentence of its own.
+
+    **Owner, 2026-09-08: stop dealing with EXP separately from materials.** It was a paragraph
+    — "8,362,650 EXP, you hold 8,380,000" — which is a currency nobody's inventory is counted
+    in. What a player actually holds is Hero's Wit and Adventurer's Experience, so those are
+    the rows.
+
+    `books_for` already splits largest-denomination-first and rounds the smallest up to cover
+    the remainder, which is the "favour the higher rarity, fill the gap with lower" the owner
+    described and also what the game leaves you doing.
+
+    **`required` and `still_needed` are two separate splits, and they do not subtract.** The
+    books needed for the whole bill and the books needed for what is left after your stock are
+    different decompositions: 419 Hero's Wit against 204 held does not leave 215 Hero's Wit, it
+    leaves whatever covers the remaining EXP. Netting them per row would invent an arithmetic
+    the pool does not have.
+
+    Not added to `outstanding`: the resin for EXP is already priced as a pool by `resin.total`,
+    and a second per-book estimate would bill the same ley lines twice.
+    """
+    if exp is None or not exp_items or exp.exp_required <= 0:
+        return
+    required = dict(costs.books_for(exp.exp_required, exp_items))
+    short = dict(costs.books_for(exp.exp_short, exp_items))
+    for item in sorted(exp_items, key=lambda entry: entry.exp, reverse=True):
+        count = required.get(item.id, 0)
+        held = stock.get(item.id, 0)
+        # **A book you hold but the split did not ask for still gets a row.** Without it the
+        # table reads as broken arithmetic: 418 Hero's Wit required against 204 owned and 0
+        # remaining, with the 860 Adventurer's Experience that closes the gap nowhere on
+        # screen. EXP is a pool, so a row can be short while the pool is not, and the only way
+        # for that to make sense is to show the rest of the pool.
+        if count <= 0 and held <= 0:
+            continue
+        section.materials.append(
+            _line(
+                item.id, catalogue, eco,
+                name=str(item.id),
+                required=count,
+                owned=stock.get(item.id, 0),
+                still=short.get(item.id, 0),
+            ),
+        )
+
+
+def _append_mora_row(
+    section: Section,
+    eco: Economy,
+    mora: int | None,
+    mora_owned: int | None,
+    catalogue: Mapping[int, Material],
+) -> None:
+    """Mora as a row, on the same three columns as everything else.
+
+    **No `Crafted` for it, and none for the EXP books either** — nothing converts into mora.
+    The column simply reads as absent for these rows.
+
+    An untyped balance counts as zero, which reads as "you need all of it". That is the
+    conservative answer and the input to correct it is at the top of the same page.
+    """
+    if mora is None or mora <= 0:
+        return
+    owned = mora_owned or 0
+    section.materials.append(
+        _line(
+            eco.mora_item_id, catalogue, eco,
+            name="Mora",
+            required=mora,
+            owned=min(owned, mora),
+            still=max(0, mora - owned),
+        ),
+    )
+
+
 def _rows_by_key(rows: Sequence[Any], key: str) -> dict[int, tuple[int, list]]:
     return {getattr(row, key): (row.mora, row.items) for row in rows}
 
@@ -252,8 +365,10 @@ def _build_section(
     catalogue: Mapping[int, Material],
     *,
     exp: costs.ExpBill | None = None,
+    exp_items: Sequence[costs.ExpItem] = (),
     character_exp: int = 0,
     craft_multipliers: Mapping[int, float] | None = None,
+    mora_owned: int | None = None,
 ) -> Section:
     """Turn `{material id: required}` into a rendered section, net of what is held.
 
@@ -320,8 +435,14 @@ def _build_section(
                     ),
                 ),
             )
+    _append_exp_rows(section, eco, exp, exp_items, stock, catalogue)
+    _append_mora_row(section, eco, mora, mora_owned, catalogue)
+    # **Net of the mora already held.** Ley-line resin for mora you are not going to farm is
+    # not a cost, and the whole point of asking for the balance is that it changes the answer.
     section.resin = resin.total(
-        eco, outstanding, mora=mora or 0, character_exp=character_exp,
+        eco, outstanding,
+        mora=max(0, (mora or 0) - (mora_owned or 0)),
+        character_exp=character_exp,
         craft_multipliers=dict(craft_multipliers or {}),
     )
     return section
@@ -415,6 +536,9 @@ async def build_plan(
     weapon_from: Progress | None = None,
     weapon_to: Progress | None = None,
     bonus_character_ids: Sequence[str] = (),
+    #: Mora the user says they hold. `None` counts as zero for the bill, which reads as
+    #: "you need all of it" — the conservative answer when nobody has said.
+    mora_owned: int | None = None,
 ) -> Plan:
     """Price a whole plan. Raises `PlanError` for a state the game cannot produce."""
     eco = economy()
@@ -493,14 +617,16 @@ async def build_plan(
     sections = [
         _build_section(
             "levels", "Character levels", {}, exp.mora, stock, catalogue,
-            exp=exp, character_exp=exp.exp_short,
+            exp=exp, exp_items=eco.character_exp_items, character_exp=exp.exp_short,
+            mora_owned=mora_owned,
         ),
         _build_section(
-            "ascension", "Character ascension", ascension_needs, ascension_mora, stock, catalogue,
+            "ascension", "Character ascension", ascension_needs, ascension_mora, stock,
+            catalogue, mora_owned=mora_owned,
         ),
         _build_section(
             "talents", "Talents", talent_needs, talent_mora, stock, catalogue,
-            craft_multipliers=talent_multipliers,
+            craft_multipliers=talent_multipliers, mora_owned=mora_owned,
         ),
     ]
     if weapon is not None:
@@ -511,7 +637,8 @@ async def build_plan(
             # yields *character* EXP.
             _build_section(
                 "weapon", "Weapon", weapon_needs, weapon_mora, stock, catalogue,
-                exp=weapon_exp, craft_multipliers=weapon_multipliers,
+                exp=weapon_exp, exp_items=eco.weapon_exp_items,
+                craft_multipliers=weapon_multipliers, mora_owned=mora_owned,
             ),
         )
 
@@ -534,6 +661,7 @@ async def build_plan(
         "total", "Everything", merged, total_mora, stock, catalogue,
         character_exp=exp.exp_short,
         craft_multipliers={**talent_multipliers, **weapon_multipliers},
+        mora_owned=mora_owned,
     )
 
     return Plan(
