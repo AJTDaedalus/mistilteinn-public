@@ -8250,6 +8250,49 @@
         "title": "MeResponse",
         "description": "Response for `GET /auth/me` \u2014 the current user's identity and account status."
       },
+      "MoraRead": {
+        "properties": {
+          "required": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required"
+          },
+          "owned": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owned"
+          },
+          "short": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short"
+          }
+        },
+        "type": "object",
+        "required": [
+          "required"
+        ],
+        "title": "MoraRead",
+        "description": "The plan's mora, and the shortfall when the user has said what they hold."
+      },
       "OptimizationRunCreate": {
         "properties": {
           "name": {
@@ -9077,6 +9120,13 @@
           "histogram_note": {
             "type": "string",
             "title": "Histogram Note"
+          },
+          "mora": {
+            "$ref": "#/components/schemas/MoraRead"
+          },
+          "stock_is_empty": {
+            "type": "boolean",
+            "title": "Stock Is Empty"
           }
         },
         "type": "object",
@@ -9089,7 +9139,9 @@
           "total",
           "bonuses_applied",
           "talent_free_levels",
-          "histogram_note"
+          "histogram_note",
+          "mora",
+          "stock_is_empty"
         ],
         "title": "PlanRead",
         "description": "A whole plan."
@@ -9150,6 +9202,18 @@
             },
             "type": "array",
             "title": "Bonus Character Ids"
+          },
+          "mora_owned": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mora Owned"
           }
         },
         "type": "object",

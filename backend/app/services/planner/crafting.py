@@ -44,10 +44,23 @@ from enum import StrEnum
 
 
 class MaterialClass(StrEnum):
-    """The crafting categories a passive can name."""
+    """The crafting categories a passive can name.
+
+    **Three, and they are the game's own.** The wiki's Crafting page lists exactly these as
+    separate recipe categories — 46 Character Talent Material recipes, 72 Weapon Ascension
+    Material recipes and 104 Character and Weapon Enhancement Material recipes — and every
+    crafting passive names exactly one of them.
+
+    Elemental gems are *Character Ascension Materials*, a fourth category no passive names, so
+    they are deliberately absent rather than forgotten (owner, 2026-09-07).
+    """
 
     TALENT = "talent"
     WEAPON_ASCENSION = "weapon_ascension"
+    #: Monster drops: Slime Condensate, Chaos Core, Concealed Talon, Heavy Horn. Used by both
+    #: character ascension and weapon ascension, which is what "Character and Weapon" means
+    #: here — **not** the union of the other two classes.
+    ENHANCEMENT = "enhancement"
 
 
 class Effect(StrEnum):
@@ -79,11 +92,17 @@ _PERCENT = re.compile(r"(\d+(?:\.\d+)?)\s*%")
 #: forging ("ore used when crafting <type>-type weapons") deliberately match none of them.
 _TALENT = re.compile(r"Character Talent Material", re.IGNORECASE)
 _WEAPON = re.compile(r"Weapon Ascension Material", re.IGNORECASE)
-#: Three spellings for the same pair of categories, all live at 7.0.54: Sucrose says
-#: "Character and Weapon Enhancement Materials" and Dori just "Character and Weapon
-#: Materials". Dori was missed by a stricter pattern that required the middle word.
-_BOTH = re.compile(
-    r"Character and Weapon (?:Enhancement |Ascension )?Materials", re.IGNORECASE,
+#: The monster-drop category. Sucrose spells it in full; Dori writes "Character and Weapon
+#: Materials", and her talent page resolves the ambiguity by linking that short form straight
+#: at `Character and Weapon Enhancement Material`.
+#:
+#: **This used to map to `{TALENT, WEAPON_ASCENSION}`**, reading "Character and Weapon" as the
+#: union of the other two classes. It is not a union; it is the game's name for a third
+#: category. The misreading gave Sucrose and Dori bonuses on talent books and weapon ascension
+#: materials they do not have, and none on the monster drops they do. Corrected against the
+#: wiki's own crafting-talent table, 2026-09-07.
+_ENHANCEMENT = re.compile(
+    r"Character and Weapon (?:Enhancement )?Materials", re.IGNORECASE,
 )
 
 _DOUBLE = re.compile(r"double the product|receive double|obtain double", re.IGNORECASE)
@@ -97,8 +116,10 @@ def classify(
     """Classify one passive, or `None` when it does not change a planner material's cost."""
     text = description or ""
     classes: set[MaterialClass] = set()
-    if _BOTH.search(text):
-        classes = {MaterialClass.TALENT, MaterialClass.WEAPON_ASCENSION}
+    # Checked first. The enhancement phrase contains neither of the other category names, so
+    # the order is belt-and-braces rather than load-bearing.
+    if _ENHANCEMENT.search(text):
+        classes = {MaterialClass.ENHANCEMENT}
     else:
         if _TALENT.search(text):
             classes.add(MaterialClass.TALENT)

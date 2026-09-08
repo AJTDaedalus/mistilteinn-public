@@ -133,9 +133,17 @@ class PlanRequest(BaseModel):
     weapon_id: str | None = None
     weapon_from: ProgressIn | None = None
     weapon_to: ProgressIn | None = None
-    #: Characters whose crafting passive should be applied. Only double-product ones move a
-    #: number; the rest are reported by `/options` so the user knows they help.
+    #: Characters whose crafting passive should be applied. **At most one per material
+    #: class matters**: only one character crafts a given batch, so `craft_multiplier` takes
+    #: the best rather than stacking. Sending more is not an error, it is just not additive.
     bonus_character_ids: list[str] = Field(default_factory=list)
+    #: Mora the account holds, when the user has told us.
+    #:
+    #: **Not in a GOOD export.** No scanner reports a mora balance, so unlike every other
+    #: quantity on this page it cannot be imported and has to be typed. `None` means "not
+    #: told", which the response distinguishes from zero: a plan that says you are 3M short
+    #: when you never said what you have is a worse answer than one that says nothing.
+    mora_owned: int | None = Field(default=None, ge=0)
 
 
 class ResinEstimateRead(BaseModel):
@@ -226,6 +234,18 @@ class SectionRead(BaseModel):
     exp: ExpBillRead | None
 
 
+class MoraRead(BaseModel):
+    """The plan's mora, and the shortfall when the user has said what they hold."""
+
+    #: Null when any section could not be priced, matching `SectionRead.mora`.
+    required: int | None
+    #: What the user typed, or null when they did not.
+    owned: int | None = None
+    #: `required - owned`, floored at zero. Null when either side is unknown, because a
+    #: shortfall computed against a number nobody gave is a number nobody should act on.
+    short: int | None = None
+
+
 class PlanRead(BaseModel):
     """A whole plan."""
 
@@ -241,6 +261,16 @@ class PlanRead(BaseModel):
     talent_free_levels: bool
     #: The two-point per-run model behind `histogram`, restated for whoever renders it.
     histogram_note: str
+    #: What the whole plan costs in mora, against what the user says they hold.
+    mora: MoraRead
+    #: True when this account has no stored materials at all.
+    #:
+    #: **"You hold none" and "you never imported an inventory" are different facts** and the
+    #: page has to be able to say which. Nothing records whether a past import carried a
+    #: `materials` map, so an empty stock is indistinguishable from an unimported one — and
+    #: reporting the second as the first shows a user a bill for materials they already have.
+    #: Reported here so the page can say so instead of quietly totalling zero.
+    stock_is_empty: bool
 
 
 _HISTOGRAM_NOTE = (
@@ -365,6 +395,15 @@ async def create_plan(payload: PlanRequest, session: _Session, user: _User) -> P
     except PlanError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+    required = plan.total.mora
+    # **`short` needs both sides.** A shortfall against a number nobody gave is a number nobody
+    # should act on, and a plan whose mora could not be priced at all has nothing to subtract
+    # from — `SectionRead.mora` is already nullable for exactly that case.
+    short = (
+        max(0, required - payload.mora_owned)
+        if required is not None and payload.mora_owned is not None
+        else None
+    )
     return PlanRead(
         character_name=plan.character_name,
         character_icon=plan.character_icon,
@@ -375,6 +414,8 @@ async def create_plan(payload: PlanRequest, session: _Session, user: _User) -> P
         bonuses_applied=[_bonus_read(b) for b in plan.bonuses_applied],
         talent_free_levels=plan.talent_free_levels,
         histogram_note=_HISTOGRAM_NOTE,
+        mora=MoraRead(required=required, owned=payload.mora_owned, short=short),
+        stock_is_empty=plan.stock_is_empty,
     )
 
 

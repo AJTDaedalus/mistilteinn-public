@@ -454,3 +454,90 @@ async def test_a_material_you_already_hold_is_satisfied_not_unknown(
     )
     assert line["still_needed"] == 0
     assert line["resin_status"] == "satisfied"
+
+
+@pytest.mark.asyncio
+async def test_an_account_with_no_stock_is_told_so_rather_than_shown_zeroes(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """**Reported: "nothing in my inventory is coming through the GOOD".**
+
+    The cause was an import that predated material tracking, so nothing was ever stored — and
+    the page could not say that, because an empty stock and an unimported one look identical.
+    `store_good_import` draws the distinction at import time (a missing `materials` key is a
+    scanner that does not report; `{}` is an account that holds nothing) and keeps neither, so
+    the plan reports the only thing it can see and lets the page explain it.
+
+    A bill that says "owned: 0" for materials the user actually has is worse than one that
+    admits it does not know.
+    """
+    character, talent, _ = await _catalogue(db_session)
+    await db_session.commit()
+
+    body = (await client.post(
+        "/api/v1/planner/plan", json=_request(character, talent), headers=_auth(authed_user),
+    )).json()
+
+    assert body["stock_is_empty"] is True
+
+
+@pytest.mark.asyncio
+async def test_one_stored_material_is_enough_to_stop_saying_it(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """The flag is about the *account*, not about this plan: a user who has imported and
+    happens to hold none of what this particular plan needs has still imported."""
+    user, _ = authed_user
+    character, talent, _ = await _catalogue(db_session)
+    db_session.add(UserMaterial(owner_id=user.id, material_id=TEACHINGS, count=1))
+    await db_session.commit()
+
+    body = (await client.post(
+        "/api/v1/planner/plan", json=_request(character, talent), headers=_auth(authed_user),
+    )).json()
+
+    assert body["stock_is_empty"] is False
+
+
+@pytest.mark.asyncio
+async def test_mora_is_reported_and_a_shortfall_needs_both_sides(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """Mora is in no GOOD export, so it is typed, and left untyped the plan must not invent a
+    shortfall: a number computed against a figure nobody gave is a number nobody should act
+    on."""
+    character, talent, _ = await _catalogue(db_session)
+    await db_session.commit()
+
+    silent = (await client.post(
+        "/api/v1/planner/plan", json=_request(character, talent), headers=_auth(authed_user),
+    )).json()["mora"]
+    told = (await client.post(
+        "/api/v1/planner/plan",
+        json={**_request(character, talent), "mora_owned": 0},
+        headers=_auth(authed_user),
+    )).json()["mora"]
+
+    assert silent["owned"] is None
+    assert silent["short"] is None
+    assert silent["required"] == told["required"]
+    # Told zero, the whole bill is the shortfall — and zero is a real answer, not "not told".
+    assert told["owned"] == 0
+    assert told["short"] == told["required"]
+
+
+@pytest.mark.asyncio
+async def test_enough_mora_reports_no_shortfall(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """Floored at zero rather than going negative: "you are -4,000 short" is not a sentence."""
+    character, talent, _ = await _catalogue(db_session)
+    await db_session.commit()
+
+    mora = (await client.post(
+        "/api/v1/planner/plan",
+        json={**_request(character, talent), "mora_owned": 99_000_000},
+        headers=_auth(authed_user),
+    )).json()["mora"]
+
+    assert mora["short"] == 0

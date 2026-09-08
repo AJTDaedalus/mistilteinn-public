@@ -42,8 +42,14 @@ if TYPE_CHECKING:
 #: `docs/RESEARCH_leveling_planner_data.md`). `104` in a talent bill is a talent book; `114`
 #: is a weapon ascension material. `112` (common drops) and `113` (boss drops) appear in both
 #: and belong to neither crafting category, so no bonus touches them.
-_TALENT_BOOK_PREFIX = "104"
+#: Talent books. **`1043`, not `104`**: the wider prefix also covers `1041` elemental gems and
+#: `1040` EXP items, neither of which any crafting passive names.
+_TALENT_BOOK_PREFIX = "1043"
 _WEAPON_MATERIAL_PREFIX = "114"
+#: Monster drops, the "Character and Weapon Enhancement Materials" category. They appear in
+#: **both** bills — talent levelling and character ascension each want them — so unlike talent
+#: books this one is not gated on which bill is being built.
+_ENHANCEMENT_PREFIX = "112"
 
 
 @dataclass
@@ -104,6 +110,15 @@ class Plan:
     bonuses_available: list[CraftingBonus]
     #: Set when a talent target was asked for above 10. Rendered as a note, not an empty list.
     talent_free_levels: bool = False
+    #: True when this account has no stored materials at all.
+    #:
+    #: **Not the same as holding none.** Nothing records whether a past GOOD import carried a
+    #: `materials` map — `store_good_import` distinguishes "the scanner did not report" from
+    #: "the account reported nothing" at import time and keeps neither — so an empty stock and
+    #: an unimported one look identical here. A page that totals zero without saying which
+    #: shows a user a bill for materials they may already have, which is what was reported
+    #: about the character EXP books.
+    stock_is_empty: bool = False
 
 
 def _class_of(material_id: int, in_talent_bill: bool) -> MaterialClass | None:
@@ -112,6 +127,8 @@ def _class_of(material_id: int, in_talent_bill: bool) -> MaterialClass | None:
         return MaterialClass.TALENT
     if text.startswith(_WEAPON_MATERIAL_PREFIX):
         return MaterialClass.WEAPON_ASCENSION
+    if text.startswith(_ENHANCEMENT_PREFIX):
+        return MaterialClass.ENHANCEMENT
     return None
 
 
@@ -441,6 +458,7 @@ async def build_plan(
         bonuses_applied=selected,
         bonuses_available=all_bonuses,
         talent_free_levels=free_levels,
+        stock_is_empty=not stock,
     )
 
 

@@ -97,13 +97,13 @@ SEEDED: tuple[tuple[str, str, str], ...] = (
 EXPECTED: dict[str, tuple[Effect, set[MaterialClass], bool] | None] = {
     "Albedo": (Effect.DOUBLE, {MaterialClass.WEAPON_ASCENSION}, True),
     "Alhaitham": (Effect.DOUBLE, {MaterialClass.WEAPON_ASCENSION}, True),
-    "Dori": (Effect.REFUND, {MaterialClass.TALENT, MaterialClass.WEAPON_ASCENSION}, True),
+    "Dori": (Effect.REFUND, {MaterialClass.ENHANCEMENT}, True),
     "Eula": (Effect.DOUBLE, {MaterialClass.TALENT}, True),
     "Kamisato Ayaka": (Effect.DOUBLE, {MaterialClass.WEAPON_ASCENSION}, True),
     "Layla": (Effect.DOUBLE, {MaterialClass.TALENT}, True),
     "Mona": (Effect.REFUND, {MaterialClass.WEAPON_ASCENSION}, True),
     "Prune": None,
-    "Sucrose": (Effect.DOUBLE, {MaterialClass.TALENT, MaterialClass.WEAPON_ASCENSION}, True),
+    "Sucrose": (Effect.DOUBLE, {MaterialClass.ENHANCEMENT}, True),
     "Wriothesley": (Effect.DOUBLE, {MaterialClass.WEAPON_ASCENSION}, True),
     "Xingqiu": (Effect.REFUND, {MaterialClass.TALENT}, True),
     "Yae Miko": None,
@@ -138,12 +138,16 @@ def test_the_expected_set_is_exactly_the_seeded_set() -> None:
 def test_dori_needs_the_looser_wording() -> None:
     """She says "Character and Weapon Materials" with no middle word, and a stricter pattern
     missed her entirely — found by listing what classified, not by a test.
+
+    **The looser pattern is still the enhancement class, not a union.** The short spelling is
+    ambiguous in isolation and the wiki settles it: her talent page links those words at
+    `Character and Weapon Enhancement Material`, the same page Sucrose's full spelling links.
     """
     dori = next(row for row in SEEDED if row[0] == "Dori")
     assert "Enhancement" not in dori[2]
     assert "Ascension" not in dori[2]
     bonus = classify("id", *dori)
-    assert set(bonus.classes) == {MaterialClass.TALENT, MaterialClass.WEAPON_ASCENSION}
+    assert set(bonus.classes) == {MaterialClass.ENHANCEMENT}
 
 
 # -- the refund arithmetic ------------------------------------------------------------
@@ -222,3 +226,36 @@ def test_every_recipe_a_bonus_can_touch_is_three_to_one() -> None:
     ]
 
     assert off_ratio == []
+
+
+def test_no_passive_covers_two_classes() -> None:
+    """**The correction of 2026-09-07, pinned as a property.**
+
+    "Character and Weapon Enhancement Materials" was read as the union of the other two
+    categories, so Sucrose and Dori were given bonuses on talent books and weapon ascension
+    materials they do not have, and none on the monster drops they do. It is not a union: it is
+    the game's own name for a third recipe category, which the wiki's Crafting page lists
+    beside the other two (104 recipes against 72 and 46), and Dori's talent page links the
+    short spelling straight at it.
+
+    Every crafting passive names exactly one category. Asserting *that* rather than
+    re-listing the twelve keeps the guard meaningful if a fourteenth ships.
+    """
+    for character, passive, description in SEEDED:
+        bonus = classify("id", character, passive, description)
+        if bonus is None:
+            continue
+        assert len(bonus.classes) == 1, f"{character} spans {sorted(bonus.classes)}"
+
+
+def test_the_enhancement_class_is_the_monster_drops() -> None:
+    """Named so it cannot be mistaken for "both of the others" again. Sucrose and Dori are the
+    only two in it, and they are the two the union misread."""
+    named = {
+        character
+        for character, passive, description in SEEDED
+        if (bonus := classify("id", character, passive, description))
+        and MaterialClass.ENHANCEMENT in bonus.classes
+    }
+
+    assert named == {"Sucrose", "Dori"}
