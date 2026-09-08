@@ -264,6 +264,9 @@ class WeaponSummary(WeaponClassed):
     id: str
     nanoka_id: int
     name: str
+    #: Datamined ahead of release, and absent from this list unless `include_beta` asks.
+    #: Published so a caller that opts in can mark the card rather than showing it as settled.
+    is_beta: bool = False
     rarity: Rarity
     base_atk: float | None = None
     sub_stat_type: str | None = None

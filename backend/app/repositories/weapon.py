@@ -30,6 +30,7 @@ class WeaponRepository(BaseRepository[Weapon]):
         weapon_type: WeaponType | None,
         rarity: Rarity | None,
         name: str | None,
+        include_beta: bool = False,
     ) -> Select[tuple[Weapon]]:
         stmt = select(Weapon)
         # Eight rows at this pin carry a weapon class the game has not shipped, and unlike the
@@ -37,6 +38,14 @@ class WeaponRepository(BaseRepository[Weapon]):
         # Crystal` rows and four more, published by nobody but a datamine. That is the larger
         # half of #271 and the half nobody had noticed. `app/services/unreleased.py`.
         stmt = stmt.where(Weapon.weapon_type.notin_(UNRELEASED_WEAPON_CLASSES))
+        # **Beta weapons are seeded and hidden by default**, the twin of the rule in
+        # `CharacterRepository`. Only the planner asks for them, so the build editor never
+        # offers one and no build can hold one.
+        #
+        # The eight held out above are a *different* exclusion and stay unconditional: those
+        # carry an unshipped weapon class, and no `include_beta` turns them on.
+        if not include_beta:
+            stmt = stmt.where(Weapon.is_beta.is_(False))
         if weapon_type is not None:
             stmt = stmt.where(Weapon.weapon_type == weapon_type)
         if rarity is not None:
@@ -51,12 +60,15 @@ class WeaponRepository(BaseRepository[Weapon]):
         weapon_type: WeaponType | None = None,
         rarity: Rarity | None = None,
         name: str | None = None,
+        include_beta: bool = False,
         offset: int = 0,
         limit: int = 100,
     ) -> Sequence[Weapon]:
         """Filtered, paginated list."""
         stmt = (
-            self._filtered(weapon_type=weapon_type, rarity=rarity, name=name)
+            self._filtered(
+                weapon_type=weapon_type, rarity=rarity, name=name, include_beta=include_beta,
+            )
             .order_by(Weapon.name, Weapon.nanoka_id)
             .offset(offset)
             .limit(limit)
@@ -70,9 +82,12 @@ class WeaponRepository(BaseRepository[Weapon]):
         weapon_type: WeaponType | None = None,
         rarity: Rarity | None = None,
         name: str | None = None,
+        include_beta: bool = False,
     ) -> int:
-        """Total matching `search`'s filters — see `CharacterRepository.count_filtered`."""
-        stmt = self._filtered(weapon_type=weapon_type, rarity=rarity, name=name)
+        """Total matching `search`'s filters. See `CharacterRepository.count_filtered`."""
+        stmt = self._filtered(
+            weapon_type=weapon_type, rarity=rarity, name=name, include_beta=include_beta,
+        )
         result = await self.session.execute(
             select(func.count()).select_from(stmt.subquery()),
         )

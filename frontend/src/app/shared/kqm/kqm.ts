@@ -108,17 +108,24 @@ export function marked(
  */
 export function weaponCard(
   weapon: { id: string; name: string; icon?: string | null; stars: number;
-            sub_stat_display?: string | null },
+            is_beta?: boolean; sub_stat_display?: string | null },
   listed: WeaponRecommendation | undefined,
 ): CardOption {
+  // **`beta` wins the second line where it applies.** An unreleased weapon's substat is the
+  // least of what a reader needs to know about it, and at this pin its *name* is a
+  // placeholder — three swords all publish "Weapon: Sword" — so the card has to say
+  // somewhere that it is not a real listing yet.
+  const detail = weapon.is_beta
+    ? `${weapon.stars}★ · beta`
+    : listed
+      ? `${weapon.stars}★`
+      : `${weapon.stars}★ · ${weapon.sub_stat_display || 'no substat'}`;
   return marked({
     value: weapon.id,
     label: weapon.name,
     icon: weapon.icon,
-    detail: listed
-      ? `${weapon.stars}★`
-      : `${weapon.stars}★ · ${weapon.sub_stat_display || 'no substat'}`,
-    tags: { stars: String(weapon.stars) },
+    detail,
+    tags: { stars: String(weapon.stars), beta: weapon.is_beta ? 'beta' : '' },
   }, listed);
 }
 

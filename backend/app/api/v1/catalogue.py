@@ -116,11 +116,22 @@ async def list_weapons(
     weapon_type: WeaponType | None = None,
     rarity: Rarity | None = None,
     name: str | None = None,
+    include_beta: bool = False,
     offset: _Offset = 0,
     limit: _Limit = 50,
 ) -> PaginatedResponse[WeaponSummary]:
-    """List weapons, filtered by type, rarity or name substring."""
-    filters = {"weapon_type": weapon_type, "rarity": rarity, "name": name}
+    """List weapons, filtered by type, rarity or name substring.
+
+    **`include_beta` defaults to false**, the twin of the character list's. Only `/planner`
+    asks, so the build editor never offers a beta weapon and no build can hold one.
+
+    It does **not** reach the eight rows carrying an unshipped weapon class: those are a
+    different exclusion and no flag turns them on.
+    """
+    filters = {
+        "weapon_type": weapon_type, "rarity": rarity, "name": name,
+        "include_beta": include_beta,
+    }
     rows = await repo.search(**filters, offset=offset, limit=limit)
     return PaginatedResponse(
         items=[WeaponSummary.model_validate(row) for row in rows],

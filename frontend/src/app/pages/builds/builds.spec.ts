@@ -445,7 +445,8 @@ describe('BuildsPage pickers', () => {
       value: 'w-mistsplitter', label: 'Mistsplitter Reforged',
       icon: 'UI_EquipIcon_Sword_Narukami', detail: '5★ · CRIT DMG',
       // `tooltip` carries KQM's own sentence when there is one; undefined when there is not.
-      tooltip: undefined, tags: { stars: '5', kqm: '' },
+      // `beta: ''` because this page never asks for beta weapons and so never sees one.
+      tooltip: undefined, tags: { stars: '5', kqm: '', beta: '' },
       // **False, not absent.** A card is drawn as recommended only when a cited source lists
       // it, and this character has no captured guide — which is a different statement from
       // "KQM recommends nothing", and neither of them is "recommended".

@@ -80,6 +80,8 @@ export class CatalogueService {
       name?: string;
       weapon_type?: WeaponSummary['weapon_type'];
       rarity?: WeaponSummary['rarity'];
+      /** Include weapons datamined ahead of release. Off unless asked; only the planner asks. */
+      include_beta?: boolean;
       offset?: number;
       limit?: number;
     } = {},
