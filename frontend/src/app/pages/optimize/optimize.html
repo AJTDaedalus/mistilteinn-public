@@ -109,7 +109,7 @@
 
       <mist-card-picker
         label="Build"
-        placeholder="Choose a build…"
+        placeholder="None"
         [options]="buildOptions()"
         [selected]="buildId() ? [buildId()] : []"
         (selectedChange)="pickBuild($event)"
@@ -205,7 +205,7 @@
             [options]="rotationOptions()"
             [value]="rotationId() || null"
             ariaLabel="Rotation"
-            placeholder="Choose a rotation…"
+            placeholder="None"
             (valueChange)="pickRotation($event ?? '')"
           />
         </span>
@@ -317,7 +317,7 @@
             <!-- The 4-piece comes first, being far the commoner build. -->
             <mist-card-picker
               label="4-piece"
-              placeholder="Select"
+              placeholder="None"
               multi
               [options]="fourPieceOptions()"
               [selected]="fourPieceSelected()"
@@ -326,7 +326,7 @@
 
             <mist-card-picker
               label="2-Piece"
-              placeholder="Select"
+              placeholder="None"
               multi
               [options]="pairOptions()"
               [selected]="pairSelected()"
@@ -391,7 +391,7 @@
 
               <mist-card-picker
                 label="Also compare"
-                placeholder="Select weapons"
+                placeholder="None"
                 multi
                 ordered
                 [options]="weaponOptions()"

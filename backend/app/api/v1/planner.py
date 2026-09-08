@@ -397,6 +397,7 @@ async def create_plan(payload: PlanRequest, session: _Session, user: _User) -> P
             ),
             weapon_to=Progress(**payload.weapon_to.model_dump()) if payload.weapon_to else None,
             bonus_character_ids=payload.bonus_character_ids,
+            mora_owned=payload.mora_owned,
         )
     except PlanError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc

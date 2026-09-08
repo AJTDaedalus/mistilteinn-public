@@ -53,7 +53,7 @@
                 [options]="optionsFor(slot)"
                 [value]="picked()[slot]"
                 [ariaLabel]="'Slot ' + (i + 1)"
-                placeholder="Select"
+                placeholder="None"
                 (valueChange)="pick(slot, $event ?? '')"
               />
             </li>
