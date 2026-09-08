@@ -312,3 +312,59 @@ describe('the resin histogram', () => {
     expect(chart.bars[1].x - (chart.bars[0].x + chart.bars[0].width)).toBeCloseTo(2, 5);
   });
 });
+
+describe('crafting help is one pick per class', () => {
+  it('replaces the pick within a class, across both columns', async () => {
+    // **Bonus and refund are alternatives, not additions.** Only one character crafts a given
+    // batch, so `craft_multiplier` takes the best and never stacks — a grid of checkboxes said
+    // otherwise, and a control implying an interaction the game does not have misinforms.
+    const page = makePage();
+    await page.ngOnInit();
+
+    page['pickCraft']('weapon_ascension', 'albedo');
+    expect(page['crafterFor']('weapon_ascension')).toBe('albedo');
+
+    // A refund, in the other column of the same class, replaces it rather than joining it.
+    page['pickCraft']('weapon_ascension', 'mona');
+
+    expect(page['crafterFor']('weapon_ascension')).toBe('mona');
+    expect(page['selectedBonusIds']()).toEqual(['mona']);
+  });
+
+  it('keeps the two classes independent', async () => {
+    // Weapon materials and talent books are separate batches, so Albedo can craft one while
+    // Eula crafts the other. One pick overall would have made that unexpressible.
+    const page = makePage();
+    await page.ngOnInit();
+
+    page['pickCraft']('weapon_ascension', 'albedo');
+    page['pickCraft']('talent', 'eula');
+
+    expect(page['selectedBonusIds']().sort()).toEqual(['albedo', 'eula']);
+  });
+
+  it('sends a character naming both classes once', async () => {
+    // Sucrose doubles either and Dori refunds either. The backend filters each bonus by class,
+    // so one id applies to both — sending it twice would say nothing new.
+    const page = makePage();
+    await page.ngOnInit();
+
+    page['pickCraft']('weapon_ascension', 'sucrose');
+    page['pickCraft']('talent', 'sucrose');
+
+    expect(page['selectedBonusIds']()).toEqual(['sucrose']);
+  });
+
+  it('can go back to nobody', async () => {
+    // A radio cannot be unchecked by clicking it, so "No one" is an option rather than an
+    // absence. Without it the first pick would be permanent.
+    const page = makePage();
+    await page.ngOnInit();
+    page['pickCraft']('talent', 'eula');
+
+    page['pickCraft']('talent', null);
+
+    expect(page['crafterFor']('talent')).toBeNull();
+    expect(page['selectedBonusIds']()).toEqual([]);
+  });
+});

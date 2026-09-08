@@ -349,7 +349,7 @@ def test_nothing_to_farm_draws_no_histogram(eco) -> None:
                 "10% chance to obtain double the product."
             ),
             Effect.DOUBLE,
-            {MaterialClass.TALENT, MaterialClass.WEAPON_ASCENSION},
+            {MaterialClass.ENHANCEMENT},
             True,
         ),
         (
@@ -359,7 +359,7 @@ def test_nothing_to_farm_draws_no_histogram(eco) -> None:
                 "Character and Weapon Materials."
             ),
             Effect.REFUND,
-            {MaterialClass.TALENT, MaterialClass.WEAPON_ASCENSION},
+            {MaterialClass.ENHANCEMENT},
             True,
         ),
         (

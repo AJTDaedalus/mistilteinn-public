@@ -111,7 +111,21 @@ export class PlannerPage implements OnInit {
   protected readonly weaponToAscension = signal(6);
 
   protected readonly talentRows = signal<TalentRow[]>([]);
-  protected readonly selectedBonuses = signal<Set<string>>(new Set());
+  /**
+   * The one character crafting each material class, keyed by class.
+   *
+   * **One per class, spanning both columns.** Only one character crafts a given batch, so a
+   * bonus and a refund are alternatives rather than additions — `craft_multiplier` has always
+   * taken the best of them and never stacked, but a grid of checkboxes said otherwise, and a
+   * control that implies an interaction the game does not have is a control that misinforms.
+   *
+   * Keyed by *class* rather than one pick overall, because weapon materials and talent books
+   * are separate batches: Albedo can craft one while Eula crafts the other.
+   */
+  protected readonly craftPick = signal<Record<string, string | null>>({});
+
+  /** Mora the user says they hold. Null until they say — no scanner exports a balance. */
+  protected readonly moraOwned = signal<number | null>(null);
   protected readonly talentLevels = TALENT_LEVELS;
 
   /** Ascension phases, with the level each unlocks — so the picker can say "5 → 80". */
@@ -289,9 +303,14 @@ export class PlannerPage implements OnInit {
         // column whose actionable rows are buried under its unactionable ones is read as
         // decoration.
         .sort((a, b) => Number(b.applicable) - Number(a.applicable));
+    // **The game's own three recipe categories**, named as the game names them. They were
+    // two, and "Weapon crafting" / "Talent crafting" were this app's own words for them —
+    // which hid that a third exists and that Sucrose and Dori belong to it rather than to
+    // both of the others. `services/planner/crafting.py`.
     return [
-      { key: 'weapon_ascension', label: 'Weapon crafting' },
-      { key: 'talent', label: 'Talent crafting' },
+      { key: 'talent', label: 'Character talent materials' },
+      { key: 'weapon_ascension', label: 'Weapon ascension materials' },
+      { key: 'enhancement', label: 'Character and weapon enhancement materials' },
     ].map((group) => ({
       ...group,
       // Only `double`. A bonus *regional* material would need the regional family modelled,
@@ -413,14 +432,24 @@ export class PlannerPage implements OnInit {
     }
   }
 
-  protected toggleBonus(characterId: string): void {
-    this.selectedBonuses.update((current) => {
-      const next = new Set(current);
-      if (next.has(characterId)) next.delete(characterId);
-      else next.add(characterId);
-      return next;
-    });
+  protected pickCraft(materialClass: string, characterId: string | null): void {
+    this.craftPick.update((current) => ({ ...current, [materialClass]: characterId }));
   }
+
+  protected crafterFor(materialClass: string): string | null {
+    return this.craftPick()[materialClass] ?? null;
+  }
+
+  /**
+   * The ids to send: one per class, de-duplicated.
+   *
+   * A character named by both classes — Sucrose doubles either, Dori refunds either — is one
+   * id, not two. The backend filters each bonus by class anyway, so sending it once applies
+   * it to both.
+   */
+  private readonly selectedBonusIds = computed(() => [
+    ...new Set(Object.values(this.craftPick()).filter((id): id is string => Boolean(id))),
+  ]);
 
   protected setTalent(index: number, field: 'current' | 'target', value: number): void {
     this.talentRows.update((rows) =>
@@ -451,7 +480,8 @@ export class PlannerPage implements OnInit {
           weapon_to: this.weaponId()
             ? { level: this.weaponToLevel(), ascension: this.weaponToAscension() }
             : null,
-          bonus_character_ids: [...this.selectedBonuses()],
+          bonus_character_ids: this.selectedBonusIds(),
+          mora_owned: this.moraOwned(),
         }),
       );
     } catch (cause: unknown) {

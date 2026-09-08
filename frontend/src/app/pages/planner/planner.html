@@ -219,7 +219,21 @@
                  "what can help *this* class". -->
             @for (group of craftGroups(); track group.key) {
               <div class="craft">
-                <h3 class="craft__title">{{ group.label }}</h3>
+                <div class="craft__head">
+                  <h3 class="craft__title">{{ group.label }}</h3>
+                  <!-- **A radio cannot be unchecked by clicking it**, so "nobody" has to be an
+                       option rather than an absence. Without it the first pick would be
+                       permanent. -->
+                  <label class="check craft__none-pick">
+                    <input
+                      type="radio"
+                      [name]="'craft-' + group.key"
+                      [checked]="crafterFor(group.key) === null"
+                      (change)="pickCraft(group.key, null)"
+                    />
+                    <span>No one</span>
+                  </label>
+                </div>
                 <div class="craft__cols">
                   <div class="craft__col">
                     <h4>Bonus crafting</h4>
@@ -230,10 +244,11 @@
                             @if (bonus.applicable) {
                               <label class="check">
                                 <input
-                                  type="checkbox"
-                                  [checked]="selectedBonuses().has(bonus.character_id)"
-                                  (change)="toggleBonus(bonus.character_id)"
-                                />
+                                  type="radio"
+                                  [name]="'craft-' + group.key"
+                                  [checked]="crafterFor(group.key) === bonus.character_id"
+                                  (change)="pickCraft(group.key, bonus.character_id)"
+                                  />
                                 <span class="craft__who">{{ bonus.character_name }}</span>
                               </label>
                             } @else {
@@ -269,10 +284,11 @@
                             @if (bonus.applicable) {
                               <label class="check">
                                 <input
-                                  type="checkbox"
-                                  [checked]="selectedBonuses().has(bonus.character_id)"
-                                  (change)="toggleBonus(bonus.character_id)"
-                                />
+                                  type="radio"
+                                  [name]="'craft-' + group.key"
+                                  [checked]="crafterFor(group.key) === bonus.character_id"
+                                  (change)="pickCraft(group.key, bonus.character_id)"
+                                  />
                                 <span class="craft__who">{{ bonus.character_name }}</span>
                               </label>
                             } @else {
@@ -294,6 +310,26 @@
           </fieldset>
         }
 
+        <fieldset>
+          <legend>Mora</legend>
+          <!-- **Typed, because no scanner exports it.** Every other quantity on this page
+               comes from a GOOD import; a mora balance is in no export format, so the only
+               way to net the bill against what you hold is to be told. Left blank it reports
+               the cost and claims nothing about a shortfall. -->
+          <label>
+            Mora you hold
+            <input
+              type="number"
+              min="0"
+              step="1000"
+              inputmode="numeric"
+              placeholder="Leave blank if you would rather not say"
+              [ngModel]="moraOwned()"
+              (ngModelChange)="moraOwned.set($event === null || $event === '' ? null : +$event)"
+            />
+          </label>
+        </fieldset>
+
         <button type="button" class="run" (click)="run()" [disabled]="busy()">
           {{ busy() ? 'Pricing…' : 'Price this plan' }}
         </button>
@@ -306,6 +342,32 @@
 
   @if (plan(); as result) {
     <div class="results">
+      <!-- **"You hold none" and "you never imported" are different facts.** Nothing records
+           whether a past import carried a `materials` map, so an empty stock and an unimported
+           one look identical to the server. Saying so beats totalling zero: the alternative is
+           a bill for materials the user may already have, which is exactly what was reported
+           about the character EXP books. -->
+      @if (result.stock_is_empty) {
+        <p class="hint hint--warn" role="status">
+          No materials are stored for this account, so everything below counts as owned: 0.
+          Import a GOOD export on the inventory page to net this bill against what you hold.
+        </p>
+      }
+
+      @if (result.mora; as mora) {
+        <p class="mora-line">
+          <span class="mora-line__label">Mora</span>
+          <span class="mono">{{ number(mora.required) }}</span>
+          @if (mora.owned !== null && mora.owned !== undefined) {
+            <span class="muted">of your {{ number(mora.owned) }}</span>
+            @if (mora.short) {
+              <strong class="warn">{{ number(mora.short) }} short</strong>
+            } @else {
+              <span class="muted">— enough</span>
+            }
+          }
+        </p>
+      }
       @for (section of result.sections.concat([result.total]); track section.key) {
         <section class="bill" [class.bill--total]="section.key === 'total'">
           <h2>
