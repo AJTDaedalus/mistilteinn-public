@@ -20,7 +20,7 @@
     <div class="pickers">
       <mist-card-picker
         label="Team"
-        placeholder="Choose a team"
+        placeholder="None"
         [options]="teamOptions()"
         [selected]="teamId() ? [teamId()] : []"
         (selectedChange)="pickTeam($event[0] ?? '')"
@@ -30,7 +30,7 @@
         @if (rotationOptions().length) {
           <mist-card-picker
             label="Rotation"
-            placeholder="Choose a rotation"
+            placeholder="None"
             [options]="rotationOptions()"
             [selected]="rotationId() ? [rotationId()] : []"
             (selectedChange)="rotationId.set($event[0] ?? '')"

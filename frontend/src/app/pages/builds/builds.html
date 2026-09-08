@@ -294,7 +294,7 @@
           [options]="rankableOptions()"
           [value]="null"
           ariaLabel="Add a build to the ranking"
-          placeholder="Choose a build…"
+          placeholder="None"
           (valueChange)="addToRanking($event)"
         />
       </span>
@@ -319,7 +319,7 @@
 
       <mist-card-picker
         label="Character"
-        placeholder="Choose a character…"
+        placeholder="None"
         [options]="characterOptions()"
         [filters]="characterFilters()"
         [selected]="characterId() ? [characterId()] : []"
@@ -350,7 +350,7 @@
            two different questions of the same kind of control. -->
       <mist-card-picker
         label="Weapon"
-        placeholder="Choose a weapon…"
+        placeholder="None"
         clearable
         ordered
         [options]="weaponOptions()"
