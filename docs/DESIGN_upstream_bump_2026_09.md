@@ -1,7 +1,7 @@
 # DESIGN — upstream bump, 2026-09: gcsim re-pin + nanoka catalogue
 
-Status: **planned, not started.** Five owner decisions are open (§5); tasks that depend on one
-say so. Evidence: `docs/RESEARCH_gcsim_repin_2026_09.md` (gcsim, 49 Go commits triaged,
+Status: **planned, not started. All five owner decisions are answered** (§5, 2026-09-19).
+Evidence: `docs/RESEARCH_gcsim_repin_2026_09.md` (gcsim, 49 Go commits triaged,
 measured in scratch worktrees) and `docs/RESEARCH_nanoka_bump_7_0_54.md` (nanoka, 1,086
 payload pairs diffed). This doc is the decisions and the order; the research files are the
 numbers.
@@ -24,7 +24,7 @@ worker churn that we never consume. The 49 that touch Go break down like this:
 | class | what | effect here |
 |---|---|---|
 | new kits | Iansan, Prune, Odette, Cryo Traveler (×2 keys); 5 weapons, 2 sets | 31 → 26 uncovered characters; snapshots only **add** entries |
-| grammar | `1de5a4243` adds action `special_skill` to the enum **but not to the parser** (`pkg/gcs/ast/keys.go`) | `authorable_actions()` reads the enum, so the builder would offer an action gcsim then rejects. **Must fix first** |
+| grammar | `1de5a4243` adds `special_skill` to the action enum. It is a **cooldown bucket, not a keyword** — `pkg/gcs/ast/keys.go` has no such token | `authorable_actions()` reads the enum, so the builder would offer an action gcsim's own parser rejects. §2 step 1, **before the pin moves** |
 | output | `61f578730` renumbers the element enums; the empty element now reads `"none"`, not `""` | We read by name, so this is harmless, but `verify-gcsim-recipe` treats `''` as unlabelled and would let `"none"` through |
 | frames | `60894d7cb` fixes frame tables for about 70 characters | `skirk_team` sample **−3.13 %**; vendored Skirk/Furina/Citlali/Escoffier **−8.2 %** |
 | kit buffs | `473e89986` adds a default-on Traveler True Moon story buff | Traveler DPS about **+27 %**. `/explain` models neither this buff nor the older Skirk one |
@@ -48,7 +48,9 @@ The only differences are:
 - six beta weapons getting real names;
 - **Exaiphanes Blade (11521) losing its whole ascension bill** from 7.0.52 onward. That weapon is released, and the owner holds two copies.
 
-**What matters more than the bump:** nanoka **deletes old versions**. `gi/6.7` returns 404 (confirmed 2026-09-19). Once 7.1 goes live, 7.0.51 will probably 404 too, and the repo commits only 9 of the ~1,086 payloads a reseed needs.
+**What matters more than the bump:** nanoka **deletes old versions**. `gi/6.7` returns 404
+(confirmed 2026-09-19). Once 7.1 goes live, 7.0.51 will probably 404 too, and the repo commits
+only 9 of the ~1,086 payloads a reseed needs. D3 rules on this — §3.
 
 ## 2. Approach — gcsim (Chunk U)
 
@@ -59,11 +61,26 @@ covers it. The tag costs one Go change, **Jade Vista**. That is the smallest pri
 the licence question closed. (D1)
 
 The order inside U is load-bearing:
-1. **Make the action list parser-derived before moving the pin.** Extend `build_key_snapshot` to
-   capture `actionKeys` from `pkg/gcs/ast/keys.go`, and make `authorable_actions()` offer
-   `enum ∩ parser`. Add a test asserting every offered action is a parser key. At the current
-   pin this is a no-op. At the new pin it drops `special_skill`, which proves the test catches
-   the case it was written for.
+1. **Make every gcsim move authorable, and make a new one fail loudly.** Owner ruling,
+   2026-09-19: *we cannot just ignore a move gcsim implements.*
+
+   `special_skill` turns out not to be a move at all. It is a **cooldown bucket**:
+   `pkg/gcs/ast/keys.go` has no such token, so no gcsim config can spell it, and the
+   player-visible moves it tracks are authored as ordinary actions that dispatch internally —
+   Varka's Four Winds through `charge` (`internal/characters/varka/charge.go:96`) and
+   Odette's recast through `skill` (`internal/characters/odette/skill.go:113`). Offering it
+   would have produced configs gcsim rejects; **not** offering it loses nothing.
+
+   So the rule is not "offer gcsim's enum" and not "offer the parser's keys" either. It is:
+   every entry in gcsim's action enum is either **authorable** (a parser key, or a variant a
+   character exposes through params) or on a **reviewed non-authorable list** with a reason.
+   `build_key_snapshot` captures the parser keys beside the enum; a test fails on any enum
+   entry that is neither. That is the same shape as the reviewed unimplemented-character
+   list, and it means the next `special_skill` is a red test rather than a silent gap.
+
+   Separately, U.3 checks the new kits by driving them: each of Iansan, Prune, Odette and
+   Cryo Traveler gets a config authored in our builder and run through gcsim.
+
 2. **Move the pin and regenerate everything that names it, in one reviewed commit.** That
    covers `CROSSVAL_gcsim.md` (commit, date, title, the Go row), both snapshots, crossval JSON,
    `skirk_team_calc.json`, the ER sweep, the coverage fixture and the OpenAPI contract. Each
@@ -78,33 +95,41 @@ The order inside U is load-bearing:
 
 **Licence compliance is overdue whatever the pin.** We serve `gcsim.wasm` without gcsim's MIT
 notice (`extractLicenses: false`), and mistilteinn has no LICENSE of its own. U.1 ships the
-notice beside the artifact. That is independent of the re-pin and can land first. Whether
-mistilteinn itself gets a licence is D5.
+notice beside the artifact. That is independent of the re-pin and can land first.
+
+Whether **mistilteinn itself** gets a LICENSE is a separate question nobody has asked yet. It
+is not blocking, and it is not in scope here.
 
 ## 3. Approach — nanoka (Chunk V)
 
-**Do not bump to 7.0.54 as a chunk.** It adds only beta tuning that 7.1 will supersede, plus
-one regression (11521). The bump worth doing is to **7.1**, when nanoka publishes it (inferred
-around 2026-09-22 on a six-week cycle; not checked).
+**Reseeding always takes the version nanoka publishes today** (D3). That is the owner's
+ruling, and it settles the retention problem by not fighting it: upstream keeps only the
+current cycle, so a pin we cannot recapture is not a pin we can reseed. Nothing is archived,
+and the catalogue moves forward when it is reseeded.
 
-**Before that, close the retention gap (D3).** A pin that upstream deletes cannot be reseeded,
-so `verify_seed --live` and the prod `reseed` job stop working the day 7.1 goes live. The fix
-is to archive the full payload set for the pinned version somewhere we own, and to make the
-transport able to read from the archive. It has to happen **before** 7.0.51 disappears if we
-want 7.0.51 recoverable, which means now.
+Two consequences the chunk has to make true, because today's tree assumes otherwise:
+- **`verify_seed --live` and the prod `reseed` job must target the current version**, not the
+  committed `FIXTURE_VERSION`. Left as they are, both start failing the day 7.1 lands.
+- **The committed fixtures stay a snapshot of record**, not a reseed source. They pin what the
+  enums and mappings were derived from (9 payloads), and `test_capture_pinning` keeps them
+  honest. Say so where the pin is declared, so nobody reads them as a backup.
 
-The bump itself follows the repo's existing sequence, which is in
-`RESEARCH_nanoka_bump_7_0_54.md` §Recommendation:
-- `capture_nanoka_fixtures --version 7.1.x`;
-- update the four hand-written pin sites (both `FIXTURE_VERSION` constants, the literal in
-  `test_seed_db.py`, and `PROVENANCE.md`);
-- `seed_db`, then `verify_seed`;
-- move the YuanShen snapshot to the matching build;
-- run icons and codegen only if something changed;
-- then the planner checks, since the materials data comes from here.
+**The bump itself goes to 7.1, not 7.0.54.** 7.0.54 differs from our pin only in beta tuning
+that 7.1 supersedes, plus one regression (below). 7.1 is inferred to land around 2026-09-22 on
+a six-week cycle; that is a guess, and V.2 waits on the manifest rather than on the date.
 
-Pinning beta versus live is D4. The importer follows `latest` (beta) by design, and the owner's
-2026-09-07 ruling keeps `is_beta` rows for the planner.
+**The catalogue keeps following `latest`, beta content included** (D4) — the 2026-09-07 ruling
+stands. Beta rows stay importable and marked, and each re-pin moves their numbers by design.
+
+The sequence is the repo's existing one (`RESEARCH_nanoka_bump_7_0_54.md` §Recommendation):
+`capture_nanoka_fixtures --version <v>` (always pass it), update the four hand-written pin
+sites, `seed_db`, `verify_seed`, move the YuanShen snapshot to the matching build, re-run
+icons and codegen if anything changed, then drive `/planner`, whose inputs come from here.
+
+**One released weapon regressed upstream.** Exaiphanes Blade (11521) has had zero ascension
+cost and no materials since 7.0.52, while `gi/7.0` still carries the full bill. If that
+survives into 7.1 the planner will price it at nothing, so V.3 rules on it with a citation
+rather than letting the zero through unexamined.
 
 ## 4. Coupling between the chunks
 
@@ -112,16 +137,23 @@ The two are independent except at `test_gcsim_character_coverage`: a character n
 that gcsim lacks is a reviewed entry, and one gcsim adds that nanoka lacks resolves to nothing.
 Whichever chunk lands second re-derives that fixture. Neither blocks the other.
 
-## 5. Owner decisions
+## 5. Owner decisions — all answered 2026-09-19
 
-| # | question | recommendation | blocks |
-|---|---|---|---|
-| D1 | Pin `v2.47.2` tag (`caf738dc8`), or `7305f726f` (adds Jade Vista, MIT tree but past the last MIT release) | **tag** | U.2 |
-| D2 | DECISIONS §26 serves older-pin runs with `any_pin=True` on the premise that kits rarely change. This re-pin moves one vendored team by **−8.2 %**. Keep §26, or stop serving cross-pin runs (or label them) | **label cross-pin runs as from an older sim, and stop ranking them against fresh ones.** Needs its own small design pass if accepted | U.7 |
-| D3 | Archive nanoka payloads for the pinned version: commit them (size not yet measured), or keep them in a prod-side store the transport can read | **measure first**, then decide. Either way, capture 7.0.51 **before 7.1 goes live** | V.1 |
-| D4 | Pin nanoka to beta `latest` or to `live` | **keep `latest`** (the current ruling), and re-pin each beta build deliberately | V.2 |
-| D5 | Traveler (and Skirk) story buffs: gcsim applies them by default, and `/explain` models neither. Match gcsim, or turn them off in emitted configs, or surface the difference | **surface it now, and model it as a separate plan** | U.8 (docs only) |
+| # | question | ruling |
+|---|---|---|
+| D1 | which commit to pin | **tag `v2.47.2` (`caf738dc8`)**. *"2.47.2 is fine if we have a good reason not to take the latest"* — the reason is the licence: gcsim's own notice guarantees MIT only for releases up to that tag. Cost: Jade Vista |
+| D2 | cross-pin runs in the corpus, given the −8.2 % shift | **keep DECISIONS §26 as it is.** Saved runs from an older pin are still served |
+| D3 | nanoka retention | **no archive; always reseed at the version nanoka publishes today.** See §3 |
+| D4 | beta (`latest`) or `live` | **keep `latest`**, beta rows included |
+| D5 | Traveler and Skirk story buffs | **match gcsim** — model them here, default-on, as Chunk W |
 
-Also open, not blocking: the stray `seed_runs` row from 2026-08-31 recorded as 7.0.51 but
-carrying live-7.0 totals and 9 pruned rows (nanoka research §Open questions). Nobody has
-reproduced it.
+**Chunk W follows from D5 and is new work, not a re-pin task.** gcsim applies the True Moon
+archon quest buffs (`473e89986`) and the older Skirk story buff by default; we model neither,
+so `/explain` disagrees with the simulator by about 27 % on Travelers today — before any
+re-pin. W sources the values from gcsim at the pin, applies them in the stat chain with the
+citation rule, and proves the agreement against a gcsim run. It is sized on its own and is
+not a blocker for U or V.
+
+One open item, not blocking and owned by nobody yet: the stray `seed_runs` row from
+2026-08-31 recorded as 7.0.51 but carrying live-7.0 totals and 9 pruned rows
+(`RESEARCH_nanoka_bump_7_0_54.md` §Open questions). Not reproduced.

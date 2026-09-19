@@ -1,87 +1,115 @@
 # TASKS — upstream bump, 2026-09
 
-Status: **nothing started.** Design: `docs/DESIGN_upstream_bump_2026_09.md`. Owner decisions
-D1–D5 are in its §5, and a task that waits on one names it. Gate for every PR:
-`cd backend && python -m scripts.ci_local` exits 0 on the exact PR head (`--clean` for U).
+Status: **nothing started. All owner decisions answered** (`docs/DESIGN_upstream_bump_2026_09.md`
+§5, 2026-09-19), so nothing here is blocked on a ruling. V.2 waits on nanoka publishing 7.1.
+Gate for every PR: `cd backend && python -m scripts.ci_local` exits 0 on the exact PR head
+(`--clean` for U, which changes the wasm build).
 
-## Chunk U — gcsim re-pin (`feat/gcsim-repin-v2.47.2`)
+## Chunk U — gcsim re-pin to `v2.47.2` (`feat/gcsim-repin-v2.47.2`)
 
 - [ ] **U.0 Branch.** `git switch dev && git pull && git switch -c feat/gcsim-repin-v2.47.2`.
   Accept: `git branch --show-current` names it.
 
-- [ ] **U.1 Ship gcsim's licence notice with the wasm.** This is independent of the pin.
-  Copy gcsim's `LICENSE` (MIT at the pin) into the build output from `build-gcsim-wasm.sh`,
-  serve it next to `gcsim.wasm`, and record it in `frontend/gcsim/PROVENANCE.md`.
-  - Files: `frontend/scripts/build-gcsim-wasm.sh`, `frontend/Dockerfile.prod`, PROVENANCE.
-  - Accept: the prod image contains the notice; a unit test asserts the build script copies it.
+- [ ] **U.1 Ship gcsim's licence notice with the wasm.** Independent of the pin; can land first.
+  Copy gcsim's `LICENSE` from the build clone into the output of `build-gcsim-wasm.sh`, serve
+  it beside `gcsim.wasm`, and record it in `frontend/gcsim/PROVENANCE.md`.
+  - Accept: the notice is present in a built `frontend/gcsim/` **and** in the prod image; a
+    unit test asserts the build script copies it.
 
-- [ ] **U.2 Make the action list parser-derived.** Do this **before** the pin moves.
-  - Extend `scripts/gcsim/build_key_snapshot.py` to record the parser's `actionKeys`
-    (`pkg/gcs/ast/keys.go`) in `keys.json`.
-  - `authorable_actions()` offers only enum ∩ parser.
-  - New test: every offered action is a parser key.
-  - Accept: a no-op at the current pin (snapshot diff is only the new field). Then plant
-    `special_skill` in the enum list and confirm the test fails.
+- [ ] **U.2 Every gcsim action is authorable or reviewed.** Do this **before** the pin moves.
+  Owner ruling: a move gcsim implements cannot be silently dropped.
+  - `build_key_snapshot` records the parser's `actionKeys` (`pkg/gcs/ast/keys.go`) beside the
+    enum (`astr`) in `keys.json`.
+  - Add a committed **reviewed non-authorable list**, each entry with a reason:
+    `invalid`; `wait` / `delay` (sequencer constructs, not actions a step emits);
+    `special_skill` (a cooldown bucket — no parser token exists, and the moves it tracks are
+    authored as `skill`/`charge`, per `varka/charge.go:96` and `odette/skill.go:113`); `swap`
+    (emitted implicitly, per the existing rotation rules).
+  - A test fails on any enum entry that is neither a parser key nor on that list.
+  - Accept: a no-op at the current pin (the snapshot diff is only the new field). Then plant a
+    fake enum entry and confirm the test fails — a check that can only return one answer is
+    not a check.
 
-- [ ] **U.3 Move the pin** *(D1)*. Update the pin table in `docs/CROSSVAL_gcsim.md`: commit,
-  date, title, "Pinned" note and Go row. Rebuild with `npm run gcsim:build`, then regenerate
-  with `python -m scripts.gcsim.build_key_snapshot --src <clone>` and
-  `... build_multiplier_snapshot --src <clone>`, and run `crossval_multipliers`.
+- [ ] **U.3 Move the pin to `caf738dc8` (tag `v2.47.2`).** Update the pin table in
+  `docs/CROSSVAL_gcsim.md` (commit, date, title, the "Pinned" note, the Go row — still 1.27).
+  Rebuild with `npm run gcsim:build`; regenerate both snapshots with
+  `python -m scripts.gcsim.{build_key_snapshot,build_multiplier_snapshot} --src <clone>`; run
+  `crossval_multipliers`.
   - Accept: `test_gcsim_pin_is_single`, `test_gcsim_keys`, `test_talent_multipliers`,
-    `test_prod_go_satisfies_the_gcsim_pin` all pass. `special_skill` is **absent** from the
-    offered actions and the OpenAPI enum. Multiplier crossval shows 0 mismatches.
+    `test_prod_go_satisfies_the_gcsim_pin` pass; `special_skill` appears in the snapshot and
+    **not** in the offered actions or the OpenAPI enum; multiplier crossval 0 mismatches.
 
-- [ ] **U.4 Regenerate the pinned fixtures**, each with a PROVENANCE note explaining its diff:
-  - crossval JSON: `sim_version` and `particle_element` change;
-  - `gcsim_sample/skirk_team_calc.json`: 219→215 hits is expected;
-  - the ER sweep;
-  - the coverage fixture: 31→26 uncovered, using the new aliases;
-  - `frontend/openapi.json`, then `npm run codegen`.
-  - Accept: `npm run gcsim:verify`, `gcsim:verify-config`, `gcsim:verify-recipe`; both
-    suites pass. The ER sweep's shape assertions hold, or the change is explained.
+- [ ] **U.4 Drive the four new kits.** Iansan, Prune, Odette and Cryo Traveler. For each:
+  author a rotation in our builder covering the kit's moves, compile it, and run it through
+  gcsim. Check the condition vocabulary covers what the kit exposes (e.g. the Ifa/Ororon
+  nightsoul conditions from `fd1699c4c`) or refuses it **by name**.
+  - Accept: four configs validate and run; anything not expressible is written down in the LOG
+    with what it would take. This is the task that answers "do we support all the moves".
 
-- [ ] **U.5 Treat `"none"` as unlabelled** in `frontend/scripts/verify-gcsim-recipe.mjs` (and
-  anywhere else that tests `element === ''`). Accept: a test with a `"none"` event fails the
-  way `''` used to.
+- [ ] **U.5 Regenerate the pinned fixtures**, each with a PROVENANCE note explaining its diff:
+  crossval JSON (`sim_version`, `particle_element`); `gcsim_sample/skirk_team_calc.json`
+  (219→215 hits is expected — frame-table fixes, `60894d7cb`); the ER sweep; the coverage
+  fixture (31→26 uncovered, new aliases); `frontend/openapi.json` then `npm run codegen`.
+  - Accept: `npm run gcsim:verify`, `gcsim:verify-config`, `gcsim:verify-recipe`; both suites
+    pass; the ER sweep's shape assertions hold or the change is explained.
 
-- [ ] **U.6 Fix citation drift.** Work through the table in the gcsim RESEARCH doc §Citation
-  drift. That covers the `damage.go` −4 shift, `element.go`, `attack.go`,
-  `exec.go:151→156`, `sysfunc.go:472→491`, plus the three `damage.go` rows and the ER-sweep
-  PROVENANCE that are already wrong. Accept: every cited line range, opened at the new pin,
-  shows the cited code (checked by hand; list them in the LOG).
+- [ ] **U.6 Treat `"none"` as unlabelled** in `frontend/scripts/verify-gcsim-recipe.mjs` and
+  anywhere else testing `element === ''` (`61f578730` renamed the empty element).
+  - Accept: a `"none"` event fails the verifier the way `''` used to.
 
-- [ ] **U.7 Cross-pin runs** *(D2)*. Implement whatever the owner rules for DECISIONS §26, and
-  record the ruling there.
+- [ ] **U.7 Fix citation drift** — the table in `RESEARCH_gcsim_repin_2026_09.md` §Citation
+  drift: the `damage.go` −4 shift, `element.go` (`ElementString` is gone), `attack.go`
+  (delimiters dropped, `RelicSkill` added), `exec.go:151→156`, `sysfunc.go:472→491`, plus the
+  three `damage.go` rows and the ER-sweep PROVENANCE already wrong at today's pin.
+  - Accept: every cited range, opened at the new pin, shows the cited code. List them in the LOG.
 
-- [ ] **U.8 Drive it and document it.** In order:
-  1. Build `Dockerfile.prod` locally.
-  2. Run a real two-character rotation search in the browser (`scripts/shoot.py`).
-  3. Add a CLAUDE.md note on the Traveler/Skirk story-buff gap *(D5)*.
-  4. Run `ci_local --clean`, then open the PR.
-  5. After the merge: `gh run list --branch dev`, and the served `BUILT_FROM` equals the pin.
+- [ ] **U.8 Record what the re-pin moves.** In `docs/DECISIONS.md`: §26 stands (D2) — saved
+  runs from an older pin are still served — noting that this re-pin moved one vendored team by
+  −8.2 %, so the premise is now known to be weaker than when it was written. Add a CLAUDE.md
+  line on the Traveler/Skirk story-buff gap pointing at Chunk W.
+
+- [ ] **U.9 Drive it, gate it, deploy it.** Build `Dockerfile.prod` locally; run a real
+  two-character rotation search in the browser (`scripts/shoot.py`); `ci_local --clean`; open
+  the PR. After merge: `gh run list --branch dev`, and the served `BUILT_FROM` equals the pin.
 
 ## Chunk V — nanoka (`feat/nanoka-7.1`)
 
-- [ ] **V.0 Branch** (only when V.2 is unblocked).
+- [ ] **V.0 Branch** (when V.2 is unblocked).
 
-- [ ] **V.1 Archive the pinned payloads** *(D3)*. This is **time-critical**: capture all
-  ~1,086 7.0.51 payloads before 7.1 goes live (inferred around 2026-09-22). Measure their
-  size, store them per D3, and give the transport an archive source. Accept: `seed_db` and
-  `verify_seed` succeed with nanoka unreachable (sockets blocked).
+- [ ] **V.1 Make "reseed at the current version" true in the code** (D3). Today
+  `verify_seed --live` and the prod `reseed` job read the committed `FIXTURE_VERSION`, which
+  upstream deletes each cycle. Point them at the version nanoka publishes now, and say at each
+  pin site that the committed fixtures are a snapshot of record, not a reseed source.
+  - Accept: with the manifest reporting a version we do not pin, `verify_seed --live` and the
+    reseed path both work; a test covers the version-resolution path.
+  - This one does **not** wait for 7.1, and it is what stops the prod job breaking when 7.1 lands.
 
-- [ ] **V.2 Bump to the 7.1 build** *(D4; blocked on nanoka publishing it)*.
-  - Capture with `capture_nanoka_fixtures --version <v>`, passing the version explicitly.
-  - Update the four pin sites (both `FIXTURE_VERSION`s, the `test_seed_db.py` literal,
-    PROVENANCE).
-  - Run `seed_db`, then `verify_seed`.
-  - Move the YuanShen snapshot to the matching build.
-  - Re-run `download_icons` for new art.
-  - Accept: `test_capture_pinning` passes; `seed_runs` records the new version as succeeded
-    with no prune refusal; the verify anchors pass (or were re-derived and explained);
-    `/planner` has been driven for one character and one weapon.
+- [ ] **V.2 Bump to the 7.1 build** (blocked on nanoka publishing it; check the manifest, do
+  not wait on the inferred date). Keep following `latest`, beta included (D4).
+  - `capture_nanoka_fixtures --version <v>` — always pass it.
+  - Update the four hand-written pin sites: both `FIXTURE_VERSION` constants, the literal in
+    `test_seed_db.py`, `PROVENANCE.md`.
+  - `seed_db`, then `verify_seed`; move the YuanShen snapshot to the matching build; re-run
+    `download_icons`; `npm run codegen` if any schema moved.
+  - Accept: `test_capture_pinning` passes; `seed_runs` shows the new version succeeded with no
+    prune refusal; the verify anchors pass or were re-derived and explained; `/planner` driven
+    for one character and one weapon.
 
-- [ ] **V.3 Exaiphanes Blade's bill.** If 11521 still has zero ascension costs at 7.1, decide
-  whether it is real (the planner shows zero) or a data defect (a curated override with a
-  citation). Accept: the planner's figure for 11521 has a stated source.
+- [ ] **V.3 Exaiphanes Blade (11521).** If it still has zero ascension cost at 7.1, decide
+  whether that is real or a data defect, and carry a curated override with a citation if it is.
+  - Accept: the planner's figure for 11521 has a stated source.
 
 - [ ] **V.4 Re-derive the coverage fixture** if V lands after U (DESIGN §4).
+
+## Chunk W — Traveler and Skirk story buffs (branch TBD)
+
+From D5: **match gcsim.** gcsim applies the True Moon archon quest buffs (`473e89986`) and the
+older Skirk story buff by default; we model neither, so `/explain` is about 27 % below the
+simulator on Travelers **today**, before any re-pin. Sized separately; not a blocker for U or V.
+
+- [ ] **W.1** Source the buff values and their conditions from gcsim at the pin, cited by file
+  and line (the citation rule: never from memory).
+- [ ] **W.2** Apply them in the stat chain as data a shared evaluator reads (DESIGN §1 A6 —
+  no per-character branches), default-on, and explainable in `/explain`.
+- [ ] **W.3** Prove it: a crossval case over a Traveler and a Skirk team agrees with gcsim
+  inside a stated tolerance, with its own paragraph — do not widen an existing one.
