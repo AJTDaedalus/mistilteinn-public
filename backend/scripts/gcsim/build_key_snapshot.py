@@ -213,6 +213,126 @@ def _character_action_params(
     return dict(sorted(found.items()))
 
 
+def _character_implemented_actions(
+    source: Path, canonical: list[str],
+) -> dict[str, list[str]]:
+    """`{character key: [action, …]}` — the actions each character's package implements."""
+    by_normalised = {key.replace("_", ""): key for key in canonical}
+    found: dict[str, list[str]] = {}
+    for path in sorted((source / "internal" / "characters").rglob("zz_*.dm.go")):
+        registered = _CHAR_REGISTER.search(path.read_text())
+        if registered is None:
+            continue
+        key = by_normalised.get(registered.group(1).lower())
+        if key is None:
+            continue
+        found[key] = _implemented_for(key, path.parent, source)
+    return dict(sorted(found.items()))
+
+
+#: The action methods `internal/template/character/character.go` defines as *"not
+#: implemented"*, and the action each one answers. A character package that does not override
+#: one inherits the error, so gcsim refuses that action **at simulation time** with
+#: `<key>: action <name> not implemented`.
+#:
+#: **This is what tells a builder not to offer an aimed shot to a polearm user.** It is a
+#: different question from `paramsFor`, which says which *parameters* an action takes, and it
+#: cannot be inferred from the weapon class: Ganyu is a bow user with no `charge` (her charged
+#: attack **is** the aimed shot), and gcsim implements plunges for some characters and not
+#: others regardless of what they hold.
+_ACTION_METHODS = {
+    "Attack": "attack",
+    "Aimed": "aim",
+    "ChargeAttack": "charge",
+    "HighPlungeAttack": "high_plunge",
+    "LowPlungeAttack": "low_plunge",
+    "Skill": "skill",
+    "Burst": "burst",
+}
+
+#: `func (c *char) Aimed(` — the override. The receiver name varies across packages, so it is
+#: matched loosely; the method name is what identifies it.
+_METHOD = re.compile(r"^func \(\w+ \*\w+\) (\w+)\(", re.M)
+
+#: Actions every character can always take: gcsim handles them outside the character, so no
+#: package overrides anything for them and no character can fail to implement one.
+_ALWAYS = ("dash", "jump", "walk", "swap")
+
+
+#: `*cryo.Traveler` inside `type char struct { … }`, and the import that gives `cryo` its
+#: path. Every Traveler variant is a thin wrapper embedding a shared implementation —
+#: `internal/characters/traveler/cryo/aether` embeds `traveler/common/cryo` — so a scan that
+#: stopped at the package holding `zz_aethercryo.dm.go` would conclude the Cryo Traveler
+#: implements no attack, no skill and no burst. Which is what the first version of this
+#: concluded, and why the derivation is checked against gcsim itself rather than trusted.
+_CHAR_STRUCT = re.compile(r"^type \w+ struct \{\n(.*?)^\}", re.M | re.S)
+_EMBEDDED = re.compile(r"^\t\*?(\w+)\.(\w+)\s*$", re.M)
+_IMPORT = re.compile(r'"github\.com/genshinsim/gcsim/(internal/[\w/]+)"')
+
+
+#: Actions a character's package **defines a method for and refuses anyway**, at run time.
+#:
+#: Both Aether Travelers whose element implements plunges get one: the shared method opens
+#: with `if c.gender == 0 { return … "not implemented" }` — `traveler/common/cryo/plunge.go:67`
+#: and `:124`, `traveler/common/pyro/plunge.go:67` and `:126`. Lumine runs the same method and
+#: plunges fine.
+#:
+#: **No parse can see this**, which is the point: a derivation from method presence gets 865
+#: of 868 character/action pairs right and is confidently wrong on these. They were found by
+#: running gcsim once per pair (`scripts/gcsim/probe_implemented_actions.py`), and that probe
+#: is part of the re-pin recipe rather than a one-off.
+#:
+#: **One of the four is invisible to the obvious probe too.** Pyro's *high* plunge refuses
+#: with the message `action low_plunge not implemented` — an upstream copy-paste
+#: (`common/pyro/plunge.go:128`) — so a probe matching on the action it asked about records
+#: `aetherpyro high_plunge` as working. It is listed here because it was read, not matched.
+_RUNTIME_REFUSALS: dict[str, tuple[str, ...]] = {
+    "aethercryo": ("high_plunge", "low_plunge"),
+    "aetherpyro": ("high_plunge", "low_plunge"),
+}
+
+
+def _implemented_actions(package: Path, source: Path) -> list[str]:
+    """Which actions this character implements, following embedded implementations.
+
+    Reads the package's methods, and the methods of any package it embeds a type from. The
+    authority is `internal/template/character/character.go`: an action whose method is not
+    overridden anywhere in that chain returns *"action … not implemented"* at run time.
+    """
+    defined: set[str] = set()
+    seen: set[Path] = set()
+    queue = [package]
+    while queue:
+        current = queue.pop()
+        if current in seen or not current.is_dir():
+            continue
+        seen.add(current)
+        for go in current.glob("*.go"):
+            text = go.read_text()
+            if go.name.startswith("zz_"):
+                continue
+            defined.update(_METHOD.findall(text))
+            # Follow one embedded type per struct, to the package its selector imports.
+            struct = _CHAR_STRUCT.search(text)
+            if struct is None:
+                continue
+            imports = {path.rsplit("/", 1)[-1]: path for path in _IMPORT.findall(text)}
+            for selector, _type in _EMBEDDED.findall(struct.group(1)):
+                target = imports.get(selector)
+                if target is not None:
+                    queue.append(source / target)
+    return sorted(
+        {action for method, action in _ACTION_METHODS.items() if method in defined}
+        | set(_ALWAYS),
+    )
+
+
+def _implemented_for(key: str, package: Path, source: Path) -> list[str]:
+    """`_implemented_actions`, minus the actions gcsim refuses at run time for this key."""
+    refused = set(_RUNTIME_REFUSALS.get(key, ()))
+    return [a for a in _implemented_actions(package, source) if a not in refused]
+
+
 #: `"arle":  keys.Arlecchino,` — an accepted spelling, then the canonical Go identifier.
 #: `pkg/shortcut/*.dm.go` is generated by gcsim's own pipeline, like the key files.
 _ALIAS = re.compile(r'^\t"([a-z0-9]+)":\s*\w+\.(\w+),\s*$', re.M)
@@ -298,6 +418,9 @@ def main() -> None:
     snapshot["character_action_params"] = _character_action_params(
         args.src, snapshot["characters"],
     )
+    snapshot["character_implemented_actions"] = _character_implemented_actions(
+        args.src, snapshot["characters"],
+    )
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(snapshot, indent=2, sort_keys=False) + "\n")
 
@@ -305,6 +428,7 @@ def main() -> None:
         f"{k}={len(snapshot[k])}"
         for k in (
             *_FILES, "actions", "parser_actions", *_ALIAS_FILES, "character_action_params",
+            "character_implemented_actions",
         )
     )
     print(f"wrote {OUT.relative_to(REPO)} at {pin}: {counts}")

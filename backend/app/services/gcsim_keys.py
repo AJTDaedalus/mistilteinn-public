@@ -138,11 +138,17 @@ def authorable_actions() -> tuple[str, ...]:
     it. A hand-kept list would drift silently in the direction that matters most — offering
     something gcsim would reject.
 
-    It reads the parser's table and not the enum because those two diverged at
-    gcsim `1de5a4243`: `special_skill` is in the enum and in no config, so deriving from the
-    enum would have offered every character an action the parser refuses by name.
+    Membership comes from the parser's table and not from the enum, because those two
+    diverged at gcsim `1de5a4243`: `special_skill` is in the enum and in no config, so
+    deriving from the enum would have offered every character an action the parser refuses by
+    name.
+
+    **The order is the enum's**, which is gcsim's own — skill, burst, attack, charge, … — and
+    that is what the picker shows. The parser's table is a Go map, captured sorted, so taking
+    its order would have alphabetised the picker as a side effect of a correctness fix.
     """
-    return tuple(a for a in parser_actions() if a not in _NOT_AUTHORED)
+    parser = set(parser_actions())
+    return tuple(a for a in gcsim_actions() if a in parser and a not in _NOT_AUTHORED)
 
 
 #: The parameters that become an **action a user can author**, and the suffix each one takes.
@@ -246,16 +252,45 @@ def split_variant(action: str) -> tuple[str, str | None]:
     return action, None
 
 
-def offerable_actions(key: str | None) -> tuple[str, ...]:
-    """The actions **this character** may be given, base ten first then their variants.
+def implemented_actions(key: str) -> frozenset[str]:
+    """Which actions gcsim implements **for this character**, at the pin.
 
-    `None` — a character gcsim does not implement at this pin — gets the base ten. They cannot
-    be simulated at all, so a rotation naming them fails for that reason and not for want of a
-    hold button; offering fewer actions would report the wrong problem.
+    Not every character has every move. gcsim's base character type answers
+    *"action aimed not implemented"* for anyone who has not overridden it, so an aimed shot
+    exists for bow users and a charged attack does not exist for Ganyu — her charged attack
+    **is** the aimed shot. It is not a function of the weapon class, and it is not a function
+    of the parameter table either: `paramsFor` says which parameters an action takes, and
+    says nothing at all for a character who takes none.
+
+    Captured by `scripts/gcsim/build_key_snapshot.py` and checked against gcsim itself by
+    `scripts/gcsim/probe_implemented_actions.py` — 868 character/action pairs, which is how
+    the four Traveler plunges gcsim refuses inside a method that exists were found.
+    """
+    table = _snapshot().get("character_implemented_actions", {})
+    return frozenset(table.get(key, ()))  # type: ignore[arg-type]
+
+
+def offerable_actions(key: str | None) -> tuple[str, ...]:
+    """The actions **this character** may be given, base actions first then their variants.
+
+    `None` — a character gcsim does not implement at this pin — gets the whole base list.
+    They cannot be simulated at all, so a rotation naming them fails for that reason and not
+    for want of a hold button; offering fewer actions would report the wrong problem.
+
+    **Filtered by what gcsim implements for this character.** Every character used to be
+    offered all ten, so a user could author `aim` on a polearm user, have it validate, and
+    watch the run die with `iansan: action aimed not implemented` — a gcsim error, minutes
+    later, about a move the builder had offered them. Refusing at authoring time is the rule
+    this module already follows for keys.
     """
     base = authorable_actions()
     if key is None:
         return base
+    implemented = implemented_actions(key)
+    # An empty table means the snapshot predates this capture, not that the character has no
+    # moves. Offering everything is the old behaviour and the safe direction to fail.
+    if implemented:
+        base = tuple(a for a in base if a in implemented)
     declared = character_action_params(key)
     variants = [
         variant_action(action, param)
