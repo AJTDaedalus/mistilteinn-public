@@ -20,9 +20,9 @@ Measured at the pin, against the committed nanoka fixtures:
 
 | | catalogue | matched | unmatched |
 |---|---:|---:|---:|
-| characters | 150 | 105 | 45 |
-| weapons | 284 | 231 | 53 |
-| artifact sets | 65 | 53 | 12 |
+| characters | 150 | 124 | 26 |
+| weapons | 286 | 237 | 49 |
+| artifact sets | 65 | 55 | 10 |
 
 The unmatched are not mapping failures. They are **things gcsim does not implement at this
 pin**: characters released after it (Kachina, Nefer, Vesna…), low-rarity sets nobody
@@ -37,8 +37,9 @@ distinguishes them by key — `10000005-2` is the Aether body with element 2 —
 uses `aetherpyro`, `luminedendro`, and so on. So this is derived from the body id and the
 element rather than listed, which also means a new element needs no new alias.
 
-**gcsim has six Traveler elements at this pin, not seven**: there is no Cryo Traveler. A
-Cryo Traveler is refused like anything else it does not implement.
+**Which Traveler elements gcsim implements is read from the snapshot, never stated here.**
+This paragraph used to say "six, not seven — there is no Cryo Traveler"; the 2026-09-19
+re-pin implemented one (gcsim `25e6ef499`), so the refusal now lists the elements it finds.
 """
 
 from __future__ import annotations
@@ -411,10 +412,20 @@ def _traveler_key(body: str, nanoka_id: str, element: Element | str | None) -> s
         raise GcsimKeyError(msg)
 
     key = f"{_TRAVELER_BODIES[body]}{normalise(str(element))}"
-    if key not in set(_snapshot()["characters"]):  # type: ignore[arg-type]
+    known = set(_snapshot()["characters"])  # type: ignore[arg-type]
+    if key not in known:
+        # Which elements exist is read from the snapshot, not stated. It used to say "six,
+        # not seven — there is no Cryo Traveler", which the 2026-09-19 re-pin made false
+        # (gcsim 25e6ef499). A sentence that names a number goes stale on exactly the event
+        # it is meant to describe.
+        have = sorted(
+            k.removeprefix(_TRAVELER_BODIES[body])
+            for k in known
+            if k.startswith(_TRAVELER_BODIES[body])
+        )
         msg = (
-            f"gcsim has no {key!r} at pin {pinned_commit()[:12]}. It implements six Traveler "
-            f"elements, not seven — there is no Cryo Traveler."
+            f"gcsim has no {key!r} at pin {pinned_commit()[:12]}. The Traveler elements it "
+            f"implements are: {', '.join(have)}."
         )
         raise GcsimKeyError(msg)
     return key

@@ -13,11 +13,22 @@ gcsim is the reference for *correctness and feature scope*, deliberately not for
 | | |
 |---|---|
 | **Repository** | `github.com/genshinsim/gcsim` |
-| **Commit** | `a36661d918772851378d48a38c267dd6efe49540` |
-| **Dated** | 2026-08-29 |
-| **Title** | `Fix max level of characters from Enka (#2726)` |
-| **Pinned** | 2026-08-31 — re-pinned from `3647a07a` to pick up Ifa and Jahoda |
+| **Commit** | `caf738dc807a646e2eee7e7b572f225dd6deb510` |
+| **Dated** | 2026-09-18 |
+| **Title** | `fix taghelper... (#3019)` — release **v2.47.2** |
+| **Pinned** | 2026-09-19 — re-pinned from `a36661d9` for Iansan, Prune, Odette and Cryo Traveler. **A release tag, and that is deliberate**: see the licence note below |
 | **Go toolchain** | `1.27` — gcsim's own `go.mod` at this commit says `go 1.27.0` |
+
+**The pin is a release tag because gcsim relicensed.** `05f01a733` (2026-09-19) moved the
+project from MIT to **AGPLv3**, whose §13 covers exactly what this project does with it —
+serving it to a browser over a network. gcsim's own `LICENSE-MIT` scopes the old terms to
+*"released versions up to and including v2.47.2"*, so that tag is the last point the MIT
+reading is unambiguous. `7305f726f`, the last commit before the relicence, has an MIT tree
+but no release covering it; the difference between the two is one weapon (Jade Vista), and
+a weapon is not worth the ambiguity.
+
+Crossing into AGPLv3 is therefore **not a routine re-pin**. It changes what this site owes
+its visitors, and it needs an owner decision rather than a version bump.
 
 **The Go row is load-bearing, not documentation.** `frontend/Dockerfile.prod` builds the
 browser wasm from this pin, and the 2026-08-31 re-pin moved to a gcsim requiring Go 1.27 while
