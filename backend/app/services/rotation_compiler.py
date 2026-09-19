@@ -237,7 +237,7 @@ def compile_rotation(
 
     # **No swap actions are emitted, and none are needed.** gcsim's parser desugars
     # `xiangling burst;` into `execute_action(...)`, which inserts an implicit swap when the
-    # named character is not active (`pkg/gcs/eval/sysfunc.go:472`).
+    # named character is not active (`pkg/gcs/eval/sysfunc.go:491`).
     #
     # That implicit swap is silently defeated by `swap_delay=0`, which `gcsim_config` used to
     # emit unconditionally — gcsim queues the swap to land `Delays.Swap` frames later, so at

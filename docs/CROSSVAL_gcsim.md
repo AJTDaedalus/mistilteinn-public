@@ -49,22 +49,22 @@ citations it invalidates — the same rule the YuanShenResources snapshot follow
 |---|---|---|
 | stat vocabulary | `pkg/core/attributes/stats.go:12-40` | `formula/genshin/tags.py` |
 | `MaxHP`/`TotalATK`/`TotalDEF` are **single-stage** | `pkg/core/attributes/stats.go:44-46` | `formula/genshin/stats.py` |
-| element list | `pkg/core/attributes/element.go:13-27` | `formula/genshin/tags.py` |
-| attack-tag (scope) list | `pkg/core/attacks/attack.go:5-20` | `formula/genshin/tags.py` |
-| strike types | `pkg/core/attacks/attack.go:52-59` | `formula/genshin/tags.py` |
+| element list | `pkg/core/attributes/element.go:7-19` — **rewritten at the 2026-09-19 re-pin** (gcsim `61f578730`): reordered, and `ElementString` no longer exists. The names now live in the generated `element_enumer.go:11` | `formula/genshin/tags.py` |
+| attack-tag (scope) list | `pkg/core/attacks/attack.go:8-17` | `formula/genshin/tags.py` |
+| strike types | `pkg/core/attacks/attack.go:87-95` | `formula/genshin/tags.py` |
 | character base stats: `base * GrowCurve[curve][level-1]` + the ascension row | `pkg/core/player/character/basestat.go:73-101` | `services/stat_calculator.py:add_character` |
 | a character starts at **100% Energy Recharge** (`res[ER] += 1`) | `pkg/core/player/character/basestat.go:82` | `services/stat_calculator.py:BASE_ENERGY_RECHARGE` |
 | base CRIT rate 5% / CRIT DMG 50% — **and the payloads' disagreement with it** | `pkg/core/player/character/basestat.go:82-84` | `models/character.py:base_crit_rate`, migration `55afb8679231` |
 | weapon base stats: each published prop is `init_value * GrowCurve[its own curve][level-1]`, plus the ascension row | `pkg/core/player/character/basestat.go:102-126` | `services/stat_calculator.py:add_weapon` |
-| the damage chain: `base x (1+dmgBonus) x def x res x crit x amp` | `pkg/enemy/damage.go:11-130` | `formula/genshin/damage.py:compute_damage` |
-| DMG bonus is `elemental[channel] + generic`, each once | `pkg/enemy/damage.go:47` | `formula/genshin/stats.py:hit_dmg_bonus_node` |
-| base is `mult * stat * (1 + baseDmgBonus) + flat`, flat **inside** the bonus | `pkg/enemy/damage.go:65-66` | `formula/genshin/damage.py:compute_damage` |
-| a talent may scale off ATK, HP, DEF or EM | `pkg/enemy/damage.go:52-62` | `formula/genshin/damage.py:ScalingStat` |
-| DEF term, with reduction and ignore multiplied **separately** | `pkg/enemy/damage.go:81-84` | `formula/genshin/damage.py:def_multiplier` |
-| DEF reduction capped at 0.9; DEF ignore at 1.0 | `pkg/enemy/damage.go:76-80` | `formula/genshin/damage.py:MAX_DEF_REDUCTION` |
-| RES term, three branches | `pkg/enemy/damage.go:89-93` | `formula/genshin/damage.py:res_multiplier` — **see the divergence below** |
-| crit rate clamped to [0, 1] | `pkg/enemy/damage.go:66-71` | `formula/genshin/damage.py:crit_multiplier` |
-| amplifying EM bonus `2.78*em/(1400+em)`, added to the reaction bonus inside the bracket | `pkg/enemy/damage.go:113-116` | `formula/genshin/damage.py:amplifying_multiplier` |
+| the damage chain: `base x (1+dmgBonus) x def x res x crit x amp` | `pkg/enemy/damage.go:11-126` | `formula/genshin/damage.py:compute_damage` |
+| DMG bonus is `elemental[channel] + generic`, each once | `pkg/enemy/damage.go:42` | `formula/genshin/stats.py:hit_dmg_bonus_node` |
+| base is `mult * stat * (1 + baseDmgBonus) + flat`, flat **inside** the bonus | `pkg/enemy/damage.go:59-60` | `formula/genshin/damage.py:compute_damage` |
+| a talent may scale off ATK, HP, DEF or EM | `pkg/enemy/damage.go:47-56` | `formula/genshin/damage.py:ScalingStat` |
+| DEF term, with reduction and ignore multiplied **separately** | `pkg/enemy/damage.go:76-80` | `formula/genshin/damage.py:def_multiplier` |
+| DEF reduction capped at 0.9; DEF ignore at 1.0 | `pkg/enemy/damage.go:72-76` | `formula/genshin/damage.py:MAX_DEF_REDUCTION` |
+| RES term, three branches | `pkg/enemy/damage.go:85-89` | `formula/genshin/damage.py:res_multiplier` — **see the divergence below** |
+| crit rate clamped to [0, 1] | `pkg/enemy/damage.go:62-67` | `formula/genshin/damage.py:crit_multiplier` |
+| amplifying EM bonus `2.78*em/(1400+em)`, added to the reaction bonus inside the bracket | `pkg/enemy/damage.go:109-112` | `formula/genshin/damage.py:amplifying_multiplier` |
 | melt multipliers: Pyro→Cryo 2.0, Cryo→Pyro 1.5 | `pkg/reactable/melt.go:23,30` | `formula/genshin/damage.py:_AMP_MULTIPLIERS` |
 | vaporize multipliers: Hydro→Pyro 2.0, Pyro→Hydro 1.5 | `pkg/reactable/vaporize.go:26,33` | `formula/genshin/damage.py:_AMP_MULTIPLIERS` |
 
@@ -115,7 +115,7 @@ damage figure. That is the entire reason the tolerance below is not zero.
 
 ### 3. Crit is computed, not rolled
 
-gcsim simulates and rolls against crit rate (`damage.go:101`). A calculator reports
+gcsim simulates and rolls against crit rate (`damage.go:96`). A calculator reports
 `non_crit`, `crit` and `expected = 1 + clamp(rate) * dmg` — an optimizer has to score on the
 expectation, and a build whose score depended on a random draw would not be reproducible.
 Compare a crossval fixture against the matching field, not against whichever number gcsim

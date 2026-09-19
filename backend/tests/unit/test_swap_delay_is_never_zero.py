@@ -1,7 +1,7 @@
 """A gcsim config must never say `swap_delay=0`, and this is why.
 
 `docs/RESEARCH_recipe_cost.md` §2. gcsim queues a character swap to land `Delays.Swap` frames
-later (`pkg/core/player/exec.go:151`). At **0 the swap never lands** before the next action is
+later (`pkg/core/player/exec.go:156`). At **0 the swap never lands** before the next action is
 requested, and the run dies with *"requested next char X is not active and next action is not
 swap"* — the sanity check at `pkg/simulation/run.go:155`.
 

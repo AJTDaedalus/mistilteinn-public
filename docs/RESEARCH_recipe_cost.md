@@ -70,7 +70,7 @@ produces the same error — which rules the wasm out immediately, and would have
 binary had been tried before the theory was written down.
 
 **The cause is `swap_delay=0`, which this repo's own emitter hardcoded.** gcsim queues the
-swap to land `Delays.Swap` frames later (`pkg/core/player/exec.go:151`), so at **0 the swap
+swap to land `Delays.Swap` frames later (`pkg/core/player/exec.go:156`), so at **0 the swap
 never lands** before the next action is requested, and the sanity check at
 `pkg/simulation/run.go:155` fires. gcsim's default is **1**
 (`pkg/gcs/parser/parser.go:55`, *"default swap timer of 1"*).

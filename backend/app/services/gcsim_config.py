@@ -241,7 +241,7 @@ def build_config(
     lines = [
         # **No `swap_delay`.** It is omitted rather than set, and never set to 0: gcsim
         # queues the swap to land `Delays.Swap` frames later
-        # (`pkg/core/player/exec.go:151`), so at **0 the swap never lands** before the next
+        # (`pkg/core/player/exec.go:156`), so at **0 the swap never lands** before the next
         # action is requested and the run dies with *"requested next char X is not active and
         # next action is not swap"*. This emitter hardcoded `swap_delay=0`, so **every
         # multi-character rotation it produced was unrunnable** — natively and in the browser
