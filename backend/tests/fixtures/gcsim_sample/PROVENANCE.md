@@ -85,6 +85,28 @@ candidate's element bonuses reach which hit. They are emitted as a strict pair, 
 instance, ability matching on all 245 in the larger fixture; the parser **verifies** that
 rather than assuming it.
 
+## Regenerated at the 2026-09-19 re-pin to v2.47.2 — and one case moved
+
+`a36661d9` → `caf738dc` (49 Go commits). Five of the six came back byte-identical.
+`skirk_team_calc.json` did not:
+
+| | |
+|---|---|
+| hits | 219 → **215** |
+| total damage | 1,338,594.8 → **1,296,751.5** (−3.13 %) |
+
+Every missing hit is a **tick of a timed summon** — one Frosty Parfait and three Furina Salon
+Members — and no other ability changed. The cause is `60894d7cb` *"Add checking animation
+length in tests"*, which corrected the frame tables for about 70 characters: the rotation
+takes marginally longer, so each summon expires a tick earlier relative to the actions after
+it. The re-pin research bisected this to that commit rather than guessing.
+
+**This is what DECISIONS §26 rests on**, and it is now known to be weaker than when it was
+written: an ordinary upstream fix moved a real team's damage by 3 %, and a vendored
+Skirk/Furina/Citlali/Escoffier config by 8.2 %. The owner's ruling (2026-09-19) is that the
+run corpus still serves rows from older pins; this paragraph is the measurement behind that
+being a choice rather than an oversight.
+
 ## Regenerated at the 2026-08-31 re-pin — and one case moved
 
 `3647a07a` → `a36661d9` (15 upstream commits). Four of the six recordings came back
