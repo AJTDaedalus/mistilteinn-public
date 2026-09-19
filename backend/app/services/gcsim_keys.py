@@ -79,30 +79,69 @@ def pinned_commit() -> str:
     return str(_snapshot()["pinned_commit_sha"])
 
 
-#: Actions the rotation model exposes to a user, as a subset of what gcsim accepts.
+#: Actions the rotation model **could** name but deliberately does not offer.
 #:
 #: `swap` is excluded because it is **implicit** — `pkg/simulation/run.go:154` has the
 #: evaluator insert swaps when the next character is not active, so emitting our own would
-#: double them. `wait` and `delay` are excluded because they are timing controls, and
-#: `DESIGN_rotation.md` §2 keeps timing out of the model: exposing them invites the user back
-#: into frame counting, which is the thing being removed.
-_NOT_AUTHORED = frozenset({"swap", "wait", "delay"})
+#: double them.
+_NOT_AUTHORED = frozenset({"swap"})
+
+#: Entries in gcsim's action **enum** that its own **parser** has no token for, each with the
+#: reason it is not a move a rotation can name. Owner ruling, 2026-09-19: *a move gcsim
+#: implements cannot be silently ignored* — so every enum entry is either authorable or listed
+#: here, and `tests/unit/test_every_gcsim_action_is_accounted_for.py` fails on one that is
+#: neither. A future action that **is** a move arrives as a red test, not as a silent gap.
+_NOT_A_MOVE: dict[str, str] = {
+    "wait": (
+        "a sequencer construct, not an action a character performs. DESIGN_rotation.md §2 "
+        "keeps timing out of the model: exposing it invites the user back into frame counting"
+    ),
+    "delay": (
+        "the same — a timing control between actions, and the model has no frame field for "
+        "it to fill"
+    ),
+    "special_skill": (
+        "a **cooldown bucket**, not a move (gcsim 1de5a4243). It holds the CD for kits whose "
+        "skill has a second form, and the forms themselves are authored as ordinary actions: "
+        "Varka's Four Winds through `charge` (internal/characters/varka/charge.go:96) and "
+        "Odette's recast through `skill` (internal/characters/odette/skill.go:113). gcsim's "
+        "tokenizer has no `special_skill` token, so emitting one is a config gcsim rejects"
+    ),
+}
 
 
 def gcsim_actions() -> tuple[str, ...]:
-    """Every action name gcsim's parser accepts at the pin, in enum order."""
+    """Every name in gcsim's action enum at the pin, in enum order.
+
+    **Not the same as what a config may name.** Use `parser_actions()` for that; this is the
+    wider list, and the difference is what `_NOT_A_MOVE` accounts for.
+    """
     return tuple(_snapshot()["actions"])  # type: ignore[index]
+
+
+def parser_actions() -> tuple[str, ...]:
+    """Every action name gcsim's tokenizer accepts at the pin (`pkg/gcs/ast/keys.go`)."""
+    return tuple(_snapshot()["parser_actions"])  # type: ignore[index]
+
+
+def unauthorable_actions() -> dict[str, str]:
+    """`{enum action: why it is not a move}` — the reviewed list, for tests and tooling."""
+    return dict(_NOT_A_MOVE)
 
 
 def authorable_actions() -> tuple[str, ...]:
     """The actions a rotation step may name.
 
-    Derived by subtraction from gcsim's own list rather than written out, so a re-pin that
-    adds an action offers it automatically and one that removes an action stops offering it.
-    A hand-kept list would drift silently in the direction that matters most — offering
+    Derived by subtraction from **the parser's** table rather than written out, so a re-pin
+    that adds an action offers it automatically and one that removes an action stops offering
+    it. A hand-kept list would drift silently in the direction that matters most — offering
     something gcsim would reject.
+
+    It reads the parser's table and not the enum because those two diverged at
+    gcsim `1de5a4243`: `special_skill` is in the enum and in no config, so deriving from the
+    enum would have offered every character an action the parser refuses by name.
     """
-    return tuple(a for a in gcsim_actions() if a not in _NOT_AUTHORED)
+    return tuple(a for a in parser_actions() if a not in _NOT_AUTHORED)
 
 
 #: The parameters that become an **action a user can author**, and the suffix each one takes.
@@ -201,7 +240,7 @@ def split_variant(action: str) -> tuple[str, str | None]:
         suffix = f"_{VARIANT_PARAMS[param]}"
         if action.endswith(suffix):
             base = action[: -len(suffix)]
-            if base in gcsim_actions():
+            if base in parser_actions():
                 return base, param
     return action, None
 

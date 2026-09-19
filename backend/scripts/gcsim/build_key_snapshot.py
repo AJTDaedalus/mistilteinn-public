@@ -67,7 +67,11 @@ _ASTR_ENTRY = re.compile(r'"([a-z_]+)"')
 
 
 def _actions(source: Path) -> list[str]:
-    """Every action name gcsim's parser accepts, in enum order."""
+    """Every name in gcsim's action **enum**, in enum order.
+
+    Not the same as what a config may name — see `_parser_actions`, which captures the
+    tokenizer's table. Both are recorded so the difference is a reviewable diff.
+    """
     text = (source / "pkg" / "core" / "action" / "action.go").read_text()
     block = _ASTR.search(text)
     if block is None:
@@ -80,6 +84,33 @@ def _actions(source: Path) -> list[str]:
         msg = "no actions parsed from action.go"
         raise SystemExit(msg)
     return actions
+
+
+#: `"high_plunge": action.ActionHighPlunge,` — the tokenizer's own table, in
+#: `pkg/gcs/ast/keys.go`. **This, not `astr`, is what a config may name.**
+#:
+#: The two are not the same list and reading `astr` as though they were is the bug this
+#: capture exists to prevent: gcsim's `Action` enum also carries entries that exist only to
+#: hold state — `wait` and `delay` are sequencer constructs, and `special_skill` (added in
+#: `1de5a4243`) is a **cooldown bucket** whose moves are authored as `skill` or `charge`.
+#: Offering one of those produces a config gcsim's own parser rejects with
+#: `unexpected token`.
+_ACTION_KEYS = re.compile(r"var actionKeys = map\[string\]action\.Action\{(.*?)^\}", re.M | re.S)
+_ACTION_KEY_ENTRY = re.compile(r'"([a-z_]+)"\s*:')
+
+
+def _parser_actions(source: Path) -> list[str]:
+    """Every action name gcsim's **tokenizer** accepts, sorted."""
+    text = (source / "pkg" / "gcs" / "ast" / "keys.go").read_text()
+    block = _ACTION_KEYS.search(text)
+    if block is None:
+        msg = "could not find `var actionKeys` in pkg/gcs/ast/keys.go; the format changed"
+        raise SystemExit(msg)
+    found = sorted(set(_ACTION_KEY_ENTRY.findall(block.group(1))))
+    if not found:
+        msg = "no action keys parsed from pkg/gcs/ast/keys.go"
+        raise SystemExit(msg)
+    return found
 
 
 #: The `Action` enum block, so a Go identifier can be mapped onto the config name `astr`
@@ -248,8 +279,8 @@ def main() -> None:
     snapshot = {
         "pinned_commit_sha": pin,
         "source": (
-            "github.com/genshinsim/gcsim — pkg/core/keys/*.dm.go and "
-            "pkg/shortcut/*.dm.go"
+            "github.com/genshinsim/gcsim — pkg/core/keys/*.dm.go, pkg/shortcut/*.dm.go, "
+            "pkg/core/action/action.go and pkg/gcs/ast/keys.go"
         ),
         "note": (
             "gcsim's config keys. NOT its package directory names: the package for Blizzard "
@@ -258,6 +289,7 @@ def main() -> None:
         ),
         **{name: _keys(args.src, filename) for name, filename in _FILES.items()},
         "actions": _actions(args.src),
+        "parser_actions": _parser_actions(args.src),
     }
     # Aliases need the canonical lists, so they are added after the comprehension above rather
     # than inside it.
@@ -271,7 +303,9 @@ def main() -> None:
 
     counts = ", ".join(
         f"{k}={len(snapshot[k])}"
-        for k in (*_FILES, "actions", *_ALIAS_FILES, "character_action_params")
+        for k in (
+            *_FILES, "actions", "parser_actions", *_ALIAS_FILES, "character_action_params",
+        )
     )
     print(f"wrote {OUT.relative_to(REPO)} at {pin}: {counts}")
 
