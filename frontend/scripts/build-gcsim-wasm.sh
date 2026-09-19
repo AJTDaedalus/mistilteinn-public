@@ -38,4 +38,11 @@ done
 cp "$EXEC" "$OUT/wasm_exec.js"
 printf '%s\n' "$PIN" > "$OUT/BUILT_FROM"
 
+# The notices travel with the artifacts. We serve both files to every visitor, and both carry
+# licences that require their notice to be retained when they are redistributed: gcsim's own
+# (MIT at the pin) and Go's (BSD-3-Clause), because `wasm_exec.js` is part of the Go
+# distribution rather than anything gcsim or this project wrote.
+cp "$SRC/LICENSE" "$OUT/gcsim.LICENSE.txt"
+cp "$(go env GOROOT)/LICENSE" "$OUT/go.LICENSE.txt"
+
 echo "wrote $OUT/gcsim.wasm ($(du -h "$OUT/gcsim.wasm" | cut -f1)) at $PIN"

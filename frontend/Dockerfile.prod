@@ -58,7 +58,12 @@ RUN set -eux; \
     done; \
     [ -n "$EXEC" ] || { echo "cannot find wasm_exec.js under $(go env GOROOT)" >&2; exit 1; }; \
     cp "$EXEC" /out/wasm_exec.js; \
-    printf '%s\n' "$PIN" > /out/BUILT_FROM
+    printf '%s\n' "$PIN" > /out/BUILT_FROM; \
+    # Both artifacts are redistributed to every visitor and both licences require their
+    # notice to travel with them — gcsim's, and Go's for `wasm_exec.js`, which is part of the
+    # Go distribution rather than gcsim's source.
+    cp LICENSE /out/gcsim.LICENSE.txt; \
+    cp "$(go env GOROOT)/LICENSE" /out/go.LICENSE.txt
 
 # ── builder ────────────────────────────────────────────────────────────────────
 FROM node:24-alpine AS builder
@@ -77,7 +82,7 @@ RUN npm run build
 # silently, which is the whole reason this was invisible for as long as it was. A bundle with
 # no simulator must not become an image.
 RUN set -eu; \
-    for f in gcsim/wasm_exec.js gcsim/gcsim.wasm; do \
+    for f in gcsim/wasm_exec.js gcsim/gcsim.wasm gcsim/gcsim.LICENSE.txt gcsim/go.LICENSE.txt; do \
       [ -s "dist/mistilteinn/browser/$f" ] || { \
         echo "the built bundle has no $f — the simulator would not load in the browser" >&2; \
         exit 1; }; \

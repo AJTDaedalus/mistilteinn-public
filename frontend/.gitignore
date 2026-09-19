@@ -50,4 +50,5 @@ src/app/api/api.types.ts
 gcsim/gcsim.wasm
 gcsim/wasm_exec.js
 gcsim/BUILT_FROM
+gcsim/*.LICENSE.txt
 gcsim/emitted/
