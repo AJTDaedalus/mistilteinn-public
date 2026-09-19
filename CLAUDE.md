@@ -298,6 +298,42 @@ a job with progress, never a request that blocks.
   its whole ascension bill**: Exaiphanes Blade (11521) reads 0 mora and no materials from
   7.0.52 on, while `gi/7.0` still carries it. Price it before trusting the planner on that
   weapon. `docs/RESEARCH_nanoka_bump_7_0_54.md`.
+- **gcsim's action enum is not its config vocabulary, and a character does not have every
+  move.** Two separate traps, both found at the 2026-09-19 re-pin and both now guarded.
+  `special_skill` (gcsim `1de5a4243`) is in the **enum** and in no config — it is a cooldown
+  bucket, and the forms it tracks are authored as ordinary `skill`/`charge` that dispatch on
+  state. Offering it emits a config gcsim's own tokenizer refuses by name. So
+  `authorable_actions()` derives from `pkg/gcs/ast/keys.go`, and every enum entry is either
+  authorable or on a **reviewed not-a-move list with its reason** —
+  `test_every_gcsim_action_is_accounted_for.py` fails on one that is neither, so the next
+  action that *is* a move arrives as a red test.
+
+  Separately, every character used to be offered all ten base actions, so `aim` on a polearm
+  user validated and then died mid-run with *"action aimed not implemented"*. It is not a
+  weapon-class rule: **Ganyu has no `charge` at all**, because her charged attack *is* the
+  aimed shot. `character_implemented_actions` in the key snapshot carries what each
+  character's package implements. **The parse is not the authority** —
+  `scripts/gcsim/probe_implemented_actions.py` asks gcsim itself over all 868
+  character/action pairs, and that is what found the four Aether Traveler plunges refused at
+  run time from inside a method that exists (`if c.gender == 0`), one of them behind an
+  upstream message naming the *wrong action*. **Run the probe at every re-pin.**
+
+  **Still true and not fixed:** a plunge needs *airborne*, which gcsim grants only from
+  Xiao/Venti/Kazuha/Xianyun bursts and Stellar Swirl, never from `jump`. A plunge authored on
+  a team with no enabler still fails at run time.
+- **gcsim applies story buffs we do not model, so `/explain` disagrees with it on Travelers
+  by about 27 %.** The True Moon archon quest stat buffs (gcsim `473e89986`) and the older
+  Skirk one are **default-on** in gcsim and absent from this repo's chain. That gap predates
+  the 2026-09-19 re-pin; the re-pin only widened the Traveler half. The owner ruled
+  (2026-09-19) to **match gcsim**, which is Chunk W in
+  `docs/TASKS_upstream_bump_2026_09.md` — sourced and cited, not written from memory.
+- **gcsim relicensed to AGPLv3 on 2026-09-19 and the pin is deliberately a release tag.**
+  `caf738dc` is **v2.47.2**, the last version gcsim's own `LICENSE-MIT` scopes the old terms
+  to. AGPLv3 §13 covers serving software over a network, which is exactly what this site does
+  with `gcsim.wasm`, so **crossing that line is an owner decision, not a version bump**. The
+  build also ships gcsim's notice and **Go's** (BSD-3-Clause, for `wasm_exec.js`) beside the
+  artifacts — we shipped neither for the whole life of the browser build, and the production
+  image now refuses to build without them.
 - **Never emit `swap_delay=0` in a gcsim config.** gcsim queues a character swap to land
   `Delays.Swap` frames later, so at zero it **never lands** and any rotation touching a second
   character dies with *"requested next char X is not active and next action is not swap"*.
