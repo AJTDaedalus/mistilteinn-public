@@ -156,7 +156,10 @@ def test_every_gcsim_asset_is_copied_into_the_bundle() -> None:
         if isinstance(asset, dict) and asset.get("input") == "gcsim"
     }
 
-    assert globs == {"gcsim.wasm", "wasm_exec.js", "BUILT_FROM"}, (
+    # `*.LICENSE.txt` is gcsim's MIT notice and Go's BSD one. Both artifacts are
+    # redistributed to every visitor and both licences require the notice to travel with
+    # them — see tests/unit/test_gcsim_licence_ships_with_the_wasm.py.
+    assert globs == {"gcsim.wasm", "wasm_exec.js", "BUILT_FROM", "*.LICENSE.txt"}, (
         f"the bundle copies {sorted(globs)} out of gcsim/. A file the build skips is a 404 "
         f"in production, and a file nobody asked for is dead weight in a 40 MB directory."
     )

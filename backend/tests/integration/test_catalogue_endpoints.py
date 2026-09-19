@@ -533,8 +533,11 @@ async def test_artifact_sets_say_whether_gcsim_can_simulate_them(
 
     db_session.add_all([
         ArtifactSet(nanoka_id=15003, name="Blizzard Strayer"),
-        # Real, and real about gcsim: no key at the pin, whatever the pin currently is.
-        ArtifactSet(nanoka_id=999001, name="Scarlet Proof"),
+        # Real, and real about gcsim: no key at the pin. This was "Scarlet Proof" until the
+        # 2026-09-19 re-pin implemented it — a case chosen from *this patch's* missing sets
+        # expires on the next one. Adventurer is a 3-star starter set nobody optimises, which
+        # is why gcsim has never had a key for it.
+        ArtifactSet(nanoka_id=999001, name="Adventurer"),
     ])
     await db_session.flush()
 
@@ -542,7 +545,7 @@ async def test_artifact_sets_say_whether_gcsim_can_simulate_them(
     by_name = {row["name"]: row["simulable"] for row in body["items"]}
 
     assert by_name["Blizzard Strayer"] is True
-    assert by_name["Scarlet Proof"] is False
+    assert by_name["Adventurer"] is False
 
 
 async def test_one_artifact_set_answers_simulable_the_same_way_the_list_does(

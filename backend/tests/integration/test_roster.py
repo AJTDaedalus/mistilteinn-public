@@ -328,14 +328,18 @@ async def test_two_travelers_of_one_element_are_two_different_rows(
 async def test_a_character_gcsim_cannot_run_says_so_on_the_row(
     authed_client: AsyncClient, db_session: AsyncSession,
 ) -> None:
-    """**gcsim implements six Traveler elements, not seven.**
+    """A Traveler gcsim cannot compile says so on the row, rather than failing in a search.
 
-    The owner's account holds exactly one Traveler — Cryo — which is the one that cannot be
-    compiled. `character_key` has always refused it correctly; nothing above it asked before
-    the roster offered the row and the builds tab offered to build it, so the first sign was a
-    search failing after several minutes.
+    Nothing above `character_key` asked before the roster offered the row and the builds tab
+    offered to build it, so the first sign was a search failing after several minutes.
+
+    **The example moved with the pin and the point did not.** This was the *Cryo* Traveler —
+    the one in the owner's own account — until the 2026-09-19 re-pin implemented it
+    (gcsim `25e6ef499`). Every Traveler element resolves now, so the unrunnable row is an
+    ordinary character released after the pin. Kachina will stop being one the day gcsim
+    implements her; what must not break is that *some* offered row can say it.
     """
-    await _traveler(db_session, "10000005-5", "UI_AvatarIcon_PlayerBoy", Element.CRYO)
+    await _character(db_session, "10000100", "Kachina")
     await _traveler(db_session, "10000005-4", "UI_AvatarIcon_PlayerBoy", Element.ANEMO)
     await db_session.commit()
 
@@ -343,9 +347,9 @@ async def test_a_character_gcsim_cannot_run_says_so_on_the_row(
 
     assert rows["Traveler (Aether · Anemo)"]["simulatable"] is True
     assert rows["Traveler (Aether · Anemo)"]["unsimulatable_reason"] is None
-    assert rows["Traveler (Aether · Cryo)"]["simulatable"] is False
+    assert rows["Kachina"]["simulatable"] is False
     # gcsim's own terms, not a sentence this repo composed about somebody else's engine.
-    assert "Cryo Traveler" in rows["Traveler (Aether · Cryo)"]["unsimulatable_reason"]
+    assert "Kachina" in rows["Kachina"]["unsimulatable_reason"]
 
 
 async def test_an_unreleased_body_is_withheld_and_counted(

@@ -93,7 +93,12 @@ for (const c of CASES) {
   // The element and attack tag come from the paired `damage` event, not from `calc` — which
   // publishes `ele` as gcsim's internal enum (19, 14). If the pairing silently produced
   // nothing, every hit would carry an empty element and G.4 would match no bonus to anything.
-  const unlabelled = fixture.hits.filter((h) => h.element === '' || h.attackTag < 0);
+  // `''` is our own sentinel for a pairing that produced nothing. `'none'` is gcsim's name
+  // for the empty element since `61f578730` renamed it (it stringified as `''` before), so
+  // after the 2026-09-19 re-pin the same failure arrives spelled differently — and a check
+  // looking only for `''` would have passed a fixture where every hit was unlabelled.
+  const UNLABELLED = new Set(['', 'none']);
+  const unlabelled = fixture.hits.filter((h) => UNLABELLED.has(h.element) || h.attackTag < 0);
   if (unlabelled.length > 0) {
     console.error(
       `${c.calc}: ${unlabelled.length} of ${fixture.hits.length} hits have no element or ` +

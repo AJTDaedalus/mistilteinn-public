@@ -84,6 +84,15 @@ making it up:
 | 145 | 85.1 | 3.4 % | 25.4 | 3.4 | 3.00–3.00 |
 | 150 | 36.0 | 1.4 % | 28.3 | 1.3 | 3.00–3.00 |
 
+> **Correction, 2026-09-19.** Every figure in this section was measured at **50
+> iterations**, where a bucket's width is mostly noise about which runs land a third burst.
+> Re-measured at 1,000 iterations during the v2.47.2 re-pin, the widest bucket is still
+> **120** and its width is **7.3 %**, not 13.3 %; the settled top end is 0.3 %. The
+> conclusion below holds — the buckets differ by an order of magnitude and a single constant
+> error is indefensible — but the specific percentages here are an overestimate, and
+> re-running the sweep at this doc's own pin reproduced neither the number nor the bucket.
+> `backend/tests/fixtures/er_sweep/PROVENANCE.md` has the detail.
+
 **Bucket 120 is 13.3 % wide in DPS** — the bucket straddling the steepest part of the climb.
 Buckets away from the transition are at or near the noise floor.
 
