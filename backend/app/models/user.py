@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime  # noqa: TC003 — SQLAlchemy resolves Mapped[datetime.datetime] at runtime
 
-from sqlalchemy import DateTime, ForeignKey, Index, String
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, validates
 
 from app.models.base import Base, TimestampMixin, enum_column, uuid_pk
@@ -76,6 +76,22 @@ class User(TimestampMixin, Base):
     avatar_character_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("characters.id", ondelete="SET NULL"), nullable=True,
     )
+
+    #: Mora this account says it holds, or null for "has not said".
+    #:
+    #: **The one planner quantity nobody can import.** No GOOD scanner reports a currency
+    #: balance, so unlike every material it cannot come from an export — which is exactly why
+    #: it is stored: it was retyped into every single plan request and thrown away.
+    #:
+    #: **Null is not zero**, and the planner depends on the difference: a plan that says you
+    #: are three million short when you never said what you hold is a worse answer than one
+    #: that says nothing. `PlanRead.mora.short` stays null while this is.
+    #:
+    #: On `users` rather than in `user_materials`, because it is not a material — a row there
+    #: would be counted by `stock_is_empty`, which asks whether an inventory was ever
+    #: imported, and a typed mora balance is not an imported inventory.
+    #: `docs/DESIGN_planner_materials.md` §8 OQ-M1.
+    mora: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     __table_args__ = (Index("ix_users_status", "status"),)
 

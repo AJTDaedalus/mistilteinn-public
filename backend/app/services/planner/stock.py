@@ -13,9 +13,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from app.models.planner import Material
+from app.models.user import User
 from app.repositories.user_material import UserMaterialRepository
 
 if TYPE_CHECKING:
@@ -34,6 +35,10 @@ class StockError(ValueError):
 #: and will not invent. Unbounded, a pasted twenty-digit number reaches asyncpg and comes back
 #: as a 500 from a route whose whole job was to say no.
 MAX_COUNT = 2_147_483_647
+
+#: The largest mora balance that can be stored, for the same reason and with the same
+#: caveat: `users.mora` is `int4`. The game's own cap is not something this repo has sourced.
+MAX_MORA = 2_147_483_647
 
 
 @dataclass(frozen=True)
@@ -72,6 +77,30 @@ async def list_stock(session: AsyncSession, owner_id: str) -> list[StockLine]:
     ]
     lines.sort(key=lambda line: (line.count == 0, line.name.lower()))
     return lines
+
+
+async def get_mora(session: AsyncSession, owner_id: str) -> int | None:
+    """What this account says it holds, or `None` for "has not said".
+
+    **Not a material.** It lives on `users` because `user_materials` is what
+    `stock_is_empty` counts, and that question is "was an inventory ever imported" — which a
+    typed mora balance is not an answer to.
+    """
+    return (
+        await session.execute(select(User.mora).where(User.id == owner_id))
+    ).scalar_one_or_none()
+
+
+async def set_mora(session: AsyncSession, owner_id: str, mora: int | None) -> None:
+    """Record a balance, or clear it back to "has not said".
+
+    `None` clears. **It is not the same as 0**, and the planner leans on the difference: a
+    shortfall against a number nobody gave is a number nobody should act on.
+    """
+    if mora is not None and (mora < 0 or mora > MAX_MORA):
+        raise StockError(f"A mora balance must be between 0 and {MAX_MORA}")
+    await session.execute(update(User).where(User.id == owner_id).values(mora=mora))
+    await session.flush()
 
 
 async def set_stock(

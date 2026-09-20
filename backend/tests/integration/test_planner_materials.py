@@ -67,7 +67,7 @@ async def test_an_edit_is_readable_afterwards(
         headers=_auth(authed_user),
     )
     assert patched.status_code == 200, patched.text
-    assert patched.json() == [
+    assert patched.json()["items"] == [
         {
             "material_id": TEACHINGS,
             "name": "Teachings of Freedom",
@@ -159,7 +159,7 @@ async def test_a_count_at_the_column_ceiling_round_trips(
         headers=_auth(authed_user),
     )
     assert accepted.status_code == 200, accepted.text
-    assert accepted.json()[0]["count"] == MAX_COUNT
+    assert accepted.json()["items"][0]["count"] == MAX_COUNT
 
     refused = await client.patch(
         "/api/v1/planner/materials",
@@ -289,3 +289,125 @@ async def test_both_routes_require_a_caller(client: AsyncClient) -> None:
     assert (
         await client.patch("/api/v1/planner/materials", json={"counts": []})
     ).status_code == 401
+
+
+# ---- the mora balance -------------------------------------------------------
+#
+# `docs/DESIGN_planner_materials.md` §8 OQ-M1. The one planner quantity no GOOD export
+# carries, and so the one that was retyped into every plan request and thrown away.
+
+
+@pytest.mark.asyncio
+async def test_mora_round_trips(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    await _materials(db_session)
+    await db_session.commit()
+
+    assert (
+        await client.get("/api/v1/planner/materials", headers=_auth(authed_user))
+    ).json()["mora"] is None
+
+    patched = await client.patch(
+        "/api/v1/planner/materials",
+        json={"mora": 4_210_000},
+        headers=_auth(authed_user),
+    )
+    assert patched.status_code == 200, patched.text
+    assert patched.json()["mora"] == 4_210_000
+
+    listed = await client.get("/api/v1/planner/materials", headers=_auth(authed_user))
+    assert listed.json()["mora"] == 4_210_000
+
+
+@pytest.mark.asyncio
+async def test_omitting_mora_leaves_it_alone_and_null_clears_it(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """Three states, not two: unset, a number, and zero.
+
+    An omitted key cannot mean "clear", or every material edit would wipe the balance. An
+    explicit `null` has to mean it, or a balance can be set and never unsaid.
+    """
+    await _materials(db_session)
+    await db_session.commit()
+    headers = _auth(authed_user)
+
+    await client.patch("/api/v1/planner/materials", json={"mora": 900}, headers=headers)
+
+    # A material edit that says nothing about mora must not touch it.
+    await client.patch(
+        "/api/v1/planner/materials",
+        json={"counts": [{"material_id": TEACHINGS, "count": 5}]},
+        headers=headers,
+    )
+    assert (
+        await client.get("/api/v1/planner/materials", headers=headers)
+    ).json()["mora"] == 900
+
+    cleared = await client.patch(
+        "/api/v1/planner/materials", json={"mora": None}, headers=headers,
+    )
+    assert cleared.json()["mora"] is None
+
+
+@pytest.mark.asyncio
+async def test_zero_mora_is_not_the_same_as_unsaid(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """**Null is not zero**, and the planner leans on it: a shortfall against a number nobody
+    gave is a number nobody should act on."""
+    await _materials(db_session)
+    await db_session.commit()
+    headers = _auth(authed_user)
+
+    await client.patch("/api/v1/planner/materials", json={"mora": 0}, headers=headers)
+
+    assert (
+        await client.get("/api/v1/planner/materials", headers=headers)
+    ).json()["mora"] == 0
+
+
+@pytest.mark.asyncio
+async def test_a_negative_mora_balance_is_refused(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    await _materials(db_session)
+    await db_session.commit()
+
+    response = await client.patch(
+        "/api/v1/planner/materials", json={"mora": -1}, headers=_auth(authed_user),
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_an_import_does_not_touch_the_mora_balance(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """**The one thing on this page an import leaves alone**, and the reason it is not a row
+    in the materials list: GOOD has no currency field, so an import has nothing to say about
+    it. Replacing it with nothing would be inventing an answer."""
+    await _materials(db_session)
+    await db_session.commit()
+    headers = _auth(authed_user)
+
+    await client.patch("/api/v1/planner/materials", json={"mora": 1_234_567}, headers=headers)
+    await client.post(
+        "/api/v1/artifacts/import/good",
+        json={
+            "mode": "replace",
+            "payload": {
+                "format": "GOOD",
+                "version": 3,
+                "source": "Inventory Kamera",
+                "artifacts": [],
+                "materials": {"TeachingsOfFreedom": 2},
+            },
+        },
+        headers=headers,
+    )
+
+    assert (
+        await client.get("/api/v1/planner/materials", headers=headers)
+    ).json()["mora"] == 1_234_567

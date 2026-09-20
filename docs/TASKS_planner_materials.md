@@ -2,7 +2,8 @@
 
 Design: `docs/DESIGN_planner_materials.md`. The planner itself: `docs/DESIGN_planner.md`.
 
-**Status:** M.0–M.9 done. The feature is walkable at `/planner` — both tabs.
+**Status:** M.0–M.9 done, and M.10–M.12 (the three open questions, all answered *yes* by the
+owner on 2026-09-20). The feature is walkable at `/planner` — both tabs.
 
 Branch **`feat/planner-materials`** off `dev`. One task at a time; stop and report after each
 (CLAUDE.md §Session Cadence). Run `ruff check app/` and the named tests before each commit.
@@ -19,6 +20,9 @@ Branch **`feat/planner-materials`** off `dev`. One task at a time; stop and repo
 | M.7 | The tablist on `/planner` | **done** |
 | M.8 | The editable `Owned` cell on a bill row | **done** |
 | M.9 | Drive it in the real app; `ci_local`; PR | **done** |
+| M.10 | OQ-M1 — `users.mora`, prefilled into every plan, editable on both surfaces | **done** |
+| M.11 | OQ-M2 — the import surface warns that it replaces hand-corrected counts | **done** |
+| M.12 | OQ-M3 — an *In this plan* filter on the tab (514 rows → 16, measured) | **done** |
 
 ---
 

@@ -23,7 +23,7 @@ from app.models.weapon import OwnedWeapon
 from app.services.planner import service, stock
 from app.services.planner.costs import PlanError, Progress
 from app.services.planner.economy import economy
-from app.services.planner.stock import MAX_COUNT, StockError
+from app.services.planner.stock import MAX_COUNT, MAX_MORA, StockError
 
 router = APIRouter(prefix="/planner", tags=["planner"])
 
@@ -523,6 +523,12 @@ class MaterialStockList(BaseModel):
 
     items: list[MaterialStockRead]
     owned_count: int
+    #: What this account says it holds in mora, or null for "has not said".
+    #:
+    #: **Beside the materials rather than among them.** It is the one planner quantity no
+    #: GOOD export carries, so it is the one an import does not replace — and a row in the
+    #: list would be counted by every `owned_count` and every "your import missed this".
+    mora: int | None = None
 
 
 class MaterialStockUpdate(BaseModel):
@@ -547,6 +553,27 @@ class MaterialStockPatch(BaseModel):
     """
 
     counts: list[MaterialStockUpdate] = Field(default_factory=list)
+    #: A new mora balance. **Omitted leaves it alone; an explicit `null` clears it back to
+    #: "has not said".**
+    #:
+    #: Those are three states, not two, and the route reads `model_fields_set` to tell the
+    #: first two apart rather than inventing a sentinel default — a sentinel would be in the
+    #: published schema and in the generated client, where it means nothing to either.
+    #: `PlanRead.mora.short` stays null while this is unset, and a plan that invents a
+    #: shortfall is worse than one that says nothing.
+    mora: int | None = Field(default=None, ge=0, le=MAX_MORA)
+
+
+class MaterialStockPatched(BaseModel):
+    """What the write left behind: the rows it touched, and the balance as it now stands.
+
+    **The rows, not the whole inventory** — a `PATCH` names what it changes, and so does its
+    answer. `mora` is echoed whether or not this call set it, because the caller that did set
+    it needs to see the stored value rather than trust the one it sent.
+    """
+
+    items: list[MaterialStockRead]
+    mora: int | None = None
 
 
 def _stock_read(line: stock.StockLine) -> MaterialStockRead:
@@ -566,15 +593,16 @@ async def list_materials(session: _Session, user: _User) -> MaterialStockList:
     return MaterialStockList(
         items=[_stock_read(line) for line in lines],
         owned_count=sum(1 for line in lines if line.count),
+        mora=await stock.get_mora(session, user.id),
     )
 
 
-@router.patch("/materials", response_model=list[MaterialStockRead])
+@router.patch("/materials", response_model=MaterialStockPatched)
 async def update_materials(
     payload: MaterialStockPatch,
     session: _Session,
     user: _User,
-) -> list[MaterialStockRead]:
+) -> MaterialStockPatched:
     """Correct the stock a bill is priced against.
 
     **A later GOOD import replaces every row written here**, deliberately —
@@ -587,7 +615,12 @@ async def update_materials(
             user.id,
             [(update.material_id, update.count) for update in payload.counts],
         )
+        if "mora" in payload.model_fields_set:
+            await stock.set_mora(session, user.id, payload.mora)
     except StockError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     await session.commit()
-    return [_stock_read(line) for line in lines]
+    return MaterialStockPatched(
+        items=[_stock_read(line) for line in lines],
+        mora=await stock.get_mora(session, user.id),
+    )

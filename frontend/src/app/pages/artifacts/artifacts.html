@@ -9,6 +9,19 @@
     <summary>Import from GOOD file</summary>
 
     <div class="import__body">
+      <!-- **Said here, because here is where it is about to happen.** The planner's Materials
+           tab carries the same sentence, but the person about to lose a hand-corrected count
+           is standing on this page, not that one. OQ-M2, answered 2026-09-20.
+
+           Unconditional on purpose: knowing *whether* this account has hand-edited counts
+           would mean storing which ones were, and that is the `source: manual` flag
+           `DESIGN_planner_materials.md` §2 deliberately does not keep — a second layer of
+           state, added to improve the wording of a warning. -->
+      <p class="hint hint--warn" role="status">
+        This replaces your material counts, including any you corrected by hand on the
+        planner. Your mora balance is not touched — no export carries one.
+      </p>
+
       <div class="import__row">
         <label class="field">
           <span class="field__label eyebrow">Mode</span>

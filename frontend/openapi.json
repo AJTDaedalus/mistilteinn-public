@@ -4394,11 +4394,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/MaterialStockRead"
-                  },
-                  "type": "array",
-                  "title": "Response Update Materials Api V1 Planner Materials Patch"
+                  "$ref": "#/components/schemas/MaterialStockPatched"
                 }
               }
             }
@@ -8314,6 +8310,17 @@
           "owned_count": {
             "type": "integer",
             "title": "Owned Count"
+          },
+          "mora": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mora"
           }
         },
         "type": "object",
@@ -8332,11 +8339,52 @@
             },
             "type": "array",
             "title": "Counts"
+          },
+          "mora": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mora"
           }
         },
         "type": "object",
         "title": "MaterialStockPatch",
         "description": "The rows to change, **and only those**.\n\nA list of named objects rather than a `dict[int, int]`, for the reason `ExpBookRead`\nrecords. Partial by construction: a whole-inventory `PUT` built from a *filtered* view\nwould delete every material the filter was hiding, and this body cannot express that."
+      },
+      "MaterialStockPatched": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialStockRead"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "mora": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mora"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "MaterialStockPatched",
+        "description": "What the write left behind: the rows it touched, and the balance as it now stands.\n\n**The rows, not the whole inventory** \u2014 a `PATCH` names what it changes, and so does its\nanswer. `mora` is echoed whether or not this call set it, because the caller that did set\nit needs to see the stored value rather than trust the one it sent."
       },
       "MaterialStockRead": {
         "properties": {
