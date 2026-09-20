@@ -49,7 +49,13 @@ and it is not optional; without it this is a feature that silently discards user
 
 ## 3. Surfaces
 
-Two new routes, both under the planner's prefix, both requiring a signed-in caller.
+Two new routes, both under the planner's prefix, both requiring a signed-in caller. A third
+change is to an existing response: `MaterialLineRead` gains **`stock_backed`**, false for the
+mora row alone — its `owned` is the balance typed into the plan request, not a
+`user_materials` count, so an editable cell there would write a row nothing reads and redraw
+showing the typed number back. An edit that appears to save and does nothing is the exact
+failure this surface exists to remove, and it is refused in the contract rather than by a
+name check in a template.
 
 ### `GET /api/v1/planner/materials`
 
@@ -120,8 +126,19 @@ Three traps, each of which produces a wrong number rather than an error:
    response is not guaranteed to arrive second. Stamp each round trip and drop a response that
    is not the newest, or the bill settles on the older of two answers.
 
-`POST /planner/plan` writes nothing and the owner's own 243-action plans return in well under a
-second, so a re-price per edit is affordable. Debounce the input; do not batch across rows.
+`POST /planner/plan` writes nothing and returns in well under a second, so a re-price per edit
+is affordable — **once per edit, which is not what a per-keystroke binding gives you.**
+
+**Built and measured: commit on `change`, never on `ngModelChange`.** Bound per keystroke,
+typing `9999` fired eight requests and *saved every intermediate value* — 9, then 99, then
+999 — so a user who typed and walked away left a half-typed count in their inventory. The
+out-of-order guard kept the final state right and hid the rest completely. Worse,
+**Playwright's `fill()` sets a value in one go**, so the first drive of this looked perfect;
+it took typing with a delay and counting requests to see it.
+
+A fourth trap, from the same family: **an emptied box is not a zero.** `Number('')` is 0, so
+clearing a field to start typing says "I hold none of this", and a click away saves it. Both
+surfaces treat emptiness as untouched.
 
 ## 5. The Materials tab
 
@@ -130,6 +147,11 @@ A second tab on `/planner`, following `builds.html`'s `role="tablist"` markup an
 `shared/{icon,token,element,combobox}` is that a pattern nobody owns gets decided again on
 every page.
 
+- **At most 80 rows drawn at a time**, with a line saying how many are held back and that
+  search reaches them. Found by looking: every row rendered made the page **25,349 pixels
+  tall** against the owner's real inventory — 514 rows, 450 held — which is a wall rather than
+  a list, and nothing measures a page's height. A row with an unsaved edit is kept visible
+  wherever it falls, or `Save` counts a change the user cannot see. Now 4,551 pixels.
 - **Sorted owned-first, then by name.** *Not* by rarity: rarity 0 is not "worst", it is
   *unranked*, and it is where the local specialties live — Sakura Bloom, Philanemo Mushroom,
   Valberry. Sorting by rarity descending would bury sixty real ascension materials under the
@@ -137,7 +159,13 @@ every page.
 - A search box over the name, and an **owned-only** toggle, default off. The case this feature
   was asked for is *the import missed something*, so the material you are hunting for is the
   one with no row.
-- An explicit `Save`, sending only the dirty rows. Leaving the tab with unsaved edits warns.
+- An explicit `Save`, sending only the dirty rows — and reading `Save` rather than
+  `Save 0 changes` when there are none.
+- **The tab is created on first open and then hidden, never destroyed.** This replaces the
+  "warn on leaving with unsaved edits" the first draft called for, and is strictly better:
+  `@if` on the active tab alone would discard half-typed counts on every switch back to the
+  plan, and a warning is a worse answer than not losing the data. Lazy so a user who never
+  opens the tab never pays for its catalogue fetch.
 - The standing line from §2: **an import replaces every count here.**
 - Mora is absent, and the tab says why: GOOD carries no currency field, so the plan asks for
   it per request. See OQ-M1.

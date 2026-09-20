@@ -2,7 +2,7 @@
 
 Design: `docs/DESIGN_planner_materials.md`. The planner itself: `docs/DESIGN_planner.md`.
 
-**Status:** M.0 done, M.1–M.9 open.
+**Status:** M.0–M.9 done. The feature is walkable at `/planner` — both tabs.
 
 Branch **`feat/planner-materials`** off `dev`. One task at a time; stop and report after each
 (CLAUDE.md §Session Cadence). Run `ruff check app/` and the named tests before each commit.
@@ -10,15 +10,15 @@ Branch **`feat/planner-materials`** off `dev`. One task at a time; stop and repo
 | # | task | state |
 |---|---|---|
 | M.0 | Branch off `dev`; DESIGN + TASKS committed | **done** |
-| M.1 | `UserMaterialRepository`; `_load_stock` moves onto it | open |
-| M.2 | `services/planner/stock.py` — list, set, and the four refusals | open |
-| M.3 | `GET`/`PATCH /planner/materials` + schemas; regenerate the contract | open |
-| M.4 | Integration tests, including the import-replaces-an-edit pin | open |
-| M.5 | `planner.service.ts` gains both calls; `npm run codegen` | open |
-| M.6 | The Materials tab component | open |
-| M.7 | The tablist on `/planner` | open |
-| M.8 | The editable `Owned` cell on a bill row | open |
-| M.9 | Drive it in the real app; `ci_local`; PR | open |
+| M.1 | `UserMaterialRepository`; `_load_stock` moves onto it | **done** |
+| M.2 | `services/planner/stock.py` — list, set, and the four refusals | **done** |
+| M.3 | `GET`/`PATCH /planner/materials` + schemas; regenerate the contract | **done** |
+| M.4 | Integration tests, including the import-replaces-an-edit pin | **done** |
+| M.5 | `planner.service.ts` gains both calls; `npm run codegen` | **done** |
+| M.6 | The Materials tab component | **done** |
+| M.7 | The tablist on `/planner` | **done** |
+| M.8 | The editable `Owned` cell on a bill row | **done** |
+| M.9 | Drive it in the real app; `ci_local`; PR | **done** |
 
 ---
 
@@ -159,3 +159,32 @@ Escalate to Planner (Opus) per CLAUDE.md if a task's acceptance criteria turn ou
 ambiguous or the same task fails twice — particularly M.8, where the three traps are the whole
 point and a passing test that does not actually distinguish a stored request from a re-derived
 one would be worse than no test.
+
+
+## What driving it found, that the suite could not
+
+Five things. Every one was visible in a browser and invisible to 1,208 frontend tests and
+2,617 backend ones — the shape CLAUDE.md §"Drive the feature" keeps predicting, and it held
+again.
+
+1. **The page was 25,349 pixels tall.** All 514 rows rendered against the owner's real
+   inventory (450 held). Nothing measures a page's height, so nothing failed. Capped at 80
+   with a line naming what is held back, and a dirty row is kept visible wherever it falls —
+   otherwise Save counts a change the user cannot see. Now 4,551.
+2. **Typing a count fired eight requests and saved every intermediate value.** Bound per
+   keystroke, "9999" wrote 9, then 99, then 999, then 9999 — so a user who typed and walked
+   away left a half-typed number in their inventory. `(change)` rather than `(ngModelChange)`
+   makes it two. **Playwright's `fill()` hid this completely**: it sets a value in one go, so
+   the first drive looked perfect. It was found by typing with a delay and counting requests.
+3. **An emptied box read as a zero**, because `Number('')` is 0. Clearing a field to start
+   typing said "I hold none of this", and a click away would have saved it.
+4. **The mora row would have offered an edit that did nothing.** Its `owned` is the balance
+   typed into the plan request, not a `user_materials` count — an input there would have
+   written a row nothing reads and redrawn showing the typed number. Found by reading
+   `_append_mora_row` while wiring the cell, and fixed in the *contract* (`stock_backed`)
+   rather than by a name check in the template.
+5. **"Save 0 changes"** on a button with nothing to save.
+
+The two subtlest tests were verified by planting the bug: removing the out-of-order guard,
+and re-deriving the plan request instead of re-sending the stored one. Both failed exactly
+the test written for them.
