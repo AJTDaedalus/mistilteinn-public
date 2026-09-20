@@ -1,0 +1,130 @@
+/* The materials tab. Every colour is a palette token — `npm run check:tokens` is in CI
+   because an undefined custom property invalidates its whole declaration silently, and the
+   element keeps whatever it had. */
+.stock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+
+  .hint {
+    color: var(--ink-dim);
+    font-size: var(--text-sm);
+    margin: 0;
+  }
+
+  .hint--warn { color: var(--warning); }
+
+  .error {
+    color: var(--danger);
+    font-size: var(--text-sm);
+    margin: 0;
+  }
+
+  .ok {
+    color: var(--mint);
+    font-size: var(--text-sm);
+    align-self: center;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--space-4);
+  }
+
+  .find {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    flex: 1 1 14rem;
+
+    span {
+      font-size: var(--text-xs);
+      color: var(--ink-dim);
+    }
+
+    input {
+      width: 100%;
+      box-sizing: border-box;
+    }
+  }
+
+  .toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--ink);
+  }
+
+  .count {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--ink-dim);
+    margin-left: auto;
+  }
+
+  .actions {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th {
+    text-align: left;
+    font-size: var(--text-xs);
+    color: var(--ink-dim);
+    font-weight: normal;
+    padding: var(--space-1) var(--space-2);
+    border-bottom: 1px solid var(--surface-rule);
+  }
+
+  td {
+    padding: var(--space-1) var(--space-2);
+    border-bottom: 1px solid var(--surface-rule);
+    vertical-align: middle;
+  }
+
+  .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  td.num input {
+    width: 7rem;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .art { width: 2.5rem; }
+
+  .name[data-rarity='5'] { color: var(--rarity-5); }
+  .name[data-rarity='4'] { color: var(--rarity-4); }
+  .name[data-rarity='3'] { color: var(--rarity-3); }
+
+  /* An unsaved row is marked on the row rather than only in the button's count: with a
+     search filter on, the changed rows can be off screen when Save is pressed. */
+  .row--dirty td {
+    background: var(--surface-hi);
+  }
+
+  .row--dirty td.num input {
+    border-color: var(--brass);
+  }
+}
+
+/* Phone width: the search, the toggle and the count stack rather than squeezing the input
+   to nothing, and the number column gives up its fixed width. */
+@media (max-width: 40rem) {
+  .stock {
+    .controls { flex-direction: column; align-items: stretch; }
+    .count { margin-left: 0; }
+    td.num input { width: 100%; }
+  }
+}

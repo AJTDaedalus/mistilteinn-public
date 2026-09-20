@@ -20,9 +20,10 @@ from app.dependencies import get_current_user, get_db
 from app.models.build import Build
 from app.models.user import User
 from app.models.weapon import OwnedWeapon
-from app.services.planner import service
+from app.services.planner import service, stock
 from app.services.planner.costs import PlanError, Progress
 from app.services.planner.economy import economy
+from app.services.planner.stock import MAX_COUNT, StockError
 
 router = APIRouter(prefix="/planner", tags=["planner"])
 
@@ -199,6 +200,11 @@ class MaterialLineRead(BaseModel):
     resin: ResinEstimateRead | None
     resin_status: str
     domain_days: list[str]
+    #: Whether `owned` is a `user_materials` count, and so whether the page may offer to
+    #: correct it. **False for the mora row**, whose `owned` is the balance the caller typed
+    #: into this very request — an editable cell there would write a row nothing reads and
+    #: redraw showing the typed number, an edit that appears to save and does nothing.
+    stock_backed: bool = True
 
 
 class ExpBookRead(BaseModel):
@@ -457,6 +463,7 @@ def _section_read(section: service.Section) -> SectionRead:
                 ),
                 resin_status=line.resin_status,
                 domain_days=line.domain_days,
+                stock_backed=line.stock_backed,
             )
             for line in section.materials
         ],
@@ -490,3 +497,97 @@ def _section_read(section: service.Section) -> SectionRead:
             else None
         ),
     )
+
+
+# -- the stock a plan is priced against ------------------------------------------------
+
+
+class MaterialStockRead(BaseModel):
+    """One material and how many of it this account holds."""
+
+    material_id: int
+    name: str
+    icon: str | None
+    rarity: int
+    count: int
+
+
+class MaterialStockList(BaseModel):
+    """Every material, owned first. **Unpaginated on purpose.**
+
+    The table holds ~514 rows, which is one ~40 KB response against a paging protocol and a
+    round trip per keystroke. It lists everything, including the handful no cost bill reaches:
+    a list that quietly omits the material a user is looking at is the bug this surface exists
+    to fix, wearing a different hat.
+    """
+
+    items: list[MaterialStockRead]
+    owned_count: int
+
+
+class MaterialStockUpdate(BaseModel):
+    """One correction.
+
+    `count` is bounded **by the column** — `user_materials.count` is `int4` — and not by any
+    claim about the game's own stack limit, which this repository has not sourced. The bound
+    lives here as well as in the service so the refusal is in the published contract, and the
+    service keeps its own copy because a route is not the only possible caller.
+    """
+
+    material_id: int
+    count: int = Field(ge=0, le=MAX_COUNT)
+
+
+class MaterialStockPatch(BaseModel):
+    """The rows to change, **and only those**.
+
+    A list of named objects rather than a `dict[int, int]`, for the reason `ExpBookRead`
+    records. Partial by construction: a whole-inventory `PUT` built from a *filtered* view
+    would delete every material the filter was hiding, and this body cannot express that.
+    """
+
+    counts: list[MaterialStockUpdate] = Field(default_factory=list)
+
+
+def _stock_read(line: stock.StockLine) -> MaterialStockRead:
+    return MaterialStockRead(
+        material_id=line.material_id,
+        name=line.name,
+        icon=line.icon,
+        rarity=line.rarity,
+        count=line.count,
+    )
+
+
+@router.get("/materials", response_model=MaterialStockList)
+async def list_materials(session: _Session, user: _User) -> MaterialStockList:
+    """This caller's stock, zero-filled across the whole catalogue."""
+    lines = await stock.list_stock(session, user.id)
+    return MaterialStockList(
+        items=[_stock_read(line) for line in lines],
+        owned_count=sum(1 for line in lines if line.count),
+    )
+
+
+@router.patch("/materials", response_model=list[MaterialStockRead])
+async def update_materials(
+    payload: MaterialStockPatch,
+    session: _Session,
+    user: _User,
+) -> list[MaterialStockRead]:
+    """Correct the stock a bill is priced against.
+
+    **A later GOOD import replaces every row written here**, deliberately —
+    `docs/DESIGN_planner_materials.md` §2 argues it and an integration test pins it. The
+    surface says so; this is the route that makes it true.
+    """
+    try:
+        lines = await stock.set_stock(
+            session,
+            user.id,
+            [(update.material_id, update.count) for update in payload.counts],
+        )
+    except StockError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    await session.commit()
+    return [_stock_read(line) for line in lines]

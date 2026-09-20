@@ -42,6 +42,7 @@ this list.
 | `DESIGN_weapons_in_the_optimizer.md` | weapons in the search, KQM tiering for 102 characters (#237, #240) |
 | `DESIGN_conditional_steps.md` | a guarded block a rotation can hold, and the import that reads one (#238) |
 | `TASKS_planner.md` | `/planner` — what levelling a character and a weapon costs, in materials, mora and resin |
+| `TASKS_planner_materials.md` | correcting the stock a bill is priced against, when a scanner got it wrong |
 | — | the four branches that had gone stale behind the trunk, reviewed and landed (#260, #262, #263, #264) |
 
 **The levelling costs were in the pinned payloads from Chunk D and nobody read them until
@@ -49,6 +50,22 @@ this list.
 map are in every nanoka detail fixture; `level_exp` appeared in `app/` only inside a comment.
 `/planner` prices them, subtracting the `materials` map that a GOOD export has always carried
 and `good_importer` always ignored — 1,384 entries in the owner's own file.
+
+**The stock a bill is priced against now has a second writer: you.** `GET`/`PATCH
+/api/v1/planner/materials` and a `Materials` tab beside the plan, plus an editable `Owned`
+cell on every bill row. **A GOOD import still replaces every count**, deliberately — `/roster`
+answers the identical question the other way with `source: manual`, and the divergence is
+argued in `docs/DESIGN_planner_materials.md` §2 and pinned by a test: *"do I own Ayaka"* is
+durable, *"how many Teachings do I hold"* goes stale within a day and does it **invisibly**.
+
+Four of its five defects were found by driving it and none failed a test. Two are worth
+carrying beyond this feature: **an input bound to `ngModelChange` saves every keystroke** —
+typing `9999` wrote 9, then 99, then 999 — and **Playwright's `fill()` cannot see it**,
+because it sets a value in one go, so the first drive looked perfect. And **`Number('')` is
+0**, so an emptied box reads as "I hold none of this". The other two were a page rendered
+25,349 pixels tall by 514 rows, and a mora row that would have offered an edit writing a row
+nothing reads — mora's `owned` is the balance typed into the request, which is why
+`MaterialLineRead` now carries `stock_backed`.
 
 **Its resin figures are an average and a spread, and the difference is load-bearing.**
 `RewardPreviewExcelConfigData`'s **fractional** counts are expected values — a whole number
