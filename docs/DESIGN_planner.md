@@ -110,7 +110,9 @@ single source for game data, and the nanoka importer already runs.
   keying is what lets the planner take Burst to 10 and Skill to 8 independently — which is
   the feature.
 - `weapon_ascension_costs` — `weapon_id`, `phase` 1–6, `mora`, `items` JSONB.
-- `user_materials` — `owner_id`, `material_id`, `count`. Written by the GOOD import.
+- `user_materials` — `owner_id`, `material_id`, `count`. Written by the GOOD import, and —
+  since 2026-09-19 — by the user directly. `docs/DESIGN_planner_materials.md`; an import
+  still replaces every row, deliberately, and §2 there is the argument.
 
 `level_exp` and `xp_requirements` go on `characters.level_exp` and `weapons.xp_requirements`
 as JSONB rather than a row per level — they are read whole, always.
@@ -123,6 +125,10 @@ targets, weapon, crafting-bonus characters) → sections, cumulative summary, re
 
 Frontend route `/planner`, one page, three sections plus a summary, splash art behind the
 character column, weapon art, talent icons, material icons on every row.
+
+`GET`/`PATCH /api/v1/planner/materials` and the `Materials` tab beside the plan let the user
+correct the stock a bill is priced against, for when their scanner got it wrong.
+`docs/DESIGN_planner_materials.md`.
 
 ## 7. Out of scope
 
