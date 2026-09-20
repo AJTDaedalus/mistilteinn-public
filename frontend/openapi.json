@@ -4344,6 +4344,82 @@
           }
         ]
       }
+    },
+    "/api/v1/planner/materials": {
+      "get": {
+        "tags": [
+          "planner"
+        ],
+        "summary": "List Materials",
+        "description": "This caller's stock, zero-filled across the whole catalogue.",
+        "operationId": "list_materials_api_v1_planner_materials_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialStockList"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "planner"
+        ],
+        "summary": "Update Materials",
+        "description": "Correct the stock a bill is priced against.\n\n**A later GOOD import replaces every row written here**, deliberately \u2014\n`docs/DESIGN_planner_materials.md` \u00a72 argues it and an integration test pins it. The\nsurface says so; this is the route that makes it true.",
+        "operationId": "update_materials_api_v1_planner_materials_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaterialStockPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MaterialStockRead"
+                  },
+                  "type": "array",
+                  "title": "Response Update Materials Api V1 Planner Materials Patch"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -8220,6 +8296,104 @@
         ],
         "title": "MaterialLineRead",
         "description": "One material row."
+      },
+      "MaterialStockList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialStockRead"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "owned_count": {
+            "type": "integer",
+            "title": "Owned Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "owned_count"
+        ],
+        "title": "MaterialStockList",
+        "description": "Every material, owned first. **Unpaginated on purpose.**\n\nThe table holds ~514 rows, which is one ~40 KB response against a paging protocol and a\nround trip per keystroke. It lists everything, including the handful no cost bill reaches:\na list that quietly omits the material a user is looking at is the bug this surface exists\nto fix, wearing a different hat."
+      },
+      "MaterialStockPatch": {
+        "properties": {
+          "counts": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialStockUpdate"
+            },
+            "type": "array",
+            "title": "Counts"
+          }
+        },
+        "type": "object",
+        "title": "MaterialStockPatch",
+        "description": "The rows to change, **and only those**.\n\nA list of named objects rather than a `dict[int, int]`, for the reason `ExpBookRead`\nrecords. Partial by construction: a whole-inventory `PUT` built from a *filtered* view\nwould delete every material the filter was hiding, and this body cannot express that."
+      },
+      "MaterialStockRead": {
+        "properties": {
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon"
+          },
+          "rarity": {
+            "type": "integer",
+            "title": "Rarity"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "material_id",
+          "name",
+          "icon",
+          "rarity",
+          "count"
+        ],
+        "title": "MaterialStockRead",
+        "description": "One material and how many of it this account holds."
+      },
+      "MaterialStockUpdate": {
+        "properties": {
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "count": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": 0.0,
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "material_id",
+          "count"
+        ],
+        "title": "MaterialStockUpdate",
+        "description": "One correction.\n\n`count` is bounded **by the column** \u2014 `user_materials.count` is `int4` \u2014 and not by any\nclaim about the game's own stack limit, which this repository has not sourced. The bound\nlives here as well as in the service so the refusal is in the published contract, and the\nservice keeps its own copy because a route is not the only possible caller."
       },
       "MeResponse": {
         "properties": {

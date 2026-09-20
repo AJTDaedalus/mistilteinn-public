@@ -180,6 +180,41 @@ async def test_owned_stock_is_subtracted(
 
 
 @pytest.mark.asyncio
+async def test_a_corrected_count_reprices_the_bill(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """The point of the whole materials surface: an edit has to reach the next plan.
+
+    `docs/DESIGN_planner_materials.md`. The stock and the bill are two routes and two
+    services, so "the number saved" and "the number the planner reads" are separate claims —
+    this is the one that matters and the one a unit test cannot make.
+    """
+    user, _ = authed_user
+    character, talent, _ = await _catalogue(db_session)
+    db_session.add(UserMaterial(owner_id=user.id, material_id=TEACHINGS, count=10))
+    await db_session.commit()
+
+    patched = await client.patch(
+        "/api/v1/planner/materials",
+        json={"counts": [{"material_id": TEACHINGS, "count": 18}]},
+        headers=_auth(authed_user),
+    )
+    assert patched.status_code == 200, patched.text
+
+    response = await client.post(
+        "/api/v1/planner/plan", json=_request(character, talent), headers=_auth(authed_user),
+    )
+    line = next(
+        line
+        for section in response.json()["sections"]
+        if section["key"] == "talents"
+        for line in section["materials"]
+        if line["material_id"] == TEACHINGS
+    )
+    assert (line["owned"], line["still_needed"]) == (18, 0)
+
+
+@pytest.mark.asyncio
 async def test_resin_distinguishes_no_cost_from_a_real_one(
     client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
 ) -> None:
