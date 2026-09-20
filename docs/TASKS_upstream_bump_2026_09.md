@@ -1,22 +1,24 @@
 # TASKS — upstream bump, 2026-09
 
-Status: **nothing started. All owner decisions answered** (`docs/DESIGN_upstream_bump_2026_09.md`
+Status: **Chunk U is done and merged (PR #323). V.1 is done and merged (PR #322).** Two
+gate fixes came out of it and merged first (PR #321) — see the LOG. V.2 waits on nanoka
+publishing 7.1; W is unstarted. All owner decisions answered (`docs/DESIGN_upstream_bump_2026_09.md`
 §5, 2026-09-19), so nothing here is blocked on a ruling. V.2 waits on nanoka publishing 7.1.
 Gate for every PR: `cd backend && python -m scripts.ci_local` exits 0 on the exact PR head
 (`--clean` for U, which changes the wasm build).
 
 ## Chunk U — gcsim re-pin to `v2.47.2` (`feat/gcsim-repin-v2.47.2`)
 
-- [ ] **U.0 Branch.** `git switch dev && git pull && git switch -c feat/gcsim-repin-v2.47.2`.
+- [x] **U.0 Branch.** `git switch dev && git pull && git switch -c feat/gcsim-repin-v2.47.2`.
   Accept: `git branch --show-current` names it.
 
-- [ ] **U.1 Ship gcsim's licence notice with the wasm.** Independent of the pin; can land first.
+- [x] **U.1 Ship gcsim's licence notice with the wasm.** Independent of the pin; can land first.
   Copy gcsim's `LICENSE` from the build clone into the output of `build-gcsim-wasm.sh`, serve
   it beside `gcsim.wasm`, and record it in `frontend/gcsim/PROVENANCE.md`.
   - Accept: the notice is present in a built `frontend/gcsim/` **and** in the prod image; a
     unit test asserts the build script copies it.
 
-- [ ] **U.2 Every gcsim action is authorable or reviewed.** Do this **before** the pin moves.
+- [x] **U.2 Every gcsim action is authorable or reviewed.** Do this **before** the pin moves.
   Owner ruling: a move gcsim implements cannot be silently dropped.
   - `build_key_snapshot` records the parser's `actionKeys` (`pkg/gcs/ast/keys.go`) beside the
     enum (`astr`) in `keys.json`.
@@ -30,7 +32,7 @@ Gate for every PR: `cd backend && python -m scripts.ci_local` exits 0 on the exa
     fake enum entry and confirm the test fails — a check that can only return one answer is
     not a check.
 
-- [ ] **U.3 Move the pin to `caf738dc8` (tag `v2.47.2`).** Update the pin table in
+- [x] **U.3 Move the pin to `caf738dc8` (tag `v2.47.2`).** Update the pin table in
   `docs/CROSSVAL_gcsim.md` (commit, date, title, the "Pinned" note, the Go row — still 1.27).
   Rebuild with `npm run gcsim:build`; regenerate both snapshots with
   `python -m scripts.gcsim.{build_key_snapshot,build_multiplier_snapshot} --src <clone>`; run
@@ -39,36 +41,36 @@ Gate for every PR: `cd backend && python -m scripts.ci_local` exits 0 on the exa
     `test_prod_go_satisfies_the_gcsim_pin` pass; `special_skill` appears in the snapshot and
     **not** in the offered actions or the OpenAPI enum; multiplier crossval 0 mismatches.
 
-- [ ] **U.4 Drive the four new kits.** Iansan, Prune, Odette and Cryo Traveler. For each:
+- [x] **U.4 Drive the four new kits.** Iansan, Prune, Odette and Cryo Traveler. For each:
   author a rotation in our builder covering the kit's moves, compile it, and run it through
   gcsim. Check the condition vocabulary covers what the kit exposes (e.g. the Ifa/Ororon
   nightsoul conditions from `fd1699c4c`) or refuses it **by name**.
   - Accept: four configs validate and run; anything not expressible is written down in the LOG
     with what it would take. This is the task that answers "do we support all the moves".
 
-- [ ] **U.5 Regenerate the pinned fixtures**, each with a PROVENANCE note explaining its diff:
+- [x] **U.5 Regenerate the pinned fixtures**, each with a PROVENANCE note explaining its diff:
   crossval JSON (`sim_version`, `particle_element`); `gcsim_sample/skirk_team_calc.json`
   (219→215 hits is expected — frame-table fixes, `60894d7cb`); the ER sweep; the coverage
   fixture (31→26 uncovered, new aliases); `frontend/openapi.json` then `npm run codegen`.
   - Accept: `npm run gcsim:verify`, `gcsim:verify-config`, `gcsim:verify-recipe`; both suites
     pass; the ER sweep's shape assertions hold or the change is explained.
 
-- [ ] **U.6 Treat `"none"` as unlabelled** in `frontend/scripts/verify-gcsim-recipe.mjs` and
+- [x] **U.6 Treat `"none"` as unlabelled** in `frontend/scripts/verify-gcsim-recipe.mjs` and
   anywhere else testing `element === ''` (`61f578730` renamed the empty element).
   - Accept: a `"none"` event fails the verifier the way `''` used to.
 
-- [ ] **U.7 Fix citation drift** — the table in `RESEARCH_gcsim_repin_2026_09.md` §Citation
+- [x] **U.7 Fix citation drift** — the table in `RESEARCH_gcsim_repin_2026_09.md` §Citation
   drift: the `damage.go` −4 shift, `element.go` (`ElementString` is gone), `attack.go`
   (delimiters dropped, `RelicSkill` added), `exec.go:151→156`, `sysfunc.go:472→491`, plus the
   three `damage.go` rows and the ER-sweep PROVENANCE already wrong at today's pin.
   - Accept: every cited range, opened at the new pin, shows the cited code. List them in the LOG.
 
-- [ ] **U.8 Record what the re-pin moves.** In `docs/DECISIONS.md`: §26 stands (D2) — saved
+- [x] **U.8 Record what the re-pin moves.** In `docs/DECISIONS.md`: §26 stands (D2) — saved
   runs from an older pin are still served — noting that this re-pin moved one vendored team by
   −8.2 %, so the premise is now known to be weaker than when it was written. Add a CLAUDE.md
   line on the Traveler/Skirk story-buff gap pointing at Chunk W.
 
-- [ ] **U.9 Drive it, gate it, deploy it.** Build `Dockerfile.prod` locally; run a real
+- [x] **U.9 Drive it, gate it, deploy it.** Build `Dockerfile.prod` locally; run a real
   two-character rotation search in the browser (`scripts/shoot.py`); `ci_local --clean`; open
   the PR. After merge: `gh run list --branch dev`, and the served `BUILT_FROM` equals the pin.
 
@@ -76,7 +78,7 @@ Gate for every PR: `cd backend && python -m scripts.ci_local` exits 0 on the exa
 
 - [ ] **V.0 Branch** (when V.2 is unblocked).
 
-- [ ] **V.1 Make "reseed at the current version" true in the code** (D3). Today
+- [x] **V.1 Make "reseed at the current version" true in the code** (D3). Today
   `verify_seed --live` and the prod `reseed` job read the committed `FIXTURE_VERSION`, which
   upstream deletes each cycle. Point them at the version nanoka publishes now, and say at each
   pin site that the committed fixtures are a snapshot of record, not a reseed source.
