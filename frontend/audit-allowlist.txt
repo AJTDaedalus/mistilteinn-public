@@ -17,7 +17,13 @@
 # reaches them and there is no advisory left here for them to appear under:
 #
 #   @angular/build         pins undici  7.28.0 -> overridden to ^7.29.0
-#   @redocly/openapi-core  pins js-yaml 4.3.0  -> overridden to ^4.3.1
+#   @redocly/openapi-core  pins js-yaml 4.3.0  -> overridden to ^4.3.2
+#
+# The js-yaml override was ^4.3.1 until 2026-09-19, when GHSA-2883-xcg3-v3hh
+# extended the vulnerable range to include 4.3.1 itself. An override is a
+# floor, not a fix: it keeps holding the old floor silently while the advisory
+# moves under it, which is the one way this file can be wrong without the
+# script noticing.
 #
 # Both are scoped to those consumers on purpose. A blanket `undici` override
 # also catches node-gyp, which declares ^6.25.0 and is already patched at
