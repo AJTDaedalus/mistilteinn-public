@@ -20,9 +20,9 @@ Measured at the pin, against the committed nanoka fixtures:
 
 | | catalogue | matched | unmatched |
 |---|---:|---:|---:|
-| characters | 150 | 105 | 45 |
-| weapons | 284 | 231 | 53 |
-| artifact sets | 65 | 53 | 12 |
+| characters | 150 | 124 | 26 |
+| weapons | 286 | 237 | 49 |
+| artifact sets | 65 | 55 | 10 |
 
 The unmatched are not mapping failures. They are **things gcsim does not implement at this
 pin**: characters released after it (Kachina, Nefer, Vesna…), low-rarity sets nobody
@@ -37,8 +37,9 @@ distinguishes them by key — `10000005-2` is the Aether body with element 2 —
 uses `aetherpyro`, `luminedendro`, and so on. So this is derived from the body id and the
 element rather than listed, which also means a new element needs no new alias.
 
-**gcsim has six Traveler elements at this pin, not seven**: there is no Cryo Traveler. A
-Cryo Traveler is refused like anything else it does not implement.
+**Which Traveler elements gcsim implements is read from the snapshot, never stated here.**
+This paragraph used to say "six, not seven — there is no Cryo Traveler"; the 2026-09-19
+re-pin implemented one (gcsim `25e6ef499`), so the refusal now lists the elements it finds.
 """
 
 from __future__ import annotations
@@ -79,30 +80,75 @@ def pinned_commit() -> str:
     return str(_snapshot()["pinned_commit_sha"])
 
 
-#: Actions the rotation model exposes to a user, as a subset of what gcsim accepts.
+#: Actions the rotation model **could** name but deliberately does not offer.
 #:
 #: `swap` is excluded because it is **implicit** — `pkg/simulation/run.go:154` has the
 #: evaluator insert swaps when the next character is not active, so emitting our own would
-#: double them. `wait` and `delay` are excluded because they are timing controls, and
-#: `DESIGN_rotation.md` §2 keeps timing out of the model: exposing them invites the user back
-#: into frame counting, which is the thing being removed.
-_NOT_AUTHORED = frozenset({"swap", "wait", "delay"})
+#: double them.
+_NOT_AUTHORED = frozenset({"swap"})
+
+#: Entries in gcsim's action **enum** that its own **parser** has no token for, each with the
+#: reason it is not a move a rotation can name. Owner ruling, 2026-09-19: *a move gcsim
+#: implements cannot be silently ignored* — so every enum entry is either authorable or listed
+#: here, and `tests/unit/test_every_gcsim_action_is_accounted_for.py` fails on one that is
+#: neither. A future action that **is** a move arrives as a red test, not as a silent gap.
+_NOT_A_MOVE: dict[str, str] = {
+    "wait": (
+        "a sequencer construct, not an action a character performs. DESIGN_rotation.md §2 "
+        "keeps timing out of the model: exposing it invites the user back into frame counting"
+    ),
+    "delay": (
+        "the same — a timing control between actions, and the model has no frame field for "
+        "it to fill"
+    ),
+    "special_skill": (
+        "a **cooldown bucket**, not a move (gcsim 1de5a4243). It holds the CD for kits whose "
+        "skill has a second form, and the forms themselves are authored as ordinary actions: "
+        "Varka's Four Winds through `charge` (internal/characters/varka/charge.go:96) and "
+        "Odette's recast through `skill` (internal/characters/odette/skill.go:113). gcsim's "
+        "tokenizer has no `special_skill` token, so emitting one is a config gcsim rejects"
+    ),
+}
 
 
 def gcsim_actions() -> tuple[str, ...]:
-    """Every action name gcsim's parser accepts at the pin, in enum order."""
+    """Every name in gcsim's action enum at the pin, in enum order.
+
+    **Not the same as what a config may name.** Use `parser_actions()` for that; this is the
+    wider list, and the difference is what `_NOT_A_MOVE` accounts for.
+    """
     return tuple(_snapshot()["actions"])  # type: ignore[index]
+
+
+def parser_actions() -> tuple[str, ...]:
+    """Every action name gcsim's tokenizer accepts at the pin (`pkg/gcs/ast/keys.go`)."""
+    return tuple(_snapshot()["parser_actions"])  # type: ignore[index]
+
+
+def unauthorable_actions() -> dict[str, str]:
+    """`{enum action: why it is not a move}` — the reviewed list, for tests and tooling."""
+    return dict(_NOT_A_MOVE)
 
 
 def authorable_actions() -> tuple[str, ...]:
     """The actions a rotation step may name.
 
-    Derived by subtraction from gcsim's own list rather than written out, so a re-pin that
-    adds an action offers it automatically and one that removes an action stops offering it.
-    A hand-kept list would drift silently in the direction that matters most — offering
+    Derived by subtraction from **the parser's** table rather than written out, so a re-pin
+    that adds an action offers it automatically and one that removes an action stops offering
+    it. A hand-kept list would drift silently in the direction that matters most — offering
     something gcsim would reject.
+
+    Membership comes from the parser's table and not from the enum, because those two
+    diverged at gcsim `1de5a4243`: `special_skill` is in the enum and in no config, so
+    deriving from the enum would have offered every character an action the parser refuses by
+    name.
+
+    **The order is the enum's**, which is gcsim's own — skill, burst, attack, charge, … — and
+    that is what the picker shows. The parser's table is a Go map, captured sorted, so taking
+    its order would have alphabetised the picker as a side effect of a correctness fix.
     """
-    return tuple(a for a in gcsim_actions() if a not in _NOT_AUTHORED)
+    parser = set(parser_actions())
+    return tuple(a for a in gcsim_actions() if a in parser and a not in _NOT_AUTHORED)
 
 
 #: The parameters that become an **action a user can author**, and the suffix each one takes.
@@ -201,21 +247,50 @@ def split_variant(action: str) -> tuple[str, str | None]:
         suffix = f"_{VARIANT_PARAMS[param]}"
         if action.endswith(suffix):
             base = action[: -len(suffix)]
-            if base in gcsim_actions():
+            if base in parser_actions():
                 return base, param
     return action, None
 
 
-def offerable_actions(key: str | None) -> tuple[str, ...]:
-    """The actions **this character** may be given, base ten first then their variants.
+def implemented_actions(key: str) -> frozenset[str]:
+    """Which actions gcsim implements **for this character**, at the pin.
 
-    `None` — a character gcsim does not implement at this pin — gets the base ten. They cannot
-    be simulated at all, so a rotation naming them fails for that reason and not for want of a
-    hold button; offering fewer actions would report the wrong problem.
+    Not every character has every move. gcsim's base character type answers
+    *"action aimed not implemented"* for anyone who has not overridden it, so an aimed shot
+    exists for bow users and a charged attack does not exist for Ganyu — her charged attack
+    **is** the aimed shot. It is not a function of the weapon class, and it is not a function
+    of the parameter table either: `paramsFor` says which parameters an action takes, and
+    says nothing at all for a character who takes none.
+
+    Captured by `scripts/gcsim/build_key_snapshot.py` and checked against gcsim itself by
+    `scripts/gcsim/probe_implemented_actions.py` — 868 character/action pairs, which is how
+    the four Traveler plunges gcsim refuses inside a method that exists were found.
+    """
+    table = _snapshot().get("character_implemented_actions", {})
+    return frozenset(table.get(key, ()))  # type: ignore[arg-type]
+
+
+def offerable_actions(key: str | None) -> tuple[str, ...]:
+    """The actions **this character** may be given, base actions first then their variants.
+
+    `None` — a character gcsim does not implement at this pin — gets the whole base list.
+    They cannot be simulated at all, so a rotation naming them fails for that reason and not
+    for want of a hold button; offering fewer actions would report the wrong problem.
+
+    **Filtered by what gcsim implements for this character.** Every character used to be
+    offered all ten, so a user could author `aim` on a polearm user, have it validate, and
+    watch the run die with `iansan: action aimed not implemented` — a gcsim error, minutes
+    later, about a move the builder had offered them. Refusing at authoring time is the rule
+    this module already follows for keys.
     """
     base = authorable_actions()
     if key is None:
         return base
+    implemented = implemented_actions(key)
+    # An empty table means the snapshot predates this capture, not that the character has no
+    # moves. Offering everything is the old behaviour and the safe direction to fail.
+    if implemented:
+        base = tuple(a for a in base if a in implemented)
     declared = character_action_params(key)
     variants = [
         variant_action(action, param)
@@ -372,10 +447,20 @@ def _traveler_key(body: str, nanoka_id: str, element: Element | str | None) -> s
         raise GcsimKeyError(msg)
 
     key = f"{_TRAVELER_BODIES[body]}{normalise(str(element))}"
-    if key not in set(_snapshot()["characters"]):  # type: ignore[arg-type]
+    known = set(_snapshot()["characters"])  # type: ignore[arg-type]
+    if key not in known:
+        # Which elements exist is read from the snapshot, not stated. It used to say "six,
+        # not seven — there is no Cryo Traveler", which the 2026-09-19 re-pin made false
+        # (gcsim 25e6ef499). A sentence that names a number goes stale on exactly the event
+        # it is meant to describe.
+        have = sorted(
+            k.removeprefix(_TRAVELER_BODIES[body])
+            for k in known
+            if k.startswith(_TRAVELER_BODIES[body])
+        )
         msg = (
-            f"gcsim has no {key!r} at pin {pinned_commit()[:12]}. It implements six Traveler "
-            f"elements, not seven — there is no Cryo Traveler."
+            f"gcsim has no {key!r} at pin {pinned_commit()[:12]}. The Traveler elements it "
+            f"implements are: {', '.join(have)}."
         )
         raise GcsimKeyError(msg)
     return key

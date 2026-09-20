@@ -45,6 +45,11 @@
                 "glob": "BUILT_FROM",
                 "input": "gcsim",
                 "output": "gcsim"
+              },
+              {
+                "glob": "*.LICENSE.txt",
+                "input": "gcsim",
+                "output": "gcsim"
               }
             ],
             "styles": [

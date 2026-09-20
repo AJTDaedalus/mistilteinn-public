@@ -8,6 +8,23 @@ The simulator this project runs **in the user's browser** (DESIGN_client_optimiz
 | **Commit** | the single pin in `docs/CROSSVAL_gcsim.md` — never restated here |
 | **Target** | `GOOS=js GOARCH=wasm ./cmd/wasm` — upstream's own browser binding |
 | **Build** | `./scripts/build-gcsim-wasm.sh` |
+| **Notices** | `gcsim.LICENSE.txt` (gcsim's own) and `go.LICENSE.txt` (Go's, for `wasm_exec.js`), written by the build and served beside the artifacts |
+
+## The licence travels with the artifact
+
+Both files are downloaded into every visitor's browser, which is redistribution, and both
+licences require their notice to be retained. gcsim's is MIT **at this pin**; `wasm_exec.js`
+is Go's, BSD-3-Clause, and is the easier one to miss because neither this project nor gcsim
+wrote it. The build writes both beside the artifacts, `angular.json` copies them into the
+bundle, and the production image **refuses to build** if either is missing — an asset glob
+that matches nothing otherwise succeeds silently, which is exactly how this bundle once
+shipped with no simulator at all.
+
+**gcsim relicensed to AGPLv3 on 2026-09-19** (`05f01a733`), whose §13 covers network use.
+The pin is a release the MIT terms still cover, deliberately. A future re-pin that crosses
+the relicence is not a routine bump: it changes what this site owes its visitors, and
+`tests/unit/test_gcsim_licence_ships_with_the_wasm.py` is where that reasoning is written
+down.
 
 ## Why the artifact is not committed
 

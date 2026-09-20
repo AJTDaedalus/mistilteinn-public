@@ -196,9 +196,19 @@ def test_the_sweep_shows_a_five_percent_bucket_is_not_uniformly_safe():
         if len(inside) > 1:
             spreads[low] = max(inside) / min(inside) - 1.0
 
-    assert max(spreads.values()) > 0.10, "no bucket is wide; a flat error would be defensible"
+    # **These thresholds describe a 1,000-iteration sweep, and the old ones described noise.**
+    # The fixture used to run 50 iterations, where a bucket's width is dominated by which
+    # iterations happened to land a third burst: the committed sample showed bucket 120 at
+    # 13.3 %, and re-running the sweep at *its own pin* reproduced neither the figure (7.6 %)
+    # nor the bucket (125). Measured properly the coupling is smaller than 13 % and perfectly
+    # stable — 7.3 % at bucket 120, against 0.3 % at the settled top end.
+    assert max(spreads.values()) > 0.05, "no bucket is wide; a flat error would be defensible"
     assert min(spreads.values()) < 0.02, "every bucket is wide; the width itself is the bug"
     assert spreads[120] == max(spreads.values()), "the widest bucket is the burst-count climb"
+    assert max(spreads.values()) / min(spreads.values()) > 5, (
+        "the point is not that one bucket is wide but that they differ by an order of "
+        "magnitude, which is what makes a single constant error indefensible"
+    )
 
 
 def test_retrieval_over_the_real_sweep_reports_the_wide_bucket_as_wide():

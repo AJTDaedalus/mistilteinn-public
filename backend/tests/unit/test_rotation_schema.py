@@ -17,7 +17,11 @@ import pytest
 from pydantic import ValidationError
 
 from app.schemas.rotation import MAX_REPEAT, MAX_STEPS, RotationCreate, RotationStep
-from app.services.gcsim_keys import authorable_actions, gcsim_actions
+from app.services.gcsim_keys import (
+    authorable_actions,
+    gcsim_actions,
+    parser_actions,
+)
 
 KEYS = Path(__file__).resolve().parents[2] / "app" / "data" / "gcsim" / "keys.json"
 
@@ -30,7 +34,7 @@ def _step(**over) -> dict:
 
 
 def test_the_action_list_comes_from_gcsim_at_the_pin():
-    """Parsed out of `pkg/core/action/action.go`, not restated.
+    """Parsed out of gcsim's own source, not restated.
 
     A restated list drifts in the direction that matters most — offering an action gcsim
     rejects, so the config fails at simulation time with a parser error instead of at
@@ -44,11 +48,16 @@ def test_the_action_list_comes_from_gcsim_at_the_pin():
     assert "invalid" not in committed, "the enum's zero value is not something a config names"
 
 
-def test_the_authorable_set_is_gcsim_minus_three_reasons():
-    """Derived by subtraction, so a re-pin adding an action offers it automatically."""
-    hidden = set(gcsim_actions()) - set(authorable_actions())
+def test_the_authorable_set_is_the_parsers_list_minus_swap():
+    """Derived by subtraction, so a re-pin adding an action offers it automatically.
 
-    assert hidden == {"swap", "wait", "delay"}
+    The subtraction is from **the parser's** table (`pkg/gcs/ast/keys.go`), not from the
+    enum: gcsim's enum also carries entries no config can name, and offering one of those
+    means emitting a config gcsim refuses by name.
+    """
+    hidden = set(parser_actions()) - set(authorable_actions())
+
+    assert hidden == {"swap"}
     assert len(authorable_actions()) == 10
 
 

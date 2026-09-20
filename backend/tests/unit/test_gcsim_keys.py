@@ -83,9 +83,22 @@ def test_a_traveler_without_an_element_is_refused():
         character_key("10000005-2", "Traveler")
 
 
-def test_the_cryo_traveler_is_refused_because_gcsim_has_six_elements():
-    with pytest.raises(GcsimKeyError, match="six Traveler elements"):
-        character_key("10000005-4", "Traveler", "Cryo")
+def test_the_cryo_traveler_resolves_since_the_2026_09_19_re_pin():
+    """gcsim `25e6ef499` implemented it, and the re-pin picked it up.
+
+    This test used to assert the opposite, naming *six* Traveler elements. It is kept
+    pointing at the same character rather than deleted: the interesting property is that
+    the refusal follows the pin, and a Traveler who quietly stopped resolving would be the
+    same bug in the other direction.
+    """
+    assert character_key("10000005-4", "Traveler", "Cryo") == "aethercryo"
+    assert character_key("10000007-4", "Traveler", "Cryo") == "luminecryo"
+
+
+def test_a_traveler_element_gcsim_does_not_have_is_refused_by_listing_the_ones_it_does():
+    """The refusal reads the snapshot, so it cannot go stale the way the old one did."""
+    with pytest.raises(GcsimKeyError, match="elements it implements are: anemo, cryo"):
+        character_key("10000005-9", "Traveler", "Nonsense")
 
 
 def test_a_character_newer_than_the_pin_is_refused_naming_it():

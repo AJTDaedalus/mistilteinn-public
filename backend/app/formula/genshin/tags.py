@@ -64,7 +64,9 @@ COND = "cond"
 
 # ---- Damage channels ------------------------------------------------------
 
-#: The seven visions, lower-cased. Source: gcsim `element.go` `ElementString`. Ordered as
+#: The seven visions, lower-cased. Source: gcsim's generated `element_enumer.go:11`
+#: (`_ElementName`) — `element.go`'s `ElementString` was the source until gcsim `61f578730`
+#: rewrote the element enum and deleted it. The seven names are unchanged. Ordered as
 #: `app.models.enums.Element` declares them (alphabetical) rather than as gcsim's enum,
 #: because nothing here depends on the ordinal and a stable order makes diffs readable.
 VISIONS: tuple[str, ...] = ("anemo", "cryo", "dendro", "electro", "geo", "hydro", "pyro")
@@ -77,10 +79,19 @@ DAMAGE_CHANNELS: tuple[str, ...] = (*VISIONS, "physical")
 
 # ---- Attack scopes --------------------------------------------------------
 
-#: What a scope-gated buff can be gated on. Source: gcsim's `AttackTag` constants **before**
-#: `ReactionAttackStartDelim` — everything after that delimiter is a reaction's own damage
-#: instance, which Chunk F does not model (F.6 is amplifying reactions only, and those
+#: What a scope-gated buff can be gated on. Source: gcsim's `AttackTag` constants
+#: (`attack.go:8-17`) **before the reaction block** — everything after it is a reaction's own
+#: damage instance, which Chunk F does not model (F.6 is amplifying reactions only, and those
 #: multiply an existing hit rather than creating a tagged one of their own).
+#:
+#: The delimiter used to be `ReactionAttackStartDelim`; gcsim `387bbb936` removed the
+#: delimiters and `AttackTagNoneStat` ("ignore attacker stats delim", `attack.go:24`) now
+#: stands where it did. The **membership of this list did not change**, which is the part
+#: worth checking at a re-pin rather than the name.
+#:
+#: **`AttackTagRelicSkill` (`attack.go:15`) is new and deliberately absent.** It tags damage
+#: an artifact set deals in its own right, and nothing in this repo's chain produces one —
+#: the same reason the reaction tags are out. Add it here when something can emit it.
 #:
 #: `charged` is gcsim's `AttackTagExtra`; the community and the game's own UI call it a
 #: Charged Attack, and this repo's talent descriptions (`"Charged Attack DMG|{param8:F1P}"`,
@@ -97,7 +108,7 @@ SCOPES: tuple[str, ...] = (
 )
 
 #: Physical-damage interactions and shield-break multipliers key off *how* a hit lands, not
-#: what talent produced it. Source: gcsim `attack.go:52-59` (`StrikeType`), and the same
+#: what talent produced it. Source: gcsim `attack.go:87-95` (`StrikeType`), and the same
 #: vocabulary appears in the nanoka payloads' `attack[].strike_type` — one of the few places
 #: the two sources use identical spellings, which is why it is worth keeping.
 STRIKE_TYPES: tuple[str, ...] = ("default", "pierce", "blunt", "slash", "spear")
