@@ -147,11 +147,20 @@ A second tab on `/planner`, following `builds.html`'s `role="tablist"` markup an
 `shared/{icon,token,element,combobox}` is that a pattern nobody owns gets decided again on
 every page.
 
-- **At most 80 rows drawn at a time**, with a line saying how many are held back and that
-  search reaches them. Found by looking: every row rendered made the page **25,349 pixels
-  tall** against the owner's real inventory — 514 rows, 450 held — which is a wall rather than
-  a list, and nothing measures a page's height. A row with an unsaved edit is kept visible
-  wherever it falls, or `Save` counts a change the user cannot see. Now 4,551 pixels.
+- **Every matching row is drawn, and the table scrolls in its own box.** Found by looking:
+  every row rendered made the *page* **25,349 pixels tall** against the owner's real inventory
+  — 514 rows, 450 held — and nothing measures a page's height. The first fix capped the list
+  at 80 and said how many it was holding back; the owner's answer was *"scroll the 514"*
+  (2026-09-20), and they were right — **the height was the complaint, and the cap fixed it by
+  hiding the list**, which is the wrong half. A `max-height` box with a sticky header keeps
+  the page a page *and* every row reachable by dragging rather than by guessing a search term.
+  Measured after: page 1,329 px, a 648 px box holding 24,709 px of rows, all 514 present.
+
+  The box carries `scrolls`, which `styles.scss` gives a **visible** scrollbar — the
+  platform's overlay one is invisible until you already know to scroll, and a box whose only
+  cue is a row sliced through the middle gives a reader no reason to think the rest exists.
+  That audit found four dialogs and the move palette; this would have been the fifth.
+  `catalogue-icon` already carries `loading="lazy"`, so 514 rows are not 514 image requests.
 - **Sorted owned-first, then by name.** *Not* by rarity: rarity 0 is not "worst", it is
   *unranked*, and it is where the local specialties live — Sakura Bloom, Philanemo Mushroom,
   Valberry. Sorting by rarity descending would bury sixty real ascension materials under the

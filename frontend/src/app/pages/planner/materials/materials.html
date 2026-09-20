@@ -55,48 +55,54 @@
       }
     </div>
 
-    @if (hidden()) {
-      <!-- Said, never silently dropped. Rendering all 514 made the page 25,349 pixels tall
-           against a real inventory, which is a wall rather than a list. -->
-      <p class="hint">
-        Showing {{ visible().length }} of {{ matching().length }}. Search to reach the rest.
-      </p>
-    }
-
     @if (!visible().length) {
       <p class="hint">
         Nothing matches. @if (ownedOnly()) { Turn off <em>Owned only</em> to reach a material
         your import missed. }
       </p>
     } @else {
-      <table>
-        <thead>
-          <tr>
-            <th scope="col" colspan="2">Material</th>
-            <th scope="col" class="num">Owned</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (row of visible(); track row.item.material_id) {
-            <tr [class.row--dirty]="isDirty(row)">
-              <td class="art">
-                <catalogue-icon [icon]="row.item.icon" [alt]="row.item.name" [size]="32" />
-              </td>
-              <td class="name" [attr.data-rarity]="row.item.rarity">{{ row.item.name }}</td>
-              <td class="num">
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  [attr.aria-label]="row.item.name + ' owned'"
-                  [ngModel]="value(row)"
-                  (ngModelChange)="setCount(row.item.material_id, $event)"
-                />
-              </td>
+      <p class="hint count-line">{{ visible().length }} shown</p>
+      <!-- **The table scrolls in its own box, rather than the page scrolling for it.**
+           Rendering every row made the page 25,349 pixels tall against a real inventory —
+           the height was the problem, not the row count, so the fix is a scroll container and
+           a sticky header rather than a cap that hides rows behind a guessed search term.
+           Owner, 2026-09-20: *"scroll the 514"*.
+
+           **`scrolls` is not decoration.** `styles.scss` gives that class a visible scrollbar
+           because the platform's overlay one is invisible until you already know to scroll —
+           and a box whose only cue is a row sliced through the middle gives a reader no
+           reason to believe the rest is reachable. That audit found four dialogs and the move
+           palette; this would have been the fifth. -->
+      <div class="rows scrolls">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col" colspan="2">Material</th>
+              <th scope="col" class="num">Owned</th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (row of visible(); track row.item.material_id) {
+              <tr [class.row--dirty]="isDirty(row)">
+                <td class="art">
+                  <catalogue-icon [icon]="row.item.icon" [alt]="row.item.name" [size]="32" />
+                </td>
+                <td class="name" [attr.data-rarity]="row.item.rarity">{{ row.item.name }}</td>
+                <td class="num">
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    [attr.aria-label]="row.item.name + ' owned'"
+                    [ngModel]="value(row)"
+                    (ngModelChange)="setCount(row.item.material_id, $event)"
+                  />
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     }
 
     <!-- Mora is the one quantity on the planner nobody can import: GOOD carries no currency

@@ -145,39 +145,38 @@ describe('the materials tab', () => {
     expect(tab['value'](tab['rows']()[0])).toBe(40);
   });
 
-  it('caps how many rows it draws, and says how many it is holding back', async () => {
-    // Found by looking: every row rendered made the page 25,349 pixels tall against the
-    // owner's real inventory. No test measures a page's height, so this one pins the cap and
-    // the sentence that keeps the hidden rows honest.
-    const many = Array.from({ length: 300 }, (_, index) =>
+  it('draws every matching row — the list scrolls, it is not capped', async () => {
+    // Owner, 2026-09-20: *"scroll the 514"*. An earlier version capped this at 80 because
+    // rendering every row made the page 25,349 pixels tall against a real inventory. The
+    // height was the complaint; the cap was the wrong fix, since it hid rows behind a search
+    // term the user had to guess. The table scrolls in its own box now, so this asserts that
+    // nothing is held back.
+    const many = Array.from({ length: 514 }, (_, index) =>
       item({ material_id: 200000 + index, name: `Material ${index}`, count: 1 }),
     );
     const tab = makeTab({
-      materials: vi.fn(async () => ({ items: many, owned_count: 300 })),
+      materials: vi.fn(async () => ({ items: many, owned_count: 514 })),
     });
     await tab.ngOnInit();
 
-    expect(tab['matching']()).toHaveLength(300);
-    expect(tab['visible']()).toHaveLength(80);
-    expect(tab['hidden']()).toBe(220);
+    expect(tab['visible']()).toHaveLength(514);
   });
 
-  it('keeps an edited row visible even when the cap would drop it', async () => {
-    // A count typed and then searched past would otherwise vanish from the table while still
-    // counting toward Save — the user would be saving something they cannot see.
-    const many = Array.from({ length: 300 }, (_, index) =>
+  it('still narrows to a search across a full-size list', async () => {
+    const many = Array.from({ length: 514 }, (_, index) =>
       item({ material_id: 200000 + index, name: `Material ${index}`, count: 1 }),
     );
     const tab = makeTab({
-      materials: vi.fn(async () => ({ items: many, owned_count: 300 })),
+      materials: vi.fn(async () => ({ items: many, owned_count: 514 })),
     });
     await tab.ngOnInit();
 
-    const farDown = many[250].material_id;
-    tab['setCount'](farDown, 9);
+    tab['search'].set('material 51');
 
-    expect(tab['visible']().some((row) => row.item.material_id === farDown)).toBe(true);
-    expect(tab['dirty']()).toHaveLength(1);
+    // 51, 510-513, and 51x for x in 4..9 are absent above 513 — the point is that a search
+    // still filters rather than that the count is memorable.
+    expect(tab['visible']().length).toBeLessThan(514);
+    expect(tab['visible']().every((row) => row.item.name.includes('51'))).toBe(true);
   });
 
   it('treats an emptied box as untouched, not as zero', async () => {
