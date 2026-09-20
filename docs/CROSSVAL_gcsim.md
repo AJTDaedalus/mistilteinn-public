@@ -65,6 +65,7 @@ citations it invalidates — the same rule the YuanShenResources snapshot follow
 | RES term, three branches | `pkg/enemy/damage.go:85-89` | `formula/genshin/damage.py:res_multiplier` — **see the divergence below** |
 | crit rate clamped to [0, 1] | `pkg/enemy/damage.go:62-67` | `formula/genshin/damage.py:crit_multiplier` |
 | amplifying EM bonus `2.78*em/(1400+em)`, added to the reaction bonus inside the bracket | `pkg/enemy/damage.go:109-112` | `formula/genshin/damage.py:amplifying_multiplier` |
+| the Traveler's three story-quest buffs, and that they are **default-on** | `internal/characters/traveler/common/storybuffs.go:26-57` | `formula/genshin/story_buffs.py` |
 | melt multipliers: Pyro→Cryo 2.0, Cryo→Pyro 1.5 | `pkg/reactable/melt.go:23,30` | `formula/genshin/damage.py:_AMP_MULTIPLIERS` |
 | vaporize multipliers: Hydro→Pyro 2.0, Pyro→Hydro 1.5 | `pkg/reactable/vaporize.go:26,33` | `formula/genshin/damage.py:_AMP_MULTIPLIERS` |
 

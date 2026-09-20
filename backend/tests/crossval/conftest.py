@@ -49,7 +49,11 @@ REQUIRE_DB_ENV = "CROSSVAL_REQUIRE_DB"
 #: entity type, so adding a second character would have silently dropped one of them at the
 #: dict-key collision. The second crossval case needs exactly that, so the shape was wrong
 #: one case before it would have mattered.
-SEEDED: set[tuple[str, str]] = {("character", "10000002"), ("weapon", "11101")}
+SEEDED: set[tuple[str, str]] = {
+    ("character", "10000002"),      # Kamisato Ayaka — the damage-chain case
+    ("character", "10000005-2"),    # Pyro Aether — the Traveler story-buff case
+    ("weapon", "11101"),            # Dull Blade, which both use for having no passive
+}
 
 
 def _required() -> bool:

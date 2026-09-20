@@ -1,0 +1,492 @@
+{
+  "schema_version": {
+    "major": "4",
+    "minor": "2"
+  },
+  "sim_version": "caf738dc807a646e2eee7e7b572f225dd6deb510",
+  "modified": false,
+  "config_file": "options iteration=1 duration=5 swap_delay=0 debug=true;\n\naetherpyro char lvl=90/90 cons=0 talent=1,1,1;\naetherpyro add weapon=\"dullblade\" lvl=70/70 refine=1;\n\ntarget lvl=90 resist=0.1 pos=0,1;\n\nactive aetherpyro;\naetherpyro attack;\n\n",
+  "simulator_settings": {
+    "duration": 5,
+    "enable_hitlag": true,
+    "def_halt": true,
+    "number_of_workers": 20,
+    "iterations": 1,
+    "delays": {}
+  },
+  "energy_settings": {},
+  "initial_character": "aetherpyro",
+  "character_details": [
+    {
+      "name": "aetherpyro",
+      "element": "pyro",
+      "level": 90,
+      "max_level": 90,
+      "weapon": {
+        "name": "dullblade",
+        "refine": 1,
+        "level": 70,
+        "max_level": 70
+      },
+      "talents": {
+        "attack": 1,
+        "skill": 1,
+        "burst": 1
+      },
+      "stats": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "snapshot": [
+        0,
+        0,
+        819.0258299999999,
+        13109.8978308,
+        0,
+        587.26562688,
+        0,
+        1.2,
+        75,
+        0.15000000000000002,
+        0.7,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        10924.914859,
+        407.823352,
+        682.521525
+      ]
+    }
+  ],
+  "target_details": [
+    {
+      "level": 90,
+      "resist": {
+        "anemo": 0.1,
+        "cryo": 0.1,
+        "dendro": 0.1,
+        "electro": 0.1,
+        "geo": 0.1,
+        "hydro": 0.1,
+        "physical": 0.1,
+        "pyro": 0.1
+      },
+      "position": {
+        "y": 1,
+        "r": 1
+      },
+      "particle_element": "none",
+      "modified": true
+    }
+  ],
+  "player_position": {
+    "r": 0.3
+  },
+  "statistics": {
+    "iterations": 1,
+    "duration": {
+      "min": 5,
+      "max": 5,
+      "mean": 5,
+      "sd": 0,
+      "q1": 5,
+      "q2": 5,
+      "q3": 5,
+      "histogram": [
+        1
+      ]
+    },
+    "dps": {
+      "min": 23.498846793976316,
+      "max": 23.498846793976316,
+      "mean": 23.498846793976316,
+      "sd": 0,
+      "q1": 23.498846793976316,
+      "q2": 23.498846793976316,
+      "q3": 23.498846793976316,
+      "histogram": [
+        1
+      ]
+    },
+    "rps": {
+      "min": 0,
+      "max": 0,
+      "mean": 0,
+      "sd": 0,
+      "q1": 0,
+      "q2": 0,
+      "q3": 0,
+      "histogram": [
+        1
+      ]
+    },
+    "eps": {
+      "min": 0,
+      "max": 0,
+      "mean": 0,
+      "sd": 0,
+      "q1": 0,
+      "q2": 0,
+      "q3": 0,
+      "histogram": [
+        1
+      ]
+    },
+    "hps": {
+      "min": 0,
+      "max": 0,
+      "mean": 0,
+      "sd": 0,
+      "q1": 0,
+      "q2": 0,
+      "q3": 0,
+      "histogram": [
+        1
+      ]
+    },
+    "shp": {
+      "min": 0,
+      "max": 0,
+      "mean": 0,
+      "sd": 0,
+      "q1": 0,
+      "q2": 0,
+      "q3": 0,
+      "histogram": [
+        1
+      ]
+    },
+    "total_damage": {
+      "min": 117.49423396988159,
+      "max": 117.49423396988159,
+      "mean": 117.49423396988159,
+      "sd": 0
+    },
+    "warnings": {},
+    "failed_actions": [
+      {
+        "insufficient_energy": {
+          "min": 0,
+          "max": 0,
+          "mean": 0,
+          "sd": 0
+        },
+        "insufficient_stamina": {
+          "min": 0,
+          "max": 0,
+          "mean": 0,
+          "sd": 0
+        },
+        "swap_cd": {
+          "min": 0,
+          "max": 0,
+          "mean": 0,
+          "sd": 0
+        },
+        "skill_cd": {
+          "min": 0,
+          "max": 0,
+          "mean": 0,
+          "sd": 0
+        },
+        "dash_cd": {
+          "min": 0,
+          "max": 0,
+          "mean": 0,
+          "sd": 0
+        },
+        "burst_cd": {
+          "min": 0,
+          "max": 0,
+          "mean": 0,
+          "sd": 0
+        }
+      }
+    ],
+    "element_dps": {
+      "physical": {
+        "min": 23.49884679397632,
+        "max": 23.49884679397632,
+        "mean": 23.49884679397632,
+        "sd": 0
+      }
+    },
+    "target_dps": {
+      "1": {
+        "min": 23.49884679397632,
+        "max": 23.49884679397632,
+        "mean": 23.49884679397632,
+        "sd": 0
+      }
+    },
+    "character_dps": [
+      {
+        "min": 23.49884679397632,
+        "max": 23.49884679397632,
+        "mean": 23.49884679397632,
+        "sd": 0
+      }
+    ],
+    "dps_by_element": [
+      {
+        "elements": {
+          "physical": {
+            "min": 23.49884679397632,
+            "max": 23.49884679397632,
+            "mean": 23.49884679397632,
+            "sd": 0
+          }
+        }
+      }
+    ],
+    "dps_by_target": [
+      {
+        "targets": {
+          "1": {
+            "min": 23.49884679397632,
+            "max": 23.49884679397632,
+            "mean": 23.49884679397632,
+            "sd": 0
+          }
+        }
+      }
+    ],
+    "source_dps": [
+      {
+        "sources": {
+          "Normal 0": {
+            "min": 23.49884679397632,
+            "max": 23.49884679397632,
+            "mean": 23.49884679397632,
+            "sd": 0
+          }
+        }
+      }
+    ],
+    "source_damage_instances": [
+      {
+        "sources": {
+          "Normal 0": {
+            "min": 1,
+            "max": 1,
+            "mean": 1,
+            "sd": 0
+          }
+        }
+      }
+    ],
+    "damage_buckets": {
+      "bucket_size": 30,
+      "buckets": [
+        {
+          "min": 117.49423396988159,
+          "max": 117.49423396988159,
+          "mean": 117.49423396988159,
+          "sd": 0
+        }
+      ]
+    },
+    "cumu_damage_contrib": {
+      "bucket_size": 30,
+      "characters": [
+        {
+          "buckets": [
+            {
+              "min": 1,
+              "max": 1,
+              "mean": 1,
+              "sd": 0
+            }
+          ]
+        }
+      ]
+    },
+    "cumu_damage": {
+      "bucket_size": 30,
+      "targets": {
+        "1": {
+          "overall": {
+            "min": [
+              117.49423396988159
+            ],
+            "max": [
+              117.49423396988159
+            ],
+            "q1": [
+              117.49423396988159
+            ],
+            "q2": [
+              117.49423396988159
+            ],
+            "q3": [
+              117.49423396988159
+            ]
+          },
+          "target": {
+            "min": [
+              117.49423396988159
+            ],
+            "max": [
+              117.49423396988159
+            ],
+            "q1": [
+              117.49423396988159
+            ],
+            "q2": [
+              117.49423396988159
+            ],
+            "q3": [
+              117.49423396988159
+            ]
+          }
+        }
+      }
+    },
+    "shields": {
+      "effective": {
+        "hp": {
+          "anemo": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "sd": 0
+          },
+          "cryo": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "sd": 0
+          },
+          "dendro": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "sd": 0
+          },
+          "electro": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "sd": 0
+          },
+          "geo": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "sd": 0
+          },
+          "hydro": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "sd": 0
+          },
+          "normalized": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "sd": 0
+          },
+          "physical": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "sd": 0
+          },
+          "pyro": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "sd": 0
+          }
+        },
+        "uptime": {
+          "min": 0,
+          "max": 0,
+          "mean": 0,
+          "sd": 0
+        }
+      }
+    },
+    "field_time": [
+      {
+        "min": 5,
+        "max": 5,
+        "mean": 5,
+        "sd": 0
+      }
+    ],
+    "total_source_energy": [
+      {}
+    ],
+    "source_reactions": [
+      {}
+    ],
+    "character_actions": [
+      {
+        "sources": {
+          "attack": {
+            "min": 1,
+            "max": 1,
+            "mean": 1,
+            "sd": 0
+          }
+        }
+      }
+    ],
+    "target_aura_uptime": [
+      {}
+    ],
+    "end_stats": [
+      {
+        "ending_energy": {
+          "min": 70,
+          "max": 70,
+          "mean": 70,
+          "sd": 0
+        }
+      }
+    ],
+    "dev_debug": {
+      "seeded_dps": [
+        {
+          "dps": 23.498846793976316
+        }
+      ]
+    }
+  },
+  "key_type": "NONE"
+}
