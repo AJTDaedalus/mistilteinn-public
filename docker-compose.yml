@@ -32,6 +32,25 @@
 #   - Host ports are 8001/4201, not fairy's 8000/4200, so both stacks can run
 #     at once on this box.
 # ---------------------------------------------------------------------------
+
+# The project name, pinned rather than inherited from the directory.
+#
+# Compose derives it from the **containing folder** by default, and every network,
+# container and volume here is named after it. So the whole separation from fairy above —
+# "we do not join fairy's network" — rested on this checkout happening to be called
+# `mistilteinn`. It is, on this box and on the prod box, which is why nothing ever went
+# wrong and why nothing would have said so.
+#
+# `tests/unit/test_prod_stack_can_coexist_with_fairy.py` asserts that every network belongs
+# to this project, and it could not fail while the directory supplied the answer: run the
+# same files from a folder named anything else and the network is `<that folder>_default`.
+# `ci_local --clean` found exactly that, from its fresh clone in a temp directory — the
+# check was green for a reason unrelated to the compose files.
+#
+# Pinning it changes nothing about the running stacks (both are already `mistilteinn`) and
+# makes the guarantee the file's own rather than the filesystem's.
+name: mistilteinn
+
 services:
   backend:
     build:

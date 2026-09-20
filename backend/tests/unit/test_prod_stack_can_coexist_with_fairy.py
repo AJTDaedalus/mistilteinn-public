@@ -28,6 +28,7 @@ import subprocess
 import pytest
 
 REPO = __import__("pathlib").Path(__file__).resolve().parents[3]
+COMPOSE = REPO / "docker-compose.yml"
 
 #: Placeholders. `docker compose config` interpolates before it validates, and an unset
 #: variable is a warning plus an empty string — which would make these assertions pass for
@@ -109,6 +110,38 @@ def test_every_network_belongs_to_this_project():
             f"network {name!r} resolves to {actual!r}, which is not this project's. Sharing "
             f"a network with the other stack on this box is how the two get confused."
         )
+
+
+def test_the_project_name_is_pinned_rather_than_taken_from_the_directory():
+    """Every network and container here is named after the Compose *project*.
+
+    Compose derives that from the containing folder unless the file says otherwise — so the
+    separation from fairy that this module exists to guard rested on the checkout being
+    called `mistilteinn`, and `test_every_network_belongs_to_this_project` could not fail
+    while the directory was supplying its answer.
+
+    `ci_local --clean` found it from a fresh clone in a temp directory: the same files
+    resolved to `<tempdir>_default`. Green here, red there, and neither had anything to do
+    with the compose files.
+    """
+    assert _config().get("name") == "mistilteinn"
+
+
+def test_the_compose_file_declares_the_name_itself():
+    """Read the file, not the resolved config.
+
+    `docker compose config` reports the same name whether it was declared or inherited
+    from a directory that happens to match, which is the confusion this whole pair is
+    about. Only the text can say which one it is.
+    """
+    declared = [
+        line for line in COMPOSE.read_text().splitlines() if line.startswith("name:")
+    ]
+
+    assert declared == ["name: mistilteinn"], (
+        "docker-compose.yml no longer pins its project name, so every network falls back "
+        "to being named after whatever folder the checkout sits in"
+    )
 
 
 def test_prod_owns_its_database_rather_than_reaching_for_a_host_port():
