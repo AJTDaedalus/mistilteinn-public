@@ -2,7 +2,7 @@
 
 Status: **Chunk U is done and merged (PR #323). V.1 is done and merged (PR #322).** Two
 gate fixes came out of it and merged first (PR #321) — see the LOG. V.2 waits on nanoka
-publishing 7.1; W is unstarted. All owner decisions answered (`docs/DESIGN_upstream_bump_2026_09.md`
+publishing 7.1. **W is done and merged (PR #325).** All owner decisions answered (`docs/DESIGN_upstream_bump_2026_09.md`
 §5, 2026-09-19), so nothing here is blocked on a ruling. V.2 waits on nanoka publishing 7.1.
 Gate for every PR: `cd backend && python -m scripts.ci_local` exits 0 on the exact PR head
 (`--clean` for U, which changes the wasm build).
@@ -103,15 +103,18 @@ Gate for every PR: `cd backend && python -m scripts.ci_local` exits 0 on the exa
 
 - [ ] **V.4 Re-derive the coverage fixture** if V lands after U (DESIGN §4).
 
-## Chunk W — Traveler and Skirk story buffs (branch TBD)
+## Chunk W — the Traveler's story buffs (`feat/traveler-story-buffs`, merged)
 
-From D5: **match gcsim.** gcsim applies the True Moon archon quest buffs (`473e89986`) and the
-older Skirk story buff by default; we model neither, so `/explain` is about 27 % below the
-simulator on Travelers **today**, before any re-pin. Sized separately; not a blocker for U or V.
+From D5: **match gcsim.** Done — `docs/LOG_mistilteinn.md` §W.
 
-- [ ] **W.1** Source the buff values and their conditions from gcsim at the pin, cited by file
+**All three buffs are the Traveler's**, including the one gcsim calls `skirk_story_buff`,
+which is what the *Traveler* gets for finishing Skirk's story quest. Skirk has none, and no
+character outside `internal/characters/traveler/` has one — which is smaller and clearer
+than the scope written here before anybody read the source.
+
+- [x] **W.1** Source the buff values and their conditions from gcsim at the pin, cited by file
   and line (the citation rule: never from memory).
-- [ ] **W.2** Apply them in the stat chain as data a shared evaluator reads (DESIGN §1 A6 —
+- [x] **W.2** Apply them in the stat chain as data a shared evaluator reads (DESIGN §1 A6 —
   no per-character branches), default-on, and explainable in `/explain`.
-- [ ] **W.3** Prove it: a crossval case over a Traveler and a Skirk team agrees with gcsim
+- [x] **W.3** Prove it: a crossval case over a Traveler and a Skirk team agrees with gcsim
   inside a stated tolerance, with its own paragraph — do not widen an existing one.
