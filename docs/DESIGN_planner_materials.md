@@ -196,15 +196,44 @@ Mora (§5), bulk paste or CSV, an undo history, per-material notes, and any atte
 reconcile a hand edit against a later import — §2 is the ruling that there is nothing to
 reconcile.
 
-## 8. Open questions
+## 8. Open questions — all three answered, 2026-09-20
 
-- **OQ-M1** — should the mora balance persist too? It is typed into every plan request today
-  and thrown away, which is the same papercut this feature fixes for everything except the one
-  quantity a user has to type. It is not a `user_materials` row and GOOD has no field for it,
-  so it needs a home of its own. Deliberately not decided here.
-- **OQ-M2** — should the GOOD import surface on `/inventory` warn, before it runs, that it
-  replaces hand-edited counts? §2's mitigation lives on the Materials tab; the user who is
-  about to lose an edit is standing on a different page.
-- **OQ-M3** — should the tab offer a *materials in the current plan* filter? Cheap, since the
-  plan response already names them, and it is the fastest route from "this bill is wrong" to
-  the row that is wrong. Left out of the task list to keep the first cut small.
+- **OQ-M1 — should the mora balance persist? _Yes._** `users.mora`, nullable, prefilled into
+  every plan and editable in two places: a block above the materials list, and the plan form's
+  own *Current Mora* box, which now saves what you type instead of discarding it.
+
+  **On `users`, not in `user_materials`.** It is not a material: a row there would be counted
+  by `stock_is_empty`, and that question is *"was an inventory ever imported"* — which a typed
+  mora balance is not an answer to. It would also be counted by "materials held" and matched
+  by searches that mean something else.
+
+  **Three states, not two.** Omitting the key leaves the balance alone; an explicit `null`
+  clears it back to "has not said"; `0` means you hold none. The route reads
+  `model_fields_set` to tell the first two apart, rather than inventing a sentinel default
+  that would show up in the published schema and the generated client meaning nothing to
+  either. The planner already distinguished null from zero — a shortfall computed against a
+  number nobody gave is a number nobody should act on — and this keeps that true.
+
+  **An import does not touch it**, which is the single exception to §2 and is not an
+  inconsistency: GOOD carries no currency field, so an import has nothing to say about mora.
+  Replacing it with nothing would be inventing an answer. A test pins it.
+
+  On the tab, an **emptied mora box means unsay it**, where an emptied count means untouched.
+  That is the one place the two differ, and it is because the states differ: a material you
+  hold none of is absent from an export anyway.
+
+- **OQ-M2 — should the import surface warn? _Yes._** A standing line above the GOOD import
+  controls on `/inventory`: it replaces your material counts including hand corrections, and
+  it does not touch your mora.
+
+  **Unconditional, deliberately.** Warning *only* when the account has hand-edited counts
+  would mean storing which ones were — the `source: manual` flag §2 argues against — so the
+  precision would cost the very thing the design refuses: a second layer of state, added to
+  improve the wording of a warning.
+
+- **OQ-M3 — should the tab filter to the current plan? _Yes._** An *In this plan* chip beside
+  *Owned only*, shown only when a plan exists to narrow to. The plan response already names
+  every material, so it costs a `Set`. Measured on a real plan: **514 rows → 16.**
+
+  A filter that is always present and usually does nothing teaches a reader to ignore it,
+  which is why it is hidden rather than disabled before anything is priced.

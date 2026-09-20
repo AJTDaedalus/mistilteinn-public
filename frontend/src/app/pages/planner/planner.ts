@@ -113,6 +113,24 @@ export class PlannerPage implements OnInit {
    */
   protected readonly materialsSeen = signal(false);
 
+  /**
+   * Every material the current plan names, for the Materials tab's *In this plan* filter.
+   *
+   * Read off the plan that is already on screen rather than asked for again — the response
+   * lists them. `total` is skipped because it repeats what the sections already named.
+   */
+  protected readonly planMaterialIds = computed(() => {
+    const priced = this.plan();
+    if (!priced) return [];
+    return [
+      ...new Set(
+        priced.sections.flatMap((section) =>
+          section.materials.map((line) => line.material_id),
+        ),
+      ),
+    ];
+  });
+
   protected readonly characters = signal<CharacterSummary[]>([]);
   protected readonly weapons = signal<WeaponSummary[]>([]);
   protected readonly options = signal<PlannerOptions | null>(null);
@@ -456,6 +474,39 @@ export class PlannerPage implements OnInit {
     ]);
     this.characters.set(characters.items);
     this.options.set(options);
+
+    // **Prefilled, not asked for again.** Mora was the one planner quantity that had to be
+    // retyped into every plan and was then thrown away — OQ-M1, answered 2026-09-20. It is
+    // stored on the account now, so the form starts from it. A failure here costs the
+    // prefill and not the page: the box is typeable either way.
+    try {
+      this.moraOwned.set((await this.planner.materials()).mora ?? null);
+    } catch {
+      this.moraOwned.set(null);
+    }
+  }
+
+  /**
+   * Persist the mora balance the user just typed, then re-price if a plan is on screen.
+   *
+   * **On `change`, like every other number on this page** — bound per keystroke it would
+   * store `4`, then `42`, then `421`, which is the defect #328 fixed on the bill's Owned
+   * cells. Empty means *unsay it*, which the planner reports differently from zero.
+   */
+  protected async commitMora(raw: unknown): Promise<void> {
+    const next =
+      raw === '' || raw === null || raw === undefined ? null : Math.floor(Number(raw));
+    if (next !== null && (!Number.isFinite(next) || next < 0)) return;
+    this.moraOwned.set(next);
+    this.stockError.set(null);
+    try {
+      await this.planner.saveMora(next);
+    } catch {
+      this.stockError.set('That mora balance could not be saved.');
+      return;
+    }
+    const request = this.lastRequest();
+    if (request) await this.price({ ...request, mora_owned: next });
   }
 
   protected pickCharacter(ids: readonly string[]): void {

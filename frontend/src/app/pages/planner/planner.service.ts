@@ -15,6 +15,7 @@ export type BuildOption = components['schemas']['BuildOption'];
 export type MaterialStockRead = components['schemas']['MaterialStockRead'];
 export type MaterialStockList = components['schemas']['MaterialStockList'];
 export type MaterialStockUpdate = components['schemas']['MaterialStockUpdate'];
+export type MaterialStockPatched = components['schemas']['MaterialStockPatched'];
 
 /**
  * The leveling planner's two calls.
@@ -54,9 +55,23 @@ export class PlannerService {
    * `docs/DESIGN_planner_materials.md` §2 — which is why both callers of this say so on
    * screen rather than leaving the user to discover it after a rescan.
    */
-  async saveMaterials(counts: MaterialStockUpdate[]): Promise<MaterialStockRead[]> {
+  async saveMaterials(counts: MaterialStockUpdate[]): Promise<MaterialStockPatched> {
     const { data, error } = await this.api.PATCH('/api/v1/planner/materials', {
       body: { counts },
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Record the mora balance, or clear it with `null`.
+   *
+   * **Omitting the key and sending `null` mean different things** — leave it alone, and unsay
+   * it — so this always sends the key and `saveMaterials` never does.
+   */
+  async saveMora(mora: number | null): Promise<MaterialStockPatched> {
+    const { data, error } = await this.api.PATCH('/api/v1/planner/materials', {
+      body: { mora },
     });
     if (error) throw error;
     return data;

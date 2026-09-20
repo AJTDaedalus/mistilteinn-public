@@ -51,6 +51,13 @@ map are in every nanoka detail fixture; `level_exp` appeared in `app/` only insi
 `/planner` prices them, subtracting the `materials` map that a GOOD export has always carried
 and `good_importer` always ignored — 1,384 entries in the owner's own file.
 
+**Mora is stored on `users`, and it is the one planner quantity an import does not touch** —
+GOOD carries no currency field, so an import has nothing to say about it and replacing it with
+nothing would be inventing an answer. Three states, not two: an omitted key leaves it alone, an
+explicit `null` unsays it, `0` means you hold none, and `PlanRead.mora.short` stays null until
+you have said. It is **not** a `user_materials` row, because that table is what
+`stock_is_empty` counts and that question is "was an inventory ever imported".
+
 **The stock a bill is priced against now has a second writer: you.** `GET`/`PATCH
 /api/v1/planner/materials` and a `Materials` tab beside the plan, plus an editable `Owned`
 cell on every bill row. **A GOOD import still replaces every count**, deliberately — `/roster`

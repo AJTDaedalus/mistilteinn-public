@@ -30,7 +30,7 @@
        active tab alone would discard half-typed counts on every tab switch. -->
   @if (materialsSeen()) {
     <div [hidden]="tab() !== 'materials'">
-      <planner-materials />
+      <planner-materials [planMaterialIds]="planMaterialIds()" />
     </div>
   }
 
@@ -98,6 +98,10 @@
 
                **First, because it is the one thing here the user has to supply.** It sat last,
                after four fieldsets of things the app already knew. -->
+          <!-- **Stored on the account, not retyped every plan.** No GOOD export carries a
+               currency balance, so this is the one number here nobody can import — which is
+               exactly why it is remembered. Committed on `change`, for the reason #328 gives:
+               per keystroke it would store 4, then 42, then 421. -->
           <label>
             Current Mora
             <input
@@ -105,8 +109,9 @@
               min="0"
               step="1000"
               inputmode="numeric"
+              placeholder="not set"
               [ngModel]="moraOwned()"
-              (ngModelChange)="moraOwned.set($event === null || $event === '' ? null : +$event)"
+              (change)="commitMora($any($event.target).value)"
             />
           </label>
         </fieldset>

@@ -27,6 +27,19 @@
       <span>Owned only</span>
     </label>
 
+    @if (hasPlan()) {
+      <!-- Only when there is a plan to narrow to. A filter that is always there and usually
+           does nothing is a control that teaches you to ignore it. -->
+      <label class="toggle">
+        <input
+          type="checkbox"
+          [ngModel]="planOnly()"
+          (ngModelChange)="planOnly.set($event)"
+        />
+        <span>In this plan</span>
+      </label>
+    }
+
     <p class="count">{{ ownedCount() }} materials held</p>
   </div>
 
@@ -38,29 +51,57 @@
     }
 
     <div class="actions">
-      <button type="button" class="save" (click)="save()" [disabled]="!dirty().length || saving()">
+      <button type="button" class="save" (click)="save()" [disabled]="!hasChanges() || saving()">
         @if (saving()) {
           Saving…
-        } @else if (dirty().length) {
-          Save {{ dirty().length }} change{{ dirty().length === 1 ? '' : 's' }}
+        } @else if (changeCount()) {
+          Save {{ changeCount() }} change{{ changeCount() === 1 ? '' : 's' }}
         } @else {
           Save
         }
       </button>
-      @if (dirty().length) {
+      @if (hasChanges()) {
         <button type="button" class="revert" (click)="revert()">Discard changes</button>
       }
-      @if (saved() && !dirty().length) {
+      @if (saved() && !hasChanges()) {
         <span class="ok" role="status">Saved.</span>
       }
     </div>
 
     @if (!visible().length) {
       <p class="hint">
-        Nothing matches. @if (ownedOnly()) { Turn off <em>Owned only</em> to reach a material
-        your import missed. }
+        Nothing matches.
+        @if (ownedOnly()) { Turn off <em>Owned only</em> to reach a material your import
+        missed. }
+        @if (planOnly()) { Turn off <em>In this plan</em> to reach the rest of the
+        catalogue. }
       </p>
     } @else {
+      <!-- **Mora sits above the list, not in it.** No GOOD export reports a balance, so it is
+           the one number here an import does not replace — and a row in the table would be
+           counted by "materials held" and by every search that misses it.
+           `DESIGN_planner_materials.md` §8 OQ-M1. -->
+      <label class="mora">
+        <span class="mora__label">Mora</span>
+        <input
+          type="number"
+          min="0"
+          step="1"
+          class="mora__input"
+          [class.row--dirty]="moraDirty()"
+          placeholder="not set"
+          aria-label="Mora you hold"
+          [ngModel]="moraValue()"
+          (ngModelChange)="setMora($event)"
+        />
+        <!-- Empty is *unsaid*, which the planner reports differently from zero: it refuses to
+             compute a shortfall at all rather than claim you are short by the whole bill. -->
+        <span class="mora__note">
+          Not in any GOOD export — type it yourself. Leave it empty and the plan totals mora
+          without saying whether you can afford it.
+        </span>
+      </label>
+
       <p class="hint count-line">{{ visible().length }} shown</p>
       <!-- **The table scrolls in its own box, rather than the page scrolling for it.**
            Rendering every row made the page 25,349 pixels tall against a real inventory —
@@ -105,10 +146,5 @@
       </div>
     }
 
-    <!-- Mora is the one quantity on the planner nobody can import: GOOD carries no currency
-         field, so the plan asks for it per request instead of storing it here. -->
-    <p class="hint">
-      Mora is not on this page — no GOOD export reports a balance, so the plan asks for it.
-    </p>
   }
 </div>

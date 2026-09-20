@@ -87,6 +87,41 @@
 
   .count-line { margin-bottom: calc(var(--space-1) * -1); }
 
+  /* Mora is above the table rather than in it, so it needs its own frame — otherwise it reads
+     as a stray control between the buttons and the list. */
+  .mora {
+    display: grid;
+    /* **Bounded, not full width.** Stretched across 1440px the label sat at the far left and
+       its input at the far right, with a metre of nothing between them — two controls rather
+       than one row. The note underneath is what sets the width. */
+    max-width: 34rem;
+    grid-template-columns: 1fr 10rem;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-3);
+    border: 1px solid var(--surface-rule);
+    border-radius: var(--radius-1);
+    background: var(--surface);
+  }
+
+  .mora__label {
+    font-family: var(--font-display);
+    color: var(--brass);
+  }
+
+  .mora__input {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .mora__note {
+    grid-column: 1 / -1;
+    font-size: var(--text-xs);
+    color: var(--ink-dim);
+  }
+
   table {
     width: 100%;
     border-collapse: collapse;
@@ -147,6 +182,7 @@
 @media (max-width: 40rem) {
   .stock {
     .controls { flex-direction: column; align-items: stretch; }
+    .mora { grid-template-columns: 1fr; }
     .count { margin-left: 0; }
     td.num input { width: 100%; }
   }

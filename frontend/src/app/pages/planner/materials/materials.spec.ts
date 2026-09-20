@@ -31,8 +31,9 @@ function makeTab(planner: Partial<PlannerService> = {}): PlannerMaterials {
       {
         provide: PlannerService,
         useValue: {
-          materials: vi.fn(async () => ({ items: ITEMS, owned_count: 2 })),
-          saveMaterials: vi.fn(async () => []),
+          materials: vi.fn(async () => ({ items: ITEMS, owned_count: 2, mora: null })),
+          saveMaterials: vi.fn(async () => ({ items: [] })),
+          saveMora: vi.fn(async () => ({ items: [], mora: null })),
           ...planner,
         },
       },
@@ -75,9 +76,9 @@ describe('the materials tab', () => {
     // Asserted on the request body rather than the rendered table: a save that quietly sent
     // all 514 rows would look identical on screen, and would overwrite counts the user never
     // touched with whatever the page happened to be holding.
-    const saveMaterials = vi.fn(async () => [
-      item({ material_id: TEACHINGS, name: 'Teachings of Ballad', count: 12 }),
-    ]);
+    const saveMaterials = vi.fn(async () => ({
+      items: [item({ material_id: TEACHINGS, name: 'Teachings of Ballad', count: 12 })],
+    }));
     const tab = makeTab({ saveMaterials });
     await tab.ngOnInit();
 
@@ -88,7 +89,7 @@ describe('the materials tab', () => {
   });
 
   it('does not count a row edited back to its original value as a change', async () => {
-    const saveMaterials = vi.fn(async () => []);
+    const saveMaterials = vi.fn(async () => ({ items: [] }));
     const tab = makeTab({ saveMaterials });
     await tab.ngOnInit();
 
@@ -105,9 +106,9 @@ describe('the materials tab', () => {
   it('reconciles from the response, not from what it sent', async () => {
     // The server is what the planner will read. Echoing our own numbers back into the table
     // would show a save that had not happened if it ever wrote something different.
-    const saveMaterials = vi.fn(async () => [
-      item({ material_id: TEACHINGS, name: 'Teachings of Ballad', count: 999 }),
-    ]);
+    const saveMaterials = vi.fn(async () => ({
+      items: [item({ material_id: TEACHINGS, name: 'Teachings of Ballad', count: 999 })],
+    }));
     const tab = makeTab({ saveMaterials });
     await tab.ngOnInit();
 
@@ -189,6 +190,68 @@ describe('the materials tab', () => {
 
     expect(tab['dirty']()).toHaveLength(0);
     expect(tab['value'](tab['rows']()[0])).toBe(40);
+  });
+
+  it('filters to the materials the current plan needs', async () => {
+    // OQ-M3: the plan response already names them, so this costs a Set. It is the fastest
+    // route from "this bill looks wrong" to the rows that are wrong, and unlike the search
+    // it does not need the user to remember what a material is called.
+    const tab = makeTab();
+    await tab.ngOnInit();
+    // `planMaterialIds` is a signal input, and this component is built by hand rather than
+    // through a fixture, so there is no `setInput`. A signal is a function, so standing one
+    // in works — and the assertions below fail if `visible()` stops consulting it.
+    (tab as unknown as { planMaterialIds: () => number[] }).planMaterialIds = () => [SLIVER];
+
+    expect(tab['hasPlan']()).toBe(true);
+    tab['planOnly'].set(true);
+
+    expect(tab['visible']().map((row) => row.item.material_id)).toEqual([SLIVER]);
+  });
+
+  it('hides the plan filter when nothing has been priced', async () => {
+    // A filter that is always there and usually does nothing teaches you to ignore it.
+    const tab = makeTab();
+    await tab.ngOnInit();
+
+    expect(tab['hasPlan']()).toBe(false);
+  });
+
+  it('records a mora balance as one change, saved on its own call', async () => {
+    // `saveMaterials` never sends the mora key, because omitting it and sending null mean
+    // different things to the route — leave it alone, and unsay it.
+    const saveMora = vi.fn(async () => ({ items: [], mora: 4_210_000 }));
+    const saveMaterials = vi.fn(async () => ({ items: [] }));
+    const tab = makeTab({ saveMora, saveMaterials });
+    await tab.ngOnInit();
+
+    tab['setMora'](4_210_000);
+    expect(tab['moraDirty']()).toBe(true);
+    expect(tab['changeCount']()).toBe(1);
+
+    await tab['save']();
+
+    expect(saveMora).toHaveBeenCalledWith(4_210_000);
+    expect(saveMaterials).not.toHaveBeenCalled();
+    expect(tab['moraDirty']()).toBe(false);
+  });
+
+  it('treats an emptied mora box as unsaid, where an emptied count is untouched', async () => {
+    // The one place emptiness is not "untouched": a material you hold none of is absent from
+    // the export anyway, but a mora balance you never gave is a state the planner reports
+    // differently from zero — it refuses to compute a shortfall at all.
+    const saveMora = vi.fn(async () => ({ items: [], mora: null }));
+    const tab = makeTab({
+      saveMora,
+      materials: vi.fn(async () => ({ items: ITEMS, owned_count: 2, mora: 500 })),
+    });
+    await tab.ngOnInit();
+
+    tab['setMora']('');
+    expect(tab['moraValue']()).toBeNull();
+    await tab['save']();
+
+    expect(saveMora).toHaveBeenCalledWith(null);
   });
 
   it('says so when the list cannot be loaded', async () => {

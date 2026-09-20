@@ -26,7 +26,13 @@ function makePage(planner: Partial<PlannerService> = {}): PlannerPage {
     providers: [
       {
         provide: PlannerService,
-        useValue: { options: vi.fn(async () => OPTIONS), plan: vi.fn(), ...planner },
+        useValue: {
+          options: vi.fn(async () => OPTIONS),
+          plan: vi.fn(),
+          materials: vi.fn(async () => ({ items: [], owned_count: 0, mora: null })),
+          saveMora: vi.fn(async () => ({ items: [], mora: null })),
+          ...planner,
+        },
       },
       {
         provide: CatalogueService,
@@ -255,6 +261,105 @@ describe('PlannerPage', () => {
   });
 });
 
+describe('the stored mora balance', () => {
+  const result = (name: string) =>
+    ({ character_name: name, sections: [], total: section() }) as unknown as PlanRead;
+
+  it('prefills the form from the account, rather than asking again', async () => {
+    // OQ-M1: mora was the one planner quantity with no importable source, retyped into every
+    // plan request and thrown away.
+    const page = makePage({
+      materials: vi.fn(async () => ({ items: [], owned_count: 0, mora: 4_210_000 })),
+    });
+    await page.ngOnInit();
+
+    expect(page['moraOwned']()).toBe(4_210_000);
+  });
+
+  it('leaves the box empty when the account has never said', async () => {
+    // **Null is not zero.** A plan that says you are three million short when you never said
+    // what you hold is worse than one that says nothing.
+    const page = makePage();
+    await page.ngOnInit();
+
+    expect(page['moraOwned']()).toBeNull();
+  });
+
+  it('still renders when the balance cannot be fetched', async () => {
+    // A dead request costs the prefill, not the page — the box is typeable either way.
+    const page = makePage({ materials: vi.fn(async () => { throw new Error('nope'); }) });
+    await page.ngOnInit();
+
+    expect(page['moraOwned']()).toBeNull();
+  });
+
+  it('saves what was typed and re-prices with it', async () => {
+    const sent: PlanRequest[] = [];
+    const plan = vi.fn(async (body: PlanRequest) => { sent.push(body); return result('A'); });
+    const saveMora = vi.fn(async () => ({ items: [], mora: 900 }));
+    const page = makePage({ plan, saveMora });
+    await page.ngOnInit();
+    page['characterId'].set('c1');
+    await page['run']();
+
+    await page['commitMora']('900');
+
+    expect(saveMora).toHaveBeenCalledWith(900);
+    expect(sent[1].mora_owned).toBe(900);
+  });
+
+  it('treats an emptied box as unsaid, not as zero', async () => {
+    const saveMora = vi.fn(async () => ({ items: [], mora: null }));
+    const page = makePage({ saveMora });
+    await page.ngOnInit();
+
+    await page['commitMora']('');
+
+    expect(saveMora).toHaveBeenCalledWith(null);
+    expect(page['moraOwned']()).toBeNull();
+  });
+
+  it('does not re-price when the balance could not be saved', async () => {
+    const plan = vi.fn(async () => result('A'));
+    const page = makePage({
+      plan,
+      saveMora: vi.fn(async () => { throw new Error('nope'); }),
+    });
+    await page.ngOnInit();
+    page['characterId'].set('c1');
+    await page['run']();
+
+    await page['commitMora']('900');
+
+    expect(plan).toHaveBeenCalledTimes(1);
+    expect(page['stockError']()).toBeTruthy();
+  });
+});
+
+describe('the materials a plan names', () => {
+  it('collects them from the sections, de-duplicated, for the tab\'s filter', async () => {
+    const page = makePage();
+    await page.ngOnInit();
+    page['plan'].set({
+      character_name: 'A',
+      sections: [
+        { ...section(), materials: [{ material_id: 1 }, { material_id: 2 }] },
+        { ...section(), materials: [{ material_id: 2 }, { material_id: 3 }] },
+      ],
+      total: section(),
+    } as unknown as PlanRead);
+
+    expect(page['planMaterialIds']()).toEqual([1, 2, 3]);
+  });
+
+  it('is empty before anything is priced, so the filter chip stays hidden', async () => {
+    const page = makePage();
+    await page.ngOnInit();
+
+    expect(page['planMaterialIds']()).toEqual([]);
+  });
+});
+
 /**
  * Correcting a count from the bill that shows it is wrong.
  *
@@ -274,7 +379,7 @@ describe('correcting an owned count from the bill', () => {
     // and a stored one cannot look the same.
     const sent: PlanRequest[] = [];
     const plan = vi.fn(async (body: PlanRequest) => { sent.push(body); return result('Ayaka'); });
-    const saveMaterials = vi.fn(async () => []);
+    const saveMaterials = vi.fn(async () => ({ items: [] }));
     const page = makePage({ plan, saveMaterials });
     await page.ngOnInit();
     page['characterId'].set('c1');
@@ -298,7 +403,7 @@ describe('correcting an owned count from the bill', () => {
     // different object and the page adopting it whole.
     const second = result('Re-priced');
     const plan = vi.fn().mockResolvedValueOnce(result('First')).mockResolvedValueOnce(second);
-    const page = makePage({ plan, saveMaterials: vi.fn(async () => []) });
+    const page = makePage({ plan, saveMaterials: vi.fn(async () => ({ items: [] })) });
     await page.ngOnInit();
     page['characterId'].set('c1');
 
@@ -321,7 +426,7 @@ describe('correcting an owned count from the bill', () => {
       .mockResolvedValueOnce(result('initial'))
       .mockImplementationOnce(() => held)
       .mockResolvedValueOnce(newer);
-    const page = makePage({ plan, saveMaterials: vi.fn(async () => []) });
+    const page = makePage({ plan, saveMaterials: vi.fn(async () => ({ items: [] })) });
     await page.ngOnInit();
     page['characterId'].set('c1');
     await page['run']();
@@ -354,7 +459,7 @@ describe('correcting an owned count from the bill', () => {
   });
 
   it('ignores an emptied box rather than saving a zero', async () => {
-    const saveMaterials = vi.fn(async () => []);
+    const saveMaterials = vi.fn(async () => ({ items: [] }));
     const page = makePage({ plan: vi.fn(async () => result('Ayaka')), saveMaterials });
     await page.ngOnInit();
     page['characterId'].set('c1');
@@ -366,7 +471,7 @@ describe('correcting an owned count from the bill', () => {
   });
 
   it('ignores a correction made before anything has been priced', async () => {
-    const saveMaterials = vi.fn(async () => []);
+    const saveMaterials = vi.fn(async () => ({ items: [] }));
     const page = makePage({ saveMaterials });
     await page.ngOnInit();
 
