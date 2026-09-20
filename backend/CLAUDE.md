@@ -102,7 +102,7 @@ ruff check app/ tests/ scripts/seed_db.py scripts/verify_seed.py \
     scripts/capture_nanoka_fixtures.py scripts/yuanshen/ scripts/bench_optimizer.py \
     scripts/gcsim/ scripts/kernel/ scripts/inject.py scripts/ci_local.py \
     scripts/download_icons.py scripts/shoot.py scripts/audit_genshin_optimizer.py \
-    scripts/measure_substat_frequencies.py
+    scripts/measure_substat_frequencies.py scripts/nanoka_latest_version.py
 ```
 
 `scripts/` as a whole is not linted — it carries ~65 pre-existing violations in unrelated

@@ -275,13 +275,29 @@ a job with progress, never a request that blocks.
   imports at `/api/v1/artifacts/import/good`; `/api/v1/builds/{id}/explain` and
   `/compare-weapons` run the Chunk F damage chain over it; `/api/v1/rotations` authors and
   compiles rotations.
-- **Upstream nanoka has moved to 7.0.52 and this repo has not.** That is a deliberate pin, not
-  drift: the committed fixtures, `nanoka_transport.FIXTURE_VERSION` and
+- **Upstream nanoka is at 7.0.54 and the committed fixtures are 7.0.51.** That is a
+  deliberate pin, not drift: the fixtures, `nanoka_transport.FIXTURE_VERSION` and
   `verify_seed.FIXTURE_VERSION` all name **7.0.51**, and
-  `tests/unit/test_capture_pinning.py` fails if they stop agreeing. Bumping it is a chunk of
-  its own. **`capture_nanoka_fixtures.py` without `--version` follows upstream**, which is
-  what it silently did in N.2 — pulling two characters at 7.0.52 into a 7.0.51 directory and
+  `tests/unit/test_capture_pinning.py` fails if they stop agreeing.
+  **`capture_nanoka_fixtures.py` without `--version` follows upstream**, which is what it
+  silently did in N.2 — pulling two characters at 7.0.52 into a 7.0.51 directory and
   rewriting three index files, one with real content changes. Pass the version.
+
+  **But the fixtures are a snapshot of record, not a re-seed source, because nanoka deletes
+  old versions.** `gi/6.7` is a 404 today, and this repo commits **9** of the ~1,086 payloads
+  a seed reads — so a pin upstream has dropped is one nobody can re-seed from, and that
+  failure lands on the day prod needs re-seeding. Owner ruling, 2026-09-19: **a re-seed takes
+  the version nanoka publishes now.** `scripts/nanoka_latest_version.py` resolves it once,
+  the prod job passes it to `seed_db`, and `verify_seed --live` then checks the database
+  against whatever `seed_runs` recorded. What the fixtures still pin is the payload shape the
+  enums and mappings were derived from.
+
+  Going 7.0.51 → 7.0.54 would change **nothing** — identical index keys (150/286/65/585), no
+  schema drift across all 1,086 payloads, and all nine committed detail fixtures
+  byte-identical. The only differences are beta tuning and **one released weapon that lost
+  its whole ascension bill**: Exaiphanes Blade (11521) reads 0 mora and no materials from
+  7.0.52 on, while `gi/7.0` still carries it. Price it before trusting the planner on that
+  weapon. `docs/RESEARCH_nanoka_bump_7_0_54.md`.
 - **Never emit `swap_delay=0` in a gcsim config.** gcsim queues a character swap to land
   `Delays.Swap` frames later, so at zero it **never lands** and any rotation touching a second
   character dies with *"requested next char X is not active and next action is not swap"*.
