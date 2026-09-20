@@ -56,6 +56,14 @@ FIXTURE_DIR = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "nano
 #: The version `tests/fixtures/nanoka_gi/` was captured at — see its PROVENANCE.md. A seed
 #: from a different version is a **failure** in offline mode, not a skip: the counts would
 #: be compared against the wrong patch, and quietly passing would be worse than either.
+#:
+#: **This is a snapshot of record, not a re-seed source, and not a pin a re-seed follows.**
+#: The enums and the payload mappings were derived from these files, and
+#: `test_capture_pinning.py` keeps them and the capture script agreeing. But nanoka keeps
+#: only the current cycle — `gi/6.7` is a 404 today — and the fixtures hold 9 of the ~1,086
+#: payloads a seed reads, so nothing here can re-seed a database. A re-seed takes the
+#: version nanoka publishes now (owner ruling, 2026-09-19) and verifies with `--live`
+#: against whatever `seed_runs` recorded.
 FIXTURE_VERSION = "7.0.51"
 
 #: The ids the anchors below are read off. Named rather than inlined so the query and the
