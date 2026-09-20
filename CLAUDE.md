@@ -63,7 +63,9 @@ carrying beyond this feature: **an input bound to `ngModelChange` saves every ke
 typing `9999` wrote 9, then 99, then 999 — and **Playwright's `fill()` cannot see it**,
 because it sets a value in one go, so the first drive looked perfect. And **`Number('')` is
 0**, so an emptied box reads as "I hold none of this". The other two were a page rendered
-25,349 pixels tall by 514 rows, and a mora row that would have offered an edit writing a row
+25,349 pixels tall by 514 rows — first "fixed" by capping the list at 80, which made the page
+short by hiding the list, and corrected by the owner to a scroll box (*"scroll the 514"*);
+**a fix that removes the thing being measured is not a fix** — and a mora row that would have offered an edit writing a row
 nothing reads — mora's `owned` is the balance typed into the request, which is why
 `MaterialLineRead` now carries `stock_backed`.
 

@@ -168,9 +168,15 @@ Five things. Every one was visible in a browser and invisible to 1,208 frontend 
 again.
 
 1. **The page was 25,349 pixels tall.** All 514 rows rendered against the owner's real
-   inventory (450 held). Nothing measures a page's height, so nothing failed. Capped at 80
-   with a line naming what is held back, and a dirty row is kept visible wherever it falls —
-   otherwise Save counts a change the user cannot see. Now 4,551.
+   inventory (450 held). Nothing measures a page's height, so nothing failed.
+
+   **The first fix was wrong and the owner caught it.** Capping the list at 80 rows made the
+   page short by hiding the list — *"scroll the 514"* (2026-09-20). The height was the
+   complaint; the row count never was. The table scrolls in its own `max-height` box now,
+   with a sticky header and the `scrolls` class that `styles.scss` gives a visible scrollbar.
+   Measured: page 1,329 px, a 648 px box holding 24,709 px of rows, all 514 reachable.
+   **A fix that makes the symptom go away by removing the thing being measured is not a
+   fix**, and it took someone looking at it to say so.
 2. **Typing a count fired eight requests and saved every intermediate value.** Bound per
    keystroke, "9999" wrote 9, then 99, then 999, then 9999 — so a user who typed and walked
    away left a half-typed number in their inventory. `(change)` rather than `(ngModelChange)`

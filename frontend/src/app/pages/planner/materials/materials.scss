@@ -71,17 +71,40 @@
     align-items: center;
   }
 
+  /* **The list scrolls here, not on the page.** Every row rendered made the page 25,349
+     pixels tall against a real inventory; capping the rows fixed the height by hiding the
+     list, which is the wrong half of the problem. A box with its own scrollbar keeps the page
+     a page *and* keeps all 514 reachable by dragging. */
+  .rows {
+    max-height: min(65vh, 44rem);
+    overflow-y: auto;
+    /* Keeps the track from reflowing the rows when it appears — the reason overlay
+       scrollbars exist, kept while taking a visible one. `styles.scss` §scrollbars. */
+    scrollbar-gutter: stable;
+    border: 1px solid var(--surface-rule);
+    border-radius: var(--radius-1);
+  }
+
+  .count-line { margin-bottom: calc(var(--space-1) * -1); }
+
   table {
     width: 100%;
     border-collapse: collapse;
   }
 
+  /* Sticky, because a scroll box whose header leaves is a column of numbers with no labels.
+     The background is opaque on purpose — rows scrolling under a transparent header read as
+     text on text. */
   th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
     text-align: left;
     font-size: var(--text-xs);
     color: var(--ink-dim);
     font-weight: normal;
-    padding: var(--space-1) var(--space-2);
+    padding: var(--space-2);
+    background: var(--bg);
     border-bottom: 1px solid var(--surface-rule);
   }
 

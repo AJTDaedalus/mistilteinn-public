@@ -9,16 +9,6 @@ import {
 } from '../planner.service';
 
 /**
- * How many rows are drawn at once.
- *
- * **Found by looking, not by testing.** Every row rendered made the page **25,349 pixels
- * tall** against the owner's real inventory — 514 rows, 450 of them held — which is a wall
- * rather than a list, and no test measures a page's height. A cap plus a line saying what it
- * hides keeps the page a page, and search reaches everything the cap does not.
- */
-const SHOWN = 80;
-
-/**
  * A typed entry as a count, or `null` when it is not one.
  *
  * An unparseable or negative entry reverts to untouched rather than being sent. The server
@@ -86,8 +76,19 @@ export class PlannerMaterials implements OnInit {
     this.rows().filter((row) => row.edited !== null && row.edited !== row.item.count),
   );
 
-  /** Everything the search and the toggle allow — which can still be all 514 rows. */
-  protected readonly matching = computed(() => {
+  /**
+   * Every row the search and the toggle allow — **all of them, however many that is.**
+   *
+   * Owner, 2026-09-20: *"scroll the 514"*. An earlier version capped this at 80 and said how
+   * many it was holding back, because rendering every row made the page **25,349 pixels
+   * tall** against a real inventory. The height was the real complaint and the cap was the
+   * wrong fix: the table scrolls in its own box now, so the page stays a page and the whole
+   * list is reachable by dragging rather than by guessing a search term.
+   *
+   * 514 rows is affordable in the DOM, and `catalogue-icon` already carries `loading="lazy"`,
+   * so the art arrives as you scroll rather than as 514 requests at once.
+   */
+  protected readonly visible = computed(() => {
     const term = this.search().trim().toLowerCase();
     const ownedOnly = this.ownedOnly();
     return this.rows().filter((row) => {
@@ -96,29 +97,6 @@ export class PlannerMaterials implements OnInit {
       return row.item.name.toLowerCase().includes(term);
     });
   });
-
-  /**
-   * What is actually drawn.
-   *
-   * A dirty row is always kept, wherever it falls: a count typed and then searched past
-   * would otherwise vanish from the table while still counting toward Save, so the user
-   * would be saving something they cannot see.
-   */
-  protected readonly visible = computed(() => {
-    const matching = this.matching();
-    if (matching.length <= SHOWN) return matching;
-    const shown = matching.slice(0, SHOWN);
-    const kept = new Set(shown.map((row) => row.item.material_id));
-    const dirtyBelow = matching
-      .slice(SHOWN)
-      .filter((row) => this.isDirty(row) && !kept.has(row.item.material_id));
-    return [...shown, ...dirtyBelow];
-  });
-
-  /** How many the cap is holding back. Said out loud, never silently dropped. */
-  protected readonly hidden = computed(() =>
-    Math.max(0, this.matching().length - this.visible().length),
-  );
 
   protected readonly ownedCount = computed(
     () => this.rows().filter((row) => this.value(row) > 0).length,
