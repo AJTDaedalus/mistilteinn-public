@@ -353,6 +353,18 @@ describe('correcting an owned count from the bill', () => {
     expect(page['stockError']()).toBeTruthy();
   });
 
+  it('ignores an emptied box rather than saving a zero', async () => {
+    const saveMaterials = vi.fn(async () => []);
+    const page = makePage({ plan: vi.fn(async () => result('Ayaka')), saveMaterials });
+    await page.ngOnInit();
+    page['characterId'].set('c1');
+    await page['run']();
+
+    await page['correctOwned'](104301, '');
+
+    expect(saveMaterials).not.toHaveBeenCalled();
+  });
+
   it('ignores a correction made before anything has been priced', async () => {
     const saveMaterials = vi.fn(async () => []);
     const page = makePage({ saveMaterials });

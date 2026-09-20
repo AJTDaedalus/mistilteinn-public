@@ -405,7 +405,13 @@
                          correction can move rows nobody touched, since spare Teachings craft
                          into Philosophies. The mora row is not editable — its Owned is the
                          balance typed above, not a stored count, so an input there would
-                         appear to save and do nothing. -->
+                         appear to save and do nothing.
+
+                         **`change`, never `ngModelChange`.** Bound per keystroke, typing
+                         "9999" fired eight requests and *saved* 9, then 99, then 999 — every
+                         intermediate value written to the database, so a user who typed and
+                         walked away left a half-typed count behind. Measured in the browser;
+                         `fill()` sets a value in one go and hid it completely. -->
                     <td class="num">
                       @if (line.stock_backed) {
                         <input
@@ -415,7 +421,7 @@
                           step="1"
                           [attr.aria-label]="line.name + ' owned'"
                           [ngModel]="line.owned"
-                          (ngModelChange)="correctOwned(line.material_id, $event)"
+                          (change)="correctOwned(line.material_id, $any($event.target).value)"
                         />
                       } @else {
                         {{ number(line.owned) }}

@@ -39,7 +39,13 @@
 
     <div class="actions">
       <button type="button" class="save" (click)="save()" [disabled]="!dirty().length || saving()">
-        {{ saving() ? 'Saving…' : 'Save ' + dirty().length + ' change' + (dirty().length === 1 ? '' : 's') }}
+        @if (saving()) {
+          Saving…
+        } @else if (dirty().length) {
+          Save {{ dirty().length }} change{{ dirty().length === 1 ? '' : 's' }}
+        } @else {
+          Save
+        }
       </button>
       @if (dirty().length) {
         <button type="button" class="revert" (click)="revert()">Discard changes</button>
@@ -48,6 +54,14 @@
         <span class="ok" role="status">Saved.</span>
       }
     </div>
+
+    @if (hidden()) {
+      <!-- Said, never silently dropped. Rendering all 514 made the page 25,349 pixels tall
+           against a real inventory, which is a wall rather than a list. -->
+      <p class="hint">
+        Showing {{ visible().length }} of {{ matching().length }}. Search to reach the rest.
+      </p>
+    }
 
     @if (!visible().length) {
       <p class="hint">

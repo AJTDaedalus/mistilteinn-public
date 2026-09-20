@@ -637,6 +637,9 @@ export class PlannerPage implements OnInit {
    * stale ones.
    */
   protected async correctOwned(materialId: number, raw: unknown): Promise<void> {
+    // **An empty box is not a zero**, and `Number('')` is. Someone who clears the field and
+    // clicks away meant to stop, not to declare they hold none of it.
+    if (raw === '' || raw === null || raw === undefined) return;
     const parsed = Number(raw);
     if (!Number.isFinite(parsed) || parsed < 0) return;
     const request = this.lastRequest();
