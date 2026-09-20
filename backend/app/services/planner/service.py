@@ -24,10 +24,10 @@ from app.models.planner import (
     CharacterAscensionCost,
     CharacterTalentCost,
     Material,
-    UserMaterial,
     WeaponAscensionCost,
 )
 from app.models.weapon import Weapon
+from app.repositories.user_material import UserMaterialRepository
 from app.services.planner import costs, resin
 from app.services.planner.costs import PlanError, Progress
 from app.services.planner.crafting import CraftingBonus, MaterialClass, classify, craft_multiplier
@@ -342,15 +342,6 @@ def _rows_by_key(rows: Sequence[Any], key: str) -> dict[int, tuple[int, list]]:
     return {getattr(row, key): (row.mora, row.items) for row in rows}
 
 
-async def _load_stock(session: AsyncSession, owner_id: str) -> dict[int, int]:
-    result = await session.execute(
-        select(UserMaterial.material_id, UserMaterial.count).where(
-            UserMaterial.owner_id == owner_id,
-        ),
-    )
-    return dict(result.all())
-
-
 def _book_ids(*bills: costs.ExpBill | None) -> set[int]:
     """The EXP denominations any bill names, so their icons and names can be looked up."""
     return {
@@ -574,7 +565,7 @@ async def build_plan(
     exp_required = costs.character_exp_between(
         character.level_exp or [], character_from.level, character_to.level,
     )
-    stock = await _load_stock(session, owner_id)
+    stock = await UserMaterialRepository(session, owner_id).counts()
     exp = costs.exp_bill(eco, exp_required, stock, "character")
 
     # -- ascension
