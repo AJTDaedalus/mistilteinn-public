@@ -245,12 +245,16 @@ SRC_ARTIFACT_SET = "artifact_set"
 SRC_TALENT = "talent"
 SRC_CONSTELLATION = "constellation"
 SRC_ASCENSION_PASSIVE = "ascension_passive"
+#: A permanent bonus the Traveler carries from a completed story quest. Its own source
+#: because it is none of the others: not the character's published stats, not an ascension
+#: row, not a talent. `formula/genshin/story_buffs.py` has the table and the citation.
+SRC_STORY_QUEST = "story_quest"
 SRC_TEAM = "team"
 SRC_ENEMY = "enemy"
 
 ALL_SOURCES: tuple[str, ...] = (
     SRC_CHARACTER, SRC_WEAPON, SRC_ARTIFACT, SRC_ARTIFACT_SET, SRC_TALENT,
-    SRC_CONSTELLATION, SRC_ASCENSION_PASSIVE, SRC_TEAM, SRC_ENEMY,
+    SRC_CONSTELLATION, SRC_ASCENSION_PASSIVE, SRC_STORY_QUEST, SRC_TEAM, SRC_ENEMY,
 )
 
 

@@ -52,6 +52,7 @@ from app.data.snapshot import (
 )
 from app.formula.genshin import tags
 from app.formula.genshin.explain import ContributionLog
+from app.formula.genshin.story_buffs import TRAVELER_STORY_BUFFS
 
 if TYPE_CHECKING:
     from app.pando.calculator import NodeRegistry
@@ -105,6 +106,11 @@ class CharacterStats:
     elemental_mastery: float = 0.0
     crit_rate: float = 0.0
     crit_dmg: float = 0.0
+    #: Travelers carry permanent story-quest buffs and nobody else does
+    #: (`formula/genshin/story_buffs.py`). Passed in rather than inferred from `name`,
+    #: which is the literal string `"Traveler"` for all sixteen rows **and** would silently
+    #: start buffing any future character who happened to share it.
+    is_traveler: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -174,6 +180,20 @@ def add_character(
         tags.SRC_CHARACTER,
         f"ascension phase {ascension_phase}",
     )
+
+    if character.is_traveler:
+        _add_story_buffs(log)
+
+
+def _add_story_buffs(log: ContributionLog) -> None:
+    """Every Traveler story buff gcsim applies by default.
+
+    Logged one quest at a time rather than summed, so `/explain` can say *which* quest a
+    number came from — the same reason an ascension row is not folded into the base stats.
+    """
+    for buff in TRAVELER_STORY_BUFFS:
+        for quantity, amount in buff.grants.items():
+            log.add(quantity, amount, tags.SRC_STORY_QUEST, buff.quest)
 
 
 def _curve_name(character: CharacterStats, prop_key: str) -> str:

@@ -305,3 +305,87 @@ async def test_the_tolerance_cannot_hide_a_formula_error(crossval_session: Async
 
     assert wrong.non_crit != pytest.approx(expected, rel=RELATIVE_TOLERANCE)
     assert abs(wrong.non_crit - expected) / expected > 0.1
+
+
+# ---- The Traveler, whose story buffs are the whole point of the case -------
+
+async def _aether_pyro_dull_blade(session: AsyncSession):
+    """The `traveler_normal_1` build, assembled through **the real assembler**.
+
+    `character_stats()` rather than a hand-built `CharacterStats`, deliberately: the thing
+    under test is that a Traveler row picks up the story buffs on the ordinary path. Building
+    the stats by hand here would let the production path stop applying them while this test
+    went on passing — which is the shape of failure this repo keeps finding.
+    """
+    from app.services.build_assembler import character_stats
+
+    character = await session.scalar(
+        select(Character).where(Character.nanoka_id == "10000005-2"),
+    )
+    weapon = await session.scalar(select(Weapon).where(Weapon.nanoka_id == 11101))
+    if character is None or weapon is None:
+        pytest.fail(
+            "the seeded database has no Pyro Aether (10000005-2) or Dull Blade (11101); "
+            "re-run `python -m scripts.seed_db`",
+        )
+
+    log = build_log(NodeRegistry())
+    add_character(log, character_stats(character), level=90, ascension_phase=6)
+    add_weapon(log, WeaponStats(
+        name=weapon.name,
+        props=[
+            {"prop_type": "FIGHT_PROP_BASE_ATTACK", "init_value": weapon.base_atk,
+             "type": weapon.base_atk_curve},
+            {"prop_type": weapon.sub_stat_type, "init_value": weapon.sub_stat_base_value,
+             "type": weapon.sub_stat_curve},
+        ],
+        ascension=weapon.ascension_atk,
+    ), level=70, ascension_phase=4)
+    return log, character
+
+
+def test_the_traveler_fixture_came_from_the_pinned_gcsim():
+    case = _case("traveler_normal_1")
+
+    assert case["sim_version"] == PINNED_GCSIM
+    assert case["modified"] is False
+
+
+async def test_the_travelers_story_buffs_match_gcsim(crossval_session: AsyncSession):
+    """**The reason this case exists.** gcsim gives every Traveler three quest buffs by
+    default (`storybuffs.go:26-57`); this repo modelled none of them until 2026-09-19, so
+    `/explain` was about a fifth under gcsim on every Traveler.
+
+    Crit rate, crit DMG and energy recharge are asserted **exactly** — no growth curve
+    touches them, so the float32 provenance residual cannot apply and an exact match is
+    available. Each of the three is *only* correct if a story buff landed: a Traveler with
+    no buffs reads 0.05 / 0.5 / 1.0.
+
+    This is also the harness's **first non-zero elemental mastery**. `ayaka_normal_1` has
+    none, so that slot was asserted against nothing and the module said so; 75 EM here is
+    15 from Skirk's quest and 60 from True Moon.
+    """
+    log, _ = await _aether_pyro_dull_blade(crossval_session)
+    calculator = Calculator(registry=log.registry)
+    snapshot = _case("traveler_normal_1")["character_details"][0]["snapshot"]
+
+    for index, node, label in (
+        (SNAPSHOT_CRIT_RATE, stat_nodes.CRIT_RATE_NODE, "crit rate"),
+        (SNAPSHOT_CRIT_DMG, stat_nodes.CRIT_DMG_NODE, "crit DMG"),
+        (SNAPSHOT_ENERGY_RECHARGE, stat_nodes.ENERGY_RECHARGE_NODE, "energy recharge"),
+        (SNAPSHOT_ELEMENTAL_MASTERY, stat_nodes.ELEMENTAL_MASTERY_NODE, "elemental mastery"),
+    ):
+        assert calculator.compute(node) == snapshot[index], (
+            f"{label} disagrees with gcsim: a story buff is missing or doubled"
+        )
+
+    # The totals carry the 20 % ATK/HP/DEF from True Moon through the curves, so they take
+    # the same tolerance as every other curve-scaled quantity.
+    for index, node, label in (
+        (SNAPSHOT_TOTAL_HP, stat_nodes.HP_NODE, "HP"),
+        (SNAPSHOT_TOTAL_ATK, stat_nodes.ATK_NODE, "ATK"),
+        (SNAPSHOT_TOTAL_DEF, stat_nodes.DEF_NODE, "DEF"),
+    ):
+        assert calculator.compute(node) == pytest.approx(
+            snapshot[index], rel=RELATIVE_TOLERANCE,
+        ), f"{label} disagrees with gcsim"

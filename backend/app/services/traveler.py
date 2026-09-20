@@ -56,6 +56,17 @@ def body_of(icon: str | None) -> str | None:
     return TRAVELER_BODIES.get(icon or "")
 
 
+def is_traveler(*, name: str, icon: str | None) -> bool:
+    """Whether this catalogue row is one of the Travelers.
+
+    Both signals, for the reason `TRAVELER_NAME` gives: the icon alone would rename a future
+    character who reused the art, and the name alone is shared by all sixteen rows and by
+    anything else ever called "Traveler". Used by `build_assembler` to decide who carries the
+    story-quest buffs, which nobody else gets.
+    """
+    return name == TRAVELER_NAME and body_of(icon) is not None
+
+
 def display_name(
     *, name: str, icon: str | None = None, element: str | None = None,
 ) -> str:

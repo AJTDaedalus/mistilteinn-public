@@ -321,12 +321,22 @@ a job with progress, never a request that blocks.
   **Still true and not fixed:** a plunge needs *airborne*, which gcsim grants only from
   Xiao/Venti/Kazuha/Xianyun bursts and Stellar Swirl, never from `jump`. A plunge authored on
   a team with no enabler still fails at run time.
-- **gcsim applies story buffs we do not model, so `/explain` disagrees with it on Travelers
-  by about 27 %.** The True Moon archon quest stat buffs (gcsim `473e89986`) and the older
-  Skirk one are **default-on** in gcsim and absent from this repo's chain. That gap predates
-  the 2026-09-19 re-pin; the re-pin only widened the Traveler half. The owner ruled
-  (2026-09-19) to **match gcsim**, which is Chunk W in
-  `docs/TASKS_upstream_bump_2026_09.md` — sourced and cited, not written from memory.
+- **The Traveler carries three permanent story-quest buffs, and they are the Traveler's
+  alone.** gcsim applies all three **by default** (`storybuffs.go:26-57`); this repo modelled
+  none of them, so `/explain` sat about a fifth under gcsim on every Traveler build. Owner
+  ruling, 2026-09-19: match gcsim. `app/formula/genshin/story_buffs.py` is the table and
+  `tests/fixtures/crossval/traveler_normal_1.json` pins it against gcsim exactly.
+
+  **Two things a reader will get wrong from the names.** The one gcsim calls
+  `skirk_story_buff` is what the *Traveler* gets for finishing Skirk's story quest — **not a
+  buff to Skirk**, who has none; no character outside `internal/characters/traveler/` has a
+  story buff at all. And two of the three add to **base** ATK and HP, which every percentage
+  then multiplies: in the flat term instead they would be invisible on a naked Traveler and
+  drift with the build.
+
+  Measured, not read: `aetherpyro` 90/90 with a Dull Blade, run with the default params and
+  again with all three set to 0, moves by BaseATK +10, BaseHP +50, EM +75, CR +0.1, CD +0.2,
+  ER +0.2 and 20 % each of ATK/HP/DEF.
 - **gcsim relicensed to AGPLv3 on 2026-09-19 and the pin is deliberately a release tag.**
   `caf738dc` is **v2.47.2**, the last version gcsim's own `LICENSE-MIT` scopes the old terms
   to. AGPLv3 §13 covers serving software over a network, which is exactly what this site does

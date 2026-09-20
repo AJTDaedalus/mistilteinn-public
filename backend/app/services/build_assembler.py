@@ -34,6 +34,7 @@ from app.services.stat_calculator import (
     add_weapon,
     build_log,
 )
+from app.services.traveler import is_traveler
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -63,6 +64,10 @@ def character_stats(row: Character) -> CharacterStats:
         elemental_mastery=row.base_elemental_mastery,
         crit_rate=row.base_crit_rate,
         crit_dmg=row.base_crit_dmg,
+        # Story-quest buffs are the Traveler's alone, and gcsim applies them by default —
+        # `formula/genshin/story_buffs.py`. `traveler.py` owns the question of which rows
+        # are Travelers; asking it here keeps one answer rather than two.
+        is_traveler=is_traveler(name=row.name, icon=row.icon),
     )
 
 

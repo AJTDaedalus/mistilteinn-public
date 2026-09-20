@@ -54,6 +54,26 @@ this note claimed two fields were enough; six more were still in the file.)
 
 ## The cases
 
+### `traveler_normal_1` — the same shape, for the story buffs
+
+Pyro Aether 90/6, **Dull Blade** 70/4, no artifacts, one normal attack: deliberately the
+same minimal shape as the case below, so the tolerance argued there applies unchanged
+rather than needing a new one.
+
+**It exists because gcsim gives every Traveler three permanent story-quest buffs by
+default** (`storybuffs.go:26-57`) and this repo modelled none of them until 2026-09-19.
+The case pins them where they are visible without any curve in the way: crit rate
+**0.15**, crit DMG **0.7** and energy recharge **1.2** are each only correct if a buff
+landed — an unbuffed Traveler reads 0.05, 0.5 and 1.0 — and they are asserted exactly.
+
+It is also the harness's **first non-zero elemental mastery** (75 = 15 from Skirk's story
+quest + 60 from True Moon). `ayaka_normal_1` has none, so that snapshot slot was asserted
+against nothing, and the module said so rather than pretending it was covered.
+
+The Traveler is **Pyro Aether**, which is the Traveler whose payload this repo commits
+(`tests/fixtures/nanoka_gi/detail/character_10000005-2.json`). The buffs do not vary by
+element.
+
 ### `ayaka_normal_1` — one normal attack, nothing else
 
 Kamisato Ayaka 90/6, **Dull Blade** 70/4, no artifacts, against a level-90 target at 10%
