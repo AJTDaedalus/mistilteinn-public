@@ -1,0 +1,94 @@
+<div class="stock">
+  <!-- **The standing line, and it is not decoration.** §2 of the design chose the failure
+       mode the user can see over the one they cannot, and this sentence is the whole of what
+       makes it visible. Removing it turns a deliberate ruling into silent data loss. -->
+  <p class="hint hint--warn" role="status">
+    Importing a GOOD export replaces every count on this page. Fix a number here when your
+    scanner got it wrong; re-import when your inventory has actually changed.
+  </p>
+
+  <div class="controls">
+    <label class="find">
+      <span>Search</span>
+      <input
+        type="search"
+        placeholder="Teachings of Ballad"
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)"
+      />
+    </label>
+
+    <label class="toggle">
+      <input
+        type="checkbox"
+        [ngModel]="ownedOnly()"
+        (ngModelChange)="ownedOnly.set($event)"
+      />
+      <span>Owned only</span>
+    </label>
+
+    <p class="count">{{ ownedCount() }} materials held</p>
+  </div>
+
+  @if (loading()) {
+    <p class="hint">Loading your materials…</p>
+  } @else {
+    @if (error(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+
+    <div class="actions">
+      <button type="button" class="save" (click)="save()" [disabled]="!dirty().length || saving()">
+        {{ saving() ? 'Saving…' : 'Save ' + dirty().length + ' change' + (dirty().length === 1 ? '' : 's') }}
+      </button>
+      @if (dirty().length) {
+        <button type="button" class="revert" (click)="revert()">Discard changes</button>
+      }
+      @if (saved() && !dirty().length) {
+        <span class="ok" role="status">Saved.</span>
+      }
+    </div>
+
+    @if (!visible().length) {
+      <p class="hint">
+        Nothing matches. @if (ownedOnly()) { Turn off <em>Owned only</em> to reach a material
+        your import missed. }
+      </p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th scope="col" colspan="2">Material</th>
+            <th scope="col" class="num">Owned</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of visible(); track row.item.material_id) {
+            <tr [class.row--dirty]="isDirty(row)">
+              <td class="art">
+                <catalogue-icon [icon]="row.item.icon" [alt]="row.item.name" [size]="32" />
+              </td>
+              <td class="name" [attr.data-rarity]="row.item.rarity">{{ row.item.name }}</td>
+              <td class="num">
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  [attr.aria-label]="row.item.name + ' owned'"
+                  [ngModel]="value(row)"
+                  (ngModelChange)="setCount(row.item.material_id, $event)"
+                />
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+    <!-- Mora is the one quantity on the planner nobody can import: GOOD carries no currency
+         field, so the plan asks for it per request instead of storing it here. -->
+    <p class="hint">
+      Mora is not on this page — no GOOD export reports a balance, so the plan asks for it.
+    </p>
+  }
+</div>

@@ -3,7 +3,12 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { CatalogueService } from '../catalogue/catalogue.service';
 import { PlannerPage } from './planner';
-import { PlannerService, type PlanRead, type SectionRead } from './planner.service';
+import {
+  PlannerService,
+  type PlanRead,
+  type PlanRequest,
+  type SectionRead,
+} from './planner.service';
 
 const EMPTY_PAGE = { items: [], total: 0, offset: 0, limit: 300 };
 
@@ -247,6 +252,115 @@ describe('PlannerPage', () => {
     expect(page['plan']()).toBe(result);
     expect(page['error']()).toBeNull();
     expect(page['busy']()).toBe(false);
+  });
+});
+
+/**
+ * Correcting a count from the bill that shows it is wrong.
+ *
+ * `docs/DESIGN_planner_materials.md` §4. All three of these are traps that produce a *wrong
+ * number* rather than an error, which is why each gets a test that can tell the difference.
+ */
+describe('correcting an owned count from the bill', () => {
+  const result = (name: string) =>
+    ({ character_name: name, sections: [], total: section() }) as unknown as PlanRead;
+
+  it('re-prices with the stored request, not one rebuilt from the controls', async () => {
+    // The trap: the bill on screen was priced from the request that produced it, and the
+    // controls above may have been touched since. Re-deriving would price a *different* plan
+    // and present the result as the effect of correcting one material count.
+    //
+    // The controls are moved between the plan and the correction, so a re-derived request
+    // and a stored one cannot look the same.
+    const sent: PlanRequest[] = [];
+    const plan = vi.fn(async (body: PlanRequest) => { sent.push(body); return result('Ayaka'); });
+    const saveMaterials = vi.fn(async () => []);
+    const page = makePage({ plan, saveMaterials });
+    await page.ngOnInit();
+    page['characterId'].set('c1');
+    page['toLevel'].set(70);
+
+    await page['run']();
+    expect(sent[0].character_to.level).toBe(70);
+
+    page['toLevel'].set(90);
+    await page['correctOwned'](104301, 40);
+
+    expect(saveMaterials).toHaveBeenCalledWith([{ material_id: 104301, count: 40 }]);
+    expect(plan).toHaveBeenCalledTimes(2);
+    expect(sent[1].character_to.level).toBe(70);
+  });
+
+  it('redraws the whole bill from the server rather than patching the row', async () => {
+    // Editing one count can move rows nobody touched: spare Teachings craft into
+    // Philosophies, so a correction can change another row's crafted column, its remaining,
+    // the section's mora and its resin histogram. Proven by the server answering with a
+    // different object and the page adopting it whole.
+    const second = result('Re-priced');
+    const plan = vi.fn().mockResolvedValueOnce(result('First')).mockResolvedValueOnce(second);
+    const page = makePage({ plan, saveMaterials: vi.fn(async () => []) });
+    await page.ngOnInit();
+    page['characterId'].set('c1');
+
+    await page['run']();
+    await page['correctOwned'](104301, 40);
+
+    expect(page['plan']()).toBe(second);
+  });
+
+  it('drops a re-price that comes back out of order', async () => {
+    // Two quick edits are two requests and the second is not guaranteed to return second.
+    // Without the guard the bill settles on the *older* of two answers and looks perfectly
+    // plausible doing it — so the test resolves them newest-first.
+    const older = result('older');
+    const newer = result('newer');
+    let releaseOlder!: (value: PlanRead) => void;
+    const held = new Promise<PlanRead>((resolve) => { releaseOlder = resolve; });
+    const plan = vi
+      .fn()
+      .mockResolvedValueOnce(result('initial'))
+      .mockImplementationOnce(() => held)
+      .mockResolvedValueOnce(newer);
+    const page = makePage({ plan, saveMaterials: vi.fn(async () => []) });
+    await page.ngOnInit();
+    page['characterId'].set('c1');
+    await page['run']();
+
+    const first = page['correctOwned'](104301, 1);
+    const second = page['correctOwned'](104301, 2);
+    await second;
+    releaseOlder(older);
+    await first;
+
+    expect(page['plan']()).toBe(newer);
+  });
+
+  it('does not re-price when the count could not be saved', async () => {
+    // A bill re-drawn from a save that failed would show the old number as though the edit
+    // had landed.
+    const plan = vi.fn(async () => result('Ayaka'));
+    const page = makePage({
+      plan,
+      saveMaterials: vi.fn(async () => { throw new Error('nope'); }),
+    });
+    await page.ngOnInit();
+    page['characterId'].set('c1');
+    await page['run']();
+
+    await page['correctOwned'](104301, 40);
+
+    expect(plan).toHaveBeenCalledTimes(1);
+    expect(page['stockError']()).toBeTruthy();
+  });
+
+  it('ignores a correction made before anything has been priced', async () => {
+    const saveMaterials = vi.fn(async () => []);
+    const page = makePage({ saveMaterials });
+    await page.ngOnInit();
+
+    await page['correctOwned'](104301, 40);
+
+    expect(saveMaterials).not.toHaveBeenCalled();
   });
 });
 

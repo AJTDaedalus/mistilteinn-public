@@ -200,6 +200,11 @@ class MaterialLineRead(BaseModel):
     resin: ResinEstimateRead | None
     resin_status: str
     domain_days: list[str]
+    #: Whether `owned` is a `user_materials` count, and so whether the page may offer to
+    #: correct it. **False for the mora row**, whose `owned` is the balance the caller typed
+    #: into this very request — an editable cell there would write a row nothing reads and
+    #: redraw showing the typed number, an edit that appears to save and does nothing.
+    stock_backed: bool = True
 
 
 class ExpBookRead(BaseModel):
@@ -458,6 +463,7 @@ def _section_read(section: service.Section) -> SectionRead:
                 ),
                 resin_status=line.resin_status,
                 domain_days=line.domain_days,
+                stock_backed=line.stock_backed,
             )
             for line in section.materials
         ],

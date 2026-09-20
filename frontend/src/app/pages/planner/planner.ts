@@ -3,6 +3,7 @@ import type { WritableSignal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { CatalogueIcon } from '../../shared/icon/icon';
+import { PlannerMaterials } from './materials/materials';
 import { CardPicker, type CardFilter, type CardOption } from '../../shared/card-picker/card-picker';
 import { characterCardFilters, characterCardOptions } from '../../shared/character-cards';
 import { KQM_FILTER, listedFirst, weaponCard, weaponsById } from '../../shared/kqm/kqm';
@@ -19,6 +20,7 @@ import {
   type CraftingBonusRead,
   type MaterialLineRead,
   type PlanRead,
+  type PlanRequest,
   type PlannerOptions,
   type SectionRead,
   type TalentOption,
@@ -86,13 +88,30 @@ interface TalentRow {
  */
 @Component({
   selector: 'page-planner',
-  imports: [FormsModule, CatalogueIcon, CardPicker],
+  imports: [FormsModule, CatalogueIcon, CardPicker, PlannerMaterials],
   templateUrl: './planner.html',
   styleUrl: './planner.scss',
 })
 export class PlannerPage implements OnInit {
   private readonly planner = inject(PlannerService);
   private readonly catalogue = inject(CatalogueService);
+
+  /**
+   * Which tab is showing. Owner, 2026-09-19: a place to fix the stock a bill is priced
+   * against, *"if there's a bug in their import"*.
+   */
+  protected readonly tab = signal<'plan' | 'materials'>('plan');
+
+  /**
+   * Whether the materials tab has ever been opened.
+   *
+   * **It is created lazily and then never destroyed.** `@if` on the active tab alone would
+   * throw away half-typed counts the moment someone clicked back to the plan — silent data
+   * loss, which is the exact failure this feature exists to stop. Hidden rather than removed,
+   * the edits are still there when they return. The lazy half is so a user who never opens
+   * the tab never pays for its ~40 KB of catalogue.
+   */
+  protected readonly materialsSeen = signal(false);
 
   protected readonly characters = signal<CharacterSummary[]>([]);
   protected readonly weapons = signal<WeaponSummary[]>([]);
@@ -126,6 +145,24 @@ export class PlannerPage implements OnInit {
    * are separate batches: Albedo can craft one while Eula crafts the other.
    */
   protected readonly craftPick = signal<Record<string, string | null>>({});
+
+  /**
+   * The request that produced the bill on screen.
+   *
+   * **Kept, rather than rebuilt from the controls.** A re-price after a stock edit has to ask
+   * the same question again; re-deriving it would price whatever the form says *now* — which
+   * the user may have been fiddling with — and present the result as the effect of correcting
+   * one material count.
+   */
+  private readonly lastRequest = signal<PlanRequest | null>(null);
+
+  /**
+   * Which re-price is the current one. See `price` — an out-of-order response is dropped.
+   */
+  private priceTicket = 0;
+
+  /** A stock correction that failed. Distinct from a plan that could not be priced. */
+  protected readonly stockError = signal<string | null>(null);
 
   /** Mora the user says they hold. Null until they say — no scanner exports a balance. */
   protected readonly moraOwned = signal<number | null>(null);
@@ -397,6 +434,12 @@ export class PlannerPage implements OnInit {
     return reasons.size ? [...reasons].join('; ') : null;
   }
 
+  /** Show a tab, creating the materials editor the first time it is asked for. */
+  protected showTab(next: 'plan' | 'materials'): void {
+    if (next === 'materials') this.materialsSeen.set(true);
+    this.tab.set(next);
+  }
+
   async ngOnInit(): Promise<void> {
     // **Weapons are no longer loaded here.** They are loaded per character, filtered to the
     // class that character can hold — a bow on a sword user is not a plan anyone can act on,
@@ -532,39 +575,83 @@ export class PlannerPage implements OnInit {
   protected async run(): Promise<void> {
     const characterId = this.characterId();
     if (!characterId) return;
+    const request: PlanRequest = {
+      character_id: characterId,
+      character_from: { level: this.fromLevel(), ascension: this.fromAscension() },
+      character_to: { level: this.toLevel(), ascension: this.toAscension() },
+      talents: this.talentRows().map((row) => ({
+        talent_id: row.talent.talent_id,
+        current: row.current,
+        target: row.target,
+      })),
+      weapon_id: this.weaponId(),
+      weapon_from: this.weaponId()
+        ? { level: this.weaponFromLevel(), ascension: this.weaponFromAscension() }
+        : null,
+      weapon_to: this.weaponId()
+        ? { level: this.weaponToLevel(), ascension: this.weaponToAscension() }
+        : null,
+      bonus_character_ids: this.selectedBonusIds(),
+      mora_owned: this.moraOwned(),
+    };
+    this.lastRequest.set(request);
+    await this.price(request);
+  }
+
+  /**
+   * Send one plan request and draw its answer.
+   *
+   * Split out of `run` because a re-price after a stock edit must send the request that
+   * produced the bill on screen, **not** one rebuilt from the controls — see `lastRequest`.
+   */
+  private async price(request: PlanRequest): Promise<void> {
     this.busy.set(true);
     this.error.set(null);
+    const ticket = ++this.priceTicket;
     try {
-      this.plan.set(
-        await this.planner.plan({
-          character_id: characterId,
-          character_from: { level: this.fromLevel(), ascension: this.fromAscension() },
-          character_to: { level: this.toLevel(), ascension: this.toAscension() },
-          talents: this.talentRows().map((row) => ({
-            talent_id: row.talent.talent_id,
-            current: row.current,
-            target: row.target,
-          })),
-          weapon_id: this.weaponId(),
-          weapon_from: this.weaponId()
-            ? { level: this.weaponFromLevel(), ascension: this.weaponFromAscension() }
-            : null,
-          weapon_to: this.weaponId()
-            ? { level: this.weaponToLevel(), ascension: this.weaponToAscension() }
-            : null,
-          bonus_character_ids: this.selectedBonusIds(),
-          mora_owned: this.moraOwned(),
-        }),
-      );
+      const priced = await this.planner.plan(request);
+      // **Drop a stale answer.** Two quick edits are two requests, and the second is not
+      // guaranteed to come back second; without this the bill settles on the older of two
+      // answers and looks perfectly plausible doing it.
+      if (ticket !== this.priceTicket) return;
+      this.plan.set(priced);
     } catch (cause: unknown) {
+      if (ticket !== this.priceTicket) return;
       // The backend rejects a state the game cannot produce with a sentence saying which —
       // "level 50 is outside 1-20, which is what ascension phase 0 unlocks". Show it.
       const detail = (cause as { detail?: unknown } | null)?.detail;
       this.error.set(typeof detail === 'string' ? detail : 'The planner could not price that.');
       this.plan.set(null);
     } finally {
-      this.busy.set(false);
+      if (ticket === this.priceTicket) this.busy.set(false);
     }
+  }
+
+  /**
+   * Correct what the account holds of one material, from the row that shows it is wrong.
+   *
+   * **The bill is redrawn from the server, never patched here.** Editing one count can move
+   * rows nobody touched: `_convert_surplus` credits spare Teachings toward Philosophies, so a
+   * single correction can change another row's crafted column, its remaining, the section's
+   * mora and its resin histogram. A local patch would show one right number surrounded by
+   * stale ones.
+   */
+  protected async correctOwned(materialId: number, raw: unknown): Promise<void> {
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed < 0) return;
+    const request = this.lastRequest();
+    if (!request) return;
+
+    this.stockError.set(null);
+    try {
+      await this.planner.saveMaterials([
+        { material_id: materialId, count: Math.floor(parsed) },
+      ]);
+    } catch {
+      this.stockError.set('That count could not be saved.');
+      return;
+    }
+    await this.price(request);
   }
 
   // -- rendering helpers ----------------------------------------------------------------

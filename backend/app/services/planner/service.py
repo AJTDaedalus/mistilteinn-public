@@ -83,6 +83,16 @@ class MaterialLine:
     #: twelve Philosophies when they hold three and can make nine, and the nine cost mora and a
     #: trip to a crafting bench.
     from_surplus: int = 0
+    #: Whether `owned` came from `user_materials` — and so whether correcting it on the page
+    #: would change anything.
+    #:
+    #: **False for the mora row only, and that row is why the flag exists.** Its `owned` is
+    #: the balance the user typed into the plan request, because GOOD carries no currency
+    #: field and nothing stores one. An editable cell there would write a `user_materials`
+    #: row nothing reads, re-price, and come back showing the typed number again — an edit
+    #: that appears to save and silently does nothing, which is the exact failure this whole
+    #: surface exists to remove.
+    stock_backed: bool = True
 
 
 @dataclass
@@ -223,6 +233,7 @@ def _line(
     required: int,
     owned: int,
     still: int,
+    stock_backed: bool = True,
 ) -> MaterialLine:
     """A material row for something that is not farmed per-unit: EXP books, mora.
 
@@ -242,6 +253,7 @@ def _line(
         resin=None,
         resin_status="satisfied" if still == 0 else "not_farmable",
         domain_days=[],
+        stock_backed=stock_backed,
     )
 
 
@@ -327,6 +339,8 @@ def _append_mora_row(
             # drop — so the row supplies both instead of rendering a nameless gap.
             icon="UI_ItemIcon_202",
             required=mora,
+            # Not stock: `user_materials` has no mora row and never will.
+            stock_backed=False,
             # **Not clamped to `required`.** It was `min(owned, mora)`, which kept the
             # subtraction non-negative by reporting a balance the user does not have: told
             # eleven million against a bill of five, the row said they owned five. The

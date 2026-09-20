@@ -37,6 +37,34 @@
     background: linear-gradient(to top, var(--bg-deep) 15%, transparent);
   }
 
+  /* The tablist, matching `builds.scss` — the same control in two places should not be two
+     different controls. Component styles are scoped, so this is a copy rather than a reuse;
+     if a third page grows tabs, that is the moment it becomes a shared element. */
+  .tabs {
+    display: flex;
+    gap: var(--space-1);
+    margin: 0 0 var(--space-3);
+    border-bottom: 1px solid var(--surface-rule);
+  }
+
+  .tab {
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: var(--radius-1) var(--radius-1) 0 0;
+    background: none;
+    color: var(--ink-dim);
+    padding: var(--space-2) var(--space-4);
+    margin-bottom: -1px;
+
+    &:hover { color: var(--ink); box-shadow: none; }
+
+    &.tab--on {
+      border-color: var(--surface-rule);
+      background: var(--surface);
+      color: var(--brass);
+    }
+  }
+
   .hint {
     color: var(--ink-dim);
     font-size: var(--text-sm);
@@ -363,6 +391,14 @@
   .name[data-rarity='5'] { color: var(--rarity-5); }
   .name[data-rarity='4'] { color: var(--rarity-4); }
   .name[data-rarity='3'] { color: var(--rarity-3); }
+
+  /* The Owned cell is an input on every stock-backed row. Sized to the column rather than
+     to the page so the table keeps its shape whether or not a row is editable. */
+  td.num input.owned {
+    width: 6rem;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
 
   .histogram {
     margin: 0.75rem 0 0;

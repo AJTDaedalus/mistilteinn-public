@@ -215,6 +215,34 @@ async def test_a_corrected_count_reprices_the_bill(
 
 
 @pytest.mark.asyncio
+async def test_the_mora_row_is_not_backed_by_stock(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """Mora's `owned` is the balance typed into this request, not a `user_materials` count.
+
+    The page reads `stock_backed` to decide whether an `Owned` cell may be corrected. Without
+    the flag, the mora row would offer an edit that writes a row nothing reads and redraws
+    showing the typed number back — an edit that appears to save and silently does nothing.
+    """
+    character, talent, _ = await _catalogue(db_session)
+    await db_session.commit()
+
+    response = await client.post(
+        "/api/v1/planner/plan",
+        json=_request(character, talent, mora_owned=5_000),
+        headers=_auth(authed_user),
+    )
+    rows = {
+        line["name"]: line
+        for section in response.json()["sections"]
+        for line in section["materials"]
+    }
+    assert rows["Mora"]["stock_backed"] is False
+    assert rows["Mora"]["owned"] == 5_000
+    assert rows["Teachings of Freedom"]["stock_backed"] is True
+
+
+@pytest.mark.asyncio
 async def test_resin_distinguishes_no_cost_from_a_real_one(
     client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
 ) -> None:

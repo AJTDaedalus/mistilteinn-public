@@ -8279,6 +8279,11 @@
             },
             "type": "array",
             "title": "Domain Days"
+          },
+          "stock_backed": {
+            "type": "boolean",
+            "title": "Stock Backed",
+            "default": true
           }
         },
         "type": "object",

@@ -3,6 +3,38 @@
     <h1>Upgrade Planner</h1>
   </header>
 
+  <!-- Two tabs, not two routes: the stock you are correcting is the stock the bill beside it
+       was priced against, and a page change between noticing and fixing is the friction that
+       stops anyone doing either. Markup copied from `builds.html` rather than invented — a
+       pattern nobody owns gets decided again on every page. -->
+  <div class="tabs" role="tablist" aria-label="Plan or materials">
+    <button
+      type="button"
+      role="tab"
+      class="tab"
+      [class.tab--on]="tab() === 'plan'"
+      [attr.aria-selected]="tab() === 'plan'"
+      (click)="showTab('plan')"
+    >Plan</button>
+    <button
+      type="button"
+      role="tab"
+      class="tab"
+      [class.tab--on]="tab() === 'materials'"
+      [attr.aria-selected]="tab() === 'materials'"
+      (click)="showTab('materials')"
+    >Materials</button>
+  </div>
+
+  <!-- Created on first use and then kept alive, hidden rather than destroyed: `@if` on the
+       active tab alone would discard half-typed counts on every tab switch. -->
+  @if (materialsSeen()) {
+    <div [hidden]="tab() !== 'materials'">
+      <planner-materials />
+    </div>
+  }
+
+  <div [hidden]="tab() !== 'plan'">
   <!-- **The splash is a banner, not a portrait in a column.** It was drawn at 360px beside
        the controls, which made the one image on the page the smallest thing on it. Wide and
        cropped under the title, it reads as a header for what you are planning — and it is the
@@ -309,6 +341,9 @@
         @if (error(); as message) {
           <p class="error" role="alert">{{ message }}</p>
         }
+        @if (stockError(); as message) {
+          <p class="error" role="alert">{{ message }}</p>
+        }
       }
     </div>
   </div>
@@ -365,7 +400,27 @@
                     <td class="art"><catalogue-icon [icon]="line.icon" [alt]="line.name" [size]="32" /></td>
                     <td class="name" [attr.data-rarity]="line.rarity">{{ line.name }}</td>
                     <td class="num">{{ number(line.required) }}</td>
-                    <td class="num">{{ number(line.owned) }}</td>
+                    <!-- **Editable, because this is where you notice it is wrong.** The
+                         count saves and the whole bill is re-priced from the server: one
+                         correction can move rows nobody touched, since spare Teachings craft
+                         into Philosophies. The mora row is not editable — its Owned is the
+                         balance typed above, not a stored count, so an input there would
+                         appear to save and do nothing. -->
+                    <td class="num">
+                      @if (line.stock_backed) {
+                        <input
+                          class="owned"
+                          type="number"
+                          min="0"
+                          step="1"
+                          [attr.aria-label]="line.name + ' owned'"
+                          [ngModel]="line.owned"
+                          (ngModelChange)="correctOwned(line.material_id, $event)"
+                        />
+                      } @else {
+                        {{ number(line.owned) }}
+                      }
+                    </td>
                     <!-- Its own column, rather than an annotation on Owned: crafting three
                          into one is a thing you do, and it belongs beside what you hold rather
                          than inside it. Absent entirely where nothing in the section crafts. -->
@@ -451,4 +506,5 @@
       }
     </div>
   }
+  </div>
 </section>
