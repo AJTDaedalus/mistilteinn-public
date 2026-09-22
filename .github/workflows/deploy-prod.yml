@@ -119,6 +119,24 @@ jobs:
           # the deploy instead of emptying the table.
           $COMPOSE run --rm backend python -m scripts.seed_teapot
 
+      - name: Seed wish income from the committed snapshot
+        run: |
+          set -euo pipefail
+          cd "$REPO_DIR"
+          # The same argument as the step above, for the same reason. `wish_income` is empty
+          # after its migration, and an empty income table makes `/wishes` hide its "add
+          # upcoming patches" control entirely — a deploy that is green, health-checks green,
+          # and serves a feature with a piece silently missing.
+          #
+          # `--from-snapshot` reads `app/data/wishes/income_snapshot.json`, a committed file,
+          # and touches **no network**: the bookkeeping workbook is never on the deploy path.
+          # It replaces the table wholesale and refuses an implausible shrink, so a mangled
+          # snapshot fails the deploy rather than emptying the table.
+          #
+          # The daily systemd timer in `deploy/wish-income/` keeps it current after this; this
+          # step exists so the first deploy does not have to wait for it.
+          $COMPOSE run --rm backend python -m scripts.refresh_wish_income --from-snapshot
+
       - name: Health check
         run: |
           set -euo pipefail
