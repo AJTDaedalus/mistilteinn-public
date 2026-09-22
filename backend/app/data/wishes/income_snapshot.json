@@ -1,0 +1,484 @@
+{
+ "note": "Wish income per Genshin version at three spending tiers, in wishes. Written by scripts/refresh_wish_income.py from the community bookkeeping workbook; see that script and docs/RESEARCH_wish_planner.md section 10. This file is the committed seed so that a fresh clone and the test suite need no network -- the live store is the wish_income table, refreshed on a timer.",
+ "document_id": "1l9HPu2cAzTckdXtr7u-7D8NSKzZNUqOuvbmxERFZ_6w",
+ "fetched_at": "2026-09-22T12:45:43.270688+00:00",
+ "versions": [
+  {
+   "version": "1.0",
+   "major": 1,
+   "minor": 0,
+   "is_estimate": false,
+   "f2p": 91.8228,
+   "welkin": 118.0728,
+   "welkin_bp": 126.3228
+  },
+  {
+   "version": "1.1",
+   "major": 1,
+   "minor": 1,
+   "is_estimate": false,
+   "f2p": 69.2603,
+   "welkin": 95.5103,
+   "welkin_bp": 103.7603
+  },
+  {
+   "version": "1.2",
+   "major": 1,
+   "minor": 2,
+   "is_estimate": false,
+   "f2p": 68.8853,
+   "welkin": 95.1353,
+   "welkin_bp": 103.3853
+  },
+  {
+   "version": "1.3",
+   "major": 1,
+   "minor": 3,
+   "is_estimate": false,
+   "f2p": 66.1449,
+   "welkin": 92.3949,
+   "welkin_bp": 100.6449
+  },
+  {
+   "version": "1.4",
+   "major": 1,
+   "minor": 4,
+   "is_estimate": false,
+   "f2p": 59.6531,
+   "welkin": 85.9031,
+   "welkin_bp": 94.1531
+  },
+  {
+   "version": "1.5",
+   "major": 1,
+   "minor": 5,
+   "is_estimate": false,
+   "f2p": 61.0906,
+   "welkin": 87.3406,
+   "welkin_bp": 95.5906
+  },
+  {
+   "version": "1.6",
+   "major": 1,
+   "minor": 6,
+   "is_estimate": false,
+   "f2p": 69.4968,
+   "welkin": 95.7468,
+   "welkin_bp": 103.9968
+  },
+  {
+   "version": "2.0",
+   "major": 2,
+   "minor": 0,
+   "is_estimate": false,
+   "f2p": 85.9656,
+   "welkin": 112.2156,
+   "welkin_bp": 120.4656
+  },
+  {
+   "version": "2.1",
+   "major": 2,
+   "minor": 1,
+   "is_estimate": false,
+   "f2p": 94.7406,
+   "welkin": 120.9906,
+   "welkin_bp": 129.2406
+  },
+  {
+   "version": "2.2",
+   "major": 2,
+   "minor": 2,
+   "is_estimate": false,
+   "f2p": 67.9343,
+   "welkin": 94.1843,
+   "welkin_bp": 102.4343
+  },
+  {
+   "version": "2.3",
+   "major": 2,
+   "minor": 3,
+   "is_estimate": false,
+   "f2p": 74.2781,
+   "welkin": 100.5281,
+   "welkin_bp": 108.7781
+  },
+  {
+   "version": "2.4",
+   "major": 2,
+   "minor": 4,
+   "is_estimate": false,
+   "f2p": 83.3281,
+   "welkin": 109.5781,
+   "welkin_bp": 117.8281
+  },
+  {
+   "version": "2.5",
+   "major": 2,
+   "minor": 5,
+   "is_estimate": false,
+   "f2p": 55.9656,
+   "welkin": 82.2156,
+   "welkin_bp": 90.4656
+  },
+  {
+   "version": "2.6",
+   "major": 2,
+   "minor": 6,
+   "is_estimate": false,
+   "f2p": 101.2117,
+   "welkin": 127.4617,
+   "welkin_bp": 135.7117
+  },
+  {
+   "version": "2.7",
+   "major": 2,
+   "minor": 7,
+   "is_estimate": false,
+   "f2p": 57.3718,
+   "welkin": 83.6218,
+   "welkin_bp": 91.8718
+  },
+  {
+   "version": "2.8",
+   "major": 2,
+   "minor": 8,
+   "is_estimate": false,
+   "f2p": 67.5281,
+   "welkin": 93.7781,
+   "welkin_bp": 102.0281
+  },
+  {
+   "version": "3.0",
+   "major": 3,
+   "minor": 0,
+   "is_estimate": false,
+   "f2p": 88.3463,
+   "welkin": 114.5963,
+   "welkin_bp": 122.8463
+  },
+  {
+   "version": "3.1",
+   "major": 3,
+   "minor": 1,
+   "is_estimate": false,
+   "f2p": 93.0963,
+   "welkin": 119.3463,
+   "welkin_bp": 127.5963
+  },
+  {
+   "version": "3.2",
+   "major": 3,
+   "minor": 2,
+   "is_estimate": false,
+   "f2p": 60.5651,
+   "welkin": 86.8151,
+   "welkin_bp": 95.0651
+  },
+  {
+   "version": "3.3",
+   "major": 3,
+   "minor": 3,
+   "is_estimate": false,
+   "f2p": 68.5906,
+   "welkin": 94.8406,
+   "welkin_bp": 103.0906
+  },
+  {
+   "version": "3.4",
+   "major": 3,
+   "minor": 4,
+   "is_estimate": false,
+   "f2p": 86.8406,
+   "welkin": 113.0906,
+   "welkin_bp": 121.3406
+  },
+  {
+   "version": "3.5",
+   "major": 3,
+   "minor": 5,
+   "is_estimate": false,
+   "f2p": 77.7468,
+   "welkin": 103.9968,
+   "welkin_bp": 112.2468
+  },
+  {
+   "version": "3.6",
+   "major": 3,
+   "minor": 6,
+   "is_estimate": false,
+   "f2p": 76.2156,
+   "welkin": 102.4656,
+   "welkin_bp": 110.7156
+  },
+  {
+   "version": "3.7",
+   "major": 3,
+   "minor": 7,
+   "is_estimate": false,
+   "f2p": 55.3406,
+   "welkin": 81.5906,
+   "welkin_bp": 89.8406
+  },
+  {
+   "version": "3.8",
+   "major": 3,
+   "minor": 8,
+   "is_estimate": false,
+   "f2p": 61.3718,
+   "welkin": 87.6218,
+   "welkin_bp": 95.8718
+  },
+  {
+   "version": "4.0",
+   "major": 4,
+   "minor": 0,
+   "is_estimate": false,
+   "f2p": 88.0656,
+   "welkin": 114.3156,
+   "welkin_bp": 122.5656
+  },
+  {
+   "version": "4.1",
+   "major": 4,
+   "minor": 1,
+   "is_estimate": false,
+   "f2p": 100.0843,
+   "welkin": 126.3343,
+   "welkin_bp": 134.5843
+  },
+  {
+   "version": "4.2",
+   "major": 4,
+   "minor": 2,
+   "is_estimate": false,
+   "f2p": 84.5156,
+   "welkin": 110.7656,
+   "welkin_bp": 119.0156
+  },
+  {
+   "version": "4.3",
+   "major": 4,
+   "minor": 3,
+   "is_estimate": false,
+   "f2p": 62.9968,
+   "welkin": 89.2468,
+   "welkin_bp": 97.4968
+  },
+  {
+   "version": "4.4",
+   "major": 4,
+   "minor": 4,
+   "is_estimate": false,
+   "f2p": 88.6656,
+   "welkin": 114.9156,
+   "welkin_bp": 123.1656
+  },
+  {
+   "version": "4.5",
+   "major": 4,
+   "minor": 5,
+   "is_estimate": false,
+   "f2p": 56.0906,
+   "welkin": 82.3406,
+   "welkin_bp": 90.5906
+  },
+  {
+   "version": "4.6",
+   "major": 4,
+   "minor": 6,
+   "is_estimate": false,
+   "f2p": 69.1781,
+   "welkin": 95.4281,
+   "welkin_bp": 103.6781
+  },
+  {
+   "version": "4.7",
+   "major": 4,
+   "minor": 7,
+   "is_estimate": false,
+   "f2p": 67.3955,
+   "welkin": 93.6455,
+   "welkin_bp": 101.8955
+  },
+  {
+   "version": "4.8",
+   "major": 4,
+   "minor": 8,
+   "is_estimate": false,
+   "f2p": 73.5642,
+   "welkin": 99.8142,
+   "welkin_bp": 108.0642
+  },
+  {
+   "version": "5.0",
+   "major": 5,
+   "minor": 0,
+   "is_estimate": false,
+   "f2p": 131.2926,
+   "welkin": 157.5426,
+   "welkin_bp": 165.7926
+  },
+  {
+   "version": "5.1",
+   "major": 5,
+   "minor": 1,
+   "is_estimate": false,
+   "f2p": 69.6364,
+   "welkin": 95.8864,
+   "welkin_bp": 104.1364
+  },
+  {
+   "version": "5.2",
+   "major": 5,
+   "minor": 2,
+   "is_estimate": false,
+   "f2p": 92.1364,
+   "welkin": 118.3864,
+   "welkin_bp": 126.6364
+  },
+  {
+   "version": "5.3",
+   "major": 5,
+   "minor": 3,
+   "is_estimate": false,
+   "f2p": 86.7614,
+   "welkin": 113.0114,
+   "welkin_bp": 121.2614
+  },
+  {
+   "version": "5.4",
+   "major": 5,
+   "minor": 4,
+   "is_estimate": false,
+   "f2p": 59.1676,
+   "welkin": 85.4176,
+   "welkin_bp": 93.6676
+  },
+  {
+   "version": "5.5",
+   "major": 5,
+   "minor": 5,
+   "is_estimate": false,
+   "f2p": 84.3176,
+   "welkin": 110.5676,
+   "welkin_bp": 118.8176
+  },
+  {
+   "version": "5.6",
+   "major": 5,
+   "minor": 6,
+   "is_estimate": false,
+   "f2p": 60.7614,
+   "welkin": 87.0114,
+   "welkin_bp": 95.2614
+  },
+  {
+   "version": "5.7",
+   "major": 5,
+   "minor": 7,
+   "is_estimate": false,
+   "f2p": 62.1051,
+   "welkin": 88.3551,
+   "welkin_bp": 96.6051
+  },
+  {
+   "version": "5.8",
+   "major": 5,
+   "minor": 8,
+   "is_estimate": false,
+   "f2p": 78.3489,
+   "welkin": 104.5989,
+   "welkin_bp": 112.8489
+  },
+  {
+   "version": "6.0",
+   "major": 6,
+   "minor": 0,
+   "is_estimate": false,
+   "f2p": 125.1562,
+   "welkin": 151.4062,
+   "welkin_bp": 159.6562
+  },
+  {
+   "version": "6.1",
+   "major": 6,
+   "minor": 1,
+   "is_estimate": false,
+   "f2p": 67.0499,
+   "welkin": 93.2999,
+   "welkin_bp": 101.5499
+  },
+  {
+   "version": "6.2",
+   "major": 6,
+   "minor": 2,
+   "is_estimate": false,
+   "f2p": 71.8624,
+   "welkin": 98.1124,
+   "welkin_bp": 106.3624
+  },
+  {
+   "version": "6.3",
+   "major": 6,
+   "minor": 3,
+   "is_estimate": false,
+   "f2p": 110.5124,
+   "welkin": 136.7624,
+   "welkin_bp": 145.0124
+  },
+  {
+   "version": "6.4",
+   "major": 6,
+   "minor": 4,
+   "is_estimate": false,
+   "f2p": 64.2062,
+   "welkin": 90.4562,
+   "welkin_bp": 98.7062
+  },
+  {
+   "version": "6.5",
+   "major": 6,
+   "minor": 5,
+   "is_estimate": false,
+   "f2p": 79.2999,
+   "welkin": 105.5499,
+   "welkin_bp": 113.7999
+  },
+  {
+   "version": "6.6",
+   "major": 6,
+   "minor": 6,
+   "is_estimate": false,
+   "f2p": 67.7062,
+   "welkin": 93.9562,
+   "welkin_bp": 102.2062
+  },
+  {
+   "version": "6.7",
+   "major": 6,
+   "minor": 7,
+   "is_estimate": false,
+   "f2p": 83.4062,
+   "welkin": 109.6562,
+   "welkin_bp": 117.9062
+  },
+  {
+   "version": "7.0",
+   "major": 7,
+   "minor": 0,
+   "is_estimate": false,
+   "f2p": 101.6499,
+   "welkin": 127.8999,
+   "welkin_bp": 136.1499
+  },
+  {
+   "version": "7.1",
+   "major": 7,
+   "minor": 1,
+   "is_estimate": true,
+   "f2p": 88.0187,
+   "welkin": 114.2687,
+   "welkin_bp": 122.5187
+  }
+ ]
+}
