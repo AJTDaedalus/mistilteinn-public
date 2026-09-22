@@ -1,0 +1,148 @@
+.wishes { display: flex; flex-direction: column; gap: var(--space-4); }
+.wishes__head h1 { margin: 0 0 var(--space-1); }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-2);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.panel__columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--space-4);
+}
+
+.col {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+
+  legend {
+    font-weight: 600;
+    color: var(--ink);
+    padding: 0 0 var(--space-2);
+  }
+}
+
+.field { display: flex; flex-direction: column; gap: var(--space-1); }
+.field label, .field .label { font-size: 0.875rem; color: var(--ink-dim); }
+.field input, .field select {
+  background: var(--bg-deep);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  color: var(--ink);
+  padding: var(--space-2);
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  overflow: hidden;
+
+  button {
+    flex: 1;
+    background: var(--bg-deep);
+    border: 0;
+    color: var(--ink-dim);
+    cursor: pointer;
+    padding: var(--space-2) var(--space-3);
+
+    &.on { background: var(--brass-deep); color: var(--ink); }
+    &:focus-visible { outline: 2px solid var(--brass-hi); outline-offset: -2px; }
+  }
+
+  & + & { margin-left: var(--space-2); }
+}
+
+.segmented--small button { padding: var(--space-1) var(--space-2); font-size: 0.8125rem; }
+
+.income { display: flex; flex-direction: column; gap: var(--space-2); }
+.income__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.chip {
+  background: var(--bg-deep);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-pill);
+  color: var(--ink-dim);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+
+  &.on { background: var(--brass-deep); border-color: var(--brass); color: var(--ink); }
+  &:focus-visible { outline: 2px solid var(--brass-hi); outline-offset: 2px; }
+}
+.chip__value { font-variant-numeric: tabular-nums; font-size: 0.8125rem; opacity: 0.85; }
+.chip__est { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.7; }
+
+.budget {
+  border-top: 1px solid var(--surface-rule);
+  color: var(--ink-dim);
+  margin: 0;
+  padding-top: var(--space-3);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+
+  strong { color: var(--ink); }
+}
+
+.ladder {
+  border-collapse: collapse;
+  width: 100%;
+
+  th, td { padding: var(--space-2) var(--space-3); text-align: right; }
+  thead th { border-bottom: 1px solid var(--surface-rule); color: var(--ink-dim); font-weight: 500; }
+  tbody tr { border-bottom: 1px solid var(--surface-rule); }
+  td { font-variant-numeric: tabular-nums; }
+
+  /* A recompute in flight dims rather than blanks: a table that vanishes on every keystroke
+     is harder to read than one that is briefly a step behind. */
+  &--stale tbody { opacity: 0.55; }
+}
+
+.ladder .goal {
+  position: relative;
+  text-align: left;
+  min-width: 12rem;
+  isolation: isolate;
+}
+
+.goal__chip {
+  background: var(--bg-deep);
+  border-radius: var(--radius-pill);
+  display: inline-block;
+  font-weight: 600;
+  padding: var(--space-1) var(--space-3);
+  position: relative;
+}
+
+.bar {
+  border-radius: var(--radius-1);
+  bottom: var(--space-1);
+  display: block;
+  left: 0;
+  position: absolute;
+  top: var(--space-1);
+  z-index: -1;
+
+  &--sure { background: var(--mint); }
+  &--likely { background: var(--brass-deep); }
+  &--even { background: var(--amber); }
+  &--unlikely { background: var(--danger); }
+  &--none { background: transparent; }
+}
+
+.unreachable { opacity: 0.45; }
+
+.hint--note { color: var(--ink); }

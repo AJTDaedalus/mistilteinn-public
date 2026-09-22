@@ -1,0 +1,183 @@
+<section class="wishes">
+  <header class="wishes__head">
+    <h1>Wish Planner</h1>
+    <p class="hint">
+      Your odds of reaching each constellation or refinement, from where you stand now.
+      Exact probabilities, not a simulation.
+    </p>
+  </header>
+
+  <div class="panel">
+    <div class="panel__columns">
+      <!-- Settings -->
+      <fieldset class="col">
+        <legend>Settings</legend>
+
+        <div class="field">
+          <label for="primogems">Primogems</label>
+          <input id="primogems" type="number" min="0" inputmode="numeric"
+                 [value]="primogems()"
+                 (change)="setNumber($event.target, primogems.set)" />
+        </div>
+
+        <div class="field">
+          <label for="fate">Intertwined Fate</label>
+          <input id="fate" type="number" min="0" inputmode="numeric"
+                 [value]="intertwined()"
+                 (change)="setNumber($event.target, intertwined.set)" />
+          <!-- Acquaint Fate buys Wanderlust Invocation, which this planner does not model. -->
+          <small class="hint">Acquaint Fate doesn’t count — it buys the standard banner.</small>
+        </div>
+
+        <div class="field">
+          <span class="label">Banner</span>
+          <div class="segmented" role="group" aria-label="Banner">
+            <button type="button" [class.on]="banner() === 'character'"
+                    (click)="chooseBanner('character')">Character</button>
+            <button type="button" [class.on]="banner() === 'weapon'"
+                    (click)="chooseBanner('weapon')">Weapon</button>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Where you stand -->
+      <fieldset class="col">
+        <legend>Your pity</legend>
+
+        <div class="field">
+          <label for="pity">Pity counter</label>
+          <input id="pity" type="number" min="0" [max]="hardPity() - 1" inputmode="numeric"
+                 [value]="pity()"
+                 (change)="setNumber($event.target, pity.set, hardPity() - 1)" />
+          <small class="hint">Wishes since your last 5★ on this banner.</small>
+        </div>
+
+        <div class="field">
+          <span class="label">Guaranteed</span>
+          <div class="segmented" role="group" aria-label="Guaranteed">
+            <button type="button" [class.on]="!guaranteed()" (click)="setGuaranteed(false)">✕</button>
+            <button type="button" [class.on]="guaranteed()" (click)="setGuaranteed(true)">✓</button>
+          </div>
+        </div>
+
+        @if (showsRadiance()) {
+          <div class="field">
+            <label for="losses">50/50s lost</label>
+            <select id="losses" [value]="lostFiftyFifties()"
+                    (change)="setLosses(+($any($event.target).value))">
+              @for (n of [0, 1, 2, 3]; track n) {
+                <option [value]="n">{{ n }}{{ n === 3 ? '+' : '' }}</option>
+              }
+            </select>
+            <!-- The counter resets only on a 50/50 you WIN: taking the character through a
+                 guarantee leaves it standing, which is what makes the fourth one certain. -->
+            <small class="hint">
+              Since the last one you <em>won</em>. Losses through a guarantee still count.
+              This is Capturing Radiance, and it can be worth 20 points.
+            </small>
+            @if (radianceIsCertain()) {
+              <small class="hint hint--note">
+                At three losses your next 50/50 cannot be lost, so this reads the same as
+                being guaranteed.
+              </small>
+            }
+          </div>
+        }
+      </fieldset>
+
+      <!-- What you already own -->
+      <fieldset class="col">
+        <legend>Already owned</legend>
+        <div class="field">
+          <label for="owned">{{ banner() === 'character' ? 'Constellation' : 'Refinement' }}</label>
+          <select id="owned" [value]="ownedCopies()"
+                  (change)="setNumber($event.target, ownedCopies.set, maxOwned())">
+            @for (n of [0, 1, 2, 3, 4, 5, 6].slice(0, maxOwned() + 1); track n) {
+              <option [value]="n">{{ banner() === 'character' ? 'C' + n : 'R' + (n + 1) }}</option>
+            }
+          </select>
+          <small class="hint">The ladder starts from here.</small>
+        </div>
+      </fieldset>
+    </div>
+
+    <!-- Projected income: whole patches, ticked. The workbook has no half-patch structure,
+         and most income is time-gated or paced by the player, so a day-level split would be
+         invented precision. -->
+    @if (income().length) {
+      <div class="income">
+        <div class="income__head">
+          <span class="label">Add upcoming patches</span>
+          <div class="segmented segmented--small" role="group" aria-label="Spending tier">
+            @for (t of tiers; track t) {
+              <button type="button" [class.on]="tier() === t" (click)="tier.set(t)">
+                {{ tierLabel(t) }}
+              </button>
+            }
+          </div>
+        </div>
+        <div class="chips">
+          @for (version of upcoming(); track version.version) {
+            <button type="button" class="chip" [class.on]="isSelected(version.version)"
+                    (click)="toggleVersion(version.version)">
+              {{ version.version }}
+              @if (version.is_estimate) { <span class="chip__est" title="An estimate, not a settled total">est.</span> }
+              <span class="chip__value">+{{ version[tier()] | number: '1.0-0' }}</span>
+            </button>
+          }
+        </div>
+        @if (incomeFetchedAt()) {
+          <small class="hint">Income data last refreshed {{ incomeFetchedAt() | date: 'mediumDate' }}.</small>
+        }
+      </div>
+    }
+
+    <!-- The arithmetic, not just the total. Fribbels' best idea on this page. -->
+    <p class="budget">
+      {{ primogems() | number }} primogems
+      + {{ intertwined() | number }} fate
+      @if (projectedWishes()) { + {{ projectedWishes() | number }} projected }
+      = <strong>{{ budget() | number }} wishes</strong>
+    </p>
+  </div>
+
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+
+  @if (plan(); as result) {
+    <table class="ladder" [class.ladder--stale]="pending()">
+      <caption class="visually-hidden">Chance of reaching each milestone on {{ result.budget }} wishes</caption>
+      <thead>
+        <tr>
+          <th scope="col">Goal</th>
+          <th scope="col">Chance with {{ result.budget | number }}</th>
+          <th scope="col">Average needed</th>
+          <th scope="col">Median</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (milestone of result.milestones; track milestone.label) {
+          <tr [class.unreachable]="milestone.success_chance === 0">
+            <th scope="row" class="goal">
+              <span [class]="barClass(milestone.success_chance)"
+                    [style.width.%]="percent(milestone.success_chance)"></span>
+              <span class="goal__chip">{{ milestone.label }}</span>
+            </th>
+            <td>{{ percent(milestone.success_chance) | number: '1.1-1' }}%</td>
+            <td>{{ milestone.average_wishes | number: '1.0-0' }}</td>
+            <td>{{ milestone.median_wishes === null ? '—' : (milestone.median_wishes | number) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <!-- Read off the published guarantee, never off the fitted pity curve: the curve's far
+         tail is not identified and understates it. -->
+    <p class="hint">
+      HoYoverse guarantees a copy within <strong>{{ result.published_worst_case }}</strong> wishes.
+      Averages above are exact for the published rates; the soft-pity ramp is a community fit,
+      which pins the middle of the range and not its extremes.
+    </p>
+  }
+</section>
