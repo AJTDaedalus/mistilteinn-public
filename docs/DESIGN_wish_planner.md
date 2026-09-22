@@ -173,71 +173,117 @@ must not silently read as pity 0.
 
 ## 9. Planned — a real starglitter simulator
 
-Owner, 2026-09-22: ship the flat refund first, *"and then once all of these are in draft a plan
-for building a real refund simulator like zzz.163.moe"*. This is that draft. **Nothing below is
-built.**
+Owner, 2026-09-22: ship the flat refund first, *"and then draft a plan for building a real
+refund simulator like zzz.163.moe"*, then — *"source the rates for each of the 3 on banner 4
+stars. We should source their current constellations from the user's account, but let them
+tweak it if they want (bold if it's sourced, regular italics if it's user edited). There's
+also a chance of non-banner 4\*s, model that too. We should use the user's account for those
+too to see what kind of refund it is, but don't give them those to edit because it's too much.
+Ideally we'd also have a banner selector where you can pick from the last 8 or so banners, and
+then a 'custom' builder where you pick the limited and the 4\*s."*
 
-### Why a constant is not enough
+**Nothing below is built.** Everything it needs is sourced.
 
-The shipped tiers are a single number applied to the budget, and three things make that wrong
-in ways that do not cancel:
+### 9.1 The 4★ stream, published in full
 
-1. **The 10-pull figure is the guarantee, not the rate.** At the published 5.1% base rate the
-   consolidated 4★ rate is **13.057%** — one every 7.66 pulls, not 10. Every tier therefore
-   understates the refund by **1.34×**: `average` should be 10.1%, not 7.53%. Deliberate, and
-   Fribbels calls it "worst-case timing" too, but it is an error of a third.
-2. **Which tier applies is not a preference, it is a fact about the account.** `low` and `high`
-   differ by 2.7× and the difference is entirely *"are your 4★ characters already C6"*. A page
-   asking the user to guess that is asking them something the database already knows.
-3. **The answer changes while you pull.** A 4★ character three constellations short pays 2
-   starglitter until C6 and 5 after. A long campaign crosses that line, so the true refund rate
-   **rises as the campaign runs** — which no constant can express.
-
-### What it would model
-
-A Monte Carlo over the 4★ stream, run alongside the exact 5★ convolution rather than replacing
-it. Per pull:
+`https://genshin-impact.fandom.com/wiki/Character_Event_Wish` (read 2026-09-22) specifies it
+completely, citing the same 9.45M-wish estimation that backs this repo's 5★ curves:
 
 | | |
 |---|---|
-| **4★ arrival** | its own pity: 5.1% base, guaranteed at 10. Independent of the 5★ counter. |
-| **Featured or not** | a 4★ is one of the banner's three featured characters half the time, else from the standard pool. |
-| **Character or weapon** | the standard 4★ pool holds both, so this is **not** a coin flip and needs the pool composition per patch. |
-| **Which one** | uniform within the chosen pool. |
-| **What it pays** | new character → a constellation and 2 starglitter; already C6 → 5; any weapon → 2. |
-| **Roster state** | mutates as the run proceeds, which is the whole reason this is a simulation. |
+| **Base rate** | 5.1% |
+| **Soft pity** | **56.1% at 9 wishes** since the last 4★ — a real ramp, not flat-then-guarantee |
+| **Hard pity** | 100% at 10 |
+| **Consolidated** | 13% official, **13.057%** community |
+| **Featured rule** | *"Every time a player obtains a 4★ item, there is a 50% chance it will be one of the featured 4★ characters"*, and if it is not, **the next 4★ is guaranteed featured** |
 
-**5★ contributions would be included**, which the constant ignores entirely: a 5★ weapon pays
-10 starglitter, a duplicate 5★ character 10 before C6 and 25 after.
+So the 4★ stream is **the same two-branch 50/50-with-guarantee shape as the 5★**, at its own
+rates, and the exact machinery in `planner.py` already models that shape. The three featured
+characters are then drawn from that featured half — **16.67% of all 4★s each**, which is the
+rate the owner asked for.
 
-### The thing only this repo can do
+**One subtlety the same page publishes and a naive model would miss.** The 5★ and 4★ rolls are
+independent per wish; a 5★ satisfies the *"4★ or above"* guarantee for that wish, but **does
+not reset the 4★ counter**, which carries to the next wish instead.
 
-**We know the roster.** `/api/v1/roster` already records tri-state ownership per character with
-its source, and `builds.constellation_level` records how far along each one is. So the
-simulator can derive the actual 4★ pool and the actual C6 count instead of asking. Fribbels
-cannot: it has no roster, which is precisely why its equivalent is a three-way guess in a
-dropdown. **This is the feature's strongest differentiator and it needs no new data.**
+### 9.2 The non-featured half is not a coin flip
 
-Gaps to close first, each needing a source before anything is built:
+Every banner page carries a `{{Wish Pool}}` template naming both pools. For the current banner
+(`When Warm Winds Cavort/2026-09-23`):
 
-- The **standard 4★ pool composition** per patch — how many characters against how many
-  weapons. The catalogue has the characters; whether it marks pool membership is unchecked.
-- Whether the **three featured 4★** are drawn uniformly, and the soft-pity shape of the 4★
-  counter, which is published only as a consolidated rate.
-- **Stardust is not in scope**: 3★ weapons pay Masterless Stardust, which buys Acquaint Fate,
-  which buys the standard banner. Out by the same ruling that excluded Acquaint.
+- featured 4★: **3** characters
+- non-featured pool: **45 characters + 18 weapons = 63**
 
-### Shape
+So a non-featured 4★ is a **character 71.4%** of the time, not 50%. The shipped tiers assume
+an even split, which is wrong in shape rather than in calibration.
 
-`scripts/` first, not `app/`: run it offline over a grid of (roster shape, campaign length) and
-see whether the answer is a smooth function of two or three account facts. **If it is, the
-product is a better-calibrated constant plus a roster-derived tier, and no simulator ships at
-all** — which would be the good outcome. Only if the answer genuinely depends on the path does
-a per-request simulation earn its place, and then it is a job with progress rather than a
-request that blocks, at the cost `RESEARCH_wish_planner.md` §4 measures for browser runs.
+### 9.3 What the numbers actually come out at
 
-**Do not put a sampler on the request path to replace a closed form that is already exact.**
-The 5★ ladder stays exact; only the refund would be sampled, and only if it must be.
+Starglitter per 4★, by how much of the pool is already C6 — featured 4★s are always
+characters, non-featured are 71.4% characters:
+
+| account | per 4★ | refund, compounded |
+|---|---|---|
+| nothing at C6 | 2.00 | **5.5 %** |
+| half at C6 | 3.29 | **9.4 %** |
+| everything at C6 | 4.57 | **13.6 %** |
+
+Against the shipped **4.2 / 7.5 / 11.1 %**. Two errors, in opposite directions: pricing a 4★
+every 10 pulls rather than every 7.66 makes every tier **low by 1.34×**, while assuming a maxed
+account pays a flat 5 starglitter ignores that 28.6% of the non-featured pool is weapons, which
+can never pay more than 2. The top of the range is understated *and* the wrong shape.
+
+### 9.4 Reading the account, and letting it be corrected
+
+The tier is not a preference. It is *"how many of the 4★ characters I can pull are already
+C6"*, and the database knows: `/api/v1/roster` records tri-state ownership per character with
+its `source`, and `builds.constellation_level` records how far along each is.
+
+- **The three featured 4★** are shown with their constellations **read from the account and
+  editable**. Owner's rule for the display: **bold when sourced from the account**, *regular
+  italics when the user has edited it* — so a corrected value never looks like a known one.
+  `RosterEntryRead.source` already distinguishes `import` from `manual`, which is the same
+  distinction one level down.
+- **The non-featured pool is read from the account too, and is not editable.** Sixty-three
+  rows is not a form. It contributes to the refund as a *distribution* — how many of the 45
+  are at C6 — rather than as a list.
+- **Missing is missing.** A character with no build has no constellation, and that is not
+  "C0": it is unknown. Defaulting unknown to C0 would make a large roster read as though
+  nothing were maxed and understate the refund; defaulting to C6 would do the reverse. The
+  count of unknowns is reported, and the page says how much of the answer rests on them.
+
+### 9.5 Banner selection
+
+`Category:Character Event Wishes` on the wiki holds **253 pages**, one per banner run, each
+named `<Banner>/<YYYY-MM-DD>` and each carrying a `{{Wish}}` infobox with `time_start` /
+`time_end` and a `{{Wish Pool}}` with the featured 5★, the three featured 4★, and both
+non-featured pools. That is the whole of what a banner selector needs.
+
+- **A picker of the last ~8 banners**, newest first, each filling the featured 5★ and the
+  three featured 4★.
+- **A custom builder**, for a banner that has not been announced or for a hypothetical:
+  choose the limited 5★ and the three 4★ from the catalogue, and inherit the most recent
+  non-featured pools.
+
+**It is a snapshot with a refresher, exactly like the income store** — `scripts/`, never
+`app/`, a committed JSON so a fresh clone and CI need no network, and invariants that refuse a
+bad refresh rather than writing it: every banner has exactly one featured 5★ and three
+featured 4★, the pools are non-empty, and every name resolves against the seeded catalogue. A
+name that does not resolve is the failure mode here, and it is the one `#263` already shipped
+once — 205 weapon ids that matched nothing in production, silently.
+
+### 9.6 Shape, and the bar for shipping it
+
+`scripts/` first. Run it offline across a grid of (roster shape, campaign length) and ask
+whether the answer is a smooth function of two or three account facts. **If it is, the product
+is a calibrated constant plus a roster-derived tier, and no simulator ships** — which would be
+the good outcome. Only if the refund genuinely depends on the path — and it might, because a
+4★ character three constellations short pays 2 until C6 and 5 after, so a long campaign
+crosses that line and the rate *rises as it runs* — does a per-request simulation earn its
+place. Then it is a job with progress, at the cost `RESEARCH_wish_planner.md` §4 measures.
+
+**The 5★ ladder stays exact.** Only the refund would be sampled, and only if it must be. Do
+not put a sampler on the request path to replace a closed form that already is not one.
 
 ---
 
@@ -249,6 +295,7 @@ The 5★ ladder stays exact; only the refund would be sampled, and only if it mu
 | ~~**OQ-W4**~~ | ~~Multi Target.~~ **Built 2026-09-22** as *Custom plan*. |
 | **OQ-W9** | Fribbels syncs pity, guarantee and currency **live** from the reliquary-archiver scanner. Genshin's analogue is the wish history export — same idea as OQ-W5. **Owner, 2026-09-22: low priority, not needed yet.** |
 | ~~**OQ-W10**~~ | ~~Per-phase income rather than per-patch.~~ **Shelved 2026-09-22**, owner's instruction, after checking: the workbook has no phase structure in any of its 54 patch tabs or its three other tabs, and no equivalent of the Telegram source Fribbels uses for HSR publishes Genshin income per phase. It stays a known under-resolution that rounds in the player's favour. |
-| **OQ-W11** | The refund tiers understate by **1.34×** because they price a 4★ every 10 pulls rather than every 7.66. Fix by calibration, or by the simulator in §9? |
+| **OQ-W11** | The refund tiers are wrong in two directions — **low by 1.34×** from pricing a 4★ every 10 pulls rather than 7.66, and the wrong *shape* because the non-featured pool is 71.4% characters, not 50%. §9.3 has the corrected figures. Recalibrate the constants now, or wait for §9? |
+| **OQ-W12** | §9.4: a 4★ character with no build has an **unknown** constellation, not C0. How much unknown is too much before the refund figure should be withheld rather than estimated? |
 | **OQ-W5** | Genshin's wish history is exportable. Derive pity / guarantee / losses rather than asking? Would make the losses counter exact instead of remembered. |
 | **OQ-W7** | Does the character banner's two concurrent 5★ split the 50/50 further? gachasim models one promotional character per banner; Genshin runs two. Needs checking before the rate is trusted for a specific character. |
