@@ -86,6 +86,10 @@ _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     # correcting the stock a bill is priced against — DESIGN_planner_materials.md
     ("GET", "/api/v1/planner/materials", None),
     ("PATCH", "/api/v1/planner/materials", {}),
+    # the wish planner — DESIGN_wish_planner.md
+    ("POST", "/api/v1/wishes/plan", {"banner": "character"}),
+    ("GET", "/api/v1/wishes/income", None),
+    ("GET", "/api/v1/wishes/limits", None),
     # builds — G.6c
     ("GET", "/api/v1/builds", None),
     ("GET", "/api/v1/builds/options", None),  # T.3
