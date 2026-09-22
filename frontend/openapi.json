@@ -12968,14 +12968,14 @@
           },
           "featured_five": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/WishFeaturedItem"
             },
             "type": "array",
             "title": "Featured Five"
           },
           "featured_four": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/WishFeaturedItem"
             },
             "type": "array",
             "title": "Featured Four"
@@ -12993,6 +12993,32 @@
         ],
         "title": "WishBannerRead",
         "description": "One banner run, for the picker."
+      },
+      "WishFeaturedItem": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon",
+            "description": "Catalogue basename, or null when the name does not resolve \u2014 a character newer than the pinned catalogue. **Null renders nothing rather than a broken image**, which is why banners store names and resolve here rather than storing ids."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "WishFeaturedItem",
+        "description": "A featured character or weapon, with whatever art the catalogue has for it."
       },
       "WishHistogramBin": {
         "properties": {

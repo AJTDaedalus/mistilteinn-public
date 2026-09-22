@@ -30,6 +30,46 @@
       </div>
     </fieldset>
 
+    @if (banners().length) {
+      <div class="banners">
+        <div class="banners__head">
+          <span class="label">Banner</span>
+          @if (chosenBanner()) {
+            <button type="button" class="banners__clear" (click)="chooseBanner(null)">
+              Clear
+            </button>
+          }
+        </div>
+        <div class="banner-grid">
+          @for (b of banners(); track b.slug) {
+            <button type="button" class="banner" [class.on]="isChosen(b.slug)"
+                    (click)="chooseBanner(b)"
+                    [attr.aria-pressed]="isChosen(b.slug)">
+              <span class="banner__five">
+                @for (item of b.featured_five; track item.name) {
+                  <catalogue-icon [icon]="item.icon" [alt]="item.name" [size]="52"
+                                  fit="cover" />
+                }
+              </span>
+              <span class="banner__four">
+                @for (item of b.featured_four; track item.name) {
+                  <catalogue-icon [icon]="item.icon" [alt]="item.name" [size]="28"
+                                  fit="cover" />
+                }
+              </span>
+              <span class="banner__name">{{ b.name }}</span>
+              <span class="banner__when">{{ bannerWhen(b) }}</span>
+            </button>
+          }
+        </div>
+        @if (hasMoreBanners()) {
+          <button type="button" class="banners__more" (click)="showMoreBanners()">
+            Show more ({{ banners().length }} of {{ bannerTotal() }})
+          </button>
+        }
+      </div>
+    }
+
     <div class="segmented segmented--modes" role="group" aria-label="Plan shape">
       <button type="button" [class.on]="mode() === 'simple'" (click)="mode.set('simple')">
         One character
@@ -243,7 +283,10 @@
         {{ primogems() | number }} primogems
         + {{ intertwined() | number }} fate
         @if (projectedWishes()) { + {{ projectedWishes() | number }} projected }
-        @if (result.refunded_wishes) { + {{ result.refunded_wishes | number }} refund }
+        @if (result.refunded_wishes) {
+          + {{ result.refunded_wishes | number }}
+          {{ result.refund_source === 'roster' ? 'refund (from your roster)' : 'refund' }}
+        }
         = <strong>{{ result.budget | number }} wishes</strong>
       </p>
     }
@@ -251,6 +294,26 @@
 
   @if (error()) {
     <p class="error" role="alert">{{ error() }}</p>
+  }
+
+  @if (charted(); as rung) {
+    <figure class="chart">
+      <figcaption>
+        Wishes needed for <strong>{{ rung.label }}</strong>
+      </figcaption>
+      <div class="chart__bars" role="img"
+           [attr.aria-label]="'Distribution of wishes needed for ' + rung.label">
+        @for (bin of rung.histogram; track bin.start) {
+          <span class="chart__bar"
+                [style.height.%]="(bin.probability / chartPeak()) * 100"
+                [title]="bin.start + '–' + bin.end + ' wishes: ' + (bin.probability * 100 | number: '1.1-1') + '%'"></span>
+        }
+      </div>
+      <div class="chart__axis">
+        <span>{{ chartFrom() | number }}</span>
+        <span>{{ chartTo() | number }} wishes</span>
+      </div>
+    </figure>
   }
 
   @if (plan(); as result) {

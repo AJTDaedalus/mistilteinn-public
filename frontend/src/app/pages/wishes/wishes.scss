@@ -321,3 +321,104 @@
     &:focus-visible { outline: 2px solid var(--brass-hi); }
   }
 }
+
+/* -- the banner picker ----------------------------------------------------------------- */
+
+.banners { display: flex; flex-direction: column; gap: var(--space-2); }
+
+.banners__head {
+  align-items: center;
+  display: flex;
+  gap: var(--space-3);
+}
+
+.banners__clear,
+.banners__more {
+  background: none;
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  color: var(--ink-dim);
+  cursor: pointer;
+  font-size: var(--text-xs);
+  padding: var(--space-1) var(--space-3);
+
+  &:hover { border-color: var(--brass); color: var(--ink); }
+  &:focus-visible { outline: 2px solid var(--brass-hi); }
+}
+
+.banners__more { align-self: flex-start; }
+
+.banner-grid {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+}
+
+/* The 5★ leads and is largest; the featured 4★ sit beneath it, smaller. Owner's layout. */
+.banner {
+  align-items: center;
+  background: var(--bg-deep);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  text-align: center;
+
+  &.on { border-color: var(--brass); background: var(--brass-deep); }
+  &:hover:not(.on) { border-color: var(--brass-hi); }
+  &:focus-visible { outline: 2px solid var(--brass-hi); outline-offset: 2px; }
+}
+
+.banner__five { display: flex; gap: var(--space-1); }
+.banner__four { display: flex; gap: 2px; opacity: 0.9; }
+
+.banner__name {
+  color: var(--ink);
+  font-size: var(--text-sm);
+  line-height: 1.2;
+  /* Banner names run long and a card that grows to fit one makes the whole row grow. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.banner__when { color: var(--ink-dim); font-size: var(--text-xs); }
+
+/* -- the exact distribution ------------------------------------------------------------ */
+
+.chart {
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  margin: 0;
+  padding: var(--space-3);
+
+  figcaption { color: var(--ink-dim); font-size: var(--text-sm); margin-bottom: var(--space-2); }
+}
+
+.chart__bars {
+  align-items: flex-end;
+  display: flex;
+  gap: 1px;
+  height: 7rem;
+}
+
+/* Every bar is a real probability, not a sample — so they are drawn flat, with no error
+   band. `docs/DESIGN_wish_planner.md` §9.8. */
+.chart__bar {
+  background: var(--brass);
+  border-radius: 1px 1px 0 0;
+  flex: 1;
+  min-height: 1px;
+}
+
+.chart__axis {
+  color: var(--ink-dim);
+  display: flex;
+  font-size: var(--text-xs);
+  justify-content: space-between;
+  padding-top: var(--space-1);
+}

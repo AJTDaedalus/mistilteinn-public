@@ -22,6 +22,7 @@ from app.dependencies import get_current_user, get_db
 from app.models.character import Character
 from app.models.roster import CharacterRosterEntry
 from app.models.user import User
+from app.models.weapon import Weapon
 from app.models.wish_banner import WishBanner
 from app.models.wish_income import WishIncome
 from app.services.wishes import (
@@ -429,6 +430,20 @@ async def read_income(session: _Session, user: _User) -> WishIncomeRead:
     )
 
 
+class WishFeaturedItem(BaseModel):
+    """A featured character or weapon, with whatever art the catalogue has for it."""
+
+    name: str
+    icon: str | None = Field(
+        None,
+        description=(
+            "Catalogue basename, or null when the name does not resolve — a character newer "
+            "than the pinned catalogue. **Null renders nothing rather than a broken image**, "
+            "which is why banners store names and resolve here rather than storing ids."
+        ),
+    )
+
+
 class WishBannerRead(BaseModel):
     """One banner run, for the picker."""
 
@@ -437,8 +452,8 @@ class WishBannerRead(BaseModel):
     kind: str
     starts_at: str | None
     ends_at: str | None
-    featured_five: list[str]
-    featured_four: list[str]
+    featured_five: list[WishFeaturedItem]
+    featured_four: list[WishFeaturedItem]
 
 
 class WishBannerList(BaseModel):
@@ -474,14 +489,32 @@ async def list_banners(
             .limit(limit),
         )
     ).scalars().all()
+    # Resolved here rather than stored: a name that has no catalogue row renders nothing,
+    # and a stale id would render nothing *silently* (#263).
+    wanted = {n for row in rows for n in row.featured_five + row.featured_four}
+    art: dict[str, str | None] = {}
+    if wanted:
+        for table in (Character, Weapon):
+            art.update(
+                (name, icon)
+                for name, icon in (
+                    await session.execute(
+                        select(table.name, table.icon).where(table.name.in_(wanted)),
+                    )
+                ).all()
+            )
+
+    def items(names: list[str]) -> list[WishFeaturedItem]:
+        return [WishFeaturedItem(name=n, icon=art.get(n)) for n in names]
+
     latest = max((row.fetched_at for row in rows), default=None)
     return WishBannerList(
         banners=[
             WishBannerRead(
                 slug=row.slug, name=row.name, kind=row.kind,
                 starts_at=row.starts_at, ends_at=row.ends_at,
-                featured_five=list(row.featured_five),
-                featured_four=list(row.featured_four),
+                featured_five=items(list(row.featured_five)),
+                featured_four=items(list(row.featured_four)),
             )
             for row in rows
         ],

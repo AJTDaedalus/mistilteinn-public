@@ -464,7 +464,11 @@ async def test_banners_come_back_newest_first_with_their_featured_items(
 
     body = (await authed_client.get("/api/v1/wishes/banners")).json()
     assert [b["slug"] for b in body["banners"]] == ["Test Banner/2026-09-23", "Old/2020-09-28"]
-    assert body["banners"][0]["featured_four"] == ["Diona", "Faruzan", "Chongyun"]
+    assert [i["name"] for i in body["banners"][0]["featured_four"]] == [
+        "Diona", "Faruzan", "Chongyun",
+    ]
+    # A name the catalogue does not have resolves to null art rather than a broken image.
+    assert all("icon" in i for i in body["banners"][0]["featured_four"])
     assert body["total"] == 2
     assert body["fetched_at"] is not None
 
