@@ -1,6 +1,9 @@
 # DESIGN — the wish planner
 
-**Status:** design, 2026-09-22. Implements `docs/RESEARCH_wish_planner.md`, which carries the
+**Status:** **built**, 2026-09-22 — math, income store, API, page and the daily timer.
+Driven in a browser, not merely tested. Open questions in §8 remain open.
+
+**Status (original):** design, 2026-09-22. Implements `docs/RESEARCH_wish_planner.md`, which carries the
 Fribbels review, the verified prototype and the income-source work. Read it first; nothing
 here repeats its evidence.
 
@@ -107,7 +110,10 @@ finding. Design consequences only:
 
 - **`wish_income`** — one row per (version, tier), tier in `f2p | welkin | welkin_bp`. Plus
   `is_estimate` and `fetched_at`.
-- **`scripts/refresh_wish_income.py`** fetches and upserts. **Never called from `app/`.**
+- **`scripts/refresh_wish_income.py`** fetches and upserts. **Never called from `app/`.** It
+  runs on a daily systemd timer — `deploy/wish-income/`, following `tools/discord-triage`'s
+  precedent. A refusal is not an outage: the API keeps serving the rows it has and keeps
+  reporting their `fetched_at`, so the page shows dated numbers rather than wrong ones.
 - **`app/data/wishes/income_snapshot.json`** is committed, and is what a fresh clone and CI
   read. The doctrine is `app/data/yuanshen/snapshot/`'s: the app never depends on a live fetch.
 - **Three invariants gate a refresh**, and a failure refuses the whole update rather than
