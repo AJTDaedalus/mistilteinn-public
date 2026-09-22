@@ -231,48 +231,62 @@ weapons and the weapon banner hands you characters.
 **Pool size does not set the odds**, and a simulator that draws uniformly over 63 items would
 be wrong by 5.7× on the non-featured character rate.
 
-#### The test that settles it
+#### Settled, with primary sources and the owner's own pulls
 
-The owner then reconsidered — *"if it's not the 50% featured character, it may pull from the
-entire 4★ pool, character and weapon"* — which is the uniform model again. **Two banners
-decide it**, because each publishes its own non-featured pool:
+The owner reconsidered — *"it may pull from the entire 4★ pool, character and weapon"* — and
+then asked the right question: *"why are the pools different? And why is the probability so
+weird? We need more reliable data sources."* Both are now answered.
 
-| | non-featured pool | uniform would predict | wiki measures |
-|---|---|---|---|
-| character banner | 45 characters + 18 weapons | 71.4 % characters | **15 %** |
-| weapon banner | 47 characters + 16 weapons | 74.6 % characters | **92.5 %** |
+**Why the pools differ: they do not.** Each banner simply removes its *own* featured items.
+Character banner 45 = 48 standard 4★ characters − its 3 featured; weapon banner 16 = 18
+always-available 4★ weapons + 3 currently featured-only − its 5 featured. Diffing the two
+lists shows exactly the featured items moving across and nothing else, bar one wiki lag
+(Jahoda). There is no second pool and no mechanic here.
 
-**Near-identical pools, near-opposite splits.** A uniform draw over the combined pool cannot
-produce that — it would give ~71% and ~75%, three points apart, not seventy-seven. The
-anti-correlation is the mechanic the wiki describes, and it is deliberate: the character banner
-hands you weapons, the weapon banner hands you characters.
+**A primary source exists**, and it is HoYoverse's own regulatory rate disclosure, published
+as static JSON: `https://webstatic.mihoyo.com/hk4e/gacha_info/cn_gf01/<gacha_id>/en-us.json`,
+indexed by `.../gacha/list.json`. **Every 5★ rate this repo ships is confirmed by it**:
 
-The weapon banner also confirms the *shape* independently, at a different rate. Owner:
-*"for weapon the 4★ featured guarantee is 75%, so 25% it takes from the wider pool."* Exactly
-so, and the consolidated share follows from it: `1 / (1 + 0.25) = 80 %`, which is what the
-wiki's table says to the digit — the same derivation that gives 66.67% on the character banner
-from its 50%. **Both banners' featured shares are corroborated arithmetic, not assertions.**
+| | official | ships here |
+|---|---|---|
+| character 5★ base / consolidated / featured | 0.600 % / 1.600 % / 50 % | same |
+| weapon 5★ base / consolidated / featured | 0.700 % / 1.850 % / 75 % | same (×½ for which of two) |
+| character 4★ base / consolidated / featured | 5.100 % / 13.000 % / 50 % | 13.057 % community |
+| **weapon 4★ base / consolidated** | **6.000 % / 14.500 %** | **not modelled — see OQ-W15** |
 
-| | featured rule | consolidated featured | featured items | each |
-|---|---|---|---|---|
-| character | 50 % | 66.67 % | 3 characters | 22.2 % of all 4★ |
-| weapon | 75 % | 80 % | 5 weapons | 16 % of all 4★ |
+Only the soft-pity *ramp* is unpublished; everything else is now primary rather than a
+community fit read through gachasim. The public index is frozen at 2023 banners, which is
+enough to pin constants and not enough to track current ones.
 
-#### What is solid here, and what is not
+**But the disclosure is silent on the non-featured split.** It publishes one flat 4★ list with
+an `is_up` flag and one featured probability. No per-item probabilities, nothing about
+character-versus-weapon. So the 15/85 has no primary backing, and an earlier version of this
+section calling a two-banner comparison "decisive" was overclaiming: that argument is only
+valid *if* the wiki's two splits are real measurements, which is what could not be checked.
 
-- **66.67 / 33.33 is corroborated, not merely asserted.** It falls out exactly from the
-  *published* 50%-with-guarantee rule: a cycle is `[featured]` with p=0.5 or
-  `[non-featured, featured]` with p=0.5, giving one featured per 1.5 four-stars. The wiki's
-  table and the published rule agree to the digit, independently.
-- **Uniform draw is ruled out** by the table above, without needing to trust the measurement:
-  it rests only on the two published pools and on the two splits being opposite.
-- **The exact 15 / 85 remains the weakest number in this feature.** It carries no inline
-  citation, and searching found only restatements of the wiki rather than independent data —
-  paimon.moe aggregates global wish submissions and would settle it, but its tally page does
-  not publish a per-item breakdown. The pinned game data cannot settle it either: there is no
-  wish-pool table in it, because banner pools are server-side. So *"weapons dominate the
-  non-featured third"* is established; *"85%"* is one community measurement.
-  `banner_rates.json` records that distinction in a `confidence` field.
+**So it was measured.** The owner supplied a wish-history authkey link, and **1,416 character
+banner pulls** settle it:
+
+| | measured | |
+|---|---|---|
+| 4★ rate | **12.99 %** | against the official 13.000 % — the data and the parse are sound |
+| 4★ weapons, share of all 4★ | **27.2 % ± 3.3** | |
+| ⟶ wiki's rolled model predicts | 28.3 % | **z = −0.35, consistent** |
+| ⟶ uniform over the combined pool predicts | 9.5 – 12.8 % | **z = +4.4 to +5.4, rejected** |
+
+And a structural test with no free parameters. A 4★ *weapon* on the character banner is
+always non-featured, and the published rule says a non-featured 4★ guarantees the next one is
+featured — so **two 4★ weapons in a row must be impossible**. Across 183 adjacent pairs:
+**zero**, where independence predicts 13.5. The featured guarantee is confirmed outright.
+
+Backing the split out of the same data — every weapon here is non-featured, and the
+non-featured third is fixed at 33.33 % by the published rule — gives **81.5 % weapons /
+18.5 % characters ± 9.8**, against the wiki's 85 / 15. Consistent, and now independently
+sourced.
+
+**The owner's first instinct was right and the uniform reading was wrong.** Character-versus-
+weapon is rolled first; only then is an item drawn from that side's pool. Pool size does not
+set the odds.
 
 ### 9.3 What the numbers actually come out at
 
@@ -391,7 +405,8 @@ not put a sampler on the request path to replace a closed form that already is n
 | **OQ-W9** | Fribbels syncs pity, guarantee and currency **live** from the reliquary-archiver scanner. Genshin's analogue is the wish history export — same idea as OQ-W5. **Owner, 2026-09-22: low priority, not needed yet.** |
 | ~~**OQ-W10**~~ | ~~Per-phase income rather than per-patch.~~ **Shelved 2026-09-22**, owner's instruction, after checking: the workbook has no phase structure in any of its 54 patch tabs or its three other tabs, and no equivalent of the Telegram source Fribbels uses for HSR publishes Genshin income per phase. It stays a known under-resolution that rounds in the player's favour. |
 | ~~**OQ-W11**~~ | ~~The refund tiers are wrong in two directions.~~ **Corrected 2026-09-22** to 3.9 / 8.7 / 12.2 %, on the consolidated 4★ rate and on the axis that actually drives it. |
-| **OQ-W13** | The **15 / 85** non-featured character/weapon split is uncited and unreproduced (§9.2). Is there a dataset behind it? Everything downstream of the featured third rests on it. |
+| ~~**OQ-W13**~~ | ~~The 15/85 split is uncited and unreproduced.~~ **Measured 2026-09-22** against the owner's 1,416 character-banner pulls: 81.5/18.5 ± 9.8, consistent with the wiki and rejecting uniform at z > 4. §9.2. |
+| **OQ-W15** | The **weapon banner's 4★ rates are 6.0 % / 14.5 %**, not the character banner's 5.1 % / 13 %. The refund prices every wish at 13.057 %, so a weapon-banner campaign is under-priced by 1.115×. |
 | **OQ-W14** | §9.5: derive "whose signature is this weapon" from the banner data's `alongside` field, or curate it? |
 | **OQ-W12** | §9.4: a 4★ character with no build has an **unknown** constellation, not C0. How much unknown is too much before the refund figure should be withheld rather than estimated? |
 | **OQ-W5** | Genshin's wish history is exportable. Derive pity / guarantee / losses rather than asking? Would make the losses counter exact instead of remembered. |
