@@ -177,7 +177,19 @@
   border-top: 1px solid var(--surface-rule);
   font-size: var(--text-xs);
   color: var(--ink-faint);
-  text-align: right;
+  // Was `text-align: right` with one child. Now that the build stamp has a sibling, a flex
+  // row puts them at opposite ends rather than jammed together at the edge.
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+
+  a {
+    color: var(--ink-dim);
+
+    &:hover,
+    &.active { color: var(--ink); }
+    &:focus-visible { outline: 2px solid var(--brass-hi); outline-offset: 2px; }
+  }
 }
 
 // Two nav groups: the caller's own work, then the game's reference data. Eleven peers in

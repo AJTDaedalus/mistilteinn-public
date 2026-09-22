@@ -67,6 +67,16 @@ export const routes: Routes = [
     canMatch: [requireApproved],
   },
   {
+    // What this is, and whose work it is built on. Reached from the footer rather than the
+    // nav: the nav is for things you do, and this is read once.
+    //
+    // **No `requireApproved`.** The licence notices it carries have to be reachable by
+    // anyone who can load the page, including someone who has not signed in.
+    path: 'about',
+    title: 'About',
+    loadComponent: () => import('./pages/about/about').then((m) => m.AboutPage),
+  },
+  {
     path: 'characters',
     title: 'Characters',
     loadComponent: () =>

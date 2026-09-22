@@ -38,13 +38,15 @@ function shell(me: Record<string, unknown> = { label: 'Tester', email: 't@exampl
 
 function renderedShell(): string {
   const el = shell().nativeElement as HTMLElement;
-  // **The header, not `.shell__nav`.** The property these assertions are about is that every
-  // linkable route is reachable from the shell chrome. `/account` is reached through the
-  // identity chip, which now sits beside the brand rather than inside `<nav>` — the header is
-  // two rows that way at every width, instead of three whenever the sign-in email is long.
-  // Scoping to the nav would have made this a test of where the markup puts a link rather
-  // than of whether the link is there.
-  return el.querySelector('.shell__header')?.innerHTML ?? '';
+  // **The whole chrome, not `.shell__nav` and not the header alone.** The property these
+  // assertions are about is that every linkable route is reachable from the shell, not where
+  // the markup happens to put the link. `/account` is reached through the identity chip
+  // beside the brand; `/about` is reached from the footer, because the nav is for things you
+  // do and the About page is read once. Scoping tighter each time one of those moves would
+  // turn this into a test of the layout.
+  const header = el.querySelector('.shell__header')?.innerHTML ?? '';
+  const footer = el.querySelector('.shell__footer')?.innerHTML ?? '';
+  return header + footer;
 }
 
 /** Paths that are deliberately not in the nav, and why each one is exempt. */
@@ -158,12 +160,12 @@ describe('app routes', () => {
     expect(linkable.length).toBeGreaterThan(0);
   });
 
-  it.each(linkable)('links to /%s from the shell nav', (path) => {
-    const nav = renderedShell();
-    expect(nav).toBeTruthy();
+  it.each(linkable)('links to /%s from the shell chrome', (path) => {
+    const chrome = renderedShell();
+    expect(chrome).toBeTruthy();
     // `href`, not `routerLink`: the attribute is what a rendered link actually carries, and
     // asserting on the directive name would pass for a link the router never resolved.
-    expect(nav).toContain(`href="/${path}"`);
+    expect(chrome).toContain(`href="/${path}"`);
   });
 
   it('exempts only paths with a stated reason', () => {

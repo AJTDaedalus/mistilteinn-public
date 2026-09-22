@@ -1,0 +1,42 @@
+<section class="about">
+  <header>
+    <h1>About</h1>
+  </header>
+
+  <p class="about__disclosure">
+    Mistilteinn was developed using AI. It is currently closed source until I have time to do a
+    security review, but the intention is to make it open source. You may join us at the
+    following Discord if you’d like to discuss bugs, new features, or the app overall.
+  </p>
+
+  <p>
+    <a class="about__discord" [href]="discord" target="_blank" rel="noopener noreferrer">
+      Join the Discord
+    </a>
+  </p>
+
+  <h2>Credits</h2>
+  <p class="hint">
+    Some of these are licence conditions rather than thanks — where one is, it says so.
+  </p>
+
+  <ul class="credits">
+    @for (credit of credits; track credit.name) {
+      <li class="credit">
+        <a class="credit__name" [href]="credit.url" target="_blank" rel="noopener noreferrer">
+          {{ credit.name }}
+        </a>
+        @if (credit.licence) {
+          <span class="credit__licence">{{ credit.licence }}</span>
+        }
+        <p class="credit__body">{{ credit.body }}</p>
+      </li>
+    }
+  </ul>
+
+  <!-- A fan project saying so, which is the polite and the prudent thing. -->
+  <p class="hint">
+    Mistilteinn is an unofficial fan project and is not affiliated with or endorsed by
+    HoYoverse. Genshin Impact and all related content are their property.
+  </p>
+</section>
