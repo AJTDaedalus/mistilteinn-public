@@ -76,8 +76,10 @@
             <label for="losses">50/50s lost</label>
             <select id="losses" [value]="character().lostFiftyFifties"
                     (change)="setLosses(+($any($event.target).value))">
-              @for (n of [0, 1, 2, 3]; track n) {
-                <option [value]="n">{{ n }}{{ n === maxLosses() ? '+' : '' }}</option>
+              @for (n of lossOptions(); track n) {
+                <option [value]="n" [selected]="character().lostFiftyFifties === n">
+                  {{ n }}{{ n === maxLosses() ? '+' : '' }}
+                </option>
               }
             </select>
             <!-- The counter resets only on a 50/50 you WIN: taking the character through a
@@ -98,7 +100,9 @@
             <select id="c-owned" [value]="character().ownedCopies"
                     (change)="patch('character', { ownedCopies: +($any($event.target).value) })">
               @for (n of ownedOptions('character'); track n) {
-                <option [value]="n">{{ ownedLabel('character', n) }}</option>
+                <option [value]="n" [selected]="character().ownedCopies === n">
+                  {{ ownedLabel('character', n) }}
+                </option>
               }
             </select>
           </div>
@@ -141,7 +145,9 @@
               <select id="w-owned" [value]="weapon().ownedCopies"
                       (change)="patch('weapon', { ownedCopies: +($any($event.target).value) })">
                 @for (n of ownedOptions('weapon'); track n) {
-                  <option [value]="n">{{ ownedLabel('weapon', n) }}</option>
+                  <option [value]="n" [selected]="weapon().ownedCopies === n">
+                    {{ ownedLabel('weapon', n) }}
+                  </option>
                 }
               </select>
             </div>
@@ -155,7 +161,7 @@
             <select id="strategy" [value]="strategy()"
                     (change)="strategy.set($any($event.target).value)">
               @for (s of strategies(); track s) {
-                <option [value]="s">{{ strategyLabel(s) }}</option>
+                <option [value]="s" [selected]="strategy() === s">{{ strategyLabel(s) }}</option>
               }
             </select>
             <small class="hint">
@@ -178,8 +184,8 @@
             <select class="row__banner" [value]="row.banner"
                     (change)="patchRow($index, { banner: $any($event.target).value })"
                     aria-label="Banner">
-              <option value="character">Character</option>
-              <option value="weapon">Weapon</option>
+              <option value="character" [selected]="row.banner === 'character'">Character</option>
+              <option value="weapon" [selected]="row.banner === 'weapon'">Weapon</option>
             </select>
             <input class="row__name" type="text" maxlength="60" [value]="row.label"
                    (change)="patchRow($index, { label: $any($event.target).value })"
@@ -189,7 +195,9 @@
               <select [value]="row.ownedCopies"
                       (change)="patchRow($index, { ownedCopies: +($any($event.target).value) })">
                 @for (n of ownedOptions(row.banner); track n) {
-                  <option [value]="n">{{ ownedLabel(row.banner, n) }}</option>
+                  <option [value]="n" [selected]="row.ownedCopies === n">
+                    {{ ownedLabel(row.banner, n) }}
+                  </option>
                 }
               </select>
             </label>
@@ -198,7 +206,9 @@
               <select [value]="row.targetCopies"
                       (change)="patchRow($index, { targetCopies: +($any($event.target).value) })">
                 @for (n of copyOptions(row.banner); track n) {
-                  <option [value]="n">{{ rung(row.banner, n) }}</option>
+                  <option [value]="n" [selected]="row.targetCopies === n">
+                    {{ rung(row.banner, n) }}
+                  </option>
                 }
               </select>
             </label>
@@ -208,10 +218,15 @@
         }
       </div>
       <div class="rows__add">
-        <button type="button" (click)="addRow('character')">+ Add character</button>
-        <button type="button" (click)="addRow('weapon')">+ Add weapon</button>
+        <button type="button" [disabled]="!canAddRow()" (click)="addRow('character')">
+          + Add character
+        </button>
+        <button type="button" [disabled]="!canAddRow()" (click)="addRow('weapon')">
+          + Add weapon
+        </button>
         <small class="hint">
           Spent in order, top to bottom. Pity and Capturing Radiance belong to the first row.
+          @if (!canAddRow()) { <strong>Twelve goals is the most a plan can hold.</strong> }
         </small>
       </div>
     }
@@ -222,7 +237,7 @@
     @if (income().length) {
       <div class="income">
         <div class="income__head">
-          <span class="label">Add upcoming patches</span>
+          <span class="label">Add income from patches still to come</span>
           <div class="segmented segmented--small" role="group" aria-label="Spending tier">
             @for (t of tiers; track t) {
               <button type="button" [class.on]="tier() === t" (click)="tier.set(t)">
@@ -243,11 +258,13 @@
             </button>
           }
         </div>
-        @if (incomeFetchedAt()) {
-          <small class="hint">
-            Income data last refreshed {{ incomeFetchedAt() | date: 'mediumDate' }}.
-          </small>
-        }
+        <small class="hint">
+          Only patches the workbook still calls an estimate — a patch already finished is
+          income you have either banked or spent, and adding it would count it twice.
+          @if (incomeFetchedAt()) {
+            Last refreshed {{ incomeFetchedAt() | date: 'mediumDate' }}.
+          }
+        </small>
       </div>
     }
 

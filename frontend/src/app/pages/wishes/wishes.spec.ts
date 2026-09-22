@@ -355,3 +355,103 @@ describe('owning copies is not the same as reaching a rung', () => {
     expect(page.ownedLabel('character', 7)).toBe('C6');
   });
 });
+
+describe('a custom plan cannot exceed what the backend accepts', () => {
+  /**
+   * `WishPlanRequest.targets` caps at 12. A page that builds a thirteenth row gets a 422 the
+   * user reads as "that combination could not be planned" — a refusal about a limit nothing
+   * on screen mentioned. Found by comparing the two caps, not by anything failing.
+   */
+  it('stops adding rows at twelve', async () => {
+    const { page } = makePage();
+    await settled();
+    page.mode.set('custom');
+    for (let i = 0; i < 20; i++) page.addRow('character');
+    expect(page.rows()).toHaveLength(12);
+    expect(page.canAddRow()).toBe(false);
+  });
+
+  it('allows adding again once a row is removed', async () => {
+    const { page } = makePage();
+    await settled();
+    page.mode.set('custom');
+    for (let i = 0; i < 20; i++) page.addRow('weapon');
+    page.removeRow(0);
+    expect(page.canAddRow()).toBe(true);
+    page.addRow('weapon');
+    expect(page.rows()).toHaveLength(12);
+  });
+});
+
+describe('PR #331 review findings', () => {
+  /**
+   * Finding 3. `income().slice(-8)` was the last eight rows of the *whole* history, and six
+   * of those had already shipped — so ticking 6.5 added ~88 wishes the player had already
+   * earned and already counted in their primogem box, inflating every success chance.
+   */
+  it('offers only patches that have not finished', async () => {
+    const { page } = makePage();
+    await settled();
+    expect(page.upcoming().map((v: any) => v.version)).toEqual(['7.1']);
+    expect(page.upcoming().every((v: any) => v.is_estimate)).toBe(true);
+  });
+
+  it('adds nothing when a finished patch cannot be ticked', async () => {
+    const { page } = makePage();
+    await settled();
+    page.toggleVersion('7.0');
+    expect(page.projectedWishes()).toBe(0);
+  });
+
+  /**
+   * Finding 4/9's frontend half: the loss options come from the backend's advertised ceiling
+   * rather than a literal `[0, 1, 2, 3]`, so a change to the radiance table cannot leave the
+   * control behind.
+   */
+  it('builds the loss options from the backend ceiling', async () => {
+    const { page } = makePage();
+    await settled();
+    expect(page.lossOptions()).toEqual([0, 1, 2, 3]);
+  });
+
+  it('follows a different ceiling if the backend reports one', async () => {
+    const { page } = makePage({
+      limits: vi.fn().mockResolvedValue({ ...LIMITS, max_lost_fifty_fifties: 2 }),
+    });
+    await settled();
+    expect(page.lossOptions()).toEqual([0, 1, 2]);
+  });
+
+  /**
+   * Finding 6. Debouncing cancels a pending timer, not a request already in flight. A slow
+   * request A and a fast request B could land out of order, leaving the table showing A's
+   * answer for B's inputs — no error, no cue.
+   */
+  it('ignores a slow earlier request that lands after a faster later one', async () => {
+    let release: ((value: WishPlanRead) => void) | null = null;
+    const slow = new Promise<WishPlanRead>((resolve) => { release = resolve; });
+    const planFn = vi.fn()
+      .mockReturnValueOnce(slow)
+      .mockResolvedValueOnce({ ...PLAN, budget: 999 });
+    const { page } = makePage({ plan: planFn });
+    await settled();
+
+    const first = page.recompute(page.request());
+    const second = page.recompute(page.request());
+    await second;
+    expect(page.plan().budget).toBe(999);
+
+    release!({ ...PLAN, budget: 111 });
+    await first;
+    expect(page.plan().budget).toBe(999);
+  });
+
+  it('still reports an error from the newest request', async () => {
+    const { page } = makePage({
+      plan: vi.fn().mockRejectedValue({ detail: 'nope' }),
+    });
+    await settled();
+    await page.recompute(page.request());
+    expect(page.error()).toBe('nope');
+  });
+});

@@ -313,7 +313,7 @@ async def test_a_weapon_in_the_character_slot_is_refused(authed_client: AsyncCli
 
 
 async def test_only_the_first_target_may_set_the_counter(authed_client: AsyncClient) -> None:
-    """One account, one Capturing Radiance counter."""
+    """One account, one Capturing Radiance counter — declared on the first character leg."""
     response = await authed_client.post(
         "/api/v1/wishes/plan",
         json={
@@ -324,7 +324,7 @@ async def test_only_the_first_target_may_set_the_counter(authed_client: AsyncCli
         },
     )
     assert response.status_code == 400
-    assert "first leg" in response.json()["detail"]
+    assert "first character-banner leg" in response.json()["detail"]
 
 
 # --- starglitter refund --------------------------------------------------------------------
@@ -377,3 +377,47 @@ async def test_limits_publishes_the_strategies_and_refund_tiers(
     tiers = body["starglitter_refund_tiers"]
     assert tiers["none"] == 0
     assert 0 < tiers["low"] < tiers["average"] < tiers["high"]
+
+
+async def test_a_weapon_first_plan_accepts_banked_losses(authed_client: AsyncClient) -> None:
+    """PR #331 review, finding 1. `R1 first` plus any banked losses used to answer 400.
+
+    Reachable in two clicks: ticking "Guaranteed" sets the counter to 1 by itself.
+    """
+    response = await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={
+            "character": {"banner": "character", "label": "F", "lost_fifty_fifties": 2},
+            "weapon": {"banner": "weapon", "label": "S"},
+            "strategy": "r1_first",
+            "primogems": 32_000,
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["milestones"][0]["label"] == "S R1"
+
+
+async def test_the_counter_is_bounded_by_the_model_not_by_constellations(
+    authed_client: AsyncClient,
+) -> None:
+    """Four states, 0-3. Accepting 4-6 and silently clamping them answered a question about
+    a counter both the model and the page say cannot exist."""
+    body = (await authed_client.get("/api/v1/wishes/limits")).json()
+    assert body["max_lost_fifty_fifties"] == 3
+
+    response = await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={"character": {"banner": "character", "lost_fifty_fifties": 4}},
+    )
+    assert response.status_code == 422
+
+
+async def test_limits_reads_its_constants_from_the_data_file(
+    authed_client: AsyncClient,
+) -> None:
+    """Hardcoding them let the page and the server disagree with nothing failing."""
+    from app.services.wishes.rates import primogems_per_wish, radiance_win_rates
+
+    body = (await authed_client.get("/api/v1/wishes/limits")).json()
+    assert body["primogems_per_wish"] == primogems_per_wish()
+    assert body["max_lost_fifty_fifties"] == len(radiance_win_rates()) - 1

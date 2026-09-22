@@ -20,6 +20,17 @@ const DEBOUNCE_MS = 250;
 /** Copies that take an item to its maximum. */
 const MAX_COPIES = { character: 7, weapon: 5 } as const;
 
+/**
+ * Most goals a custom plan may hold.
+ *
+ * **Must match `WishPlanRequest.targets`' `max_length` on the backend.** Without it the page
+ * happily builds a thirteenth row and the request comes back 422, which the user reads as
+ * "that combination could not be planned" — a refusal about a limit nothing on screen
+ * mentioned. A control that can build a state the server refuses is the defect; the error
+ * message is only how it surfaces.
+ */
+const MAX_ROWS = 12;
+
 /** One banner's starting position, as the controls hold it. */
 interface Position {
   label: string;
@@ -103,27 +114,51 @@ export class WishesPage {
     () => this.limits()?.banners['weapon']?.hard_pity ?? 80,
   );
   protected readonly maxLosses = computed(() => this.limits()?.max_lost_fifty_fifties ?? 3);
+  /** 0..maxLosses. Built from the backend's own ceiling rather than a literal `[0,1,2,3]`. */
+  protected readonly lossOptions = computed(() =>
+    Array.from({ length: this.maxLosses() + 1 }, (_, n) => n),
+  );
 
   /** True once the counter alone guarantees the next 50/50, so the page can say why. */
   protected readonly radianceIsCertain = computed(
     () => this.character().lostFiftyFifties >= this.maxLosses(),
   );
 
-  /** Wishes from the patches ticked, at the chosen tier. */
+  /**
+   * Versions still ahead, oldest first.
+   *
+   * **Filtered on `is_estimate`, which is the only forward marker the store has.** It held
+   * the last eight rows of the whole history, and six of those had already shipped — so
+   * ticking 6.5 added ~88 wishes the player had already earned *and already counted in their
+   * primogem box*, silently inflating every success chance. The workbook carries no dates, so
+   * "has this patch happened" cannot be asked any other way; an estimate is by definition a
+   * patch that has not finished.
+   */
+  protected readonly upcoming = computed(() =>
+    this.income().filter((version) => version.is_estimate),
+  );
+
+  /**
+   * Wishes from the patches ticked, at the chosen tier.
+   *
+   * **Summed over `upcoming()`, not over the whole store.** Filtering only what is *offered*
+   * left the total counting anything already selected, so a version that stopped being
+   * offered — because it shipped — kept contributing invisibly. The set of things that can
+   * be counted and the set that can be ticked have to be the same set.
+   */
   protected readonly projectedWishes = computed(() => {
     const chosen = this.selectedVersions();
     const tier = this.tier();
     return Math.floor(
-      this.income()
+      this.upcoming()
         .filter((version) => chosen.has(version.version))
         .reduce((total, version) => total + version[tier], 0),
     );
   });
 
-  /** Versions still ahead, newest first — nobody budgets for a patch that has been and gone. */
-  protected readonly upcoming = computed(() => this.income().slice(-8).reverse());
-
   private timer: ReturnType<typeof setTimeout> | null = null;
+  /** Sequence guard: a slower earlier request must not overwrite a faster later one. */
+  private latest = 0;
 
   constructor() {
     void this.load();
@@ -189,15 +224,22 @@ export class WishesPage {
   }
 
   private async recompute(request: ReturnType<WishesPage['request']>): Promise<void> {
+    // Debouncing cancels a pending *timer*, not a request already in flight. Without this
+    // guard a slow request A and a fast request B can land out of order and the table shows
+    // A's answer for B's inputs — no error, no cue, just the wrong numbers.
+    const ticket = ++this.latest;
     this.pending.set(true);
     try {
-      this.plan.set(await this.service.plan(request as never));
+      const plan = await this.service.plan(request as never);
+      if (ticket !== this.latest) return;
+      this.plan.set(plan);
       this.error.set(null);
     } catch (caught) {
+      if (ticket !== this.latest) return;
       this.plan.set(null);
       this.error.set(this.describe(caught));
     } finally {
-      this.pending.set(false);
+      if (ticket === this.latest) this.pending.set(false);
     }
   }
 
@@ -258,7 +300,11 @@ export class WishesPage {
 
   // -- custom rows
 
+  /** True when the plan is full, so the add buttons can say so rather than fail on use. */
+  protected readonly canAddRow = computed(() => this.rows().length < MAX_ROWS);
+
   protected addRow(banner: 'character' | 'weapon'): void {
+    if (!this.canAddRow()) return;
     const label = banner === 'character' ? 'Character' : 'Weapon';
     this.rows.set([
       ...this.rows(),

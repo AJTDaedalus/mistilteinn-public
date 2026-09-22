@@ -26,11 +26,18 @@ from app.services.wishes import (
     UnreachableStateError,
     campaign_for,
     plan_campaign,
+    radiance_win_rates,
     rates_for,
     refund_tiers,
     refunded_budget,
 )
 from app.services.wishes.planner import MAX_CONSTELLATION, MAX_REFINEMENT, wishes_from
+from app.services.wishes.rates import primogems_per_wish
+
+#: Highest Capturing Radiance counter the model has a rate for. **Derived, not typed**: the
+#: table's last entry is 1.0 ("you cannot lose a fourth"), so its length is the answer and a
+#: change to the data file cannot leave this behind.
+MAX_LOST_FIFTY_FIFTIES = len(radiance_win_rates()) - 1
 
 router = APIRouter(prefix="/wishes", tags=["wishes"])
 
@@ -56,7 +63,7 @@ class WishTarget(BaseModel):
         False, description="Whether the next 5-star is guaranteed to be the promotional item."
     )
     lost_fifty_fifties: int = Field(
-        0, ge=0, le=MAX_CONSTELLATION,
+        0, ge=0, le=MAX_LOST_FIFTY_FIFTIES,
         description=(
             "50/50s lost since the last one WON — the Capturing Radiance counter. It is one "
             "account-wide counter, so only the FIRST target of a plan may set it."
@@ -300,7 +307,7 @@ async def read_income(session: _Session, user: _User) -> WishIncomeRead:
 async def read_limits(user: _User) -> dict:
     """Static facts the page needs to build its controls without hardcoding them."""
     return {
-        "primogems_per_wish": 160,
+        "primogems_per_wish": primogems_per_wish(),
         "max_constellation": MAX_CONSTELLATION,
         "max_refinement": MAX_REFINEMENT,
         "banners": {
@@ -313,7 +320,7 @@ async def read_limits(user: _User) -> dict:
         },
         # Offering "guaranteed with 0 losses" would let the page build a state the service
         # refuses; the control has to know that here rather than discover it in a 422.
-        "max_lost_fifty_fifties": 3,
+        "max_lost_fifty_fifties": MAX_LOST_FIFTY_FIFTIES,
         "strategies": [strategy.value for strategy in Strategy],
         "starglitter_refund_tiers": refund_tiers(),
     }

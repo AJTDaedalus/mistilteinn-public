@@ -13068,7 +13068,7 @@
           },
           "lost_fifty_fifties": {
             "type": "integer",
-            "maximum": 6.0,
+            "maximum": 3.0,
             "minimum": 0.0,
             "title": "Lost Fifty Fifties",
             "description": "50/50s lost since the last one WON \u2014 the Capturing Radiance counter. It is one account-wide counter, so only the FIRST target of a plan may set it.",

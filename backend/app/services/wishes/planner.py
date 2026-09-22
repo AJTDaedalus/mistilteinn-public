@@ -223,9 +223,9 @@ def plan_campaign(legs: Sequence[Leg], budget: int) -> WishPlan:
 
     radiance_states = len(radiance_win_rates())
     state: list[np.ndarray | None] = [None] * radiance_states
+    state[_initial_radiance(legs, radiance_states)] = np.array([1.0])
     milestones: list[Milestone] = []
     seen_banners: set[BannerKind] = set()
-    started = False
 
     for leg in legs:
         rates = rates_for(leg.banner)
@@ -242,16 +242,6 @@ def plan_campaign(legs: Sequence[Leg], budget: int) -> WishPlan:
         start = _conditioned_on_pity(fresh, leg.pity) if first_on_banner else fresh
         guaranteed = leg.guaranteed if first_on_banner else False
 
-        if not started:
-            state[min(leg.lost_fifty_fifties, radiance_states - 1)] = np.array([1.0])
-            started = True
-        elif leg.lost_fifty_fifties:
-            # One account has one counter. A later leg cannot re-declare what the campaign
-            # has been carrying, whatever banner it is on.
-            raise ValueError(
-                "lost_fifty_fifties belongs to the first leg of a campaign: the counter is "
-                "carried from there, not re-entered per character"
-            )
 
         for step in range(target - leg.owned_copies):
             cost = start if step == 0 else fresh
@@ -272,6 +262,40 @@ def plan_campaign(legs: Sequence[Leg], budget: int) -> WishPlan:
             )
 
     return WishPlan(budget=budget, milestones=milestones)
+
+
+def _initial_radiance(legs: Sequence[Leg], radiance_states: int) -> int:
+    """The Capturing Radiance counter a campaign starts on.
+
+    **It belongs to the banner that has the mechanic, not to leg 0.** An earlier draft read it
+    off the first leg of the campaign, so any ordering that opened on the weapon banner —
+    `R1 first`, or `C0 first` for someone who already owns C0 — was refused outright. A weapon
+    leg cannot touch the counter, so it cannot matter that one runs first.
+
+    Raises:
+        ValueError: If more than one leg declares it. One account has one counter.
+    """
+    declared = [leg for leg in legs if leg.lost_fifty_fifties]
+    if not declared:
+        return 0
+    if len(declared) > 1:
+        raise ValueError(
+            "lost_fifty_fifties belongs to one leg of a campaign: it is a single account-wide "
+            "counter, carried from there, not re-entered per character"
+        )
+    holder = declared[0]
+    # Every leg on the mechanic's banner *before* the one declaring it would already have
+    # advanced or reset the counter, so a later declaration describes a state the campaign
+    # has moved past.
+    for leg in legs:
+        if leg is holder:
+            break
+        if rates_for(leg.banner).capturing_radiance:
+            raise ValueError(
+                "lost_fifty_fifties must be declared on the first character-banner leg: a "
+                "character pulled before it would already have changed the counter"
+            )
+    return min(holder.lost_fifty_fifties, radiance_states - 1)
 
 
 def _cap(banner: BannerKind) -> int:
@@ -375,26 +399,3 @@ def _quantile(pmf: np.ndarray, q: float) -> int | None:
 def _label(banner: BannerKind, copies: int) -> str:
     """"C3" for the fourth copy of a character, "R2" for the second of a weapon."""
     return f"C{copies - 1}" if banner is BannerKind.CHARACTER else f"R{copies}"
-
-
-def _validate(position: PlanInput, budget: int, rates: BannerRates, max_copies: int) -> None:
-    """Reject inputs the game cannot produce, rather than answering them."""
-    if budget < 0:
-        raise ValueError("budget must not be negative")
-    if not 0 <= position.pity < rates.hard_pity:
-        raise ValueError(f"pity must be within [0, {rates.hard_pity - 1}]")
-    if not 0 <= position.owned_copies < max_copies:
-        raise ValueError(f"owned_copies must be within [0, {max_copies - 1}]")
-    if position.lost_fifty_fifties < 0:
-        raise ValueError("lost_fifty_fifties must not be negative")
-    if position.lost_fifty_fifties and not rates.capturing_radiance:
-        raise ValueError(
-            "lost_fifty_fifties applies to the character banner only: the weapon banner's "
-            "Epitomized Path has no Capturing Radiance equivalent"
-        )
-    if position.guaranteed and rates.capturing_radiance and position.lost_fifty_fifties == 0:
-        raise UnreachableStateError(
-            "guaranteed with no 50/50s lost is not a state the game can produce: arming the "
-            "guarantee requires losing a 50/50, and that loss increments the Capturing "
-            "Radiance counter"
-        )

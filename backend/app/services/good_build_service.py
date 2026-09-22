@@ -345,7 +345,8 @@ def _new_build(
         weapon_id=weapon.id if weapon else None,
         character_level=entry.level if entry else 1,
         ascension_phase=entry.ascension if entry else 0,
-        constellation_level=entry.constellation if entry else 0,
+        # A build column cannot hold "unknown"; the roster row can, and does.
+        constellation_level=(entry.constellation if entry else None) or 0,
         weapon_level=wielded.level if wielded else 1,
         refinement=wielded.refinement if wielded else 1,
         talent_levels=dict(entry.talents) if entry else {},

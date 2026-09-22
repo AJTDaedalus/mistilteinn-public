@@ -147,7 +147,11 @@ class ParsedCharacter:
     key: str
     level: int
     ascension: int
-    constellation: int
+    #: **None means the export did not say**, which is not C0. `character_roster` keeps that
+    #: distinction because an unknown constellation and a zero one give different starglitter
+    #: refunds and only one of them is a claim — `docs/DESIGN_wish_planner.md` section 9.4.
+    #: Builds still coerce it to 0, because a build column cannot hold "unknown".
+    constellation: int | None
     #: `{normal_attack, elemental_skill, elemental_burst}` — GOOD's `auto`/`skill`/`burst`
     #: renamed to this repo's `TalentType` spellings at the boundary, so nothing downstream
     #: carries GO's vocabulary.
@@ -361,7 +365,11 @@ def _parse_characters(records: Iterable[Any]) -> list[ParsedCharacter]:
                 key=key,
                 level=_bounded(record.get("level"), 1, 90, 1),
                 ascension=_bounded(record.get("ascension"), 0, 6, 0),
-                constellation=_bounded(record.get("constellation"), 0, 6, 0),
+                constellation=(
+                    _bounded(record.get("constellation"), 0, 6, 0)
+                    if record.get("constellation") is not None
+                    else None
+                ),
                 talents={
                     ours: _bounded(talents.get(theirs), 1, 15, 1)
                     for theirs, ours in _TALENTS.items()

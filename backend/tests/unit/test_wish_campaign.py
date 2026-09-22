@@ -113,8 +113,12 @@ def test_a_weapon_leg_cannot_clear_the_radiance_counter() -> None:
 
 
 def test_the_counter_is_declared_once_for_a_campaign() -> None:
-    """It is one account-wide counter, so a later character cannot re-enter it."""
-    with pytest.raises(ValueError, match="first leg of a campaign"):
+    """It is one account-wide counter, so a later character cannot re-enter it.
+
+    The weapon leg in between is deliberate: it cannot touch the counter, so the refusal has
+    to come from the *character* leg before it and not merely from "this is not leg 0".
+    """
+    with pytest.raises(ValueError, match="first character-banner leg"):
         plan_campaign(
             [
                 Leg(BannerKind.CHARACTER, "A", target_copies=1),
@@ -287,3 +291,84 @@ def test_an_unknown_tier_is_refused_rather_than_ignored() -> None:
 def test_a_negative_wallet_is_refused() -> None:
     with pytest.raises(ValueError, match="must not be negative"):
         refunded_budget(-1, "none")
+
+
+# --- the counter belongs to a banner, not to leg 0 (PR #331 review, finding 1) ------------
+
+
+@pytest.mark.parametrize("strategy", list(Strategy))
+def test_every_strategy_accepts_banked_losses(strategy: Strategy) -> None:
+    """Regression: `R1 first` with any banked losses used to be refused outright.
+
+    `_legs` put the counter on the first leg *of each banner* and `plan_campaign` accepted it
+    only on the first leg *of the campaign*, so every ordering that opened on the weapon banner
+    returned a 400. Through the UI that was not an edge case — ticking "Guaranteed" sets the
+    counter to 1 automatically, so "Guaranteed" plus "R1 first" broke the page.
+    """
+    legs = campaign_for(
+        strategy, Leg(BannerKind.CHARACTER, "F", lost_fifty_fifties=2), WEAPON
+    )
+    plan = plan_campaign(legs, budget=200)
+    assert plan.milestones
+
+
+def test_a_dropped_first_goal_still_accepts_banked_losses() -> None:
+    """The same defect by another route: owning C0 already drops the character leg to second."""
+    legs = campaign_for(
+        Strategy.C0_FIRST,
+        Leg(BannerKind.CHARACTER, "F", lost_fifty_fifties=2, owned_copies=1),
+        WEAPON,
+    )
+    assert legs[0].banner is BannerKind.WEAPON
+    assert plan_campaign(legs, budget=200).milestones
+
+
+def test_a_leading_weapon_leg_does_not_swallow_the_counter() -> None:
+    """Accepting the state is not enough — it has to still be worth something."""
+    def to_c0(lost: int) -> float:
+        legs = campaign_for(
+            Strategy.WEAPON_FIRST, Leg(BannerKind.CHARACTER, "F", lost_fifty_fifties=lost), WEAPON
+        )
+        return next(
+            m for m in plan_campaign(legs, 0).milestones if m.label == "F C0"
+        ).average_wishes
+
+    assert to_c0(3) < to_c0(0) - 25
+
+
+def test_two_legs_may_not_both_declare_the_counter() -> None:
+    with pytest.raises(ValueError, match="single account-wide counter"):
+        plan_campaign(
+            [
+                Leg(BannerKind.CHARACTER, "A", lost_fifty_fifties=1, target_copies=1),
+                Leg(BannerKind.CHARACTER, "B", lost_fifty_fifties=2, target_copies=1),
+            ],
+            0,
+        )
+
+
+def test_a_later_character_leg_may_not_declare_the_counter() -> None:
+    """A character pulled before it would already have moved the counter."""
+    with pytest.raises(ValueError, match="first character-banner leg"):
+        plan_campaign(
+            [
+                Leg(BannerKind.CHARACTER, "A", target_copies=1),
+                Leg(BannerKind.CHARACTER, "B", lost_fifty_fifties=2, target_copies=1),
+            ],
+            0,
+        )
+
+
+def test_a_maximal_custom_plan_stays_interactive() -> None:
+    """Twelve legs run to their caps is the largest plan the API accepts."""
+    legs = [
+        Leg(
+            BannerKind.CHARACTER if i % 2 == 0 else BannerKind.WEAPON,
+            f"T{i}",
+            target_copies=7 if i % 2 == 0 else 5,
+        )
+        for i in range(12)
+    ]
+    plan = plan_campaign(legs, budget=100_000)
+    assert len(plan.milestones) == 72
+    assert plan.milestones[-1].success_chance == pytest.approx(1.0, abs=1e-6)
