@@ -20,16 +20,24 @@
   padding: var(--space-3);
 }
 
+/* **Dark text on the bright brass, not light text on the deep one.** `--ink` on
+   `--brass-deep` measured 2.64:1 and the hover state dropped it to 1.43:1 — the label all but
+   disappeared. Switching the text to `--bg` fixed hover and left the rest state at **4.12:1,
+   still under AA's 4.5** — a number worth measuring rather than assuming, because it looks
+   like a fix. `--brass` at rest is 7.58:1 and `--brass-hi` on hover is higher still. This
+   palette reasons about its ratios by name in `_tokens.scss`; no other rule in the app puts
+   text on brass, and the house primary is `--violet`. */
 .about__discord {
-  background: var(--brass-deep);
-  border: 1px solid var(--brass);
+  background: var(--brass);
+  border: 1px solid var(--brass-hi);
   border-radius: var(--radius-1);
-  color: var(--ink);
+  color: var(--bg);
+  font-weight: 600;
   display: inline-block;
   padding: var(--space-2) var(--space-4);
   text-decoration: none;
 
-  &:hover { background: var(--brass); }
+  &:hover { background: var(--brass-hi); }
   &:focus-visible { outline: 2px solid var(--brass-hi); outline-offset: 2px; }
 }
 

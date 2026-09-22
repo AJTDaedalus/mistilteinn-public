@@ -31,6 +31,7 @@ export class AboutPage {
       name: 'gcsim',
       url: 'https://github.com/genshinsim/gcsim',
       licence: 'MIT · © 2021 genshinsim',
+      licenceUrl: '/gcsim/gcsim.LICENSE.txt',
       body:
         'Optimization of artifacts/weapons is built on top of GCsim’s engine. Their open ' +
         'source community is what makes optimization possible, and they are always looking ' +
@@ -40,6 +41,7 @@ export class AboutPage {
       name: 'Genshin Optimizer',
       url: 'https://github.com/frzyc/genshin-optimizer',
       licence: null,
+      licenceUrl: null,
       body:
         'GO was used as a baseline for what an optimizer should do, with some improvements ' +
         '(most notably the GCsim engine providing full rotation optimizations).',
@@ -48,25 +50,32 @@ export class AboutPage {
       name: 'The Go authors',
       url: 'https://go.dev',
       licence: 'BSD-3-Clause · © 2009 The Go Authors',
+      licenceUrl: '/gcsim/go.LICENSE.txt',
       body: 'Provides a WASM loader that is used to run gcsim.',
     },
     {
       name: 'nanoka',
       url: 'https://nanoka.cc',
       licence: null,
+      licenceUrl: null,
       body: 'Primary source for game data and art displayed.',
     },
     {
       name: 'KeqingMains',
       url: 'https://keqingmains.com',
       licence: null,
+      licenceUrl: null,
       body:
         'Source for weapon and artifact recommendations used to order build options.',
     },
     {
       name: 'Genshin Impact Wiki',
       url: 'https://genshin-impact.fandom.com',
-      licence: 'CC BY-SA',
+      // Fandom is CC BY-SA **3.0**; a bare "CC BY-SA" reads as 4.0 today, which is a
+      // different licence. The licence itself requires a link to its terms, so the tag
+      // carries one — the other two tags point at the notices served beside the artifacts.
+      licence: 'CC BY-SA 3.0',
+      licenceUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
       body:
         'Source for banner information, gacha rates, and other game system specifics.',
     },

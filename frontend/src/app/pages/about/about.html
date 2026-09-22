@@ -23,7 +23,12 @@
           {{ credit.name }}
         </a>
         @if (credit.licence) {
-          <span class="credit__licence">{{ credit.licence }}</span>
+          @if (credit.licenceUrl) {
+            <a class="credit__licence" [href]="credit.licenceUrl"
+               target="_blank" rel="noopener noreferrer">{{ credit.licence }}</a>
+          } @else {
+            <span class="credit__licence">{{ credit.licence }}</span>
+          }
         }
         <p class="credit__body">{{ credit.body }}</p>
       </li>

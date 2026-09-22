@@ -89,6 +89,19 @@ RUN set -eu; \
     done; \
     echo "bundle carries the simulator: $(du -h dist/mistilteinn/browser/gcsim/gcsim.wasm | cut -f1)"
 
+# **The bundle's own notices, moved into the served tree.** Angular writes
+# `3rdpartylicenses.txt` to `dist/mistilteinn/`, one level *above* `browser/` — so the copy
+# below, which takes `browser/` alone, left the MIT notices for Angular, RxJS and zone.js
+# reaching no visitor at all. That is the same obligation the gcsim notices two lines up
+# exist to satisfy, and it went unnoticed because the SPA's catch-all answers every missing
+# path with `200 text/html`: the URL "worked" and served the index.
+RUN set -eu; \
+    [ -s dist/mistilteinn/3rdpartylicenses.txt ] || { \
+      echo "the build emitted no 3rdpartylicenses.txt — the bundle's own notices would not ship" >&2; \
+      exit 1; }; \
+    cp dist/mistilteinn/3rdpartylicenses.txt dist/mistilteinn/browser/3rdpartylicenses.txt; \
+    echo "bundle carries its third-party notices: $(wc -c < dist/mistilteinn/browser/3rdpartylicenses.txt) bytes"
+
 # ── runtime ────────────────────────────────────────────────────────────────────
 FROM nginx:stable-alpine AS runtime
 

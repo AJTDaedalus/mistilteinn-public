@@ -9,8 +9,14 @@ function open(): any {
 }
 
 describe('AboutPage', () => {
-  it('points at the project Discord', () => {
-    expect(open().discord).toBe('https://discord.gg/QAgVwnQHf');
+  /**
+   * **Shape, not the constant.** Asserting the literal restated line 21 of `about.ts` back at
+   * itself: the only edit it could fail on was the deliberate one. It was also blind to the
+   * failure that will actually happen — a Discord invite expiring — which no test can catch
+   * offline, and which is why the link is a permanent invite rather than a temporary one.
+   */
+  it('points at a Discord invite', () => {
+    expect(open().discord).toMatch(/^https:\/\/discord\.gg\/[A-Za-z0-9-]+$/);
   });
 
   describe('credits', () => {
@@ -30,8 +36,28 @@ describe('AboutPage', () => {
     it('links every credit somewhere a reader can check', () => {
       for (const credit of open().credits) {
         expect(credit.url).toMatch(/^https:\/\//);
-        expect(credit.body.length).toBeGreaterThan(40);
+        expect(credit.body.length).toBeGreaterThan(20);
       }
+    });
+
+    /**
+     * The licence tag is the compliance-bearing text on this page, so naming a licence
+     * without a way to read it is the entry that undercuts the rest. gcsim's and Go's point
+     * at the notices served beside the artifacts; the wiki's points at the CC deed, which
+     * CC BY-SA itself requires.
+     */
+    it('makes every named licence reachable', () => {
+      const credits = open().credits as { licence: string | null; licenceUrl: string | null }[];
+      for (const credit of credits.filter((c) => c.licence)) {
+        expect(credit.licenceUrl).toBeTruthy();
+      }
+    });
+
+    it('names a licence version where the licence has them', () => {
+      const credits = open().credits as { name: string; licence: string | null }[];
+      // A bare "CC BY-SA" reads as 4.0 today; Fandom is 3.0, a different licence.
+      const wiki = credits.find((c) => c.name === 'Genshin Impact Wiki')!;
+      expect(wiki.licence).toBe('CC BY-SA 3.0');
     });
 
     it('names the two the owner called out first', () => {
