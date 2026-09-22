@@ -171,7 +171,7 @@ Recompute is **debounced**, not per-keystroke: `CLAUDE.md` records this repo typ
 a materials box and writing 9, then 99, then 999. And `Number('') === 0`, so an emptied pity box
 must not silently read as pity 0.
 
-## 9. Planned — a real starglitter simulator
+## 9. Planned — the starglitter refund, computed exactly
 
 Owner, 2026-09-22: ship the flat refund first, *"and then draft a plan for building a real
 refund simulator like zzz.163.moe"*, then — *"source the rates for each of the 3 on banner 4
@@ -428,18 +428,84 @@ That is the general shape of the answer: **the uncertainty a user should see is 
 can act on.** They can fix a wrong constellation. They cannot do anything about the spread of
 a binomial.
 
-### 9.7 Shape, and the bar for shipping it
+### 9.7 It never needs to be a simulator — and the histogram is already free
 
-`scripts/` first. Run it offline across a grid of (roster shape, campaign length) and ask
-whether the answer is a smooth function of two or three account facts. **If it is, the product
-is a calibrated constant plus a roster-derived tier, and no simulator ships** — which would be
-the good outcome. Only if the refund genuinely depends on the path — and it might, because a
-4★ character three constellations short pays 2 until C6 and 5 after, so a long campaign
-crosses that line and the rate *rises as it runs* — does a per-request simulation earn its
-place. Then it is a job with progress, at the cost `RESEARCH_wish_planner.md` §4 measures.
+Owner, 2026-09-22: *"would it be better to switch from raw probabilities to simulations and
+show a histogram? Could we generate a histogram without simulations based on the refund
+variance?"* and then *"is it possible to model the refund pool mathematically without
+simulation to make it 'exact' as well with a distribution?"*
 
-**The 5★ ladder stays exact.** Only the refund would be sampled, and only if it must be. Do
-not put a sampler on the request path to replace a closed form that already is not one.
+**The histogram already exists and is exact.** The convolution's output *is* the distribution
+of wishes-to-a-rung; the page computes it and then throws all but three numbers away. Reaching
+C2 has a 409-wish-wide support peaking at 311, and the shape is visibly multi-modal — one hump
+per pity cycle — which is information the mean and the median cannot carry. **Switching to
+simulation would replace an exact answer with a noisy estimate of it.**
+
+**And the refund is exactly computable too.** It looks path-dependent because a featured 4★
+crosses C6 *during* a campaign and its payout changes from 2 starglitter to 5. It is not.
+Prototyped 2026-09-22, four nested exact steps and no sampling anywhere:
+
+| step | how |
+|---|---|
+| 4★ count in *N* pulls | the same first-passage convolution, on the 4★ curve. Came out at 13.0627 % against the official 13.000 % |
+| featured vs non-featured | a **2-state Markov chain** — 50 % with the next guaranteed. Exact for any count; 66.2 % of 26 four-stars against the published 66.67 % |
+| the three featured characters | counts are multinomial, so **not** independent — handled by nesting the binomials exactly rather than by sampling. O(F²), and F is under 40 for any real campaign |
+| non-featured **weapons** (85 % of the non-featured third) | always 2 starglitter, so `2 × count` |
+| non-featured **characters** (15 %) | the *same* nesting as the featured three, with the roster's ~45 categories instead of 3 — `O(n · draws²)`, processed one character at a time conditioning on the draws left |
+
+Given a character's own draw count, its payout is a **deterministic** function — that is the
+step that dissolves the apparent path-dependence:
+
+    g(k) = 2 · min(k − u, 6 − c)⁺ + 5 · (k − u − (6 − c))⁺      u = 1 if unowned
+
+**The first prototype was not exact here and the owner caught it.** It priced *every*
+non-featured 4★ at 2 starglitter, which is right for the 85 % that are weapons and wrong for
+the 15 % that are characters — those pay 0 unowned, 2 below C6 and **5 at C6**. On a roster of
+20 at C6, 10 at C4, 8 at C2 and 7 unowned the true figure is **3.02 starglitter a draw, not
+2**. It is a small slice — about 1.3 such draws per 200 pulls, so **+0.27 wishes** — but it is
+a *bias* rather than noise, and it understates exactly the maxed accounts the `high` tier is
+for. The fix is the same nesting at 45 categories and runs instantly.
+
+Over 200 pulls, with that slice still simplified:
+
+| account | starglitter | in wishes |
+|---|---|---|
+| three featured all at C6 | 102.7 ± 8.8 | **20.5 ± 1.8** |
+| one C6, one C2, one unowned | 73.2 ± 8.6 | **14.6 ± 1.7** |
+
+So §9 is **not a simulator** and this section is no longer named as though it were. Nothing in
+this feature needs sampling: the cost is exact, the refund is exact, and their independence is
+published.
+
+### 9.8 What to draw
+
+- **The cost distribution as a histogram**, which costs nothing because it is already computed.
+  The multi-modality is the point — a reader sees the pity cycles rather than being told a mean.
+- **The budget as a marker line on it.** The area to its left *is* the success chance, so the
+  table's headline number becomes something you can see rather than something you take.
+- **The refund's spread is a ±2-wish band on that line** (§9.7), against a distribution
+  hundreds of wishes wide. Drawing it honestly means drawing it thin.
+
+**Population, not sample.** The PMF *is* the distribution rather than an estimate of it:
+no standard error, no confidence interval, identical to the last bit on every run. What
+remains is **model** error — the fitted soft-pity ramp, the 15/85 split, the roster's unknown
+constellations — and a simulation would carry all of that *plus* sampling noise. That is the
+whole argument for not sampling.
+
+**And the opposite caveat to the resin histograms applies.** `CLAUDE.md` records that the
+planner's resin histogram falls back to a two-point distribution when only a mean is known, so
+it is *narrower than reality* and every surface says so. This one is exact, and should say
+that instead — the two cases look identical on screen and are not the same claim.
+
+### 9.9 Shape, and the bar for shipping it
+
+**§9.7 settles the shape**: this is a closed form, so it belongs in the request path beside the
+ladder rather than in a job. The open question is no longer *simulate or not* but *how much of
+the roster to read* — §9.4's unknown-constellation problem, OQ-W12.
+
+`scripts/` first is still right, but for a different reason than the one this section
+originally gave: to check the exact computation against a naive simulation before trusting it,
+the same way `tests/unit/test_wish_planner_crossval.py` checks the ladder.
 
 ---
 
@@ -456,6 +522,7 @@ not put a sampler on the request path to replace a closed form that already is n
 | **OQ-W15** | The **weapon banner's 4★ rates are 6.0 % / 14.5 %**, not the character banner's 5.1 % / 13 %. The refund prices every wish at 13.057 %, so a weapon-banner campaign is under-priced by 1.115×. |
 | **OQ-W14** | §9.5: derive "whose signature is this weapon" from the banner data's `alongside` field, or curate it? |
 | **OQ-W12** | §9.4: the column is nullable so unknown stays unknown (OQ-W16), but **how much unknown is too much** before the refund figure should be withheld rather than estimated is still unanswered. |
+| **OQ-W20** | §9.8: a histogram per rung, or one for a selected rung? Twelve goals × a 400-wide PMF is a lot of chart for one page. |
 | **OQ-W5** | Genshin's wish history is exportable. Derive pity / guarantee / losses rather than asking? Would make the losses counter exact instead of remembered. |
 | ~~**OQ-W7**~~ | ~~Do the two concurrent 5★ split the 50/50 further?~~ **No — resolved 2026-09-22** from HoYoverse's disclosure: `r5_up_items` holds exactly **one** character for gacha_type 301, and Character Event Wish-2 is a **separate** gacha_type (400) with its own single promotional character and its own 50%. The 50% is the whole story. (The weapon banner is the one with two, `r5_up_items` = 2, which is why its featured rate is 0.75 × ½.) |
 | ~~**OQ-W16**~~ | **Built 2026-09-22** — `character_roster.constellation`, nullable, written by the importer for every owned character and editable by hand. Original text: **BLOCKER for §9.4.** A GOOD export carries `constellation` for *every* owned character, and `good_build_service` persists it **only onto builds — and only equipped characters get a build**. `character_roster` records ownership and no constellation. So for an owned-but-unequipped 4★ the constellation is parsed and then **discarded**, and those are exactly the characters the refund turns on. Fix is small (a column on the roster row, written during import) but it is a schema change and a decision. |
