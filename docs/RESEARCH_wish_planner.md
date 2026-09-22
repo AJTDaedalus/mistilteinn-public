@@ -283,10 +283,10 @@ shape from `CLAUDE.md` §planner-materials — **a number that goes stale within
 it invisibly**. If it ships, it needs the same treatment the curated resin rates got: a dated
 file, a named source, and a test that fails when nothing has been refreshed.
 
-**Recommendation: ship without "Additional resources" first.** Primogems + fates + pity +
-guarantee + losses is the whole of the question people actually ask, and it is entirely
-derivable from published rates plus one citation. Income projection can be a second pass, or
-never.
+**Superseded by the owner, 2026-09-22.** Income projection *is* in scope, sourced from the
+sheet the sister repo `/root/hoyincome` already reads, refreshed into a local store daily. It
+turns out to be the best-sourced part of the whole feature — see §10. Starglitter is out
+entirely by the same ruling: **primogems + Intertwined Fate, nothing else.**
 
 ---
 
@@ -343,9 +343,10 @@ figure for that, and it is the one HoYoverse advertises.
 | | |
 |---|---|
 | **OQ-W1** | Its own `/wishes` route (matches Fribbels, two things named "planner") or a third tab on `/planner`? |
-| **OQ-W2** | Ship "Additional resources" income projection at all? §6 argues not in a first pass. |
-| **OQ-W3** | Is the Masterless Starglitter refund in scope for v1, given it needs sourcing that gachasim cannot supply? |
+| ~~**OQ-W2**~~ | ~~Ship income projection at all?~~ **Answered 2026-09-22: yes**, from the hoyincome sheet. §10. |
+| ~~**OQ-W3**~~ | ~~Masterless Starglitter refund in v1?~~ **Answered 2026-09-22: no.** Primogems + Intertwined Fate only, so no uncited conversion rate is needed. |
 | **OQ-W4** | Multi Target in v1, or Simple only? Multi Target is most of the UI and none of the math. |
+| **OQ-W6** | Income is published *per patch*; a budget needs it *between two dates*. Whole-phase ticks like Fribbels', or a patch calendar? §10. |
 | **OQ-W5** | Genshin's wish history is exportable. Should pity / guarantee / losses eventually be *derived* rather than typed? That would make the losses counter exact instead of remembered. |
 
 ## Sources
@@ -355,7 +356,117 @@ figure for that, and it is the one HoYoverse advertises.
   site.
 - `fribbels/hsr-optimizer` — `docs/guides/en/warp-planner.md`,
   `src/lib/tabs/tabWarp/{warpCalculatorController,warpRates}.ts` (read at main, 2026-09-22).
+- Genshin bookkeeping workbook, doc `1l9HPu2cAzTckdXtr7u-7D8NSKzZNUqOuvbmxERFZ_6w`, all 54
+  patch tabs read 2026-09-22 via `/export?format=csv&gid=`. Located through
+  `/root/hoyincome/hoyo_pulls/config.py`.
 - `/root/gachasim` — `simulator.py`, `configurations.py`,
   `docs/RESEARCH_gacha_math_audit.md`, `docs/RESEARCH_hsr_loss_pool_hypothesis.md`.
   **It is not a git repository** — no `.git`, no remote, last touched 2026-08-16. Anything this
   repo comes to depend on should be vendored with its citations, not referenced by path.
+
+
+---
+
+## 10. Income per patch — sourced, verified, 2026-09-22
+
+Owner direction: *"use the google sheet the sister folder hoyincome uses to get pulls per
+patch for Genshin. We should be able to source f2p, welkin, and welkin + BP for each patch
+there. Maybe have it refresh an internal store every day so it doesn't have to scrape the
+sheet on each request."* And then, closing §6 and OQ-W3: *"acquaint fates don't count for
+this"*, *"just primogems + intertwined"*.
+
+### The source
+
+The Genshin bookkeeping workbook, document `1l9HPu2cAzTckdXtr7u-7D8NSKzZNUqOuvbmxERFZ_6w`
+— `hoyo_pulls/config.py` in `/root/hoyincome`. It carries a `summary` tab and **one tab per
+patch, 1.0 through `7.1 est.`**, 54 of them.
+
+**The three tiers are line items on every per-patch tab**, so nothing has to be modelled:
+
+| tier | how |
+|---|---|
+| **F2P** | the `Total F2P` row |
+| **Welkin** | `Total F2P` + the `Welkin 42 Days` row |
+| **Welkin + BP** | the above + `Battle Pass - Paid Bonus` — equals the `Total P2P` row |
+
+A wish is **`Primogems / 160 + Intertwined Fate`**. Column indices come from the sheet's own
+header row, not from counting: **9 = Primogems, 10 = Acquaint, 11 = Intertwined**.
+
+**Acquaint Fate is excluded** (owner, 2026-09-22). It buys standard-banner wishes and the
+planner is about the limited banners, so counting it would inflate every tier by roughly
+16 wishes a patch.
+
+### It validates against itself three ways
+
+Extracted across all 54 tabs:
+
+1. `F2P + Welkin + BP` equals the sheet's own **`Total P2P`** row to < 0.01 on **all 54**.
+2. The per-patch `Total F2P` equals the **`summary` tab's** F2P column on every patch checked
+   (5.0 → 131.29, 5.2 → 92.14, 6.0 → 125.16, 7.0 → 101.65). The two tabs agree, so the
+   sourcing is not picking a side.
+3. Welkin is a flat **26.25** wishes and the paid BP a flat **8.25** on every patch, which is
+   what a fixed subscription should look like. A patch where either moves is a shape change
+   worth failing on.
+
+Those are the three guards a refresher needs. A third-party spreadsheet can be re-laid-out by
+its maintainers at any time, and a column shift is exactly the kind of change that returns a
+valid HTTP 200 full of wrong numbers.
+
+### `hoyincome` reads the Acquaint column, and it costs it 4 wishes a patch
+
+`_GENSHIN_FATE_COLUMN = 10` is **Acquaint**, not Intertwined. It is used in one place,
+`_genshin_paid_uplift`, and only as a *difference* between the `Total P2P` and `Total F2P`
+rows. Measured over all 53 tabs that have both rows:
+
+- the **Acquaint** difference is `0.0` on **53 of 53**;
+- the **Intertwined** difference is `4.0` on **53 of 53** — the paid Battle Pass's four fates.
+
+So the answer to *"does hoyincome count acquaint?"* is **no — but only because the difference
+cancels.** No acquaint value ever reaches its totals. What it does instead is **drop the
+Intertwined difference**, so its `paid_total` is **4 wishes per patch low, on every patch,
+and always has been.**
+
+**The cancellation is what hides it.** A wrong column read as an absolute value would have been
+obvious immediately; read as a difference between two rows that happen to agree, it is
+invisible, and the number it produces is plausible. This repo has the same shape on record —
+`CLAUDE.md` §gate-discipline, *"a query-count test that passed while counting zero"*. Not
+mistilteinn's bug to fix, but it is the reason **this** port reads column 11 by header lookup
+rather than by index.
+
+### The store
+
+The owner asked for a daily refresh rather than a per-request scrape, which is also the only
+shape this repo's rules allow. `app/` has exactly **one** request-time fetch
+(`POST /rotations/import/link`) and E.6 argues the case for it; the unit lane blocks
+`socket.connect`. A Google Sheet read on the request path would be a third precedent and a
+third-party dependency on the hot path.
+
+Proposed:
+
+- **`scripts/refresh_wish_income.py`** — fetches, validates against the three invariants
+  above, upserts. Never called from `app/`.
+- **A committed snapshot** beside it, so a fresh clone and the test suite work with **no
+  network at all** — the same doctrine as `app/data/yuanshen/snapshot/`. The refresher updates
+  the store; the snapshot is what the app falls back to and what CI runs against.
+- **A daily systemd timer on the prod box**, precedent being `tools/discord-triage`'s own unit.
+  Not a GitHub schedule: `test.yml` and `security.yml` are `workflow_dispatch`-only and the
+  hosted runners are not a dependency this should acquire.
+- **Refuse an implausible replacement.** If the fetch returns 3 patches where the store has 54,
+  report and exit non-zero rather than truncate — `seed_db`'s `PRUNE REFUSED` rule, for the
+  same reason.
+- **`fetched_at` is part of the payload, not just a column.** The failure mode for projected
+  income is going stale invisibly; the page should be able to say when the numbers were last
+  refreshed, and a store older than some threshold should be *visible* rather than silently
+  served. `CLAUDE.md` §planner-materials is the precedent: *"how many Teachings do I hold"
+  goes stale within a day and does it invisibly.*
+- **Carry the `est.` marker.** The sheet publishes `7.1 est.` — a forward estimate — and the
+  distinction between a settled patch and a projected one must survive into the store and onto
+  the page. A projection presented as history is the same error as a mean presented as a
+  certainty (`CLAUDE.md`, the two-point distribution note).
+
+### What this does not settle
+
+The sheet gives **income per patch**, not income between two dates. Turning "I have 24,000
+primogems today and the banner ends in 11 days" into a budget needs a patch calendar and a
+proportion-of-patch rule, and the sheet does not carry one. Fribbels sidesteps this by letting
+the user tick whole patch phases. **OQ-W6.**
