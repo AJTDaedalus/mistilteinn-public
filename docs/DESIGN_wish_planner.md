@@ -231,17 +231,48 @@ weapons and the weapon banner hands you characters.
 **Pool size does not set the odds**, and a simulator that draws uniformly over 63 items would
 be wrong by 5.7× on the non-featured character rate.
 
+#### The test that settles it
+
+The owner then reconsidered — *"if it's not the 50% featured character, it may pull from the
+entire 4★ pool, character and weapon"* — which is the uniform model again. **Two banners
+decide it**, because each publishes its own non-featured pool:
+
+| | non-featured pool | uniform would predict | wiki measures |
+|---|---|---|---|
+| character banner | 45 characters + 18 weapons | 71.4 % characters | **15 %** |
+| weapon banner | 47 characters + 16 weapons | 74.6 % characters | **92.5 %** |
+
+**Near-identical pools, near-opposite splits.** A uniform draw over the combined pool cannot
+produce that — it would give ~71% and ~75%, three points apart, not seventy-seven. The
+anti-correlation is the mechanic the wiki describes, and it is deliberate: the character banner
+hands you weapons, the weapon banner hands you characters.
+
+The weapon banner also confirms the *shape* independently, at a different rate. Owner:
+*"for weapon the 4★ featured guarantee is 75%, so 25% it takes from the wider pool."* Exactly
+so, and the consolidated share follows from it: `1 / (1 + 0.25) = 80 %`, which is what the
+wiki's table says to the digit — the same derivation that gives 66.67% on the character banner
+from its 50%. **Both banners' featured shares are corroborated arithmetic, not assertions.**
+
+| | featured rule | consolidated featured | featured items | each |
+|---|---|---|---|---|
+| character | 50 % | 66.67 % | 3 characters | 22.2 % of all 4★ |
+| weapon | 75 % | 80 % | 5 weapons | 16 % of all 4★ |
+
 #### What is solid here, and what is not
 
 - **66.67 / 33.33 is corroborated, not merely asserted.** It falls out exactly from the
   *published* 50%-with-guarantee rule: a cycle is `[featured]` with p=0.5 or
   `[non-featured, featured]` with p=0.5, giving one featured per 1.5 four-stars. The wiki's
   table and the published rule agree to the digit, independently.
-- **15 / 85 within the non-featured third is the weakest number in this feature.** It carries
-  no inline citation on that page, and a web search returned only restatements of the wiki
-  rather than independent data. The pinned game data cannot settle it either — there is no
-  wish-pool table in it; banner pools are server-side. It is recorded as the first thing to
-  re-check, and `banner_rates.json` says so in a `confidence` field.
+- **Uniform draw is ruled out** by the table above, without needing to trust the measurement:
+  it rests only on the two published pools and on the two splits being opposite.
+- **The exact 15 / 85 remains the weakest number in this feature.** It carries no inline
+  citation, and searching found only restatements of the wiki rather than independent data —
+  paimon.moe aggregates global wish submissions and would settle it, but its tally page does
+  not publish a per-item breakdown. The pinned game data cannot settle it either: there is no
+  wish-pool table in it, because banner pools are server-side. So *"weapons dominate the
+  non-featured third"* is established; *"85%"* is one community measurement.
+  `banner_rates.json` records that distinction in a `confidence` field.
 
 ### 9.3 What the numbers actually come out at
 
@@ -263,6 +294,14 @@ The three bold rows are what ships as `low` / `average` / `high`. **The previous
 4.2 / 7.5 / 11.1 % — were wrong twice over**: they priced a 4★ every 10 pulls rather than
 every 7.66, and they varied the wrong axis, because they were Fribbels' HSR labels, which are
 right for HSR and not here.
+
+**The banner changes the answer, and the shipped constant cannot.** Because the character
+banner's featured third is *characters* and the weapon banner's is *weapons*, a maxed account
+refunds **12.2 % on the character banner and 7.2 % on the weapon banner** — the same account,
+nearly double. The tiers above are the character banner's; a campaign mixing both is somewhere
+between, weighted by where the wishes go. That is a fourth reason the honest answer is
+computed rather than chosen from a dropdown, and it is cheap to add: the leg list already
+knows which banner each goal is on.
 
 ### 9.4 Reading the account, and letting it be corrected
 

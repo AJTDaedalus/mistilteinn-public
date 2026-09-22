@@ -64,11 +64,28 @@
   "four_star_pity_source": "HoYoverse guarantees at least one 4-star or above every 10 wishes, published on the banner's Details screen. The CONSOLIDATED 4-star rate -- what actually happens once the 5.1% base rate is included -- is 13% official / 13.057% community, https://genshin-impact.fandom.com/wiki/Character_Event_Wish (read 2026-09-22), citing the same 9.45M-wish estimation that backs the 5-star curves in this file. That page also republishes the 5-star figures this file already uses (0.6% base, 1.6% official, 1.6052% community), which is an independent confirmation of the `character` entry above.",
   "tiers_are_worst_case": "These price a 4-star every 10 pulls, which is the GUARANTEE rather than the rate: at the consolidated 13.057% one arrives every 7.66 pulls. Corrected here -- the values above USE 13.057%, not the 10-pull figure. The earlier tiers (4.17/7.53/11.11%) were both uncorrected and derived on the wrong axis; they were copied from Fribbels' HSR labels, which happen to be right for HSR and not for Genshin.",
   "four_star_composition": {
-   "featured": 0.6667,
-   "non_featured_character": 0.05,
-   "non_featured_weapon": 0.2833,
-   "source": "https://genshin-impact.fandom.com/wiki/Wish/Expanded_Wish_Probabilities (read 2026-09-22), 'Overall 4-Star Item Drop Probability'. The 66.67% featured share is NOT merely asserted there: it falls out exactly from the published 50%-with-guarantee rule, since a cycle is [featured] with p=0.5 or [non-featured, featured] with p=0.5, giving 1 featured per 1.5 four-stars. The companion table splits the remaining 33.33% as 15% characters / 85% weapons on the character banner.",
-   "confidence": "The 66.67/33.33 split is corroborated by arithmetic against a published rule. The 15/85 split WITHIN the non-featured third is a community measurement carrying no inline citation on that page, and a web search found only restatements of the wiki rather than independent data. Treat it as the weakest number in this file and the first thing to re-check."
+   "character_banner": {
+    "featured": 0.6667,
+    "non_featured_character": 0.05,
+    "non_featured_weapon": 0.2833
+   },
+   "weapon_banner": {
+    "featured": 0.8,
+    "non_featured_character": 0.185,
+    "non_featured_weapon": 0.015
+   },
+   "featured_rule": {
+    "character_banner": 0.5,
+    "weapon_banner": 0.75,
+    "comment": "Chance a 4-star is featured, with the next one guaranteed if it is not. The CONSOLIDATED featured share follows as 1/(1+(1-p)): 66.67% and 80%."
+   },
+   "featured_count": {
+    "character_banner": 3,
+    "weapon_banner": 5
+   },
+   "source": "https://genshin-impact.fandom.com/wiki/Wish/Expanded_Wish_Probabilities (read 2026-09-22), tables 'Non-Featured Drop Probability' and 'Overall 4-Star Item Drop Probability'. The featured shares are corroborated rather than assumed: 66.67% and 80% fall out exactly from the published 50% and 75% featured rules on https://genshin-impact.fandom.com/wiki/Character_Event_Wish and the weapon banner's equivalent.",
+   "why_not_uniform": "The game rolls character-versus-weapon first and then draws within that side's pool; it does NOT draw uniformly from the combined non-featured pool. Decisive check, 2026-09-23 banners: the two banners' non-featured pools are near-identical (45 characters + 18 weapons on the character banner, 47 + 16 on the weapon banner), so a uniform draw would give 71.4% and 74.6% characters. The measured splits are 15% and 92.5% -- near-opposite. The anti-correlation is deliberate: the character banner hands you weapons and the weapon banner hands you characters.",
+   "confidence": "The 66.67/33.33 and 80/20 featured splits are arithmetic against published rules. That weapons dominate the character banner's non-featured third is established by the test above. The exact 15/85 and 92.5/7.5 are single community measurements with no inline citation, and no independent dataset was found -- paimon.moe aggregates global submissions but publishes no per-item breakdown, and the pinned game data has no wish-pool table because pools are server-side. Weakest numbers in this file; re-check first."
   }
  }
 }
