@@ -316,8 +316,10 @@
     }
 
     <!-- The arithmetic, not just the total. Fribbels' best idea on this page. -->
-    @if (refundFallback(); as reason) {
-      <p class="hint hint--note">{{ reason }}</p>
+    @if (noConstellationData()) {
+      <p class="hint hint--note">
+        No constellation data on account, providing refund options instead.
+      </p>
     }
 
     @if (plan(); as result) {
@@ -325,10 +327,7 @@
         {{ primogems() | number }} primogems
         + {{ intertwined() | number }} fate
         @if (projectedWishes()) { + {{ projectedWishes() | number }} projected }
-        @if (result.refunded_wishes) {
-          + {{ result.refunded_wishes | number }}
-          {{ result.refund_source === 'roster' ? 'refund (from your roster)' : 'refund' }}
-        }
+        @if (result.refunded_wishes) { + {{ result.refunded_wishes | number }} refund }
         = <strong>{{ result.budget | number }} wishes</strong>
       </p>
     }

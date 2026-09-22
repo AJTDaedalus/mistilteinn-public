@@ -197,25 +197,24 @@ export class WishesPage {
     return bins.length ? bins[bins.length - 1].end : 0;
   });
 
+  /** True when the refund was computed from the account rather than taken from a tier. */
+  protected readonly refundFromRoster = computed(
+    () => this.plan()?.refund_source === 'roster',
+  );
+
   /**
-   * Why the refund is not being read from the account, or null when it is.
+   * True when a banner is picked but the account has no constellations to price it from.
    *
-   * **Silence was the bug.** The budget line said "from your roster" when the exact figure
-   * was used and simply said nothing when it was not, so a player whose roster carries no
-   * constellations — every account imported before that column existed — saw the tier
-   * quietly substituted with no way to tell.
+   * **Only this case.** Not having picked a banner is not a problem to warn about — the
+   * refund dropdown is right there. This is the one where the user has done everything the
+   * page asked and still gets the tier.
    */
-  protected readonly refundFallback = computed(() => {
+  protected readonly noConstellationData = computed(() => {
     const result = this.plan();
-    if (!result || result.refund_source === 'roster') return null;
-    const picked =
-      this.mode() === 'custom'
-        ? this.rows().some((entry) => entry.bannerSlug)
-        : this.chosenBanner() !== null;
-    return picked
-      ? 'Your roster has no 4★ constellations yet — re-import a GOOD export to compute this ' +
-        'from your own account.'
-      : 'Pick a banner to compute the refund from your own roster.';
+    if (!result || result.refund_source === 'roster') return false;
+    return this.mode() === 'custom'
+      ? this.rows().some((entry) => entry.bannerSlug)
+      : this.chosenBanner() !== null;
   });
 
   /** Tallest bar, so the chart can scale to it rather than to 1. */

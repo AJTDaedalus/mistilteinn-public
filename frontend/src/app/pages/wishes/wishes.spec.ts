@@ -670,38 +670,6 @@ describe('a custom plan spans banners', () => {
   });
 });
 
-describe('when the refund is not read from the account', () => {
-  /**
-   * Silence was the bug: the budget line said "from your roster" when the exact figure was
-   * used and said nothing when it was not, so a player whose roster predates the
-   * constellation column saw the tier quietly substituted with no way to tell.
-   */
-  it('says to pick a banner when none is picked', async () => {
-    const { page } = makePage();
-    await settled();
-    await page.recompute(page.request());
-    expect(page.refundFallback()).toContain('Pick a banner');
-  });
-
-  it('says the roster is empty when a banner is picked and it still falls back', async () => {
-    const { page } = makePage();
-    await settled();
-    await settled();
-    page.chooseBanner(BANNERS.banners[0]);
-    await page.recompute(page.request());
-    expect(page.refundFallback()).toContain('re-import');
-  });
-
-  it('says nothing when the roster answered', async () => {
-    const { page } = makePage({
-      plan: vi.fn().mockResolvedValue({ ...PLAN, refund_source: 'roster' }),
-    });
-    await settled();
-    await page.recompute(page.request());
-    expect(page.refundFallback()).toBeNull();
-  });
-});
-
 describe('a row that does not exist', () => {
   /**
    * `patchRow` spread `next[index]` without checking it. For an out-of-range index that
@@ -743,5 +711,74 @@ describe('a row that does not exist', () => {
     page.mode.set('custom');
     page.moveRow(9, -1);
     expect(page.rows()).toHaveLength(1);
+  });
+});
+
+describe('no constellation data', () => {
+  /**
+   * The one case worth a word: a banner is picked, so the user has done what the page asked,
+   * and the refund still comes from the tier because the roster carries no constellations —
+   * every account imported before that column existed.
+   */
+  it('is reported when a banner is picked and the refund still falls back', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    page.chooseBanner(BANNERS.banners[0]);
+    await page.recompute(page.request());
+    expect(page.noConstellationData()).toBe(true);
+  });
+
+  /** Not picking a banner is not a problem to warn about; the dropdown is right there. */
+  it('is silent when no banner is picked', async () => {
+    const { page } = makePage();
+    await settled();
+    await page.recompute(page.request());
+    expect(page.noConstellationData()).toBe(false);
+  });
+
+  it('is silent when the roster answered', async () => {
+    const { page } = makePage({
+      plan: vi.fn().mockResolvedValue({ ...PLAN, refund_source: 'roster' }),
+    });
+    await settled();
+    await settled();
+    page.chooseBanner(BANNERS.banners[0]);
+    await page.recompute(page.request());
+    expect(page.noConstellationData()).toBe(false);
+  });
+
+  it('follows a custom row’s banner too', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    page.mode.set('custom');
+    await page.recompute(page.request());
+    expect(page.noConstellationData()).toBe(false);
+    page.chooseRowBanner(0, BANNERS.banners[0]);
+    await page.recompute(page.request());
+    expect(page.noConstellationData()).toBe(true);
+  });
+});
+
+describe('the refund control reflects what is used', () => {
+  /**
+   * The dropdown stayed selectable while the exact refund was in use, so it was the one
+   * thing on screen that could have said which source won — and it said the wrong one.
+   */
+  it('is disabled once the roster answers', async () => {
+    const { page } = makePage({
+      plan: vi.fn().mockResolvedValue({ ...PLAN, refund_source: 'roster' }),
+    });
+    await settled();
+    await page.recompute(page.request());
+    expect(page.refundFromRoster()).toBe(true);
+  });
+
+  it('stays selectable while the tier is in use', async () => {
+    const { page } = makePage();
+    await settled();
+    await page.recompute(page.request());
+    expect(page.refundFromRoster()).toBe(false);
   });
 });
