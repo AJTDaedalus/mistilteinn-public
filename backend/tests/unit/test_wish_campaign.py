@@ -254,12 +254,24 @@ def test_the_tiers_are_ordered_and_modest() -> None:
 
 
 @pytest.mark.parametrize(
-    ("tier", "expected"), [("low", 208), ("average", 215), ("high", 222)]
+    ("tier", "expected"), [("low", 207), ("average", 217), ("high", 224)]
 )
 def test_refund_on_two_hundred_wishes(tier: str, expected: int) -> None:
-    """2 starglitter a 4-star weapon, 5 a maxed 4-star character, 5 to a fate, one 4-star
-    every 10 pulls — compounded, because the refund buys wishes that refund again."""
+    """Priced on the 13.057% consolidated 4-star rate, not the 10-pull guarantee.
+
+    The tiers are points on the axis that drives the refund — how much of the 4-star roster
+    is maxed — because 71.67% of 4-stars are characters whatever the pool looks like, and a
+    character pays 0, 2 or 5 depending only on how far along it is.
+    """
     assert refunded_budget(200, tier) == expected
+
+
+def test_a_first_copy_pays_nothing_so_the_floor_is_low() -> None:
+    """The wiki's quantity table lists duplicates only: a 4-star character you do not own
+    returns a constellation and no starglitter. So `low` has to sit well under the
+    owns-everything floor rather than at it."""
+    tiers = refund_tiers()
+    assert tiers["low"] < 0.055, "an account still collecting earns less than one that is not"
 
 
 def test_the_refund_rounds_down() -> None:

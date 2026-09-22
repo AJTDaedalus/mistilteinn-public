@@ -206,32 +206,63 @@ rate the owner asked for.
 independent per wish; a 5★ satisfies the *"4★ or above"* guarantee for that wish, but **does
 not reset the 4★ counter**, which carries to the next wish instead.
 
-### 9.2 The non-featured half is not a coin flip
+### 9.2 The non-featured half is a roll, not a pool — and the pool sizes are a trap
 
-Every banner page carries a `{{Wish Pool}}` template naming both pools. For the current banner
-(`When Warm Winds Cavort/2026-09-23`):
+**An earlier draft of this section was wrong, and the owner caught it.** It read the
+`{{Wish Pool}}` sizes — 45 non-featured characters against 18 weapons — and concluded a
+non-featured 4★ is a character 71.4% of the time. That assumes the game draws uniformly from
+the combined pool. It does not.
 
-- featured 4★: **3** characters
-- non-featured pool: **45 characters + 18 weapons = 63**
+`Wish/Expanded Wish Probabilities` publishes the real structure, which is the one the owner
+described: **character-versus-weapon is rolled first, and only then is an item drawn from that
+side's pool.** On the character banner:
 
-So a non-featured 4★ is a **character 71.4%** of the time, not 50%. The shipped tiers assume
-an even split, which is wrong in shape rather than in calibration.
+| | share of all 4★ | |
+|---|---|---|
+| featured (always characters) | **66.67 %** | |
+| non-featured **characters** | **5 %** | 15% of the non-featured third |
+| non-featured **weapons** | **28.33 %** | 85% of it |
+
+So it is the *opposite* of what pool size implies: a non-featured 4★ is a **weapon 85% of the
+time**, not a character 71% of the time. The wiki names the reason — the mechanic keeps
+characters and weapons balanced whichever banner you pull, so the character banner hands you
+weapons and the weapon banner hands you characters.
+
+**Pool size does not set the odds**, and a simulator that draws uniformly over 63 items would
+be wrong by 5.7× on the non-featured character rate.
+
+#### What is solid here, and what is not
+
+- **66.67 / 33.33 is corroborated, not merely asserted.** It falls out exactly from the
+  *published* 50%-with-guarantee rule: a cycle is `[featured]` with p=0.5 or
+  `[non-featured, featured]` with p=0.5, giving one featured per 1.5 four-stars. The wiki's
+  table and the published rule agree to the digit, independently.
+- **15 / 85 within the non-featured third is the weakest number in this feature.** It carries
+  no inline citation on that page, and a web search returned only restatements of the wiki
+  rather than independent data. The pinned game data cannot settle it either — there is no
+  wish-pool table in it; banner pools are server-side. It is recorded as the first thing to
+  re-check, and `banner_rates.json` says so in a `confidence` field.
 
 ### 9.3 What the numbers actually come out at
 
-Starglitter per 4★, by how much of the pool is already C6 — featured 4★s are always
-characters, non-featured are 71.4% characters:
+**A first copy pays nothing.** The wiki's quantity table lists *duplicates* only, so a 4★
+character you do not own yet returns a constellation and no starglitter. Weapons always pay 2.
+That makes the axis two-dimensional — how many 4★ characters you own, and how many are C6 —
+and is the sharpest argument that no constant is right for long.
 
-| account | per 4★ | refund, compounded |
+Priced at the consolidated 13.057%, with 71.67% of 4★s being characters:
+
+| account | starglitter per 4★ | refund, compounded |
 |---|---|---|
-| nothing at C6 | 2.00 | **5.5 %** |
-| half at C6 | 3.29 | **9.4 %** |
-| everything at C6 | 4.57 | **13.6 %** |
+| still collecting — ~60% owned, none C6 | 1.43 | **3.9 %** |
+| owns them all, none at C6 | 2.00 | 5.5 % |
+| owns them all, half at C6 | 3.07 | **8.7 %** |
+| owns them all, all at C6 | 4.15 | **12.2 %** |
 
-Against the shipped **4.2 / 7.5 / 11.1 %**. Two errors, in opposite directions: pricing a 4★
-every 10 pulls rather than every 7.66 makes every tier **low by 1.34×**, while assuming a maxed
-account pays a flat 5 starglitter ignores that 28.6% of the non-featured pool is weapons, which
-can never pay more than 2. The top of the range is understated *and* the wrong shape.
+The three bold rows are what ships as `low` / `average` / `high`. **The previous values —
+4.2 / 7.5 / 11.1 % — were wrong twice over**: they priced a 4★ every 10 pulls rather than
+every 7.66, and they varied the wrong axis, because they were Fribbels' HSR labels, which are
+right for HSR and not here.
 
 ### 9.4 Reading the account, and letting it be corrected
 
@@ -259,8 +290,33 @@ named `<Banner>/<YYYY-MM-DD>` and each carrying a `{{Wish}}` infobox with `time_
 `time_end` and a `{{Wish Pool}}` with the featured 5★, the three featured 4★, and both
 non-featured pools. That is the whole of what a banner selector needs.
 
-- **A picker of the last ~8 banners**, newest first, each filling the featured 5★ and the
-  three featured 4★.
+**Every banner, eight at a time** (owner, 2026-09-22). The snapshot holds all 253; the picker
+shows the eight most recent and a *Show more* that reveals the next eight. Not a scroll box of
+253 and not a truncated list — `CLAUDE.md` records the planner materials tab being "fixed" by
+capping a 514-row list at 80, which made the page short by hiding the data. *Show more* hides
+nothing; it defers.
+
+**Banner cards**, per the owner's layout:
+
+| | |
+|---|---|
+| **Character banner** | the featured 5★'s **headshot first and largest**, then the three featured 4★ headshots beside it, smaller. |
+| **Weapon banner** | the **weapon first**, carrying a **mini portrait of the character it is the signature of in its corner**, then the on-banner 4★ weapons beside it, slightly smaller. |
+
+The signature link is the one thing here the catalogue does not already answer. `app/data/kqm/`
+carries weapon recommendations per character, which is a *"which weapons suit this character"*
+mapping — the inverse of *"whose signature is this weapon"*, and not the same question: a
+weapon can be recommended for many characters and be nobody's signature. The honest sources
+are the banner data itself (a 5★ weapon banner runs alongside a character banner, and its
+`alongside` field is in the `{{Wish}}` infobox already being parsed) or a curated mapping with
+citations. **Deriving it from `alongside` is the better answer** — it needs no new data and it
+is what "signature" actually means in practice.
+
+**Art is already vendored.** `CatalogueIcon` and `frontend/public/icons/` hold committed
+character and weapon art, 446 files, and `scripts/download_icons.py` reproduces them. A card
+needs no new asset pipeline — but it does need every banner name to resolve to a catalogue
+row, which is the invariant below.
+
 - **A custom builder**, for a banner that has not been announced or for a hypothetical:
   choose the limited 5★ and the three 4★ from the catalogue, and inherit the most recent
   non-featured pools.
@@ -295,7 +351,9 @@ not put a sampler on the request path to replace a closed form that already is n
 | ~~**OQ-W4**~~ | ~~Multi Target.~~ **Built 2026-09-22** as *Custom plan*. |
 | **OQ-W9** | Fribbels syncs pity, guarantee and currency **live** from the reliquary-archiver scanner. Genshin's analogue is the wish history export — same idea as OQ-W5. **Owner, 2026-09-22: low priority, not needed yet.** |
 | ~~**OQ-W10**~~ | ~~Per-phase income rather than per-patch.~~ **Shelved 2026-09-22**, owner's instruction, after checking: the workbook has no phase structure in any of its 54 patch tabs or its three other tabs, and no equivalent of the Telegram source Fribbels uses for HSR publishes Genshin income per phase. It stays a known under-resolution that rounds in the player's favour. |
-| **OQ-W11** | The refund tiers are wrong in two directions — **low by 1.34×** from pricing a 4★ every 10 pulls rather than 7.66, and the wrong *shape* because the non-featured pool is 71.4% characters, not 50%. §9.3 has the corrected figures. Recalibrate the constants now, or wait for §9? |
+| ~~**OQ-W11**~~ | ~~The refund tiers are wrong in two directions.~~ **Corrected 2026-09-22** to 3.9 / 8.7 / 12.2 %, on the consolidated 4★ rate and on the axis that actually drives it. |
+| **OQ-W13** | The **15 / 85** non-featured character/weapon split is uncited and unreproduced (§9.2). Is there a dataset behind it? Everything downstream of the featured third rests on it. |
+| **OQ-W14** | §9.5: derive "whose signature is this weapon" from the banner data's `alongside` field, or curate it? |
 | **OQ-W12** | §9.4: a 4★ character with no build has an **unknown** constellation, not C0. How much unknown is too much before the refund figure should be withheld rather than estimated? |
 | **OQ-W5** | Genshin's wish history is exportable. Derive pity / guarantee / losses rather than asking? Would make the losses counter exact instead of remembered. |
 | **OQ-W7** | Does the character banner's two concurrent 5★ split the 50/50 further? gachasim models one promotional character per banner; Genshin runs two. Needs checking before the rate is trusted for a specific character. |

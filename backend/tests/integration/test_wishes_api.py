@@ -351,7 +351,7 @@ async def test_the_refund_grows_the_budget_and_is_reported_separately(
     assert none["refunded_wishes"] == 0
     assert none["budget"] == 200
 
-    for tier, expected in (("low", 8), ("average", 15), ("high", 22)):
+    for tier, expected in (("low", 7), ("average", 17), ("high", 24)):
         body = await budget(tier)
         assert body["wallet_wishes"] == 200
         assert body["refunded_wishes"] == expected

@@ -45,21 +45,30 @@
   "fate_cost": 5,
   "four_star_pity": 10,
   "per_four_star": {
-   "weapon": 2,
-   "character_at_max_constellation": 5
+   "new_character": 0,
+   "duplicate_character_below_max_constellation": 2,
+   "duplicate_character_at_max_constellation": 5,
+   "weapon": 2
   },
   "source": "Masterless Starglitter quantities from https://genshin-impact.fandom.com/wiki/Masterless_Starglitter (read 2026-09-22): a duplicate 4-star weapon gives 2, and a duplicate 4-star character whose constellations are complete gives 5. Intertwined Fate costs 5 Masterless Starglitter in Paimon's Bargains with a monthly limit of None -- https://genshin-impact.fandom.com/wiki/Paimon%27s_Bargains, `{{Shop|Intertwined Fate|5|None}}` under Permanent Items, where the template's third field is the monthly limit.",
   "comment": "A wish is guaranteed to yield a 4-star every 10 pulls, so the refund per pull is `starglitter / 5 / 10` wishes. The refund buys wishes which themselves refund, so the figure the planner applies is the compounded `r / (1 - r)`. 5-star contributions are ignored, matching Fribbels, which makes every tier a slight UNDER-estimate rather than an over-estimate.\n\nTHERE IS NO MONTHLY CAP on Intertwined Fate, which was worth checking: the Crown of Insight on the same shop page is limited to 1 a month, so a limit column exists and this row genuinely says None.",
   "tiers": {
    "none": 0.0,
-   "low": 0.041667,
-   "average": 0.075269,
-   "high": 0.111111
+   "low": 0.0387,
+   "average": 0.0873,
+   "high": 0.1215
   },
-  "tiers_comment": "low = every 4-star is a weapon (2 sg), average = an even split (3.5), high = every 4-star is a C6 character (5). Compounded. These land on 4.17% / 7.53% / 11.1%, which is where Fribbels' HSR figures of 4% / 7.5% / 11% land too -- NOT copied: the two games happen to have identical refund economics, since Genshin's 2-of-5 starglitter and HSR's 8-of-20 starlight are both 0.4 of a pull, and 5-of-5 and 20-of-20 are both 1.0. Derived in the commit that added this entry.",
+  "tiers_comment": "Points on the axis that actually drives the refund: how much of your 4-star roster is maxed. `low` is an account still collecting (about 60% of 4-star characters owned, none at C6), `average` owns them all with half at C6, `high` owns them all at C6.\n\nTHE POOL IS NOT UNIFORM, which an earlier version of this file got wrong. A non-featured 4-star is a WEAPON 85% of the time on the character banner -- not the 28.6% that the raw pool sizes (45 characters against 18 weapons) would imply. The game rolls character-versus-weapon first and then draws within that pool, so pool size does not set the odds. Overall 71.67% of 4-stars are characters, but almost all of that is the featured third rather than the pool.\n\nAND A FIRST COPY PAYS NOTHING: the wiki's quantity table lists duplicates only, so a 4-star character you do not own yet returns a constellation and no starglitter. That is why the axis is two-dimensional and why no constant is right for long -- see docs/DESIGN_wish_planner.md section 9.",
   "assumption_risk": "`high` assumes every 4-star character you pull is already C6, which is true for a veteran account and false for a new one -- a new account banks constellations instead of starglitter. `low` is the honest default for anyone still filling out their roster.",
   "four_star_consolidated_rate": 0.13057,
   "four_star_pity_source": "HoYoverse guarantees at least one 4-star or above every 10 wishes, published on the banner's Details screen. The CONSOLIDATED 4-star rate -- what actually happens once the 5.1% base rate is included -- is 13% official / 13.057% community, https://genshin-impact.fandom.com/wiki/Character_Event_Wish (read 2026-09-22), citing the same 9.45M-wish estimation that backs the 5-star curves in this file. That page also republishes the 5-star figures this file already uses (0.6% base, 1.6% official, 1.6052% community), which is an independent confirmation of the `character` entry above.",
-  "tiers_are_worst_case": "The tiers assume a 4-star arrives every 10 pulls, which is the GUARANTEE rather than the rate: at the consolidated 13.057% one really arrives every 7.66 pulls. So every tier understates the refund by about 30% -- `average` would be 10.1% rather than 7.53%. That is deliberate and matches Fribbels, whose own note calls it 'worst-case timing'. A planner that promises wishes a player does not have is worse than one that is quietly pessimistic, and the honest fix is the simulator in docs/DESIGN_wish_planner.md section 9, not a bigger constant."
+  "tiers_are_worst_case": "These price a 4-star every 10 pulls, which is the GUARANTEE rather than the rate: at the consolidated 13.057% one arrives every 7.66 pulls. Corrected here -- the values above USE 13.057%, not the 10-pull figure. The earlier tiers (4.17/7.53/11.11%) were both uncorrected and derived on the wrong axis; they were copied from Fribbels' HSR labels, which happen to be right for HSR and not for Genshin.",
+  "four_star_composition": {
+   "featured": 0.6667,
+   "non_featured_character": 0.05,
+   "non_featured_weapon": 0.2833,
+   "source": "https://genshin-impact.fandom.com/wiki/Wish/Expanded_Wish_Probabilities (read 2026-09-22), 'Overall 4-Star Item Drop Probability'. The 66.67% featured share is NOT merely asserted there: it falls out exactly from the published 50%-with-guarantee rule, since a cycle is [featured] with p=0.5 or [non-featured, featured] with p=0.5, giving 1 featured per 1.5 four-stars. The companion table splits the remaining 33.33% as 15% characters / 85% weapons on the character banner.",
+   "confidence": "The 66.67/33.33 split is corroborated by arithmetic against a published rule. The 15/85 split WITHIN the non-featured third is a community measurement carrying no inline citation on that page, and a web search found only restatements of the wiki rather than independent data. Treat it as the weakest number in this file and the first thing to re-check."
+  }
  }
 }
