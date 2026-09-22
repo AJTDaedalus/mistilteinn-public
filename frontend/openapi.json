@@ -4416,6 +4416,109 @@
           }
         ]
       }
+    },
+    "/api/v1/wishes/plan": {
+      "post": {
+        "tags": [
+          "wishes"
+        ],
+        "summary": "Create Plan",
+        "description": "Return the odds of each remaining milestone on the caller's budget.",
+        "operationId": "create_plan_api_v1_wishes_plan_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WishPlanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WishPlanRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/wishes/income": {
+      "get": {
+        "tags": [
+          "wishes"
+        ],
+        "summary": "Read Income",
+        "description": "Return wish income per game version, at the three spending tiers.\n\nServed from `wish_income`, which `scripts/refresh_wish_income.py` fills on a timer. This\nroute never reaches the workbook: `app/` has one request-time fetch and a third-party\nspreadsheet on the request path would be a second.\n\nAn empty store is **not** an error \u2014 it means the refresher has not run yet, and a page\ncan say so. Inventing numbers to fill it would be worse.",
+        "operationId": "read_income_api_v1_wishes_income_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WishIncomeRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/wishes/limits": {
+      "get": {
+        "tags": [
+          "wishes"
+        ],
+        "summary": "Read Limits",
+        "description": "Static facts the page needs to build its controls without hardcoding them.",
+        "operationId": "read_limits_api_v1_wishes_limits_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Read Limits Api V1 Wishes Limits Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -5010,6 +5113,15 @@
         ],
         "title": "AvatarRead",
         "description": "The character standing in for an account, as the client needs it to draw one.\n\n**One optional object rather than three flat nullable fields.** `avatar_character_id`,\n`avatar_name` and `avatar_icon` side by side are three things that can disagree; this is\neither present or it is not.\n\n`name` is here because the client needs it for the image's `alt` text and for the line\nnaming who is shown \u2014 and a bare id would make the account page fetch the whole catalogue\nbefore it could name what it is already displaying. `icon` may still be null: it is a\nseeding gap for a handful of rows, and `CatalogueIcon` renders nothing at all for one."
+      },
+      "BannerKind": {
+        "type": "string",
+        "enum": [
+          "character",
+          "weapon"
+        ],
+        "title": "BannerKind",
+        "description": "Which limited banner is being planned for."
       },
       "Binary": {
         "properties": {
@@ -12665,6 +12777,210 @@
         ],
         "title": "WeaponType",
         "description": "The six weapon classes.\n\nSource: `character.json` `weapon` and `weapon.json` `type`. **The two indexes disagree\non the sixth.** Characters spell the crossbow class `WEAPON_CROSSBOW` (2 characters);\nweapons spell it `ITEM_TPS_WEAPON` (8 weapons) and `WEAPON_CROSSBOW` appears nowhere in\n`weapon.json`. Both spellings therefore map here, via `parse`.\n\nDESIGN \u00a72.6 recorded only `WEAPON_CROSSBOW`, having read the character index alone."
+      },
+      "WishIncomeRead": {
+        "properties": {
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/WishIncomeVersionRead"
+            },
+            "type": "array",
+            "title": "Versions"
+          },
+          "fetched_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At",
+            "description": "When the store last read the workbook. Present so a page can say how old these numbers are: stale projected income is the failure mode that goes wrong silently."
+          }
+        },
+        "type": "object",
+        "required": [
+          "versions",
+          "fetched_at"
+        ],
+        "title": "WishIncomeRead",
+        "description": "The income table, and when it was last refreshed."
+      },
+      "WishIncomeVersionRead": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "is_estimate": {
+            "type": "boolean",
+            "title": "Is Estimate",
+            "description": "The workbook's own `est.` marker \u2014 a forecast, not a settled total."
+          },
+          "f2p": {
+            "type": "number",
+            "title": "F2P"
+          },
+          "welkin": {
+            "type": "number",
+            "title": "Welkin"
+          },
+          "welkin_bp": {
+            "type": "number",
+            "title": "Welkin Bp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "is_estimate",
+          "f2p",
+          "welkin",
+          "welkin_bp"
+        ],
+        "title": "WishIncomeVersionRead",
+        "description": "One game version's income at all three tiers."
+      },
+      "WishMilestoneRead": {
+        "properties": {
+          "copies": {
+            "type": "integer",
+            "title": "Copies"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "What a player calls this rung: \"C3\", \"R2\"."
+          },
+          "success_chance": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Success Chance"
+          },
+          "average_wishes": {
+            "type": "number",
+            "title": "Average Wishes"
+          },
+          "median_wishes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Wishes",
+            "description": "Wishes at which the chance first reaches 50%, or null if it never does."
+          }
+        },
+        "type": "object",
+        "required": [
+          "copies",
+          "label",
+          "success_chance",
+          "average_wishes",
+          "median_wishes"
+        ],
+        "title": "WishMilestoneRead",
+        "description": "One rung of the ladder."
+      },
+      "WishPlanRead": {
+        "properties": {
+          "budget": {
+            "type": "integer",
+            "title": "Budget",
+            "description": "Wishes available: primogems/160 + fate + projected income."
+          },
+          "milestones": {
+            "items": {
+              "$ref": "#/components/schemas/WishMilestoneRead"
+            },
+            "type": "array",
+            "title": "Milestones"
+          },
+          "published_worst_case": {
+            "type": "integer",
+            "title": "Published Worst Case",
+            "description": "The largest number of wishes HoYoverse advertises may be needed for one copy. Published, NOT read off the fitted pity curve \u2014 the curve's far tail is not identified and would understate it."
+          }
+        },
+        "type": "object",
+        "required": [
+          "budget",
+          "milestones",
+          "published_worst_case"
+        ],
+        "title": "WishPlanRead",
+        "description": "The ladder, and the budget it was measured against."
+      },
+      "WishPlanRequest": {
+        "properties": {
+          "banner": {
+            "$ref": "#/components/schemas/BannerKind",
+            "description": "Which limited banner to plan for."
+          },
+          "primogems": {
+            "type": "integer",
+            "maximum": 10000000.0,
+            "minimum": 0.0,
+            "title": "Primogems",
+            "default": 0
+          },
+          "intertwined_fate": {
+            "type": "integer",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Intertwined Fate",
+            "description": "Acquaint Fate is deliberately not accepted: it buys the standard banner.",
+            "default": 0
+          },
+          "extra_wishes": {
+            "type": "integer",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Extra Wishes",
+            "description": "Projected income the caller has opted into, in whole wishes.",
+            "default": 0
+          },
+          "pity": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Pity",
+            "description": "Wishes since the last 5-star on this banner.",
+            "default": 0
+          },
+          "guaranteed": {
+            "type": "boolean",
+            "title": "Guaranteed",
+            "description": "Whether the next 5-star is guaranteed to be the promotional item.",
+            "default": false
+          },
+          "lost_fifty_fifties": {
+            "type": "integer",
+            "maximum": 6.0,
+            "minimum": 0.0,
+            "title": "Lost Fifty Fifties",
+            "description": "50/50s lost since the last one WON \u2014 the Capturing Radiance counter. Losing through a guarantee still counts; winning through one does not reset it. Character banner only.",
+            "default": 0
+          },
+          "owned_copies": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Owned Copies",
+            "description": "Copies already held. C2 is 3 copies; R3 is 3 copies.",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "banner"
+        ],
+        "title": "WishPlanRequest",
+        "description": "A player's position and wallet."
       }
     },
     "securitySchemes": {

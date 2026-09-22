@@ -1,0 +1,221 @@
+"""The wish planner: odds of reaching a constellation or refinement on a given budget.
+
+`docs/DESIGN_wish_planner.md`. Two routes — the ladder, and the income table it can be
+budgeted against.
+
+**A plan is a `POST` that writes nothing** and is not cached. The whole calculation is a few
+discrete convolutions; looking a result up would cost more than producing it.
+"""
+
+from __future__ import annotations
+
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.dependencies import get_current_user, get_db
+from app.models.user import User
+from app.models.wish_income import WishIncome
+from app.services.wishes import (
+    BannerKind,
+    PlanInput,
+    UnreachableStateError,
+    plan_wishes,
+    rates_for,
+)
+from app.services.wishes.planner import MAX_CONSTELLATION, MAX_REFINEMENT, wishes_from
+
+router = APIRouter(prefix="/wishes", tags=["wishes"])
+
+_Session = Annotated[AsyncSession, Depends(get_db)]
+_User = Annotated[User, Depends(get_current_user)]
+
+#: Generous ceilings that still refuse a value which can only be a typo or an attempt to make
+#: the server convolve a very long array.
+MAX_PRIMOGEMS = 10_000_000
+MAX_FATE = 100_000
+MAX_EXTRA_WISHES = 100_000
+
+
+class WishPlanRequest(BaseModel):
+    """A player's position and wallet."""
+
+    banner: BannerKind = Field(description="Which limited banner to plan for.")
+    primogems: int = Field(0, ge=0, le=MAX_PRIMOGEMS)
+    intertwined_fate: int = Field(
+        0, ge=0, le=MAX_FATE,
+        description="Acquaint Fate is deliberately not accepted: it buys the standard banner.",
+    )
+    extra_wishes: int = Field(
+        0, ge=0, le=MAX_EXTRA_WISHES,
+        description="Projected income the caller has opted into, in whole wishes.",
+    )
+    pity: int = Field(0, ge=0, description="Wishes since the last 5-star on this banner.")
+    guaranteed: bool = Field(
+        False, description="Whether the next 5-star is guaranteed to be the promotional item."
+    )
+    lost_fifty_fifties: int = Field(
+        0, ge=0, le=MAX_CONSTELLATION,
+        description=(
+            "50/50s lost since the last one WON — the Capturing Radiance counter. Losing "
+            "through a guarantee still counts; winning through one does not reset it. "
+            "Character banner only."
+        ),
+    )
+    owned_copies: int = Field(
+        0, ge=0, description="Copies already held. C2 is 3 copies; R3 is 3 copies."
+    )
+
+
+class WishMilestoneRead(BaseModel):
+    """One rung of the ladder."""
+
+    copies: int
+    label: str = Field(description='What a player calls this rung: "C3", "R2".')
+    success_chance: float = Field(ge=0.0, le=1.0)
+    average_wishes: float
+    median_wishes: int | None = Field(
+        description="Wishes at which the chance first reaches 50%, or null if it never does."
+    )
+
+
+class WishPlanRead(BaseModel):
+    """The ladder, and the budget it was measured against."""
+
+    budget: int = Field(description="Wishes available: primogems/160 + fate + projected income.")
+    milestones: list[WishMilestoneRead]
+    published_worst_case: int = Field(
+        description=(
+            "The largest number of wishes HoYoverse advertises may be needed for one copy. "
+            "Published, NOT read off the fitted pity curve — the curve's far tail is not "
+            "identified and would understate it."
+        )
+    )
+
+
+class WishIncomeVersionRead(BaseModel):
+    """One game version's income at all three tiers."""
+
+    version: str
+    is_estimate: bool = Field(
+        description="The workbook's own `est.` marker — a forecast, not a settled total."
+    )
+    f2p: float
+    welkin: float
+    welkin_bp: float
+
+
+class WishIncomeRead(BaseModel):
+    """The income table, and when it was last refreshed."""
+
+    versions: list[WishIncomeVersionRead]
+    fetched_at: str | None = Field(
+        description=(
+            "When the store last read the workbook. Present so a page can say how old these "
+            "numbers are: stale projected income is the failure mode that goes wrong silently."
+        )
+    )
+
+
+@router.post("/plan", response_model=WishPlanRead)
+async def create_plan(payload: WishPlanRequest, user: _User) -> WishPlanRead:
+    """Return the odds of each remaining milestone on the caller's budget."""
+    rates = rates_for(payload.banner)
+    budget = (
+        wishes_from(payload.primogems, payload.intertwined_fate) + payload.extra_wishes
+    )
+    try:
+        plan = plan_wishes(
+            PlanInput(
+                banner=payload.banner,
+                pity=payload.pity,
+                guaranteed=payload.guaranteed,
+                lost_fifty_fifties=payload.lost_fifty_fifties,
+                owned_copies=payload.owned_copies,
+            ),
+            budget=budget,
+        )
+    except UnreachableStateError as error:
+        # 422 rather than 400: the body is well-formed and each field is individually valid;
+        # it is the combination that describes a situation the game cannot produce.
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+    return WishPlanRead(
+        budget=plan.budget,
+        milestones=[
+            WishMilestoneRead(
+                copies=milestone.copies,
+                label=milestone.label,
+                success_chance=milestone.success_chance,
+                average_wishes=milestone.average_wishes,
+                median_wishes=milestone.median_wishes,
+            )
+            for milestone in plan.milestones
+        ],
+        published_worst_case=rates.published_worst_case,
+    )
+
+
+@router.get("/income", response_model=WishIncomeRead)
+async def read_income(session: _Session, user: _User) -> WishIncomeRead:
+    """Return wish income per game version, at the three spending tiers.
+
+    Served from `wish_income`, which `scripts/refresh_wish_income.py` fills on a timer. This
+    route never reaches the workbook: `app/` has one request-time fetch and a third-party
+    spreadsheet on the request path would be a second.
+
+    An empty store is **not** an error — it means the refresher has not run yet, and a page
+    can say so. Inventing numbers to fill it would be worse.
+    """
+    rows = (
+        await session.execute(select(WishIncome).order_by(WishIncome.major, WishIncome.minor))
+    ).scalars().all()
+
+    by_version: dict[str, dict[str, object]] = {}
+    for row in rows:
+        entry = by_version.setdefault(
+            row.version, {"version": row.version, "is_estimate": row.is_estimate}
+        )
+        entry[row.tier] = row.wishes
+
+    versions = [
+        WishIncomeVersionRead(
+            version=str(entry["version"]),
+            is_estimate=bool(entry["is_estimate"]),
+            f2p=float(entry.get("f2p", 0.0)),  # type: ignore[arg-type]
+            welkin=float(entry.get("welkin", 0.0)),  # type: ignore[arg-type]
+            welkin_bp=float(entry.get("welkin_bp", 0.0)),  # type: ignore[arg-type]
+        )
+        for entry in by_version.values()
+    ]
+    fetched_at = max((row.fetched_at for row in rows), default=None)
+    return WishIncomeRead(
+        versions=versions,
+        fetched_at=fetched_at.isoformat() if fetched_at else None,
+    )
+
+
+@router.get("/limits", response_model=dict)
+async def read_limits(user: _User) -> dict:
+    """Static facts the page needs to build its controls without hardcoding them."""
+    return {
+        "primogems_per_wish": 160,
+        "max_constellation": MAX_CONSTELLATION,
+        "max_refinement": MAX_REFINEMENT,
+        "banners": {
+            banner.value: {
+                "hard_pity": rates_for(banner).hard_pity,
+                "published_worst_case": rates_for(banner).published_worst_case,
+                "capturing_radiance": rates_for(banner).capturing_radiance,
+            }
+            for banner in BannerKind
+        },
+        # Offering "guaranteed with 0 losses" would let the page build a state the service
+        # refuses; the control has to know that here rather than discover it in a 422.
+        "max_lost_fifty_fifties": 3,
+    }
