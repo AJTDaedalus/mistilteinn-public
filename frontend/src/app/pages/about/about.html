@@ -1,0 +1,44 @@
+<section class="about">
+  <header>
+    <h1>About</h1>
+  </header>
+
+  <p class="about__disclosure">
+    Mistilteinn was developed using AI. It is currently closed source until I have time to do a
+    security review, but the intention is to make it open source. You may join us at the
+    following Discord if you’d like to discuss bugs, new features, or the app overall.
+  </p>
+
+  <p>
+    <a class="about__discord" [href]="discord" target="_blank" rel="noopener noreferrer">
+      Join the Discord
+    </a>
+  </p>
+
+  <h2>Credits</h2>
+  <ul class="credits">
+    @for (credit of credits; track credit.name) {
+      <li class="credit">
+        <a class="credit__name" [href]="credit.url" target="_blank" rel="noopener noreferrer">
+          {{ credit.name }}
+        </a>
+        @if (credit.licence) {
+          @if (credit.licenceUrl) {
+            <a class="credit__licence" [href]="credit.licenceUrl"
+               target="_blank" rel="noopener noreferrer">{{ credit.licence }}</a>
+          } @else {
+            <span class="credit__licence">{{ credit.licence }}</span>
+          }
+        }
+        <p class="credit__body">{{ credit.body }}</p>
+      </li>
+    }
+  </ul>
+
+  <!-- "Free and non-commercial" is the fair-use factor this project actually controls, and
+       the one a rights-holder checks first. Owner's words, owner's call. -->
+  <p class="hint">
+    Mistilteinn is a fan project, all characters and other game content is the copyright of
+    Hoyoverse. It is free and non-commercial.
+  </p>
+</section>

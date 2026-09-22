@@ -1,0 +1,71 @@
+.about {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  /* A reading measure. **Not `--measure`**, which is 90rem — the page container's width,
+     not a line length; using it here constrained nothing and the credits ran the full
+     1,440px. Prose at this size wants roughly 70 characters a line. */
+  max-width: 58rem;
+
+  h1 { margin: 0; }
+  h2 { margin: var(--space-4) 0 0; }
+  p { margin: 0; }
+}
+
+.about__disclosure {
+  background: var(--surface);
+  border: 1px solid var(--surface-rule);
+  border-left: 3px solid var(--brass);
+  border-radius: var(--radius-1);
+  padding: var(--space-3);
+}
+
+/* **Dark text on the bright brass, not light text on the deep one.** `--ink` on
+   `--brass-deep` measured 2.64:1 and the hover state dropped it to 1.43:1 — the label all but
+   disappeared. Switching the text to `--bg` fixed hover and left the rest state at **4.12:1,
+   still under AA's 4.5** — a number worth measuring rather than assuming, because it looks
+   like a fix. `--brass` at rest is 7.58:1 and `--brass-hi` on hover is higher still. This
+   palette reasons about its ratios by name in `_tokens.scss`; no other rule in the app puts
+   text on brass, and the house primary is `--violet`. */
+.about__discord {
+  background: var(--brass);
+  border: 1px solid var(--brass-hi);
+  border-radius: var(--radius-1);
+  color: var(--bg);
+  font-weight: 600;
+  display: inline-block;
+  padding: var(--space-2) var(--space-4);
+  text-decoration: none;
+
+  &:hover { background: var(--brass-hi); }
+  &:focus-visible { outline: 2px solid var(--brass-hi); outline-offset: 2px; }
+}
+
+.credits {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.credit {
+  border-left: 2px solid var(--surface-rule);
+  padding-left: var(--space-3);
+}
+
+.credit__name {
+  color: var(--brass-hi);
+  font-weight: 600;
+
+  &:focus-visible { outline: 2px solid var(--brass-hi); outline-offset: 2px; }
+}
+
+.credit__licence {
+  color: var(--ink-faint);
+  font-size: var(--text-xs);
+  margin-left: var(--space-2);
+}
+
+.credit__body { color: var(--ink-dim); margin-top: var(--space-1) !important; }
