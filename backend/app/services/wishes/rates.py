@@ -102,6 +102,16 @@ def radiance_win_rates() -> tuple[float, ...]:
 
 
 @lru_cache(maxsize=1)
+def refund_tiers() -> dict[str, float]:
+    """Starglitter refund as a fraction of wishes spent, by tier.
+
+    Compounded: the refund buys wishes which refund again. See the data file for the
+    derivation and for why `high` is a veteran-account assumption rather than a default.
+    """
+    return {name: float(value) for name, value in _raw()["starglitter"]["tiers"].items()}
+
+
+@lru_cache(maxsize=1)
 def primogems_per_wish() -> int:
     """Primogems in one wish. Acquaint Fate is not counted — it buys the standard banner."""
     return int(_raw()["primogems_per_wish"]["value"])

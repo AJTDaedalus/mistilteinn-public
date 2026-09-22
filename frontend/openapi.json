@@ -4423,7 +4423,7 @@
           "wishes"
         ],
         "summary": "Create Plan",
-        "description": "Return the odds of each remaining milestone on the caller's budget.",
+        "description": "Return the odds of each goal in the plan, on one shared budget.\n\nMilestones are **cumulative**: a rung's chance is the chance of reaching it *and*\neverything before it. That is the whole difference from asking about each banner\nseparately, where both answers silently assume they own the entire wallet.",
         "operationId": "create_plan_api_v1_wishes_plan_post",
         "requestBody": {
           "content": {
@@ -11432,6 +11432,21 @@
         "title": "StatePath",
         "description": "A reach into the simulation: `.furina.energy`, `.x.burst.ready`.\n\n**Deliberately not an `Identifier`.** Only gcsim can answer one of these, and a condition\neditor that treats both as \"a string\" ends up offering the loop index `i` as a character."
       },
+      "Strategy": {
+        "type": "string",
+        "enum": [
+          "r1_first",
+          "c0_first",
+          "c1_first",
+          "c2_first",
+          "c3_first",
+          "c4_first",
+          "c5_first",
+          "c6_first"
+        ],
+        "title": "Strategy",
+        "description": "Which goal to reach first when one budget covers a character and their weapon.\n\nAfter the primary goal the order is always *character to C0 \u2192 weapon to R1 \u2192 character to\nC6 \u2192 weapon to R5*, which is the rule Fribbels' warp planner documents and the reason a\nstrategy is a single choice rather than a sortable list."
+      },
       "SubstatAnalysisRead": {
         "properties": {
           "rolls": {
@@ -12902,16 +12917,28 @@
             "type": "array",
             "title": "Milestones"
           },
+          "wallet_wishes": {
+            "type": "integer",
+            "title": "Wallet Wishes",
+            "description": "Wishes the wallet alone is worth, before refund."
+          },
+          "refunded_wishes": {
+            "type": "integer",
+            "title": "Refunded Wishes",
+            "description": "Wishes the starglitter refund adds. Zero when the tier is `none`."
+          },
           "published_worst_case": {
             "type": "integer",
             "title": "Published Worst Case",
-            "description": "The largest number of wishes HoYoverse advertises may be needed for one copy. Published, NOT read off the fitted pity curve \u2014 the curve's far tail is not identified and would understate it."
+            "description": "The largest number of wishes HoYoverse advertises may be needed for one copy, for the plan's first banner. Published, NOT read off the fitted pity curve \u2014 the curve's far tail is not identified and would understate it."
           }
         },
         "type": "object",
         "required": [
           "budget",
           "milestones",
+          "wallet_wishes",
+          "refunded_wishes",
           "published_worst_case"
         ],
         "title": "WishPlanRead",
@@ -12919,9 +12946,47 @@
       },
       "WishPlanRequest": {
         "properties": {
-          "banner": {
-            "$ref": "#/components/schemas/BannerKind",
-            "description": "Which limited banner to plan for."
+          "character": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WishTarget"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Simple mode: the character to plan, with `weapon` and `strategy`."
+          },
+          "weapon": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WishTarget"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Simple mode: their signature weapon, or null to plan alone."
+          },
+          "strategy": {
+            "$ref": "#/components/schemas/Strategy",
+            "description": "Simple mode: which goal to reach first.",
+            "default": "c0_first"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/WishTarget"
+            },
+            "type": "array",
+            "maxItems": 12,
+            "title": "Targets",
+            "description": "Custom mode: goals in spending order. Each needs `target_copies`."
+          },
+          "starglitter_refund": {
+            "type": "string",
+            "title": "Starglitter Refund",
+            "description": "How much of the budget comes back as Masterless Starglitter: none, low (every 4-star a weapon), average (an even split), high (every 4-star a maxed character).",
+            "default": "none"
           },
           "primogems": {
             "type": "integer",
@@ -12945,6 +13010,23 @@
             "title": "Extra Wishes",
             "description": "Projected income the caller has opted into, in whole wishes.",
             "default": 0
+          }
+        },
+        "type": "object",
+        "title": "WishPlanRequest",
+        "description": "A player's wallet, and either one character to plan or an explicit list of goals.\n\n**Two shapes, one route.** `character` (plus an optional `weapon` and a `strategy`) is\nFribbels' Simple mode: the whole ladder for one character, ordered by the strategy.\n`targets` is its Multi Target: an ordered list of goals across several characters,\nspending the same budget down the list."
+      },
+      "WishTarget": {
+        "properties": {
+          "banner": {
+            "$ref": "#/components/schemas/BannerKind"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 60,
+            "title": "Label",
+            "description": "What to call this target's rungs \u2014 a character name.",
+            "default": ""
           },
           "pity": {
             "type": "integer",
@@ -12964,23 +13046,36 @@
             "maximum": 6.0,
             "minimum": 0.0,
             "title": "Lost Fifty Fifties",
-            "description": "50/50s lost since the last one WON \u2014 the Capturing Radiance counter. Losing through a guarantee still counts; winning through one does not reset it. Character banner only.",
+            "description": "50/50s lost since the last one WON \u2014 the Capturing Radiance counter. It is one account-wide counter, so only the FIRST target of a plan may set it.",
             "default": 0
           },
           "owned_copies": {
             "type": "integer",
             "minimum": 0.0,
             "title": "Owned Copies",
-            "description": "Copies already held. C2 is 3 copies; R3 is 3 copies.",
+            "description": "Copies already held. C2 is 3; R3 is 3.",
             "default": 0
+          },
+          "target_copies": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Copies",
+            "description": "Total copies to reach. Only used by a custom plan; a simple plan's goals come from its strategy."
           }
         },
         "type": "object",
         "required": [
           "banner"
         ],
-        "title": "WishPlanRequest",
-        "description": "A player's position and wallet."
+        "title": "WishTarget",
+        "description": "One banner's starting position within a plan."
       }
     },
     "securitySchemes": {

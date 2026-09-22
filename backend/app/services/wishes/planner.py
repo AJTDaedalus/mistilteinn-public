@@ -34,8 +34,12 @@ that invariant and `tests/unit/test_wish_planner_math.py` asserts it directly.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 from app.services.wishes.rates import (
     BannerKind,
@@ -90,6 +94,27 @@ class Milestone:
     average_wishes: float
     #: Wishes at which the chance first reaches 50%, or None if it never does.
     median_wishes: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class Leg:
+    """One banner's worth of a campaign: pull here until `target_copies` are held.
+
+    A campaign is an ordered list of these sharing **one** budget, which is the question a
+    per-banner ladder cannot answer: *"can I get C1 and R1 with what I have?"* Two separate
+    ladders each silently assume they own the whole wallet, so both can read 99% when
+    affording both is impossible.
+    """
+
+    banner: BannerKind
+    #: What to call this leg's milestones — a character's name, usually.
+    label: str = ""
+    pity: int = 0
+    guaranteed: bool = False
+    lost_fifty_fifties: int = 0
+    owned_copies: int = 0
+    #: Total copies to hold once this leg is done. Defaults to one more than owned.
+    target_copies: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -153,52 +178,130 @@ def _win_rate(rates: BannerRates, radiance: int) -> float:
 def plan_wishes(position: PlanInput, budget: int) -> WishPlan:
     """Return the full ladder of remaining milestones for `position` on `budget` wishes.
 
-    Args:
-        position: Where the player currently stands.
-        budget: Wishes available.
+    A single-banner convenience over :func:`plan_campaign` — one leg, run to the cap — so the
+    two cannot drift apart.
+    """
+    return plan_campaign(
+        [
+            Leg(
+                banner=position.banner,
+                pity=position.pity,
+                guaranteed=position.guaranteed,
+                lost_fifty_fifties=position.lost_fifty_fifties,
+                owned_copies=position.owned_copies,
+                target_copies=_cap(position.banner),
+            )
+        ],
+        budget=budget,
+    )
 
-    Returns:
-        One `Milestone` per rung still to be reached, in order.
+
+def plan_campaign(legs: Sequence[Leg], budget: int) -> WishPlan:
+    """Spend one budget down an ordered list of goals.
+
+    Each milestone is **cumulative**: its chance is the chance of having reached that rung
+    *and every rung before it*, which is what makes the answer different from planning each
+    banner alone.
+
+    Three pieces of state cross a leg boundary, and getting them wrong is the whole difficulty:
+
+    * **Pity does not**, because obtaining a copy is a 5-star and a 5-star resets pity. A
+      leg's own `pity` therefore applies only when it is the first leg on that banner.
+    * **The guarantee does not**, because obtaining the wanted copy is what spends it.
+    * **The Capturing Radiance counter does**, and it survives *everything* — including a
+      weapon leg in the middle, which cannot touch it because the weapon banner has no
+      radiance at all.
 
     Raises:
-        UnreachableStateError: For `guaranteed` with no 50/50s lost — see the class docstring.
-        ValueError: For a pity, copy count or budget outside its valid range.
+        UnreachableStateError: If any leg describes a state the game cannot produce.
+        ValueError: If a leg or the budget is out of range, or there are no legs.
     """
-    rates = rates_for(position.banner)
-    max_copies = (
-        MAX_CONSTELLATION + 1 if position.banner is BannerKind.CHARACTER else MAX_REFINEMENT
-    )
-    _validate(position, budget, rates, max_copies)
+    if not legs:
+        raise ValueError("a campaign needs at least one leg")
+    if budget < 0:
+        raise ValueError("budget must not be negative")
 
-    fresh = first_passage_pmf(rates)
-    start = _conditioned_on_pity(fresh, position.pity)
     radiance_states = len(radiance_win_rates())
-
-    # state[r] is the PMF of wishes spent so far, conditioned on the counter now reading r.
-    # Without Capturing Radiance only index 0 is ever occupied and this degenerates to
-    # Fribbels' single-PMF form.
     state: list[np.ndarray | None] = [None] * radiance_states
-    state[min(position.lost_fifty_fifties, radiance_states - 1)] = np.array([1.0])
-
     milestones: list[Milestone] = []
-    for step in range(max_copies - position.owned_copies):
-        first = step == 0
-        cost = start if first else fresh
-        guaranteed = position.guaranteed if first else False
-        state = _advance(state, cost, fresh, rates, guaranteed, radiance_states)
+    seen_banners: set[BannerKind] = set()
+    started = False
 
-        total = _collapse(state)
-        copies = position.owned_copies + step + 1
-        milestones.append(
-            Milestone(
-                copies=copies,
-                label=_label(position.banner, copies),
-                success_chance=float(total[: budget + 1].sum()) if budget >= 0 else 0.0,
-                average_wishes=float((np.arange(len(total)) * total).sum()),
-                median_wishes=_quantile(total, 0.5),
+    for leg in legs:
+        rates = rates_for(leg.banner)
+        max_copies = _cap(leg.banner)
+        target = leg.target_copies if leg.target_copies is not None else leg.owned_copies + 1
+        _validate_leg(leg, target, rates, max_copies)
+
+        first_on_banner = leg.banner not in seen_banners
+        seen_banners.add(leg.banner)
+
+        fresh = first_passage_pmf(rates)
+        # Pity and the guarantee belong to the first leg on their banner and to nothing after
+        # it, because by then a 5-star has already been obtained on that banner.
+        start = _conditioned_on_pity(fresh, leg.pity) if first_on_banner else fresh
+        guaranteed = leg.guaranteed if first_on_banner else False
+
+        if not started:
+            state[min(leg.lost_fifty_fifties, radiance_states - 1)] = np.array([1.0])
+            started = True
+        elif leg.lost_fifty_fifties:
+            # One account has one counter. A later leg cannot re-declare what the campaign
+            # has been carrying, whatever banner it is on.
+            raise ValueError(
+                "lost_fifty_fifties belongs to the first leg of a campaign: the counter is "
+                "carried from there, not re-entered per character"
             )
-        )
+
+        for step in range(target - leg.owned_copies):
+            cost = start if step == 0 else fresh
+            armed = guaranteed if step == 0 else False
+            state = _advance(state, cost, fresh, rates, armed, radiance_states)
+
+            total = _collapse(state)
+            copies = leg.owned_copies + step + 1
+            rung = _label(leg.banner, copies)
+            milestones.append(
+                Milestone(
+                    copies=copies,
+                    label=f"{leg.label} {rung}".strip(),
+                    success_chance=float(total[: budget + 1].sum()),
+                    average_wishes=float((np.arange(len(total)) * total).sum()),
+                    median_wishes=_quantile(total, 0.5),
+                )
+            )
+
     return WishPlan(budget=budget, milestones=milestones)
+
+
+def _cap(banner: BannerKind) -> int:
+    """Copies that take an item to its maximum: seven for C6, five for R5."""
+    return MAX_CONSTELLATION + 1 if banner is BannerKind.CHARACTER else MAX_REFINEMENT
+
+
+def _validate_leg(leg: Leg, target: int, rates: BannerRates, max_copies: int) -> None:
+    """Reject a leg the game cannot produce, rather than answering it."""
+    if not 0 <= leg.pity < rates.hard_pity:
+        raise ValueError(f"pity must be within [0, {rates.hard_pity - 1}]")
+    if not 0 <= leg.owned_copies < max_copies:
+        raise ValueError(f"owned_copies must be within [0, {max_copies - 1}]")
+    if not leg.owned_copies < target <= max_copies:
+        raise ValueError(
+            f"target_copies must be within ({leg.owned_copies}, {max_copies}]"
+        )
+    if leg.lost_fifty_fifties < 0:
+        raise ValueError("lost_fifty_fifties must not be negative")
+    if leg.lost_fifty_fifties and not rates.capturing_radiance:
+        raise ValueError(
+            "lost_fifty_fifties applies to the character banner only: the weapon banner's "
+            "Epitomized Path has no Capturing Radiance equivalent"
+        )
+    if leg.guaranteed and rates.capturing_radiance and leg.lost_fifty_fifties == 0:
+        raise UnreachableStateError(
+            "guaranteed with no 50/50s lost is not a state the game can produce: arming the "
+            "guarantee requires losing a 50/50, and that loss increments the Capturing "
+            "Radiance counter"
+        )
 
 
 def _advance(
@@ -221,12 +324,18 @@ def _advance(
             continue
 
         win = _win_rate(rates, radiance)
-        _add(nxt, 0, np.convolve(pmf, cost), win)
+        # A won 50/50 resets the counter -- but only on the banner that HAS one. A weapon leg
+        # in the middle of a campaign cannot clear the character banner's Capturing Radiance,
+        # so it passes the index straight through.
+        won_index = 0 if rates.capturing_radiance else radiance
+        _add(nxt, won_index, np.convolve(pmf, cost), win)
         if win < 1.0:
             # Lost: the counter advances and the *next* 5-star is guaranteed, so this copy
             # costs two cycles.
-            _add(nxt, min(radiance + 1, radiance_states - 1),
-                 np.convolve(pmf, np.convolve(cost, fresh)), 1.0 - win)
+            lost_index = (
+                min(radiance + 1, radiance_states - 1) if rates.capturing_radiance else radiance
+            )
+            _add(nxt, lost_index, np.convolve(pmf, np.convolve(cost, fresh)), 1.0 - win)
     return nxt
 
 

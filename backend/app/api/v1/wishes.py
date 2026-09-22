@@ -21,10 +21,14 @@ from app.models.user import User
 from app.models.wish_income import WishIncome
 from app.services.wishes import (
     BannerKind,
-    PlanInput,
+    Leg,
+    Strategy,
     UnreachableStateError,
-    plan_wishes,
+    campaign_for,
+    plan_campaign,
     rates_for,
+    refund_tiers,
+    refunded_budget,
 )
 from app.services.wishes.planner import MAX_CONSTELLATION, MAX_REFINEMENT, wishes_from
 
@@ -40,18 +44,12 @@ MAX_FATE = 100_000
 MAX_EXTRA_WISHES = 100_000
 
 
-class WishPlanRequest(BaseModel):
-    """A player's position and wallet."""
+class WishTarget(BaseModel):
+    """One banner's starting position within a plan."""
 
-    banner: BannerKind = Field(description="Which limited banner to plan for.")
-    primogems: int = Field(0, ge=0, le=MAX_PRIMOGEMS)
-    intertwined_fate: int = Field(
-        0, ge=0, le=MAX_FATE,
-        description="Acquaint Fate is deliberately not accepted: it buys the standard banner.",
-    )
-    extra_wishes: int = Field(
-        0, ge=0, le=MAX_EXTRA_WISHES,
-        description="Projected income the caller has opted into, in whole wishes.",
+    banner: BannerKind
+    label: str = Field(
+        "", max_length=60, description="What to call this target's rungs — a character name."
     )
     pity: int = Field(0, ge=0, description="Wishes since the last 5-star on this banner.")
     guaranteed: bool = Field(
@@ -60,13 +58,58 @@ class WishPlanRequest(BaseModel):
     lost_fifty_fifties: int = Field(
         0, ge=0, le=MAX_CONSTELLATION,
         description=(
-            "50/50s lost since the last one WON — the Capturing Radiance counter. Losing "
-            "through a guarantee still counts; winning through one does not reset it. "
-            "Character banner only."
+            "50/50s lost since the last one WON — the Capturing Radiance counter. It is one "
+            "account-wide counter, so only the FIRST target of a plan may set it."
         ),
     )
-    owned_copies: int = Field(
-        0, ge=0, description="Copies already held. C2 is 3 copies; R3 is 3 copies."
+    owned_copies: int = Field(0, ge=0, description="Copies already held. C2 is 3; R3 is 3.")
+    target_copies: int | None = Field(
+        None, ge=1,
+        description=(
+            "Total copies to reach. Only used by a custom plan; a simple plan's goals come "
+            "from its strategy."
+        ),
+    )
+
+
+class WishPlanRequest(BaseModel):
+    """A player's wallet, and either one character to plan or an explicit list of goals.
+
+    **Two shapes, one route.** `character` (plus an optional `weapon` and a `strategy`) is
+    Fribbels' Simple mode: the whole ladder for one character, ordered by the strategy.
+    `targets` is its Multi Target: an ordered list of goals across several characters,
+    spending the same budget down the list.
+    """
+
+    character: WishTarget | None = Field(
+        None, description="Simple mode: the character to plan, with `weapon` and `strategy`."
+    )
+    weapon: WishTarget | None = Field(
+        None, description="Simple mode: their signature weapon, or null to plan alone."
+    )
+    strategy: Strategy = Field(
+        Strategy.C0_FIRST, description="Simple mode: which goal to reach first."
+    )
+    targets: list[WishTarget] = Field(
+        default_factory=list, max_length=12,
+        description="Custom mode: goals in spending order. Each needs `target_copies`.",
+    )
+    starglitter_refund: str = Field(
+        "none",
+        description=(
+            "How much of the budget comes back as Masterless Starglitter: none, low "
+            "(every 4-star a weapon), average (an even split), high (every 4-star a maxed "
+            "character)."
+        ),
+    )
+    primogems: int = Field(0, ge=0, le=MAX_PRIMOGEMS)
+    intertwined_fate: int = Field(
+        0, ge=0, le=MAX_FATE,
+        description="Acquaint Fate is deliberately not accepted: it buys the standard banner.",
+    )
+    extra_wishes: int = Field(
+        0, ge=0, le=MAX_EXTRA_WISHES,
+        description="Projected income the caller has opted into, in whole wishes.",
     )
 
 
@@ -87,11 +130,15 @@ class WishPlanRead(BaseModel):
 
     budget: int = Field(description="Wishes available: primogems/160 + fate + projected income.")
     milestones: list[WishMilestoneRead]
+    wallet_wishes: int = Field(description="Wishes the wallet alone is worth, before refund.")
+    refunded_wishes: int = Field(
+        description="Wishes the starglitter refund adds. Zero when the tier is `none`."
+    )
     published_worst_case: int = Field(
         description=(
-            "The largest number of wishes HoYoverse advertises may be needed for one copy. "
-            "Published, NOT read off the fitted pity curve — the curve's far tail is not "
-            "identified and would understate it."
+            "The largest number of wishes HoYoverse advertises may be needed for one copy, "
+            "for the plan's first banner. Published, NOT read off the fitted pity curve — "
+            "the curve's far tail is not identified and would understate it."
         )
     )
 
@@ -122,22 +169,28 @@ class WishIncomeRead(BaseModel):
 
 @router.post("/plan", response_model=WishPlanRead)
 async def create_plan(payload: WishPlanRequest, user: _User) -> WishPlanRead:
-    """Return the odds of each remaining milestone on the caller's budget."""
-    rates = rates_for(payload.banner)
-    budget = (
-        wishes_from(payload.primogems, payload.intertwined_fate) + payload.extra_wishes
-    )
+    """Return the odds of each goal in the plan, on one shared budget.
+
+    Milestones are **cumulative**: a rung's chance is the chance of reaching it *and*
+    everything before it. That is the whole difference from asking about each banner
+    separately, where both answers silently assume they own the entire wallet.
+    """
     try:
-        plan = plan_wishes(
-            PlanInput(
-                banner=payload.banner,
-                pity=payload.pity,
-                guaranteed=payload.guaranteed,
-                lost_fifty_fifties=payload.lost_fifty_fifties,
-                owned_copies=payload.owned_copies,
-            ),
-            budget=budget,
-        )
+        legs = _legs_for(payload)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+    wallet = wishes_from(payload.primogems, payload.intertwined_fate) + payload.extra_wishes
+    try:
+        budget = refunded_budget(wallet, payload.starglitter_refund)
+    except KeyError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=f"unknown starglitter refund tier: {payload.starglitter_refund!r}",
+        ) from error
+
+    try:
+        plan = plan_campaign(legs, budget=budget)
     except UnreachableStateError as error:
         # 422 rather than 400: the body is well-formed and each field is individually valid;
         # it is the combination that describes a situation the game cannot produce.
@@ -147,6 +200,8 @@ async def create_plan(payload: WishPlanRequest, user: _User) -> WishPlanRead:
 
     return WishPlanRead(
         budget=plan.budget,
+        wallet_wishes=wallet,
+        refunded_wishes=budget - wallet,
         milestones=[
             WishMilestoneRead(
                 copies=milestone.copies,
@@ -157,7 +212,48 @@ async def create_plan(payload: WishPlanRequest, user: _User) -> WishPlanRead:
             )
             for milestone in plan.milestones
         ],
-        published_worst_case=rates.published_worst_case,
+        published_worst_case=rates_for(legs[0].banner).published_worst_case,
+    )
+
+
+def _legs_for(payload: WishPlanRequest) -> list[Leg]:
+    """Turn either request shape into one ordered list of legs.
+
+    Raises:
+        ValueError: If neither shape is given, both are, or a custom target omits its goal.
+    """
+    if payload.targets and payload.character is not None:
+        raise ValueError("send either `character` (simple) or `targets` (custom), not both")
+
+    if payload.targets:
+        missing = [t.label or t.banner.value for t in payload.targets if t.target_copies is None]
+        if missing:
+            raise ValueError(f"custom targets need `target_copies`: {missing}")
+        return [_leg(target) for target in payload.targets]
+
+    if payload.character is None:
+        raise ValueError("a plan needs a `character` or a list of `targets`")
+    if payload.character.banner is not BannerKind.CHARACTER:
+        raise ValueError("`character` must be a character-banner target")
+    if payload.weapon is not None and payload.weapon.banner is not BannerKind.WEAPON:
+        raise ValueError("`weapon` must be a weapon-banner target")
+
+    return campaign_for(
+        payload.strategy,
+        _leg(payload.character),
+        _leg(payload.weapon) if payload.weapon else None,
+    )
+
+
+def _leg(target: WishTarget) -> Leg:
+    return Leg(
+        banner=target.banner,
+        label=target.label,
+        pity=target.pity,
+        guaranteed=target.guaranteed,
+        lost_fifty_fifties=target.lost_fifty_fifties,
+        owned_copies=target.owned_copies,
+        target_copies=target.target_copies,
     )
 
 
@@ -218,4 +314,6 @@ async def read_limits(user: _User) -> dict:
         # Offering "guaranteed with 0 losses" would let the page build a state the service
         # refuses; the control has to know that here rather than discover it in a 422.
         "max_lost_fifty_fifties": 3,
+        "strategies": [strategy.value for strategy in Strategy],
+        "starglitter_refund_tiers": refund_tiers(),
     }

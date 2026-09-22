@@ -35,7 +35,7 @@ async def test_income_requires_a_caller(client: AsyncClient) -> None:
 async def test_a_fresh_character_ladder(authed_client: AsyncClient) -> None:
     response = await authed_client.post(
         "/api/v1/wishes/plan",
-        json={"banner": "character", "primogems": 24_000, "intertwined_fate": 60},
+        json={"character": {"banner": "character"}, "primogems": 24_000, "intertwined_fate": 60},
     )
     assert response.status_code == 200
     body = response.json()
@@ -48,7 +48,10 @@ async def test_a_fresh_character_ladder(authed_client: AsyncClient) -> None:
 
 
 async def test_a_weapon_ladder_uses_refinements(authed_client: AsyncClient) -> None:
-    response = await authed_client.post("/api/v1/wishes/plan", json={"banner": "weapon"})
+    response = await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={"targets": [{"banner": "weapon", "target_copies": 5}]},
+    )
     assert response.status_code == 200
     body = response.json()
     assert [m["label"] for m in body["milestones"]] == ["R1", "R2", "R3", "R4", "R5"]
@@ -58,7 +61,7 @@ async def test_a_weapon_ladder_uses_refinements(authed_client: AsyncClient) -> N
 async def test_acquaint_fate_is_not_a_field(authed_client: AsyncClient) -> None:
     """Owner ruling, 2026-09-22. An unknown field must not silently inflate the budget."""
     response = await authed_client.post(
-        "/api/v1/wishes/plan", json={"banner": "character", "acquaint_fate": 500}
+        "/api/v1/wishes/plan", json={"character": {"banner": "character"}, "acquaint_fate": 500}
     )
     assert response.status_code == 200
     assert response.json()["budget"] == 0
@@ -67,7 +70,7 @@ async def test_acquaint_fate_is_not_a_field(authed_client: AsyncClient) -> None:
 async def test_projected_income_adds_to_the_budget(authed_client: AsyncClient) -> None:
     response = await authed_client.post(
         "/api/v1/wishes/plan",
-        json={"banner": "character", "primogems": 1_600, "extra_wishes": 90},
+        json={"character": {"banner": "character"}, "primogems": 1_600, "extra_wishes": 90},
     )
     assert response.json()["budget"] == 100
 
@@ -78,7 +81,10 @@ async def test_banked_losses_change_the_answer(authed_client: AsyncClient) -> No
     for lost in (0, 3):
         response = await authed_client.post(
             "/api/v1/wishes/plan",
-            json={"banner": "character", "primogems": 28_800, "lost_fifty_fifties": lost},
+            json={
+                "character": {"banner": "character", "lost_fifty_fifties": lost},
+                "primogems": 28_800,
+            },
         )
         assert response.status_code == 200
         chances.append(response.json()["milestones"][1]["success_chance"])
@@ -89,7 +95,7 @@ async def test_the_unreachable_state_is_refused(authed_client: AsyncClient) -> N
     """Guaranteed with no 50/50s lost: arming the guarantee requires losing one."""
     response = await authed_client.post(
         "/api/v1/wishes/plan",
-        json={"banner": "character", "guaranteed": True, "lost_fifty_fifties": 0},
+        json={"character": {"banner": "character", "guaranteed": True, "lost_fifty_fifties": 0}},
     )
     assert response.status_code == 422
     assert "guarantee" in response.json()["detail"].lower()
@@ -97,28 +103,29 @@ async def test_the_unreachable_state_is_refused(authed_client: AsyncClient) -> N
 
 async def test_radiance_on_the_weapon_banner_is_refused(authed_client: AsyncClient) -> None:
     response = await authed_client.post(
-        "/api/v1/wishes/plan", json={"banner": "weapon", "lost_fifty_fifties": 2}
+        "/api/v1/wishes/plan",
+        json={"targets": [{"banner": "weapon", "target_copies": 1, "lost_fifty_fifties": 2}]},
     )
     assert response.status_code == 400
 
 
 async def test_pity_beyond_hard_pity_is_refused(authed_client: AsyncClient) -> None:
     response = await authed_client.post(
-        "/api/v1/wishes/plan", json={"banner": "character", "pity": 90}
+        "/api/v1/wishes/plan", json={"character": {"banner": "character", "pity": 90}}
     )
     assert response.status_code == 400
 
 
 async def test_owning_copies_shortens_the_ladder(authed_client: AsyncClient) -> None:
     response = await authed_client.post(
-        "/api/v1/wishes/plan", json={"banner": "character", "owned_copies": 5}
+        "/api/v1/wishes/plan", json={"character": {"banner": "character", "owned_copies": 5}}
     )
     assert [m["label"] for m in response.json()["milestones"]] == ["C5", "C6"]
 
 
 async def test_a_negative_wallet_is_rejected_by_the_schema(authed_client: AsyncClient) -> None:
     response = await authed_client.post(
-        "/api/v1/wishes/plan", json={"banner": "character", "primogems": -1}
+        "/api/v1/wishes/plan", json={"character": {"banner": "character"}, "primogems": -1}
     )
     assert response.status_code == 422
 
@@ -199,3 +206,174 @@ async def test_limits_let_the_page_build_its_controls(authed_client: AsyncClient
     assert body["banners"]["character"]["capturing_radiance"] is True
     assert body["banners"]["weapon"]["capturing_radiance"] is False
     assert body["max_lost_fifty_fifties"] == 3
+
+
+# --- campaigns: one budget across several goals -------------------------------------------
+
+
+async def test_a_character_and_their_weapon_share_one_budget(
+    authed_client: AsyncClient,
+) -> None:
+    """The question two separate ladders cannot answer.
+
+    At 160 wishes each banner alone reads near-certain; together, the weapon is not.
+    """
+    response = await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={
+            "character": {"banner": "character", "label": "Furina"},
+            "weapon": {"banner": "weapon", "label": "Splendor"},
+            "strategy": "c0_first",
+            "primogems": 25_600,
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["budget"] == 160
+
+    rungs = {m["label"]: m["success_chance"] for m in body["milestones"]}
+    assert rungs["Furina C0"] > 0.98
+    assert rungs["Splendor R1"] < 0.5, "both cannot be near-certain on one wallet"
+    assert [m["label"] for m in body["milestones"]][:3] == [
+        "Furina C0", "Splendor R1", "Furina C1",
+    ]
+
+
+async def test_the_strategy_reorders_the_ladder(authed_client: AsyncClient) -> None:
+    async def first_rung(strategy: str) -> str:
+        response = await authed_client.post(
+            "/api/v1/wishes/plan",
+            json={
+                "character": {"banner": "character", "label": "Furina"},
+                "weapon": {"banner": "weapon", "label": "Splendor"},
+                "strategy": strategy,
+            },
+        )
+        return response.json()["milestones"][0]["label"]
+
+    assert await first_rung("c0_first") == "Furina C0"
+    assert await first_rung("r1_first") == "Splendor R1"
+    assert await first_rung("c2_first") == "Furina C0"
+
+
+async def test_a_custom_plan_spans_several_characters(authed_client: AsyncClient) -> None:
+    """The owner's shape: C2 R1 of one character and C0 R1 of another, one wallet."""
+    response = await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={
+            "targets": [
+                {"banner": "character", "label": "Furina", "target_copies": 3},
+                {"banner": "weapon", "label": "Splendor", "target_copies": 1},
+                {"banner": "character", "label": "Neuvillette", "target_copies": 1},
+                {"banner": "weapon", "label": "Tome", "target_copies": 1},
+            ],
+            "primogems": 160_000,
+        },
+    )
+    assert response.status_code == 200
+    labels = [m["label"] for m in response.json()["milestones"]]
+    assert labels == [
+        "Furina C0", "Furina C1", "Furina C2",
+        "Splendor R1",
+        "Neuvillette C0",
+        "Tome R1",
+    ]
+
+
+async def test_a_custom_target_without_a_goal_is_refused(authed_client: AsyncClient) -> None:
+    response = await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={"targets": [{"banner": "character", "label": "Furina"}]},
+    )
+    assert response.status_code == 400
+    assert "target_copies" in response.json()["detail"]
+
+
+async def test_sending_both_shapes_is_refused(authed_client: AsyncClient) -> None:
+    response = await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={
+            "character": {"banner": "character"},
+            "targets": [{"banner": "character", "target_copies": 1}],
+        },
+    )
+    assert response.status_code == 400
+
+
+async def test_sending_neither_shape_is_refused(authed_client: AsyncClient) -> None:
+    response = await authed_client.post("/api/v1/wishes/plan", json={"primogems": 1600})
+    assert response.status_code == 400
+
+
+async def test_a_weapon_in_the_character_slot_is_refused(authed_client: AsyncClient) -> None:
+    response = await authed_client.post(
+        "/api/v1/wishes/plan", json={"character": {"banner": "weapon"}}
+    )
+    assert response.status_code == 400
+
+
+async def test_only_the_first_target_may_set_the_counter(authed_client: AsyncClient) -> None:
+    """One account, one Capturing Radiance counter."""
+    response = await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={
+            "targets": [
+                {"banner": "character", "target_copies": 1},
+                {"banner": "character", "target_copies": 2, "lost_fifty_fifties": 2},
+            ]
+        },
+    )
+    assert response.status_code == 400
+    assert "first leg" in response.json()["detail"]
+
+
+# --- starglitter refund --------------------------------------------------------------------
+
+
+async def test_the_refund_grows_the_budget_and_is_reported_separately(
+    authed_client: AsyncClient,
+) -> None:
+    """A player should see what their wallet holds and what the refund adds, not one total."""
+    async def budget(tier: str) -> dict:
+        response = await authed_client.post(
+            "/api/v1/wishes/plan",
+            json={
+                "character": {"banner": "character"},
+                "primogems": 32_000,
+                "starglitter_refund": tier,
+            },
+        )
+        assert response.status_code == 200
+        return response.json()
+
+    none = await budget("none")
+    assert none["wallet_wishes"] == 200
+    assert none["refunded_wishes"] == 0
+    assert none["budget"] == 200
+
+    for tier, expected in (("low", 8), ("average", 15), ("high", 22)):
+        body = await budget(tier)
+        assert body["wallet_wishes"] == 200
+        assert body["refunded_wishes"] == expected
+        assert body["budget"] == 200 + expected
+
+
+async def test_an_unknown_refund_tier_is_refused(authed_client: AsyncClient) -> None:
+    response = await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={"character": {"banner": "character"}, "starglitter_refund": "generous"},
+    )
+    assert response.status_code == 400
+    assert "refund tier" in response.json()["detail"]
+
+
+async def test_limits_publishes_the_strategies_and_refund_tiers(
+    authed_client: AsyncClient,
+) -> None:
+    """The page builds both dropdowns from this rather than hardcoding them."""
+    body = (await authed_client.get("/api/v1/wishes/limits")).json()
+    assert body["strategies"][0] == "r1_first"
+    assert "c6_first" in body["strategies"]
+    tiers = body["starglitter_refund_tiers"]
+    assert tiers["none"] == 0
+    assert 0 < tiers["low"] < tiers["average"] < tiers["high"]
