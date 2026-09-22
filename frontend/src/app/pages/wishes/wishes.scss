@@ -1,5 +1,12 @@
 .wishes { display: flex; flex-direction: column; gap: var(--space-4); }
-.wishes__head h1 { margin: 0 0 var(--space-1); }
+
+/* The display face is tall and carries a glow, so its descenders reach well below the text
+   box. `space-1` let the subtitle draw straight through them — found by screenshotting the
+   page, which no test does. */
+.wishes__head {
+  h1 { margin: 0 0 var(--space-3); }
+  .hint { margin: 0; }
+}
 
 .panel {
   background: var(--surface);
@@ -39,8 +46,13 @@
   border: 1px solid var(--surface-rule);
   border-radius: var(--radius-1);
   color: var(--ink);
+  font: inherit;
   padding: var(--space-2);
 }
+
+/* Capped rather than full-width. A select stretched across the column reads as a text box —
+   the same point planner.scss makes about a 700px control holding the number 80. */
+.field select { max-width: 11rem; }
 
 .segmented {
   display: inline-flex;
@@ -63,10 +75,23 @@
   & + & { margin-left: var(--space-2); }
 }
 
-.segmented--small button { padding: var(--space-1) var(--space-2); font-size: 0.8125rem; }
+.segmented--small button {
+  font-size: var(--text-xs);
+  padding: var(--space-1) var(--space-3);
+  /* "Welkin + BP" wrapped to two lines and made the control twice as tall as its neighbours. */
+  white-space: nowrap;
+}
 
 .income { display: flex; flex-direction: column; gap: var(--space-2); }
-.income__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+/* The tier control belongs *to* this block, so it sits on the block's own line rather than
+   being pushed to the far edge of the panel where it read as unattached. */
+.income__head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.income__head .label { margin-right: auto; }
 
 .chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .chip {
