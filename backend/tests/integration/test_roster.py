@@ -199,7 +199,7 @@ async def test_an_import_leaves_a_manual_answer_alone(
     await repository.set_owned(str(character.id), owned=False)
     await db_session.commit()
 
-    await repository.upsert_imported([str(character.id)])
+    await repository.upsert_imported([(str(character.id), None)])
     await db_session.commit()
 
     entry = await db_session.get(
@@ -216,10 +216,10 @@ async def test_a_reimport_refreshes_a_row_it_wrote_itself(
     user, _ = authed_user
     character = await _character(db_session, "10000027", "Ningguang")
     repository = CharacterRosterRepository(db_session, str(user.id))
-    await repository.upsert_imported([str(character.id)])
+    await repository.upsert_imported([(str(character.id), None)])
     await db_session.commit()
 
-    written = await repository.upsert_imported([str(character.id)])
+    written = await repository.upsert_imported([(str(character.id), None)])
     await db_session.commit()
 
     assert written == 1
