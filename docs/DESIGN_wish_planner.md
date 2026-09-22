@@ -152,6 +152,21 @@ arithmetic** (`24,000 💎 + 60 🎫 = 210 🎫`), and a goal table with a propo
 each chip. Differences: primogems/fates rather than jades/passes, C/R rather than E/S, whole
 patches rather than half-patches, and a **Capturing Radiance control** beside Guaranteed.
 
+### One banner at a time — a divergence this section originally failed to name
+
+**Fribbels' Simple mode is not one banner.** It shows Character *and* Light Cone pity and
+guarantee at once and builds a single interleaved ladder from one budget —
+`E0 S0 → E0 S1 → E1 S1 → … → E6 S5` — which is what its `Strategy` dropdown reorders.
+
+What shipped is a Character/Weapon **toggle** with two independent ladders, so it cannot
+answer *"I have 298 wishes: can I get C1 and R1?"* — the question most people bring. The first
+draft of this section listed four deliberate differences and treated this as a layout choice.
+It is a capability difference and the largest one remaining. **OQ-W8.**
+
+The math needs no change: the same convolution with two alternating first-passage PMFs, and
+the banners' state is independent because Capturing Radiance is character-only. The work is
+the milestone ordering and the UI.
+
 Recompute is **debounced**, not per-keystroke: `CLAUDE.md` records this repo typing `9999` into
 a materials box and writing 9, then 99, then 999. And `Number('') === 0`, so an emptied pity box
 must not silently read as pity 0.
@@ -160,6 +175,9 @@ must not silently read as pity 0.
 
 | | |
 |---|---|
-| **OQ-W4** | Multi Target — a queue of banners sharing one budget — in v1? It is most of Fribbels' UI and none of its math. Deferred, not declined. |
+| **OQ-W8** | **A combined character + weapon ladder from one budget**, with Fribbels' `Strategy` ordering. The largest remaining gap; see §7. |
+| **OQ-W9** | Fribbels syncs pity, guarantee and currency **live** from the reliquary-archiver scanner (`useWarpScannerSync.ts`). Genshin's analogue is the wish history export — the same idea as OQ-W5 and the strongest argument for it, since typed pity is the least reliable input on the page. |
+| **OQ-W10** | Income is per patch, but **a Genshin banner runs one phase**, so "will I have enough before this banner ends" is answered only at patch resolution — and it rounds in the player's favour. Fribbels splits by half-patch; the workbook cannot. |
+| **OQ-W4** | Multi Target — a queue of *characters* sharing one budget — in v1? It is most of Fribbels' UI and none of its math. Deferred, not declined. Distinct from OQ-W8. |
 | **OQ-W5** | Genshin's wish history is exportable. Derive pity / guarantee / losses rather than asking? Would make the losses counter exact instead of remembered. |
 | **OQ-W7** | Does the character banner's two concurrent 5★ split the 50/50 further? gachasim models one promotional character per banner; Genshin runs two. Needs checking before the rate is trusted for a specific character. |
