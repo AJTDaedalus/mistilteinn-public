@@ -1,0 +1,43 @@
+{
+  "note": "Pity curves and featured-item rates for Genshin's two limited banners. RULE: every numeric entry carries a `source`, and tests/unit/test_wish_rates_are_cited.py fails on one that does not -- the same discipline as app/data/planner/curated_rates.json, for the same reason (CLAUDE.md: 'do not write damage or reaction formulas from memory'). Gacha rates are the same class of claim.\n\nThe values and their sourcing are carried from /root/gachasim -- configurations.py and docs/RESEARCH_gacha_math_audit.md, which holds the source links and the audit that produced them. gachasim is NOT a git repository, so this file is a vendored copy with its citations rather than a reference to a path that may change underneath it.\n\nWHAT MUST NOT BE BUILT ON THIS: `soft_pity_start` and `increase_rate` are JOINTLY fitted to the published consolidated rate and are not separately identified -- roughly thirty pairs reproduce each weapon banner's published rate to within 0.5%. Everything about the CENTRE of the distribution is stable across that family (the mean moves by less than 0.02 pulls, p90 by at most 6) because pinning the consolidated rate pins the mean cycle length exactly. The FAR TAIL is not: the simulated maximum moves by 18 to 26 pulls. So a mean or a mid-range probability off these curves is sound and a 'worst case' off them is not. Use `published_worst_case`, which is the figure HoYoverse advertises.",
+
+  "character": {
+    "hard_pity": 90,
+    "soft_pity_start": 74,
+    "base_rate": 0.006,
+    "increase_rate": 0.06,
+    "featured_rate": 0.5,
+    "capturing_radiance": true,
+    "published_worst_case": 180,
+    "published_consolidated_rate": 0.016,
+    "source": "HoYoverse publishes the 0.6% base rate, the 1.6% consolidated ('average rate including pity') rate, the 90-pull hard pity and the 50/50 on the in-game Details screen. The soft-pity ramp is never published: +6%/pull from pity 74 is the community fit, which yields 1.6052%. Rate estimation from 9.45M wishes, https://www.bilibili.com/video/BV19Y411W7W5 -- via gachasim docs/RESEARCH_gacha_math_audit.md.",
+    "comment": "A 50/50 loss guarantees the next 5-star is the promotional character, so the featured resolution is exactly two branches. Capturing Radiance replaces the 0.5 at index 0 only; see `capturing_radiance_win_rates`."
+  },
+
+  "weapon": {
+    "hard_pity": 80,
+    "soft_pity_start": 63,
+    "base_rate": 0.007,
+    "increase_rate": 0.07,
+    "featured_rate": 0.375,
+    "capturing_radiance": false,
+    "published_worst_case": 160,
+    "published_consolidated_rate": 0.0185,
+    "source": "HoYoverse publishes 0.7% base, 1.85% consolidated, 80-pull hard pity, the 75% promotional rate and Epitomized Path. The ramp of +7%/pull from pity 63 is the community fit, yielding 1.8779%. Same bilibili estimation pass -- via gachasim docs/RESEARCH_gacha_math_audit.md.",
+    "comment": "featured_rate is 0.75 (a 5-star is promotional) x 0.5 (which of the two promotional weapons it is) = 0.375. Any other 5-star grants the single Fate Point, so the next 5-star is the chosen weapon with certainty -- the same two-branch shape as a 50/50, at a different rate. Version 5.0 reduced Epitomized Path from 2 Fate Points to 1: https://gamerant.com/genshin-impact-epitomized-path-fate-point-change-weapon-banner/ . NOTE the fitted curve clamps to 1.0 at pity 77, three pulls before the published 80 -- which is why `published_worst_case` and not the curve answers 'how bad can it get'.",
+    "no_capturing_radiance_source": "HoYoverse's Capturing Radiance announcement scopes the mechanic to the Character Event Wish: https://genshin.hoyoverse.com/en/news/detail/125274"
+  },
+
+  "capturing_radiance_win_rates": {
+    "values": [0.50, 0.525, 0.75, 1.0],
+    "source": "HoYoverse describes Capturing Radiance only qualitatively -- a lost 50/50 can be silently converted into a win, four consecutive losses are impossible, and the consolidated chance of a 5-star being the promotional character is 55%: https://genshin.hoyoverse.com/en/news/detail/125274 . These four are the community best-fit derived from a 0% / 5% / 50% / 100% loss-to-win conversion chance, https://www.reddit.com/r/Genshin_Impact/comments/1flac9n/capturing_radiance_theory_and_observations_to_date/ -- via gachasim, which re-derived and corrected an earlier, far more generous model.",
+    "comment": "Indexed by the number of 50/50s lost since the last WON 50/50. The stationary win rate is 55.65%, reproducing HoYoverse's published 55%, and index 3 being 1.0 encodes 'you cannot lose four in a row'. The counter increments on every lost 50/50 and resets ONLY on a won one -- obtaining the character through the guarantee leaves it untouched, which is what makes the fourth 50/50 certain.",
+    "model_risk": "This is the least-pinned number in the file. gachasim's audit bounds the disagreement between competing Capturing Radiance models at roughly 4% of the answer. The 55% consolidated anchor is what discriminates between them."
+  },
+
+  "primogems_per_wish": {
+    "value": 160,
+    "source": "Paimon's Bargains sells one Intertwined Fate for 160 Primogems; the in-game wish screen converts at the same rate.",
+    "comment": "Acquaint Fate buys Wanderlust Invocation (the standard banner) and is deliberately NOT counted -- owner ruling, 2026-09-22: 'acquaint fates don't count for this', 'just primogems + intertwined'."
+  }
+}
