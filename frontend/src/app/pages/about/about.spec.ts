@@ -43,12 +43,26 @@ describe('AboutPage', () => {
     it('credits every source the app actually ships data from', () => {
       const names = open().credits.map((c: any) => c.name);
       // Each of these is redistributed here, not merely consulted: catalogue rows and art,
-      // the pinned game tables, cited recommendations, and the banner and income snapshots.
-      for (const required of [
-        'nanoka', 'YuanShenResources', 'KeqingMains', 'Genshin Impact Wiki',
+      // cited recommendations, and the banner and income snapshots.
+      for (const required of ['nanoka', 'KeqingMains', 'Genshin Impact Wiki']) {
+        expect(names).toContain(required);
+      }
+    });
+
+    /**
+     * Owner, 2026-09-22: exclude YuanShen unless licensing requires it, and drop the two that
+     * are observations rather than borrowed material. YuanShenResources declares **no
+     * licence** — GitLab reports none, there is no LICENSE file, and its README carries a
+     * disclaimer with no attribution condition — so nothing compels the credit. Pinned here
+     * so a future edit re-adds it on purpose rather than by habit.
+     */
+    it('omits the ones the owner ruled out', () => {
+      const names = open().credits.map((c: any) => c.name);
+      for (const excluded of [
+        'YuanShenResources', 'Fribbels Star Rail Optimizer', 'Community wish-rate research',
         'Genshin income bookkeeping',
       ]) {
-        expect(names).toContain(required);
+        expect(names).not.toContain(excluded);
       }
     });
 
