@@ -20,9 +20,12 @@
         </div>
         <div class="field">
           <label for="refund">Starglitter refund</label>
+          <!-- **The account is an option, not an override.** It used to win silently
+               whenever the roster could answer, which left this control reading "8.7%
+               (Average)" while nothing it said was being used. -->
           <select id="refund" [value]="refund()"
                   (change)="refund.set($any($event.target).value)">
-            @for (t of refundTiers(); track t) {
+            @for (t of refundOptions(); track t) {
               <option [value]="t">{{ refundLabel(t) }}</option>
             }
           </select>

@@ -24,6 +24,8 @@ export interface WishLimits {
   banner_page: number;
   strategies: string[];
   starglitter_refund_tiers: Record<string, number>;
+  /** The refund choice meaning "price it from my roster" — the page does not spell it. */
+  account_refund: string;
   banners: Record<string, { hard_pity: number; published_worst_case: number; capturing_radiance: boolean }>;
 }
 

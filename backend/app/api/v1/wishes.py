@@ -44,7 +44,7 @@ from app.services.wishes.planner import (
     MAX_REFINEMENT,
     wishes_from,
 )
-from app.services.wishes.rates import primogems_per_wish
+from app.services.wishes.rates import ACCOUNT_REFUND, primogems_per_wish
 from app.services.wishes.refund import RefundInputs, expected_refund
 
 #: Highest Capturing Radiance counter the model has a rate for. **Derived, not typed**: the
@@ -127,11 +127,13 @@ class WishPlanRequest(BaseModel):
         description="Custom mode: goals in spending order. Each needs `target_copies`.",
     )
     starglitter_refund: str = Field(
-        "none",
+        ACCOUNT_REFUND,
         description=(
-            "How much of the budget comes back as Masterless Starglitter: none, low "
-            "(every 4-star a weapon), average (an even split), high (every 4-star a maxed "
-            "character)."
+            "How much of the budget comes back as Masterless Starglitter. `account` (the "
+            "default) prices it exactly from the caller's own roster against the banner's "
+            "featured 4-stars, and falls back to `none` when the account cannot answer. The "
+            "constants are none, low (every 4-star a weapon), average (an even split), high "
+            "(every 4-star a maxed character)."
         ),
     )
     primogems: int = Field(0, ge=0, le=MAX_PRIMOGEMS)
@@ -183,7 +185,9 @@ class WishPlanRead(BaseModel):
         "tier",
         description=(
             "`roster` when the refund was computed exactly from the account and the banner's "
-            "featured 4-stars, `tier` when it came from the chosen constant."
+            "featured 4-stars, `tier` when it came from the chosen constant, and `none` when "
+            "the account was asked for and could not answer. The third is distinct because "
+            "it is the only one the caller did not choose: it is a request that declined."
         ),
     )
     refunded_wishes: int = Field(
@@ -243,8 +247,14 @@ async def create_plan(
     # the roster knows their constellations, which is the axis the tiers only approximate.
     # Validated whichever source wins. Moving this into the `else` branch alone meant a bogus
     # tier answered 200 as soon as a banner was picked, and was never reported.
+    # **The control means what it says.** `account` asks for the exact figure; a tier asks
+    # for that constant and gets it even when the roster could have answered better. Deciding
+    # for the caller is what made the dropdown a control that changed nothing — it sat there
+    # reading "8.7% (Average)" while the roster quietly priced the plan.
+    wants_account = payload.starglitter_refund == ACCOUNT_REFUND
+    tier = "none" if wants_account else payload.starglitter_refund
     try:
-        tier_budget = refunded_budget(wallet, payload.starglitter_refund)
+        tier_budget = refunded_budget(wallet, tier)
     except KeyError as error:
         raise HTTPException(
             status_code=400,
@@ -254,7 +264,10 @@ async def create_plan(
     # **Priced per leg, because a campaign can span banners.** A custom plan is several
     # characters on several banners and each one's featured 4-stars decide its own refund —
     # pricing the whole plan off one banner was wrong the moment a second row existed.
-    exact = await _refund_for_campaign(session, str(user.id), legs, wallet)
+    exact = (
+        await _refund_for_campaign(session, str(user.id), legs, wallet)
+        if wants_account else None
+    )
     if exact is not None:
         # **Compounded, as the tier is.** The refund buys wishes which themselves refund, so
         # pricing it over `wallet` alone and stopping drops the second order — and switching a
@@ -263,7 +276,11 @@ async def create_plan(
         second = await _refund_for_campaign(session, str(user.id), legs, wallet + int(exact))
         budget, refund_source = wallet + int(second if second is not None else exact), "roster"
     else:
-        budget, refund_source = tier_budget, "tier"
+        # **Falls back to nothing, not to a tier.** A tier the caller did not pick is a number
+        # they have no reason to trust, and `none` is the only honest answer to "use my
+        # account" from an account that cannot say.
+        budget = tier_budget
+        refund_source = "none" if wants_account else "tier"
 
     try:
         plan = plan_campaign(legs, budget=budget)
@@ -642,5 +659,8 @@ async def read_limits(user: _User) -> dict:
         "max_lost_fifty_fifties": MAX_LOST_FIFTY_FIFTIES,
         "strategies": [strategy.value for strategy in Strategy],
         "starglitter_refund_tiers": refund_tiers(),
+        # The page builds its dropdown from this, so the sentinel is not a
+        # string the client spells for itself.
+        "account_refund": ACCOUNT_REFUND,
         "banner_page": BANNER_PAGE,
     }

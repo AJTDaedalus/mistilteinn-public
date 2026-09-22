@@ -628,12 +628,74 @@ async def test_the_refund_is_read_from_the_account(
         "/api/v1/wishes/plan",
         json={
             "character": {"banner": "character", "banner_slug": slug},
-            "primogems": 32_000, "starglitter_refund": "none",
+            "primogems": 32_000, "starglitter_refund": "account",
         },
     )).json()
     assert body["refund_source"] == "roster"
     # `none` would have given zero; the account gave a real figure.
     assert body["refunded_wishes"] > 0
+
+
+async def test_the_account_is_the_default_refund_choice(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """Omitting the field asks for the account, because that is the better answer.
+
+    The owner's ruling: the dropdown has to *control* the refund, and the exact figure is
+    what it should start on.
+    """
+    user, _ = authed_user
+    slug = await _banner(db_session)
+    for name in ("Diona", "Faruzan", "Chongyun", "Bennett"):
+        await _owned_four_star(db_session, str(user.id), name, 6)
+
+    body = (await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={"character": {"banner": "character", "banner_slug": slug}, "primogems": 32_000},
+    )).json()
+    assert body["refund_source"] == "roster"
+
+
+async def test_a_chosen_tier_beats_the_account(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """A tier is a request, not a fallback.
+
+    **This is the defect the owner found by reading the control.** The account used to win
+    whenever it could answer, so the dropdown sat on "8.7% (Average)" while nothing it said
+    was being used — a control that changed nothing.
+    """
+    user, _ = authed_user
+    slug = await _banner(db_session)
+    for name in ("Diona", "Faruzan", "Chongyun", "Bennett"):
+        await _owned_four_star(db_session, str(user.id), name, 6)
+
+    body = (await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={
+            "character": {"banner": "character", "banner_slug": slug},
+            "primogems": 32_000, "starglitter_refund": "average",
+        },
+    )).json()
+    assert body["refund_source"] == "tier"
+
+
+async def test_an_account_that_cannot_answer_falls_back_to_nothing(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """Not to a tier — a constant the caller did not pick is a number they cannot trust."""
+    slug = await _banner(db_session)
+    body = (await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={
+            "character": {"banner": "character", "banner_slug": slug},
+            "primogems": 32_000, "starglitter_refund": "account",
+        },
+    )).json()
+    assert body["refund_source"] == "none"
+    assert body["refunded_wishes"] == 0
+    # The wallet is untouched: `none` is exactly "no refund", not "a small one".
+    assert body["budget"] == body["wallet_wishes"]
 
 
 async def test_a_five_star_does_not_dilute_the_four_star_pool(
@@ -699,7 +761,7 @@ async def test_the_banner_decides_the_kind_not_the_first_leg(
         json={
             "character": {"banner": "character", "banner_slug": character_slug},
             "weapon": {"banner": "weapon"},
-            "strategy": "r1_first", "primogems": 32_000, "starglitter_refund": "none",
+            "strategy": "r1_first", "primogems": 32_000, "starglitter_refund": "account",
         },
     )).json()
     assert body["refund_source"] == "roster"
@@ -802,7 +864,7 @@ async def test_a_custom_plan_prices_each_banner_separately(
                 {"banner": "weapon", "label": "Splendor", "target_copies": 1,
                  "banner_slug": weapon_slug},
             ],
-            "primogems": 48_000, "starglitter_refund": "none",
+            "primogems": 48_000, "starglitter_refund": "account",
         },
     )).json()
     assert body["refund_source"] == "roster"
@@ -829,7 +891,7 @@ async def test_a_row_without_a_banner_does_not_sink_the_whole_plan(
                 {"banner": "character", "target_copies": 1, "banner_slug": slug},
                 {"banner": "character", "target_copies": 1},
             ],
-            "primogems": 48_000, "starglitter_refund": "none",
+            "primogems": 48_000, "starglitter_refund": "account",
         },
     )).json()
     assert body["refund_source"] == "roster"

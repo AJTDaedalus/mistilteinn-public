@@ -5,6 +5,7 @@ import { WishesService, type WishLimits, type WishPlanRead } from './wishes.serv
 import { WishesPage } from './wishes';
 
 const LIMITS: WishLimits = {
+  account_refund: 'account',
   primogems_per_wish: 160,
   max_constellation: 6,
   max_refinement: 5,
@@ -716,12 +717,17 @@ describe('a row that does not exist', () => {
 
 describe('no constellation data', () => {
   /**
-   * The one case worth a word: a banner is picked, so the user has done what the page asked,
-   * and the refund still comes from the tier because the roster carries no constellations —
-   * every account imported before that column existed.
+   * The one case worth a word: the account was asked and could not answer, because the
+   * roster carries no constellations — every account imported before that column existed.
+   *
+   * **Keyed off `refund_source: 'none'`, which only that case produces.** The earlier version
+   * reassembled the rule here from "a banner is picked and the source is not roster", which
+   * also caught an empty wallet and told a fully-scanned account its roster was blank.
    */
-  it('is reported when a banner is picked and the refund still falls back', async () => {
-    const { page } = makePage();
+  it('is reported when the account was asked and declined', async () => {
+    const { page } = makePage({
+      plan: vi.fn().mockResolvedValue({ ...PLAN, refund_source: 'none', wallet_wishes: 180 }),
+    });
     await settled();
     await settled();
     page.chooseBanner(BANNERS.banners[0]);
@@ -748,37 +754,65 @@ describe('no constellation data', () => {
     expect(page.noConstellationData()).toBe(false);
   });
 
-  it('follows a custom row’s banner too', async () => {
-    const { page } = makePage();
+  /**
+   * The warning no longer reconstructs *why* the account declined, so there is nothing
+   * mode-specific left to assert here. What matters instead is that a custom row's banner
+   * actually reaches the request — the per-row slug is the whole point of this mode, and it
+   * was silently dropped once already.
+   */
+  it('sends each custom row’s own banner', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const { page } = makePage({ plan });
     await settled();
     await settled();
     page.mode.set('custom');
-    await page.recompute(page.request());
-    expect(page.noConstellationData()).toBe(false);
     page.chooseRowBanner(0, BANNERS.banners[0]);
     await page.recompute(page.request());
-    expect(page.noConstellationData()).toBe(true);
+    const sent = plan.mock.calls.at(-1)?.[0];
+    expect(sent.targets[0].banner_slug).toBe(BANNERS.banners[0].slug);
   });
 });
 
-describe('the refund control reflects what is used', () => {
+
+describe('the account is a refund choice, not an override', () => {
   /**
-   * The dropdown stayed selectable while the exact refund was in use, so it was the one
-   * thing on screen that could have said which source won — and it said the wrong one.
+   * The exact refund used to win silently whenever the roster could answer, so this control
+   * read "8.7% (Average)" while nothing it said was in use. The owner read it exactly that
+   * way: "having 'Starglitter refund' makes users assume that controls it."
    */
-  it('is disabled once the roster answers', async () => {
+  it('defaults to the account and offers it first', async () => {
+    const { page } = makePage();
+    await settled();
+    expect(page.refund()).toBe('account');
+    expect(page.refundOptions()[0]).toBe('account');
+    expect(page.refundLabel('account')).toBe('Calculate with my account');
+  });
+
+  it('sends whichever choice is selected', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const { page } = makePage({ plan });
+    await settled();
+    page.refund.set('average');
+    await page.recompute(page.request());
+    expect(plan.mock.calls.at(-1)?.[0].starglitter_refund).toBe('average');
+  });
+
+  /** A declined account is the backend's verdict, not a guess reassembled here. */
+  it('warns only when the account was asked and declined on a real wallet', async () => {
     const { page } = makePage({
-      plan: vi.fn().mockResolvedValue({ ...PLAN, refund_source: 'roster' }),
+      plan: vi.fn().mockResolvedValue({ ...PLAN, refund_source: 'none', wallet_wishes: 180 }),
     });
     await settled();
     await page.recompute(page.request());
-    expect(page.refundFromRoster()).toBe(true);
+    expect(page.noConstellationData()).toBe(true);
   });
 
-  it('stays selectable while the tier is in use', async () => {
-    const { page } = makePage();
+  it('stays quiet when the wallet is empty', async () => {
+    const { page } = makePage({
+      plan: vi.fn().mockResolvedValue({ ...PLAN, refund_source: 'none', wallet_wishes: 0 }),
+    });
     await settled();
     await page.recompute(page.request());
-    expect(page.refundFromRoster()).toBe(false);
+    expect(page.noConstellationData()).toBe(false);
   });
 });

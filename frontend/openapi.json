@@ -13184,7 +13184,7 @@
           "refund_source": {
             "type": "string",
             "title": "Refund Source",
-            "description": "`roster` when the refund was computed exactly from the account and the banner's featured 4-stars, `tier` when it came from the chosen constant.",
+            "description": "`roster` when the refund was computed exactly from the account and the banner's featured 4-stars, `tier` when it came from the chosen constant, and `none` when the account was asked for and could not answer. The third is distinct because it is the only one the caller did not choose: it is a request that declined.",
             "default": "tier"
           },
           "refunded_wishes": {
@@ -13250,8 +13250,8 @@
           "starglitter_refund": {
             "type": "string",
             "title": "Starglitter Refund",
-            "description": "How much of the budget comes back as Masterless Starglitter: none, low (every 4-star a weapon), average (an even split), high (every 4-star a maxed character).",
-            "default": "none"
+            "description": "How much of the budget comes back as Masterless Starglitter. `account` (the default) prices it exactly from the caller's own roster against the banner's featured 4-stars, and falls back to `none` when the account cannot answer. The constants are none, low (every 4-star a weapon), average (an even split), high (every 4-star a maxed character).",
+            "default": "account"
           },
           "primogems": {
             "type": "integer",

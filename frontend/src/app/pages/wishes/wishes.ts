@@ -75,6 +75,14 @@ function row(banner: 'character' | 'weapon', label: string): CustomRow {
  * "50/50s lost" control, and **whole patches** of projected income rather than half-patches,
  * because the source workbook has no phase structure.
  */
+/**
+ * The refund choice meaning "price it from my roster".
+ *
+ * A fallback for the literal `/limits` publishes — used only before that request lands, so
+ * the control has a sane default on first paint rather than an empty dropdown.
+ */
+const ACCOUNT_REFUND = 'account';
+
 @Component({
   selector: 'app-wishes',
   imports: [FormsModule, DecimalPipe, DatePipe, CatalogueIcon],
@@ -106,7 +114,9 @@ export class WishesPage {
   // -- wallet
   protected readonly primogems = signal(0);
   protected readonly intertwined = signal(0);
-  protected readonly refund = signal('none');
+  // **Defaults to the account.** The exact figure is the better answer whenever the roster
+  // can give it, and a tier is the fallback rather than the starting point.
+  protected readonly refund = signal(ACCOUNT_REFUND);
   protected readonly tier = signal<Tier>('f2p');
   protected readonly selectedVersions = signal<ReadonlySet<string>>(new Set());
 
@@ -121,6 +131,12 @@ export class WishesPage {
   protected readonly refundTiers = computed(() =>
     Object.keys(this.limits()?.starglitter_refund_tiers ?? { none: 0 }),
   );
+
+  /** Every refund choice, the account first. */
+  protected readonly refundOptions = computed(() => [
+    this.limits()?.account_refund ?? ACCOUNT_REFUND,
+    ...this.refundTiers(),
+  ]);
 
   protected readonly characterHardPity = computed(
     () => this.limits()?.banners['character']?.hard_pity ?? 90,
@@ -197,24 +213,20 @@ export class WishesPage {
     return bins.length ? bins[bins.length - 1].end : 0;
   });
 
-  /** True when the refund was computed from the account rather than taken from a tier. */
-  protected readonly refundFromRoster = computed(
-    () => this.plan()?.refund_source === 'roster',
-  );
-
   /**
-   * True when a banner is picked but the account has no constellations to price it from.
+   * True when the account was asked for the refund and could not answer.
    *
-   * **Only this case.** Not having picked a banner is not a problem to warn about — the
-   * refund dropdown is right there. This is the one where the user has done everything the
-   * page asked and still gets the tier.
+   * **The backend's verdict, not a guess from here.** `refund_source: 'none'` is returned
+   * only for a request that asked for the account and got nothing, which is exactly this
+   * case — reconstructing it client-side meant duplicating the rule and getting it wrong,
+   * and the first version read a response field that does not exist.
+   *
+   * An empty wallet is excluded: with no wishes there is nothing to refund, so the account
+   * declines for a reason that has nothing to do with the roster.
    */
   protected readonly noConstellationData = computed(() => {
     const result = this.plan();
-    if (!result || result.refund_source === 'roster') return false;
-    return this.mode() === 'custom'
-      ? this.rows().some((entry) => entry.bannerSlug)
-      : this.chosenBanner() !== null;
+    return !!result && result.refund_source === 'none' && result.wallet_wishes > 0;
   });
 
   /** Tallest bar, so the chart can scale to it rather than to 1. */
@@ -536,6 +548,9 @@ export class WishesPage {
   }
 
   protected refundLabel(tier: string): string {
+    if (tier === (this.limits()?.account_refund ?? ACCOUNT_REFUND)) {
+      return 'Calculate with my account';
+    }
     const percent = (this.limits()?.starglitter_refund_tiers[tier] ?? 0) * 100;
     if (tier === 'none') return 'None';
     const shape = { low: 'Low', average: 'Average', high: 'High' }[tier] ?? tier;
