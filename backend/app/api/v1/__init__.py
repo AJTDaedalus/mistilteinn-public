@@ -23,6 +23,7 @@ from app.api.v1.rotations import router as rotations_router
 from app.api.v1.sim_runs import router as sim_runs_router
 from app.api.v1.teams import router as teams_router
 from app.api.v1.teapot import router as teapot_router
+from app.api.v1.wishes import router as wishes_router
 
 v1_router = APIRouter(prefix="/api/v1")
 v1_router.include_router(health_router)
@@ -37,3 +38,4 @@ v1_router.include_router(roster_router)
 v1_router.include_router(teapot_router)
 v1_router.include_router(sim_runs_router)
 v1_router.include_router(planner_router)
+v1_router.include_router(wishes_router)

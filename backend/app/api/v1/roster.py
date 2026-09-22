@@ -51,8 +51,16 @@ class RosterEntryRead(BaseModel):
     #: It is not the same as `false`, and collapsing the two here would make a fresh account
     #: read as "you own none of the 150 characters".
     owned: bool | None = None
+    #: **Null means nobody has said**, not C0. A GOOD export carries one for every owned
+    #: character; only equipped characters become builds, so this row is where it survives for
+    #: the rest. `docs/DESIGN_wish_planner.md` section 9.4.
+    constellation: int | None = None
     #: `"import"`, `"manual"`, or null when there is no row. Lets the tab show which answers
     #: came from a scan and which the user gave.
+    #:
+    #: It is also what the wish planner's refund panel renders with: **bold when the value came
+    #: from an import, italic when the user corrected it** (owner, 2026-09-22), so a typed
+    #: figure never looks like a scanned one.
     source: str | None = None
     #: Whether gcsim implements this character at the pinned commit.
     #:
@@ -68,6 +76,7 @@ class RosterEntryRead(BaseModel):
 
 def _entry(
     character: Character, *, owned: bool | None, source: str | None,
+    constellation: int | None = None,
 ) -> RosterEntryRead:
     """One row, built the same way on both routes.
 
@@ -84,6 +93,7 @@ def _entry(
         simulatable, reason = True, None
 
     return RosterEntryRead(
+        constellation=constellation,
         character_id=str(character.id),
         name=character.name,
         display_name=traveler.display_name(
@@ -119,6 +129,15 @@ class RosterEntryUpdate(BaseModel):
     """The user's own answer."""
 
     owned: bool = Field(description="Does this account have this character?")
+    constellation: int | None = Field(
+        None, ge=0, le=6,
+        description=(
+            "Constellation 0-6. **Null means 'nobody has said', not C0** — the same "
+            "three-state rule `owned` follows, because an unknown constellation and a zero "
+            "one lead to different answers and only one of them is a claim. Omitting the "
+            "field leaves any stored value alone; sending null clears it."
+        ),
+    )
 
 
 @router.get("", response_model=RosterRead)
@@ -153,7 +172,7 @@ async def list_roster(session: _Session, user: _User) -> RosterRead:
 
     repository = CharacterRosterRepository(session, str(user.id))
     answers = {
-        entry.character_id: (entry.owned, entry.source)
+        entry.character_id: (entry.owned, entry.source, entry.constellation)
         for entry in await repository.entries()
     }
 
@@ -174,6 +193,7 @@ async def list_roster(session: _Session, user: _User) -> RosterRead:
             character,
             owned=answer[0] if answer else None,
             source=answer[1] if answer else None,
+            constellation=answer[2] if answer else None,
         ))
     entries.sort(key=lambda entry: entry.display_name)
     return RosterRead(
@@ -219,6 +239,17 @@ async def set_owned(
 
     repository = CharacterRosterRepository(session, str(user.id))
     await repository.set_owned(character_id, owned=payload.owned)
+    # Written only when the field was sent. Omitting it leaves a stored constellation alone;
+    # sending an explicit null clears it. Three states, as with `owned` — the distinction the
+    # planner's mora field already turns on.
+    if "constellation" in payload.model_fields_set:
+        await repository.set_constellation(character_id, payload.constellation)
     await session.commit()
 
-    return _entry(character, owned=payload.owned, source="manual")
+    stored = await repository.entry(character_id)
+    return _entry(
+        character,
+        owned=payload.owned,
+        source="manual",
+        constellation=stored.constellation if stored else None,
+    )

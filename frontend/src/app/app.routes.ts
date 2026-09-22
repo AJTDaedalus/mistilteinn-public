@@ -58,6 +58,15 @@ export const routes: Routes = [
     canMatch: [requireApproved],
   },
   {
+    // Odds of reaching a constellation or refinement on a given budget.
+    // `docs/DESIGN_wish_planner.md`. Its own route rather than a tab on /planner: Fribbels
+    // puts the equivalent in its tools group, and familiarity is the point.
+    path: 'wishes',
+    title: 'Wish Planner',
+    loadComponent: () => import('./pages/wishes/wishes').then((m) => m.WishesPage),
+    canMatch: [requireApproved],
+  },
+  {
     path: 'characters',
     title: 'Characters',
     loadComponent: () =>

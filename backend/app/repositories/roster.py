@@ -76,7 +76,40 @@ class CharacterRosterRepository:
             ),
         )
 
-    async def upsert_imported(self, character_ids: Iterable[str]) -> int:
+    async def entry(self, character_id: str) -> CharacterRosterEntry | None:
+        """This owner's row for one character, or None when nobody has said anything."""
+        return (await self.session.execute(
+            select(CharacterRosterEntry).where(
+                CharacterRosterEntry.owner_id == self.owner_id,
+                CharacterRosterEntry.character_id == character_id,
+            ),
+        )).scalar_one_or_none()
+
+    async def set_constellation(self, character_id: str, constellation: int | None) -> None:
+        """Record a constellation the user gave by hand, marking the row `manual`.
+
+        `None` unsays it rather than meaning C0 — the same three-state discipline `owned`
+        already uses, and for the same reason: an unknown constellation and a zero one lead
+        to different refund figures and only one of them is a claim.
+        """
+        await self.session.execute(
+            insert(CharacterRosterEntry)
+            .values(
+                owner_id=self.owner_id,
+                character_id=character_id,
+                owned=True,
+                constellation=constellation,
+                source=SOURCE_MANUAL,
+            )
+            .on_conflict_do_update(
+                index_elements=["owner_id", "character_id"],
+                set_={"constellation": constellation, "source": SOURCE_MANUAL},
+            ),
+        )
+
+    async def upsert_imported(
+        self, characters: Iterable[tuple[str, int | None]],
+    ) -> int:
         """Mark these characters owned from an import, **without touching manual rows**.
 
         The `WHERE` on the conflict clause is the whole point and is easy to leave off: a
@@ -87,8 +120,8 @@ class CharacterRosterRepository:
         Returns the number of rows actually written, so the caller can report it rather than
         assume the count it passed in.
         """
-        ids = list(dict.fromkeys(character_ids))
-        if not ids:
+        rows = dict(characters)
+        if not rows:
             return 0
         statement = (
             insert(CharacterRosterEntry)
@@ -97,15 +130,20 @@ class CharacterRosterRepository:
                     "owner_id": self.owner_id,
                     "character_id": character_id,
                     "owned": True,
+                    "constellation": constellation,
                     "source": SOURCE_IMPORT,
                 }
-                for character_id in ids
+                for character_id, constellation in rows.items()
             ])
         )
         result = await self.session.execute(
             statement.on_conflict_do_update(
                 index_elements=["owner_id", "character_id"],
-                set_={"owned": True, "source": SOURCE_IMPORT},
+                set_={
+                    "owned": True,
+                    "constellation": statement.excluded.constellation,
+                    "source": SOURCE_IMPORT,
+                },
                 where=CharacterRosterEntry.source == SOURCE_IMPORT,
             ),
         )

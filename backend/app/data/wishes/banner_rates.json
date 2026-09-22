@@ -1,0 +1,127 @@
+{
+ "note": "Pity curves and featured-item rates for Genshin's two limited banners. RULE: every numeric entry carries a `source`, and tests/unit/test_wish_rates_are_cited.py fails on one that does not -- the same discipline as app/data/planner/curated_rates.json, for the same reason (CLAUDE.md: 'do not write damage or reaction formulas from memory'). Gacha rates are the same class of claim.\n\nThe values and their sourcing are carried from /root/gachasim -- configurations.py and docs/RESEARCH_gacha_math_audit.md, which holds the source links and the audit that produced them. gachasim is NOT a git repository, so this file is a vendored copy with its citations rather than a reference to a path that may change underneath it.\n\nWHAT MUST NOT BE BUILT ON THIS: `soft_pity_start` and `increase_rate` are JOINTLY fitted to the published consolidated rate and are not separately identified -- roughly thirty pairs reproduce each weapon banner's published rate to within 0.5%. Everything about the CENTRE of the distribution is stable across that family (the mean moves by less than 0.02 pulls, p90 by at most 6) because pinning the consolidated rate pins the mean cycle length exactly. The FAR TAIL is not: the simulated maximum moves by 18 to 26 pulls. So a mean or a mid-range probability off these curves is sound and a 'worst case' off them is not. Use `published_worst_case`, which is the figure HoYoverse advertises.",
+ "character": {
+  "hard_pity": 90,
+  "soft_pity_start": 74,
+  "base_rate": 0.006,
+  "increase_rate": 0.06,
+  "featured_rate": 0.5,
+  "capturing_radiance": true,
+  "published_worst_case": 180,
+  "published_consolidated_rate": 0.016,
+  "source": "Base 0.6%, consolidated 1.6%, featured 50%, one featured item: all four confirmed against HoYoverse's own probability disclosure, published as static JSON at https://webstatic.mihoyo.com/hk4e/gacha_info/cn_gf01/<gacha_id>/en-us.json and indexed by .../gacha/list.json (read 2026-09-22). This is the PRIMARY source -- the rate disclosure Chinese regulation requires -- not a community estimate. The public index is frozen at 2023 banners, which is plenty to verify constants that have not changed, and not enough to track current banners. (`r5_prob`, `r5_baodi_prob`, `r5_up_prob`, `r5_up_items`). The soft-pity RAMP is the one part HoYoverse does not publish: +6%/pull from pity 74 is the community fit that reproduces the published 1.6%, from rate estimation over 9.45M wishes, https://www.bilibili.com/video/BV19Y411W7W5 -- via gachasim docs/RESEARCH_gacha_math_audit.md.",
+  "comment": "A 50/50 loss guarantees the next 5-star is the promotional character, so the featured resolution is exactly two branches. Capturing Radiance replaces the 0.5 at index 0 only; see `capturing_radiance_win_rates`."
+ },
+ "weapon": {
+  "hard_pity": 80,
+  "soft_pity_start": 63,
+  "base_rate": 0.007,
+  "increase_rate": 0.07,
+  "featured_rate": 0.375,
+  "capturing_radiance": false,
+  "published_worst_case": 160,
+  "published_consolidated_rate": 0.0185,
+  "source": "Base 0.7%, consolidated 1.85%, featured 75%, TWO featured items: all confirmed against HoYoverse's own probability disclosure, published as static JSON at https://webstatic.mihoyo.com/hk4e/gacha_info/cn_gf01/<gacha_id>/en-us.json and indexed by .../gacha/list.json (read 2026-09-22). This is the PRIMARY source -- the rate disclosure Chinese regulation requires -- not a community estimate. The public index is frozen at 2023 banners, which is plenty to verify constants that have not changed, and not enough to track current banners. The 0.375 here is that 75% times the 1/2 for which of the two promotional weapons it is. The ramp of +7%/pull from pity 63 is the community fit yielding 1.8779%, same estimation pass. Version 5.0 reduced Epitomized Path from 2 Fate Points to 1: https://gamerant.com/genshin-impact-epitomized-path-fate-point-change-weapon-banner/",
+  "comment": "featured_rate is 0.75 (a 5-star is promotional) x 0.5 (which of the two promotional weapons it is) = 0.375. Any other 5-star grants the single Fate Point, so the next 5-star is the chosen weapon with certainty -- the same two-branch shape as a 50/50, at a different rate. Version 5.0 reduced Epitomized Path from 2 Fate Points to 1: https://gamerant.com/genshin-impact-epitomized-path-fate-point-change-weapon-banner/ . NOTE the fitted curve clamps to 1.0 at pity 77, three pulls before the published 80 -- which is why `published_worst_case` and not the curve answers 'how bad can it get'.",
+  "no_capturing_radiance_source": "HoYoverse's Capturing Radiance announcement scopes the mechanic to the Character Event Wish: https://genshin.hoyoverse.com/en/news/detail/125274"
+ },
+ "capturing_radiance_win_rates": {
+  "values": [
+   0.5,
+   0.525,
+   0.75,
+   1.0
+  ],
+  "source": "HoYoverse describes Capturing Radiance only qualitatively -- a lost 50/50 can be silently converted into a win, four consecutive losses are impossible, and the consolidated chance of a 5-star being the promotional character is 55%: https://genshin.hoyoverse.com/en/news/detail/125274 . These four are the community best-fit derived from a 0% / 5% / 50% / 100% loss-to-win conversion chance, https://www.reddit.com/r/Genshin_Impact/comments/1flac9n/capturing_radiance_theory_and_observations_to_date/ -- via gachasim, which re-derived and corrected an earlier, far more generous model.",
+  "comment": "Indexed by the number of 50/50s lost since the last WON 50/50. The stationary win rate is 55.65%, reproducing HoYoverse's published 55%, and index 3 being 1.0 encodes 'you cannot lose four in a row'. The counter increments on every lost 50/50 and resets ONLY on a won one -- obtaining the character through the guarantee leaves it untouched, which is what makes the fourth 50/50 certain.",
+  "model_risk": "This is the least-pinned number in the file. gachasim's audit bounds the disagreement between competing Capturing Radiance models at roughly 4% of the answer. The 55% consolidated anchor is what discriminates between them."
+ },
+ "primogems_per_wish": {
+  "value": 160,
+  "source": "Paimon's Bargains sells one Intertwined Fate for 160 Primogems; the in-game wish screen converts at the same rate.",
+  "comment": "Acquaint Fate buys Wanderlust Invocation (the standard banner) and is deliberately NOT counted -- owner ruling, 2026-09-22: 'acquaint fates don't count for this', 'just primogems + intertwined'."
+ },
+ "starglitter": {
+  "fate_cost": 5,
+  "four_star_pity": 10,
+  "per_four_star": {
+   "new_character": 0,
+   "duplicate_character_below_max_constellation": 2,
+   "duplicate_character_at_max_constellation": 5,
+   "weapon": 2
+  },
+  "source": "Masterless Starglitter quantities from https://genshin-impact.fandom.com/wiki/Masterless_Starglitter (read 2026-09-22): a duplicate 4-star weapon gives 2, and a duplicate 4-star character whose constellations are complete gives 5. Intertwined Fate costs 5 Masterless Starglitter in Paimon's Bargains with a monthly limit of None -- https://genshin-impact.fandom.com/wiki/Paimon%27s_Bargains, `{{Shop|Intertwined Fate|5|None}}` under Permanent Items, where the template's third field is the monthly limit.",
+  "comment": "A wish is guaranteed to yield a 4-star every 10 pulls, so the refund per pull is `starglitter / 5 / 10` wishes. The refund buys wishes which themselves refund, so the figure the planner applies is the compounded `r / (1 - r)`. 5-star contributions are ignored, matching Fribbels, which makes every tier a slight UNDER-estimate rather than an over-estimate.\n\nTHERE IS NO MONTHLY CAP on Intertwined Fate, which was worth checking: the Crown of Insight on the same shop page is limited to 1 a month, so a limit column exists and this row genuinely says None.",
+  "tiers": {
+   "none": 0.0,
+   "low": 0.0387,
+   "average": 0.0873,
+   "high": 0.1215
+  },
+  "tiers_comment": "Points on the axis that actually drives the refund: how much of your 4-star roster is maxed. `low` is an account still collecting (about 60% of 4-star characters owned, none at C6), `average` owns them all with half at C6, `high` owns them all at C6.\n\nTHE POOL IS NOT UNIFORM, which an earlier version of this file got wrong. A non-featured 4-star is a WEAPON 85% of the time on the character banner -- not the 28.6% that the raw pool sizes (45 characters against 18 weapons) would imply. The game rolls character-versus-weapon first and then draws within that pool, so pool size does not set the odds. Overall 71.67% of 4-stars are characters, but almost all of that is the featured third rather than the pool.\n\nAND A FIRST COPY PAYS NOTHING: the wiki's quantity table lists duplicates only, so a 4-star character you do not own yet returns a constellation and no starglitter. That is why the axis is two-dimensional and why no constant is right for long -- see docs/DESIGN_wish_planner.md section 9.",
+  "assumption_risk": "`high` assumes every 4-star character you pull is already C6, which is true for a veteran account and false for a new one -- a new account banks constellations instead of starglitter. `low` is the honest default for anyone still filling out their roster.",
+  "four_star_consolidated_rate": 0.13057,
+  "four_star_pity_source": "HoYoverse guarantees at least one 4-star or above every 10 wishes, published on the banner's Details screen. The CONSOLIDATED 4-star rate -- what actually happens once the 5.1% base rate is included -- is 13% official / 13.057% community, https://genshin-impact.fandom.com/wiki/Character_Event_Wish (read 2026-09-22), citing the same 9.45M-wish estimation that backs the 5-star curves in this file. That page also republishes the 5-star figures this file already uses (0.6% base, 1.6% official, 1.6052% community), which is an independent confirmation of the `character` entry above.",
+  "tiers_are_worst_case": "These price a 4-star every 10 pulls, which is the GUARANTEE rather than the rate: at the consolidated 13.057% one arrives every 7.66 pulls. Corrected here -- the values above USE 13.057%, not the 10-pull figure. The earlier tiers (4.17/7.53/11.11%) were both uncorrected and derived on the wrong axis; they were copied from Fribbels' HSR labels, which happen to be right for HSR and not for Genshin.",
+  "four_star_composition": {
+   "character_banner": {
+    "featured": 0.6667,
+    "non_featured_character": 0.05,
+    "non_featured_weapon": 0.2833
+   },
+   "weapon_banner": {
+    "featured": 0.8,
+    "non_featured_character": 0.185,
+    "non_featured_weapon": 0.015
+   },
+   "featured_rule": {
+    "character_banner": 0.5,
+    "weapon_banner": 0.75,
+    "comment": "Chance a 4-star is featured, with the next one guaranteed if it is not. The CONSOLIDATED featured share follows as 1/(1+(1-p)): 66.67% and 80%."
+   },
+   "featured_count": {
+    "character_banner": 3,
+    "weapon_banner": 5
+   },
+   "source": "https://genshin-impact.fandom.com/wiki/Wish/Expanded_Wish_Probabilities (read 2026-09-22), tables 'Non-Featured Drop Probability' and 'Overall 4-Star Item Drop Probability'. The featured shares are corroborated rather than assumed: 66.67% and 80% fall out exactly from the published 50% and 75% featured rules on https://genshin-impact.fandom.com/wiki/Character_Event_Wish and the weapon banner's equivalent.",
+   "why_not_uniform": "The game rolls character-versus-weapon first and then draws within that side's pool; it does NOT draw uniformly from the combined non-featured pool. Decisive check, 2026-09-23 banners: the two banners' non-featured pools are near-identical (45 characters + 18 weapons on the character banner, 47 + 16 on the weapon banner), so a uniform draw would give 71.4% and 74.6% characters. The measured splits are 15% and 92.5% -- near-opposite. The anti-correlation is deliberate: the character banner hands you weapons and the weapon banner hands you characters.",
+   "confidence": "MEASURED 2026-09-22 and no longer an open question. HoYoverse's own disclosure (see `source`) publishes one flat 4-star list with an `is_up` flag and one featured probability, and is SILENT on the non-featured character/weapon split -- so the 15/85 has no primary backing. It was therefore measured directly against 1,416 character-banner pulls from a real wish history:\n\n  - 4-star rate came out at 12.99% against the official 13.000%, so the sample and the parse are sound.\n  - 4-star weapons were 27.2% +-3.3 of all 4-stars. The rolled model predicts 28.3% (z=-0.35, consistent); a uniform draw over the combined pool predicts 9.5-12.8% (z=+4.4 to +5.4, rejected).\n  - Backing out the split: 81.5% weapons / 18.5% characters +-9.8, against the wiki's 85/15. Consistent.\n  - Structural check with no free parameters: two non-featured 4-stars cannot occur in a row, and every 4-star WEAPON here is non-featured. Across 183 adjacent pairs there were ZERO weapon-then-weapon, where independence predicts 13.5.\n\nCaveat: one account. +-9.8 points does not pin the second digit, so treat 85/15 as the shape rather than the precision.",
+   "pools_explained": "The two banners' non-featured pools differ only because each removes its OWN featured items. Character banner 45 = 48 standard 4-star characters minus its 3 featured; weapon banner 16 = 18 always-available 4-star weapons plus 3 currently featured-only, minus its 5 featured. The single leftover (Jahoda, on the character banner's list and not the weapon banner's) is a wiki lag rather than a mechanic. There is no second pool."
+  },
+  "four_star_rates": {
+   "character_banner": {
+    "base": 0.051,
+    "consolidated": 0.13
+   },
+   "weapon_banner": {
+    "base": 0.06,
+    "consolidated": 0.145
+   },
+   "source": "HoYoverse's own probability disclosure, published as static JSON at https://webstatic.mihoyo.com/hk4e/gacha_info/cn_gf01/<gacha_id>/en-us.json and indexed by .../gacha/list.json (read 2026-09-22). This is the PRIMARY source -- the rate disclosure Chinese regulation requires -- not a community estimate. The public index is frozen at 2023 banners, which is plenty to verify constants that have not changed, and not enough to track current banners. Fields `r4_prob` and `r4_baodi_prob`.",
+   "comment": "THE TWO BANNERS DIFFER, which the shipped tiers do not model: they price every wish at the character banner's 13.057%, so a weapon-banner campaign is under-priced by 14.5/13 = 1.115x. The community 13.057% and the official 13% agree to within rounding."
+  },
+  "four_star_curves": {
+   "character_banner": {
+    "base_rate": 0.051,
+    "hard_pity": 10,
+    "raised": {
+     "9": 0.561
+    },
+    "published": true,
+    "source": "https://genshin-impact.fandom.com/wiki/Character_Event_Wish -- 5.1% for 1<=X<=8, 56.1% at X=9, 100% at X>=10, citing the 9.45M-wish estimation. Reproduces 13.06% against the official 13.000%; the 0.06 is the rounding in the published 56.1%."
+   },
+   "weapon_banner": {
+    "base_rate": 0.06,
+    "hard_pity": 10,
+    "raised": {
+     "8": 0.5778,
+     "9": 0.5778
+    },
+    "published": false,
+    "source": "FITTED, not published. Base 6.000% and consolidated 14.500% are official (`r4_prob`, `r4_baodi_prob`); the ramp is not published for this banner anywhere found. Fitted by the same method as the 5-star ramps: constrain the curve to reproduce the published consolidated rate.",
+    "why_two_steps": "A single raised step cannot reach 14.5%. Even setting pity 9 to a certainty -- the most a 10-pity curve with a 6% base can do -- yields only 14.05%. So the ramp must start at 8, and 0.5778 at both 8 and 9 reproduces 14.500% exactly. That the published numbers FORCE a longer ramp than the character banner's is a finding rather than a choice.",
+    "identifiability": "Jointly unidentified, exactly like the 5-star ramps: many shapes reproduce 14.5%. Pinning the consolidated rate pins the MEAN interval between 4-stars and says nothing about the tail. Only the mean is used -- the refund needs the long-run 4-star rate and never the shape -- so this fit is used inside its valid range."
+   }
+  }
+ }
+}

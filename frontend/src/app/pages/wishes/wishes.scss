@@ -1,0 +1,281 @@
+.wishes { display: flex; flex-direction: column; gap: var(--space-4); }
+
+/* The display face is tall and carries a glow, so its descenders reach well below the text
+   box. `space-1` let the subtitle draw straight through them — found by screenshotting the
+   page, which no test does. */
+.wishes__head {
+  h1 { margin: 0 0 var(--space-3); }
+  .hint { margin: 0; }
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-2);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.panel__columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--space-4);
+}
+
+.col {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+
+  legend {
+    font-weight: 600;
+    color: var(--ink);
+    padding: 0 0 var(--space-2);
+  }
+}
+
+.field { display: flex; flex-direction: column; gap: var(--space-1); }
+.field label, .field .label { font-size: 0.875rem; color: var(--ink-dim); }
+.field input, .field select {
+  background: var(--bg-deep);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  color: var(--ink);
+  font: inherit;
+  padding: var(--space-2);
+}
+
+/* Capped rather than full-width. A select stretched across the column reads as a text box —
+   the same point planner.scss makes about a 700px control holding the number 80. */
+.field select { max-width: 11rem; }
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  overflow: hidden;
+
+  button {
+    flex: 1;
+    background: var(--bg-deep);
+    border: 0;
+    color: var(--ink-dim);
+    cursor: pointer;
+    padding: var(--space-2) var(--space-3);
+
+    &.on { background: var(--brass-deep); color: var(--ink); }
+    &:focus-visible { outline: 2px solid var(--brass-hi); outline-offset: -2px; }
+  }
+
+  & + & { margin-left: var(--space-2); }
+}
+
+.segmented--small button {
+  font-size: var(--text-xs);
+  padding: var(--space-1) var(--space-3);
+  /* "Welkin + BP" wrapped to two lines and made the control twice as tall as its neighbours. */
+  white-space: nowrap;
+}
+
+.income { display: flex; flex-direction: column; gap: var(--space-2); }
+/* The tier control belongs *to* this block, so it sits on the block's own line rather than
+   being pushed to the far edge of the panel where it read as unattached. */
+.income__head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.income__head .label { margin-right: auto; }
+
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.chip {
+  background: var(--bg-deep);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-pill);
+  color: var(--ink-dim);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+
+  &.on { background: var(--brass-deep); border-color: var(--brass); color: var(--ink); }
+  &:focus-visible { outline: 2px solid var(--brass-hi); outline-offset: 2px; }
+}
+.chip__value { font-variant-numeric: tabular-nums; font-size: 0.8125rem; opacity: 0.85; }
+.chip__est { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.7; }
+
+.budget {
+  border-top: 1px solid var(--surface-rule);
+  color: var(--ink-dim);
+  margin: 0;
+  padding-top: var(--space-3);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+
+  strong { color: var(--ink); }
+}
+
+.ladder {
+  border-collapse: collapse;
+  width: 100%;
+
+  th, td { padding: var(--space-2) var(--space-3); text-align: right; }
+  thead th { border-bottom: 1px solid var(--surface-rule); color: var(--ink-dim); font-weight: 500; }
+  tbody tr { border-bottom: 1px solid var(--surface-rule); }
+  td { font-variant-numeric: tabular-nums; }
+
+  /* A recompute in flight dims rather than blanks: a table that vanishes on every keystroke
+     is harder to read than one that is briefly a step behind. */
+  &--stale tbody { opacity: 0.55; }
+}
+
+.ladder .goal {
+  position: relative;
+  text-align: left;
+  min-width: 12rem;
+  isolation: isolate;
+}
+
+.goal__chip {
+  background: var(--bg-deep);
+  border-radius: var(--radius-pill);
+  display: inline-block;
+  font-weight: 600;
+  padding: var(--space-1) var(--space-3);
+  position: relative;
+}
+
+.bar {
+  border-radius: var(--radius-1);
+  bottom: var(--space-1);
+  display: block;
+  left: 0;
+  position: absolute;
+  top: var(--space-1);
+  z-index: -1;
+
+  &--sure { background: var(--mint); }
+  &--likely { background: var(--brass-deep); }
+  &--even { background: var(--amber); }
+  &--unlikely { background: var(--danger); }
+  &--none { background: transparent; }
+}
+
+.unreachable { opacity: 0.45; }
+
+.hint--note { color: var(--ink); }
+
+/* -- wallet and modes ---------------------------------------------------------------- */
+
+.wallet {
+  border: 0;
+  margin: 0;
+  padding: 0;
+
+  legend {
+    color: var(--ink);
+    font-weight: 600;
+    padding: 0 0 var(--space-2);
+  }
+}
+
+.wallet__grid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  margin-bottom: var(--space-2);
+}
+
+.segmented--modes button { padding: var(--space-2) var(--space-4); }
+
+.legend-toggle {
+  align-items: center;
+  cursor: pointer;
+  display: inline-flex;
+  gap: var(--space-2);
+}
+
+/* -- the custom plan's rows ----------------------------------------------------------- */
+
+.rows { display: flex; flex-direction: column; gap: var(--space-2); }
+
+.row {
+  align-items: center;
+  background: var(--bg-deep);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2);
+
+  select, input { max-width: none; }
+}
+
+.row__move {
+  display: flex;
+  flex-direction: column;
+
+  button {
+    background: none;
+    border: 0;
+    color: var(--ink-dim);
+    cursor: pointer;
+    font-size: var(--text-xs);
+    line-height: 1;
+    padding: 1px var(--space-1);
+
+    &:disabled { opacity: 0.3; cursor: default; }
+    &:focus-visible { outline: 2px solid var(--brass-hi); }
+  }
+}
+
+.row__banner { flex: 0 0 8rem; }
+.row__name { flex: 1 1 8rem; min-width: 6rem; }
+
+.row__pair {
+  align-items: center;
+  color: var(--ink-dim);
+  display: inline-flex;
+  font-size: var(--text-sm);
+  gap: var(--space-1);
+}
+
+.row__remove {
+  background: none;
+  border: 0;
+  color: var(--ink-dim);
+  cursor: pointer;
+  margin-left: auto;
+  padding: var(--space-1) var(--space-2);
+
+  &:disabled { opacity: 0.3; cursor: default; }
+  &:hover:not(:disabled) { color: var(--danger); }
+  &:focus-visible { outline: 2px solid var(--brass-hi); }
+}
+
+.rows__add {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+
+  button {
+    background: var(--bg-deep);
+    border: 1px dashed var(--surface-rule);
+    border-radius: var(--radius-1);
+    color: var(--ink-dim);
+    cursor: pointer;
+    padding: var(--space-2) var(--space-3);
+
+    &:hover { color: var(--ink); border-color: var(--brass); }
+    &:focus-visible { outline: 2px solid var(--brass-hi); }
+  }
+}

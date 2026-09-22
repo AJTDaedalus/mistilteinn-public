@@ -71,6 +71,10 @@ class CharacterRosterEntry(Base):
         CheckConstraint(
             "source IN ('import', 'manual')", name="ck_character_roster_source",
         ),
+        CheckConstraint(
+            "constellation IS NULL OR constellation BETWEEN 0 AND 6",
+            name="ck_character_roster_constellation",
+        ),
     )
 
     owner_id: Mapped[str] = mapped_column(
@@ -80,6 +84,19 @@ class CharacterRosterEntry(Base):
         String(36), ForeignKey("characters.id", ondelete="CASCADE"), primary_key=True,
     )
     owned: Mapped[bool] = mapped_column(nullable=False, server_default=text("true"))
+    #: Constellation 0-6, or **NULL for "nobody has said"** — which is not C0.
+    #:
+    #: A GOOD export carries a constellation for *every* character the account owns, but only
+    #: characters holding a weapon or an artifact get a build (`good_build_service`), so for
+    #: an owned-but-unequipped character it used to be parsed and thrown away. That is most of
+    #: a 4-star roster, and the starglitter refund turns on exactly those characters —
+    #: `docs/DESIGN_wish_planner.md` section 9.4.
+    #:
+    #: **Nullable on purpose.** Defaulting an unknown constellation to 0 would make a maxed
+    #: roster read as unmaxed and understate the refund, which is the same mistake
+    #: `good_importer` makes with its `_bounded(..., 0)` and the reason this column exists
+    #: rather than a join to builds.
+    constellation: Mapped[int | None] = mapped_column(nullable=True)
     #: **Who said so**, and the reason a re-import is safe.
     #:
     #: A row the user set by hand is `manual` and an import leaves it alone; an `import` row is
