@@ -171,13 +171,84 @@ Recompute is **debounced**, not per-keystroke: `CLAUDE.md` records this repo typ
 a materials box and writing 9, then 99, then 999. And `Number('') === 0`, so an emptied pity box
 must not silently read as pity 0.
 
+## 9. Planned — a real starglitter simulator
+
+Owner, 2026-09-22: ship the flat refund first, *"and then once all of these are in draft a plan
+for building a real refund simulator like zzz.163.moe"*. This is that draft. **Nothing below is
+built.**
+
+### Why a constant is not enough
+
+The shipped tiers are a single number applied to the budget, and three things make that wrong
+in ways that do not cancel:
+
+1. **The 10-pull figure is the guarantee, not the rate.** At the published 5.1% base rate the
+   consolidated 4★ rate is **13.057%** — one every 7.66 pulls, not 10. Every tier therefore
+   understates the refund by **1.34×**: `average` should be 10.1%, not 7.53%. Deliberate, and
+   Fribbels calls it "worst-case timing" too, but it is an error of a third.
+2. **Which tier applies is not a preference, it is a fact about the account.** `low` and `high`
+   differ by 2.7× and the difference is entirely *"are your 4★ characters already C6"*. A page
+   asking the user to guess that is asking them something the database already knows.
+3. **The answer changes while you pull.** A 4★ character three constellations short pays 2
+   starglitter until C6 and 5 after. A long campaign crosses that line, so the true refund rate
+   **rises as the campaign runs** — which no constant can express.
+
+### What it would model
+
+A Monte Carlo over the 4★ stream, run alongside the exact 5★ convolution rather than replacing
+it. Per pull:
+
+| | |
+|---|---|
+| **4★ arrival** | its own pity: 5.1% base, guaranteed at 10. Independent of the 5★ counter. |
+| **Featured or not** | a 4★ is one of the banner's three featured characters half the time, else from the standard pool. |
+| **Character or weapon** | the standard 4★ pool holds both, so this is **not** a coin flip and needs the pool composition per patch. |
+| **Which one** | uniform within the chosen pool. |
+| **What it pays** | new character → a constellation and 2 starglitter; already C6 → 5; any weapon → 2. |
+| **Roster state** | mutates as the run proceeds, which is the whole reason this is a simulation. |
+
+**5★ contributions would be included**, which the constant ignores entirely: a 5★ weapon pays
+10 starglitter, a duplicate 5★ character 10 before C6 and 25 after.
+
+### The thing only this repo can do
+
+**We know the roster.** `/api/v1/roster` already records tri-state ownership per character with
+its source, and `builds.constellation_level` records how far along each one is. So the
+simulator can derive the actual 4★ pool and the actual C6 count instead of asking. Fribbels
+cannot: it has no roster, which is precisely why its equivalent is a three-way guess in a
+dropdown. **This is the feature's strongest differentiator and it needs no new data.**
+
+Gaps to close first, each needing a source before anything is built:
+
+- The **standard 4★ pool composition** per patch — how many characters against how many
+  weapons. The catalogue has the characters; whether it marks pool membership is unchecked.
+- Whether the **three featured 4★** are drawn uniformly, and the soft-pity shape of the 4★
+  counter, which is published only as a consolidated rate.
+- **Stardust is not in scope**: 3★ weapons pay Masterless Stardust, which buys Acquaint Fate,
+  which buys the standard banner. Out by the same ruling that excluded Acquaint.
+
+### Shape
+
+`scripts/` first, not `app/`: run it offline over a grid of (roster shape, campaign length) and
+see whether the answer is a smooth function of two or three account facts. **If it is, the
+product is a better-calibrated constant plus a roster-derived tier, and no simulator ships at
+all** — which would be the good outcome. Only if the answer genuinely depends on the path does
+a per-request simulation earn its place, and then it is a job with progress rather than a
+request that blocks, at the cost `RESEARCH_wish_planner.md` §4 measures for browser runs.
+
+**Do not put a sampler on the request path to replace a closed form that is already exact.**
+The 5★ ladder stays exact; only the refund would be sampled, and only if it must be.
+
+---
+
 ## 8. Open questions
 
 | | |
 |---|---|
-| **OQ-W8** | **A combined character + weapon ladder from one budget**, with Fribbels' `Strategy` ordering. The largest remaining gap; see §7. |
-| **OQ-W9** | Fribbels syncs pity, guarantee and currency **live** from the reliquary-archiver scanner (`useWarpScannerSync.ts`). Genshin's analogue is the wish history export — the same idea as OQ-W5 and the strongest argument for it, since typed pity is the least reliable input on the page. |
-| **OQ-W10** | Income is per patch, but **a Genshin banner runs one phase**, so "will I have enough before this banner ends" is answered only at patch resolution — and it rounds in the player's favour. Fribbels splits by half-patch; the workbook cannot. |
-| **OQ-W4** | Multi Target — a queue of *characters* sharing one budget — in v1? It is most of Fribbels' UI and none of its math. Deferred, not declined. Distinct from OQ-W8. |
+| ~~**OQ-W8**~~ | ~~A combined ladder from one budget, with strategy ordering.~~ **Built 2026-09-22**, and generalised past Fribbels: *Custom plan* takes an ordered list of goals across several characters, which its Simple mode cannot express. |
+| ~~**OQ-W4**~~ | ~~Multi Target.~~ **Built 2026-09-22** as *Custom plan*. |
+| **OQ-W9** | Fribbels syncs pity, guarantee and currency **live** from the reliquary-archiver scanner. Genshin's analogue is the wish history export — same idea as OQ-W5. **Owner, 2026-09-22: low priority, not needed yet.** |
+| ~~**OQ-W10**~~ | ~~Per-phase income rather than per-patch.~~ **Shelved 2026-09-22**, owner's instruction, after checking: the workbook has no phase structure in any of its 54 patch tabs or its three other tabs, and no equivalent of the Telegram source Fribbels uses for HSR publishes Genshin income per phase. It stays a known under-resolution that rounds in the player's favour. |
+| **OQ-W11** | The refund tiers understate by **1.34×** because they price a 4★ every 10 pulls rather than every 7.66. Fix by calibration, or by the simulator in §9? |
 | **OQ-W5** | Genshin's wish history is exportable. Derive pity / guarantee / losses rather than asking? Would make the losses counter exact instead of remembered. |
 | **OQ-W7** | Does the character banner's two concurrent 5★ split the 50/50 further? gachasim models one promotional character per banner; Genshin runs two. Needs checking before the rate is trusted for a specific character. |
