@@ -1,0 +1,5823 @@
+{
+ "note": "Every Genshin event banner and what it featured. Written by scripts/refresh_banners.py from the community wiki; see that script and docs/DESIGN_wish_planner.md section 9.5. Committed so a fresh clone and the test suite need no network -- the live store is `wish_banners`.",
+ "fetched_at": "2026-09-22T17:33:42.329359+00:00",
+ "banners": [
+  {
+   "slug": "When Warm Winds Cavort/2026-09-23",
+   "name": "When Warm Winds Cavort",
+   "kind": "character",
+   "starts_at": "2026-09-23 11:00:00",
+   "ends_at": "2026-10-13 17:59:59",
+   "featured_five": [
+    "Vesna"
+   ],
+   "featured_four": [
+    "Diona",
+    "Faruzan",
+    "Chongyun"
+   ],
+   "alongside": [
+    "Surging Ballad/2026-09-23",
+    "Epitome Invocation/2026-09-23"
+   ]
+  },
+  {
+   "slug": "Surging Ballad/2026-09-23",
+   "name": "Surging Ballad",
+   "kind": "character",
+   "starts_at": "2026-09-23 11:00:00",
+   "ends_at": "2026-10-13 17:59:59",
+   "featured_five": [
+    "Vodyanitsa"
+   ],
+   "featured_four": [
+    "Diona",
+    "Faruzan",
+    "Chongyun"
+   ],
+   "alongside": [
+    "When Warm Winds Cavort/2026-09-23",
+    "Epitome Invocation/2026-09-23"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2026-09-23",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2026-09-23 11:00:00",
+   "ends_at": "2026-10-13 17:59:59",
+   "featured_five": [
+    "Beyond the Chrysalis",
+    "Hymn of the Maelstrom"
+   ],
+   "featured_four": [
+    "New Bough",
+    "Winter's Heavy Heart",
+    "Breezeborne Refrain",
+    "Favonius Greatsword",
+    "Dragon's Bane"
+   ],
+   "alongside": [
+    "When Warm Winds Cavort/2026-09-23",
+    "Surging Ballad/2026-09-23"
+   ]
+  },
+  {
+   "slug": "The Lone Light Knocks at Night/2026-09-01",
+   "name": "The Lone Light Knocks at Night",
+   "kind": "character",
+   "starts_at": "2026-09-01 18:00:00",
+   "ends_at": "2026-09-22 14:59:59",
+   "featured_five": [
+    "Flins"
+   ],
+   "featured_four": [
+    "Aino",
+    "Iansan",
+    "Lan Yan"
+   ],
+   "alongside": [
+    "Astral Actuation/2026-09-01",
+    "Epitome Invocation/2026-09-01"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2026-09-01",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2026-09-01 18:00:00",
+   "ends_at": "2026-09-22 14:59:59",
+   "featured_five": [
+    "Bloodsoaked Ruins",
+    "Fractured Halo"
+   ],
+   "featured_four": [
+    "The Flute",
+    "Favonius Greatsword",
+    "Favonius Lance",
+    "Eye of Perception",
+    "The Stringless"
+   ],
+   "alongside": [
+    "The Lone Light Knocks at Night/2026-09-01",
+    "Astral Actuation/2026-09-01"
+   ]
+  },
+  {
+   "slug": "Astral Actuation/2026-09-01",
+   "name": "Astral Actuation",
+   "kind": "character",
+   "starts_at": "2026-09-01 18:00:00",
+   "ends_at": "2026-09-22 14:59:59",
+   "featured_five": [
+    "Ineffa"
+   ],
+   "featured_four": [
+    "Aino",
+    "Iansan",
+    "Lan Yan"
+   ],
+   "alongside": [
+    "The Lone Light Knocks at Night/2026-09-01",
+    "Epitome Invocation/2026-09-01"
+   ]
+  },
+  {
+   "slug": "The Hearth's Ashen Shadow/2026-08-12",
+   "name": "The Hearth's Ashen Shadow",
+   "kind": "character",
+   "starts_at": "2026-08-12 11:00:00",
+   "ends_at": "2026-09-01 17:59:59",
+   "featured_five": [
+    "Arlecchino"
+   ],
+   "featured_four": [
+    "Alyosha",
+    "Sucrose",
+    "Lynette"
+   ],
+   "alongside": [
+    "Swan's Shadow in Silken Ice/2026-08-12",
+    "Epitome Invocation/2026-08-12"
+   ]
+  },
+  {
+   "slug": "Swan's Shadow in Silken Ice/2026-08-12",
+   "name": "Swan's Shadow in Silken Ice",
+   "kind": "character",
+   "starts_at": "2026-08-12 11:00:00",
+   "ends_at": "2026-09-01 17:59:59",
+   "featured_five": [
+    "Odette"
+   ],
+   "featured_four": [
+    "Alyosha",
+    "Sucrose",
+    "Lynette"
+   ],
+   "alongside": [
+    "The Hearth's Ashen Shadow/2026-08-12",
+    "Epitome Invocation/2026-08-12"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2026-08-12",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2026-08-12 11:00:00",
+   "ends_at": "2026-09-01 17:59:59",
+   "featured_five": [
+    "Whitelake Frostfeather",
+    "Crimson Moon's Semblance"
+   ],
+   "featured_four": [
+    "Favonius Sword",
+    "The Bell",
+    "Dragon's Bane",
+    "Sacrificial Fragments",
+    "Rust"
+   ],
+   "alongside": [
+    "Swan's Shadow in Silken Ice/2026-08-12",
+    "The Hearth's Ashen Shadow/2026-08-12"
+   ]
+  },
+  {
+   "slug": "Somnias a Luna/2026-07-21",
+   "name": "Somnias a Luna",
+   "kind": "character",
+   "starts_at": "2026-07-21 18:00:00",
+   "ends_at": "2026-08-11 14:59:59",
+   "featured_five": [
+    "Columbina"
+   ],
+   "featured_four": [
+    "Jahoda",
+    "Ororon",
+    "Sethos"
+   ],
+   "alongside": [
+    "Reign of Serenity/2026-07-21",
+    "Epitome Invocation/2026-07-21"
+   ]
+  },
+  {
+   "slug": "Reign of Serenity/2026-07-21",
+   "name": "Reign of Serenity",
+   "kind": "character",
+   "starts_at": "2026-07-21 18:00:00",
+   "ends_at": "2026-08-11 14:59:59",
+   "featured_five": [
+    "Raiden Shogun"
+   ],
+   "featured_four": [
+    "Jahoda",
+    "Ororon",
+    "Sethos"
+   ],
+   "alongside": [
+    "Somnias a Luna/2026-07-21",
+    "Epitome Invocation/2026-07-21"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2026-07-21",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2026-07-21 18:00:00",
+   "ends_at": "2026-08-11 14:59:59",
+   "featured_five": [
+    "Nocturne's Curtain Call",
+    "Engulfing Lightning"
+   ],
+   "featured_four": [
+    "Waveriding Whirl",
+    "Sacrificial Sword",
+    "The Bell",
+    "Favonius Lance",
+    "Favonius Warbow"
+   ],
+   "alongside": [
+    "Somnias a Luna/2026-07-21",
+    "Reign of Serenity/2026-07-21"
+   ]
+  },
+  {
+   "slug": "To the Looking-Glass the Mademoiselle Said/2026-07-01",
+   "name": "To the Looking-Glass the Mademoiselle Said",
+   "kind": "character",
+   "starts_at": "2026-07-01 11:00:00",
+   "ends_at": "2026-07-21 17:59:59",
+   "featured_five": [
+    "Sandrone"
+   ],
+   "featured_four": [
+    "Beidou",
+    "Diona",
+    "Freminet"
+   ],
+   "alongside": [
+    "Starry Night's Whispers/2026-07-01",
+    "Heavenlit Prophecy/2026-07-01",
+    "Epitome Invocation/2026-07-01"
+   ]
+  },
+  {
+   "slug": "Starry Night's Whispers/2026-07-01",
+   "name": "Starry Night's Whispers",
+   "kind": "character",
+   "starts_at": "2026-07-01 11:00:00",
+   "ends_at": "2026-07-21 17:59:59",
+   "featured_five": [
+    "Citlali"
+   ],
+   "featured_four": [
+    "Beidou",
+    "Diona",
+    "Freminet"
+   ],
+   "alongside": [
+    "To the Looking-Glass the Mademoiselle Said/2026-07-01",
+    "Heavenlit Prophecy/2026-07-01",
+    "Epitome Invocation/2026-07-01"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2026-07-01",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2026-07-01 11:00:00",
+   "ends_at": "2026-07-21 17:59:59",
+   "featured_five": [
+    "A Teaspoon of Transcendence",
+    "Starcaller's Watch"
+   ],
+   "featured_four": [
+    "Favonius Sword",
+    "Rainslasher",
+    "Dragon's Bane",
+    "Sacrificial Fragments",
+    "Sacrificial Bow"
+   ],
+   "alongside": [
+    "To the Looking-Glass the Mademoiselle Said/2026-07-01",
+    "Starry Night's Whispers/2026-07-01",
+    "Heavenlit Prophecy/2026-07-01"
+   ]
+  },
+  {
+   "slug": "Frostedge Nocturne/2026-06-09",
+   "name": "Frostedge Nocturne",
+   "kind": "character",
+   "starts_at": "2026-06-09 18:00:00",
+   "ends_at": "2026-06-30 14:59:59",
+   "featured_five": [
+    "Lohen"
+   ],
+   "featured_four": [
+    "Mika",
+    "Xiangling",
+    "Bennett"
+   ],
+   "alongside": [
+    "Ancient Flame Ablaze/2026-06-09",
+    "Epitome Invocation/2026-06-09"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2026-06-09",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2026-06-09 18:00:00",
+   "ends_at": "2026-06-30 14:59:59",
+   "featured_five": [
+    "Disaster and Remorse",
+    "A Thousand Blazing Suns"
+   ],
+   "featured_four": [
+    "The Alley Flash",
+    "Wine and Song",
+    "Alley Hunter",
+    "Rainslasher",
+    "Favonius Lance"
+   ],
+   "alongside": [
+    "Frostedge Nocturne/2026-06-09",
+    "Ancient Flame Ablaze/2026-06-09"
+   ]
+  },
+  {
+   "slug": "Ancient Flame Ablaze/2026-06-09",
+   "name": "Ancient Flame Ablaze",
+   "kind": "character",
+   "starts_at": "2026-06-09 18:00:00",
+   "ends_at": "2026-06-30 14:59:59",
+   "featured_five": [
+    "Mavuika"
+   ],
+   "featured_four": [
+    "Mika",
+    "Xiangling",
+    "Bennett"
+   ],
+   "alongside": [
+    "Frostedge Nocturne/2026-06-09",
+    "Epitome Invocation/2026-06-09"
+   ]
+  },
+  {
+   "slug": "Rubedo, of White Stone Born/2026-05-20",
+   "name": "Rubedo, of White Stone Born",
+   "kind": "character",
+   "starts_at": "2026-05-20 11:00:00",
+   "ends_at": "2026-06-09 17:59:59",
+   "featured_five": [
+    "Durin"
+   ],
+   "featured_four": [
+    "Prune",
+    "Razor",
+    "Fischl"
+   ],
+   "alongside": [
+    "Angel's Reverie/2026-05-20",
+    "Epitome Invocation/2026-05-20"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2026-05-20",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2026-05-20 11:00:00",
+   "ends_at": "2026-06-09 17:59:59",
+   "featured_five": [
+    "Angelos' Heptades",
+    "Athame Artis"
+   ],
+   "featured_four": [
+    "Moonweaver's Dawn",
+    "Mitternachts Waltz",
+    "The Bell",
+    "Dragon's Bane",
+    "The Widsith"
+   ],
+   "alongside": [
+    "Angel's Reverie/2026-05-20",
+    "Rubedo, of White Stone Born/2026-05-20"
+   ]
+  },
+  {
+   "slug": "Angel's Reverie/2026-05-20",
+   "name": "Angel's Reverie",
+   "kind": "character",
+   "starts_at": "2026-05-20 11:00:00",
+   "ends_at": "2026-06-09 17:59:59",
+   "featured_five": [
+    "Nicole"
+   ],
+   "featured_four": [
+    "Prune",
+    "Razor",
+    "Fischl"
+   ],
+   "alongside": [
+    "Rubedo, of White Stone Born/2026-05-20",
+    "Epitome Invocation/2026-05-20"
+   ]
+  },
+  {
+   "slug": "Temptation of the Crimson Sands/2026-04-28",
+   "name": "Temptation of the Crimson Sands",
+   "kind": "character",
+   "starts_at": "2026-04-28 18:00:00",
+   "ends_at": "2026-05-19 14:59:59",
+   "featured_five": [
+    "Nefer"
+   ],
+   "featured_four": [
+    "Xingqiu",
+    "Kirara",
+    "Jahoda"
+   ],
+   "alongside": [
+    "Moonsong of the Groves/2026-04-28",
+    "Dewlit Tranquility/2026-04-28",
+    "Epitome Invocation/2026-04-28"
+   ]
+  },
+  {
+   "slug": "Moonsong of the Groves/2026-04-28",
+   "name": "Moonsong of the Groves",
+   "kind": "character",
+   "starts_at": "2026-04-28 18:00:00",
+   "ends_at": "2026-05-19 14:59:59",
+   "featured_five": [
+    "Lauma"
+   ],
+   "featured_four": [
+    "Xingqiu",
+    "Kirara",
+    "Jahoda"
+   ],
+   "alongside": [
+    "Temptation of the Crimson Sands/2026-04-28",
+    "Dewlit Tranquility/2026-04-28",
+    "Epitome Invocation/2026-04-28"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2026-04-28",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2026-04-28 18:00:00",
+   "ends_at": "2026-05-19 14:59:59",
+   "featured_five": [
+    "Nightweaver's Looking Glass",
+    "Reliquary of Truth"
+   ],
+   "featured_four": [
+    "Dawning Frost",
+    "Sacrificial Sword",
+    "Rainslasher",
+    "Favonius Lance",
+    "Favonius Warbow"
+   ],
+   "alongside": [
+    "Moonsong of the Groves/2026-04-28",
+    "Temptation of the Crimson Sands/2026-04-28",
+    "Dewlit Tranquility/2026-04-28"
+   ]
+  },
+  {
+   "slug": "Ya-hoho! Compendium/2026-04-08",
+   "name": "Ya-hoho! Compendium",
+   "kind": "character",
+   "starts_at": "2026-04-08 11:00:00",
+   "ends_at": "2026-04-28 17:59:59",
+   "featured_five": [
+    "Linnea"
+   ],
+   "featured_four": [
+    "Illuga",
+    "Aino",
+    "Noelle"
+   ],
+   "alongside": [
+    "Piercing Shot's Crimson Wake/2026-04-08",
+    "Epitome Invocation/2026-04-08"
+   ]
+  },
+  {
+   "slug": "Piercing Shot's Crimson Wake/2026-04-08",
+   "name": "Piercing Shot's Crimson Wake",
+   "kind": "character",
+   "starts_at": "2026-04-08 11:00:00",
+   "ends_at": "2026-04-28 17:59:59",
+   "featured_five": [
+    "Chasca"
+   ],
+   "featured_four": [
+    "Illuga",
+    "Aino",
+    "Noelle"
+   ],
+   "alongside": [
+    "Ya-hoho! Compendium/2026-04-08",
+    "Epitome Invocation/2026-04-08"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2026-04-08",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2026-04-08 11:00:00",
+   "ends_at": "2026-04-28 17:59:59",
+   "featured_five": [
+    "Golden Frostbound Oath",
+    "Astral Vulture's Crimson Plumage"
+   ],
+   "featured_four": [
+    "Flower-Wreathed Feathers",
+    "Lion's Roar",
+    "Sacrificial Greatsword",
+    "Dragon's Bane",
+    "Eye of Perception"
+   ],
+   "alongside": [
+    "Piercing Shot's Crimson Wake/2026-04-08",
+    "Ya-hoho! Compendium/2026-04-08"
+   ]
+  },
+  {
+   "slug": "Void Star's Advent/2026-03-17",
+   "name": "Void Star's Advent",
+   "kind": "character",
+   "starts_at": "2026-03-17 18:00:00",
+   "ends_at": "2026-04-07 14:59:59",
+   "featured_five": [
+    "Skirk"
+   ],
+   "featured_four": [
+    "Dahlia",
+    "Candace",
+    "Charlotte"
+   ],
+   "alongside": [
+    "La Chanson Cerise/2026-03-17",
+    "Epitome Invocation/2026-03-17"
+   ]
+  },
+  {
+   "slug": "La Chanson Cerise/2026-03-17",
+   "name": "La Chanson Cerise",
+   "kind": "character",
+   "starts_at": "2026-03-17 18:00:00",
+   "ends_at": "2026-04-07 14:59:59",
+   "featured_five": [
+    "Escoffier"
+   ],
+   "featured_four": [
+    "Dahlia",
+    "Candace",
+    "Charlotte"
+   ],
+   "alongside": [
+    "Void Star's Advent/2026-03-17",
+    "Epitome Invocation/2026-03-17"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2026-03-17",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2026-03-17 18:00:00",
+   "ends_at": "2026-04-07 14:59:59",
+   "featured_five": [
+    "Azurelight",
+    "Symphonist of Scents"
+   ],
+   "featured_four": [
+    "The Flute",
+    "The Bell",
+    "Favonius Lance",
+    "Favonius Codex",
+    "Rust"
+   ],
+   "alongside": [
+    "Void Star's Advent/2026-03-17",
+    "La Chanson Cerise/2026-03-17"
+   ]
+  },
+  {
+   "slug": "The Northerly Wind's Song of Triumph/2026-02-25",
+   "name": "The Northerly Wind's Song of Triumph",
+   "kind": "character",
+   "starts_at": "2026-02-25 11:00:00",
+   "ends_at": "2026-03-17 17:59:59",
+   "featured_five": [
+    "Varka"
+   ],
+   "featured_four": [
+    "Bennett",
+    "Xiangling",
+    "Sucrose"
+   ],
+   "alongside": [
+    "The Lone Light Knocks at Night/2026-02-25",
+    "Epitome Invocation/2026-02-25",
+    "Ode to the Dawn Breeze/2026-02-25"
+   ]
+  },
+  {
+   "slug": "The Lone Light Knocks at Night/2026-02-25",
+   "name": "The Lone Light Knocks at Night",
+   "kind": "character",
+   "starts_at": "2026-02-25 11:00:00",
+   "ends_at": "2026-03-17 17:59:59",
+   "featured_five": [
+    "Flins"
+   ],
+   "featured_four": [
+    "Bennett",
+    "Xiangling",
+    "Sucrose"
+   ],
+   "alongside": [
+    "The Northerly Wind's Song of Triumph/2026-02-25",
+    "Epitome Invocation/2026-02-25",
+    "Ode to the Dawn Breeze/2026-02-25"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2026-02-25",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2026-02-25 11:00:00",
+   "ends_at": "2026-03-17 17:59:59",
+   "featured_five": [
+    "Gest of the Mighty Wolf",
+    "Bloodsoaked Ruins"
+   ],
+   "featured_four": [
+    "Sacrificer's Staff",
+    "Favonius Sword",
+    "Favonius Greatsword",
+    "Sacrificial Fragments",
+    "Sacrificial Bow"
+   ],
+   "alongside": [
+    "The Northerly Wind's Song of Triumph/2026-02-25",
+    "The Lone Light Knocks at Night/2026-02-25",
+    "Ode to the Dawn Breeze/2026-02-25"
+   ]
+  },
+  {
+   "slug": "Harmonious Abundance/2026-02-03",
+   "name": "Harmonious Abundance",
+   "kind": "character",
+   "starts_at": "2026-02-03 18:00:00",
+   "ends_at": "2026-02-24 14:59:59",
+   "featured_five": [
+    "Zibai"
+   ],
+   "featured_four": [
+    "Illuga",
+    "Aino",
+    "Gorou"
+   ],
+   "alongside": [
+    "Decree of the Deeps/2026-02-03",
+    "Epitome Invocation/2026-02-03"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2026-02-03",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2026-02-03 18:00:00",
+   "ends_at": "2026-02-24 14:59:59",
+   "featured_five": [
+    "Lightbearing Moonshard",
+    "Tome of the Eternal Flow"
+   ],
+   "featured_four": [
+    "Xiphos' Moonlight",
+    "Favonius Greatsword",
+    "Dragon's Bane",
+    "Eye of Perception",
+    "Favonius Warbow"
+   ],
+   "alongside": [
+    "Harmonious Abundance/2026-02-03",
+    "Decree of the Deeps/2026-02-03"
+   ]
+  },
+  {
+   "slug": "Decree of the Deeps/2026-02-03",
+   "name": "Decree of the Deeps",
+   "kind": "character",
+   "starts_at": "2026-02-03 18:00:00",
+   "ends_at": "2026-02-24 14:59:59",
+   "featured_five": [
+    "Neuvillette"
+   ],
+   "featured_four": [
+    "Illuga",
+    "Aino",
+    "Gorou"
+   ],
+   "alongside": [
+    "Harmonious Abundance/2026-02-03",
+    "Epitome Invocation/2026-02-03"
+   ]
+  },
+  {
+   "slug": "Somnias a Luna/2026-01-14",
+   "name": "Somnias a Luna",
+   "kind": "character",
+   "starts_at": "2026-01-14 11:00:00",
+   "ends_at": "2026-02-03 17:59:59",
+   "featured_five": [
+    "Columbina"
+   ],
+   "featured_four": [
+    "Sethos",
+    "Fischl",
+    "Ifa"
+   ],
+   "alongside": [
+    "Astral Actuation/2026-01-14",
+    "Epitome Invocation/2026-01-14"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2026-01-14",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2026-01-14 11:00:00",
+   "ends_at": "2026-02-03 17:59:59",
+   "featured_five": [
+    "Nocturne's Curtain Call",
+    "Fractured Halo"
+   ],
+   "featured_four": [
+    "Mountain-Bracing Bolt",
+    "Waveriding Whirl",
+    "Mitternachts Waltz",
+    "The Flute",
+    "Sacrificial Greatsword"
+   ],
+   "alongside": [
+    "Somnias a Luna/2026-01-14",
+    "Astral Actuation/2026-01-14"
+   ]
+  },
+  {
+   "slug": "Astral Actuation/2026-01-14",
+   "name": "Astral Actuation",
+   "kind": "character",
+   "starts_at": "2026-01-14 11:00:00",
+   "ends_at": "2026-02-03 17:59:59",
+   "featured_five": [
+    "Ineffa"
+   ],
+   "featured_four": [
+    "Sethos",
+    "Fischl",
+    "Ifa"
+   ],
+   "alongside": [
+    "Somnias a Luna/2026-01-14",
+    "Epitome Invocation/2026-01-14"
+   ]
+  },
+  {
+   "slug": "Forgefire's Blessing/2025-12-23",
+   "name": "Forgefire's Blessing",
+   "kind": "character",
+   "starts_at": "2025-12-23 18:00:00",
+   "ends_at": "2026-01-13 14:59:59",
+   "featured_five": [
+    "Xilonen"
+   ],
+   "featured_four": [
+    "Iansan",
+    "Chevreuse",
+    "Gaming"
+   ],
+   "alongside": [
+    "Cornucopia of Contention/2025-12-23",
+    "Epitome Invocation/2025-12-23"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2025-12-23",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2025-12-23 18:00:00",
+   "ends_at": "2026-01-13 14:59:59",
+   "featured_five": [
+    "Vivid Notions",
+    "Peak Patrol Song"
+   ],
+   "featured_four": [
+    "Fruitful Hook",
+    "Alley Hunter",
+    "Favonius Sword",
+    "Favonius Lance",
+    "The Widsith"
+   ],
+   "alongside": [
+    "Cornucopia of Contention/2025-12-23",
+    "Forgefire's Blessing/2025-12-23"
+   ]
+  },
+  {
+   "slug": "Cornucopia of Contention/2025-12-23",
+   "name": "Cornucopia of Contention",
+   "kind": "character",
+   "starts_at": "2025-12-23 18:00:00",
+   "ends_at": "2026-01-13 14:59:59",
+   "featured_five": [
+    "Varesa"
+   ],
+   "featured_four": [
+    "Iansan",
+    "Chevreuse",
+    "Gaming"
+   ],
+   "alongside": [
+    "Forgefire's Blessing/2025-12-23",
+    "Epitome Invocation/2025-12-23"
+   ]
+  },
+  {
+   "slug": "Rubedo, of White Stone Born/2025-12-03",
+   "name": "Rubedo, of White Stone Born",
+   "kind": "character",
+   "starts_at": "2025-12-03 11:00:00",
+   "ends_at": "2025-12-23 17:59:59",
+   "featured_five": [
+    "Durin"
+   ],
+   "featured_four": [
+    "Jahoda",
+    "Bennett",
+    "Faruzan"
+   ],
+   "alongside": [
+    "Ballad in Goblets/2025-12-03",
+    "Epitome Invocation/2025-12-03"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2025-12-03",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2025-12-03 11:00:00",
+   "ends_at": "2025-12-23 17:59:59",
+   "featured_five": [
+    "Athame Artis",
+    "The Daybreak Chronicles"
+   ],
+   "featured_four": [
+    "The Alley Flash",
+    "Prospector's Drill",
+    "Wine and Song",
+    "Rainslasher",
+    "The Stringless"
+   ],
+   "alongside": [
+    "Rubedo, of White Stone Born/2025-12-03",
+    "Ballad in Goblets/2025-12-03"
+   ]
+  },
+  {
+   "slug": "Ballad in Goblets/2025-12-03",
+   "name": "Ballad in Goblets",
+   "kind": "character",
+   "starts_at": "2025-12-03 11:00:00",
+   "ends_at": "2025-12-23 17:59:59",
+   "featured_five": [
+    "Venti"
+   ],
+   "featured_four": [
+    "Jahoda",
+    "Bennett",
+    "Faruzan"
+   ],
+   "alongside": [
+    "Rubedo, of White Stone Born/2025-12-03",
+    "Epitome Invocation/2025-12-03"
+   ]
+  },
+  {
+   "slug": "The Hearth's Ashen Shadow/2025-11-11",
+   "name": "The Hearth's Ashen Shadow",
+   "kind": "character",
+   "starts_at": "2025-11-11 18:00:00",
+   "ends_at": "2025-12-02 14:59:59",
+   "featured_five": [
+    "Arlecchino"
+   ],
+   "featured_four": [
+    "Lan Yan",
+    "Rosaria",
+    "Yun Jin"
+   ],
+   "alongside": [
+    "Gentry of Hermitage/2025-11-11",
+    "Epitome Invocation/2025-11-11"
+   ]
+  },
+  {
+   "slug": "Gentry of Hermitage/2025-11-11",
+   "name": "Gentry of Hermitage",
+   "kind": "character",
+   "starts_at": "2025-11-11 18:00:00",
+   "ends_at": "2025-12-02 14:59:59",
+   "featured_five": [
+    "Zhongli"
+   ],
+   "featured_four": [
+    "Lan Yan",
+    "Rosaria",
+    "Yun Jin"
+   ],
+   "alongside": [
+    "The Hearth's Ashen Shadow/2025-11-11",
+    "Epitome Invocation/2025-11-11"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2025-11-11",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2025-11-11 18:00:00",
+   "ends_at": "2025-12-02 14:59:59",
+   "featured_five": [
+    "Crimson Moon's Semblance",
+    "Vortex Vanquisher"
+   ],
+   "featured_four": [
+    "The Dockhand's Assistant",
+    "Portable Power Saw",
+    "Range Gauge",
+    "Dragon's Bane",
+    "Sacrificial Fragments"
+   ],
+   "alongside": [
+    "The Hearth's Ashen Shadow/2025-11-11",
+    "Gentry of Hermitage/2025-11-11"
+   ]
+  },
+  {
+   "slug": "Temptation of the Crimson Sands/2025-10-22",
+   "name": "Temptation of the Crimson Sands",
+   "kind": "character",
+   "starts_at": "2025-10-22 13:00:00",
+   "ends_at": "2025-11-11 17:59:59",
+   "featured_five": [
+    "Nefer"
+   ],
+   "featured_four": [
+    "Xingqiu",
+    "Collei",
+    "Yaoyao"
+   ],
+   "alongside": [
+    "Chanson of Many Waters/2025-10-22",
+    "Epitome Invocation/2025-10-22"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2025-10-22",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2025-10-22 13:00:00",
+   "ends_at": "2025-11-11 17:59:59",
+   "featured_five": [
+    "Reliquary of Truth",
+    "Splendor of Tranquil Waters"
+   ],
+   "featured_four": [
+    "Moonweaver's Dawn",
+    "Sacrificer's Staff",
+    "Dawning Frost",
+    "The Bell",
+    "Favonius Warbow"
+   ],
+   "alongside": [
+    "Temptation of the Crimson Sands/2025-10-22",
+    "Chanson of Many Waters/2025-10-22"
+   ]
+  },
+  {
+   "slug": "Chanson of Many Waters/2025-10-22",
+   "name": "Chanson of Many Waters",
+   "kind": "character",
+   "starts_at": "2025-10-22 13:00:00",
+   "ends_at": "2025-11-11 17:59:59",
+   "featured_five": [
+    "Furina"
+   ],
+   "featured_four": [
+    "Xingqiu",
+    "Collei",
+    "Yaoyao"
+   ],
+   "alongside": [
+    "Temptation of the Crimson Sands/2025-10-22",
+    "Epitome Invocation/2025-10-22"
+   ]
+  },
+  {
+   "slug": "The Lone Light Knocks at Night/2025-09-30",
+   "name": "The Lone Light Knocks at Night",
+   "kind": "character",
+   "starts_at": "2025-09-30 18:00:00",
+   "ends_at": "2025-10-21 14:59:59",
+   "featured_five": [
+    "Flins"
+   ],
+   "featured_four": [
+    "Aino",
+    "Sucrose",
+    "Dori"
+   ],
+   "alongside": [
+    "Discerner of Enigmas/2025-09-30",
+    "Epitome Invocation/2025-09-30"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2025-09-30",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2025-09-30 18:00:00",
+   "ends_at": "2025-10-21 14:59:59",
+   "featured_five": [
+    "Bloodsoaked Ruins",
+    "Aqua Simulacra"
+   ],
+   "featured_four": [
+    "Lion's Roar",
+    "Favonius Greatsword",
+    "Favonius Lance",
+    "Favonius Codex",
+    "Sacrificial Bow"
+   ],
+   "alongside": [
+    "The Lone Light Knocks at Night/2025-09-30",
+    "Discerner of Enigmas/2025-09-30"
+   ]
+  },
+  {
+   "slug": "Discerner of Enigmas/2025-09-30",
+   "name": "Discerner of Enigmas",
+   "kind": "character",
+   "starts_at": "2025-09-30 18:00:00",
+   "ends_at": "2025-10-21 14:59:59",
+   "featured_five": [
+    "Yelan"
+   ],
+   "featured_four": [
+    "Aino",
+    "Sucrose",
+    "Dori"
+   ],
+   "alongside": [
+    "The Lone Light Knocks at Night/2025-09-30",
+    "Epitome Invocation/2025-09-30"
+   ]
+  },
+  {
+   "slug": "The Moongrass' Enlightenment/2025-09-10",
+   "name": "The Moongrass' Enlightenment",
+   "kind": "character",
+   "starts_at": "2025-09-10 11:00:00",
+   "ends_at": "2025-09-30 17:59:59",
+   "featured_five": [
+    "Nahida"
+   ],
+   "featured_four": [
+    "Barbara",
+    "Kuki Shinobu",
+    "Kaveh"
+   ],
+   "alongside": [
+    "Moonsong of the Groves/2025-09-10",
+    "Roving Chalice of Dewgrass/2025-09-10",
+    "Epitome Invocation/2025-09-10"
+   ]
+  },
+  {
+   "slug": "Moonsong of the Groves/2025-09-10",
+   "name": "Moonsong of the Groves",
+   "kind": "character",
+   "starts_at": "2025-09-10 11:00:00",
+   "ends_at": "2025-09-30 17:59:59",
+   "featured_five": [
+    "Lauma"
+   ],
+   "featured_four": [
+    "Barbara",
+    "Kuki Shinobu",
+    "Kaveh"
+   ],
+   "alongside": [
+    "The Moongrass' Enlightenment/2025-09-10",
+    "Roving Chalice of Dewgrass/2025-09-10",
+    "Epitome Invocation/2025-09-10"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2025-09-10",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2025-09-10 11:00:00",
+   "ends_at": "2025-09-30 17:59:59",
+   "featured_five": [
+    "Nightweaver's Looking Glass",
+    "A Thousand Floating Dreams"
+   ],
+   "featured_four": [
+    "The Flute",
+    "Sacrificial Greatsword",
+    "Dragon's Bane",
+    "Sacrificial Fragments",
+    "The Stringless"
+   ],
+   "alongside": [
+    "The Moongrass' Enlightenment/2025-09-10",
+    "Moonsong of the Groves/2025-09-10",
+    "Roving Chalice of Dewgrass/2025-09-10"
+   ]
+  },
+  {
+   "slug": "Sharktacular Surfari/2025-08-19",
+   "name": "Sharktacular Surfari",
+   "kind": "character",
+   "starts_at": "2025-08-19 18:00:00",
+   "ends_at": "2025-09-09 14:59:59",
+   "featured_five": [
+    "Mualani"
+   ],
+   "featured_four": [
+    "Ifa",
+    "Ororon",
+    "Bennett"
+   ],
+   "alongside": [
+    "Piercing Shot's Crimson Wake/2025-08-19",
+    "Epitome Invocation/2025-08-19"
+   ]
+  },
+  {
+   "slug": "Piercing Shot's Crimson Wake/2025-08-19",
+   "name": "Piercing Shot's Crimson Wake",
+   "kind": "character",
+   "starts_at": "2025-08-19 18:00:00",
+   "ends_at": "2025-09-09 14:59:59",
+   "featured_five": [
+    "Chasca"
+   ],
+   "featured_four": [
+    "Ifa",
+    "Ororon",
+    "Bennett"
+   ],
+   "alongside": [
+    "Sharktacular Surfari/2025-08-19",
+    "Epitome Invocation/2025-08-19"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2025-08-19",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2025-08-19 18:00:00",
+   "ends_at": "2025-09-09 14:59:59",
+   "featured_five": [
+    "Surf's Up",
+    "Astral Vulture's Crimson Plumage"
+   ],
+   "featured_four": [
+    "Fruitful Hook",
+    "Waveriding Whirl",
+    "Flower-Wreathed Feathers",
+    "Favonius Sword",
+    "Favonius Lance"
+   ],
+   "alongside": [
+    "Sharktacular Surfari/2025-08-19",
+    "Piercing Shot's Crimson Wake/2025-08-19"
+   ]
+  },
+  {
+   "slug": "Starry Night's Whispers/2025-07-30",
+   "name": "Starry Night's Whispers",
+   "kind": "character",
+   "starts_at": "2025-07-30 11:00:00",
+   "ends_at": "2025-08-19 17:59:59",
+   "featured_five": [
+    "Citlali"
+   ],
+   "featured_four": [
+    "Sethos",
+    "Xingqiu",
+    "Fischl"
+   ],
+   "alongside": [
+    "Astral Actuation/2025-07-30",
+    "Epitome Invocation/2025-07-30"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2025-07-30",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2025-07-30 11:00:00",
+   "ends_at": "2025-08-19 17:59:59",
+   "featured_five": [
+    "Fractured Halo",
+    "Starcaller's Watch"
+   ],
+   "featured_four": [
+    "Sturdy Bone",
+    "Mountain-Bracing Bolt",
+    "Sacrificial Greatsword",
+    "Favonius Codex",
+    "Favonius Warbow"
+   ],
+   "alongside": [
+    "Astral Actuation/2025-07-30",
+    "Starry Night's Whispers/2025-07-30"
+   ]
+  },
+  {
+   "slug": "Astral Actuation/2025-07-30",
+   "name": "Astral Actuation",
+   "kind": "character",
+   "starts_at": "2025-07-30 11:00:00",
+   "ends_at": "2025-08-19 17:59:59",
+   "featured_five": [
+    "Ineffa"
+   ],
+   "featured_four": [
+    "Sethos",
+    "Xingqiu",
+    "Fischl"
+   ],
+   "alongside": [
+    "Starry Night's Whispers/2025-07-30",
+    "Epitome Invocation/2025-07-30"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2025-07-08",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2025-07-08 18:00:00",
+   "ends_at": "2025-07-29 14:59:59",
+   "featured_five": [
+    "A Thousand Blazing Suns",
+    "Lumidouce Elegy"
+   ],
+   "featured_four": [
+    "The Flute",
+    "Rainslasher",
+    "Dragon's Bane",
+    "Sacrificial Fragments",
+    "Rust"
+   ],
+   "alongside": [
+    "Ancient Flame Ablaze/2025-07-08",
+    "Ambrosial Essence/2025-07-08"
+   ]
+  },
+  {
+   "slug": "Ancient Flame Ablaze/2025-07-08",
+   "name": "Ancient Flame Ablaze",
+   "kind": "character",
+   "starts_at": "2025-07-08 18:00:00",
+   "ends_at": "2025-07-29 14:59:59",
+   "featured_five": [
+    "Mavuika"
+   ],
+   "featured_four": [
+    "Iansan",
+    "Yaoyao",
+    "Xiangling"
+   ],
+   "alongside": [
+    "Ambrosial Essence/2025-07-08",
+    "Epitome Invocation/2025-07-08"
+   ]
+  },
+  {
+   "slug": "Ambrosial Essence/2025-07-08",
+   "name": "Ambrosial Essence",
+   "kind": "character",
+   "starts_at": "2025-07-08 18:00:00",
+   "ends_at": "2025-07-29 14:59:59",
+   "featured_five": [
+    "Emilie"
+   ],
+   "featured_four": [
+    "Iansan",
+    "Yaoyao",
+    "Xiangling"
+   ],
+   "alongside": [
+    "Ancient Flame Ablaze/2025-07-08",
+    "Epitome Invocation/2025-07-08"
+   ]
+  },
+  {
+   "slug": "Void Star's Advent/2025-06-18",
+   "name": "Void Star's Advent",
+   "kind": "character",
+   "starts_at": "2025-06-18 11:00:00",
+   "ends_at": "2025-07-08 17:59:59",
+   "featured_five": [
+    "Skirk"
+   ],
+   "featured_four": [
+    "Dahlia",
+    "Candace",
+    "Diona"
+   ],
+   "alongside": [
+    "The Transcendent One Returns/2025-06-18",
+    "Epitome Invocation/2025-06-18"
+   ]
+  },
+  {
+   "slug": "The Transcendent One Returns/2025-06-18",
+   "name": "The Transcendent One Returns",
+   "kind": "character",
+   "starts_at": "2025-06-18 11:00:00",
+   "ends_at": "2025-07-08 17:59:59",
+   "featured_five": [
+    "Shenhe"
+   ],
+   "featured_four": [
+    "Dahlia",
+    "Candace",
+    "Diona"
+   ],
+   "alongside": [
+    "Void Star's Advent/2025-06-18",
+    "Epitome Invocation/2025-06-18"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2025-06-18",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2025-06-18 11:00:00",
+   "ends_at": "2025-07-08 17:59:59",
+   "featured_five": [
+    "Azurelight",
+    "Calamity Queller"
+   ],
+   "featured_four": [
+    "Xiphos' Moonlight",
+    "Makhaira Aquamarine",
+    "Wandering Evenstar",
+    "Favonius Lance",
+    "Sacrificial Bow"
+   ],
+   "alongside": [
+    "Void Star's Advent/2025-06-18",
+    "The Transcendent One Returns/2025-06-18"
+   ]
+  },
+  {
+   "slug": "Seeker of Flame-Wrought Secrets/2025-05-27",
+   "name": "Seeker of Flame-Wrought Secrets",
+   "kind": "character",
+   "starts_at": "2025-05-27 18:00:00",
+   "ends_at": "2025-06-17 14:59:59",
+   "featured_five": [
+    "Kinich"
+   ],
+   "featured_four": [
+    "Thoma",
+    "Kujou Sara",
+    "Lynette"
+   ],
+   "alongside": [
+    "Reign of Serenity/2025-05-27",
+    "Epitome Invocation/2025-05-27",
+    "Thunder Rends the Plains on High/2025-05-27"
+   ]
+  },
+  {
+   "slug": "Reign of Serenity/2025-05-27",
+   "name": "Reign of Serenity",
+   "kind": "character",
+   "starts_at": "2025-05-27 18:00:00",
+   "ends_at": "2025-06-17 14:59:59",
+   "featured_five": [
+    "Raiden Shogun"
+   ],
+   "featured_four": [
+    "Thoma",
+    "Kujou Sara",
+    "Lynette"
+   ],
+   "alongside": [
+    "Seeker of Flame-Wrought Secrets/2025-05-27",
+    "Epitome Invocation/2025-05-27",
+    "Thunder Rends the Plains on High/2025-05-27"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2025-05-27",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2025-05-27 18:00:00",
+   "ends_at": "2025-06-17 14:59:59",
+   "featured_five": [
+    "Fang of the Mountain King",
+    "Engulfing Lightning"
+   ],
+   "featured_four": [
+    "Lion's Roar",
+    "Favonius Greatsword",
+    "Dragon's Bane",
+    "Eye of Perception",
+    "The Stringless"
+   ],
+   "alongside": [
+    "Seeker of Flame-Wrought Secrets/2025-05-27",
+    "Reign of Serenity/2025-05-27",
+    "Thunder Rends the Plains on High/2025-05-27"
+   ]
+  },
+  {
+   "slug": "La Chanson Cerise/2025-05-07",
+   "name": "La Chanson Cerise",
+   "kind": "character",
+   "starts_at": "2025-05-07 11:00:00",
+   "ends_at": "2025-05-27 17:59:59",
+   "featured_five": [
+    "Escoffier"
+   ],
+   "featured_four": [
+    "Ifa",
+    "Ororon",
+    "Layla"
+   ],
+   "alongside": [
+    "In the Name of the Rosula/2025-05-07",
+    "Epitome Invocation/2025-05-07"
+   ]
+  },
+  {
+   "slug": "In the Name of the Rosula/2025-05-07",
+   "name": "In the Name of the Rosula",
+   "kind": "character",
+   "starts_at": "2025-05-07 11:00:00",
+   "ends_at": "2025-05-27 17:59:59",
+   "featured_five": [
+    "Navia"
+   ],
+   "featured_four": [
+    "Ifa",
+    "Ororon",
+    "Layla"
+   ],
+   "alongside": [
+    "La Chanson Cerise/2025-05-07",
+    "Epitome Invocation/2025-05-07"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2025-05-07",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2025-05-07 11:00:00",
+   "ends_at": "2025-05-27 17:59:59",
+   "featured_five": [
+    "Symphonist of Scents",
+    "Verdict"
+   ],
+   "featured_four": [
+    "The Dockhand's Assistant",
+    "Portable Power Saw",
+    "Prospector's Drill",
+    "Range Gauge",
+    "The Widsith"
+   ],
+   "alongside": [
+    "La Chanson Cerise/2025-05-07",
+    "In the Name of the Rosula/2025-05-07"
+   ]
+  },
+  {
+   "slug": "Forgefire's Blessing/2025-04-15",
+   "name": "Forgefire's Blessing",
+   "kind": "character",
+   "starts_at": "2025-04-15 18:00:00",
+   "ends_at": "2025-05-06 14:59:59",
+   "featured_five": [
+    "Xilonen"
+   ],
+   "featured_four": [
+    "Faruzan",
+    "Beidou",
+    "Yanfei"
+   ],
+   "alongside": [
+    "Ballad in Goblets/2025-04-15",
+    "Epitome Invocation/2025-04-15"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2025-04-15",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2025-04-15 18:00:00",
+   "ends_at": "2025-05-06 14:59:59",
+   "featured_five": [
+    "Peak Patrol Song",
+    "Elegy for the End"
+   ],
+   "featured_four": [
+    "Sacrificial Sword",
+    "The Bell",
+    "Favonius Lance",
+    "Favonius Codex",
+    "Favonius Warbow"
+   ],
+   "alongside": [
+    "Forgefire's Blessing/2025-04-15",
+    "Ballad in Goblets/2025-04-15"
+   ]
+  },
+  {
+   "slug": "Ballad in Goblets/2025-04-15",
+   "name": "Ballad in Goblets",
+   "kind": "character",
+   "starts_at": "2025-04-15 18:00:00",
+   "ends_at": "2025-05-06 14:59:59",
+   "featured_five": [
+    "Venti"
+   ],
+   "featured_four": [
+    "Faruzan",
+    "Beidou",
+    "Yanfei"
+   ],
+   "alongside": [
+    "Forgefire's Blessing/2025-04-15",
+    "Epitome Invocation/2025-04-15"
+   ]
+  },
+  {
+   "slug": "The Crane Soars Skyward/2025-03-26",
+   "name": "The Crane Soars Skyward",
+   "kind": "character",
+   "starts_at": "2025-03-26 11:00:00",
+   "ends_at": "2025-04-15 17:59:59",
+   "featured_five": [
+    "Xianyun"
+   ],
+   "featured_four": [
+    "Iansan",
+    "Chevreuse",
+    "Gaming"
+   ],
+   "alongside": [
+    "Cornucopia of Contention/2025-03-26",
+    "Epitome Invocation/2025-03-26"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2025-03-26",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2025-03-26 11:00:00",
+   "ends_at": "2025-04-15 17:59:59",
+   "featured_five": [
+    "Vivid Notions",
+    "Crane's Echoing Call"
+   ],
+   "featured_four": [
+    "Sturdy Bone",
+    "Fruitful Hook",
+    "Mountain-Bracing Bolt",
+    "Waveriding Whirl",
+    "Flower-Wreathed Feathers"
+   ],
+   "alongside": [
+    "Cornucopia of Contention/2025-03-26",
+    "The Crane Soars Skyward/2025-03-26"
+   ]
+  },
+  {
+   "slug": "Cornucopia of Contention/2025-03-26",
+   "name": "Cornucopia of Contention",
+   "kind": "character",
+   "starts_at": "2025-03-26 11:00:00",
+   "ends_at": "2025-04-15 17:59:59",
+   "featured_five": [
+    "Varesa"
+   ],
+   "featured_four": [
+    "Iansan",
+    "Chevreuse",
+    "Gaming"
+   ],
+   "alongside": [
+    "The Crane Soars Skyward/2025-03-26",
+    "Epitome Invocation/2025-03-26"
+   ]
+  },
+  {
+   "slug": "Tempestuous Destiny/2025-03-04",
+   "name": "Tempestuous Destiny",
+   "kind": "character",
+   "starts_at": "2025-03-04 18:00:00",
+   "ends_at": "2025-03-25 14:59:59",
+   "featured_five": [
+    "Wriothesley"
+   ],
+   "featured_four": [
+    "Charlotte",
+    "Chongyun",
+    "Mika"
+   ],
+   "alongside": [
+    "Chanson of Many Waters/2025-03-04",
+    "Epitome Invocation/2025-03-04"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2025-03-04",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2025-03-04 18:00:00",
+   "ends_at": "2025-03-25 14:59:59",
+   "featured_five": [
+    "Splendor of Tranquil Waters",
+    "Cashflow Supervision"
+   ],
+   "featured_four": [
+    "Favonius Sword",
+    "Sacrificial Greatsword",
+    "Dragon's Bane",
+    "Sacrificial Fragments",
+    "Rust"
+   ],
+   "alongside": [
+    "Chanson of Many Waters/2025-03-04",
+    "Tempestuous Destiny/2025-03-04"
+   ]
+  },
+  {
+   "slug": "Chanson of Many Waters/2025-03-04",
+   "name": "Chanson of Many Waters",
+   "kind": "character",
+   "starts_at": "2025-03-04 18:00:00",
+   "ends_at": "2025-03-25 14:59:59",
+   "featured_five": [
+    "Furina"
+   ],
+   "featured_four": [
+    "Charlotte",
+    "Chongyun",
+    "Mika"
+   ],
+   "alongside": [
+    "Tempestuous Destiny/2025-03-04",
+    "Epitome Invocation/2025-03-04"
+   ]
+  },
+  {
+   "slug": "Romaritime Meluserenity/2025-02-12",
+   "name": "Romaritime Meluserenity",
+   "kind": "character",
+   "starts_at": "2025-02-12 11:00:00",
+   "ends_at": "2025-03-04 17:59:59",
+   "featured_five": [
+    "Sigewinne"
+   ],
+   "featured_four": [
+    "Gorou",
+    "Sayu",
+    "Xiangling"
+   ],
+   "alongside": [
+    "Dawn's Drifting Reverie/2025-02-12",
+    "Epitome Invocation/2025-02-12"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2025-02-12",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2025-02-12 11:00:00",
+   "ends_at": "2025-03-04 17:59:59",
+   "featured_five": [
+    "Sunny Morning Sleep-In",
+    "Silvershower Heartstrings"
+   ],
+   "featured_four": [
+    "Akuoumaru",
+    "Wavebreaker's Fin",
+    "Mouun's Moon",
+    "The Flute",
+    "Eye of Perception"
+   ],
+   "alongside": [
+    "Dawn's Drifting Reverie/2025-02-12",
+    "Romaritime Meluserenity/2025-02-12"
+   ]
+  },
+  {
+   "slug": "Dawn's Drifting Reverie/2025-02-12",
+   "name": "Dawn's Drifting Reverie",
+   "kind": "character",
+   "starts_at": "2025-02-12 11:00:00",
+   "ends_at": "2025-03-04 17:59:59",
+   "featured_five": [
+    "Yumemizuki Mizuki"
+   ],
+   "featured_four": [
+    "Gorou",
+    "Sayu",
+    "Xiangling"
+   ],
+   "alongside": [
+    "Romaritime Meluserenity/2025-02-12",
+    "Epitome Invocation/2025-02-12"
+   ]
+  },
+  {
+   "slug": "The Hearth's Ashen Shadow/2025-01-21",
+   "name": "The Hearth's Ashen Shadow",
+   "kind": "character",
+   "starts_at": "2025-01-21 18:00:00",
+   "ends_at": "2025-02-11 14:59:59",
+   "featured_five": [
+    "Arlecchino"
+   ],
+   "featured_four": [
+    "Lan Yan",
+    "Chevreuse",
+    "Rosaria"
+   ],
+   "alongside": [
+    "Illuminating Lightning/2025-01-21",
+    "Epitome Invocation/2025-01-21",
+    "Remembrance of Jade and Stone/2025-01-21"
+   ]
+  },
+  {
+   "slug": "Illuminating Lightning/2025-01-21",
+   "name": "Illuminating Lightning",
+   "kind": "character",
+   "starts_at": "2025-01-21 18:00:00",
+   "ends_at": "2025-02-11 14:59:59",
+   "featured_five": [
+    "Clorinde"
+   ],
+   "featured_four": [
+    "Lan Yan",
+    "Chevreuse",
+    "Rosaria"
+   ],
+   "alongside": [
+    "The Hearth's Ashen Shadow/2025-01-21",
+    "Epitome Invocation/2025-01-21",
+    "Remembrance of Jade and Stone/2025-01-21"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2025-01-21",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2025-01-21 18:00:00",
+   "ends_at": "2025-02-11 14:59:59",
+   "featured_five": [
+    "Crimson Moon's Semblance",
+    "Absolution"
+   ],
+   "featured_four": [
+    "Lion's Roar",
+    "Rainslasher",
+    "The Widsith",
+    "Sacrificial Bow",
+    "Lithic Spear"
+   ],
+   "alongside": [
+    "The Hearth's Ashen Shadow/2025-01-21",
+    "Illuminating Lightning/2025-01-21",
+    "Remembrance of Jade and Stone/2025-01-21"
+   ]
+  },
+  {
+   "slug": "Starry Night's Whispers/2025-01-01",
+   "name": "Starry Night's Whispers",
+   "kind": "character",
+   "starts_at": "2025-01-01 11:00:00",
+   "ends_at": "2025-01-21 17:59:59",
+   "featured_five": [
+    "Citlali"
+   ],
+   "featured_four": [
+    "Kachina",
+    "Bennett",
+    "Diona"
+   ],
+   "alongside": [
+    "Ancient Flame Ablaze/2025-01-01",
+    "Epitome Invocation/2025-01-01"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2025-01-01",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2025-01-01 11:00:00",
+   "ends_at": "2025-01-21 17:59:59",
+   "featured_five": [
+    "A Thousand Blazing Suns",
+    "Starcaller's Watch"
+   ],
+   "featured_four": [
+    "Lithic Blade",
+    "Sacrificial Sword",
+    "Favonius Lance",
+    "Favonius Codex",
+    "The Stringless"
+   ],
+   "alongside": [
+    "Ancient Flame Ablaze/2025-01-01",
+    "Starry Night's Whispers/2025-01-01"
+   ]
+  },
+  {
+   "slug": "Ancient Flame Ablaze/2025-01-01",
+   "name": "Ancient Flame Ablaze",
+   "kind": "character",
+   "starts_at": "2025-01-01 11:00:00",
+   "ends_at": "2025-01-21 17:59:59",
+   "featured_five": [
+    "Mavuika"
+   ],
+   "featured_four": [
+    "Kachina",
+    "Bennett",
+    "Diona"
+   ],
+   "alongside": [
+    "Starry Night's Whispers/2025-01-01",
+    "Epitome Invocation/2025-01-01"
+   ]
+  },
+  {
+   "slug": "Gentry of Hermitage/2024-12-10",
+   "name": "Gentry of Hermitage",
+   "kind": "character",
+   "starts_at": "2024-12-10 18:00:00",
+   "ends_at": "2024-12-31 14:59:59",
+   "featured_five": [
+    "Zhongli"
+   ],
+   "featured_four": [
+    "Shikanoin Heizou",
+    "Fischl",
+    "Yaoyao"
+   ],
+   "alongside": [
+    "Decree of the Deeps/2024-12-10",
+    "Epitome Invocation/2024-12-10"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2024-12-10",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2024-12-10 18:00:00",
+   "ends_at": "2024-12-31 14:59:59",
+   "featured_five": [
+    "Tome of the Eternal Flow",
+    "Vortex Vanquisher"
+   ],
+   "featured_four": [
+    "Mitternachts Waltz",
+    "Favonius Sword",
+    "Favonius Greatsword",
+    "Dragon's Bane",
+    "Sacrificial Fragments"
+   ],
+   "alongside": [
+    "Decree of the Deeps/2024-12-10",
+    "Gentry of Hermitage/2024-12-10"
+   ]
+  },
+  {
+   "slug": "Decree of the Deeps/2024-12-10",
+   "name": "Decree of the Deeps",
+   "kind": "character",
+   "starts_at": "2024-12-10 18:00:00",
+   "ends_at": "2024-12-31 14:59:59",
+   "featured_five": [
+    "Neuvillette"
+   ],
+   "featured_four": [
+    "Shikanoin Heizou",
+    "Fischl",
+    "Yaoyao"
+   ],
+   "alongside": [
+    "Gentry of Hermitage/2024-12-10",
+    "Epitome Invocation/2024-12-10"
+   ]
+  },
+  {
+   "slug": "Piercing Shot's Crimson Wake/2024-11-20",
+   "name": "Piercing Shot's Crimson Wake",
+   "kind": "character",
+   "starts_at": "2024-11-20 11:00:00",
+   "ends_at": "2024-12-10 17:59:59",
+   "featured_five": [
+    "Chasca"
+   ],
+   "featured_four": [
+    "Ororon",
+    "Sucrose",
+    "Barbara"
+   ],
+   "alongside": [
+    "Conjuring Chiaroscuro/2024-11-20",
+    "Epitome Invocation/2024-11-20"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2024-11-20",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2024-11-20 11:00:00",
+   "ends_at": "2024-12-10 17:59:59",
+   "featured_five": [
+    "Astral Vulture's Crimson Plumage",
+    "The First Great Magic"
+   ],
+   "featured_four": [
+    "Waveriding Whirl",
+    "Flower-Wreathed Feathers",
+    "The Flute",
+    "The Bell",
+    "Favonius Lance"
+   ],
+   "alongside": [
+    "Piercing Shot's Crimson Wake/2024-11-20",
+    "Conjuring Chiaroscuro/2024-11-20"
+   ]
+  },
+  {
+   "slug": "Conjuring Chiaroscuro/2024-11-20",
+   "name": "Conjuring Chiaroscuro",
+   "kind": "character",
+   "starts_at": "2024-11-20 11:00:00",
+   "ends_at": "2024-12-10 17:59:59",
+   "featured_five": [
+    "Lyney"
+   ],
+   "featured_four": [
+    "Ororon",
+    "Sucrose",
+    "Barbara"
+   ],
+   "alongside": [
+    "Piercing Shot's Crimson Wake/2024-11-20",
+    "Epitome Invocation/2024-11-20"
+   ]
+  },
+  {
+   "slug": "The Moongrass' Enlightenment/2024-10-29",
+   "name": "The Moongrass' Enlightenment",
+   "kind": "character",
+   "starts_at": "2024-10-29 18:00:00",
+   "ends_at": "2024-11-19 14:59:59",
+   "featured_five": [
+    "Nahida"
+   ],
+   "featured_four": [
+    "Sethos",
+    "Xingqiu",
+    "Kuki Shinobu"
+   ],
+   "alongside": [
+    "Moment of Bloom/2024-10-29",
+    "Epitome Invocation/2024-10-29"
+   ]
+  },
+  {
+   "slug": "Moment of Bloom/2024-10-29",
+   "name": "Moment of Bloom",
+   "kind": "character",
+   "starts_at": "2024-10-29 18:00:00",
+   "ends_at": "2024-11-19 14:59:59",
+   "featured_five": [
+    "Hu Tao"
+   ],
+   "featured_four": [
+    "Sethos",
+    "Xingqiu",
+    "Kuki Shinobu"
+   ],
+   "alongside": [
+    "The Moongrass' Enlightenment/2024-10-29",
+    "Epitome Invocation/2024-10-29"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2024-10-29",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2024-10-29 18:00:00",
+   "ends_at": "2024-11-19 14:59:59",
+   "featured_five": [
+    "A Thousand Floating Dreams",
+    "Staff of Homa"
+   ],
+   "featured_four": [
+    "Fruitful Hook",
+    "Lion's Roar",
+    "Dragon's Bane",
+    "Eye of Perception",
+    "Favonius Warbow"
+   ],
+   "alongside": [
+    "The Moongrass' Enlightenment/2024-10-29",
+    "Moment of Bloom/2024-10-29"
+   ]
+  },
+  {
+   "slug": "Of Silken Clouds Woven/2024-10-09",
+   "name": "Of Silken Clouds Woven",
+   "kind": "character",
+   "starts_at": "2024-10-09 11:00:00",
+   "ends_at": "2024-10-29 17:59:59",
+   "featured_five": [
+    "Chiori"
+   ],
+   "featured_four": [
+    "Dori",
+    "Candace",
+    "Collei"
+   ],
+   "alongside": [
+    "Forgefire's Blessing/2024-10-09",
+    "Epitome Invocation/2024-10-09"
+   ]
+  },
+  {
+   "slug": "Forgefire's Blessing/2024-10-09",
+   "name": "Forgefire's Blessing",
+   "kind": "character",
+   "starts_at": "2024-10-09 11:00:00",
+   "ends_at": "2024-10-29 17:59:59",
+   "featured_five": [
+    "Xilonen"
+   ],
+   "featured_four": [
+    "Dori",
+    "Candace",
+    "Collei"
+   ],
+   "alongside": [
+    "Of Silken Clouds Woven/2024-10-09",
+    "Epitome Invocation/2024-10-09"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2024-10-09",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2024-10-09 11:00:00",
+   "ends_at": "2024-10-29 17:59:59",
+   "featured_five": [
+    "Peak Patrol Song",
+    "Uraku Misugiri"
+   ],
+   "featured_four": [
+    "Sturdy Bone",
+    "Mountain-Bracing Bolt",
+    "Sacrificial Greatsword",
+    "Favonius Codex",
+    "Rust"
+   ],
+   "alongside": [
+    "Forgefire's Blessing/2024-10-09",
+    "Of Silken Clouds Woven/2024-10-09"
+   ]
+  },
+  {
+   "slug": "Seeker of Flame-Wrought Secrets/2024-09-17",
+   "name": "Seeker of Flame-Wrought Secrets",
+   "kind": "character",
+   "starts_at": "2024-09-17 18:00:00",
+   "ends_at": "2024-10-08 14:59:59",
+   "featured_five": [
+    "Kinich"
+   ],
+   "featured_four": [
+    "Thoma",
+    "Kujou Sara",
+    "Chevreuse"
+   ],
+   "alongside": [
+    "Reign of Serenity/2024-09-17",
+    "Epitome Invocation/2024-09-17"
+   ]
+  },
+  {
+   "slug": "Reign of Serenity/2024-09-17",
+   "name": "Reign of Serenity",
+   "kind": "character",
+   "starts_at": "2024-09-17 18:00:00",
+   "ends_at": "2024-10-08 14:59:59",
+   "featured_five": [
+    "Raiden Shogun"
+   ],
+   "featured_four": [
+    "Thoma",
+    "Kujou Sara",
+    "Chevreuse"
+   ],
+   "alongside": [
+    "Seeker of Flame-Wrought Secrets/2024-09-17",
+    "Epitome Invocation/2024-09-17"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2024-09-17",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2024-09-17 18:00:00",
+   "ends_at": "2024-10-08 14:59:59",
+   "featured_five": [
+    "Fang of the Mountain King",
+    "Engulfing Lightning"
+   ],
+   "featured_four": [
+    "Sacrificial Sword",
+    "Rainslasher",
+    "Favonius Lance",
+    "The Widsith",
+    "Sacrificial Bow"
+   ],
+   "alongside": [
+    "Seeker of Flame-Wrought Secrets/2024-09-17",
+    "Reign of Serenity/2024-09-17"
+   ]
+  },
+  {
+   "slug": "Sharktacular Surfari/2024-08-28",
+   "name": "Sharktacular Surfari",
+   "kind": "character",
+   "starts_at": "2024-08-28 11:00:00",
+   "ends_at": "2024-09-17 17:59:59",
+   "featured_five": [
+    "Mualani"
+   ],
+   "featured_four": [
+    "Kachina",
+    "Xinyan",
+    "Bennett"
+   ],
+   "alongside": [
+    "Leaves in the Wind/2024-08-28",
+    "Epitome Invocation/2024-08-28"
+   ]
+  },
+  {
+   "slug": "Leaves in the Wind/2024-08-28",
+   "name": "Leaves in the Wind",
+   "kind": "character",
+   "starts_at": "2024-08-28 11:00:00",
+   "ends_at": "2024-09-17 17:59:59",
+   "featured_five": [
+    "Kaedehara Kazuha"
+   ],
+   "featured_four": [
+    "Kachina",
+    "Xinyan",
+    "Bennett"
+   ],
+   "alongside": [
+    "Sharktacular Surfari/2024-08-28",
+    "Epitome Invocation/2024-08-28"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2024-08-28",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2024-08-28 11:00:00",
+   "ends_at": "2024-09-17 17:59:59",
+   "featured_five": [
+    "Surf's Up",
+    "Freedom-Sworn"
+   ],
+   "featured_four": [
+    "Favonius Sword",
+    "Favonius Greatsword",
+    "Dragon's Bane",
+    "Sacrificial Fragments",
+    "The Stringless"
+   ],
+   "alongside": [
+    "Sharktacular Surfari/2024-08-28",
+    "Leaves in the Wind/2024-08-28"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2024-08-06",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2024-08-06 18:00:00",
+   "ends_at": "2024-08-27 14:59:59",
+   "featured_five": [
+    "Lumidouce Elegy",
+    "Aqua Simulacra"
+   ],
+   "featured_four": [
+    "Makhaira Aquamarine",
+    "Wandering Evenstar",
+    "The Flute",
+    "Favonius Lance",
+    "Favonius Warbow"
+   ],
+   "alongside": [
+    "Ambrosial Essence/2024-08-06",
+    "Discerner of Enigmas/2024-08-06"
+   ]
+  },
+  {
+   "slug": "Discerner of Enigmas/2024-08-06",
+   "name": "Discerner of Enigmas",
+   "kind": "character",
+   "starts_at": "2024-08-06 18:00:00",
+   "ends_at": "2024-08-27 14:59:59",
+   "featured_five": [
+    "Yelan"
+   ],
+   "featured_four": [
+    "Yanfei",
+    "Xiangling",
+    "Razor"
+   ],
+   "alongside": [
+    "Ambrosial Essence/2024-08-06",
+    "Epitome Invocation/2024-08-06"
+   ]
+  },
+  {
+   "slug": "Ambrosial Essence/2024-08-06",
+   "name": "Ambrosial Essence",
+   "kind": "character",
+   "starts_at": "2024-08-06 18:00:00",
+   "ends_at": "2024-08-27 14:59:59",
+   "featured_five": [
+    "Emilie"
+   ],
+   "featured_four": [
+    "Yanfei",
+    "Xiangling",
+    "Razor"
+   ],
+   "alongside": [
+    "Discerner of Enigmas/2024-08-06",
+    "Epitome Invocation/2024-08-06"
+   ]
+  },
+  {
+   "slug": "Twirling Lotus/2024-07-17",
+   "name": "Twirling Lotus",
+   "kind": "character",
+   "starts_at": "2024-07-17 11:00:00",
+   "ends_at": "2024-08-06 17:59:59",
+   "featured_five": [
+    "Nilou"
+   ],
+   "featured_four": [
+    "Kirara",
+    "Kaveh",
+    "Ningguang"
+   ],
+   "alongside": [
+    "In the Name of the Rosula/2024-07-17",
+    "Epitome Invocation/2024-07-17"
+   ]
+  },
+  {
+   "slug": "In the Name of the Rosula/2024-07-17",
+   "name": "In the Name of the Rosula",
+   "kind": "character",
+   "starts_at": "2024-07-17 11:00:00",
+   "ends_at": "2024-08-06 17:59:59",
+   "featured_five": [
+    "Navia"
+   ],
+   "featured_four": [
+    "Kirara",
+    "Kaveh",
+    "Ningguang"
+   ],
+   "alongside": [
+    "Twirling Lotus/2024-07-17",
+    "Epitome Invocation/2024-07-17"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2024-07-17",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2024-07-17 11:00:00",
+   "ends_at": "2024-08-06 17:59:59",
+   "featured_five": [
+    "Verdict",
+    "Key of Khaj-Nisut"
+   ],
+   "featured_four": [
+    "Xiphos' Moonlight",
+    "The Bell",
+    "Dragon's Bane",
+    "Eye of Perception",
+    "Rust"
+   ],
+   "alongside": [
+    "In the Name of the Rosula/2024-07-17",
+    "Twirling Lotus/2024-07-17"
+   ]
+  },
+  {
+   "slug": "Romaritime Meluserenity/2024-06-25",
+   "name": "Romaritime Meluserenity",
+   "kind": "character",
+   "starts_at": "2024-06-25 18:00:00",
+   "ends_at": "2024-07-16 14:59:59",
+   "featured_five": [
+    "Sigewinne"
+   ],
+   "featured_four": [
+    "Noelle",
+    "Gaming",
+    "Rosaria"
+   ],
+   "alongside": [
+    "Chanson of Many Waters/2024-06-25",
+    "Epitome Invocation/2024-06-25"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2024-06-25",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2024-06-25 18:00:00",
+   "ends_at": "2024-07-16 14:59:59",
+   "featured_five": [
+    "Silvershower Heartstrings",
+    "Splendor of Tranquil Waters"
+   ],
+   "featured_four": [
+    "Lithic Blade",
+    "Lion's Roar",
+    "Favonius Lance",
+    "Favonius Codex",
+    "Sacrificial Bow"
+   ],
+   "alongside": [
+    "Romaritime Meluserenity/2024-06-25",
+    "Chanson of Many Waters/2024-06-25"
+   ]
+  },
+  {
+   "slug": "Chanson of Many Waters/2024-06-25",
+   "name": "Chanson of Many Waters",
+   "kind": "character",
+   "starts_at": "2024-06-25 18:00:00",
+   "ends_at": "2024-07-16 14:59:59",
+   "featured_five": [
+    "Furina"
+   ],
+   "featured_four": [
+    "Noelle",
+    "Gaming",
+    "Rosaria"
+   ],
+   "alongside": [
+    "Romaritime Meluserenity/2024-06-25",
+    "Epitome Invocation/2024-06-25"
+   ]
+  },
+  {
+   "slug": "Illuminating Lightning/2024-06-05",
+   "name": "Illuminating Lightning",
+   "kind": "character",
+   "starts_at": "2024-06-05 11:00:00",
+   "ends_at": "2024-06-25 17:59:00",
+   "featured_five": [
+    "Clorinde"
+   ],
+   "featured_four": [
+    "Sethos",
+    "Bennett",
+    "Thoma"
+   ],
+   "alongside": [
+    "Caution in Confidence/2024-06-05",
+    "Epitome Invocation/2024-06-05"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2024-06-05",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2024-06-05 11:00:00",
+   "ends_at": "2024-06-25 17:59:00",
+   "featured_five": [
+    "Absolution",
+    "Light of Foliar Incision"
+   ],
+   "featured_four": [
+    "Lithic Spear",
+    "Sacrificial Sword",
+    "Sacrificial Greatsword",
+    "The Widsith",
+    "The Stringless"
+   ],
+   "alongside": [
+    "Illuminating Lightning/2024-06-05",
+    "Caution in Confidence/2024-06-05"
+   ]
+  },
+  {
+   "slug": "Caution in Confidence/2024-06-05",
+   "name": "Caution in Confidence",
+   "kind": "character",
+   "starts_at": "2024-06-05 11:00:00",
+   "ends_at": "2024-06-25 17:59:00",
+   "featured_five": [
+    "Alhaitham"
+   ],
+   "featured_four": [
+    "Sethos",
+    "Bennett",
+    "Thoma"
+   ],
+   "alongside": [
+    "Illuminating Lightning/2024-06-05",
+    "Epitome Invocation/2024-06-05"
+   ]
+  },
+  {
+   "slug": "Immaculate Pulse/2024-05-14",
+   "name": "Immaculate Pulse",
+   "kind": "character",
+   "starts_at": "2024-05-14 18:00:00",
+   "ends_at": "2024-06-04 14:59:00",
+   "featured_five": [
+    "Baizhu"
+   ],
+   "featured_four": [
+    "Beidou",
+    "Faruzan",
+    "Layla"
+   ],
+   "alongside": [
+    "From Ashes Reborn/2024-05-14",
+    "Epitome Invocation/2024-05-14"
+   ]
+  },
+  {
+   "slug": "From Ashes Reborn/2024-05-14",
+   "name": "From Ashes Reborn",
+   "kind": "character",
+   "starts_at": "2024-05-14 18:00:00",
+   "ends_at": "2024-06-04 14:59:00",
+   "featured_five": [
+    "Wanderer"
+   ],
+   "featured_four": [
+    "Beidou",
+    "Faruzan",
+    "Layla"
+   ],
+   "alongside": [
+    "Immaculate Pulse/2024-05-14",
+    "Epitome Invocation/2024-05-14"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2024-05-14",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2024-05-14 18:00:00",
+   "ends_at": "2024-06-04 14:59:00",
+   "featured_five": [
+    "Tulaytullah's Remembrance",
+    "Jadefall's Splendor"
+   ],
+   "featured_four": [
+    "Range Gauge",
+    "Favonius Sword",
+    "Sacrificial Fragments",
+    "Prospector's Drill",
+    "Rainslasher"
+   ],
+   "alongside": [
+    "From Ashes Reborn/2024-05-14",
+    "Immaculate Pulse/2024-05-14"
+   ]
+  },
+  {
+   "slug": "The Hearth's Ashen Shadow/2024-04-24",
+   "name": "The Hearth's Ashen Shadow",
+   "kind": "character",
+   "starts_at": "2024-04-24 11:00:00",
+   "ends_at": "2024-05-14 17:59:59",
+   "featured_five": [
+    "Arlecchino"
+   ],
+   "featured_four": [
+    "Freminet",
+    "Lynette",
+    "Xiangling"
+   ],
+   "alongside": [
+    "Conjuring Chiaroscuro/2024-04-24",
+    "Epitome Invocation/2024-04-24"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2024-04-24",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2024-04-24 11:00:00",
+   "ends_at": "2024-05-14 17:59:59",
+   "featured_five": [
+    "Crimson Moon's Semblance",
+    "The First Great Magic"
+   ],
+   "featured_four": [
+    "The Dockhand's Assistant",
+    "Portable Power Saw",
+    "Dragon's Bane",
+    "Eye of Perception",
+    "Favonius Warbow"
+   ],
+   "alongside": [
+    "The Hearth's Ashen Shadow/2024-04-24",
+    "Conjuring Chiaroscuro/2024-04-24"
+   ]
+  },
+  {
+   "slug": "Conjuring Chiaroscuro/2024-04-24",
+   "name": "Conjuring Chiaroscuro",
+   "kind": "character",
+   "starts_at": "2024-04-24 11:00:00",
+   "ends_at": "2024-05-14 17:59:59",
+   "featured_five": [
+    "Lyney"
+   ],
+   "featured_four": [
+    "Freminet",
+    "Lynette",
+    "Xiangling"
+   ],
+   "alongside": [
+    "The Hearth's Ashen Shadow/2024-04-24",
+    "Epitome Invocation/2024-04-24"
+   ]
+  },
+  {
+   "slug": "Leaves in the Wind/2024-04-02",
+   "name": "Leaves in the Wind",
+   "kind": "character",
+   "starts_at": "2024-04-02 18:00:00",
+   "ends_at": "2024-04-23 14:59:00",
+   "featured_five": [
+    "Kaedehara Kazuha"
+   ],
+   "featured_four": [
+    "Barbara",
+    "Xingqiu",
+    "Yanfei"
+   ],
+   "alongside": [
+    "Decree of the Deeps/2024-04-02",
+    "Epitome Invocation/2024-04-02"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2024-04-02",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2024-04-02 18:00:00",
+   "ends_at": "2024-04-23 14:59:00",
+   "featured_five": [
+    "Tome of the Eternal Flow",
+    "Freedom-Sworn"
+   ],
+   "featured_four": [
+    "Wine and Song",
+    "Mitternachts Waltz",
+    "The Flute",
+    "Favonius Greatsword",
+    "Favonius Lance"
+   ],
+   "alongside": [
+    "Decree of the Deeps/2024-04-02",
+    "Leaves in the Wind/2024-04-02"
+   ]
+  },
+  {
+   "slug": "Decree of the Deeps/2024-04-02",
+   "name": "Decree of the Deeps",
+   "kind": "character",
+   "starts_at": "2024-04-02 18:00:00",
+   "ends_at": "2024-04-23 14:59:00",
+   "featured_five": [
+    "Neuvillette"
+   ],
+   "featured_four": [
+    "Barbara",
+    "Xingqiu",
+    "Yanfei"
+   ],
+   "alongside": [
+    "Leaves in the Wind/2024-04-02",
+    "Epitome Invocation/2024-04-02"
+   ]
+  },
+  {
+   "slug": "Oni's Royale/2024-03-13",
+   "name": "Oni's Royale",
+   "kind": "character",
+   "starts_at": "2024-03-13 11:00:00",
+   "ends_at": "2024-04-02 17:59:59",
+   "featured_five": [
+    "Arataki Itto"
+   ],
+   "featured_four": [
+    "Gorou",
+    "Yun Jin",
+    "Dori"
+   ],
+   "alongside": [
+    "Of Silken Clouds Woven/2024-03-13",
+    "Epitome Invocation/2024-03-13",
+    "Ode to the Dawn Breeze/2024-03-13"
+   ]
+  },
+  {
+   "slug": "Of Silken Clouds Woven/2024-03-13",
+   "name": "Of Silken Clouds Woven",
+   "kind": "character",
+   "starts_at": "2024-03-13 11:00:00",
+   "ends_at": "2024-04-02 17:59:59",
+   "featured_five": [
+    "Chiori"
+   ],
+   "featured_four": [
+    "Gorou",
+    "Yun Jin",
+    "Dori"
+   ],
+   "alongside": [
+    "Oni's Royale/2024-03-13",
+    "Epitome Invocation/2024-03-13",
+    "Ode to the Dawn Breeze/2024-03-13"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2024-03-13",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2024-03-13 11:00:00",
+   "ends_at": "2024-04-02 17:59:59",
+   "featured_five": [
+    "Uraku Misugiri",
+    "Redhorn Stonethresher"
+   ],
+   "featured_four": [
+    "The Alley Flash",
+    "Alley Hunter",
+    "The Bell",
+    "Dragon's Bane",
+    "Favonius Codex"
+   ],
+   "alongside": [
+    "Of Silken Clouds Woven/2024-03-13",
+    "Oni's Royale/2024-03-13",
+    "Ode to the Dawn Breeze/2024-03-13"
+   ]
+  },
+  {
+   "slug": "Invitation to Mundane Life/2024-02-20",
+   "name": "Invitation to Mundane Life",
+   "kind": "character",
+   "starts_at": "2024-02-20 18:00:00",
+   "ends_at": "2024-03-12 14:59:59",
+   "featured_five": [
+    "Xiao"
+   ],
+   "featured_four": [
+    "Yaoyao",
+    "Xinyan",
+    "Ningguang"
+   ],
+   "alongside": [
+    "Everbloom Violet/2024-02-20",
+    "Epitome Invocation/2024-02-20"
+   ]
+  },
+  {
+   "slug": "Everbloom Violet/2024-02-20",
+   "name": "Everbloom Violet",
+   "kind": "character",
+   "starts_at": "2024-02-20 18:00:00",
+   "ends_at": "2024-03-12 14:59:59",
+   "featured_five": [
+    "Yae Miko"
+   ],
+   "featured_four": [
+    "Yaoyao",
+    "Xinyan",
+    "Ningguang"
+   ],
+   "alongside": [
+    "Invitation to Mundane Life/2024-02-20",
+    "Epitome Invocation/2024-02-20"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2024-02-20",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2024-02-20 18:00:00",
+   "ends_at": "2024-03-12 14:59:59",
+   "featured_five": [
+    "Kagura's Verity",
+    "Primordial Jade Winged-Spear"
+   ],
+   "featured_four": [
+    "Lithic Blade",
+    "Lion's Roar",
+    "Favonius Lance",
+    "The Widsith",
+    "The Stringless"
+   ],
+   "alongside": [
+    "Invitation to Mundane Life/2024-02-20",
+    "Everbloom Violet/2024-02-20"
+   ]
+  },
+  {
+   "slug": "The Moongrass' Enlightenment/2024-01-31",
+   "name": "The Moongrass' Enlightenment",
+   "kind": "character",
+   "starts_at": "2024-01-31 11:00:00",
+   "ends_at": "2024-02-20 17:59:59",
+   "featured_five": [
+    "Nahida"
+   ],
+   "featured_four": [
+    "Gaming",
+    "Faruzan",
+    "Noelle"
+   ],
+   "alongside": [
+    "The Crane Soars Skyward/2024-01-31",
+    "Epitome Invocation/2024-01-31"
+   ]
+  },
+  {
+   "slug": "The Crane Soars Skyward/2024-01-31",
+   "name": "The Crane Soars Skyward",
+   "kind": "character",
+   "starts_at": "2024-01-31 11:00:00",
+   "ends_at": "2024-02-20 17:59:59",
+   "featured_five": [
+    "Xianyun"
+   ],
+   "featured_four": [
+    "Gaming",
+    "Faruzan",
+    "Noelle"
+   ],
+   "alongside": [
+    "The Moongrass' Enlightenment/2024-01-31",
+    "Epitome Invocation/2024-01-31"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2024-01-31",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2024-01-31 11:00:00",
+   "ends_at": "2024-02-20 17:59:59",
+   "featured_five": [
+    "Crane's Echoing Call",
+    "A Thousand Floating Dreams"
+   ],
+   "featured_four": [
+    "Lithic Spear",
+    "Sacrificial Sword",
+    "Sacrificial Greatsword",
+    "Sacrificial Fragments",
+    "Sacrificial Bow"
+   ],
+   "alongside": [
+    "The Crane Soars Skyward/2024-01-31",
+    "The Moongrass' Enlightenment/2024-01-31"
+   ]
+  },
+  {
+   "slug": "Tapestry of Golden Flames/2024-01-09",
+   "name": "Tapestry of Golden Flames",
+   "kind": "character",
+   "starts_at": "2024-01-09 18:00:00",
+   "ends_at": "2024-01-30 14:59:59",
+   "featured_five": [
+    "Yoimiya"
+   ],
+   "featured_four": [
+    "Chevreuse",
+    "Kujou Sara",
+    "Bennett"
+   ],
+   "alongside": [
+    "Reign of Serenity/2024-01-09",
+    "Epitome Invocation/2024-01-09"
+   ]
+  },
+  {
+   "slug": "Reign of Serenity/2024-01-09",
+   "name": "Reign of Serenity",
+   "kind": "character",
+   "starts_at": "2024-01-09 18:00:00",
+   "ends_at": "2024-01-30 14:59:59",
+   "featured_five": [
+    "Raiden Shogun"
+   ],
+   "featured_four": [
+    "Chevreuse",
+    "Kujou Sara",
+    "Bennett"
+   ],
+   "alongside": [
+    "Tapestry of Golden Flames/2024-01-09",
+    "Epitome Invocation/2024-01-09"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2024-01-09",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2024-01-09 18:00:00",
+   "ends_at": "2024-01-30 14:59:59",
+   "featured_five": [
+    "Engulfing Lightning",
+    "Thundering Pulse"
+   ],
+   "featured_four": [
+    "Wavebreaker's Fin",
+    "Favonius Sword",
+    "Rainslasher",
+    "Eye of Perception",
+    "Rust"
+   ],
+   "alongside": [
+    "Reign of Serenity/2024-01-09",
+    "Tapestry of Golden Flames/2024-01-09"
+   ]
+  },
+  {
+   "slug": "The Heron's Court/2023-12-20",
+   "name": "The Heron's Court",
+   "kind": "character",
+   "starts_at": "2023-12-20 11:00:00",
+   "ends_at": "2024-01-09 17:59:59",
+   "featured_five": [
+    "Kamisato Ayaka"
+   ],
+   "featured_four": [
+    "Sucrose",
+    "Rosaria",
+    "Candace"
+   ],
+   "alongside": [
+    "In the Name of the Rosula/2023-12-20",
+    "Epitome Invocation/2023-12-20"
+   ]
+  },
+  {
+   "slug": "In the Name of the Rosula/2023-12-20",
+   "name": "In the Name of the Rosula",
+   "kind": "character",
+   "starts_at": "2023-12-20 11:00:00",
+   "ends_at": "2024-01-09 17:59:59",
+   "featured_five": [
+    "Navia"
+   ],
+   "featured_four": [
+    "Sucrose",
+    "Rosaria",
+    "Candace"
+   ],
+   "alongside": [
+    "The Heron's Court/2023-12-20",
+    "Epitome Invocation/2023-12-20"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2023-12-20",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2023-12-20 11:00:00",
+   "ends_at": "2024-01-09 17:59:59",
+   "featured_five": [
+    "Verdict",
+    "Mistsplitter Reforged"
+   ],
+   "featured_four": [
+    "Akuoumaru",
+    "Mouun's Moon",
+    "The Flute",
+    "Dragon's Bane",
+    "Favonius Codex"
+   ],
+   "alongside": [
+    "In the Name of the Rosula/2023-12-20",
+    "The Heron's Court/2023-12-20"
+   ]
+  },
+  {
+   "slug": "Twilight Arbiter/2023-11-28",
+   "name": "Twilight Arbiter",
+   "kind": "character",
+   "starts_at": "2023-11-28 18:00:00",
+   "ends_at": "2023-12-19 14:59:59",
+   "featured_five": [
+    "Cyno"
+   ],
+   "featured_four": [
+    "Kirara",
+    "Kuki Shinobu",
+    "Xiangling"
+   ],
+   "alongside": [
+    "Azure Excursion/2023-11-28",
+    "Epitome Invocation/2023-11-28"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2023-11-28",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2023-11-28 18:00:00",
+   "ends_at": "2023-12-19 14:59:59",
+   "featured_five": [
+    "Staff of the Scarlet Sands",
+    "Haran Geppaku Futsu"
+   ],
+   "featured_four": [
+    "Lion's Roar",
+    "Favonius Greatsword",
+    "Favonius Lance",
+    "The Widsith",
+    "Favonius Warbow"
+   ],
+   "alongside": [
+    "Twilight Arbiter/2023-11-28",
+    "Azure Excursion/2023-11-28"
+   ]
+  },
+  {
+   "slug": "Azure Excursion/2023-11-28",
+   "name": "Azure Excursion",
+   "kind": "character",
+   "starts_at": "2023-11-28 18:00:00",
+   "ends_at": "2023-12-19 14:59:59",
+   "featured_five": [
+    "Kamisato Ayato"
+   ],
+   "featured_four": [
+    "Kirara",
+    "Kuki Shinobu",
+    "Xiangling"
+   ],
+   "alongside": [
+    "Twilight Arbiter/2023-11-28",
+    "Epitome Invocation/2023-11-28"
+   ]
+  },
+  {
+   "slug": "Immaculate Pulse/2023-11-08",
+   "name": "Immaculate Pulse",
+   "kind": "character",
+   "starts_at": "2023-11-08 11:00:00",
+   "ends_at": "2023-11-28 17:59:59",
+   "featured_five": [
+    "Baizhu"
+   ],
+   "featured_four": [
+    "Charlotte",
+    "Collei",
+    "Beidou"
+   ],
+   "alongside": [
+    "Chanson of Many Waters/2023-11-08",
+    "Epitome Invocation/2023-11-08"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2023-11-08",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2023-11-08 11:00:00",
+   "ends_at": "2023-11-28 17:59:59",
+   "featured_five": [
+    "Splendor of Tranquil Waters",
+    "Jadefall's Splendor"
+   ],
+   "featured_four": [
+    "Sacrificial Sword",
+    "The Bell",
+    "Dragon's Bane",
+    "Sacrificial Fragments",
+    "The Stringless"
+   ],
+   "alongside": [
+    "Chanson of Many Waters/2023-11-08",
+    "Immaculate Pulse/2023-11-08"
+   ]
+  },
+  {
+   "slug": "Chanson of Many Waters/2023-11-08",
+   "name": "Chanson of Many Waters",
+   "kind": "character",
+   "starts_at": "2023-11-08 11:00:00",
+   "ends_at": "2023-11-28 17:59:59",
+   "featured_five": [
+    "Furina"
+   ],
+   "featured_four": [
+    "Charlotte",
+    "Collei",
+    "Beidou"
+   ],
+   "alongside": [
+    "Immaculate Pulse/2023-11-08",
+    "Epitome Invocation/2023-11-08"
+   ]
+  },
+  {
+   "slug": "Tempestuous Destiny/2023-10-17",
+   "name": "Tempestuous Destiny",
+   "kind": "character",
+   "starts_at": "2023-10-17 18:00:00",
+   "ends_at": "2023-11-07 14:59:59",
+   "featured_five": [
+    "Wriothesley"
+   ],
+   "featured_four": [
+    "Chongyun",
+    "Thoma",
+    "Dori"
+   ],
+   "alongside": [
+    "Ballad in Goblets/2023-10-17",
+    "Epitome Invocation/2023-10-17"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2023-10-17",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2023-10-17 18:00:00",
+   "ends_at": "2023-11-07 14:59:59",
+   "featured_five": [
+    "Cashflow Supervision",
+    "Elegy for the End"
+   ],
+   "featured_four": [
+    "Prospector's Drill",
+    "Range Gauge",
+    "Favonius Sword",
+    "Rainslasher",
+    "Eye of Perception"
+   ],
+   "alongside": [
+    "Tempestuous Destiny/2023-10-17",
+    "Ballad in Goblets/2023-10-17"
+   ]
+  },
+  {
+   "slug": "Ballad in Goblets/2023-10-17",
+   "name": "Ballad in Goblets",
+   "kind": "character",
+   "starts_at": "2023-10-17 18:00:00",
+   "ends_at": "2023-11-07 14:59:59",
+   "featured_five": [
+    "Venti"
+   ],
+   "featured_four": [
+    "Chongyun",
+    "Thoma",
+    "Dori"
+   ],
+   "alongside": [
+    "Tempestuous Destiny/2023-10-17",
+    "Epitome Invocation/2023-10-17"
+   ]
+  },
+  {
+   "slug": "Moment of Bloom/2023-09-27",
+   "name": "Moment of Bloom",
+   "kind": "character",
+   "starts_at": "2023-09-27 11:00:00",
+   "ends_at": "2023-10-17 17:59:59",
+   "featured_five": [
+    "Hu Tao"
+   ],
+   "featured_four": [
+    "Fischl",
+    "Xingqiu",
+    "Diona"
+   ],
+   "alongside": [
+    "Decree of the Deeps/2023-09-27",
+    "Epitome Invocation/2023-09-27"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2023-09-27",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2023-09-27 11:00:00",
+   "ends_at": "2023-10-17 17:59:59",
+   "featured_five": [
+    "Tome of the Eternal Flow",
+    "Staff of Homa"
+   ],
+   "featured_four": [
+    "The Dockhand's Assistant",
+    "Portable Power Saw",
+    "Mitternachts Waltz",
+    "Favonius Lance",
+    "Favonius Codex"
+   ],
+   "alongside": [
+    "Decree of the Deeps/2023-09-27",
+    "Moment of Bloom/2023-09-27"
+   ]
+  },
+  {
+   "slug": "Decree of the Deeps/2023-09-27",
+   "name": "Decree of the Deeps",
+   "kind": "character",
+   "starts_at": "2023-09-27 11:00:00",
+   "ends_at": "2023-10-17 17:59:59",
+   "featured_five": [
+    "Neuvillette"
+   ],
+   "featured_four": [
+    "Fischl",
+    "Xingqiu",
+    "Diona"
+   ],
+   "alongside": [
+    "Moment of Bloom/2023-09-27",
+    "Epitome Invocation/2023-09-27"
+   ]
+  },
+  {
+   "slug": "Gentry of Hermitage/2023-09-05",
+   "name": "Gentry of Hermitage",
+   "kind": "character",
+   "starts_at": "2023-09-05 18:00:00",
+   "ends_at": "2023-09-26 14:59:59",
+   "featured_five": [
+    "Zhongli"
+   ],
+   "featured_four": [
+    "Freminet",
+    "Sayu",
+    "Noelle"
+   ],
+   "alongside": [
+    "Farewell of Snezhnaya/2023-09-05",
+    "Epitome Invocation/2023-09-05"
+   ]
+  },
+  {
+   "slug": "Farewell of Snezhnaya/2023-09-05",
+   "name": "Farewell of Snezhnaya",
+   "kind": "character",
+   "starts_at": "2023-09-05 18:00:00",
+   "ends_at": "2023-09-26 14:59:59",
+   "featured_five": [
+    "Tartaglia"
+   ],
+   "featured_four": [
+    "Freminet",
+    "Sayu",
+    "Noelle"
+   ],
+   "alongside": [
+    "Gentry of Hermitage/2023-09-05",
+    "Epitome Invocation/2023-09-05"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2023-09-05",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2023-09-05 18:00:00",
+   "ends_at": "2023-09-26 14:59:59",
+   "featured_five": [
+    "Vortex Vanquisher",
+    "Polar Star"
+   ],
+   "featured_four": [
+    "The Flute",
+    "Sacrificial Greatsword",
+    "Dragon's Bane",
+    "The Widsith",
+    "Rust"
+   ],
+   "alongside": [
+    "Gentry of Hermitage/2023-09-05",
+    "Farewell of Snezhnaya/2023-09-05"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2023-08-16",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2023-08-16 11:00:00",
+   "ends_at": "2023-09-05 17:59:59",
+   "featured_five": [
+    "The First Great Magic",
+    "Aqua Simulacra"
+   ],
+   "featured_four": [
+    "Sacrificial Sword",
+    "Favonius Greatsword",
+    "Favonius Lance",
+    "Sacrificial Fragments",
+    "Sacrificial Bow"
+   ],
+   "alongside": [
+    "Conjuring Chiaroscuro/2023-08-16",
+    "Discerner of Enigmas/2023-08-16"
+   ]
+  },
+  {
+   "slug": "Discerner of Enigmas/2023-08-16",
+   "name": "Discerner of Enigmas",
+   "kind": "character",
+   "starts_at": "2023-08-16 11:00:00",
+   "ends_at": "2023-09-05 17:59:59",
+   "featured_five": [
+    "Yelan"
+   ],
+   "featured_four": [
+    "Lynette",
+    "Bennett",
+    "Barbara"
+   ],
+   "alongside": [
+    "Conjuring Chiaroscuro/2023-08-16",
+    "Epitome Invocation/2023-08-16"
+   ]
+  },
+  {
+   "slug": "Conjuring Chiaroscuro/2023-08-16",
+   "name": "Conjuring Chiaroscuro",
+   "kind": "character",
+   "starts_at": "2023-08-16 11:00:00",
+   "ends_at": "2023-09-05 17:59:59",
+   "featured_five": [
+    "Lyney"
+   ],
+   "featured_four": [
+    "Lynette",
+    "Bennett",
+    "Barbara"
+   ],
+   "alongside": [
+    "Discerner of Enigmas/2023-08-16",
+    "Epitome Invocation/2023-08-16"
+   ]
+  },
+  {
+   "slug": "From Ashes Reborn/2023-07-25",
+   "name": "From Ashes Reborn",
+   "kind": "character",
+   "starts_at": "2023-07-25 18:00:00",
+   "ends_at": "2023-08-15 14:59:59",
+   "featured_five": [
+    "Wanderer"
+   ],
+   "featured_four": [
+    "Faruzan",
+    "Rosaria",
+    "Yanfei"
+   ],
+   "alongside": [
+    "Drifting Luminescence/2023-07-25",
+    "Epitome Invocation/2023-07-25"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2023-07-25",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2023-07-25 18:00:00",
+   "ends_at": "2023-08-15 14:59:59",
+   "featured_five": [
+    "Everlasting Moonglow",
+    "Tulaytullah's Remembrance"
+   ],
+   "featured_four": [
+    "Wine and Song",
+    "Lion's Roar",
+    "The Bell",
+    "Dragon's Bane",
+    "Favonius Warbow"
+   ],
+   "alongside": [
+    "Drifting Luminescence/2023-07-25",
+    "From Ashes Reborn/2023-07-25"
+   ]
+  },
+  {
+   "slug": "Drifting Luminescence/2023-07-25",
+   "name": "Drifting Luminescence",
+   "kind": "character",
+   "starts_at": "2023-07-25 18:00:00",
+   "ends_at": "2023-08-15 14:59:59",
+   "featured_five": [
+    "Sangonomiya Kokomi"
+   ],
+   "featured_four": [
+    "Faruzan",
+    "Rosaria",
+    "Yanfei"
+   ],
+   "alongside": [
+    "From Ashes Reborn/2023-07-25",
+    "Epitome Invocation/2023-07-25"
+   ]
+  },
+  {
+   "slug": "Sparkling Steps/2023-07-05",
+   "name": "Sparkling Steps",
+   "kind": "character",
+   "starts_at": "2023-07-05 11:00:00",
+   "ends_at": "2023-07-25 17:59:59",
+   "featured_five": [
+    "Klee"
+   ],
+   "featured_four": [
+    "Mika",
+    "Razor",
+    "Thoma"
+   ],
+   "alongside": [
+    "Born of Ocean Swell/2023-07-05",
+    "Epitome Invocation/2023-07-05"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2023-07-05",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2023-07-05 11:00:00",
+   "ends_at": "2023-07-25 17:59:59",
+   "featured_five": [
+    "Song of Broken Pines",
+    "Lost Prayer to the Sacred Winds"
+   ],
+   "featured_four": [
+    "The Alley Flash",
+    "Alley Hunter",
+    "Rainslasher",
+    "Favonius Lance",
+    "Eye of Perception"
+   ],
+   "alongside": [
+    "Born of Ocean Swell/2023-07-05",
+    "Sparkling Steps/2023-07-05"
+   ]
+  },
+  {
+   "slug": "Born of Ocean Swell/2023-07-05",
+   "name": "Born of Ocean Swell",
+   "kind": "character",
+   "starts_at": "2023-07-05 11:00:00",
+   "ends_at": "2023-07-25 17:59:59",
+   "featured_five": [
+    "Eula"
+   ],
+   "featured_four": [
+    "Mika",
+    "Razor",
+    "Thoma"
+   ],
+   "alongside": [
+    "Sparkling Steps/2023-07-05",
+    "Epitome Invocation/2023-07-05"
+   ]
+  },
+  {
+   "slug": "Leaves in the Wind/2023-06-13",
+   "name": "Leaves in the Wind",
+   "kind": "character",
+   "starts_at": "2023-06-13 18:00:00",
+   "ends_at": "2023-07-04 14:59:59",
+   "featured_five": [
+    "Kaedehara Kazuha"
+   ],
+   "featured_four": [
+    "Shikanoin Heizou",
+    "Xiangling",
+    "Yaoyao"
+   ],
+   "alongside": [
+    "Caution in Confidence/2023-06-13",
+    "Epitome Invocation/2023-06-13"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2023-06-13",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2023-06-13 18:00:00",
+   "ends_at": "2023-07-04 14:59:59",
+   "featured_five": [
+    "Light of Foliar Incision",
+    "Freedom-Sworn"
+   ],
+   "featured_four": [
+    "Favonius Codex",
+    "Favonius Sword",
+    "Mouun's Moon",
+    "Sacrificial Greatsword",
+    "Wavebreaker's Fin"
+   ],
+   "alongside": [
+    "Caution in Confidence/2023-06-13",
+    "Leaves in the Wind/2023-06-13"
+   ]
+  },
+  {
+   "slug": "Caution in Confidence/2023-06-13",
+   "name": "Caution in Confidence",
+   "kind": "character",
+   "starts_at": "2023-06-13 18:00:00",
+   "ends_at": "2023-07-04 14:59:59",
+   "featured_five": [
+    "Alhaitham"
+   ],
+   "featured_four": [
+    "Shikanoin Heizou",
+    "Xiangling",
+    "Yaoyao"
+   ],
+   "alongside": [
+    "Leaves in the Wind/2023-06-13",
+    "Epitome Invocation/2023-06-13"
+   ]
+  },
+  {
+   "slug": "Tapestry of Golden Flames/2023-05-24",
+   "name": "Tapestry of Golden Flames",
+   "kind": "character",
+   "starts_at": "2023-05-24 11:00:00",
+   "ends_at": "2023-06-13 17:59:59",
+   "featured_five": [
+    "Yoimiya"
+   ],
+   "featured_four": [
+    "Kirara",
+    "Yun Jin",
+    "Chongyun"
+   ],
+   "alongside": [
+    "Everbloom Violet/2023-05-24",
+    "Epitome Invocation/2023-05-24"
+   ]
+  },
+  {
+   "slug": "Everbloom Violet/2023-05-24",
+   "name": "Everbloom Violet",
+   "kind": "character",
+   "starts_at": "2023-05-24 11:00:00",
+   "ends_at": "2023-06-13 17:59:59",
+   "featured_five": [
+    "Yae Miko"
+   ],
+   "featured_four": [
+    "Kirara",
+    "Yun Jin",
+    "Chongyun"
+   ],
+   "alongside": [
+    "Tapestry of Golden Flames/2023-05-24",
+    "Epitome Invocation/2023-05-24"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2023-05-24",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2023-05-24 11:00:00",
+   "ends_at": "2023-06-13 17:59:59",
+   "featured_five": [
+    "Thundering Pulse",
+    "Kagura's Verity"
+   ],
+   "featured_four": [
+    "Akuoumaru",
+    "The Flute",
+    "Dragon's Bane",
+    "The Widsith",
+    "Rust"
+   ],
+   "alongside": [
+    "Tapestry of Golden Flames/2023-05-24",
+    "Everbloom Violet/2023-05-24"
+   ]
+  },
+  {
+   "slug": "Immaculate Pulse/2023-05-02",
+   "name": "Immaculate Pulse",
+   "kind": "character",
+   "starts_at": "2023-05-02 18:00:00",
+   "ends_at": "2023-05-23 14:59:59",
+   "featured_five": [
+    "Baizhu"
+   ],
+   "featured_four": [
+    "Kaveh",
+    "Candace",
+    "Fischl"
+   ],
+   "alongside": [
+    "Adrift in the Harbor/2023-05-02",
+    "Epitome Invocation/2023-05-02"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2023-05-02",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2023-05-02 18:00:00",
+   "ends_at": "2023-05-23 14:59:59",
+   "featured_five": [
+    "Jadefall's Splendor",
+    "Amos' Bow"
+   ],
+   "featured_four": [
+    "Makhaira Aquamarine",
+    "Wandering Evenstar",
+    "Lion's Roar",
+    "Favonius Lance",
+    "Sacrificial Bow"
+   ],
+   "alongside": [
+    "Immaculate Pulse/2023-05-02",
+    "Adrift in the Harbor/2023-05-02"
+   ]
+  },
+  {
+   "slug": "Adrift in the Harbor/2023-05-02",
+   "name": "Adrift in the Harbor",
+   "kind": "character",
+   "starts_at": "2023-05-02 18:00:00",
+   "ends_at": "2023-05-23 14:59:59",
+   "featured_five": [
+    "Ganyu"
+   ],
+   "featured_four": [
+    "Kaveh",
+    "Candace",
+    "Fischl"
+   ],
+   "alongside": [
+    "Immaculate Pulse/2023-05-02",
+    "Epitome Invocation/2023-05-02"
+   ]
+  },
+  {
+   "slug": "Twirling Lotus/2023-04-12",
+   "name": "Twirling Lotus",
+   "kind": "character",
+   "starts_at": "2023-04-12 11:00:00",
+   "ends_at": "2023-05-02 17:59:59",
+   "featured_five": [
+    "Nilou"
+   ],
+   "featured_four": [
+    "Kuki Shinobu",
+    "Dori",
+    "Layla"
+   ],
+   "alongside": [
+    "The Moongrass' Enlightenment/2023-04-12",
+    "Epitome Invocation/2023-04-12"
+   ]
+  },
+  {
+   "slug": "The Moongrass' Enlightenment/2023-04-12",
+   "name": "The Moongrass' Enlightenment",
+   "kind": "character",
+   "starts_at": "2023-04-12 11:00:00",
+   "ends_at": "2023-05-02 17:59:59",
+   "featured_five": [
+    "Nahida"
+   ],
+   "featured_four": [
+    "Kuki Shinobu",
+    "Dori",
+    "Layla"
+   ],
+   "alongside": [
+    "Twirling Lotus/2023-04-12",
+    "Epitome Invocation/2023-04-12"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2023-04-12",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2023-04-12 11:00:00",
+   "ends_at": "2023-05-02 17:59:59",
+   "featured_five": [
+    "A Thousand Floating Dreams",
+    "Key of Khaj-Nisut"
+   ],
+   "featured_four": [
+    "Xiphos' Moonlight",
+    "Favonius Greatsword",
+    "Dragon's Bane",
+    "Sacrificial Fragments",
+    "The Stringless"
+   ],
+   "alongside": [
+    "The Moongrass' Enlightenment/2023-04-12",
+    "Twirling Lotus/2023-04-12"
+   ]
+  },
+  {
+   "slug": "The Transcendent One Returns/2023-03-21",
+   "name": "The Transcendent One Returns",
+   "kind": "character",
+   "starts_at": "2023-03-21 18:00:00",
+   "ends_at": "2023-04-11 14:59:59",
+   "featured_five": [
+    "Shenhe"
+   ],
+   "featured_four": [
+    "Diona",
+    "Sucrose",
+    "Mika"
+   ],
+   "alongside": [
+    "The Heron's Court/2023-03-21",
+    "Epitome Invocation/2023-03-21"
+   ]
+  },
+  {
+   "slug": "The Heron's Court/2023-03-21",
+   "name": "The Heron's Court",
+   "kind": "character",
+   "starts_at": "2023-03-21 18:00:00",
+   "ends_at": "2023-04-11 14:59:59",
+   "featured_five": [
+    "Kamisato Ayaka"
+   ],
+   "featured_four": [
+    "Diona",
+    "Sucrose",
+    "Mika"
+   ],
+   "alongside": [
+    "The Transcendent One Returns/2023-03-21",
+    "Epitome Invocation/2023-03-21"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2023-03-21",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2023-03-21 18:00:00",
+   "ends_at": "2023-04-11 14:59:59",
+   "featured_five": [
+    "Calamity Queller",
+    "Mistsplitter Reforged"
+   ],
+   "featured_four": [
+    "Wine and Song",
+    "Sacrificial Sword",
+    "The Bell",
+    "Favonius Lance",
+    "Favonius Warbow"
+   ],
+   "alongside": [
+    "The Transcendent One Returns/2023-03-21",
+    "The Heron's Court/2023-03-21"
+   ]
+  },
+  {
+   "slug": "Twilight Arbiter/2023-03-01",
+   "name": "Twilight Arbiter",
+   "kind": "character",
+   "starts_at": "2023-03-01 11:00:00",
+   "ends_at": "2023-03-21 17:59:59",
+   "featured_five": [
+    "Cyno"
+   ],
+   "featured_four": [
+    "Bennett",
+    "Barbara",
+    "Collei"
+   ],
+   "alongside": [
+    "Auric Blaze/2023-03-01",
+    "Epitome Invocation/2023-03-01"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2023-03-01",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2023-03-01 11:00:00",
+   "ends_at": "2023-03-21 17:59:59",
+   "featured_five": [
+    "Beacon of the Reed Sea",
+    "Staff of the Scarlet Sands"
+   ],
+   "featured_four": [
+    "The Alley Flash",
+    "Alley Hunter",
+    "Sacrificial Greatsword",
+    "Dragon's Bane",
+    "Eye of Perception"
+   ],
+   "alongside": [
+    "Auric Blaze/2023-03-01",
+    "Twilight Arbiter/2023-03-01"
+   ]
+  },
+  {
+   "slug": "Auric Blaze/2023-03-01",
+   "name": "Auric Blaze",
+   "kind": "character",
+   "starts_at": "2023-03-01 11:00:00",
+   "ends_at": "2023-03-21 17:59:59",
+   "featured_five": [
+    "Dehya"
+   ],
+   "featured_four": [
+    "Bennett",
+    "Barbara",
+    "Collei"
+   ],
+   "alongside": [
+    "Twilight Arbiter/2023-03-01",
+    "Epitome Invocation/2023-03-01"
+   ]
+  },
+  {
+   "slug": "Moment of Bloom/2023-02-07",
+   "name": "Moment of Bloom",
+   "kind": "character",
+   "starts_at": "2023-02-07 18:00:00",
+   "ends_at": "2023-02-28 14:59:59",
+   "featured_five": [
+    "Hu Tao"
+   ],
+   "featured_four": [
+    "Xingqiu",
+    "Ningguang",
+    "Beidou"
+   ],
+   "alongside": [
+    "Discerner of Enigmas/2023-02-07",
+    "Epitome Invocation/2023-02-07"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2023-02-07",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2023-02-07 18:00:00",
+   "ends_at": "2023-02-28 14:59:59",
+   "featured_five": [
+    "Staff of Homa",
+    "Aqua Simulacra"
+   ],
+   "featured_four": [
+    "Lithic Blade",
+    "Favonius Sword",
+    "Dragon's Bane",
+    "Favonius Codex",
+    "Rust"
+   ],
+   "alongside": [
+    "Moment of Bloom/2023-02-07",
+    "Discerner of Enigmas/2023-02-07"
+   ]
+  },
+  {
+   "slug": "Discerner of Enigmas/2023-02-07",
+   "name": "Discerner of Enigmas",
+   "kind": "character",
+   "starts_at": "2023-02-07 18:00:00",
+   "ends_at": "2023-02-28 14:59:59",
+   "featured_five": [
+    "Yelan"
+   ],
+   "featured_four": [
+    "Xingqiu",
+    "Ningguang",
+    "Beidou"
+   ],
+   "alongside": [
+    "Moment of Bloom/2023-02-07",
+    "Epitome Invocation/2023-02-07"
+   ]
+  },
+  {
+   "slug": "Invitation to Mundane Life/2023-01-18",
+   "name": "Invitation to Mundane Life",
+   "kind": "character",
+   "starts_at": "2023-01-18 11:00:00",
+   "ends_at": "2023-02-07 17:59:59",
+   "featured_five": [
+    "Xiao"
+   ],
+   "featured_four": [
+    "Yaoyao",
+    "Yun Jin",
+    "Xinyan"
+   ],
+   "alongside": [
+    "Caution in Confidence/2023-01-18",
+    "Epitome Invocation/2023-01-18"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2023-01-18",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2023-01-18 11:00:00",
+   "ends_at": "2023-02-07 17:59:59",
+   "featured_five": [
+    "Light of Foliar Incision",
+    "Primordial Jade Winged-Spear"
+   ],
+   "featured_four": [
+    "Lithic Spear",
+    "The Flute",
+    "Rainslasher",
+    "The Widsith",
+    "Sacrificial Bow"
+   ],
+   "alongside": [
+    "Caution in Confidence/2023-01-18",
+    "Invitation to Mundane Life/2023-01-18"
+   ]
+  },
+  {
+   "slug": "Caution in Confidence/2023-01-18",
+   "name": "Caution in Confidence",
+   "kind": "character",
+   "starts_at": "2023-01-18 11:00:00",
+   "ends_at": "2023-02-07 17:59:59",
+   "featured_five": [
+    "Alhaitham"
+   ],
+   "featured_four": [
+    "Yaoyao",
+    "Yun Jin",
+    "Xinyan"
+   ],
+   "alongside": [
+    "Invitation to Mundane Life/2023-01-18",
+    "Epitome Invocation/2023-01-18"
+   ]
+  },
+  {
+   "slug": "Reign of Serenity/2022-12-27",
+   "name": "Reign of Serenity",
+   "kind": "character",
+   "starts_at": "2022-12-27 18:00:00",
+   "ends_at": "2023-01-17 14:59:59",
+   "featured_five": [
+    "Raiden Shogun"
+   ],
+   "featured_four": [
+    "Rosaria",
+    "Sayu",
+    "Kujou Sara"
+   ],
+   "alongside": [
+    "Azure Excursion/2022-12-27",
+    "Epitome Invocation/2022-12-27"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2022-12-27",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2022-12-27 18:00:00",
+   "ends_at": "2023-01-17 14:59:59",
+   "featured_five": [
+    "Engulfing Lightning",
+    "Haran Geppaku Futsu"
+   ],
+   "featured_four": [
+    "Akuoumaru",
+    "Mouun's Moon",
+    "Lion's Roar",
+    "Favonius Lance",
+    "Sacrificial Fragments"
+   ],
+   "alongside": [
+    "Reign of Serenity/2022-12-27",
+    "Azure Excursion/2022-12-27"
+   ]
+  },
+  {
+   "slug": "Azure Excursion/2022-12-27",
+   "name": "Azure Excursion",
+   "kind": "character",
+   "starts_at": "2022-12-27 18:00:00",
+   "ends_at": "2023-01-17 14:59:59",
+   "featured_five": [
+    "Kamisato Ayato"
+   ],
+   "featured_four": [
+    "Rosaria",
+    "Sayu",
+    "Kujou Sara"
+   ],
+   "alongside": [
+    "Reign of Serenity/2022-12-27",
+    "Epitome Invocation/2022-12-27"
+   ]
+  },
+  {
+   "slug": "Oni's Royale/2022-12-07",
+   "name": "Oni's Royale",
+   "kind": "character",
+   "starts_at": "2022-12-07 11:00:00",
+   "ends_at": "2022-12-27 17:59:59",
+   "featured_five": [
+    "Arataki Itto"
+   ],
+   "featured_four": [
+    "Faruzan",
+    "Gorou",
+    "Yanfei"
+   ],
+   "alongside": [
+    "From Ashes Reborn/2022-12-07",
+    "Epitome Invocation/2022-12-07"
+   ]
+  },
+  {
+   "slug": "From Ashes Reborn/2022-12-07",
+   "name": "From Ashes Reborn",
+   "kind": "character",
+   "starts_at": "2022-12-07 11:00:00",
+   "ends_at": "2022-12-27 17:59:59",
+   "featured_five": [
+    "Wanderer"
+   ],
+   "featured_four": [
+    "Faruzan",
+    "Gorou",
+    "Yanfei"
+   ],
+   "alongside": [
+    "Oni's Royale/2022-12-07",
+    "Epitome Invocation/2022-12-07"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2022-12-07",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2022-12-07 11:00:00",
+   "ends_at": "2022-12-27 17:59:59",
+   "featured_five": [
+    "Tulaytullah's Remembrance",
+    "Redhorn Stonethresher"
+   ],
+   "featured_four": [
+    "Wavebreaker's Fin",
+    "Sacrificial Sword",
+    "Favonius Greatsword",
+    "Eye of Perception",
+    "Favonius Warbow"
+   ],
+   "alongside": [
+    "From Ashes Reborn/2022-12-07",
+    "Oni's Royale/2022-12-07"
+   ]
+  },
+  {
+   "slug": "Farewell of Snezhnaya/2022-11-18",
+   "name": "Farewell of Snezhnaya",
+   "kind": "character",
+   "starts_at": "2022-11-18 18:00:00",
+   "ends_at": "2022-12-06 14:59:59",
+   "featured_five": [
+    "Tartaglia"
+   ],
+   "featured_four": [
+    "Layla",
+    "Thoma",
+    "Shikanoin Heizou"
+   ],
+   "alongside": [
+    "Everbloom Violet/2022-11-18",
+    "Epitome Invocation/2022-11-18"
+   ]
+  },
+  {
+   "slug": "Everbloom Violet/2022-11-18",
+   "name": "Everbloom Violet",
+   "kind": "character",
+   "starts_at": "2022-11-18 18:00:00",
+   "ends_at": "2022-12-06 14:59:59",
+   "featured_five": [
+    "Yae Miko"
+   ],
+   "featured_four": [
+    "Layla",
+    "Thoma",
+    "Shikanoin Heizou"
+   ],
+   "alongside": [
+    "Farewell of Snezhnaya/2022-11-18",
+    "Epitome Invocation/2022-11-18"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2022-11-18",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2022-11-18 18:00:00",
+   "ends_at": "2022-12-06 14:59:59",
+   "featured_five": [
+    "Kagura's Verity",
+    "Polar Star"
+   ],
+   "featured_four": [
+    "Favonius Sword",
+    "The Bell",
+    "Dragon's Bane",
+    "Favonius Codex",
+    "The Stringless"
+   ],
+   "alongside": [
+    "Everbloom Violet/2022-11-18",
+    "Farewell of Snezhnaya/2022-11-18"
+   ]
+  },
+  {
+   "slug": "The Moongrass' Enlightenment/2022-11-02",
+   "name": "The Moongrass' Enlightenment",
+   "kind": "character",
+   "starts_at": "2022-11-02 11:00:00",
+   "ends_at": "2022-11-18 17:59:59",
+   "featured_five": [
+    "Nahida"
+   ],
+   "featured_four": [
+    "Razor",
+    "Noelle",
+    "Bennett"
+   ],
+   "alongside": [
+    "Tapestry of Golden Flames/2022-11-02",
+    "Epitome Invocation/2022-11-02"
+   ]
+  },
+  {
+   "slug": "Tapestry of Golden Flames/2022-11-02",
+   "name": "Tapestry of Golden Flames",
+   "kind": "character",
+   "starts_at": "2022-11-02 11:00:00",
+   "ends_at": "2022-11-18 17:59:59",
+   "featured_five": [
+    "Yoimiya"
+   ],
+   "featured_four": [
+    "Razor",
+    "Noelle",
+    "Bennett"
+   ],
+   "alongside": [
+    "The Moongrass' Enlightenment/2022-11-02",
+    "Epitome Invocation/2022-11-02"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2022-11-02",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2022-11-02 11:00:00",
+   "ends_at": "2022-11-18 17:59:59",
+   "featured_five": [
+    "A Thousand Floating Dreams",
+    "Thundering Pulse"
+   ],
+   "featured_four": [
+    "The Flute",
+    "Sacrificial Greatsword",
+    "Favonius Lance",
+    "The Widsith",
+    "Rust"
+   ],
+   "alongside": [
+    "The Moongrass' Enlightenment/2022-11-02",
+    "Tapestry of Golden Flames/2022-11-02"
+   ]
+  },
+  {
+   "slug": "Twirling Lotus/2022-10-14",
+   "name": "Twirling Lotus",
+   "kind": "character",
+   "starts_at": "2022-10-14 18:00:00",
+   "ends_at": "2022-11-01 14:59:59",
+   "featured_five": [
+    "Nilou"
+   ],
+   "featured_four": [
+    "Barbara",
+    "Beidou",
+    "Xiangling"
+   ],
+   "alongside": [
+    "Secretum Secretorum/2022-10-14",
+    "Epitome Invocation/2022-10-14"
+   ]
+  },
+  {
+   "slug": "Secretum Secretorum/2022-10-14",
+   "name": "Secretum Secretorum",
+   "kind": "character",
+   "starts_at": "2022-10-14 18:00:00",
+   "ends_at": "2022-11-01 14:59:59",
+   "featured_five": [
+    "Albedo"
+   ],
+   "featured_four": [
+    "Barbara",
+    "Beidou",
+    "Xiangling"
+   ],
+   "alongside": [
+    "Twirling Lotus/2022-10-14",
+    "Epitome Invocation/2022-10-14"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2022-10-14",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2022-10-14 18:00:00",
+   "ends_at": "2022-11-01 14:59:59",
+   "featured_five": [
+    "Key of Khaj-Nisut",
+    "Primordial Jade Cutter"
+   ],
+   "featured_four": [
+    "Xiphos' Moonlight",
+    "Wandering Evenstar",
+    "Rainslasher",
+    "Dragon's Bane",
+    "Sacrificial Bow"
+   ],
+   "alongside": [
+    "Twirling Lotus/2022-10-14",
+    "Secretum Secretorum/2022-10-14"
+   ]
+  },
+  {
+   "slug": "Twilight Arbiter/2022-09-28",
+   "name": "Twilight Arbiter",
+   "kind": "character",
+   "starts_at": "2022-09-28 11:00:00",
+   "ends_at": "2022-10-14 17:59:59",
+   "featured_five": [
+    "Cyno"
+   ],
+   "featured_four": [
+    "Candace",
+    "Kuki Shinobu",
+    "Sayu"
+   ],
+   "alongside": [
+    "Ballad in Goblets/2022-09-28",
+    "Epitome Invocation/2022-09-28"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2022-09-28",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2022-09-28 11:00:00",
+   "ends_at": "2022-10-14 17:59:59",
+   "featured_five": [
+    "Staff of the Scarlet Sands",
+    "Elegy for the End"
+   ],
+   "featured_four": [
+    "Makhaira Aquamarine",
+    "Lion's Roar",
+    "Favonius Lance",
+    "Sacrificial Fragments",
+    "Favonius Warbow"
+   ],
+   "alongside": [
+    "Twilight Arbiter/2022-09-28",
+    "Ballad in Goblets/2022-09-28"
+   ]
+  },
+  {
+   "slug": "Ballad in Goblets/2022-09-28",
+   "name": "Ballad in Goblets",
+   "kind": "character",
+   "starts_at": "2022-09-28 11:00:00",
+   "ends_at": "2022-10-14 17:59:59",
+   "featured_five": [
+    "Venti"
+   ],
+   "featured_four": [
+    "Candace",
+    "Kuki Shinobu",
+    "Sayu"
+   ],
+   "alongside": [
+    "Twilight Arbiter/2022-09-28",
+    "Epitome Invocation/2022-09-28"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2022-09-09",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2022-09-09 18:00:00",
+   "ends_at": "2022-09-27 14:59:59",
+   "featured_five": [
+    "Everlasting Moonglow",
+    "Amos' Bow"
+   ],
+   "featured_four": [
+    "Sacrificial Sword",
+    "Favonius Greatsword",
+    "Dragon's Bane",
+    "Eye of Perception",
+    "Rust"
+   ],
+   "alongside": [
+    "Drifting Luminescence/2022-09-09",
+    "Adrift in the Harbor/2022-09-09"
+   ]
+  },
+  {
+   "slug": "Drifting Luminescence/2022-09-09",
+   "name": "Drifting Luminescence",
+   "kind": "character",
+   "starts_at": "2022-09-09 18:00:00",
+   "ends_at": "2022-09-27 14:59:59",
+   "featured_five": [
+    "Sangonomiya Kokomi"
+   ],
+   "featured_four": [
+    "Dori",
+    "Sucrose",
+    "Xingqiu"
+   ],
+   "alongside": [
+    "Adrift in the Harbor/2022-09-09",
+    "Epitome Invocation/2022-09-09"
+   ]
+  },
+  {
+   "slug": "Adrift in the Harbor/2022-09-09",
+   "name": "Adrift in the Harbor",
+   "kind": "character",
+   "starts_at": "2022-09-09 18:00:00",
+   "ends_at": "2022-09-27 14:59:59",
+   "featured_five": [
+    "Ganyu"
+   ],
+   "featured_four": [
+    "Dori",
+    "Sucrose",
+    "Xingqiu"
+   ],
+   "alongside": [
+    "Drifting Luminescence/2022-09-09",
+    "Epitome Invocation/2022-09-09"
+   ]
+  },
+  {
+   "slug": "Viridescent Vigil/2022-08-24",
+   "name": "Viridescent Vigil",
+   "kind": "character",
+   "starts_at": "2022-08-24 11:00:00",
+   "ends_at": "2022-09-09 17:59:59",
+   "featured_five": [
+    "Tighnari"
+   ],
+   "featured_four": [
+    "Collei",
+    "Diona",
+    "Fischl"
+   ],
+   "alongside": [
+    "Gentry of Hermitage/2022-08-24",
+    "Epitome Invocation/2022-08-24"
+   ]
+  },
+  {
+   "slug": "Gentry of Hermitage/2022-08-24",
+   "name": "Gentry of Hermitage",
+   "kind": "character",
+   "starts_at": "2022-08-24 11:00:00",
+   "ends_at": "2022-09-09 17:59:59",
+   "featured_five": [
+    "Zhongli"
+   ],
+   "featured_four": [
+    "Collei",
+    "Diona",
+    "Fischl"
+   ],
+   "alongside": [
+    "Viridescent Vigil/2022-08-24",
+    "Epitome Invocation/2022-08-24"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2022-08-24",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2022-08-24 11:00:00",
+   "ends_at": "2022-09-09 17:59:59",
+   "featured_five": [
+    "Hunter's Path",
+    "Vortex Vanquisher"
+   ],
+   "featured_four": [
+    "Favonius Sword",
+    "The Bell",
+    "Favonius Lance",
+    "Favonius Codex",
+    "The Stringless"
+   ],
+   "alongside": [
+    "Viridescent Vigil/2022-08-24",
+    "Gentry of Hermitage/2022-08-24"
+   ]
+  },
+  {
+   "slug": "Tapestry of Golden Flames/2022-08-02",
+   "name": "Tapestry of Golden Flames",
+   "kind": "character",
+   "starts_at": "2022-08-02 18:00:00",
+   "ends_at": "2022-08-23 14:59:59",
+   "featured_five": [
+    "Yoimiya"
+   ],
+   "featured_four": [
+    "Bennett",
+    "Xinyan",
+    "Yun Jin"
+   ],
+   "alongside": [
+    "Epitome Invocation/2022-08-02"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2022-08-02",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2022-08-02 18:00:00",
+   "ends_at": "2022-08-23 14:59:59",
+   "featured_five": [
+    "Thundering Pulse",
+    "Summit Shaper"
+   ],
+   "featured_four": [
+    "Wine and Song",
+    "Alley Hunter",
+    "The Flute",
+    "Sacrificial Greatsword",
+    "Dragon's Bane"
+   ],
+   "alongside": [
+    "Tapestry of Golden Flames/2022-08-02"
+   ]
+  },
+  {
+   "slug": "Sparkling Steps/2022-07-13",
+   "name": "Sparkling Steps",
+   "kind": "character",
+   "starts_at": "2022-07-13 11:00:00",
+   "ends_at": "2022-08-02 17:59:59",
+   "featured_five": [
+    "Klee"
+   ],
+   "featured_four": [
+    "Shikanoin Heizou",
+    "Ningguang",
+    "Thoma"
+   ],
+   "alongside": [
+    "Leaves in the Wind/2022-07-13",
+    "Epitome Invocation/2022-07-13"
+   ]
+  },
+  {
+   "slug": "Leaves in the Wind/2022-07-13",
+   "name": "Leaves in the Wind",
+   "kind": "character",
+   "starts_at": "2022-07-13 11:00:00",
+   "ends_at": "2022-08-02 17:59:59",
+   "featured_five": [
+    "Kaedehara Kazuha"
+   ],
+   "featured_four": [
+    "Shikanoin Heizou",
+    "Ningguang",
+    "Thoma"
+   ],
+   "alongside": [
+    "Sparkling Steps/2022-07-13",
+    "Epitome Invocation/2022-07-13"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2022-07-13",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2022-07-13 11:00:00",
+   "ends_at": "2022-08-02 17:59:59",
+   "featured_five": [
+    "Freedom-Sworn",
+    "Lost Prayer to the Sacred Winds"
+   ],
+   "featured_four": [
+    "The Alley Flash",
+    "Mitternachts Waltz",
+    "Rainslasher",
+    "Favonius Lance",
+    "The Widsith"
+   ],
+   "alongside": [
+    "Leaves in the Wind/2022-07-13",
+    "Sparkling Steps/2022-07-13"
+   ]
+  },
+  {
+   "slug": "Oni's Royale/2022-06-21",
+   "name": "Oni's Royale",
+   "kind": "character",
+   "starts_at": "2022-06-21 18:00:00",
+   "ends_at": "2022-07-12 14:59:59",
+   "featured_five": [
+    "Arataki Itto"
+   ],
+   "featured_four": [
+    "Kuki Shinobu",
+    "Chongyun",
+    "Gorou"
+   ],
+   "alongside": [
+    "Epitome Invocation/2022-06-21"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2022-06-21",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2022-06-21 18:00:00",
+   "ends_at": "2022-07-12 14:59:59",
+   "featured_five": [
+    "Redhorn Stonethresher",
+    "Memory of Dust"
+   ],
+   "featured_four": [
+    "Lithic Blade",
+    "Lion's Roar",
+    "Dragon's Bane",
+    "Sacrificial Fragments",
+    "The Stringless"
+   ],
+   "alongside": [
+    "Oni's Royale/2022-06-21"
+   ]
+  },
+  {
+   "slug": "Invitation to Mundane Life/2022-05-31",
+   "name": "Invitation to Mundane Life",
+   "kind": "character",
+   "starts_at": "2022-05-31 11:00:00",
+   "ends_at": "2022-06-21 17:59:00",
+   "featured_five": [
+    "Xiao"
+   ],
+   "featured_four": [
+    "Barbara",
+    "Yanfei",
+    "Noelle"
+   ],
+   "alongside": [
+    "Discerner of Enigmas/2022-05-31",
+    "Epitome Invocation/2022-05-31"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2022-05-31",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2022-05-31 11:00:00",
+   "ends_at": "2022-06-21 17:59:00",
+   "featured_five": [
+    "Aqua Simulacra",
+    "Primordial Jade Winged-Spear"
+   ],
+   "featured_four": [
+    "Lithic Spear",
+    "Eye of Perception",
+    "Favonius Greatsword",
+    "Sacrificial Bow",
+    "Sacrificial Sword"
+   ],
+   "alongside": [
+    "Discerner of Enigmas/2022-05-31",
+    "Invitation to Mundane Life/2022-05-31"
+   ]
+  },
+  {
+   "slug": "Discerner of Enigmas/2022-05-31",
+   "name": "Discerner of Enigmas",
+   "kind": "character",
+   "starts_at": "2022-05-31 11:00:00",
+   "ends_at": "2022-06-21 17:59:00",
+   "featured_five": [
+    "Yelan"
+   ],
+   "featured_four": [
+    "Barbara",
+    "Yanfei",
+    "Noelle"
+   ],
+   "alongside": [
+    "Invitation to Mundane Life/2022-05-31",
+    "Epitome Invocation/2022-05-31"
+   ]
+  },
+  {
+   "slug": "The Heron's Court/2022-04-19",
+   "name": "The Heron's Court",
+   "kind": "character",
+   "starts_at": "2022-04-19 18:00:00",
+   "ends_at": "2022-05-31 05:59:59",
+   "featured_five": [
+    "Kamisato Ayaka"
+   ],
+   "featured_four": [
+    "Razor",
+    "Rosaria",
+    "Sayu"
+   ],
+   "alongside": [
+    "Epitome Invocation/2022-04-19"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2022-04-19",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2022-04-19 18:00:00",
+   "ends_at": "2022-05-31 05:59:59",
+   "featured_five": [
+    "Mistsplitter Reforged",
+    "The Unforged"
+   ],
+   "featured_four": [
+    "Favonius Sword",
+    "The Bell",
+    "Favonius Lance",
+    "Favonius Codex",
+    "Favonius Warbow"
+   ],
+   "alongside": [
+    "The Heron's Court/2022-04-19"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2022-03-30",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2022-03-30 11:00:00",
+   "ends_at": "2022-04-19 17:59:59",
+   "featured_five": [
+    "Haran Geppaku Futsu",
+    "Elegy for the End"
+   ],
+   "featured_four": [
+    "The Flute",
+    "Sacrificial Greatsword",
+    "Dragon's Bane",
+    "The Widsith",
+    "Rust"
+   ],
+   "alongside": [
+    "Azure Excursion/2022-03-30",
+    "Ballad in Goblets/2022-03-30"
+   ]
+  },
+  {
+   "slug": "Ballad in Goblets/2022-03-30",
+   "name": "Ballad in Goblets",
+   "kind": "character",
+   "starts_at": "2022-03-30 11:00:00",
+   "ends_at": "2022-04-19 17:59:00",
+   "featured_five": [
+    "Venti"
+   ],
+   "featured_four": [
+    "Sucrose",
+    "Xiangling",
+    "Yun Jin"
+   ],
+   "alongside": [
+    "Azure Excursion/2022-03-30",
+    "Epitome Invocation/2022-03-30"
+   ]
+  },
+  {
+   "slug": "Azure Excursion/2022-03-30",
+   "name": "Azure Excursion",
+   "kind": "character",
+   "starts_at": "2022-03-30 11:00:00",
+   "ends_at": "2022-04-19 17:59:00",
+   "featured_five": [
+    "Kamisato Ayato"
+   ],
+   "featured_four": [
+    "Sucrose",
+    "Xiangling",
+    "Yun Jin"
+   ],
+   "alongside": [
+    "Ballad in Goblets/2022-03-30",
+    "Epitome Invocation/2022-03-30"
+   ]
+  },
+  {
+   "slug": "Reign of Serenity/2022-03-08",
+   "name": "Reign of Serenity",
+   "kind": "character",
+   "starts_at": "2022-03-08 18:00:00",
+   "ends_at": "2022-03-29 14:59:59",
+   "featured_five": [
+    "Raiden Shogun"
+   ],
+   "featured_four": [
+    "Bennett",
+    "Xinyan",
+    "Kujou Sara"
+   ],
+   "alongside": [
+    "Drifting Luminescence/2022-03-08",
+    "Epitome Invocation/2022-03-08"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2022-03-08",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2022-03-08 18:00:00",
+   "ends_at": "2022-03-29 14:59:59",
+   "featured_five": [
+    "Engulfing Lightning",
+    "Everlasting Moonglow"
+   ],
+   "featured_four": [
+    "Akuoumaru",
+    "Mouun's Moon",
+    "Lion's Roar",
+    "Favonius Lance",
+    "Sacrificial Fragments"
+   ],
+   "alongside": [
+    "Reign of Serenity/2022-03-08",
+    "Drifting Luminescence/2022-03-08"
+   ]
+  },
+  {
+   "slug": "Drifting Luminescence/2022-03-08",
+   "name": "Drifting Luminescence",
+   "kind": "character",
+   "starts_at": "2022-03-08 18:00:00",
+   "ends_at": "2022-03-29 14:59:59",
+   "featured_five": [
+    "Sangonomiya Kokomi"
+   ],
+   "featured_four": [
+    "Bennett",
+    "Xinyan",
+    "Kujou Sara"
+   ],
+   "alongside": [
+    "Reign of Serenity/2022-03-08",
+    "Epitome Invocation/2022-03-08"
+   ]
+  },
+  {
+   "slug": "Everbloom Violet/2022-02-16",
+   "name": "Everbloom Violet",
+   "kind": "character",
+   "starts_at": "2022-02-16 11:00:00",
+   "ends_at": "2022-03-08 17:59:59",
+   "featured_five": [
+    "Yae Miko"
+   ],
+   "featured_four": [
+    "Fischl",
+    "Diona",
+    "Thoma"
+   ],
+   "alongside": [
+    "Epitome Invocation/2022-02-16"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2022-02-16",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2022-02-16 11:00:00",
+   "ends_at": "2022-03-08 17:59:59",
+   "featured_five": [
+    "Kagura's Verity",
+    "Primordial Jade Cutter"
+   ],
+   "featured_four": [
+    "Wavebreaker's Fin",
+    "Sacrificial Sword",
+    "Rainslasher",
+    "Eye of Perception",
+    "The Stringless"
+   ],
+   "alongside": [
+    "Everbloom Violet/2022-02-16"
+   ]
+  },
+  {
+   "slug": "Gentry of Hermitage/2022-01-25",
+   "name": "Gentry of Hermitage",
+   "kind": "character",
+   "starts_at": "2022-01-25 18:00:00",
+   "ends_at": "2022-02-15 14:59:59",
+   "featured_five": [
+    "Zhongli"
+   ],
+   "featured_four": [
+    "Xingqiu",
+    "Beidou",
+    "Yanfei"
+   ],
+   "alongside": [
+    "Adrift in the Harbor/2022-01-25",
+    "Epitome Invocation/2022-01-25"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2022-01-25",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2022-01-25 18:00:00",
+   "ends_at": "2022-02-15 14:59:59",
+   "featured_five": [
+    "Vortex Vanquisher",
+    "Amos' Bow"
+   ],
+   "featured_four": [
+    "Lithic Blade",
+    "Favonius Sword",
+    "Dragon's Bane",
+    "Favonius Codex",
+    "Sacrificial Bow"
+   ],
+   "alongside": [
+    "Gentry of Hermitage/2022-01-25",
+    "Adrift in the Harbor/2022-01-25"
+   ]
+  },
+  {
+   "slug": "Adrift in the Harbor/2022-01-25",
+   "name": "Adrift in the Harbor",
+   "kind": "character",
+   "starts_at": "2022-01-25 18:00:00",
+   "ends_at": "2022-02-15 14:59:59",
+   "featured_five": [
+    "Ganyu"
+   ],
+   "featured_four": [
+    "Xingqiu",
+    "Beidou",
+    "Yanfei"
+   ],
+   "alongside": [
+    "Gentry of Hermitage/2022-01-25",
+    "Epitome Invocation/2022-01-25"
+   ]
+  },
+  {
+   "slug": "The Transcendent One Returns/2022-01-05",
+   "name": "The Transcendent One Returns",
+   "kind": "character",
+   "starts_at": "2022-01-05 11:00:00",
+   "ends_at": "2022-01-25 17:59:59",
+   "featured_five": [
+    "Shenhe"
+   ],
+   "featured_four": [
+    "Yun Jin",
+    "Ningguang",
+    "Chongyun"
+   ],
+   "alongside": [
+    "Invitation to Mundane Life/2022-01-05",
+    "Epitome Invocation/2022-01-05"
+   ]
+  },
+  {
+   "slug": "Invitation to Mundane Life/2022-01-05",
+   "name": "Invitation to Mundane Life",
+   "kind": "character",
+   "starts_at": "2022-01-05 11:00:00",
+   "ends_at": "2022-01-25 17:59:59",
+   "featured_five": [
+    "Xiao"
+   ],
+   "featured_four": [
+    "Yun Jin",
+    "Ningguang",
+    "Chongyun"
+   ],
+   "alongside": [
+    "The Transcendent One Returns/2022-01-05",
+    "Epitome Invocation/2022-01-05"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2022-01-05",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2022-01-05 11:00:00",
+   "ends_at": "2022-01-25 17:59:59",
+   "featured_five": [
+    "Calamity Queller",
+    "Primordial Jade Winged-Spear"
+   ],
+   "featured_four": [
+    "Lithic Spear",
+    "The Flute",
+    "Favonius Greatsword",
+    "The Widsith",
+    "Favonius Warbow"
+   ],
+   "alongside": [
+    "The Transcendent One Returns/2022-01-05",
+    "Invitation to Mundane Life/2022-01-05"
+   ]
+  },
+  {
+   "slug": "Oni's Royale/2021-12-14",
+   "name": "Oni's Royale",
+   "kind": "character",
+   "starts_at": "2021-12-14 18:00:00",
+   "ends_at": "2022-01-04 14:59:59",
+   "featured_five": [
+    "Arataki Itto"
+   ],
+   "featured_four": [
+    "Gorou",
+    "Barbara",
+    "Xiangling"
+   ],
+   "alongside": [
+    "Epitome Invocation/2021-12-14"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2021-12-14",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2021-12-14 18:00:00",
+   "ends_at": "2022-01-04 14:59:59",
+   "featured_five": [
+    "Redhorn Stonethresher",
+    "Skyward Harp"
+   ],
+   "featured_four": [
+    "The Alley Flash",
+    "Mitternachts Waltz",
+    "The Bell",
+    "Favonius Lance",
+    "Sacrificial Fragments"
+   ],
+   "alongside": [
+    "Oni's Royale/2021-12-14"
+   ]
+  },
+  {
+   "slug": "Secretum Secretorum/2021-11-24",
+   "name": "Secretum Secretorum",
+   "kind": "character",
+   "starts_at": "2021-11-24 11:00:00",
+   "ends_at": "2021-12-14 17:59:59",
+   "featured_five": [
+    "Albedo"
+   ],
+   "featured_four": [
+    "Bennett",
+    "Noelle",
+    "Rosaria"
+   ],
+   "alongside": [
+    "Born of Ocean Swell/2021-11-24",
+    "Epitome Invocation/2021-11-24"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2021-11-24",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2021-11-24 11:00:00",
+   "ends_at": "2021-12-14 17:59:59",
+   "featured_five": [
+    "Freedom-Sworn",
+    "Song of Broken Pines"
+   ],
+   "featured_four": [
+    "Wine and Song",
+    "Alley Hunter",
+    "Lion's Roar",
+    "Sacrificial Greatsword",
+    "Dragon's Bane"
+   ],
+   "alongside": [
+    "Secretum Secretorum/2021-11-24",
+    "Born of Ocean Swell/2021-11-24"
+   ]
+  },
+  {
+   "slug": "Born of Ocean Swell/2021-11-24",
+   "name": "Born of Ocean Swell",
+   "kind": "character",
+   "starts_at": "2021-11-24 11:00:00",
+   "ends_at": "2021-12-14 17:59:59",
+   "featured_five": [
+    "Eula"
+   ],
+   "featured_four": [
+    "Bennett",
+    "Noelle",
+    "Rosaria"
+   ],
+   "alongside": [
+    "Secretum Secretorum/2021-11-24",
+    "Epitome Invocation/2021-11-24"
+   ]
+  },
+  {
+   "slug": "Moment of Bloom/2021-11-02",
+   "name": "Moment of Bloom",
+   "kind": "character",
+   "starts_at": "2021-11-02 18:00:00",
+   "ends_at": "2021-11-23 14:59:59",
+   "featured_five": [
+    "Hu Tao"
+   ],
+   "featured_four": [
+    "Thoma",
+    "Diona",
+    "Sayu"
+   ],
+   "alongside": [
+    "Epitome Invocation/2021-11-02"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2021-11-02",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2021-11-02 18:00:00",
+   "ends_at": "2021-11-23 14:59:59",
+   "featured_five": [
+    "Staff of Homa",
+    "Elegy for the End"
+   ],
+   "featured_four": [
+    "Wavebreaker's Fin",
+    "Mouun's Moon",
+    "Sacrificial Sword",
+    "Rainslasher",
+    "The Widsith"
+   ],
+   "alongside": [
+    "Moment of Bloom/2021-11-02"
+   ]
+  },
+  {
+   "slug": "Farewell of Snezhnaya/2021-10-13",
+   "name": "Farewell of Snezhnaya",
+   "kind": "character",
+   "starts_at": "2021-10-13 11:00:00",
+   "ends_at": "2021-11-02 17:59:59",
+   "featured_five": [
+    "Tartaglia"
+   ],
+   "featured_four": [
+    "Ningguang",
+    "Chongyun",
+    "Yanfei"
+   ],
+   "alongside": [
+    "Epitome Invocation/2021-10-13"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2021-10-13",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2021-10-13 11:00:00",
+   "ends_at": "2021-11-02 17:59:00",
+   "featured_five": [
+    "Polar Star",
+    "Memory of Dust"
+   ],
+   "featured_four": [
+    "Akuoumaru",
+    "Favonius Sword",
+    "Favonius Lance",
+    "Eye of Perception",
+    "Rust"
+   ],
+   "alongside": [
+    "Farewell of Snezhnaya/2021-10-13"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2021-09-21",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2021-09-21 18:00:00",
+   "ends_at": "2021-10-12 14:59:00",
+   "featured_five": [
+    "Everlasting Moonglow",
+    "Primordial Jade Cutter"
+   ],
+   "featured_four": [
+    "The Flute",
+    "Favonius Greatsword",
+    "Dragon's Bane",
+    "Favonius Codex",
+    "The Stringless"
+   ],
+   "alongside": [
+    "Drifting Luminescence/2021-09-21"
+   ]
+  },
+  {
+   "slug": "Drifting Luminescence/2021-09-21",
+   "name": "Drifting Luminescence",
+   "kind": "character",
+   "starts_at": "2021-09-21 18:00:00",
+   "ends_at": "2021-10-12 14:59:59",
+   "featured_five": [
+    "Sangonomiya Kokomi"
+   ],
+   "featured_four": [
+    "Rosaria",
+    "Beidou",
+    "Xingqiu"
+   ],
+   "alongside": [
+    "Epitome Invocation/2021-09-21"
+   ]
+  },
+  {
+   "slug": "Reign of Serenity/2021-09-01",
+   "name": "Reign of Serenity",
+   "kind": "character",
+   "starts_at": "2021-09-01 11:00:00",
+   "ends_at": "2021-09-21 17:59:59",
+   "featured_five": [
+    "Raiden Shogun"
+   ],
+   "featured_four": [
+    "Kujou Sara",
+    "Xiangling",
+    "Sucrose"
+   ],
+   "alongside": [
+    "Epitome Invocation/2021-09-01"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2021-09-01",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2021-09-01 11:00:00",
+   "ends_at": "2021-09-21 17:59:00",
+   "featured_five": [
+    "Engulfing Lightning",
+    "The Unforged"
+   ],
+   "featured_four": [
+    "Lion's Roar",
+    "The Bell",
+    "Favonius Lance",
+    "The Widsith",
+    "Sacrificial Bow"
+   ],
+   "alongside": [
+    "Reign of Serenity/2021-09-01"
+   ]
+  },
+  {
+   "slug": "Tapestry of Golden Flames/2021-08-10",
+   "name": "Tapestry of Golden Flames",
+   "kind": "character",
+   "starts_at": "2021-08-10 18:00:00",
+   "ends_at": "2021-08-31 14:59:59",
+   "featured_five": [
+    "Yoimiya"
+   ],
+   "featured_four": [
+    "Sayu",
+    "Diona",
+    "Xinyan"
+   ],
+   "alongside": [
+    "Epitome Invocation/2021-08-10"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2021-08-10",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2021-08-10 18:00:00",
+   "ends_at": "2021-08-31 14:59:59",
+   "featured_five": [
+    "Thundering Pulse",
+    "Skyward Blade"
+   ],
+   "featured_four": [
+    "Sacrificial Sword",
+    "Rainslasher",
+    "Dragon's Bane",
+    "Sacrificial Fragments",
+    "Favonius Warbow"
+   ],
+   "alongside": [
+    "Tapestry of Golden Flames/2021-08-10"
+   ]
+  },
+  {
+   "slug": "The Heron's Court/2021-07-21",
+   "name": "The Heron's Court",
+   "kind": "character",
+   "starts_at": "2021-07-21 11:00:00",
+   "ends_at": "2021-08-10 17:59:59",
+   "featured_five": [
+    "Kamisato Ayaka"
+   ],
+   "featured_four": [
+    "Ningguang",
+    "Chongyun",
+    "Yanfei"
+   ],
+   "alongside": [
+    "Epitome Invocation/2021-07-21"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2021-07-21",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2021-07-21 11:00:00",
+   "ends_at": "2021-08-10 17:59:00",
+   "featured_five": [
+    "Mistsplitter Reforged",
+    "Skyward Spine"
+   ],
+   "featured_four": [
+    "Sacrificial Greatsword",
+    "Favonius Lance",
+    "Favonius Codex",
+    "Favonius Sword",
+    "The Stringless"
+   ],
+   "alongside": [
+    "The Heron's Court/2021-07-21"
+   ]
+  },
+  {
+   "slug": "Leaves in the Wind/2021-06-29",
+   "name": "Leaves in the Wind",
+   "kind": "character",
+   "starts_at": "2021-06-29 18:00:00",
+   "ends_at": "2021-07-20 14:59:59",
+   "featured_five": [
+    "Kaedehara Kazuha"
+   ],
+   "featured_four": [
+    "Rosaria",
+    "Bennett",
+    "Razor"
+   ],
+   "alongside": [
+    "Epitome Invocation/2021-06-29"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2021-06-29",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2021-06-29 18:00:00",
+   "ends_at": "2021-07-20 14:59:59",
+   "featured_five": [
+    "Freedom-Sworn",
+    "Skyward Atlas"
+   ],
+   "featured_four": [
+    "The Alley Flash",
+    "Wine and Song",
+    "Alley Hunter",
+    "Dragon's Bane",
+    "Favonius Greatsword"
+   ],
+   "alongside": [
+    "Leaves in the Wind/2021-06-29"
+   ]
+  },
+  {
+   "slug": "Sparkling Steps/2021-06-09",
+   "name": "Sparkling Steps",
+   "kind": "character",
+   "starts_at": "2021-06-09 11:00:00",
+   "ends_at": "2021-06-29 17:59:00",
+   "featured_five": [
+    "Klee"
+   ],
+   "featured_four": [
+    "Barbara",
+    "Sucrose",
+    "Fischl"
+   ],
+   "alongside": [
+    "Epitome Invocation/2021-06-09"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2021-06-09",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2021-06-09 11:00:00",
+   "ends_at": "2021-06-29 17:59:00",
+   "featured_five": [
+    "Skyward Pride",
+    "Lost Prayer to the Sacred Winds"
+   ],
+   "featured_four": [
+    "Mitternachts Waltz",
+    "Lion's Roar",
+    "The Bell",
+    "Favonius Lance",
+    "The Widsith"
+   ],
+   "alongside": [
+    "Sparkling Steps/2021-06-09"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2021-05-18",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2021-05-18 18:00:00",
+   "ends_at": "2021-06-08 14:59:59",
+   "featured_five": [
+    "Song of Broken Pines",
+    "Aquila Favonia"
+   ],
+   "featured_four": [
+    "Sacrificial Sword",
+    "Rainslasher",
+    "Dragon's Bane",
+    "Sacrificial Fragments",
+    "Rust"
+   ],
+   "alongside": [
+    "Born of Ocean Swell/2021-05-18"
+   ]
+  },
+  {
+   "slug": "Born of Ocean Swell/2021-05-18",
+   "name": "Born of Ocean Swell",
+   "kind": "character",
+   "starts_at": "2021-05-18 18:00:00",
+   "ends_at": "2021-06-08 14:59:59",
+   "featured_five": [
+    "Eula"
+   ],
+   "featured_four": [
+    "Xinyan",
+    "Xingqiu",
+    "Beidou"
+   ],
+   "alongside": [
+    "Epitome Invocation/2021-05-18"
+   ]
+  },
+  {
+   "slug": "Gentry of Hermitage/2021-04-28",
+   "name": "Gentry of Hermitage",
+   "kind": "character",
+   "starts_at": "2021-04-28 11:00:00",
+   "ends_at": "2021-05-18 17:59:00",
+   "featured_five": [
+    "Zhongli"
+   ],
+   "featured_four": [
+    "Yanfei",
+    "Noelle",
+    "Diona"
+   ],
+   "alongside": [
+    "Epitome Invocation/2021-04-28"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2021-04-28",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2021-04-28 11:00:00",
+   "ends_at": "2021-05-18 17:59:00",
+   "featured_five": [
+    "Summit Shaper",
+    "Memory of Dust"
+   ],
+   "featured_four": [
+    "Lithic Blade",
+    "Lithic Spear",
+    "The Flute",
+    "Eye of Perception",
+    "Sacrificial Bow"
+   ],
+   "alongside": [
+    "Gentry of Hermitage/2021-04-28"
+   ]
+  },
+  {
+   "slug": "Farewell of Snezhnaya/2021-04-06",
+   "name": "Farewell of Snezhnaya",
+   "kind": "character",
+   "starts_at": "2021-04-06 18:00:00",
+   "ends_at": "2021-04-27 14:59:59",
+   "featured_five": [
+    "Tartaglia"
+   ],
+   "featured_four": [
+    "Rosaria",
+    "Barbara",
+    "Fischl"
+   ],
+   "alongside": [
+    "Epitome Invocation/2021-04-06"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2021-04-06",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2021-04-06 18:00:00",
+   "ends_at": "2021-04-27 14:59:59",
+   "featured_five": [
+    "Skyward Harp",
+    "Lost Prayer to the Sacred Winds"
+   ],
+   "featured_four": [
+    "Alley Hunter",
+    "Favonius Sword",
+    "Sacrificial Greatsword",
+    "Favonius Codex",
+    "Favonius Lance"
+   ],
+   "alongside": [
+    "Farewell of Snezhnaya/2021-04-06"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2021-03-17",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2021-03-17 11:00:00",
+   "ends_at": "2021-04-06 15:59:59",
+   "featured_five": [
+    "Elegy for the End",
+    "Skyward Blade"
+   ],
+   "featured_four": [
+    "The Alley Flash",
+    "Wine and Song",
+    "Favonius Greatsword",
+    "Favonius Warbow",
+    "Dragon's Bane"
+   ],
+   "alongside": [
+    "Ballad in Goblets/2021-03-17"
+   ]
+  },
+  {
+   "slug": "Ballad in Goblets/2021-03-17",
+   "name": "Ballad in Goblets",
+   "kind": "character",
+   "starts_at": "2021-03-17 11:00:00",
+   "ends_at": "2021-04-06 15:59:59",
+   "featured_five": [
+    "Venti"
+   ],
+   "featured_four": [
+    "Sucrose",
+    "Razor",
+    "Noelle"
+   ],
+   "alongside": [
+    "Epitome Invocation/2021-03-17"
+   ]
+  },
+  {
+   "slug": "Moment of Bloom/2021-03-02",
+   "name": "Moment of Bloom",
+   "kind": "character",
+   "starts_at": "2021-03-02 18:00:00",
+   "ends_at": "2021-03-16 14:59:59",
+   "featured_five": [
+    "Hu Tao"
+   ],
+   "featured_four": [
+    "Xingqiu",
+    "Xiangling",
+    "Chongyun"
+   ],
+   "alongside": [
+    "Epitome Invocation/2021-02-23"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2021-02-23",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2021-02-23 18:00:00",
+   "ends_at": "2021-03-16 14:59:59",
+   "featured_five": [
+    "Staff of Homa",
+    "Wolf's Gravestone"
+   ],
+   "featured_four": [
+    "Lithic Blade",
+    "Lithic Spear",
+    "Lion's Roar",
+    "Sacrificial Bow",
+    "The Widsith"
+   ],
+   "alongside": [
+    "Dance of Lanterns/2021-02-17",
+    "Moment of Bloom/2021-03-02"
+   ]
+  },
+  {
+   "slug": "Dance of Lanterns/2021-02-17",
+   "name": "Dance of Lanterns",
+   "kind": "character",
+   "starts_at": "2021-02-17 18:00:00",
+   "ends_at": "2021-03-02 15:59:59",
+   "featured_five": [
+    "Keqing"
+   ],
+   "featured_four": [
+    "Ningguang",
+    "Bennett",
+    "Barbara"
+   ],
+   "alongside": [
+    "Epitome Invocation/2021-02-03",
+    "Epitome Invocation/2021-02-23"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2021-02-03",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2021-02-03 11:00:00",
+   "ends_at": "2021-02-23 15:59:59",
+   "featured_five": [
+    "Primordial Jade Cutter",
+    "Primordial Jade Winged-Spear"
+   ],
+   "featured_four": [
+    "The Flute",
+    "Sacrificial Greatsword",
+    "Rust",
+    "Eye of Perception",
+    "Favonius Lance"
+   ],
+   "alongside": [
+    "Invitation to Mundane Life/2021-02-03",
+    "Dance of Lanterns/2021-02-17"
+   ]
+  },
+  {
+   "slug": "Invitation to Mundane Life/2021-02-03",
+   "name": "Invitation to Mundane Life",
+   "kind": "character",
+   "starts_at": "2021-02-03 09:49:00",
+   "ends_at": "2021-02-17 15:59:59",
+   "featured_five": [
+    "Xiao"
+   ],
+   "featured_four": [
+    "Diona",
+    "Beidou",
+    "Xinyan"
+   ],
+   "alongside": [
+    "Epitome Invocation/2021-02-03"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2021-01-12",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2021-01-12 18:00:00",
+   "ends_at": "2021-02-02 14:59:59",
+   "featured_five": [
+    "Skyward Pride",
+    "Amos' Bow"
+   ],
+   "featured_four": [
+    "Sacrificial Sword",
+    "The Bell",
+    "Dragon's Bane",
+    "Eye of Perception",
+    "Favonius Warbow"
+   ],
+   "alongside": [
+    "Adrift in the Harbor/2021-01-12"
+   ]
+  },
+  {
+   "slug": "Adrift in the Harbor/2021-01-12",
+   "name": "Adrift in the Harbor",
+   "kind": "character",
+   "starts_at": "2021-01-12 18:00:00",
+   "ends_at": "2021-02-02 14:59:59",
+   "featured_five": [
+    "Ganyu"
+   ],
+   "featured_four": [
+    "Xiangling",
+    "Xingqiu",
+    "Noelle"
+   ],
+   "alongside": [
+    "Epitome Invocation/2021-01-12"
+   ]
+  },
+  {
+   "slug": "Secretum Secretorum/2020-12-23",
+   "name": "Secretum Secretorum",
+   "kind": "character",
+   "starts_at": "2020-12-23 10:00:00",
+   "ends_at": "2021-01-12 15:59:59",
+   "featured_five": [
+    "Albedo"
+   ],
+   "featured_four": [
+    "Fischl",
+    "Sucrose",
+    "Bennett"
+   ],
+   "alongside": [
+    "Epitome Invocation/2020-12-23"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2020-12-23",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2020-12-23 10:00:00",
+   "ends_at": "2021-01-12 15:59:59",
+   "featured_five": [
+    "Summit Shaper",
+    "Skyward Atlas"
+   ],
+   "featured_four": [
+    "Favonius Sword",
+    "Favonius Greatsword",
+    "Favonius Lance",
+    "Sacrificial Fragments",
+    "The Stringless"
+   ],
+   "alongside": [
+    "Secretum Secretorum/2020-12-23"
+   ]
+  },
+  {
+   "slug": "Gentry of Hermitage/2020-12-01",
+   "name": "Gentry of Hermitage",
+   "kind": "character",
+   "starts_at": "2020-12-01 18:00:00",
+   "ends_at": "2020-12-22 14:59:59",
+   "featured_five": [
+    "Zhongli"
+   ],
+   "featured_four": [
+    "Xinyan",
+    "Razor",
+    "Chongyun"
+   ],
+   "alongside": [
+    "Epitome Invocation/2020-12-01"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2020-12-01",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2020-12-01 18:00:00",
+   "ends_at": "2020-12-22 14:59:59",
+   "featured_five": [
+    "Vortex Vanquisher",
+    "The Unforged"
+   ],
+   "featured_four": [
+    "Lion's Roar",
+    "The Bell",
+    "Favonius Codex",
+    "Favonius Warbow",
+    "Dragon's Bane"
+   ],
+   "alongside": [
+    "Gentry of Hermitage/2020-12-01"
+   ]
+  },
+  {
+   "slug": "Farewell of Snezhnaya/2020-11-11",
+   "name": "Farewell of Snezhnaya",
+   "kind": "character",
+   "starts_at": "2020-11-11 10:00:00",
+   "ends_at": "2020-12-01 15:59:59",
+   "featured_five": [
+    "Tartaglia"
+   ],
+   "featured_four": [
+    "Diona",
+    "Beidou",
+    "Ningguang"
+   ],
+   "alongside": [
+    "Epitome Invocation/2020-11-11"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2020-11-11",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2020-11-11 10:00:00",
+   "ends_at": "2020-12-01 15:59:59",
+   "featured_five": [
+    "Memory of Dust",
+    "Skyward Harp"
+   ],
+   "featured_four": [
+    "The Flute",
+    "Rainslasher",
+    "Eye of Perception",
+    "Rust",
+    "Favonius Lance"
+   ],
+   "alongside": [
+    "Farewell of Snezhnaya/2020-11-11"
+   ]
+  },
+  {
+   "slug": "Sparkling Steps/2020-10-20",
+   "name": "Sparkling Steps",
+   "kind": "character",
+   "starts_at": "2020-10-20 18:00:00",
+   "ends_at": "2020-11-10 14:59:59",
+   "featured_five": [
+    "Klee"
+   ],
+   "featured_four": [
+    "Xingqiu",
+    "Noelle",
+    "Sucrose"
+   ],
+   "alongside": [
+    "Epitome Invocation/2020-10-20"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2020-10-20",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2020-10-20 18:00:00",
+   "ends_at": "2020-11-10 14:59:59",
+   "featured_five": [
+    "Lost Prayer to the Sacred Winds",
+    "Wolf's Gravestone"
+   ],
+   "featured_four": [
+    "Sacrificial Sword",
+    "Sacrificial Bow",
+    "Sacrificial Greatsword",
+    "Sacrificial Fragments",
+    "Dragon's Bane"
+   ],
+   "alongside": [
+    "Sparkling Steps/2020-10-20"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2020-09-28",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2020-09-28 10:00:00",
+   "ends_at": "2020-10-18 17:59:59",
+   "featured_five": [
+    "Aquila Favonia",
+    "Amos' Bow"
+   ],
+   "featured_four": [
+    "The Flute",
+    "The Bell",
+    "The Widsith",
+    "The Stringless",
+    "Favonius Lance"
+   ],
+   "alongside": [
+    "Ballad in Goblets/2020-09-28"
+   ]
+  },
+  {
+   "slug": "Ballad in Goblets/2020-09-28",
+   "name": "Ballad in Goblets",
+   "kind": "character",
+   "starts_at": "2020-09-28 10:00:00",
+   "ends_at": "2020-10-18 17:59:59",
+   "featured_five": [
+    "Venti"
+   ],
+   "featured_four": [
+    "Barbara",
+    "Fischl",
+    "Xiangling"
+   ],
+   "alongside": [
+    "Epitome Invocation/2020-09-28"
+   ]
+  }
+ ]
+}

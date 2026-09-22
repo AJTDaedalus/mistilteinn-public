@@ -10,6 +10,7 @@ instead of inventing numbers.
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from itertools import pairwise
 from typing import TYPE_CHECKING
 
 import pytest
@@ -421,3 +422,351 @@ async def test_limits_reads_its_constants_from_the_data_file(
     body = (await authed_client.get("/api/v1/wishes/limits")).json()
     assert body["primogems_per_wish"] == primogems_per_wish()
     assert body["max_lost_fifty_fifties"] == len(radiance_win_rates()) - 1
+
+
+# --- banners --------------------------------------------------------------------------
+
+
+async def _banner(db_session: AsyncSession, **over) -> str:
+    from datetime import UTC, datetime
+
+    from app.models.wish_banner import WishBanner
+
+    fields = {
+        "slug": "Test Banner/2026-09-23", "name": "Test Banner", "kind": "character",
+        "starts_at": "2026-09-23 11:00:00", "ends_at": "2026-10-13 17:59:59",
+        "featured_five": ["Vesna"], "featured_four": ["Diona", "Faruzan", "Chongyun"],
+        "alongside": [], "fetched_at": datetime(2026, 9, 22, tzinfo=UTC),
+    }
+    fields.update(over)
+    db_session.add(WishBanner(**fields))
+    await db_session.commit()
+    return str(fields["slug"])
+
+
+async def test_banners_require_a_caller(client: AsyncClient) -> None:
+    assert (await client.get("/api/v1/wishes/banners")).status_code == 401
+
+
+async def test_an_unseeded_banner_table_is_empty_rather_than_invented(
+    authed_client: AsyncClient,
+) -> None:
+    body = (await authed_client.get("/api/v1/wishes/banners")).json()
+    assert body["banners"] == []
+    assert body["total"] == 0
+
+
+async def test_banners_come_back_newest_first_with_their_featured_items(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    await _banner(db_session, slug="Old/2020-09-28", starts_at="2020-09-28 11:00:00")
+    await _banner(db_session)
+
+    body = (await authed_client.get("/api/v1/wishes/banners")).json()
+    assert [b["slug"] for b in body["banners"]] == ["Test Banner/2026-09-23", "Old/2020-09-28"]
+    assert [i["name"] for i in body["banners"][0]["featured_four"]] == [
+        "Diona", "Faruzan", "Chongyun",
+    ]
+    # A name the catalogue does not have resolves to null art rather than a broken image.
+    assert all("icon" in i for i in body["banners"][0]["featured_four"])
+    assert body["total"] == 2
+    assert body["fetched_at"] is not None
+
+
+async def test_banners_page_rather_than_truncate(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """`total` is what lets the page offer "show more" instead of hiding the rest.
+
+    CLAUDE.md records the materials tab being "fixed" by capping a 514-row list at 80, which
+    made the page short by hiding the data.
+    """
+    for i in range(5):
+        await _banner(db_session, slug=f"B{i}/2026-01-0{i + 1}", starts_at=f"2026-01-0{i + 1}")
+
+    first = (await authed_client.get("/api/v1/wishes/banners?limit=2")).json()
+    assert len(first["banners"]) == 2
+    assert first["total"] == 5
+
+    second = (await authed_client.get("/api/v1/wishes/banners?limit=2&offset=2")).json()
+    assert second["banners"]
+    assert [b["slug"] for b in second["banners"]] != [b["slug"] for b in first["banners"]]
+
+
+async def test_banners_filter_by_kind(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    await _banner(db_session)
+    await _banner(db_session, slug="Epitome/2026-09-23", kind="weapon",
+                  featured_five=["A", "B"], featured_four=["c", "d", "e", "f", "g"])
+
+    body = (await authed_client.get("/api/v1/wishes/banners?kind=weapon")).json()
+    assert [b["kind"] for b in body["banners"]] == ["weapon"]
+    assert body["total"] == 1
+
+
+# --- the histogram ---------------------------------------------------------------------
+
+
+async def test_the_plan_carries_the_exact_distribution(authed_client: AsyncClient) -> None:
+    """The convolution already produces it; the page used to throw it away.
+
+    It is the population, not a sample — so the bars sum to the success probability of the
+    whole support, not to something with a standard error on it.
+    """
+    body = (await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={"character": {"banner": "character"}, "primogems": 32_000},
+    )).json()
+
+    first = body["milestones"][0]
+    assert first["histogram"], "the first rung should be chartable"
+    assert sum(b["probability"] for b in first["histogram"]) == pytest.approx(1.0, abs=0.01)
+    assert all(b["end"] > b["start"] for b in first["histogram"])
+    # Bins ascend and do not overlap.
+    edges = [(b["start"], b["end"]) for b in first["histogram"]]
+    assert all(a[1] <= b[0] for a, b in pairwise(edges))
+
+
+async def test_only_the_first_rungs_carry_a_histogram(authed_client: AsyncClient) -> None:
+    """Twelve charts nobody asked for is a payload, not a feature."""
+    body = (await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={"character": {"banner": "character"}, "primogems": 32_000},
+    )).json()
+    charted = [m for m in body["milestones"] if m["histogram"]]
+    assert 0 < len(charted) < len(body["milestones"])
+
+
+# --- the refund read from the account ---------------------------------------------------
+
+
+async def test_the_refund_falls_back_to_the_tier_without_a_banner(
+    authed_client: AsyncClient,
+) -> None:
+    body = (await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={
+            "character": {"banner": "character"},
+            "primogems": 32_000, "starglitter_refund": "average",
+        },
+    )).json()
+    assert body["refund_source"] == "tier"
+    assert body["refunded_wishes"] > 0
+
+
+async def test_an_unknown_banner_falls_back_rather_than_failing(
+    authed_client: AsyncClient,
+) -> None:
+    """None rather than a guess — and a fallback that says which it used."""
+    body = (await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={
+            "character": {"banner": "character"}, "primogems": 32_000,
+            "banner_slug": "Nothing/1999-01-01", "starglitter_refund": "low",
+        },
+    )).json()
+    assert body["refund_source"] == "tier"
+
+
+async def test_a_banner_with_no_roster_falls_back(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """An account that has said nothing cannot have its refund computed from nothing."""
+    slug = await _banner(db_session)
+    body = (await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={
+            "character": {"banner": "character"}, "primogems": 32_000,
+            "banner_slug": slug, "starglitter_refund": "low",
+        },
+    )).json()
+    assert body["refund_source"] == "tier"
+
+
+async def test_limits_publishes_the_banner_page_size(authed_client: AsyncClient) -> None:
+    body = (await authed_client.get("/api/v1/wishes/limits")).json()
+    assert body["banner_page"] == 8
+
+
+# --- PR #332 review findings -------------------------------------------------------------
+
+
+async def _owned_four_star(
+    db_session: AsyncSession, owner_id: str, name: str, constellation: int | None,
+    *, rarity: str = "FOUR_STAR", owned: bool = True, nanoka_id: str | None = None,
+) -> None:
+    from app.models.character import Character
+    from app.models.enums import Element, Rarity, WeaponType
+    from app.models.roster import CharacterRosterEntry
+
+    character = Character(
+        nanoka_id=nanoka_id or f"n-{name}", name=name, element=Element.CRYO,
+        weapon_type=WeaponType.SWORD, rarity=Rarity[rarity],
+        base_hp=1000.0, base_atk=26.0, base_def=60.0,
+        base_crit_rate=0.05, base_crit_dmg=0.5,
+    )
+    db_session.add(character)
+    await db_session.flush()
+    db_session.add(CharacterRosterEntry(
+        owner_id=owner_id, character_id=str(character.id),
+        owned=owned, constellation=constellation, source="import",
+    ))
+    await db_session.commit()
+
+
+async def test_the_refund_is_read_from_the_account(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    user, _ = authed_user
+    slug = await _banner(db_session)
+    for name in ("Diona", "Faruzan", "Chongyun"):
+        await _owned_four_star(db_session, str(user.id), name, 6)
+    await _owned_four_star(db_session, str(user.id), "Bennett", 6)
+
+    body = (await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={
+            "character": {"banner": "character"}, "primogems": 32_000,
+            "banner_slug": slug, "starglitter_refund": "none",
+        },
+    )).json()
+    assert body["refund_source"] == "roster"
+    # `none` would have given zero; the account gave a real figure.
+    assert body["refunded_wishes"] > 0
+
+
+async def test_a_five_star_does_not_dilute_the_four_star_pool(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """Finding 1. Without a rarity filter every 5-star owned joined the pool a non-featured
+    *4-star* draw spreads over, diluting it and understating the refund."""
+    user, _ = authed_user
+    slug = await _banner(db_session)
+    for name in ("Diona", "Faruzan", "Chongyun"):
+        await _owned_four_star(db_session, str(user.id), name, 6)
+    await _owned_four_star(db_session, str(user.id), "Bennett", 6)
+
+    async def refund() -> int:
+        return (await authed_client.post(
+            "/api/v1/wishes/plan",
+            json={"character": {"banner": "character"}, "primogems": 32_000,
+                  "banner_slug": slug, "starglitter_refund": "none"},
+        )).json()["refunded_wishes"]
+
+    before = await refund()
+    for i in range(12):
+        await _owned_four_star(db_session, str(user.id), f"Five{i}", 6, rarity="FIVE_STAR")
+    assert await refund() == before, "5-stars are not in the 4-star pool"
+
+
+async def test_a_character_marked_not_owned_does_not_contribute(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """Finding 1. Un-owning a character keeps its stored constellation, so without the
+    ownership filter it kept paying into the refund."""
+    user, _ = authed_user
+    slug = await _banner(db_session)
+    for name in ("Diona", "Faruzan", "Chongyun"):
+        await _owned_four_star(db_session, str(user.id), name, 6)
+    await _owned_four_star(db_session, str(user.id), "Kept", 6)
+
+    async def refund() -> int:
+        return (await authed_client.post(
+            "/api/v1/wishes/plan",
+            json={"character": {"banner": "character"}, "primogems": 32_000,
+                  "banner_slug": slug, "starglitter_refund": "none"},
+        )).json()["refunded_wishes"]
+
+    before = await refund()
+    await _owned_four_star(db_session, str(user.id), "Disowned", 6, owned=False)
+    assert await refund() == before
+
+
+async def test_the_banner_decides_the_kind_not_the_first_leg(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """Finding 2. Reading the kind off `legs[0]` priced a weapon banner's five weapon names
+    as unowned *characters*, and the mirror case threw away three real constellations."""
+    user, _ = authed_user
+    for name in ("Diona", "Faruzan", "Chongyun"):
+        await _owned_four_star(db_session, str(user.id), name, 6)
+    character_slug = await _banner(db_session)
+
+    # The character banner with a strategy whose FIRST leg is the weapon banner.
+    body = (await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={
+            "character": {"banner": "character"}, "weapon": {"banner": "weapon"},
+            "strategy": "r1_first", "primogems": 32_000,
+            "banner_slug": character_slug, "starglitter_refund": "none",
+        },
+    )).json()
+    assert body["refund_source"] == "roster"
+    assert body["refunded_wishes"] > 0, (
+        "the three featured constellations must still be priced as characters"
+    )
+
+
+async def test_an_unknown_constellation_is_left_out_rather_than_read_as_unowned(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """Finding 5. `None` means "not owned" to `payout`, which gives the first copy away
+    free — so forwarding a NULL understated exactly the accounts the column was added for."""
+    user, _ = authed_user
+    slug = await _banner(db_session)
+    for name in ("Diona", "Faruzan", "Chongyun"):
+        await _owned_four_star(db_session, str(user.id), name, 6)
+    await _owned_four_star(db_session, str(user.id), "Known", 6)
+
+    async def refund() -> int:
+        return (await authed_client.post(
+            "/api/v1/wishes/plan",
+            json={"character": {"banner": "character"}, "primogems": 32_000,
+                  "banner_slug": slug, "starglitter_refund": "none"},
+        )).json()["refunded_wishes"]
+
+    before = await refund()
+    for i in range(10):
+        await _owned_four_star(db_session, str(user.id), f"Unknown{i}", None)
+    assert await refund() == before, "a NULL constellation must not enter the pool at all"
+
+
+async def test_a_bad_tier_is_still_refused_when_a_banner_is_picked(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """Finding 11. The handler moved into the `else` branch and stopped firing."""
+    slug = await _banner(db_session)
+    response = await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={"character": {"banner": "character"}, "banner_slug": slug,
+              "starglitter_refund": "bogus"},
+    )
+    assert response.status_code == 400
+
+
+async def test_a_banner_with_no_start_date_does_not_take_the_first_slot(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """Finding 8. Postgres sorts NULLs first under DESC."""
+    await _banner(db_session, slug="Undated/2019-01-01", starts_at=None)
+    await _banner(db_session)
+
+    body = (await authed_client.get("/api/v1/wishes/banners")).json()
+    assert body["banners"][0]["slug"] == "Test Banner/2026-09-23"
+
+
+async def test_fetched_at_is_the_table_not_the_page(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """Finding 7. Taken from the page it changed as the user clicked "show more"."""
+    for i in range(4):
+        await _banner(db_session, slug=f"B{i}/2026-01-0{i + 1}", starts_at=f"2026-01-0{i + 1}")
+
+    first = (await authed_client.get("/api/v1/wishes/banners?limit=1")).json()
+    later = (await authed_client.get("/api/v1/wishes/banners?limit=1&offset=3")).json()
+    assert first["fetched_at"] == later["fetched_at"]
+
+    past_the_end = (await authed_client.get("/api/v1/wishes/banners?limit=1&offset=99")).json()
+    assert past_the_end["banners"] == []
+    assert past_the_end["fetched_at"] is not None, "the table is populated; say so"

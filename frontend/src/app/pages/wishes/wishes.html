@@ -1,16 +1,12 @@
 <section class="wishes">
   <header class="wishes__head">
     <h1>Wish Planner</h1>
-    <p class="hint">
-      Your odds of reaching each constellation or refinement, from where you stand now, on one
-      shared budget. Exact probabilities, not a simulation.
-    </p>
   </header>
 
   <div class="panel">
     <!-- Wallet -->
     <fieldset class="wallet">
-      <legend>What you have</legend>
+      <legend>Parameters</legend>
       <div class="wallet__grid">
         <div class="field">
           <label for="primogems">Primogems</label>
@@ -32,12 +28,47 @@
           </select>
         </div>
       </div>
-      <small class="hint">
-        Acquaint Fate doesn’t count — it buys the standard banner. The refund is the
-        Starglitter your 4★ duplicates pay back, compounded; pick <em>Low</em> unless your
-        4★ characters are already C6.
-      </small>
     </fieldset>
+
+    @if (banners().length) {
+      <div class="banners">
+        <div class="banners__head">
+          <span class="label">Banner</span>
+          @if (chosenBanner()) {
+            <button type="button" class="banners__clear" (click)="chooseBanner(null)">
+              Clear
+            </button>
+          }
+        </div>
+        <div class="banner-grid">
+          @for (b of banners(); track b.slug) {
+            <button type="button" class="banner" [class.on]="isChosen(b.slug)"
+                    (click)="chooseBanner(b)"
+                    [attr.aria-pressed]="isChosen(b.slug)">
+              <span class="banner__five">
+                @for (item of b.featured_five; track item.name) {
+                  <catalogue-icon [icon]="item.icon" [alt]="item.name" [size]="52"
+                                  fit="cover" />
+                }
+              </span>
+              <span class="banner__four">
+                @for (item of b.featured_four; track item.name) {
+                  <catalogue-icon [icon]="item.icon" [alt]="item.name" [size]="28"
+                                  fit="cover" />
+                }
+              </span>
+              <span class="banner__name">{{ b.name }}</span>
+              <span class="banner__when">{{ bannerWhen(b) }}</span>
+            </button>
+          }
+        </div>
+        @if (hasMoreBanners()) {
+          <button type="button" class="banners__more" (click)="showMoreBanners()">
+            Show more ({{ banners().length }} of {{ bannerTotal() }})
+          </button>
+        }
+      </div>
+    }
 
     <div class="segmented segmented--modes" role="group" aria-label="Plan shape">
       <button type="button" [class.on]="mode() === 'simple'" (click)="mode.set('simple')">
@@ -49,6 +80,15 @@
     </div>
 
     @if (mode() === 'simple') {
+      <div class="field field--inline">
+        <label for="strategy">Reach first</label>
+        <select id="strategy" [value]="strategy()"
+                (change)="strategy.set($any($event.target).value)">
+          @for (s of strategies(); track s) {
+            <option [value]="s" [selected]="strategy() === s">{{ strategyLabel(s) }}</option>
+          }
+        </select>
+      </div>
       <div class="panel__columns">
         <fieldset class="col">
           <legend>Character</legend>
@@ -78,22 +118,12 @@
                     (change)="setLosses(+($any($event.target).value))">
               @for (n of lossOptions(); track n) {
                 <option [value]="n" [selected]="character().lostFiftyFifties === n">
-                  {{ n }}{{ n === maxLosses() ? '+' : '' }}
+                  {{ n }}
                 </option>
               }
             </select>
             <!-- The counter resets only on a 50/50 you WIN: taking the character through a
                  guarantee leaves it standing, which is what makes the fourth one certain. -->
-            <small class="hint">
-              Since the last one you <em>won</em>. Losses through a guarantee still count.
-              This is Capturing Radiance, and it can be worth 20 points.
-            </small>
-            @if (radianceIsCertain()) {
-              <small class="hint hint--note">
-                At three losses your next 50/50 cannot be lost, so this reads the same as
-                being guaranteed.
-              </small>
-            }
           </div>
           <div class="field">
             <label for="c-owned">Already own</label>
@@ -138,7 +168,6 @@
                 <button type="button" [class.on]="weapon().guaranteed"
                         (click)="setGuaranteed('weapon', true)">✓</button>
               </div>
-              <small class="hint">Epitomized Path: you hold a Fate Point.</small>
             </div>
             <div class="field">
               <label for="w-owned">Already own</label>
@@ -154,21 +183,6 @@
           }
         </fieldset>
 
-        <fieldset class="col">
-          <legend>Order</legend>
-          <div class="field">
-            <label for="strategy">Reach first</label>
-            <select id="strategy" [value]="strategy()"
-                    (change)="strategy.set($any($event.target).value)">
-              @for (s of strategies(); track s) {
-                <option [value]="s" [selected]="strategy() === s">{{ strategyLabel(s) }}</option>
-              }
-            </select>
-            <small class="hint">
-              After that the order is always C0 → R1 → C6 → R5.
-            </small>
-          </div>
-        </fieldset>
       </div>
     } @else {
       <!-- Custom plan: goals in spending order, across as many characters as you like. -->
@@ -224,10 +238,9 @@
         <button type="button" [disabled]="!canAddRow()" (click)="addRow('weapon')">
           + Add weapon
         </button>
-        <small class="hint">
-          Spent in order, top to bottom. Pity and Capturing Radiance belong to the first row.
-          @if (!canAddRow()) { <strong>Twelve goals is the most a plan can hold.</strong> }
-        </small>
+        @if (!canAddRow()) {
+          <small class="hint">Twelve goals is the most a plan can hold.</small>
+        }
       </div>
     }
 
@@ -237,7 +250,7 @@
     @if (income().length) {
       <div class="income">
         <div class="income__head">
-          <span class="label">Add income from patches still to come</span>
+          <span class="label">Additional Income</span>
           <div class="segmented segmented--small" role="group" aria-label="Spending tier">
             @for (t of tiers; track t) {
               <button type="button" [class.on]="tier() === t" (click)="tier.set(t)">
@@ -258,13 +271,9 @@
             </button>
           }
         </div>
-        <small class="hint">
-          Only patches the workbook still calls an estimate — a patch already finished is
-          income you have either banked or spent, and adding it would count it twice.
-          @if (incomeFetchedAt()) {
-            Last refreshed {{ incomeFetchedAt() | date: 'mediumDate' }}.
-          }
-        </small>
+        @if (incomeFetchedAt()) {
+          <small class="hint">Refreshed {{ incomeFetchedAt() | date: 'mediumDate' }}.</small>
+        }
       </div>
     }
 
@@ -274,7 +283,10 @@
         {{ primogems() | number }} primogems
         + {{ intertwined() | number }} fate
         @if (projectedWishes()) { + {{ projectedWishes() | number }} projected }
-        @if (result.refunded_wishes) { + {{ result.refunded_wishes | number }} refund }
+        @if (result.refunded_wishes) {
+          + {{ result.refunded_wishes | number }}
+          {{ result.refund_source === 'roster' ? 'refund (from your roster)' : 'refund' }}
+        }
         = <strong>{{ result.budget | number }} wishes</strong>
       </p>
     }
@@ -282,6 +294,26 @@
 
   @if (error()) {
     <p class="error" role="alert">{{ error() }}</p>
+  }
+
+  @if (charted(); as rung) {
+    <figure class="chart">
+      <figcaption>
+        Wishes needed for <strong>{{ rung.label }}</strong>
+      </figcaption>
+      <div class="chart__bars" role="img"
+           [attr.aria-label]="'Distribution of wishes needed for ' + rung.label">
+        @for (bin of rung.histogram; track bin.start) {
+          <span class="chart__bar"
+                [style.height.%]="(bin.probability / chartPeak()) * 100"
+                [title]="bin.start + '–' + bin.end + ' wishes: ' + (bin.probability * 100 | number: '1.1-1') + '%'"></span>
+        }
+      </div>
+      <div class="chart__axis">
+        <span>{{ chartFrom() | number }}</span>
+        <span>{{ chartTo() | number }} wishes</span>
+      </div>
+    </figure>
   }
 
   @if (plan(); as result) {
@@ -313,13 +345,11 @@
       </tbody>
     </table>
 
-    <!-- Read off the published guarantee, never off the fitted pity curve: the curve's far
-         tail is not identified and understates it. -->
+    <!-- Kept where the rest went. Without it a reader takes each row as an independent
+         question and adds them up, which is the one way to misread this table badly. -->
     <p class="hint">
       Each rung is <strong>cumulative</strong> — the chance of reaching it <em>and</em>
-      everything above it, from the same budget. HoYoverse guarantees a copy within
-      {{ result.published_worst_case }} wishes; the soft-pity ramp is a community fit, which
-      pins the middle of the range and not its extremes.
+      everything above it, from the same budget.
     </p>
   }
 </section>

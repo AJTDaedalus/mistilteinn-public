@@ -9,6 +9,7 @@ const LIMITS: WishLimits = {
   max_constellation: 6,
   max_refinement: 5,
   max_lost_fifty_fifties: 3,
+  banner_page: 8,
   strategies: ['r1_first', 'c0_first', 'c1_first', 'c6_first'],
   starglitter_refund_tiers: { none: 0, low: 0.041667, average: 0.075269, high: 0.111111 },
   banners: {
@@ -29,9 +30,41 @@ const PLAN: WishPlanRead = {
   budget: 0,
   wallet_wishes: 0,
   refunded_wishes: 0,
+  refund_source: 'tier',
   published_worst_case: 180,
   milestones: [
-    { copies: 1, label: 'Furina C0', success_chance: 1, average_wishes: 93.45, median_wishes: 80 },
+    {
+      copies: 1, label: 'Furina C0', success_chance: 1, average_wishes: 93.45,
+      median_wishes: 80,
+      histogram: [
+        { start: 60, end: 70, probability: 0.2 },
+        { start: 70, end: 80, probability: 0.5 },
+        { start: 80, end: 90, probability: 0.3 },
+      ],
+    },
+  ],
+};
+
+const BANNERS = {
+  total: 20,
+  fetched_at: '2026-09-22T12:00:00Z',
+  banners: [
+    {
+      slug: 'When Warm Winds Cavort/2026-09-23', name: 'When Warm Winds Cavort',
+      kind: 'character', starts_at: '2026-09-23 11:00:00', ends_at: '2026-10-13 17:59:59',
+      featured_five: [{ name: 'Vesna', icon: 'UI_Vesna' }],
+      featured_four: [
+        { name: 'Diona', icon: 'UI_Diona' },
+        { name: 'Faruzan', icon: null },
+        { name: 'Chongyun', icon: 'UI_Chongyun' },
+      ],
+    },
+    {
+      slug: 'Epitome Invocation/2026-09-23', name: 'Epitome Invocation',
+      kind: 'weapon', starts_at: '2026-09-23 11:00:00', ends_at: '2026-10-13 17:59:59',
+      featured_five: [{ name: 'Splendor', icon: 'UI_Splendor' }],
+      featured_four: [{ name: 'New Bough', icon: null }],
+    },
   ],
 };
 
@@ -44,6 +77,7 @@ function makePage(over: Partial<WishesService> = {}) {
   const service = {
     limits: vi.fn().mockResolvedValue(LIMITS),
     income: vi.fn().mockResolvedValue(INCOME),
+    banners: vi.fn().mockResolvedValue(BANNERS),
     plan: vi.fn().mockResolvedValue(PLAN),
     ...over,
   };
@@ -453,5 +487,110 @@ describe('PR #331 review findings', () => {
     await settled();
     await page.recompute(page.request());
     expect(page.error()).toBe('nope');
+  });
+});
+
+
+describe('the banner picker', () => {
+  it('loads a page of banners and knows there are more', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    expect(page.banners()).toHaveLength(2);
+    expect(page.bannerTotal()).toBe(20);
+    expect(page.hasMoreBanners()).toBe(true);
+  });
+
+  it('appends rather than replaces when showing more', async () => {
+    const service = {
+      banners: vi.fn()
+        .mockResolvedValueOnce(BANNERS)
+        .mockResolvedValueOnce({ ...BANNERS, banners: [{ ...BANNERS.banners[0], slug: 'x/1' }] }),
+    };
+    const { page } = makePage(service as never);
+    await settled();
+    await settled();
+    page.showMoreBanners();
+    await settled();
+    await settled();
+    expect(page.banners().map((b: any) => b.slug)).toContain('x/1');
+    expect(page.banners().length).toBe(3);
+  });
+
+  /** The banner knows who is featured. It cannot know your pity, so it must not clear it. */
+  it('fills the name but leaves typed state alone', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    page.patch('character', { pity: 62, ownedCopies: 2 });
+    page.chooseBanner(BANNERS.banners[0]);
+    expect(page.character().label).toBe('Vesna');
+    expect(page.character().pity).toBe(62);
+    expect(page.character().ownedCopies).toBe(2);
+  });
+
+  it('sends the chosen banner so the refund can be read from the account', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    page.chooseBanner(BANNERS.banners[0]);
+    expect(page.request().banner_slug).toBe('When Warm Winds Cavort/2026-09-23');
+    page.chooseBanner(null);
+    expect(page.request().banner_slug).toBeNull();
+  });
+
+  it('plans the weapon when a weapon banner is picked', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    page.chooseBanner(BANNERS.banners[1]);
+    expect(page.planWeapon()).toBe(true);
+    expect(page.weapon().label).toBe('Splendor');
+  });
+
+  /**
+   * The planner works without a banner — it just cannot read the refund from the account.
+   * Blanking the page over a failed banner fetch would be the worse trade.
+   */
+  it('survives a banner fetch that fails', async () => {
+    const { page } = makePage({ banners: vi.fn().mockRejectedValue(new Error('nope')) });
+    await settled();
+    await settled();
+    expect(page.banners()).toEqual([]);
+    expect(page.error()).toBeNull();
+  });
+
+  it('formats a banner date for scanning', async () => {
+    const { page } = makePage();
+    await settled();
+    expect(page.bannerWhen(BANNERS.banners[0])).toMatch(/2026/);
+    expect(page.bannerWhen({ ...BANNERS.banners[0], starts_at: null })).toBe('');
+  });
+});
+
+describe('the exact distribution', () => {
+  it('charts the first rung that carries a histogram', async () => {
+    const { page } = makePage();
+    await settled();
+    await page.recompute(page.request());
+    expect(page.charted().label).toBe('Furina C0');
+  });
+
+  it('scales to the tallest bar rather than to one', async () => {
+    const { page } = makePage();
+    await settled();
+    await page.recompute(page.request());
+    expect(page.chartPeak()).toBe(0.5);
+  });
+
+  it('charts nothing when no rung carries a histogram', async () => {
+    const { page } = makePage({
+      plan: vi.fn().mockResolvedValue({
+        ...PLAN, milestones: [{ ...PLAN.milestones[0], histogram: [] }],
+      }),
+    });
+    await settled();
+    await page.recompute(page.request());
+    expect(page.charted()).toBeNull();
   });
 });

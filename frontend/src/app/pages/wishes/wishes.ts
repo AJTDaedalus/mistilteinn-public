@@ -2,8 +2,11 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { CatalogueIcon } from '../../shared/icon/icon';
+
 import {
   WishesService,
+  type WishBannerRead,
   type WishIncomeVersionRead,
   type WishLimits,
   type WishPlanRead,
@@ -68,7 +71,7 @@ function position(label = ''): Position {
  */
 @Component({
   selector: 'app-wishes',
-  imports: [FormsModule, DecimalPipe, DatePipe],
+  imports: [FormsModule, DecimalPipe, DatePipe, CatalogueIcon],
   templateUrl: './wishes.html',
   styleUrl: './wishes.scss',
 })
@@ -76,6 +79,12 @@ export class WishesPage {
   private service = inject(WishesService);
 
   protected readonly mode = signal<'simple' | 'custom'>('simple');
+
+  // -- banners
+  protected readonly banners = signal<WishBannerRead[]>([]);
+  protected readonly bannerTotal = signal(0);
+  protected readonly chosenBanner = signal<string | null>(null);
+  protected readonly bannersOpen = signal(true);
 
   // -- simple mode
   protected readonly character = signal<Position>(position('Character'));
@@ -156,6 +165,37 @@ export class WishesPage {
     );
   });
 
+  /** The banner currently picked, if it is still in the loaded page. */
+  protected readonly banner = computed(() =>
+    this.banners().find((b) => b.slug === this.chosenBanner()) ?? null,
+  );
+
+  protected readonly hasMoreBanners = computed(
+    () => this.banners().length < this.bannerTotal(),
+  );
+
+  /** The first rung that carries a histogram — what the chart draws. */
+  protected readonly charted = computed(
+    () => this.plan()?.milestones.find((m) => (m.histogram ?? []).length) ?? null,
+  );
+
+  /** First and last wish counts the chart covers. Computed here because indexing an
+   *  optional array in a template is a type error the Angular compiler catches and
+   *  `npx tsc` does not. */
+  protected readonly chartFrom = computed(
+    () => this.charted()?.histogram?.[0]?.start ?? 0,
+  );
+
+  protected readonly chartTo = computed(() => {
+    const bins = this.charted()?.histogram ?? [];
+    return bins.length ? bins[bins.length - 1].end : 0;
+  });
+
+  /** Tallest bar, so the chart can scale to it rather than to 1. */
+  protected readonly chartPeak = computed(() =>
+    Math.max(...(this.charted()?.histogram ?? []).map((b) => b.probability), 1e-9),
+  );
+
   private timer: ReturnType<typeof setTimeout> | null = null;
   /** Sequence guard: a slower earlier request must not overwrite a faster later one. */
   private latest = 0;
@@ -195,6 +235,7 @@ export class WishesPage {
     if (this.mode() === 'custom') {
       return {
         ...wallet,
+        banner_slug: this.chosenBanner(),
         targets: this.rows().map((row, index) => ({
           ...this.target(row, row.banner),
           // Only the first row declares the counter; the backend refuses a later one.
@@ -209,6 +250,7 @@ export class WishesPage {
       character: this.target(this.character(), 'character'),
       weapon: this.planWeapon() ? this.target(this.weapon(), 'weapon') : null,
       strategy: this.strategy(),
+      banner_slug: this.chosenBanner(),
     };
   }
 
@@ -218,9 +260,61 @@ export class WishesPage {
       this.limits.set(limits);
       this.income.set(income.versions);
       this.incomeFetchedAt.set(income.fetched_at ?? null);
+      await this.loadBanners(0);
     } catch {
       this.error.set('Could not load the planner’s reference data.');
     }
+  }
+
+  /** Fetch a page of banners. `offset` 0 replaces, anything else appends. */
+  protected async loadBanners(offset: number): Promise<void> {
+    const page = this.limits()?.banner_page ?? 8;
+    try {
+      const body = await this.service.banners(offset, page);
+      this.banners.set(offset ? [...this.banners(), ...body.banners] : body.banners);
+      this.bannerTotal.set(body.total);
+    } catch {
+      // Not fatal: the planner works without a banner, it just cannot read the refund from
+      // the account. Blanking the page over it would be the worse trade.
+      this.bannerTotal.set(this.banners().length);
+    }
+  }
+
+  protected showMoreBanners(): void {
+    void this.loadBanners(this.banners().length);
+  }
+
+  /**
+   * Pick a banner, filling in what it knows.
+   *
+   * The name and the banner kind come from the banner; **pity, guarantee and owned copies
+   * stay whatever the user last said**, because the banner cannot know them and silently
+   * resetting a typed pity to zero is worse than leaving it.
+   */
+  protected chooseBanner(banner: WishBannerRead | null): void {
+    this.chosenBanner.set(banner?.slug ?? null);
+    if (!banner) return;
+    if (banner.kind === 'character') {
+      this.patch('character', { label: banner.featured_five[0]?.name ?? '' });
+      this.planWeapon.set(false);
+    } else {
+      this.planWeapon.set(true);
+      this.patch('weapon', { label: banner.featured_five[0]?.name ?? '' });
+    }
+  }
+
+  protected isChosen(slug: string): boolean {
+    return this.chosenBanner() === slug;
+  }
+
+  /** `2026-09-23 11:00:00` as `Sep 2026` — the banner list is scanned, not read. */
+  protected bannerWhen(banner: WishBannerRead): string {
+    const raw = banner.starts_at;
+    if (!raw) return '';
+    const parsed = new Date(raw.replace(' ', 'T'));
+    return Number.isNaN(parsed.getTime())
+      ? raw.slice(0, 7)
+      : parsed.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
   }
 
   private async recompute(request: ReturnType<WishesPage['request']>): Promise<void> {

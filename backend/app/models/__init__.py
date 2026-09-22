@@ -51,6 +51,7 @@ from app.models.teapot import (
 )
 from app.models.user import User
 from app.models.weapon import OwnedWeapon, Weapon, WeaponRefinement
+from app.models.wish_banner import WishBanner
 from app.models.wish_income import WishIncome
 
 __all__ = [
@@ -98,6 +99,7 @@ __all__ = [
     "WeaponAscensionCost",
     "WeaponRefinement",
     "WeaponType",
+    "WishBanner",
     "WishIncome",
     "main_stats_for",
 ]

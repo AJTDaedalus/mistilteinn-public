@@ -90,6 +90,7 @@ _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     ("POST", "/api/v1/wishes/plan", {"banner": "character"}),
     ("GET", "/api/v1/wishes/income", None),
     ("GET", "/api/v1/wishes/limits", None),
+    ("GET", "/api/v1/wishes/banners", None),
     # builds — G.6c
     ("GET", "/api/v1/builds", None),
     ("GET", "/api/v1/builds/options", None),  # T.3

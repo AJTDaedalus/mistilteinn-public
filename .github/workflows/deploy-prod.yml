@@ -137,6 +137,21 @@ jobs:
           # step exists so the first deploy does not have to wait for it.
           $COMPOSE run --rm backend python -m scripts.refresh_wish_income --from-snapshot
 
+      - name: Seed the banner roster from the committed snapshot
+        run: |
+          set -euo pipefail
+          cd "$REPO_DIR"
+          # The third seed for the third reason that is the same reason. An empty
+          # `wish_banners` makes /wishes offer no banner to pick, so the refund silently
+          # falls back to the constant tier and the picker renders nothing — green deploy,
+          # green health check, a feature missing its middle.
+          #
+          # `--from-snapshot` reads app/data/wishes/banners.json, a committed file, and
+          # touches **no network**: the wiki is never on the deploy path. It refuses an
+          # implausible shrink, so a mangled snapshot fails the deploy rather than emptying
+          # the table, and the rollback step below covers it.
+          $COMPOSE run --rm backend python -m scripts.refresh_banners --from-snapshot
+
       - name: Health check
         run: |
           set -euo pipefail
