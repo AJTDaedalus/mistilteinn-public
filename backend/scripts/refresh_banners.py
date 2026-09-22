@@ -97,10 +97,28 @@ def _fetch(params: dict[str, str], timeout: int = 45) -> dict:
 
 
 def _members(category: str) -> list[str]:
-    """Dated runs only — the bare banner name is an overview page carrying no pool."""
-    body = _fetch({"action": "query", "list": "categorymembers",
-                   "cmtitle": category, "cmlimit": "500"})
-    titles = [row["title"] for row in body.get("query", {}).get("categorymembers", [])]
+    """Dated runs only — the bare banner name is an overview page carrying no pool.
+
+    **Follows `cmcontinue`.** A single 500-member page truncates silently once a category
+    outgrows it, and neither guard would catch it: `MIN_BANNERS` is a combined floor across
+    both categories and `MIN_RETAINED_SHARE` compares against a stored total the other
+    category props up. That is the "valid HTTP 200 that no retry can detect" this file's
+    other comments are written against.
+    """
+    titles: list[str] = []
+    params = {
+        "action": "query", "list": "categorymembers",
+        "cmtitle": category, "cmlimit": "500",
+    }
+    while True:
+        body = _fetch(params)
+        titles.extend(
+            row["title"] for row in body.get("query", {}).get("categorymembers", [])
+        )
+        cont = body.get("continue", {}).get("cmcontinue")
+        if not cont:
+            break
+        params = {**params, "cmcontinue": cont}
     return [title for title in titles if re.search(r"/\d{4}-\d{2}-\d{2}$", title)]
 
 
@@ -231,12 +249,21 @@ def write_snapshot(banners: list[ParsedBanner], fetched_at: datetime) -> None:
 
 
 def load_snapshot() -> tuple[list[ParsedBanner], datetime]:
-    """Read the committed seed. Fills an empty table without touching the network."""
+    """Read the committed seed. Fills an empty table without touching the network.
+
+    Raises:
+        BannerRefreshError: If the snapshot is empty or truncated. Without this a mangled
+            file escaped every guard and failed the deploy step with a raw `IndexError`
+            rather than the script's own refusal.
+    """
     raw = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
-    return (
-        [ParsedBanner(**entry) for entry in raw["banners"]],
-        datetime.fromisoformat(raw["fetched_at"]),
-    )
+    banners = [ParsedBanner(**entry) for entry in raw["banners"]]
+    if len(banners) < MIN_BANNERS:
+        raise BannerRefreshError(
+            f"the committed snapshot holds {len(banners)} banners, below the {MIN_BANNERS} "
+            "floor — it is truncated, so nothing is written"
+        )
+    return banners, datetime.fromisoformat(raw["fetched_at"])
 
 
 async def _main(arguments: argparse.Namespace) -> int:

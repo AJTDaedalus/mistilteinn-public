@@ -139,6 +139,22 @@ class _FourStarRates(BannerRates):
         ]
 
 
+@cache
+def non_featured_character_share(banner: BannerKind) -> float:
+    """Share of *non-featured* 4-stars that are characters rather than weapons.
+
+    **The two banners are near-opposite and the data file says so**: 15 % on the character
+    banner against 92.5 % on the weapon one, because the mechanic keeps characters and
+    weapons balanced whichever banner you pull. Derived from the published composition rather
+    than restated, so the two cannot drift.
+    """
+    entry = _raw()["starglitter"]["four_star_composition"][f"{banner.value}_banner"]
+    character = float(entry["non_featured_character"])
+    weapon = float(entry["non_featured_weapon"])
+    total = character + weapon
+    return character / total if total else 0.0
+
+
 @lru_cache(maxsize=1)
 def refund_tiers() -> dict[str, float]:
     """Starglitter refund as a fraction of wishes spent, by tier.

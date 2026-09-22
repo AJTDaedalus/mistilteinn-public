@@ -37,7 +37,12 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from app.services.wishes.planner import first_passage_pmf
-from app.services.wishes.rates import BannerKind, BannerRates, four_star_rates
+from app.services.wishes.rates import (
+    BannerKind,
+    BannerRates,
+    four_star_rates,
+    non_featured_character_share,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -64,8 +69,10 @@ class RefundInputs:
     #: An unknown constellation is left out by the caller rather than guessed at — see
     #: `docs/DESIGN_wish_planner.md` §9.4.
     roster: tuple[int | None, ...] = ()
-    #: Share of non-featured 4-stars that are characters rather than weapons.
-    non_featured_character_share: float = 0.15
+    #: Share of non-featured 4-stars that are characters rather than weapons. **Defaults to
+    #: the banner's published value** rather than to a constant: the two are near-opposite,
+    #: 15 % on the character banner against 92.5 % on the weapon one.
+    non_featured_character_share: float | None = None
 
 
 def payout(draws: int, constellation: int | None) -> int:
@@ -86,11 +93,17 @@ def payout(draws: int, constellation: int | None) -> int:
     return below * 2 + at_max * 5
 
 
-def four_star_count_pmf(rates: BannerRates, pulls: int, cap: int = 120) -> np.ndarray:
+def four_star_count_pmf(rates: BannerRates, pulls: int) -> np.ndarray:
     """P(exactly *k* four-stars within `pulls` wishes).
 
     A renewal process: *k* four-stars fit in `pulls` when the sum of *k* cycle lengths does.
     Convolving the cycle PMF with itself gives each `P(at least k)` exactly.
+
+    **The loop runs until the mass is gone, not to a fixed ceiling.** A hard cap of 120 looked
+    harmless and was not: past about a thousand wishes the remaining mass piled onto the last
+    bin, the array still summed to 1.0, and the mean four-star count froze at the cap —
+    understating the refund by 39 % at 1,500 wishes with nothing to show for it. A C6R5
+    campaign is well over a thousand.
     """
     if pulls < 0:
         raise ValueError("pulls must not be negative")
@@ -98,7 +111,9 @@ def four_star_count_pmf(rates: BannerRates, pulls: int, cap: int = 120) -> np.nd
     alive = np.zeros(pulls + 1)
     alive[0] = 1.0
     at_least = []
-    for _ in range(cap + 1):
+    # One four-star cannot arrive in fewer than one wish, so `pulls` is a hard ceiling on the
+    # count and the loop provably terminates.
+    for _ in range(pulls + 1):
         at_least.append(float(alive.sum()))
         if at_least[-1] < EPSILON:
             break
@@ -215,6 +230,11 @@ def refund_pmf(inputs: RefundInputs, pulls: int) -> dict[int, float]:
     `RefundInputs` is frozen with tuple fields precisely so it can be a key.
     """
     rates = four_star_rates(inputs.banner)
+    share = (
+        inputs.non_featured_character_share
+        if inputs.non_featured_character_share is not None
+        else non_featured_character_share(inputs.banner)
+    )
     counts = four_star_count_pmf(rates, pulls)
     # Counts whose probability is already negligible still cost O(k²) apiece to build a
     # payout distribution for. Trimming the tail is most of what makes this a request.
@@ -249,7 +269,7 @@ def refund_pmf(inputs: RefundInputs, pulls: int) -> dict[int, float]:
         else [_point_mass(k * 2) for k in range(reach)]
     )
     non_featured_by_count = [
-        _non_featured_pmf(k, inputs.non_featured_character_share, roster_for)
+        _non_featured_pmf(k, share, roster_for)
         for k in range(reach)
     ]
 

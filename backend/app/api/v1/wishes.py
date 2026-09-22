@@ -15,16 +15,18 @@ from typing import Annotated
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_current_user, get_db
 from app.models.character import Character
+from app.models.enums import Rarity
 from app.models.roster import CharacterRosterEntry
 from app.models.user import User
 from app.models.weapon import Weapon
 from app.models.wish_banner import WishBanner
 from app.models.wish_income import WishIncome
+from app.services.roster import is_mannequin
 from app.services.wishes import (
     BannerKind,
     Leg,
@@ -234,21 +236,32 @@ async def create_plan(
 
     # The account beats the tier when it can answer. A banner names its featured 4-stars and
     # the roster knows their constellations, which is the axis the tiers only approximate.
+    # Validated whichever source wins. Moving this into the `else` branch alone meant a bogus
+    # tier answered 200 as soon as a banner was picked, and was never reported.
+    try:
+        tier_budget = refunded_budget(wallet, payload.starglitter_refund)
+    except KeyError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=f"unknown starglitter refund tier: {payload.starglitter_refund!r}",
+        ) from error
+
     exact = None
     if payload.banner_slug:
         exact = await _refund_from_account(
-            session, str(user.id), payload.banner_slug, legs[0].banner, wallet,
+            session, str(user.id), payload.banner_slug, wallet,
         )
     if exact is not None:
-        budget, refund_source = wallet + int(exact), "roster"
+        # **Compounded, as the tier is.** The refund buys wishes which themselves refund, so
+        # pricing it over `wallet` alone and stopping drops the second order — and switching a
+        # banner on could make the reported refund *fall*. One more pass closes most of the
+        # gap; the third is under a wish.
+        second = await _refund_from_account(
+            session, str(user.id), payload.banner_slug, wallet + int(exact),
+        )
+        budget, refund_source = wallet + int(second if second is not None else exact), "roster"
     else:
-        try:
-            budget, refund_source = refunded_budget(wallet, payload.starglitter_refund), "tier"
-        except KeyError as error:
-            raise HTTPException(
-                status_code=400,
-                detail=f"unknown starglitter refund tier: {payload.starglitter_refund!r}",
-            ) from error
+        budget, refund_source = tier_budget, "tier"
 
     try:
         plan = plan_campaign(legs, budget=budget)
@@ -336,44 +349,68 @@ def _histogram(pmf: list[float] | None) -> list[WishHistogramBin]:
 
 
 async def _refund_from_account(
-    session: AsyncSession, owner_id: str, banner_slug: str, banner: BannerKind, pulls: int,
+    session: AsyncSession, owner_id: str, banner_slug: str, pulls: int,
 ) -> float | None:
     """The exact refund for this account on this banner, or None if it cannot be computed.
 
-    **None rather than a guess.** An unknown banner or a roster that says nothing is a reason
-    to fall back to the caller's tier and say so, not to invent an account.
+    **None rather than a guess.** An unknown banner, or a roster that has said nothing about
+    any 4-star, is a reason to fall back to the caller's tier and say so — not to invent an
+    account.
+
+    **The banner decides the kind, not the plan's first leg.** Reading it off `legs[0]` meant
+    picking a weapon banner while the strategy happened to start on the character leg priced
+    five *weapon* names as unowned *characters*; the mirror case threw away three real
+    constellations. The row knows what it is.
     """
     row = (await session.execute(
         select(WishBanner).where(WishBanner.slug == banner_slug),
     )).scalar_one_or_none()
     if row is None:
         return None
+    banner = BannerKind(row.kind)
 
-    constellations = dict(
-        (
-            await session.execute(
-                select(Character.name, CharacterRosterEntry.constellation)
-                .join(
-                    CharacterRosterEntry,
-                    CharacterRosterEntry.character_id == Character.id,
-                )
-                .where(CharacterRosterEntry.owner_id == owner_id),
-            )
-        ).all()
-    )
-    if not constellations:
+    # **Owned 4-star characters only.** Without the rarity filter every 5-star the account
+    # owns joined the pool a non-featured *4-star* draw spreads over, diluting it; without
+    # the ownership filter a character explicitly marked not-owned still contributed, because
+    # un-owning one keeps its stored constellation.
+    rows = (
+        await session.execute(
+            select(Character.nanoka_id, Character.name, CharacterRosterEntry.constellation)
+            .join(CharacterRosterEntry, CharacterRosterEntry.character_id == Character.id)
+            .where(
+                CharacterRosterEntry.owner_id == owner_id,
+                CharacterRosterEntry.owned.is_(True),
+                Character.rarity == Rarity.FOUR_STAR,
+            ),
+        )
+    ).all()
+
+    featured_names = set(row.featured_four)
+    featured: list[int | None] = [None] * len(row.featured_four)
+    roster: list[int | None] = []
+    for nanoka_id, name, constellation in rows:
+        # Sixteen Travelers share the name `Traveler` and fourteen mannequins share two more,
+        # so keying by name collapses thirty rows to three and lets whichever the database
+        # returned last win. Mannequins are not ownable characters at all.
+        if is_mannequin(nanoka_id):
+            continue
+        if name in featured_names:
+            featured[row.featured_four.index(name)] = constellation
+        elif constellation is not None:
+            # **An unknown constellation is left out, not passed through.** `None` means
+            # "not owned" to `payout`, which gives the first copy away free — so forwarding a
+            # NULL would understate exactly the accounts the column was added for.
+            roster.append(constellation)
+
+    if not roster and all(value is None for value in featured):
         return None
 
-    featured = tuple(constellations.get(name) for name in row.featured_four)
-    # Everything else the account owns is the pool a non-featured 4-star draws from.
-    roster = tuple(
-        value for name, value in constellations.items() if name not in set(row.featured_four)
-    )
     return expected_refund(
         RefundInputs(
             banner=banner,
-            featured=featured if banner is BannerKind.CHARACTER else (),
-            roster=roster,
+            # The weapon banner's featured 4-stars are weapons: a flat 2 apiece, no roster.
+            featured=tuple(featured) if banner is BannerKind.CHARACTER else (),
+            roster=tuple(roster),
         ),
         pulls,
     )
@@ -481,10 +518,20 @@ async def list_banners(
     query = select(WishBanner)
     if kind is not None:
         query = query.where(WishBanner.kind == kind.value)
-    total = len((await session.execute(query)).all())
+
+    # Counted, not materialised: `len(all())` loaded all 291 rows with their JSONB on every
+    # eight-row page.
+    total = int(
+        (await session.execute(
+            select(func.count()).select_from(query.subquery()),
+        )).scalar_one()
+    )
     rows = (
         await session.execute(
-            query.order_by(WishBanner.starts_at.desc(), WishBanner.slug.desc())
+            # **NULLs last.** `starts_at` is nullable and Postgres sorts NULLs *first* under
+            # DESC, so a wiki page missing `time_start` would take the picker's opening eight
+            # slots ahead of every real banner.
+            query.order_by(WishBanner.starts_at.desc().nulls_last(), WishBanner.slug.desc())
             .offset(offset)
             .limit(limit),
         )
@@ -507,7 +554,9 @@ async def list_banners(
     def items(names: list[str]) -> list[WishFeaturedItem]:
         return [WishFeaturedItem(name=n, icon=art.get(n)) for n in names]
 
-    latest = max((row.fetched_at for row in rows), default=None)
+    # Over the table, not over the page: taken from `rows` it changed as the user clicked
+    # "show more", and read null on any page past the end of a populated table.
+    latest = (await session.execute(select(func.max(WishBanner.fetched_at)))).scalar_one_or_none()
     return WishBannerList(
         banners=[
             WishBannerRead(

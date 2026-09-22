@@ -331,6 +331,11 @@ its `source`, and `builds.constellation_level` records how far along each is.
 - **The non-featured pool is read from the account too, and is not editable.** Sixty-three
   rows is not a form. It contributes to the refund as a *distribution* — how many of the 45
   are at C6 — rather than as a list.
+- **An existing account falls back until it re-imports.** `character_roster.constellation` is
+  new and every row written before it is NULL, so a roster that has never been re-imported
+  supports no exact refund and the planner uses the tier instead. That is correct rather than
+  a gap — and it is visible, because the budget line only says *"from your roster"* when the
+  roster actually answered.
 - **Missing is missing.** A character with no build has no constellation, and that is not
   "C0": it is unknown. Defaulting unknown to C0 would make a large roster read as though
   nothing were maxed and understate the refund; defaulting to C6 would do the reverse. The

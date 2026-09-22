@@ -587,3 +587,186 @@ async def test_a_banner_with_no_roster_falls_back(
 async def test_limits_publishes_the_banner_page_size(authed_client: AsyncClient) -> None:
     body = (await authed_client.get("/api/v1/wishes/limits")).json()
     assert body["banner_page"] == 8
+
+
+# --- PR #332 review findings -------------------------------------------------------------
+
+
+async def _owned_four_star(
+    db_session: AsyncSession, owner_id: str, name: str, constellation: int | None,
+    *, rarity: str = "FOUR_STAR", owned: bool = True, nanoka_id: str | None = None,
+) -> None:
+    from app.models.character import Character
+    from app.models.enums import Element, Rarity, WeaponType
+    from app.models.roster import CharacterRosterEntry
+
+    character = Character(
+        nanoka_id=nanoka_id or f"n-{name}", name=name, element=Element.CRYO,
+        weapon_type=WeaponType.SWORD, rarity=Rarity[rarity],
+        base_hp=1000.0, base_atk=26.0, base_def=60.0,
+        base_crit_rate=0.05, base_crit_dmg=0.5,
+    )
+    db_session.add(character)
+    await db_session.flush()
+    db_session.add(CharacterRosterEntry(
+        owner_id=owner_id, character_id=str(character.id),
+        owned=owned, constellation=constellation, source="import",
+    ))
+    await db_session.commit()
+
+
+async def test_the_refund_is_read_from_the_account(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    user, _ = authed_user
+    slug = await _banner(db_session)
+    for name in ("Diona", "Faruzan", "Chongyun"):
+        await _owned_four_star(db_session, str(user.id), name, 6)
+    await _owned_four_star(db_session, str(user.id), "Bennett", 6)
+
+    body = (await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={
+            "character": {"banner": "character"}, "primogems": 32_000,
+            "banner_slug": slug, "starglitter_refund": "none",
+        },
+    )).json()
+    assert body["refund_source"] == "roster"
+    # `none` would have given zero; the account gave a real figure.
+    assert body["refunded_wishes"] > 0
+
+
+async def test_a_five_star_does_not_dilute_the_four_star_pool(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """Finding 1. Without a rarity filter every 5-star owned joined the pool a non-featured
+    *4-star* draw spreads over, diluting it and understating the refund."""
+    user, _ = authed_user
+    slug = await _banner(db_session)
+    for name in ("Diona", "Faruzan", "Chongyun"):
+        await _owned_four_star(db_session, str(user.id), name, 6)
+    await _owned_four_star(db_session, str(user.id), "Bennett", 6)
+
+    async def refund() -> int:
+        return (await authed_client.post(
+            "/api/v1/wishes/plan",
+            json={"character": {"banner": "character"}, "primogems": 32_000,
+                  "banner_slug": slug, "starglitter_refund": "none"},
+        )).json()["refunded_wishes"]
+
+    before = await refund()
+    for i in range(12):
+        await _owned_four_star(db_session, str(user.id), f"Five{i}", 6, rarity="FIVE_STAR")
+    assert await refund() == before, "5-stars are not in the 4-star pool"
+
+
+async def test_a_character_marked_not_owned_does_not_contribute(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """Finding 1. Un-owning a character keeps its stored constellation, so without the
+    ownership filter it kept paying into the refund."""
+    user, _ = authed_user
+    slug = await _banner(db_session)
+    for name in ("Diona", "Faruzan", "Chongyun"):
+        await _owned_four_star(db_session, str(user.id), name, 6)
+    await _owned_four_star(db_session, str(user.id), "Kept", 6)
+
+    async def refund() -> int:
+        return (await authed_client.post(
+            "/api/v1/wishes/plan",
+            json={"character": {"banner": "character"}, "primogems": 32_000,
+                  "banner_slug": slug, "starglitter_refund": "none"},
+        )).json()["refunded_wishes"]
+
+    before = await refund()
+    await _owned_four_star(db_session, str(user.id), "Disowned", 6, owned=False)
+    assert await refund() == before
+
+
+async def test_the_banner_decides_the_kind_not_the_first_leg(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """Finding 2. Reading the kind off `legs[0]` priced a weapon banner's five weapon names
+    as unowned *characters*, and the mirror case threw away three real constellations."""
+    user, _ = authed_user
+    for name in ("Diona", "Faruzan", "Chongyun"):
+        await _owned_four_star(db_session, str(user.id), name, 6)
+    character_slug = await _banner(db_session)
+
+    # The character banner with a strategy whose FIRST leg is the weapon banner.
+    body = (await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={
+            "character": {"banner": "character"}, "weapon": {"banner": "weapon"},
+            "strategy": "r1_first", "primogems": 32_000,
+            "banner_slug": character_slug, "starglitter_refund": "none",
+        },
+    )).json()
+    assert body["refund_source"] == "roster"
+    assert body["refunded_wishes"] > 0, (
+        "the three featured constellations must still be priced as characters"
+    )
+
+
+async def test_an_unknown_constellation_is_left_out_rather_than_read_as_unowned(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """Finding 5. `None` means "not owned" to `payout`, which gives the first copy away
+    free — so forwarding a NULL understated exactly the accounts the column was added for."""
+    user, _ = authed_user
+    slug = await _banner(db_session)
+    for name in ("Diona", "Faruzan", "Chongyun"):
+        await _owned_four_star(db_session, str(user.id), name, 6)
+    await _owned_four_star(db_session, str(user.id), "Known", 6)
+
+    async def refund() -> int:
+        return (await authed_client.post(
+            "/api/v1/wishes/plan",
+            json={"character": {"banner": "character"}, "primogems": 32_000,
+                  "banner_slug": slug, "starglitter_refund": "none"},
+        )).json()["refunded_wishes"]
+
+    before = await refund()
+    for i in range(10):
+        await _owned_four_star(db_session, str(user.id), f"Unknown{i}", None)
+    assert await refund() == before, "a NULL constellation must not enter the pool at all"
+
+
+async def test_a_bad_tier_is_still_refused_when_a_banner_is_picked(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """Finding 11. The handler moved into the `else` branch and stopped firing."""
+    slug = await _banner(db_session)
+    response = await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={"character": {"banner": "character"}, "banner_slug": slug,
+              "starglitter_refund": "bogus"},
+    )
+    assert response.status_code == 400
+
+
+async def test_a_banner_with_no_start_date_does_not_take_the_first_slot(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """Finding 8. Postgres sorts NULLs first under DESC."""
+    await _banner(db_session, slug="Undated/2019-01-01", starts_at=None)
+    await _banner(db_session)
+
+    body = (await authed_client.get("/api/v1/wishes/banners")).json()
+    assert body["banners"][0]["slug"] == "Test Banner/2026-09-23"
+
+
+async def test_fetched_at_is_the_table_not_the_page(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """Finding 7. Taken from the page it changed as the user clicked "show more"."""
+    for i in range(4):
+        await _banner(db_session, slug=f"B{i}/2026-01-0{i + 1}", starts_at=f"2026-01-0{i + 1}")
+
+    first = (await authed_client.get("/api/v1/wishes/banners?limit=1")).json()
+    later = (await authed_client.get("/api/v1/wishes/banners?limit=1&offset=3")).json()
+    assert first["fetched_at"] == later["fetched_at"]
+
+    past_the_end = (await authed_client.get("/api/v1/wishes/banners?limit=1&offset=99")).json()
+    assert past_the_end["banners"] == []
+    assert past_the_end["fetched_at"] is not None, "the table is populated; say so"
