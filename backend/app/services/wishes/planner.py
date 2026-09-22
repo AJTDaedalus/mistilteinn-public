@@ -94,6 +94,13 @@ class Milestone:
     average_wishes: float
     #: Wishes at which the chance first reaches 50%, or None if it never does.
     median_wishes: int | None
+    #: The exact distribution this rung's three summary numbers were read off.
+    #:
+    #: **Kept rather than discarded.** The convolution produces the whole distribution and
+    #: the page used to throw all but three numbers away — so a histogram costs nothing but
+    #: the decision to carry it. It is the *population*: no sampling error, identical on
+    #: every run. `docs/DESIGN_wish_planner.md` §9.8.
+    pmf: list[float] = field(default_factory=list)
 
 
 @dataclass(frozen=True, slots=True)
@@ -258,6 +265,7 @@ def plan_campaign(legs: Sequence[Leg], budget: int) -> WishPlan:
                     success_chance=float(total[: budget + 1].sum()),
                     average_wishes=float((np.arange(len(total)) * total).sum()),
                     median_wishes=_quantile(total, 0.5),
+                    pmf=total.tolist(),
                 )
             )
 

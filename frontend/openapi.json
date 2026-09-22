@@ -4491,6 +4491,84 @@
         ]
       }
     },
+    "/api/v1/wishes/banners": {
+      "get": {
+        "tags": [
+          "wishes"
+        ],
+        "summary": "List Banners",
+        "description": "Banners newest first, paged.\n\n**Paged rather than capped.** `CLAUDE.md` records the planner's materials tab being\n\"fixed\" by truncating a 514-row list at 80, which made the page short by hiding the data.\n`total` is sent so the page can say how many more there are rather than guess.",
+        "operationId": "list_banners_api_v1_wishes_banners_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BannerKind"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 60,
+              "minimum": 1,
+              "default": 8,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WishBannerList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/wishes/limits": {
       "get": {
         "tags": [
@@ -12818,6 +12896,128 @@
         "title": "WeaponType",
         "description": "The six weapon classes.\n\nSource: `character.json` `weapon` and `weapon.json` `type`. **The two indexes disagree\non the sixth.** Characters spell the crossbow class `WEAPON_CROSSBOW` (2 characters);\nweapons spell it `ITEM_TPS_WEAPON` (8 weapons) and `WEAPON_CROSSBOW` appears nowhere in\n`weapon.json`. Both spellings therefore map here, via `parse`.\n\nDESIGN \u00a72.6 recorded only `WEAPON_CROSSBOW`, having read the character index alone."
       },
+      "WishBannerList": {
+        "properties": {
+          "banners": {
+            "items": {
+              "$ref": "#/components/schemas/WishBannerRead"
+            },
+            "type": "array",
+            "title": "Banners"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "fetched_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "banners",
+          "total",
+          "fetched_at"
+        ],
+        "title": "WishBannerList",
+        "description": "Banners newest first, with how many there are in total."
+      },
+      "WishBannerRead": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "starts_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts At"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "featured_five": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Featured Five"
+          },
+          "featured_four": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Featured Four"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "kind",
+          "starts_at",
+          "ends_at",
+          "featured_five",
+          "featured_four"
+        ],
+        "title": "WishBannerRead",
+        "description": "One banner run, for the picker."
+      },
+      "WishHistogramBin": {
+        "properties": {
+          "start": {
+            "type": "integer",
+            "title": "Start"
+          },
+          "end": {
+            "type": "integer",
+            "title": "End"
+          },
+          "probability": {
+            "type": "number",
+            "title": "Probability"
+          }
+        },
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "probability"
+        ],
+        "title": "WishHistogramBin",
+        "description": "One bar of the exact distribution of wishes to a rung."
+      },
       "WishIncomeRead": {
         "properties": {
           "versions": {
@@ -12915,6 +13115,14 @@
             ],
             "title": "Median Wishes",
             "description": "Wishes at which the chance first reaches 50%, or null if it never does."
+          },
+          "histogram": {
+            "items": {
+              "$ref": "#/components/schemas/WishHistogramBin"
+            },
+            "type": "array",
+            "title": "Histogram",
+            "description": "The exact distribution of wishes needed, binned for drawing. **The population, not a sample** \u2014 no sampling error, identical on every run. Sent for the rungs the page can chart; empty on the rest to keep the payload small."
           }
         },
         "type": "object",
@@ -12946,6 +13154,12 @@
             "type": "integer",
             "title": "Wallet Wishes",
             "description": "Wishes the wallet alone is worth, before refund."
+          },
+          "refund_source": {
+            "type": "string",
+            "title": "Refund Source",
+            "description": "`roster` when the refund was computed exactly from the account and the banner's featured 4-stars, `tier` when it came from the chosen constant.",
+            "default": "tier"
           },
           "refunded_wishes": {
             "type": "integer",
@@ -13006,6 +13220,19 @@
             "maxItems": 12,
             "title": "Targets",
             "description": "Custom mode: goals in spending order. Each needs `target_copies`."
+          },
+          "banner_slug": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Banner Slug",
+            "description": "A banner from `/wishes/banners`. When given, the refund is computed **exactly** from its featured 4-stars and the caller's roster instead of from a tier."
           },
           "starglitter_refund": {
             "type": "string",

@@ -9,15 +9,20 @@ discrete convolutions; looking a result up would cost more than producing it.
 
 from __future__ import annotations
 
+from itertools import pairwise
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+import numpy as np
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_current_user, get_db
+from app.models.character import Character
+from app.models.roster import CharacterRosterEntry
 from app.models.user import User
+from app.models.wish_banner import WishBanner
 from app.models.wish_income import WishIncome
 from app.services.wishes import (
     BannerKind,
@@ -33,6 +38,7 @@ from app.services.wishes import (
 )
 from app.services.wishes.planner import MAX_CONSTELLATION, MAX_REFINEMENT, wishes_from
 from app.services.wishes.rates import primogems_per_wish
+from app.services.wishes.refund import RefundInputs, expected_refund
 
 #: Highest Capturing Radiance counter the model has a rate for. **Derived, not typed**: the
 #: table's last entry is 1.0 ("you cannot lose a fourth"), so its length is the answer and a
@@ -49,6 +55,10 @@ _User = Annotated[User, Depends(get_current_user)]
 MAX_PRIMOGEMS = 10_000_000
 MAX_FATE = 100_000
 MAX_EXTRA_WISHES = 100_000
+#: Banners a page asks for at a time, and the most it may ask for. Eight is the owner's
+#: "show more" step; the ceiling stops a caller pulling all 291 in one request.
+BANNER_PAGE = 8
+MAX_BANNER_PAGE = 60
 
 
 class WishTarget(BaseModel):
@@ -101,6 +111,13 @@ class WishPlanRequest(BaseModel):
         default_factory=list, max_length=12,
         description="Custom mode: goals in spending order. Each needs `target_copies`.",
     )
+    banner_slug: str | None = Field(
+        None, max_length=200,
+        description=(
+            "A banner from `/wishes/banners`. When given, the refund is computed **exactly** "
+            "from its featured 4-stars and the caller's roster instead of from a tier."
+        ),
+    )
     starglitter_refund: str = Field(
         "none",
         description=(
@@ -120,6 +137,14 @@ class WishPlanRequest(BaseModel):
     )
 
 
+class WishHistogramBin(BaseModel):
+    """One bar of the exact distribution of wishes to a rung."""
+
+    start: int
+    end: int
+    probability: float
+
+
 class WishMilestoneRead(BaseModel):
     """One rung of the ladder."""
 
@@ -130,6 +155,14 @@ class WishMilestoneRead(BaseModel):
     median_wishes: int | None = Field(
         description="Wishes at which the chance first reaches 50%, or null if it never does."
     )
+    histogram: list[WishHistogramBin] = Field(
+        default_factory=list,
+        description=(
+            "The exact distribution of wishes needed, binned for drawing. **The population, "
+            "not a sample** — no sampling error, identical on every run. Sent for the rungs "
+            "the page can chart; empty on the rest to keep the payload small."
+        ),
+    )
 
 
 class WishPlanRead(BaseModel):
@@ -138,6 +171,13 @@ class WishPlanRead(BaseModel):
     budget: int = Field(description="Wishes available: primogems/160 + fate + projected income.")
     milestones: list[WishMilestoneRead]
     wallet_wishes: int = Field(description="Wishes the wallet alone is worth, before refund.")
+    refund_source: str = Field(
+        "tier",
+        description=(
+            "`roster` when the refund was computed exactly from the account and the banner's "
+            "featured 4-stars, `tier` when it came from the chosen constant."
+        ),
+    )
     refunded_wishes: int = Field(
         description="Wishes the starglitter refund adds. Zero when the tier is `none`."
     )
@@ -175,7 +215,9 @@ class WishIncomeRead(BaseModel):
 
 
 @router.post("/plan", response_model=WishPlanRead)
-async def create_plan(payload: WishPlanRequest, user: _User) -> WishPlanRead:
+async def create_plan(
+    payload: WishPlanRequest, session: _Session, user: _User,
+) -> WishPlanRead:
     """Return the odds of each goal in the plan, on one shared budget.
 
     Milestones are **cumulative**: a rung's chance is the chance of reaching it *and*
@@ -188,13 +230,24 @@ async def create_plan(payload: WishPlanRequest, user: _User) -> WishPlanRead:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
     wallet = wishes_from(payload.primogems, payload.intertwined_fate) + payload.extra_wishes
-    try:
-        budget = refunded_budget(wallet, payload.starglitter_refund)
-    except KeyError as error:
-        raise HTTPException(
-            status_code=400,
-            detail=f"unknown starglitter refund tier: {payload.starglitter_refund!r}",
-        ) from error
+
+    # The account beats the tier when it can answer. A banner names its featured 4-stars and
+    # the roster knows their constellations, which is the axis the tiers only approximate.
+    exact = None
+    if payload.banner_slug:
+        exact = await _refund_from_account(
+            session, str(user.id), payload.banner_slug, legs[0].banner, wallet,
+        )
+    if exact is not None:
+        budget, refund_source = wallet + int(exact), "roster"
+    else:
+        try:
+            budget, refund_source = refunded_budget(wallet, payload.starglitter_refund), "tier"
+        except KeyError as error:
+            raise HTTPException(
+                status_code=400,
+                detail=f"unknown starglitter refund tier: {payload.starglitter_refund!r}",
+            ) from error
 
     try:
         plan = plan_campaign(legs, budget=budget)
@@ -209,6 +262,7 @@ async def create_plan(payload: WishPlanRequest, user: _User) -> WishPlanRead:
         budget=plan.budget,
         wallet_wishes=wallet,
         refunded_wishes=budget - wallet,
+        refund_source=refund_source,
         milestones=[
             WishMilestoneRead(
                 copies=milestone.copies,
@@ -216,8 +270,9 @@ async def create_plan(payload: WishPlanRequest, user: _User) -> WishPlanRead:
                 success_chance=milestone.success_chance,
                 average_wishes=milestone.average_wishes,
                 median_wishes=milestone.median_wishes,
+                histogram=_histogram(milestone.pmf) if index < CHARTED_RUNGS else [],
             )
-            for milestone in plan.milestones
+            for index, milestone in enumerate(plan.milestones)
         ],
         published_worst_case=rates_for(legs[0].banner).published_worst_case,
     )
@@ -249,6 +304,77 @@ def _legs_for(payload: WishPlanRequest) -> list[Leg]:
         payload.strategy,
         _leg(payload.character),
         _leg(payload.weapon) if payload.weapon else None,
+    )
+
+
+#: Bars in a milestone's histogram. Enough to show the pity humps, few enough to send.
+HISTOGRAM_BINS = 40
+#: Below this a bin is empty for drawing purposes; it trims a long, invisible tail.
+HISTOGRAM_FLOOR = 1e-6
+#: Rungs that carry a histogram. The whole ladder would be twelve charts nobody asked for.
+CHARTED_RUNGS = 3
+
+
+def _histogram(pmf: list[float] | None) -> list[WishHistogramBin]:
+    """Bin an exact PMF for drawing, trimmed to where the mass actually is."""
+    if not pmf:
+        return []
+    values = np.asarray(pmf)
+    live = np.flatnonzero(values > HISTOGRAM_FLOOR)
+    if live.size == 0:
+        return []
+    lo, hi = int(live[0]), int(live[-1]) + 1
+    edges = np.linspace(lo, hi, HISTOGRAM_BINS + 1).astype(int)
+    return [
+        WishHistogramBin(
+            start=int(a), end=int(b), probability=float(values[a:b].sum()),
+        )
+        for a, b in pairwise(edges)
+        if b > a
+    ]
+
+
+async def _refund_from_account(
+    session: AsyncSession, owner_id: str, banner_slug: str, banner: BannerKind, pulls: int,
+) -> float | None:
+    """The exact refund for this account on this banner, or None if it cannot be computed.
+
+    **None rather than a guess.** An unknown banner or a roster that says nothing is a reason
+    to fall back to the caller's tier and say so, not to invent an account.
+    """
+    row = (await session.execute(
+        select(WishBanner).where(WishBanner.slug == banner_slug),
+    )).scalar_one_or_none()
+    if row is None:
+        return None
+
+    constellations = dict(
+        (
+            await session.execute(
+                select(Character.name, CharacterRosterEntry.constellation)
+                .join(
+                    CharacterRosterEntry,
+                    CharacterRosterEntry.character_id == Character.id,
+                )
+                .where(CharacterRosterEntry.owner_id == owner_id),
+            )
+        ).all()
+    )
+    if not constellations:
+        return None
+
+    featured = tuple(constellations.get(name) for name in row.featured_four)
+    # Everything else the account owns is the pool a non-featured 4-star draws from.
+    roster = tuple(
+        value for name, value in constellations.items() if name not in set(row.featured_four)
+    )
+    return expected_refund(
+        RefundInputs(
+            banner=banner,
+            featured=featured if banner is BannerKind.CHARACTER else (),
+            roster=roster,
+        ),
+        pulls,
     )
 
 
@@ -303,6 +429,67 @@ async def read_income(session: _Session, user: _User) -> WishIncomeRead:
     )
 
 
+class WishBannerRead(BaseModel):
+    """One banner run, for the picker."""
+
+    slug: str
+    name: str
+    kind: str
+    starts_at: str | None
+    ends_at: str | None
+    featured_five: list[str]
+    featured_four: list[str]
+
+
+class WishBannerList(BaseModel):
+    """Banners newest first, with how many there are in total."""
+
+    banners: list[WishBannerRead]
+    total: int
+    fetched_at: str | None
+
+
+@router.get("/banners", response_model=WishBannerList)
+async def list_banners(
+    session: _Session,
+    user: _User,
+    kind: BannerKind | None = None,
+    limit: int = Query(BANNER_PAGE, ge=1, le=MAX_BANNER_PAGE),
+    offset: int = Query(0, ge=0),
+) -> WishBannerList:
+    """Banners newest first, paged.
+
+    **Paged rather than capped.** `CLAUDE.md` records the planner's materials tab being
+    "fixed" by truncating a 514-row list at 80, which made the page short by hiding the data.
+    `total` is sent so the page can say how many more there are rather than guess.
+    """
+    query = select(WishBanner)
+    if kind is not None:
+        query = query.where(WishBanner.kind == kind.value)
+    total = len((await session.execute(query)).all())
+    rows = (
+        await session.execute(
+            query.order_by(WishBanner.starts_at.desc(), WishBanner.slug.desc())
+            .offset(offset)
+            .limit(limit),
+        )
+    ).scalars().all()
+    latest = max((row.fetched_at for row in rows), default=None)
+    return WishBannerList(
+        banners=[
+            WishBannerRead(
+                slug=row.slug, name=row.name, kind=row.kind,
+                starts_at=row.starts_at, ends_at=row.ends_at,
+                featured_five=list(row.featured_five),
+                featured_four=list(row.featured_four),
+            )
+            for row in rows
+        ],
+        total=total,
+        fetched_at=latest.isoformat() if latest else None,
+    )
+
+
 @router.get("/limits", response_model=dict)
 async def read_limits(user: _User) -> dict:
     """Static facts the page needs to build its controls without hardcoding them."""
@@ -323,4 +510,5 @@ async def read_limits(user: _User) -> dict:
         "max_lost_fifty_fifties": MAX_LOST_FIFTY_FIFTIES,
         "strategies": [strategy.value for strategy in Strategy],
         "starglitter_refund_tiers": refund_tiers(),
+        "banner_page": BANNER_PAGE,
     }
