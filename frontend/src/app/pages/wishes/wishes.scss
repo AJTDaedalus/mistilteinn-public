@@ -422,3 +422,31 @@
   justify-content: space-between;
   padding-top: var(--space-1);
 }
+
+/* -- per-row banner picking ------------------------------------------------------------ */
+
+.row__banner-pick {
+  background: var(--bg-deep);
+  border: 1px dashed var(--surface-rule);
+  border-radius: var(--radius-1);
+  color: var(--ink-dim);
+  cursor: pointer;
+  font-size: var(--text-xs);
+  max-width: 11rem;
+  overflow: hidden;
+  padding: var(--space-1) var(--space-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &.on { border-style: solid; border-color: var(--brass); color: var(--ink); }
+  &:hover { border-color: var(--brass-hi); }
+  &:focus-visible { outline: 2px solid var(--brass-hi); outline-offset: 2px; }
+}
+
+/* Opened under the row it belongs to, so it is obvious which goal it is setting. */
+.banner-grid--inline {
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  margin-bottom: var(--space-2);
+  padding: var(--space-2);
+}

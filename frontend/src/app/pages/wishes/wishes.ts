@@ -47,10 +47,16 @@ interface Position {
 interface CustomRow extends Position {
   banner: 'character' | 'weapon';
   targetCopies: number;
+  /** Which banner run this row is on. Per row: a custom plan spans banners. */
+  bannerSlug: string | null;
 }
 
 function position(label = ''): Position {
   return { label, pity: 0, guaranteed: false, lostFiftyFifties: 0, ownedCopies: 0 };
+}
+
+function row(banner: 'character' | 'weapon', label: string): CustomRow {
+  return { ...position(label), banner, targetCopies: 1, bannerSlug: null };
 }
 
 /**
@@ -93,9 +99,9 @@ export class WishesPage {
   protected readonly strategy = signal('c0_first');
 
   // -- custom mode
-  protected readonly rows = signal<CustomRow[]>([
-    { ...position('Character'), banner: 'character', targetCopies: 1 },
-  ]);
+  protected readonly rows = signal<CustomRow[]>([row('character', 'Character')]);
+  /** Which row's banner picker is open, or null. One at a time keeps the page short. */
+  protected readonly pickingFor = signal<number | null>(null);
 
   // -- wallet
   protected readonly primogems = signal(0);
@@ -191,6 +197,27 @@ export class WishesPage {
     return bins.length ? bins[bins.length - 1].end : 0;
   });
 
+  /**
+   * Why the refund is not being read from the account, or null when it is.
+   *
+   * **Silence was the bug.** The budget line said "from your roster" when the exact figure
+   * was used and simply said nothing when it was not, so a player whose roster carries no
+   * constellations — every account imported before that column existed — saw the tier
+   * quietly substituted with no way to tell.
+   */
+  protected readonly refundFallback = computed(() => {
+    const result = this.plan();
+    if (!result || result.refund_source === 'roster') return null;
+    const picked =
+      this.mode() === 'custom'
+        ? this.rows().some((entry) => entry.bannerSlug)
+        : this.chosenBanner() !== null;
+    return picked
+      ? 'Your roster has no 4★ constellations yet — re-import a GOOD export to compute this ' +
+        'from your own account.'
+      : 'Pick a banner to compute the refund from your own roster.';
+  });
+
   /** Tallest bar, so the chart can scale to it rather than to 1. */
   protected readonly chartPeak = computed(() =>
     Math.max(...(this.charted()?.histogram ?? []).map((b) => b.probability), 1e-9),
@@ -235,22 +262,25 @@ export class WishesPage {
     if (this.mode() === 'custom') {
       return {
         ...wallet,
-        banner_slug: this.chosenBanner(),
-        targets: this.rows().map((row, index) => ({
-          ...this.target(row, row.banner),
+        targets: this.rows().map((entry, index) => ({
+          ...this.target(entry, entry.banner),
           // Only the first row declares the counter; the backend refuses a later one.
-          lost_fifty_fifties: index === 0 ? this.target(row, row.banner).lost_fifty_fifties : 0,
-          target_copies: row.targetCopies,
+          lost_fifty_fifties:
+            index === 0 ? this.target(entry, entry.banner).lost_fifty_fifties : 0,
+          target_copies: entry.targetCopies,
+          banner_slug: entry.bannerSlug,
         })),
       };
     }
 
     return {
       ...wallet,
-      character: this.target(this.character(), 'character'),
-      weapon: this.planWeapon() ? this.target(this.weapon(), 'weapon') : null,
+      character: { ...this.target(this.character(), 'character'),
+                   banner_slug: this.chosenBanner() },
+      weapon: this.planWeapon()
+        ? { ...this.target(this.weapon(), 'weapon'), banner_slug: this.chosenBanner() }
+        : null,
       strategy: this.strategy(),
-      banner_slug: this.chosenBanner(),
     };
   }
 
@@ -305,6 +335,28 @@ export class WishesPage {
 
   protected isChosen(slug: string): boolean {
     return this.chosenBanner() === slug;
+  }
+
+  /** Open or close the banner picker for one custom row. */
+  protected togglePicker(index: number): void {
+    this.pickingFor.set(this.pickingFor() === index ? null : index);
+  }
+
+  /** Pick a banner for one row of a custom plan, filling in what the banner knows. */
+  protected chooseRowBanner(index: number, banner: WishBannerRead | null): void {
+    if (!this.rows()[index]) return;
+    const change: Partial<CustomRow> = { bannerSlug: banner?.slug ?? null };
+    if (banner) {
+      change.banner = banner.kind as 'character' | 'weapon';
+      change.label = banner.featured_five[0]?.name ?? '';
+    }
+    this.patchRow(index, change);
+    this.pickingFor.set(null);
+  }
+
+  /** The banner a custom row is on, when it is one of the loaded ones. */
+  protected rowBanner(entry: CustomRow): WishBannerRead | null {
+    return this.banners().find((b) => b.slug === entry.bannerSlug) ?? null;
   }
 
   /** `2026-09-23 11:00:00` as `Sep 2026` — the banner list is scanned, not read. */
@@ -402,7 +454,7 @@ export class WishesPage {
     const label = banner === 'character' ? 'Character' : 'Weapon';
     this.rows.set([
       ...this.rows(),
-      { ...position(`${label} ${this.rows().length + 1}`), banner, targetCopies: 1 },
+      row(banner, `${label} ${this.rows().length + 1}`),
     ]);
   }
 
@@ -416,13 +468,18 @@ export class WishesPage {
   protected moveRow(index: number, by: -1 | 1): void {
     const next = [...this.rows()];
     const to = index + by;
-    if (to < 0 || to >= next.length) return;
+    if (!next[index] || to < 0 || to >= next.length) return;
     [next[index], next[to]] = [next[to], next[index]];
     this.rows.set(next);
   }
 
   protected patchRow(index: number, change: Partial<CustomRow>): void {
     const next = [...this.rows()];
+    // **Guarded.** Spreading a row that does not exist produced one out of the change alone,
+    // so `ownedCopies` became `undefined`, the clamp below turned it into `NaN`, and it went
+    // out as `null` — a 422 whose message named a field the user never touched, on a row
+    // they never added.
+    if (!next[index]) return;
     next[index] = { ...next[index], ...change };
     // Changing the banner can leave a goal above the new banner's cap.
     const cap = MAX_COPIES[next[index].banner];

@@ -13247,19 +13247,6 @@
             "title": "Targets",
             "description": "Custom mode: goals in spending order. Each needs `target_copies`."
           },
-          "banner_slug": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 200
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Banner Slug",
-            "description": "A banner from `/wishes/banners`. When given, the refund is computed **exactly** from its featured 4-stars and the caller's roster instead of from a tier."
-          },
           "starglitter_refund": {
             "type": "string",
             "title": "Starglitter Refund",
@@ -13333,6 +13320,19 @@
             "title": "Owned Copies",
             "description": "Copies already held. C2 is 3; R3 is 3.",
             "default": 0
+          },
+          "banner_slug": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Banner Slug",
+            "description": "A banner from `/wishes/banners`. **Per target, because a custom plan is several characters on several banners** and each has its own featured 4-stars \u2014 which are two thirds of every 4-star pulled, so they decide the refund."
           },
           "target_copies": {
             "anyOf": [

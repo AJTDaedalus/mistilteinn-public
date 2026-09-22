@@ -112,6 +112,10 @@ def _legs(
                 lost_fifty_fifties=source.lost_fifty_fifties if first else 0,
                 owned_copies=held[banner],
                 target_copies=target,
+                # **Carried, not dropped.** `campaign_for` rebuilds the legs, and losing the
+                # slug here silently sent every plan back to the constant tier — the refund
+                # read as unavailable while a banner was plainly picked.
+                banner_slug=source.banner_slug,
             )
         )
         held[banner] = target

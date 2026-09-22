@@ -562,8 +562,8 @@ async def test_an_unknown_banner_falls_back_rather_than_failing(
     body = (await authed_client.post(
         "/api/v1/wishes/plan",
         json={
-            "character": {"banner": "character"}, "primogems": 32_000,
-            "banner_slug": "Nothing/1999-01-01", "starglitter_refund": "low",
+            "character": {"banner": "character", "banner_slug": "Nothing/1999-01-01"},
+            "primogems": 32_000, "starglitter_refund": "low",
         },
     )).json()
     assert body["refund_source"] == "tier"
@@ -627,8 +627,8 @@ async def test_the_refund_is_read_from_the_account(
     body = (await authed_client.post(
         "/api/v1/wishes/plan",
         json={
-            "character": {"banner": "character"}, "primogems": 32_000,
-            "banner_slug": slug, "starglitter_refund": "none",
+            "character": {"banner": "character", "banner_slug": slug},
+            "primogems": 32_000, "starglitter_refund": "none",
         },
     )).json()
     assert body["refund_source"] == "roster"
@@ -650,8 +650,8 @@ async def test_a_five_star_does_not_dilute_the_four_star_pool(
     async def refund() -> int:
         return (await authed_client.post(
             "/api/v1/wishes/plan",
-            json={"character": {"banner": "character"}, "primogems": 32_000,
-                  "banner_slug": slug, "starglitter_refund": "none"},
+            json={"character": {"banner": "character", "banner_slug": slug},
+                  "primogems": 32_000, "starglitter_refund": "none"},
         )).json()["refunded_wishes"]
 
     before = await refund()
@@ -674,8 +674,8 @@ async def test_a_character_marked_not_owned_does_not_contribute(
     async def refund() -> int:
         return (await authed_client.post(
             "/api/v1/wishes/plan",
-            json={"character": {"banner": "character"}, "primogems": 32_000,
-                  "banner_slug": slug, "starglitter_refund": "none"},
+            json={"character": {"banner": "character", "banner_slug": slug},
+                  "primogems": 32_000, "starglitter_refund": "none"},
         )).json()["refunded_wishes"]
 
     before = await refund()
@@ -697,9 +697,9 @@ async def test_the_banner_decides_the_kind_not_the_first_leg(
     body = (await authed_client.post(
         "/api/v1/wishes/plan",
         json={
-            "character": {"banner": "character"}, "weapon": {"banner": "weapon"},
-            "strategy": "r1_first", "primogems": 32_000,
-            "banner_slug": character_slug, "starglitter_refund": "none",
+            "character": {"banner": "character", "banner_slug": character_slug},
+            "weapon": {"banner": "weapon"},
+            "strategy": "r1_first", "primogems": 32_000, "starglitter_refund": "none",
         },
     )).json()
     assert body["refund_source"] == "roster"
@@ -722,8 +722,8 @@ async def test_an_unknown_constellation_is_left_out_rather_than_read_as_unowned(
     async def refund() -> int:
         return (await authed_client.post(
             "/api/v1/wishes/plan",
-            json={"character": {"banner": "character"}, "primogems": 32_000,
-                  "banner_slug": slug, "starglitter_refund": "none"},
+            json={"character": {"banner": "character", "banner_slug": slug},
+                  "primogems": 32_000, "starglitter_refund": "none"},
         )).json()["refunded_wishes"]
 
     before = await refund()
@@ -739,7 +739,7 @@ async def test_a_bad_tier_is_still_refused_when_a_banner_is_picked(
     slug = await _banner(db_session)
     response = await authed_client.post(
         "/api/v1/wishes/plan",
-        json={"character": {"banner": "character"}, "banner_slug": slug,
+        json={"character": {"banner": "character", "banner_slug": slug},
               "starglitter_refund": "bogus"},
     )
     assert response.status_code == 400
@@ -770,3 +770,67 @@ async def test_fetched_at_is_the_table_not_the_page(
     past_the_end = (await authed_client.get("/api/v1/wishes/banners?limit=1&offset=99")).json()
     assert past_the_end["banners"] == []
     assert past_the_end["fetched_at"] is not None, "the table is populated; say so"
+
+
+async def test_a_custom_plan_prices_each_banner_separately(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """The picker used to set one banner for the whole plan.
+
+    That was wrong the moment a second row existed: each row is on its own banner with its
+    own featured 4-stars, and the refund is priced per leg in proportion to what each leg is
+    expected to cost.
+    """
+    user, _ = authed_user
+    character_slug = await _banner(db_session)
+    weapon_slug = await _banner(
+        db_session, slug="Epitome/2026-09-23", kind="weapon",
+        featured_five=["Splendor", "Other"],
+        featured_four=["w1", "w2", "w3", "w4", "w5"],
+    )
+    for name in ("Diona", "Faruzan", "Chongyun"):
+        await _owned_four_star(db_session, str(user.id), name, 6)
+    for i in range(20):
+        await _owned_four_star(db_session, str(user.id), f"Owned{i}", 6)
+
+    body = (await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={
+            "targets": [
+                {"banner": "character", "label": "Vesna", "target_copies": 1,
+                 "banner_slug": character_slug},
+                {"banner": "weapon", "label": "Splendor", "target_copies": 1,
+                 "banner_slug": weapon_slug},
+            ],
+            "primogems": 48_000, "starglitter_refund": "none",
+        },
+    )).json()
+    assert body["refund_source"] == "roster"
+    assert body["refunded_wishes"] > 0
+    assert [m["label"] for m in body["milestones"]] == ["Vesna C0", "Splendor R1"]
+
+
+async def test_a_row_without_a_banner_does_not_sink_the_whole_plan(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """Some legs priced and some not under-states rather than inventing — and must not fall
+    all the way back to the tier when one leg could be priced."""
+    user, _ = authed_user
+    slug = await _banner(db_session)
+    for name in ("Diona", "Faruzan", "Chongyun"):
+        await _owned_four_star(db_session, str(user.id), name, 6)
+    for i in range(20):
+        await _owned_four_star(db_session, str(user.id), f"Owned{i}", 6)
+
+    body = (await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={
+            "targets": [
+                {"banner": "character", "target_copies": 1, "banner_slug": slug},
+                {"banner": "character", "target_copies": 1},
+            ],
+            "primogems": 48_000, "starglitter_refund": "none",
+        },
+    )).json()
+    assert body["refund_source"] == "roster"
+    assert body["refunded_wishes"] > 0

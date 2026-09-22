@@ -529,14 +529,23 @@ describe('the banner picker', () => {
     expect(page.character().ownedCopies).toBe(2);
   });
 
-  it('sends the chosen banner so the refund can be read from the account', async () => {
+  /** The banner rides on the TARGET, not on the plan — a custom plan spans banners. */
+  it('sends the chosen banner on each simple-mode target', async () => {
     const { page } = makePage();
     await settled();
     await settled();
     page.chooseBanner(BANNERS.banners[0]);
-    expect(page.request().banner_slug).toBe('When Warm Winds Cavort/2026-09-23');
+    const request = page.request();
+    expect(request.banner_slug).toBeUndefined();
+    expect(request.character.banner_slug).toBe('When Warm Winds Cavort/2026-09-23');
+    // A character banner has no weapon on it, so `chooseBanner` turns the weapon leg off.
+    expect(request.weapon).toBeNull();
+
+    page.chooseBanner(BANNERS.banners[1]);
+    expect(page.request().weapon.banner_slug).toBe('Epitome Invocation/2026-09-23');
+
     page.chooseBanner(null);
-    expect(page.request().banner_slug).toBeNull();
+    expect(page.request().character.banner_slug).toBeNull();
   });
 
   it('plans the weapon when a weapon banner is picked', async () => {
@@ -592,5 +601,147 @@ describe('the exact distribution', () => {
     await settled();
     await page.recompute(page.request());
     expect(page.charted()).toBeNull();
+  });
+});
+
+
+describe('a custom plan spans banners', () => {
+  /**
+   * The picker used to set one banner for the whole plan, which was wrong the moment a
+   * second row existed: each character is on its own banner with its own featured 4-stars,
+   * and those are two thirds of every 4-star pulled, so they decide that leg's refund.
+   */
+  it('gives each row its own banner', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    page.mode.set('custom');
+    page.addRow('weapon');
+    page.chooseRowBanner(0, BANNERS.banners[0]);
+    page.chooseRowBanner(1, BANNERS.banners[1]);
+
+    const targets = page.request().targets;
+    expect(targets[0].banner_slug).toBe('When Warm Winds Cavort/2026-09-23');
+    expect(targets[1].banner_slug).toBe('Epitome Invocation/2026-09-23');
+  });
+
+  it('fills the row from the banner it was given', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    page.mode.set('custom');
+    page.chooseRowBanner(0, BANNERS.banners[1]);
+    expect(page.rows()[0].banner).toBe('weapon');
+    expect(page.rows()[0].label).toBe('Splendor');
+  });
+
+  it('leaves the other rows alone', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    page.mode.set('custom');
+    page.addRow('character');
+    page.patchRow(1, { label: 'Kept', pity: 40 });
+    page.chooseRowBanner(0, BANNERS.banners[0]);
+    expect(page.rows()[1].label).toBe('Kept');
+    expect(page.rows()[1].pity).toBe(40);
+    expect(page.rows()[1].bannerSlug).toBeNull();
+  });
+
+  it('opens one picker at a time', async () => {
+    const { page } = makePage();
+    await settled();
+    page.mode.set('custom');
+    page.addRow('character');
+    page.togglePicker(1);
+    expect(page.pickingFor()).toBe(1);
+    page.togglePicker(1);
+    expect(page.pickingFor()).toBeNull();
+  });
+
+  it('closes the picker once a banner is chosen', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    page.mode.set('custom');
+    page.togglePicker(0);
+    page.chooseRowBanner(0, BANNERS.banners[0]);
+    expect(page.pickingFor()).toBeNull();
+  });
+});
+
+describe('when the refund is not read from the account', () => {
+  /**
+   * Silence was the bug: the budget line said "from your roster" when the exact figure was
+   * used and said nothing when it was not, so a player whose roster predates the
+   * constellation column saw the tier quietly substituted with no way to tell.
+   */
+  it('says to pick a banner when none is picked', async () => {
+    const { page } = makePage();
+    await settled();
+    await page.recompute(page.request());
+    expect(page.refundFallback()).toContain('Pick a banner');
+  });
+
+  it('says the roster is empty when a banner is picked and it still falls back', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    page.chooseBanner(BANNERS.banners[0]);
+    await page.recompute(page.request());
+    expect(page.refundFallback()).toContain('re-import');
+  });
+
+  it('says nothing when the roster answered', async () => {
+    const { page } = makePage({
+      plan: vi.fn().mockResolvedValue({ ...PLAN, refund_source: 'roster' }),
+    });
+    await settled();
+    await page.recompute(page.request());
+    expect(page.refundFallback()).toBeNull();
+  });
+});
+
+describe('a row that does not exist', () => {
+  /**
+   * `patchRow` spread `next[index]` without checking it. For an out-of-range index that
+   * spread `undefined`, so the change *became* the row: `ownedCopies` was missing, the clamp
+   * turned it into `NaN`, and it serialised as `null`. The user saw a 422 naming a field
+   * they never touched, on a row they never added — and the plan vanished.
+   */
+  it('is not created by patching it', async () => {
+    const { page } = makePage();
+    await settled();
+    page.mode.set('custom');
+    page.patchRow(7, { label: 'ghost' });
+    expect(page.rows()).toHaveLength(1);
+  });
+
+  it('is not created by choosing a banner for it', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    page.mode.set('custom');
+    page.chooseRowBanner(5, BANNERS.banners[0]);
+    expect(page.rows()).toHaveLength(1);
+  });
+
+  it('never sends a null owned_copies', async () => {
+    const { page } = makePage();
+    await settled();
+    page.mode.set('custom');
+    page.patchRow(3, { banner: 'weapon' });
+    for (const target of page.request().targets) {
+      expect(target.owned_copies).toEqual(expect.any(Number));
+      expect(Number.isNaN(target.owned_copies)).toBe(false);
+    }
+  });
+
+  it('is not moved', async () => {
+    const { page } = makePage();
+    await settled();
+    page.mode.set('custom');
+    page.moveRow(9, -1);
+    expect(page.rows()).toHaveLength(1);
   });
 });

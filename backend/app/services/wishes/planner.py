@@ -94,6 +94,9 @@ class Milestone:
     average_wishes: float
     #: Wishes at which the chance first reaches 50%, or None if it never does.
     median_wishes: int | None
+    #: The banner this rung is pulled on, carried through so the refund can be priced per
+    #: leg rather than once for the whole plan.
+    banner_slug: str | None = None
     #: The exact distribution this rung's three summary numbers were read off.
     #:
     #: **Kept rather than discarded.** The convolution produces the whole distribution and
@@ -122,6 +125,10 @@ class Leg:
     owned_copies: int = 0
     #: Total copies to hold once this leg is done. Defaults to one more than owned.
     target_copies: int | None = None
+    #: Which banner run this goal is on, if the caller picked one. **Per leg**, because a
+    #: campaign spanning several characters spans several banners, and each one's featured
+    #: 4-stars decide its refund.
+    banner_slug: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -260,6 +267,7 @@ def plan_campaign(legs: Sequence[Leg], budget: int) -> WishPlan:
             rung = _label(leg.banner, copies)
             milestones.append(
                 Milestone(
+                    banner_slug=leg.banner_slug,
                     copies=copies,
                     label=f"{leg.label} {rung}".strip(),
                     success_chance=float(total[: budget + 1].sum()),

@@ -30,7 +30,7 @@
       </div>
     </fieldset>
 
-    @if (banners().length) {
+    @if (banners().length && mode() === 'simple') {
       <div class="banners">
         <div class="banners__head">
           <span class="label">Banner</span>
@@ -187,27 +187,27 @@
     } @else {
       <!-- Custom plan: goals in spending order, across as many characters as you like. -->
       <div class="rows">
-        @for (row of rows(); track $index) {
+        @for (row of rows(); track $index; let rowIndex = $index) {
           <div class="row">
             <div class="row__move">
-              <button type="button" (click)="moveRow($index, -1)" [disabled]="$index === 0"
+              <button type="button" (click)="moveRow(rowIndex, -1)" [disabled]="rowIndex === 0"
                       aria-label="Move earlier">▲</button>
-              <button type="button" (click)="moveRow($index, 1)"
-                      [disabled]="$index === rows().length - 1" aria-label="Move later">▼</button>
+              <button type="button" (click)="moveRow(rowIndex, 1)"
+                      [disabled]="rowIndex === rows().length - 1" aria-label="Move later">▼</button>
             </div>
             <select class="row__banner" [value]="row.banner"
-                    (change)="patchRow($index, { banner: $any($event.target).value })"
+                    (change)="patchRow(rowIndex, { banner: $any($event.target).value })"
                     aria-label="Banner">
               <option value="character" [selected]="row.banner === 'character'">Character</option>
               <option value="weapon" [selected]="row.banner === 'weapon'">Weapon</option>
             </select>
             <input class="row__name" type="text" maxlength="60" [value]="row.label"
-                   (change)="patchRow($index, { label: $any($event.target).value })"
+                   (change)="patchRow(rowIndex, { label: $any($event.target).value })"
                    aria-label="Name" />
             <label class="row__pair">
               <span>from</span>
               <select [value]="row.ownedCopies"
-                      (change)="patchRow($index, { ownedCopies: +($any($event.target).value) })">
+                      (change)="patchRow(rowIndex, { ownedCopies: +($any($event.target).value) })">
                 @for (n of ownedOptions(row.banner); track n) {
                   <option [value]="n" [selected]="row.ownedCopies === n">
                     {{ ownedLabel(row.banner, n) }}
@@ -218,7 +218,7 @@
             <label class="row__pair">
               <span>to</span>
               <select [value]="row.targetCopies"
-                      (change)="patchRow($index, { targetCopies: +($any($event.target).value) })">
+                      (change)="patchRow(rowIndex, { targetCopies: +($any($event.target).value) })">
                 @for (n of copyOptions(row.banner); track n) {
                   <option [value]="n" [selected]="row.targetCopies === n">
                     {{ rung(row.banner, n) }}
@@ -226,9 +226,47 @@
                 }
               </select>
             </label>
-            <button type="button" class="row__remove" (click)="removeRow($index)"
+            <button type="button" class="row__banner-pick"
+                    [class.on]="row.bannerSlug"
+                    (click)="togglePicker(rowIndex)"
+                    [attr.aria-expanded]="pickingFor() === rowIndex">
+              @if (rowBanner(row); as picked) {
+                {{ picked.name }}
+              } @else {
+                Pick banner
+              }
+            </button>
+            <button type="button" class="row__remove" (click)="removeRow(rowIndex)"
                     [disabled]="rows().length === 1" aria-label="Remove">✕</button>
           </div>
+          @if (pickingFor() === rowIndex) {
+            <div class="banner-grid banner-grid--inline">
+              @for (b of banners(); track b.slug) {
+                <button type="button" class="banner" [class.on]="row.bannerSlug === b.slug"
+                        (click)="chooseRowBanner(rowIndex, b)">
+                  <span class="banner__five">
+                    @for (item of b.featured_five; track item.name) {
+                      <catalogue-icon [icon]="item.icon" [alt]="item.name" [size]="44"
+                                      fit="cover" />
+                    }
+                  </span>
+                  <span class="banner__four">
+                    @for (item of b.featured_four; track item.name) {
+                      <catalogue-icon [icon]="item.icon" [alt]="item.name" [size]="24"
+                                      fit="cover" />
+                    }
+                  </span>
+                  <span class="banner__name">{{ b.name }}</span>
+                  <span class="banner__when">{{ bannerWhen(b) }}</span>
+                </button>
+              }
+            </div>
+            @if (hasMoreBanners()) {
+              <button type="button" class="banners__more" (click)="showMoreBanners()">
+                Show more ({{ banners().length }} of {{ bannerTotal() }})
+              </button>
+            }
+          }
         }
       </div>
       <div class="rows__add">
@@ -278,6 +316,10 @@
     }
 
     <!-- The arithmetic, not just the total. Fribbels' best idea on this page. -->
+    @if (refundFallback(); as reason) {
+      <p class="hint hint--note">{{ reason }}</p>
+    }
+
     @if (plan(); as result) {
       <p class="budget">
         {{ primogems() | number }} primogems

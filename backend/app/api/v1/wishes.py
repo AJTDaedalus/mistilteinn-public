@@ -39,7 +39,11 @@ from app.services.wishes import (
     refund_tiers,
     refunded_budget,
 )
-from app.services.wishes.planner import MAX_CONSTELLATION, MAX_REFINEMENT, wishes_from
+from app.services.wishes.planner import (
+    MAX_CONSTELLATION,
+    MAX_REFINEMENT,
+    wishes_from,
+)
 from app.services.wishes.rates import primogems_per_wish
 from app.services.wishes.refund import RefundInputs, expected_refund
 
@@ -83,6 +87,14 @@ class WishTarget(BaseModel):
         ),
     )
     owned_copies: int = Field(0, ge=0, description="Copies already held. C2 is 3; R3 is 3.")
+    banner_slug: str | None = Field(
+        None, max_length=200,
+        description=(
+            "A banner from `/wishes/banners`. **Per target, because a custom plan is several "
+            "characters on several banners** and each has its own featured 4-stars — which "
+            "are two thirds of every 4-star pulled, so they decide the refund."
+        ),
+    )
     target_copies: int | None = Field(
         None, ge=1,
         description=(
@@ -113,13 +125,6 @@ class WishPlanRequest(BaseModel):
     targets: list[WishTarget] = Field(
         default_factory=list, max_length=12,
         description="Custom mode: goals in spending order. Each needs `target_copies`.",
-    )
-    banner_slug: str | None = Field(
-        None, max_length=200,
-        description=(
-            "A banner from `/wishes/banners`. When given, the refund is computed **exactly** "
-            "from its featured 4-stars and the caller's roster instead of from a tier."
-        ),
     )
     starglitter_refund: str = Field(
         "none",
@@ -246,19 +251,16 @@ async def create_plan(
             detail=f"unknown starglitter refund tier: {payload.starglitter_refund!r}",
         ) from error
 
-    exact = None
-    if payload.banner_slug:
-        exact = await _refund_from_account(
-            session, str(user.id), payload.banner_slug, wallet,
-        )
+    # **Priced per leg, because a campaign can span banners.** A custom plan is several
+    # characters on several banners and each one's featured 4-stars decide its own refund —
+    # pricing the whole plan off one banner was wrong the moment a second row existed.
+    exact = await _refund_for_campaign(session, str(user.id), legs, wallet)
     if exact is not None:
         # **Compounded, as the tier is.** The refund buys wishes which themselves refund, so
         # pricing it over `wallet` alone and stopping drops the second order — and switching a
         # banner on could make the reported refund *fall*. One more pass closes most of the
         # gap; the third is under a wish.
-        second = await _refund_from_account(
-            session, str(user.id), payload.banner_slug, wallet + int(exact),
-        )
+        second = await _refund_for_campaign(session, str(user.id), legs, wallet + int(exact))
         budget, refund_source = wallet + int(second if second is not None else exact), "roster"
     else:
         budget, refund_source = tier_budget, "tier"
@@ -348,6 +350,53 @@ def _histogram(pmf: list[float] | None) -> list[WishHistogramBin]:
     ]
 
 
+async def _refund_for_campaign(
+    session: AsyncSession, owner_id: str, legs: list[Leg], budget: int,
+) -> float | None:
+    """The refund across a whole campaign, priced per leg.
+
+    Each leg is on its own banner, so each has its own featured 4-stars and its own refund
+    rate. The budget is split between them in proportion to what each leg is expected to
+    cost — which the ladder already computes — so a plan that spends most of its wishes on a
+    weapon banner is priced mostly at the weapon banner's rate.
+
+    Returns None when **no** leg could be priced from the account, which is the signal to fall
+    back to the caller's tier. A campaign where only some legs name a banner prices those and
+    treats the rest as earning nothing, which under-states rather than invents.
+    """
+    slugged = [leg for leg in legs if leg.banner_slug]
+    if not slugged or budget <= 0:
+        return None
+
+    # Expected cost of each leg, from the ladder itself. Cheap: the plan is a few
+    # convolutions and this runs once per refund pass.
+    plan = plan_campaign(legs, budget=0)
+    spent_by_slug: dict[str, float] = {}
+    previous = 0.0
+    for milestone in plan.milestones:
+        cost = milestone.average_wishes - previous
+        previous = milestone.average_wishes
+        if milestone.banner_slug:
+            spent_by_slug[milestone.banner_slug] = (
+                spent_by_slug.get(milestone.banner_slug, 0.0) + cost
+            )
+    total_cost = sum(spent_by_slug.values())
+    if total_cost <= 0:
+        return None
+
+    refund = 0.0
+    priced = False
+    for slug, cost in spent_by_slug.items():
+        # The share of the budget this banner is expected to absorb. Capped at the budget so
+        # a plan costing more than the wallet does not price a refund on wishes never spent.
+        share = min(budget, budget * cost / total_cost)
+        leg_refund = await _refund_from_account(session, owner_id, slug, int(share))
+        if leg_refund is not None:
+            refund += leg_refund
+            priced = True
+    return refund if priced else None
+
+
 async def _refund_from_account(
     session: AsyncSession, owner_id: str, banner_slug: str, pulls: int,
 ) -> float | None:
@@ -425,6 +474,7 @@ def _leg(target: WishTarget) -> Leg:
         lost_fifty_fifties=target.lost_fifty_fifties,
         owned_copies=target.owned_copies,
         target_copies=target.target_copies,
+        banner_slug=target.banner_slug,
     )
 
 
