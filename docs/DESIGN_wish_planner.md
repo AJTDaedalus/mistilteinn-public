@@ -381,7 +381,54 @@ featured 4★, the pools are non-empty, and every name resolves against the seed
 name that does not resolve is the failure mode here, and it is the one `#263` already shipped
 once — 205 weapon ids that matched nothing in production, silently.
 
-### 9.6 Shape, and the bar for shipping it
+### 9.6 Refund variance — how to model it for a user
+
+Owner asked directly. Measured answer first, because the magnitude decides the design.
+
+**The refund is independent of the cost, and HoYoverse publishes that it is**: *"each
+individual Wish calculates 5★ and 4★ drop probabilities independently."* The cost is a 5★
+question and the refund a 4★ one, so the honest model is not a simulation but a dot product:
+
+```
+P(success) = Σ_b  P(budget = b) · P(cost ≤ b)
+```
+
+Both halves already exist — the ladder gives the second exactly, and the first is a small PMF
+off the 4★ stream.
+
+**It barely moves.** The budget's standard deviation is **2.7 – 4.2 wishes**, because the
+refund is ~8 % of the budget and the 4★ count's own relative spread over a few hundred pulls is
+~20 %. Integrating it against the ladder rather than using the mean changes the reported
+probability by:
+
+| wallet, tier | budget mean ± sd | largest change to any rung |
+|---|---|---|
+| 160, average | 173.4 ± 2.7 | +0.18 pt |
+| 200, average | 216.9 ± 3.1 | +0.34 pt |
+| 260, average | 282.1 ± 3.5 | +0.05 pt |
+| 200, high | 223.8 ± 4.2 | **+0.99 pt** |
+
+Always slightly **positive** — Jensen, since the CDF is convex through the range the budget
+distribution covers — so the point estimate is mildly *pessimistic*, which is the safe side.
+
+**So: fold it in, and show the user nothing.**
+
+1. **Integrate it** rather than using the mean. One dot product against a ≤ 20-entry PMF, exact
+   given published independence, and it retires the caveat instead of printing it.
+2. **Do not show a range.** The success chance is *already* a probability; putting
+   "215 ± 3 wishes" next to "65 % chance" invites a reader to count the same uncertainty
+   twice, and the second number is a tenth the size of the first. The budget line stays one
+   number — prefixed "≈", because it is an expectation.
+3. **Spend the UI on the tier instead.** Choosing `low` against `average` moves the budget by
+   about **10 wishes**; the variance is ±3. The tier is three times the uncertainty and it is
+   the part a user is currently *guessing*. §9.4's roster-derived constellations remove that
+   guess, which is worth more than modelling the variance ever will.
+
+That is the general shape of the answer: **the uncertainty a user should see is the one they
+can act on.** They can fix a wrong constellation. They cannot do anything about the spread of
+a binomial.
+
+### 9.7 Shape, and the bar for shipping it
 
 `scripts/` first. Run it offline across a grid of (roster shape, campaign length) and ask
 whether the answer is a smooth function of two or three account facts. **If it is, the product
@@ -408,10 +455,10 @@ not put a sampler on the request path to replace a closed form that already is n
 | ~~**OQ-W13**~~ | ~~The 15/85 split is uncited and unreproduced.~~ **Measured 2026-09-22** against the owner's 1,416 character-banner pulls: 81.5/18.5 ± 9.8, consistent with the wiki and rejecting uniform at z > 4. §9.2. |
 | **OQ-W15** | The **weapon banner's 4★ rates are 6.0 % / 14.5 %**, not the character banner's 5.1 % / 13 %. The refund prices every wish at 13.057 %, so a weapon-banner campaign is under-priced by 1.115×. |
 | **OQ-W14** | §9.5: derive "whose signature is this weapon" from the banner data's `alongside` field, or curate it? |
-| **OQ-W12** | §9.4: a 4★ character with no build has an **unknown** constellation, not C0. How much unknown is too much before the refund figure should be withheld rather than estimated? |
+| **OQ-W12** | §9.4: the column is nullable so unknown stays unknown (OQ-W16), but **how much unknown is too much** before the refund figure should be withheld rather than estimated is still unanswered. |
 | **OQ-W5** | Genshin's wish history is exportable. Derive pity / guarantee / losses rather than asking? Would make the losses counter exact instead of remembered. |
 | ~~**OQ-W7**~~ | ~~Do the two concurrent 5★ split the 50/50 further?~~ **No — resolved 2026-09-22** from HoYoverse's disclosure: `r5_up_items` holds exactly **one** character for gacha_type 301, and Character Event Wish-2 is a **separate** gacha_type (400) with its own single promotional character and its own 50%. The 50% is the whole story. (The weapon banner is the one with two, `r5_up_items` = 2, which is why its featured rate is 0.75 × ½.) |
-| **OQ-W16** | **BLOCKER for §9.4.** A GOOD export carries `constellation` for *every* owned character, and `good_build_service` persists it **only onto builds — and only equipped characters get a build**. `character_roster` records ownership and no constellation. So for an owned-but-unequipped 4★ the constellation is parsed and then **discarded**, and those are exactly the characters the refund turns on. Fix is small (a column on the roster row, written during import) but it is a schema change and a decision. |
-| **OQ-W17** | The **weapon banner's 4★ soft-pity ramp is unpublished.** Base 6.0 % and consolidated 14.5 % are official; the shape — the character banner's is 5.1 % to pity 8, 56.1 % at 9, 100 % at 10 — is not published for it anywhere found. Fit it against the published 14.5 % the same way the 5★ ramps were fitted, and mark it a fit rather than a source. |
-| **OQ-W18** | **Refund variance.** The budget is `wallet × (1 + r)`, deterministic. Simulating the refund makes it a *random variable* correlated with the cost — more pulls, more refund — so the ladder's CDF would have to integrate over it. The mean is right either way; the **spread is understated**. §9.5 does not supply this; it is maths to be written. |
-| **OQ-W19** | **Within-pool uniformity is assumed, never verified.** The disclosure publishes no per-item probabilities, so "a specific non-featured character is as likely as any other" is an assumption. Low risk, cheap to test with a larger sample, and it changes which *constellations* fill in rather than the character/weapon split. |
+| ~~**OQ-W16**~~ | **Built 2026-09-22** — `character_roster.constellation`, nullable, written by the importer for every owned character and editable by hand. Original text: **BLOCKER for §9.4.** A GOOD export carries `constellation` for *every* owned character, and `good_build_service` persists it **only onto builds — and only equipped characters get a build**. `character_roster` records ownership and no constellation. So for an owned-but-unequipped 4★ the constellation is parsed and then **discarded**, and those are exactly the characters the refund turns on. Fix is small (a column on the roster row, written during import) but it is a schema change and a decision. |
+| ~~**OQ-W17**~~ | **Fitted 2026-09-22**, and the published numbers forced the shape: a single raised step cannot reach 14.5 % — even a certainty at pity 9 gives only 14.05 % — so the ramp must start at pity 8. 0.5778 at both 8 and 9 reproduces 14.500 % exactly. Recorded as a fit, with the same identifiability caveat as the 5★ ramps. Original text: The **weapon banner's 4★ soft-pity ramp is unpublished.** Base 6.0 % and consolidated 14.5 % are official; the shape — the character banner's is 5.1 % to pity 8, 56.1 % at 9, 100 % at 10 — is not published for it anywhere found. Fit it against the published 14.5 % the same way the 5★ ramps were fitted, and mark it a fit rather than a source. |
+| ~~**OQ-W18**~~ | **Answered 2026-09-22, §9.6**: integrate it (one dot product, exact given published independence), show the user nothing, and spend the UI on the tier instead — which is 3× the uncertainty and the part they are guessing. Original text: **Refund variance.** The budget is `wallet × (1 + r)`, deterministic. Simulating the refund makes it a *random variable* correlated with the cost — more pulls, more refund — so the ladder's CDF would have to integrate over it. The mean is right either way; the **spread is understated**. §9.5 does not supply this; it is maths to be written. |
+| ~~**OQ-W19**~~ | **Accepted by the owner, 2026-09-22** — *"within-pool similarity is acceptable."* Original text: **Within-pool uniformity is assumed, never verified.** The disclosure publishes no per-item probabilities, so "a specific non-featured character is as likely as any other" is an assumption. Low risk, cheap to test with a larger sample, and it changes which *constellations* fill in rather than the character/weapon split. |

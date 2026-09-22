@@ -10236,6 +10236,17 @@
             ],
             "title": "Owned"
           },
+          "constellation": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Constellation"
+          },
           "source": {
             "anyOf": [
               {
@@ -10279,6 +10290,20 @@
             "type": "boolean",
             "title": "Owned",
             "description": "Does this account have this character?"
+          },
+          "constellation": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 6.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Constellation",
+            "description": "Constellation 0-6. **Null means 'nobody has said', not C0** \u2014 the same three-state rule `owned` follows, because an unknown constellation and a zero one lead to different answers and only one of them is a claim. Omitting the field leaves any stored value alone; sending null clears it."
           }
         },
         "type": "object",

@@ -242,7 +242,11 @@ async def rebuild_builds(
     #
     # `upsert_imported` leaves `manual` rows alone, so a character the user deliberately
     # un-owned does not come back on every rescan.
-    owned_character_ids = []
+    #
+    # The constellation rides along: the export carries one for every owned character, and
+    # only equipped ones become builds, so this row is the only place it survives for the
+    # rest. `docs/DESIGN_wish_planner.md` section 9.4.
+    owned_characters: list[tuple[str, int | None]] = []
     for parsed_character in parsed.characters:
         _, catalogue_rows = _resolve(
             lookup_key(parsed_character.key), characters_by_key, by_key,
@@ -252,10 +256,10 @@ async def rebuild_builds(
         catalogue_row = _pick(catalogue_rows)
         if is_mannequin(catalogue_row.nanoka_id):
             continue
-        owned_character_ids.append(str(catalogue_row.id))
+        owned_characters.append((str(catalogue_row.id), parsed_character.constellation))
     report.roster_written = await CharacterRosterRepository(
         session, owner_id,
-    ).upsert_imported(owned_character_ids)
+    ).upsert_imported(owned_characters)
 
     # Who is holding what. `location` is the only link the export gives.
     worn: dict[str, list[ParsedArtifact]] = defaultdict(list)

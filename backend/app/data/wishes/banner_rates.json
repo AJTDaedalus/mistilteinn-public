@@ -99,6 +99,29 @@
    },
    "source": "HoYoverse's own probability disclosure, published as static JSON at https://webstatic.mihoyo.com/hk4e/gacha_info/cn_gf01/<gacha_id>/en-us.json and indexed by .../gacha/list.json (read 2026-09-22). This is the PRIMARY source -- the rate disclosure Chinese regulation requires -- not a community estimate. The public index is frozen at 2023 banners, which is plenty to verify constants that have not changed, and not enough to track current banners. Fields `r4_prob` and `r4_baodi_prob`.",
    "comment": "THE TWO BANNERS DIFFER, which the shipped tiers do not model: they price every wish at the character banner's 13.057%, so a weapon-banner campaign is under-priced by 14.5/13 = 1.115x. The community 13.057% and the official 13% agree to within rounding."
+  },
+  "four_star_curves": {
+   "character_banner": {
+    "base_rate": 0.051,
+    "hard_pity": 10,
+    "raised": {
+     "9": 0.561
+    },
+    "published": true,
+    "source": "https://genshin-impact.fandom.com/wiki/Character_Event_Wish -- 5.1% for 1<=X<=8, 56.1% at X=9, 100% at X>=10, citing the 9.45M-wish estimation. Reproduces 13.06% against the official 13.000%; the 0.06 is the rounding in the published 56.1%."
+   },
+   "weapon_banner": {
+    "base_rate": 0.06,
+    "hard_pity": 10,
+    "raised": {
+     "8": 0.5778,
+     "9": 0.5778
+    },
+    "published": false,
+    "source": "FITTED, not published. Base 6.000% and consolidated 14.500% are official (`r4_prob`, `r4_baodi_prob`); the ramp is not published for this banner anywhere found. Fitted by the same method as the 5-star ramps: constrain the curve to reproduce the published consolidated rate.",
+    "why_two_steps": "A single raised step cannot reach 14.5%. Even setting pity 9 to a certainty -- the most a 10-pity curve with a 6% base can do -- yields only 14.05%. So the ramp must start at 8, and 0.5778 at both 8 and 9 reproduces 14.500% exactly. That the published numbers FORCE a longer ramp than the character banner's is a finding rather than a choice.",
+    "identifiability": "Jointly unidentified, exactly like the 5-star ramps: many shapes reproduce 14.5%. Pinning the consolidated rate pins the MEAN interval between 4-stars and says nothing about the tail. Only the mean is used -- the refund needs the long-run 4-star rate and never the shape -- so this fit is used inside its valid range."
+   }
   }
  }
 }
