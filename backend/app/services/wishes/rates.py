@@ -9,7 +9,7 @@ not describe raises rather than falling back to a plausible default, which is th
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from functools import cache, lru_cache
 from pathlib import Path
@@ -99,6 +99,44 @@ def radiance_win_rates() -> tuple[float, ...]:
     the counter terminate.
     """
     return tuple(float(v) for v in _raw()["capturing_radiance_win_rates"]["values"])
+
+
+@cache
+def four_star_rates(banner: BannerKind) -> BannerRates:
+    """The banner's **4-star** pity curve and featured rate.
+
+    The two banners differ and the shipped constant tiers do not model it: 5.1 % base and
+    13 % consolidated on the character banner against 6.0 % and 14.5 % on the weapon one,
+    both from HoYoverse's own disclosure. The weapon banner's ramp is a fit — the published
+    numbers force a two-step shape, because a single raised step cannot reach 14.5 %.
+    """
+    entry = _raw()["starglitter"]["four_star_curves"][f"{banner.value}_banner"]
+    raised = {int(k): float(v) for k, v in entry["raised"].items()}
+    hard = int(entry["hard_pity"])
+    base = float(entry["base_rate"])
+    start = min(raised) if raised else hard
+    # The curve is expressed as explicit raised steps rather than a linear ramp, so it is
+    # handed over as a BannerRates whose drop_curve is overridden below.
+    return _FourStarRates(
+        hard_pity=hard, soft_pity_start=start, base_rate=base, increase_rate=0.0,
+        featured_rate=float(_raw()["starglitter"]["four_star_composition"]
+                            ["featured_rule"][f"{banner.value}_banner"]),
+        capturing_radiance=False, published_worst_case=hard, raised=raised,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class _FourStarRates(BannerRates):
+    """A 4-star curve, whose soft pity is published as explicit steps rather than a ramp."""
+
+    raised: dict[int, float] = field(default_factory=dict)
+
+    def drop_curve(self) -> list[float]:
+        """Flat at the base rate, then the published steps, then certain."""
+        return [
+            1.0 if pity >= self.hard_pity else self.raised.get(pity, self.base_rate)
+            for pity in range(1, self.hard_pity + 1)
+        ]
 
 
 @lru_cache(maxsize=1)
