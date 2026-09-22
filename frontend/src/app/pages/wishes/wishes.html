@@ -2,71 +2,82 @@
   <header class="wishes__head">
     <h1>Wish Planner</h1>
     <p class="hint">
-      Your odds of reaching each constellation or refinement, from where you stand now.
-      Exact probabilities, not a simulation.
+      Your odds of reaching each constellation or refinement, from where you stand now, on one
+      shared budget. Exact probabilities, not a simulation.
     </p>
   </header>
 
   <div class="panel">
-    <div class="panel__columns">
-      <!-- Settings -->
-      <fieldset class="col">
-        <legend>Settings</legend>
-
+    <!-- Wallet -->
+    <fieldset class="wallet">
+      <legend>What you have</legend>
+      <div class="wallet__grid">
         <div class="field">
           <label for="primogems">Primogems</label>
           <input id="primogems" type="number" min="0" inputmode="numeric"
-                 [value]="primogems()"
-                 (change)="setNumber($event.target, primogems.set)" />
+                 [value]="primogems()" (change)="setNumber($event.target, primogems.set)" />
         </div>
-
         <div class="field">
           <label for="fate">Intertwined Fate</label>
           <input id="fate" type="number" min="0" inputmode="numeric"
-                 [value]="intertwined()"
-                 (change)="setNumber($event.target, intertwined.set)" />
-          <!-- Acquaint Fate buys Wanderlust Invocation, which this planner does not model. -->
-          <small class="hint">Acquaint Fate doesn’t count — it buys the standard banner.</small>
+                 [value]="intertwined()" (change)="setNumber($event.target, intertwined.set)" />
         </div>
-
         <div class="field">
-          <span class="label">Banner</span>
-          <div class="segmented" role="group" aria-label="Banner">
-            <button type="button" [class.on]="banner() === 'character'"
-                    (click)="chooseBanner('character')">Character</button>
-            <button type="button" [class.on]="banner() === 'weapon'"
-                    (click)="chooseBanner('weapon')">Weapon</button>
+          <label for="refund">Starglitter refund</label>
+          <select id="refund" [value]="refund()"
+                  (change)="refund.set($any($event.target).value)">
+            @for (t of refundTiers(); track t) {
+              <option [value]="t">{{ refundLabel(t) }}</option>
+            }
+          </select>
+        </div>
+      </div>
+      <small class="hint">
+        Acquaint Fate doesn’t count — it buys the standard banner. The refund is the
+        Starglitter your 4★ duplicates pay back, compounded; pick <em>Low</em> unless your
+        4★ characters are already C6.
+      </small>
+    </fieldset>
+
+    <div class="segmented segmented--modes" role="group" aria-label="Plan shape">
+      <button type="button" [class.on]="mode() === 'simple'" (click)="mode.set('simple')">
+        One character
+      </button>
+      <button type="button" [class.on]="mode() === 'custom'" (click)="mode.set('custom')">
+        Custom plan
+      </button>
+    </div>
+
+    @if (mode() === 'simple') {
+      <div class="panel__columns">
+        <fieldset class="col">
+          <legend>Character</legend>
+          <div class="field">
+            <label for="c-name">Name</label>
+            <input id="c-name" type="text" maxlength="60" [value]="character().label"
+                   (change)="patch('character', { label: $any($event.target).value })" />
           </div>
-        </div>
-      </fieldset>
-
-      <!-- Where you stand -->
-      <fieldset class="col">
-        <legend>Your pity</legend>
-
-        <div class="field">
-          <label for="pity">Pity counter</label>
-          <input id="pity" type="number" min="0" [max]="hardPity() - 1" inputmode="numeric"
-                 [value]="pity()"
-                 (change)="setNumber($event.target, pity.set, hardPity() - 1)" />
-          <small class="hint">Wishes since your last 5★ on this banner.</small>
-        </div>
-
-        <div class="field">
-          <span class="label">Guaranteed</span>
-          <div class="segmented" role="group" aria-label="Guaranteed">
-            <button type="button" [class.on]="!guaranteed()" (click)="setGuaranteed(false)">✕</button>
-            <button type="button" [class.on]="guaranteed()" (click)="setGuaranteed(true)">✓</button>
+          <div class="field">
+            <label for="c-pity">Pity counter</label>
+            <input id="c-pity" type="number" min="0" [max]="characterHardPity() - 1"
+                   inputmode="numeric" [value]="character().pity"
+                   (change)="setNumber($event.target, (v) => patch('character', { pity: v }), characterHardPity() - 1)" />
           </div>
-        </div>
-
-        @if (showsRadiance()) {
+          <div class="field">
+            <span class="label">Guaranteed</span>
+            <div class="segmented" role="group" aria-label="Character guaranteed">
+              <button type="button" [class.on]="!character().guaranteed"
+                      (click)="setGuaranteed('character', false)">✕</button>
+              <button type="button" [class.on]="character().guaranteed"
+                      (click)="setGuaranteed('character', true)">✓</button>
+            </div>
+          </div>
           <div class="field">
             <label for="losses">50/50s lost</label>
-            <select id="losses" [value]="lostFiftyFifties()"
+            <select id="losses" [value]="character().lostFiftyFifties"
                     (change)="setLosses(+($any($event.target).value))">
               @for (n of [0, 1, 2, 3]; track n) {
-                <option [value]="n">{{ n }}{{ n === 3 ? '+' : '' }}</option>
+                <option [value]="n">{{ n }}{{ n === maxLosses() ? '+' : '' }}</option>
               }
             </select>
             <!-- The counter resets only on a 50/50 you WIN: taking the character through a
@@ -82,27 +93,131 @@
               </small>
             }
           </div>
+          <div class="field">
+            <label for="c-owned">Already own</label>
+            <select id="c-owned" [value]="character().ownedCopies"
+                    (change)="patch('character', { ownedCopies: +($any($event.target).value) })">
+              @for (n of ownedOptions('character'); track n) {
+                <option [value]="n">{{ ownedLabel('character', n) }}</option>
+              }
+            </select>
+          </div>
+        </fieldset>
+
+        <fieldset class="col">
+          <legend>
+            <label class="legend-toggle">
+              <input type="checkbox" [checked]="planWeapon()"
+                     (change)="planWeapon.set($any($event.target).checked)" />
+              Signature weapon
+            </label>
+          </legend>
+          @if (planWeapon()) {
+            <div class="field">
+              <label for="w-name">Name</label>
+              <input id="w-name" type="text" maxlength="60" [value]="weapon().label"
+                     (change)="patch('weapon', { label: $any($event.target).value })" />
+            </div>
+            <div class="field">
+              <label for="w-pity">Pity counter</label>
+              <input id="w-pity" type="number" min="0" [max]="weaponHardPity() - 1"
+                     inputmode="numeric" [value]="weapon().pity"
+                     (change)="setNumber($event.target, (v) => patch('weapon', { pity: v }), weaponHardPity() - 1)" />
+            </div>
+            <div class="field">
+              <span class="label">Guaranteed</span>
+              <!-- Epitomized Path, not a 50/50: one Fate Point and the next 5★ is the one
+                   you chose. No Capturing Radiance here. -->
+              <div class="segmented" role="group" aria-label="Weapon guaranteed">
+                <button type="button" [class.on]="!weapon().guaranteed"
+                        (click)="setGuaranteed('weapon', false)">✕</button>
+                <button type="button" [class.on]="weapon().guaranteed"
+                        (click)="setGuaranteed('weapon', true)">✓</button>
+              </div>
+              <small class="hint">Epitomized Path: you hold a Fate Point.</small>
+            </div>
+            <div class="field">
+              <label for="w-owned">Already own</label>
+              <select id="w-owned" [value]="weapon().ownedCopies"
+                      (change)="patch('weapon', { ownedCopies: +($any($event.target).value) })">
+                @for (n of ownedOptions('weapon'); track n) {
+                  <option [value]="n">{{ ownedLabel('weapon', n) }}</option>
+                }
+              </select>
+            </div>
+          }
+        </fieldset>
+
+        <fieldset class="col">
+          <legend>Order</legend>
+          <div class="field">
+            <label for="strategy">Reach first</label>
+            <select id="strategy" [value]="strategy()"
+                    (change)="strategy.set($any($event.target).value)">
+              @for (s of strategies(); track s) {
+                <option [value]="s">{{ strategyLabel(s) }}</option>
+              }
+            </select>
+            <small class="hint">
+              After that the order is always C0 → R1 → C6 → R5.
+            </small>
+          </div>
+        </fieldset>
+      </div>
+    } @else {
+      <!-- Custom plan: goals in spending order, across as many characters as you like. -->
+      <div class="rows">
+        @for (row of rows(); track $index) {
+          <div class="row">
+            <div class="row__move">
+              <button type="button" (click)="moveRow($index, -1)" [disabled]="$index === 0"
+                      aria-label="Move earlier">▲</button>
+              <button type="button" (click)="moveRow($index, 1)"
+                      [disabled]="$index === rows().length - 1" aria-label="Move later">▼</button>
+            </div>
+            <select class="row__banner" [value]="row.banner"
+                    (change)="patchRow($index, { banner: $any($event.target).value })"
+                    aria-label="Banner">
+              <option value="character">Character</option>
+              <option value="weapon">Weapon</option>
+            </select>
+            <input class="row__name" type="text" maxlength="60" [value]="row.label"
+                   (change)="patchRow($index, { label: $any($event.target).value })"
+                   aria-label="Name" />
+            <label class="row__pair">
+              <span>from</span>
+              <select [value]="row.ownedCopies"
+                      (change)="patchRow($index, { ownedCopies: +($any($event.target).value) })">
+                @for (n of ownedOptions(row.banner); track n) {
+                  <option [value]="n">{{ ownedLabel(row.banner, n) }}</option>
+                }
+              </select>
+            </label>
+            <label class="row__pair">
+              <span>to</span>
+              <select [value]="row.targetCopies"
+                      (change)="patchRow($index, { targetCopies: +($any($event.target).value) })">
+                @for (n of copyOptions(row.banner); track n) {
+                  <option [value]="n">{{ rung(row.banner, n) }}</option>
+                }
+              </select>
+            </label>
+            <button type="button" class="row__remove" (click)="removeRow($index)"
+                    [disabled]="rows().length === 1" aria-label="Remove">✕</button>
+          </div>
         }
-      </fieldset>
+      </div>
+      <div class="rows__add">
+        <button type="button" (click)="addRow('character')">+ Add character</button>
+        <button type="button" (click)="addRow('weapon')">+ Add weapon</button>
+        <small class="hint">
+          Spent in order, top to bottom. Pity and Capturing Radiance belong to the first row.
+        </small>
+      </div>
+    }
 
-      <!-- What you already own -->
-      <fieldset class="col">
-        <legend>Already owned</legend>
-        <div class="field">
-          <label for="owned">{{ banner() === 'character' ? 'Constellation' : 'Refinement' }}</label>
-          <select id="owned" [value]="ownedCopies()"
-                  (change)="setNumber($event.target, ownedCopies.set, maxOwned())">
-            @for (n of [0, 1, 2, 3, 4, 5, 6].slice(0, maxOwned() + 1); track n) {
-              <option [value]="n">{{ banner() === 'character' ? 'C' + n : 'R' + (n + 1) }}</option>
-            }
-          </select>
-          <small class="hint">The ladder starts from here.</small>
-        </div>
-      </fieldset>
-    </div>
-
-    <!-- Projected income: whole patches, ticked. The workbook has no half-patch structure,
-         and most income is time-gated or paced by the player, so a day-level split would be
+    <!-- Projected income: whole patches, ticked. The workbook has no phase structure, and
+         most income is time-gated or paced by the player, so a day-level split would be
          invented precision. -->
     @if (income().length) {
       <div class="income">
@@ -121,24 +236,31 @@
             <button type="button" class="chip" [class.on]="isSelected(version.version)"
                     (click)="toggleVersion(version.version)">
               {{ version.version }}
-              @if (version.is_estimate) { <span class="chip__est" title="An estimate, not a settled total">est.</span> }
+              @if (version.is_estimate) {
+                <span class="chip__est" title="An estimate, not a settled total">est.</span>
+              }
               <span class="chip__value">+{{ version[tier()] | number: '1.0-0' }}</span>
             </button>
           }
         </div>
         @if (incomeFetchedAt()) {
-          <small class="hint">Income data last refreshed {{ incomeFetchedAt() | date: 'mediumDate' }}.</small>
+          <small class="hint">
+            Income data last refreshed {{ incomeFetchedAt() | date: 'mediumDate' }}.
+          </small>
         }
       </div>
     }
 
     <!-- The arithmetic, not just the total. Fribbels' best idea on this page. -->
-    <p class="budget">
-      {{ primogems() | number }} primogems
-      + {{ intertwined() | number }} fate
-      @if (projectedWishes()) { + {{ projectedWishes() | number }} projected }
-      = <strong>{{ budget() | number }} wishes</strong>
-    </p>
+    @if (plan(); as result) {
+      <p class="budget">
+        {{ primogems() | number }} primogems
+        + {{ intertwined() | number }} fate
+        @if (projectedWishes()) { + {{ projectedWishes() | number }} projected }
+        @if (result.refunded_wishes) { + {{ result.refunded_wishes | number }} refund }
+        = <strong>{{ result.budget | number }} wishes</strong>
+      </p>
+    }
   </div>
 
   @if (error()) {
@@ -147,7 +269,9 @@
 
   @if (plan(); as result) {
     <table class="ladder" [class.ladder--stale]="pending()">
-      <caption class="visually-hidden">Chance of reaching each milestone on {{ result.budget }} wishes</caption>
+      <caption class="visually-hidden">
+        Chance of reaching each milestone on {{ result.budget }} wishes
+      </caption>
       <thead>
         <tr>
           <th scope="col">Goal</th>
@@ -157,7 +281,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (milestone of result.milestones; track milestone.label) {
+        @for (milestone of result.milestones; track $index) {
           <tr [class.unreachable]="milestone.success_chance === 0">
             <th scope="row" class="goal">
               <span [class]="barClass(milestone.success_chance)"
@@ -175,9 +299,10 @@
     <!-- Read off the published guarantee, never off the fitted pity curve: the curve's far
          tail is not identified and understates it. -->
     <p class="hint">
-      HoYoverse guarantees a copy within <strong>{{ result.published_worst_case }}</strong> wishes.
-      Averages above are exact for the published rates; the soft-pity ramp is a community fit,
-      which pins the middle of the range and not its extremes.
+      Each rung is <strong>cumulative</strong> — the chance of reaching it <em>and</em>
+      everything above it, from the same budget. HoYoverse guarantees a copy within
+      {{ result.published_worst_case }} wishes; the soft-pity ramp is a community fit, which
+      pins the middle of the range and not its extremes.
     </p>
   }
 </section>

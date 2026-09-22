@@ -8,6 +8,8 @@ export type WishPlanRead = components['schemas']['WishPlanRead'];
 export type WishMilestoneRead = components['schemas']['WishMilestoneRead'];
 export type WishIncomeRead = components['schemas']['WishIncomeRead'];
 export type WishIncomeVersionRead = components['schemas']['WishIncomeVersionRead'];
+export type WishTarget = components['schemas']['WishTarget'];
+export type Strategy = components['schemas']['Strategy'];
 
 /** What `/wishes/limits` answers — the page builds its controls from this, not from constants. */
 export interface WishLimits {
@@ -15,6 +17,8 @@ export interface WishLimits {
   max_constellation: number;
   max_refinement: number;
   max_lost_fifty_fifties: number;
+  strategies: string[];
+  starglitter_refund_tiers: Record<string, number>;
   banners: Record<string, { hard_pity: number; published_worst_case: number; capturing_radiance: boolean }>;
 }
 

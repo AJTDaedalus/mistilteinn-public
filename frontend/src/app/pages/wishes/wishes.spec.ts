@@ -9,6 +9,8 @@ const LIMITS: WishLimits = {
   max_constellation: 6,
   max_refinement: 5,
   max_lost_fifty_fifties: 3,
+  strategies: ['r1_first', 'c0_first', 'c1_first', 'c6_first'],
+  starglitter_refund_tiers: { none: 0, low: 0.041667, average: 0.075269, high: 0.111111 },
   banners: {
     character: { hard_pity: 90, published_worst_case: 180, capturing_radiance: true },
     weapon: { hard_pity: 80, published_worst_case: 160, capturing_radiance: false },
@@ -25,10 +27,11 @@ const INCOME = {
 
 const PLAN: WishPlanRead = {
   budget: 0,
+  wallet_wishes: 0,
+  refunded_wishes: 0,
   published_worst_case: 180,
   milestones: [
-    { copies: 1, label: 'C0', success_chance: 1, average_wishes: 93.45, median_wishes: 80 },
-    { copies: 2, label: 'C1', success_chance: 0.49, average_wishes: 186.11, median_wishes: 182 },
+    { copies: 1, label: 'Furina C0', success_chance: 1, average_wishes: 93.45, median_wishes: 80 },
   ],
 };
 
@@ -57,23 +60,116 @@ async function settled(): Promise<void> {
 }
 
 describe('WishesPage', () => {
-  describe('the budget shows its own arithmetic', () => {
-    it('turns primogems and fate into whole wishes', async () => {
+  describe('simple mode builds one character’s campaign', () => {
+    it('sends the character, the weapon and the strategy', async () => {
       const { page } = makePage();
       await settled();
-      page.primogems.set(24_000);
-      page.intertwined.set(60);
-      expect(page.walletWishes()).toBe(210);
-      expect(page.budget()).toBe(210);
+      const request = page.request();
+      expect(request.character.banner).toBe('character');
+      expect(request.weapon.banner).toBe('weapon');
+      expect(request.strategy).toBe('c0_first');
+      expect(request.targets).toBeUndefined();
     });
 
-    it('does not sell a partial wish', async () => {
+    it('drops the weapon when it is not being planned', async () => {
       const { page } = makePage();
       await settled();
-      page.primogems.set(159);
-      expect(page.walletWishes()).toBe(0);
+      page.planWeapon.set(false);
+      expect(page.request().weapon).toBeNull();
     });
 
+    /** Capturing Radiance is the character banner's alone. */
+    it('never sends banked losses on the weapon', async () => {
+      const { page } = makePage();
+      await settled();
+      page.patch('weapon', { lostFiftyFifties: 3 });
+      expect(page.request().weapon.lost_fifty_fifties).toBe(0);
+    });
+  });
+
+  describe('custom mode builds an explicit list', () => {
+    it('sends targets in order with their goals', async () => {
+      const { page } = makePage();
+      await settled();
+      page.mode.set('custom');
+      page.patchRow(0, { label: 'Furina', targetCopies: 3 });
+      page.addRow('weapon');
+      page.patchRow(1, { label: 'Splendor', targetCopies: 1 });
+      page.addRow('character');
+      page.patchRow(2, { label: 'Neuvillette', targetCopies: 1 });
+
+      const request = page.request();
+      expect(request.character).toBeUndefined();
+      expect(request.targets.map((t: any) => [t.label, t.banner, t.target_copies])).toEqual([
+        ['Furina', 'character', 3],
+        ['Splendor', 'weapon', 1],
+        ['Neuvillette', 'character', 1],
+      ]);
+    });
+
+    /** One account, one counter — the backend refuses a later row that sets it. */
+    it('lets only the first row carry the loss counter', async () => {
+      const { page } = makePage();
+      await settled();
+      page.mode.set('custom');
+      page.addRow('character');
+      page.patchRow(0, { lostFiftyFifties: 2 });
+      page.patchRow(1, { lostFiftyFifties: 3 });
+      const targets = page.request().targets;
+      expect(targets[0].lost_fifty_fifties).toBe(2);
+      expect(targets[1].lost_fifty_fifties).toBe(0);
+    });
+
+    it('reorders rows', async () => {
+      const { page } = makePage();
+      await settled();
+      page.mode.set('custom');
+      page.patchRow(0, { label: 'first' });
+      page.addRow('weapon');
+      page.patchRow(1, { label: 'second' });
+      page.moveRow(1, -1);
+      expect(page.rows().map((r: any) => r.label)).toEqual(['second', 'first']);
+    });
+
+    it('will not move a row off either end', async () => {
+      const { page } = makePage();
+      await settled();
+      page.mode.set('custom');
+      page.addRow('weapon');
+      page.moveRow(0, -1);
+      page.moveRow(1, 1);
+      expect(page.rows()).toHaveLength(2);
+      expect(page.rows()[0].banner).toBe('character');
+    });
+
+    /** An empty plan is refused by the backend, so the page must not be able to build one. */
+    it('refuses to remove the last row', async () => {
+      const { page } = makePage();
+      await settled();
+      page.mode.set('custom');
+      page.removeRow(0);
+      expect(page.rows()).toHaveLength(1);
+    });
+
+    it('clamps a goal that the new banner cannot reach', async () => {
+      const { page } = makePage();
+      await settled();
+      page.mode.set('custom');
+      page.patchRow(0, { targetCopies: 7 });
+      page.patchRow(0, { banner: 'weapon' });
+      expect(page.rows()[0].targetCopies).toBe(5);
+    });
+
+    it('keeps the goal above what is already owned', async () => {
+      const { page } = makePage();
+      await settled();
+      page.mode.set('custom');
+      page.patchRow(0, { ownedCopies: 4, targetCopies: 1 });
+      expect(page.rows()[0].targetCopies).toBe(5);
+    });
+  });
+
+  describe('the wallet', () => {
     it('adds only the patches that were ticked, at the chosen tier', async () => {
       const { page } = makePage();
       await settled();
@@ -84,35 +180,47 @@ describe('WishesPage', () => {
       page.toggleVersion('7.1');
       expect(page.projectedWishes()).toBe(0);
     });
+
+    it('sends the refund tier so the backend applies the cited rate', async () => {
+      const { page } = makePage();
+      await settled();
+      page.refund.set('average');
+      expect(page.request().starglitter_refund).toBe('average');
+    });
+
+    it('labels the refund tiers from the backend rather than hardcoding them', async () => {
+      const { page } = makePage();
+      await settled();
+      expect(page.refundLabel('none')).toBe('None');
+      expect(page.refundLabel('average')).toContain('7.5');
+      expect(page.refundTiers()).toEqual(['none', 'low', 'average', 'high']);
+    });
   });
 
   describe('Capturing Radiance', () => {
-    it('is offered on the character banner and hidden on the weapon banner', async () => {
-      const { page } = makePage();
-      await settled();
-      expect(page.showsRadiance()).toBe(true);
-      page.chooseBanner('weapon');
-      expect(page.showsRadiance()).toBe(false);
-    });
-
-    /**
-     * Arming the guarantee *requires* losing a 50/50, so guaranteed-with-zero-losses is a
-     * state the game cannot produce and the backend refuses with a 422. The control raises
-     * the counter instead of letting the user build it.
-     */
+    /** Arming the guarantee requires losing a 50/50, which increments the counter. */
     it('cannot express guaranteed with no losses', async () => {
       const { page } = makePage();
       await settled();
-      page.setGuaranteed(true);
-      expect(page.lostFiftyFifties()).toBe(1);
+      page.setGuaranteed('character', true);
+      expect(page.character().lostFiftyFifties).toBe(1);
     });
 
     it('drops the guarantee when the losses go back to zero', async () => {
       const { page } = makePage();
       await settled();
-      page.setGuaranteed(true);
+      page.setGuaranteed('character', true);
       page.setLosses(0);
-      expect(page.guaranteed()).toBe(false);
+      expect(page.character().guaranteed).toBe(false);
+    });
+
+    /** The weapon banner has Epitomized Path, which arms without any counter. */
+    it('does not touch the counter when the weapon is guaranteed', async () => {
+      const { page } = makePage();
+      await settled();
+      page.setGuaranteed('weapon', true);
+      expect(page.weapon().guaranteed).toBe(true);
+      expect(page.character().lostFiftyFifties).toBe(0);
     });
 
     it('says when three losses already amount to a guarantee', async () => {
@@ -122,44 +230,10 @@ describe('WishesPage', () => {
       page.setLosses(3);
       expect(page.radianceIsCertain()).toBe(true);
     });
-
-    it('never sends banked losses for the weapon banner', async () => {
-      const { page } = makePage();
-      await settled();
-      page.setLosses(2);
-      page.chooseBanner('weapon');
-      expect(page.request().lost_fifty_fifties).toBe(0);
-    });
-  });
-
-  describe('switching banners', () => {
-    it('clears pity, guarantee and losses together', async () => {
-      const { page } = makePage();
-      await settled();
-      page.pity.set(70);
-      page.setGuaranteed(true);
-      page.ownedCopies.set(3);
-      page.chooseBanner('weapon');
-      expect(page.pity()).toBe(0);
-      expect(page.guaranteed()).toBe(false);
-      expect(page.lostFiftyFifties()).toBe(0);
-      expect(page.ownedCopies()).toBe(0);
-    });
-
-    it('caps owned copies per banner', async () => {
-      const { page } = makePage();
-      await settled();
-      expect(page.maxOwned()).toBe(6);
-      page.chooseBanner('weapon');
-      expect(page.maxOwned()).toBe(4);
-    });
   });
 
   describe('numeric inputs', () => {
-    /**
-     * `Number('')` is 0, so an emptied box would silently read as "I hold none" — the defect
-     * CLAUDE.md records from the materials editor. An empty box keeps the previous value.
-     */
+    /** `Number('')` is 0, so an emptied box would read as "I hold none". */
     it('ignores an emptied box rather than reading it as zero', async () => {
       const { page } = makePage();
       await settled();
@@ -179,8 +253,9 @@ describe('WishesPage', () => {
     it('clamps to the maximum it was given', async () => {
       const { page } = makePage();
       await settled();
-      page.setNumber({ value: '500' } as HTMLInputElement, page.pity.set, 89);
-      expect(page.pity()).toBe(89);
+      page.setNumber({ value: '500' } as HTMLInputElement,
+        (v: number) => page.patch('character', { pity: v }), 89);
+      expect(page.character().pity).toBe(89);
     });
 
     it('refuses a negative', async () => {
@@ -207,6 +282,22 @@ describe('WishesPage', () => {
       const { page } = makePage();
       await settled();
       expect(page.percent(0.4908)).toBe(49.1);
+    });
+
+    it('names rungs the way a player says them', async () => {
+      const { page } = makePage();
+      await settled();
+      expect(page.rung('character', 1)).toBe('C0');
+      expect(page.rung('character', 7)).toBe('C6');
+      expect(page.rung('weapon', 1)).toBe('R1');
+      expect(page.rung('weapon', 5)).toBe('R5');
+    });
+
+    it('labels strategies readably', async () => {
+      const { page } = makePage();
+      await settled();
+      expect(page.strategyLabel('r1_first')).toBe('R1 first');
+      expect(page.strategyLabel('c6_first')).toBe('C6 first');
     });
   });
 
@@ -240,5 +331,27 @@ describe('WishesPage', () => {
       await settled();
       expect(page.incomeFetchedAt()).toBe('2026-09-22T12:00:00Z');
     });
+  });
+});
+
+describe('owning copies is not the same as reaching a rung', () => {
+  /**
+   * A character you have never pulled is not a C0 character. Labelling `owned = 0` as "C0"
+   * made a fresh custom row read "from C0 to C0" — self-contradictory, and a goal the
+   * backend refuses. Found by looking at the page, not by a test.
+   */
+  it('calls holding none "None" on both banners', async () => {
+    const { page } = makePage();
+    await settled();
+    expect(page.ownedLabel('character', 0)).toBe('None');
+    expect(page.ownedLabel('weapon', 0)).toBe('None');
+  });
+
+  it('calls the first copy C0 on a character and R1 on a weapon', async () => {
+    const { page } = makePage();
+    await settled();
+    expect(page.ownedLabel('character', 1)).toBe('C0');
+    expect(page.ownedLabel('weapon', 1)).toBe('R1');
+    expect(page.ownedLabel('character', 7)).toBe('C6');
   });
 });

@@ -1,5 +1,5 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import {
@@ -7,6 +7,7 @@ import {
   type WishIncomeVersionRead,
   type WishLimits,
   type WishPlanRead,
+  type WishTarget,
 } from './wishes.service';
 
 /** The three spending tiers the bookkeeping workbook publishes. */
@@ -16,21 +17,43 @@ type Tier = (typeof TIERS)[number];
 /** How long to wait after the last keystroke before asking the backend. */
 const DEBOUNCE_MS = 250;
 
+/** Copies that take an item to its maximum. */
+const MAX_COPIES = { character: 7, weapon: 5 } as const;
+
+/** One banner's starting position, as the controls hold it. */
+interface Position {
+  label: string;
+  pity: number;
+  guaranteed: boolean;
+  lostFiftyFifties: number;
+  ownedCopies: number;
+}
+
+/** A row of the custom plan. */
+interface CustomRow extends Position {
+  banner: 'character' | 'weapon';
+  targetCopies: number;
+}
+
+function position(label = ''): Position {
+  return { label, pity: 0, guaranteed: false, lostFiftyFifties: 0, ownedCopies: 0 };
+}
+
 /**
  * The wish planner — odds of reaching a constellation or refinement on a given budget.
  *
  * `docs/DESIGN_wish_planner.md`. Laid out after Fribbels' Warp Planner, deliberately, so that
- * anyone who has used that one already knows this one: a settings panel, a resource line that
- * shows its own arithmetic, and a goal table with a proportional bar behind each rung.
+ * anyone who has used that one already knows this one.
  *
- * Two differences, both argued in the DESIGN:
+ * **Two modes, as Fribbels has.** *Simple* plans one character and optionally their signature
+ * weapon, ordered by a strategy. *Custom* takes an explicit ordered list of goals across as
+ * many characters as you like. Both spend **one** budget: the thing a per-banner ladder
+ * cannot do, because two separate ladders each assume they own the whole wallet and can both
+ * read "almost certain" when affording both is impossible.
  *
- * - **Capturing Radiance**, which HSR has no equivalent of, as a "50/50s lost" control beside
- *   Guaranteed. It is worth up to 22 points of the answer and without it the mechanic is
- *   invisible for the most common question anyone asks.
- * - **Whole patches** of projected income rather than Fribbels' half-patches. The workbook has
- *   no phase structure, and splitting a patch in two would be inventing precision the source
- *   does not have.
+ * Genshin-specific additions Fribbels has no equivalent of: **Capturing Radiance**, as a
+ * "50/50s lost" control, and **whole patches** of projected income rather than half-patches,
+ * because the source workbook has no phase structure.
  */
 @Component({
   selector: 'app-wishes',
@@ -41,13 +64,23 @@ const DEBOUNCE_MS = 250;
 export class WishesPage {
   private service = inject(WishesService);
 
-  protected readonly banner = signal<'character' | 'weapon'>('character');
+  protected readonly mode = signal<'simple' | 'custom'>('simple');
+
+  // -- simple mode
+  protected readonly character = signal<Position>(position('Character'));
+  protected readonly weapon = signal<Position>(position('Weapon'));
+  protected readonly planWeapon = signal(true);
+  protected readonly strategy = signal('c0_first');
+
+  // -- custom mode
+  protected readonly rows = signal<CustomRow[]>([
+    { ...position('Character'), banner: 'character', targetCopies: 1 },
+  ]);
+
+  // -- wallet
   protected readonly primogems = signal(0);
   protected readonly intertwined = signal(0);
-  protected readonly pity = signal(0);
-  protected readonly guaranteed = signal(false);
-  protected readonly lostFiftyFifties = signal(0);
-  protected readonly ownedCopies = signal(0);
+  protected readonly refund = signal('none');
   protected readonly tier = signal<Tier>('f2p');
   protected readonly selectedVersions = signal<ReadonlySet<string>>(new Set());
 
@@ -58,31 +91,25 @@ export class WishesPage {
   protected readonly error = signal<string | null>(null);
   protected readonly pending = signal(false);
 
-  /**
-   * Capturing Radiance applies to the character banner only, so the control disappears on the
-   * weapon banner — and the banked losses have to go with it, or the next request is refused.
-   */
-  protected readonly showsRadiance = computed(
-    () => this.limits()?.banners[this.banner()]?.capturing_radiance ?? false,
+  protected readonly strategies = computed(() => this.limits()?.strategies ?? []);
+  protected readonly refundTiers = computed(() =>
+    Object.keys(this.limits()?.starglitter_refund_tiers ?? { none: 0 }),
   );
 
-  protected readonly hardPity = computed(
-    () => this.limits()?.banners[this.banner()]?.hard_pity ?? 90,
+  protected readonly characterHardPity = computed(
+    () => this.limits()?.banners['character']?.hard_pity ?? 90,
+  );
+  protected readonly weaponHardPity = computed(
+    () => this.limits()?.banners['weapon']?.hard_pity ?? 80,
+  );
+  protected readonly maxLosses = computed(() => this.limits()?.max_lost_fifty_fifties ?? 3);
+
+  /** True once the counter alone guarantees the next 50/50, so the page can say why. */
+  protected readonly radianceIsCertain = computed(
+    () => this.character().lostFiftyFifties >= this.maxLosses(),
   );
 
-  protected readonly maxOwned = computed(() => {
-    const limits = this.limits();
-    if (!limits) return 0;
-    return this.banner() === 'character' ? limits.max_constellation : limits.max_refinement - 1;
-  });
-
-  /** Wishes the wallet alone is worth. */
-  protected readonly walletWishes = computed(() => {
-    const per = this.limits()?.primogems_per_wish ?? 160;
-    return Math.floor(this.primogems() / per) + this.intertwined();
-  });
-
-  /** Wishes from the patches the user has ticked, at the chosen tier. */
+  /** Wishes from the patches ticked, at the chosen tier. */
   protected readonly projectedWishes = computed(() => {
     const chosen = this.selectedVersions();
     const tier = this.tier();
@@ -93,13 +120,6 @@ export class WishesPage {
     );
   });
 
-  protected readonly budget = computed(() => this.walletWishes() + this.projectedWishes());
-
-  /** True once the counter alone guarantees the next 50/50, so the page can say why. */
-  protected readonly radianceIsCertain = computed(
-    () => this.showsRadiance() && this.lostFiftyFifties() >= (this.limits()?.max_lost_fifty_fifties ?? 3),
-  );
-
   /** Versions still ahead, newest first — nobody budgets for a patch that has been and gone. */
   protected readonly upcoming = computed(() => this.income().slice(-8).reverse());
 
@@ -107,9 +127,8 @@ export class WishesPage {
 
   constructor() {
     void this.load();
-    // Recompute when anything the request depends on moves, debounced. Firing per keystroke
-    // would send `9`, `99`, `999` on the way to `9999` — the defect CLAUDE.md records for the
-    // materials editor, one layer up.
+    // Debounced. Firing per keystroke would send `9`, `99`, `999` on the way to `9999` — the
+    // defect CLAUDE.md records for the materials editor, one layer up.
     effect(() => {
       const request = this.request();
       if (this.timer) clearTimeout(this.timer);
@@ -117,16 +136,44 @@ export class WishesPage {
     });
   }
 
-  private request() {
+  private target(from: Position, banner: 'character' | 'weapon'): WishTarget {
     return {
-      banner: this.banner(),
+      banner,
+      label: from.label,
+      pity: from.pity,
+      guaranteed: from.guaranteed,
+      // Capturing Radiance is the character banner's, and it is one account-wide counter, so
+      // only the first target of a plan may carry it.
+      lost_fifty_fifties: banner === 'character' ? from.lostFiftyFifties : 0,
+      owned_copies: from.ownedCopies,
+    };
+  }
+
+  protected request() {
+    const wallet = {
       primogems: this.primogems(),
       intertwined_fate: this.intertwined(),
       extra_wishes: this.projectedWishes(),
-      pity: this.pity(),
-      guaranteed: this.guaranteed(),
-      lost_fifty_fifties: this.showsRadiance() ? this.lostFiftyFifties() : 0,
-      owned_copies: this.ownedCopies(),
+      starglitter_refund: this.refund(),
+    };
+
+    if (this.mode() === 'custom') {
+      return {
+        ...wallet,
+        targets: this.rows().map((row, index) => ({
+          ...this.target(row, row.banner),
+          // Only the first row declares the counter; the backend refuses a later one.
+          lost_fifty_fifties: index === 0 ? this.target(row, row.banner).lost_fifty_fifties : 0,
+          target_copies: row.targetCopies,
+        })),
+      };
+    }
+
+    return {
+      ...wallet,
+      character: this.target(this.character(), 'character'),
+      weapon: this.planWeapon() ? this.target(this.weapon(), 'weapon') : null,
+      strategy: this.strategy(),
     };
   }
 
@@ -144,7 +191,7 @@ export class WishesPage {
   private async recompute(request: ReturnType<WishesPage['request']>): Promise<void> {
     this.pending.set(true);
     try {
-      this.plan.set(await this.service.plan(request));
+      this.plan.set(await this.service.plan(request as never));
       this.error.set(null);
     } catch (caught) {
       this.plan.set(null);
@@ -164,40 +211,114 @@ export class WishesPage {
    * `Number('')` is 0, so an emptied box would silently read as "I have none" — the trap
    * CLAUDE.md records from the materials editor. An unparseable value keeps the last one.
    */
-  protected setNumber(target: EventTarget | null, into: (value: number) => void, max?: number): void {
+  protected parse(target: EventTarget | null, max?: number): number | null {
     const raw = (target as HTMLInputElement | null)?.value ?? '';
-    if (raw.trim() === '') return;
+    if (raw.trim() === '') return null;
     const value = Number(raw);
-    if (!Number.isFinite(value) || value < 0) return;
-    into(max === undefined ? Math.floor(value) : Math.min(Math.floor(value), max));
+    if (!Number.isFinite(value) || value < 0) return null;
+    return max === undefined ? Math.floor(value) : Math.min(Math.floor(value), max);
   }
 
-  protected chooseBanner(next: 'character' | 'weapon'): void {
-    this.banner.set(next);
-    this.ownedCopies.set(0);
-    this.pity.set(0);
-    // Both pieces of banner state have to reset together: a guarantee carried from the
-    // character banner would describe a weapon banner the player has never pulled on.
-    this.guaranteed.set(false);
-    this.lostFiftyFifties.set(0);
+  protected setNumber(
+    target: EventTarget | null,
+    into: (value: number) => void,
+    max?: number,
+  ): void {
+    const value = this.parse(target, max);
+    if (value !== null) into(value);
+  }
+
+  /** Update one field of a simple-mode position. */
+  protected patch(which: 'character' | 'weapon', change: Partial<Position>): void {
+    const signal = which === 'character' ? this.character : this.weapon;
+    signal.set({ ...signal(), ...change });
   }
 
   /**
    * Guaranteed and the loss counter are not independent. Arming the guarantee *requires*
-   * losing a 50/50, so `guaranteed` with zero losses is a state the game cannot produce and
-   * the service refuses. Selecting it here raises the counter rather than sending a 422.
+   * losing a 50/50, so `guaranteed` with zero losses is a state the game cannot produce.
+   * Selecting it here raises the counter rather than sending a 422.
    */
-  protected setGuaranteed(next: boolean): void {
-    this.guaranteed.set(next);
-    if (next && this.showsRadiance() && this.lostFiftyFifties() === 0) {
-      this.lostFiftyFifties.set(1);
-    }
+  protected setGuaranteed(which: 'character' | 'weapon', next: boolean): void {
+    const current = which === 'character' ? this.character() : this.weapon();
+    const losses =
+      which === 'character' && next && current.lostFiftyFifties === 0
+        ? 1
+        : current.lostFiftyFifties;
+    this.patch(which, { guaranteed: next, lostFiftyFifties: losses });
   }
 
   protected setLosses(next: number): void {
-    this.lostFiftyFifties.set(next);
-    if (next === 0) this.guaranteed.set(false);
+    const current = this.character();
+    this.patch('character', {
+      lostFiftyFifties: next,
+      guaranteed: next === 0 ? false : current.guaranteed,
+    });
   }
+
+  // -- custom rows
+
+  protected addRow(banner: 'character' | 'weapon'): void {
+    const label = banner === 'character' ? 'Character' : 'Weapon';
+    this.rows.set([
+      ...this.rows(),
+      { ...position(`${label} ${this.rows().length + 1}`), banner, targetCopies: 1 },
+    ]);
+  }
+
+  protected removeRow(index: number): void {
+    // Never leave the plan empty: a request with no targets is refused, and the page would
+    // show an error rather than an empty state.
+    if (this.rows().length === 1) return;
+    this.rows.set(this.rows().filter((_, i) => i !== index));
+  }
+
+  protected moveRow(index: number, by: -1 | 1): void {
+    const next = [...this.rows()];
+    const to = index + by;
+    if (to < 0 || to >= next.length) return;
+    [next[index], next[to]] = [next[to], next[index]];
+    this.rows.set(next);
+  }
+
+  protected patchRow(index: number, change: Partial<CustomRow>): void {
+    const next = [...this.rows()];
+    next[index] = { ...next[index], ...change };
+    // Changing the banner can leave a goal above the new banner's cap.
+    const cap = MAX_COPIES[next[index].banner];
+    next[index].targetCopies = Math.min(next[index].targetCopies, cap);
+    next[index].ownedCopies = Math.min(next[index].ownedCopies, cap - 1);
+    if (next[index].targetCopies <= next[index].ownedCopies) {
+      next[index].targetCopies = next[index].ownedCopies + 1;
+    }
+    this.rows.set(next);
+  }
+
+  protected copyOptions(banner: 'character' | 'weapon'): number[] {
+    return Array.from({ length: MAX_COPIES[banner] }, (_, i) => i + 1);
+  }
+
+  protected ownedOptions(banner: 'character' | 'weapon'): number[] {
+    return Array.from({ length: MAX_COPIES[banner] }, (_, i) => i);
+  }
+
+  /** "C3" for the fourth copy of a character, "R2" for the second of a weapon. */
+  protected rung(banner: 'character' | 'weapon', copies: number): string {
+    return banner === 'character' ? `C${copies - 1}` : `R${copies}`;
+  }
+
+  /**
+   * What *holding* `copies` is called — which is not the same as the rung `copies` reaches.
+   *
+   * Holding none is "None", not "C0": a character you have never pulled is not a C0
+   * character. Getting this wrong made a fresh row read "from C0 to C0", which is both
+   * self-contradictory and a goal the backend refuses.
+   */
+  protected ownedLabel(banner: 'character' | 'weapon', copies: number): string {
+    return copies === 0 ? 'None' : this.rung(banner, copies);
+  }
+
+  // -- income
 
   protected toggleVersion(version: string): void {
     const next = new Set(this.selectedVersions());
@@ -212,6 +333,17 @@ export class WishesPage {
 
   protected tierLabel(tier: Tier): string {
     return { f2p: 'F2P', welkin: 'Welkin', welkin_bp: 'Welkin + BP' }[tier];
+  }
+
+  protected strategyLabel(value: string): string {
+    return value === 'r1_first' ? 'R1 first' : `${value.slice(0, 2).toUpperCase()} first`;
+  }
+
+  protected refundLabel(tier: string): string {
+    const percent = (this.limits()?.starglitter_refund_tiers[tier] ?? 0) * 100;
+    if (tier === 'none') return 'None';
+    const shape = { low: 'Low', average: 'Average', high: 'High' }[tier] ?? tier;
+    return `${percent.toFixed(1)}% (${shape})`;
   }
 
   protected readonly tiers = TIERS;
