@@ -1,4 +1,4 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
@@ -7,9 +7,11 @@ import { CatalogueIcon } from '../../shared/icon/icon';
 import {
   WishesService,
   type WishBannerRead,
+  type WishFeaturedItem,
   type WishIncomeVersionRead,
   type WishLimits,
   type WishPlanRead,
+  type WishMilestoneRead,
   type WishPlanRequest,
   type WishStrategy,
   type WishTarget,
@@ -57,7 +59,14 @@ function position(label = ''): Position {
   return { label, pity: 0, guaranteed: false, lostFiftyFifties: 0, ownedCopies: 0 };
 }
 
-function row(banner: 'character' | 'weapon', label: string): CustomRow {
+/**
+ * A fresh row.
+ *
+ * **No placeholder label.** The free-text editor is gone, so a made-up `"Weapon 2"` could never
+ * be changed and went out as the goal's name — the ladder printed `Weapon 2 R1`. Empty means the
+ * banner has not named it yet, and `plan_campaign` builds the rung label with `.strip()`.
+ */
+function row(banner: 'character' | 'weapon', label = ''): CustomRow {
   return { ...position(label), banner, targetCopies: 1, bannerSlug: null };
 }
 
@@ -87,7 +96,7 @@ const ACCOUNT_REFUND = 'account';
 
 @Component({
   selector: 'app-wishes',
-  imports: [FormsModule, DecimalPipe, DatePipe, CatalogueIcon],
+  imports: [FormsModule, DecimalPipe, CatalogueIcon],
   templateUrl: './wishes.html',
   styleUrl: './wishes.scss',
 })
@@ -126,7 +135,6 @@ export class WishesPage {
 
   protected readonly limits = signal<WishLimits | null>(null);
   protected readonly income = signal<WishIncomeVersionRead[]>([]);
-  protected readonly incomeFetchedAt = signal<string | null>(null);
   protected readonly plan = signal<WishPlanRead | null>(null);
   protected readonly error = signal<string | null>(null);
   protected readonly pending = signal(false);
@@ -192,6 +200,32 @@ export class WishesPage {
   });
 
   /** The banner currently picked, if it is still in the loaded page. */
+  /**
+   * The weapon banner running beside the chosen character banner — their signature's banner.
+   *
+   * **One direction only.** A character banner names exactly one concurrent weapon banner, so
+   * character → weapon is unambiguous. The reverse is not: a weapon banner runs beside *two*
+   * character banners and carries *two* 5-star weapons, and nothing in the source says which
+   * is whose. Pairing backwards would be a guess dressed as a fact.
+   */
+  protected readonly pairedWeaponBanner = computed(
+    () => this.banner()?.signature_banner ?? null,
+  );
+
+  /**
+   * The paired banner's row, when it happens to be on the loaded page.
+   *
+   * **Only for the highlight.** Pricing uses the slug, which the backend resolves over the
+   * whole table; searching the page for it reported "no weapon banner" whenever the partner
+   * was off-page, which over the committed table is 2 of the 6 character banners on the first
+   * page. That null was indistinguishable from a phase with no weapon banner, and no phase has
+   * none, so it was always a pagination artefact.
+   */
+  protected readonly pairedWeaponRow = computed(() => {
+    const slug = this.pairedWeaponBanner();
+    return slug ? this.banners().find((b) => b.slug === slug) ?? null : null;
+  });
+
   protected readonly banner = computed(() =>
     this.banners().find((b) => b.slug === this.chosenBanner()) ?? null,
   );
@@ -200,10 +234,54 @@ export class WishesPage {
     () => this.banners().length < this.bannerTotal(),
   );
 
-  /** The first rung that carries a histogram — what the chart draws. */
-  protected readonly charted = computed(
-    () => this.plan()?.milestones.find((m) => (m.histogram ?? []).length) ?? null,
-  );
+  /**
+   * Which rung the chart draws, by index into the plan's milestones.
+   *
+   * Null follows the plan: the first rung that has a histogram. Set, it is the rung the user
+   * clicked. Reset whenever a new plan arrives, because index 3 of one ladder is not the same
+   * goal as index 3 of another.
+   */
+  protected readonly chartedIndex = signal<number | null>(null);
+
+  /**
+   * The label of the chosen rung, so a reshape that keeps the ladder's *length* is still caught.
+   *
+   * Length alone was not enough and the doc above the guard claimed otherwise. Flipping the
+   * strategy from `c0_first` to `r1_first` keeps **12** milestones and swaps rungs 0 and 1, so
+   * a click on R1 silently ended up drawing C0 — measured. Labels repeat in a custom plan (two
+   * rows can both be "C0"), so this pairs with the index rather than replacing it.
+   */
+  private chartedLabel: string | null = null;
+
+  /**
+   * The rung the chart draws.
+   *
+   * **Milestones are cumulative**, so a rung's distribution is already "reach this *and*
+   * everything before it" — C1 is C0+C1, the second row of a custom plan is both characters,
+   * and the weapon rung after C0 is C0R1. Selecting one needs no new maths; each milestone
+   * carries its own PMF.
+   */
+  protected readonly charted = computed(() => {
+    const milestones = this.plan()?.milestones ?? [];
+    const chosen = this.chartedIndex();
+    if (chosen !== null && (milestones[chosen]?.histogram ?? []).length) {
+      return milestones[chosen];
+    }
+    return milestones.find((m) => (m.histogram ?? []).length) ?? null;
+  });
+
+  /** True for the rung the chart is drawing, so the ladder can say which one that is. */
+  protected isCharted(milestone: WishMilestoneRead): boolean {
+    return this.charted() === milestone;
+  }
+
+  /** Draw this rung's distribution. A rung with no histogram is not selectable. */
+  protected chart(index: number): void {
+    const milestone = this.plan()?.milestones[index];
+    if (!milestone || !(milestone.histogram ?? []).length) return;
+    this.chartedLabel = milestone.label;
+    this.chartedIndex.set(index);
+  }
 
   /** First and last wish counts the chart covers. Computed here because indexing an
    *  optional array in a template is a type error the Angular compiler catches and
@@ -291,7 +369,10 @@ export class WishesPage {
         // contract makes a defaulted field non-optional, so sending it keeps the request
         // typed rather than cast.
         strategy: this.strategy(),
-        targets: this.rows().map((entry, index) => ({
+        // **A complete row is dropped, not sent.** Owning the maximum leaves no rung above
+        // it, so the row describes a goal that is already met; sending it would ask the
+        // backend to plan "from C6 to C6".
+        targets: this.plannableRows().map((entry, index) => ({
           ...this.target(entry, entry.banner),
           // Only the first row declares the counter; the backend refuses a later one.
           lost_fifty_fifties:
@@ -324,7 +405,6 @@ export class WishesPage {
       const [limits, income] = await Promise.all([this.service.limits(), this.service.income()]);
       this.limits.set(limits);
       this.income.set(income.versions);
-      this.incomeFetchedAt.set(income.fetched_at ?? null);
       await this.loadBanners(0);
     } catch {
       this.error.set('Could not load the planner’s reference data.');
@@ -359,19 +439,36 @@ export class WishesPage {
   /** The chosen banner's slug, but only for the leg it is actually a banner for. */
   private slugForKind(kind: 'character' | 'weapon'): string | null {
     const picked = this.banner();
-    return picked && picked.kind === kind ? picked.slug : null;
+    if (picked && picked.kind === kind) return picked.slug;
+    // **The signature weapon runs on its own banner.** Sending null here priced the weapon
+    // leg at nothing; sending the character's slug priced it at the character banner's
+    // 4-star economics. The banner beside it is the actual answer, and the row knows it.
+    if (kind === 'weapon') return this.pairedWeaponBanner();
+    return null;
   }
 
   protected chooseBanner(banner: WishBannerRead | null): void {
     this.chosenBanner.set(banner?.slug ?? null);
     if (!banner) return;
     if (banner.kind === 'character') {
-      this.patch('character', { label: banner.featured_five[0]?.name ?? '' });
-      this.planWeapon.set(false);
+      // The roster's answer, in simple mode too. Reading it only in custom mode left the
+      // default mode asking the user to retype the constellation the response just delivered.
+      this.patch('character', this.fromFeatured(banner.featured_five[0]));
+      // **The weapon goal is left as the user set it.** Forcing it off here meant one click
+      // lit the paired banner in brass, captioned it "Signature", and sent `weapon: null` --
+      // two halves of one screen asserting opposite things. The new test only passed because
+      // it set `planWeapon(true)` on the next line, undoing the one thing production did.
     } else {
       this.planWeapon.set(true);
-      this.patch('weapon', { label: banner.featured_five[0]?.name ?? '' });
+      // A weapon banner has two 5-stars and no weapon roster exists, so this names the first
+      // and carries no owned count — `fromFeatured` returns 0 for a null, which is "None".
+      this.patch('weapon', this.fromFeatured(banner.featured_five[0]));
     }
+  }
+
+  /** True for the picked banner and for the weapon banner paired with it. */
+  protected isPaired(slug: string): boolean {
+    return this.pairedWeaponBanner() === slug;
   }
 
   protected isChosen(slug: string): boolean {
@@ -389,10 +486,100 @@ export class WishesPage {
     const change: Partial<CustomRow> = { bannerSlug: banner?.slug ?? null };
     if (banner) {
       change.banner = banner.kind as 'character' | 'weapon';
-      change.label = banner.featured_five[0]?.name ?? '';
+      // A character banner has one 5-star, so it is the goal. A weapon banner has two, and
+      // which one the user wants is theirs to say -- picking for them would be the same guess
+      // as deciding whose signature a weapon is.
+      if (banner.featured_five.length === 1) {
+        Object.assign(change, this.fromFeatured(banner.featured_five[0]));
+      } else {
+        change.label = '';
+        change.ownedCopies = 0;
+      }
     }
     this.patchRow(index, change);
     this.pickingFor.set(null);
+  }
+
+  /** Name a row's goal from a featured unit, carrying what the roster already knows. */
+  protected chooseRowUnit(index: number, item: WishFeaturedItem): void {
+    if (!this.rows()[index]) return;
+    this.patchRow(index, this.fromFeatured(item));
+  }
+
+  /**
+   * A featured unit as row fields.
+   *
+   * **`owned_copies` on the wire is a constellation; the row counts copies.** C3 is four
+   * copies and holding none is 0, so this is `constellation + 1` — reading it straight across
+   * would say a C3 account holds three copies and make a fresh C0 pull read as "from C2".
+   * Null stays 0: "nobody has said" is not "I have one".
+   */
+  private fromFeatured(item: WishFeaturedItem | undefined): Partial<CustomRow> {
+    if (!item) return { label: '' };
+    // **Only when the roster actually knows.** Null is "nobody has said", and writing that
+    // across as 0 would wipe a count the user had typed themselves and replace it with a
+    // claim the account never made.
+    if (item.owned_copies === null || item.owned_copies === undefined) {
+      return { label: item.name };
+    }
+    return { label: item.name, ownedCopies: item.owned_copies + 1 };
+  }
+
+  /** The featured 5-stars a row may name its goal after. */
+  protected rowUnits(entry: CustomRow): WishFeaturedItem[] {
+    return this.rowBanner(entry)?.featured_five ?? [];
+  }
+
+  /**
+   * True when this row is the first of its banner kind, which is the only row whose pity and
+   * guarantee the planner reads.
+   *
+   * **`plan_campaign` applies both only `if first_on_banner`** (`planner.py:256-258`), because
+   * the state carries: obtaining a copy is a 5-star, which resets pity and spends the
+   * guarantee, so a later leg on the same banner starts from what the simulation produced
+   * rather than from anything the user could type. Offering the controls on every row gave
+   * three boxes that accepted a number and reported nothing -- measured, row 2's pity moved
+   * the averages not at all (93.446/186.113 at pity 0 and at pity 89) while row 1's moved them
+   * to 32.149.
+   *
+   * It is also what made the guarantee a dead end: `request()` zeroes `lost_fifty_fifties` for
+   * every row but the first, so arming ✓ on row 2 sent `guaranteed: true` with no losses --
+   * exactly the state `_validate_leg` refuses -- and the control that would have fixed it is
+   * only rendered on row 0.
+   */
+  protected leadsItsBanner(index: number): boolean {
+    const entry = this.rows()[index];
+    if (!entry) return false;
+    return this.rows().findIndex((row) => row.banner === entry.banner) === index;
+  }
+
+  /** Hard pity for whichever banner this row is on. */
+  protected rowHardPity(entry: CustomRow): number {
+    return entry.banner === 'character' ? this.characterHardPity() : this.weaponHardPity();
+  }
+
+  /**
+   * Guaranteed and the loss counter are not independent for a row either — arming the
+   * guarantee requires having lost a 50/50, and `guaranteed` with zero losses is a state the
+   * backend refuses with a 422.
+   */
+  protected setRowGuaranteed(index: number, next: boolean): void {
+    const current = this.rows()[index];
+    if (!current) return;
+    const losses =
+      current.banner === 'character' && next && current.lostFiftyFifties === 0
+        ? 1
+        : current.lostFiftyFifties;
+    this.patchRow(index, { guaranteed: next, lostFiftyFifties: losses });
+  }
+
+  protected setRowLosses(index: number, next: number): void {
+    const current = this.rows()[index];
+    if (!current) return;
+    this.patchRow(index, {
+      lostFiftyFifties: next,
+      guaranteed: next === 0 ? false : current.guaranteed,
+    });
   }
 
   /** The banner a custom row is on, when it is one of the loaded ones. */
@@ -419,11 +606,22 @@ export class WishesPage {
     try {
       const plan = await this.service.plan(request);
       if (ticket !== this.latest) return;
+      // **Keep the chosen rung across a recompute, drop it when the ladder changes shape.**
+      // Typing a primogem re-plans the same goals, and resetting there would throw the
+      // selection away on every keystroke; adding or removing a goal makes index 3 a
+      // different thing, and keeping it would silently chart the wrong one.
+      const chosen = this.chartedIndex();
+      if (chosen === null || plan.milestones[chosen]?.label !== this.chartedLabel) {
+        this.chartedIndex.set(null);
+        this.chartedLabel = null;
+      }
       this.plan.set(plan);
       this.error.set(null);
     } catch (caught) {
       if (ticket !== this.latest) return;
       this.plan.set(null);
+      this.chartedIndex.set(null);
+      this.chartedLabel = null;
       this.error.set(this.describe(caught));
     } finally {
       if (ticket === this.latest) this.pending.set(false);
@@ -492,18 +690,18 @@ export class WishesPage {
 
   protected addRow(banner: 'character' | 'weapon'): void {
     if (!this.canAddRow()) return;
-    const label = banner === 'character' ? 'Character' : 'Weapon';
-    this.rows.set([
-      ...this.rows(),
-      row(banner, `${label} ${this.rows().length + 1}`),
-    ]);
+    // Unnamed until a banner names it. The invented `"Weapon 2"` had no editor to change it and
+    // was sent as the goal's name, so the ladder printed `Weapon 2 R1`.
+    this.rows.set(this.normalised([...this.rows(), row(banner)]));
   }
 
   protected removeRow(index: number): void {
     // Never leave the plan empty: a request with no targets is refused, and the page would
     // show an error rather than an empty state.
     if (this.rows().length === 1) return;
-    this.rows.set(this.rows().filter((_, i) => i !== index));
+    // Removing the row that led its banner kind promotes another, so the invariant has to be
+    // re-established here as well.
+    this.rows.set(this.normalised(this.rows().filter((_, i) => i !== index)));
   }
 
   protected moveRow(index: number, by: -1 | 1): void {
@@ -511,7 +709,27 @@ export class WishesPage {
     const to = index + by;
     if (!next[index] || to < 0 || to >= next.length) return;
     [next[index], next[to]] = [next[to], next[index]];
-    this.rows.set(next);
+    this.rows.set(this.normalised(next));
+  }
+
+  /**
+   * Strip pity, guarantee and losses from rows that cannot carry them.
+   *
+   * Reordering changes *which* row leads its banner kind, so a row that legitimately held a
+   * guarantee can end up second -- where `request()` zeroes its loss counter and the pair
+   * becomes the state the backend refuses. Rather than leave a 422 for the user to discover
+   * from a drag, the fields are cleared on the rows the planner will ignore anyway.
+   */
+  private normalised(rows: CustomRow[]): CustomRow[] {
+    return rows.map((entry, index) => {
+      const leads = rows.findIndex((row) => row.banner === entry.banner) === index;
+      if (leads && index === 0) return entry;
+      if (!leads) return { ...entry, pity: 0, guaranteed: false, lostFiftyFifties: 0 };
+      // Leads its kind but is not row 0: it may hold pity and a guarantee, but only row 0 may
+      // carry the account-wide Capturing Radiance counter, so a guarantee here has nothing to
+      // rest on.
+      return { ...entry, guaranteed: false, lostFiftyFifties: 0 };
+    });
   }
 
   protected patchRow(index: number, change: Partial<CustomRow>): void {
@@ -524,12 +742,22 @@ export class WishesPage {
     next[index] = { ...next[index], ...change };
     // Changing the banner can leave a goal above the new banner's cap.
     const cap = MAX_COPIES[next[index].banner];
+    // **Pity is capped per banner too.** Character hard pity is 90 and the weapon banner's is
+    // 80, so a row switched from one to the other kept a pity the new banner cannot have and
+    // the request came back 400 "must be within [0, 79]" from a control that looked valid.
+    const hardPity = this.rowHardPity(next[index]);
+    next[index].pity = Math.min(Math.max(next[index].pity, 0), Math.max(hardPity - 1, 0));
     next[index].targetCopies = Math.min(next[index].targetCopies, cap);
-    next[index].ownedCopies = Math.min(next[index].ownedCopies, cap - 1);
+    // **Clamped to the cap, not to one below it.** `cap - 1` turned a C6 account into "from
+    // C5 to C6" and priced a copy they already hold. Holding the maximum is a real state; it
+    // just leaves nothing to plan, which `rowIsComplete` reports rather than papering over.
+    next[index].ownedCopies = Math.min(Math.max(next[index].ownedCopies, 0), cap);
     if (next[index].targetCopies <= next[index].ownedCopies) {
-      next[index].targetCopies = next[index].ownedCopies + 1;
+      // Capped: a complete row has no rung above it, and `owned + 1` would send a goal past
+      // the banner's maximum. `rowIsComplete` is what the request and the UI read instead.
+      next[index].targetCopies = Math.min(next[index].ownedCopies + 1, cap);
     }
-    this.rows.set(next);
+    this.rows.set(this.normalised(next));
   }
 
   protected copyOptions(banner: 'character' | 'weapon'): number[] {
@@ -537,8 +765,20 @@ export class WishesPage {
   }
 
   protected ownedOptions(banner: 'character' | 'weapon'): number[] {
-    return Array.from({ length: MAX_COPIES[banner] }, (_, i) => i);
+    // 0 ("None") through the maximum, inclusive: a C6 character is a thing an account can be,
+    // and leaving it out is what made the roster's own answer unrepresentable.
+    return Array.from({ length: MAX_COPIES[banner] + 1 }, (_, i) => i);
   }
+
+  /** True when the row's goal is already held, so there is nothing left to pull for. */
+  protected rowIsComplete(entry: CustomRow): boolean {
+    return entry.ownedCopies >= MAX_COPIES[entry.banner];
+  }
+
+  /** The rows that describe a goal still to reach. */
+  protected readonly plannableRows = computed(
+    () => this.rows().filter((entry) => !this.rowIsComplete(entry)),
+  );
 
   /** "C3" for the fourth copy of a character, "R2" for the second of a weapon. */
   protected rung(banner: 'character' | 'weapon', copies: number): string {

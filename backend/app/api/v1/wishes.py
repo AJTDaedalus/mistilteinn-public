@@ -313,9 +313,9 @@ async def create_plan(
                 success_chance=milestone.success_chance,
                 average_wishes=milestone.average_wishes,
                 median_wishes=milestone.median_wishes,
-                histogram=_histogram(milestone.pmf) if index < CHARTED_RUNGS else [],
+                histogram=_histogram(milestone.pmf),
             )
-            for index, milestone in enumerate(plan.milestones)
+            for milestone in plan.milestones
         ],
         published_worst_case=rates_for(legs[0].banner).published_worst_case,
     )
@@ -354,8 +354,21 @@ def _legs_for(payload: WishPlanRequest) -> list[Leg]:
 HISTOGRAM_BINS = 40
 #: Below this a bin is empty for drawing purposes; it trims a long, invisible tail.
 HISTOGRAM_FLOOR = 1e-6
-#: Rungs that carry a histogram. The whole ladder would be twelve charts nobody asked for.
-CHARTED_RUNGS = 3
+#: Catalogue names shared by more than one row, so a name-keyed lookup cannot resolve them.
+#: Sixteen Travelers, and the practice mannequins (`Manekin`/`Manekina`, seven each).
+_AMBIGUOUS_NAMES = frozenset({"Traveler", "Manekin", "Manekina"})
+
+
+# **Every rung carries its histogram, now that the chart follows the one you click.**
+#
+# This used to be `CHARTED_RUNGS = 3`, from when the page drew one chart pinned to the first
+# rung — "the whole ladder would be twelve charts nobody asked for" was true then. It stopped
+# being true when the ladder became the selector: a C0-C6 plus R1-R5 plan is twelve rungs, so
+# nine of twelve chips rendered disabled with nothing saying why, and a four-row custom plan
+# could not chart its fourth row.
+#
+# The cost is one binning pass per rung over a PMF the convolution already produced — twelve
+# small arrays of `HISTOGRAM_BINS` bins, not twelve charts.
 
 
 def _histogram(pmf: list[float] | None) -> list[WishHistogramBin]:
@@ -599,6 +612,16 @@ class WishFeaturedItem(BaseModel):
             "which is why banners store names and resolve here rather than storing ids."
         ),
     )
+    owned_copies: int | None = Field(
+        None,
+        description=(
+            "Constellations of this character the caller already holds, from their roster — "
+            "so picking a goal off a banner does not ask them to retype what an import "
+            "already knows. **Null is 'nobody has said', not zero**: an account that never "
+            "imported, a character it has no row for, a row written before the column "
+            "existed, or a weapon (there is no weapon roster, so refinement cannot be read)."
+        ),
+    )
 
 
 class WishBannerRead(BaseModel):
@@ -611,6 +634,29 @@ class WishBannerRead(BaseModel):
     ends_at: str | None
     featured_five: list[WishFeaturedItem]
     featured_four: list[WishFeaturedItem]
+    signature_banner: str | None = Field(
+        None,
+        description=(
+            "The concurrent *weapon* banner's slug — where this character's signature weapon "
+            "is pulled. **Resolved here, not by the client.** The picker holds one page of "
+            "banners and a phase's weapon banner is not guaranteed to be on it: over the "
+            "committed table, 2 of the 6 character banners on the default first page have "
+            "their partner at index 8. A client filtering its own page therefore reported "
+            "*no weapon banner* — indistinguishable from a phase that genuinely had none, "
+            "except that no phase does, so the null was always a pagination artefact."
+        ),
+    )
+    alongside: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Slugs of the banners running at the same time — what makes a weapon somebody's "
+            "signature. Picking a character can therefore also select the weapon banner "
+            "running beside them, which is the only way the weapon leg gets priced at the "
+            "weapon banner's own 4-star economics. **It does not say which of a weapon "
+            "banner's two 5-stars belongs to which character**; nothing in the source does, "
+            "and inferring it from list order would be a guess."
+        ),
+    )
 
 
 class WishBannerList(BaseModel):
@@ -671,8 +717,71 @@ async def list_banners(
                 ).all()
             )
 
+    # **The caller's own constellations, by name.** The same resolve-by-name the art uses,
+    # for the same reason: a stored id would be the row id of whichever database the capture
+    # ran against, which is #263's silent miss. Owned characters only — an un-owned row keeps
+    # its stored constellation, and reporting it would offer a goal from a character the user
+    # has said they do not have.
+    held: dict[str, int] = {}
+    if wanted:
+        held = dict(
+            (
+                await session.execute(
+                    select(Character.name, CharacterRosterEntry.constellation)
+                    .join(
+                        CharacterRosterEntry,
+                        CharacterRosterEntry.character_id == Character.id,
+                    )
+                    .where(
+                        CharacterRosterEntry.owner_id == str(user.id),
+                        CharacterRosterEntry.owned.is_(True),
+                        CharacterRosterEntry.constellation.isnot(None),
+                        Character.name.in_(wanted),
+                    )
+                )
+            ).all(),
+        )
+
+    # **The same duplicate-name guard `_refund_from_account` applies forty lines up.** Sixteen
+    # Travelers share one name and fourteen practice mannequins share two more, so keying by
+    # name lets whichever row the database returned last win. Harmless today only because no
+    # banner features those names — which is exactly the kind of thing that stops being true
+    # without anyone noticing, so it is filtered rather than relied upon.
+    held = {
+        name: constellation
+        for name, constellation in held.items()
+        if name not in _AMBIGUOUS_NAMES
+    }
+
+    # Which of the concurrent banners is the weapon one. Resolved over the whole table rather
+    # than the page, because the page is exactly what the client could already see.
+    partners = {slug for row in rows for slug in (row.alongside or [])}
+    weapon_slugs: set[str] = set()
+    if partners:
+        weapon_slugs = {
+            slug
+            for (slug,) in (
+                await session.execute(
+                    select(WishBanner.slug).where(
+                        WishBanner.slug.in_(partners), WishBanner.kind == "weapon",
+                    ),
+                )
+            ).all()
+        }
+
+    def signature_of(row: WishBanner) -> str | None:
+        if row.kind != "character":
+            return None
+        # **One weapon banner a phase**, so this is unambiguous — unlike the reverse, where a
+        # weapon banner runs beside two character banners and carries two weapons, and nothing
+        # in the source says which is whose.
+        return next((s for s in (row.alongside or []) if s in weapon_slugs), None)
+
     def items(names: list[str]) -> list[WishFeaturedItem]:
-        return [WishFeaturedItem(name=n, icon=art.get(n)) for n in names]
+        return [
+            WishFeaturedItem(name=n, icon=art.get(n), owned_copies=held.get(n))
+            for n in names
+        ]
 
     # Over the table, not over the page: taken from `rows` it changed as the user clicked
     # "show more", and read null on any page past the end of a populated table.
@@ -684,6 +793,8 @@ async def list_banners(
                 starts_at=row.starts_at, ends_at=row.ends_at,
                 featured_five=items(list(row.featured_five)),
                 featured_four=items(list(row.featured_four)),
+                signature_banner=signature_of(row),
+                alongside=list(row.alongside or []),
             )
             for row in rows
         ],

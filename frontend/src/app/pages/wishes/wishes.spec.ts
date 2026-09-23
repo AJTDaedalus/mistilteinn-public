@@ -53,18 +53,22 @@ const BANNERS = {
     {
       slug: 'When Warm Winds Cavort/2026-09-23', name: 'When Warm Winds Cavort',
       kind: 'character', starts_at: '2026-09-23 11:00:00', ends_at: '2026-10-13 17:59:59',
-      featured_five: [{ name: 'Vesna', icon: 'UI_Vesna' }],
+      featured_five: [{ name: 'Vesna', icon: 'UI_Vesna', owned_copies: null }],
       featured_four: [
-        { name: 'Diona', icon: 'UI_Diona' },
-        { name: 'Faruzan', icon: null },
-        { name: 'Chongyun', icon: 'UI_Chongyun' },
+        { name: 'Diona', icon: 'UI_Diona', owned_copies: 3 },
+        { name: 'Faruzan', icon: null, owned_copies: null },
+        { name: 'Chongyun', icon: 'UI_Chongyun', owned_copies: 0 },
       ],
+      alongside: ['Epitome Invocation/2026-09-23'],
+      signature_banner: 'Epitome Invocation/2026-09-23',
     },
     {
       slug: 'Epitome Invocation/2026-09-23', name: 'Epitome Invocation',
       kind: 'weapon', starts_at: '2026-09-23 11:00:00', ends_at: '2026-10-13 17:59:59',
-      featured_five: [{ name: 'Splendor', icon: 'UI_Splendor' }],
-      featured_four: [{ name: 'New Bough', icon: null }],
+      featured_five: [{ name: 'Splendor', icon: 'UI_Splendor', owned_copies: null }],
+      featured_four: [{ name: 'New Bough', icon: null, owned_copies: null }],
+      alongside: ['When Warm Winds Cavort/2026-09-23'],
+      signature_banner: null,
     },
   ],
 };
@@ -361,11 +365,9 @@ describe('WishesPage', () => {
       expect(page.upcoming().find((v: any) => v.version === '7.1').is_estimate).toBe(true);
     });
 
-    it('records when the store was last refreshed', async () => {
-      const { page } = makePage();
-      await settled();
-      expect(page.incomeFetchedAt()).toBe('2026-09-22T12:00:00Z');
-    });
+    // The "Refreshed …" line was removed at the owner's request, and with it the only reader
+    // of `fetched_at` — so the signal and the `DatePipe` went with it rather than staying
+    // tested and rendered nowhere.
   });
 });
 
@@ -539,8 +541,10 @@ describe('the banner picker', () => {
     const request = page.request();
     expect(request.banner_slug).toBeUndefined();
     expect(request.character.banner_slug).toBe('When Warm Winds Cavort/2026-09-23');
-    // A character banner has no weapon on it, so `chooseBanner` turns the weapon leg off.
-    expect(request.weapon).toBeNull();
+    // A character banner now *keeps* the weapon leg and prices it on the paired weapon
+    // banner. Turning it off here was the defect: the same click lit that banner in brass and
+    // captioned it "Signature" while sending `weapon: null`.
+    expect(request.weapon.banner_slug).toBe('Epitome Invocation/2026-09-23');
 
     page.chooseBanner(BANNERS.banners[1]);
     expect(page.request().weapon.banner_slug).toBe('Epitome Invocation/2026-09-23');
@@ -642,11 +646,37 @@ describe('a custom plan spans banners', () => {
     await settled();
     page.mode.set('custom');
     page.addRow('character');
-    page.patchRow(1, { label: 'Kept', pity: 40 });
+    page.patchRow(1, { label: 'Kept' });
     page.chooseRowBanner(0, BANNERS.banners[0]);
     expect(page.rows()[1].label).toBe('Kept');
-    expect(page.rows()[1].pity).toBe(40);
     expect(page.rows()[1].bannerSlug).toBeNull();
+  });
+
+  /**
+   * **A second row of the same kind cannot hold pity, so it is not left holding one.**
+   * `plan_campaign` applies pity only to the first leg on each banner, so a value here was
+   * accepted, validated and thrown away -- measured, row 2 at pity 89 gave the same averages
+   * as row 2 at pity 0.
+   */
+  it('clears pity on a row that does not lead its banner kind', async () => {
+    const { page } = makePage();
+    await settled();
+    page.mode.set('custom');
+    page.addRow('character');
+    page.patchRow(1, { pity: 40 });
+    expect(page.leadsItsBanner(1)).toBe(false);
+    expect(page.rows()[1].pity).toBe(0);
+  });
+
+  /** But the first row of a *different* kind does lead, and keeps it. */
+  it('keeps pity on the first row of each kind', async () => {
+    const { page } = makePage();
+    await settled();
+    page.mode.set('custom');
+    page.addRow('weapon');
+    page.patchRow(1, { pity: 40 });
+    expect(page.leadsItsBanner(1)).toBe(true);
+    expect(page.rows()[1].pity).toBe(40);
   });
 
   it('opens one picker at a time', async () => {
@@ -826,7 +856,7 @@ describe('one picker, two legs', () => {
    * adds did nothing at all in the default mode. Nothing caught it: the backend unit test
    * proves two *different* slugs work, which no client has ever sent.
    */
-  it('does not label the weapon leg with a character banner', async () => {
+  it('never labels the weapon leg with a character banner', async () => {
     const plan = vi.fn().mockResolvedValue(PLAN);
     const { page } = makePage({ plan });
     await settled();
@@ -837,7 +867,27 @@ describe('one picker, two legs', () => {
     await page.recompute(page.request());
     const sent = plan.mock.calls.at(-1)?.[0];
     expect(sent.character.banner_slug).toBe(character.slug);
-    expect(sent.weapon.banner_slug).toBeNull();
+    // The defect was the weapon leg inheriting the *character* banner, which priced its
+    // pulls with featured 4-star characters. It now takes the paired weapon banner; what it
+    // must never be is the character's.
+    expect(sent.weapon.banner_slug).not.toBe(character.slug);
+  });
+
+  it('sends no weapon banner when none runs beside the character', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const lonely = {
+      ...BANNERS,
+      // `signature_banner` is what decides the pairing now, resolved server-side; an empty
+      // `alongside` alone no longer means anything to the client.
+      banners: [{ ...BANNERS.banners[0], alongside: [], signature_banner: null }],
+    };
+    const { page } = makePage({ plan, banners: vi.fn().mockResolvedValue(lonely) });
+    await settled();
+    await settled();
+    page.chooseBanner(lonely.banners[0]);
+    page.planWeapon.set(true);
+    await page.recompute(page.request());
+    expect(plan.mock.calls.at(-1)?.[0].weapon.banner_slug).toBeNull();
   });
 
   it('does not label the character leg with a weapon banner', async () => {
@@ -872,5 +922,347 @@ describe('naming no banner is not a silent roster', () => {
     await settled();
     await page.recompute(page.request());
     expect(page.noConstellationData()).toBe(false);
+  });
+});
+
+describe('the signature weapon runs on its own banner', () => {
+  /**
+   * The owner's ask: "the one character plan 'signature weapon' uses the character's
+   * signature weapon banner. Selecting it should also select their weapon banner so both are
+   * yellow and it's obvious."
+   *
+   * It is also the correct fix for #334's finding 4: the weapon leg was sent either the
+   * character's slug (pricing it with featured 4-star *characters*) or nothing at all.
+   */
+  it('lights the paired weapon banner and prices the weapon leg on it', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const { page } = makePage({ plan });
+    await settled();
+    await settled();
+    const character = BANNERS.banners.find((b) => b.kind === 'character')!;
+    const weapon = BANNERS.banners.find((b) => b.kind === 'weapon')!;
+
+    page.chooseBanner(character);
+    page.planWeapon.set(true);
+    expect(page.isPaired(weapon.slug)).toBe(true);
+
+    await page.recompute(page.request());
+    const sent = plan.mock.calls.at(-1)?.[0];
+    expect(sent.character.banner_slug).toBe(character.slug);
+    expect(sent.weapon.banner_slug).toBe(weapon.slug);
+  });
+
+  /**
+   * **Not backwards.** A weapon banner runs beside *two* character banners and carries *two*
+   * 5-star weapons, and nothing in the source says which is whose. Pairing in that direction
+   * would be a guess presented as a fact.
+   */
+  it('does not infer a character from a weapon banner', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    const character = BANNERS.banners.find((b) => b.kind === 'character')!;
+    page.chooseBanner(BANNERS.banners.find((b) => b.kind === 'weapon')!);
+    expect(page.pairedWeaponBanner()).toBeNull();
+    expect(page.isPaired(character.slug)).toBe(false);
+  });
+});
+
+describe('a custom row is named by its banner, not by typing', () => {
+  /**
+   * The owner's point: "Free text entry characters/weapons don't give us the benefit of the
+   * roster we've given ourselves." A typed name cannot be looked up, so the constellation
+   * data the refund already reads went unused for the thing actually being pulled for.
+   */
+  it('takes the name and the owned copies from a one-five-star banner', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    page.mode.set('custom');
+    const character = BANNERS.banners.find((b) => b.kind === 'character')!;
+    page.chooseRowBanner(0, character);
+    expect(page.rows()[0].label).toBe('Vesna');
+    expect(page.rows()[0].banner).toBe('character');
+  });
+
+  /**
+   * **Constellation on the wire, copies in the row.** C3 is four copies and holding none is
+   * 0, so reading `owned_copies` straight across would make a C3 account read as "from C2".
+   */
+  it('converts a constellation into copies held', async () => {
+    const owned = {
+      ...BANNERS,
+      banners: [{
+        ...BANNERS.banners[0],
+        featured_five: [{ name: 'Diona', icon: 'UI_Diona', owned_copies: 3 }],
+      }],
+    };
+    const { page } = makePage({ banners: vi.fn().mockResolvedValue(owned) });
+    await settled();
+    await settled();
+    page.mode.set('custom');
+    page.chooseRowBanner(0, owned.banners[0]);
+    expect(page.rows()[0].ownedCopies).toBe(4);
+  });
+
+  it('leaves an unknown constellation at none rather than guessing C0', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    page.mode.set('custom');
+    page.chooseRowBanner(0, BANNERS.banners.find((b) => b.kind === 'character')!);
+    expect(page.rows()[0].ownedCopies).toBe(0);
+  });
+
+  /** A weapon banner has two 5-stars; the user says which, we do not infer it. */
+  it('does not name a goal for a two-five-star banner until one is picked', async () => {
+    const two = {
+      ...BANNERS,
+      banners: [{
+        ...BANNERS.banners[1],
+        featured_five: [
+          { name: 'Splendor', icon: null, owned_copies: null },
+          { name: 'Hymn', icon: null, owned_copies: null },
+        ],
+      }],
+    };
+    const { page } = makePage({ banners: vi.fn().mockResolvedValue(two) });
+    await settled();
+    await settled();
+    page.mode.set('custom');
+    page.chooseRowBanner(0, two.banners[0]);
+    expect(page.rows()[0].label).toBe('');
+    expect(page.rowUnits(page.rows()[0]).length).toBe(2);
+
+    page.chooseRowUnit(0, two.banners[0].featured_five[1]);
+    expect(page.rows()[0].label).toBe('Hymn');
+  });
+});
+
+describe('a custom row carries pity, guarantee and losses', () => {
+  /**
+   * All three were already in `CustomRow` and already sent by `target()`, with no UI at all —
+   * so every custom plan was silently computed at 0 pity with no guarantee. The owner hit it
+   * directly: "I turned off my 50/50 losses since I can't edit them on custom right now."
+   */
+  it('sends the row’s pity and guarantee', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const { page } = makePage({ plan });
+    await settled();
+    page.mode.set('custom');
+    page.patchRow(0, { pity: 42 });
+    page.setRowGuaranteed(0, true);
+    await page.recompute(page.request());
+    const sent = plan.mock.calls.at(-1)?.[0].targets[0];
+    expect(sent.pity).toBe(42);
+    expect(sent.guaranteed).toBe(true);
+  });
+
+  /**
+   * Guaranteed with zero losses is a state the game cannot produce and the backend answers
+   * 422 for. Arming it raises the counter instead of sending the contradiction.
+   */
+  it('raises the loss counter rather than arming an impossible guarantee', async () => {
+    const { page } = makePage();
+    await settled();
+    page.mode.set('custom');
+    page.setRowGuaranteed(0, true);
+    expect(page.rows()[0].lostFiftyFifties).toBe(1);
+    page.setRowLosses(0, 0);
+    expect(page.rows()[0].guaranteed).toBe(false);
+  });
+});
+
+describe('the histogram follows a chosen rung', () => {
+  const laddered = {
+    ...PLAN,
+    milestones: [
+      { ...PLAN.milestones[0], label: 'C0', histogram: [{ start: 0, end: 10, probability: 1 }] },
+      { ...PLAN.milestones[0], label: 'C1', histogram: [{ start: 0, end: 20, probability: 1 }] },
+    ],
+  };
+
+  /** It was pinned to the first rung with a histogram, and nothing said which that was. */
+  it('defaults to the first rung that has one', async () => {
+    const { page } = makePage({ plan: vi.fn().mockResolvedValue(laddered) });
+    await settled();
+    await page.recompute(page.request());
+    expect(page.charted()?.label).toBe('C0');
+    expect(page.isCharted(laddered.milestones[0])).toBe(true);
+  });
+
+  /**
+   * Milestones are cumulative, so charting C1 shows the odds of C0 *and* C1 — which is the
+   * owner's own example, along with "the second character in a custom plan to see the
+   * probability of both".
+   */
+  it('charts the rung that was clicked', async () => {
+    const { page } = makePage({ plan: vi.fn().mockResolvedValue(laddered) });
+    await settled();
+    await page.recompute(page.request());
+    page.chart(1);
+    expect(page.charted()?.label).toBe('C1');
+    expect(page.isCharted(laddered.milestones[1])).toBe(true);
+  });
+
+  it('refuses a rung with no distribution to draw', async () => {
+    const partial = {
+      ...laddered,
+      milestones: [laddered.milestones[0], { ...laddered.milestones[1], histogram: [] }],
+    };
+    const { page } = makePage({ plan: vi.fn().mockResolvedValue(partial) });
+    await settled();
+    await page.recompute(page.request());
+    page.chart(1);
+    expect(page.charted()?.label).toBe('C0');
+  });
+
+  /** A recompute of the same goals must not throw the selection away on every keystroke. */
+  it('keeps the chosen rung across a recompute of the same ladder', async () => {
+    const plan = vi.fn().mockResolvedValue(laddered);
+    const { page } = makePage({ plan });
+    await settled();
+    await page.recompute(page.request());
+    page.chart(1);
+    await page.recompute(page.request());
+    expect(page.charted()?.label).toBe('C1');
+  });
+
+  /** But index 3 of a different ladder is a different goal, so a shape change resets it. */
+  it('drops the chosen rung when the ladder changes shape', async () => {
+    const plan = vi.fn().mockResolvedValue(laddered);
+    const { page } = makePage({ plan });
+    await settled();
+    await page.recompute(page.request());
+    page.chart(1);
+    plan.mockResolvedValue({ ...laddered, milestones: [laddered.milestones[0]] });
+    await page.recompute(page.request());
+    expect(page.chartedIndex()).toBeNull();
+    expect(page.charted()?.label).toBe('C0');
+  });
+});
+
+describe('a control never builds a state the backend refuses', () => {
+  /**
+   * **The dead end.** `setRowGuaranteed` raised the row's loss counter so the pair was not
+   * contradictory, but `request()` zeroes that counter for every row after the first -- so
+   * arming ✓ on row 2 sent `guaranteed: true, lost_fifty_fifties: 0`, the one state
+   * `_validate_leg` refuses. Measured against the real API: 422. And the control that would
+   * have fixed it is rendered only on row 0, so there was no way out.
+   */
+  it('never sends a guarantee with no losses behind it', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const { page } = makePage({ plan });
+    await settled();
+    page.mode.set('custom');
+    page.addRow('character');
+    page.setRowGuaranteed(1, true);
+    await page.recompute(page.request());
+    for (const target of plan.mock.calls.at(-1)?.[0].targets ?? []) {
+      if (target.guaranteed) expect(target.lost_fifty_fifties).toBeGreaterThan(0);
+    }
+  });
+
+  /** Reordering changes which row leads its kind, so the invariant is re-established. */
+  it('does not leave a guarantee stranded by a move', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const { page } = makePage({ plan });
+    await settled();
+    page.mode.set('custom');
+    page.addRow('character');
+    page.setRowGuaranteed(0, true);
+    page.moveRow(0, 1);
+    await page.recompute(page.request());
+    for (const target of plan.mock.calls.at(-1)?.[0].targets ?? []) {
+      if (target.guaranteed) expect(target.lost_fifty_fifties).toBeGreaterThan(0);
+    }
+  });
+
+  /** Character hard pity is 90 and the weapon banner's is 80. */
+  it('re-clamps pity when the row changes banner kind', async () => {
+    const { page } = makePage();
+    await settled();
+    page.mode.set('custom');
+    page.patchRow(0, { pity: 85 });
+    expect(page.rows()[0].pity).toBe(85);
+    page.patchRow(0, { banner: 'weapon' });
+    expect(page.rows()[0].pity).toBeLessThanOrEqual(79);
+  });
+});
+
+describe('holding the maximum is a real state', () => {
+  /**
+   * `ownedCopies` was clamped to `cap - 1`, so a C6 account read as **C5** and the plan priced
+   * a copy they already hold. Seven copies is C6; the row then has no rung above it.
+   */
+  it('keeps a C6 holder at C6 rather than reporting C5', async () => {
+    const { page } = makePage();
+    await settled();
+    page.mode.set('custom');
+    page.patchRow(0, { ownedCopies: 7 });
+    expect(page.rows()[0].ownedCopies).toBe(7);
+    expect(page.rowIsComplete(page.rows()[0])).toBe(true);
+  });
+
+  it('offers the maximum as a choice at all', async () => {
+    const { page } = makePage();
+    await settled();
+    expect(page.ownedOptions('character')).toContain(7);
+    expect(page.ownedOptions('weapon')).toContain(5);
+  });
+
+  /** A goal already met is not sent: it would ask the backend to plan "from C6 to C6". */
+  it('drops a complete row from the request', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const { page } = makePage({ plan });
+    await settled();
+    page.mode.set('custom');
+    page.addRow('character');
+    page.patchRow(0, { ownedCopies: 7 });
+    await page.recompute(page.request());
+    expect(plan.mock.calls.at(-1)?.[0].targets.length).toBe(1);
+  });
+});
+
+describe('the signature pairing is resolved server-side', () => {
+  /**
+   * The click used to light the paired banner brass, caption it "Signature", and switch the
+   * weapon goal *off* in the same gesture — measured `isPaired=true, planWeapon=false,
+   * request().weapon=null`. Two halves of one screen asserting opposite things.
+   */
+  it('prices the weapon leg on the paired banner from the click alone', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const { page } = makePage({ plan });
+    await settled();
+    await settled();
+    const character = BANNERS.banners.find((b) => b.kind === 'character')!;
+    page.chooseBanner(character);          // and nothing else
+    expect(page.planWeapon()).toBe(true);
+    await page.recompute(page.request());
+    const sent = plan.mock.calls.at(-1)?.[0];
+    expect(sent.weapon.banner_slug).toBe('Epitome Invocation/2026-09-23');
+  });
+
+  /**
+   * **The partner need not be on the loaded page.** The picker holds 8 banners and over the
+   * committed table 2 of the 6 character banners on the first page have their partner at index
+   * 8, so a client filtering its own page priced the weapon leg at zero refund and showed no
+   * highlight — indistinguishable from a phase with no weapon banner, and no phase has none.
+   */
+  it('still prices the weapon leg when the partner is off the loaded page', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const offPage = {
+      ...BANNERS,
+      banners: [BANNERS.banners[0]],   // the weapon banner is not loaded at all
+    };
+    const { page } = makePage({ plan, banners: vi.fn().mockResolvedValue(offPage) });
+    await settled();
+    await settled();
+    page.chooseBanner(offPage.banners[0]);
+    await page.recompute(page.request());
+    expect(page.pairedWeaponBanner()).toBe('Epitome Invocation/2026-09-23');
+    expect(page.pairedWeaponRow()).toBeNull();          // nothing to highlight
+    expect(plan.mock.calls.at(-1)?.[0].weapon.banner_slug)
+      .toBe('Epitome Invocation/2026-09-23');           // but it is still priced
   });
 });

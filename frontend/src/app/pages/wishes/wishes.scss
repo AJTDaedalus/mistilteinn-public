@@ -127,9 +127,11 @@
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
+  /* The label used to carry `margin-right: auto`, which pushed the tier control to the far
+     right of the panel — far enough that it read as unattached to the heading it belongs to.
+     Adjacent, with the row's own gap, is the whole fix. */
+  gap: var(--space-3) var(--space-2);
 }
-.income__head .label { margin-right: auto; }
 
 .chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .chip {
@@ -188,6 +190,26 @@
   font-weight: 600;
   padding: var(--space-1) var(--space-3);
   position: relative;
+}
+
+/* The rung is the control that picks what the chart draws, so it has to look like one. */
+.goal__chip--pick {
+  border: 1px solid transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+
+  &:hover:not(:disabled) { border-color: var(--brass-hi); }
+  &:disabled { cursor: default; opacity: 0.6; }
+  &:focus-visible { outline: 2px solid var(--brass-hi); outline-offset: 2px; }
+}
+
+/* Which rung the chart is showing. Without this the chart named a goal and nothing in the
+   ladder said which row it came from. */
+.ladder__row--charted .goal__chip--pick {
+  border-color: var(--brass);
+  background: var(--brass-deep);
 }
 
 .bar {
@@ -279,7 +301,22 @@
   }
 }
 
-.row__banner { flex: 0 0 8rem; }
+/* The kind select is gone -- the banner decides it -- so the picker takes its place. */
+.row__unit {
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.row__pity { max-width: 5rem; }
+
+/* A row whose goal is already held is dropped from the plan, so it has to say so rather than
+   look like a goal that is simply never reached. */
+.row__done {
+  color: var(--mint);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 .row__name { flex: 1 1 8rem; min-width: 6rem; }
 
 .row__pair {
@@ -370,6 +407,15 @@
   &.on { border-color: var(--brass); background: var(--brass-deep); }
   &:hover:not(.on) { border-color: var(--brass-hi); }
   &:focus-visible { outline: 2px solid var(--brass-hi); outline-offset: 2px; }
+}
+
+// A paired banner is lit the same brass as the picked one -- that is the point, the pairing
+// has to be obvious -- and carries a caption so it is clear why it lit without being clicked.
+.banner__paired {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--brass-hi);
 }
 
 .banner__five { display: flex; gap: var(--space-1); }
