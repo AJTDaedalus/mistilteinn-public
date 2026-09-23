@@ -621,6 +621,18 @@ class WishBannerRead(BaseModel):
     ends_at: str | None
     featured_five: list[WishFeaturedItem]
     featured_four: list[WishFeaturedItem]
+    signature_banner: str | None = Field(
+        None,
+        description=(
+            "The concurrent *weapon* banner's slug — where this character's signature weapon "
+            "is pulled. **Resolved here, not by the client.** The picker holds one page of "
+            "banners and a phase's weapon banner is not guaranteed to be on it: over the "
+            "committed table, 2 of the 6 character banners on the default first page have "
+            "their partner at index 8. A client filtering its own page therefore reported "
+            "*no weapon banner* — indistinguishable from a phase that genuinely had none, "
+            "except that no phase does, so the null was always a pagination artefact."
+        ),
+    )
     alongside: list[str] = Field(
         default_factory=list,
         description=(
@@ -717,6 +729,30 @@ async def list_banners(
             ).all(),
         )
 
+    # Which of the concurrent banners is the weapon one. Resolved over the whole table rather
+    # than the page, because the page is exactly what the client could already see.
+    partners = {slug for row in rows for slug in (row.alongside or [])}
+    weapon_slugs: set[str] = set()
+    if partners:
+        weapon_slugs = {
+            slug
+            for (slug,) in (
+                await session.execute(
+                    select(WishBanner.slug).where(
+                        WishBanner.slug.in_(partners), WishBanner.kind == "weapon",
+                    ),
+                )
+            ).all()
+        }
+
+    def signature_of(row: WishBanner) -> str | None:
+        if row.kind != "character":
+            return None
+        # **One weapon banner a phase**, so this is unambiguous — unlike the reverse, where a
+        # weapon banner runs beside two character banners and carries two weapons, and nothing
+        # in the source says which is whose.
+        return next((s for s in (row.alongside or []) if s in weapon_slugs), None)
+
     def items(names: list[str]) -> list[WishFeaturedItem]:
         return [
             WishFeaturedItem(name=n, icon=art.get(n), owned_copies=held.get(n))
@@ -733,6 +769,7 @@ async def list_banners(
                 starts_at=row.starts_at, ends_at=row.ends_at,
                 featured_five=items(list(row.featured_five)),
                 featured_four=items(list(row.featured_four)),
+                signature_banner=signature_of(row),
                 alongside=list(row.alongside or []),
             )
             for row in rows

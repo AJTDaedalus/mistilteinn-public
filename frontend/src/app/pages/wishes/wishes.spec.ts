@@ -60,6 +60,7 @@ const BANNERS = {
         { name: 'Chongyun', icon: 'UI_Chongyun', owned_copies: 0 },
       ],
       alongside: ['Epitome Invocation/2026-09-23'],
+      signature_banner: 'Epitome Invocation/2026-09-23',
     },
     {
       slug: 'Epitome Invocation/2026-09-23', name: 'Epitome Invocation',
@@ -67,6 +68,7 @@ const BANNERS = {
       featured_five: [{ name: 'Splendor', icon: 'UI_Splendor', owned_copies: null }],
       featured_four: [{ name: 'New Bough', icon: null, owned_copies: null }],
       alongside: ['When Warm Winds Cavort/2026-09-23'],
+      signature_banner: null,
     },
   ],
 };
@@ -541,8 +543,10 @@ describe('the banner picker', () => {
     const request = page.request();
     expect(request.banner_slug).toBeUndefined();
     expect(request.character.banner_slug).toBe('When Warm Winds Cavort/2026-09-23');
-    // A character banner has no weapon on it, so `chooseBanner` turns the weapon leg off.
-    expect(request.weapon).toBeNull();
+    // A character banner now *keeps* the weapon leg and prices it on the paired weapon
+    // banner. Turning it off here was the defect: the same click lit that banner in brass and
+    // captioned it "Signature" while sending `weapon: null`.
+    expect(request.weapon.banner_slug).toBe('Epitome Invocation/2026-09-23');
 
     page.chooseBanner(BANNERS.banners[1]);
     expect(page.request().weapon.banner_slug).toBe('Epitome Invocation/2026-09-23');
@@ -875,7 +879,9 @@ describe('one picker, two legs', () => {
     const plan = vi.fn().mockResolvedValue(PLAN);
     const lonely = {
       ...BANNERS,
-      banners: [{ ...BANNERS.banners[0], alongside: [] }],
+      // `signature_banner` is what decides the pairing now, resolved server-side; an empty
+      // `alongside` alone no longer means anything to the client.
+      banners: [{ ...BANNERS.banners[0], alongside: [], signature_banner: null }],
     };
     const { page } = makePage({ plan, banners: vi.fn().mockResolvedValue(lonely) });
     await settled();
@@ -1217,5 +1223,48 @@ describe('holding the maximum is a real state', () => {
     page.patchRow(0, { ownedCopies: 7 });
     await page.recompute(page.request());
     expect(plan.mock.calls.at(-1)?.[0].targets.length).toBe(1);
+  });
+});
+
+describe('the signature pairing is resolved server-side', () => {
+  /**
+   * The click used to light the paired banner brass, caption it "Signature", and switch the
+   * weapon goal *off* in the same gesture — measured `isPaired=true, planWeapon=false,
+   * request().weapon=null`. Two halves of one screen asserting opposite things.
+   */
+  it('prices the weapon leg on the paired banner from the click alone', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const { page } = makePage({ plan });
+    await settled();
+    await settled();
+    const character = BANNERS.banners.find((b) => b.kind === 'character')!;
+    page.chooseBanner(character);          // and nothing else
+    expect(page.planWeapon()).toBe(true);
+    await page.recompute(page.request());
+    const sent = plan.mock.calls.at(-1)?.[0];
+    expect(sent.weapon.banner_slug).toBe('Epitome Invocation/2026-09-23');
+  });
+
+  /**
+   * **The partner need not be on the loaded page.** The picker holds 8 banners and over the
+   * committed table 2 of the 6 character banners on the first page have their partner at index
+   * 8, so a client filtering its own page priced the weapon leg at zero refund and showed no
+   * highlight — indistinguishable from a phase with no weapon banner, and no phase has none.
+   */
+  it('still prices the weapon leg when the partner is off the loaded page', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const offPage = {
+      ...BANNERS,
+      banners: [BANNERS.banners[0]],   // the weapon banner is not loaded at all
+    };
+    const { page } = makePage({ plan, banners: vi.fn().mockResolvedValue(offPage) });
+    await settled();
+    await settled();
+    page.chooseBanner(offPage.banners[0]);
+    await page.recompute(page.request());
+    expect(page.pairedWeaponBanner()).toBe('Epitome Invocation/2026-09-23');
+    expect(page.pairedWeaponRow()).toBeNull();          // nothing to highlight
+    expect(plan.mock.calls.at(-1)?.[0].weapon.banner_slug)
+      .toBe('Epitome Invocation/2026-09-23');           // but it is still priced
   });
 });

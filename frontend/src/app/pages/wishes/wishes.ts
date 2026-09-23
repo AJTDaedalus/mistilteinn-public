@@ -202,12 +202,22 @@ export class WishesPage {
    * character banners and carries *two* 5-star weapons, and nothing in the source says which
    * is whose. Pairing backwards would be a guess dressed as a fact.
    */
-  protected readonly pairedWeaponBanner = computed(() => {
-    const picked = this.banner();
-    if (!picked || picked.kind !== 'character') return null;
-    return this.banners().find(
-      (b) => b.kind === 'weapon' && (picked.alongside ?? []).includes(b.slug),
-    ) ?? null;
+  protected readonly pairedWeaponBanner = computed(
+    () => this.banner()?.signature_banner ?? null,
+  );
+
+  /**
+   * The paired banner's row, when it happens to be on the loaded page.
+   *
+   * **Only for the highlight.** Pricing uses the slug, which the backend resolves over the
+   * whole table; searching the page for it reported "no weapon banner" whenever the partner
+   * was off-page, which over the committed table is 2 of the 6 character banners on the first
+   * page. That null was indistinguishable from a phase with no weapon banner, and no phase has
+   * none, so it was always a pagination artefact.
+   */
+  protected readonly pairedWeaponRow = computed(() => {
+    const slug = this.pairedWeaponBanner();
+    return slug ? this.banners().find((b) => b.slug === slug) ?? null : null;
   });
 
   protected readonly banner = computed(() =>
@@ -417,7 +427,7 @@ export class WishesPage {
     // **The signature weapon runs on its own banner.** Sending null here priced the weapon
     // leg at nothing; sending the character's slug priced it at the character banner's
     // 4-star economics. The banner beside it is the actual answer, and the row knows it.
-    if (kind === 'weapon') return this.pairedWeaponBanner()?.slug ?? null;
+    if (kind === 'weapon') return this.pairedWeaponBanner();
     return null;
   }
 
@@ -426,7 +436,10 @@ export class WishesPage {
     if (!banner) return;
     if (banner.kind === 'character') {
       this.patch('character', { label: banner.featured_five[0]?.name ?? '' });
-      this.planWeapon.set(false);
+      // **The weapon goal is left as the user set it.** Forcing it off here meant one click
+      // lit the paired banner in brass, captioned it "Signature", and sent `weapon: null` --
+      // two halves of one screen asserting opposite things. The new test only passed because
+      // it set `planWeapon(true)` on the next line, undoing the one thing production did.
     } else {
       this.planWeapon.set(true);
       this.patch('weapon', { label: banner.featured_five[0]?.name ?? '' });
@@ -435,7 +448,7 @@ export class WishesPage {
 
   /** True for the picked banner and for the weapon banner paired with it. */
   protected isPaired(slug: string): boolean {
-    return this.pairedWeaponBanner()?.slug === slug;
+    return this.pairedWeaponBanner() === slug;
   }
 
   protected isChosen(slug: string): boolean {

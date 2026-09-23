@@ -12980,6 +12980,18 @@
             "type": "array",
             "title": "Featured Four"
           },
+          "signature_banner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signature Banner",
+            "description": "The concurrent *weapon* banner's slug \u2014 where this character's signature weapon is pulled. **Resolved here, not by the client.** The picker holds one page of banners and a phase's weapon banner is not guaranteed to be on it: over the committed table, 2 of the 6 character banners on the default first page have their partner at index 8. A client filtering its own page therefore reported *no weapon banner* \u2014 indistinguishable from a phase that genuinely had none, except that no phase does, so the null was always a pagination artefact."
+          },
           "alongside": {
             "items": {
               "type": "string"

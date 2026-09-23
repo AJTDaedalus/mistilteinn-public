@@ -743,6 +743,56 @@ async def test_an_unowned_character_reports_nothing_rather_than_its_stored_const
     assert held["Diona"] is None
 
 
+async def test_the_signature_banner_is_resolved_over_the_table_not_the_page(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """The partner need not be on the page the client asked for.
+
+    `/banners` pages at 8 and orders by `starts_at DESC, slug DESC`, and a phase's weapon
+    banner is not guaranteed to land in the same 8 rows — over the committed table, 2 of the 6
+    character banners on the first page have their partner at index 8. A client filtering its
+    own page therefore reported *no weapon banner*, which is indistinguishable from a phase
+    that had none, except that no phase does.
+    """
+    await _banner(
+        db_session,
+        slug="Char A/2026-01-01", name="Char A", kind="character",
+        starts_at="2026-01-01", alongside=["Weap/2026-01-01"],
+    )
+    await _banner(
+        db_session,
+        slug="Weap/2026-01-01", name="Weap", kind="weapon",
+        starts_at="2026-01-01", alongside=["Char A/2026-01-01"],
+        featured_five=["Blade"], featured_four=["Stick"],
+    )
+
+    # One row per page, so the partner is *never* on the same page as the character banner.
+    body = (await authed_client.get(
+        "/api/v1/wishes/banners", params={"kind": "character", "limit": 1},
+    )).json()
+    row = next(b for b in body["banners"] if b["slug"] == "Char A/2026-01-01")
+    assert row["signature_banner"] == "Weap/2026-01-01"
+    assert all(b["slug"] != "Weap/2026-01-01" for b in body["banners"])
+
+
+async def test_a_weapon_banner_names_no_signature(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """One direction only: a weapon banner runs beside two character banners and carries two
+    weapons, and nothing in the source says which is whose."""
+    await _banner(
+        db_session,
+        slug="Weap B/2026-02-02", name="Weap B", kind="weapon",
+        starts_at="2026-02-02", alongside=["Char B/2026-02-02", "Char C/2026-02-02"],
+        featured_five=["Blade", "Hymn"], featured_four=["Stick"],
+    )
+    body = (await authed_client.get(
+        "/api/v1/wishes/banners", params={"kind": "weapon"},
+    )).json()
+    row = next(b for b in body["banners"] if b["slug"] == "Weap B/2026-02-02")
+    assert row["signature_banner"] is None
+
+
 async def test_limits_publishes_the_banner_page_size(authed_client: AsyncClient) -> None:
     body = (await authed_client.get("/api/v1/wishes/limits")).json()
     assert body["banner_page"] == 8
