@@ -342,7 +342,10 @@ export class WishesPage {
         // contract makes a defaulted field non-optional, so sending it keeps the request
         // typed rather than cast.
         strategy: this.strategy(),
-        targets: this.rows().map((entry, index) => ({
+        // **A complete row is dropped, not sent.** Owning the maximum leaves no rung above
+        // it, so the row describes a goal that is already met; sending it would ask the
+        // backend to plan "from C6 to C6".
+        targets: this.plannableRows().map((entry, index) => ({
           ...this.target(entry, entry.banner),
           // Only the first row declares the counter; the backend refuses a later one.
           lost_fifty_fifties:
@@ -491,6 +494,29 @@ export class WishesPage {
     return this.rowBanner(entry)?.featured_five ?? [];
   }
 
+  /**
+   * True when this row is the first of its banner kind, which is the only row whose pity and
+   * guarantee the planner reads.
+   *
+   * **`plan_campaign` applies both only `if first_on_banner`** (`planner.py:256-258`), because
+   * the state carries: obtaining a copy is a 5-star, which resets pity and spends the
+   * guarantee, so a later leg on the same banner starts from what the simulation produced
+   * rather than from anything the user could type. Offering the controls on every row gave
+   * three boxes that accepted a number and reported nothing -- measured, row 2's pity moved
+   * the averages not at all (93.446/186.113 at pity 0 and at pity 89) while row 1's moved them
+   * to 32.149.
+   *
+   * It is also what made the guarantee a dead end: `request()` zeroes `lost_fifty_fifties` for
+   * every row but the first, so arming ✓ on row 2 sent `guaranteed: true` with no losses --
+   * exactly the state `_validate_leg` refuses -- and the control that would have fixed it is
+   * only rendered on row 0.
+   */
+  protected leadsItsBanner(index: number): boolean {
+    const entry = this.rows()[index];
+    if (!entry) return false;
+    return this.rows().findIndex((row) => row.banner === entry.banner) === index;
+  }
+
   /** Hard pity for whichever banner this row is on. */
   protected rowHardPity(entry: CustomRow): number {
     return entry.banner === 'character' ? this.characterHardPity() : this.weaponHardPity();
@@ -636,7 +662,9 @@ export class WishesPage {
     // Never leave the plan empty: a request with no targets is refused, and the page would
     // show an error rather than an empty state.
     if (this.rows().length === 1) return;
-    this.rows.set(this.rows().filter((_, i) => i !== index));
+    // Removing the row that led its banner kind promotes another, so the invariant has to be
+    // re-established here as well.
+    this.rows.set(this.normalised(this.rows().filter((_, i) => i !== index)));
   }
 
   protected moveRow(index: number, by: -1 | 1): void {
@@ -644,7 +672,27 @@ export class WishesPage {
     const to = index + by;
     if (!next[index] || to < 0 || to >= next.length) return;
     [next[index], next[to]] = [next[to], next[index]];
-    this.rows.set(next);
+    this.rows.set(this.normalised(next));
+  }
+
+  /**
+   * Strip pity, guarantee and losses from rows that cannot carry them.
+   *
+   * Reordering changes *which* row leads its banner kind, so a row that legitimately held a
+   * guarantee can end up second -- where `request()` zeroes its loss counter and the pair
+   * becomes the state the backend refuses. Rather than leave a 422 for the user to discover
+   * from a drag, the fields are cleared on the rows the planner will ignore anyway.
+   */
+  private normalised(rows: CustomRow[]): CustomRow[] {
+    return rows.map((entry, index) => {
+      const leads = rows.findIndex((row) => row.banner === entry.banner) === index;
+      if (leads && index === 0) return entry;
+      if (!leads) return { ...entry, pity: 0, guaranteed: false, lostFiftyFifties: 0 };
+      // Leads its kind but is not row 0: it may hold pity and a guarantee, but only row 0 may
+      // carry the account-wide Capturing Radiance counter, so a guarantee here has nothing to
+      // rest on.
+      return { ...entry, guaranteed: false, lostFiftyFifties: 0 };
+    });
   }
 
   protected patchRow(index: number, change: Partial<CustomRow>): void {
@@ -657,12 +705,22 @@ export class WishesPage {
     next[index] = { ...next[index], ...change };
     // Changing the banner can leave a goal above the new banner's cap.
     const cap = MAX_COPIES[next[index].banner];
+    // **Pity is capped per banner too.** Character hard pity is 90 and the weapon banner's is
+    // 80, so a row switched from one to the other kept a pity the new banner cannot have and
+    // the request came back 400 "must be within [0, 79]" from a control that looked valid.
+    const hardPity = this.rowHardPity(next[index]);
+    next[index].pity = Math.min(Math.max(next[index].pity, 0), Math.max(hardPity - 1, 0));
     next[index].targetCopies = Math.min(next[index].targetCopies, cap);
-    next[index].ownedCopies = Math.min(next[index].ownedCopies, cap - 1);
+    // **Clamped to the cap, not to one below it.** `cap - 1` turned a C6 account into "from
+    // C5 to C6" and priced a copy they already hold. Holding the maximum is a real state; it
+    // just leaves nothing to plan, which `rowIsComplete` reports rather than papering over.
+    next[index].ownedCopies = Math.min(Math.max(next[index].ownedCopies, 0), cap);
     if (next[index].targetCopies <= next[index].ownedCopies) {
-      next[index].targetCopies = next[index].ownedCopies + 1;
+      // Capped: a complete row has no rung above it, and `owned + 1` would send a goal past
+      // the banner's maximum. `rowIsComplete` is what the request and the UI read instead.
+      next[index].targetCopies = Math.min(next[index].ownedCopies + 1, cap);
     }
-    this.rows.set(next);
+    this.rows.set(this.normalised(next));
   }
 
   protected copyOptions(banner: 'character' | 'weapon'): number[] {
@@ -670,8 +728,20 @@ export class WishesPage {
   }
 
   protected ownedOptions(banner: 'character' | 'weapon'): number[] {
-    return Array.from({ length: MAX_COPIES[banner] }, (_, i) => i);
+    // 0 ("None") through the maximum, inclusive: a C6 character is a thing an account can be,
+    // and leaving it out is what made the roster's own answer unrepresentable.
+    return Array.from({ length: MAX_COPIES[banner] + 1 }, (_, i) => i);
   }
+
+  /** True when the row's goal is already held, so there is nothing left to pull for. */
+  protected rowIsComplete(entry: CustomRow): boolean {
+    return entry.ownedCopies >= MAX_COPIES[entry.banner];
+  }
+
+  /** The rows that describe a goal still to reach. */
+  protected readonly plannableRows = computed(
+    () => this.rows().filter((entry) => !this.rowIsComplete(entry)),
+  );
 
   /** "C3" for the fourth copy of a character, "R2" for the second of a weapon. */
   protected rung(banner: 'character' | 'weapon', copies: number): string {

@@ -644,11 +644,37 @@ describe('a custom plan spans banners', () => {
     await settled();
     page.mode.set('custom');
     page.addRow('character');
-    page.patchRow(1, { label: 'Kept', pity: 40 });
+    page.patchRow(1, { label: 'Kept' });
     page.chooseRowBanner(0, BANNERS.banners[0]);
     expect(page.rows()[1].label).toBe('Kept');
-    expect(page.rows()[1].pity).toBe(40);
     expect(page.rows()[1].bannerSlug).toBeNull();
+  });
+
+  /**
+   * **A second row of the same kind cannot hold pity, so it is not left holding one.**
+   * `plan_campaign` applies pity only to the first leg on each banner, so a value here was
+   * accepted, validated and thrown away -- measured, row 2 at pity 89 gave the same averages
+   * as row 2 at pity 0.
+   */
+  it('clears pity on a row that does not lead its banner kind', async () => {
+    const { page } = makePage();
+    await settled();
+    page.mode.set('custom');
+    page.addRow('character');
+    page.patchRow(1, { pity: 40 });
+    expect(page.leadsItsBanner(1)).toBe(false);
+    expect(page.rows()[1].pity).toBe(0);
+  });
+
+  /** But the first row of a *different* kind does lead, and keeps it. */
+  it('keeps pity on the first row of each kind', async () => {
+    const { page } = makePage();
+    await settled();
+    page.mode.set('custom');
+    page.addRow('weapon');
+    page.patchRow(1, { pity: 40 });
+    expect(page.leadsItsBanner(1)).toBe(true);
+    expect(page.rows()[1].pity).toBe(40);
   });
 
   it('opens one picker at a time', async () => {
@@ -1109,5 +1135,87 @@ describe('the histogram follows a chosen rung', () => {
     await page.recompute(page.request());
     expect(page.chartedIndex()).toBeNull();
     expect(page.charted()?.label).toBe('C0');
+  });
+});
+
+describe('a control never builds a state the backend refuses', () => {
+  /**
+   * **The dead end.** `setRowGuaranteed` raised the row's loss counter so the pair was not
+   * contradictory, but `request()` zeroes that counter for every row after the first -- so
+   * arming ✓ on row 2 sent `guaranteed: true, lost_fifty_fifties: 0`, the one state
+   * `_validate_leg` refuses. Measured against the real API: 422. And the control that would
+   * have fixed it is rendered only on row 0, so there was no way out.
+   */
+  it('never sends a guarantee with no losses behind it', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const { page } = makePage({ plan });
+    await settled();
+    page.mode.set('custom');
+    page.addRow('character');
+    page.setRowGuaranteed(1, true);
+    await page.recompute(page.request());
+    for (const target of plan.mock.calls.at(-1)?.[0].targets ?? []) {
+      if (target.guaranteed) expect(target.lost_fifty_fifties).toBeGreaterThan(0);
+    }
+  });
+
+  /** Reordering changes which row leads its kind, so the invariant is re-established. */
+  it('does not leave a guarantee stranded by a move', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const { page } = makePage({ plan });
+    await settled();
+    page.mode.set('custom');
+    page.addRow('character');
+    page.setRowGuaranteed(0, true);
+    page.moveRow(0, 1);
+    await page.recompute(page.request());
+    for (const target of plan.mock.calls.at(-1)?.[0].targets ?? []) {
+      if (target.guaranteed) expect(target.lost_fifty_fifties).toBeGreaterThan(0);
+    }
+  });
+
+  /** Character hard pity is 90 and the weapon banner's is 80. */
+  it('re-clamps pity when the row changes banner kind', async () => {
+    const { page } = makePage();
+    await settled();
+    page.mode.set('custom');
+    page.patchRow(0, { pity: 85 });
+    expect(page.rows()[0].pity).toBe(85);
+    page.patchRow(0, { banner: 'weapon' });
+    expect(page.rows()[0].pity).toBeLessThanOrEqual(79);
+  });
+});
+
+describe('holding the maximum is a real state', () => {
+  /**
+   * `ownedCopies` was clamped to `cap - 1`, so a C6 account read as **C5** and the plan priced
+   * a copy they already hold. Seven copies is C6; the row then has no rung above it.
+   */
+  it('keeps a C6 holder at C6 rather than reporting C5', async () => {
+    const { page } = makePage();
+    await settled();
+    page.mode.set('custom');
+    page.patchRow(0, { ownedCopies: 7 });
+    expect(page.rows()[0].ownedCopies).toBe(7);
+    expect(page.rowIsComplete(page.rows()[0])).toBe(true);
+  });
+
+  it('offers the maximum as a choice at all', async () => {
+    const { page } = makePage();
+    await settled();
+    expect(page.ownedOptions('character')).toContain(7);
+    expect(page.ownedOptions('weapon')).toContain(5);
+  });
+
+  /** A goal already met is not sent: it would ask the backend to plan "from C6 to C6". */
+  it('drops a complete row from the request', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const { page } = makePage({ plan });
+    await settled();
+    page.mode.set('custom');
+    page.addRow('character');
+    page.patchRow(0, { ownedCopies: 7 });
+    await page.recompute(page.request());
+    expect(plan.mock.calls.at(-1)?.[0].targets.length).toBe(1);
   });
 });

@@ -308,6 +308,15 @@
   white-space: nowrap;
 }
 .row__pity { max-width: 5rem; }
+
+/* A row whose goal is already held is dropped from the plan, so it has to say so rather than
+   look like a goal that is simply never reached. */
+.row__done {
+  color: var(--mint);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 .row__name { flex: 1 1 8rem; min-width: 6rem; }
 
 .row__pair {
