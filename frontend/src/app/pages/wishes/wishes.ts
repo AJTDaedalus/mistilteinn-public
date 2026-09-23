@@ -10,6 +10,8 @@ import {
   type WishIncomeVersionRead,
   type WishLimits,
   type WishPlanRead,
+  type WishPlanRequest,
+  type WishStrategy,
   type WishTarget,
 } from './wishes.service';
 
@@ -104,7 +106,9 @@ export class WishesPage {
   protected readonly character = signal<Position>(position('Character'));
   protected readonly weapon = signal<Position>(position('Weapon'));
   protected readonly planWeapon = signal(true);
-  protected readonly strategy = signal('c0_first');
+  // Typed to the contract's own union, so a strategy the backend does not accept is a
+  // compile error rather than a 422.
+  protected readonly strategy = signal<WishStrategy>('c0_first');
 
   // -- custom mode
   protected readonly rows = signal<CustomRow[]>([row('character', 'Character')]);
@@ -226,6 +230,9 @@ export class WishesPage {
    */
   protected readonly noConstellationData = computed(() => {
     const result = this.plan();
+    // `no_banner` is a separate verdict precisely so this cannot claim it: the page's own
+    // default state names no banner, and this used to tell a fully-imported roster that it
+    // had no constellation data.
     return !!result && result.refund_source === 'none' && result.wallet_wishes > 0;
   });
 
@@ -262,7 +269,14 @@ export class WishesPage {
     };
   }
 
-  protected request() {
+  /**
+   * The plan request.
+   *
+   * **Typed, not cast.** `recompute` used to pass this through `as never`, which erased the
+   * only check that the object still matches the generated contract — so moving `banner_slug`
+   * from the request onto each target could not have failed `npm run verify`.
+   */
+  protected request(): WishPlanRequest {
     const wallet = {
       primogems: this.primogems(),
       intertwined_fate: this.intertwined(),
@@ -273,6 +287,10 @@ export class WishesPage {
     if (this.mode() === 'custom') {
       return {
         ...wallet,
+        // Ignored for custom targets -- each row names its own goal -- but the generated
+        // contract makes a defaulted field non-optional, so sending it keeps the request
+        // typed rather than cast.
+        strategy: this.strategy(),
         targets: this.rows().map((entry, index) => ({
           ...this.target(entry, entry.banner),
           // Only the first row declares the counter; the backend refuses a later one.
@@ -286,10 +304,16 @@ export class WishesPage {
 
     return {
       ...wallet,
+      // **Only the leg whose kind the picked banner actually is.** Simple mode has one
+      // picker and two legs, and sending the same slug to both made the client assert
+      // something it does not know: a character banner priced the *weapon* leg's pulls with
+      // featured 4-star characters, a 50 % featured rate against 75 %, and collapsed both
+      // legs onto one key so the per-leg split did nothing here at all. `null` means "this
+      // leg earns nothing", which under-states rather than invents.
       character: { ...this.target(this.character(), 'character'),
-                   banner_slug: this.chosenBanner() },
+                   banner_slug: this.slugForKind('character') },
       weapon: this.planWeapon()
-        ? { ...this.target(this.weapon(), 'weapon'), banner_slug: this.chosenBanner() }
+        ? { ...this.target(this.weapon(), 'weapon'), banner_slug: this.slugForKind('weapon') }
         : null,
       strategy: this.strategy(),
     };
@@ -332,6 +356,12 @@ export class WishesPage {
    * stay whatever the user last said**, because the banner cannot know them and silently
    * resetting a typed pity to zero is worse than leaving it.
    */
+  /** The chosen banner's slug, but only for the leg it is actually a banner for. */
+  private slugForKind(kind: 'character' | 'weapon'): string | null {
+    const picked = this.banner();
+    return picked && picked.kind === kind ? picked.slug : null;
+  }
+
   protected chooseBanner(banner: WishBannerRead | null): void {
     this.chosenBanner.set(banner?.slug ?? null);
     if (!banner) return;
@@ -387,7 +417,7 @@ export class WishesPage {
     const ticket = ++this.latest;
     this.pending.set(true);
     try {
-      const plan = await this.service.plan(request as never);
+      const plan = await this.service.plan(request);
       if (ticket !== this.latest) return;
       this.plan.set(plan);
       this.error.set(null);

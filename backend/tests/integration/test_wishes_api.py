@@ -563,25 +563,147 @@ async def test_an_unknown_banner_falls_back_rather_than_failing(
         "/api/v1/wishes/plan",
         json={
             "character": {"banner": "character", "banner_slug": "Nothing/1999-01-01"},
-            "primogems": 32_000, "starglitter_refund": "low",
+            # **`account`, not a tier.** With a tier this reached `refund_source == "tier"`
+            # whatever the slug was, so it stopped testing the unknown banner entirely.
+            "primogems": 32_000, "starglitter_refund": "account",
         },
     )).json()
-    assert body["refund_source"] == "tier"
+    # A slug the table does not know is not a reason to invent a tier.
+    assert body["refund_source"] == "none"
+
+
+async def test_an_unreachable_leg_is_still_a_422_when_a_banner_is_named(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """The refund pre-pass runs the ladder, and it used to run outside the error handler.
+
+    Guaranteed with no 50/50s lost is the request `test_a_guaranteed_pull_with_no_losses...`
+    already covers -- but that one sends no slug, so `_refund_for_campaign` returned at its
+    first guard before touching the ladder. With a slug the `UnreachableStateError` escaped
+    and the caller got **500 "Internal server error"** in place of the sentence explaining
+    what was contradictory. Reachable straight from the UI, since `account` is the default.
+    """
+    slug = await _banner(db_session)
+    response = await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={
+            "character": {
+                "banner": "character", "banner_slug": slug,
+                "guaranteed": True, "lost_fifty_fifties": 0,
+            },
+            "primogems": 32_000,
+        },
+    )
+    assert response.status_code == 422
+    assert "Internal server error" not in response.text
+    assert "guaranteed" in response.json()["detail"]
+
+
+async def test_naming_no_banner_is_not_a_silent_roster(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """`no_banner` is its own verdict, because the page's default state is exactly this.
+
+    Load the planner, type a wallet, do not open the picker. Collapsing this into `none`
+    made a fully-imported roster read "No constellation data on account".
+    """
+    user, _ = authed_user
+    for name in ("Diona", "Faruzan", "Chongyun", "Bennett"):
+        await _owned_four_star(db_session, str(user.id), name, 6)
+
+    body = (await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={"character": {"banner": "character"}, "primogems": 32_000},
+    )).json()
+    assert body["refund_source"] == "no_banner"
+
+
+async def test_the_budget_is_filled_in_spending_order_not_in_proportion(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """A campaign spends sequentially, so leg order decides which banner the wishes land on.
+
+    **This is the check the first version of it could not make.** Asserting "adding an
+    unslugged leg does not raise the refund" holds under the proportional split too, because
+    that split renormalised over slugged legs and gave the named banner the whole budget
+    either way -- a check with one possible answer.
+
+    The discriminating case is a budget that runs out inside the first leg. One C0 goal
+    averages ~93 wishes, so at 100 wishes almost nothing reaches a second leg. Measured:
+    slug first 9 wishes back, slug second 0. The proportional split answered the same for
+    both, and priced 36 of a 90-wish wallet on a banner the player cannot reach.
+    """
+    user, _ = authed_user
+    slug = await _banner(db_session)
+    for name in ("Diona", "Faruzan", "Chongyun", "Bennett"):
+        await _owned_four_star(db_session, str(user.id), name, 6)
+    slugged = {"banner": "character", "target_copies": 1, "banner_slug": slug}
+    bare = {"banner": "character", "target_copies": 1}
+
+    async def refund(targets: list[dict]) -> int:
+        body = (await authed_client.post(
+            "/api/v1/wishes/plan",
+            json={"targets": targets, "primogems": 16_000,
+                  "starglitter_refund": "account"},
+        )).json()
+        return body["refunded_wishes"]
+
+    first = await refund([slugged, bare])
+    second = await refund([bare, slugged])
+    assert first > 0, "a zero baseline compares nothing"
+    assert second < first, (
+        "an unslugged first leg must absorb the budget, not hand it to the named banner"
+    )
+
+
+async def test_the_refund_is_priced_on_what_the_plan_costs_not_the_whole_wallet(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """A wallet far larger than the plan does not earn a refund on wishes never spent.
+
+    The `min(budget, ...)` this replaces could never bind -- `cost <= total_cost` by
+    construction -- and its comment named the harmless direction. The unguarded case was the
+    reverse: a 3,000-wish wallet aimed at one ~93-wish goal reported a refund over all 3,000.
+    """
+    user, _ = authed_user
+    slug = await _banner(db_session)
+    for name in ("Diona", "Faruzan", "Chongyun", "Bennett"):
+        await _owned_four_star(db_session, str(user.id), name, 6)
+    target = {"banner": "character", "target_copies": 1, "banner_slug": slug}
+
+    async def refund(primogems: int) -> int:
+        body = (await authed_client.post(
+            "/api/v1/wishes/plan",
+            json={"targets": [target], "primogems": primogems,
+                  "starglitter_refund": "account"},
+        )).json()
+        return body["refunded_wishes"]
+
+    enough = await refund(48_000)     # 300 wishes, comfortably past the ~93 the goal costs
+    absurd = await refund(480_000)    # 3,000 wishes
+    assert enough > 0, "a zero baseline compares nothing"
+    assert absurd == enough, "the refund must not grow with a wallet the plan cannot spend"
 
 
 async def test_a_banner_with_no_roster_falls_back(
     authed_client: AsyncClient, db_session: AsyncSession,
 ) -> None:
-    """An account that has said nothing cannot have its refund computed from nothing."""
+    """An account that has said nothing cannot have its refund computed from nothing.
+
+    **The slug goes on the target.** This used to pass it top-level, where `WishPlanRequest`
+    has no `extra="forbid"` and Pydantic silently dropped it -- so the test asserted a
+    fallback for a request that named no banner at all, which every request satisfies.
+    """
     slug = await _banner(db_session)
     body = (await authed_client.post(
         "/api/v1/wishes/plan",
         json={
-            "character": {"banner": "character"}, "primogems": 32_000,
-            "banner_slug": slug, "starglitter_refund": "low",
+            "character": {"banner": "character", "banner_slug": slug},
+            "primogems": 32_000, "starglitter_refund": "account",
         },
     )).json()
-    assert body["refund_source"] == "tier"
+    # A named banner the roster cannot price is `none`; naming nothing at all is `no_banner`.
+    assert body["refund_source"] == "none"
 
 
 async def test_limits_publishes_the_banner_page_size(authed_client: AsyncClient) -> None:
@@ -713,12 +835,13 @@ async def test_a_five_star_does_not_dilute_the_four_star_pool(
         return (await authed_client.post(
             "/api/v1/wishes/plan",
             json={"character": {"banner": "character", "banner_slug": slug},
-                  "primogems": 32_000, "starglitter_refund": "none"},
+                  "primogems": 32_000, "starglitter_refund": "account"},
         )).json()["refunded_wishes"]
 
     before = await refund()
     for i in range(12):
         await _owned_four_star(db_session, str(user.id), f"Five{i}", 6, rarity="FIVE_STAR")
+    assert before > 0, "a zero baseline compares nothing: this guard once went vacuous"
     assert await refund() == before, "5-stars are not in the 4-star pool"
 
 
@@ -737,11 +860,12 @@ async def test_a_character_marked_not_owned_does_not_contribute(
         return (await authed_client.post(
             "/api/v1/wishes/plan",
             json={"character": {"banner": "character", "banner_slug": slug},
-                  "primogems": 32_000, "starglitter_refund": "none"},
+                  "primogems": 32_000, "starglitter_refund": "account"},
         )).json()["refunded_wishes"]
 
     before = await refund()
     await _owned_four_star(db_session, str(user.id), "Disowned", 6, owned=False)
+    assert before > 0, "a zero baseline compares nothing: this guard once went vacuous"
     assert await refund() == before
 
 
@@ -785,12 +909,13 @@ async def test_an_unknown_constellation_is_left_out_rather_than_read_as_unowned(
         return (await authed_client.post(
             "/api/v1/wishes/plan",
             json={"character": {"banner": "character", "banner_slug": slug},
-                  "primogems": 32_000, "starglitter_refund": "none"},
+                  "primogems": 32_000, "starglitter_refund": "account"},
         )).json()["refunded_wishes"]
 
     before = await refund()
     for i in range(10):
         await _owned_four_star(db_session, str(user.id), f"Unknown{i}", None)
+    assert before > 0, "a zero baseline compares nothing: this guard once went vacuous"
     assert await refund() == before, "a NULL constellation must not enter the pool at all"
 
 

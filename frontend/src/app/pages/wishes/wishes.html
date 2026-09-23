@@ -26,7 +26,10 @@
           <select id="refund" [value]="refund()"
                   (change)="refund.set($any($event.target).value)">
             @for (t of refundOptions(); track t) {
-              <option [value]="t">{{ refundLabel(t) }}</option>
+              <!-- `[selected]` per option, not `[value]` on the select alone: the select's
+                   binding runs before `@for` fills it, so it would always display option 0.
+                   It only looked right here because the account *is* option 0. -->
+              <option [value]="t" [selected]="refund() === t">{{ refundLabel(t) }}</option>
             }
           </select>
         </div>

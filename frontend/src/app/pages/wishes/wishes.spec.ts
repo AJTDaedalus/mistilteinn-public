@@ -816,3 +816,61 @@ describe('the account is a refund choice, not an override', () => {
     expect(page.noConstellationData()).toBe(false);
   });
 });
+
+describe('one picker, two legs', () => {
+  /**
+   * Simple mode has one banner picker and up to two legs, and it used to send the same slug
+   * to both. `_refund_from_account` reads the banner's kind off the row, so a character
+   * banner priced the *weapon* leg's pulls with featured 4-star characters — a 50 % featured
+   * rate against 75 % — and both legs collapsed onto one key, so the per-leg split this PR
+   * adds did nothing at all in the default mode. Nothing caught it: the backend unit test
+   * proves two *different* slugs work, which no client has ever sent.
+   */
+  it('does not label the weapon leg with a character banner', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const { page } = makePage({ plan });
+    await settled();
+    await settled();
+    const character = BANNERS.banners.find((b) => b.kind === 'character')!;
+    page.chooseBanner(character);
+    page.planWeapon.set(true);
+    await page.recompute(page.request());
+    const sent = plan.mock.calls.at(-1)?.[0];
+    expect(sent.character.banner_slug).toBe(character.slug);
+    expect(sent.weapon.banner_slug).toBeNull();
+  });
+
+  it('does not label the character leg with a weapon banner', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const { page } = makePage({ plan });
+    await settled();
+    await settled();
+    const weapon = BANNERS.banners.find((b) => b.kind === 'weapon')!;
+    page.chooseBanner(weapon);
+    await page.recompute(page.request());
+    const sent = plan.mock.calls.at(-1)?.[0];
+    expect(sent.character.banner_slug).toBeNull();
+    expect(sent.weapon.banner_slug).toBe(weapon.slug);
+  });
+});
+
+describe('naming no banner is not a silent roster', () => {
+  /**
+   * The page's own default state — type a wallet, never open the picker — answered
+   * `refund_source: "none"`, so a fully-imported account was told it had no constellation
+   * data. `no_banner` is a separate verdict so this cannot claim it.
+   *
+   * The test that used to guard this could not: it used the default mock, whose fixture says
+   * `tier`, so it passed for a reason unrelated to the code.
+   */
+  it('is silent when the backend says no banner was named', async () => {
+    const { page } = makePage({
+      plan: vi.fn().mockResolvedValue({
+        ...PLAN, refund_source: 'no_banner', wallet_wishes: 200,
+      }),
+    });
+    await settled();
+    await page.recompute(page.request());
+    expect(page.noConstellationData()).toBe(false);
+  });
+});

@@ -4,6 +4,7 @@ import { injectApi } from '../../api/api.client';
 import type { components } from '../../api/api.types';
 
 export type WishPlanRequest = components['schemas']['WishPlanRequest'];
+export type WishStrategy = components['schemas']['Strategy'];
 export type WishPlanRead = components['schemas']['WishPlanRead'];
 export type WishMilestoneRead = components['schemas']['WishMilestoneRead'];
 export type WishIncomeRead = components['schemas']['WishIncomeRead'];
