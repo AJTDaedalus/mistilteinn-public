@@ -333,9 +333,21 @@ its `source`, and `builds.constellation_level` records how far along each is.
   are at C6 — rather than as a list.
 - **An existing account falls back until it re-imports.** `character_roster.constellation` is
   new and every row written before it is NULL, so a roster that has never been re-imported
-  supports no exact refund and the planner uses the tier instead. That is correct rather than
-  a gap — and it is visible, because the budget line only says *"from your roster"* when the
-  roster actually answered.
+  supports no exact refund.
+
+  **It falls back to `none`, not to a tier** (owner ruling, 2026-09-22). A tier the caller did
+  not choose is a number they have no reason to trust, and quietly substituting one is how the
+  control came to mean nothing: the account used to *override* whichever tier was selected, so
+  the dropdown sat reading "8.7% (Average)" while the roster priced the plan. `account` is now
+  a value of that control and its default, a tier is honoured when asked for, and
+  `refund_source` has a third verdict — `none` — which is distinct precisely because it is the
+  only one the caller did not pick.
+
+  It is visible, but **not as prose in the budget line**: that read *"(from your roster)"* and
+  was removed under the page's text convention — give the data, not a commentary on it. What
+  the user sees instead is the control itself showing *"Calculate with my account"*, and the
+  one warning the owner did approve, for the case where they asked for it and the roster could
+  not answer: *"No constellation data on account, providing refund options instead."*
 - **Missing is missing.** A character with no build has no constellation, and that is not
   "C0": it is unknown. Defaulting unknown to C0 would make a large roster read as though
   nothing were maxed and understate the refund; defaulting to C6 would do the reverse. The
