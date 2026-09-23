@@ -7,6 +7,7 @@ import { CatalogueIcon } from '../../shared/icon/icon';
 import {
   WishesService,
   type WishBannerRead,
+  type WishFeaturedItem,
   type WishIncomeVersionRead,
   type WishLimits,
   type WishPlanRead,
@@ -192,6 +193,22 @@ export class WishesPage {
   });
 
   /** The banner currently picked, if it is still in the loaded page. */
+  /**
+   * The weapon banner running beside the chosen character banner — their signature's banner.
+   *
+   * **One direction only.** A character banner names exactly one concurrent weapon banner, so
+   * character → weapon is unambiguous. The reverse is not: a weapon banner runs beside *two*
+   * character banners and carries *two* 5-star weapons, and nothing in the source says which
+   * is whose. Pairing backwards would be a guess dressed as a fact.
+   */
+  protected readonly pairedWeaponBanner = computed(() => {
+    const picked = this.banner();
+    if (!picked || picked.kind !== 'character') return null;
+    return this.banners().find(
+      (b) => b.kind === 'weapon' && (picked.alongside ?? []).includes(b.slug),
+    ) ?? null;
+  });
+
   protected readonly banner = computed(() =>
     this.banners().find((b) => b.slug === this.chosenBanner()) ?? null,
   );
@@ -359,7 +376,12 @@ export class WishesPage {
   /** The chosen banner's slug, but only for the leg it is actually a banner for. */
   private slugForKind(kind: 'character' | 'weapon'): string | null {
     const picked = this.banner();
-    return picked && picked.kind === kind ? picked.slug : null;
+    if (picked && picked.kind === kind) return picked.slug;
+    // **The signature weapon runs on its own banner.** Sending null here priced the weapon
+    // leg at nothing; sending the character's slug priced it at the character banner's
+    // 4-star economics. The banner beside it is the actual answer, and the row knows it.
+    if (kind === 'weapon') return this.pairedWeaponBanner()?.slug ?? null;
+    return null;
   }
 
   protected chooseBanner(banner: WishBannerRead | null): void {
@@ -372,6 +394,11 @@ export class WishesPage {
       this.planWeapon.set(true);
       this.patch('weapon', { label: banner.featured_five[0]?.name ?? '' });
     }
+  }
+
+  /** True for the picked banner and for the weapon banner paired with it. */
+  protected isPaired(slug: string): boolean {
+    return this.pairedWeaponBanner()?.slug === slug;
   }
 
   protected isChosen(slug: string): boolean {
@@ -389,10 +416,74 @@ export class WishesPage {
     const change: Partial<CustomRow> = { bannerSlug: banner?.slug ?? null };
     if (banner) {
       change.banner = banner.kind as 'character' | 'weapon';
-      change.label = banner.featured_five[0]?.name ?? '';
+      // A character banner has one 5-star, so it is the goal. A weapon banner has two, and
+      // which one the user wants is theirs to say -- picking for them would be the same guess
+      // as deciding whose signature a weapon is.
+      if (banner.featured_five.length === 1) {
+        Object.assign(change, this.fromFeatured(banner.featured_five[0]));
+      } else {
+        change.label = '';
+        change.ownedCopies = 0;
+      }
     }
     this.patchRow(index, change);
     this.pickingFor.set(null);
+  }
+
+  /** Name a row's goal from a featured unit, carrying what the roster already knows. */
+  protected chooseRowUnit(index: number, item: WishFeaturedItem): void {
+    if (!this.rows()[index]) return;
+    this.patchRow(index, this.fromFeatured(item));
+  }
+
+  /**
+   * A featured unit as row fields.
+   *
+   * **`owned_copies` on the wire is a constellation; the row counts copies.** C3 is four
+   * copies and holding none is 0, so this is `constellation + 1` — reading it straight across
+   * would say a C3 account holds three copies and make a fresh C0 pull read as "from C2".
+   * Null stays 0: "nobody has said" is not "I have one".
+   */
+  private fromFeatured(item: WishFeaturedItem | undefined): Partial<CustomRow> {
+    if (!item) return { label: '', ownedCopies: 0 };
+    const owned = item.owned_copies === null || item.owned_copies === undefined
+      ? 0
+      : item.owned_copies + 1;
+    return { label: item.name, ownedCopies: owned };
+  }
+
+  /** The featured 5-stars a row may name its goal after. */
+  protected rowUnits(entry: CustomRow): WishFeaturedItem[] {
+    return this.rowBanner(entry)?.featured_five ?? [];
+  }
+
+  /** Hard pity for whichever banner this row is on. */
+  protected rowHardPity(entry: CustomRow): number {
+    return entry.banner === 'character' ? this.characterHardPity() : this.weaponHardPity();
+  }
+
+  /**
+   * Guaranteed and the loss counter are not independent for a row either — arming the
+   * guarantee requires having lost a 50/50, and `guaranteed` with zero losses is a state the
+   * backend refuses with a 422.
+   */
+  protected setRowGuaranteed(index: number, next: boolean): void {
+    const current = this.rows()[index];
+    if (!current) return;
+    const losses =
+      current.banner === 'character' && next && current.lostFiftyFifties === 0
+        ? 1
+        : current.lostFiftyFifties;
+    this.patchRow(index, { guaranteed: next, lostFiftyFifties: losses });
+  }
+
+  protected setRowLosses(index: number, next: number): void {
+    const current = this.rows()[index];
+    if (!current) return;
+    this.patchRow(index, {
+      lostFiftyFifties: next,
+      guaranteed: next === 0 ? false : current.guaranteed,
+    });
   }
 
   /** The banner a custom row is on, when it is one of the loaded ones. */

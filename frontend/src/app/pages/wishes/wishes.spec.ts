@@ -53,18 +53,20 @@ const BANNERS = {
     {
       slug: 'When Warm Winds Cavort/2026-09-23', name: 'When Warm Winds Cavort',
       kind: 'character', starts_at: '2026-09-23 11:00:00', ends_at: '2026-10-13 17:59:59',
-      featured_five: [{ name: 'Vesna', icon: 'UI_Vesna' }],
+      featured_five: [{ name: 'Vesna', icon: 'UI_Vesna', owned_copies: null }],
       featured_four: [
-        { name: 'Diona', icon: 'UI_Diona' },
-        { name: 'Faruzan', icon: null },
-        { name: 'Chongyun', icon: 'UI_Chongyun' },
+        { name: 'Diona', icon: 'UI_Diona', owned_copies: 3 },
+        { name: 'Faruzan', icon: null, owned_copies: null },
+        { name: 'Chongyun', icon: 'UI_Chongyun', owned_copies: 0 },
       ],
+      alongside: ['Epitome Invocation/2026-09-23'],
     },
     {
       slug: 'Epitome Invocation/2026-09-23', name: 'Epitome Invocation',
       kind: 'weapon', starts_at: '2026-09-23 11:00:00', ends_at: '2026-10-13 17:59:59',
-      featured_five: [{ name: 'Splendor', icon: 'UI_Splendor' }],
-      featured_four: [{ name: 'New Bough', icon: null }],
+      featured_five: [{ name: 'Splendor', icon: 'UI_Splendor', owned_copies: null }],
+      featured_four: [{ name: 'New Bough', icon: null, owned_copies: null }],
+      alongside: ['When Warm Winds Cavort/2026-09-23'],
     },
   ],
 };
@@ -826,7 +828,7 @@ describe('one picker, two legs', () => {
    * adds did nothing at all in the default mode. Nothing caught it: the backend unit test
    * proves two *different* slugs work, which no client has ever sent.
    */
-  it('does not label the weapon leg with a character banner', async () => {
+  it('never labels the weapon leg with a character banner', async () => {
     const plan = vi.fn().mockResolvedValue(PLAN);
     const { page } = makePage({ plan });
     await settled();
@@ -837,7 +839,25 @@ describe('one picker, two legs', () => {
     await page.recompute(page.request());
     const sent = plan.mock.calls.at(-1)?.[0];
     expect(sent.character.banner_slug).toBe(character.slug);
-    expect(sent.weapon.banner_slug).toBeNull();
+    // The defect was the weapon leg inheriting the *character* banner, which priced its
+    // pulls with featured 4-star characters. It now takes the paired weapon banner; what it
+    // must never be is the character's.
+    expect(sent.weapon.banner_slug).not.toBe(character.slug);
+  });
+
+  it('sends no weapon banner when none runs beside the character', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const lonely = {
+      ...BANNERS,
+      banners: [{ ...BANNERS.banners[0], alongside: [] }],
+    };
+    const { page } = makePage({ plan, banners: vi.fn().mockResolvedValue(lonely) });
+    await settled();
+    await settled();
+    page.chooseBanner(lonely.banners[0]);
+    page.planWeapon.set(true);
+    await page.recompute(page.request());
+    expect(plan.mock.calls.at(-1)?.[0].weapon.banner_slug).toBeNull();
   });
 
   it('does not label the character leg with a weapon banner', async () => {
@@ -872,5 +892,153 @@ describe('naming no banner is not a silent roster', () => {
     await settled();
     await page.recompute(page.request());
     expect(page.noConstellationData()).toBe(false);
+  });
+});
+
+describe('the signature weapon runs on its own banner', () => {
+  /**
+   * The owner's ask: "the one character plan 'signature weapon' uses the character's
+   * signature weapon banner. Selecting it should also select their weapon banner so both are
+   * yellow and it's obvious."
+   *
+   * It is also the correct fix for #334's finding 4: the weapon leg was sent either the
+   * character's slug (pricing it with featured 4-star *characters*) or nothing at all.
+   */
+  it('lights the paired weapon banner and prices the weapon leg on it', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const { page } = makePage({ plan });
+    await settled();
+    await settled();
+    const character = BANNERS.banners.find((b) => b.kind === 'character')!;
+    const weapon = BANNERS.banners.find((b) => b.kind === 'weapon')!;
+
+    page.chooseBanner(character);
+    page.planWeapon.set(true);
+    expect(page.isPaired(weapon.slug)).toBe(true);
+
+    await page.recompute(page.request());
+    const sent = plan.mock.calls.at(-1)?.[0];
+    expect(sent.character.banner_slug).toBe(character.slug);
+    expect(sent.weapon.banner_slug).toBe(weapon.slug);
+  });
+
+  /**
+   * **Not backwards.** A weapon banner runs beside *two* character banners and carries *two*
+   * 5-star weapons, and nothing in the source says which is whose. Pairing in that direction
+   * would be a guess presented as a fact.
+   */
+  it('does not infer a character from a weapon banner', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    const character = BANNERS.banners.find((b) => b.kind === 'character')!;
+    page.chooseBanner(BANNERS.banners.find((b) => b.kind === 'weapon')!);
+    expect(page.pairedWeaponBanner()).toBeNull();
+    expect(page.isPaired(character.slug)).toBe(false);
+  });
+});
+
+describe('a custom row is named by its banner, not by typing', () => {
+  /**
+   * The owner's point: "Free text entry characters/weapons don't give us the benefit of the
+   * roster we've given ourselves." A typed name cannot be looked up, so the constellation
+   * data the refund already reads went unused for the thing actually being pulled for.
+   */
+  it('takes the name and the owned copies from a one-five-star banner', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    page.mode.set('custom');
+    const character = BANNERS.banners.find((b) => b.kind === 'character')!;
+    page.chooseRowBanner(0, character);
+    expect(page.rows()[0].label).toBe('Vesna');
+    expect(page.rows()[0].banner).toBe('character');
+  });
+
+  /**
+   * **Constellation on the wire, copies in the row.** C3 is four copies and holding none is
+   * 0, so reading `owned_copies` straight across would make a C3 account read as "from C2".
+   */
+  it('converts a constellation into copies held', async () => {
+    const owned = {
+      ...BANNERS,
+      banners: [{
+        ...BANNERS.banners[0],
+        featured_five: [{ name: 'Diona', icon: 'UI_Diona', owned_copies: 3 }],
+      }],
+    };
+    const { page } = makePage({ banners: vi.fn().mockResolvedValue(owned) });
+    await settled();
+    await settled();
+    page.mode.set('custom');
+    page.chooseRowBanner(0, owned.banners[0]);
+    expect(page.rows()[0].ownedCopies).toBe(4);
+  });
+
+  it('leaves an unknown constellation at none rather than guessing C0', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    page.mode.set('custom');
+    page.chooseRowBanner(0, BANNERS.banners.find((b) => b.kind === 'character')!);
+    expect(page.rows()[0].ownedCopies).toBe(0);
+  });
+
+  /** A weapon banner has two 5-stars; the user says which, we do not infer it. */
+  it('does not name a goal for a two-five-star banner until one is picked', async () => {
+    const two = {
+      ...BANNERS,
+      banners: [{
+        ...BANNERS.banners[1],
+        featured_five: [
+          { name: 'Splendor', icon: null, owned_copies: null },
+          { name: 'Hymn', icon: null, owned_copies: null },
+        ],
+      }],
+    };
+    const { page } = makePage({ banners: vi.fn().mockResolvedValue(two) });
+    await settled();
+    await settled();
+    page.mode.set('custom');
+    page.chooseRowBanner(0, two.banners[0]);
+    expect(page.rows()[0].label).toBe('');
+    expect(page.rowUnits(page.rows()[0]).length).toBe(2);
+
+    page.chooseRowUnit(0, two.banners[0].featured_five[1]);
+    expect(page.rows()[0].label).toBe('Hymn');
+  });
+});
+
+describe('a custom row carries pity, guarantee and losses', () => {
+  /**
+   * All three were already in `CustomRow` and already sent by `target()`, with no UI at all —
+   * so every custom plan was silently computed at 0 pity with no guarantee. The owner hit it
+   * directly: "I turned off my 50/50 losses since I can't edit them on custom right now."
+   */
+  it('sends the row’s pity and guarantee', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const { page } = makePage({ plan });
+    await settled();
+    page.mode.set('custom');
+    page.patchRow(0, { pity: 42 });
+    page.setRowGuaranteed(0, true);
+    await page.recompute(page.request());
+    const sent = plan.mock.calls.at(-1)?.[0].targets[0];
+    expect(sent.pity).toBe(42);
+    expect(sent.guaranteed).toBe(true);
+  });
+
+  /**
+   * Guaranteed with zero losses is a state the game cannot produce and the backend answers
+   * 422 for. Arming it raises the counter instead of sending the contradiction.
+   */
+  it('raises the loss counter rather than arming an impossible guarantee', async () => {
+    const { page } = makePage();
+    await settled();
+    page.mode.set('custom');
+    page.setRowGuaranteed(0, true);
+    expect(page.rows()[0].lostFiftyFifties).toBe(1);
+    page.setRowLosses(0, 0);
+    expect(page.rows()[0].guaranteed).toBe(false);
   });
 });

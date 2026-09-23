@@ -48,9 +48,13 @@
         </div>
         <div class="banner-grid">
           @for (b of banners(); track b.slug) {
-            <button type="button" class="banner" [class.on]="isChosen(b.slug)"
+            <!-- A paired banner reads as selected too: the signature weapon runs on its
+                 own banner, and the pairing is only obvious if both light up. -->
+            <button type="button" class="banner"
+                    [class.on]="isChosen(b.slug) || isPaired(b.slug)"
+                    [class.banner--paired]="isPaired(b.slug)"
                     (click)="chooseBanner(b)"
-                    [attr.aria-pressed]="isChosen(b.slug)">
+                    [attr.aria-pressed]="isChosen(b.slug) || isPaired(b.slug)">
               <span class="banner__five">
                 @for (item of b.featured_five; track item.name) {
                   <catalogue-icon [icon]="item.icon" [alt]="item.name" [size]="52"
@@ -65,6 +69,9 @@
               </span>
               <span class="banner__name">{{ b.name }}</span>
               <span class="banner__when">{{ bannerWhen(b) }}</span>
+              @if (isPaired(b.slug)) {
+                <span class="banner__paired">Signature</span>
+              }
             </button>
           }
         </div>
@@ -201,15 +208,31 @@
               <button type="button" (click)="moveRow(rowIndex, 1)"
                       [disabled]="rowIndex === rows().length - 1" aria-label="Move later">▼</button>
             </div>
-            <select class="row__banner" [value]="row.banner"
-                    (change)="patchRow(rowIndex, { banner: $any($event.target).value })"
-                    aria-label="Banner">
-              <option value="character" [selected]="row.banner === 'character'">Character</option>
-              <option value="weapon" [selected]="row.banner === 'weapon'">Weapon</option>
-            </select>
-            <input class="row__name" type="text" maxlength="60" [value]="row.label"
-                   (change)="patchRow(rowIndex, { label: $any($event.target).value })"
-                   aria-label="Name" />
+            <!-- **The banner names the goal; there is no free-text unit.** A typed name
+                 could not be looked up, which is why the roster went unused for the very
+                 thing being pulled for. Picking the banner sets the kind too. -->
+            <button type="button" class="row__banner-pick"
+                    [class.on]="row.bannerSlug"
+                    (click)="togglePicker(rowIndex)"
+                    [attr.aria-expanded]="pickingFor() === rowIndex">
+              @if (rowBanner(row); as picked) {
+                {{ picked.name }}
+              } @else {
+                Pick banner
+              }
+            </button>
+            <!-- A weapon banner carries two featured 5-stars, so the row says which one. The
+                 user names it; we do not infer whose signature it is. -->
+            @if (rowUnits(row).length > 1) {
+              <div class="segmented segmented--small" role="group" aria-label="Goal">
+                @for (unit of rowUnits(row); track unit.name) {
+                  <button type="button" [class.on]="row.label === unit.name"
+                          (click)="chooseRowUnit(rowIndex, unit)">{{ unit.name }}</button>
+                }
+              </div>
+            } @else if (row.label) {
+              <span class="row__unit">{{ row.label }}</span>
+            }
             <label class="row__pair">
               <span>from</span>
               <select [value]="row.ownedCopies"
@@ -232,16 +255,37 @@
                 }
               </select>
             </label>
-            <button type="button" class="row__banner-pick"
-                    [class.on]="row.bannerSlug"
-                    (click)="togglePicker(rowIndex)"
-                    [attr.aria-expanded]="pickingFor() === rowIndex">
-              @if (rowBanner(row); as picked) {
-                {{ picked.name }}
-              } @else {
-                Pick banner
-              }
-            </button>
+            <!-- The controls simple mode has always had. `CustomRow` carried pity,
+                 guaranteed and the loss counter from the start and `target()` sent all three,
+                 so every custom plan was silently computed at 0 pity with no guarantee. -->
+            <label class="row__pair">
+              <span>pity</span>
+              <input class="row__pity" type="number" min="0" [max]="rowHardPity(row) - 1"
+                     inputmode="numeric" [value]="row.pity"
+                     (change)="setNumber($event.target, (v) => patchRow(rowIndex, { pity: v }), rowHardPity(row) - 1)" />
+            </label>
+            <label class="row__pair">
+              <span>guaranteed</span>
+              <div class="segmented segmented--small" role="group" aria-label="Guaranteed">
+                <button type="button" [class.on]="!row.guaranteed"
+                        (click)="setRowGuaranteed(rowIndex, false)">✕</button>
+                <button type="button" [class.on]="row.guaranteed"
+                        (click)="setRowGuaranteed(rowIndex, true)">✓</button>
+              </div>
+            </label>
+            <!-- Capturing Radiance is one account-wide counter and the backend refuses it on
+                 a later target, so only the first row may carry it, and only a character one. -->
+            @if (rowIndex === 0 && row.banner === 'character') {
+              <label class="row__pair">
+                <span>50/50s lost</span>
+                <select [value]="row.lostFiftyFifties"
+                        (change)="setRowLosses(rowIndex, +($any($event.target).value))">
+                  @for (n of lossOptions(); track n) {
+                    <option [value]="n" [selected]="row.lostFiftyFifties === n">{{ n }}</option>
+                  }
+                </select>
+              </label>
+            }
             <button type="button" class="row__remove" (click)="removeRow(rowIndex)"
                     [disabled]="rows().length === 1" aria-label="Remove">✕</button>
           </div>
@@ -315,9 +359,6 @@
             </button>
           }
         </div>
-        @if (incomeFetchedAt()) {
-          <small class="hint">Refreshed {{ incomeFetchedAt() | date: 'mediumDate' }}.</small>
-        }
       </div>
     }
 
