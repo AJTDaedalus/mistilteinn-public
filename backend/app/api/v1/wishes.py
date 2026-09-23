@@ -304,10 +304,11 @@ async def create_plan(
         return pools.get(slug)
 
     ladder = plan_campaign(legs, budget=0).milestones
-    rung_budgets: list[int | None] = [
-        _budget_for_rung(wallet, ladder, index, pool_of) if wants_account else None
-        for index in range(len(ladder))
-    ]
+    rung_budgets = (
+        _calculate_rung_budgets(wallet, ladder, pool_of)
+        if wants_account
+        else [None] * len(ladder)
+    )
     exact = next((b for b in reversed(rung_budgets) if b is not None), None)
     if exact is not None:
         budget, refund_source = exact, "roster"
@@ -577,6 +578,16 @@ def _budget_for_rung(
     """
     if wallet <= 0:
         return None
+    target_cost = milestones[upto].average_wishes
+    if wallet >= target_cost:
+        # If the wallet alone already covers the entire cost to reach this rung, spend is
+        # strictly capped at target_cost and cannot increase on subsequent passes.
+        spent = _spend_by_pool(milestones, target_cost, upto, pool_of)
+        if not spent:
+            return None
+        refund = sum(expected_refund(pool, int(pulls)) for pool, pulls in spent.items())
+        return wallet + int(refund)
+
     refund = 0.0
     priced = False
     for _ in range(_REFUND_PASSES + 1):
@@ -590,6 +601,29 @@ def _budget_for_rung(
             break
         refund = nxt
     return wallet + int(refund) if priced else None
+
+
+def _calculate_rung_budgets(
+    wallet: int,
+    ladder: Sequence[Milestone],
+    pool_of: Callable[[str], RefundInputs | None],
+) -> list[int | None]:
+    """Wishes available at each milestone on the ladder, evaluated sequentially.
+
+    Each rung's budget is non-decreasing. Once a rung's budget fails to cover its cost,
+    all deeper rungs are bounded by the exact same wallet and earn no additional refund.
+    """
+    rung_budgets: list[int | None] = []
+    for index in range(len(ladder)):
+        if (
+            rung_budgets
+            and rung_budgets[-1] is not None
+            and rung_budgets[-1] < ladder[index - 1].average_wishes
+        ):
+            rung_budgets.append(rung_budgets[-1])
+            continue
+        rung_budgets.append(_budget_for_rung(wallet, ladder, index, pool_of))
+    return rung_budgets
 
 
 async def _refund_from_account(
