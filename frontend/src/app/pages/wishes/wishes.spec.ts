@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi } from 'vitest';
 
 import { WishesService, type WishLimits, type WishPlanRead } from './wishes.service';
+import { CatalogueService } from '../catalogue/catalogue.service';
 import { WishesPage } from './wishes';
 
 const LIMITS: WishLimits = {
@@ -87,7 +88,16 @@ function makePage(over: Partial<WishesService> = {}) {
     ...over,
   };
   TestBed.configureTestingModule({
-    providers: [{ provide: WishesService, useValue: service }],
+    providers: [
+      { provide: WishesService, useValue: service },
+      {
+        provide: CatalogueService,
+        useValue: {
+          listCharacters: vi.fn().mockResolvedValue({ items: [] }),
+          listWeapons: vi.fn().mockResolvedValue({ items: [] }),
+        },
+      },
+    ],
   });
   const page = TestBed.runInInjectionContext(() => new WishesPage());
   return { page: open(page), service };
@@ -1264,5 +1274,101 @@ describe('the signature pairing is resolved server-side', () => {
     expect(page.pairedWeaponRow()).toBeNull();          // nothing to highlight
     expect(plan.mock.calls.at(-1)?.[0].weapon.banner_slug)
       .toBe('Epitome Invocation/2026-09-23');           // but it is still priced
+  });
+});
+
+describe('custom banner creation and management', () => {
+  beforeEach(() => {
+    try {
+      localStorage.clear();
+    } catch {
+      // ignore
+    }
+  });
+
+  it('creates a custom character banner with ? placeholder target and ? 4-stars', async () => {
+    const { page } = makePage();
+    await settled();
+
+    page.openCustomBannerDialog(null);
+    expect(page.customBannerKind()).toBe('character');
+    expect(page.customBannerName()).toBe('Custom Banner');
+    expect(page.customBannerTargetName()).toBe('?');
+
+    // Configure starting ownership: target at C0, 4-star #1 at C6, 4-star #2 unowned
+    page.setCustomBannerTargetOwnership(0);
+    page.setCustomBannerSlotName(0, '?');
+    page.setCustomBannerSlotConstellation(0, '6');
+    page.setCustomBannerSlotName(1, '?');
+    page.setCustomBannerSlotConstellation(1, 'none');
+
+    page.saveAndSelectCustomBanner();
+
+    expect(page.customBanners().length).toBe(1);
+    const banner = page.customBanners()[0];
+    expect(banner.name).toBe('Custom Banner');
+    expect(banner.kind).toBe('character');
+    expect(banner.target).toEqual({ name: '?', owned_copies: 0 });
+    expect(banner.fourStars[0]).toEqual({ name: '?', constellation: 6 });
+    expect(banner.fourStars[1]).toEqual({ name: '?', constellation: null });
+
+    // The custom banner should now be in allBanners() and selected
+    expect(page.allBanners().some((b: any) => b.slug === banner.slug)).toBe(true);
+    expect(page.chosenBanner()).toBe(banner.slug);
+
+    // And request() includes custom_banners
+    const req = page.request();
+    expect(req.custom_banners).toBeDefined();
+    expect(req.custom_banners?.length).toBe(1);
+    expect(req.custom_banners?.[0].slug).toBe(banner.slug);
+    expect(req.custom_banners?.[0].featured_five).toEqual(['?']);
+    expect(req.custom_banners?.[0].featured_four[0]).toEqual({ name: '?', constellation: 6 });
+  });
+
+  it('supports weapon custom banners with refinement ownership', async () => {
+    const { page } = makePage();
+    await settled();
+
+    page.openCustomBannerDialog(null);
+    page.setCustomBannerKind('weapon');
+    expect(page.customBannerKind()).toBe('weapon');
+
+    page.setCustomBannerName('My Custom Weapon Banner');
+    page.setCustomBannerTargetOwnership(4); // R5
+    page.saveAndSelectCustomBanner();
+
+    expect(page.customBanners().length).toBe(1);
+    const banner = page.customBanners()[0];
+    expect(banner.name).toBe('My Custom Weapon Banner');
+    expect(banner.kind).toBe('weapon');
+    expect(banner.target).toEqual({ name: '?', owned_copies: 4 });
+  });
+
+  it('deletes custom banners and resets selection if currently selected', async () => {
+    const { page } = makePage();
+    await settled();
+
+    page.openCustomBannerDialog(null);
+    page.saveAndSelectCustomBanner();
+    const slug = page.customBanners()[0].slug;
+    expect(page.chosenBanner()).toBe(slug);
+
+    page.deleteCustomBanner(slug, new MouseEvent('click'));
+    expect(page.customBanners().length).toBe(0);
+    expect(page.chosenBanner()).toBeNull();
+  });
+});
+
+describe('legacy text strings removed from wishes UI', () => {
+  it('does not include the removed copy in wishes template', async () => {
+    const fixture = TestBed.createComponent(WishesPage);
+    fixture.detectChanges();
+    await settled();
+    fixture.detectChanges();
+    const text = fixture.nativeElement.textContent ?? '';
+
+    expect(text.includes('reaching every goal')).toBe(false);
+    expect(text.includes('Each rung is cumulative')).toBe(false);
+    expect(text.includes('Chance of reaching each milestone')).toBe(false);
   });
 });

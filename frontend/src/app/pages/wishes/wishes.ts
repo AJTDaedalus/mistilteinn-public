@@ -1,12 +1,15 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, viewChild, type ElementRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { CatalogueIcon } from '../../shared/icon/icon';
+import { CatalogueService, type CharacterSummary, type WeaponSummary } from '../catalogue/catalogue.service';
 
 import {
   WishesService,
+  type CustomFeaturedItem,
   type WishBannerRead,
+  type WishCustomBanner,
   type WishFeaturedItem,
   type WishIncomeVersionRead,
   type WishLimits,
@@ -66,6 +69,22 @@ function position(label = ''): Position {
  * be changed and went out as the goal's name — the ladder printed `Weapon 2 R1`. Empty means the
  * banner has not named it yet, and `plan_campaign` builds the rung label with `.strip()`.
  */
+export interface CustomBannerFourStar {
+  name: string;
+  constellation: number | null;
+}
+
+export interface CustomBannerConfig {
+  slug: string;
+  name: string;
+  kind: 'character' | 'weapon';
+  target: {
+    name: string;
+    owned_copies: number;
+  };
+  fourStars: CustomBannerFourStar[];
+}
+
 function row(banner: 'character' | 'weapon', label = ''): CustomRow {
   return { ...position(label), banner, targetCopies: 1, bannerSlug: null };
 }
@@ -102,6 +121,24 @@ const ACCOUNT_REFUND = 'account';
 })
 export class WishesPage {
   private service = inject(WishesService);
+  private catalogue = inject(CatalogueService);
+
+  private readonly customBannerStorageKey = 'mistilteinn.custom_banners';
+  protected readonly customBanners = signal<CustomBannerConfig[]>([]);
+  protected readonly allCharacters = signal<CharacterSummary[]>([]);
+  protected readonly allWeapons = signal<WeaponSummary[]>([]);
+
+  protected readonly customBannerDialog = viewChild<ElementRef<HTMLDialogElement>>('customBannerDialog');
+  protected readonly customBannerRowIndex = signal<number | null>(null);
+  protected readonly customBannerKind = signal<'character' | 'weapon'>('character');
+  protected readonly customBannerName = signal('Custom Banner');
+  protected readonly customBannerTargetName = signal('?');
+  protected readonly customBannerTargetOwnership = signal(0);
+  protected readonly customBannerFourStars = signal<CustomBannerFourStar[]>([
+    { name: '?', constellation: null },
+    { name: '?', constellation: null },
+    { name: '?', constellation: null },
+  ]);
 
   protected readonly mode = signal<'simple' | 'custom'>('simple');
 
@@ -221,13 +258,63 @@ export class WishesPage {
    * page. That null was indistinguishable from a phase with no weapon banner, and no phase has
    * none, so it was always a pagination artefact.
    */
+  protected readonly customBannersAsRead = computed<WishBannerRead[]>(() =>
+    this.customBanners().map((cb) => ({
+      slug: cb.slug,
+      name: cb.name,
+      kind: cb.kind,
+      starts_at: null,
+      ends_at: null,
+      featured_five: [
+        {
+          name: cb.target.name,
+          icon: this.artFor(cb.target.name),
+          owned_copies: cb.target.owned_copies > 0 ? cb.target.owned_copies - 1 : null,
+        },
+      ],
+      featured_four: cb.fourStars.map((item) => ({
+        name: item.name,
+        icon: this.artFor(item.name),
+        owned_copies: item.constellation !== undefined ? item.constellation : null,
+      })),
+      signature_banner: null,
+      alongside: [],
+    })),
+  );
+
+  protected readonly allBanners = computed<WishBannerRead[]>(() => [
+    ...this.customBannersAsRead(),
+    ...this.banners(),
+  ]);
+
+  protected readonly fourStarCharacters = computed(() =>
+    this.allCharacters()
+      .filter((ch) => ch.rarity === 'four_star')
+      .sort((a, b) => a.name.localeCompare(b.name)),
+  );
+  protected readonly fiveStarCharacters = computed(() =>
+    this.allCharacters()
+      .filter((ch) => ch.rarity === 'five_star')
+      .sort((a, b) => a.name.localeCompare(b.name)),
+  );
+  protected readonly fourStarWeapons = computed(() =>
+    this.allWeapons()
+      .filter((w) => w.rarity === 'four_star')
+      .sort((a, b) => a.name.localeCompare(b.name)),
+  );
+  protected readonly fiveStarWeapons = computed(() =>
+    this.allWeapons()
+      .filter((w) => w.rarity === 'five_star')
+      .sort((a, b) => a.name.localeCompare(b.name)),
+  );
+
   protected readonly pairedWeaponRow = computed(() => {
     const slug = this.pairedWeaponBanner();
-    return slug ? this.banners().find((b) => b.slug === slug) ?? null : null;
+    return slug ? this.allBanners().find((b) => b.slug === slug) ?? null : null;
   });
 
   protected readonly banner = computed(() =>
-    this.banners().find((b) => b.slug === this.chosenBanner()) ?? null,
+    this.allBanners().find((b) => b.slug === this.chosenBanner()) ?? null,
   );
 
   protected readonly hasMoreBanners = computed(
@@ -354,7 +441,21 @@ export class WishesPage {
    * only check that the object still matches the generated contract — so moving `banner_slug`
    * from the request onto each target could not have failed `npm run verify`.
    */
+  private customBannersPayload(): WishCustomBanner[] {
+    return this.customBanners().map((cb) => ({
+      slug: cb.slug,
+      name: cb.name,
+      kind: cb.kind,
+      featured_five: [cb.target.name],
+      featured_four: cb.fourStars.map((f) => ({
+        name: f.name,
+        constellation: f.constellation ?? null,
+      })),
+    }));
+  }
+
   protected request(): WishPlanRequest {
+    const custom_banners = this.customBannersPayload();
     const wallet = {
       primogems: this.primogems(),
       intertwined_fate: this.intertwined(),
@@ -365,46 +466,63 @@ export class WishesPage {
     if (this.mode() === 'custom') {
       return {
         ...wallet,
-        // Ignored for custom targets -- each row names its own goal -- but the generated
-        // contract makes a defaulted field non-optional, so sending it keeps the request
-        // typed rather than cast.
         strategy: this.strategy(),
-        // **A complete row is dropped, not sent.** Owning the maximum leaves no rung above
-        // it, so the row describes a goal that is already met; sending it would ask the
-        // backend to plan "from C6 to C6".
         targets: this.plannableRows().map((entry, index) => ({
           ...this.target(entry, entry.banner),
-          // Only the first row declares the counter; the backend refuses a later one.
           lost_fifty_fifties:
             index === 0 ? this.target(entry, entry.banner).lost_fifty_fifties : 0,
           target_copies: entry.targetCopies,
           banner_slug: entry.bannerSlug,
         })),
+        custom_banners,
       };
     }
 
     return {
       ...wallet,
-      // **Only the leg whose kind the picked banner actually is.** Simple mode has one
-      // picker and two legs, and sending the same slug to both made the client assert
-      // something it does not know: a character banner priced the *weapon* leg's pulls with
-      // featured 4-star characters, a 50 % featured rate against 75 %, and collapsed both
-      // legs onto one key so the per-leg split did nothing here at all. `null` means "this
-      // leg earns nothing", which under-states rather than invents.
       character: { ...this.target(this.character(), 'character'),
                    banner_slug: this.slugForKind('character') },
       weapon: this.planWeapon()
         ? { ...this.target(this.weapon(), 'weapon'), banner_slug: this.slugForKind('weapon') }
         : null,
       strategy: this.strategy(),
+      custom_banners,
     };
+  }
+
+  private artFor(name: string): string | null {
+    if (!name || name === '?') return null;
+    const char = this.allCharacters().find((ch) => ch.name === name);
+    if (char?.icon) return char.icon;
+    const weapon = this.allWeapons().find((w) => w.name === name);
+    return weapon?.icon ?? null;
   }
 
   private async load(): Promise<void> {
     try {
-      const [limits, income] = await Promise.all([this.service.limits(), this.service.income()]);
+      const [limits, income, characters, weapons] = await Promise.all([
+        this.service.limits(),
+        this.service.income(),
+        this.catalogue.listCharacters({ limit: 300 }).catch(() => ({ items: [] })),
+        this.catalogue.listWeapons({ limit: 400 }).catch(() => ({ items: [] })),
+      ]);
       this.limits.set(limits);
       this.income.set(income.versions);
+      this.allCharacters.set((characters && 'items' in characters ? characters.items : []) ?? []);
+      this.allWeapons.set((weapons && 'items' in weapons ? weapons.items : []) ?? []);
+
+      try {
+        const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(this.customBannerStorageKey) : null;
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            this.customBanners.set(parsed);
+          }
+        }
+      } catch {
+        // localStorage not available
+      }
+
       await this.loadBanners(0);
     } catch {
       this.error.set('Could not load the planner’s reference data.');
@@ -584,7 +702,7 @@ export class WishesPage {
 
   /** The banner a custom row is on, when it is one of the loaded ones. */
   protected rowBanner(entry: CustomRow): WishBannerRead | null {
-    return this.banners().find((b) => b.slug === entry.bannerSlug) ?? null;
+    return this.allBanners().find((b) => b.slug === entry.bannerSlug) ?? null;
   }
 
   /** `2026-09-23 11:00:00` as `Sep 2026` — the banner list is scanned, not read. */
@@ -841,5 +959,165 @@ export class WishesPage {
     if (chance >= 0.25) return 'bar bar--even';
     if (chance > 0) return 'bar bar--unlikely';
     return 'bar bar--none';
+  }
+
+  // ── Custom Banners ──────────────────────────────────────────────────────────
+
+  protected isCustom(slug: string | null | undefined): boolean {
+    return !!slug && slug.startsWith('custom:');
+  }
+
+  protected openCustomBannerDialog(rowIndex: number | null = null): void {
+    this.customBannerRowIndex.set(rowIndex);
+    const initialKind = rowIndex !== null && this.rows()[rowIndex]?.banner === 'weapon' ? 'weapon' : 'character';
+    this.setCustomBannerKind(initialKind);
+    this.customBannerName.set('Custom Banner');
+    this.customBannerTargetName.set('?');
+    this.customBannerTargetOwnership.set(0);
+    this.customBannerDialog()?.nativeElement.showModal?.();
+  }
+
+  protected closeCustomBannerDialog(): void {
+    this.customBannerDialog()?.nativeElement.close?.();
+  }
+
+  protected onCustomBannerDialogClosed(): void {
+    // dialog closed
+  }
+
+  protected setCustomBannerKind(kind: 'character' | 'weapon'): void {
+    this.customBannerKind.set(kind);
+    if (kind === 'character') {
+      this.customBannerFourStars.set([
+        { name: '?', constellation: null },
+        { name: '?', constellation: null },
+        { name: '?', constellation: null },
+      ]);
+    } else {
+      this.customBannerFourStars.set([
+        { name: '?', constellation: null },
+        { name: '?', constellation: null },
+        { name: '?', constellation: null },
+        { name: '?', constellation: null },
+        { name: '?', constellation: null },
+      ]);
+    }
+    this.customBannerTargetName.set('?');
+    this.customBannerTargetOwnership.set(0);
+  }
+
+  protected setCustomBannerName(name: string): void {
+    this.customBannerName.set(name);
+  }
+
+  protected setCustomBannerTargetName(name: string): void {
+    this.customBannerTargetName.set(name);
+  }
+
+  protected setCustomBannerTargetOwnership(ownership: number): void {
+    this.customBannerTargetOwnership.set(ownership);
+  }
+
+  protected setCustomBannerSlotName(index: number, name: string): void {
+    const slots = [...this.customBannerFourStars()];
+    if (!slots[index]) return;
+    let defaultConstellation: number | null = null;
+    if (name !== '?') {
+      const match = this.banners()
+        .flatMap((b) => b.featured_four)
+        .find((item) => item.name === name && item.owned_copies !== null);
+      if (match?.owned_copies !== null && match?.owned_copies !== undefined) {
+        defaultConstellation = match.owned_copies;
+      }
+    }
+    slots[index] = { name, constellation: defaultConstellation };
+    this.customBannerFourStars.set(slots);
+  }
+
+  protected setCustomBannerSlotConstellation(index: number, value: string): void {
+    const slots = [...this.customBannerFourStars()];
+    if (!slots[index]) return;
+    const constellation = value === 'none' ? null : parseInt(value, 10);
+    slots[index] = { ...slots[index], constellation };
+    this.customBannerFourStars.set(slots);
+  }
+
+  protected saveAndSelectCustomBanner(): void {
+    const slug = `custom:${Date.now()}`;
+    const kind = this.customBannerKind();
+    const targetName = this.customBannerTargetName();
+    const targetOwnership = this.customBannerTargetOwnership();
+    const name = this.customBannerName().trim() || 'Custom Banner';
+
+    const newBanner: CustomBannerConfig = {
+      slug,
+      name,
+      kind,
+      target: {
+        name: targetName,
+        owned_copies: targetOwnership,
+      },
+      fourStars: this.customBannerFourStars(),
+    };
+
+    const updated = [newBanner, ...this.customBanners()];
+    this.customBanners.set(updated);
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(this.customBannerStorageKey, JSON.stringify(updated));
+      }
+    } catch {
+      // ignore
+    }
+
+    const readBanner = this.toBannerRead(newBanner);
+    const targetRow = this.customBannerRowIndex();
+    if (targetRow !== null) {
+      this.chooseRowBanner(targetRow, readBanner);
+    } else {
+      this.chooseBanner(readBanner);
+    }
+
+    this.closeCustomBannerDialog();
+  }
+
+  protected deleteCustomBanner(slug: string, event: Event): void {
+    event.stopPropagation();
+    const filtered = this.customBanners().filter((cb) => cb.slug !== slug);
+    this.customBanners.set(filtered);
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(this.customBannerStorageKey, JSON.stringify(filtered));
+      }
+    } catch {
+      // ignore
+    }
+    if (this.chosenBanner() === slug) {
+      this.chooseBanner(null);
+    }
+  }
+
+  private toBannerRead(cb: CustomBannerConfig): WishBannerRead {
+    return {
+      slug: cb.slug,
+      name: cb.name,
+      kind: cb.kind,
+      starts_at: null,
+      ends_at: null,
+      featured_five: [
+        {
+          name: cb.target.name,
+          icon: this.artFor(cb.target.name),
+          owned_copies: cb.target.owned_copies > 0 ? cb.target.owned_copies - 1 : null,
+        },
+      ],
+      featured_four: cb.fourStars.map((item) => ({
+        name: item.name,
+        icon: this.artFor(item.name),
+        owned_copies: item.constellation !== undefined ? item.constellation : null,
+      })),
+      signature_banner: null,
+      alongside: [],
+    };
   }
 }

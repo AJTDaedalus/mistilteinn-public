@@ -1253,3 +1253,79 @@ async def test_a_row_without_a_banner_does_not_sink_the_whole_plan(
     )).json()
     assert body["refund_source"] == "roster"
     assert body["refunded_wishes"] > 0
+
+
+
+async def test_custom_banner_prices_from_roster_and_explicit_constellations(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """Custom banner prices named 4-stars from roster and '?' from explicit constellation."""
+    user, _ = authed_user
+    await _owned_four_star(db_session, str(user.id), "Bennett", 6)
+    await _owned_four_star(db_session, str(user.id), "Xiangling", 2)
+
+    custom_slug = "custom:test-1"
+    body = (await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={
+            "character": {"banner": "character", "label": "?", "banner_slug": custom_slug},
+            "custom_banners": [
+                {
+                    "slug": custom_slug,
+                    "name": "Hypothetical Phase",
+                    "kind": "character",
+                    "featured_five": ["?"],
+                    "featured_four": [
+                        {"name": "Bennett"},
+                        {"name": "Xiangling"},
+                        {"name": "?", "constellation": 6},
+                    ],
+                }
+            ],
+            "primogems": 48_000,
+            "starglitter_refund": "account",
+        },
+    )).json()
+
+    assert body["refund_source"] == "roster"
+    assert body["refunded_wishes"] > 0
+    milestone = body["milestones"][0]
+    assert milestone["label"] == "? C0"
+    assert milestone["budget"] > body["wallet_wishes"]
+
+
+async def test_custom_banner_question_mark_with_starting_ownership(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """A '?' character target starting from C2 plans C3 through C6."""
+    _ = authed_user
+    custom_slug = "custom:test-c2"
+    body = (await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={
+            "character": {
+                "banner": "character",
+                "label": "?",
+                "owned_copies": 3,  # C2
+                "banner_slug": custom_slug,
+            },
+            "custom_banners": [
+                {
+                    "slug": custom_slug,
+                    "name": "Custom C2 Banner",
+                    "kind": "character",
+                    "featured_five": ["?"],
+                    "featured_four": [
+                        {"name": "?", "constellation": 6},
+                        {"name": "?", "constellation": 6},
+                        {"name": "?", "constellation": 6},
+                    ],
+                }
+            ],
+            "primogems": 48_000,
+            "starglitter_refund": "account",
+        },
+    )).json()
+
+    labels = [m["label"] for m in body["milestones"]]
+    assert labels == ["? C3", "? C4", "? C5", "? C6"]

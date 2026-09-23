@@ -6821,6 +6821,35 @@
         "title": "CraftingBonusRead",
         "description": "A character whose passive changes what crafting costs."
       },
+      "CustomFeaturedItem": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Character/weapon name or \"?\""
+          },
+          "constellation": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 6.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Constellation",
+            "description": "Owned constellation (0-6, or null to read from account/unowned)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "CustomFeaturedItem",
+        "description": "One featured 4-star on a custom banner, with optional ownership."
+      },
       "DeclaredFunction": {
         "properties": {
           "name": {
@@ -13014,6 +13043,48 @@
         "title": "WishBannerRead",
         "description": "One banner run, for the picker."
       },
+      "WishCustomBanner": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Slug",
+            "description": "Unique custom banner identifier (e.g. 'custom:1')"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Name",
+            "default": "Custom Banner"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/BannerKind",
+            "default": "character"
+          },
+          "featured_five": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Featured Five",
+            "description": "Target 5-star name(s) or '?'"
+          },
+          "featured_four": {
+            "items": {
+              "$ref": "#/components/schemas/CustomFeaturedItem"
+            },
+            "type": "array",
+            "title": "Featured Four",
+            "description": "Featured 4-star lineup (3 for character banner, 5 for weapon banner)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug"
+        ],
+        "title": "WishCustomBanner",
+        "description": "Player-defined banner for targets not on the historical schedule."
+      },
       "WishFeaturedItem": {
         "properties": {
           "name": {
@@ -13284,6 +13355,14 @@
             "maxItems": 12,
             "title": "Targets",
             "description": "Custom mode: goals in spending order. Each needs `target_copies`."
+          },
+          "custom_banners": {
+            "items": {
+              "$ref": "#/components/schemas/WishCustomBanner"
+            },
+            "type": "array",
+            "title": "Custom Banners",
+            "description": "Player-defined banners for targets not on the historical schedule."
           },
           "starglitter_refund": {
             "type": "string",
