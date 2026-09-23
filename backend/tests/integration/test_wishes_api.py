@@ -1329,3 +1329,29 @@ async def test_custom_banner_question_mark_with_starting_ownership(
 
     labels = [m["label"] for m in body["milestones"]]
     assert labels == ["? C3", "? C4", "? C5", "? C6"]
+
+async def test_custom_banners_capped_at_twenty(
+    authed_client: AsyncClient, authed_user: tuple,
+) -> None:
+    """Request with more than 20 custom banners is rejected as 422."""
+    _ = authed_user
+    banners = [
+        {
+            "slug": f"custom:test-{i}",
+            "name": f"Banner {i}",
+            "kind": "character",
+            "featured_five": ["?"],
+            "featured_four": [],
+        }
+        for i in range(21)
+    ]
+    resp = await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={
+            "character": {"banner": "character", "label": "Amber"},
+            "custom_banners": banners,
+            "primogems": 1600,
+        },
+    )
+    assert resp.status_code == 422
+

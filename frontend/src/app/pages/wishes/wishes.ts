@@ -568,6 +568,24 @@ export class WishesPage {
   protected chooseBanner(banner: WishBannerRead | null): void {
     this.chosenBanner.set(banner?.slug ?? null);
     if (!banner) return;
+    if (this.isCustom(banner.slug)) {
+      const custom = this.customBanners().find((cb) => cb.slug === banner.slug);
+      if (custom) {
+        if (custom.kind === 'character') {
+          this.patch('character', {
+            label: custom.target.name,
+            ownedCopies: custom.target.owned_copies,
+          });
+        } else {
+          this.planWeapon.set(true);
+          this.patch('weapon', {
+            label: custom.target.name,
+            ownedCopies: custom.target.owned_copies,
+          });
+        }
+        return;
+      }
+    }
     if (banner.kind === 'character') {
       // The roster's answer, in simple mode too. Reading it only in custom mode left the
       // default mode asking the user to retype the constellation the response just delivered.
@@ -604,10 +622,16 @@ export class WishesPage {
     const change: Partial<CustomRow> = { bannerSlug: banner?.slug ?? null };
     if (banner) {
       change.banner = banner.kind as 'character' | 'weapon';
-      // A character banner has one 5-star, so it is the goal. A weapon banner has two, and
-      // which one the user wants is theirs to say -- picking for them would be the same guess
-      // as deciding whose signature a weapon is.
-      if (banner.featured_five.length === 1) {
+      if (this.isCustom(banner.slug)) {
+        const custom = this.customBanners().find((cb) => cb.slug === banner.slug);
+        if (custom) {
+          change.label = custom.target.name;
+          change.ownedCopies = custom.target.owned_copies;
+        }
+      } else if (banner.featured_five.length === 1) {
+        // A character banner has one 5-star, so it is the goal. A weapon banner has two, and
+        // which one the user wants is theirs to say -- picking for them would be the same guess
+        // as deciding whose signature a weapon is.
         Object.assign(change, this.fromFeatured(banner.featured_five[0]));
       } else {
         change.label = '';
@@ -1095,6 +1119,9 @@ export class WishesPage {
     if (this.chosenBanner() === slug) {
       this.chooseBanner(null);
     }
+    this.rows.update((rows) =>
+      rows.map((r) => (r.bannerSlug === slug ? { ...r, bannerSlug: null } : r)),
+    );
   }
 
   private toBannerRead(cb: CustomBannerConfig): WishBannerRead {

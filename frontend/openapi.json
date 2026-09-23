@@ -13361,6 +13361,7 @@
               "$ref": "#/components/schemas/WishCustomBanner"
             },
             "type": "array",
+            "maxItems": 20,
             "title": "Custom Banners",
             "description": "Player-defined banners for targets not on the historical schedule."
           },

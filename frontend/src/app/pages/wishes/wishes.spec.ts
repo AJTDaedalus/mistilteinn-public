@@ -1357,6 +1357,50 @@ describe('custom banner creation and management', () => {
     expect(page.customBanners().length).toBe(0);
     expect(page.chosenBanner()).toBeNull();
   });
+
+  it('sets ownedCopies to 0 for unowned custom banners even if state previously held copies', async () => {
+    const { page } = makePage();
+    await settled();
+
+    // Player previously had a C3 character selected (4 copies)
+    page.patch('character', { label: 'Prior Character', ownedCopies: 4 });
+    expect(page.character().ownedCopies).toBe(4);
+
+    page.openCustomBannerDialog(null);
+    page.setCustomBannerTargetName('?');
+    page.setCustomBannerTargetOwnership(0); // Unowned (Need C0)
+    page.saveAndSelectCustomBanner();
+
+    expect(page.character().label).toBe('?');
+    expect(page.character().ownedCopies).toBe(0);
+
+    // Also verify in custom row mode
+    page.mode.set('custom');
+    page.patchRow(0, { label: 'Prior Character', ownedCopies: 5 });
+    expect(page.rows()[0].ownedCopies).toBe(5);
+
+    const banner = page.allBanners().find((b: any) => b.slug === page.customBanners()[0].slug);
+    page.chooseRowBanner(0, banner);
+    expect(page.rows()[0].label).toBe('?');
+    expect(page.rows()[0].ownedCopies).toBe(0);
+  });
+
+  it('clears bannerSlug on custom rows when the assigned custom banner is deleted', async () => {
+    const { page } = makePage();
+    await settled();
+
+    page.openCustomBannerDialog(null);
+    page.saveAndSelectCustomBanner();
+    const slug = page.customBanners()[0].slug;
+
+    page.mode.set('custom');
+    page.patchRow(0, { bannerSlug: slug });
+    expect(page.rows()[0].bannerSlug).toBe(slug);
+
+    page.deleteCustomBanner(slug, new MouseEvent('click'));
+    expect(page.customBanners().length).toBe(0);
+    expect(page.rows()[0].bannerSlug).toBeNull();
+  });
 });
 
 describe('legacy text strings removed from wishes UI', () => {

@@ -163,6 +163,7 @@ class WishPlanRequest(BaseModel):
     )
     custom_banners: list[WishCustomBanner] = Field(
         default_factory=list,
+        max_length=20,
         description="Player-defined banners for targets not on the historical schedule.",
     )
     starglitter_refund: str = Field(
