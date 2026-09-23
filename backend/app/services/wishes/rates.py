@@ -155,6 +155,14 @@ def non_featured_character_share(banner: BannerKind) -> float:
     return character / total if total else 0.0
 
 
+#: The refund choice that means "price it from my own roster", rather than a constant.
+#:
+#: **Not a tier, and deliberately not in the tiers map.** `refunded_budget` would have to
+#: invent a number for it, and the whole point is that no constant is involved. Keeping it
+#: out means a caller that forgets to handle it gets a `KeyError` rather than a silent 0 %.
+ACCOUNT_REFUND = "account"
+
+
 @lru_cache(maxsize=1)
 def refund_tiers() -> dict[str, float]:
     """Starglitter refund as a fraction of wishes spent, by tier.

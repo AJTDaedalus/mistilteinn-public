@@ -5,6 +5,7 @@ import { WishesService, type WishLimits, type WishPlanRead } from './wishes.serv
 import { WishesPage } from './wishes';
 
 const LIMITS: WishLimits = {
+  account_refund: 'account',
   primogems_per_wish: 160,
   max_constellation: 6,
   max_refinement: 5,
@@ -529,14 +530,23 @@ describe('the banner picker', () => {
     expect(page.character().ownedCopies).toBe(2);
   });
 
-  it('sends the chosen banner so the refund can be read from the account', async () => {
+  /** The banner rides on the TARGET, not on the plan — a custom plan spans banners. */
+  it('sends the chosen banner on each simple-mode target', async () => {
     const { page } = makePage();
     await settled();
     await settled();
     page.chooseBanner(BANNERS.banners[0]);
-    expect(page.request().banner_slug).toBe('When Warm Winds Cavort/2026-09-23');
+    const request = page.request();
+    expect(request.banner_slug).toBeUndefined();
+    expect(request.character.banner_slug).toBe('When Warm Winds Cavort/2026-09-23');
+    // A character banner has no weapon on it, so `chooseBanner` turns the weapon leg off.
+    expect(request.weapon).toBeNull();
+
+    page.chooseBanner(BANNERS.banners[1]);
+    expect(page.request().weapon.banner_slug).toBe('Epitome Invocation/2026-09-23');
+
     page.chooseBanner(null);
-    expect(page.request().banner_slug).toBeNull();
+    expect(page.request().character.banner_slug).toBeNull();
   });
 
   it('plans the weapon when a weapon banner is picked', async () => {
@@ -592,5 +602,275 @@ describe('the exact distribution', () => {
     await settled();
     await page.recompute(page.request());
     expect(page.charted()).toBeNull();
+  });
+});
+
+
+describe('a custom plan spans banners', () => {
+  /**
+   * The picker used to set one banner for the whole plan, which was wrong the moment a
+   * second row existed: each character is on its own banner with its own featured 4-stars,
+   * and those are two thirds of every 4-star pulled, so they decide that leg's refund.
+   */
+  it('gives each row its own banner', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    page.mode.set('custom');
+    page.addRow('weapon');
+    page.chooseRowBanner(0, BANNERS.banners[0]);
+    page.chooseRowBanner(1, BANNERS.banners[1]);
+
+    const targets = page.request().targets;
+    expect(targets[0].banner_slug).toBe('When Warm Winds Cavort/2026-09-23');
+    expect(targets[1].banner_slug).toBe('Epitome Invocation/2026-09-23');
+  });
+
+  it('fills the row from the banner it was given', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    page.mode.set('custom');
+    page.chooseRowBanner(0, BANNERS.banners[1]);
+    expect(page.rows()[0].banner).toBe('weapon');
+    expect(page.rows()[0].label).toBe('Splendor');
+  });
+
+  it('leaves the other rows alone', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    page.mode.set('custom');
+    page.addRow('character');
+    page.patchRow(1, { label: 'Kept', pity: 40 });
+    page.chooseRowBanner(0, BANNERS.banners[0]);
+    expect(page.rows()[1].label).toBe('Kept');
+    expect(page.rows()[1].pity).toBe(40);
+    expect(page.rows()[1].bannerSlug).toBeNull();
+  });
+
+  it('opens one picker at a time', async () => {
+    const { page } = makePage();
+    await settled();
+    page.mode.set('custom');
+    page.addRow('character');
+    page.togglePicker(1);
+    expect(page.pickingFor()).toBe(1);
+    page.togglePicker(1);
+    expect(page.pickingFor()).toBeNull();
+  });
+
+  it('closes the picker once a banner is chosen', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    page.mode.set('custom');
+    page.togglePicker(0);
+    page.chooseRowBanner(0, BANNERS.banners[0]);
+    expect(page.pickingFor()).toBeNull();
+  });
+});
+
+describe('a row that does not exist', () => {
+  /**
+   * `patchRow` spread `next[index]` without checking it. For an out-of-range index that
+   * spread `undefined`, so the change *became* the row: `ownedCopies` was missing, the clamp
+   * turned it into `NaN`, and it serialised as `null`. The user saw a 422 naming a field
+   * they never touched, on a row they never added — and the plan vanished.
+   */
+  it('is not created by patching it', async () => {
+    const { page } = makePage();
+    await settled();
+    page.mode.set('custom');
+    page.patchRow(7, { label: 'ghost' });
+    expect(page.rows()).toHaveLength(1);
+  });
+
+  it('is not created by choosing a banner for it', async () => {
+    const { page } = makePage();
+    await settled();
+    await settled();
+    page.mode.set('custom');
+    page.chooseRowBanner(5, BANNERS.banners[0]);
+    expect(page.rows()).toHaveLength(1);
+  });
+
+  it('never sends a null owned_copies', async () => {
+    const { page } = makePage();
+    await settled();
+    page.mode.set('custom');
+    page.patchRow(3, { banner: 'weapon' });
+    for (const target of page.request().targets) {
+      expect(target.owned_copies).toEqual(expect.any(Number));
+      expect(Number.isNaN(target.owned_copies)).toBe(false);
+    }
+  });
+
+  it('is not moved', async () => {
+    const { page } = makePage();
+    await settled();
+    page.mode.set('custom');
+    page.moveRow(9, -1);
+    expect(page.rows()).toHaveLength(1);
+  });
+});
+
+describe('no constellation data', () => {
+  /**
+   * The one case worth a word: the account was asked and could not answer, because the
+   * roster carries no constellations — every account imported before that column existed.
+   *
+   * **Keyed off `refund_source: 'none'`, which only that case produces.** The earlier version
+   * reassembled the rule here from "a banner is picked and the source is not roster", which
+   * also caught an empty wallet and told a fully-scanned account its roster was blank.
+   */
+  it('is reported when the account was asked and declined', async () => {
+    const { page } = makePage({
+      plan: vi.fn().mockResolvedValue({ ...PLAN, refund_source: 'none', wallet_wishes: 180 }),
+    });
+    await settled();
+    await settled();
+    page.chooseBanner(BANNERS.banners[0]);
+    await page.recompute(page.request());
+    expect(page.noConstellationData()).toBe(true);
+  });
+
+  /** Not picking a banner is not a problem to warn about; the dropdown is right there. */
+  it('is silent when no banner is picked', async () => {
+    const { page } = makePage();
+    await settled();
+    await page.recompute(page.request());
+    expect(page.noConstellationData()).toBe(false);
+  });
+
+  it('is silent when the roster answered', async () => {
+    const { page } = makePage({
+      plan: vi.fn().mockResolvedValue({ ...PLAN, refund_source: 'roster' }),
+    });
+    await settled();
+    await settled();
+    page.chooseBanner(BANNERS.banners[0]);
+    await page.recompute(page.request());
+    expect(page.noConstellationData()).toBe(false);
+  });
+
+  /**
+   * The warning no longer reconstructs *why* the account declined, so there is nothing
+   * mode-specific left to assert here. What matters instead is that a custom row's banner
+   * actually reaches the request — the per-row slug is the whole point of this mode, and it
+   * was silently dropped once already.
+   */
+  it('sends each custom row’s own banner', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const { page } = makePage({ plan });
+    await settled();
+    await settled();
+    page.mode.set('custom');
+    page.chooseRowBanner(0, BANNERS.banners[0]);
+    await page.recompute(page.request());
+    const sent = plan.mock.calls.at(-1)?.[0];
+    expect(sent.targets[0].banner_slug).toBe(BANNERS.banners[0].slug);
+  });
+});
+
+
+describe('the account is a refund choice, not an override', () => {
+  /**
+   * The exact refund used to win silently whenever the roster could answer, so this control
+   * read "8.7% (Average)" while nothing it said was in use. The owner read it exactly that
+   * way: "having 'Starglitter refund' makes users assume that controls it."
+   */
+  it('defaults to the account and offers it first', async () => {
+    const { page } = makePage();
+    await settled();
+    expect(page.refund()).toBe('account');
+    expect(page.refundOptions()[0]).toBe('account');
+    expect(page.refundLabel('account')).toBe('Calculate with my account');
+  });
+
+  it('sends whichever choice is selected', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const { page } = makePage({ plan });
+    await settled();
+    page.refund.set('average');
+    await page.recompute(page.request());
+    expect(plan.mock.calls.at(-1)?.[0].starglitter_refund).toBe('average');
+  });
+
+  /** A declined account is the backend's verdict, not a guess reassembled here. */
+  it('warns only when the account was asked and declined on a real wallet', async () => {
+    const { page } = makePage({
+      plan: vi.fn().mockResolvedValue({ ...PLAN, refund_source: 'none', wallet_wishes: 180 }),
+    });
+    await settled();
+    await page.recompute(page.request());
+    expect(page.noConstellationData()).toBe(true);
+  });
+
+  it('stays quiet when the wallet is empty', async () => {
+    const { page } = makePage({
+      plan: vi.fn().mockResolvedValue({ ...PLAN, refund_source: 'none', wallet_wishes: 0 }),
+    });
+    await settled();
+    await page.recompute(page.request());
+    expect(page.noConstellationData()).toBe(false);
+  });
+});
+
+describe('one picker, two legs', () => {
+  /**
+   * Simple mode has one banner picker and up to two legs, and it used to send the same slug
+   * to both. `_refund_from_account` reads the banner's kind off the row, so a character
+   * banner priced the *weapon* leg's pulls with featured 4-star characters — a 50 % featured
+   * rate against 75 % — and both legs collapsed onto one key, so the per-leg split this PR
+   * adds did nothing at all in the default mode. Nothing caught it: the backend unit test
+   * proves two *different* slugs work, which no client has ever sent.
+   */
+  it('does not label the weapon leg with a character banner', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const { page } = makePage({ plan });
+    await settled();
+    await settled();
+    const character = BANNERS.banners.find((b) => b.kind === 'character')!;
+    page.chooseBanner(character);
+    page.planWeapon.set(true);
+    await page.recompute(page.request());
+    const sent = plan.mock.calls.at(-1)?.[0];
+    expect(sent.character.banner_slug).toBe(character.slug);
+    expect(sent.weapon.banner_slug).toBeNull();
+  });
+
+  it('does not label the character leg with a weapon banner', async () => {
+    const plan = vi.fn().mockResolvedValue(PLAN);
+    const { page } = makePage({ plan });
+    await settled();
+    await settled();
+    const weapon = BANNERS.banners.find((b) => b.kind === 'weapon')!;
+    page.chooseBanner(weapon);
+    await page.recompute(page.request());
+    const sent = plan.mock.calls.at(-1)?.[0];
+    expect(sent.character.banner_slug).toBeNull();
+    expect(sent.weapon.banner_slug).toBe(weapon.slug);
+  });
+});
+
+describe('naming no banner is not a silent roster', () => {
+  /**
+   * The page's own default state — type a wallet, never open the picker — answered
+   * `refund_source: "none"`, so a fully-imported account was told it had no constellation
+   * data. `no_banner` is a separate verdict so this cannot claim it.
+   *
+   * The test that used to guard this could not: it used the default mock, whose fixture says
+   * `tier`, so it passed for a reason unrelated to the code.
+   */
+  it('is silent when the backend says no banner was named', async () => {
+    const { page } = makePage({
+      plan: vi.fn().mockResolvedValue({
+        ...PLAN, refund_source: 'no_banner', wallet_wishes: 200,
+      }),
+    });
+    await settled();
+    await page.recompute(page.request());
+    expect(page.noConstellationData()).toBe(false);
   });
 });

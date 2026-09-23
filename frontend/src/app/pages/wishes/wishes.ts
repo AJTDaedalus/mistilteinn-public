@@ -10,6 +10,8 @@ import {
   type WishIncomeVersionRead,
   type WishLimits,
   type WishPlanRead,
+  type WishPlanRequest,
+  type WishStrategy,
   type WishTarget,
 } from './wishes.service';
 
@@ -47,10 +49,16 @@ interface Position {
 interface CustomRow extends Position {
   banner: 'character' | 'weapon';
   targetCopies: number;
+  /** Which banner run this row is on. Per row: a custom plan spans banners. */
+  bannerSlug: string | null;
 }
 
 function position(label = ''): Position {
   return { label, pity: 0, guaranteed: false, lostFiftyFifties: 0, ownedCopies: 0 };
+}
+
+function row(banner: 'character' | 'weapon', label: string): CustomRow {
+  return { ...position(label), banner, targetCopies: 1, bannerSlug: null };
 }
 
 /**
@@ -69,6 +77,14 @@ function position(label = ''): Position {
  * "50/50s lost" control, and **whole patches** of projected income rather than half-patches,
  * because the source workbook has no phase structure.
  */
+/**
+ * The refund choice meaning "price it from my roster".
+ *
+ * A fallback for the literal `/limits` publishes — used only before that request lands, so
+ * the control has a sane default on first paint rather than an empty dropdown.
+ */
+const ACCOUNT_REFUND = 'account';
+
 @Component({
   selector: 'app-wishes',
   imports: [FormsModule, DecimalPipe, DatePipe, CatalogueIcon],
@@ -90,17 +106,21 @@ export class WishesPage {
   protected readonly character = signal<Position>(position('Character'));
   protected readonly weapon = signal<Position>(position('Weapon'));
   protected readonly planWeapon = signal(true);
-  protected readonly strategy = signal('c0_first');
+  // Typed to the contract's own union, so a strategy the backend does not accept is a
+  // compile error rather than a 422.
+  protected readonly strategy = signal<WishStrategy>('c0_first');
 
   // -- custom mode
-  protected readonly rows = signal<CustomRow[]>([
-    { ...position('Character'), banner: 'character', targetCopies: 1 },
-  ]);
+  protected readonly rows = signal<CustomRow[]>([row('character', 'Character')]);
+  /** Which row's banner picker is open, or null. One at a time keeps the page short. */
+  protected readonly pickingFor = signal<number | null>(null);
 
   // -- wallet
   protected readonly primogems = signal(0);
   protected readonly intertwined = signal(0);
-  protected readonly refund = signal('none');
+  // **Defaults to the account.** The exact figure is the better answer whenever the roster
+  // can give it, and a tier is the fallback rather than the starting point.
+  protected readonly refund = signal(ACCOUNT_REFUND);
   protected readonly tier = signal<Tier>('f2p');
   protected readonly selectedVersions = signal<ReadonlySet<string>>(new Set());
 
@@ -115,6 +135,12 @@ export class WishesPage {
   protected readonly refundTiers = computed(() =>
     Object.keys(this.limits()?.starglitter_refund_tiers ?? { none: 0 }),
   );
+
+  /** Every refund choice, the account first. */
+  protected readonly refundOptions = computed(() => [
+    this.limits()?.account_refund ?? ACCOUNT_REFUND,
+    ...this.refundTiers(),
+  ]);
 
   protected readonly characterHardPity = computed(
     () => this.limits()?.banners['character']?.hard_pity ?? 90,
@@ -191,6 +217,25 @@ export class WishesPage {
     return bins.length ? bins[bins.length - 1].end : 0;
   });
 
+  /**
+   * True when the account was asked for the refund and could not answer.
+   *
+   * **The backend's verdict, not a guess from here.** `refund_source: 'none'` is returned
+   * only for a request that asked for the account and got nothing, which is exactly this
+   * case — reconstructing it client-side meant duplicating the rule and getting it wrong,
+   * and the first version read a response field that does not exist.
+   *
+   * An empty wallet is excluded: with no wishes there is nothing to refund, so the account
+   * declines for a reason that has nothing to do with the roster.
+   */
+  protected readonly noConstellationData = computed(() => {
+    const result = this.plan();
+    // `no_banner` is a separate verdict precisely so this cannot claim it: the page's own
+    // default state names no banner, and this used to tell a fully-imported roster that it
+    // had no constellation data.
+    return !!result && result.refund_source === 'none' && result.wallet_wishes > 0;
+  });
+
   /** Tallest bar, so the chart can scale to it rather than to 1. */
   protected readonly chartPeak = computed(() =>
     Math.max(...(this.charted()?.histogram ?? []).map((b) => b.probability), 1e-9),
@@ -224,7 +269,14 @@ export class WishesPage {
     };
   }
 
-  protected request() {
+  /**
+   * The plan request.
+   *
+   * **Typed, not cast.** `recompute` used to pass this through `as never`, which erased the
+   * only check that the object still matches the generated contract — so moving `banner_slug`
+   * from the request onto each target could not have failed `npm run verify`.
+   */
+  protected request(): WishPlanRequest {
     const wallet = {
       primogems: this.primogems(),
       intertwined_fate: this.intertwined(),
@@ -235,22 +287,35 @@ export class WishesPage {
     if (this.mode() === 'custom') {
       return {
         ...wallet,
-        banner_slug: this.chosenBanner(),
-        targets: this.rows().map((row, index) => ({
-          ...this.target(row, row.banner),
+        // Ignored for custom targets -- each row names its own goal -- but the generated
+        // contract makes a defaulted field non-optional, so sending it keeps the request
+        // typed rather than cast.
+        strategy: this.strategy(),
+        targets: this.rows().map((entry, index) => ({
+          ...this.target(entry, entry.banner),
           // Only the first row declares the counter; the backend refuses a later one.
-          lost_fifty_fifties: index === 0 ? this.target(row, row.banner).lost_fifty_fifties : 0,
-          target_copies: row.targetCopies,
+          lost_fifty_fifties:
+            index === 0 ? this.target(entry, entry.banner).lost_fifty_fifties : 0,
+          target_copies: entry.targetCopies,
+          banner_slug: entry.bannerSlug,
         })),
       };
     }
 
     return {
       ...wallet,
-      character: this.target(this.character(), 'character'),
-      weapon: this.planWeapon() ? this.target(this.weapon(), 'weapon') : null,
+      // **Only the leg whose kind the picked banner actually is.** Simple mode has one
+      // picker and two legs, and sending the same slug to both made the client assert
+      // something it does not know: a character banner priced the *weapon* leg's pulls with
+      // featured 4-star characters, a 50 % featured rate against 75 %, and collapsed both
+      // legs onto one key so the per-leg split did nothing here at all. `null` means "this
+      // leg earns nothing", which under-states rather than invents.
+      character: { ...this.target(this.character(), 'character'),
+                   banner_slug: this.slugForKind('character') },
+      weapon: this.planWeapon()
+        ? { ...this.target(this.weapon(), 'weapon'), banner_slug: this.slugForKind('weapon') }
+        : null,
       strategy: this.strategy(),
-      banner_slug: this.chosenBanner(),
     };
   }
 
@@ -291,6 +356,12 @@ export class WishesPage {
    * stay whatever the user last said**, because the banner cannot know them and silently
    * resetting a typed pity to zero is worse than leaving it.
    */
+  /** The chosen banner's slug, but only for the leg it is actually a banner for. */
+  private slugForKind(kind: 'character' | 'weapon'): string | null {
+    const picked = this.banner();
+    return picked && picked.kind === kind ? picked.slug : null;
+  }
+
   protected chooseBanner(banner: WishBannerRead | null): void {
     this.chosenBanner.set(banner?.slug ?? null);
     if (!banner) return;
@@ -305,6 +376,28 @@ export class WishesPage {
 
   protected isChosen(slug: string): boolean {
     return this.chosenBanner() === slug;
+  }
+
+  /** Open or close the banner picker for one custom row. */
+  protected togglePicker(index: number): void {
+    this.pickingFor.set(this.pickingFor() === index ? null : index);
+  }
+
+  /** Pick a banner for one row of a custom plan, filling in what the banner knows. */
+  protected chooseRowBanner(index: number, banner: WishBannerRead | null): void {
+    if (!this.rows()[index]) return;
+    const change: Partial<CustomRow> = { bannerSlug: banner?.slug ?? null };
+    if (banner) {
+      change.banner = banner.kind as 'character' | 'weapon';
+      change.label = banner.featured_five[0]?.name ?? '';
+    }
+    this.patchRow(index, change);
+    this.pickingFor.set(null);
+  }
+
+  /** The banner a custom row is on, when it is one of the loaded ones. */
+  protected rowBanner(entry: CustomRow): WishBannerRead | null {
+    return this.banners().find((b) => b.slug === entry.bannerSlug) ?? null;
   }
 
   /** `2026-09-23 11:00:00` as `Sep 2026` — the banner list is scanned, not read. */
@@ -324,7 +417,7 @@ export class WishesPage {
     const ticket = ++this.latest;
     this.pending.set(true);
     try {
-      const plan = await this.service.plan(request as never);
+      const plan = await this.service.plan(request);
       if (ticket !== this.latest) return;
       this.plan.set(plan);
       this.error.set(null);
@@ -402,7 +495,7 @@ export class WishesPage {
     const label = banner === 'character' ? 'Character' : 'Weapon';
     this.rows.set([
       ...this.rows(),
-      { ...position(`${label} ${this.rows().length + 1}`), banner, targetCopies: 1 },
+      row(banner, `${label} ${this.rows().length + 1}`),
     ]);
   }
 
@@ -416,13 +509,18 @@ export class WishesPage {
   protected moveRow(index: number, by: -1 | 1): void {
     const next = [...this.rows()];
     const to = index + by;
-    if (to < 0 || to >= next.length) return;
+    if (!next[index] || to < 0 || to >= next.length) return;
     [next[index], next[to]] = [next[to], next[index]];
     this.rows.set(next);
   }
 
   protected patchRow(index: number, change: Partial<CustomRow>): void {
     const next = [...this.rows()];
+    // **Guarded.** Spreading a row that does not exist produced one out of the change alone,
+    // so `ownedCopies` became `undefined`, the clamp below turned it into `NaN`, and it went
+    // out as `null` — a 422 whose message named a field the user never touched, on a row
+    // they never added.
+    if (!next[index]) return;
     next[index] = { ...next[index], ...change };
     // Changing the banner can leave a goal above the new banner's cap.
     const cap = MAX_COPIES[next[index].banner];
@@ -480,6 +578,9 @@ export class WishesPage {
   }
 
   protected refundLabel(tier: string): string {
+    if (tier === (this.limits()?.account_refund ?? ACCOUNT_REFUND)) {
+      return 'Calculate with my account';
+    }
     const percent = (this.limits()?.starglitter_refund_tiers[tier] ?? 0) * 100;
     if (tier === 'none') return 'None';
     const shape = { low: 'Low', average: 'Average', high: 'High' }[tier] ?? tier;

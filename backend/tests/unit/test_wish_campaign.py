@@ -372,3 +372,39 @@ def test_a_maximal_custom_plan_stays_interactive() -> None:
     plan = plan_campaign(legs, budget=100_000)
     assert len(plan.milestones) == 72
     assert plan.milestones[-1].success_chance == pytest.approx(1.0, abs=1e-6)
+
+
+# --- the banner belongs to a leg, because a campaign spans banners -----------------------
+
+
+def test_the_banner_rides_on_each_leg() -> None:
+    """A custom plan is several characters on several banners, and each one's featured
+    4-stars decide that leg's refund."""
+    plan = plan_campaign(
+        [
+            Leg(BannerKind.CHARACTER, "A", target_copies=1, banner_slug="one/2026-01-01"),
+            Leg(BannerKind.WEAPON, "W", target_copies=1, banner_slug="two/2026-02-01"),
+        ],
+        300,
+    )
+    assert [m.banner_slug for m in plan.milestones] == ["one/2026-01-01", "two/2026-02-01"]
+
+
+def test_campaign_for_carries_the_banner_through() -> None:
+    """Regression. `campaign_for` rebuilds the legs, and dropping the slug there sent every
+    plan back to the constant tier — the refund read as unavailable while a banner was
+    plainly picked, with nothing failing."""
+    legs = campaign_for(
+        Strategy.C0_FIRST,
+        Leg(BannerKind.CHARACTER, "F", banner_slug="character/2026-09-23"),
+        Leg(BannerKind.WEAPON, "S", banner_slug="weapon/2026-09-23"),
+    )
+    by_banner = {leg.banner: {leg.banner_slug} for leg in legs}
+    assert by_banner[BannerKind.CHARACTER] == {"character/2026-09-23"}
+    assert by_banner[BannerKind.WEAPON] == {"weapon/2026-09-23"}
+    assert all(leg.banner_slug for leg in legs), "every leg, not only the first of its banner"
+
+
+def test_a_leg_with_no_banner_keeps_none() -> None:
+    legs = campaign_for(Strategy.C0_FIRST, Leg(BannerKind.CHARACTER, "F"), WEAPON)
+    assert all(leg.banner_slug is None for leg in legs)

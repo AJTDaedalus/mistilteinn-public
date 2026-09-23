@@ -314,8 +314,40 @@ banner's featured third is *characters* and the weapon banner's is *weapons*, a 
 refunds **12.2 % on the character banner and 7.2 % on the weapon banner** — the same account,
 nearly double. The tiers above are the character banner's; a campaign mixing both is somewhere
 between, weighted by where the wishes go. That is a fourth reason the honest answer is
-computed rather than chosen from a dropdown, and it is cheap to add: the leg list already
-knows which banner each goal is on.
+computed rather than chosen from a dropdown.
+
+**Built, and weighted in spending order rather than in proportion** (`_refund_for_campaign`).
+A campaign spends *sequentially*: the ladder's own milestone walk gives each leg's expected
+cost, and the budget is filled down that list, `min(remaining, cost)` per rung, with each
+rung's spending credited to its own banner's rate.
+
+The proportional split this replaced was wrong in three ways that a test asserting
+`refund > 0` could not see:
+
+- **It priced wishes on banners the plan never reaches.** A 90-wish wallet aimed at a
+  character goal averaging 93.4 wishes still put 36 of those 90 on the weapon banner.
+  Measured against a maxed roster: 7.02 wishes back where the truth is 8.98, **22 % low**.
+- **It redistributed an unpriceable leg's spending instead of dropping it.** `total_cost`
+  summed only the *slugged* legs, so a row with no banner handed its share to the named ones —
+  **double** the refund, and the opposite of what the docstring promised. A leg whose banner
+  is merely *unknown* was dropped correctly, so the same situation was handled two ways.
+  Both now consume their budget and earn nothing.
+- **It priced the whole wallet.** A 2,000-wish wallet aimed at one ~93-wish goal reported a
+  refund over all 2,000. The `min(budget, …)` that claimed to guard this could never bind:
+  `cost <= total_cost` by construction, so it had exactly one answer.
+
+**The compounding is iterated to a fixed point, not done twice.** The refund buys wishes which
+refund again. The earlier note that "the third pass is under a wish" is false at scale: on a
+900-wish wallet against a maxed forty-character roster the passes run 96.82, 107.23, 108.42,
+108.53 to a fixed point of 108.40 — the third is worth **1.19** wishes. It is monotone and
+bounded, so it converges and can never *reduce* the reported refund.
+
+**One picker cannot label two legs.** Simple mode's single banner choice applies only to the
+leg whose kind it matches; the other sends no banner and earns nothing. Sending the same slug
+to both priced a weapon leg's pulls with a character banner's featured 4★ *characters* — a
+50 % featured rate against 75 % — and collapsed both legs onto one key, so the per-leg split
+did nothing in the default mode. Pairing a character with their signature weapon's own banner
+is the open item, not a second guess from the client.
 
 ### 9.4 Reading the account, and letting it be corrected
 
@@ -333,9 +365,21 @@ its `source`, and `builds.constellation_level` records how far along each is.
   are at C6 — rather than as a list.
 - **An existing account falls back until it re-imports.** `character_roster.constellation` is
   new and every row written before it is NULL, so a roster that has never been re-imported
-  supports no exact refund and the planner uses the tier instead. That is correct rather than
-  a gap — and it is visible, because the budget line only says *"from your roster"* when the
-  roster actually answered.
+  supports no exact refund.
+
+  **It falls back to `none`, not to a tier** (owner ruling, 2026-09-22). A tier the caller did
+  not choose is a number they have no reason to trust, and quietly substituting one is how the
+  control came to mean nothing: the account used to *override* whichever tier was selected, so
+  the dropdown sat reading "8.7% (Average)" while the roster priced the plan. `account` is now
+  a value of that control and its default, a tier is honoured when asked for, and
+  `refund_source` has a third verdict — `none` — which is distinct precisely because it is the
+  only one the caller did not pick.
+
+  It is visible, but **not as prose in the budget line**: that read *"(from your roster)"* and
+  was removed under the page's text convention — give the data, not a commentary on it. What
+  the user sees instead is the control itself showing *"Calculate with my account"*, and the
+  one warning the owner did approve, for the case where they asked for it and the roster could
+  not answer: *"No constellation data on account, providing refund options instead."*
 - **Missing is missing.** A character with no build has no constellation, and that is not
   "C0": it is unknown. Defaulting unknown to C0 would make a large roster read as though
   nothing were maxed and understate the refund; defaulting to C6 would do the reverse. The

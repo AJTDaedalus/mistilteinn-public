@@ -39,8 +39,12 @@ from app.services.wishes import (
     refund_tiers,
     refunded_budget,
 )
-from app.services.wishes.planner import MAX_CONSTELLATION, MAX_REFINEMENT, wishes_from
-from app.services.wishes.rates import primogems_per_wish
+from app.services.wishes.planner import (
+    MAX_CONSTELLATION,
+    MAX_REFINEMENT,
+    wishes_from,
+)
+from app.services.wishes.rates import ACCOUNT_REFUND, primogems_per_wish
 from app.services.wishes.refund import RefundInputs, expected_refund
 
 #: Highest Capturing Radiance counter the model has a rate for. **Derived, not typed**: the
@@ -83,6 +87,14 @@ class WishTarget(BaseModel):
         ),
     )
     owned_copies: int = Field(0, ge=0, description="Copies already held. C2 is 3; R3 is 3.")
+    banner_slug: str | None = Field(
+        None, max_length=200,
+        description=(
+            "A banner from `/wishes/banners`. **Per target, because a custom plan is several "
+            "characters on several banners** and each has its own featured 4-stars — which "
+            "are two thirds of every 4-star pulled, so they decide the refund."
+        ),
+    )
     target_copies: int | None = Field(
         None, ge=1,
         description=(
@@ -114,19 +126,14 @@ class WishPlanRequest(BaseModel):
         default_factory=list, max_length=12,
         description="Custom mode: goals in spending order. Each needs `target_copies`.",
     )
-    banner_slug: str | None = Field(
-        None, max_length=200,
-        description=(
-            "A banner from `/wishes/banners`. When given, the refund is computed **exactly** "
-            "from its featured 4-stars and the caller's roster instead of from a tier."
-        ),
-    )
     starglitter_refund: str = Field(
-        "none",
+        ACCOUNT_REFUND,
         description=(
-            "How much of the budget comes back as Masterless Starglitter: none, low "
-            "(every 4-star a weapon), average (an even split), high (every 4-star a maxed "
-            "character)."
+            "How much of the budget comes back as Masterless Starglitter. `account` (the "
+            "default) prices it exactly from the caller's own roster against the banner's "
+            "featured 4-stars, and falls back to `none` when the account cannot answer. The "
+            "constants are none, low (every 4-star a weapon), average (an even split), high "
+            "(every 4-star a maxed character)."
         ),
     )
     primogems: int = Field(0, ge=0, le=MAX_PRIMOGEMS)
@@ -178,7 +185,9 @@ class WishPlanRead(BaseModel):
         "tier",
         description=(
             "`roster` when the refund was computed exactly from the account and the banner's "
-            "featured 4-stars, `tier` when it came from the chosen constant."
+            "featured 4-stars, `tier` when it came from the chosen constant, and `none` when "
+            "the account was asked for and could not answer. The third is distinct because "
+            "it is the only one the caller did not choose: it is a request that declined."
         ),
     )
     refunded_wishes: int = Field(
@@ -238,39 +247,59 @@ async def create_plan(
     # the roster knows their constellations, which is the axis the tiers only approximate.
     # Validated whichever source wins. Moving this into the `else` branch alone meant a bogus
     # tier answered 200 as soon as a banner was picked, and was never reported.
+    # **The control means what it says.** `account` asks for the exact figure; a tier asks
+    # for that constant and gets it even when the roster could have answered better. Deciding
+    # for the caller is what made the dropdown a control that changed nothing — it sat there
+    # reading "8.7% (Average)" while the roster quietly priced the plan.
+    wants_account = payload.starglitter_refund == ACCOUNT_REFUND
+    tier = "none" if wants_account else payload.starglitter_refund
     try:
-        tier_budget = refunded_budget(wallet, payload.starglitter_refund)
+        tier_budget = refunded_budget(wallet, tier)
     except KeyError as error:
         raise HTTPException(
             status_code=400,
             detail=f"unknown starglitter refund tier: {payload.starglitter_refund!r}",
         ) from error
 
-    exact = None
-    if payload.banner_slug:
-        exact = await _refund_from_account(
-            session, str(user.id), payload.banner_slug, wallet,
-        )
-    if exact is not None:
-        # **Compounded, as the tier is.** The refund buys wishes which themselves refund, so
-        # pricing it over `wallet` alone and stopping drops the second order — and switching a
-        # banner on could make the reported refund *fall*. One more pass closes most of the
-        # gap; the third is under a wish.
-        second = await _refund_from_account(
-            session, str(user.id), payload.banner_slug, wallet + int(exact),
-        )
-        budget, refund_source = wallet + int(second if second is not None else exact), "roster"
-    else:
-        budget, refund_source = tier_budget, "tier"
-
+    # **Validated before anything prices it.** The refund pre-pass runs the ladder itself, so
+    # an unreachable leg used to raise from *there* — outside the handler thirty lines down —
+    # and the caller got a 500 "Internal server error" in place of the sentence explaining
+    # what was contradictory. Reachable straight from the UI: tick Guaranteed, leave the
+    # 50/50 counter at 0, pick any banner.
     try:
-        plan = plan_campaign(legs, budget=budget)
+        plan_campaign(legs, budget=0)
     except UnreachableStateError as error:
         # 422 rather than 400: the body is well-formed and each field is individually valid;
         # it is the combination that describes a situation the game cannot produce.
         raise HTTPException(status_code=422, detail=str(error)) from error
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
+
+    # **Priced per leg, because a campaign can span banners.** A custom plan is several
+    # characters on several banners and each one's featured 4-stars decide its own refund —
+    # pricing the whole plan off one banner was wrong the moment a second row existed.
+    exact = (
+        await _converged_refund(session, str(user.id), legs, wallet)
+        if wants_account else None
+    )
+    if exact is not None:
+        budget, refund_source = wallet + int(exact), "roster"
+    else:
+        # **Falls back to nothing, not to a tier.** A tier the caller did not pick is a number
+        # they have no reason to trust, and `none` is the only honest answer to "use my
+        # account" from an account that cannot say.
+        budget = tier_budget
+        if not wants_account:
+            refund_source = "tier"
+        elif not any(leg.banner_slug for leg in legs):
+            # **Distinct, because it is not the roster's fault.** Lumping this in with `none`
+            # made the page's own default state — type a wallet, do not open the picker —
+            # tell a fully-imported account it had no constellation data.
+            refund_source = "no_banner"
+        else:
+            refund_source = "none"
+
+    plan = plan_campaign(legs, budget=budget)
 
     return WishPlanRead(
         budget=plan.budget,
@@ -346,6 +375,96 @@ def _histogram(pmf: list[float] | None) -> list[WishHistogramBin]:
         for a, b in pairwise(edges)
         if b > a
     ]
+
+
+#: How many compounding passes past the first the refund may take before it is called done.
+_REFUND_PASSES = 6
+#: Stop compounding once a pass moves the refund by less than this many wishes.
+_REFUND_TOLERANCE = 0.25
+
+
+async def _converged_refund(
+    session: AsyncSession, owner_id: str, legs: list[Leg], wallet: int,
+) -> float | None:
+    """The refund at its fixed point, or None if the account cannot price any leg.
+
+    **Compounded, as the tier is.** The refund buys wishes which themselves refund, so pricing
+    it over `wallet` alone and stopping drops the second order — and switching a banner on
+    could then make the reported refund *fall*.
+
+    Iterated rather than done twice. The comment this replaces claimed "the third is under a
+    wish"; measured on a 900-wish wallet against a maxed forty-character roster the passes run
+    96.82, 107.23, 108.42, 108.53 to a fixed point of 108.40 — so the third pass is worth
+    **1.19** wishes, not under one, and two passes understate a large campaign. Monotone and
+    bounded (`expected_refund` increases in `pulls`, and the refund rate is far below 1), so
+    this converges; the cap is belt and braces.
+    """
+    refund = await _refund_for_campaign(session, owner_id, legs, wallet)
+    if refund is None:
+        return None
+    for _ in range(_REFUND_PASSES):
+        nxt = await _refund_for_campaign(session, owner_id, legs, wallet + int(refund))
+        if nxt is None or abs(nxt - refund) < _REFUND_TOLERANCE:
+            return nxt if nxt is not None else refund
+        refund = nxt
+    return refund
+
+
+async def _refund_for_campaign(
+    session: AsyncSession, owner_id: str, legs: list[Leg], budget: int,
+) -> float | None:
+    """The refund across a whole campaign, priced per leg.
+
+    Each leg is on its own banner, so each has its own featured 4-stars and its own refund
+    rate, and the budget is divided between them before either is priced.
+
+    **Filled in spending order, not in proportion to the whole campaign's cost.** A campaign
+    spends sequentially: with a small wallet every wish lands on the first leg's banner. The
+    proportional split this replaces gave a 90-wish wallet 53 wishes on the character banner
+    and 36 on the weapon banner — for a plan whose *first* goal averages 93.4 wishes, so 36 of
+    them were priced on a banner the player cannot reach, and the refund came out 22 % low.
+
+    It also stops at what the plan actually costs. A 2,000-wish wallet aimed at one C0 goal
+    spends about 93 wishes, and pricing the refund over all 2,000 reported wishes back that
+    nobody would ever earn.
+
+    Returns None when **no** leg could be priced from the account, which is the signal to fall
+    back to the caller's choice. A leg that cannot be priced — no banner named, or a banner the
+    table does not know — consumes its share of the budget and earns nothing, which
+    under-states rather than invents. **Both unpriceable cases are treated the same way**: they
+    used to diverge, with a missing slug redistributing its spending onto the named banners
+    (doubling the reported refund) while an unknown slug correctly dropped it.
+    """
+    if budget <= 0 or not any(leg.banner_slug for leg in legs):
+        return None
+
+    # Expected cost of each leg, from the ladder itself. Cheap: the plan is a few
+    # convolutions and this runs once per refund pass.
+    plan = plan_campaign(legs, budget=0)
+    spent_by_slug: dict[str, float] = {}
+    remaining = float(budget)
+    previous = 0.0
+    for milestone in plan.milestones:
+        cost = milestone.average_wishes - previous
+        previous = milestone.average_wishes
+        if remaining <= 0:
+            break
+        spend = min(remaining, cost)
+        remaining -= spend
+        # An unslugged milestone still consumes the budget; it simply earns nothing.
+        if milestone.banner_slug:
+            spent_by_slug[milestone.banner_slug] = (
+                spent_by_slug.get(milestone.banner_slug, 0.0) + spend
+            )
+
+    refund = 0.0
+    priced = False
+    for slug, spend in spent_by_slug.items():
+        leg_refund = await _refund_from_account(session, owner_id, slug, int(spend))
+        if leg_refund is not None:
+            refund += leg_refund
+            priced = True
+    return refund if priced else None
 
 
 async def _refund_from_account(
@@ -425,6 +544,7 @@ def _leg(target: WishTarget) -> Leg:
         lost_fifty_fifties=target.lost_fifty_fifties,
         owned_copies=target.owned_copies,
         target_copies=target.target_copies,
+        banner_slug=target.banner_slug,
     )
 
 
@@ -592,5 +712,8 @@ async def read_limits(user: _User) -> dict:
         "max_lost_fifty_fifties": MAX_LOST_FIFTY_FIFTIES,
         "strategies": [strategy.value for strategy in Strategy],
         "starglitter_refund_tiers": refund_tiers(),
+        # The page builds its dropdown from this, so the sentinel is not a
+        # string the client spells for itself.
+        "account_refund": ACCOUNT_REFUND,
         "banner_page": BANNER_PAGE,
     }
