@@ -11,6 +11,7 @@ import {
   type WishIncomeVersionRead,
   type WishLimits,
   type WishPlanRead,
+  type WishMilestoneRead,
   type WishPlanRequest,
   type WishStrategy,
   type WishTarget,
@@ -217,10 +218,43 @@ export class WishesPage {
     () => this.banners().length < this.bannerTotal(),
   );
 
-  /** The first rung that carries a histogram — what the chart draws. */
-  protected readonly charted = computed(
-    () => this.plan()?.milestones.find((m) => (m.histogram ?? []).length) ?? null,
-  );
+  /**
+   * Which rung the chart draws, by index into the plan's milestones.
+   *
+   * Null follows the plan: the first rung that has a histogram. Set, it is the rung the user
+   * clicked. Reset whenever a new plan arrives, because index 3 of one ladder is not the same
+   * goal as index 3 of another.
+   */
+  protected readonly chartedIndex = signal<number | null>(null);
+
+  /**
+   * The rung the chart draws.
+   *
+   * **Milestones are cumulative**, so a rung's distribution is already "reach this *and*
+   * everything before it" — C1 is C0+C1, the second row of a custom plan is both characters,
+   * and the weapon rung after C0 is C0R1. Selecting one needs no new maths; each milestone
+   * carries its own PMF.
+   */
+  protected readonly charted = computed(() => {
+    const milestones = this.plan()?.milestones ?? [];
+    const chosen = this.chartedIndex();
+    if (chosen !== null && (milestones[chosen]?.histogram ?? []).length) {
+      return milestones[chosen];
+    }
+    return milestones.find((m) => (m.histogram ?? []).length) ?? null;
+  });
+
+  /** True for the rung the chart is drawing, so the ladder can say which one that is. */
+  protected isCharted(milestone: WishMilestoneRead): boolean {
+    return this.charted() === milestone;
+  }
+
+  /** Draw this rung's distribution. A rung with no histogram is not selectable. */
+  protected chart(index: number): void {
+    const milestone = this.plan()?.milestones[index];
+    if (!milestone || !(milestone.histogram ?? []).length) return;
+    this.chartedIndex.set(index);
+  }
 
   /** First and last wish counts the chart covers. Computed here because indexing an
    *  optional array in a template is a type error the Angular compiler catches and
@@ -510,11 +544,19 @@ export class WishesPage {
     try {
       const plan = await this.service.plan(request);
       if (ticket !== this.latest) return;
+      // **Keep the chosen rung across a recompute, drop it when the ladder changes shape.**
+      // Typing a primogem re-plans the same goals, and resetting there would throw the
+      // selection away on every keystroke; adding or removing a goal makes index 3 a
+      // different thing, and keeping it would silently chart the wrong one.
+      if (plan.milestones.length !== (this.plan()?.milestones.length ?? -1)) {
+        this.chartedIndex.set(null);
+      }
       this.plan.set(plan);
       this.error.set(null);
     } catch (caught) {
       if (ticket !== this.latest) return;
       this.plan.set(null);
+      this.chartedIndex.set(null);
       this.error.set(this.describe(caught));
     } finally {
       if (ticket === this.latest) this.pending.set(false);

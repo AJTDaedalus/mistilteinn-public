@@ -419,11 +419,17 @@
       </thead>
       <tbody>
         @for (milestone of result.milestones; track $index) {
-          <tr [class.unreachable]="milestone.success_chance === 0">
+          <!-- Clicking a rung charts it. Milestones are cumulative, so this reads as
+               "the odds of getting this and everything above it" with no new maths. -->
+          <tr [class.unreachable]="milestone.success_chance === 0"
+              [class.ladder__row--charted]="isCharted(milestone)">
             <th scope="row" class="goal">
               <span [class]="barClass(milestone.success_chance)"
                     [style.width.%]="percent(milestone.success_chance)"></span>
-              <span class="goal__chip">{{ milestone.label }}</span>
+              <button type="button" class="goal__chip goal__chip--pick"
+                      [disabled]="!(milestone.histogram ?? []).length"
+                      [attr.aria-pressed]="isCharted(milestone)"
+                      (click)="chart($index)">{{ milestone.label }}</button>
             </th>
             <td>{{ percent(milestone.success_chance) | number: '1.1-1' }}%</td>
             <td>{{ milestone.average_wishes | number: '1.0-0' }}</td>

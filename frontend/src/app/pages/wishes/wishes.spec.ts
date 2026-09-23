@@ -1042,3 +1042,72 @@ describe('a custom row carries pity, guarantee and losses', () => {
     expect(page.rows()[0].guaranteed).toBe(false);
   });
 });
+
+describe('the histogram follows a chosen rung', () => {
+  const laddered = {
+    ...PLAN,
+    milestones: [
+      { ...PLAN.milestones[0], label: 'C0', histogram: [{ start: 0, end: 10, probability: 1 }] },
+      { ...PLAN.milestones[0], label: 'C1', histogram: [{ start: 0, end: 20, probability: 1 }] },
+    ],
+  };
+
+  /** It was pinned to the first rung with a histogram, and nothing said which that was. */
+  it('defaults to the first rung that has one', async () => {
+    const { page } = makePage({ plan: vi.fn().mockResolvedValue(laddered) });
+    await settled();
+    await page.recompute(page.request());
+    expect(page.charted()?.label).toBe('C0');
+    expect(page.isCharted(laddered.milestones[0])).toBe(true);
+  });
+
+  /**
+   * Milestones are cumulative, so charting C1 shows the odds of C0 *and* C1 — which is the
+   * owner's own example, along with "the second character in a custom plan to see the
+   * probability of both".
+   */
+  it('charts the rung that was clicked', async () => {
+    const { page } = makePage({ plan: vi.fn().mockResolvedValue(laddered) });
+    await settled();
+    await page.recompute(page.request());
+    page.chart(1);
+    expect(page.charted()?.label).toBe('C1');
+    expect(page.isCharted(laddered.milestones[1])).toBe(true);
+  });
+
+  it('refuses a rung with no distribution to draw', async () => {
+    const partial = {
+      ...laddered,
+      milestones: [laddered.milestones[0], { ...laddered.milestones[1], histogram: [] }],
+    };
+    const { page } = makePage({ plan: vi.fn().mockResolvedValue(partial) });
+    await settled();
+    await page.recompute(page.request());
+    page.chart(1);
+    expect(page.charted()?.label).toBe('C0');
+  });
+
+  /** A recompute of the same goals must not throw the selection away on every keystroke. */
+  it('keeps the chosen rung across a recompute of the same ladder', async () => {
+    const plan = vi.fn().mockResolvedValue(laddered);
+    const { page } = makePage({ plan });
+    await settled();
+    await page.recompute(page.request());
+    page.chart(1);
+    await page.recompute(page.request());
+    expect(page.charted()?.label).toBe('C1');
+  });
+
+  /** But index 3 of a different ladder is a different goal, so a shape change resets it. */
+  it('drops the chosen rung when the ladder changes shape', async () => {
+    const plan = vi.fn().mockResolvedValue(laddered);
+    const { page } = makePage({ plan });
+    await settled();
+    await page.recompute(page.request());
+    page.chart(1);
+    plan.mockResolvedValue({ ...laddered, milestones: [laddered.milestones[0]] });
+    await page.recompute(page.request());
+    expect(page.chartedIndex()).toBeNull();
+    expect(page.charted()?.label).toBe('C0');
+  });
+});
