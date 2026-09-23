@@ -528,14 +528,20 @@ async def test_the_plan_carries_the_exact_distribution(authed_client: AsyncClien
     assert all(a[1] <= b[0] for a, b in pairwise(edges))
 
 
-async def test_only_the_first_rungs_carry_a_histogram(authed_client: AsyncClient) -> None:
-    """Twelve charts nobody asked for is a payload, not a feature."""
+async def test_every_rung_carries_a_histogram(authed_client: AsyncClient) -> None:
+    """The ladder is the chart's selector, so every rung has to have one to draw.
+
+    This asserted the opposite — `0 < charted < total`, from when one chart was drawn pinned to
+    the first rung. Once clicking a rung charts it, a cap of three left nine of twelve chips
+    disabled with nothing saying why, and a four-row custom plan could not chart its fourth row.
+    """
     body = (await authed_client.post(
         "/api/v1/wishes/plan",
         json={"character": {"banner": "character"}, "primogems": 32_000},
     )).json()
     charted = [m for m in body["milestones"] if m["histogram"]]
-    assert 0 < len(charted) < len(body["milestones"])
+    assert len(charted) == len(body["milestones"])
+    assert charted, "a ladder with no distributions would make the selector pointless"
 
 
 # --- the refund read from the account ---------------------------------------------------
@@ -741,6 +747,47 @@ async def test_an_unowned_character_reports_nothing_rather_than_its_stored_const
     row = next(b for b in body["banners"] if b["slug"] == slug)
     held = {i["name"]: i["owned_copies"] for i in row["featured_four"]}
     assert held["Diona"] is None
+
+
+async def test_the_featured_five_carries_owned_copies_too(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """**The path the client actually reads.**
+
+    The first two tests for this field assert it on `featured_four`, which no frontend file
+    consumes; the picker names a goal from `featured_five`. So the consumed path had no test at
+    all while the unconsumed one had two.
+    """
+    user, _ = authed_user
+    slug = await _banner(db_session, featured_five=["Diona"])
+    await _owned_four_star(db_session, str(user.id), "Diona", 2)
+
+    body = (await authed_client.get("/api/v1/wishes/banners")).json()
+    row = next(b for b in body["banners"] if b["slug"] == slug)
+    assert row["featured_five"][0]["owned_copies"] == 2
+
+
+async def test_a_shared_name_is_not_resolved_to_whichever_row_came_last(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """Sixteen Travelers share one name, and the mannequins share two more.
+
+    `_refund_from_account` filters them by `nanoka_id`; this lookup keys by name, so it has to
+    refuse the ambiguous names outright rather than report whichever row the database returned
+    last.
+    """
+    user, _ = authed_user
+    slug = await _banner(db_session, featured_five=["Traveler"])
+    await _owned_four_star(
+        db_session, str(user.id), "Traveler", 1, nanoka_id="n-traveler-anemo",
+    )
+    await _owned_four_star(
+        db_session, str(user.id), "Traveler", 6, nanoka_id="n-traveler-geo",
+    )
+
+    body = (await authed_client.get("/api/v1/wishes/banners")).json()
+    row = next(b for b in body["banners"] if b["slug"] == slug)
+    assert row["featured_five"][0]["owned_copies"] is None
 
 
 async def test_the_signature_banner_is_resolved_over_the_table_not_the_page(

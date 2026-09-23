@@ -313,9 +313,9 @@ async def create_plan(
                 success_chance=milestone.success_chance,
                 average_wishes=milestone.average_wishes,
                 median_wishes=milestone.median_wishes,
-                histogram=_histogram(milestone.pmf) if index < CHARTED_RUNGS else [],
+                histogram=_histogram(milestone.pmf),
             )
-            for index, milestone in enumerate(plan.milestones)
+            for milestone in plan.milestones
         ],
         published_worst_case=rates_for(legs[0].banner).published_worst_case,
     )
@@ -354,8 +354,21 @@ def _legs_for(payload: WishPlanRequest) -> list[Leg]:
 HISTOGRAM_BINS = 40
 #: Below this a bin is empty for drawing purposes; it trims a long, invisible tail.
 HISTOGRAM_FLOOR = 1e-6
-#: Rungs that carry a histogram. The whole ladder would be twelve charts nobody asked for.
-CHARTED_RUNGS = 3
+#: Catalogue names shared by more than one row, so a name-keyed lookup cannot resolve them.
+#: Sixteen Travelers, and the practice mannequins (`Manekin`/`Manekina`, seven each).
+_AMBIGUOUS_NAMES = frozenset({"Traveler", "Manekin", "Manekina"})
+
+
+# **Every rung carries its histogram, now that the chart follows the one you click.**
+#
+# This used to be `CHARTED_RUNGS = 3`, from when the page drew one chart pinned to the first
+# rung — "the whole ladder would be twelve charts nobody asked for" was true then. It stopped
+# being true when the ladder became the selector: a C0-C6 plus R1-R5 plan is twelve rungs, so
+# nine of twelve chips rendered disabled with nothing saying why, and a four-row custom plan
+# could not chart its fourth row.
+#
+# The cost is one binning pass per rung over a PMF the convolution already produced — twelve
+# small arrays of `HISTOGRAM_BINS` bins, not twelve charts.
 
 
 def _histogram(pmf: list[float] | None) -> list[WishHistogramBin]:
@@ -728,6 +741,17 @@ async def list_banners(
                 )
             ).all(),
         )
+
+    # **The same duplicate-name guard `_refund_from_account` applies forty lines up.** Sixteen
+    # Travelers share one name and fourteen practice mannequins share two more, so keying by
+    # name lets whichever row the database returned last win. Harmless today only because no
+    # banner features those names — which is exactly the kind of thing that stops being true
+    # without anyone noticing, so it is filtered rather than relied upon.
+    held = {
+        name: constellation
+        for name, constellation in held.items()
+        if name not in _AMBIGUOUS_NAMES
+    }
 
     # Which of the concurrent banners is the weapon one. Resolved over the whole table rather
     # than the page, because the page is exactly what the client could already see.

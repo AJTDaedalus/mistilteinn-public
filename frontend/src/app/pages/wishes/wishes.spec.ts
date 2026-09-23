@@ -365,11 +365,9 @@ describe('WishesPage', () => {
       expect(page.upcoming().find((v: any) => v.version === '7.1').is_estimate).toBe(true);
     });
 
-    it('records when the store was last refreshed', async () => {
-      const { page } = makePage();
-      await settled();
-      expect(page.incomeFetchedAt()).toBe('2026-09-22T12:00:00Z');
-    });
+    // The "Refreshed …" line was removed at the owner's request, and with it the only reader
+    // of `fetched_at` — so the signal and the `DatePipe` went with it rather than staying
+    // tested and rendered nowhere.
   });
 });
 

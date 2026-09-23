@@ -1,4 +1,4 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
@@ -59,7 +59,14 @@ function position(label = ''): Position {
   return { label, pity: 0, guaranteed: false, lostFiftyFifties: 0, ownedCopies: 0 };
 }
 
-function row(banner: 'character' | 'weapon', label: string): CustomRow {
+/**
+ * A fresh row.
+ *
+ * **No placeholder label.** The free-text editor is gone, so a made-up `"Weapon 2"` could never
+ * be changed and went out as the goal's name — the ladder printed `Weapon 2 R1`. Empty means the
+ * banner has not named it yet, and `plan_campaign` builds the rung label with `.strip()`.
+ */
+function row(banner: 'character' | 'weapon', label = ''): CustomRow {
   return { ...position(label), banner, targetCopies: 1, bannerSlug: null };
 }
 
@@ -89,7 +96,7 @@ const ACCOUNT_REFUND = 'account';
 
 @Component({
   selector: 'app-wishes',
-  imports: [FormsModule, DecimalPipe, DatePipe, CatalogueIcon],
+  imports: [FormsModule, DecimalPipe, CatalogueIcon],
   templateUrl: './wishes.html',
   styleUrl: './wishes.scss',
 })
@@ -128,7 +135,6 @@ export class WishesPage {
 
   protected readonly limits = signal<WishLimits | null>(null);
   protected readonly income = signal<WishIncomeVersionRead[]>([]);
-  protected readonly incomeFetchedAt = signal<string | null>(null);
   protected readonly plan = signal<WishPlanRead | null>(null);
   protected readonly error = signal<string | null>(null);
   protected readonly pending = signal(false);
@@ -238,6 +244,16 @@ export class WishesPage {
   protected readonly chartedIndex = signal<number | null>(null);
 
   /**
+   * The label of the chosen rung, so a reshape that keeps the ladder's *length* is still caught.
+   *
+   * Length alone was not enough and the doc above the guard claimed otherwise. Flipping the
+   * strategy from `c0_first` to `r1_first` keeps **12** milestones and swaps rungs 0 and 1, so
+   * a click on R1 silently ended up drawing C0 — measured. Labels repeat in a custom plan (two
+   * rows can both be "C0"), so this pairs with the index rather than replacing it.
+   */
+  private chartedLabel: string | null = null;
+
+  /**
    * The rung the chart draws.
    *
    * **Milestones are cumulative**, so a rung's distribution is already "reach this *and*
@@ -263,6 +279,7 @@ export class WishesPage {
   protected chart(index: number): void {
     const milestone = this.plan()?.milestones[index];
     if (!milestone || !(milestone.histogram ?? []).length) return;
+    this.chartedLabel = milestone.label;
     this.chartedIndex.set(index);
   }
 
@@ -388,7 +405,6 @@ export class WishesPage {
       const [limits, income] = await Promise.all([this.service.limits(), this.service.income()]);
       this.limits.set(limits);
       this.income.set(income.versions);
-      this.incomeFetchedAt.set(income.fetched_at ?? null);
       await this.loadBanners(0);
     } catch {
       this.error.set('Could not load the planner’s reference data.');
@@ -435,14 +451,18 @@ export class WishesPage {
     this.chosenBanner.set(banner?.slug ?? null);
     if (!banner) return;
     if (banner.kind === 'character') {
-      this.patch('character', { label: banner.featured_five[0]?.name ?? '' });
+      // The roster's answer, in simple mode too. Reading it only in custom mode left the
+      // default mode asking the user to retype the constellation the response just delivered.
+      this.patch('character', this.fromFeatured(banner.featured_five[0]));
       // **The weapon goal is left as the user set it.** Forcing it off here meant one click
       // lit the paired banner in brass, captioned it "Signature", and sent `weapon: null` --
       // two halves of one screen asserting opposite things. The new test only passed because
       // it set `planWeapon(true)` on the next line, undoing the one thing production did.
     } else {
       this.planWeapon.set(true);
-      this.patch('weapon', { label: banner.featured_five[0]?.name ?? '' });
+      // A weapon banner has two 5-stars and no weapon roster exists, so this names the first
+      // and carries no owned count — `fromFeatured` returns 0 for a null, which is "None".
+      this.patch('weapon', this.fromFeatured(banner.featured_five[0]));
     }
   }
 
@@ -495,11 +515,14 @@ export class WishesPage {
    * Null stays 0: "nobody has said" is not "I have one".
    */
   private fromFeatured(item: WishFeaturedItem | undefined): Partial<CustomRow> {
-    if (!item) return { label: '', ownedCopies: 0 };
-    const owned = item.owned_copies === null || item.owned_copies === undefined
-      ? 0
-      : item.owned_copies + 1;
-    return { label: item.name, ownedCopies: owned };
+    if (!item) return { label: '' };
+    // **Only when the roster actually knows.** Null is "nobody has said", and writing that
+    // across as 0 would wipe a count the user had typed themselves and replace it with a
+    // claim the account never made.
+    if (item.owned_copies === null || item.owned_copies === undefined) {
+      return { label: item.name };
+    }
+    return { label: item.name, ownedCopies: item.owned_copies + 1 };
   }
 
   /** The featured 5-stars a row may name its goal after. */
@@ -587,8 +610,10 @@ export class WishesPage {
       // Typing a primogem re-plans the same goals, and resetting there would throw the
       // selection away on every keystroke; adding or removing a goal makes index 3 a
       // different thing, and keeping it would silently chart the wrong one.
-      if (plan.milestones.length !== (this.plan()?.milestones.length ?? -1)) {
+      const chosen = this.chartedIndex();
+      if (chosen === null || plan.milestones[chosen]?.label !== this.chartedLabel) {
         this.chartedIndex.set(null);
+        this.chartedLabel = null;
       }
       this.plan.set(plan);
       this.error.set(null);
@@ -596,6 +621,7 @@ export class WishesPage {
       if (ticket !== this.latest) return;
       this.plan.set(null);
       this.chartedIndex.set(null);
+      this.chartedLabel = null;
       this.error.set(this.describe(caught));
     } finally {
       if (ticket === this.latest) this.pending.set(false);
@@ -664,11 +690,9 @@ export class WishesPage {
 
   protected addRow(banner: 'character' | 'weapon'): void {
     if (!this.canAddRow()) return;
-    const label = banner === 'character' ? 'Character' : 'Weapon';
-    this.rows.set([
-      ...this.rows(),
-      row(banner, `${label} ${this.rows().length + 1}`),
-    ]);
+    // Unnamed until a banner names it. The invented `"Weapon 2"` had no editor to change it and
+    // was sent as the goal's name, so the ladder printed `Weapon 2 R1`.
+    this.rows.set(this.normalised([...this.rows(), row(banner)]));
   }
 
   protected removeRow(index: number): void {
