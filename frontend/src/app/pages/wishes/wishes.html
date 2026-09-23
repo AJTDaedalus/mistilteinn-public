@@ -264,7 +264,11 @@
                      inputmode="numeric" [value]="row.pity"
                      (change)="setNumber($event.target, (v) => patchRow(rowIndex, { pity: v }), rowHardPity(row) - 1)" />
             </label>
-            <label class="row__pair">
+            <!-- **A `span`, not a `label`.** A `<label>` wrapping a group of buttons
+                 associates with no form element at all, which `ng lint` rejects and which
+                 `frontend/CLAUDE.md` already records from #131. The group carries its own
+                 accessible name. -->
+            <span class="row__pair">
               <span>guaranteed</span>
               <div class="segmented segmented--small" role="group" aria-label="Guaranteed">
                 <button type="button" [class.on]="!row.guaranteed"
@@ -272,7 +276,7 @@
                 <button type="button" [class.on]="row.guaranteed"
                         (click)="setRowGuaranteed(rowIndex, true)">✓</button>
               </div>
-            </label>
+            </span>
             <!-- Capturing Radiance is one account-wide counter and the backend refuses it on
                  a later target, so only the first row may carry it, and only a character one. -->
             @if (rowIndex === 0 && row.banner === 'character') {
