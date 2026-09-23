@@ -790,6 +790,104 @@ async def test_a_shared_name_is_not_resolved_to_whichever_row_came_last(
     assert row["featured_five"][0]["owned_copies"] is None
 
 
+async def test_each_rung_is_funded_by_the_wishes_spent_reaching_it(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """Owner ruling, 2026-09-22: pulls stop at the goal.
+
+    *"refunds gained going after C0 applied to C0, etc"* — so a shallow rung must not be
+    funded by starglitter from pulls nobody makes on the way to a deeper one.
+    """
+    user, _ = authed_user
+    slug = await _banner(db_session)
+    for name in ("Diona", "Faruzan", "Chongyun", "Bennett"):
+        await _owned_four_star(db_session, str(user.id), name, 6)
+
+    body = (await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={"character": {"banner": "character", "banner_slug": slug},
+              "primogems": 48_000, "starglitter_refund": "account"},
+    )).json()
+    budgets = [m["budget"] for m in body["milestones"]]
+    wallet = body["wallet_wishes"]
+
+    assert budgets[0] > wallet, "the first rung still earns a refund on the way to itself"
+    assert budgets[0] < budgets[-1], (
+        "a deeper rung costs more, so it earns more -- if every rung got the same figure the "
+        "refund is still being priced over the whole wallet"
+    )
+    # Non-decreasing: deeper rungs are reached by spending strictly more.
+    assert all(a <= b for a, b in pairwise(budgets))
+    # And a bigger budget on a deeper rung must not make it read as *more* likely.
+    chances = [m["success_chance"] for m in body["milestones"]]
+    assert all(a >= b - 1e-12 for a, b in pairwise(chances))
+
+
+async def test_two_ways_of_asking_for_two_featured_wins_agree(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """C1 of one character and C0 of two are the same two featured wins.
+
+    The owner found these disagreeing. Two causes: simple mode priced the refund over the
+    whole wallet because its ladder runs C0-C6, and the refund was keyed by *banner slug* so
+    two concurrent banners sharing one 4-star lineup had their pulls split and truncated
+    twice. Both are fixed, and the two now agree exactly rather than approximately.
+    """
+    user, _ = authed_user
+    for name in ("Diona", "Faruzan", "Chongyun", "Bennett"):
+        await _owned_four_star(db_session, str(user.id), name, 6)
+    one = await _banner(db_session, slug="Alpha/2026-03-03", name="Alpha")
+    # **The same featured 4-stars**, which is what makes them one refund pool.
+    two = await _banner(db_session, slug="Beta/2026-03-03", name="Beta")
+
+    simple = (await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={"character": {"banner": "character", "banner_slug": one, "target_copies": 2},
+              "strategy": "c1_first", "primogems": 48_000,
+              "starglitter_refund": "account"},
+    )).json()
+    custom = (await authed_client.post(
+        "/api/v1/wishes/plan",
+        json={"targets": [
+            {"banner": "character", "target_copies": 1, "banner_slug": one},
+            {"banner": "character", "target_copies": 1, "banner_slug": two}],
+            "primogems": 48_000, "starglitter_refund": "account"},
+    )).json()
+
+    a, b = simple["milestones"][1], custom["milestones"][1]
+    assert a["budget"] == b["budget"]
+    assert a["success_chance"] == pytest.approx(b["success_chance"], abs=1e-12)
+
+
+async def test_banners_sharing_a_four_star_lineup_pool_their_pulls(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """Constellations fill from one pool, so the pulls belong together.
+
+    Keying the refund by banner slug split a plan's pulls between two concurrent banners with
+    the same lineup, truncating the count twice and double-counting "the first copy of an
+    unowned 4-star is free".
+    """
+    user, _ = authed_user
+    for name in ("Diona", "Faruzan", "Chongyun", "Bennett"):
+        await _owned_four_star(db_session, str(user.id), name, 6)
+    one = await _banner(db_session, slug="Gamma/2026-04-04", name="Gamma")
+    two = await _banner(db_session, slug="Delta/2026-04-04", name="Delta")
+
+    async def budget(second_slug: str) -> int:
+        body = (await authed_client.post(
+            "/api/v1/wishes/plan",
+            json={"targets": [
+                {"banner": "character", "target_copies": 1, "banner_slug": one},
+                {"banner": "character", "target_copies": 1, "banner_slug": second_slug}],
+                "primogems": 48_000, "starglitter_refund": "account"},
+        )).json()
+        return body["milestones"][1]["budget"]
+
+    # Same lineup on both banners, so splitting across them must cost nothing.
+    assert await budget(two) == await budget(one)
+
+
 async def test_the_signature_banner_is_resolved_over_the_table_not_the_page(
     authed_client: AsyncClient, db_session: AsyncSession,
 ) -> None:

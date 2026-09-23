@@ -162,6 +162,13 @@
   strong { color: var(--ink); }
 }
 
+/* The headline figure funds the *whole* plan; each rung's own figure is in the ladder. */
+.budget__note {
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+  margin-left: var(--space-2);
+}
+
 .ladder {
   border-collapse: collapse;
   width: 100%;
@@ -317,7 +324,6 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.row__name { flex: 1 1 8rem; min-width: 6rem; }
 
 .row__pair {
   align-items: center;

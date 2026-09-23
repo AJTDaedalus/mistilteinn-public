@@ -391,6 +391,7 @@
         @if (projectedWishes()) { + {{ projectedWishes() | number }} projected }
         @if (result.refunded_wishes) { + {{ result.refunded_wishes | number }} refund }
         = <strong>{{ result.budget | number }} wishes</strong>
+        <span class="budget__note">reaching every goal</span>
       </p>
     }
   </div>
@@ -421,13 +422,17 @@
 
   @if (plan(); as result) {
     <table class="ladder" [class.ladder--stale]="pending()">
+      <!-- **No single budget in the header any more.** Pulls stop at the goal, so each rung
+           is funded by the wishes spent reaching *it* and carries its own figure. Naming one
+           number here would have been the wrong one for eleven of twelve rows. -->
       <caption class="visually-hidden">
-        Chance of reaching each milestone on {{ result.budget }} wishes
+        Chance of reaching each milestone, each on the wishes spent to reach it
       </caption>
       <thead>
         <tr>
           <th scope="col">Goal</th>
-          <th scope="col">Chance with {{ result.budget | number }}</th>
+          <th scope="col">Chance</th>
+          <th scope="col">Wishes available</th>
           <th scope="col">Average needed</th>
           <th scope="col">Median</th>
         </tr>
@@ -447,6 +452,7 @@
                       (click)="chart($index)">{{ milestone.label }}</button>
             </th>
             <td>{{ percent(milestone.success_chance) | number: '1.1-1' }}%</td>
+            <td>{{ milestone.budget | number }}</td>
             <td>{{ milestone.average_wishes | number: '1.0-0' }}</td>
             <td>{{ milestone.median_wishes === null ? '—' : (milestone.median_wishes | number) }}</td>
           </tr>
