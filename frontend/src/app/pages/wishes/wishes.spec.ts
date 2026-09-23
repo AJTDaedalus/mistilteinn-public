@@ -35,7 +35,7 @@ const PLAN: WishPlanRead = {
   published_worst_case: 180,
   milestones: [
     {
-      copies: 1, label: 'Furina C0', success_chance: 1, average_wishes: 93.45,
+      copies: 1, label: 'Furina C0', success_chance: 1, average_wishes: 93.45, budget: 0,
       median_wishes: 80,
       histogram: [
         { start: 60, end: 70, probability: 0.2 },

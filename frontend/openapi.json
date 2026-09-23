@@ -13162,6 +13162,12 @@
             "type": "number",
             "title": "Average Wishes"
           },
+          "budget": {
+            "type": "integer",
+            "title": "Budget",
+            "description": "Wishes available **if this rung is the goal**. Pulls stop once the goal is reached, so the starglitter a rung is credited with is earned by the wishes spent getting to that rung and no further \u2014 a shallow rung is not funded by pulls nobody makes. Non-decreasing down the ladder, because deeper rungs cost more and so earn more on the way.",
+            "default": 0
+          },
           "median_wishes": {
             "anyOf": [
               {

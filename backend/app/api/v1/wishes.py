@@ -10,7 +10,7 @@ discrete convolutions; looking a result up would cost more than producing it.
 from __future__ import annotations
 
 from itertools import pairwise
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -42,10 +42,14 @@ from app.services.wishes import (
 from app.services.wishes.planner import (
     MAX_CONSTELLATION,
     MAX_REFINEMENT,
+    Milestone,
     wishes_from,
 )
 from app.services.wishes.rates import ACCOUNT_REFUND, primogems_per_wish
 from app.services.wishes.refund import RefundInputs, expected_refund
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
 
 #: Highest Capturing Radiance counter the model has a rate for. **Derived, not typed**: the
 #: table's last entry is 1.0 ("you cannot lose a fourth"), so its length is the answer and a
@@ -162,6 +166,16 @@ class WishMilestoneRead(BaseModel):
     label: str = Field(description='What a player calls this rung: "C3", "R2".')
     success_chance: float = Field(ge=0.0, le=1.0)
     average_wishes: float
+    budget: int = Field(
+        0,
+        description=(
+            "Wishes available **if this rung is the goal**. Pulls stop once the goal is "
+            "reached, so the starglitter a rung is credited with is earned by the wishes "
+            "spent getting to that rung and no further — a shallow rung is not funded by "
+            "pulls nobody makes. Non-decreasing down the ladder, because deeper rungs cost "
+            "more and so earn more on the way."
+        ),
+    )
     median_wishes: int | None = Field(
         description="Wishes at which the chance first reaches 50%, or null if it never does."
     )
@@ -275,15 +289,28 @@ async def create_plan(
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
-    # **Priced per leg, because a campaign can span banners.** A custom plan is several
-    # characters on several banners and each one's featured 4-stars decide its own refund —
-    # pricing the whole plan off one banner was wrong the moment a second row existed.
-    exact = (
-        await _converged_refund(session, str(user.id), legs, wallet)
-        if wants_account else None
-    )
+    # **One budget per rung** (owner ruling, 2026-09-22): *"Pulls stop once the plan is
+    # complete or success is reached … refunds gained going after C0 applied to C0."* A rung's
+    # budget is the fixed point of `S = wallet + refund(spend down to that rung)`, so a goal
+    # reached early is never credited with starglitter from pulls nobody makes. Simple mode
+    # used to price the whole wallet because its ladder runs C0→C6, which is what made an
+    # equivalent goal disagree between the two modes.
+    pools: dict[str, RefundInputs | None] = {}
+    if wants_account:
+        for slug in {leg.banner_slug for leg in legs if leg.banner_slug}:
+            pools[slug] = await _refund_inputs(session, str(user.id), slug)
+
+    def pool_of(slug: str) -> RefundInputs | None:
+        return pools.get(slug)
+
+    ladder = plan_campaign(legs, budget=0).milestones
+    rung_budgets: list[int | None] = [
+        _budget_for_rung(wallet, ladder, index, pool_of) if wants_account else None
+        for index in range(len(ladder))
+    ]
+    exact = next((b for b in reversed(rung_budgets) if b is not None), None)
     if exact is not None:
-        budget, refund_source = wallet + int(exact), "roster"
+        budget, refund_source = exact, "roster"
     else:
         # **Falls back to nothing, not to a tier.** A tier the caller did not pick is a number
         # they have no reason to trust, and `none` is the only honest answer to "use my
@@ -300,6 +327,13 @@ async def create_plan(
             refund_source = "none"
 
     plan = plan_campaign(legs, budget=budget)
+    # `success_chance` is exactly `pmf[: budget + 1].sum()` and `pmf` does not depend on the
+    # budget, so re-reading a rung at its own budget needs no second convolution.
+    per_rung = [
+        (rung_budgets[index] if index < len(rung_budgets) and rung_budgets[index] is not None
+         else budget)
+        for index in range(len(plan.milestones))
+    ]
 
     return WishPlanRead(
         budget=plan.budget,
@@ -310,12 +344,13 @@ async def create_plan(
             WishMilestoneRead(
                 copies=milestone.copies,
                 label=milestone.label,
-                success_chance=milestone.success_chance,
+                success_chance=_chance_at(milestone, per_rung[index]),
+                budget=per_rung[index],
                 average_wishes=milestone.average_wishes,
                 median_wishes=milestone.median_wishes,
                 histogram=_histogram(milestone.pmf),
             )
-            for milestone in plan.milestones
+            for index, milestone in enumerate(plan.milestones)
         ],
         published_worst_case=rates_for(legs[0].banner).published_worst_case,
     )
@@ -371,6 +406,20 @@ _AMBIGUOUS_NAMES = frozenset({"Traveler", "Manekin", "Manekina"})
 # small arrays of `HISTOGRAM_BINS` bins, not twelve charts.
 
 
+def _chance_at(milestone: Milestone, budget: int) -> float:
+    """This rung's chance on its *own* budget.
+
+    `plan_campaign` already computed `success_chance` as `pmf[: budget + 1].sum()` against one
+    shared budget. The PMF does not depend on the budget, so re-reading it at the rung's own
+    budget is the same arithmetic on the same array — no second convolution, no new maths.
+    """
+    if not milestone.pmf:
+        return milestone.success_chance
+    if budget < 0:
+        return 0.0
+    return float(sum(milestone.pmf[: budget + 1]))
+
+
 def _histogram(pmf: list[float] | None) -> list[WishHistogramBin]:
     """Bin an exact PMF for drawing, trimmed to where the mass actually is."""
     if not pmf:
@@ -396,88 +445,151 @@ _REFUND_PASSES = 6
 _REFUND_TOLERANCE = 0.25
 
 
-async def _converged_refund(
-    session: AsyncSession, owner_id: str, legs: list[Leg], wallet: int,
-) -> float | None:
-    """The refund at its fixed point, or None if the account cannot price any leg.
+async def _refund_inputs(
+    session: AsyncSession, owner_id: str, banner_slug: str,
+) -> RefundInputs | None:
+    """What this account's refund on this banner depends on, or None if it cannot be priced.
 
-    **Compounded, as the tier is.** The refund buys wishes which themselves refund, so pricing
-    it over `wallet` alone and stopping drops the second order — and switching a banner on
-    could then make the reported refund *fall*.
+    Split out from the pricing so the database is touched **once per banner**, not once per
+    rung per pass. `RefundInputs` is hashable and `refund_pmf` is `lru_cache`d, so everything
+    after this is pure arithmetic — which is what makes a budget per rung affordable.
 
-    Iterated rather than done twice. The comment this replaces claimed "the third is under a
-    wish"; measured on a 900-wish wallet against a maxed forty-character roster the passes run
-    96.82, 107.23, 108.42, 108.53 to a fixed point of 108.40 — so the third pass is worth
-    **1.19** wishes, not under one, and two passes understate a large campaign. Monotone and
-    bounded (`expected_refund` increases in `pulls`, and the refund rate is far below 1), so
-    this converges; the cap is belt and braces.
+    **None rather than a guess.** An unknown banner, or a roster that has said nothing about
+    any 4-star, is a reason to fall back to the caller's choice and say so, not to invent an
+    account.
+
+    **The banner decides the kind, not the plan's first leg.** Reading it off `legs[0]` meant
+    picking a weapon banner while the strategy happened to start on the character leg priced
+    five *weapon* names as unowned *characters*; the mirror case threw away three real
+    constellations. The row knows what it is.
     """
-    refund = await _refund_for_campaign(session, owner_id, legs, wallet)
-    if refund is None:
+    row = (await session.execute(
+        select(WishBanner).where(WishBanner.slug == banner_slug),
+    )).scalar_one_or_none()
+    if row is None:
         return None
-    for _ in range(_REFUND_PASSES):
-        nxt = await _refund_for_campaign(session, owner_id, legs, wallet + int(refund))
-        if nxt is None or abs(nxt - refund) < _REFUND_TOLERANCE:
-            return nxt if nxt is not None else refund
-        refund = nxt
-    return refund
+    banner = BannerKind(row.kind)
+
+    # **Owned 4-star characters only.** Without the rarity filter every 5-star the account
+    # owns joined the pool a non-featured *4-star* draw spreads over, diluting it; without
+    # the ownership filter a character explicitly marked not-owned still contributed, because
+    # un-owning one keeps its stored constellation.
+    rows = (
+        await session.execute(
+            select(Character.nanoka_id, Character.name, CharacterRosterEntry.constellation)
+            .join(CharacterRosterEntry, CharacterRosterEntry.character_id == Character.id)
+            .where(
+                CharacterRosterEntry.owner_id == owner_id,
+                CharacterRosterEntry.owned.is_(True),
+                Character.rarity == Rarity.FOUR_STAR,
+            ),
+        )
+    ).all()
+
+    featured_names = set(row.featured_four)
+    featured: list[int | None] = [None] * len(row.featured_four)
+    roster: list[int | None] = []
+    for nanoka_id, name, constellation in rows:
+        # Sixteen Travelers share the name `Traveler` and fourteen mannequins share two more,
+        # so keying by name collapses thirty rows to three and lets whichever the database
+        # returned last win. Mannequins are not ownable characters at all.
+        if is_mannequin(nanoka_id):
+            continue
+        if name in featured_names:
+            featured[row.featured_four.index(name)] = constellation
+        elif constellation is not None:
+            # **An unknown constellation is left out, not passed through.** `None` means
+            # "not owned" to `payout`, which gives the first copy away free — so forwarding a
+            # NULL would understate exactly the accounts the column was added for.
+            roster.append(constellation)
+
+    if not roster and all(value is None for value in featured):
+        return None
+
+    return RefundInputs(
+        banner=banner,
+        # The weapon banner's featured 4-stars are weapons: a flat 2 apiece, no roster.
+        featured=tuple(featured) if banner is BannerKind.CHARACTER else (),
+        roster=tuple(roster),
+    )
 
 
-async def _refund_for_campaign(
-    session: AsyncSession, owner_id: str, legs: list[Leg], budget: int,
-) -> float | None:
-    """The refund across a whole campaign, priced per leg.
+def _spend_by_pool(
+    milestones: Sequence[Milestone],
+    budget: float,
+    upto: int,
+    pool_of: Callable[[str], RefundInputs | None],
+) -> dict[RefundInputs, float]:
+    """Fill `budget` down the ladder as far as rung `upto`, grouped by refund pool.
 
-    Each leg is on its own banner, so each has its own featured 4-stars and its own refund
-    rate, and the budget is divided between them before either is priced.
-
-    **Filled in spending order, not in proportion to the whole campaign's cost.** A campaign
-    spends sequentially: with a small wallet every wish lands on the first leg's banner. The
+    **Filled in spending order, not in proportion to the campaign's cost.** A campaign spends
+    sequentially: with a small wallet every wish lands on the first leg's banner. The
     proportional split this replaces gave a 90-wish wallet 53 wishes on the character banner
-    and 36 on the weapon banner — for a plan whose *first* goal averages 93.4 wishes, so 36 of
-    them were priced on a banner the player cannot reach, and the refund came out 22 % low.
+    and 36 on the weapon banner — for a plan whose *first* goal averages 93.4 — so the refund
+    came out 22 % low.
 
-    It also stops at what the plan actually costs. A 2,000-wish wallet aimed at one C0 goal
-    spends about 93 wishes, and pricing the refund over all 2,000 reported wishes back that
-    nobody would ever earn.
+    **Stops at `upto`, which is the owner's ruling**: pulls stop once the goal is reached, so
+    the refund a rung is credited with is earned by the wishes spent getting *to that rung* —
+    "refunds gained going after C0 applied to C0".
 
-    Returns None when **no** leg could be priced from the account, which is the signal to fall
-    back to the caller's choice. A leg that cannot be priced — no banner named, or a banner the
-    table does not know — consumes its share of the budget and earns nothing, which
-    under-states rather than invents. **Both unpriceable cases are treated the same way**: they
-    used to diverge, with a missing slug redistributing its spending onto the named banners
-    (doubling the reported refund) while an unknown slug correctly dropped it.
+    **Grouped by `RefundInputs`, not by banner slug.** Two concurrent character banners share
+    one featured 4-star lineup, so pulls against either draw from the same pool and fill the
+    same constellations. Keying by slug split them, truncated the pull count twice, and
+    double-counted "the first copy of an unowned 4-star is free" — which is why reaching C1 on
+    one character and C0 on two disagreed when they are the same two featured wins.
+
+    A rung whose banner cannot be priced still consumes its share of the budget and earns
+    nothing: under-stating rather than inventing.
     """
-    if budget <= 0 or not any(leg.banner_slug for leg in legs):
-        return None
-
-    # Expected cost of each leg, from the ladder itself. Cheap: the plan is a few
-    # convolutions and this runs once per refund pass.
-    plan = plan_campaign(legs, budget=0)
-    spent_by_slug: dict[str, float] = {}
+    spent: dict[RefundInputs, float] = {}
     remaining = float(budget)
     previous = 0.0
-    for milestone in plan.milestones:
+    for index, milestone in enumerate(milestones):
+        if index > upto:
+            break
         cost = milestone.average_wishes - previous
         previous = milestone.average_wishes
         if remaining <= 0:
             break
         spend = min(remaining, cost)
         remaining -= spend
-        # An unslugged milestone still consumes the budget; it simply earns nothing.
-        if milestone.banner_slug:
-            spent_by_slug[milestone.banner_slug] = (
-                spent_by_slug.get(milestone.banner_slug, 0.0) + spend
-            )
+        pool = pool_of(milestone.banner_slug) if milestone.banner_slug else None
+        if pool is not None:
+            spent[pool] = spent.get(pool, 0.0) + spend
+    return spent
 
+
+def _budget_for_rung(
+    wallet: int,
+    milestones: Sequence[Milestone],
+    upto: int,
+    pool_of: Callable[[str], RefundInputs | None],
+) -> int | None:
+    """Wishes available if rung `upto` is the goal, or None if nothing can be priced.
+
+    The fixed point of `S = wallet + refund(spend down to rung upto, capped at S)`. Iterated
+    rather than done twice: measured on a 900-wish wallet against a maxed forty-character
+    roster the passes run 96.82, 107.23, 108.42, 108.53 to a fixed point of 108.40, so the
+    third pass is worth **1.19** wishes — the comment this replaces claimed it was under one.
+
+    Monotone and bounded (`expected_refund` increases in `pulls`, and the refund rate is far
+    below 1), so it converges; the pass cap is belt and braces.
+    """
+    if wallet <= 0:
+        return None
     refund = 0.0
     priced = False
-    for slug, spend in spent_by_slug.items():
-        leg_refund = await _refund_from_account(session, owner_id, slug, int(spend))
-        if leg_refund is not None:
-            refund += leg_refund
-            priced = True
-    return refund if priced else None
+    for _ in range(_REFUND_PASSES + 1):
+        spent = _spend_by_pool(milestones, wallet + refund, upto, pool_of)
+        if not spent:
+            return wallet if priced else None
+        nxt = sum(expected_refund(pool, int(pulls)) for pool, pulls in spent.items())
+        priced = True
+        if abs(nxt - refund) < _REFUND_TOLERANCE:
+            refund = nxt
+            break
+        refund = nxt
+    return wallet + int(refund) if priced else None
 
 
 async def _refund_from_account(
