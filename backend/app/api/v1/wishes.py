@@ -599,6 +599,16 @@ class WishFeaturedItem(BaseModel):
             "which is why banners store names and resolve here rather than storing ids."
         ),
     )
+    owned_copies: int | None = Field(
+        None,
+        description=(
+            "Constellations of this character the caller already holds, from their roster — "
+            "so picking a goal off a banner does not ask them to retype what an import "
+            "already knows. **Null is 'nobody has said', not zero**: an account that never "
+            "imported, a character it has no row for, a row written before the column "
+            "existed, or a weapon (there is no weapon roster, so refinement cannot be read)."
+        ),
+    )
 
 
 class WishBannerRead(BaseModel):
@@ -611,6 +621,17 @@ class WishBannerRead(BaseModel):
     ends_at: str | None
     featured_five: list[WishFeaturedItem]
     featured_four: list[WishFeaturedItem]
+    alongside: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Slugs of the banners running at the same time — what makes a weapon somebody's "
+            "signature. Picking a character can therefore also select the weapon banner "
+            "running beside them, which is the only way the weapon leg gets priced at the "
+            "weapon banner's own 4-star economics. **It does not say which of a weapon "
+            "banner's two 5-stars belongs to which character**; nothing in the source does, "
+            "and inferring it from list order would be a guess."
+        ),
+    )
 
 
 class WishBannerList(BaseModel):
@@ -671,8 +692,36 @@ async def list_banners(
                 ).all()
             )
 
+    # **The caller's own constellations, by name.** The same resolve-by-name the art uses,
+    # for the same reason: a stored id would be the row id of whichever database the capture
+    # ran against, which is #263's silent miss. Owned characters only — an un-owned row keeps
+    # its stored constellation, and reporting it would offer a goal from a character the user
+    # has said they do not have.
+    held: dict[str, int] = {}
+    if wanted:
+        held = dict(
+            (
+                await session.execute(
+                    select(Character.name, CharacterRosterEntry.constellation)
+                    .join(
+                        CharacterRosterEntry,
+                        CharacterRosterEntry.character_id == Character.id,
+                    )
+                    .where(
+                        CharacterRosterEntry.owner_id == str(user.id),
+                        CharacterRosterEntry.owned.is_(True),
+                        CharacterRosterEntry.constellation.isnot(None),
+                        Character.name.in_(wanted),
+                    )
+                )
+            ).all(),
+        )
+
     def items(names: list[str]) -> list[WishFeaturedItem]:
-        return [WishFeaturedItem(name=n, icon=art.get(n)) for n in names]
+        return [
+            WishFeaturedItem(name=n, icon=art.get(n), owned_copies=held.get(n))
+            for n in names
+        ]
 
     # Over the table, not over the page: taken from `rows` it changed as the user clicked
     # "show more", and read null on any page past the end of a populated table.
@@ -684,6 +733,7 @@ async def list_banners(
                 starts_at=row.starts_at, ends_at=row.ends_at,
                 featured_five=items(list(row.featured_five)),
                 featured_four=items(list(row.featured_four)),
+                alongside=list(row.alongside or []),
             )
             for row in rows
         ],

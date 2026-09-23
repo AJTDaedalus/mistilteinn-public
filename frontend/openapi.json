@@ -12979,6 +12979,14 @@
             },
             "type": "array",
             "title": "Featured Four"
+          },
+          "alongside": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Alongside",
+            "description": "Slugs of the banners running at the same time \u2014 what makes a weapon somebody's signature. Picking a character can therefore also select the weapon banner running beside them, which is the only way the weapon leg gets priced at the weapon banner's own 4-star economics. **It does not say which of a weapon banner's two 5-stars belongs to which character**; nothing in the source does, and inferring it from list order would be a guess."
           }
         },
         "type": "object",
@@ -13011,6 +13019,18 @@
             ],
             "title": "Icon",
             "description": "Catalogue basename, or null when the name does not resolve \u2014 a character newer than the pinned catalogue. **Null renders nothing rather than a broken image**, which is why banners store names and resolve here rather than storing ids."
+          },
+          "owned_copies": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owned Copies",
+            "description": "Constellations of this character the caller already holds, from their roster \u2014 so picking a goal off a banner does not ask them to retype what an import already knows. **Null is 'nobody has said', not zero**: an account that never imported, a character it has no row for, a row written before the column existed, or a weapon (there is no weapon roster, so refinement cannot be read)."
           }
         },
         "type": "object",

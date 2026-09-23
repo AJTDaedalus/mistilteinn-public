@@ -706,6 +706,43 @@ async def test_a_banner_with_no_roster_falls_back(
     assert body["refund_source"] == "none"
 
 
+async def test_a_banner_reports_what_the_caller_already_owns(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """Picking a goal off a banner must not ask for what an import already knows.
+
+    The free-text row was the whole reason the roster went unused for the thing being pulled
+    for: it carried a typed name and a typed `owned_copies`, so nothing could look the
+    character up.
+    """
+    user, _ = authed_user
+    slug = await _banner(db_session, featured_four=["Diona", "Faruzan", "Chongyun"])
+    await _owned_four_star(db_session, str(user.id), "Diona", 3)
+
+    body = (await authed_client.get("/api/v1/wishes/banners")).json()
+    row = next(b for b in body["banners"] if b["slug"] == slug)
+    held = {i["name"]: i["owned_copies"] for i in row["featured_four"]}
+
+    assert held["Diona"] == 3
+    # **Null, not 0.** "Nobody has said" and "I have C0" are different answers, and
+    # defaulting the first to the second would claim a character the account may not own.
+    assert held["Faruzan"] is None
+
+
+async def test_an_unowned_character_reports_nothing_rather_than_its_stored_constellation(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """Un-owning a character keeps its stored constellation; offering it would contradict."""
+    user, _ = authed_user
+    slug = await _banner(db_session, featured_four=["Diona", "Faruzan", "Chongyun"])
+    await _owned_four_star(db_session, str(user.id), "Diona", 3, owned=False)
+
+    body = (await authed_client.get("/api/v1/wishes/banners")).json()
+    row = next(b for b in body["banners"] if b["slug"] == slug)
+    held = {i["name"]: i["owned_copies"] for i in row["featured_four"]}
+    assert held["Diona"] is None
+
+
 async def test_limits_publishes_the_banner_page_size(authed_client: AsyncClient) -> None:
     body = (await authed_client.get("/api/v1/wishes/limits")).json()
     assert body["banner_page"] == 8
