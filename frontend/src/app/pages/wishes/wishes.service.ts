@@ -15,6 +15,8 @@ export type WishBannerRead = components['schemas']['WishBannerRead'];
 export type WishBannerList = components['schemas']['WishBannerList'];
 export type WishHistogramBin = components['schemas']['WishHistogramBin'];
 export type WishFeaturedItem = components['schemas']['WishFeaturedItem'];
+export type WishCustomBanner = components['schemas']['WishCustomBanner'];
+export type CustomFeaturedItem = components['schemas']['CustomFeaturedItem'];
 
 /** What `/wishes/limits` answers — the page builds its controls from this, not from constants. */
 export interface WishLimits {

@@ -108,6 +108,37 @@ class WishTarget(BaseModel):
     )
 
 
+class CustomFeaturedItem(BaseModel):
+    """One featured 4-star on a custom banner, with optional ownership."""
+
+    name: str = Field(description='Character/weapon name or "?"')
+    constellation: int | None = Field(
+        None,
+        ge=0,
+        le=MAX_CONSTELLATION,
+        description="Owned constellation (0-6, or null to read from account/unowned).",
+    )
+
+
+class WishCustomBanner(BaseModel):
+    """Player-defined banner for targets not on the historical schedule."""
+
+    slug: str = Field(
+        max_length=200,
+        description="Unique custom banner identifier (e.g. 'custom:1')",
+    )
+    name: str = Field(default="Custom Banner", max_length=100)
+    kind: BannerKind = Field(default=BannerKind.CHARACTER)
+    featured_five: list[str] = Field(
+        default_factory=list,
+        description="Target 5-star name(s) or '?'",
+    )
+    featured_four: list[CustomFeaturedItem] = Field(
+        default_factory=list,
+        description="Featured 4-star lineup (3 for character banner, 5 for weapon banner).",
+    )
+
+
 class WishPlanRequest(BaseModel):
     """A player's wallet, and either one character to plan or an explicit list of goals.
 
@@ -129,6 +160,11 @@ class WishPlanRequest(BaseModel):
     targets: list[WishTarget] = Field(
         default_factory=list, max_length=12,
         description="Custom mode: goals in spending order. Each needs `target_copies`.",
+    )
+    custom_banners: list[WishCustomBanner] = Field(
+        default_factory=list,
+        max_length=20,
+        description="Player-defined banners for targets not on the historical schedule.",
     )
     starglitter_refund: str = Field(
         ACCOUNT_REFUND,
@@ -295,10 +331,11 @@ async def create_plan(
     # reached early is never credited with starglitter from pulls nobody makes. Simple mode
     # used to price the whole wallet because its ladder runs C0→C6, which is what made an
     # equivalent goal disagree between the two modes.
+    custom_by_slug = {cb.slug: cb for cb in payload.custom_banners}
     pools: dict[str, RefundInputs | None] = {}
     if wants_account:
         for slug in {leg.banner_slug for leg in legs if leg.banner_slug}:
-            pools[slug] = await _refund_inputs(session, str(user.id), slug)
+            pools[slug] = await _resolve_refund_pool(session, str(user.id), slug, custom_by_slug)
 
     def pool_of(slug: str) -> RefundInputs | None:
         return pools.get(slug)
@@ -444,6 +481,70 @@ def _histogram(pmf: list[float] | None) -> list[WishHistogramBin]:
 _REFUND_PASSES = 6
 #: Stop compounding once a pass moves the refund by less than this many wishes.
 _REFUND_TOLERANCE = 0.25
+
+
+async def _resolve_refund_pool(
+    session: AsyncSession,
+    owner_id: str,
+    slug: str,
+    custom_by_slug: dict[str, WishCustomBanner],
+) -> RefundInputs | None:
+    if slug in custom_by_slug:
+        return await _custom_refund_inputs(session, owner_id, custom_by_slug[slug])
+    return await _refund_inputs(session, owner_id, slug)
+
+
+async def _custom_refund_inputs(
+    session: AsyncSession, owner_id: str, custom: WishCustomBanner,
+) -> RefundInputs | None:
+    """Refund inputs for a player-defined custom banner."""
+    banner = custom.kind
+
+    rows = (
+        await session.execute(
+            select(Character.nanoka_id, Character.name, CharacterRosterEntry.constellation)
+            .join(CharacterRosterEntry, CharacterRosterEntry.character_id == Character.id)
+            .where(
+                CharacterRosterEntry.owner_id == owner_id,
+                CharacterRosterEntry.owned.is_(True),
+                Character.rarity == Rarity.FOUR_STAR,
+            ),
+        )
+    ).all()
+
+    held_constellations: dict[str, int] = {}
+    for nanoka_id, name, constellation in rows:
+        if is_mannequin(nanoka_id) or name in _AMBIGUOUS_NAMES:
+            continue
+        if constellation is not None:
+            held_constellations[name] = constellation
+
+    featured: list[int | None] = []
+    featured_names: set[str] = set()
+    for item in custom.featured_four:
+        if item.name and item.name != "?":
+            featured_names.add(item.name)
+        if item.constellation is not None:
+            featured.append(item.constellation)
+        elif item.name in held_constellations:
+            featured.append(held_constellations[item.name])
+        else:
+            featured.append(None)
+
+    roster: list[int | None] = [
+        constellation
+        for name, constellation in held_constellations.items()
+        if name not in featured_names
+    ]
+
+    if not roster and all(value is None for value in featured) and banner is BannerKind.CHARACTER:
+        return None
+
+    return RefundInputs(
+        banner=banner,
+        featured=tuple(featured) if banner is BannerKind.CHARACTER else (),
+        roster=tuple(roster),
+    )
 
 
 async def _refund_inputs(
