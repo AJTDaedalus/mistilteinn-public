@@ -1511,6 +1511,63 @@ describe('the banner list is searched on the server', () => {
     expect(page.request().character.banner_slug).toBe('custom:character');
   });
 
+  it('keeps a picked real banner priced when a chip filters it off the page', async () => {
+    const { page, service } = makePage();
+    await settled();
+    page.chooseBanner(BANNERS.banners[0]);
+    vi.mocked(service.banners).mockResolvedValueOnce(
+      { ...BANNERS, banners: [BANNERS.banners[1]], total: 1 } as never,
+    );
+    page.toggleBannerChip('kind', 'weapon');
+    await settled();
+    expect(page.banners().map((b: any) => b.slug)).toEqual(['Epitome Invocation/2026-09-23']);
+    expect(page.banner()?.slug).toBe('When Warm Winds Cavort/2026-09-23');
+    const request = page.request();
+    expect(request.character.banner_slug).toBe('When Warm Winds Cavort/2026-09-23');
+    expect(request.weapon.banner_slug).toBe('Epitome Invocation/2026-09-23');
+  });
+
+  it('keeps a custom row’s picked banner named when the page changes', async () => {
+    const { page, service } = makePage();
+    await settled();
+    page.mode.set('custom');
+    page.chooseRowBanner(0, BANNERS.banners[0]);
+    vi.mocked(service.banners).mockResolvedValueOnce({ ...BANNERS, banners: [], total: 0 } as never);
+    page.toggleBannerChip('kind', 'weapon');
+    await settled();
+    expect(page.rowBanner(page.rows()[0])?.name).toBe('When Warm Winds Cavort');
+  });
+
+  it('refuses "show more" while a search is pending or in flight', async () => {
+    vi.useFakeTimers();
+    try {
+      const { page, service } = makePage();
+      await settled();
+      const calls = () => vi.mocked(service.banners).mock.calls.length;
+      const before = calls();
+      page.searchBanners('Ben');
+      page.showMoreBanners();                      // debounce pending
+      expect(calls()).toBe(before);
+
+      let release!: (v: unknown) => void;
+      vi.mocked(service.banners).mockReturnValueOnce(
+        new Promise((resolve) => (release = resolve)) as never,
+      );
+      vi.advanceTimersByTime(300);                 // the search goes out
+      expect(calls()).toBe(before + 1);
+      page.showMoreBanners();                      // search in flight
+      expect(calls()).toBe(before + 1);
+
+      release({ ...BANNERS, banners: [BANNERS.banners[0]], total: 3 });
+      await settled(); await settled();
+      expect(page.banners().map((b: any) => b.slug)).toEqual([BANNERS.banners[0].slug]);
+      page.showMoreBanners();                      // now it belongs to the list on screen
+      expect(vi.mocked(service.banners)).toHaveBeenLastCalledWith(1, 8, { q: 'Ben' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('ignores a slower earlier page that lands after a later one', async () => {
     let release!: (v: unknown) => void;
     const slow = new Promise((resolve) => (release = resolve));

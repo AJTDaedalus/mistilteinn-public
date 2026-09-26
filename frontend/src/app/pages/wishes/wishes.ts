@@ -455,11 +455,27 @@ export class WishesPage {
   });
 
   /**
-   * Every banner the page can resolve a slug against — **whatever the chips hide.** Narrowing
-   * the grid to weapon banners must not un-pick the character banner already chosen, which is
-   * what looking the choice up in the drawn list would do.
+   * Every real banner the user has picked, kept by slug whatever the list shows now.
+   *
+   * **The list is a filtered server page, so it cannot be where a choice lives.** Pressing the
+   * Weapon chip after picking a character banner replaced the page, the lookup came back null,
+   * and the plan went out with `banner_slug: null` on both legs — the account refund silently
+   * gone, with the card the user picked no longer drawn to show why. Found in review of #338.
    */
-  private readonly known = computed(() => [...this.customBanners(), ...this.banners()]);
+  private readonly picked = signal<ReadonlyMap<string, WishBannerRead>>(new Map());
+
+  /**
+   * Every banner the page can resolve a slug against — **whatever the chips hide.** Custom
+   * banners come first so an edit to one is what gets read; the picks outlive the page.
+   */
+  private readonly known = computed(() => [
+    ...this.customBanners(), ...this.banners(), ...this.picked().values(),
+  ]);
+
+  private remember(banner: WishBannerRead | null): void {
+    if (!banner || this.isCustom(banner.slug)) return;
+    this.picked.update((all) => new Map(all).set(banner.slug, banner));
+  }
 
   protected readonly banner = computed(() =>
     this.known().find((b) => b.slug === this.chosenBanner()) ?? null,
@@ -720,24 +736,42 @@ export class WishesPage {
     ));
   }
 
-  /** Sequence guard for banner pages: a slow search must not land over a faster later one. */
+  /** Sequence guard: every *replace* takes a ticket, and anything older is dropped. */
   private bannerTicket = 0;
   private bannerTimer: ReturnType<typeof setTimeout> | null = null;
+  /** True while a replace or an append is in flight. */
+  private bannersBusy = false;
+  /** The filter the list on screen was fetched with, as a key. */
+  private listedFilter = '';
 
-  /** Fetch a page of banners. `offset` 0 replaces, anything else appends. */
+  /**
+   * Fetch a page of banners. `offset` 0 replaces, anything else appends.
+   *
+   * **An append is refused while the list is about to change.** "Show more" during a search
+   * appended page two of the *new* filter onto page one of the *old*, and — because it took a
+   * newer ticket — threw away the search's own reply, so the mixed list stayed. An append now
+   * belongs to the list on screen or does not happen; the pending replace draws the right one.
+   */
   protected async loadBanners(offset: number): Promise<void> {
     const page = this.limits()?.banner_page ?? 8;
-    const ticket = ++this.bannerTicket;
+    const filter = this.bannerFilter();
+    const key = JSON.stringify(filter);
+    if (offset && (this.bannersBusy || this.bannerTimer || key !== this.listedFilter)) return;
+    const ticket = offset ? this.bannerTicket : ++this.bannerTicket;
+    this.bannersBusy = true;
     try {
-      const body = await this.service.banners(offset, page, this.bannerFilter());
+      const body = await this.service.banners(offset, page, filter);
       if (ticket !== this.bannerTicket) return;
       this.banners.set(offset ? [...this.banners(), ...body.banners] : body.banners);
       this.bannerTotal.set(body.total);
+      this.listedFilter = key;
     } catch {
       if (ticket !== this.bannerTicket) return;
       // Not fatal: the planner works without a banner, it just cannot read the refund from
       // the account. Blanking the page over it would be the worse trade.
       this.bannerTotal.set(this.banners().length);
+    } finally {
+      if (ticket === this.bannerTicket) this.bannersBusy = false;
     }
   }
 
@@ -756,7 +790,10 @@ export class WishesPage {
   protected searchBanners(text: string): void {
     this.bannerQuery.set(text);
     if (this.bannerTimer) clearTimeout(this.bannerTimer);
-    this.bannerTimer = setTimeout(() => void this.loadBanners(0), DEBOUNCE_MS);
+    this.bannerTimer = setTimeout(() => {
+      this.bannerTimer = null;
+      void this.loadBanners(0);
+    }, DEBOUNCE_MS);
   }
 
   /** A chip: pressing the lit one clears it, as a single-choice chip row reads. */
@@ -805,6 +842,7 @@ export class WishesPage {
   }
 
   protected chooseBanner(banner: WishBannerRead | null): void {
+    this.remember(banner);
     this.chosenBanner.set(banner?.slug ?? null);
     if (!banner) return;
     if (this.isCustom(banner.slug)) {
@@ -846,6 +884,7 @@ export class WishesPage {
   /** Pick a banner for one row of a custom plan, filling in what the banner knows. */
   protected chooseRowBanner(index: number, banner: WishBannerRead | null): void {
     if (!this.rows()[index]) return;
+    this.remember(banner);
     const change: Partial<CustomRow> = { bannerSlug: banner?.slug ?? null };
     if (banner) {
       change.banner = banner.kind as 'character' | 'weapon';
