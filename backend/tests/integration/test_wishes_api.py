@@ -505,6 +505,87 @@ async def test_banners_filter_by_kind(
     assert body["total"] == 1
 
 
+async def _character(
+    db_session: AsyncSession, name: str, element: str, weapon_type: str,
+) -> None:
+    from app.models.character import Character
+    from app.models.enums import Element, Rarity, WeaponType
+
+    db_session.add(Character(
+        nanoka_id=f"n-{name}", name=name, element=Element[element],
+        weapon_type=WeaponType[weapon_type], rarity=Rarity.FIVE_STAR,
+        base_hp=1000.0, base_atk=26.0, base_def=60.0,
+        base_crit_rate=0.05, base_crit_dmg=0.5,
+    ))
+    await db_session.commit()
+
+
+async def test_banners_search_the_name_and_every_featured_unit(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """A rerun is found by any of its units, 4-stars included, and by the banner's own name."""
+    await _banner(db_session)
+    await _banner(db_session, slug="Other/2026-01-01", name="Ballad in Goblets",
+                  starts_at="2026-01-01", featured_five=["Venti"],
+                  featured_four=["Bennett", "Noelle", "Xiangling"])
+
+    by_four = (await authed_client.get("/api/v1/wishes/banners?q=faru")).json()
+    assert [b["slug"] for b in by_four["banners"]] == ["Test Banner/2026-09-23"]
+    assert by_four["total"] == 1
+
+    by_name = (await authed_client.get("/api/v1/wishes/banners?q=GOBLET")).json()
+    assert [b["slug"] for b in by_name["banners"]] == ["Other/2026-01-01"]
+
+    # A LIKE wildcard in the query is a character, not a pattern.
+    assert (await authed_client.get("/api/v1/wishes/banners?q=%25")).json()["total"] == 0
+
+
+async def test_banners_filter_by_the_featured_five_stars_element_and_weapon(
+    authed_client: AsyncClient, db_session: AsyncSession,
+) -> None:
+    """The chips the character grid offers, applied to whose banner it is.
+
+    Matched on the 5-star only: filtering Cryo should not return every banner Diona was a
+    4-star on, which is the search box's job.
+    """
+    from app.models.enums import Rarity, StatType, WeaponType
+    from app.models.weapon import Weapon
+
+    await _character(db_session, "Vesna", "PYRO", "CLAYMORE")
+    await _character(db_session, "Venti", "ANEMO", "BOW")
+    await _character(db_session, "Diona", "CRYO", "BOW")
+    db_session.add(Weapon(
+        nanoka_id=15599, name="Elegy", weapon_type=WeaponType.BOW,
+        rarity=Rarity.FIVE_STAR, base_atk=46.0, base_atk_curve="GROW_CURVE_ATTACK_101",
+        sub_stat_type=StatType.CRIT_DMG, sub_stat_base_value=0.096,
+        sub_stat_curve="GROW_CURVE_CRITICAL_101", ascension_atk={},
+    ))
+    await db_session.commit()
+    await _banner(db_session)
+    await _banner(db_session, slug="Venti/2026-01-01", starts_at="2026-01-01",
+                  featured_five=["Venti"])
+    await _banner(db_session, slug="Epitome/2025-01-01", kind="weapon",
+                  starts_at="2025-01-01", featured_five=["Elegy", "Unknown"],
+                  featured_four=["c", "d", "e", "f", "g"])
+
+    pyro = (await authed_client.get("/api/v1/wishes/banners?element=Pyro")).json()
+    assert [b["slug"] for b in pyro["banners"]] == ["Test Banner/2026-09-23"]
+    assert pyro["total"] == 1
+    # Diona is a 4-star on the Vesna banner, and is not what makes it a Cryo banner.
+    cryo = (await authed_client.get("/api/v1/wishes/banners?element=Cryo")).json()
+    assert cryo["banners"] == []
+
+    bows = (await authed_client.get(
+        "/api/v1/wishes/banners?weapon_type=WEAPON_BOW",
+    )).json()
+    assert [b["slug"] for b in bows["banners"]] == ["Venti/2026-01-01", "Epitome/2025-01-01"]
+
+    both = (await authed_client.get(
+        "/api/v1/wishes/banners?weapon_type=WEAPON_BOW&element=Anemo",
+    )).json()
+    assert [b["slug"] for b in both["banners"]] == ["Venti/2026-01-01"]
+
+
 # --- the histogram ---------------------------------------------------------------------
 
 
@@ -1329,6 +1410,41 @@ async def test_custom_banner_question_mark_with_starting_ownership(
 
     labels = [m["label"] for m in body["milestones"]]
     assert labels == ["? C3", "? C4", "? C5", "? C6"]
+
+async def test_a_custom_four_star_said_to_be_unowned_is_not_read_from_the_account(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple,
+) -> None:
+    """An explicit null is the user's answer; an omitted field is "ask the account".
+
+    The page prefills each slot from the roster and lets the user override it, so "Unowned"
+    on a character the account holds at C6 has to be priced as unowned rather than quietly
+    replaced by the C6 the user just overrode.
+    """
+    user, _ = authed_user
+    await _owned_four_star(db_session, str(user.id), "Bennett", 6)
+
+    async def refund(slot: dict) -> float:
+        body = (await authed_client.post(
+            "/api/v1/wishes/plan",
+            json={
+                "character": {"banner": "character", "label": "?",
+                              "banner_slug": "custom:character"},
+                "custom_banners": [{
+                    "slug": "custom:character", "kind": "character",
+                    "featured_five": ["?"],
+                    "featured_four": [slot, {"name": "?", "constellation": 6},
+                                      {"name": "?", "constellation": 6}],
+                }],
+                "primogems": 48_000,
+                "starglitter_refund": "account",
+            },
+        )).json()
+        return body["refunded_wishes"]
+
+    from_account = await refund({"name": "Bennett"})
+    said_unowned = await refund({"name": "Bennett", "constellation": None})
+    assert said_unowned < from_account
+
 
 async def test_custom_banners_capped_at_twenty(
     authed_client: AsyncClient, authed_user: tuple,
