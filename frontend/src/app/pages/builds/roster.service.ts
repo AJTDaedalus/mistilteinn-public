@@ -29,6 +29,8 @@ export interface RosterEntry {
   owned: boolean | null;
   /** `"import"`, `"manual"`, or null when nobody has said. */
   source: string | null;
+  /** Constellation, 0-6, or null when nobody has said — which is not C0. */
+  constellation: number | null;
   /**
    * Whether gcsim implements this character at the pinned commit.
    *

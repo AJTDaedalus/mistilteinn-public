@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi } from 'vitest';
 
 import { WishesService, type WishLimits, type WishPlanRead } from './wishes.service';
+import { RosterService } from '../builds/roster.service';
 import { CatalogueService } from '../catalogue/catalogue.service';
 import { WishesPage } from './wishes';
 
@@ -74,6 +75,34 @@ const BANNERS = {
   ],
 };
 
+function character(name: string, rarity: string, element = 'Pyro'): any {
+  return {
+    id: `id-${name}`, name, display_name: name, rarity, element, icon: `UI_${name}`,
+    weapon_type: 'WEAPON_SWORD_ONE_HAND', weapon_type_display: 'Sword',
+    weapon_type_icon: 'sword', element_icon: element.toLowerCase(), is_beta: false,
+  };
+}
+
+const CHARACTERS = [
+  character('Vesna', 'five_star'),
+  character('Bennett', 'four_star'),
+  character('Diona', 'four_star', 'Cryo'),
+  // Sixteen of these share one name; a custom banner resolves by name, so none is offered.
+  character('Traveler', 'five_star'),
+  { ...character('Traveler', 'five_star'), id: 'id-Traveler-2' },
+];
+
+const ROSTER = {
+  owned_count: 2,
+  withheld: 0,
+  entries: [
+    { name: 'Bennett', owned: true, constellation: 6 },
+    { name: 'Vesna', owned: true, constellation: 1 },
+    // Owned with no constellation said is not C0.
+    { name: 'Diona', owned: true, constellation: null },
+  ],
+};
+
 /** Access a protected member without widening the component's real surface. */
 function open(page: WishesPage): any {
   return page as any;
@@ -93,10 +122,11 @@ function makePage(over: Partial<WishesService> = {}) {
       {
         provide: CatalogueService,
         useValue: {
-          listCharacters: vi.fn().mockResolvedValue({ items: [] }),
-          listWeapons: vi.fn().mockResolvedValue({ items: [] }),
+          listCharacters: vi.fn().mockResolvedValue({ items: CHARACTERS, total: CHARACTERS.length }),
+          listWeapons: vi.fn().mockResolvedValue({ items: [], total: 0 }),
         },
       },
+      { provide: RosterService, useValue: { list: vi.fn().mockResolvedValue(ROSTER) } },
     ],
   });
   const page = TestBed.runInInjectionContext(() => new WishesPage());
@@ -106,6 +136,11 @@ function makePage(over: Partial<WishesService> = {}) {
 async function settled(): Promise<void> {
   await Promise.resolve();
   await Promise.resolve();
+}
+
+/** The catalogue and roster load beside the planner's data, and take more ticks to land. */
+async function unitsLoaded(): Promise<void> {
+  for (let i = 0; i < 10; i++) await Promise.resolve();
 }
 
 describe('WishesPage', () => {
@@ -1277,129 +1312,217 @@ describe('the signature pairing is resolved server-side', () => {
   });
 });
 
-describe('custom banner creation and management', () => {
-  beforeEach(() => {
-    try {
-      localStorage.clear();
-    } catch {
-      // ignore
-    }
+describe('the custom banner is one per kind, edited in place', () => {
+  it('is always offered, first, with every unit unannounced', async () => {
+    const { page } = makePage();
+    await unitsLoaded();
+    const [first, second] = page.allBanners();
+    expect(first.slug).toBe('custom:character');
+    expect(second.slug).toBe('custom:weapon');
+    expect(first.featured_five.map((i: any) => i.name)).toEqual(['?']);
+    expect(first.featured_four.map((i: any) => i.name)).toEqual(['?', '?', '?']);
+    expect(second.featured_four).toHaveLength(5);
   });
 
-  it('creates a custom character banner with ? placeholder target and ? 4-stars', async () => {
+  it('is not saved anywhere', async () => {
+    const setItem = vi.spyOn(Storage.prototype, 'setItem');
     const { page } = makePage();
-    await settled();
-
-    page.openCustomBannerDialog(null);
-    expect(page.customBannerKind()).toBe('character');
-    expect(page.customBannerName()).toBe('Custom Banner');
-    expect(page.customBannerTargetName()).toBe('?');
-
-    // Configure starting ownership: target at C0, 4-star #1 at C6, 4-star #2 unowned
-    page.setCustomBannerTargetOwnership(0);
-    page.setCustomBannerSlotName(0, '?');
-    page.setCustomBannerSlotConstellation(0, '6');
-    page.setCustomBannerSlotName(1, '?');
-    page.setCustomBannerSlotConstellation(1, 'none');
-
-    page.saveAndSelectCustomBanner();
-
-    expect(page.customBanners().length).toBe(1);
-    const banner = page.customBanners()[0];
-    expect(banner.name).toBe('Custom Banner');
-    expect(banner.kind).toBe('character');
-    expect(banner.target).toEqual({ name: '?', owned_copies: 0 });
-    expect(banner.fourStars[0]).toEqual({ name: '?', constellation: 6 });
-    expect(banner.fourStars[1]).toEqual({ name: '?', constellation: null });
-
-    // The custom banner should now be in allBanners() and selected
-    expect(page.allBanners().some((b: any) => b.slug === banner.slug)).toBe(true);
-    expect(page.chosenBanner()).toBe(banner.slug);
-
-    // And request() includes custom_banners
-    const req = page.request();
-    expect(req.custom_banners).toBeDefined();
-    expect(req.custom_banners?.length).toBe(1);
-    expect(req.custom_banners?.[0].slug).toBe(banner.slug);
-    expect(req.custom_banners?.[0].featured_five).toEqual(['?']);
-    expect(req.custom_banners?.[0].featured_four[0]).toEqual({ name: '?', constellation: 6 });
+    await unitsLoaded();
+    page.chooseBanner(page.allBanners()[0]);
+    page.setCustomFive('character', ['Vesna']);
+    expect(setItem).not.toHaveBeenCalled();
+    setItem.mockRestore();
   });
 
-  it('supports weapon custom banners with refinement ownership', async () => {
+  it('offers ? first, then characters by name, never an ambiguous one', async () => {
     const { page } = makePage();
-    await settled();
-
-    page.openCustomBannerDialog(null);
-    page.setCustomBannerKind('weapon');
-    expect(page.customBannerKind()).toBe('weapon');
-
-    page.setCustomBannerName('My Custom Weapon Banner');
-    page.setCustomBannerTargetOwnership(4); // R5
-    page.saveAndSelectCustomBanner();
-
-    expect(page.customBanners().length).toBe(1);
-    const banner = page.customBanners()[0];
-    expect(banner.name).toBe('My Custom Weapon Banner');
-    expect(banner.kind).toBe('weapon');
-    expect(banner.target).toEqual({ name: '?', owned_copies: 4 });
+    await unitsLoaded();
+    const five = page.pickerOptions().character.five.map((o: any) => o.value);
+    expect(five).toEqual(['?', 'Vesna']);
+    const four = page.pickerOptions().character.four.map((o: any) => o.value);
+    expect(four).toEqual(['?', 'Bennett', 'Diona']);
+    // The account's constellation is on the card, so the choice is made with it in view.
+    expect(page.pickerOptions().character.four[1].detail).toContain('C6 owned');
   });
 
-  it('deletes custom banners and resets selection if currently selected', async () => {
+  it('carries the chips the character grid has', async () => {
     const { page } = makePage();
-    await settled();
-
-    page.openCustomBannerDialog(null);
-    page.saveAndSelectCustomBanner();
-    const slug = page.customBanners()[0].slug;
-    expect(page.chosenBanner()).toBe(slug);
-
-    page.deleteCustomBanner(slug, new MouseEvent('click'));
-    expect(page.customBanners().length).toBe(0);
-    expect(page.chosenBanner()).toBeNull();
+    await unitsLoaded();
+    const groups = page.pickerOptions().character.filters.map((f: any) => f.group);
+    expect(groups).toEqual(['element', 'weapon']);
   });
 
-  it('sets ownedCopies to 0 for unowned custom banners even if state previously held copies', async () => {
+  it('prefills a 4-star from the account, and lets it be overridden', async () => {
+    const { page, service } = makePage();
+    await unitsLoaded();
+    page.chooseBanner(page.allBanners()[0]);
+    page.setCustomSlot('character', 0, ['Bennett']);
+    page.setCustomSlot('character', 1, ['Diona']);   // owned, constellation unsaid
+    expect(page.custom().character.fours[0]).toEqual({ name: 'Bennett', constellation: 6 });
+    expect(page.slotFromAccount(page.custom().character.fours[0])).toBe(true);
+    expect(page.custom().character.fours[1].constellation).toBeNull();
+
+    page.setCustomSlotConstellation('character', 0, 'none');
+    await page.recompute(page.request());
+    const sent = vi.mocked(service.plan).mock.calls.at(-1)?.[0].custom_banners;
+    expect(sent).toEqual([{
+      slug: 'custom:character', name: 'Custom banner', kind: 'character',
+      featured_five: ['?'],
+      // Null is sent, not omitted: it is the user's "unowned", which the backend honours.
+      featured_four: [
+        { name: 'Bennett', constellation: null },
+        { name: 'Diona', constellation: null },
+        { name: '?', constellation: null },
+      ],
+    }]);
+  });
+
+  it('names the goal from the 5-star, with the account’s copies', async () => {
     const { page } = makePage();
-    await settled();
-
-    // Player previously had a C3 character selected (4 copies)
-    page.patch('character', { label: 'Prior Character', ownedCopies: 4 });
-    expect(page.character().ownedCopies).toBe(4);
-
-    page.openCustomBannerDialog(null);
-    page.setCustomBannerTargetName('?');
-    page.setCustomBannerTargetOwnership(0); // Unowned (Need C0)
-    page.saveAndSelectCustomBanner();
-
+    await unitsLoaded();
+    page.chooseBanner(page.allBanners()[0]);
     expect(page.character().label).toBe('?');
+    page.setCustomFive('character', ['Vesna']);
+    expect(page.character().label).toBe('Vesna');
+    expect(page.character().ownedCopies).toBe(2);     // C1 is two copies
+    expect(page.request().character.banner_slug).toBe('custom:character');
+  });
+
+  it('resets owned copies for an unannounced target (#337)', async () => {
+    const { page } = makePage();
+    await unitsLoaded();
+    page.patch('character', { label: 'Prior', ownedCopies: 4 });
+    page.chooseBanner(page.allBanners()[0]);
     expect(page.character().ownedCopies).toBe(0);
 
-    // Also verify in custom row mode
     page.mode.set('custom');
-    page.patchRow(0, { label: 'Prior Character', ownedCopies: 5 });
-    expect(page.rows()[0].ownedCopies).toBe(5);
-
-    const banner = page.allBanners().find((b: any) => b.slug === page.customBanners()[0].slug);
-    page.chooseRowBanner(0, banner);
+    page.patchRow(0, { label: 'Prior', ownedCopies: 5 });
+    page.chooseRowBanner(0, page.allBanners()[0]);
     expect(page.rows()[0].label).toBe('?');
     expect(page.rows()[0].ownedCopies).toBe(0);
   });
 
-  it('clears bannerSlug on custom rows when the assigned custom banner is deleted', async () => {
+  it('renames every custom row on that banner when its 5-star changes', async () => {
     const { page } = makePage();
-    await settled();
-
-    page.openCustomBannerDialog(null);
-    page.saveAndSelectCustomBanner();
-    const slug = page.customBanners()[0].slug;
-
+    await unitsLoaded();
     page.mode.set('custom');
-    page.patchRow(0, { bannerSlug: slug });
-    expect(page.rows()[0].bannerSlug).toBe(slug);
+    page.chooseRowBanner(0, page.allBanners()[0]);
+    page.setCustomFive('character', ['Vesna']);
+    expect(page.rows()[0].label).toBe('Vesna');
+    expect(page.editsCustom(0)).toBe('character');
+  });
 
-    page.deleteCustomBanner(slug, new MouseEvent('click'));
-    expect(page.customBanners().length).toBe(0);
-    expect(page.rows()[0].bannerSlug).toBeNull();
+  it('sends only the custom banners a request names', async () => {
+    const { page } = makePage();
+    await unitsLoaded();
+    expect(page.request().custom_banners).toEqual([]);
+    page.chooseBanner(page.allBanners()[1]);
+    expect(page.request().custom_banners.map((b: any) => b.slug)).toEqual(['custom:weapon']);
+    // A weapon banner's 4-stars earn no refund the planner prices, so they go bare.
+    expect(page.request().custom_banners[0].featured_four[0]).toEqual({ name: '?' });
+  });
+
+  it('draws the editor under the first custom row only', async () => {
+    const { page } = makePage();
+    await unitsLoaded();
+    page.mode.set('custom');
+    page.addRow('character');
+    page.chooseRowBanner(0, page.allBanners()[0]);
+    page.chooseRowBanner(1, page.allBanners()[0]);
+    expect(page.editsCustom(0)).toBe('character');
+    expect(page.editsCustom(1)).toBeNull();
+  });
+});
+
+describe('the catalogue is read in pages', () => {
+  /** The endpoint caps `limit` at 200 and there are 260 weapons; one request is not all. */
+  it('asks within the cap and keeps asking until it has every row', async () => {
+    const weapons = Array.from({ length: 260 }, (_, i) => ({
+      name: `W${i}`, rarity: 'four_star', weapon_type: 'WEAPON_BOW',
+    }));
+    const listWeapons = vi.fn(async ({ offset, limit }: { offset: number; limit: number }) => ({
+      items: weapons.slice(offset, offset + limit), total: weapons.length,
+    }));
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: WishesService, useValue: {
+          limits: vi.fn().mockResolvedValue(LIMITS), income: vi.fn().mockResolvedValue(INCOME),
+          banners: vi.fn().mockResolvedValue(BANNERS), plan: vi.fn().mockResolvedValue(PLAN),
+        } },
+        { provide: CatalogueService, useValue: {
+          listCharacters: vi.fn().mockResolvedValue({ items: [], total: 0 }), listWeapons,
+        } },
+        { provide: RosterService, useValue: { list: vi.fn().mockResolvedValue(ROSTER) } },
+      ],
+    });
+    const page = open(TestBed.runInInjectionContext(() => new WishesPage()));
+    for (let i = 0; i < 10; i++) await unitsLoaded();
+    expect(listWeapons.mock.calls.every(([q]) => q.limit <= 200)).toBe(true);
+    expect(page.allWeapons()).toHaveLength(260);
+  });
+});
+
+describe('the banner list is searched on the server', () => {
+  it('sends the search and chips, and replaces the page', async () => {
+    const { page, service } = makePage();
+    await unitsLoaded();
+    page.toggleBannerChip('element', 'Pyro');
+    page.toggleBannerChip('kind', 'character');
+    await unitsLoaded();
+    expect(service.banners).toHaveBeenLastCalledWith(
+      0, 8, { element: 'Pyro', kind: 'character' },
+    );
+    // Pressing a lit chip clears it.
+    page.toggleBannerChip('element', 'Pyro');
+    expect(service.banners).toHaveBeenLastCalledWith(0, 8, { kind: 'character' });
+  });
+
+  it('debounces the search box', async () => {
+    vi.useFakeTimers();
+    try {
+      const { page, service } = makePage();
+      await unitsLoaded();
+      const before = vi.mocked(service.banners).mock.calls.length;
+      page.searchBanners('B');
+      page.searchBanners('Be');
+      page.searchBanners('Ben');
+      vi.advanceTimersByTime(300);
+      expect(vi.mocked(service.banners).mock.calls.length).toBe(before + 1);
+      expect(service.banners).toHaveBeenLastCalledWith(0, 8, { q: 'Ben' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('hides the other kind’s custom banner under the kind chip', async () => {
+    const { page } = makePage();
+    await unitsLoaded();
+    page.toggleBannerChip('kind', 'weapon');
+    expect(page.allBanners().filter((b: any) => page.isCustom(b.slug)).map((b: any) => b.slug))
+      .toEqual(['custom:weapon']);
+  });
+
+  it('keeps the chosen banner when a chip hides it', async () => {
+    const { page } = makePage();
+    await unitsLoaded();
+    page.chooseBanner(page.allBanners()[0]);
+    page.toggleBannerChip('kind', 'weapon');
+    expect(page.banner()?.slug).toBe('custom:character');
+    expect(page.request().character.banner_slug).toBe('custom:character');
+  });
+
+  it('ignores a slower earlier page that lands after a later one', async () => {
+    let release!: (v: unknown) => void;
+    const slow = new Promise((resolve) => (release = resolve));
+    const { page, service } = makePage();
+    await unitsLoaded();
+    vi.mocked(service.banners).mockReturnValueOnce(slow as never);
+    const first = page.loadBanners(0);
+    vi.mocked(service.banners).mockResolvedValueOnce({ ...BANNERS, banners: [], total: 0 } as never);
+    await page.loadBanners(0);
+    release(BANNERS);
+    await first;
+    expect(page.banners()).toEqual([]);
   });
 });
 

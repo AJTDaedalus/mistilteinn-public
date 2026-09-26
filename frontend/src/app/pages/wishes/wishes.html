@@ -36,7 +36,7 @@
       </div>
     </fieldset>
 
-    @if (banners().length && mode() === 'simple') {
+    @if (mode() === 'simple') {
       <div class="banners">
         <div class="banners__head">
           <span class="label">Banner</span>
@@ -46,6 +46,7 @@
             </button>
           }
         </div>
+        <ng-container *ngTemplateOutlet="bannerSearch" />
         <div class="banner-grid">
           @for (b of allBanners(); track b.slug) {
             <!-- A paired banner reads as selected too: the signature weapon runs on its
@@ -56,47 +57,18 @@
                     [class.banner--custom]="isCustom(b.slug)"
                     (click)="chooseBanner(b)"
                     [attr.aria-pressed]="isChosen(b.slug) || isPaired(b.slug)">
-              @if (isCustom(b.slug)) {
-                <button type="button" class="banner__delete" (click)="deleteCustomBanner(b.slug, $event)" title="Delete custom banner">✕</button>
-              }
-              <span class="banner__five">
-                @for (item of b.featured_five; track item.name) {
-                  @if (item.name === '?') {
-                    <span class="banner__placeholder banner__placeholder--five">?</span>
-                  } @else {
-                    <catalogue-icon [icon]="item.icon" [alt]="item.name" [size]="52"
-                                    fit="cover" />
-                  }
-                }
-              </span>
-              <span class="banner__four">
-                @for (item of b.featured_four; track item.name) {
-                  @if (item.name === '?') {
-                    <span class="banner__placeholder banner__placeholder--four">?</span>
-                  } @else {
-                    <catalogue-icon [icon]="item.icon" [alt]="item.name" [size]="28"
-                                    fit="cover" />
-                  }
-                }
-              </span>
-              <span class="banner__name">{{ b.name }}</span>
-              <span class="banner__when">{{ isCustom(b.slug) ? 'Custom' : bannerWhen(b) }}</span>
+              <ng-container *ngTemplateOutlet="bannerCard; context: { $implicit: b, five: 52, four: 28 }" />
               @if (isPaired(b.slug)) {
                 <span class="banner__paired">Signature</span>
               }
             </button>
           }
         </div>
-        <div class="banners__footer">
-          @if (hasMoreBanners()) {
-            <button type="button" class="banners__more" (click)="showMoreBanners()">
-              Show more ({{ banners().length }} of {{ bannerTotal() }})
-            </button>
-          }
-          <button type="button" class="banners__custom-trigger" (click)="openCustomBannerDialog()">
-            + Custom banner
-          </button>
-        </div>
+        <ng-container *ngTemplateOutlet="bannerFooter" />
+        @if (editingCustom(); as kind) {
+          <ng-container *ngTemplateOutlet="customEditor;
+              context: { $implicit: kind, banner: custom()[kind], picker: pickerOptions()[kind] }" />
+        }
       </div>
     }
 
@@ -321,50 +293,23 @@
             <button type="button" class="row__remove" (click)="removeRow(rowIndex)"
                     [disabled]="rows().length === 1" aria-label="Remove">✕</button>
           </div>
+          <!-- The custom banner is edited where it is used, not in a dialog that saves it. -->
+          @if (editsCustom(rowIndex); as kind) {
+            <ng-container *ngTemplateOutlet="customEditor;
+              context: { $implicit: kind, banner: custom()[kind], picker: pickerOptions()[kind] }" />
+          }
           @if (pickingFor() === rowIndex) {
+            <ng-container *ngTemplateOutlet="bannerSearch" />
             <div class="banner-grid banner-grid--inline">
               @for (b of allBanners(); track b.slug) {
                 <button type="button" class="banner" [class.on]="row.bannerSlug === b.slug"
                         [class.banner--custom]="isCustom(b.slug)"
                         (click)="chooseRowBanner(rowIndex, b)">
-                  @if (isCustom(b.slug)) {
-                    <button type="button" class="banner__delete" (click)="deleteCustomBanner(b.slug, $event)" title="Delete custom banner">✕</button>
-                  }
-                  <span class="banner__five">
-                    @for (item of b.featured_five; track item.name) {
-                      @if (item.name === '?') {
-                        <span class="banner__placeholder banner__placeholder--five">?</span>
-                      } @else {
-                        <catalogue-icon [icon]="item.icon" [alt]="item.name" [size]="44"
-                                        fit="cover" />
-                      }
-                    }
-                  </span>
-                  <span class="banner__four">
-                    @for (item of b.featured_four; track item.name) {
-                      @if (item.name === '?') {
-                        <span class="banner__placeholder banner__placeholder--four">?</span>
-                      } @else {
-                        <catalogue-icon [icon]="item.icon" [alt]="item.name" [size]="24"
-                                        fit="cover" />
-                      }
-                    }
-                  </span>
-                  <span class="banner__name">{{ b.name }}</span>
-                  <span class="banner__when">{{ isCustom(b.slug) ? 'Custom' : bannerWhen(b) }}</span>
+                  <ng-container *ngTemplateOutlet="bannerCard; context: { $implicit: b, five: 44, four: 24 }" />
                 </button>
               }
             </div>
-            <div class="banners__footer">
-              @if (hasMoreBanners()) {
-                <button type="button" class="banners__more" (click)="showMoreBanners()">
-                  Show more ({{ banners().length }} of {{ bannerTotal() }})
-                </button>
-              }
-              <button type="button" class="banners__custom-trigger" (click)="openCustomBannerDialog(rowIndex)">
-                + Custom banner
-              </button>
-            </div>
+            <ng-container *ngTemplateOutlet="bannerFooter" />
           }
         }
       </div>
@@ -496,123 +441,121 @@
 
   }
 
-  <!-- Custom Banner Builder Dialog -->
-  <dialog #customBannerDialog class="custom-banner-dialog" (close)="onCustomBannerDialogClosed()">
-    <div class="custom-banner-dialog__head">
-      <h3>Create Custom Banner</h3>
-      <button type="button" class="custom-banner-dialog__close" (click)="closeCustomBannerDialog()">✕</button>
-    </div>
+  <!-- One banner card's contents, for both grids. `track $index` inside: a custom banner
+       can feature `?` more than once, and tracking by name would collide. -->
+  <ng-template #bannerCard let-b let-five="five" let-four="four">
+    <span class="banner__five">
+      @for (item of b.featured_five; track $index) {
+        @if (item.name === '?') {
+          <span class="banner__placeholder banner__placeholder--five">?</span>
+        } @else {
+          <catalogue-icon [icon]="item.icon" [alt]="item.name" [size]="five" fit="cover" />
+        }
+      }
+    </span>
+    <span class="banner__four">
+      @for (item of b.featured_four; track $index) {
+        @if (item.name === '?') {
+          <span class="banner__placeholder banner__placeholder--four">?</span>
+        } @else {
+          <catalogue-icon [icon]="item.icon" [alt]="item.name" [size]="four" fit="cover" />
+        }
+      }
+    </span>
+    <span class="banner__name">{{ b.name }}</span>
+    <span class="banner__when">{{ isCustom(b.slug) ? 'Your own' : bannerWhen(b) }}</span>
+  </ng-template>
 
-    <div class="custom-banner-dialog__body">
-      <div class="field">
-        <label for="custom-banner-name">Banner Name</label>
-        <input id="custom-banner-name" type="text" maxlength="60"
-               [value]="customBannerName()"
-               (input)="setCustomBannerName($any($event.target).value)" />
-      </div>
-
-      <div class="field">
-        <span class="label">Banner Type</span>
-        <div class="segmented" role="group" aria-label="Banner Type">
-          <button type="button" [class.on]="customBannerKind() === 'character'"
-                  (click)="setCustomBannerKind('character')">Character</button>
-          <button type="button" [class.on]="customBannerKind() === 'weapon'"
-                  (click)="setCustomBannerKind('weapon')">Weapon</button>
+  <!-- Search and chips over the banner grid. The server does the filtering, so a rerun on
+       page nine is found without paging to it. -->
+  <ng-template #bannerSearch>
+    <div class="banner-search">
+      <input type="search" name="banner-search" placeholder="Search banners or characters…"
+             aria-label="Search banners" [value]="bannerQuery()"
+             (input)="searchBanners($any($event.target).value)" />
+      <div class="banner-search__chips">
+        <div class="banner-search__group" role="group" aria-label="Banner type">
+          <button type="button" class="chip" [class.chip--on]="bannerChipOn('kind', 'character')"
+                  [attr.aria-pressed]="bannerChipOn('kind', 'character')"
+                  (click)="toggleBannerChip('kind', 'character')">Character</button>
+          <button type="button" class="chip" [class.chip--on]="bannerChipOn('kind', 'weapon')"
+                  [attr.aria-pressed]="bannerChipOn('kind', 'weapon')"
+                  (click)="toggleBannerChip('kind', 'weapon')">Weapon</button>
         </div>
-      </div>
-
-      <!-- Featured 5-star target -->
-      <fieldset class="custom-banner-dialog__fieldset">
-        <legend>Featured 5★ Target</legend>
-        <div class="custom-banner-dialog__row">
-          <div class="field">
-            <label for="custom-target-select">{{ customBannerKind() === 'character' ? 'Character' : 'Weapon' }}</label>
-            <select id="custom-target-select" [value]="customBannerTargetName()"
-                    (change)="setCustomBannerTargetName($any($event.target).value)">
-              <option value="?">? (Unknown {{ customBannerKind() === 'character' ? 'Character' : 'Weapon' }})</option>
-              @if (customBannerKind() === 'character') {
-                @for (ch of fiveStarCharacters(); track ch.name) {
-                  <option [value]="ch.name">{{ ch.name }}</option>
-                }
-              } @else {
-                @for (w of fiveStarWeapons(); track w.name) {
-                  <option [value]="w.name">{{ w.name }}</option>
-                }
-              }
-            </select>
-          </div>
-
-          <div class="field">
-            <label for="custom-target-owned">Already Owned</label>
-            <select id="custom-target-owned" [value]="customBannerTargetOwnership()"
-                    (change)="setCustomBannerTargetOwnership(+$any($event.target).value)">
-              @if (customBannerKind() === 'character') {
-                <option value="0">Unowned (Need C0)</option>
-                <option value="1">C0 (Need C1)</option>
-                <option value="2">C1 (Need C2)</option>
-                <option value="3">C2 (Need C3)</option>
-                <option value="4">C3 (Need C4)</option>
-                <option value="5">C4 (Need C5)</option>
-                <option value="6">C5 (Need C6)</option>
-              } @else {
-                <option value="0">Unowned (Need R1)</option>
-                <option value="1">R1 (Need R2)</option>
-                <option value="2">R2 (Need R3)</option>
-                <option value="3">R3 (Need R4)</option>
-                <option value="4">R4 (Need R5)</option>
-              }
-            </select>
-          </div>
-        </div>
-      </fieldset>
-
-      <!-- Featured 4-stars -->
-      <fieldset class="custom-banner-dialog__fieldset">
-        <legend>Featured 4★ Lineup ({{ customBannerKind() === 'character' ? '3 Characters' : '5 Weapons' }})</legend>
-        @for (slot of customBannerFourStars(); track $index) {
-          <div class="custom-banner-dialog__row">
-            <div class="field">
-              <label [for]="'custom-four-' + $index">Slot {{ $index + 1 }}</label>
-              <select [id]="'custom-four-' + $index" [value]="slot.name"
-                      (change)="setCustomBannerSlotName($index, $any($event.target).value)">
-                <option value="?">? (Unknown {{ customBannerKind() === 'character' ? 'Character' : 'Weapon' }})</option>
-                @if (customBannerKind() === 'character') {
-                  @for (ch of fourStarCharacters(); track ch.name) {
-                    <option [value]="ch.name">{{ ch.name }}</option>
-                  }
+        @for (filter of bannerChips(); track filter.group) {
+          <div class="banner-search__group" role="group" [attr.aria-label]="filter.label">
+            @for (chip of filter.options; track chip.value) {
+              <button type="button" class="chip"
+                      [class.chip--on]="bannerChipOn($any(filter.group), chip.value)"
+                      [attr.aria-pressed]="bannerChipOn($any(filter.group), chip.value)"
+                      [attr.title]="chip.label" [attr.aria-label]="chip.label"
+                      (click)="toggleBannerChip($any(filter.group), chip.value)">
+                @if (chip.icon) {
+                  <catalogue-icon [icon]="chip.icon" [alt]="''" [size]="16" />
                 } @else {
-                  @for (w of fourStarWeapons(); track w.name) {
-                    <option [value]="w.name">{{ w.name }}</option>
-                  }
+                  {{ chip.label }}
                 }
-              </select>
-            </div>
-
-            @if (customBannerKind() === 'character') {
-              <div class="field">
-                <label [for]="'custom-four-const-' + $index">Ownership</label>
-                <select [id]="'custom-four-const-' + $index"
-                        [value]="slot.constellation === null ? 'none' : slot.constellation"
-                        (change)="setCustomBannerSlotConstellation($index, $any($event.target).value)">
-                  <option value="none">Unowned (0 Starglitter)</option>
-                  <option value="0">C0</option>
-                  <option value="1">C1</option>
-                  <option value="2">C2</option>
-                  <option value="3">C3</option>
-                  <option value="4">C4</option>
-                  <option value="5">C5</option>
-                  <option value="6">C6 (5 Starglitter)</option>
-                </select>
-              </div>
+              </button>
             }
           </div>
         }
-      </fieldset>
+      </div>
     </div>
+  </ng-template>
 
-    <div class="custom-banner-dialog__actions">
-      <button type="button" class="btn btn--subtle" (click)="closeCustomBannerDialog()">Cancel</button>
-      <button type="button" class="btn btn--primary" (click)="saveAndSelectCustomBanner()">Save & Select</button>
+  <ng-template #bannerFooter>
+    <div class="banners__footer">
+      @if (hasMoreBanners()) {
+        <button type="button" class="banners__more" (click)="showMoreBanners()">
+          Show more ({{ banners().length }} of {{ bannerTotal() }})
+        </button>
+      } @else if (bannersFiltered() && !banners().length) {
+        <small class="hint">No past banner matches — the custom banner is always there.</small>
+      }
     </div>
-  </dialog>
+  </ng-template>
+
+  <!-- The custom banner of one kind, edited in place. Nothing is saved: it is a question to
+       ask the planner, not a thing to keep. -->
+  <ng-template #customEditor let-kind let-banner="banner" let-picker="picker">
+    <fieldset class="custom-editor">
+      <legend>{{ kind === 'character' ? 'Custom character banner' : 'Custom weapon banner' }}</legend>
+      <div class="custom-editor__five">
+        <mist-card-picker [label]="kind === 'character' ? '5★ character' : '5★ weapon'"
+                          [options]="picker.five"
+                          [filters]="picker.filters"
+                          [selected]="[banner.five]" ordered
+                          (selectedChange)="setCustomFive(kind, $event)" />
+      </div>
+      <div class="custom-editor__fours">
+        @for (slot of banner.fours; track $index; let i = $index) {
+          <div class="custom-editor__slot">
+            <mist-card-picker [label]="'4★ ' + (kind === 'character' ? 'character ' : 'weapon ') + (i + 1)"
+                              [options]="picker.four"
+                              [filters]="picker.filters"
+                              [selected]="[slot.name]" ordered
+                              (selectedChange)="setCustomSlot(kind, i, $event)" />
+            <!-- Only a character banner's 4-stars earn a refund the planner prices. -->
+            @if (kind === 'character') {
+              <label class="custom-editor__owned">
+                <span>Owned</span>
+                <select (change)="setCustomSlotConstellation(kind, i, $any($event.target).value)">
+                  <option value="none" [selected]="slot.constellation === null">Unowned</option>
+                  @for (c of constellations; track c) {
+                    <option [value]="c" [selected]="slot.constellation === c">C{{ c }}</option>
+                  }
+                </select>
+                @if (slotFromAccount(slot)) {
+                  <small class="hint">from account</small>
+                }
+              </label>
+            }
+          </div>
+        }
+      </div>
+      <button type="button" class="banners__clear" (click)="resetCustom(kind)">
+        Reset to ?
+      </button>
+    </fieldset>
+  </ng-template>
 </section>
