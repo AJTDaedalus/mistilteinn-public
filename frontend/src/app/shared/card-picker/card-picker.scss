@@ -169,6 +169,32 @@
 /* A row of faces for an option whose identity is several things — a team's party. Wrapping,
    because four 34px faces do not fit a narrow card at every width and clipping one would drop
    a character from a team silently. */
+/* The art and a corner mark over it. Only drawn for a card with a badge, so every other
+   picker's art keeps the exact box it had. */
+.picker__art {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Bottom-right, on the art: where other planners put a constellation or refinement. Solid
+   ground and a rule so it reads over any portrait. */
+.picker__badge {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 0 0.3rem;
+  border: 1px solid var(--brass);
+  border-radius: var(--radius-1);
+  background: var(--bg-deep);
+  color: var(--brass-hi);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+
 .picker__faces {
   /* Two columns, so a four-character party reads as a 2x2 block rather than the ragged 3+1 a
      wrapping flex row gives it at this card width. */

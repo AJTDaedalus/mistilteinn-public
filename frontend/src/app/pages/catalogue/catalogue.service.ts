@@ -93,6 +93,19 @@ export class CatalogueService {
     return data;
   }
 
+  /**
+   * The caller's own weapons, one row per copy, with its refinement. Equipped first.
+   *
+   * Distinct from `listWeapons`, which is the catalogue of every weapon in the game.
+   */
+  async listOwnedWeapons(params: { offset?: number; limit?: number } = {}) {
+    const { data, error } = await this.api.GET('/api/v1/weapons/owned', {
+      params: { query: params },
+    });
+    if (error) throw new Error('Could not load your weapons');
+    return data;
+  }
+
   async listArtifactSets(params: { name?: string; offset?: number; limit?: number } = {}) {
     const { data, error } = await this.api.GET('/api/v1/artifact-sets', {
       params: { query: params },

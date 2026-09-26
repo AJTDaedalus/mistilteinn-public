@@ -120,6 +120,22 @@ describe('CardPicker', () => {
     expect(shown().filter(Boolean)).toHaveLength(4);
   });
 
+  it('marks a card’s art with its badge, and only the cards that have one', () => {
+    fixture.componentRef.setInput('options', [
+      { ...options[0], badge: 'C2' },
+      options[1],
+    ]);
+    fixture.detectChanges();
+    const card = (name: string) =>
+      ([...fixture.nativeElement.querySelectorAll('.picker__card')] as HTMLElement[])
+        .find((el) => el.querySelector('.picker__name')?.textContent?.trim() === name)!;
+    expect(card('Nahida').querySelector('.picker__art .picker__badge')?.textContent?.trim())
+      .toBe('C2');
+    // No badge is "nothing said", so the art keeps its plain box and draws no empty mark.
+    expect(card('Alhaitham').querySelector('.picker__badge')).toBeNull();
+    expect(card('Alhaitham').querySelector('.picker__art')).toBeNull();
+  });
+
   it('says so rather than showing an empty grid', () => {
     inner().search.set('nobody');
 

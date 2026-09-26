@@ -28,6 +28,15 @@ export interface CardOption {
    * widening as you add a filter — is the thing that makes a filter bar feel broken.
    */
   tags?: Readonly<Record<string, string>>;
+  /**
+   * A short mark drawn on the card's art — `C2` for a character held at C2, `R1` for a weapon.
+   *
+   * Owner, 2026-09-26: *"instead of 'C0 owned' can we put a 'C0' icon on the character icon …
+   * Most other sites do this."* A detail line saying it wrapped to two lines on a narrow card
+   * and was read last; a corner mark on the face is where every other planner puts it.
+   * **Absent means "nothing said"**, never "none held", so only set it from a real answer.
+   */
+  badge?: string;
   /** Shown on hover. For a set's bonus text, which is too long for a card. */
   tooltip?: string;
   /**

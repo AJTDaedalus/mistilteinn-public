@@ -192,6 +192,13 @@ export class WishesPage {
   protected readonly allWeapons = signal<WeaponSummary[]>([]);
   /** Constellation of every character the account owns, by name. Empty until it loads. */
   protected readonly held = signal<ReadonlyMap<string, number>>(new Map());
+  /**
+   * Highest refinement of every weapon the account owns, by name.
+   *
+   * **The highest copy, not a sum.** Two R1 copies are not an R2 until one is fed to the other,
+   * and the planner's question is what the best copy needs to reach the goal.
+   */
+  protected readonly heldWeapons = signal<ReadonlyMap<string, number>>(new Map());
 
   /** The custom banner of each kind, as currently edited. */
   protected readonly custom = signal<Record<Kind, CustomBanner>>({
@@ -362,9 +369,10 @@ export class WishesPage {
    * The picker's cards: **`?` first**, then the catalogue alphabetically.
    *
    * The card value is the **name**, because that is what the backend resolves a custom banner
-   * by; `characterCardOptions` keys on the row id for pickers that save one. A held character
-   * says so in its detail line — the constellation the slot will be priced at — so the choice
-   * is made with the account in view rather than discovered after.
+   * by; `characterCardOptions` keys on the row id for pickers that save one. A held unit carries
+   * its constellation or refinement as a badge on the art — the owner's ask, and where other
+   * planners put it — so the choice is made with the account in view rather than discovered
+   * after.
    */
   private cardOptions(kind: Kind, rarity: 'five_star' | 'four_star'): CardOption[] {
     const unknown: CardOption = {
@@ -382,9 +390,7 @@ export class WishesPage {
           return {
             ...option,
             value: pool[index].name,
-            detail: constellation === undefined
-              ? option.detail
-              : `${option.detail} · C${constellation} owned`,
+            badge: constellation === undefined ? undefined : `C${constellation}`,
           };
         }),
       ];
@@ -393,6 +399,7 @@ export class WishesPage {
       unknown,
       ...this.weaponPool(rarity).map((w) => ({
         value: w.name,
+        badge: this.heldWeapons().has(w.name) ? `R${this.heldWeapons().get(w.name)}` : undefined,
         label: w.name,
         icon: w.icon,
         detail: w.is_beta ? `${w.weapon_type_display} · beta` : w.weapon_type_display,
@@ -712,7 +719,7 @@ export class WishesPage {
   private async loadUnits(): Promise<void> {
     // **Beta units included.** A leaked character is exactly who a hypothetical banner is
     // for; the card says "beta" so it is not mistaken for a released one.
-    const [characters, weapons, roster] = await Promise.all([
+    const [characters, weapons, roster, owned] = await Promise.all([
       everyPage((offset) => this.catalogue.listCharacters(
         { limit: CATALOGUE_PAGE, offset, include_beta: true },
       )).catch(() => null),
@@ -721,6 +728,9 @@ export class WishesPage {
       )).catch(() => null),
       // Not fatal: without it the slots start unowned and say nothing about the account.
       this.roster.list().catch(() => null),
+      everyPage((offset) => this.catalogue.listOwnedWeapons(
+        { limit: CATALOGUE_PAGE, offset },
+      )).catch(() => null),
     ]);
     this.allCharacters.set(characters ?? []);
     this.allWeapons.set(weapons ?? []);
@@ -734,6 +744,12 @@ export class WishesPage {
         .filter((e) => e.owned === true && e.constellation !== null && names.get(e.name) === 1)
         .map((e) => [e.name, e.constellation as number]),
     ));
+    const best = new Map<string, number>();
+    for (const copy of owned ?? []) {
+      const name = copy.weapon?.name;
+      if (name) best.set(name, Math.max(best.get(name) ?? 0, copy.refinement));
+    }
+    this.heldWeapons.set(best);
   }
 
   /** Sequence guard: every *replace* takes a ticket, and anything older is dropped. */
@@ -1264,13 +1280,17 @@ export class WishesPage {
    *
    * **Owned copies are always written, never left as they were** — the fix #337 made, kept.
    * Switching from a C3 goal to an unannounced one and keeping "from C3" would plan a copy
-   * nobody holds. An unannounced unit is unowned by definition; a named character is whatever
-   * the roster says, and unowned when it says nothing. There is no weapon roster, so a weapon
-   * starts from none and the "from" control is where to say otherwise.
+   * nobody holds. An unannounced unit is unowned by definition; a named one is whatever the
+   * account says — the roster's constellation, or the best owned copy's refinement — and
+   * unowned when it says nothing.
    */
   private customTarget(kind: Kind): Partial<Position> {
     const name = this.custom()[kind].five;
-    const held = kind === 'character' ? this.held().get(name) : undefined;
+    if (kind === 'weapon') {
+      // Refinement *is* the copy count: R1 is one copy, R5 five.
+      return { label: name, ownedCopies: this.heldWeapons().get(name) ?? 0 };
+    }
+    const held = this.held().get(name);
     return { label: name, ownedCopies: held === undefined ? 0 : held + 1 };
   }
 

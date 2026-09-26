@@ -114,6 +114,11 @@
                 <catalogue-icon [icon]="art" [alt]="''" [size]="34" />
               }
             </span>
+          } @else if (option.badge) {
+            <span class="picker__art">
+              <catalogue-icon class="fill" [icon]="option.icon" [alt]="''" [size]="64" />
+              <span class="picker__badge">{{ option.badge }}</span>
+            </span>
           } @else {
             <catalogue-icon class="fill" [icon]="option.icon" [alt]="''" [size]="64" />
           }
