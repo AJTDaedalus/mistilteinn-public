@@ -92,6 +92,22 @@ const CHARACTERS = [
   { ...character('Traveler', 'five_star'), id: 'id-Traveler-2' },
 ];
 
+function weapon(name: string, rarity: string): any {
+  return {
+    id: `id-${name}`, name, rarity, icon: `UI_${name}`, is_beta: false,
+    weapon_type: 'WEAPON_BOW', weapon_type_display: 'Bow', weapon_type_icon: 'bow',
+  };
+}
+
+const WEAPONS = [weapon('Elegy', 'five_star'), weapon('Favonius Warbow', 'four_star')];
+
+/** Two copies of one weapon: the badge is the best copy, not the sum. */
+const OWNED_WEAPONS = [
+  { weapon: WEAPONS[1], refinement: 1 },
+  { weapon: WEAPONS[1], refinement: 3 },
+  { weapon: WEAPONS[0], refinement: 1 },
+];
+
 const ROSTER = {
   owned_count: 2,
   withheld: 0,
@@ -123,7 +139,8 @@ function makePage(over: Partial<WishesService> = {}) {
         provide: CatalogueService,
         useValue: {
           listCharacters: vi.fn().mockResolvedValue({ items: CHARACTERS, total: CHARACTERS.length }),
-          listWeapons: vi.fn().mockResolvedValue({ items: [], total: 0 }),
+          listWeapons: vi.fn().mockResolvedValue({ items: WEAPONS, total: WEAPONS.length }),
+          listOwnedWeapons: vi.fn().mockResolvedValue({ items: OWNED_WEAPONS, total: 3 }),
         },
       },
       { provide: RosterService, useValue: { list: vi.fn().mockResolvedValue(ROSTER) } },
@@ -1341,8 +1358,32 @@ describe('the custom banner is one per kind, edited in place', () => {
     expect(five).toEqual(['?', 'Vesna']);
     const four = page.pickerOptions().character.four.map((o: any) => o.value);
     expect(four).toEqual(['?', 'Bennett', 'Diona']);
-    // The account's constellation is on the card, so the choice is made with it in view.
-    expect(page.pickerOptions().character.four[1].detail).toContain('C6 owned');
+    // The account's constellation is a badge on the card's art, not a line of text.
+    expect(page.pickerOptions().character.four[1].badge).toBe('C6');
+    expect(page.pickerOptions().character.four[1].detail).not.toContain('owned');
+    // Owned with no constellation said, and not owned at all, carry no badge.
+    expect(page.pickerOptions().character.four[2].badge).toBeUndefined();
+    expect(page.pickerOptions().character.four[0].badge).toBeUndefined();
+  });
+
+  it('badges a weapon with its best copy’s refinement', async () => {
+    const { page } = makePage();
+    await unitsLoaded();
+    const four = page.pickerOptions().weapon.four;
+    expect(four.map((o: any) => [o.value, o.badge])).toEqual([
+      ['?', undefined], ['Favonius Warbow', 'R3'],
+    ]);
+    expect(page.pickerOptions().weapon.five[1].badge).toBe('R1');
+  });
+
+  it('starts a custom weapon goal from the refinement the account holds', async () => {
+    const { page } = makePage();
+    await unitsLoaded();
+    page.chooseBanner(page.allBanners()[1]);
+    expect(page.weapon().ownedCopies).toBe(0);           // ? is unowned by definition
+    page.setCustomFive('weapon', ['Elegy']);
+    expect(page.weapon().label).toBe('Elegy');
+    expect(page.weapon().ownedCopies).toBe(1);           // R1 is one copy
   });
 
   it('carries the chips the character grid has', async () => {
@@ -1451,6 +1492,7 @@ describe('the catalogue is read in pages', () => {
         } },
         { provide: CatalogueService, useValue: {
           listCharacters: vi.fn().mockResolvedValue({ items: [], total: 0 }), listWeapons,
+          listOwnedWeapons: vi.fn().mockResolvedValue({ items: [], total: 0 }),
         } },
         { provide: RosterService, useValue: { list: vi.fn().mockResolvedValue(ROSTER) } },
       ],
