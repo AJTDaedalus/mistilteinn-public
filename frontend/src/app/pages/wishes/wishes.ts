@@ -1,13 +1,16 @@
-import { DecimalPipe } from '@angular/common';
-import { Component, computed, effect, inject, signal, viewChild, type ElementRef } from '@angular/core';
+import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { CardPicker, type CardFilter, type CardOption } from '../../shared/card-picker/card-picker';
+import { characterCardFilters, characterCardOptions } from '../../shared/character-cards';
 import { CatalogueIcon } from '../../shared/icon/icon';
+import { RosterService } from '../builds/roster.service';
 import { CatalogueService, type CharacterSummary, type WeaponSummary } from '../catalogue/catalogue.service';
 
 import {
   WishesService,
-  type CustomFeaturedItem,
+  type WishBannerFilter,
   type WishBannerRead,
   type WishCustomBanner,
   type WishFeaturedItem,
@@ -62,6 +65,83 @@ function position(label = ''): Position {
   return { label, pity: 0, guaranteed: false, lostFiftyFifties: 0, ownedCopies: 0 };
 }
 
+type Kind = 'character' | 'weapon';
+
+/** A unit nobody has announced yet. The first choice in every custom-banner picker. */
+export const UNKNOWN = '?';
+
+/**
+ * The custom banner of each kind — **one each, edited in place, never saved.**
+ *
+ * Owner, 2026-09-26: *"We don't need to save custom banners, have it be an option people change
+ * their custom banner for."* The first version kept a growing list in `localStorage` behind a
+ * create-and-save dialog, which made a hypothetical banner a thing to manage rather than a
+ * question to ask.
+ */
+export const CUSTOM_SLUG: Readonly<Record<Kind, string>> = {
+  character: 'custom:character',
+  weapon: 'custom:weapon',
+};
+
+/** One featured 4-star. `constellation` null is "unowned" — sent as such, not as "ask". */
+export interface CustomSlot {
+  name: string;
+  constellation: number | null;
+}
+
+export interface CustomBanner {
+  five: string;
+  fours: CustomSlot[];
+}
+
+/** Three featured 4-star characters, or five 4-star weapons. */
+function blankCustom(kind: Kind): CustomBanner {
+  return {
+    five: UNKNOWN,
+    fours: Array.from({ length: kind === 'character' ? 3 : 5 }, () => ({
+      name: UNKNOWN, constellation: null,
+    })),
+  };
+}
+
+/**
+ * Names that pick exactly one catalogue row.
+ *
+ * The backend resolves a custom banner **by name**, so a name sixteen Travelers or fourteen
+ * practice mannequins share cannot be offered — it would price whichever row came back last.
+ * Neither is ever on a banner, which is why dropping them loses nothing.
+ */
+function uniquelyNamed<T extends { name: string }>(rows: readonly T[]): T[] {
+  const seen = new Map<string, number>();
+  for (const r of rows) seen.set(r.name, (seen.get(r.name) ?? 0) + 1);
+  return rows
+    .filter((r) => seen.get(r.name) === 1)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** The catalogue endpoints' own ceiling (`le=200`). */
+const CATALOGUE_PAGE = 200;
+
+/**
+ * Every row of a paged catalogue list.
+ *
+ * **Paged because one request cannot hold them.** The first version asked for `limit: 300` and
+ * `limit: 400` against an endpoint capped at 200; both came back 422, the `.catch` turned that
+ * into an empty list, and every custom-banner picker offered `?` and nothing else — with no
+ * error anywhere. There are 260 weapons, so one page of the maximum is not enough either.
+ */
+async function everyPage<T>(
+  fetch: (offset: number) => Promise<{ items: T[]; total: number } | undefined>,
+): Promise<T[]> {
+  const rows: T[] = [];
+  for (;;) {
+    const page = await fetch(rows.length);
+    const items = page?.items ?? [];
+    rows.push(...items);
+    if (!items.length || rows.length >= (page?.total ?? 0)) return rows;
+  }
+}
+
 /**
  * A fresh row.
  *
@@ -69,22 +149,6 @@ function position(label = ''): Position {
  * be changed and went out as the goal's name — the ladder printed `Weapon 2 R1`. Empty means the
  * banner has not named it yet, and `plan_campaign` builds the rung label with `.strip()`.
  */
-export interface CustomBannerFourStar {
-  name: string;
-  constellation: number | null;
-}
-
-export interface CustomBannerConfig {
-  slug: string;
-  name: string;
-  kind: 'character' | 'weapon';
-  target: {
-    name: string;
-    owned_copies: number;
-  };
-  fourStars: CustomBannerFourStar[];
-}
-
 function row(banner: 'character' | 'weapon', label = ''): CustomRow {
   return { ...position(label), banner, targetCopies: 1, bannerSlug: null };
 }
@@ -115,30 +179,31 @@ const ACCOUNT_REFUND = 'account';
 
 @Component({
   selector: 'app-wishes',
-  imports: [FormsModule, DecimalPipe, CatalogueIcon],
+  imports: [FormsModule, DecimalPipe, NgTemplateOutlet, CatalogueIcon, CardPicker],
   templateUrl: './wishes.html',
   styleUrl: './wishes.scss',
 })
 export class WishesPage {
   private service = inject(WishesService);
   private catalogue = inject(CatalogueService);
+  private roster = inject(RosterService);
 
-  private readonly customBannerStorageKey = 'mistilteinn.custom_banners';
-  protected readonly customBanners = signal<CustomBannerConfig[]>([]);
   protected readonly allCharacters = signal<CharacterSummary[]>([]);
   protected readonly allWeapons = signal<WeaponSummary[]>([]);
+  /** Constellation of every character the account owns, by name. Empty until it loads. */
+  protected readonly held = signal<ReadonlyMap<string, number>>(new Map());
 
-  protected readonly customBannerDialog = viewChild<ElementRef<HTMLDialogElement>>('customBannerDialog');
-  protected readonly customBannerRowIndex = signal<number | null>(null);
-  protected readonly customBannerKind = signal<'character' | 'weapon'>('character');
-  protected readonly customBannerName = signal('Custom Banner');
-  protected readonly customBannerTargetName = signal('?');
-  protected readonly customBannerTargetOwnership = signal(0);
-  protected readonly customBannerFourStars = signal<CustomBannerFourStar[]>([
-    { name: '?', constellation: null },
-    { name: '?', constellation: null },
-    { name: '?', constellation: null },
-  ]);
+  /** The custom banner of each kind, as currently edited. */
+  protected readonly custom = signal<Record<Kind, CustomBanner>>({
+    character: blankCustom('character'),
+    weapon: blankCustom('weapon'),
+  });
+
+  // -- banner search. Sent to the server: the page holds one page of a ~300-row table.
+  protected readonly bannerQuery = signal('');
+  protected readonly bannerKind = signal<Kind | null>(null);
+  protected readonly bannerElement = signal<WishBannerFilter['element'] | null>(null);
+  protected readonly bannerWeapon = signal<WishBannerFilter['weapon_type'] | null>(null);
 
   protected readonly mode = signal<'simple' | 'custom'>('simple');
 
@@ -249,6 +314,132 @@ export class WishesPage {
     () => this.banner()?.signature_banner ?? null,
   );
 
+  /** The custom banners as the grid draws them, in the same shape as a real one. */
+  protected readonly customBanners = computed<WishBannerRead[]>(() =>
+    (['character', 'weapon'] as const).map((kind) => {
+      const banner = this.custom()[kind];
+      return {
+        slug: CUSTOM_SLUG[kind],
+        name: kind === 'character' ? 'Custom character banner' : 'Custom weapon banner',
+        kind,
+        starts_at: null,
+        ends_at: null,
+        featured_five: [this.featured(kind, banner.five)],
+        featured_four: banner.fours.map((slot) => ({
+          name: slot.name,
+          icon: this.artFor(slot.name),
+          owned_copies: slot.constellation,
+        })),
+        signature_banner: null,
+        alongside: [],
+      };
+    }),
+  );
+
+  /**
+   * Every card the grid draws: **the custom banners first**, then the loaded page.
+   *
+   * First because a hypothetical banner is what someone reaches for when the real ones do not
+   * have their target — scrolling past eight reruns to find it was half of what made it clunky.
+   * The kind chip applies to them too; the text and element chips do not, since a custom banner
+   * is whatever the user makes it.
+   */
+  protected readonly allBanners = computed<WishBannerRead[]>(() => [
+    ...this.customBanners().filter((b) => !this.bannerKind() || b.kind === this.bannerKind()),
+    ...this.banners(),
+  ]);
+
+  /** Characters a custom banner may feature, by rarity. */
+  private characterPool(rarity: 'five_star' | 'four_star'): CharacterSummary[] {
+    return uniquelyNamed(this.allCharacters().filter((c) => c.rarity === rarity));
+  }
+
+  private weaponPool(rarity: 'five_star' | 'four_star'): WeaponSummary[] {
+    return uniquelyNamed(this.allWeapons().filter((w) => w.rarity === rarity));
+  }
+
+  /**
+   * The picker's cards: **`?` first**, then the catalogue alphabetically.
+   *
+   * The card value is the **name**, because that is what the backend resolves a custom banner
+   * by; `characterCardOptions` keys on the row id for pickers that save one. A held character
+   * says so in its detail line — the constellation the slot will be priced at — so the choice
+   * is made with the account in view rather than discovered after.
+   */
+  private cardOptions(kind: Kind, rarity: 'five_star' | 'four_star'): CardOption[] {
+    const unknown: CardOption = {
+      value: UNKNOWN,
+      label: '? Unannounced',
+      detail: kind === 'character' ? 'Any character' : 'Any weapon',
+    };
+    if (kind === 'character') {
+      const pool = this.characterPool(rarity);
+      const held = this.held();
+      return [
+        unknown,
+        ...characterCardOptions(pool).map((option, index) => {
+          const constellation = held.get(pool[index].name);
+          return {
+            ...option,
+            value: pool[index].name,
+            detail: constellation === undefined
+              ? option.detail
+              : `${option.detail} · C${constellation} owned`,
+          };
+        }),
+      ];
+    }
+    return [
+      unknown,
+      ...this.weaponPool(rarity).map((w) => ({
+        value: w.name,
+        label: w.name,
+        icon: w.icon,
+        detail: w.is_beta ? `${w.weapon_type_display} · beta` : w.weapon_type_display,
+        tags: { weapon: w.weapon_type ?? '' },
+      })),
+    ];
+  }
+
+  /** The same chips the character grid offers; a weapon only answers to its class. */
+  private cardFilters(kind: Kind): CardFilter[] {
+    if (kind === 'character') return characterCardFilters(this.allCharacters());
+    const classes = new Map<string, { label: string; icon: string }>();
+    for (const w of this.allWeapons()) {
+      if (w.weapon_type && w.weapon_type_icon && !classes.has(w.weapon_type)) {
+        classes.set(w.weapon_type, { label: w.weapon_type_display, icon: w.weapon_type_icon });
+      }
+    }
+    return [{
+      group: 'weapon',
+      label: 'Weapon',
+      options: [...classes].sort().map(([value, { label, icon }]) => ({ value, label, icon })),
+    }];
+  }
+
+  /**
+   * Each picker's cards and chips, built once per catalogue or roster change.
+   *
+   * Computed rather than called from the template: a method there rebuilt some 150 cards on
+   * every change detection for each of up to six pickers, and handed `CardPicker` a new array
+   * each time, which re-renders an `OnPush` component for nothing.
+   */
+  protected readonly pickerOptions = computed(() => ({
+    character: {
+      five: this.cardOptions('character', 'five_star'),
+      four: this.cardOptions('character', 'four_star'),
+      filters: this.cardFilters('character'),
+    },
+    weapon: {
+      five: this.cardOptions('weapon', 'five_star'),
+      four: this.cardOptions('weapon', 'four_star'),
+      filters: this.cardFilters('weapon'),
+    },
+  }));
+
+  /** The chips above the banner grid: vision and weapon class, as on the character grid. */
+  protected readonly bannerChips = computed(() => characterCardFilters(this.allCharacters()));
+
   /**
    * The paired banner's row, when it happens to be on the loaded page.
    *
@@ -258,63 +449,36 @@ export class WishesPage {
    * page. That null was indistinguishable from a phase with no weapon banner, and no phase has
    * none, so it was always a pagination artefact.
    */
-  protected readonly customBannersAsRead = computed<WishBannerRead[]>(() =>
-    this.customBanners().map((cb) => ({
-      slug: cb.slug,
-      name: cb.name,
-      kind: cb.kind,
-      starts_at: null,
-      ends_at: null,
-      featured_five: [
-        {
-          name: cb.target.name,
-          icon: this.artFor(cb.target.name),
-          owned_copies: cb.target.owned_copies > 0 ? cb.target.owned_copies - 1 : null,
-        },
-      ],
-      featured_four: cb.fourStars.map((item) => ({
-        name: item.name,
-        icon: this.artFor(item.name),
-        owned_copies: item.constellation !== undefined ? item.constellation : null,
-      })),
-      signature_banner: null,
-      alongside: [],
-    })),
-  );
-
-  protected readonly allBanners = computed<WishBannerRead[]>(() => [
-    ...this.customBannersAsRead(),
-    ...this.banners(),
-  ]);
-
-  protected readonly fourStarCharacters = computed(() =>
-    this.allCharacters()
-      .filter((ch) => ch.rarity === 'four_star')
-      .sort((a, b) => a.name.localeCompare(b.name)),
-  );
-  protected readonly fiveStarCharacters = computed(() =>
-    this.allCharacters()
-      .filter((ch) => ch.rarity === 'five_star')
-      .sort((a, b) => a.name.localeCompare(b.name)),
-  );
-  protected readonly fourStarWeapons = computed(() =>
-    this.allWeapons()
-      .filter((w) => w.rarity === 'four_star')
-      .sort((a, b) => a.name.localeCompare(b.name)),
-  );
-  protected readonly fiveStarWeapons = computed(() =>
-    this.allWeapons()
-      .filter((w) => w.rarity === 'five_star')
-      .sort((a, b) => a.name.localeCompare(b.name)),
-  );
-
   protected readonly pairedWeaponRow = computed(() => {
     const slug = this.pairedWeaponBanner();
-    return slug ? this.allBanners().find((b) => b.slug === slug) ?? null : null;
+    return slug ? this.known().find((b) => b.slug === slug) ?? null : null;
   });
 
+  /**
+   * Every real banner the user has picked, kept by slug whatever the list shows now.
+   *
+   * **The list is a filtered server page, so it cannot be where a choice lives.** Pressing the
+   * Weapon chip after picking a character banner replaced the page, the lookup came back null,
+   * and the plan went out with `banner_slug: null` on both legs — the account refund silently
+   * gone, with the card the user picked no longer drawn to show why. Found in review of #338.
+   */
+  private readonly picked = signal<ReadonlyMap<string, WishBannerRead>>(new Map());
+
+  /**
+   * Every banner the page can resolve a slug against — **whatever the chips hide.** Custom
+   * banners come first so an edit to one is what gets read; the picks outlive the page.
+   */
+  private readonly known = computed(() => [
+    ...this.customBanners(), ...this.banners(), ...this.picked().values(),
+  ]);
+
+  private remember(banner: WishBannerRead | null): void {
+    if (!banner || this.isCustom(banner.slug)) return;
+    this.picked.update((all) => new Map(all).set(banner.slug, banner));
+  }
+
   protected readonly banner = computed(() =>
-    this.allBanners().find((b) => b.slug === this.chosenBanner()) ?? null,
+    this.known().find((b) => b.slug === this.chosenBanner()) ?? null,
   );
 
   protected readonly hasMoreBanners = computed(
@@ -441,19 +605,6 @@ export class WishesPage {
    * only check that the object still matches the generated contract — so moving `banner_slug`
    * from the request onto each target could not have failed `npm run verify`.
    */
-  private customBannersPayload(): WishCustomBanner[] {
-    return this.customBanners().map((cb) => ({
-      slug: cb.slug,
-      name: cb.name,
-      kind: cb.kind,
-      featured_five: [cb.target.name],
-      featured_four: cb.fourStars.map((f) => ({
-        name: f.name,
-        constellation: f.constellation ?? null,
-      })),
-    }));
-  }
-
   protected request(): WishPlanRequest {
     const custom_banners = this.customBannersPayload();
     const wallet = {
@@ -466,9 +617,16 @@ export class WishesPage {
     if (this.mode() === 'custom') {
       return {
         ...wallet,
+        // Ignored for custom targets -- each row names its own goal -- but the generated
+        // contract makes a defaulted field non-optional, so sending it keeps the request
+        // typed rather than cast.
         strategy: this.strategy(),
+        // **A complete row is dropped, not sent.** Owning the maximum leaves no rung above
+        // it, so the row describes a goal that is already met; sending it would ask the
+        // backend to plan "from C6 to C6".
         targets: this.plannableRows().map((entry, index) => ({
           ...this.target(entry, entry.banner),
+          // Only the first row declares the counter; the backend refuses a later one.
           lost_fifty_fifties:
             index === 0 ? this.target(entry, entry.banner).lost_fifty_fifties : 0,
           target_copies: entry.targetCopies,
@@ -480,6 +638,12 @@ export class WishesPage {
 
     return {
       ...wallet,
+      // **Only the leg whose kind the picked banner actually is.** Simple mode has one
+      // picker and two legs, and sending the same slug to both made the client assert
+      // something it does not know: a character banner priced the *weapon* leg's pulls with
+      // featured 4-star characters, a 50 % featured rate against 75 %, and collapsed both
+      // legs onto one key so the per-leg split did nothing here at all. `null` means "this
+      // leg earns nothing", which under-states rather than invents.
       character: { ...this.target(this.character(), 'character'),
                    banner_slug: this.slugForKind('character') },
       weapon: this.planWeapon()
@@ -490,8 +654,40 @@ export class WishesPage {
     };
   }
 
+  /**
+   * The custom banners a request actually names, and only those.
+   *
+   * Each 4-star character is sent **with** its constellation, null included: the slot was
+   * prefilled from the roster and may since have been overridden, so the value on screen is the
+   * user's answer and the backend reads a sent null as "unowned" rather than asking the account
+   * again. A weapon banner's 4-stars earn no refund the planner models, so they go bare.
+   */
+  private customBannersPayload(): WishCustomBanner[] {
+    const used = new Set(
+      this.mode() === 'custom'
+        ? this.rows().map((entry) => entry.bannerSlug)
+        : [this.slugForKind('character'), this.slugForKind('weapon')],
+    );
+    return (['character', 'weapon'] as const)
+      .filter((kind) => used.has(CUSTOM_SLUG[kind]))
+      .map((kind) => {
+        const banner = this.custom()[kind];
+        return {
+          slug: CUSTOM_SLUG[kind],
+          name: 'Custom banner',
+          kind,
+          featured_five: [banner.five],
+          featured_four: banner.fours.map((slot) =>
+            kind === 'character'
+              ? { name: slot.name, constellation: slot.constellation }
+              : { name: slot.name },
+          ),
+        };
+      });
+  }
+
   private artFor(name: string): string | null {
-    if (!name || name === '?') return null;
+    if (!name || name === UNKNOWN) return null;
     const char = this.allCharacters().find((ch) => ch.name === name);
     if (char?.icon) return char.icon;
     const weapon = this.allWeapons().find((w) => w.name === name);
@@ -499,49 +695,129 @@ export class WishesPage {
   }
 
   private async load(): Promise<void> {
+    // **Not awaited.** The units only feed the custom-banner pickers and the banner chips; the
+    // planner's own reference data should not wait for 460 catalogue rows to arrive.
+    void this.loadUnits();
     try {
-      const [limits, income, characters, weapons] = await Promise.all([
-        this.service.limits(),
-        this.service.income(),
-        this.catalogue.listCharacters({ limit: 300 }).catch(() => ({ items: [] })),
-        this.catalogue.listWeapons({ limit: 400 }).catch(() => ({ items: [] })),
-      ]);
+      const [limits, income] = await Promise.all([this.service.limits(), this.service.income()]);
       this.limits.set(limits);
       this.income.set(income.versions);
-      this.allCharacters.set((characters && 'items' in characters ? characters.items : []) ?? []);
-      this.allWeapons.set((weapons && 'items' in weapons ? weapons.items : []) ?? []);
-
-      try {
-        const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(this.customBannerStorageKey) : null;
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            this.customBanners.set(parsed);
-          }
-        }
-      } catch {
-        // localStorage not available
-      }
-
       await this.loadBanners(0);
     } catch {
       this.error.set('Could not load the planner’s reference data.');
     }
   }
 
-  /** Fetch a page of banners. `offset` 0 replaces, anything else appends. */
+  /** Characters, weapons, and what the account holds — for the custom banner. */
+  private async loadUnits(): Promise<void> {
+    // **Beta units included.** A leaked character is exactly who a hypothetical banner is
+    // for; the card says "beta" so it is not mistaken for a released one.
+    const [characters, weapons, roster] = await Promise.all([
+      everyPage((offset) => this.catalogue.listCharacters(
+        { limit: CATALOGUE_PAGE, offset, include_beta: true },
+      )).catch(() => null),
+      everyPage((offset) => this.catalogue.listWeapons(
+        { limit: CATALOGUE_PAGE, offset, include_beta: true },
+      )).catch(() => null),
+      // Not fatal: without it the slots start unowned and say nothing about the account.
+      this.roster.list().catch(() => null),
+    ]);
+    this.allCharacters.set(characters ?? []);
+    this.allWeapons.set(weapons ?? []);
+    // Owned **and** a constellation said: an owned row with no constellation is "nobody has
+    // said how many", which is not C0.
+    const entries = roster?.entries ?? [];
+    const names = new Map<string, number>();
+    for (const e of entries) names.set(e.name, (names.get(e.name) ?? 0) + 1);
+    this.held.set(new Map(
+      entries
+        .filter((e) => e.owned === true && e.constellation !== null && names.get(e.name) === 1)
+        .map((e) => [e.name, e.constellation as number]),
+    ));
+  }
+
+  /** Sequence guard: every *replace* takes a ticket, and anything older is dropped. */
+  private bannerTicket = 0;
+  private bannerTimer: ReturnType<typeof setTimeout> | null = null;
+  /** True while a replace or an append is in flight. */
+  private bannersBusy = false;
+  /** The filter the list on screen was fetched with, as a key. */
+  private listedFilter = '';
+
+  /**
+   * Fetch a page of banners. `offset` 0 replaces, anything else appends.
+   *
+   * **An append is refused while the list is about to change.** "Show more" during a search
+   * appended page two of the *new* filter onto page one of the *old*, and — because it took a
+   * newer ticket — threw away the search's own reply, so the mixed list stayed. An append now
+   * belongs to the list on screen or does not happen; the pending replace draws the right one.
+   */
   protected async loadBanners(offset: number): Promise<void> {
     const page = this.limits()?.banner_page ?? 8;
+    const filter = this.bannerFilter();
+    const key = JSON.stringify(filter);
+    if (offset && (this.bannersBusy || this.bannerTimer || key !== this.listedFilter)) return;
+    const ticket = offset ? this.bannerTicket : ++this.bannerTicket;
+    this.bannersBusy = true;
     try {
-      const body = await this.service.banners(offset, page);
+      const body = await this.service.banners(offset, page, filter);
+      if (ticket !== this.bannerTicket) return;
       this.banners.set(offset ? [...this.banners(), ...body.banners] : body.banners);
       this.bannerTotal.set(body.total);
+      this.listedFilter = key;
     } catch {
+      if (ticket !== this.bannerTicket) return;
       // Not fatal: the planner works without a banner, it just cannot read the refund from
       // the account. Blanking the page over it would be the worse trade.
       this.bannerTotal.set(this.banners().length);
+    } finally {
+      if (ticket === this.bannerTicket) this.bannersBusy = false;
     }
   }
+
+  /** The chips and the search box, as the endpoint spells them. Unset fields are left out. */
+  private bannerFilter(): WishBannerFilter {
+    const filter: WishBannerFilter = {};
+    const q = this.bannerQuery().trim();
+    if (q) filter.q = q;
+    if (this.bannerKind()) filter.kind = this.bannerKind()!;
+    if (this.bannerElement()) filter.element = this.bannerElement()!;
+    if (this.bannerWeapon()) filter.weapon_type = this.bannerWeapon()!;
+    return filter;
+  }
+
+  /** Typed: debounced, for the same `9`, `99`, `999` reason the plan is. */
+  protected searchBanners(text: string): void {
+    this.bannerQuery.set(text);
+    if (this.bannerTimer) clearTimeout(this.bannerTimer);
+    this.bannerTimer = setTimeout(() => {
+      this.bannerTimer = null;
+      void this.loadBanners(0);
+    }, DEBOUNCE_MS);
+  }
+
+  /** A chip: pressing the lit one clears it, as a single-choice chip row reads. */
+  protected toggleBannerChip(group: 'kind' | 'element' | 'weapon', value: string): void {
+    const next = this.bannerChipOn(group, value) ? null : value;
+    if (group === 'kind') this.bannerKind.set(next as Kind | null);
+    else if (group === 'element') this.bannerElement.set(next as WishBannerFilter['element']);
+    else this.bannerWeapon.set(next as WishBannerFilter['weapon_type']);
+    void this.loadBanners(0);
+  }
+
+  protected bannerChipOn(group: 'kind' | 'element' | 'weapon', value: string): boolean {
+    const current =
+      group === 'kind' ? this.bannerKind()
+        : group === 'element' ? this.bannerElement()
+          : this.bannerWeapon();
+    return current === value;
+  }
+
+  /** True when anything narrows the list, so the empty state can say it is the filter. */
+  protected readonly bannersFiltered = computed(
+    () => !!(this.bannerQuery().trim() || this.bannerKind() || this.bannerElement()
+      || this.bannerWeapon()),
+  );
 
   protected showMoreBanners(): void {
     void this.loadBanners(this.banners().length);
@@ -566,25 +842,14 @@ export class WishesPage {
   }
 
   protected chooseBanner(banner: WishBannerRead | null): void {
+    this.remember(banner);
     this.chosenBanner.set(banner?.slug ?? null);
     if (!banner) return;
     if (this.isCustom(banner.slug)) {
-      const custom = this.customBanners().find((cb) => cb.slug === banner.slug);
-      if (custom) {
-        if (custom.kind === 'character') {
-          this.patch('character', {
-            label: custom.target.name,
-            ownedCopies: custom.target.owned_copies,
-          });
-        } else {
-          this.planWeapon.set(true);
-          this.patch('weapon', {
-            label: custom.target.name,
-            ownedCopies: custom.target.owned_copies,
-          });
-        }
-        return;
-      }
+      const kind = banner.kind as Kind;
+      if (kind === 'weapon') this.planWeapon.set(true);
+      this.patch(kind, this.customTarget(kind));
+      return;
     }
     if (banner.kind === 'character') {
       // The roster's answer, in simple mode too. Reading it only in custom mode left the
@@ -619,15 +884,12 @@ export class WishesPage {
   /** Pick a banner for one row of a custom plan, filling in what the banner knows. */
   protected chooseRowBanner(index: number, banner: WishBannerRead | null): void {
     if (!this.rows()[index]) return;
+    this.remember(banner);
     const change: Partial<CustomRow> = { bannerSlug: banner?.slug ?? null };
     if (banner) {
       change.banner = banner.kind as 'character' | 'weapon';
       if (this.isCustom(banner.slug)) {
-        const custom = this.customBanners().find((cb) => cb.slug === banner.slug);
-        if (custom) {
-          change.label = custom.target.name;
-          change.ownedCopies = custom.target.owned_copies;
-        }
+        Object.assign(change, this.customTarget(banner.kind as Kind));
       } else if (banner.featured_five.length === 1) {
         // A character banner has one 5-star, so it is the goal. A weapon banner has two, and
         // which one the user wants is theirs to say -- picking for them would be the same guess
@@ -726,7 +988,7 @@ export class WishesPage {
 
   /** The banner a custom row is on, when it is one of the loaded ones. */
   protected rowBanner(entry: CustomRow): WishBannerRead | null {
-    return this.allBanners().find((b) => b.slug === entry.bannerSlug) ?? null;
+    return this.known().find((b) => b.slug === entry.bannerSlug) ?? null;
   }
 
   /** `2026-09-23 11:00:00` as `Sep 2026` — the banner list is scanned, not read. */
@@ -985,166 +1247,102 @@ export class WishesPage {
     return 'bar bar--none';
   }
 
-  // ── Custom Banners ──────────────────────────────────────────────────────────
+  // -- custom banners
 
   protected isCustom(slug: string | null | undefined): boolean {
     return !!slug && slug.startsWith('custom:');
   }
 
-  protected openCustomBannerDialog(rowIndex: number | null = null): void {
-    this.customBannerRowIndex.set(rowIndex);
-    const initialKind = rowIndex !== null && this.rows()[rowIndex]?.banner === 'weapon' ? 'weapon' : 'character';
-    this.setCustomBannerKind(initialKind);
-    this.customBannerName.set('Custom Banner');
-    this.customBannerTargetName.set('?');
-    this.customBannerTargetOwnership.set(0);
-    this.customBannerDialog()?.nativeElement.showModal?.();
+  /** A custom banner's unit as a featured item, with the account's constellation if held. */
+  private featured(kind: Kind, name: string): WishFeaturedItem {
+    const held = kind === 'character' ? this.held().get(name) : undefined;
+    return { name, icon: this.artFor(name), owned_copies: held ?? null };
   }
 
-  protected closeCustomBannerDialog(): void {
-    this.customBannerDialog()?.nativeElement.close?.();
+  /**
+   * The goal a custom banner names, as position fields.
+   *
+   * **Owned copies are always written, never left as they were** — the fix #337 made, kept.
+   * Switching from a C3 goal to an unannounced one and keeping "from C3" would plan a copy
+   * nobody holds. An unannounced unit is unowned by definition; a named character is whatever
+   * the roster says, and unowned when it says nothing. There is no weapon roster, so a weapon
+   * starts from none and the "from" control is where to say otherwise.
+   */
+  private customTarget(kind: Kind): Partial<Position> {
+    const name = this.custom()[kind].five;
+    const held = kind === 'character' ? this.held().get(name) : undefined;
+    return { label: name, ownedCopies: held === undefined ? 0 : held + 1 };
   }
 
-  protected onCustomBannerDialogClosed(): void {
-    // dialog closed
-  }
-
-  protected setCustomBannerKind(kind: 'character' | 'weapon'): void {
-    this.customBannerKind.set(kind);
-    if (kind === 'character') {
-      this.customBannerFourStars.set([
-        { name: '?', constellation: null },
-        { name: '?', constellation: null },
-        { name: '?', constellation: null },
-      ]);
-    } else {
-      this.customBannerFourStars.set([
-        { name: '?', constellation: null },
-        { name: '?', constellation: null },
-        { name: '?', constellation: null },
-        { name: '?', constellation: null },
-        { name: '?', constellation: null },
-      ]);
+  /** Name the custom banner's 5-star, and carry it to every goal on that banner. */
+  protected setCustomFive(kind: Kind, picked: readonly string[]): void {
+    const name = picked[0] ?? UNKNOWN;
+    this.custom.update((all) => ({ ...all, [kind]: { ...all[kind], five: name } }));
+    const target = this.customTarget(kind);
+    if (this.mode() === 'simple' && this.chosenBanner() === CUSTOM_SLUG[kind]) {
+      this.patch(kind, target);
     }
-    this.customBannerTargetName.set('?');
-    this.customBannerTargetOwnership.set(0);
+    this.rows().forEach((entry, index) => {
+      if (entry.bannerSlug === CUSTOM_SLUG[kind]) this.patchRow(index, target);
+    });
   }
 
-  protected setCustomBannerName(name: string): void {
-    this.customBannerName.set(name);
+  /** Name one featured 4-star. Its constellation starts at what the account holds. */
+  protected setCustomSlot(kind: Kind, index: number, picked: readonly string[]): void {
+    const name = picked[0] ?? UNKNOWN;
+    const constellation = kind === 'character' ? this.held().get(name) ?? null : null;
+    this.updateSlot(kind, index, { name, constellation });
   }
 
-  protected setCustomBannerTargetName(name: string): void {
-    this.customBannerTargetName.set(name);
+  /** `'none'` is unowned; anything else a constellation. */
+  protected setCustomSlotConstellation(kind: Kind, index: number, value: string): void {
+    this.updateSlot(kind, index, {
+      constellation: value === 'none' ? null : Number(value),
+    });
   }
 
-  protected setCustomBannerTargetOwnership(ownership: number): void {
-    this.customBannerTargetOwnership.set(ownership);
+  /** True when the slot is priced at exactly what the account holds, so the page can say so. */
+  protected slotFromAccount(slot: CustomSlot): boolean {
+    const held = this.held().get(slot.name);
+    return held !== undefined && held === slot.constellation;
   }
 
-  protected setCustomBannerSlotName(index: number, name: string): void {
-    const slots = [...this.customBannerFourStars()];
-    if (!slots[index]) return;
-    let defaultConstellation: number | null = null;
-    if (name !== '?') {
-      const match = this.banners()
-        .flatMap((b) => b.featured_four)
-        .find((item) => item.name === name && item.owned_copies !== null);
-      if (match?.owned_copies !== null && match?.owned_copies !== undefined) {
-        defaultConstellation = match.owned_copies;
-      }
-    }
-    slots[index] = { name, constellation: defaultConstellation };
-    this.customBannerFourStars.set(slots);
+  /** Put the custom banner of this kind back to all `?`. */
+  protected resetCustom(kind: Kind): void {
+    this.custom.update((all) => ({ ...all, [kind]: blankCustom(kind) }));
+    this.setCustomFive(kind, [UNKNOWN]);
   }
 
-  protected setCustomBannerSlotConstellation(index: number, value: string): void {
-    const slots = [...this.customBannerFourStars()];
-    if (!slots[index]) return;
-    const constellation = value === 'none' ? null : parseInt(value, 10);
-    slots[index] = { ...slots[index], constellation };
-    this.customBannerFourStars.set(slots);
+  private updateSlot(kind: Kind, index: number, change: Partial<CustomSlot>): void {
+    this.custom.update((all) => {
+      const fours = [...all[kind].fours];
+      if (!fours[index]) return all;
+      fours[index] = { ...fours[index], ...change };
+      return { ...all, [kind]: { ...all[kind], fours } };
+    });
   }
 
-  protected saveAndSelectCustomBanner(): void {
-    const slug = `custom:${Date.now()}`;
-    const kind = this.customBannerKind();
-    const targetName = this.customBannerTargetName();
-    const targetOwnership = this.customBannerTargetOwnership();
-    const name = this.customBannerName().trim() || 'Custom Banner';
-
-    const newBanner: CustomBannerConfig = {
-      slug,
-      name,
-      kind,
-      target: {
-        name: targetName,
-        owned_copies: targetOwnership,
-      },
-      fourStars: this.customBannerFourStars(),
-    };
-
-    const updated = [newBanner, ...this.customBanners()];
-    this.customBanners.set(updated);
-    try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(this.customBannerStorageKey, JSON.stringify(updated));
-      }
-    } catch {
-      // ignore
-    }
-
-    const readBanner = this.toBannerRead(newBanner);
-    const targetRow = this.customBannerRowIndex();
-    if (targetRow !== null) {
-      this.chooseRowBanner(targetRow, readBanner);
-    } else {
-      this.chooseBanner(readBanner);
-    }
-
-    this.closeCustomBannerDialog();
+  /**
+   * Which kind of custom banner to edit under a custom row, if any.
+   *
+   * **Under the first row on it only.** One custom banner of each kind is shared by every row
+   * that picks it, so drawing the editor under each would be two controls for one value.
+   */
+  protected editsCustom(index: number): Kind | null {
+    const slug = this.rows()[index]?.bannerSlug;
+    if (!this.isCustom(slug)) return null;
+    return this.rows().findIndex((entry) => entry.bannerSlug === slug) === index
+      ? (slug === CUSTOM_SLUG.weapon ? 'weapon' : 'character')
+      : null;
   }
 
-  protected deleteCustomBanner(slug: string, event: Event): void {
-    event.stopPropagation();
-    const filtered = this.customBanners().filter((cb) => cb.slug !== slug);
-    this.customBanners.set(filtered);
-    try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(this.customBannerStorageKey, JSON.stringify(filtered));
-      }
-    } catch {
-      // ignore
-    }
-    if (this.chosenBanner() === slug) {
-      this.chooseBanner(null);
-    }
-    this.rows.update((rows) =>
-      rows.map((r) => (r.bannerSlug === slug ? { ...r, bannerSlug: null } : r)),
-    );
-  }
+  /** The simple mode's editor: shown while a custom banner is the one picked. */
+  protected readonly editingCustom = computed<Kind | null>(() => {
+    const slug = this.chosenBanner();
+    if (slug === CUSTOM_SLUG.character) return 'character';
+    if (slug === CUSTOM_SLUG.weapon) return 'weapon';
+    return null;
+  });
 
-  private toBannerRead(cb: CustomBannerConfig): WishBannerRead {
-    return {
-      slug: cb.slug,
-      name: cb.name,
-      kind: cb.kind,
-      starts_at: null,
-      ends_at: null,
-      featured_five: [
-        {
-          name: cb.target.name,
-          icon: this.artFor(cb.target.name),
-          owned_copies: cb.target.owned_copies > 0 ? cb.target.owned_copies - 1 : null,
-        },
-      ],
-      featured_four: cb.fourStars.map((item) => ({
-        name: item.name,
-        icon: this.artFor(item.name),
-        owned_copies: item.constellation !== undefined ? item.constellation : null,
-      })),
-      signature_banner: null,
-      alongside: [],
-    };
-  }
+  protected readonly constellations = [0, 1, 2, 3, 4, 5, 6];
 }

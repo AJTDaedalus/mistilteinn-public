@@ -4497,7 +4497,7 @@
           "wishes"
         ],
         "summary": "List Banners",
-        "description": "Banners newest first, paged.\n\n**Paged rather than capped.** `CLAUDE.md` records the planner's materials tab being\n\"fixed\" by truncating a 514-row list at 80, which made the page short by hiding the data.\n`total` is sent so the page can say how many more there are rather than guess.",
+        "description": "Banners newest first, paged, and narrowed the way the character grid narrows.\n\n**Paged rather than capped.** `CLAUDE.md` records the planner's materials tab being\n\"fixed\" by truncating a 514-row list at 80, which made the page short by hiding the data.\n`total` is sent so the page can say how many more there are rather than guess \u2014 and it\ncounts the *filtered* table, so \"show more\" stops where the matches do.\n\n**Filtered here, not on the page.** The page holds one page of banners; a client-side\nfilter would search eight of 291 and report \"nothing matches\" for a rerun on page nine.\n\n`q` matches the banner's name and **every** featured unit, 4-stars included, because\n\"when did Bennett last rerun\" is a question asked by name. `element` and `weapon_type`\nmatch the **5-stars only** \u2014 the chips the character grid offers, applied to whose banner\nit is. Diona being a 4-star on a banner does not make it a Cryo banner. A weapon banner's\n5-stars are weapons, so it answers to `weapon_type` and never to `element`.",
         "operationId": "list_banners_api_v1_wishes_banners_get",
         "security": [
           {
@@ -4519,6 +4519,55 @@
                 }
               ],
               "title": "Kind"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "element",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Element"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Element"
+            }
+          },
+          {
+            "name": "weapon_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/WeaponType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Weapon Type"
             }
           },
           {
@@ -6840,7 +6889,7 @@
               }
             ],
             "title": "Constellation",
-            "description": "Owned constellation (0-6, or null to read from account/unowned)."
+            "description": "Owned constellation, 0-6. **Null means unowned; omit the field to read it from the account.**"
           }
         },
         "type": "object",

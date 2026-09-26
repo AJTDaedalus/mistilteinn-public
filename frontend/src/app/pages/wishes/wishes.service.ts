@@ -18,6 +18,14 @@ export type WishFeaturedItem = components['schemas']['WishFeaturedItem'];
 export type WishCustomBanner = components['schemas']['WishCustomBanner'];
 export type CustomFeaturedItem = components['schemas']['CustomFeaturedItem'];
 
+/** What `/wishes/banners` narrows by. Absent means "any". */
+export interface WishBannerFilter {
+  q?: string;
+  kind?: 'character' | 'weapon';
+  element?: components['schemas']['Element'];
+  weapon_type?: components['schemas']['WeaponType'];
+}
+
 /** What `/wishes/limits` answers — the page builds its controls from this, not from constants. */
 export interface WishLimits {
   primogems_per_wish: number;
@@ -55,9 +63,12 @@ export class WishesService {
   }
 
   /** Banners newest first. `total` is what lets the page say how many more there are. */
-  async banners(offset: number, limit: number): Promise<WishBannerList> {
+  /** Banners newest first. The filters are the server's, so they search the whole table. */
+  async banners(
+    offset: number, limit: number, filter: WishBannerFilter = {},
+  ): Promise<WishBannerList> {
     const { data, error } = await this.api.GET('/api/v1/wishes/banners', {
-      params: { query: { offset, limit } },
+      params: { query: { offset, limit, ...filter } },
     });
     if (error) throw error;
     return data;

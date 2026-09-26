@@ -15,12 +15,13 @@ from typing import TYPE_CHECKING, Annotated
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import String, cast, func, select
+from sqlalchemy.dialects.postgresql import array
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_current_user, get_db
 from app.models.character import Character
-from app.models.enums import Rarity
+from app.models.enums import Element, Rarity, WeaponType
 from app.models.roster import CharacterRosterEntry
 from app.models.user import User
 from app.models.weapon import Weapon
@@ -116,7 +117,10 @@ class CustomFeaturedItem(BaseModel):
         None,
         ge=0,
         le=MAX_CONSTELLATION,
-        description="Owned constellation (0-6, or null to read from account/unowned).",
+        description=(
+            "Owned constellation, 0-6. **Null means unowned; omit the field to read it from "
+            "the account.**"
+        ),
     )
 
 
@@ -524,7 +528,11 @@ async def _custom_refund_inputs(
     for item in custom.featured_four:
         if item.name and item.name != "?":
             featured_names.add(item.name)
-        if item.constellation is not None:
+        # **Sent as null is the user's answer; omitted is "ask the account".** The page
+        # prefills each slot from the roster and lets it be overridden, so "Unowned" on a
+        # character the account holds at C6 has to price as unowned rather than be quietly
+        # replaced by the C6 the user just overrode.
+        if item.constellation is not None or "constellation" in item.model_fields_set:
             featured.append(item.constellation)
         elif item.name in held_constellations:
             featured.append(held_constellations[item.name])
@@ -919,18 +927,46 @@ async def list_banners(
     session: _Session,
     user: _User,
     kind: BannerKind | None = None,
+    q: str | None = Query(None, max_length=100),
+    element: Element | None = None,
+    weapon_type: WeaponType | None = None,
     limit: int = Query(BANNER_PAGE, ge=1, le=MAX_BANNER_PAGE),
     offset: int = Query(0, ge=0),
 ) -> WishBannerList:
-    """Banners newest first, paged.
+    """Banners newest first, paged, and narrowed the way the character grid narrows.
 
     **Paged rather than capped.** `CLAUDE.md` records the planner's materials tab being
     "fixed" by truncating a 514-row list at 80, which made the page short by hiding the data.
-    `total` is sent so the page can say how many more there are rather than guess.
+    `total` is sent so the page can say how many more there are rather than guess — and it
+    counts the *filtered* table, so "show more" stops where the matches do.
+
+    **Filtered here, not on the page.** The page holds one page of banners; a client-side
+    filter would search eight of 291 and report "nothing matches" for a rerun on page nine.
+
+    `q` matches the banner's name and **every** featured unit, 4-stars included, because
+    "when did Bennett last rerun" is a question asked by name. `element` and `weapon_type`
+    match the **5-stars only** — the chips the character grid offers, applied to whose banner
+    it is. Diona being a 4-star on a banner does not make it a Cryo banner. A weapon banner's
+    5-stars are weapons, so it answers to `weapon_type` and never to `element`.
     """
     query = select(WishBanner)
     if kind is not None:
         query = query.where(WishBanner.kind == kind.value)
+    if q and q.strip():
+        # Escaped: `%` typed into a search box is a character someone is looking for, not a
+        # pattern that matches every row.
+        needle = "%" + _escape_like(q.strip()) + "%"
+        query = query.where(
+            WishBanner.name.ilike(needle, escape="\\")
+            | cast(WishBanner.featured_five, String).ilike(needle, escape="\\")
+            | cast(WishBanner.featured_four, String).ilike(needle, escape="\\"),
+        )
+    if element is not None or weapon_type is not None:
+        query = query.where(
+            WishBanner.featured_five.has_any(
+                array(await _five_star_names(session, element, weapon_type) or [""]),
+            ),
+        )
 
     # Counted, not materialised: `len(all())` loaded all 291 rows with their JSONB on every
     # eight-row page.
@@ -1048,6 +1084,36 @@ async def list_banners(
         total=total,
         fetched_at=latest.isoformat() if latest else None,
     )
+
+
+def _escape_like(text: str) -> str:
+    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+async def _five_star_names(
+    session: AsyncSession, element: Element | None, weapon_type: WeaponType | None,
+) -> list[str]:
+    """Catalogue names a banner's 5-stars must include to pass the element/weapon chips.
+
+    Characters answer to both chips; weapons only to the weapon chip, since a weapon has no
+    vision — so an element filter leaves weapon banners out rather than guessing whose
+    signature each one is.
+    """
+    characters = select(Character.name)
+    if element is not None:
+        characters = characters.where(Character.element == element)
+    if weapon_type is not None:
+        characters = characters.where(Character.weapon_type == weapon_type)
+    names = {name for (name,) in (await session.execute(characters)).all()}
+    if element is None and weapon_type is not None:
+        names.update(
+            name for (name,) in (
+                await session.execute(
+                    select(Weapon.name).where(Weapon.weapon_type == weapon_type),
+                )
+            ).all()
+        )
+    return sorted(names)
 
 
 @router.get("/limits", response_model=dict)
