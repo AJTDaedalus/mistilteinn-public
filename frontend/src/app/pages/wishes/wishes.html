@@ -399,6 +399,7 @@
   }
 
   @if (plan(); as result) {
+    <div class="ladder-wrap">
     <table class="ladder" [class.ladder--stale]="pending()">
       <!-- **No single budget in the header any more.** Pulls stop at the goal, so each rung
            is funded by the wishes spent reaching *it* and carries its own figure. Naming one
@@ -437,8 +438,7 @@
         }
       </tbody>
     </table>
-
-
+    </div>
   }
 
   <!-- One banner card's contents, for both grids. `track $index` inside: a custom banner

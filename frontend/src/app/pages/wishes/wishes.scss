@@ -175,6 +175,9 @@
 
   th, td { padding: var(--space-2) var(--space-3); text-align: right; }
   thead th { border-bottom: 1px solid var(--surface-rule); color: var(--ink-dim); font-weight: 500; }
+  /* The goal cells are left-aligned, so their heading is too — right-aligned, "Goal" sat
+     over empty space two hundred pixels from the chips it names. */
+  thead th:first-child { text-align: left; }
   tbody tr { border-bottom: 1px solid var(--surface-rule); }
   td { font-variant-numeric: tabular-nums; }
 
@@ -188,6 +191,25 @@
   text-align: left;
   min-width: 12rem;
   isolation: isolate;
+}
+
+/* **A phone could not hold the ladder.** Five columns with a 12rem goal made `/wishes` 560px
+   wide at a 390px viewport — the whole page scrolled sideways, not just the table. Tighter
+   cells, and the wrapper scrolls if a long unit name still does not fit. */
+.ladder-wrap { overflow-x: auto; }
+
+@media (max-width: 40rem) {
+  .ladder {
+    font-size: var(--text-sm);
+
+    th, td { padding: var(--space-2) var(--space-1); }
+  }
+
+  .ladder .goal { min-width: 7rem; }
+
+  /* One line, always: a wrapped "Weapon / R1" chip was twice as tall as the chance bar
+     behind it, which then drew as a half-circle. The wrapper scrolls instead. */
+  .goal__chip { letter-spacing: 0.02em; white-space: nowrap; }
 }
 
 .goal__chip {
@@ -395,6 +417,12 @@
   display: grid;
   gap: var(--space-2);
   grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+}
+
+/* Two cards a row on a phone. At one, eight banners and the two custom ones were a column
+   1,500px tall between the search box and the plan it is meant to feed. */
+@media (max-width: 40rem) {
+  .banner-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* The 5★ leads and is largest; the featured 4★ sit beneath it, smaller. Owner's layout. */
