@@ -9,8 +9,8 @@ then **stop and report**.
 **Status key:** ` ` todo · `~` in progress · `x` done · `!` blocked (escalation in LOG)
 
 > **Status: draft, 2026-10-24. Nothing started.** OQ-U1/U2/U5 answered (DESIGN §9.1): θ = 1%,
-> no levelling cost, standard domains only. Phase 3's location waits on DESIGN §11 (tabbed
-> `/optimize`). Task 1 is a measurement whose
+> no levelling cost, standard domains only. Phase 3 is the **Upgrade** tab of a tabbed
+> `/artifacts` (DESIGN §11), which lands first as its own refactor. Task 1 is a measurement whose
 > result can change §5. If it does, the DESIGN is amended before Task 4 starts.
 
 **Branch policy.** `feat/upgrade-estimator`, off `dev`. **No direct commits to `dev`.** Task 0 is
@@ -147,7 +147,7 @@ the gate. **One PR per phase**, three PRs in total (`space-prs-further-apart`).
 
 # Phase 3 — the surface
 
-### [ ] 8 — The Upgrade tab (DESIGN §11; if the tabbed shell is declined, a panel on the build view)
+### [ ] 8 — The Upgrade tab at `/artifacts/upgrade` (DESIGN §11; needs the tabs refactor merged)
 - **Do:**
   - **Per slot:** median, P25–P75, P90 in resin and days, and the per-drop `1 in N`.
   - **Under the slots:** the domain ranking by `q_any`.

@@ -330,7 +330,7 @@ mechanism is settled, because the wrong reading of a guarantee is a confident wr
 | **OQ-U1** | **θ = 1%** — *"a meaningful barrier"* |
 | **OQ-U2** | **No levelling cost.** *"This isn't about leveling cost but resin spent on artifact domain runs."* |
 | **OQ-U5** | **Standard artifact domains only** — no Strongbox, no Stygian Onslaught in v1. Strongbox later, as "how many Strongbox crafts". |
-| **OQ-U6** | Reframed by the owner as a bigger question: *one optimizer page with a tab per mode?* Proposal in §11, awaiting a yes. |
+| **OQ-U6** | **One `/artifacts` page with tabs** — Inventory · Optimize · Rank · Upgrade. §11. |
 
 ## 10. Risks
 
@@ -348,36 +348,47 @@ mechanism is settled, because the wrong reading of a guarantee is a confident wr
 
 ---
 
-## 11. Proposal for OQ-U6: one `/optimize`, a tab per question
+## 11. OQ-U6: one `/artifacts` page, a tab per question
 
-Four surfaces now ask the same *context* different questions, and they all need the same three
-inputs — **a build, a rotation, and a calibrated recipe**:
+**Owner, 2026-10-24:** the parent is **Artifacts**, not Optimize — *"make 'Search' 'Optimize'.
+That's what everyone thinks when they hear optimize"* — with an **Inventory** tab for the raw
+pieces. So:
 
-| mode | question | lives today |
-|---|---|---|
-| **Search** | which five pieces (and which weapon) maximise this rotation? | `/optimize` |
-| **Rank** | what is each piece I own worth to this build, now and levelled? | the Rank panel on `/inventory` (OQ-A7) |
-| **Deep dive** | best build *containing* this piece (pinned re-search) | launched from Rank |
-| **Upgrade** | how much domain resin until each slot improves by 1%? | new |
+| tab | route | question | lives today |
+|---|---|---|---|
+| **Inventory** | `/artifacts/inventory` | what do I own? import, filter, equip | `/inventory` |
+| **Optimize** | `/artifacts/optimize` | which five pieces (and weapon) maximise this rotation? | `/optimize` |
+| **Rank** | `/artifacts/rank` | what is each piece worth to this build, now and levelled? | Rank panel on `/inventory` (OQ-A7) |
+| **Upgrade** | `/artifacts/upgrade` | how much domain resin until each slot improves by 1%? | new |
 
-So: **`/optimize` becomes a shell with one shared context bar** (build · rotation · recipe state
-and its `unstable`/`stale` flags), and the modes become **child routes** —
-`/optimize/search`, `/optimize/rank`, `/optimize/upgrade` — so a tab is linkable and the back
-button works. The calibration is paid once and every tab reuses it, which `recipe-cache.ts`
-already makes true; today a user who switches from `/inventory` to `/optimize` re-picks the same
-build and rotation in a second picker.
+**Child routes, not in-page tabs**, so a tab is linkable and the back button works. **One context
+bar** (build · rotation · recipe state with its `unstable`/`stale` flags) shared by Optimize,
+Rank and Upgrade, and hidden on Inventory, which needs none. The calibration is paid once;
+`recipe-cache.ts` already makes that true, the UI just stops asking twice.
 
-What stays out: **`/calculate`** (evaluates a whole team's rotation, it does not search) and
-**`/planner`** (materials, not artifacts). Folding them in would make "optimizer" mean "every
-page with a number on it".
+**Redirects, not deletions:** `/inventory` → `/artifacts/inventory`, `/optimize` →
+`/artifacts/optimize`, and bare `/artifacts` → `/artifacts/inventory`. `/artifacts` is today
+itself a redirect *to* `/inventory` (`app.routes.ts`), so this reverses that pointer rather than
+inventing a path. The `/` and `**` fallbacks follow.
 
-Two things this reverses or touches, flagged rather than slipped in:
-- **OQ-A7 put Rank on `/inventory`.** Moving it is a reversal of an owner ruling, so it needs an
-  explicit yes. Keeping a slim score *column* on the inventory, linking into
-  `/optimize/rank`, keeps what OQ-A7 bought (scores beside the pieces).
-- **It is its own refactor, not part of this feature.** Recommended order: a small
-  `TASKS_optimizer_tabs.md` (shell + context bar + move Search and Rank, no behaviour change,
-  driven before/after with `scripts/shoot.py`), then this feature's Phase 3 lands as the
-  **Upgrade** tab. Phases 1–2 here are unaffected either way.
+**OQ-A7 mostly dissolves.** It put Rank on `/inventory` so scores sat beside the pieces; with
+Inventory and Rank as sibling tabs that adjacency survives, and Rank gets the room the panel was
+squeezed into.
 
-*Planner draft. OQ-U4 open (later, recommended); OQ-U6 awaiting a yes on §11.*
+**The "Optimal build" button is not a tab.** It is built (`TASKS_artifact_ranking.md` A.12, on
+each ranked card) and it is what issue #291 literally asked for: *"assume that you can move
+other artifacts"* — the best five-piece build that contains this piece, levelled, against the
+build as equipped, naming which neighbours moved. It answers "this piece scores low in its slot,
+but would it be great if I rebuilt around it?", which the single-slot score structurally
+understates. It is an action on one piece, so it stays a button on Rank's cards. Whether it
+earns its place is a usage question; it is not part of this restructure.
+
+**Out:** `/calculate` (evaluates a team's rotation, does not search) and `/planner`
+(materials). Weapons stay inside Optimize, where #237 put them.
+
+**Its own refactor, first.** A small `TASKS_artifacts_tabs.md`: shell + context bar + move
+Inventory, Optimize and Rank, **no behaviour change**, driven before and after with
+`scripts/shoot.py`. This feature's Phase 3 then lands as the Upgrade tab; Phases 1–2 are
+unaffected.
+
+*Planner draft. OQ-U4 open (later, recommended). OQ-U6 shaped by the owner, §11.*
