@@ -5,7 +5,7 @@
 will cost to get an upgrade for each piece of an artifact set on a character. Like the optimizer,
 but theoretically 'how long would it take to get a better artifact than this?' for each slot."*
 The goal is feasibility and an implementation plan, not code. `docs/TASKS_upgrade_estimator.md`
-is the task list. §9's open questions are the owner's to answer before Task 1.
+is the task list. **§9.1 records the owner's 2026-10-24 rulings**; OQ-U4 and OQ-U6 remain open.
 
 **Evidence:** `docs/RESEARCH_artifact_drop_model.md` (2026-10-24) has every public source this
 document relies on: drop rates, line counts, weights, tiers, the newer acquisition routes, and the
@@ -66,8 +66,9 @@ Every word in that sentence was a choice:
   worse. The resin figure is therefore an **upper bound**, and the page must say so.
 - **"reference"**: the build's damage today, with the current piece as it stands. A +12 piece
   is compared as a +12. That is OQ-U3.
-- **θ**: a minimum meaningful gain. At θ = 0, a drop that adds 0.01% counts as "better", and
-  for a weak slot the answer becomes "one run" for a reason nobody cares about. OQ-U1.
+- **θ = 1%** (owner, 2026-10-24): a minimum meaningful gain. At θ = 0, a drop that adds 0.01%
+  counts as "better", and for a weak slot the answer becomes "one run" for a reason nobody
+  cares about. Editable, defaulting to 1%.
 - **the set constraint**: §3.1.
 
 **The output is a distribution over resin**, per slot, plus one "any slot" line per domain (§4.3).
@@ -188,7 +189,11 @@ pushed through the same geometric. **"Resin until any of your five pieces improv
 across domains. Because `P(beat | s, main)` is shared (§4.1), ranking every domain in the game
 costs only the per-slot work plus a table lookup.
 
-### 4.4 Optional: Strongbox recycling
+### 4.4 Later: Strongbox recycling — **deferred** (owner, 2026-10-24)
+
+*Not in v1: standard domain runs only. Kept because the owner wants it later, framed as "how
+many Strongbox crafts would it take", which is a different output from a blended rate.*
+
 
 Unwanted 5★ pieces go into the Strongbox at 3:1 for a chosen set, with better line odds (66/34,
 R§5.1). Under a policy that recycles **every** non-upgrade, each domain 5★ yields on average
@@ -282,8 +287,8 @@ from the preview, and drop *counts* come from R§1.2, never from the preview's n
 | route | in v1? | why |
 |---|---|---|
 | domain | **yes** | the question |
-| Strongbox recycling | **toggle**, §4.4 | changes the answer by about a third for a set-locked slot, and costs nothing beyond `q_box` |
-| Stygian Onslaught outbreak (+1 5★ per 120 resin, 10 days a version) | no; a footnote | time-boxed. Folding it into an average would misprice the other 32 days. A later toggle ("I farm during outbreak"), since it is ×1.16 on the rate |
+| Strongbox recycling | **later**, §4.4 (owner: "may be nice later to know how many strongbox runs it would take") | its own output, not a toggle on the resin number |
+| Stygian Onslaught outbreak (+1 5★ per 120 resin, 10 days a version) | **no** (owner, 2026-10-24) | time-boxed. Folding it into an average would misprice the rest of the version |
 | Sanctifying Elixir (Definition) | **no**, OQ-U4 | not resin. It is a per-version budget, 2 per set per version, at a cost by slot. It is a **different question**: "how many Elixirs", not "how much resin". GO already models it (`elixirDefinition`) |
 | Dust of Enlightenment (Reshape) | **no**, OQ-U4 | upgrades **the current piece**, not a new one, and is often the cheaper path. The guarantee's mechanism is unverified (floor or resample, R§5.7), and that changes the numbers |
 | weekly/normal bosses, Abyss | no | sets are fixed or rotating, and runs are better spent elsewhere. They matter as Strongbox fodder, which §4.4 already abstracts |
@@ -318,6 +323,15 @@ mechanism is settled, because the wrong reading of a guarantee is a confident wr
 | **OQ-U6** | Where it lives: a column/panel on the build (per slot), a panel on `/optimize` beside the result, or a new page with the domain ranking? | **A panel on the build view**: slots as rows, a domain ranking under it. It needs a build plus a calibrated recipe, which those pages already have |
 | **OQ-U7** | When the current piece is the off-piece, should the domain ranking prefer the domain the player is already farming for another slot? | **No special case.** `q_any` already credits a domain for every slot it feeds |
 
+### 9.1 Answered, owner 2026-10-24
+
+| | ruling |
+|---|---|
+| **OQ-U1** | **θ = 1%** — *"a meaningful barrier"* |
+| **OQ-U2** | **No levelling cost.** *"This isn't about leveling cost but resin spent on artifact domain runs."* |
+| **OQ-U5** | **Standard artifact domains only** — no Strongbox, no Stygian Onslaught in v1. Strongbox later, as "how many Strongbox crafts". |
+| **OQ-U6** | Reframed by the owner as a bigger question: *one optimizer page with a tab per mode?* Proposal in §11, awaiting a yes. |
+
 ## 10. Risks
 
 - **The secondary sources are the whole prior.** Every probability rests on community tables
@@ -334,4 +348,36 @@ mechanism is settled, because the wrong reading of a guarantee is a confident wr
 
 ---
 
-*Planner draft. Before Task 1, the owner answers §9; OQ-U4 and OQ-U6 decide scope.*
+## 11. Proposal for OQ-U6: one `/optimize`, a tab per question
+
+Four surfaces now ask the same *context* different questions, and they all need the same three
+inputs — **a build, a rotation, and a calibrated recipe**:
+
+| mode | question | lives today |
+|---|---|---|
+| **Search** | which five pieces (and which weapon) maximise this rotation? | `/optimize` |
+| **Rank** | what is each piece I own worth to this build, now and levelled? | the Rank panel on `/inventory` (OQ-A7) |
+| **Deep dive** | best build *containing* this piece (pinned re-search) | launched from Rank |
+| **Upgrade** | how much domain resin until each slot improves by 1%? | new |
+
+So: **`/optimize` becomes a shell with one shared context bar** (build · rotation · recipe state
+and its `unstable`/`stale` flags), and the modes become **child routes** —
+`/optimize/search`, `/optimize/rank`, `/optimize/upgrade` — so a tab is linkable and the back
+button works. The calibration is paid once and every tab reuses it, which `recipe-cache.ts`
+already makes true; today a user who switches from `/inventory` to `/optimize` re-picks the same
+build and rotation in a second picker.
+
+What stays out: **`/calculate`** (evaluates a whole team's rotation, it does not search) and
+**`/planner`** (materials, not artifacts). Folding them in would make "optimizer" mean "every
+page with a number on it".
+
+Two things this reverses or touches, flagged rather than slipped in:
+- **OQ-A7 put Rank on `/inventory`.** Moving it is a reversal of an owner ruling, so it needs an
+  explicit yes. Keeping a slim score *column* on the inventory, linking into
+  `/optimize/rank`, keeps what OQ-A7 bought (scores beside the pieces).
+- **It is its own refactor, not part of this feature.** Recommended order: a small
+  `TASKS_optimizer_tabs.md` (shell + context bar + move Search and Rank, no behaviour change,
+  driven before/after with `scripts/shoot.py`), then this feature's Phase 3 lands as the
+  **Upgrade** tab. Phases 1–2 here are unaffected either way.
+
+*Planner draft. OQ-U4 open (later, recommended); OQ-U6 awaiting a yes on §11.*

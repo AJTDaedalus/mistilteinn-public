@@ -8,8 +8,9 @@ then **stop and report**.
 
 **Status key:** ` ` todo · `~` in progress · `x` done · `!` blocked (escalation in LOG)
 
-> **Status: draft, 2026-10-24. Nothing started.** Blocked on the owner answering
-> DESIGN §9, at minimum OQ-U1 (θ) and OQ-U6 (where it lives). Task 1 is a measurement whose
+> **Status: draft, 2026-10-24. Nothing started.** OQ-U1/U2/U5 answered (DESIGN §9.1): θ = 1%,
+> no levelling cost, standard domains only. Phase 3's location waits on DESIGN §11 (tabbed
+> `/optimize`). Task 1 is a measurement whose
 > result can change §5. If it does, the DESIGN is amended before Task 4 starts.
 
 **Branch policy.** `feat/upgrade-estimator`, off `dev`. **No direct commits to `dev`.** Task 0 is
@@ -59,7 +60,8 @@ the gate. **One PR per phase**, three PRs in total (`space-prs-further-apart`).
   schema, unit tests.
 - **Do:** add the following, each with the R§ and URL beside it:
   - `five_star_per_run: 1.065`, with the `N₅ = 1 + Bernoulli` shape marked `assumed: true`;
-  - `four_line_share: {domain: 0.20, boss: 0.34, strongbox: 0.34, abyss: 0.34}`;
+  - `four_line_share: {domain: 0.20}` — domain only in v1; other sources arrive with the
+    Strongbox follow-up;
   - the daily resin regeneration constant, cited.
 
   Resin per run is **read from `planner_economy.json`**, not restated.
@@ -128,9 +130,9 @@ the gate. **One PR per phase**, three PRs in total (`space-prs-further-apart`).
 - **Files:** `frontend/src/app/sim/resin-to-upgrade.ts` + spec.
 - **Do:** implement DESIGN §4:
   - `q(s, D)` with set admissibility (§3.1), `r` from `N₅`, then the geometric quantiles, mean
-    and PMF, in resin and days;
-  - `q_any(D)` across slots;
-  - the Strongbox toggle (§4.4), labelled as an approximation.
+    and PMF, in resin and days, with θ defaulting to 1%;
+  - `q_any(D)` across slots.
+  - **No Strongbox, no Stygian Onslaught** (DESIGN §9.1).
 - **Accept:**
   - the quantile formula matches a brute-force cumulative sum;
   - `q = 0` yields "unreachable", never `Infinity` or `NaN` (`a-default-change-can-neuter-tests`:
@@ -145,14 +147,14 @@ the gate. **One PR per phase**, three PRs in total (`space-prs-further-apart`).
 
 # Phase 3 — the surface
 
-### [ ] 8 — The panel (location per OQ-U6)
+### [ ] 8 — The Upgrade tab (DESIGN §11; if the tabbed shell is declined, a panel on the build view)
 - **Do:**
   - **Per slot:** median, P25–P75, P90 in resin and days, and the per-drop `1 in N`.
   - **Under the slots:** the domain ranking by `q_any`.
   - **Labels:** fast-pass numbers carry *Estimated* until the exact pass lands, then *Exact*.
   - **Captions that must not be dropped:**
     - "single-slot lower bound; the full search may find more";
-    - "levelling cost not included";
+    - "standard domain runs only; levelling cost not included";
     - the draw model's community-source caveat;
     - the sensitivity spread;
     - the recipe's `unstable` / `staleConversions` flags.
