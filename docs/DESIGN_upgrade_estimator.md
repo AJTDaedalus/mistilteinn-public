@@ -152,7 +152,14 @@ computed **once per (slot, main stat)** and reused across every domain. That mat
 A run yields `N₅` 5★ pieces, each independent. R§1.2 gives a mean of 1.065 (measured 1.07,
 n = 14,088) and a guarantee of at least one. **The shape beyond the mean is unverified**
 (R§8). v1 takes `N₅ = 1 + Bernoulli(0.065)`, the only shape consistent with both the guarantee
-and the mean that adds nothing, and labels it as an assumption. Then:
+and the mean that adds nothing, and labels it as an assumption.
+
+**The follow-up search could not settle the shape** (`RESEARCH_artifact_drop_model_followup.md`
+item 1: only means are published, n = 14,088), **and it barely matters.**
+`r = 1 − E[(1 − q)^N₅] = q·E[N₅] − O(q²)`, so for the small `q` this feature exists for, any shape
+with mean 1.065 gives the same answer. The shape only shows once `q` is large, and then the
+resin figure is a handful of runs whichever shape is right. So the mean carries a citation, and
+the shape carries a one-line label. Then:
 
 ```
 r(s, D) = 1 − E[(1 − q)^N₅] = 1 − (1 − q)(1 − 0.065·q)
