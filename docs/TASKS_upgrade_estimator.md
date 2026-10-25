@@ -167,17 +167,10 @@ the gate. **One PR per phase**, three PRs in total (`space-prs-further-apart`).
   hand-checked against the Task 5 sampler run on that same build. The DOM audit
   (`dom-audit-measures-what-screenshots-cannot`) shows no overflow at 375 px.
 
-### [!] 9 — Close-out — **blocked on the npm audit gate, not on this feature**
-- **Gate, 2026-10-24, on `58b3f43`:** `ci_local` **25/26**. Every backend, integration, crossval,
-  frontend, typecheck, lint and security job passed; `frontend-security/npm audit` failed on
-  **47 advisories published since the allowlist's last review (2026-09-19)** — zod, Angular
-  tooling and others. `package-lock.json` is byte-identical to `origin/dev`, so `dev` fails
-  the same gate today. Rule 1 says a red gate blocks, so this does not merge until a
-  dependency-patch branch clears it. Docs, banners and LOG are done.
-- **Do:** update this file's banner, DESIGN status, `CLAUDE.md`'s plan table and
-  `docs/LOG_mistilteinn.md`. Record what driving it found that no test did.
-- **Accept:** `ci_local` is green on the PR head; merged; the deploy confirmed by
-  `gh run list --branch dev` plus a lazy-chunk grep
-  (`verify-a-frontend-deploy-by-grepping-the-lazy-chunk`).
+### [x] 9 — Close-out
+- **Gate, 2026-10-24:** first run 25/26 — `frontend-security/npm audit` red on 47 advisories
+  published since 2026-09-19, identically on `dev`. Cleared by **#343** (Angular 21.2.25, vitest
+  4.1.12, `npm audit fix`, undici floor ^7.30.1; `ci_local --clean` 28/28), merged and deployed.
+  This branch was rebased onto it; the final gate result is recorded in the PR.
 
 *PR 3 here.*
