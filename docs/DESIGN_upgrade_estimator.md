@@ -37,7 +37,6 @@ yet:
 | "the damage to beat" | **yes**, `OutcomeDistribution.reference` (the owner's 2026-09-06 correction) | `sim/artifact-outcome.ts` |
 | **a fresh-drop prior** (set → slot → main → 3 or 4 lines → substats → rolls) | **no** | new, §3 |
 | **drop counts per run and the 80/20 line split** | **no** | new data, R§1.2, R§4.1 |
-| **domain → its two sets** | **no**, but derivable from the pinned AnimeGameData the planner already reads | new snapshot field, §6 |
 | **probability per drop → resin distribution** | **no**, but closed form | new, §4 |
 
 **No new engine is involved and gcsim never enters the loop.** It is the ranker's evaluator
@@ -71,7 +70,7 @@ Every word in that sentence was a choice:
   cares about. Editable, defaulting to 1%.
 - **the set constraint**: §3.1.
 
-**The output is a distribution over resin**, per slot, plus one "any slot" line per domain (§4.3).
+**The output is a distribution over resin**, per slot.
 It is not a point estimate. That follows OQ-A4 and the wish planner's population-not-sample
 argument (`DESIGN_wish_planner.md` §9.7), and here it costs nothing extra (§4).
 
@@ -137,15 +136,19 @@ written down so it is not mistaken for exactness.
 
 ### 4.1 Per drop
 
-For slot `s` and domain `D`:
+**No domains** (owner, 2026-10-24): *"just assume we're farming the right one for each set (so
+half of artifacts could be a replacement). For off-pieces, it should be any artifact."* So the
+set factor is a constant per slot, and the model needs no domain → set map:
 
 ```
-q(s, D) = Σ_{X ∈ sets(D), admissible(s, X)} ½ · ⅕ · Σ_main P(main | slot)
-                                                · P(beat | s, main)
+q(s) = σ(s) · ⅕ · Σ_main P(main | slot) · P(beat | s, main)
+
+σ(s) = ½   if s is inside an active set bonus (4-piece or 2-piece): half the drops are that set
+       1   if s is the off-piece: every drop from the domain fits
 ```
 
-`P(beat | s, main)` does not depend on `X`, because the recipe is unchanged (§3.1). So it is
-computed **once per (slot, main stat)** and reused across every domain. That matters for §4.3.
+`P(beat | s, main)` does not depend on the set, because the recipe is unchanged (§3.1). So it is
+computed **once per (slot, main stat)**.
 
 ### 4.2 Per run, then resin
 
@@ -162,7 +165,7 @@ resin figure is a handful of runs whichever shape is right. So the mean carries 
 the shape carries a one-line label. Then:
 
 ```
-r(s, D) = 1 − E[(1 − q)^N₅] = 1 − (1 − q)(1 − 0.065·q)
+r(s) = 1 − E[(1 − q)^N₅] = 1 − (1 − q)(1 − 0.065·q)
 runs    ~ Geometric(r)                  (support 1, 2, …)
 resin   = 20 · runs                     R§1.1: every claim option is 20 per reward set since Luna I
 ```
@@ -172,9 +175,8 @@ histogram is the geometric PMF. The mean is `20 / r`. **The Luna I change matter
 "condensed = 40 resin for 2 drops" rule that much community arithmetic still uses is out of date
 (R§1.1), and per reward set the cost is now flat.
 
-**What to report, per slot:** median, mean, the P25–P75 band and P90 in resin. The same in
-**days of resin regeneration**, which is how a player thinks about it. The daily figure is a
-curated constant to cite in Task 2, not a number to write from memory. Also report the per-drop
+**What to report, per slot:** median, mean, the P25–P75 band and P90, **in resin only** (owner,
+2026-10-24: *"it's calculating resin needed for an upgrade, not days"*). Also report the per-drop
 `q`, because "1 in 2,300 drops" is a sentence a reader can check against their own experience,
 and a resin number alone is not.
 
@@ -182,19 +184,6 @@ and a resin number alone is not.
 near-perfect CRIT circlet) has an infinite expected cost. Rendering that as "∞" or a huge
 number would be wrong. It is *"no drop of this kind can beat this piece"*, and branch-and-bound
 (§5) proves it exactly rather than estimating it.
-
-### 4.3 The view a player acts on: "farm this domain"
-
-A player does not farm a slot; they farm a domain, and every drop lands somewhere. So beside the
-per-slot table, report per domain:
-
-```
-q_any(D) = Σ_s q(s, D)       slots are mutually exclusive per drop, so the sum is exact
-```
-
-pushed through the same geometric. **"Resin until any of your five pieces improves"**, ranked
-across domains. Because `P(beat | s, main)` is shared (§4.1), ranking every domain in the game
-costs only the per-slot work plus a table lookup.
 
 ### 4.4 Later: Strongbox recycling — **deferred** (owner, 2026-10-24)
 
@@ -281,13 +270,9 @@ branches has a floor (223 ms worst case), and five slots times many mains is mor
 |---|---|---|
 | 5★ per run, AR 45+ = 1.065; 4-line share 0.20 domain, 0.34 boss/Strongbox/Abyss | R§1.2, R§4.1: community tables plus GDGT measurement | extend `app/data/external/artifact_draw_model.json`, with a citation per entry and the `N₅` shape marked as assumed |
 | resin per reward set = 20 | R§1.1 | the planner already prices domains at 20 (`planner_economy.json`); **read it, do not restate it** |
-| domain → its two artifact sets | `DungeonExcelConfigData` + `RewardPreviewExcelConfigData` at the pinned AnimeGameData commit: the same tables `build_snapshot.py` already reads for talent domains | new derived field in the yuanshen snapshot; **refuse** on a domain whose preview names other than two 5★ sets |
 | which sets the Strongbox offers | R§5.1: grows by patch, not in our data | v1: all sets, labelled. OQ-U5 |
 
-**One trap is already known from the planner:** a reward preview publishes *which* items, and
-for domains it published only part of *how many*. That is how talent books first priced at 4.6×
-too pessimistic (`CLAUDE.md`, the two-roll model). So the snapshot takes **set membership only**
-from the preview, and drop *counts* come from R§1.2, never from the preview's numbers.
+**No domain → set map is needed** (§4.1), so nothing is derived from reward previews.
 
 ## 7. Sources other than domains
 
@@ -309,9 +294,8 @@ mechanism is settled, because the wrong reading of a guarantee is a confident wr
 
 - **Not a re-search.** Moving the other four pieces is the ranker's pinned deep dive (A.12).
   This is the single-slot lower bound, labelled as one.
-- **Not a farming optimizer.** It ranks domains for *this build*. It does not plan resin across
-  a roster. That is a natural follow-up, since `q_any` sums across builds the same way it sums
-  across slots, but only if the owner wants it.
+- **Not a farming optimizer.** No domains, no ranking of where to farm; it assumes the right
+  domain for each slot (§4.1).
 - **Not the levelling cost.** A 5★ to +20 is 270,475 EXP, about 16–19 runs of fodder (R§6). The
   resin figure assumes you can level whatever drops and **says so**. An optimal-stopping policy
   (level to +4, look, decide) is real and is the GO-style extension, OQ-U2.
@@ -328,7 +312,7 @@ mechanism is settled, because the wrong reading of a guarantee is a confident wr
 | **OQ-U4** | Elixir and Reshape as alternative columns: in this feature, later, or never? | **Later, Reshape first**, after the guarantee mechanism is settled |
 | **OQ-U5** | Strongbox: offer the toggle with "all sets available", or wait for a curated set list? | **Offer it, labelled.** The difference is a few sets per patch |
 | **OQ-U6** | Where it lives: a column/panel on the build (per slot), a panel on `/optimize` beside the result, or a new page with the domain ranking? | **A panel on the build view**: slots as rows, a domain ranking under it. It needs a build plus a calibrated recipe, which those pages already have |
-| **OQ-U7** | When the current piece is the off-piece, should the domain ranking prefer the domain the player is already farming for another slot? | **No special case.** `q_any` already credits a domain for every slot it feeds |
+| **OQ-U7** | ~~Domain ranking~~ — moot: no domains (§4.1). | |
 
 ### 9.1 Answered, owner 2026-10-24
 

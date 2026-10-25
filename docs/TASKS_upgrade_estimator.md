@@ -6,7 +6,7 @@ form) and §5 (the hard part) first. **Evidence:** `docs/RESEARCH_artifact_drop_
 **Cadence:** one task at a time. After each one: tick it here, append to `docs/LOG_mistilteinn.md`,
 then **stop and report**.
 
-**Status key:** ` ` todo · `~` in progress · `x` done · `!` blocked (escalation in LOG)
+**Status key:** ` ` todo · `~` in progress · `x` done · `!` blocked (escalation in LOG) · `-` removed
 
 > **Status: draft, 2026-10-24. Nothing started.** OQ-U1/U2/U5 answered (DESIGN §9.1): θ = 1%,
 > no levelling cost, standard domains only. Phase 3 is the **Upgrade** tab of a tabbed
@@ -62,7 +62,7 @@ the gate. **One PR per phase**, three PRs in total (`space-prs-further-apart`).
   - `five_star_per_run: 1.065`, with the `N₅ = 1 + Bernoulli` shape marked `assumed: true`;
   - `four_line_share: {domain: 0.20}` — domain only in v1; other sources arrive with the
     Strongbox follow-up;
-  - the daily resin regeneration constant, cited.
+  - `set_share_in_domain: 0.5` (R§1.3) — the σ = ½ of DESIGN §4.1.
 
   Resin per run is **read from `planner_economy.json`**, not restated.
 - **Accept:** the loader refuses a missing or out-of-range share. A test asserts every new entry
@@ -70,19 +70,7 @@ the gate. **One PR per phase**, three PRs in total (`space-prs-further-apart`).
   `npm run codegen`, and the openapi diff is **purely additive**
   (`duplicate-pydantic-names-rename-both`).
 
-### [ ] 3 — Domain → sets in the yuanshen snapshot
-- **Files:** `scripts/yuanshen/build_snapshot.py`, a new
-  `snapshot/artifact_domains.json`, `app/data/snapshot.py`, tests.
-- **Do:** derive each artifact domain's two 5★ sets from `DungeonExcelConfigData` +
-  `RewardPreviewExcelConfigData` at the pinned commit. Take **membership only**, never counts
-  (DESIGN §6, the planner's two-roll trap). Join set ids to the catalogue by game id, not by
-  row id (`CLAUDE.md`: the KQM snapshot's 0-of-205 failure).
-- **Accept:**
-  - every domain has exactly two sets, or the build refuses;
-  - every set id resolves against the seeded `artifact_sets`;
-  - hand-read anchors for three domains, one of them the newest (7.0, Inverted Glacier,
-    R§1.5);
-  - an endpoint or field exposing the map, with an additive openapi diff.
+### [-] 3 — ~~Domain → sets~~ **removed** (owner, 2026-10-24: no domains; DESIGN §4.1)
 
 *PR 1 here: data only, backend only.*
 
@@ -129,9 +117,8 @@ the gate. **One PR per phase**, three PRs in total (`space-prs-further-apart`).
 ### [ ] 7 — Per drop → resin
 - **Files:** `frontend/src/app/sim/resin-to-upgrade.ts` + spec.
 - **Do:** implement DESIGN §4:
-  - `q(s, D)` with set admissibility (§3.1), `r` from `N₅`, then the geometric quantiles, mean
-    and PMF, in resin and days, with θ defaulting to 1%;
-  - `q_any(D)` across slots.
+  - `q(s)` with σ = ½ for a set slot and 1 for the off-piece (§4.1), `r` from `N₅`, then the
+    geometric quantiles, mean and PMF, in resin, with θ defaulting to 1%.
   - **No Strongbox, no Stygian Onslaught** (DESIGN §9.1).
 - **Accept:**
   - the quantile formula matches a brute-force cumulative sum;
@@ -149,8 +136,7 @@ the gate. **One PR per phase**, three PRs in total (`space-prs-further-apart`).
 
 ### [ ] 8 — The Upgrade tab at `/artifacts/upgrade` (DESIGN §11; needs the tabs refactor merged)
 - **Do:**
-  - **Per slot:** median, P25–P75, P90 in resin and days, and the per-drop `1 in N`.
-  - **Under the slots:** the domain ranking by `q_any`.
+  - **Per slot:** median, P25–P75, P90 in resin, and the per-drop `1 in N`.
   - **Labels:** fast-pass numbers carry *Estimated* until the exact pass lands, then *Exact*.
   - **Captions that must not be dropped:**
     - "single-slot lower bound; the full search may find more";
