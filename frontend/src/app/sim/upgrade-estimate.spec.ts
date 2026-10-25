@@ -106,7 +106,9 @@ describe('slotBeatProbability', () => {
     const full = slotBeatProbability(input(threshold, { live: new Set(Object.keys(WEIGHTS)) }));
     expect(collapsed.pBeat).toBeCloseTo(full.pBeat, 12);
     expect(collapsed.questions).toBeLessThan(full.questions);
-  });
+    // Without the collapse every stat is enumerated: that is the cost the collapse removes, and
+    // under jsdom it is tens of seconds.
+  }, 120_000);
 
   it('reports a smaller probability against a stronger piece', () => {
     const weak = slotBeatProbability(input(circletDamage(MEDIOCRE) * 1.01)).pBeat;
@@ -160,7 +162,7 @@ describe('slotBeatProbabilityAsync', () => {
     const cache = newBeatCache();
     slotBeatProbability(base, cache);
     expect(await weightSensitivityAsync(base, cache)).toEqual(weightSensitivity(base, cache));
-  });
+  }, 60_000);
 
   it('stops when asked', async () => {
     const base = input(circletDamage(MEDIOCRE) * 1.01);

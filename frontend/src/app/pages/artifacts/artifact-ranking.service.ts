@@ -40,7 +40,14 @@ import { type RankedArtifact, idealFor, rankArtifact } from '../../sim/artifact-
 import { evaluateRecipe } from '../../sim/recipe-eval';
 import { candidateStatsFrom } from '../../sim/recipe-search';
 import { SLOTS, type Candidate } from '../../sim/search';
-import { fourPieceSetOf, searchRecipe } from '../../sim/recipe-search';
+import { fourPieceSetOf, liveQuantitiesFor, searchRecipe } from '../../sim/recipe-search';
+import {
+  type MainStatBeat, type SlotBeatInput, newBeatCache, slotBeatProbabilityAsync,
+  weightSensitivityAsync,
+} from '../../sim/upgrade-estimate';
+import {
+  type ClaimModel, type ResinEstimate, resinToUpgrade, setFactor,
+} from '../../sim/resin-to-upgrade';
 import { type Recipe } from '../../sim/recipe';
 import {
   type CalibrationProgress,
@@ -143,6 +150,39 @@ export interface DeepDive {
   searchedPerSlot: number;
   /** The inventory it was trimmed from, so the panel can say what fraction that was. */
   inventorySize: number;
+}
+
+/** One slot of the upgrade estimate. `docs/DESIGN_upgrade_estimator.md` §4. */
+export interface UpgradeSlotRow {
+  slot: (typeof SLOTS)[number];
+  /** The piece worn there now, or null for an empty slot (then anything with a stat beats it). */
+  pieceId: string | null;
+  setId: number | null;
+  level: number | null;
+  /** Its main stat's raw property key, for the label. */
+  mainStat: string | null;
+  /** ½ when the slot is inside an active set bonus, 1 for the off-piece. */
+  factor: number;
+  /** `P(a fresh drop for this slot, levelled, beats the bar)`. */
+  pBeat: number;
+  byMain: MainStatBeat[];
+  estimate: ResinEstimate;
+  /** The estimate with the substat weights nudged ±1 — how firm the number is. */
+  sensitivity: { cheap: ResinEstimate; dear: ResinEstimate };
+  evaluations: number;
+}
+
+export interface UpgradeResult {
+  rows: UpgradeSlotRow[];
+  /** The build's damage today. */
+  baseline: number;
+  /** The gain asked for, as a fraction. */
+  gain: number;
+  /** `baseline · (1 + gain)` — what a drop has to beat. */
+  threshold: number;
+  resinPerRun: number;
+  weightsCaveat: string;
+  caveats: { unstable: string[]; staleConversions: string[] };
 }
 
 /** What `rank` needs to know before it can start. */
@@ -529,6 +569,145 @@ export class ArtifactRankingService {
       },
       { shouldCancel: request.shouldCancel, reference: baseline },
     );
+  }
+
+  /**
+   * How much domain resin until each slot's piece is beaten by 1% (or `gain`).
+   *
+   * `docs/DESIGN_upgrade_estimator.md`; the math is `sim/upgrade-estimate.ts` and
+   * `sim/resin-to-upgrade.ts`. This is the join, and it reuses `rank`'s calibration — same
+   * targets, same `recipe-cache.ts` key — so a build already ranked or optimized costs nothing
+   * to calibrate here.
+   *
+   * **Scored under the build's own recipe throughout.** A replacement that counts (DESIGN
+   * §3.1: same set for a slot inside a bonus, any set for the off-piece) never changes which
+   * bonuses are active, so the recipe the build is in today is the right one for every
+   * candidate. That is what makes one calibration enough.
+   *
+   * Slots are reported **as they finish** through `onSlot`, because a whole build is a few
+   * seconds and the first answers are useful before the last.
+   */
+  async upgradeEstimate(
+    request: RankingRequest & {
+      /** Minimum meaningful gain, as a fraction. Owner, 2026-10-24: 1%. */
+      gain?: number;
+      onSlot?: (row: UpgradeSlotRow) => void;
+      shouldCancel?: () => boolean;
+    },
+  ): Promise<UpgradeResult> {
+    const snapshot = await this.optimize.inventory();
+    const raw = snapshot.draw_model;
+    const fresh = raw?.fresh_drop;
+    if (!raw || !fresh) {
+      throw new Error(
+        'the server sent no drop model, so there is nothing to estimate from. This is a '
+        + 'refusal rather than a guess: an estimate without the drop rates would be a number '
+        + 'about nothing.',
+      );
+    }
+    const model = drawModelFrom(raw);
+    const ladderRows = model.rollTiers['5'];
+    if (!ladderRows?.length) {
+      throw new Error('no 5-star roll ladders arrived, so a 5-star drop cannot be modelled');
+    }
+    const ladders = Object.fromEntries(ladderRows.map((row) => [row.quantity, row.values]));
+
+    const worn = await this.artifacts.list({ build_id: request.buildId });
+    const byId = new Map(snapshot.artifacts.map((c) => [c.id, c]));
+    const wornBySlot = new Map(worn.items.map((piece) => [piece.slot, piece.id] as const));
+    const counts = setCountsOf(wornBySlot, byId);
+    const wornFourPiece = fourPieceSetOf(counts);
+    const calibration = await this.recipes.calibrateAll(
+      request.buildId,
+      request.rotationId,
+      snapshot.version,
+      await this.targetsFor(wornFourPiece, request.extraSets ?? []),
+      request.onProgress ?? (() => undefined),
+      undefined,
+      request.waitForEnergy ?? false,
+    );
+    const recipe = wornFourPiece === null
+      ? calibration.noFourPiece
+      : calibration.byFourPieceSet.get(wornFourPiece);
+    if (!recipe) {
+      throw new Error(
+        "the build's own recipe did not calibrate, so its damage cannot be measured. An "
+        + 'estimate against a recipe missing its own set bonus would be wrong, and not '
+        + 'uniformly.',
+      );
+    }
+
+    const equipped: StatPool[] = SLOTS.map((slot) => {
+      const id = wornBySlot.get(slot);
+      return (id ? byId.get(id)?.stats : undefined) ?? {};
+    });
+    const baseline = evaluateRecipe(recipe, candidateStatsFrom(equipped));
+    const gain = request.gain ?? 0.01;
+    const threshold = baseline * (1 + gain);
+    const live = new Set(liveQuantitiesFor(recipe));
+    const claim: ClaimModel = {
+      fiveStarPerRun: fresh.five_star_per_run,
+      setShare: fresh.set_share,
+      slotShare: fresh.slot_share,
+      resinPerRun: fresh.resin_per_run,
+    };
+
+    const rows: UpgradeSlotRow[] = [];
+    for (const [index, slot] of SLOTS.entries()) {
+      const pieceId = wornBySlot.get(slot) ?? null;
+      const piece = pieceId ? byId.get(pieceId) : undefined;
+      const input: SlotBeatInput = {
+        mainStatProbabilities: fresh.main_stat_probabilities[slot] ?? {},
+        mainStatValues: fresh.main_stat_values,
+        substatWeights: model.substatWeights,
+        ladders,
+        fourLineShare: fresh.four_line_share,
+        live,
+        evaluate: (stats) => {
+          const swapped = [...equipped];
+          swapped[index] = stats;
+          return evaluateRecipe(recipe, candidateStatsFrom(swapped));
+        },
+        threshold,
+      };
+      const cache = newBeatCache();
+      const options = { shouldCancel: request.shouldCancel };
+      const found = await slotBeatProbabilityAsync(input, cache, options);
+      const range = await weightSensitivityAsync(input, cache, options);
+      const factor = setFactor(piece?.set_id ?? null, counts, claim.setShare);
+      const row: UpgradeSlotRow = {
+        slot,
+        pieceId,
+        setId: piece?.set_id ?? null,
+        level: piece?.level ?? null,
+        mainStat: piece?.main_stat ?? null,
+        factor,
+        pBeat: found.pBeat,
+        byMain: found.byMain,
+        estimate: resinToUpgrade(found.pBeat, factor, claim),
+        // Low P(beat) is the expensive end, so the ranges swap.
+        sensitivity: {
+          cheap: resinToUpgrade(range.high, factor, claim),
+          dear: resinToUpgrade(range.low, factor, claim),
+        },
+        evaluations: found.evaluations,
+      };
+      rows.push(row);
+      request.onSlot?.(row);
+    }
+
+    return {
+      rows,
+      baseline,
+      gain,
+      threshold,
+      resinPerRun: claim.resinPerRun,
+      weightsCaveat: model.weightsCaveat,
+      caveats: {
+        unstable: recipe.meta?.unstable ?? [],
+        staleConversions: (recipe.meta?.staleConversions ?? []).map((c) => c.term),
+      },
+    };
   }
 
   /**

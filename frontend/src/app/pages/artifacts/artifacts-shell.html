@@ -1,0 +1,13 @@
+<!-- Links, not `role="tab"` buttons: each tab is a route, so the right semantics are a nav whose
+     current link carries `aria-current="page"` — which `routerLinkActive` sets. -->
+<nav class="tabs" aria-label="Artifacts">
+  @for (tab of tabs; track tab.path) {
+    <a
+      class="tab"
+      [routerLink]="tab.path"
+      routerLinkActive="tab--on"
+      ariaCurrentWhenActive="page"
+    >{{ tab.label }}</a>
+  }
+</nav>
+<router-outlet />

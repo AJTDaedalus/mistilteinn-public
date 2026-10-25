@@ -25,12 +25,12 @@ export const routes: Routes = [
     canMatch: [requirePending],
   },
   {
-    // **`/` is the inventory.** Owner, 2026-09-05: *"inventory is a good landing page"*, after
+    // **`/` is the inventory** — now the Inventory tab of `/artifacts`. Owner, 2026-09-05: *"inventory is a good landing page"*, after
     // *"honestly landing page could just be blank and be better"* — the page it replaces sat
     // behind `requireApproved`, so its only reader was a signed-in user looking at a nav bar
     // that already carried all eleven links. It was the nav a second time, in prose.
     //
-    // **No guard here, on purpose.** `/inventory` carries `requireApproved`, and that guard
+    // **No guard here, on purpose.** `/artifacts` carries `requireApproved`, and that guard
     // returns a `UrlTree`, so a signed-out arrival lands on `/login` and a pending one on
     // `/pending` exactly as before. Repeating the guard on a redirect would put the same rule
     // in two places, and the one that drifted would be the one nobody reads.
@@ -38,7 +38,7 @@ export const routes: Routes = [
     // `pathMatch: 'full'` is load-bearing: an empty path matches by *prefix* by default, so
     // without it this route would swallow every URL in the app.
     path: '',
-    redirectTo: 'inventory',
+    redirectTo: 'artifacts/inventory',
     pathMatch: 'full',
   },
   {
@@ -106,21 +106,59 @@ export const routes: Routes = [
     canMatch: [requireApproved],
   },
   {
-    // `inventory`, not `artifacts`. The nav carried two links reading "Artifacts" — the
-    // game's set catalogue at `/artifact-sets` and the caller's own pieces here — and the
-    // only way to tell them apart was to click one. Renaming the label alone would leave a
-    // path that disagrees with it.
-    path: 'inventory',
-    title: 'Inventory',
-    loadComponent: () => import('./pages/artifacts/artifacts').then((m) => m.ArtifactsPage),
+    // **One page, a tab per question** — `docs/DESIGN_upgrade_estimator.md` §11 (owner,
+    // 2026-10-24). Inventory, Optimize, Rank and Upgrade all ask about the same pieces, three
+    // of them for the same build; they were three nav entries that each re-asked for it.
+    //
+    // `/artifacts` used to be a redirect *to* `/inventory`; this reverses that pointer rather
+    // than inventing a path. The set catalogue stays at `/artifact-sets` and its nav label
+    // stays "Artifact sets", so the old ambiguity (two links reading "Artifacts") does not
+    // come back.
+    //
+    // The guard is on the parent: `canMatch` failing here means no child can match either.
+    path: 'artifacts',
+    // A fallback only: each tab's own title is deeper and wins.
+    title: 'Artifacts',
+    loadComponent: () =>
+      import('./pages/artifacts/artifacts-shell').then((m) => m.ArtifactsShell),
     canMatch: [requireApproved],
+    children: [
+      { path: '', redirectTo: 'inventory', pathMatch: 'full' },
+      {
+        path: 'inventory',
+        title: 'Inventory',
+        data: { mode: 'inventory' },
+        loadComponent: () => import('./pages/artifacts/artifacts').then((m) => m.ArtifactsPage),
+      },
+      {
+        path: 'optimize',
+        title: 'Optimize',
+        loadComponent: () => import('./pages/optimize/optimize').then((m) => m.OptimizePage),
+      },
+      {
+        path: 'rank',
+        title: 'Rank',
+        data: { mode: 'rank' },
+        loadComponent: () => import('./pages/artifacts/artifacts').then((m) => m.ArtifactsPage),
+      },
+      {
+        path: 'upgrade',
+        title: 'Upgrade',
+        loadComponent: () => import('./pages/upgrade/upgrade').then((m) => m.UpgradePage),
+      },
+    ],
   },
   {
-    // The old path still resolves. A redirect rather than a deletion because this URL has
-    // been the inventory since the artifacts chunk shipped, and a bookmark landing on the
-    // catch-all would take the user to the landing page with no indication why.
-    path: 'artifacts',
-    redirectTo: 'inventory',
+    // The old paths still resolve. Redirects rather than deletions: `/inventory` has been the
+    // landing page and `/optimize` the search since they shipped, and a bookmark landing on
+    // the catch-all would arrive somewhere with no indication why.
+    path: 'inventory',
+    redirectTo: 'artifacts/inventory',
+    pathMatch: 'full',
+  },
+  {
+    path: 'optimize',
+    redirectTo: 'artifacts/optimize',
     pathMatch: 'full',
   },
   {
@@ -133,12 +171,6 @@ export const routes: Routes = [
     path: 'teams',
     title: 'Teams',
     loadComponent: () => import('./pages/teams/teams').then((m) => m.TeamsPage),
-    canMatch: [requireApproved],
-  },
-  {
-    path: 'optimize',
-    title: 'Optimize',
-    loadComponent: () => import('./pages/optimize/optimize').then((m) => m.OptimizePage),
     canMatch: [requireApproved],
   },
   {
@@ -181,6 +213,6 @@ export const routes: Routes = [
     // test rather than assuming it; the guards' `createUrlTree(['/'])` *does* chain, because
     // a guard redirect starts a fresh navigation, and there is a test for that too.
     path: '**',
-    redirectTo: 'inventory',
+    redirectTo: 'artifacts/inventory',
   },
 ];

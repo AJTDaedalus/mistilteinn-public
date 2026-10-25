@@ -1,0 +1,163 @@
+<section class="upgrade">
+  <header>
+    <h1>Upgrade</h1>
+    <p class="hint">
+      How much domain resin until a fresh 5★ drop, fully levelled, beats each piece this build
+      wears by at least the gain below.
+    </p>
+  </header>
+
+  <div class="controls">
+    <!-- Rotation first, as on Rank: it names the team, and only that team's builds can be asked
+         about. The choice is shared with Rank, so it is made once. -->
+    <label>
+      <span>Rotation</span>
+      <select (change)="chooseRotation($any($event.target).value)" [disabled]="running()">
+        <option value="" [selected]="!rotationId()">Choose a rotation…</option>
+        @for (choice of rotationChoices(); track choice.id) {
+          <option [value]="choice.id" [selected]="choice.id === rotationId()">{{ choice.label }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      <span>Character</span>
+      <select
+        (change)="buildId.set($any($event.target).value)"
+        [disabled]="running() || !rotationId()"
+      >
+        <option value="" [selected]="!buildId()">
+          {{ rotationId() ? 'Choose a character…' : 'Pick a rotation first' }}
+        </option>
+        @for (choice of buildChoices(); track choice.id) {
+          <option [value]="choice.id" [selected]="choice.id === buildId()">
+            {{ choice.label }} · {{ choice.detail }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="gain">
+      <span>Minimum gain</span>
+      <span class="gain__field">
+        <input
+          type="number"
+          min="0"
+          step="0.5"
+          inputmode="decimal"
+          [ngModel]="gainPercent()"
+          (change)="setGain($any($event.target).value)"
+          [disabled]="running()"
+          aria-describedby="gain-help"
+        />
+        <span aria-hidden="true">%</span>
+      </span>
+    </label>
+
+    @if (running()) {
+      <button type="button" (click)="cancel()">Cancel</button>
+    } @else {
+      <button type="button" [disabled]="!canRun()" (click)="run()">Estimate</button>
+    }
+  </div>
+  <p id="gain-help" class="hint">
+    A drop counts only if the build deals at least this much more damage with it. At 0% a drop
+    that adds 0.01% would count.
+  </p>
+
+  @if (progress(); as p) {
+    <p class="muted" role="status">
+      @if (p.loading) {
+        Loading the simulator…
+      } @else {
+        Calibrating {{ p.current }} ({{ p.done }} of {{ p.total }})…
+      }
+    </p>
+  } @else if (running()) {
+    <p class="muted" role="status">Estimating {{ rows().length + 1 }} of 5…</p>
+  }
+
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+
+  @if (rows().length) {
+    <div class="table-scroll">
+      <table class="estimates">
+        <caption class="sr-only">Resin until each slot improves</caption>
+        <thead>
+          <tr>
+            <th scope="col">Slot</th>
+            <th scope="col">Worn now</th>
+            <th scope="col" title="Half the domain's drops are your set; the off-piece takes any">Drops that fit</th>
+            <th scope="col">Chance per drop</th>
+            <th scope="col" class="num">Median resin</th>
+            <th scope="col" class="num">Middle half</th>
+            <th scope="col" class="num">Unlucky (90%)</th>
+            <th scope="col" class="num" title="The median with each substat weight nudged by ±1">If the weights are off</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.slot) {
+            <tr>
+              <th scope="row">{{ slotNames()[row.slot] || row.slot }}</th>
+              <td>
+                {{ setName(row) }}
+                @if (row.level !== null) {
+                  <span class="muted">+{{ row.level }}</span>
+                }
+                @if (row.mainStat) {
+                  <span class="muted">· {{ statNames()[row.mainStat] || row.mainStat }}</span>
+                }
+              </td>
+              <td>{{ row.factor < 1 ? 'Half (your set)' : 'All (off-piece)' }}</td>
+              <td class="mono">{{ oneIn(row.estimate) }}</td>
+              @if (row.estimate.unreachable) {
+                <td class="unreachable" colspan="4">No drop can beat this piece by that much.</td>
+              } @else {
+                <td class="num mono strong">{{ resin(row.estimate.median) }}</td>
+                <td class="num mono">{{ resin(row.estimate.p25) }}–{{ resin(row.estimate.p75) }}</td>
+                <td class="num mono">{{ resin(row.estimate.p90) }}</td>
+                <td class="num mono muted">{{ spread(row) }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (result(); as r) {
+      @if (r.caveats.unstable.length || r.caveats.staleConversions.length) {
+        <p class="warn" role="note">
+          The rotation's recipe is flagged
+          @if (r.caveats.unstable.length) { unstable ({{ r.caveats.unstable.join(', ') }}) }
+          @if (r.caveats.staleConversions.length) {
+            with stale conversions ({{ r.caveats.staleConversions.join(', ') }})
+          }
+          — these figures inherit that.
+        </p>
+      }
+    }
+
+    <ul class="notes">
+      <li>
+        <strong>An upper bound on resin.</strong> Each piece is compared with the other four left
+        as they are; moving them could find an upgrade sooner.
+      </li>
+      <li>
+        Standard domain runs at 20 resin per claim, 1.065 five-stars per claim on average. No
+        Strongbox, no Stygian Onslaught, and levelling costs are not included.
+      </li>
+      <li>
+        Each piece is compared as it stands, at its current level. A replacement is assumed to be
+        levelled to +20.
+      </li>
+      @if (result(); as r) {
+        <li>
+          <abbr [attr.title]="r.weightsCaveat">The substat draw weights are a community table</abbr>;
+          the last column shows how far the median moves if any one of them is off by one.
+        </li>
+      }
+    </ul>
+  }
+</section>

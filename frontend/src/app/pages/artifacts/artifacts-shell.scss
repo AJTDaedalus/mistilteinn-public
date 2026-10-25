@@ -1,0 +1,27 @@
+/* The tab strip, matching `planner.scss` and `builds.scss`. Those are buttons over in-page
+   state; these are links over routes, so it is the look that is shared and not the element. */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-4);
+  border-bottom: 1px solid var(--surface-rule);
+}
+
+.tab {
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: var(--radius-1) var(--radius-1) 0 0;
+  color: var(--ink-dim);
+  padding: var(--space-2) var(--space-4);
+  margin-bottom: -1px;
+  text-decoration: none;
+
+  &:hover { color: var(--ink); }
+
+  &.tab--on {
+    border-color: var(--surface-rule);
+    background: var(--surface);
+    color: var(--brass);
+  }
+}
