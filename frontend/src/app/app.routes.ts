@@ -206,7 +206,7 @@ export const routes: Routes = [
     canMatch: [requireApproved],
   },
   {
-    // **Straight to `/inventory`, not via `''`.** It pointed at `''` while `''` rendered the
+    // **Straight to `/artifacts/inventory`, not via `''`.** It pointed at `''` while `''` rendered the
     // landing page. Now that `''` is itself a redirect, that was two hops — and Angular
     // resolves one redirect per recognition pass, so an unknown URL landed on `/` and stopped
     // there, on a path with no component, rendering nothing. Caught by walking the chain in a

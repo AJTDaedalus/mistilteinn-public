@@ -161,8 +161,13 @@ export interface UpgradeSlotRow {
   level: number | null;
   /** Its main stat's raw property key, for the label. */
   mainStat: string | null;
-  /** ½ when the slot is inside an active set bonus, 1 for the off-piece. */
+  /**
+   * The share of drops that could replace it: `setShare` when the piece holds a bonus up, 1 when
+   * any drop keeps every bonus, 0 when no domain drops its set at 5★.
+   */
   factor: number;
+  /** True when `factor` is 0 for that last reason. The page says why, not "can't be beaten". */
+  domainless: boolean;
   /** `P(a fresh drop for this slot, levelled, beats the bar)`. */
   pBeat: number;
   byMain: MainStatBeat[];
@@ -181,6 +186,10 @@ export interface UpgradeResult {
   /** `baseline · (1 + gain)` — what a drop has to beat. */
   threshold: number;
   resinPerRun: number;
+  fiveStarPerRun: number;
+  setShare: number;
+  /** No set bonus active, so any 2-piece a new drop would create is not counted. DESIGN §3.1. */
+  rainbow: boolean;
   weightsCaveat: string;
   caveats: { unstable: string[]; staleConversions: string[] };
 }
@@ -591,6 +600,8 @@ export class ArtifactRankingService {
     request: RankingRequest & {
       /** Minimum meaningful gain, as a fraction. Owner, 2026-10-24: 1%. */
       gain?: number;
+      /** Calibration is done; the estimate itself has started. For the status line. */
+      onCalibrated?: () => void;
       onSlot?: (row: UpgradeSlotRow) => void;
       shouldCancel?: () => boolean;
     },
@@ -625,7 +636,9 @@ export class ArtifactRankingService {
       request.onProgress ?? (() => undefined),
       undefined,
       request.waitForEnergy ?? false,
+      request.shouldCancel,
     );
+    request.onCalibrated?.();
     const recipe = wornFourPiece === null
       ? calibration.noFourPiece
       : calibration.byFourPieceSet.get(wornFourPiece);
@@ -651,6 +664,7 @@ export class ArtifactRankingService {
       slotShare: fresh.slot_share,
       resinPerRun: fresh.resin_per_run,
     };
+    const domainless = new Set(fresh.sets_without_domain_drop);
 
     const rows: UpgradeSlotRow[] = [];
     for (const [index, slot] of SLOTS.entries()) {
@@ -670,11 +684,17 @@ export class ArtifactRankingService {
         },
         threshold,
       };
+      const factor = setFactor(piece?.set_id ?? null, counts, claim.setShare, domainless);
+      // **No domain drops the set this slot has to stay in** — nothing to enumerate, and the
+      // answer is "never" for a reason that is not the piece's strength. Said separately.
       const cache = newBeatCache();
       const options = { shouldCancel: request.shouldCancel };
-      const found = await slotBeatProbabilityAsync(input, cache, options);
-      const range = await weightSensitivityAsync(input, cache, options);
-      const factor = setFactor(piece?.set_id ?? null, counts, claim.setShare);
+      const found = factor === 0
+        ? { pBeat: 0, byMain: [], evaluations: 0, questions: 0 }
+        : await slotBeatProbabilityAsync(input, cache, options);
+      const range = factor === 0
+        ? { low: 0, high: 0 }
+        : await weightSensitivityAsync(input, cache, options);
       const row: UpgradeSlotRow = {
         slot,
         pieceId,
@@ -682,6 +702,7 @@ export class ArtifactRankingService {
         level: piece?.level ?? null,
         mainStat: piece?.main_stat ?? null,
         factor,
+        domainless: factor === 0,
         pBeat: found.pBeat,
         byMain: found.byMain,
         estimate: resinToUpgrade(found.pBeat, factor, claim),
@@ -702,6 +723,9 @@ export class ArtifactRankingService {
       gain,
       threshold,
       resinPerRun: claim.resinPerRun,
+      fiveStarPerRun: claim.fiveStarPerRun,
+      setShare: claim.setShare,
+      rainbow: Object.values(counts).every((n) => n < 2),
       weightsCaveat: model.weightsCaveat,
       caveats: {
         unstable: recipe.meta?.unstable ?? [],

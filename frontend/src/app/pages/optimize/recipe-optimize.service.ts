@@ -37,6 +37,13 @@ export const RECIPE_STORE = new InjectionToken<RecipeStore | null>('RECIPE_STORE
 });
 
 /** One 4-piece state to calibrate: a set, or `null` for the state that reaches none. */
+/** Thrown by `calibrateAll` when its `shouldCancel` says stop. Nothing went wrong. */
+export class CalibrationCancelled extends Error {
+  constructor() {
+    super('the calibration was cancelled');
+  }
+}
+
 export interface CalibrationTarget {
   /**
    * The sets to equip, as catalogue **uuids** — what `/calibrate` resolves.
@@ -337,6 +344,11 @@ export class RecipeOptimizeService {
      * option never reaches it.
      */
     waitForEnergy = false,
+    /**
+     * Checked between targets. A target is one gcsim calibration (~3 s cold), so a cancel lands
+     * within one — without it, Cancel and leaving the page did nothing until every set had run.
+     */
+    shouldCancel?: () => boolean,
   ): Promise<CalibrationResult> {
     const byFourPieceSet = new Map<number, Recipe>();
     const byPair = new Map<string, Recipe>();
@@ -367,6 +379,7 @@ export class RecipeOptimizeService {
     }
 
     for (const [index, target] of targets.entries()) {
+      if (shouldCancel?.()) throw new CalibrationCancelled();
       onProgress({ done: index, total: targets.length, current: target.label, loading: false });
 
       const configs = await this.configs(

@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 
@@ -9,10 +9,6 @@ import { CatalogueIcon } from '../../shared/icon/icon';
 import { describeStat as describe } from '../../shared/stat-label';
 import { SubstatBars, substatReadings } from '../../shared/substat-bars/substat-bars';
 import { CatalogueService } from '../catalogue/catalogue.service';
-import { BuildsService, type BuildRead } from '../builds/builds.service';
-import { RotationsService } from '../rotations/rotations.service';
-import { TeamsService, type TeamRead } from '../teams/teams.service';
-import { buildsInTeam } from '../../shared/team-scope';
 import {
   ArtifactRankingService,
   type DeepDive,
@@ -219,7 +215,7 @@ export function comparator(key: SortKey): (a: ArtifactRow, b: ArtifactRow) => nu
   templateUrl: './artifacts.html',
   styleUrl: './artifacts.scss',
 })
-export class ArtifactsPage implements OnInit {
+export class ArtifactsPage implements OnInit, OnDestroy {
   protected readonly loading = signal(true);
   /** Non-null means the page failed to load. Never rendered as "you have no artifacts". */
   protected readonly error = signal<string | null>(null);
@@ -345,14 +341,13 @@ export class ArtifactsPage implements OnInit {
    * because a cache key for "this build running this rotation" is meaningless otherwise. So
    * the picker offers only what can actually be asked, which is what `/optimize` already does
    * with `buildsInTeam`.
+   *
+   * Shared with the Upgrade tab, so the build is chosen once: the choices, the scoping and the
+   * selection all live in `ArtifactsContextService`.
    */
-  private readonly allBuilds = signal<BuildRead[]>([]);
-  private readonly teams = signal<TeamRead[]>([]);
-  private readonly rotationTeam = signal<Map<string, string>>(new Map());
-
-  protected readonly rotationChoices = signal<{ id: string; label: string }[]>([]);
-  /** Shared with the Upgrade tab, so the build is chosen once. `ArtifactsContextService`. */
   private readonly context = inject(ArtifactsContextService);
+  private readonly allBuilds = this.context.allBuilds;
+  protected readonly rotationChoices = this.context.rotationChoices;
   protected readonly rankBuildId = this.context.buildId;
   protected readonly rankRotationId = this.context.rotationId;
 
@@ -368,26 +363,8 @@ export class ArtifactsPage implements OnInit {
       ? 'rank'
       : 'inventory';
 
-  /**
-   * The builds the chosen rotation's team actually fields.
-   *
-   * Labelled by **character**, with constellation and weapon as the detail — the decision
-   * `shared/team-scope.buildOptions` already made for `/optimize` and `/builds`. A build's own
-   * `name` is not used, and driving the page is how that was learned: all 84 builds in the
-   * local database have an empty name, so a label of `${character} — ${name}` rendered as
-   * "Furina —" seventy-five times over.
-   */
-  protected readonly buildChoices = computed(() => {
-    const teamId = this.rotationTeam().get(this.rankRotationId());
-    const team = this.teams().find((t) => t.id === teamId) ?? null;
-    if (!teamId || !team) return [];
-    return buildsInTeam(team, this.allBuilds()).map((build) => ({
-      id: build.id,
-      label: build.character?.name || 'No character',
-      detail: `C${build.constellation_level} · `
-        + `${build.weapon_display || build.weapon?.name || 'no weapon'}`,
-    }));
-  });
+  /** The chosen rotation's team's builds. One definition, in `ArtifactsContextService`. */
+  protected readonly buildChoices = this.context.buildChoices;
   /** Null when idle. A calibration is ~3.2 s of gcsim and must never block a click. */
   protected readonly rankProgress = signal<CalibrationProgress | null>(null);
   protected readonly rankError = signal('');
@@ -649,9 +626,6 @@ export class ArtifactsPage implements OnInit {
 
   private readonly service = inject(ArtifactsService);
   private readonly catalogue = inject(CatalogueService);
-  private readonly buildsService = inject(BuildsService);
-  private readonly rotationsService = inject(RotationsService);
-  private readonly teamsService = inject(TeamsService);
   private readonly rankingService = inject(ArtifactRankingService);
 
   /**
@@ -664,11 +638,9 @@ export class ArtifactsPage implements OnInit {
    */
   /** Choosing a rotation re-scopes the builds, so a stale choice must not survive it. */
   protected chooseRotation(rotationId: string): void {
-    this.rankRotationId.set(rotationId);
-    if (!this.buildChoices().some((choice) => choice.id === this.rankBuildId())) {
-      this.rankBuildId.set('');
-    }
+    this.context.chooseRotation(rotationId);
   }
+
 
   protected async rankAgainstBuild(): Promise<void> {
     if (!this.canRank()) return;
@@ -871,38 +843,19 @@ export class ArtifactsPage implements OnInit {
     }
   }
 
-  ngOnInit(): void {
-    void this.load();
-    void this.loadRankingChoices();
+  /**
+   * **Stop the background sweep when the tab goes.** Rank, Inventory and Upgrade are sibling
+   * routes, so switching tabs destroys this page — and a sweep left running on a destroyed
+   * instance kept taking the main thread from the Upgrade estimate, with no Stop button left
+   * on screen to reach it.
+   */
+  ngOnDestroy(): void {
+    this.sweepCancelled = true;
   }
 
-  /**
-   * The builds and rotations the ranking picker offers.
-   *
-   * Not awaited by `load` and not inside its `Promise.all`: the inventory is the page, and a
-   * list of cards that will not render until an unrelated endpoint answers is the same mistake
-   * the set art already avoids here.
-   */
-  private async loadRankingChoices(): Promise<void> {
-    try {
-      const [builds, rotations, teams] = await Promise.all([
-        this.buildsService.list(),
-        this.rotationsService.list(),
-        this.teamsService.list(),
-      ]);
-      this.allBuilds.set(builds);
-      this.teams.set(teams);
-      this.rotationTeam.set(new Map(rotations.items.map((r) => [r.id, r.team_id])));
-      this.rotationChoices.set(
-        rotations.items.map((rotation) => ({ id: rotation.id, label: rotation.name })),
-      );
-    } catch {
-      // Silent by design: the ranking panel simply offers nothing, and the inventory below it
-      // is unaffected. Surfacing this as a page error would make a working page look broken.
-      this.allBuilds.set([]);
-      this.teams.set([]);
-      this.rotationChoices.set([]);
-    }
+  ngOnInit(): void {
+    void this.load();
+    void this.context.load();
   }
 
   protected async load(): Promise<void> {

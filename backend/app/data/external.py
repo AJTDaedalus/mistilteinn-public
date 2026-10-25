@@ -200,3 +200,25 @@ def domain_drop_model() -> dict[str, float]:
             msg = f"domain_drops.{key} is {out[key]}, outside (0, 1)"
             raise ExternalDataUnavailableError(msg)
     return out
+
+
+@cache
+def sets_without_domain_five_star() -> frozenset[int]:
+    """Set ids (nanoka) that no Domain of Blessing drops at 5 stars.
+
+    `DESIGN_upgrade_estimator.md` §3.1. Cited and curated rather than derived: the pinned
+    game data's reward previews do not name relic ids, and nanoka's `rank` lists 5 for sets
+    that never drop at 5 stars. **Refuses a missing or empty list** — an empty one would price
+    a Gladiator's Finale slot at half the domain's drops, a finite number for "never".
+    """
+    block = (_load("artifact_draw_model").get("domain_drops") or {}).get(
+        "sets_without_domain_five_star",
+    )
+    if not isinstance(block, dict) or not block.get("urls"):
+        msg = "domain_drops.sets_without_domain_five_star is missing or uncited"
+        raise ExternalDataUnavailableError(msg)
+    ids = [*block.get("boss_only", []), *block.get("no_five_star_source", [])]
+    if not ids or not all(isinstance(i, int) and not isinstance(i, bool) for i in ids):
+        msg = f"domain_drops.sets_without_domain_five_star holds {ids!r}, not set ids"
+        raise ExternalDataUnavailableError(msg)
+    return frozenset(ids)

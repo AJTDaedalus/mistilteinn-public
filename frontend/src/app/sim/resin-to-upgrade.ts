@@ -43,19 +43,31 @@ export interface ResinEstimate {
   p90: number | null;
 }
 
+/** The set bonus a count of pieces activates: 4, 2 or none. */
+function tier(count: number): number {
+  return count >= 4 ? 4 : count >= 2 ? 2 : 0;
+}
+
 /**
  * The share of a domain's drops that could replace this slot's piece.
  *
- * `½` when the slot's set has an active bonus — two or more of it on the build, counting this
- * piece — and `1` for the off-piece, a setless piece, or an empty slot.
+ * **The piece is needed only if losing it loses a bonus.** A 4-piece's fourth or a 2-piece's
+ * second: then only its own set fits, `setShare` of the domain's drops — or **none**, when no
+ * domain drops that set at 5★ (`domainless`: Gladiator's Finale, the Prayers sets…), which is
+ * "never" rather than a finite figure. A fifth piece of one set, or the third of a 3+2, keeps
+ * every bonus without it, so like the off-piece it takes any drop: `1`. So does a setless
+ * piece or an empty slot.
  */
 export function setFactor(
   slotSetId: number | null,
   setCounts: Readonly<Record<number, number>>,
   setShare: number,
+  domainless: ReadonlySet<number> = new Set(),
 ): number {
   if (slotSetId === null) return 1;
-  return (setCounts[slotSetId] ?? 0) >= 2 ? setShare : 1;
+  const count = setCounts[slotSetId] ?? 0;
+  if (tier(count - 1) === tier(count)) return 1;
+  return domainless.has(slotSetId) ? 0 : setShare;
 }
 
 /**
@@ -69,10 +81,16 @@ export function perRunSuccess(perDrop: number, fiveStarPerRun: number): number {
   return 1 - (1 - perDrop) * (1 - extra * perDrop);
 }
 
-/** Claims until the first success at probability `r`, at quantile `p`: `⌈ln(1−p) / ln(1−r)⌉`. */
+/**
+ * Claims until the first success at probability `r`, at quantile `p`: `⌈ln(1−p) / ln(1−r)⌉`.
+ *
+ * `log1p`, not `log(1 − r)`: below r ≈ 1e-16, `1 − r` rounds to exactly 1, the denominator
+ * becomes 0, and a near-unbeatable piece would read as one claim — the cheapest answer for the
+ * dearest piece.
+ */
 export function claimsAtQuantile(r: number, p: number): number {
   if (r >= 1) return 1;
-  return Math.max(1, Math.ceil(Math.log(1 - p) / Math.log(1 - r)));
+  return Math.max(1, Math.ceil(Math.log1p(-p) / Math.log1p(-r)));
 }
 
 /** The whole estimate for one slot, from its per-slot beat probability. */

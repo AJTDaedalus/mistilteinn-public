@@ -498,9 +498,12 @@ class Economy:
     def domain_resin_per_run(self) -> int:
         """Resin per Domain claim, from `DungeonExcelConfigData.statueCostCount`.
 
-        Read off the derived domain rates rather than written down a second time. Every domain
-        the snapshot prices costs the same; **refuses if they ever disagree**, because "the"
-        resin per run would then be a choice somebody made silently.
+        **Read off the material domains**, because those are the domains this snapshot derives;
+        artifact Domains of Blessing are not in it (`DESIGN_upgrade_estimator.md` §6 dropped the
+        domain map on the owner's ruling). The game charges every Domain claim the same 20, and
+        `RESEARCH_artifact_drop_model.md` §1.1 cites that for artifact domains independently —
+        so this is the one figure, read where it is derived. **Refuses if material domains ever
+        disagree**, because "the" resin per run would then be a choice somebody made silently.
         """
         costs = {r.resin for r in self._rates.values() if r.source_type == "domain"}
         if len(costs) != 1:
