@@ -7017,6 +7017,16 @@
           "weights_caveat": {
             "type": "string",
             "title": "Weights Caveat"
+          },
+          "fresh_drop": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FreshDropInputs"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -7559,6 +7569,59 @@
         ],
         "title": "FnNode",
         "description": "`fn name(params) { body }`.\n\nStructural here, and **authored as text** \u2014 owner, 2026-09-03: *\"user defined functions\nalmost need to be written\u2026 they'll have to author them themselves.\"* Measured: of the 41\ncorpus configs defining one, 41 have control flow in the body and 30 take a parameter, so\nthere is no simple-function case a form could have covered."
+      },
+      "FreshDropInputs": {
+        "properties": {
+          "five_star_per_run": {
+            "type": "number",
+            "title": "Five Star Per Run"
+          },
+          "four_line_share": {
+            "type": "number",
+            "title": "Four Line Share"
+          },
+          "set_share": {
+            "type": "number",
+            "title": "Set Share"
+          },
+          "slot_share": {
+            "type": "number",
+            "title": "Slot Share"
+          },
+          "resin_per_run": {
+            "type": "integer",
+            "title": "Resin Per Run"
+          },
+          "main_stat_probabilities": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Main Stat Probabilities"
+          },
+          "main_stat_values": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Main Stat Values"
+          }
+        },
+        "type": "object",
+        "required": [
+          "five_star_per_run",
+          "four_line_share",
+          "set_share",
+          "slot_share",
+          "resin_per_run",
+          "main_stat_probabilities",
+          "main_stat_values"
+        ],
+        "title": "FreshDropInputs",
+        "description": "What one domain claim yields, for the upgrade estimator.\n\n`docs/DESIGN_upgrade_estimator.md` \u00a7\u00a73-4. Cited in `app/data/external/artifact_draw_model.json`\nbeside every number; `app/services/artifact_potential.fresh_drop_model` is the translation."
       },
       "GcsimCandidateConfig": {
         "properties": {

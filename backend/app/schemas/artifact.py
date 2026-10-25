@@ -291,6 +291,29 @@ class RollLadder(BaseModel):
     values: list[float]
 
 
+class FreshDropInputs(BaseModel):
+    """What one domain claim yields, for the upgrade estimator.
+
+    `docs/DESIGN_upgrade_estimator.md` §§3-4. Cited in `app/data/external/artifact_draw_model.json`
+    beside every number; `app/services/artifact_potential.fresh_drop_model` is the translation.
+    """
+
+    #: Mean 5-star pieces per 20-resin claim at AR 45+. The count's *shape* beyond the mean is
+    #: assumed (`1 + Bernoulli`), and barely matters — DESIGN §4.2.
+    five_star_per_run: float
+    #: A domain piece starts with four substats this often, three otherwise.
+    four_line_share: float
+    #: Share of a domain's 5-stars that are any one of its two sets.
+    set_share: float
+    #: Share of drops in any one slot.
+    slot_share: float
+    resin_per_run: int
+    #: Kernel slot key (`equip_ring`) -> kernel quantity -> probability.
+    main_stat_probabilities: dict[str, dict[str, float]]
+    #: Kernel quantity -> that main stat's value on a 5-star at +20.
+    main_stat_values: dict[str, float]
+
+
 class DrawModel(BaseModel):
     """Everything a projection needs that is the same for every piece.
 
@@ -309,6 +332,9 @@ class DrawModel(BaseModel):
     #: the client so a probability derived from them can say so on screen rather than in a
     #: comment nobody reading the number will see.
     weights_caveat: str
+    #: The upgrade estimator's half. **Null when its data cannot be read**, so the estimator is
+    #: unavailable rather than approximate, and ranking — which does not need it — still works.
+    fresh_drop: FreshDropInputs | None = None
 
 
 class KernelCandidate(BaseModel):

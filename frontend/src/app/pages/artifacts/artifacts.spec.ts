@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { ActivatedRoute } from '@angular/router';
 import {
   barsTitle,
   rollBars,
@@ -11,6 +12,7 @@ import { ArtifactsPage, comparator, totalRollValue } from './artifacts';
 import type { RankingRow } from './artifact-ranking.service';
 import { formatStat } from '../../shared/stat-label';
 import { ArtifactsService } from './artifacts.service';
+import { ArtifactsContextService } from './artifacts-context.service';
 
 const OPTIONS = {
   stats: [
@@ -613,5 +615,34 @@ describe('comparator', () => {
       .sort(comparator('stars')).map((r) => r.id)).toEqual(['b', 'a']);
     expect([row({ id: 'a', setName: 'Zed' }), row({ id: 'b', setName: 'Ace' })]
       .sort(comparator('set')).map((r) => r.id)).toEqual(['b', 'a']);
+  });
+});
+
+/** `DESIGN_upgrade_estimator.md` §11: one component, two tabs, chosen by the route. */
+describe('ArtifactsPage tabs', () => {
+  function pageOn(mode: string | undefined) {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: ArtifactsService, useValue: {} },
+        { provide: ActivatedRoute, useValue: { snapshot: { data: mode ? { mode } : {} } } },
+      ],
+    });
+    return TestBed.runInInjectionContext(() => new ArtifactsPage());
+  }
+
+  it('is the Rank tab when the route says so', () => {
+    expect(pageOn('rank')['tab']).toBe('rank');
+  });
+
+  it('is the Inventory tab otherwise, including with no route data at all', () => {
+    expect(pageOn('inventory')['tab']).toBe('inventory');
+    expect(pageOn(undefined)['tab']).toBe('inventory');
+  });
+
+  it('shares its build choice with the Upgrade tab', () => {
+    const page = pageOn('rank');
+    page['rankBuildId'].set('b1');
+    expect(TestBed.inject(ArtifactsContextService).buildId()).toBe('b1');
   });
 });

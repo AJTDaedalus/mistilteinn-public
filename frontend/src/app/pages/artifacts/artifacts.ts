@@ -1,5 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 
 import { apiErrorMessage } from '../../api/api-error';
 import { CardPicker, type CardOption } from '../../shared/card-picker/card-picker';
@@ -19,6 +20,7 @@ import {
 } from './artifact-ranking.service';
 import { type OutcomeDistribution } from '../../sim/artifact-outcome';
 import { type CalibrationProgress } from '../optimize/recipe-optimize.service';
+import { ArtifactsContextService } from './artifacts-context.service';
 import {
   ArtifactsService,
   type ArtifactOptions,
@@ -349,8 +351,22 @@ export class ArtifactsPage implements OnInit {
   private readonly rotationTeam = signal<Map<string, string>>(new Map());
 
   protected readonly rotationChoices = signal<{ id: string; label: string }[]>([]);
-  protected readonly rankBuildId = signal('');
-  protected readonly rankRotationId = signal('');
+  /** Shared with the Upgrade tab, so the build is chosen once. `ArtifactsContextService`. */
+  private readonly context = inject(ArtifactsContextService);
+  protected readonly rankBuildId = this.context.buildId;
+  protected readonly rankRotationId = this.context.rotationId;
+
+  /**
+   * Which tab this instance is: **Inventory** (import, filter, the cards) or **Rank** (the
+   * build picker over the same cards). One component for both, because the ranking decorates
+   * the inventory's own cards — its scores, sort and refusals are columns on them — and
+   * splitting the grid in two would be two copies of the page's largest template.
+   * `DESIGN_upgrade_estimator.md` §11.
+   */
+  protected readonly tab: 'inventory' | 'rank' =
+    inject(ActivatedRoute, { optional: true })?.snapshot.data['mode'] === 'rank'
+      ? 'rank'
+      : 'inventory';
 
   /**
    * The builds the chosen rotation's team actually fields.

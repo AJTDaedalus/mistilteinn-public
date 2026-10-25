@@ -75,7 +75,8 @@ APP_ROUTES = (
 #: carries and this does not is appended rather than dropped, so a new page cannot go
 #: unphotographed just because nobody added it here.
 PREFERRED = (
-    "/", "/inventory", "/my-weapons", "/builds", "/teams", "/rotations", "/optimize",
+    "/", "/artifacts/inventory", "/artifacts/optimize", "/artifacts/rank", "/artifacts/upgrade",
+    "/my-weapons", "/builds", "/teams", "/rotations",
     "/calculate", "/teapot", "/characters", "/weapons", "/artifact-sets", "/enemies",
 )
 
@@ -98,12 +99,29 @@ def _routes() -> tuple[str, ...]:
     """
     text = APP_ROUTES.read_text()
     # Each entry is `path: '...'`, optionally followed by `redirectTo:` before the next path.
-    entries = re.findall(r"path:\s*'([^']*)'((?:(?!path:).)*)", text, re.S)
+    # **Child routes are prefixed by their parent** — the Artifacts tabs are `children` of
+    # `artifacts`, and reading them flat would photograph `/rank` (the catch-all) as rank.png.
+    # A bracket stack tells a `children: [` from any other `[`, such as `canMatch: [...]`.
     found = []
-    for path, body in entries:
-        if path == "**" or "redirectTo" in body:
-            continue
-        found.append("/" + path)
+    stack: list[str | None] = []
+    last_path = ""
+    tokens = re.finditer(r"path:\s*'([^']*)'|children:\s*\[|\[|\]", text)
+    for token in tokens:
+        if token.group(1) is not None:
+            last_path = token.group(1)
+            body = text[token.end():]
+            following = re.search(r"path:|children:", body)
+            body = body[: following.start()] if following else body
+            prefix = "/".join(p for p in stack if p)
+            full = "/".join(p for p in (prefix, last_path) if p)
+            if last_path != "**" and "redirectTo" not in body:
+                found.append("/" + full)
+        elif token.group(0).startswith("children"):
+            stack.append(last_path)
+        elif token.group(0) == "[":
+            stack.append(None)
+        elif stack:
+            stack.pop()
     seen = set(found)
     ordered = [r for r in PREFERRED if r in seen]
     ordered += [r for r in found if r not in set(ordered)]

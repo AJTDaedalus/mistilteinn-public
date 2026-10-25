@@ -495,6 +495,19 @@ class Economy:
         msg = f"material {material_id} is not an EXP denomination"
         raise ValueError(msg)
 
+    def domain_resin_per_run(self) -> int:
+        """Resin per Domain claim, from `DungeonExcelConfigData.statueCostCount`.
+
+        Read off the derived domain rates rather than written down a second time. Every domain
+        the snapshot prices costs the same; **refuses if they ever disagree**, because "the"
+        resin per run would then be a choice somebody made silently.
+        """
+        costs = {r.resin for r in self._rates.values() if r.source_type == "domain"}
+        if len(costs) != 1:
+            msg = f"domains do not share one resin cost: {sorted(costs)}"
+            raise ValueError(msg)
+        return int(costs.pop())
+
     def source_resin(self, source: MaterialSource) -> int | None:
         """Resin per run at a source, from the curated defaults."""
         record = self._curated.get("source_defaults", {}).get(source.value)

@@ -2,9 +2,10 @@
   <header>
     <!-- "Inventory", matching the nav link that leads here. The heading said "Artifacts"
          and so did the link to the *set catalogue*, which is the ambiguity being removed. -->
-    <h1>Inventory</h1>
+    <h1>{{ tab === 'rank' ? 'Rank' : 'Inventory' }}</h1>
   </header>
 
+  @if (tab === 'inventory') {
   <details class="import">
     <summary>Import from GOOD file</summary>
 
@@ -188,6 +189,7 @@
       }
     </div>
   </details>
+  }
 
   @if (error(); as message) {
     <p class="error" role="alert">
@@ -206,8 +208,10 @@
          stylesheet had carried a `.rank-panel h2` rule the whole time for a heading the
          template never had. Pointing the accessible name at the visible heading means there
          is one string rather than two that can drift apart. -->
+    @if (tab === 'rank') {
     <section class="rank-panel" aria-labelledby="rank-panel-title">
-      <h2 id="rank-panel-title">Rank</h2>
+      <!-- Not "Rank" again: the tab and the page heading already say it. -->
+      <h2 id="rank-panel-title">Against a build</h2>
       <div class="rank-panel__controls">
         <!-- Rotation first: it names the team, and only that team's four builds can be asked
              about. Offering all of them produced a 422 on a real run. -->
@@ -220,7 +224,7 @@
           >
             <option value="">Choose a rotation…</option>
             @for (choice of rotationChoices(); track choice.id) {
-              <option [value]="choice.id">{{ choice.label }}</option>
+              <option [value]="choice.id" [selected]="choice.id === rankRotationId()">{{ choice.label }}</option>
             }
           </select>
         </label>
@@ -236,7 +240,7 @@
               {{ rankRotationId() ? 'Choose a character…' : 'Pick a rotation first' }}
             </option>
             @for (choice of buildChoices(); track choice.id) {
-              <option [value]="choice.id">{{ choice.label }} · {{ choice.detail }}</option>
+              <option [value]="choice.id" [selected]="choice.id === rankBuildId()">{{ choice.label }} · {{ choice.detail }}</option>
             }
           </select>
         </label>
@@ -316,6 +320,7 @@
         }
       }
     </section>
+    }
 
     <div class="filters">
       <button type="button" [class.active]="slotFilter === ''" (click)="filterBySlot('')">

@@ -1,10 +1,14 @@
 import { TestBed } from '@angular/core/testing';
 import { Title } from '@angular/platform-browser';
-import { RouterStateSnapshot } from '@angular/router';
+import { type Routes, RouterStateSnapshot } from '@angular/router';
 import { describe, expect, it } from 'vitest';
 
 import { PageTitle } from './page-title';
-import { routes } from './app.routes';
+import { routes as topLevel } from './app.routes';
+
+/** Every route, child routes included — the Artifacts tabs are children of `/artifacts`. */
+const flatten = (list: Routes): Routes => list.flatMap((r) => [r, ...flatten(r.children ?? [])]);
+const routes = flatten(topLevel);
 
 /**
  * **Every route set the same `<title>`.** Fourteen tabs read `mistilteinn`, so a tab strip, a

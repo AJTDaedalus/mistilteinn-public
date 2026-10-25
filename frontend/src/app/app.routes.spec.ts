@@ -51,12 +51,14 @@ function renderedShell(): string {
 
 /** Paths that are deliberately not in the nav, and why each one is exempt. */
 const NOT_IN_NAV: Record<string, string> = {
-  '': 'a redirect to /inventory — the brand link goes there, and the nav already links the canonical path',
+  '': 'a redirect to /artifacts/inventory — the brand link goes there, and the nav already links /artifacts',
   login: 'reached by being signed out, not by clicking',
   pending: 'reached by having a pending account',
   '**': 'the catch-all redirect',
-  artifacts: 'a redirect to /inventory, kept so old bookmarks resolve — the nav links the '
-    + 'canonical path, and linking both would put the same page in the bar twice',
+  inventory: 'a redirect to /artifacts/inventory, kept so old bookmarks resolve — the nav links '
+    + '/artifacts, whose tabs reach it, and linking both would put the same page in the bar twice',
+  optimize: 'a redirect to /artifacts/optimize, for the same reason: Optimize became a tab of '
+    + 'Artifacts (DESIGN_upgrade_estimator.md §11) and its old bookmarks must still land',
   explain: 'a redirect to /calculate, for the same reason: the page was renamed when it grew '
     + 'from explaining one hit to calculating a whole rotation, and a rename that breaks '
     + 'links is a rename that loses readers',
@@ -95,12 +97,12 @@ describe('the front door', () => {
 
     await router.navigateByUrl('/');
 
-    expect(router.url).toBe('/inventory');
+    expect(router.url).toBe('/artifacts/inventory');
   });
 
   it('leaves every other url alone', async () => {
     // The `pathMatch: 'full'` assertion, made where it bites. Without it the empty path
-    // matches by prefix and this comes back '/inventory'.
+    // matches by prefix and this comes back '/artifacts/inventory'.
     const router = await routerWith('approved');
 
     await router.navigateByUrl('/builds');
@@ -109,7 +111,7 @@ describe('the front door', () => {
   });
 
   it('still sends a signed-out arrival to the login page', async () => {
-    // The redirect carries no guard of its own; `/inventory` carries `requireApproved` and
+    // The redirect carries no guard of its own; `/artifacts` carries `requireApproved` and
     // that guard returns a UrlTree. Repeating the rule on the redirect would be a second copy
     // of it, and this asserts the single copy still reaches someone arriving at `/`.
     const router = await routerWith('unauthed');
@@ -135,7 +137,7 @@ describe('the front door', () => {
 
     await router.navigateByUrl('/login');
 
-    expect(router.url).toBe('/inventory');
+    expect(router.url).toBe('/artifacts/inventory');
   });
 
   it('resolves an unknown url rather than looping through the catch-all', async () => {
@@ -145,7 +147,51 @@ describe('the front door', () => {
 
     await router.navigateByUrl('/no-such-page');
 
-    expect(router.url).toBe('/inventory');
+    expect(router.url).toBe('/artifacts/inventory');
+  });
+});
+
+describe('the artifacts tabs', () => {
+  async function approved() {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        {
+          provide: AuthService,
+          useValue: { status: signal('approved'), me: signal({ email: 't@example.com' }), logout: vi.fn() },
+        },
+      ],
+    });
+    return TestBed.inject(Router);
+  }
+
+  it.each([
+    ['/artifacts', '/artifacts/inventory'],
+    ['/inventory', '/artifacts/inventory'],
+    ['/optimize', '/artifacts/optimize'],
+    ['/artifacts/rank', '/artifacts/rank'],
+    ['/artifacts/upgrade', '/artifacts/upgrade'],
+  ])('resolves %s to %s', async (from, to) => {
+    const router = await approved();
+    await router.navigateByUrl(from);
+    expect(router.url).toBe(to);
+  });
+
+  it('keeps a signed-out arrival out of every tab', async () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        {
+          provide: AuthService,
+          useValue: { status: signal('unauthed'), me: signal(null), logout: vi.fn() },
+        },
+      ],
+    });
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/artifacts/upgrade');
+    expect(router.url).toBe('/login');
   });
 });
 
