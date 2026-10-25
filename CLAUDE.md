@@ -44,6 +44,7 @@ this list.
 | `TASKS_planner.md` | `/planner` — what levelling a character and a weapon costs, in materials, mora and resin |
 | `TASKS_planner_materials.md` | correcting the stock a bill is priced against, when a scanner got it wrong |
 | — | the four branches that had gone stale behind the trunk, reviewed and landed (#260, #262, #263, #264) |
+| `TASKS_upgrade_estimator.md` | `/artifacts` as four tabs (Inventory · Optimize · Rank · Upgrade), and the resin a domain costs before a fresh drop beats each slot by 1% — exact, checked against a literal Monte Carlo on the owner's own recipe |
 
 **The levelling costs were in the pinned payloads from Chunk D and nobody read them until
 `TASKS_planner.md`.** `materials.ascensions`, `materials.talents` and the weapon's `materials`
@@ -244,9 +245,10 @@ candidates is **~7.7 minutes**. The decision holds; the interaction it implies d
 a job with progress, never a request that blocks.
 
 - **Both suites pass, with nothing skipped.** **2424 backend tests, 0 skipped**; **1174
-  frontend tests** over 72 files; `create_app()` serves **70 paths**; the SPA has **17 routes, 3 redirects
-  and a catch-all** — the redirects are `/`→`/inventory`, `/artifacts`→`/inventory` and
-  `/explain`→`/calculate`, with `**` also landing on `/inventory`,
+  frontend tests** over 72 files; `create_app()` serves **70 paths**; the SPA's redirects are `/`→`/artifacts/inventory`,
+  `/inventory`→`/artifacts/inventory`, `/optimize`→`/artifacts/optimize` and
+  `/explain`→`/calculate`, with `**` also landing on `/artifacts/inventory` — and the four
+  Artifacts tabs are **child routes** of `/artifacts` (`TASKS_upgrade_estimator.md`),
   and a screenshot harness that followed one was how the count came to be re-derived at all. (Every figure here has been stale at least once — 1273 / 255 / 40, then
   1439 / 450 / 39, then 1549 / 544 / 51, then 1567 / 565, then 1647 / 802 / 49, then
   1699 / 896 / 51. **The number is not the point; the command underneath

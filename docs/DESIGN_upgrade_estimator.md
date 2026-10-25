@@ -1,6 +1,6 @@
 # DESIGN — the upgrade estimator: "how much resin until I beat this piece?"
 
-**Status: draft, 2026-10-24. Feasibility and plan only; nothing built.** Owner request:
+**Status: built, 2026-10-24, on `feat/upgrade-estimator`** — see the TASKS banner for the six places the build departed from this plan. (Originally: draft, feasibility and plan only.) Owner request:
 *"come up with a draft 'upgrade estimator' that calculates the distribution of how much resin it
 will cost to get an upgrade for each piece of an artifact set on a character. Like the optimizer,
 but theoretically 'how long would it take to get a better artifact than this?' for each slot."*
@@ -377,9 +377,11 @@ earns its place is a usage question; it is not part of this restructure.
 **Out:** `/calculate` (evaluates a team's rotation, does not search) and `/planner`
 (materials). Weapons stay inside Optimize, where #237 put them.
 
-**Its own refactor, first.** A small `TASKS_artifacts_tabs.md`: shell + context bar + move
-Inventory, Optimize and Rank, **no behaviour change**, driven before and after with
-`scripts/shoot.py`. This feature's Phase 3 then lands as the Upgrade tab; Phases 1–2 are
-unaffected.
+**Built on this feature's branch, not first on its own** (2026-10-24). Rank is the inventory
+page in a route mode rather than a new component — its scores, sort and refusals are columns on
+the inventory's own cards, so splitting the grid would be two copies of the largest template.
+Rank and Upgrade share their rotation and build through `ArtifactsContextService`. **Optimize
+still keeps its own pickers** (`remembered.ts` persists them); the one shared context bar
+across all three is the part of this section not yet done.
 
 *Planner draft. OQ-U4 open (later, recommended). OQ-U6 shaped by the owner, §11.*

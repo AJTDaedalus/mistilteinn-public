@@ -8,10 +8,14 @@ then **stop and report**.
 
 **Status key:** ` ` todo · `~` in progress · `x` done · `!` blocked (escalation in LOG) · `-` removed
 
-> **Status: draft, 2026-10-24. Nothing started.** OQ-U1/U2/U5 answered (DESIGN §9.1): θ = 1%,
-> no levelling cost, standard domains only. Phase 3 is the **Upgrade** tab of a tabbed
-> `/artifacts` (DESIGN §11), which lands first as its own refactor. Task 1 is a measurement whose
-> result can change §5. If it does, the DESIGN is amended before Task 4 starts.
+> **Status: built, 2026-10-24, on `feat/upgrade-estimator`.** Tasks 0–8 done, 3 removed by the
+> owner, 9 is this close-out. Six departures from the plan as written, each recorded at its
+> task and in `docs/LOG_mistilteinn.md`: Task 1 measured *after* Tasks 4–6 (a measurement needs
+> the code it measures); GO's `freshArtifact` crossval replaced by a hand-worked cell plus the
+> sampler; yielding instead of a Web Worker (38 ms worst block, measured); the sampler's
+> no-page-imports guard is a grep, not a spec; mutations ran through a scratch harness because
+> `scripts.inject` drives pytest only; and the tabs landed on this branch rather than first on
+> their own, with Optimize keeping its own pickers.
 
 **Branch policy.** `feat/upgrade-estimator`, off `dev`. **No direct commits to `dev`.** Task 0 is
 the gate. **One PR per phase**, three PRs in total (`space-prs-further-apart`).
@@ -32,13 +36,16 @@ the gate. **One PR per phase**, three PRs in total (`space-prs-further-apart`).
 
 # Phase 1 — data and the measurement
 
-### [ ] 0 — Branch setup **(gate)**
+### [x] 0 — Branch setup **(gate)**
 - **Do:** rename `docs/upgrade-estimator` to `feat/upgrade-estimator` and rebase it on an
   up-to-date `dev`.
 - **Accept:** `git branch --show-current` is `feat/upgrade-estimator`; the RESEARCH and DESIGN
   commits are on it; `git status --porcelain` is clean.
 
-### [ ] 1 — **[Planner]** Measure the exact pass's cost, and test monotonicity
+### [x] 1 — **[Planner]** Measure the exact pass's cost, and test monotonicity
+- **Done:** `docs/RESEARCH_upgrade_estimator_cost.md`, `frontend/scripts/bench-upgrade-estimate.mjs`.
+  0.1–0.9 s per slot on a 245-hit recipe; 10³–10⁵ evaluations, not 10⁷; monotone in every
+  stat. Verdict: yield on the main thread, no worker.
 - **Why:** DESIGN §5.1 reasons that brute force is ~10⁷ evaluations and that three reductions
   make it interactive. That is an inference, and `RESEARCH_pinned_search_cost.md` is this repo's
   record of an inferred cost being wrong by orders of magnitude.
@@ -55,7 +62,7 @@ the gate. **One PR per phase**, three PRs in total (`space-prs-further-apart`).
   command, not just the numbers.
 - **Escalate if:** any stat is non-monotone, or the worst slot exceeds ~2 s in a worker.
 
-### [ ] 2 — Extend the draw model with drop counts and line shares
+### [x] 2 — Extend the draw model with drop counts and line shares
 - **Files:** `backend/app/data/external/artifact_draw_model.json`, `app/data/external.py`, its
   schema, unit tests.
 - **Do:** add the following, each with the R§ and URL beside it:
@@ -78,7 +85,10 @@ the gate. **One PR per phase**, three PRs in total (`space-prs-further-apart`).
 
 # Phase 2 — the math, client-side, with its oracle
 
-### [ ] 4 — The fresh-drop prior
+### [x] 4 — The fresh-drop prior
+- **Done:** `sim/fresh-drop.ts`. **Deviation:** no GO capture — GO is not runnable offline here.
+  The spec instead checks one cell against an independent permutation sum, equal weights
+  against `1/C(n,4)`, and the whole prior is judged by the Task 5 sampler.
 - **Files:** `frontend/src/app/sim/fresh-drop.ts` + spec.
 - **Do:** enumerate (main, unordered 4-subset) cells with exact weights from `lineOutcomes`, plus
   the two roll budgets (DESIGN §3: 4-line → `1 + Multinomial(5, ¼)`, 3-line →
@@ -90,7 +100,7 @@ the gate. **One PR per phase**, three PRs in total (`space-prs-further-apart`).
   - a crossvalidation fixture against GO's `freshArtifact` (DESIGN §3), with numbers captured from
     GO at a pinned commit, matches to 1e-9.
 
-### [ ] 5 — The literal Monte Carlo oracle
+### [x] 5 — The literal Monte Carlo oracle
 - **Files:** `frontend/src/app/sim/fresh-drop-sampler.ts` (test-only, never imported by a page) +
   spec.
 - **Do:** generate an artifact the way the game does (R§§2–4, one line at a time, upgrade by
@@ -99,7 +109,11 @@ the gate. **One PR per phase**, three PRs in total (`space-prs-further-apart`).
 - **Accept:** on a toy linear evaluator where `P(beat)` has a closed form, the sampler's estimate
   falls inside its 99.9% binomial interval.
 
-### [ ] 6 — **[Planner]** `P(beat | slot, main)`: exact with the three reductions, plus the Gaussian fast pass
+### [x] 6 — **[Planner]** `P(beat | slot, main)`: exact with the three reductions, plus the Gaussian fast pass
+- **Done:** `sim/upgrade-estimate.ts`. Exact inside the sampler's interval on four slots of a
+  synthetic recipe **and on the owner's real Skirk recipe** (flower: exact 5.30e-4, sampled
+  [4.54e-4, 5.75e-4], 1.5M draws). Five planted faults all caught. **No Gaussian fast pass**:
+  the exact pass is already interactive, and a Gaussian tail is wrong where this feature lives.
 - **Files:** `frontend/src/app/sim/upgrade-estimate.ts` + spec. A worker wrapper only if Task 1
   said so.
 - **Do:** per DESIGN §5.2:
@@ -114,7 +128,7 @@ the gate. **One PR per phase**, three PRs in total (`space-prs-further-apart`).
     is not dead, an off-by-one budget) exits **0** for each, so each mutation is caught;
   - Task 1's time budget holds.
 
-### [ ] 7 — Per drop → resin
+### [x] 7 — Per drop → resin
 - **Files:** `frontend/src/app/sim/resin-to-upgrade.ts` + spec.
 - **Do:** implement DESIGN §4:
   - `q(s)` with σ = ½ for a set slot and 1 for the off-piece (§4.1), `r` from `N₅`, then the
@@ -134,7 +148,11 @@ the gate. **One PR per phase**, three PRs in total (`space-prs-further-apart`).
 
 # Phase 3 — the surface
 
-### [ ] 8 — The Upgrade tab at `/artifacts/upgrade` (DESIGN §11; needs the tabs refactor merged)
+### [x] 8 — The Upgrade tab at `/artifacts/upgrade` (DESIGN §11; needs the tabs refactor merged)
+- **Done:** `pages/upgrade/`, `/artifacts` shell with Inventory · Optimize · Rank · Upgrade,
+  redirects from `/inventory` and `/optimize`. Driven on the owner's Skirk build at 1440 and
+  375 px; four visual defects found by looking and fixed (see LOG). **Not done:** a shared
+  context bar for Optimize — Rank and Upgrade share their choice, Optimize keeps its own.
 - **Do:**
   - **Per slot:** median, P25–P75, P90 in resin, and the per-drop `1 in N`.
   - **Labels:** fast-pass numbers carry *Estimated* until the exact pass lands, then *Exact*.
@@ -149,7 +167,7 @@ the gate. **One PR per phase**, three PRs in total (`space-prs-further-apart`).
   hand-checked against the Task 5 sampler run on that same build. The DOM audit
   (`dom-audit-measures-what-screenshots-cannot`) shows no overflow at 375 px.
 
-### [ ] 9 — Close-out
+### [~] 9 — Close-out
 - **Do:** update this file's banner, DESIGN status, `CLAUDE.md`'s plan table and
   `docs/LOG_mistilteinn.md`. Record what driving it found that no test did.
 - **Accept:** `ci_local` is green on the PR head; merged; the deploy confirmed by
