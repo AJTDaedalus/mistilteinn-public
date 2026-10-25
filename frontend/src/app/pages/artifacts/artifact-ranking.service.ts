@@ -51,6 +51,7 @@ import {
 import { type Recipe } from '../../sim/recipe';
 import {
   type CalibrationProgress,
+  type CalibrationResult,
   type CalibrationTarget,
   RecipeOptimizeService,
 } from '../optimize/recipe-optimize.service';
@@ -209,6 +210,30 @@ export interface RankingRequest {
   extraSets?: readonly { uuid: string; setId: number; name: string }[];
 }
 
+/** What every question about one build starts from. `ArtifactRankingService.buildState`. */
+interface BuildState {
+  snapshot: InventorySnapshot;
+  model: DrawModel;
+  byId: Map<string, KernelCandidate>;
+  wornBySlot: Map<string, string>;
+  wornIds: Set<string>;
+  /** Pieces of each set the build wears. */
+  counts: Record<number, number>;
+  wornFour: number | null;
+  calibration: CalibrationResult;
+  recipes: {
+    noFourPiece: Recipe;
+    byFourPieceSet: Map<number, Recipe>;
+    byPair: Map<string, Recipe>;
+  };
+  /** The recipe the build is in today: its own 4-piece's, or `noFourPiece` when it has none. */
+  current: Recipe;
+  /** The five worn pools in `SLOTS` order; an empty slot is `{}`. */
+  equipped: StatPool[];
+  /** The build's damage today, under `current`. Every delta is measured against this. */
+  baseline: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ArtifactRankingService {
   /**
@@ -272,6 +297,111 @@ export class ArtifactRankingService {
   private readonly recipes = inject(RecipeOptimizeService);
 
   /**
+   * Everything the four ways of asking about a build share: what it wears, the recipe it is in
+   * today, and its damage under that recipe.
+   *
+   * `docs/DESIGN_artifacts_followups.md` §1. **One copy, because four had drifted.** `rank` and
+   * `upgradeEstimate` refused when the build's own 4-piece recipe was missing; `outcomesFor` and
+   * the dive fell back to `noFourPiece` and scored a build that had lost its own set bonus, with
+   * nothing on screen to say so. The refusals here are the rule for all of them.
+   *
+   * `check` runs on the snapshot **before** calibrating, so a refusal that needs only the
+   * inventory — no drop model, an id that is not there — never waits on gcsim first.
+   */
+  private async buildState(
+    request: RankingRequest,
+    options: {
+      check?: (snapshot: InventorySnapshot) => void;
+      shouldCancel?: () => boolean;
+    } = {},
+  ): Promise<BuildState> {
+    const snapshot = await this.optimize.inventory();
+    const raw = snapshot.draw_model;
+    if (!raw) {
+      throw new Error(
+        'the server sent no draw model, so nothing can be projected. Ranking is unavailable '
+        + 'rather than approximate: a projection without roll ladders would be a confident '
+        + 'number about nothing.',
+      );
+    }
+    options.check?.(snapshot);
+
+    const worn = await this.artifacts.list({ build_id: request.buildId });
+    const byId = new Map(snapshot.artifacts.map((c) => [c.id, c]));
+    const wornBySlot = new Map(worn.items.map((piece) => [piece.slot, piece.id] as const));
+    const counts = setCountsOf(wornBySlot, byId);
+
+    // **What the build wears has to be calibrated before anything can be scored**, and it is
+    // not an "extra" set — it is the state the baseline is measured in. Driving the page found
+    // this: the refusal below fired on a Nahida build wearing 4-piece Blizzard Strayer, which
+    // is what a real build looks like. Calibrating only the no-4-piece baseline made the
+    // feature unusable for most of them.
+    const wornFour = fourPieceSetOf(counts);
+    const calibration = await this.recipes.calibrateAll(
+      request.buildId,
+      request.rotationId,
+      snapshot.version,
+      // **The baseline is a target, not the absence of one.** Passing `[]` here calibrated
+      // nothing at all and `noFourPiece` came back null — which the refusal below caught, but
+      // only after a real run in a browser. `/optimize`'s own comment says why: "it is not
+      // optional and never was: every combination that reaches no 4-piece is scored against
+      // it, so a search without it can rank nothing."
+      await this.targetsFor(wornFour, request.extraSets ?? []),
+      request.onProgress ?? (() => undefined),
+      undefined,
+      request.waitForEnergy ?? false,
+      options.shouldCancel,
+    );
+    const noFourPiece = calibration.noFourPiece;
+    if (!noFourPiece) {
+      throw new Error(
+        'the baseline recipe did not calibrate, so there is nothing to score against. This is '
+        + 'a refusal rather than a fallback: a ranking computed off a recipe that is not this '
+        + "build's would sort the inventory confidently and wrongly.",
+      );
+    }
+    // `undefined` from the map means the build's own 4-piece did not calibrate — a gcsim
+    // failure, or a set with no catalogue entry for `targetsFor` to name. Falling back to
+    // `noFourPiece` would understate the build by its own set bonus, so it refuses.
+    const current = wornFour === null
+      ? noFourPiece
+      : calibration.byFourPieceSet.get(wornFour);
+    if (!current) {
+      throw new Error(
+        `the build wears a 4-piece set (${wornFour}) that was not calibrated, so its own `
+        + 'damage cannot be measured. Scoring against a recipe missing the build\'s own set '
+        + 'bonus would understate every piece, and not uniformly.',
+      );
+    }
+
+    // The five slots the build is wearing, as the evaluator reads them. A slot with nothing in
+    // it contributes an empty pool rather than being absent: the kernel takes five.
+    const equipped: StatPool[] = SLOTS.map((slot) => {
+      const id = wornBySlot.get(slot);
+      return (id ? byId.get(id)?.stats : undefined) ?? {};
+    });
+
+    return {
+      snapshot,
+      model: drawModelFrom(raw),
+      byId,
+      wornBySlot,
+      wornIds: new Set(worn.items.map((piece) => piece.id)),
+      counts,
+      wornFour,
+      calibration,
+      recipes: {
+        noFourPiece,
+        byFourPieceSet: calibration.byFourPieceSet,
+        byPair: calibration.byPair,
+      },
+      current,
+      equipped,
+      baseline: evaluateRecipe(current, candidateStatsFrom(equipped)),
+    };
+  }
+
+  /**
    * Score every owned piece against one build, in its own slot.
    *
    * ## Three 4-piece states, not one
@@ -291,75 +421,11 @@ export class ArtifactRankingService {
    * until now.
    */
   async rank(request: RankingRequest): Promise<RankingResult> {
-    const snapshot = await this.optimize.inventory();
-    const raw = snapshot.draw_model;
-    if (!raw) {
-      throw new Error(
-        'the server sent no draw model, so nothing can be projected. Ranking is unavailable '
-        + 'rather than approximate: a projection without roll ladders would be a confident '
-        + 'number about nothing.',
-      );
-    }
-
-    const worn = await this.artifacts.list({ build_id: request.buildId });
-    const byId = new Map(snapshot.artifacts.map((c) => [c.id, c]));
-    const wornBySlot = new Map(worn.items.map((piece) => [piece.slot, piece.id] as const));
-
-    // **What the build wears has to be calibrated before anything can be scored**, and it is
-    // not an "extra" set — it is the state the baseline is measured in. Driving the page found
-    // this: the refusal below fired on a Nahida build wearing 4-piece Blizzard Strayer, which
-    // is what a real build looks like. Calibrating only the no-4-piece baseline made the
-    // feature unusable for most of them.
-    const wornFourPiece = fourPieceSetOf(setCountsOf(wornBySlot, byId));
-    const calibration = await this.recipes.calibrateAll(
-      request.buildId,
-      request.rotationId,
-      snapshot.version,
-      // **The baseline is a target, not the absence of one.** Passing `[]` here calibrated
-      // nothing at all and `noFourPiece` came back null — which the refusal below caught, but
-      // only after a real run in a browser. `/optimize`'s own comment says why: "it is not
-      // optional and never was: every combination that reaches no 4-piece is scored against
-      // it, so a search without it can rank nothing."
-      await this.targetsFor(wornFourPiece, request.extraSets ?? []),
-      request.onProgress ?? (() => undefined),
-      undefined,
-      request.waitForEnergy ?? false,
-    );
-    const noFourPiece = calibration.noFourPiece;
-    if (!noFourPiece) {
-      throw new Error(
-        'the baseline recipe did not calibrate, so there is nothing to score against. This is '
-        + 'a refusal rather than a fallback: a ranking computed off a recipe that is not this '
-        + "build's would sort the inventory confidently and wrongly.",
-      );
-    }
-    const model = drawModelFrom(raw);
-
-    const wornIds = new Set(worn.items.map((piece) => piece.id));
-
-    // The five slots the build is wearing, as the evaluator reads them. A slot with nothing in
-    // it contributes an empty pool rather than being absent: the kernel takes five.
-    const equipped: StatPool[] = SLOTS.map((slot) => {
-      const id = wornBySlot.get(slot);
-      const candidate = id ? byId.get(id) : undefined;
-      return candidate ? candidate.stats : {};
-    });
-    const wornSetCounts = setCountsOf(wornBySlot, byId);
-    // `undefined` from the map means the build's own 4-piece did not calibrate — a gcsim
-    // failure rather than an omission, now that `targetsFor` always asks for it. Falling back
-    // to `noFourPiece` would understate the build by its own set bonus, so it refuses.
-    const recipe = wornFourPiece === null
-      ? noFourPiece
-      : calibration.byFourPieceSet.get(wornFourPiece);
-    if (!recipe) {
-      throw new Error(
-        `the build wears a 4-piece set (${wornFourPiece}) that was not calibrated, so its own `
-        + 'damage cannot be measured. Ranking against a recipe missing the build\'s own set '
-        + 'bonus would understate every piece, and not uniformly.',
-      );
-    }
-
-    const baseline = evaluateRecipe(recipe, candidateStatsFrom(equipped));
+    const {
+      snapshot, model, byId, wornBySlot, wornIds, counts: wornSetCounts,
+      wornFour: wornFourPiece, calibration, recipes: { noFourPiece }, current: recipe, equipped,
+      baseline,
+    } = await this.buildState(request);
 
     const emptyBySlot = SLOTS.map((_slot, index) => {
       const bare = [...equipped];
@@ -387,8 +453,8 @@ export class ArtifactRankingService {
 
       // Which 4-piece state the build would be in with this piece equipped.
       const swappedCounts = { ...wornSetCounts };
-      const outgoing = worn.items.find((piece) => piece.slot === candidate.slot);
-      const outgoingSet = outgoing ? byId.get(outgoing.id)?.set_id : undefined;
+      const outgoingId = wornBySlot.get(candidate.slot);
+      const outgoingSet = outgoingId ? byId.get(outgoingId)?.set_id : undefined;
       if (outgoingSet != null) swappedCounts[outgoingSet] = (swappedCounts[outgoingSet] ?? 1) - 1;
       if (candidate.set_id != null) {
         swappedCounts[candidate.set_id] = (swappedCounts[candidate.set_id] ?? 0) + 1;
@@ -493,45 +559,17 @@ export class ArtifactRankingService {
       shouldCancel?: () => boolean;
     },
   ): Promise<OutcomeDistribution | null> {
-    const snapshot = await this.optimize.inventory();
-    const raw = snapshot.draw_model;
-    if (!raw) throw new Error('the server sent no draw model, so nothing can be projected');
-    const model = drawModelFrom(raw);
-
-    const target = snapshot.artifacts.find((c) => c.id === request.artifactId);
-    if (!target) throw new Error(`artifact ${request.artifactId} is not in the inventory`);
-
-    const worn = await this.artifacts.list({ build_id: request.buildId });
-    const byId = new Map(snapshot.artifacts.map((c) => [c.id, c]));
-    const wornBySlot = new Map(worn.items.map((piece) => [piece.slot, piece.id] as const));
-    const wornFour = fourPieceSetOf(setCountsOf(wornBySlot, byId));
-
-    const calibration = await this.recipes.calibrateAll(
-      request.buildId,
-      request.rotationId,
-      snapshot.version,
-      await this.targetsFor(wornFour, request.extraSets ?? []),
-      request.onProgress ?? (() => undefined),
-      undefined,
-      request.waitForEnergy ?? false,
-    );
-    const noFourPiece = calibration.noFourPiece;
-    if (!noFourPiece) throw new Error('the baseline recipe did not calibrate');
-    const recipe = wornFour === null
-      ? noFourPiece
-      : calibration.byFourPieceSet.get(wornFour) ?? noFourPiece;
-
-    const equipped: StatPool[] = SLOTS.map((slot) => {
-      const id = wornBySlot.get(slot);
-      const candidate = id ? byId.get(id) : undefined;
-      return candidate ? candidate.stats : {};
+    // `baseline` is the build as it stands, which is what a candidate has to beat — under the
+    // **worn** recipe, because that is the state the build is in today.
+    const {
+      snapshot, model, byId, wornBySlot, counts, wornFour, calibration,
+      recipes: { noFourPiece }, current: recipe, equipped, baseline,
+    } = await this.buildState(request, {
+      check: (inventory) => requireArtifact(inventory, request.artifactId),
     });
+    const target = requireArtifact(snapshot, request.artifactId);
     const slot = SLOTS.indexOf(target.slot as (typeof SLOTS)[number]);
     if (slot < 0) return null;
-
-    // The build as it stands, which is what a candidate has to beat. Under the **worn**
-    // recipe, because that is the state the build is in today.
-    const baseline = evaluateRecipe(recipe, candidateStatsFrom(equipped));
 
     /**
      * The recipe the build would be under **with this piece equipped**, which is not always
@@ -544,7 +582,7 @@ export class ArtifactRankingService {
      * `avg -7.5%` on its card and `+1.5%` inside its own distribution — the same piece, the
      * same build, nine points apart, and the panel was the optimistic one.
      */
-    const swappedCounts = { ...setCountsOf(wornBySlot, byId) };
+    const swappedCounts = { ...counts };
     const outgoingId = wornBySlot.get(target.slot);
     const outgoingSet = outgoingId ? byId.get(outgoingId)?.set_id : undefined;
     if (outgoingSet != null) swappedCounts[outgoingSet] = (swappedCounts[outgoingSet] ?? 1) - 1;
@@ -606,55 +644,14 @@ export class ArtifactRankingService {
       shouldCancel?: () => boolean;
     },
   ): Promise<UpgradeResult> {
-    const snapshot = await this.optimize.inventory();
-    const raw = snapshot.draw_model;
-    const fresh = raw?.fresh_drop;
-    if (!raw || !fresh) {
-      throw new Error(
-        'the server sent no drop model, so there is nothing to estimate from. This is a '
-        + 'refusal rather than a guess: an estimate without the drop rates would be a number '
-        + 'about nothing.',
-      );
-    }
-    const model = drawModelFrom(raw);
-    const ladderRows = model.rollTiers['5'];
-    if (!ladderRows?.length) {
-      throw new Error('no 5-star roll ladders arrived, so a 5-star drop cannot be modelled');
-    }
-    const ladders = Object.fromEntries(ladderRows.map((row) => [row.quantity, row.values]));
-
-    const worn = await this.artifacts.list({ build_id: request.buildId });
-    const byId = new Map(snapshot.artifacts.map((c) => [c.id, c]));
-    const wornBySlot = new Map(worn.items.map((piece) => [piece.slot, piece.id] as const));
-    const counts = setCountsOf(wornBySlot, byId);
-    const wornFourPiece = fourPieceSetOf(counts);
-    const calibration = await this.recipes.calibrateAll(
-      request.buildId,
-      request.rotationId,
-      snapshot.version,
-      await this.targetsFor(wornFourPiece, request.extraSets ?? []),
-      request.onProgress ?? (() => undefined),
-      undefined,
-      request.waitForEnergy ?? false,
-      request.shouldCancel,
-    );
-    request.onCalibrated?.();
-    const recipe = wornFourPiece === null
-      ? calibration.noFourPiece
-      : calibration.byFourPieceSet.get(wornFourPiece);
-    if (!recipe) {
-      throw new Error(
-        "the build's own recipe did not calibrate, so its damage cannot be measured. An "
-        + 'estimate against a recipe missing its own set bonus would be wrong, and not '
-        + 'uniformly.',
-      );
-    }
-
-    const equipped: StatPool[] = SLOTS.map((slot) => {
-      const id = wornBySlot.get(slot);
-      return (id ? byId.get(id)?.stats : undefined) ?? {};
+    const {
+      snapshot, model, byId, wornBySlot, counts, current: recipe, equipped, baseline,
+    } = await this.buildState(request, {
+      check: freshDropOf,
+      shouldCancel: request.shouldCancel,
     });
-    const baseline = evaluateRecipe(recipe, candidateStatsFrom(equipped));
+    request.onCalibrated?.();
+    const { fresh, ladders } = freshDropOf(snapshot);
     const gain = request.gain ?? 0.01;
     const threshold = baseline * (1 + gain);
     const live = new Set(liveQuantitiesFor(recipe));
@@ -828,6 +825,35 @@ export class ArtifactRankingService {
   }
 
   /**
+   * Everything a pinned search needs that does not depend on *which* piece is pinned:
+   * `buildState`, plus the inventory as search candidates.
+   *
+   * Shared because `sweepBestBuilds` runs hundreds of pins, and rebuilding this per piece would
+   * repeat a calibration lookup, an inventory walk and a whole-inventory scoring pass for each.
+   */
+  private async diveContext(
+    request: RankingRequest,
+    options: { check?: (snapshot: InventorySnapshot) => void } = {},
+  ) {
+    const state = await this.buildState(request, options);
+
+    // **Pieces in a slot the kernel does not search are dropped, not coerced.** The five slot
+    // names are a closed set; a payload carrying a sixth is a piece this walk cannot place, and
+    // casting it in would put it in whichever bucket the string happened to match.
+    const searchable = new Set<string>(SLOTS);
+    const all: Candidate[] = state.snapshot.artifacts
+      .filter((c) => searchable.has(c.slot))
+      .map((c) => ({
+        id: c.id,
+        slot: c.slot as (typeof SLOTS)[number],
+        setId: c.set_id ?? 0,
+        stats: c.stats,
+      }));
+
+    return { ...state, before: state.baseline, all };
+  }
+
+  /**
    * **The best build containing this piece, at its projected max level.** Issue #291's headline.
    *
    * This is the half a single-slot swap cannot answer. *"Assume that you can move other
@@ -849,87 +875,14 @@ export class ArtifactRankingService {
    * it deeper for the same money** — so this is not a slower optimizer, it is the same job asked
    * a narrower question. One piece at a time, deliberately: 2,370 of them would be three hours.
    */
-  /**
-   * Everything a pinned search needs that does not depend on *which* piece is pinned.
-   *
-   * Extracted because `sweepBestBuilds` runs hundreds of pins and rebuilding this per piece
-   * would repeat a calibration lookup, an inventory walk and a whole-inventory scoring pass
-   * for each one. It is also the third place this preamble would otherwise have been written
-   * — `rank` has its own, and two copies of "what is this build wearing" is exactly the pair
-   * `setCountsOf` was extracted to stop drifting apart.
-   */
-  private async diveContext(request: RankingRequest) {
-    const snapshot = await this.optimize.inventory();
-    const raw = snapshot.draw_model;
-    if (!raw) throw new Error('the server sent no draw model, so nothing can be projected');
-    const model = drawModelFrom(raw);
-
-    const worn = await this.artifacts.list({ build_id: request.buildId });
-    const byId = new Map(snapshot.artifacts.map((c) => [c.id, c]));
-    const wornBySlot = new Map(
-      worn.items.map((piece) => [piece.slot, piece.id] as const),
-    );
-    const wornFour = fourPieceSetOf(setCountsOf(wornBySlot, byId));
-
-    const calibration = await this.recipes.calibrateAll(
-      request.buildId,
-      request.rotationId,
-      snapshot.version,
-      await this.targetsFor(wornFour, request.extraSets ?? []),
-      request.onProgress ?? (() => undefined),
-      undefined,
-      request.waitForEnergy ?? false,
-    );
-    const noFourPiece = calibration.noFourPiece;
-    if (!noFourPiece) throw new Error('the baseline recipe did not calibrate');
-    const equipped: StatPool[] = SLOTS.map((slot) => {
-      const id = wornBySlot.get(slot);
-      const candidate = id ? byId.get(id) : undefined;
-      return candidate ? candidate.stats : {};
-    });
-
-    // The build's own 4-piece state decides which recipe describes it today — A.9's first
-    // state, and the number every percentage below is *of*.
-    const current = wornFour === null
-      ? noFourPiece
-      : calibration.byFourPieceSet.get(wornFour) ?? noFourPiece;
-    const before = evaluateRecipe(current, candidateStatsFrom(equipped));
-
-    // **Pieces in a slot the kernel does not search are dropped, not coerced.** The five slot
-    // names are a closed set; a payload carrying a sixth is a piece this walk cannot place, and
-    // casting it in would put it in whichever bucket the string happened to match.
-    const searchable = new Set<string>(SLOTS);
-    const all: Candidate[] = snapshot.artifacts
-      .filter((c) => searchable.has(c.slot))
-      .map((c) => ({
-        id: c.id,
-        slot: c.slot as (typeof SLOTS)[number],
-        setId: c.set_id ?? 0,
-        stats: c.stats,
-      }));
-
-    return {
-      snapshot, model, byId, wornBySlot, wornFour, calibration,
-      current, before, equipped, all,
-      wornIds: new Set(wornBySlot.values()),
-      recipes: {
-        noFourPiece,
-        byFourPieceSet: calibration.byFourPieceSet,
-        byPair: calibration.byPair,
-      },
-    };
-  }
-
   async deepDive(request: RankingRequest & { artifactId: string }): Promise<DeepDive> {
-    const context = await this.diveContext(request);
+    const context = await this.diveContext(request, {
+      check: (snapshot) => requireArtifact(snapshot, request.artifactId),
+    });
     const {
-      snapshot, model, wornBySlot, current, before, equipped, all, wornIds, recipes,
+      model, wornBySlot, current, before, equipped, all, wornIds, recipes,
     } = context;
-
-    const target = snapshot.artifacts.find((c) => c.id === request.artifactId);
-    if (!target) {
-      throw new Error(`artifact ${request.artifactId} is not in the inventory snapshot`);
-    }
+    const target = requireArtifact(context.snapshot, request.artifactId);
 
     // **Pinned at the piece's projected max-level stats**, because #291 asks about the artifact
     // "at max level". `average` rather than `best`: the expected outcome is the honest thing to
@@ -1073,6 +1026,31 @@ export function trimForDive(
     out.push(...kept);
   }
   return out;
+}
+
+/** The candidate with this id, or a refusal naming it. */
+function requireArtifact(snapshot: InventorySnapshot, id: string): KernelCandidate {
+  const found = snapshot.artifacts.find((c) => c.id === id);
+  if (!found) throw new Error(`artifact ${id} is not in the inventory`);
+  return found;
+}
+
+/** The fresh-drop inputs and 5-star ladders the upgrade estimate needs, or a refusal. */
+function freshDropOf(snapshot: InventorySnapshot) {
+  const fresh = snapshot.draw_model?.fresh_drop;
+  if (!fresh) {
+    throw new Error(
+      'the server sent no drop model, so there is nothing to estimate from. This is a '
+      + 'refusal rather than a guess: an estimate without the drop rates would be a number '
+      + 'about nothing.',
+    );
+  }
+  const ladderRows = snapshot.draw_model?.roll_tiers['5'];
+  if (!ladderRows?.length) {
+    throw new Error('no 5-star roll ladders arrived, so a 5-star drop cannot be modelled');
+  }
+  const ladders = Object.fromEntries(ladderRows.map((row) => [row.quantity, row.values]));
+  return { fresh, ladders };
 }
 
 /**
