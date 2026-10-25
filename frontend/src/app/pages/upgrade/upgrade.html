@@ -87,11 +87,9 @@
         <caption class="sr-only">Resin until each slot improves</caption>
         <thead>
           <tr>
-            <th scope="col">Slot</th>
-            <th scope="col">Worn now</th>
-            <th scope="col" title="Half the domain's drops are your set; the off-piece takes any">Drops that fit</th>
-            <th scope="col">Chance per drop</th>
+            <th scope="col">Slot, and what it wears now</th>
             <th scope="col" class="num">Median resin</th>
+            <th scope="col">Chance per drop</th>
             <th scope="col" class="num">Middle half</th>
             <th scope="col" class="num">Unlucky (90%)</th>
             <th scope="col" class="num" title="The median with each substat weight nudged by ±1">If the weights are off</th>
@@ -100,22 +98,28 @@
         <tbody>
           @for (row of rows(); track row.slot) {
             <tr>
-              <th scope="row">{{ slotNames()[row.slot] || row.slot }}</th>
-              <td>
-                {{ setName(row) }}
-                @if (row.level !== null) {
-                  <span class="muted">+{{ row.level }}</span>
-                }
+              <th scope="row">
+                <span class="slot">{{ slotNames()[row.slot] || row.slot }}</span>
+                <!-- What it wears, under the slot rather than in its own column: on a phone the
+                     numbers are what a reader came for, and three text columns pushed them
+                     off-screen behind a horizontal scroll. -->
+                <span class="piece">
+                  {{ setName(row) }}@if (row.level !== null) {<span class="muted"> +{{ row.level }}</span>}
+                </span>
                 @if (row.mainStat) {
-                  <span class="muted">· {{ statNames()[row.mainStat] || row.mainStat }}</span>
+                  <span class="piece muted">{{ statNames()[row.mainStat] || row.mainStat }}</span>
                 }
-              </td>
-              <td>{{ row.factor < 1 ? 'Half (your set)' : 'All (off-piece)' }}</td>
-              <td class="mono">{{ oneIn(row.estimate) }}</td>
+                <span class="piece muted">
+                  {{ row.factor < 1 ? 'Half the drops fit (your set)' : 'Every drop fits (off-piece)' }}
+                </span>
+              </th>
               @if (row.estimate.unreachable) {
-                <td class="unreachable" colspan="4">No drop can beat this piece by that much.</td>
+                <td class="unreachable" colspan="5">No drop can beat this piece by that much.</td>
               } @else {
+                <!-- The median first: it is the headline, and on a phone it is the column that
+                     has to be on screen without scrolling. -->
                 <td class="num mono strong">{{ resin(row.estimate.median) }}</td>
+                <td class="mono nowrap">{{ oneIn(row.estimate) }}</td>
                 <td class="num mono">{{ resin(row.estimate.p25) }}–{{ resin(row.estimate.p75) }}</td>
                 <td class="num mono">{{ resin(row.estimate.p90) }}</td>
                 <td class="num mono muted">{{ spread(row) }}</td>
