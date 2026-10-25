@@ -27,14 +27,20 @@ from functools import cache
 
 from app.data.external import (
     GO_KEY_TO_PROPERTY,
+    MAIN_STAT_GO_KEY_TO_PROPERTY,
     ExternalDataUnavailableError,
+    domain_drop_model,
+    main_stat_probabilities,
     substat_weights,
 )
 from app.data.snapshot import (
+    artifact_main_stat_value,
     artifact_max_level,
     artifact_rolls_remaining,
     artifact_upgrade_levels,
 )
+from app.models.enums import ArtifactSlot
+from app.services.planner.economy import economy
 from app.services.stat_calculator import _quantity_for_prop
 
 #: Genshin gives an artifact four substats at most. Stated rather than derived: the committed
@@ -134,3 +140,71 @@ def substat_weights_by_quantity() -> dict[str, int]:
             raise ExternalDataUnavailableError(msg)
         out[quantity] = weight
     return out
+
+
+#: The rarity the upgrade estimator models. A 4-star cannot beat a 5-star in any slot worth
+#: asking about (`DESIGN_upgrade_estimator.md` §8), so a fresh drop is a 5-star by definition.
+FRESH_DROP_RARITY = 5
+
+#: GOOD's slot name, as the draw model spells it, onto the payload key the kernel reads.
+_SLOT_KEYS = {
+    "flower": ArtifactSlot.FLOWER.value,
+    "plume": ArtifactSlot.PLUME.value,
+    "sands": ArtifactSlot.SANDS.value,
+    "goblet": ArtifactSlot.GOBLET.value,
+    "circlet": ArtifactSlot.CIRCLET.value,
+}
+
+
+@dataclass(frozen=True)
+class FreshDropModel:
+    """Everything the upgrade estimator needs that is the same for every build.
+
+    `docs/DESIGN_upgrade_estimator.md` §§3-4 and §6. Keyed by **kernel quantity** and by the
+    kernel's slot keys, so the client joins it to the recipe without a second vocabulary.
+    """
+
+    five_star_per_run: float
+    four_line_share: float
+    set_share: float
+    slot_share: float
+    #: Read from the planner's derived economy, never restated here.
+    resin_per_run: int
+    #: `equip_*` -> quantity -> probability, summing to 1 per slot.
+    main_stat_probabilities: dict[str, dict[str, float]]
+    #: quantity -> the main stat's value on a 5-star at +20.
+    main_stat_values: dict[str, float]
+
+
+@cache
+def fresh_drop_model() -> FreshDropModel:
+    """The domain drop model in the app's vocabulary.
+
+    **Refuses on any main stat it cannot place**, for the reason `substat_weights_by_quantity`
+    does: a dropped main stat is not a smaller model, it hands its probability to the others,
+    and a goblet that quietly lost Pyro DMG would make a Pyro DPS's goblet unreachable.
+    """
+    drops = domain_drop_model()
+    max_level = artifact_max_level(FRESH_DROP_RARITY)
+    probabilities: dict[str, dict[str, float]] = {}
+    values: dict[str, float] = {}
+    for slot, slot_key in _SLOT_KEYS.items():
+        by_quantity: dict[str, float] = {}
+        for key, p in main_stat_probabilities(slot).items():
+            prop = MAIN_STAT_GO_KEY_TO_PROPERTY.get(key)
+            quantity = _quantity_for_prop(prop) if prop else None
+            if prop is None or quantity is None:
+                msg = f"main stat {key!r} on {slot} maps to no known property"
+                raise ExternalDataUnavailableError(msg)
+            by_quantity[quantity] = by_quantity.get(quantity, 0.0) + float(p)
+            values[quantity] = artifact_main_stat_value(FRESH_DROP_RARITY, max_level, prop)
+        probabilities[slot_key] = by_quantity
+    return FreshDropModel(
+        five_star_per_run=drops["five_star_per_run"],
+        four_line_share=drops["four_line_share"],
+        set_share=drops["set_share"],
+        slot_share=drops["slot_share"],
+        resin_per_run=economy().domain_resin_per_run(),
+        main_stat_probabilities=probabilities,
+        main_stat_values=values,
+    )

@@ -8,6 +8,7 @@ through a repository already carrying the caller's id.
 from __future__ import annotations
 
 import hashlib
+from dataclasses import asdict
 from typing import TYPE_CHECKING, Annotated
 
 from fastapi import (
@@ -41,6 +42,7 @@ from app.schemas.artifact import (
     ArtifactRead,
     BuildImportSummary,
     DrawModel,
+    FreshDropInputs,
     GoodImportRequest,
     GoodImportResponse,
     ImportRejection,
@@ -57,6 +59,7 @@ from app.schemas.build import KernelSetBonus
 from app.schemas.common import PaginatedResponse
 from app.services import build_assembler
 from app.services.artifact_potential import (
+    fresh_drop_model,
     substat_weights_by_quantity,
     upgrade_potential,
 )
@@ -295,7 +298,21 @@ def _draw_model(rarities: set[int]) -> DrawModel | None:
         }
     except (ExternalDataUnavailableError, SnapshotUnavailableError):
         return None
-    return DrawModel(roll_tiers=ladders, substat_weights=weights, weights_caveat=caveat)
+    return DrawModel(
+        roll_tiers=ladders,
+        substat_weights=weights,
+        weights_caveat=caveat,
+        fresh_drop=_fresh_drop(),
+    )
+
+
+def _fresh_drop() -> FreshDropInputs | None:
+    """The upgrade estimator's inputs, or null — kept apart so a gap here never costs ranking."""
+    try:
+        model = fresh_drop_model()
+    except (ExternalDataUnavailableError, SnapshotUnavailableError, ValueError):
+        return None
+    return FreshDropInputs(**asdict(model))
 
 
 def _kernel_stats(artifact: Artifact) -> dict[str, float]:

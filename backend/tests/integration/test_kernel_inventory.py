@@ -468,6 +468,11 @@ async def test_the_draw_model_ships_once_and_carries_its_caveat(
     # The weights are cited rather than derived, and a number computed from them has to be
     # able to say so on screen — not in a comment nobody reading it will see.
     assert "cannot" in model["weights_caveat"] or "could not" in model["weights_caveat"]
+    # The upgrade estimator's half rides on the same payload (TASKS_upgrade_estimator.md 2).
+    fresh = model["fresh_drop"]
+    assert fresh["five_star_per_run"] == 1.065
+    assert fresh["resin_per_run"] == 20
+    assert fresh["main_stat_probabilities"]["equip_bracer"] == {"flat_hp": 1.0}
 
 
 async def test_a_ladder_is_never_the_unupgradable_fixed_value(

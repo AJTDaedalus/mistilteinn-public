@@ -70,6 +70,24 @@ GO_KEY_TO_PROPERTY = {
 }
 
 
+#: GO's **main-stat** keys -> raw property. The substat table plus the stats only a main stat can
+#: carry: healing bonus and the eight damage bonuses. Kept beside the substat table rather than
+#: merged into it, because `substat_weights_by_quantity` iterates *that* one and must not start
+#: offering Pyro DMG as a substat.
+MAIN_STAT_GO_KEY_TO_PROPERTY = {
+    **GO_KEY_TO_PROPERTY,
+    "heal_": "FIGHT_PROP_HEAL_ADD",
+    "physical_dmg_": "FIGHT_PROP_PHYSICAL_ADD_HURT",
+    "anemo_dmg_": "FIGHT_PROP_WIND_ADD_HURT",
+    "geo_dmg_": "FIGHT_PROP_ROCK_ADD_HURT",
+    "electro_dmg_": "FIGHT_PROP_ELEC_ADD_HURT",
+    "hydro_dmg_": "FIGHT_PROP_WATER_ADD_HURT",
+    "pyro_dmg_": "FIGHT_PROP_FIRE_ADD_HURT",
+    "cryo_dmg_": "FIGHT_PROP_ICE_ADD_HURT",
+    "dendro_dmg_": "FIGHT_PROP_GRASS_ADD_HURT",
+}
+
+
 class ExternalDataUnavailableError(RuntimeError):
     """A committed external data file is missing, unreadable, or lacks what was asked of it."""
 
@@ -136,3 +154,49 @@ def draw_model_provenance() -> dict[str, Any]:
         "caveat": data["caveat"],
     }
 
+
+#: The fractions `domain_drop_model` returns, each with the open interval it must sit in. A
+#: share of 0 or 1 is not a drop model, it is a typo that would make every estimate either
+#: impossible or certain.
+_DOMAIN_SHARES = ("four_line_share", "set_share", "slot_share")
+
+#: A domain guarantees at least one 5-star at AR 45+, and nothing measured is near two.
+_FIVE_STAR_RANGE = (1.0, 2.0)
+
+
+@cache
+def domain_drop_model() -> dict[str, float]:
+    """What one Domain of Blessing claim yields, for the upgrade estimator.
+
+    `docs/DESIGN_upgrade_estimator.md` §§3-4. Every value is cited in the file beside it, and
+    **this refuses a value that is missing, uncited or out of range** rather than defaulting:
+    a five-star count of 0 would make every upgrade unreachable, and one of 10 would make every
+    upgrade look ten times cheaper, and neither would look wrong on a chart.
+    """
+    block = _load("artifact_draw_model").get("domain_drops")
+    if not block:
+        msg = "artifact_draw_model.json carries no domain_drops"
+        raise ExternalDataUnavailableError(msg)
+    out: dict[str, float] = {}
+    for key in ("five_star_per_run", *_DOMAIN_SHARES):
+        value = block.get(key)
+        source = block.get(f"{key}_source")
+        if not isinstance(value, int | float) or isinstance(value, bool):
+            msg = f"domain_drops.{key} is {value!r}, not a number"
+            raise ExternalDataUnavailableError(msg)
+        if not source or not source.get("urls"):
+            msg = (
+                f"domain_drops.{key} carries no source. Every drop number must say where it "
+                f"came from."
+            )
+            raise ExternalDataUnavailableError(msg)
+        out[key] = float(value)
+    low, high = _FIVE_STAR_RANGE
+    if not low <= out["five_star_per_run"] < high:
+        msg = f"domain_drops.five_star_per_run is {out['five_star_per_run']}, outside [1, 2)"
+        raise ExternalDataUnavailableError(msg)
+    for key in _DOMAIN_SHARES:
+        if not 0.0 < out[key] < 1.0:
+            msg = f"domain_drops.{key} is {out[key]}, outside (0, 1)"
+            raise ExternalDataUnavailableError(msg)
+    return out

@@ -65,5 +65,42 @@
       "critDMG_": 0.1,
       "heal_": 0.1
     }
+  },
+  "domain_drops": {
+    "note": "What one Domain of Blessing claim (20 resin) yields at Adventure Rank 45+, for docs/DESIGN_upgrade_estimator.md. Community-compiled and community-measured, never published by HoYoverse. docs/RESEARCH_artifact_drop_model.md sections 1-4 carry the reading of every source.",
+    "five_star_per_run": 1.065,
+    "five_star_per_run_source": {
+      "what": "Predicted mean 1.065 five-star artifacts per claim at AR 45+, with at least one guaranteed; measured 1.07 over 14,088 runs by the Genshin Data Gathering Team.",
+      "urls": [
+        "https://genshin-impact.fandom.com/wiki/Loot_System/Artifact_Drop_Distribution",
+        "https://docs.google.com/spreadsheets/d/10DF-Wqn-79SxTeSZPAY__RW1uGtpphAx4rG97akYskY"
+      ],
+      "research": "RESEARCH_artifact_drop_model.md section 1.2"
+    },
+    "five_star_count_shape": "ASSUMED: 1 + Bernoulli(five_star_per_run - 1). Only means are published (RESEARCH_artifact_drop_model_followup.md item 1). The shape barely moves the answer: r = q * E[N] - O(q^2).",
+    "four_line_share": 0.2,
+    "four_line_share_source": {
+      "what": "A domain 5-star starts with 4 substats 20% of the time and 3 substats 80% of the time (bosses, Strongbox and Abyss are 34%, not used here). Confirmed by the owner, 2026-10-24.",
+      "urls": [
+        "https://genshin-impact.fandom.com/wiki/Loot_System/Artifact_Drop_Distribution"
+      ],
+      "research": "RESEARCH_artifact_drop_model.md section 4.1"
+    },
+    "set_share": 0.5,
+    "set_share_source": {
+      "what": "A domain's 5-star drops are split 1/2 between its two sets.",
+      "urls": [
+        "https://genshin-impact.fandom.com/wiki/Loot_System/Artifact_Drop_Distribution"
+      ],
+      "research": "RESEARCH_artifact_drop_model.md section 1.3"
+    },
+    "slot_share": 0.2,
+    "slot_share_source": {
+      "what": "Each of the five slots is equally likely.",
+      "urls": [
+        "https://genshin-impact.fandom.com/wiki/Loot_System/Artifact_Drop_Distribution"
+      ],
+      "research": "RESEARCH_artifact_drop_model.md section 2"
+    }
   }
 }
