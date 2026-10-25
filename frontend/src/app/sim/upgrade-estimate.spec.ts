@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { type StatPool } from './artifact-score';
 import { sampleBeatProbability } from './fresh-drop-sampler';
@@ -53,6 +53,15 @@ function sampled(threshold: number, evaluate = circletDamage, mains = CIRCLET) {
   }, evaluate, threshold, 60_000, 20261024);
 }
 
+/**
+ * A sampler spec draws tens of thousands of artifacts. About 2 s alone, but `ci_local` runs the
+ * suite beside the backend jobs, and one timed out at vitest's 5 s default there.
+ */
+const SAMPLER_TIMEOUT = 60_000;
+
+// Every spec here enumerates or samples for real; none is a unit-sized check.
+vi.setConfig({ testTimeout: SAMPLER_TIMEOUT });
+
 describe('slotBeatProbability', () => {
   it('lies inside the sampler interval against a mediocre circlet, +1%', () => {
     const threshold = circletDamage(MEDIOCRE) * 1.01;
@@ -61,7 +70,7 @@ describe('slotBeatProbability', () => {
     expect(exact).toBeGreaterThan(1e-2);
     expect(exact).toBeGreaterThanOrEqual(mc.low);
     expect(exact).toBeLessThanOrEqual(mc.high);
-  });
+  }, SAMPLER_TIMEOUT);
 
   it('lies inside the sampler interval on a flower, where only substats move', () => {
     const flowerDamage = (piece: StatPool) =>
@@ -74,7 +83,7 @@ describe('slotBeatProbability', () => {
     expect(exact).toBeGreaterThan(1e-2);
     expect(exact).toBeGreaterThanOrEqual(mc.low);
     expect(exact).toBeLessThanOrEqual(mc.high);
-  });
+  }, SAMPLER_TIMEOUT);
 
   it('lies inside the sampler interval on a linear toy evaluator', () => {
     const linear = (s: StatPool) => 3 * (s['crit_rate'] ?? 0) + (s['crit_dmg'] ?? 0)
@@ -87,7 +96,7 @@ describe('slotBeatProbability', () => {
     expect(exact).toBeGreaterThan(1e-2);
     expect(exact).toBeGreaterThanOrEqual(mc.low);
     expect(exact).toBeLessThanOrEqual(mc.high);
-  });
+  }, SAMPLER_TIMEOUT);
 
   it('proves zero for a bar no drop can clear, without enumerating', () => {
     const found = slotBeatProbability(input(circletDamage(STRONG) * 10));

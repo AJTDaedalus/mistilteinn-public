@@ -12,6 +12,12 @@ const MODEL = {
 };
 
 /** `docs/TASKS_upgrade_estimator.md` Task 5 — the oracle has to be right before it judges. */
+/**
+ * A sampler spec draws tens of thousands of artifacts. About 2 s alone, but `ci_local` runs the
+ * suite beside the backend jobs, and one timed out at vitest's 5 s default there.
+ */
+const SAMPLER_TIMEOUT = 60_000;
+
 describe('fresh-drop sampler', () => {
   it('makes pieces with a main stat and four distinct substats', () => {
     const random = seededRandom(7);
@@ -42,5 +48,5 @@ describe('fresh-drop sampler', () => {
     const sampled = sampleBeatProbability(flower, (s) => s['crit_dmg'] ?? 0, 0, 40_000, 11);
     expect(sampled.low).toBeLessThanOrEqual(1 - miss);
     expect(sampled.high).toBeGreaterThanOrEqual(1 - miss);
-  });
+  }, SAMPLER_TIMEOUT);
 });
