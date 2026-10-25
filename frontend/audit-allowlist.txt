@@ -16,8 +16,11 @@
 # Two transitive deps pin a vulnerable version *exactly*, so no range bump
 # reaches them and there is no advisory left here for them to appear under:
 #
-#   @angular/build         pins undici  7.28.0 -> overridden to ^7.29.0
+#   @angular/build         pins undici  7.29.1 -> overridden to ^7.30.1
 #   @redocly/openapi-core  pins js-yaml 4.3.0  -> overridden to ^4.3.2
+#
+# The undici override was ^7.29.0 until 2026-10-25, when the advisories ending at 7.30.0
+# covered the 7.29.1 that @angular/build 21.2.28 pins; the floor moved with them.
 #
 # The js-yaml override was ^4.3.1 until 2026-09-19, when GHSA-2883-xcg3-v3hh
 # extended the vulnerable range to include 4.3.1 itself. An override is a
