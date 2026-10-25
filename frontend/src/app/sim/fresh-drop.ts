@@ -26,8 +26,6 @@
  * per cell. That is what `freshDropCells` and `rollBudgets` return.
  */
 
-import { lineOutcomes } from './artifact-distribution';
-
 /** Genshin gives an artifact four substats at most, and a fresh drop always ends with four. */
 export const LINES = 4;
 
@@ -70,12 +68,38 @@ export function rollBudgets(fourLineShare: number): RollBudget[] {
   ];
 }
 
+/** Every ordered draw of four distinct positions from `n`, computed once per `n`. */
+const ORDERS = new Map<number, Int8Array[]>();
+function ordersOf(n: number): Int8Array[] {
+  let found = ORDERS.get(n);
+  if (!found) {
+    found = [];
+    for (let a = 0; a < n; a += 1) {
+      for (let b = 0; b < n; b += 1) {
+        if (b === a) continue;
+        for (let c = 0; c < n; c += 1) {
+          if (c === a || c === b) continue;
+          for (let d = 0; d < n; d += 1) {
+            if (d === a || d === b || d === c) continue;
+            found.push(Int8Array.of(a, b, c, d));
+          }
+        }
+      }
+    }
+    ORDERS.set(n, found);
+  }
+  return found;
+}
+
 /**
  * Every (main stat, four substats) a fresh drop for one slot can be, with its probability.
  *
- * Draw orders are enumerated by `lineOutcomes` — the port of Genshin Optimizer's `substatProb`
- * that the artifact ranker already uses — and collapsed to unordered sets. At most `10·9·8·7 =
- * 5,040` orders and `C(10, 4) = 210` sets per main stat, so this is exact and cheap.
+ * The weighted draw **without replacement** — each draw's denominator is what is left of the
+ * pool — summed over every order of a set, which is what GO's `substatProb` and this repo's
+ * `lineOutcomes` compute. Written out flat here rather than calling `lineOutcomes`, because
+ * the weight-sensitivity pass asks this twenty times per slot: the orders depend only on the
+ * pool's size and are built once; a re-weighting is then `5,040 × 4` multiplications per main
+ * stat. A spec pins the two against each other.
  *
  * **Refuses a main-stat table that does not sum to 1.** A slot whose table quietly lost a row
  * would hand that row's probability to nobody, and every estimate would come out wrong by that
@@ -93,18 +117,28 @@ export function freshDropCells(
   for (const [main, pMain] of Object.entries(mainStatProbabilities)) {
     if (pMain <= 0) continue;
     // The main stat is out of the pool when it is a substat type: no piece has CRIT DMG twice.
-    const pool = Object.fromEntries(
-      Object.entries(substatWeights).filter(([quantity]) => quantity !== main),
-    );
-    const bySet = new Map<string, { subs: string[]; p: number }>();
-    for (const outcome of lineOutcomes(pool, LINES)) {
-      const subs = [...outcome.added].sort();
-      const key = subs.join('|');
-      const found = bySet.get(key);
-      if (found) found.p += outcome.p;
-      else bySet.set(key, { subs, p: outcome.p });
+    // Sorted, so a set's key is the same whichever order its members were drawn in.
+    const keys = Object.keys(substatWeights).filter((quantity) => quantity !== main).sort();
+    if (keys.length < LINES) continue;
+    const weights = keys.map((quantity) => substatWeights[quantity]);
+    const poolTotal = weights.reduce((a, b) => a + b, 0);
+    const bySet = new Map<number, number>();
+    for (const order of ordersOf(keys.length)) {
+      let p = 1;
+      let left = poolTotal;
+      let mask = 0;
+      for (let i = 0; i < LINES; i += 1) {
+        const w = weights[order[i]];
+        p *= w / left;
+        left -= w;
+        mask |= 1 << order[i];
+      }
+      bySet.set(mask, (bySet.get(mask) ?? 0) + p);
     }
-    for (const { subs, p } of bySet.values()) cells.push({ main, subs, p: pMain * p });
+    for (const [mask, p] of bySet) {
+      const subs = keys.filter((_, index) => mask & (1 << index));
+      cells.push({ main, subs, p: pMain * p });
+    }
   }
   return cells;
 }

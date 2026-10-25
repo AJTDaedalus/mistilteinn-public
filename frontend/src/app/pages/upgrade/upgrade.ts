@@ -1,13 +1,8 @@
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 
 import { apiErrorMessage } from '../../api/api-error';
-import { buildsInTeam } from '../../shared/team-scope';
 import { type ResinEstimate } from '../../sim/resin-to-upgrade';
 import { EstimateCancelled } from '../../sim/upgrade-estimate';
-import { BuildsService, type BuildRead } from '../builds/builds.service';
-import { RotationsService } from '../rotations/rotations.service';
-import { TeamsService, type TeamRead } from '../teams/teams.service';
 import { ArtifactsService } from '../artifacts/artifacts.service';
 import { ArtifactsContextService } from '../artifacts/artifacts-context.service';
 import {
@@ -16,7 +11,10 @@ import {
   type UpgradeSlotRow,
 } from '../artifacts/artifact-ranking.service';
 import { OptimizeService } from '../optimize/optimize.service';
-import { type CalibrationProgress } from '../optimize/recipe-optimize.service';
+import {
+  CalibrationCancelled,
+  type CalibrationProgress,
+} from '../optimize/recipe-optimize.service';
 
 /**
  * `/artifacts/upgrade`: how much domain resin until each slot's piece is beaten.
@@ -28,43 +26,27 @@ import { type CalibrationProgress } from '../optimize/recipe-optimize.service';
  */
 @Component({
   selector: 'app-upgrade',
-  imports: [FormsModule],
+  imports: [],
   templateUrl: './upgrade.html',
   styleUrl: './upgrade.scss',
 })
 export class UpgradePage implements OnInit, OnDestroy {
-  private readonly buildsService = inject(BuildsService);
-  private readonly rotationsService = inject(RotationsService);
-  private readonly teamsService = inject(TeamsService);
   private readonly artifactsService = inject(ArtifactsService);
   private readonly optimize = inject(OptimizeService);
   private readonly ranking = inject(ArtifactRankingService);
+  /** The picker, shared with Rank: choices, scoping and selection. */
   private readonly context = inject(ArtifactsContextService);
 
   protected readonly rotationId = this.context.rotationId;
   protected readonly buildId = this.context.buildId;
+  protected readonly rotationChoices = this.context.rotationChoices;
+  protected readonly buildChoices = this.context.buildChoices;
   /** Minimum meaningful gain, in percent. */
   protected readonly gainPercent = signal(1);
 
-  private readonly allBuilds = signal<BuildRead[]>([]);
-  private readonly teams = signal<TeamRead[]>([]);
-  private readonly rotationTeam = signal<Map<string, string>>(new Map());
-  protected readonly rotationChoices = signal<{ id: string; label: string }[]>([]);
-
-  /** The same scoping Rank uses: only the chosen rotation's team can be asked about. */
-  protected readonly buildChoices = computed(() => {
-    const teamId = this.rotationTeam().get(this.rotationId());
-    const team = this.teams().find((t) => t.id === teamId) ?? null;
-    if (!teamId || !team) return [];
-    return buildsInTeam(team, this.allBuilds()).map((build) => ({
-      id: build.id,
-      label: build.character?.name || 'No character',
-      detail: `C${build.constellation_level} · `
-        + `${build.weapon_display || build.weapon?.name || 'no weapon'}`,
-    }));
-  });
-
   protected readonly progress = signal<CalibrationProgress | null>(null);
+  /** Calibration finished and the slots are being estimated — what the status line says. */
+  protected readonly estimating = signal(false);
   protected readonly running = signal(false);
   protected readonly error = signal('');
   protected readonly rows = signal<UpgradeSlotRow[]>([]);
@@ -74,9 +56,12 @@ export class UpgradePage implements OnInit, OnDestroy {
   protected readonly statNames = signal<Record<string, string>>({});
   protected readonly setNames = signal<Map<number, string>>(new Map());
 
+  /**
+   * Only for a choice this account can actually ask about. A selection left over from another
+   * session would otherwise be an enabled button that requests someone else's ids.
+   */
   protected readonly canRun = computed(
-    () => !!this.buildId() && !!this.rotationId() && !this.running()
-      && this.gainPercent() >= 0,
+    () => this.context.ready() && !this.running() && this.gainPercent() >= 0,
   );
 
   private cancelled = false;
@@ -89,19 +74,14 @@ export class UpgradePage implements OnInit, OnDestroy {
     this.cancelled = true;
   }
 
+  /** The vocabulary for labels. The picker's own choices load through the context service. */
   private async loadChoices(): Promise<void> {
     try {
-      const [builds, rotations, teams, options, sets] = await Promise.all([
-        this.buildsService.list(),
-        this.rotationsService.list(),
-        this.teamsService.list(),
+      const [options, sets] = await Promise.all([
         this.artifactsService.options(),
         this.optimize.artifactSets(),
+        this.context.load(),
       ]);
-      this.allBuilds.set(builds);
-      this.teams.set(teams);
-      this.rotationTeam.set(new Map(rotations.items.map((r) => [r.id, r.team_id])));
-      this.rotationChoices.set(rotations.items.map((r) => ({ id: r.id, label: r.name })));
       this.slotNames.set(Object.fromEntries(options.slots.map((s) => [s.key, s.display])));
       this.statNames.set(Object.fromEntries(options.stats.map((s) => [s.key, s.display])));
       this.setNames.set(new Map([...sets].map(([id, set]) => [id, set.name])));
@@ -110,12 +90,8 @@ export class UpgradePage implements OnInit, OnDestroy {
     }
   }
 
-  /** Choosing a rotation re-scopes the builds, so a stale choice must not survive it. */
   protected chooseRotation(id: string): void {
-    this.rotationId.set(id);
-    if (!this.buildChoices().some((choice) => choice.id === this.buildId())) {
-      this.buildId.set('');
-    }
+    this.context.chooseRotation(id);
   }
 
   protected async run(): Promise<void> {
@@ -125,6 +101,7 @@ export class UpgradePage implements OnInit, OnDestroy {
     this.error.set('');
     this.rows.set([]);
     this.result.set(null);
+    this.estimating.set(false);
     this.progress.set({ done: 0, total: 1, current: 'starting', loading: true });
     try {
       const result = await this.ranking.upgradeEstimate({
@@ -132,17 +109,20 @@ export class UpgradePage implements OnInit, OnDestroy {
         rotationId: this.rotationId(),
         gain: this.gainPercent() / 100,
         onProgress: (p) => this.progress.set(p),
-        onSlot: (row) => {
+        onCalibrated: () => {
           this.progress.set(null);
-          this.rows.update((rows) => [...rows, row]);
+          this.estimating.set(true);
         },
+        onSlot: (row) => this.rows.update((rows) => [...rows, row]),
         shouldCancel: () => this.cancelled,
       });
       this.result.set(result);
     } catch (err) {
-      if (!(err instanceof EstimateCancelled)) this.error.set(apiErrorMessage(err));
+      const cancelled = err instanceof EstimateCancelled || err instanceof CalibrationCancelled;
+      if (!cancelled) this.error.set(apiErrorMessage(err));
     } finally {
       this.running.set(false);
+      this.estimating.set(false);
       this.progress.set(null);
     }
   }
@@ -151,14 +131,25 @@ export class UpgradePage implements OnInit, OnDestroy {
    * Read on `change`, not per keystroke, and an emptied box keeps the last value: `Number('')`
    * is 0, and a cleared field silently becoming "any gain counts" would change every answer.
    */
-  protected setGain(raw: string): void {
-    if (raw.trim() === '') return;
+  protected setGain(input: HTMLInputElement): void {
+    const raw = input.value;
     const value = Number(raw);
-    if (Number.isFinite(value) && value >= 0) this.gainPercent.set(value);
+    if (raw.trim() !== '' && Number.isFinite(value) && value >= 0) {
+      this.gainPercent.set(value);
+    } else {
+      // **Put the used value back in the box.** A rejected entry left on screen reads as the
+      // gain the estimate ran with; the box must never show a number nobody is using.
+      input.value = String(this.gainPercent());
+    }
   }
 
   protected cancel(): void {
     this.cancelled = true;
+  }
+
+  /** `50%`, from the cited set share rather than a word written into the template. */
+  protected percent(fraction: number): string {
+    return `${Math.round(fraction * 100)}%`;
   }
 
   protected setName(row: UpgradeSlotRow): string {

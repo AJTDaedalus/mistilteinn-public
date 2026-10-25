@@ -59,6 +59,7 @@ from app.schemas.build import KernelSetBonus
 from app.schemas.common import PaginatedResponse
 from app.services import build_assembler
 from app.services.artifact_potential import (
+    FRESH_DROP_RARITY,
     fresh_drop_model,
     substat_weights_by_quantity,
     upgrade_potential,
@@ -191,7 +192,9 @@ async def get_inventory(
         total=len(candidates),
         truncated=truncated,
         unreadable=unreadable,
-        draw_model=_draw_model({c.rarity for c in candidates}),
+        # **5★ always**, whatever the account holds: the upgrade estimator models a fresh 5★
+        # drop, and an account of only 4★ pieces asking it is exactly who it is for.
+        draw_model=_draw_model({c.rarity for c in candidates} | {FRESH_DROP_RARITY}),
     )
 
 
@@ -310,7 +313,14 @@ def _fresh_drop() -> FreshDropInputs | None:
     """The upgrade estimator's inputs, or null — kept apart so a gap here never costs ranking."""
     try:
         model = fresh_drop_model()
-    except (ExternalDataUnavailableError, SnapshotUnavailableError, ValueError):
+    # **Wide on purpose.** This rides on the inventory payload, so anything it raises would
+    # take Inventory and Rank down with it. A malformed cited file can fail as a KeyError,
+    # TypeError or AttributeError as easily as a ValueError, and the planner's economy reads
+    # files of its own (OSError). Every one of them means "no estimator", never "no page".
+    except (
+        ExternalDataUnavailableError, SnapshotUnavailableError, ValueError, KeyError,
+        TypeError, AttributeError, OSError,
+    ):
         return None
     return FreshDropInputs(**asdict(model))
 

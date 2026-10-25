@@ -41,12 +41,13 @@
       <span>Minimum gain</span>
       <span class="gain__field">
         <input
+          #gain
           type="number"
           min="0"
           step="0.5"
           inputmode="decimal"
-          [ngModel]="gainPercent()"
-          (change)="setGain($any($event.target).value)"
+          [value]="gainPercent()"
+          (change)="setGain(gain)"
           [disabled]="running()"
           aria-describedby="gain-help"
         />
@@ -73,7 +74,7 @@
         Calibrating {{ p.current }} ({{ p.done }} of {{ p.total }})…
       }
     </p>
-  } @else if (running()) {
+  } @else if (estimating()) {
     <p class="muted" role="status">Estimating {{ rows().length + 1 }} of 5…</p>
   }
 
@@ -84,7 +85,7 @@
   @if (rows().length) {
     <div class="table-scroll">
       <table class="estimates">
-        <caption class="sr-only">Resin until each slot improves</caption>
+        <caption class="visually-hidden">Resin until each slot improves</caption>
         <thead>
           <tr>
             <th scope="col">Slot, and what it wears now</th>
@@ -110,10 +111,20 @@
                   <span class="piece muted">{{ statNames()[row.mainStat] || row.mainStat }}</span>
                 }
                 <span class="piece muted">
-                  {{ row.factor < 1 ? 'Half the drops fit (your set)' : 'Every drop fits (off-piece)' }}
+                  @if (row.domainless) {
+                    No domain drops this set at 5★
+                  } @else if (row.factor < 1) {
+                    {{ percent(row.factor) }} of drops fit (its set holds a bonus)
+                  } @else {
+                    Every drop fits (no bonus needs it)
+                  }
                 </span>
               </th>
-              @if (row.estimate.unreachable) {
+              @if (row.domainless) {
+                <td class="unreachable" colspan="5">
+                  Never from a domain: its set bonus needs this set, and no domain drops it at 5★.
+                </td>
+              } @else if (row.estimate.unreachable) {
                 <td class="unreachable" colspan="5">No drop can beat this piece by that much.</td>
               } @else {
                 <!-- The median first: it is the headline, and on a phone it is the column that
@@ -148,10 +159,19 @@
         <strong>An upper bound on resin.</strong> Each piece is compared with the other four left
         as they are; moving them could find an upgrade sooner.
       </li>
-      <li>
-        Standard domain runs at 20 resin per claim, 1.065 five-stars per claim on average. No
-        Strongbox, no Stygian Onslaught, and levelling costs are not included.
-      </li>
+      @if (result(); as r) {
+        <li>
+          Standard domain runs at {{ r.resinPerRun }} resin per claim,
+          {{ r.fiveStarPerRun }} five-stars per claim on average. No Strongbox, no Stygian
+          Onslaught, and levelling costs are not included.
+        </li>
+        @if (r.rainbow) {
+          <li>
+            This build has no set bonus active, so every drop is counted for its stats alone —
+            a drop that would complete a new 2-piece is worth more than these figures say.
+          </li>
+        }
+      }
       <li>
         Each piece is compared as it stands, at its current level. A replacement is assumed to be
         levelled to +20.

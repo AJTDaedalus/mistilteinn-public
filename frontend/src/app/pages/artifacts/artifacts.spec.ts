@@ -640,6 +640,14 @@ describe('ArtifactsPage tabs', () => {
     expect(pageOn(undefined)['tab']).toBe('inventory');
   });
 
+  it('stops its background sweep when the tab is left', () => {
+    // Rank and Upgrade are sibling routes: leaving one destroys it, and a sweep still running
+    // on a destroyed page took the main thread from the next tab with no Stop button in reach.
+    const page = pageOn('rank');
+    page.ngOnDestroy();
+    expect(page['sweepCancelled']).toBe(true);
+  });
+
   it('shares its build choice with the Upgrade tab', () => {
     const page = pageOn('rank');
     page['rankBuildId'].set('b1');

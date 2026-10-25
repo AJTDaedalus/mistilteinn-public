@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { lineOutcomes } from './artifact-distribution';
 import { freshDropCells, rollBudgets } from './fresh-drop';
 import { CIRCLET, FLOWER, WEIGHTS } from './upgrade-fixtures';
 
@@ -23,6 +24,18 @@ describe('freshDropCells', () => {
     const cells = freshDropCells(CIRCLET, WEIGHTS);
     expect(cells.filter((c) => c.main === 'crit_dmg')).toHaveLength(126);
     expect(cells.filter((c) => c.main === 'healing_bonus')).toHaveLength(210);
+  });
+
+  it('agrees with lineOutcomes, the recursive port of GO substatProb, cell by cell', () => {
+    const pool = Object.fromEntries(Object.entries(WEIGHTS).filter(([q]) => q !== 'crit_dmg'));
+    const bySet = new Map<string, number>();
+    for (const o of lineOutcomes(pool, 4)) {
+      const key = [...o.added].sort().join('|');
+      bySet.set(key, (bySet.get(key) ?? 0) + o.p);
+    }
+    const cells = freshDropCells({ crit_dmg: 1 }, WEIGHTS);
+    expect(cells).toHaveLength(bySet.size);
+    for (const cell of cells) expect(cell.p).toBeCloseTo(bySet.get(cell.subs.join('|'))!, 14);
   });
 
   it('gives equal weights equal sets: 1 / C(n, 4)', () => {

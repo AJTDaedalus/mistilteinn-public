@@ -31,6 +31,7 @@ from app.data.external import (
     ExternalDataUnavailableError,
     domain_drop_model,
     main_stat_probabilities,
+    sets_without_domain_five_star,
     substat_weights,
 )
 from app.data.snapshot import (
@@ -174,6 +175,8 @@ class FreshDropModel:
     main_stat_probabilities: dict[str, dict[str, float]]
     #: quantity -> the main stat's value on a 5-star at +20.
     main_stat_values: dict[str, float]
+    #: Nanoka set ids no domain drops at 5 stars, sorted. A slot needing one is "never".
+    sets_without_domain_drop: list[int]
 
 
 @cache
@@ -207,4 +210,5 @@ def fresh_drop_model() -> FreshDropModel:
         resin_per_run=economy().domain_resin_per_run(),
         main_stat_probabilities=probabilities,
         main_stat_values=values,
+        sets_without_domain_drop=sorted(sets_without_domain_five_star()),
     )

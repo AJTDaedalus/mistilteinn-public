@@ -105,3 +105,33 @@ def test_main_stat_values_are_the_five_star_plus_twenty_values() -> None:
     assert values["physical_dmg_bonus"] == pytest.approx(0.583, abs=1e-6)
     every_main = {q for row in fresh_drop_model().main_stat_probabilities.values() for q in row}
     assert every_main == set(values), "every main stat that can drop has a value"
+
+
+def test_sets_no_domain_drops_at_five_star_are_the_ones_read_off_the_wiki() -> None:
+    """Read 2026-10-25 off each set's `source5.N` infobox fields. Written out, not loaded."""
+    found = set(fresh_drop_model().sets_without_domain_drop)
+    assert {15001, 15003} <= found, "Gladiator's Finale and Wanderer's Troupe are boss-only"
+    assert 10007 in found, "Instructor never drops at 5 stars, whatever nanoka's rank says"
+    assert {15009, 15010, 15011, 15012, 15013} <= found, "the Prayers sets"
+    # A domain set must never be on it: that would answer "never" for a farmable slot.
+    assert not found & {15040, 15020, 15002, 14001, 15047}
+
+
+def test_an_empty_or_uncited_domainless_list_refuses(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    data = json.loads(
+        (external.EXTERNAL_DIR / "artifact_draw_model.json").read_text(encoding="utf-8"),
+    )
+    data["domain_drops"]["sets_without_domain_five_star"]["urls"] = []
+    (tmp_path / "artifact_draw_model.json").write_text(json.dumps(data), encoding="utf-8")
+    monkeypatch.setattr(external, "EXTERNAL_DIR", tmp_path)
+    external._load.cache_clear()
+    external.sets_without_domain_five_star.cache_clear()
+    try:
+        with pytest.raises(ExternalDataUnavailableError, match="uncited"):
+            external.sets_without_domain_five_star()
+    finally:
+        external._load.cache_clear()
+        external.sets_without_domain_five_star.cache_clear()
+        artifact_potential.fresh_drop_model.cache_clear()

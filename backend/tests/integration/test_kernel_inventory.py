@@ -473,6 +473,36 @@ async def test_the_draw_model_ships_once_and_carries_its_caveat(
     assert fresh["five_star_per_run"] == 1.065
     assert fresh["resin_per_run"] == 20
     assert fresh["main_stat_probabilities"]["equip_bracer"] == {"flat_hp": 1.0}
+    assert 15001 in fresh["sets_without_domain_drop"]
+
+
+async def test_the_five_star_ladders_ship_to_an_account_with_no_five_stars(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+):
+    """The estimator models a fresh 5-star drop, so a 4-star-only account still needs them.
+
+    It used to ship ladders only for the rarities held, and the estimate then refused with
+    "no 5-star roll ladders arrived" for exactly the newer account it is most useful to.
+    """
+    user, _ = authed_user
+    artifact_set = ArtifactSet(
+        nanoka_id=15040, name="Finale of the Deep Galleries", piece_thresholds=[2, 4],
+        available_ranks=[4, 5],
+    )
+    db_session.add(artifact_set)
+    await db_session.flush()
+    db_session.add(Artifact(
+        owner_id=str(user.id), artifact_set_id=str(artifact_set.id),
+        slot=ArtifactSlot.FLOWER, rarity=Rarity.FOUR_STAR, level=16,
+        main_stat_type=StatType.HP_FLAT, main_stat_value=3571.0, substats=[],
+    ))
+    await db_session.flush()
+    db_session.expire_all()
+
+    model = (await authed_client.get(INVENTORY)).json()["draw_model"]
+
+    assert "5" in model["roll_tiers"]
+    assert len(ladders_of(model)["crit_dmg"]) == 4
 
 
 async def test_a_ladder_is_never_the_unupgradable_fixed_value(

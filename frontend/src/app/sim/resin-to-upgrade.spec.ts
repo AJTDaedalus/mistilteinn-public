@@ -44,6 +44,12 @@ describe('resinToUpgrade', () => {
   });
 });
 
+describe('claimsAtQuantile', () => {
+  it('stays enormous for a vanishingly small chance rather than collapsing to one claim', () => {
+    expect(claimsAtQuantile(1e-17, 0.5)).toBeGreaterThan(1e16);
+  });
+});
+
 describe('perRunSuccess', () => {
   it('is ≈ q · E[N] for small q, whatever the shape', () => {
     expect(perRunSuccess(1e-4, 1.065) / 1e-4).toBeCloseTo(1.065, 3);
@@ -62,6 +68,18 @@ describe('setFactor', () => {
     expect(setFactor(10, counts, 0.5)).toBe(0.5);
     expect(setFactor(20, counts, 0.5)).toBe(0.5);
     expect(setFactor(30, counts, 0.5)).toBe(1);
+  });
+  it('is 1 for a piece the bonus does not need: a fifth of one set, a third of a 3+2', () => {
+    expect(setFactor(10, { 10: 5 }, 0.5)).toBe(1);
+    expect(setFactor(10, { 10: 3, 20: 2 }, 0.5)).toBe(1);
+    expect(setFactor(20, { 10: 3, 20: 2 }, 0.5)).toBe(0.5);
+  });
+  it('is 0 — never — when the set must stay and no domain drops it at 5 stars', () => {
+    const gladiator = 15001;
+    expect(setFactor(gladiator, { [gladiator]: 4, 10: 1 }, 0.5, new Set([gladiator]))).toBe(0);
+    // The same set as an off-piece is not needed, so any drop still fits.
+    expect(setFactor(gladiator, { 10: 4, [gladiator]: 1 }, 0.5, new Set([gladiator]))).toBe(1);
+    expect(resinToUpgrade(0.5, 0, CLAIM).unreachable).toBe(true);
   });
   it('is 1 everywhere on a rainbow build, and for a setless piece', () => {
     expect(setFactor(10, { 10: 1, 20: 1, 30: 1, 40: 1, 50: 1 }, 0.5)).toBe(1);

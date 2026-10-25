@@ -101,6 +101,39 @@
         "https://genshin-impact.fandom.com/wiki/Loot_System/Artifact_Drop_Distribution"
       ],
       "research": "RESEARCH_artifact_drop_model.md section 2"
+    },
+    "sets_without_domain_five_star": {
+      "what": "Nanoka set ids no Domain of Blessing drops at 5 stars. A slot inside one of these sets' active bonus cannot be replaced by any domain drop, so the estimator answers 'never' rather than pricing half the drops.",
+      "boss_only": [
+        15001,
+        15003
+      ],
+      "boss_only_note": "Gladiator's Finale and Wanderer's Troupe: 5-star sources are Weekly Bosses, Normal Bosses, Domain Reliquary: Tier I and the Artifact Strongbox, and no domain.",
+      "no_five_star_source": [
+        10001,
+        10002,
+        10003,
+        10004,
+        10005,
+        10006,
+        10007,
+        10008,
+        10009,
+        10012,
+        15004,
+        15009,
+        15010,
+        15011,
+        15012,
+        15013
+      ],
+      "no_five_star_source_note": "Sets whose wiki infobox lists no source5 at all: the beginner and 4-star-capped sets, the Prayers sets, and Glacier and Snowfield. Nanoka's `rank` lists 5 for several of these (Instructor reads [1..5]), so `artifact_sets.available_ranks` cannot answer this.",
+      "method": "Read 2026-10-25: each 5-star-ranked set in the nanoka 7.0.51 catalogue fetched as wikitext from the Genshin Fandom wiki and classified by its `source5.N` infobox fields. A set newer than this list is assumed domain-farmable, which is how every new set has shipped.",
+      "urls": [
+        "https://genshin-impact.fandom.com/wiki/Gladiator%27s_Finale",
+        "https://genshin-impact.fandom.com/wiki/Wanderer%27s_Troupe",
+        "https://genshin-impact.fandom.com/api.php?action=parse&page=<Set_Name>&prop=wikitext&format=json"
+      ]
     }
   }
 }

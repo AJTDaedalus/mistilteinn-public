@@ -312,6 +312,9 @@ class FreshDropInputs(BaseModel):
     main_stat_probabilities: dict[str, dict[str, float]]
     #: Kernel quantity -> that main stat's value on a 5-star at +20.
     main_stat_values: dict[str, float]
+    #: Nanoka set ids no Domain of Blessing drops at 5 stars — Gladiator's Finale, Wanderer's
+    #: Troupe, and sets with no 5-star source at all. A slot that must stay in one is "never".
+    sets_without_domain_drop: list[int]
 
 
 class DrawModel(BaseModel):

@@ -1,10 +1,10 @@
+import { computed, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi } from 'vitest';
 
-import { BuildsService } from '../builds/builds.service';
-import { RotationsService } from '../rotations/rotations.service';
-import { TeamsService } from '../teams/teams.service';
 import { ArtifactsService } from '../artifacts/artifacts.service';
+import { ArtifactsContextService } from '../artifacts/artifacts-context.service';
+import { CalibrationCancelled } from '../optimize/recipe-optimize.service';
 import { ArtifactRankingService, type UpgradeSlotRow } from '../artifacts/artifact-ranking.service';
 import { OptimizeService } from '../optimize/optimize.service';
 import { resinToUpgrade } from '../../sim/resin-to-upgrade';
@@ -15,7 +15,7 @@ const CLAIM = { fiveStarPerRun: 1.065, setShare: 0.5, slotShare: 0.2, resinPerRu
 function row(pBeat: number, factor = 0.5): UpgradeSlotRow {
   return {
     slot: 'equip_dress', pieceId: 'a1', setId: 15003, level: 20, mainStat: 'FIGHT_PROP_CRITICAL_HURT',
-    factor, pBeat, byMain: [],
+    factor, domainless: factor === 0, pBeat, byMain: [],
     estimate: resinToUpgrade(pBeat, factor, CLAIM),
     sensitivity: {
       cheap: resinToUpgrade(pBeat * 1.2, factor, CLAIM),
@@ -25,13 +25,25 @@ function row(pBeat: number, factor = 0.5): UpgradeSlotRow {
   };
 }
 
+/** The shared picker, stubbed: `ready` is what the page gates Estimate on. */
+function context() {
+  const rotationId = signal('');
+  const buildId = signal('');
+  return {
+    rotationId, buildId,
+    rotationChoices: signal([{ id: 'r1', label: 'R' }]),
+    buildChoices: signal([{ id: 'b1', label: 'B', detail: '' }]),
+    ready: computed(() => rotationId() === 'r1' && buildId() === 'b1'),
+    load: vi.fn().mockResolvedValue(undefined),
+    chooseRotation: (id: string) => rotationId.set(id),
+  };
+}
+
 function page(upgradeEstimate = vi.fn()) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
-      { provide: BuildsService, useValue: { list: vi.fn().mockResolvedValue([]) } },
-      { provide: RotationsService, useValue: { list: vi.fn().mockResolvedValue({ items: [] }) } },
-      { provide: TeamsService, useValue: { list: vi.fn().mockResolvedValue([]) } },
+      { provide: ArtifactsContextService, useValue: context() },
       {
         provide: ArtifactsService,
         useValue: { options: vi.fn().mockResolvedValue({ stats: [], slots: [], rarities: [] }) },
@@ -45,8 +57,12 @@ function page(upgradeEstimate = vi.fn()) {
 
 /** `docs/TASKS_upgrade_estimator.md` Task 8 — the page's own logic, not the math beneath it. */
 describe('UpgradePage', () => {
-  it('will not run without a rotation and a build', () => {
+  it('will not run without a rotation and a build this account can ask about', () => {
     const p = page();
+    expect(p['canRun']()).toBe(false);
+    // A selection left over from another session is not one of this account's choices.
+    p['rotationId'].set('someone-elses');
+    p['buildId'].set('b1');
     expect(p['canRun']()).toBe(false);
     p['rotationId'].set('r1');
     p['buildId'].set('b1');
@@ -66,14 +82,30 @@ describe('UpgradePage', () => {
     expect(upgradeEstimate.mock.calls[0][0].gain).toBeCloseTo(0.01, 12);
   });
 
-  it('keeps the last gain when the box is emptied, because Number("") is 0', () => {
+  it('keeps the last gain when the box is emptied or negative, and puts it back in the box', () => {
     const p = page();
-    p['setGain']('2.5');
+    const box = document.createElement('input');
+    box.value = '2.5';
+    p['setGain'](box);
     expect(p['gainPercent']()).toBe(2.5);
-    p['setGain']('');
+    // `Number('')` is 0: an emptied box must not silently become "any gain counts".
+    box.value = '';
+    p['setGain'](box);
     expect(p['gainPercent']()).toBe(2.5);
-    p['setGain']('-1');
+    expect(box.value).toBe('2.5');
+    box.value = '-1';
+    p['setGain'](box);
     expect(p['gainPercent']()).toBe(2.5);
+    expect(box.value).toBe('2.5');
+  });
+
+  it('treats a cancelled calibration as a cancel, not an error', async () => {
+    const p = page(vi.fn().mockRejectedValue(new CalibrationCancelled()));
+    p['rotationId'].set('r1');
+    p['buildId'].set('b1');
+    await p['run']();
+    expect(p['error']()).toBe('');
+    expect(p['running']()).toBe(false);
   });
 
   it('says "never" for a piece no drop can beat, and a real ratio otherwise', () => {

@@ -7608,6 +7608,13 @@
             },
             "type": "object",
             "title": "Main Stat Values"
+          },
+          "sets_without_domain_drop": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Sets Without Domain Drop"
           }
         },
         "type": "object",
@@ -7618,7 +7625,8 @@
           "slot_share",
           "resin_per_run",
           "main_stat_probabilities",
-          "main_stat_values"
+          "main_stat_values",
+          "sets_without_domain_drop"
         ],
         "title": "FreshDropInputs",
         "description": "What one domain claim yields, for the upgrade estimator.\n\n`docs/DESIGN_upgrade_estimator.md` \u00a7\u00a73-4. Cited in `app/data/external/artifact_draw_model.json`\nbeside every number; `app/services/artifact_potential.fresh_drop_model` is the translation."
