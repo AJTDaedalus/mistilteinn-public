@@ -4,7 +4,7 @@
 → F2 → F3, one PR per part. Each PR is gated by `cd backend && python -m scripts.ci_local` on
 its exact head.*
 
-**Status: F1 in progress. F2–F4 planned. Owner rulings OQ-F1–F4 have recommended defaults
+**Status: F1 built and verified, PR pending. F2–F4 planned. Owner rulings OQ-F1–F4 have recommended defaults
 (DESIGN §5).**
 
 ---
@@ -14,7 +14,7 @@ its exact head.*
 ### F1.0 Branch — **done**
 `refactor/ranking-setup` off `dev` @ `bbb04af`.
 
-### F1.1 Characterisation spec — before any refactor
+### F1.1 Characterisation spec — before any refactor — **done**
 - **Files:** new `frontend/src/app/pages/artifacts/artifact-ranking.service.spec.ts`.
 - Stub `OptimizeService` (`inventory`, `artifactSets`), `ArtifactsService.list` and
   `RecipeOptimizeService.calibrateAll`. Use synthetic recipes from `sim/upgrade-fixtures.ts`.
@@ -24,16 +24,19 @@ its exact head.*
   current code.
 - **Accept:** green on the unrefactored code.
 
-### F1.2 The refusal spec — red first
+### F1.2 The refusal spec — red first — **done**
 - Same file. The worn set's recipe is missing from the stub's `byFourPieceSet`. All of `rank`,
   `outcomesFor`, `upgradeEstimate`, `deepDive` and `sweepBestBuilds` must reject with one
   message naming the set.
 - Cheap refusals: a missing `fresh_drop` (Upgrade) and an unknown artifact id (outcomes, dive)
   reject **without** calling `calibrateAll`.
-- **Accept:** committed failing for `outcomesFor`, `deepDive` and `sweepBestBuilds` only. Record
-  that in the log.
+- **Accept:** failing on the old code for `outcomesFor`, `deepDive` and `sweepBestBuilds` only.
+  Record that in the log.
+- **As built:** five failed on the old code. `upgradeEstimate` refused with a different message,
+  and `deepDive` calibrated before refusing an unknown id. The red tests were committed with the
+  fix, not before it, so every commit stays buildable.
 
-### F1.3 `buildState` and the four migrations
+### F1.3 `buildState` and the four migrations — **done**
 - **Files:** `artifact-ranking.service.ts`.
 - Add `buildState(request, { check, shouldCancel })` per DESIGN §1.3. Migrate `rank`,
   `upgradeEstimate`, `outcomesFor` and `diveContext`. `diveContext` keeps only `all`.
@@ -42,7 +45,7 @@ its exact head.*
 - **Accept:** F1.1 unchanged and green. F1.2 green. `npm run verify` green. The service file is
   shorter.
 
-### F1.4 Planted faults
+### F1.4 Planted faults — **done**
 - Each of these must be caught by the spec:
   - remove refusal step 4;
   - restore `?? noFourPiece` inside `buildState`;
@@ -50,7 +53,7 @@ its exact head.*
   - drop the `check` callback call.
 - **Accept:** 4/4 caught, recorded in the log.
 
-### F1.5 Drive and gate
+### F1.5 Drive and gate — **driven: identical on `dev` and the branch**; gate pending
 - Drive Rank, an outcome card, Optimal build and Upgrade on the owner's Skirk build. Compare
   against the same views on `dev`.
 - `ci_local`, then PR, merge and deploy confirmation.

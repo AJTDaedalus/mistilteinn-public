@@ -6,7 +6,7 @@
 
 | part | what | state |
 |---|---|---|
-| **F1** | Merge the build-state setup repeated across four `ArtifactRankingService` methods, with one refusal rule | **in progress** |
+| **F1** | Merge the build-state setup repeated across four `ArtifactRankingService` methods, with one refusal rule | **built and verified** |
 | **F2** | One build/rotation picker across Optimize, Rank and Upgrade | planned; two owner rulings recommended below (OQ-F1, OQ-F2) |
 | **F3** | Reshape (Dust) and Elixir as alternative columns on Upgrade (OQ-U4) | planned; **unblocked by computing a range, not by waiting for research** (§3.3) |
 | **F4** | Strongbox crafts as a second output on Upgrade (`DESIGN_upgrade_estimator.md` §4.4) | planned; one owner ruling (OQ-F4) |
