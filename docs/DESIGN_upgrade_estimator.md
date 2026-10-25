@@ -108,7 +108,7 @@ stat (126 when the main is itself a substat type), and `rollSplits` already enum
 
 **GO has this function and does not use it.** `freshArtifact(sets, p3sub, rarity)` in
 `libs/gi/upopt/src/upOpt.ts` builds exactly this mixture, and R§7 found no caller in the current
-UI. It is a **reference implementation to crossvalidate against** (Task 3), the same role
+UI. It is a **reference implementation to crossvalidate against** (Task 4), the same role
 `substatProb` played for A.13. It is not code to port wholesale. The repo's port is already the
 leaf machinery.
 
