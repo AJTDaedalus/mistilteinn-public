@@ -17,6 +17,7 @@ which is the failure this repository keeps a whole section of `CLAUDE.md` about.
 
 from __future__ import annotations
 
+import copy
 import json
 import math
 from dataclasses import dataclass
@@ -26,7 +27,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
 
 _SNAPSHOT = Path(__file__).resolve().parents[2] / "data" / "yuanshen" / "snapshot"
 _CURATED = Path(__file__).resolve().parents[2] / "data" / "planner"
@@ -148,6 +149,10 @@ class MaterialSource(StrEnum):
     #: Free of resin: elemental gems, common enemy drops, local specialties, the Enhancement
     #: Ores, and Crown of Insight.
     NONE = "none"
+    #: A boss material whose rarity nobody knows, so nothing says which boss drops it. Priced
+    #: as unknown rather than guessed: guessing "weekly" is what billed Mitya's 46 Anchors at
+    #: 1,725 resin instead of about 594.
+    UNKNOWN = "unknown"
 
 
 #: Material id families, measured against the seeded catalogue at 7.0.54. Each is a prefix of
@@ -239,9 +244,9 @@ class Economy:
         self._domain_days: dict[int, list[str]] = {
             int(k): v for k, v in derived["domain_days"].items()
         }
-        #: Ids the game itself published an expected drop for. Used to split world bosses
-        #: (which have previews) from trounce domains (which do not).
-        self._published_rates: set[int] = {int(k) for k in derived["drop_rates"]}
+        #: Rarities the seeded catalogue knows and the snapshot does not -- a material from a
+        #: patch newer than the pinned dump. Empty until `with_rarities` fills it.
+        self._catalogue_rarities: dict[int, int] = {}
         self._rates: dict[int, DropRate] = {}
         for key, rec in derived["drop_rates"].items():
             self._rates[int(key)] = DropRate(
@@ -285,9 +290,27 @@ class Economy:
         )
 
     def rarity(self, material_id: int) -> int | None:
-        """The material's star rating, cross-checked against nanoka's `rank` at seed time."""
+        """The material's star rating, cross-checked against nanoka's `rank` at seed time.
+
+        The snapshot first, then the catalogue rarities `with_rarities` supplied. The seed
+        checks the two agree wherever both know a material, so the catalogue only fills gaps.
+        """
         meta = self._meta.get(material_id)
-        return meta["rarity"] if meta else None
+        if meta:
+            return meta["rarity"]
+        return self._catalogue_rarities.get(material_id)
+
+    def with_rarities(self, rarities: Mapping[int, int]) -> Economy:
+        """This price list, also knowing the seeded catalogue's rarities.
+
+        **The snapshot lags the catalogue.** It is pinned to a dump that predates Mitya, so it
+        has no entry for his Shattered Stabilizing Anchor at all, while the seed (a later patch)
+        does. A boss material is classified by rarity, so a plan built from the catalogue passes
+        its rows' rarities in here. Returns a copy: `economy()` is process-wide and cached.
+        """
+        out = copy.copy(self)
+        out._catalogue_rarities = {**self._catalogue_rarities, **rarities}  # noqa: SLF001
+        return out
 
     def domain_days(self, material_id: int) -> list[str]:
         """The weekdays this material's domain is open, or `[]` if it is not a domain drop."""
@@ -367,13 +390,15 @@ class Economy:
         if text.startswith((_TALENT_BOOKS, _WEAPON_MATERIALS)):
             return MaterialSource.DOMAIN
         if text.startswith(_BOSS_DROPS):
-            # A published expected drop means the game's own preview priced it, which it does
-            # for world bosses and not for trounce domains. That split is the classifier.
-            return (
-                MaterialSource.WORLD_BOSS
-                if material_id in self._published_rates
-                else MaterialSource.WEEKLY_BOSS
-            )
+            # **By rarity, not by whether a reward preview publishes a rate.** Every boss
+            # material a character ascends with is 4-star and drops from a world boss; every one
+            # a talent spends is 5-star and drops from a trounce domain -- 49 and 43 at 7.1.50,
+            # no exceptions. The preview rule failed for six world bosses with no fractional
+            # preview, and billed each at the weekly rate: about 2.7 times too dear.
+            return {
+                4: MaterialSource.WORLD_BOSS,
+                5: MaterialSource.WEEKLY_BOSS,
+            }.get(self.rarity(material_id) or 0, MaterialSource.UNKNOWN)
         return MaterialSource.NONE
 
     def family_multipliers(self, root_id: int) -> dict[int, int]:

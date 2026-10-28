@@ -675,3 +675,56 @@ async def test_mora_owned_is_reported_as_given_not_clamped_to_the_bill(
     for line in rows:
         assert line["owned"] == 99_000_000
         assert line["still_needed"] == 0
+
+
+#: A boss material the snapshot has never heard of, as Mitya's Shattered Stabilizing Anchor
+#: (113093) is against a snapshot that predates him. Only the catalogue knows its rarity.
+NEWER_BOSS = 113999
+#: 3.1 world-boss materials per 40-resin run (curated, World Level 9).
+WORLD_BOSS_PER_RUN, WORLD_BOSS_RESIN = 3.1, 40
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("rarity", "status", "per_run", "resin_per_run"),
+    [
+        (4, "priced", WORLD_BOSS_PER_RUN, WORLD_BOSS_RESIN),
+        (5, "priced", 2.4 / 3, 30),
+        (0, "unknown", None, None),
+    ],
+)
+async def test_a_boss_newer_than_the_snapshot_is_priced_by_its_catalogue_rarity(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+    rarity: int, status: str, per_run: float | None, resin_per_run: int | None,
+) -> None:
+    """Mitya's 46 Anchors read 1,725 resin -- priced as a weekly boss because no published
+    preview named them -- where a world boss prices them near 594. A 4-star boss material is
+    a world-boss drop; a 5-star one is a trounce drop; one nobody can place is unknown, never
+    the dearest guess.
+    """
+    character, talent, _ = await _catalogue(db_session)
+    db_session.add(Material(id=NEWER_BOSS, name="Newer Boss Drop", icon=None, rarity=rarity))
+    db_session.add(
+        CharacterAscensionCost(
+            character_id=character.id, phase=2, mora=40000,
+            items=[{"id": NEWER_BOSS, "count": 46}],
+        ),
+    )
+    await db_session.commit()
+
+    response = await client.post(
+        "/api/v1/planner/plan",
+        json=_request(character, talent, character_to={"level": 40, "ascension": 2}),
+        headers=_auth(authed_user),
+    )
+    assert response.status_code == 200, response.text
+    advancement = next(s for s in response.json()["sections"] if s["key"] == "advancement")
+    line = next(m for m in advancement["materials"] if m["material_id"] == NEWER_BOSS)
+    assert line["resin_status"] == status
+    if per_run is None:
+        assert line["resin"] is None
+        assert NEWER_BOSS in advancement["resin"]["unpriced"]
+    else:
+        assert line["resin"]["expected_per_run"] == pytest.approx(per_run)
+        assert line["resin"]["resin_per_run"] == resin_per_run
+        assert line["resin"]["expected_resin"] == pytest.approx(46 / per_run * resin_per_run)

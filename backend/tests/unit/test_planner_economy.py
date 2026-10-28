@@ -172,3 +172,77 @@ def test_material_icons_are_cited_basenames() -> None:
     eco = economy()
     assert eco.icon(104161) == "UI_ItemIcon_104161"
     assert eco.icon(-1) is None
+
+
+@pytest.mark.parametrize(
+    ("material_id", "name"),
+    [
+        (113016, "Juvenile Jade"),
+        (113045, "Evergloom Ring"),
+        (113064, "Mark of the Binding Blessing"),
+        (113065, "Overripe Flamegranate"),
+        (113066, "Gold-Inscribed Secret Source Core"),
+    ],
+)
+def test_a_world_boss_with_no_published_preview_is_still_a_world_boss(material_id, name) -> None:
+    """These five have no reward preview with a fractional count, so the old rule -- "the game
+    published a rate, so it is a world boss" -- priced them as weekly-boss drops: 0.8 a run at
+    30 resin instead of 3.1 at 40, about 2.7 times too dear. Hu Tao, Xiao, Yanfei, Baizhu,
+    Kirara, Mualani, Ororon, Kachina, Kinich, Lan Yan, Mavuika and Xilonen all read high.
+    """
+    assert economy().source_of(material_id) is MaterialSource.WORLD_BOSS, name
+
+
+def test_every_boss_material_in_the_snapshot_is_four_or_five_star() -> None:
+    """Rarity is the classifier, so a boss material of any other rarity is one it cannot place.
+
+    4-star is a world boss (ascension), 5-star a trounce domain (talents) -- checked against the
+    seeded catalogue at 7.1.50, where all 49 ascension and all 43 talent boss materials agree.
+    """
+    eco = economy()
+    boss = [int(k) for k in eco._meta if str(k).startswith("113")]
+    assert len(boss) > 80
+    assert {eco.rarity(m) for m in boss} == {4, 5}
+    for material_id in boss:
+        expected = {4: MaterialSource.WORLD_BOSS, 5: MaterialSource.WEEKLY_BOSS}[
+            eco.rarity(material_id)
+        ]
+        assert eco.source_of(material_id) is expected, material_id
+
+
+#: A boss-material id the snapshot has never heard of -- the shape Mitya's Shattered
+#: Stabilizing Anchor (113093) has against a snapshot that predates him.
+NEWER_THAN_THE_SNAPSHOT = 113999
+
+
+@pytest.mark.parametrize(
+    ("rarity", "expected"),
+    [
+        (4, MaterialSource.WORLD_BOSS),
+        (5, MaterialSource.WEEKLY_BOSS),
+        (0, MaterialSource.UNKNOWN),
+    ],
+)
+def test_a_boss_newer_than_the_snapshot_is_placed_by_the_catalogues_rarity(
+    rarity, expected,
+) -> None:
+    eco = economy()
+    assert eco.rarity(NEWER_THAN_THE_SNAPSHOT) is None
+    assert eco.with_rarities({NEWER_THAN_THE_SNAPSHOT: rarity}).source_of(
+        NEWER_THAN_THE_SNAPSHOT,
+    ) is expected
+
+
+def test_a_boss_nobody_can_place_is_unknown_not_weekly() -> None:
+    """Guessing "weekly" is how Mitya's 46 Anchors came to read 1,725 resin. Unknown is honest:
+    the bill says it cannot price the line rather than pricing it at the dearest source."""
+    eco = economy()
+    assert eco.source_of(NEWER_THAN_THE_SNAPSHOT) is MaterialSource.UNKNOWN
+    assert eco.rate(NEWER_THAN_THE_SNAPSHOT) is None
+
+
+def test_the_snapshot_outranks_the_catalogue_where_both_know_a_material() -> None:
+    """The seed cross-checks the two and they agree; the catalogue fills gaps, never overrides."""
+    eco = economy().with_rarities({113016: 5})
+    assert eco.source_of(113016) is MaterialSource.WORLD_BOSS
+    assert economy().source_of(113016) is MaterialSource.WORLD_BOSS
