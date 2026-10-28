@@ -386,6 +386,7 @@ def _build_section(
     character_exp: int = 0,
     craft_multipliers: Mapping[int, float] | None = None,
     mora_owned: int | None = None,
+    eco: Economy,
 ) -> Section:
     """Turn `{material id: required}` into a rendered section, net of what is held.
 
@@ -394,8 +395,10 @@ def _build_section(
     subtracted the same stock a second time and reported "satisfied" for books the user still
     had to farm. They are rendered from `exp.books` instead, and priced through
     `character_exp`, which is the unit a ley line actually yields.
+
+    `eco` is the price list *with the catalogue's rarities* (`Economy.with_rarities`), so a
+    boss material newer than the snapshot is still placed at the right boss.
     """
-    eco = economy()
     section = Section(key=key, label=label, mora=mora, exp=exp)
     # **Excess of a lower rarity converts upward 3:1** — gems, monster drops, talent books and
     # weapon ascension materials all do — so a tier's shortfall is not `required - owned`.
@@ -634,6 +637,7 @@ async def build_plan(
         | set(weapon_needs)
         | _book_ids(exp, weapon_exp),
     )
+    priced = eco.with_rarities({row.id: row.rarity for row in catalogue.values()})
 
     # **Levels and ascension are one section**, the way the weapon's already were. Owner:
     # "it's a little odd we lump weapon levels and ascension together but not characters".
@@ -648,11 +652,11 @@ async def build_plan(
             "advancement", "Character advancement", ascension_needs, advancement_mora, stock,
             catalogue, exp=exp, exp_items=eco.character_exp_items,
             character_exp=exp.exp_short, craft_multipliers=ascension_multipliers,
-            mora_owned=mora_owned,
+            mora_owned=mora_owned, eco=priced,
         ),
         _build_section(
             "talents", "Character talents", talent_needs, talent_mora, stock, catalogue,
-            craft_multipliers=talent_multipliers, mora_owned=mora_owned,
+            craft_multipliers=talent_multipliers, mora_owned=mora_owned, eco=priced,
         ),
     ]
     if weapon is not None:
@@ -664,7 +668,7 @@ async def build_plan(
             _build_section(
                 "weapon", "Weapon advancement", weapon_needs, weapon_mora, stock, catalogue,
                 exp=weapon_exp, exp_items=eco.weapon_exp_items,
-                craft_multipliers=weapon_multipliers, mora_owned=mora_owned,
+                craft_multipliers=weapon_multipliers, mora_owned=mora_owned, eco=priced,
             ),
         )
 
@@ -687,7 +691,7 @@ async def build_plan(
         "total", "Everything", merged, total_mora, stock, catalogue,
         character_exp=exp.exp_short,
         craft_multipliers={**ascension_multipliers, **talent_multipliers, **weapon_multipliers},
-        mora_owned=mora_owned,
+        mora_owned=mora_owned, eco=priced,
     )
 
     return Plan(
