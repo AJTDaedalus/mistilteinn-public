@@ -107,6 +107,15 @@ lists it; it is an ordinary overworld mob drop. `MaterialSource` in
 `app/services/planner/economy.py` is the classifier and each branch is a decision about
 whether a run gets billed once or twice.
 
+**The same mistake happened a second time with boss materials.** World versus weekly was decided by
+"did a reward preview publish a rate", so six world-boss materials with no fractional preview
+were priced as weekly drops. That made 14 characters about 2.7× too dear: Mitya's 46 Anchors
+read 1,725 resin instead of 594. The classifier is now **rarity**. Ascension boss materials
+are all 4★ (world) and talent ones are all 5★ (weekly), with no exceptions across the
+catalogue. Rarity comes from the catalogue too, because **the snapshot predates Mitya** and
+has no entry for his material. A boss material of unknown rarity reads *unknown*, never the
+dearest guess.
+
 **A Trounce Blossom is 60 resin** and only three a week are halved to 30, so the curated 30 is
 the optimistic price.
 
