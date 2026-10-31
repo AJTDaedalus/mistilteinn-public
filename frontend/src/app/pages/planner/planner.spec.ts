@@ -661,3 +661,37 @@ describe('start clean or use existing', () => {
     expect(page['talentRows']()[0].current).toBe(1);
   });
 });
+
+describe('switching character', () => {
+  it('starts the new character clean, rather than where the last one stood', async () => {
+    // The start card already went back to "Start clean" on a switch, but the levels it controls
+    // did not — so a 90/6 build read off one character became the next character's starting
+    // point while the card claimed a fresh start, and the bill came back near empty.
+    const page = makePage();
+    await page.ngOnInit();
+    page['fromLevel'].set(90);
+    page['fromAscension'].set(6);
+    page['weaponFromLevel'].set(80);
+    page['weaponFromAscension'].set(5);
+
+    await page['selectCharacter']('c2');
+
+    expect(page['startFrom']()).toBe('clean');
+    expect(page['fromLevel']()).toBe(1);
+    expect(page['fromAscension']()).toBe(0);
+    expect(page['weaponFromLevel']()).toBe(1);
+    expect(page['weaponFromAscension']()).toBe(0);
+  });
+
+  it('keeps the goal, which is the player\'s and not the character\'s', async () => {
+    const page = makePage();
+    await page.ngOnInit();
+    page['toLevel'].set(80);
+    page['toAscension'].set(5);
+
+    await page['selectCharacter']('c2');
+
+    expect(page['toLevel']()).toBe(80);
+    expect(page['toAscension']()).toBe(5);
+  });
+});
