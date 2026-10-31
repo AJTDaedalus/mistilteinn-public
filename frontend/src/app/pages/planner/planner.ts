@@ -524,14 +524,20 @@ export class PlannerPage implements OnInit {
     this.weaponId.set(null);
     this.weapons.set([]);
     this.weaponGuide.set(null);
+    // **The starting point was the last character's, and so was the build it came from.**
+    // Resetting only the card left its levels behind: a 90/6 read off one character became the
+    // next one's start while the card said "Start clean". The goal is the player's and stays.
+    this.startFrom.set(CLEAN);
+    this.fromLevel.set(1);
+    this.fromAscension.set(0);
+    this.weaponFromLevel.set(1);
+    this.weaponFromAscension.set(0);
     if (!id) return;
     const options = await this.planner.options(id);
     this.options.set(options);
     this.talentRows.set(
       (options.talents ?? []).map((talent) => ({ talent, current: 1, target: 10 })),
     );
-    // The builds are this character's, so a choice made for the last one means nothing here.
-    this.startFrom.set(CLEAN);
     const chosen = this.characters().find((row) => row.id === id);
     if (!chosen) return;
     try {
