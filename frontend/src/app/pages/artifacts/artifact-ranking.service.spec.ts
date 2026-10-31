@@ -160,6 +160,13 @@ function setUp(options: Setup = {}) {
   return { service: TestBed.inject(ArtifactRankingService), calibrateAll };
 }
 
+/**
+ * The characterisation specs run the real calibration and upgrade estimate — about 2 s alone,
+ * and two timed out at vitest's 5 s default under `ci_local`, which runs the suite beside the
+ * backend jobs. The same allowance `sim/upgrade-estimate.spec.ts` gives its samplers.
+ */
+vi.setConfig({ testTimeout: 60_000 });
+
 const REQUEST = { buildId: 'b1', rotationId: 'r1' };
 
 /**
