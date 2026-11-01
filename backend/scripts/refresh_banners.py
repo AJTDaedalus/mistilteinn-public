@@ -137,8 +137,45 @@ def _template_fields(text: str, marker: str) -> dict[str, str]:
     return fields
 
 
+#: What the wiki writes in a pool slot before the featured item is announced. A banner page
+#: goes up as a stub days ahead of its run — Mitya's read `Valeriy; Unknown Character; Unknown
+#: Character` — and these are not names, so they are dropped rather than reported as
+#: unresolved on every refresh until somebody edits the page.
+PLACEHOLDERS = frozenset({"Unknown Character", "Unknown Weapon"})
+
+_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
+_DATE = re.compile(r"\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?")
+
+
 def _items(value: str) -> list[str]:
     return [part.strip() for part in value.split(";") if part.strip()]
+
+
+def _date(value: str | None) -> str | None:
+    """A date, or None — never the raw field.
+
+    A stub's end reads `TBA<!--2026-12-31 17:59:59-->`: the comment is an editor's guess the
+    wiki does not render, and `TBA` is not a date. Both were being stored verbatim.
+    """
+    if not value:
+        return None
+    text = _COMMENT.sub("", value).strip()
+    return text if _DATE.fullmatch(text) else None
+
+
+def _kind(pool: dict[str, str], listed_as: str) -> str:
+    """What the pool features, which is what the banner *is*.
+
+    The category a page sits in is set by its infobox `type`, and `Epitome Invocation/
+    2026-10-13` sets `type` twice — `Weapon Event`, then `Character Event` — so the wiki files
+    a weapon banner under Character Event Wishes. The pool's own keys cannot disagree with
+    what it holds. The category is the fallback for a pool that names neither.
+    """
+    if pool.get("weapon_5_F"):
+        return "weapon"
+    if pool.get("character_5_F"):
+        return "character"
+    return listed_as
 
 
 def parse_banner(title: str, kind: str) -> ParsedBanner:
@@ -146,8 +183,11 @@ def parse_banner(title: str, kind: str) -> ParsedBanner:
     body = _fetch({"action": "parse", "page": title, "prop": "wikitext"})
     if "error" in body:
         raise BannerRefreshError(f"{title}: {body['error'].get('info')}")
-    text = body["parse"]["wikitext"]["*"]
+    return parse_wikitext(title, kind, body["parse"]["wikitext"]["*"])
 
+
+def parse_wikitext(title: str, kind: str, text: str) -> ParsedBanner:
+    """One banner page's wikitext into a row, with no network."""
     info = _template_fields(text, "{{Wish\n")
     pool = _template_fields(text, "{{Wish Pool")
     if not pool:
@@ -161,11 +201,11 @@ def parse_banner(title: str, kind: str) -> ParsedBanner:
     return ParsedBanner(
         slug=title,
         name=title.rsplit("/", 1)[0],
-        kind=kind,
-        starts_at=info.get("time_start") or None,
-        ends_at=info.get("time_end") or None,
-        featured_five=five,
-        featured_four=four,
+        kind=_kind(pool, kind),
+        starts_at=_date(info.get("time_start")),
+        ends_at=_date(info.get("time_end")),
+        featured_five=[name for name in five if name not in PLACEHOLDERS],
+        featured_four=[name for name in four if name not in PLACEHOLDERS],
         alongside=[v for k, v in info.items() if k.startswith("alongside") and v],
     )
 

@@ -1,7 +1,101 @@
 {
  "note": "Every Genshin event banner and what it featured. Written by scripts/refresh_banners.py from the community wiki; see that script and docs/DESIGN_wish_planner.md section 9.5. Committed so a fresh clone and the test suite need no network -- the live store is `wish_banners`.",
- "fetched_at": "2026-09-22T17:33:42.329359+00:00",
+ "fetched_at": "2026-11-01T15:20:11.020958+00:00",
  "banners": [
+  {
+   "slug": "Myriad Patterns Unfold/2026-11-04",
+   "name": "Myriad Patterns Unfold",
+   "kind": "character",
+   "starts_at": "2026-11-04 11:00:00",
+   "ends_at": null,
+   "featured_five": [
+    "Mitya"
+   ],
+   "featured_four": [
+    "Valeriy"
+   ],
+   "alongside": [
+    "Chanson of Many Waters/2026-11-04",
+    "Epitome Invocation/2026-11-04"
+   ]
+  },
+  {
+   "slug": "Chanson of Many Waters/2026-11-04",
+   "name": "Chanson of Many Waters",
+   "kind": "character",
+   "starts_at": "2026-11-04 11:00:00",
+   "ends_at": null,
+   "featured_five": [
+    "Furina"
+   ],
+   "featured_four": [
+    "Valeriy"
+   ],
+   "alongside": [
+    "Myriad Patterns Unfold/2026-11-04",
+    "Epitome Invocation/2026-11-04"
+   ]
+  },
+  {
+   "slug": "Void Star's Advent/2026-10-13",
+   "name": "Void Star's Advent",
+   "kind": "character",
+   "starts_at": "2026-10-13 18:00:00",
+   "ends_at": "2026-11-03 14:59:59",
+   "featured_five": [
+    "Skirk"
+   ],
+   "featured_four": [
+    "Dahlia",
+    "Candace",
+    "Mika"
+   ],
+   "alongside": [
+    "La Chanson Cerise/2026-10-13",
+    "Epitome Invocation/2026-10-13"
+   ]
+  },
+  {
+   "slug": "La Chanson Cerise/2026-10-13",
+   "name": "La Chanson Cerise",
+   "kind": "character",
+   "starts_at": "2026-10-13 18:00:00",
+   "ends_at": "2026-11-03 14:59:59",
+   "featured_five": [
+    "Escoffier"
+   ],
+   "featured_four": [
+    "Dahlia",
+    "Candace",
+    "Mika"
+   ],
+   "alongside": [
+    "Void Star's Advent/2026-10-13",
+    "Epitome Invocation/2026-10-13"
+   ]
+  },
+  {
+   "slug": "Epitome Invocation/2026-10-13",
+   "name": "Epitome Invocation",
+   "kind": "weapon",
+   "starts_at": "2026-10-13 18:00:00",
+   "ends_at": "2026-11-03 14:59:59",
+   "featured_five": [
+    "Azurelight",
+    "Symphonist of Scents"
+   ],
+   "featured_four": [
+    "Sturdy Bone",
+    "Sacrificial Greatsword",
+    "Favonius Lance",
+    "The Widsith",
+    "Sacrificial Bow"
+   ],
+   "alongside": [
+    "Void Star's Advent/2026-10-13",
+    "La Chanson Cerise/2026-10-13"
+   ]
+  },
   {
    "slug": "When Warm Winds Cavort/2026-09-23",
    "name": "When Warm Winds Cavort",
