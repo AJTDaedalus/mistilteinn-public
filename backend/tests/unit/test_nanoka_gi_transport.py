@@ -19,6 +19,7 @@ from app.data.importers.nanoka_gi_importer import (
     NanokaGIImporter,
     _batched,
     _index_keys,
+    shortest_float,
 )
 from tests.unit.nanoka_transport import FixtureTransport
 
@@ -309,3 +310,45 @@ async def test_a_dropped_connection_is_retried_like_a_500(monkeypatch):
 
     assert await transport.fetch_detail("character", "10000002") == {"served": 2}
     assert attempts == 2
+
+
+# -- float32 widening (nanoka 7.1.53) ----------------------------------------------------
+#
+# 7.1.50 published Aquila Favonia's base ATK as `47.537`; 7.1.53 publishes
+# `47.5369987487793`. Same float32, written out at double precision. The raw text below is
+# what 7.1.53 served, byte for byte, because `json=` would re-serialise and hide the shape.
+
+_WIDENED = (
+    b'{"weapon_prop": [{"init_value": 47.5369987487793},'
+    b' {"init_value": 0.09000000357627869}],'
+    b' "sub_hurt": {"physical": 0.699999988079071, "fire": 0.10000000149011612}}'
+)
+
+
+async def test_a_widened_float32_reads_back_as_the_number_the_game_wrote():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=_WIDENED)
+
+    transport = HttpNanokaTransport(
+        version="7.1.53",
+        client=httpx.AsyncClient(transport=httpx.MockTransport(handler)),
+    )
+    payload = await transport.fetch_detail("weapon", 11501)
+
+    assert [p["init_value"] for p in payload["weapon_prop"]] == [47.537, 0.09]
+    assert payload["sub_hurt"] == {"physical": 0.7, "fire": 0.1}
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("47.537", 47.537),             # already shortest: unchanged
+        ("0.5", 0.5),                   # exact in both widths
+        ("2.5556", 2.5556),             # not a float32 at all: a real double, left alone
+        ("0.1", 0.1),                   # a double that is not float32(0.1): left alone
+        ("1e40", 1e40),                 # beyond float32 range: left alone, not an error
+        ("0.10000000149011612", 0.1),   # float32(0.1), widened
+    ],
+)
+def test_only_an_exact_float32_is_shortened(text: str, expected: float) -> None:
+    assert shortest_float(text) == expected
