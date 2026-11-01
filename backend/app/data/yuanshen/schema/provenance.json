@@ -3,10 +3,10 @@
   "project_url": "https://gitlab.com/GuraFoundation/YuanShenResources",
   "project_id": 81135933,
   "branch": "main",
-  "pinned_commit_sha": "5445617e33b29f057b9479883cc8e5e77c7d128d",
-  "commit_timestamp": "2026-08-17T07:21:33.000-03:00",
-  "commit_title": "OSCBWin7.0.51",
-  "captured_at": "2026-08-21",
+  "pinned_commit_sha": "224708edc8056f27e9ffc4eacabe797d75274636",
+  "commit_timestamp": "2026-10-16T00:06:03.000-03:00",
+  "commit_title": "OSCBWin7.1.53_R48845164_S48722240_D48845164",
+  "captured_at": "2026-11-01",
   "task": "E.1",
   "branch_note": "Two branches: `main` is the closed beta (OSCBWin7.0.51) and `live` is the shipped build (OSRELWin7.0.0, ddd9855b2ee5, 2026-08-10). `main` is pinned because it matches the nanoka version Chunk D seeded from \u2014 nanoka's `gi.latest` is 7.0.51 and its `gi.live` is 7.0, the same split. Two sources describing different patches would be worse than either alone.",
   "access": {
@@ -21,5 +21,6 @@
     "textmap": "TextMap/TextMap<LANG>.json",
     "textmap_medium": "TextMap/TextMap_Medium<LANG>.json",
     "note": "ZZZ published `TextMap_<LANG>TemplateTb.json` plus a `..OverwriteTemplateTb.json` layer, and fairy's toolkit merged them base-then-overwrite because beta content lived only in the overwrite layer. **This repository has no Overwrite file for any of its 16 languages** \u2014 the 31 entries in TextMap/ are one full map and one `_Medium` map per language (plus TH split in two). The merge is therefore not ported; the anchor assertion that made it trustworthy is."
-  }
+  },
+  "repin_note": "Re-pinned 2026-11-01 from 5445617e33b2 (OSCBWin7.0.51). Upstream rewrote its history on 2026-10-12 to an 'Initial commit' plus one 7.1.53 commit, so the old pin answers 404 and can no longer be fetched. 7.1.53 is also nanoka's `gi.latest`, keeping the two sources on one patch. Prompted by six 7.1 planner materials (Mitya's among them) with no icon in planner_economy.json."
 }

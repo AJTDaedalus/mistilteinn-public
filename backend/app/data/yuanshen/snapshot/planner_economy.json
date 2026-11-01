@@ -839,6 +839,16 @@
    "icon": "UI_ItemIcon_101272",
    "rarity": 0
   },
+  "101273": {
+   "name": "Fairy Wormwood",
+   "icon": "UI_ItemIcon_101273",
+   "rarity": 0
+  },
+  "101274": {
+   "name": "Crystalfold",
+   "icon": "UI_ItemIcon_101274",
+   "rarity": 0
+  },
   "101275": {
    "name": "Frostfairy Flower",
    "icon": "UI_ItemIcon_101275",
@@ -877,6 +887,11 @@
   "101282": {
    "name": "Lumifluorite",
    "icon": "UI_ItemIcon_101282",
+   "rarity": 0
+  },
+  "101285": {
+   "name": "Lanternberry",
+   "icon": "UI_ItemIcon_101285",
    "rarity": 0
   },
   "101401": {
@@ -2324,6 +2339,21 @@
    "icon": "UI_ItemIcon_112157",
    "rarity": 4
   },
+  "112158": {
+   "name": "Snowborn Heartshard",
+   "icon": "UI_ItemIcon_112158",
+   "rarity": 2
+  },
+  "112159": {
+   "name": "Snowborn Mirrorheart",
+   "icon": "UI_ItemIcon_112159",
+   "rarity": 3
+  },
+  "112160": {
+   "name": "Snowborn Heart of Ignorance",
+   "icon": "UI_ItemIcon_112160",
+   "rarity": 4
+  },
   "113001": {
    "name": "Hurricane Seed",
    "icon": "UI_ItemIcon_113001",
@@ -2777,6 +2807,11 @@
   "113092": {
    "name": "Vagabond's Cracked Armor",
    "icon": "UI_ItemIcon_113092",
+   "rarity": 4
+  },
+  "113093": {
+   "name": "Shattered Stability Anchor",
+   "icon": "UI_ItemIcon_113093",
    "rarity": 4
   },
   "114001": {
@@ -3700,7 +3735,7 @@
    "rarity": 4
   },
   "200129": {
-   "name": "",
+   "name": "Tea-Scented Tassel",
    "icon": "UI_ItemIcon_200129",
    "rarity": 4
   }
@@ -4768,6 +4803,18 @@
    "output_count": 1,
    "mora": 125
   },
+  "112159": {
+   "input": 112158,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 50
+  },
+  "112160": {
+   "input": 112159,
+   "input_count": 3,
+   "output_count": 1,
+   "mora": 125
+  },
   "114002": {
    "input": 114001,
    "input_count": 3,
@@ -5627,6 +5674,12 @@
    "resin": 40,
    "expected_per_run": 2.556,
    "boss_id": 103
+  },
+  "113093": {
+   "source": "boss",
+   "resin": 40,
+   "expected_per_run": 2.556,
+   "boss_id": 104
   },
   "114001": {
    "source": "domain",
