@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import struct
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -151,6 +152,35 @@ class NanokaTransport(Protocol):
         ...
 
 
+def _as_float32(value: float) -> float | None:
+    try:
+        return struct.unpack("<f", struct.pack("<f", value))[0]
+    except OverflowError:
+        return None
+
+
+def shortest_float(text: str) -> float:
+    """A JSON number, with a widened float32 written back as the game wrote it.
+
+    **nanoka 7.1.53 changed how it prints numbers.** 7.1.50 published Aquila Favonia's base
+    ATK as `47.537`; 7.1.53 publishes `47.5369987487793`. They are the same float32 — the
+    game's tables are float32 — printed at double precision. Every decimal in a seed moved
+    by up to 6e-8 relative, and `verify_seed`'s anchors, which compare exactly, failed.
+
+    So a value that is *exactly* a float32 becomes the shortest decimal that rounds to that
+    float32, which is the number 7.1.50 printed. A value that is not exactly a float32 is a
+    real double and is returned unchanged, as is anything beyond float32 range.
+    """
+    value = float(text)
+    if _as_float32(value) != value:
+        return value
+    for digits in range(1, 10):
+        candidate = float(f"{value:.{digits}g}")
+        if _as_float32(candidate) == value:
+            return candidate
+    return value  # pragma: no cover - nine significant digits always round-trip a float32
+
+
 class HttpNanokaTransport:
     """The live transport: httpx against static.nanoka.cc."""
 
@@ -212,7 +242,7 @@ class HttpNanokaTransport:
             except httpx.TransportError as exc:
                 last_error = exc
             else:
-                return response.json()
+                return response.json(parse_float=shortest_float)
             if attempt < MAX_ATTEMPTS:
                 delay = BACKOFF_BASE_SECONDS * 2 ** (attempt - 1)
                 logger.warning(

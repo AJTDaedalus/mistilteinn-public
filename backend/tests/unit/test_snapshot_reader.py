@@ -11,6 +11,7 @@ from __future__ import annotations
 import pytest
 
 from app.data import snapshot
+from scripts.yuanshen.fetch import load_provenance
 
 # ---- Growth curves --------------------------------------------------------
 
@@ -99,8 +100,12 @@ def test_the_pools_are_the_five_slots():
 
 
 def test_the_reader_can_say_which_commit_it_is_reading():
-    """Provenance has to survive the trip from the file to whatever reports a number."""
-    assert snapshot.pinned_commit().startswith("5445617e")
+    """Provenance has to survive the trip from the file to whatever reports a number.
+
+    Against `provenance.json` rather than a literal, which went stale at the 7.1.53 re-pin:
+    the claim is that the reader reports the commit the snapshot was built from.
+    """
+    assert snapshot.pinned_commit() == load_provenance()["pinned_commit_sha"]
 
 
 def test_a_missing_snapshot_file_says_how_to_rebuild_it(monkeypatch, tmp_path):

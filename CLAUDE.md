@@ -112,8 +112,9 @@ whether a run gets billed once or twice.
 were priced as weekly drops. That made 14 characters about 2.7× too dear: Mitya's 46 Anchors
 read 1,725 resin instead of 594. The classifier is now **rarity**. Ascension boss materials
 are all 4★ (world) and talent ones are all 5★ (weekly), with no exceptions across the
-catalogue. Rarity comes from the catalogue too, because **the snapshot predates Mitya** and
-has no entry for his material. A boss material of unknown rarity reads *unknown*, never the
+catalogue. Rarity comes from the catalogue too, because **the snapshot can predate a
+character**. It did for Mitya until the 2026-11-01 re-pin to 7.1.53, and it will again for the
+next patch. A boss material of unknown rarity reads *unknown*, never the
 dearest guess.
 
 **A Trounce Blossom is 60 resin** and only three a week are halved to 30, so the curated 30 is
