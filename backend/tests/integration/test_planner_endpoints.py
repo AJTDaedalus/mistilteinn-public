@@ -728,3 +728,51 @@ async def test_a_boss_newer_than_the_snapshot_is_priced_by_its_catalogue_rarity(
         assert line["resin"]["expected_per_run"] == pytest.approx(per_run)
         assert line["resin"]["resin_per_run"] == resin_per_run
         assert line["resin"]["expected_resin"] == pytest.approx(46 / per_run * resin_per_run)
+
+
+@pytest.mark.asyncio
+async def test_every_row_carries_its_share_of_the_section_resin(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """The page shows a Resin column, so the rows must add up to the header.
+
+    Reported as a bug that was not one: a header of "≈ 594" above a table of monster drops and
+    specialties read as though all of them were charged, when the whole figure was one world
+    boss. A per-row column answers that — but only if it sums to the header. Mora and EXP are
+    priced as a ley-line *pool* rather than per row, and with `resin` null on those rows the
+    column would have been short by exactly the pool.
+    """
+    character, talent, _ = await _catalogue(db_session)
+    await db_session.commit()
+
+    body = (await client.post(
+        "/api/v1/planner/plan",
+        json=_request(character, talent, mora_owned=0),
+        headers=_auth(authed_user),
+    )).json()
+
+    for section in body["sections"]:
+        rows = section["materials"]
+        priced = [line for line in rows if line["resin_status"] == "priced"]
+        for line in priced:
+            assert line["resin"] is not None, line["name"]
+        assert sum(line["resin"]["expected_resin"] for line in priced) == pytest.approx(
+            section["resin"]["expected"],
+        ), section["key"]
+
+    advancement = next(s for s in body["sections"] if s["key"] == "advancement")
+    by_name = {line["name"]: line for line in advancement["materials"]}
+    assert by_name["Mora"]["resin_status"] == "priced"
+    assert by_name["Mora"]["resin"]["resin_per_run"] == LEY_LINE_RESIN
+    assert by_name["Mora"]["resin"]["expected_resin"] == pytest.approx(
+        by_name["Mora"]["still_needed"] / MORA_PER_RUN * LEY_LINE_RESIN,
+    )
+    exp_rows = [
+        line for line in advancement["materials"]
+        if line["material_id"] in {104001, 104002, 104003} and line["still_needed"] > 0
+    ]
+    assert exp_rows, "the fixture should leave some EXP to farm"
+    assert all(line["resin_status"] == "priced" for line in exp_rows)
+    # Free rows stay free.
+    assert by_name["Sakura Bloom"]["resin"] is None
+    assert by_name["Sakura Bloom"]["resin_status"] == "not_farmable"

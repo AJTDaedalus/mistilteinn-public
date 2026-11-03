@@ -386,6 +386,13 @@
 
   .muted { color: var(--ink-faint); }
   .unknown { color: var(--warning); }
+
+  /* The Resin column: azure for a cost (the data accent, as in the section header), faint for
+     a row that costs none. */
+  td.resin-cell[data-kind='priced'] { color: var(--azure-hi); }
+  td.resin-cell[data-kind='free'],
+  td.resin-cell[data-kind='satisfied'] { color: var(--ink-faint); }
+  td.resin-cell[data-kind='unknown'] { color: var(--warning); }
   .days { color: var(--ink-faint); font-size: var(--text-xs); }
 
   .name[data-rarity='5'] { color: var(--rarity-5); }

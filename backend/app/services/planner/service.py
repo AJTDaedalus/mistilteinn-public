@@ -13,7 +13,7 @@ would bill it twice.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import select
@@ -465,7 +465,59 @@ def _build_section(
         character_exp=character_exp,
         craft_multipliers=dict(craft_multipliers or {}),
     )
+    _share_pooled_resin(section, eco)
     return section
+
+
+def _share_pooled_resin(section: Section, eco: Economy) -> None:
+    """Give the mora and EXP rows their share of the ley-line pool, so the rows sum to the total.
+
+    `_line` leaves those rows' `resin` null because the pool is priced once, in `resin.total`,
+    and a per-unit estimate would bill it twice. That was right while nothing displayed a
+    per-row figure. A Resin column does, and with the pool on no row it read short of the
+    header by exactly the pool — so the pool is *split* here, never re-priced: the mora row
+    takes the mora pool whole, and the EXP book rows divide the EXP pool by the points each
+    row still needs. The shares add back to the pool exactly.
+    """
+    pooled = section.resin.pooled
+    exp_rows = [
+        index
+        for index, line in enumerate(section.materials)
+        if line.still_needed > 0 and eco.source_of(line.material_id) is MaterialSource.LEY_LINE_EXP
+    ]
+    points = {item.id: item.exp for item in eco.character_exp_items}
+    exp_weight = sum(section.materials[i].still_needed * points[section.materials[i].material_id]
+                     for i in exp_rows)
+    shares: dict[int, tuple[int, float]] = {}
+    if eco.mora_item_id in pooled:
+        for index, line in enumerate(section.materials):
+            if line.material_id == eco.mora_item_id and line.still_needed > 0:
+                shares[index] = (eco.mora_item_id, pooled[eco.mora_item_id])
+    if resin.EXP_PROBE in pooled and exp_weight > 0:
+        for index in exp_rows:
+            line = section.materials[index]
+            weight = line.still_needed * points[line.material_id] / exp_weight
+            shares[index] = (resin.EXP_PROBE, pooled[resin.EXP_PROBE] * weight)
+    for index, (probe, expected) in shares.items():
+        line = section.materials[index]
+        rate = eco.rate(probe)
+        if rate is None:  # pragma: no cover - a pool exists only where a rate did
+            continue
+        section.materials[index] = replace(
+            line,
+            resin=resin.ResinEstimate(
+                material_id=line.material_id,
+                root_id=probe,
+                source_type=rate.source_type,
+                resin_per_run=rate.resin,
+                expected_per_run=rate.expected_per_run,
+                expected_runs=expected / rate.resin,
+                expected_resin=expected,
+                resin_per_unit=expected / line.still_needed,
+                curated=rate.curated,
+            ),
+            resin_status="priced",
+        )
 
 
 def _craft_multipliers(
