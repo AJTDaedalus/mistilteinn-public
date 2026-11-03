@@ -64,7 +64,7 @@ _BINS = 12
 #: Stand-in id for "character EXP points" when pricing a ley line. Hero's Wit is the largest
 #: denomination and classifies as `LEY_LINE_EXP`, so asking the economy for *its* rate returns
 #: the blossom's rate — which is published per EXP point, not per book.
-_EXP_PROBE = 104003
+EXP_PROBE = 104003
 
 
 @dataclass(frozen=True)
@@ -117,6 +117,10 @@ class ResinTotal:
     #: `unpriced` — resin-farmable, rate not supplied.
     unpriced_sources: list[str] = field(default_factory=list)
     histogram: list[HistogramBin] = field(default_factory=list)
+    #: `{probe id: expected resin}` for the two costs priced as a ley-line pool rather than per
+    #: row — mora under the mora id, character EXP under `EXP_PROBE`. Kept so the rows can be
+    #: given their share and a Resin column sums to `expected`.
+    pooled: dict[int, float] = field(default_factory=dict)
     #: `(runs distribution, resin per run)` per craft root, kept so a caller can combine
     #: sections without re-deriving them.
     _roots: dict[int, tuple[list[float], int]] = field(default_factory=dict, repr=False)
@@ -288,7 +292,7 @@ def total(
 
     for amount, probe, label in (
         (mora, economy.mora_item_id, "mora"),
-        (character_exp, _EXP_PROBE, "character EXP"),
+        (character_exp, EXP_PROBE, "character EXP"),
     ):
         if amount <= 0:
             continue
@@ -297,6 +301,7 @@ def total(
             out.unpriced_sources.append(label)
             continue
         by_root[probe] = by_root.get(probe, 0) + amount
+        out.pooled[probe] = (amount / rate.expected_per_run) * rate.resin
 
     for root_id, root_needed in by_root.items():
         rate = economy.rate(root_id)

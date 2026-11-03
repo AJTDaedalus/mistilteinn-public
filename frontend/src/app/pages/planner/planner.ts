@@ -812,6 +812,36 @@ export class PlannerPage implements OnInit {
     return this.rowsToShow(section).some((line) => line.from_surplus > 0);
   }
 
+  /**
+   * What one row costs to farm, for the Resin column.
+   *
+   * **Added because a header alone read as a sum over every row.** "Resin ≈ 594" above a table
+   * of monster drops and specialties was reported as those drops being charged; all of it was
+   * one world boss. The rows sum to the header — the backend splits the ley-line pool onto the
+   * mora and EXP rows so that holds — and the free rows say so in words rather than with a
+   * zero that could be a rounding.
+   */
+  protected lineResin(line: MaterialLineRead): { text: string; title: string; kind: string } {
+    switch (line.resin_status) {
+      case 'priced': {
+        const value = line.resin?.expected_resin ?? 0;
+        return {
+          text: value < 1 ? '< 1' : `\u2248 ${this.round(value)}`,
+          title: line.resin
+            ? `≈ ${line.resin.expected_runs.toFixed(1)} runs at ${line.resin.resin_per_run} resin`
+            : '',
+          kind: 'priced',
+        };
+      }
+      case 'not_farmable':
+        return { text: 'free', title: 'Not farmed with resin', kind: 'free' };
+      case 'unknown':
+        return { text: '?', title: 'Costs resin at a drop rate nobody publishes', kind: 'unknown' };
+      default:
+        return { text: '—', title: 'Nothing left to farm', kind: 'satisfied' };
+    }
+  }
+
   protected rowsToShow(section: SectionRead): MaterialLineRead[] {
     return section.materials.filter((line) => line.required > 0);
   }

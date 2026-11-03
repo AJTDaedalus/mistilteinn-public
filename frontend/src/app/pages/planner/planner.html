@@ -397,6 +397,10 @@
                     <th scope="col" class="num">Crafted</th>
                   }
                   <th scope="col" class="num">Remaining needed</th>
+                  <!-- **Back, as the resin for this row's remaining need, not per unit.** A
+                       header total alone was read as charging every row, monster drops and
+                       specialties included. The rows sum to the header. -->
+                  <th scope="col" class="num">Resin</th>
                 </tr>
               </thead>
               <tbody>
@@ -445,6 +449,10 @@
                       </td>
                     }
                     <td class="num">{{ number(line.still_needed) }}</td>
+                    @let cost = lineResin(line);
+                    <td class="num resin-cell" [attr.data-kind]="cost.kind" [attr.title]="cost.title">
+                      {{ cost.text }}
+                    </td>
                   </tr>
                 }
               </tbody>

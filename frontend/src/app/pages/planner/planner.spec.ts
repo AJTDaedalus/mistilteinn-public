@@ -481,6 +481,37 @@ describe('correcting an owned count from the bill', () => {
   });
 });
 
+describe('the Resin column', () => {
+  const line = (over: Record<string, unknown>) => ({
+    material_id: 1, name: 'x', icon: null, rarity: 2, required: 10, owned: 0, from_surplus: 0,
+    still_needed: 10, resin: null, resin_status: 'not_farmable', domain_days: [],
+    stock_backed: true, ...over,
+  }) as never;
+
+  it('says a monster drop is free in words, not with a zero that could be rounding', () => {
+    // Reported: a header of "≈ 594" over drops and specialties read as charging all of them.
+    const page = makePage();
+    expect(page['lineResin'](line({})).text).toBe('free');
+  });
+
+  it('prices a farmed row from its own estimate', () => {
+    const page = makePage();
+    const cost = page['lineResin'](line({
+      resin_status: 'priced',
+      resin: { expected_resin: 593.548, expected_runs: 14.84, resin_per_run: 40 },
+    }));
+    expect(cost.text).toBe('\u2248 594');
+    expect(cost.title).toBe('≈ 14.8 runs at 40 resin');
+  });
+
+  it('keeps an unpublished rate distinct from a free row and a finished one', () => {
+    const page = makePage();
+    expect(page['lineResin'](line({ resin_status: 'unknown' })).text).toBe('?');
+    expect(page['lineResin'](line({ resin_status: 'satisfied', still_needed: 0 })).text).toBe('—');
+    expect(page['lineResin'](line({ resin_status: 'priced', resin: { expected_resin: 0.3, expected_runs: 0.01, resin_per_run: 20 } })).text).toBe('< 1');
+  });
+});
+
 describe('the resin histogram', () => {
   const section = (probabilities: number[]) => ({
     resin: {
