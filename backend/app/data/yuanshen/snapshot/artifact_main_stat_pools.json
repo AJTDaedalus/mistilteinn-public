@@ -1,5 +1,5 @@
 {
- "pinned_commit_sha": "224708edc8056f27e9ffc4eacabe797d75274636",
+ "pinned_commit_sha": "f11cf545a7eee32a29999f960ebfba305f896ed3",
  "note": "artifact slot -> the main stats it can roll **at `rank`** (5-star). Slot keys are app.models.enums.ArtifactSlot values (nanoka's `parts` keys); the config tables spell them EQUIP_*. `corroborated_slots` names the slots the second scheme table also covers — the others rest on one table. Derived by scripts/yuanshen/build_snapshot.py:derive_main_stat_pools — read that docstring before editing this file by hand, which you should not do.",
  "sources": [
   "ReliquarySetSchemeMainPropExcelConfigData",
