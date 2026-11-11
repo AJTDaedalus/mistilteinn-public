@@ -1,5 +1,8 @@
 """Pando engine — port of frzyc/genshin-optimizer's ``libs/pando/engine``.
 
+Genshin Optimizer is MIT-licensed (Copyright (c) 2020-present, frzyc). Its notice is kept in
+``THIRD_PARTY_NOTICES.md`` at the repository root, as the MIT licence requires.
+
 Consumes the symbolic DAG from :mod:`app.formula`. Provides a single-shot
 ``Calculator`` (mirror of Pando's), and (in later phases) interval-based
 pruning, monotonicity-driven Pareto reduction, a solver for artifact

@@ -624,6 +624,9 @@ repository, not about a byte count, which is why the guard is a floor and a git 
 The set we declined to commit was about a third the weight of the one already committed one
 repository over.
 
+> **Superseded 2026-11-10 by §34:** the art is gitignored again, and prod fetches it at deploy
+> time. The incident above is why that deploy step probes a content type.
+
 **What stays.** `scripts/download_icons.py` is still the reproduction and `--check` is still
 the audit — nothing about how the art is *obtained* changes. `tests/unit/test_catalogue_art_is_committed.py`
 is the executable version of this ruling, and deliberately needs no database: it asks git
@@ -1245,3 +1248,64 @@ because the last time someone inferred a cost here instead of measuring it they 
 factor of thirty. **OQ-A10** — whether "% gain" is against the current build or against the best
 build without the piece — is answered *current* and labelled, because the two diverge exactly when
 the current build is not optimal, which for a piece someone is asking about is most of the time.
+
+## 34. The catalogue art leaves the repository, and the repository takes AGPLv3 (2026-11-10)
+
+**Ruling (owner):** remove the HoYoverse art and gitignore it, keeping the process that
+fetches it. Adopt **AGPLv3**.
+
+**Why the art goes.** The repository is to be published (`docs/AUDIT_open_source.md`), and a
+public repository offers everything in it under its licence. The icons are HoYoverse's, so
+that is not a licence anyone here can grant. A public copy also invites a takedown that the
+deployed site has never drawn. Three files in `references/` went with it for the same reason:
+Mitya's model render, his ornament, and a Genshin Optimizer screenshot that carries game art.
+`favicon.svg` and `og-card.png` stay. They are original geometry drawn *after* the ornament,
+not copies of it.
+
+**This reverses §4, not its lesson.** §4 committed the art because the gitignored arrangement
+had shipped no art to prod for weeks, silently: nothing ran the script there, and nginx's SPA
+fallback answered every missing image with `200 text/html`. The replacement keeps both halves
+of the fix:
+
+- **A deploy step obtains the art.** `deploy-prod.yml` runs `scripts.download_icons` on the
+  host **before** each rebuild, while the old frontend is still serving. Cloudflare caches a
+  404 for hours, so a gap would be expensive. It runs again after each re-seed.
+  `docker-compose.prod.yml` mounts the host directory into nginx read-only, so new art serves
+  without a rebuild.
+- **Content type, not status.** The deploy probes `icons/UI_AvatarIcon_Ayaka.webp` for
+  `image/webp`. That also catches a mount at the wrong path, which would otherwise download
+  every icon into a container deleted a second later and report success.
+
+`tests/unit/test_catalogue_art_is_not_committed.py` replaces the old guard and pins the
+steps, their order, the mount, and the container path derived from the script's own `OUT`.
+`scripts.inject` confirms it catches a wrong mount path, a dropped ignore rule and a dropped
+Mora icon.
+
+**A fresh download found a gap that a committed directory had hidden.** Mora's icon,
+`UI_ItemIcon_202`, which the planner draws on every bill, was committed by hand. No catalogue
+row names it, so the downloader had never fetched it, and the first prod deploy after this
+change would have dropped it. It is now `planner.service.MORA_ICON`, and the downloader
+reads it.
+
+**First deploy cost, measured:** 55 s to fetch 2,181 files (99 MB) into an empty directory,
+using the exact command the workflow runs, as a non-root user. Later deploys fetch only what
+is missing.
+
+**`--check` is not used by the deploy.** Its hand-kept list of art nanoka does not publish has
+fallen behind: the download finds 22 such basenames and reports them correctly, but `--check`
+calls some of them failures. The download's own exit code and the content-type probe are the
+gate.
+
+**Why AGPLv3.** The owner chose it. It is also what would let the gcsim pin move: gcsim
+relicensed to AGPLv3 on 2026-09-19, and the browser build serves it over the network. Moving
+the pin is still a separate decision, and this ruling does not move it.
+
+**Compatibility checked:**
+- fairy, this fork's origin, has no licence but is the owner's own repository, so the owner
+  can license its code.
+- The pinned gcsim (v2.47.2) is MIT.
+- `app/pando/` ports Genshin Optimizer, which is MIT.
+- MIT code can be included in AGPLv3 work as long as its notices are kept.
+
+Their notices are kept in `THIRD_PARTY_NOTICES.md`.
+
