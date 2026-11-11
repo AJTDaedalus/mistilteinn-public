@@ -82,6 +82,28 @@ jobs:
           echo "after=$AFTER"   >> "$GITHUB_ENV"
           echo "Deploying $BEFORE -> $AFTER"
 
+      - name: Vendor the catalogue art
+        # **Before the rebuild, on purpose.** The art is HoYoverse's and left the repository
+        # on 2026-11-10 (docs/DECISIONS.md), so the reset above deletes any icon an older
+        # commit tracked. The frontend that is still running serves art baked into its image,
+        # so filling the host directory *now* means the rebuilt container mounts a complete
+        # one. A gap would be expensive: Cloudflare caches a 404 for hours.
+        #
+        # Runs in the backend image that is already built. `download_icons` writes to
+        # `<root>/frontend/public/icons`, which is `/frontend/public/icons` in an image whose
+        # code is at `/app`, and that path is what the mount supplies. `--user` so the files
+        # belong to the runner's user, the same one that owns the checkout. Fetches only what
+        # is missing, so a routine deploy makes no request to nanoka at all.
+        run: |
+          set -euo pipefail
+          cd "$REPO_DIR"
+          # Created here rather than by Docker, which would create a missing bind source as
+          # root and leave the download unable to write into it.
+          mkdir -p frontend/public/icons
+          $COMPOSE run --rm -T --user "$(id -u):$(id -g)" \
+            -v "$REPO_DIR/frontend/public/icons:/frontend/public/icons" \
+            backend python -m scripts.download_icons
+
       - name: Rebuild and restart stack
         run: |
           set -euo pipefail
@@ -195,6 +217,24 @@ jobs:
           done
           [ "$fail" -eq 0 ] || exit 1
 
+      - name: The mount serves the catalogue art
+        # The same content-type rule as above, for the asset that taught it. An icon that is
+        # missing, or a mount pointed at the wrong path, answers `200 text/html` from the SPA
+        # fallback unless `/icons/` keeps its `=404`, and either way only the type tells a
+        # real file apart. Ayaka has shipped since 1.x, so her portrait is always vendored.
+        run: |
+          set -euo pipefail
+          cd "$REPO_DIR"
+          path=icons/UI_AvatarIcon_Ayaka.webp
+          type="$($COMPOSE exec -T frontend wget -S -qO /dev/null "http://127.0.0.1/${path}" 2>&1 \
+                  | grep -i '^ *Content-Type:' | head -1 | tr -d '\r' || true)"
+          case "${type}" in
+            *image/webp*) echo "ok  ${path} — ${type# }" ;;
+            *) echo "::error::${path} is served as '${type:-nothing}', not image/webp."
+               echo "::error::The icon mount is empty or wrong — see 'Vendor the catalogue art'."
+               exit 1 ;;
+          esac
+
       - name: What the edge is actually serving
         # **The check above probes the origin, and users do not.** It runs `wget` inside the
         # frontend container against 127.0.0.1, so it is blind to Cloudflare — and Cloudflare
@@ -293,6 +333,18 @@ jobs:
           # Overriding that is a decision someone makes after reading the numbers, not a
           # flag a workflow carries permanently.
           $COMPOSE run --rm -T backend python -m scripts.seed_db --version "$VERSION"
+
+      - name: Vendor art for whatever the seed added
+        # A patch adds characters, weapons and enemies whose art nothing has fetched yet. The
+        # frontend mounts this directory live, so the new files serve without a rebuild. Same
+        # command and the same reasons as the deploy job's step.
+        run: |
+          set -euo pipefail
+          cd "$REPO_DIR"
+          mkdir -p frontend/public/icons
+          $COMPOSE run --rm -T --user "$(id -u):$(id -g)" \
+            -v "$REPO_DIR/frontend/public/icons:/frontend/public/icons" \
+            backend python -m scripts.download_icons
 
   verify-seed:
     # SEPARATE JOB, deliberately — the same reasoning fairy wrote down. `deploy` ends with a

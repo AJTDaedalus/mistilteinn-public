@@ -5,7 +5,7 @@ else: the per-route `<title>` is set by `PageTitle` at runtime, which no scraper
 a mistilteinn URL pasted into Discord — where this project's bug-report workflow lives —
 unfurled as a naked URL with no title, description or image.
 
-This lives in the backend suite for the same reason `test_catalogue_art_is_committed.py`
+This lives in the backend suite for the same reason `test_catalogue_art_is_not_committed.py`
 does: the assertion is about a file the build ships and no component imports, and the
 frontend's spec tsconfig deliberately carries only `vitest/globals`. Reading the file from
 the Angular test build needs either `@types/node` or a `?raw` loader esbuild does not

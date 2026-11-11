@@ -16,17 +16,17 @@ third-party CDN being up is a page that breaks for a reason its owner cannot fix
 crossval harness seeds from committed fixtures precisely so it needs no network, and folding a
 download into it would take that away.
 
-**Committed** — reversed 2026-08-28, `docs/DECISIONS.md` §4. This paragraph used to say the
-opposite, on the reasoning that fairy committed 207 files and this is ~475, so a repository is
-not a CDN. Measured, the comparison inverts: **446 distinct files at 9.6 MB here against
-fairy's 207 at 27 MB**, about a third the weight of the set already committed one repository
-over. And the cost of not committing them was a production site that served no art at all —
-nothing ever ran this script there, `Dockerfile.prod` copied a tree without the directory, and
-nginx's SPA fallback answered every `/icons/*.webp` with `200 text/html`, so every image
-failed silently.
+**Not committed**, since 2026-11-10 (`docs/DECISIONS.md` §4). The art is HoYoverse's, and
+the repository is going public under AGPLv3, which is not a licence anyone here can grant over
+someone else's art. That reverses the 2026-08-28 decision to commit it, but not that
+decision's lesson. While the art was gitignored the first time, nothing ran this script on the
+prod box, and nginx's SPA fallback answered every `/icons/*.webp` with `200 text/html`, so
+every image failed silently. So now `deploy-prod.yml` runs this script on the host before
+each rebuild and after each re-seed, `docker-compose.prod.yml` mounts the result into nginx,
+and the deploy probes an icon's **content type**, which is what tells a real file from the
+fallback.
 
-This script is still how the directory is *filled*; `--check` is still how it is audited.
-Nothing about obtaining the art changed.
+This script is how the directory is filled, locally and in prod.
 
 ## What it refuses to do
 
@@ -56,6 +56,7 @@ from app.models.planner import Material
 from app.models.teapot import FurnishingSuite
 from app.models.weapon import Weapon
 from app.services import element_symbols, weapon_symbols
+from app.services.planner.service import MORA_ICON
 from app.services.practice_dummies import is_practice_dummy
 from app.services.unreleased import is_unreleased_class
 
@@ -198,8 +199,8 @@ async def wanted() -> list[tuple[str, str]]:
                 if model is Character and is_practice_dummy(row.nanoka_id):
                     continue
                 # And rows whose weapon class the game has not shipped, for the same reason
-                # plus one: these icons are *committed*, so vendoring them publishes art for
-                # unreleased content — and their basenames say more than the rows do
+                # plus one: these icons were *committed* then, so vendoring them published art
+                # for unreleased content — and their basenames say more than the rows do
                 # (`UI_EquipIcon_AssaultRifle_Glacia`, three `UI_EquipIcon_Grenade_*`). Seven
                 # were in the tree before anyone looked. `app/services/unreleased.py`.
                 if model in {Character, Weapon} and is_unreleased_class(row.weapon_type):
@@ -260,6 +261,10 @@ async def wanted() -> list[tuple[str, str]]:
     found.extend(
         (symbol, f"vision emblem {symbol}") for symbol in element_symbols.all_symbols()
     )
+    # Mora, which the planner draws on every bill. A currency, so no catalogue row names it.
+    # It was committed by hand while the art was committed, which is how this list went
+    # without it unnoticed; a fresh download is what found the gap (2026-11-10).
+    found.append((MORA_ICON, "currency Mora"))
     return found
 
 

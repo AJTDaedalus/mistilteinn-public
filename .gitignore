@@ -61,20 +61,15 @@ docker-compose.override.yml
 # Scratch research files (agent-curation working notes)
 scratch_*.txt
 
-# Vendored catalogue art is **committed**, not ignored — see docs/DECISIONS.md
-# (2026-08-28). The rule that once stood here compared 475 images against fairy's 207 and
-# concluded this set was the heavier one. It is not: 446 distinct files at 9.6 MB, against
-# fairy's 207 at 27 MB. Weighing the file count rather than the bytes reversed the
-# comparison, and the cost of ignoring them was a production site that served no art at all
-# — `/icons/*.webp` fell through to the SPA catch-all and answered `text/html` with a 200,
-# so every image failed and `CatalogueIcon` hid it exactly as designed.
-#
-# `cd backend && python -m scripts.download_icons` remains the reproduction, and
-# `--check` remains the audit.
-#
-# **907 files at 33 MB now**, with the character portraits and the enemy art added since. The
-# decision is unchanged; the number is not, which is why the guard is a floor and a git query
-# rather than a count.
+# Vendored catalogue art is **not committed** (owner ruling, 2026-11-10; docs/DECISIONS.md).
+# It is HoYoverse's, and the repository is going public under AGPLv3, which is not a licence
+# we can grant over someone else's art. `cd backend && python -m scripts.download_icons`
+# fills this directory locally, and prod's deploy runs the same script into a host directory
+# that nginx serves through a bind mount (`docker-compose.prod.yml`). The deploy then probes
+# an icon's **content type**: the 2026-08 failure this rule caused last time was nginx's SPA
+# fallback answering `200 text/html` for every missing image, and only the type tells a real
+# file from the fallback. `tests/unit/test_catalogue_art_is_not_committed.py` pins all three.
+frontend/public/icons/
 
 # A user's own GOOD export — their account data, and derivable from the game.
 # Kept out of the repo for the same reason icons are: a repository is not a data store,
@@ -84,12 +79,10 @@ references/*.json
 # Screenshots passed in during review. Ignored for the same reason as the export above and
 # then some: two of the first three showed the owner's own inventory, and a screenshot is
 # permanent history for a conversation that is not. The *design* references this repo cites
-# — `mitya*.png`, and GO's card in `docs/DECISIONS.md` — are committed deliberately and
-# named here so the rule cannot swallow them.
+# — `mitya*.png`, and GO's card in `docs/DECISIONS.md` — used to be committed as exceptions.
+# They are game art and a screenshot carrying game art, so they left the repo with the icons
+# (2026-11-10) and are kept locally only.
 references/*.png
-!references/mitya.png
-!references/mitya_ornament.png
-!references/genshin_optimizer_artifact_info.png
 
 # Saved web pages passed in during review — gcsim's results view, and anything like it.
 # Same reason as the screenshots above, and then some: "Save page as" drags a site's whole
