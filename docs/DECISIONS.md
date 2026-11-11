@@ -1300,6 +1300,11 @@ gate.
 relicensed to AGPLv3 on 2026-09-19, and the browser build serves it over the network. Moving
 the pin is still a separate decision, and this ruling does not move it.
 
+**Version 3 "or later", matching gcsim (owner, 2026-11-11).** gcsim's own `LICENSE` grants
+"version 3 of the License, or (at your option) any later version", so this repository declares
+`AGPL-3.0-or-later` in `pyproject.toml` and `package.json`. The first draft said `-only`; the
+owner asked for gcsim's terms instead.
+
 **Compatibility checked:**
 - fairy, this fork's origin, has no licence but is the owner's own repository, so the owner
   can license its code.

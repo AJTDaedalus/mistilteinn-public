@@ -80,4 +80,10 @@ Per the BRIEF — none wired up yet:
 
 ## License
 
-Game data © miHoYo / HoYoverse. Fan project, not affiliated with miHoYo.
+Copyright (c) the mistilteinn contributors. This program is free software: you can
+redistribute it and/or modify it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the License, or (at your option)
+any later version. See [`LICENSE`](LICENSE) and, for the MIT-licensed code this builds on,
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
+Game data and art © miHoYo / HoYoverse, and not covered by this licence. Fan project, not affiliated with miHoYo.
