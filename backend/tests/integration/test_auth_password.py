@@ -217,6 +217,50 @@ async def test_login_rate_limit_triggers_after_ten_attempts(
     assert hit_429, "Expected 429 after 10 failed login attempts for the same email"
 
 
+def _variants(local: str, domain: str, count: int) -> list[str]:
+    """`count` spellings of one address that all resolve to the same account."""
+    spellings = []
+    for i in range(count):
+        cased = "".join(
+            ch.upper() if (i >> (n % 8)) & 1 else ch for n, ch in enumerate(local)
+        )
+        spellings.append(f"{cased}@{domain.upper() if i % 2 else domain}")
+    return spellings
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("domain", ["example.com", "gmail.com"])
+async def test_login_email_limit_is_keyed_on_the_normalised_address(
+    client: AsyncClient, domain: str,
+) -> None:
+    """Security audit F5: changing the case (or Gmail dots / +tags) bought a fresh bucket.
+
+    Each request comes from its own address so the per-IP limit cannot be what answers 429 —
+    only the per-email one can.
+    """
+    local = f"ratelimitcase{secrets.token_hex(4)}"
+    spellings = _variants(local, domain, 12)
+    if domain == "gmail.com":
+        spellings = [
+            f"{s.split('@')[0][:3]}.{s.split('@')[0][3:]}+t{i}@{s.split('@')[1]}"
+            for i, s in enumerate(spellings)
+        ]
+    assert len(set(spellings)) == len(spellings)
+
+    base = secrets.randbelow(200)
+    codes = []
+    for i, email in enumerate(spellings):
+        resp = await client.post(
+            "/api/v1/auth/login",
+            json={"email": email, "password": "wrong-password-5555"},
+            headers={"CF-Connecting-IP": f"198.18.{base}.{i + 1}"},
+        )
+        codes.append(resp.status_code)
+
+    assert 429 not in codes[:10], codes
+    assert codes[10] == 429, codes
+
+
 # ── POST /auth/logout ──────────────────────────────────────────────────────────
 
 

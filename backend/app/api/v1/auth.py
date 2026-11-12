@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json as _json
 import secrets
@@ -94,12 +95,18 @@ def _resend_email_key(request: Request) -> str:
 
 
 def _login_email_key(request: Request) -> str:
+    """Key on the **normalized** address, exactly as `_resend_email_key` does.
+
+    Security audit F5: this keyed on the raw body string while the account lookup
+    normalises it, so every change of case (and, for Gmail, every dot or `+tag`) found the
+    same account from a fresh 10/hour bucket — no per-account throttle at all.
+    """
     # request._body is populated by FastAPI's body parsing before the handler runs.
     raw: bytes | None = getattr(request, "_body", None)
     if raw:
         try:
-            return str(_json.loads(raw).get("email", "unknown"))
-        except ValueError:
+            return normalize(str(_json.loads(raw).get("email", "")))
+        except (ValueError, AttributeError):
             pass
     return "unknown"
 
@@ -171,7 +178,10 @@ async def register(
     # timing one: bcrypt at cost 12 is ~250 ms, so a handler that skipped the hash for
     # duplicates would still answer "already registered" measurably faster. Do not "optimise"
     # this into the new-account branch.
-    pw_hash = hash_password(body.password)
+    #
+    # **In a worker thread** (security audit F4): ~250 ms of CPU on the event loop stalls every
+    # other request this worker holds. The timing argument above is unchanged by it.
+    pw_hash = await asyncio.to_thread(hash_password, body.password)
 
     signup_event(REGISTER_ACCEPTED, ip=get_client_ip(request), email=body.email)
     # Out of band: a slow provider must not hold the request open, and a provider outage must
@@ -252,14 +262,15 @@ async def login(
     user = await repo.get_by_email(body.email)
 
     if user is None or user.password_hash is None:
-        # Constant-time path for unknown email — hash runs regardless.
-        verify_password(body.password, DUMMY_HASH)
+        # Constant-time path for unknown email — hash runs regardless. Both checks run in a
+        # worker thread, off the event loop (security audit F4).
+        await asyncio.to_thread(verify_password, body.password, DUMMY_HASH)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=_AUTH_ERROR,
         )
 
-    if not verify_password(body.password, user.password_hash):
+    if not await asyncio.to_thread(verify_password, body.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=_AUTH_ERROR,

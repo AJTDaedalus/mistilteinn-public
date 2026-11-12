@@ -208,7 +208,8 @@ async def _token(client: httpx.AsyncClient) -> str:
     # account that could approve itself would not be an approval.
     from scripts.approve_user import approve_user  # noqa: PLC0415 — needs the DB, not the API
 
-    await approve_user(SERVICE_EMAIL)
+    # A local dev account whose mail goes to the console, so it is never verified.
+    await approve_user(SERVICE_EMAIL, allow_unverified=True)
     signed_in = await client.post(f"{BACKEND}/api/v1/auth/login", json=body)
     signed_in.raise_for_status()
     return _remember(str(signed_in.json()["token"]))

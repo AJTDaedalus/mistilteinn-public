@@ -141,6 +141,7 @@ from hashlib import sha256
 from typing import TYPE_CHECKING
 
 from app.services import gcsim_keys
+from app.services.rotation_conditions import is_allowed_condition, refusal
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -315,6 +316,11 @@ def _conditions_by_path(steps: Sequence[Mapping[str, object]]) -> dict[str, str]
     for step in steps:
         path = str(step.get("group") or "")
         condition = str(step.get("group_condition") or "")
+        # **Checked here as well as in the schema** (security audit F2). This text is emitted
+        # verbatim, and stored rows predate the schema's check — a condition outside the
+        # vocabulary could close its block and append gcsim script of its own.
+        if condition and not is_allowed_condition(condition):
+            raise RotationCompileError(refusal(condition))
         if path and condition:
             found.setdefault(path, condition)
     return found
