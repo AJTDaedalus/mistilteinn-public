@@ -13,9 +13,11 @@ what it is doing.
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from pydantic import ValidationError
 
 from app.dependencies import (
     CurrentUser,
@@ -54,6 +56,7 @@ from app.schemas.rotation import (
     RotationStep,
     RotationUpdate,
     TeamRoster,
+    check_groups,
 )
 from app.schemas.rotation_nodes import (
     ActionNode,
@@ -98,6 +101,8 @@ if TYPE_CHECKING:
 
     from app.models.build import Build
     from app.models.character import Character
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/rotations", tags=["rotations"])
 
@@ -733,13 +738,14 @@ async def browse_library(
             id=r.id,
             name=r.name,
             description=r.description,
-            steps=[RotationStep.model_validate(step) for step in r.steps],
+            steps=steps,
             characters=by_rotation.get(r.id, []),
             like_count=counts.get(r.id, 0),
             liked_by_me=r.id in mine,
             your_dps=yours.get(r.id),
         )
         for r in rows
+        if (steps := _listable_steps(r)) is not None
     ]
 
     # Ordered **after** assembly, because two of the three keys are facts about the caller
@@ -759,6 +765,20 @@ async def browse_library(
         offset=offset,
         limit=limit,
     )
+
+
+def _listable_steps(rotation: Rotation) -> list[RotationStep] | None:
+    """The row's steps, or `None` when they no longer pass the step schema.
+
+    **One stored row must not 500 the library for everyone.** A rotation saved before a check
+    existed — `group_condition`'s vocabulary is the case that prompted this (security audit
+    F2) — is left out of the listing and logged, rather than failing the whole page.
+    """
+    try:
+        return [RotationStep.model_validate(step) for step in rotation.steps]
+    except ValidationError:
+        logger.warning("library: rotation %s has steps that fail validation", rotation.id)
+        return None
 
 
 async def _your_dps(
@@ -862,6 +882,16 @@ async def copy_rotation(
     if await teams.get_by_id(body.team_id) is None:
         raise HTTPException(status_code=404, detail=f"No team {body.team_id!r}")
 
+    # **Re-validated, not trusted** (security audit F2). The row was written by another user,
+    # possibly before a check existed, and a copy is how its content reaches a second account.
+    try:
+        steps = check_groups([RotationStep.model_validate(step) for step in original.steps])
+    except (ValidationError, ValueError) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="That rotation's steps do not pass validation, so it cannot be copied.",
+        ) from exc
+
     roster = await repo.team_characters(body.team_id)
     missing = sorted(
         {
@@ -884,7 +914,7 @@ async def copy_rotation(
         "team_id": body.team_id,
         "name": f"{original.name} (copy)",
         "description": original.description,
-        "steps": original.steps,
+        "steps": [step.model_dump() for step in steps],
         "visibility": Visibility.PRIVATE,
     })
     return RotationRead.model_validate(created)

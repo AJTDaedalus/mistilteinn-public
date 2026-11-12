@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field, field_validator
 from app.models.enums import Visibility
 from app.schemas.rotation_nodes import RotationTree
 from app.services.gcsim_keys import all_offerable_actions, authorable_actions
+from app.services.rotation_conditions import is_allowed_condition, refusal
 from app.services.rotation_diagnostics import Diagnostic
 
 #: How many steps one rotation may hold.
@@ -83,6 +84,20 @@ class RotationStep(BaseModel):
     #: name, because a grammar that accepts what it cannot faithfully re-emit is how a rotation
     #: silently becomes a different one.
     group_condition: str = Field(default="", max_length=120)
+
+    @field_validator("group_condition")
+    @classmethod
+    def _is_in_the_vocabulary(cls, value: str) -> str:
+        """Refuse a condition outside `DESIGN_conditional_steps.md`'s vocabulary.
+
+        **A security boundary as well as a grammar** (audit F2): the compiler emits this text
+        into a gcsim config, and the config runs in whoever compiles it — including another
+        user who copied a published rotation. Checked here so that every path building a step
+        (create, update, preview, import, copy, the library's read) checks it.
+        """
+        if value and not is_allowed_condition(value):
+            raise ValueError(refusal(value))
+        return value
 
     @field_validator("action")
     @classmethod
