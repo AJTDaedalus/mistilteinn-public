@@ -23,6 +23,10 @@ paths = [
   # `python -m scripts.yuanshen.build_table_catalog`, and that script's `--check` mode
   # reports any hand edit as drift.
   '''backend/app/data/yuanshen/schema/table_catalog\.json''',
+  # The release gate's self-test samples: one string per denylist rule, each of which must
+  # look like the leak it stands for, or the self-test proves nothing. Private-only: the
+  # public export drops `release/` entirely, and its own gitleaks run uses no allowlist.
+  '''release/denylist_samples\.txt''',
 ]
 # False positive: a function argument in an auth integration test.
 regexes = [
