@@ -602,8 +602,14 @@ that turns out to be worth porting rather than re-deriving.
   (`docs/DECISIONS.md` §4): the icons are **committed**, because the measurement the original
   decision rested on was inverted — **446 files at 9.6 MB here against fairy's 207 at 27 MB**,
   so this set is about a third the weight of the one fairy already ships. The script stays the
-  reproduction; `tests/unit/test_catalogue_art_is_committed.py` asks git whether the files are
-  tracked and so needs no database.
+  reproduction; `tests/unit/test_catalogue_art_is_committed.py` asked git whether the files were
+  tracked.
+  **Reversed again 2026-11-10 (`docs/DECISIONS.md` §34): the art is HoYoverse's and is
+  gitignored**, because the repository is going public under AGPLv3. The deploy now fetches it:
+  `deploy-prod.yml` runs the script on the host before each rebuild and after a re-seed, nginx
+  mounts the directory, and the deploy probes an icon for `image/webp`.
+  `tests/unit/test_catalogue_art_is_not_committed.py` pins all of it. A fresh clone has no
+  art: run `cd backend && python -m scripts.download_icons`.
 
 ### Database
 

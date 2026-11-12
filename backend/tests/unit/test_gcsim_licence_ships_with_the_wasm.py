@@ -13,7 +13,7 @@ redistribution, and both licences require the notice to travel with the thing:
 
 Asserted here rather than left to review because the failure is silent: the bundle builds,
 the simulator runs, and nothing on screen looks different when a notice is missing.
-`tests/unit/test_catalogue_art_is_committed.py` takes the same shape — ask the repo, not the
+`tests/unit/test_catalogue_art_is_not_committed.py` takes the same shape — ask the repo, not the
 running system.
 """
 

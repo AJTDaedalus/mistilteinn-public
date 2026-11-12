@@ -44,6 +44,12 @@ if TYPE_CHECKING:
 #: and belong to neither crafting category, so no bonus touches them.
 #: Talent books. **`1043`, not `104`**: the wider prefix also covers `1041` elemental gems and
 #: `1040` EXP items, neither of which any crafting passive names.
+#: Mora's icon. The snapshot carries no name or icon for mora, since it is a currency rather
+#: than a drop, so the plan's mora row supplies its own. `scripts/download_icons.py` reads this
+#: constant: the art is not committed, and an icon no catalogue row names is one the downloader
+#: would otherwise never fetch.
+MORA_ICON = "UI_ItemIcon_202"
+
 _TALENT_BOOK_PREFIX = "1043"
 _WEAPON_MATERIAL_PREFIX = "114"
 #: Monster drops, the "Character and Weapon Enhancement Materials" category. They appear in
@@ -337,7 +343,7 @@ def _append_mora_row(
             name="Mora",
             # The snapshot carries no name or icon for mora — it is a currency rather than a
             # drop — so the row supplies both instead of rendering a nameless gap.
-            icon="UI_ItemIcon_202",
+            icon=MORA_ICON,
             required=mora,
             # Not stock: `user_materials` has no mora row and never will.
             stock_backed=False,

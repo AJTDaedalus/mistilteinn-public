@@ -89,8 +89,9 @@ should use `class="mono"` or `.stat-value` so they line up.
 
 ### Catalogue art
 
-`frontend/public/icons/` is **committed** (see `docs/DECISIONS.md`, 2026-08-28) and filled by
-`cd backend && python -m scripts.download_icons`. Three components consume it, and a new
+`frontend/public/icons/` is **gitignored**. The art is HoYoverse's (`docs/DECISIONS.md` §34).
+A fresh clone has none. Fill it with `cd backend && python -m scripts.download_icons`; prod's
+deploy runs the same script and mounts the result into nginx. Three components consume it, and a new
 surface should reach for one rather than writing an `<img>`:
 
 - `shared/icon` — `<catalogue-icon [icon] [alt] [size]>`, the raw image. Renders nothing for

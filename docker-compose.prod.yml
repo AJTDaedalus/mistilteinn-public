@@ -129,7 +129,13 @@ services:
       context: .
       dockerfile: frontend/Dockerfile.prod
     ports: !reset []          # no host ports; cloudflared reaches nginx internally
-    volumes: !reset []        # nginx serves the pre-built bundle
+    # nginx serves the pre-built bundle, plus the one directory the bundle cannot carry: the
+    # catalogue art is HoYoverse's and is not in the repository (docs/DECISIONS.md,
+    # 2026-11-10). `deploy-prod.yml` fills `frontend/public/icons/` on the host with
+    # `scripts.download_icons` before this container is rebuilt, and again after a re-seed,
+    # so new art appears without a rebuild. Read-only: nginx never writes art.
+    volumes: !override
+      - ./frontend/public/icons:/usr/share/nginx/html/icons:ro
     depends_on:
       - backend
     restart: unless-stopped
