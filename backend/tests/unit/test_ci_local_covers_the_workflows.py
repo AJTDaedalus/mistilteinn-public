@@ -153,5 +153,7 @@ def test_a_tree_without_the_tool_runs_without_its_workflow(tmp_path: Path) -> No
     assert "triage.yml" not in workflows(tmp_path)
 
 
-def test_this_tree_runs_the_triage_workflow() -> None:
-    assert "triage.yml" in WORKFLOWS
+def test_this_tree_runs_the_triage_workflow_exactly_when_it_has_the_tool() -> None:
+    """True in both trees: the private one has the tool, the public export has neither."""
+    has_tool = (REPO / "tools" / "discord-triage").is_dir()
+    assert ("triage.yml" in WORKFLOWS) == has_tool
