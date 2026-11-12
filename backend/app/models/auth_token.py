@@ -39,6 +39,12 @@ class AuthToken(TimestampMixin, Base):
     consumed_at: Mapped[datetime.datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # **The password submitted with the registration that minted this link** (bcrypt hash),
+    # applied to the account when the link is clicked. Binding it to the proof of inbox
+    # ownership is what stops a pre-registration takeover (security audit F1): whoever
+    # registered an address *first* no longer decides its password. NULL for links minted
+    # before the column existed, which leave the account's password as it was.
+    password_hash: Mapped[str | None] = mapped_column(String(72), nullable=True)
 
     __table_args__ = (Index("ix_auth_tokens_user_purpose", "user_id", "purpose"),)
 

@@ -74,8 +74,11 @@ class RegistrationService:
 
     # ── issuing ───────────────────────────────────────────────────────────────
 
-    async def send_verification(self, user: User) -> None:
+    async def send_verification(self, user: User, *, password_hash: str | None = None) -> None:
         """Mint a fresh link for *user* and email it. Never raises.
+
+        *password_hash* rides on the link and becomes the account's password when it is
+        clicked — see `_register` for why the password belongs to the link, not the row.
 
         A provider outage must not fail the caller's request: the user row is already
         written, and a 500 here turns a blip into a failed signup the user reads as
@@ -83,7 +86,10 @@ class RegistrationService:
         whose mail never arrived goes anyway.
         """
         raw = await self._tokens.mint(
-            str(user.id), PURPOSE_EMAIL_VERIFY, self._settings.EMAIL_VERIFY_TTL_SECONDS
+            str(user.id),
+            PURPOSE_EMAIL_VERIFY,
+            self._settings.EMAIL_VERIFY_TTL_SECONDS,
+            password_hash=password_hash,
         )
         link = f"{self._settings.PUBLIC_BASE_URL.rstrip('/')}/verify?token={quote(raw)}"
         await self._send(templates.verify_email(to=user.email, link=link), user.email)
@@ -110,7 +116,7 @@ class RegistrationService:
 
         Three cases, one response:
           - new address        → create, send the verification link
-          - known, unverified  → send a fresh link, leave the password untouched
+          - known, unverified  → send a fresh link carrying *this* submission's password
           - known, verified    → send "someone tried to register your address"
 
         The third is what makes silence safe rather than merely quiet: it protects the
@@ -143,11 +149,17 @@ class RegistrationService:
                     "status": UserStatus.PENDING,
                 }
             )
-            await self.send_verification(user)
+            await self.send_verification(user, password_hash=password_hash)
             return
 
         if existing.email_verified_at is None and existing.status != UserStatus.DISABLED:
-            await self.send_verification(existing)
+            # **The new password goes on the link, not the row** (security audit F1). This
+            # branch used to leave the row's password untouched, so whoever registered an
+            # address *first* — before its owner — held the password that worked once the
+            # owner verified. Writing it to the row instead would be last-writer-wins and
+            # just as raceable; on the link, the password that takes effect is always the
+            # one submitted with the link that was actually clicked.
+            await self.send_verification(existing, password_hash=password_hash)
             return
 
         # Send to the address on the account, never the one just submitted — otherwise
@@ -177,6 +189,11 @@ class RegistrationService:
         now = datetime.now(UTC)
         if user.email_verified_at is None:
             user.email_verified_at = now
+            if result.token.password_hash is not None:
+                # The clicked link's password replaces whatever the row held, and any
+                # session minted under the old one goes with it.
+                user.password_hash = result.token.password_hash
+                await self._sessions.delete_for_user(str(user.id))
 
         # A DISABLED account is never revived by clicking an old link.
         if not self._settings.AUTO_APPROVE_ON_VERIFY or user.status != UserStatus.PENDING:
@@ -211,7 +228,10 @@ class RegistrationService:
             return
         if user.status == UserStatus.DISABLED:
             return
-        await self.send_verification(user)
+        # Carry the live link's password forward: a resend takes none, and minting without
+        # one would let a resend revert the account to the first registrant's password.
+        carried = await self._tokens.live_password_hash(str(user.id), PURPOSE_EMAIL_VERIFY)
+        await self.send_verification(user, password_hash=carried)
 
     @staticmethod
     def _new_session_token() -> str:

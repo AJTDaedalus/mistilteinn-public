@@ -56,12 +56,22 @@ class AuthTokenRepository(BaseRepository[AuthToken]):
 
     model = AuthToken
 
-    async def mint(self, user_id: str, purpose: str, ttl_seconds: int) -> str:
+    async def mint(
+        self,
+        user_id: str,
+        purpose: str,
+        ttl_seconds: int,
+        *,
+        password_hash: str | None = None,
+    ) -> str:
         """Issue a token for (*user_id*, *purpose*) and return the raw value.
 
         Any live token for the same pair is consumed first. A resend must not leave two
         working links behind: the user will click the newest, and the older one is then
         a live credential sitting in an inbox for no reason.
+
+        *password_hash*, when given, rides on the token and is what the account's password
+        becomes when this link is consumed (security audit F1).
         """
         await self._invalidate_live(user_id, purpose)
 
@@ -73,9 +83,30 @@ class AuthTokenRepository(BaseRepository[AuthToken]):
                 "purpose": purpose,
                 "token_hash": hash_token(raw),
                 "expires_at": now + timedelta(seconds=ttl_seconds),
+                "password_hash": password_hash,
             }
         )
         return raw
+
+    async def live_password_hash(self, user_id: str, purpose: str) -> str | None:
+        """The password carried by the pair's live (unconsumed) token, if there is one.
+
+        A resend takes no password, so it carries forward the one the latest registration
+        submitted — otherwise a resend would quietly fall back to whatever the account row
+        holds, which is the first registrant's. `mint` keeps at most one live token per pair;
+        the newest expiry wins if that ever stops being true.
+        """
+        stmt = (
+            select(AuthToken.password_hash)
+            .where(
+                AuthToken.user_id == user_id,
+                AuthToken.purpose == purpose,
+                AuthToken.consumed_at.is_(None),
+            )
+            .order_by(AuthToken.expires_at.desc())
+            .limit(1)
+        )
+        return (await self.session.execute(stmt)).scalar_one_or_none()
 
     async def consume(self, raw: str, purpose: str) -> ConsumeResult:
         """Mark the token matching *raw* consumed, or explain why it could not be."""

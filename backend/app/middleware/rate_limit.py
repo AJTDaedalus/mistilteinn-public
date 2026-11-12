@@ -15,6 +15,9 @@ if TYPE_CHECKING:
 WRITE_LIMIT = "60/minute"
 JOB_LIMIT = "10/minute"
 COMPUTE_LIMIT = "20/minute"
+#: `/rotations/validate`, which the source editor calls on every keystroke (debounced). Two a
+#: second sustained is well past typing speed, and bounds a parse loop from one account.
+VALIDATE_LIMIT = "120/minute"
 
 
 def _owner_key(request: Request) -> str:

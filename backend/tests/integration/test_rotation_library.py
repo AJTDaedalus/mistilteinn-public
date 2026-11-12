@@ -462,3 +462,94 @@ async def test_sorting_puts_a_rotation_you_have_run_above_one_you_have_not(
 
     assert [r["name"] for r in listed.json()["items"]] == ["Ran it", "Never run"]
     assert unrun  # the unrun rotation is present, just last
+
+
+# ── security audit F2: a condition is gcsim script, so it is checked on every path ─────────
+
+#: Closes the guarded block and appends statements of its own. Emitted verbatim, this ran in
+#: the browser of anyone who compiled a copy of the rotation.
+_INJECTED = '1 { } while 1 { print("x"); } if 0'
+
+
+def _guarded(character: str, condition: str) -> dict:
+    return {**_step(character), "group": "g", "group_condition": condition}
+
+
+async def _plant(db_session: AsyncSession, rotation_id: str, condition: str) -> None:
+    """Write a condition straight to the row — what a rotation saved before the check holds."""
+    from app.models.rotation import Rotation
+
+    row = await db_session.get(Rotation, rotation_id)
+    assert row is not None
+    row.steps = [_guarded(AYAKA, condition)]
+    await db_session.flush()
+
+
+async def test_creating_a_rotation_with_an_injected_condition_is_refused(alice: Party):
+    refused = await alice.client.post(ROTATIONS, json={
+        "name": "Hostile", "team_id": alice.team_id, "steps": [_guarded(AYAKA, _INJECTED)],
+    })
+
+    assert refused.status_code == 422
+    assert "not a condition" in refused.text
+
+
+async def test_updating_a_rotation_to_an_injected_condition_is_refused(alice: Party):
+    rotation_id = await _rotation(alice, "Mine", AYAKA)
+
+    refused = await alice.client.patch(
+        f"{ROTATIONS}/{rotation_id}", json={"steps": [_guarded(AYAKA, _INJECTED)]},
+    )
+
+    assert refused.status_code == 422
+
+
+async def test_a_condition_in_the_vocabulary_is_accepted(alice: Party):
+    created = await alice.client.post(ROTATIONS, json={
+        "name": "Guarded", "team_id": alice.team_id,
+        "steps": [_guarded(AYAKA, ".ayaka.energy >= 30")],
+    })
+
+    assert created.status_code == 201, created.text
+
+
+async def test_copying_a_published_rotation_revalidates_its_steps(
+    db_session: AsyncSession, alice: Party, bob: Party,
+):
+    """A row stored before the check existed must not spread to another user's account."""
+    rotation_id = await _rotation(alice, "Shared", AYAKA, publish=True)
+    await _plant(db_session, rotation_id, _INJECTED)
+
+    refused = await bob.client.post(
+        f"{ROTATIONS}/{rotation_id}/copy", json={"team_id": bob.team_id},
+    )
+
+    assert refused.status_code == 422
+
+
+async def test_the_compiler_refuses_a_stored_injected_condition(
+    db_session: AsyncSession, alice: Party,
+):
+    rotation_id = await _rotation(alice, "Mine", AYAKA)
+    await _plant(db_session, rotation_id, _INJECTED)
+
+    refused = await alice.client.post(f"{ROTATIONS}/{rotation_id}/compile")
+
+    assert refused.status_code == 422
+    assert "config" not in refused.json()
+
+
+async def test_one_bad_published_row_does_not_break_the_library(
+    db_session: AsyncSession, alice: Party, bob: Party,
+):
+    """The library validates every row it lists; a single stored bad one must not 500 it."""
+    good = await _rotation(alice, "Fine", BARBARA, publish=True)
+    bad = await _rotation(alice, "Hostile", AYAKA, publish=True)
+    await _plant(db_session, bad, _INJECTED)
+
+    listed = await bob.client.get(LIBRARY)
+
+    assert listed.status_code == 200
+    ids = [r["id"] for r in listed.json()["items"]]
+    assert good in ids
+    assert bad not in ids

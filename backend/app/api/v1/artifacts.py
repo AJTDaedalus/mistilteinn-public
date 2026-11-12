@@ -29,6 +29,7 @@ from app.data.snapshot import SnapshotUnavailableError
 from app.dependencies import (
     CurrentUser,
     DBSession,
+    SettingsDep,
     get_owned_artifact_repo,
     get_owned_build_repo,
 )
@@ -431,6 +432,7 @@ async def import_good(
     body: GoodImportRequest,
     session: DBSession,
     current_user: CurrentUser,
+    settings: SettingsDep,
 ) -> GoodImportResponse:
     """Import a GOOD export into the caller's inventory.
 
@@ -450,6 +452,7 @@ async def import_good(
     try:
         stored = await store_good_import(
             session, str(current_user.id), parsed, body.mode,
+            max_artifacts=settings.MAX_ARTIFACTS_PER_USER,
         )
     except ReplaceRefusedError as exc:
         # 409, not 400: the request is well-formed and the refusal is about the state it

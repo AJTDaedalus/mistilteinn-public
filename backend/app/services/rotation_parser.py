@@ -47,6 +47,7 @@ import re
 from typing import TYPE_CHECKING, Any
 
 from app.services import gcsim_keys
+from app.services.rotation_conditions import CONDITION_PATTERN
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -82,13 +83,10 @@ _READY_CONDITION = re.compile(r"\.[a-z0-9]+\.[a-z_]+\.ready\b")
 #: The conditions a block may carry, and nothing else. `DESIGN_conditional_steps.md` states
 #: why the list is short: a grammar that accepts what it cannot faithfully re-emit is how a
 #: rotation silently becomes a different one, so anything outside this is refused by name.
-_BLOCK_CONDITION = re.compile(
-    r"^if\s+("
-    r"\.[a-z0-9]+\.[a-z_]+\.ready"
-    r"|\.[a-z0-9]+\.energy\s*(?:>=|<=|>|<|==)\s*\d+"
-    r"|\.[a-z0-9]+\.status\.[a-z0-9_-]+"
-    r")\s*\{$",
-)
+#:
+#: The condition itself is `rotation_conditions.CONDITION_PATTERN`, shared with the request
+#: schema and the compiler so that the importer cannot open a block they would refuse.
+_BLOCK_CONDITION = re.compile(rf"^if\s+({CONDITION_PATTERN})\s*\{{$", re.ASCII)
 _CLOSE_BLOCK = re.compile(r"^\}$")
 _GATED = re.compile(
     r"^if\s+\.([a-z0-9]+)\.([a-z_]+)\.ready\s*\{\s*"

@@ -12,6 +12,7 @@ from app.repositories.base import BaseRepository
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
+    from datetime import datetime
 
 
 class SimRunRepository(BaseRepository[SimRun]):
@@ -124,6 +125,13 @@ class SimRunRepository(BaseRepository[SimRun]):
         )
         row = (await self.session.execute(stmt)).one()
         return row[0], bool(row.created)
+
+    async def count_created_since(self, since: datetime) -> int:
+        """How many runs this owner has created since *since* — the daily cap's question."""
+        stmt = select(func.count()).select_from(SimRun).where(
+            SimRun.owner_id == self.owner_id, SimRun.created_at >= since,
+        )
+        return int((await self.session.execute(stmt)).scalar_one())
 
     async def dps_by_rotation(
         self, pairs: Mapping[str, str],

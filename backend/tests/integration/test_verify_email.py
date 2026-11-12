@@ -318,3 +318,101 @@ class TestResend:
 
         assert resp.status_code == 202
         assert mailbox.sent == []
+
+
+async def _register_with(client, email: str, password: str):
+    return await client.post(
+        "/api/v1/auth/register",
+        json={"email": email, "password": password},
+        headers=_caller(),
+    )
+
+
+async def _login(client, email: str, password: str):
+    return await client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": password},
+        headers=_caller(),
+    )
+
+
+_FIRST = "first-registrant-pass-111"
+_SECOND = "second-registrant-pass-222"
+
+
+class TestPreRegistrationCannotHijack:
+    """The password that becomes active is the one sent with the link that was clicked.
+
+    Security audit F1 (pre-hijacked accounts): re-registering an unverified address used to
+    keep the *first* registrant's password, so whoever registered an address before its owner
+    held a working password once the owner proved the inbox was theirs.
+    """
+
+    @pytest.mark.asyncio
+    async def test_with_auto_approve_only_the_clicked_links_password_works(
+        self, signup_client
+    ) -> None:
+        make, mailbox = signup_client
+        client = make(AUTO_APPROVE_ON_VERIFY=True)
+        email = _email()
+
+        await _register_with(client, email, _FIRST)
+        await _register_with(client, email, _SECOND)
+        resp = await client.post(
+            "/api/v1/auth/verify-email", json={"token": _link_token(mailbox)}
+        )
+        assert resp.status_code == 200
+
+        assert (await _login(client, email, _FIRST)).status_code == 401
+        assert (await _login(client, email, _SECOND)).status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_without_auto_approve_the_later_approval_honours_the_clicked_link(
+        self, signup_client, db_session: AsyncSession
+    ) -> None:
+        make, mailbox = signup_client
+        client = make(AUTO_APPROVE_ON_VERIFY=False)
+        email = _email()
+
+        await _register_with(client, email, _FIRST)
+        await _register_with(client, email, _SECOND)
+        await client.post("/api/v1/auth/verify-email", json={"token": _link_token(mailbox)})
+
+        user = await _fetch(db_session, email)
+        user.status = UserStatus.APPROVED
+        await db_session.flush()
+
+        assert (await _login(client, email, _FIRST)).status_code == 401
+        assert (await _login(client, email, _SECOND)).status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_a_resend_carries_the_latest_registrations_password(
+        self, signup_client
+    ) -> None:
+        """A resend (which takes no password) must not fall back to the first registrant's."""
+        make, mailbox = signup_client
+        client = make(AUTO_APPROVE_ON_VERIFY=True)
+        email = _email()
+
+        await _register_with(client, email, _FIRST)
+        await _register_with(client, email, _SECOND)
+        await client.post(
+            "/api/v1/auth/resend-verification", json={"email": email}, headers=_caller()
+        )
+        await client.post("/api/v1/auth/verify-email", json={"token": _link_token(mailbox)})
+
+        assert (await _login(client, email, _FIRST)).status_code == 401
+        assert (await _login(client, email, _SECOND)).status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_a_single_registration_still_verifies_with_its_own_password(
+        self, signup_client
+    ) -> None:
+        make, mailbox = signup_client
+        client = make(AUTO_APPROVE_ON_VERIFY=True)
+        email = _email()
+
+        await _register_with(client, email, _FIRST)
+        await client.post("/api/v1/auth/verify-email", json={"token": _link_token(mailbox)})
+
+        assert (await _login(client, email, _FIRST)).status_code == 200

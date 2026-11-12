@@ -49,6 +49,12 @@ class SessionRepository(BaseRepository[Session]):
         await self.session.flush()
         return True
 
+    async def delete_for_user(self, user_id: str) -> int:
+        """Delete every session belonging to *user_id*; returns the number removed."""
+        stmt = delete(Session).where(Session.user_id == user_id)
+        result = await self.session.execute(stmt)
+        return result.rowcount
+
     async def delete_expired(self, now: datetime | None = None) -> int:
         """Purge sessions past their expiry; returns the number of rows removed."""
         if now is None:
