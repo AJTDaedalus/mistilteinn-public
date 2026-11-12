@@ -107,12 +107,13 @@ def test_the_deploy_mounts_the_directory_the_downloader_writes() -> None:
     inside = "/" + str(download_icons.OUT.relative_to(REPO))
     for job in ("deploy", "reseed"):
         steps = _deploy_steps(job)
-        step = steps[_index(steps, "scripts.download_icons")]["run"]
-        assert f'frontend/public/icons:{inside}"' in step, f"{job} mounts the wrong path"
-        assert "mkdir -p frontend/public/icons" in step, (
-            f"{job} lets Docker create the bind source, as root, and the download then cannot "
-            "write into it"
-        )
+        runs = [s["run"] for s in steps if "scripts.download_icons" in s.get("run", "")]
+        for step in runs:
+            assert f'frontend/public/icons:{inside}"' in step, f"{job} mounts the wrong path"
+            assert "mkdir -p frontend/public/icons" in step, (
+                f"{job} lets Docker create the bind source, as root, and the download then "
+                "cannot write into it"
+            )
 
 
 def test_the_deploy_vendors_before_it_rebuilds() -> None:
@@ -120,6 +121,24 @@ def test_the_deploy_vendors_before_it_rebuilds() -> None:
     assert _index(steps, "scripts.download_icons") < _index(steps, "$COMPOSE up -d --build"), (
         "art vendored after the rebuild leaves a window of 404s, which Cloudflare caches"
     )
+
+
+def test_the_deploy_vendors_again_with_the_new_image() -> None:
+    """The pre-rebuild pass runs the old image, which cannot know about an icon this deploy added.
+
+    Mora was missing from prod after the first deploy without committed art for exactly that
+    reason.
+    """
+    steps = _deploy_steps("deploy")
+    rebuild = _index(steps, "$COMPOSE up -d --build")
+    later = [
+        i for i, step in enumerate(steps)
+        if i > rebuild and "scripts.download_icons" in step.get("run", "")
+    ]
+    assert later, "nothing vendors art with the rebuilt backend image"
+    probe = _index(steps, "icons/UI_AvatarIcon_Ayaka.webp")
+    assert later[0] < probe, "the probe must check what the post-rebuild pass fetched"
+    assert MORA_ICON in steps[probe]["run"], "the probe should check an icon no row names"
 
 
 def test_a_reseed_vendors_art_for_what_it_added() -> None:
