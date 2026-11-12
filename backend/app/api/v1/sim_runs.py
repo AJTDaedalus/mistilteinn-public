@@ -19,6 +19,7 @@ that disagrees about it is not a client whose numbers should be cached.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import (
@@ -32,7 +33,7 @@ from fastapi import (
     status,
 )
 
-from app.dependencies import get_owned_sim_run_repo
+from app.dependencies import SettingsDep, get_owned_sim_run_repo
 from app.middleware.rate_limit import WRITE_LIMIT, limiter
 from app.repositories.sim_run import SimRunRepository
 from app.schemas.sim_run import (
@@ -48,6 +49,7 @@ from app.schemas.sim_run import (
     dps_mean_of,
 )
 from app.services.gcsim_keys import pinned_commit
+from app.services.quotas import enforce_daily
 from app.services.sim_context import ER_BUCKET_PERCENT, er_bucket
 from app.services.sim_retrieval import MAX_NEIGHBOUR_BUCKETS, retrieve
 
@@ -222,6 +224,7 @@ async def store_run(
     body: SimRunSubmit,
     response: Response,
     gcsim_pin: Annotated[str, Query(min_length=40, max_length=40, pattern=r"^[0-9a-f]{40}$")],
+    settings: SettingsDep,
 ) -> SimRunStored:
     """Cache a run the browser finished.
 
@@ -229,6 +232,15 @@ async def store_run(
     gets a 422 naming it, instead of a body validated against a default nobody chose.
     """
     pin = _require_our_pin(gcsim_pin)
+    # **`MAX_SIM_RUNS_PER_DAY` bounds new rows** (security audit F3). Re-storing a run already
+    # held replaces it in place, writes no new row, and so is not counted against it.
+    held = await repo.get(context_key=body.context_key, er_bucket=body.er_bucket, gcsim_pin=pin)
+    if held is None:
+        enforce_daily(
+            await repo.count_created_since(datetime.now(UTC) - timedelta(days=1)),
+            settings.MAX_SIM_RUNS_PER_DAY,
+            "Sim run",
+        )
     run, created = await repo.store(
         context_key=body.context_key,
         er_bucket=body.er_bucket,

@@ -21,6 +21,7 @@ from pydantic import ValidationError
 
 from app.dependencies import (
     CurrentUser,
+    SettingsDep,
     get_enemy_profile_repo,
     get_owned_build_repo,
     get_owned_rotation_repo,
@@ -80,6 +81,7 @@ from app.services.gcsim_share import (
     fetch_config,
 )
 from app.services.import_throttle import import_throttle
+from app.services.quotas import enforce_quota
 from app.services.rotation_compiler import (
     RotationCompileError,
     compile_rotation,
@@ -314,8 +316,10 @@ async def create_rotation(
     body: RotationCreate,
     repo: _Repo,
     teams: _Teams,
+    settings: SettingsDep,
 ) -> RotationRead:
     """Save a rotation, having checked every step against its team."""
+    await enforce_quota(repo, settings.MAX_ROTATIONS_PER_USER, "Rotation")
     if await teams.get_by_id(body.team_id) is None:
         raise HTTPException(status_code=404, detail=f"No team {body.team_id!r}")
     await _check_steps_against_team(repo, body.team_id, body.steps)
@@ -866,6 +870,7 @@ async def copy_rotation(
     teams: _Teams,
     body: RotationCopyRequest,
     rotation_id: str,
+    settings: SettingsDep,
 ) -> RotationRead:
     """Copy a published rotation onto one of the caller's own teams.
 
@@ -876,6 +881,7 @@ async def copy_rotation(
 
     The copy is private, whatever the original was: publishing is something a user does.
     """
+    await enforce_quota(repo, settings.MAX_ROTATIONS_PER_USER, "Rotation")
     original = await library.published(rotation_id)
     if original is None:
         raise HTTPException(status_code=404, detail=f"No published rotation {rotation_id!r}")

@@ -74,3 +74,18 @@ async def enforce_headroom(repo: _Countable, limit: int, noun: str, incoming: in
             ),
         )
 
+
+def enforce_daily(created_today: int, limit: int, noun: str) -> None:
+    """Raise 429 if the caller has already created *limit* rows of this kind in a day.
+
+    429 rather than 409: nothing needs deleting, the allowance simply refills. Takes the
+    count rather than a repository because "today" is a query each table answers its own way.
+    """
+    if limit <= 0:
+        return
+    if created_today >= limit:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"{noun} daily limit reached ({limit}). Try again tomorrow.",
+        )
+

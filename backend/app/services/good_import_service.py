@@ -42,12 +42,13 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 
 from app.data.snapshot import artifact_main_stat_value
 from app.models.artifact import Artifact, ArtifactSet
 from app.models.planner import Material, UserMaterial
 from app.models.user import User
+from app.services.quotas import enforce_headroom
 from app.services.substat_rolls import analyse
 
 if TYPE_CHECKING:
@@ -112,11 +113,17 @@ async def store_good_import(
     owner_id: str,
     parsed: GoodImportResult,
     mode: str,
+    *,
+    max_artifacts: int = 0,
 ) -> StoredImport:
     """Write a parsed GOOD export to `owner_id`'s inventory.
 
     Set resolution happens **before** anything is deleted, and a `replace` that resolved
     nothing at all refuses rather than wiping — see `ReplaceRefusedError`.
+
+    *max_artifacts* (`MAX_ARTIFACTS_PER_USER`; 0 disables it) is checked against what this
+    import would leave the caller holding, after resolution and **before** anything is
+    deleted or written, so a refused import changes nothing (security audit F3).
     """
     if mode not in MODES:
         msg = f"import mode must be one of {MODES}; got {mode!r}"
@@ -158,6 +165,11 @@ async def store_good_import(
             f"Nothing was deleted."
         )
         raise ReplaceRefusedError(msg)
+
+    # A replace deletes the inventory first, so only what it brings counts; an append adds to
+    # what is already held.
+    held = _Held(0) if mode == REPLACE else _Held(await _artifact_count(session, owner_id))
+    await enforce_headroom(held, max_artifacts, "Artifact", len(resolved))
 
     deleted = 0
     equipped_before: list[tuple[str, tuple]] = []
@@ -231,6 +243,21 @@ async def store_good_import(
         materials_unresolved=materials_unresolved,
         rows_by_source=rows_by_source,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class _Held:
+    """A count already taken, in the shape `enforce_headroom` asks for."""
+
+    n: int
+
+    async def count(self) -> int:
+        return self.n
+
+
+async def _artifact_count(session: AsyncSession, owner_id: str) -> int:
+    stmt = select(func.count()).select_from(Artifact).where(Artifact.owner_id == owner_id)
+    return int((await session.execute(stmt)).scalar_one())
 
 
 async def _store_materials(

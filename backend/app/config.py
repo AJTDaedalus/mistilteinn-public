@@ -73,6 +73,10 @@ class Settings(BaseSettings):
     MAX_BUILDS_PER_USER: int = 500
     MAX_TEAMS_PER_USER: int = 200
     MAX_ROTATIONS_PER_USER: int = 500
+    #: Saved optimization runs carry client-supplied JSON up to the 2 MB body cap each, so
+    #: an uncapped table is the cheapest way to fill the disk (security audit F3). The owner
+    #: had none saved when this was set; 500 is the rotation cap's size.
+    MAX_OPTIMIZATION_RUNS_PER_USER: int = 500
 
     #: **Somebody else's servers.** `POST /rotations/import/link` is the only request-time
     #: outbound fetch in `app/`; open registration would make it a free proxy pointed at

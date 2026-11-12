@@ -12,9 +12,10 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
-from app.dependencies import get_optimization_run_repo
+from app.dependencies import SettingsDep, get_optimization_run_repo
+from app.middleware.rate_limit import WRITE_LIMIT, limiter
 from app.models.enums import Visibility
 from app.repositories.optimization_run import PAGE, OptimizationRunRepository
 from app.schemas.optimization_run import (
@@ -23,6 +24,7 @@ from app.schemas.optimization_run import (
     OptimizationRunSummary,
     OptimizationRunUpdate,
 )
+from app.services.quotas import enforce_quota
 
 router = APIRouter(prefix="/optimization-runs", tags=["optimization-runs"])
 
@@ -95,13 +97,20 @@ async def list_public(
 
 
 @router.post("", response_model=OptimizationRunRead, status_code=201)
-async def save_run(body: OptimizationRunCreate, repo: _Repo) -> OptimizationRunRead:
+@limiter.limit(WRITE_LIMIT)
+async def save_run(
+    request: Request,  # slowapi reads the client address off it
+    body: OptimizationRunCreate,
+    repo: _Repo,
+    settings: SettingsDep,
+) -> OptimizationRunRead:
     """Save a completed search.
 
     **Private on creation**, always. Publishing is a separate PATCH, because a private thing
     becoming visible is not a mistake anyone can take back — the same reasoning `Visibility`
     records for rotations.
     """
+    await enforce_quota(repo, settings.MAX_OPTIMIZATION_RUNS_PER_USER, "Optimization run")
     # `owner_id` is stamped by the repository, not passed here — the scoping belongs to the
     # object that enforces it, and a handler that also sets it is a second place to get wrong.
     run = await repo.create(
