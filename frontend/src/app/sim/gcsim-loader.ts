@@ -8,8 +8,8 @@
  *
  * The wasm is **gitignored and produced by `npm run gcsim:build`** (`frontend/gcsim/
  * PROVENANCE.md`), served from `/gcsim/` by an `angular.json` assets entry. A deployment that
- * has not run the build serves 404s here, which is the same operational note `docs/DEPLOY.md`
- * §5a carries for icons — and the reason `load()` reports a reason rather than throwing an
+ * has not run the build serves 404s here, the same failure the catalogue icons have when
+ * `scripts.download_icons` has not run — and the reason `load()` reports a reason rather than throwing an
  * opaque instantiation error.
  */
 

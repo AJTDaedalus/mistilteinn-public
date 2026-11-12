@@ -16,7 +16,8 @@ What it proves, in order:
 
 Point 3 is the whole reason Resend was chosen over self-hosted SMTP, and it is not something a
 program can assert. A verification mail in spam is indistinguishable from a broken signup flow:
-the user never tells you, they just leave. `docs/DEPLOY.md` §4a has the SPF/DKIM/DMARC steps.
+the user never tells you, they just leave. The fix is the sending domain's SPF, DKIM and DMARC
+records; the mail provider lists them (Resend: Domains).
 
 The body is a **real verification email** with a fake token rather than a "test" message,
 because how it renders and where it lands are what is being tested. Its link goes nowhere: the
@@ -66,7 +67,7 @@ async def _send(recipient: str) -> int:
     print()
     print("**That is not the same as delivered.** Check the inbox now, and check spam:")
     print("  - in the inbox      → SPF/DKIM/DMARC are right; open registration is safe to use")
-    print("  - in spam           → the DNS records need work first (docs/DEPLOY.md §4a)")
+    print("  - in spam           → the domain's SPF/DKIM/DMARC records need work first")
     print("  - nowhere at all    → the provider accepted and dropped it; check their dashboard")
     return 0
 

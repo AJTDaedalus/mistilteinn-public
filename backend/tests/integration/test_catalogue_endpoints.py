@@ -26,6 +26,7 @@ from app.models.character import (
 )
 from app.models.enums import Element, Rarity, TalentType, WeaponType
 from app.models.weapon import Weapon, WeaponRefinement
+from app.services import kqm_weapons
 
 if TYPE_CHECKING:
     from httpx import AsyncClient
@@ -606,4 +607,6 @@ async def test_a_weapon_this_pin_lacks_keeps_its_citation_and_loses_only_its_id(
 
     assert body["weapons"], "the guide is still published in full"
     assert all(row["weapon_id"] is None for row in body["weapons"])
-    assert all(row["note"] and row["weapon_nanoka_id"] for row in body["weapons"])
+    assert all(row["weapon_nanoka_id"] for row in body["weapons"])
+    # KQM's sentence survives, except in the public copy, which withholds it (§35).
+    assert all(bool(row["note"]) != kqm_weapons.notes_withheld() for row in body["weapons"])
