@@ -8,6 +8,20 @@ notice to be kept with copies, which is what this file is for.
 HoYoverse. The art is not in this repository: `backend/scripts/download_icons.py` fetches it
 at deploy time (`docs/DECISIONS.md` §34).
 
+## Data this repository carries, and where it is from
+
+None of the following is licensed by this repository, and none of it is HoYoverse art.
+
+- **Game data**, derived from Genshin Impact and belonging to HoYoverse:
+  - `backend/tests/fixtures/nanoka_gi/` holds payloads from nanoka (<https://nanoka.cc>);
+  - `backend/app/data/yuanshen/` holds a snapshot from GuraFoundation/YuanShenResources
+    (<https://gitlab.com/GuraFoundation/YuanShenResources>), with its pin and provenance in
+    `schema/provenance.json`.
+- **KeqingMains weapon recommendations** in `backend/app/data/kqm/weapons.json`, cited per
+  character to <https://keqingmains.com>, with the retrieval date in the file.
+- **Five gcsim configs** in `references/gcsim_db/`, from gcsim's public database
+  (<https://gcsim.app/database>), with provenance in `references/gcsim_db/PROVENANCE.md`.
+
 ## Genshin Optimizer
 
 `backend/app/pando/` is a port of `libs/pando/engine` from
