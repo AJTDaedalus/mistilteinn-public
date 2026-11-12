@@ -13,6 +13,7 @@ what it is doing.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import TYPE_CHECKING, Annotated, Literal
 
@@ -29,7 +30,7 @@ from app.dependencies import (
     get_owned_team_repo,
     get_rotation_library_repo,
 )
-from app.middleware.rate_limit import WRITE_LIMIT, limiter
+from app.middleware.rate_limit import VALIDATE_LIMIT, WRITE_LIMIT, limiter
 from app.models.enums import Visibility
 from app.models.rotation import Rotation
 from app.repositories.build import BuildRepository
@@ -97,6 +98,7 @@ from app.services.rotation_parser import (
     parse_action_block,
 )
 from app.services.sim_context import ER_BUCKET_PERCENT, context_key
+from app.services.source_limits import nesting_refusal
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -374,7 +376,18 @@ async def import_from_gcsim(
     # one is blocked only by gcsim's short aliases (`arle`, `esco`), and two use user-defined
     # functions and cycle-index conditionals that are different rotations rather than different
     # spellings.
-    return _read_config(body.config, roster)
+    #
+    # **Bounded, then off the event loop** (security audit F4): the parser is recursive and
+    # pure Python, and 100 KB of it on the loop stalls every other request this worker holds.
+    _refuse_deep(body.config)
+    return await asyncio.to_thread(_read_config, body.config, roster)
+
+
+def _refuse_deep(source: str) -> None:
+    """422 for source nested past what the recursive parser reads safely."""
+    refusal = nesting_refusal(source)
+    if refusal is not None:
+        raise HTTPException(status_code=422, detail=refusal)
 
 
 def _require_roster(roster: dict[str, object], team_id: str) -> None:
@@ -472,7 +485,9 @@ def _read_config(config: str, roster: dict[str, object]) -> RotationImportRead:
 
 
 @router.post("/validate", response_model=RotationSourceRead)
+@limiter.limit(VALIDATE_LIMIT)
 async def validate_source(
+    request: Request,  # slowapi reads the client address off it
     body: RotationSourceRequest,
     repo: _Repo,
 ) -> RotationSourceRead:
@@ -491,7 +506,22 @@ async def validate_source(
     """
     roster = await repo.character_rows(body.team_id)
     _require_roster(roster, body.team_id)
-    tree, diagnostics = validate_rotation(body.source, roster)
+    # **Bounded, rate limited, and off the event loop** (security audit F4). Deep input used
+    # to recurse into a 500, and seconds of parsing on the loop stalled the whole worker.
+    _refuse_deep(body.source)
+    try:
+        return await asyncio.to_thread(_validated_source, body.source, roster)
+    except RecursionError as exc:
+        # The nesting check should make this unreachable; if a shape slips past it, the answer
+        # is still a refusal rather than a 500 with a traceback in the log.
+        raise HTTPException(
+            status_code=422, detail="this source nests too deeply to read.",
+        ) from exc
+
+
+def _validated_source(source: str, roster: dict[str, object]) -> RotationSourceRead:
+    """The CPU-bound half of `/validate`, run in a worker thread."""
+    tree, diagnostics = validate_rotation(source, roster)
     return RotationSourceRead(
         tree=tree,
         diagnostics=diagnostics,
