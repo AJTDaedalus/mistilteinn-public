@@ -94,12 +94,18 @@ def _resend_email_key(request: Request) -> str:
 
 
 def _login_email_key(request: Request) -> str:
+    """Key on the **normalized** address, exactly as `_resend_email_key` does.
+
+    Security audit F5: this keyed on the raw body string while the account lookup
+    normalises it, so every change of case (and, for Gmail, every dot or `+tag`) found the
+    same account from a fresh 10/hour bucket — no per-account throttle at all.
+    """
     # request._body is populated by FastAPI's body parsing before the handler runs.
     raw: bytes | None = getattr(request, "_body", None)
     if raw:
         try:
-            return str(_json.loads(raw).get("email", "unknown"))
-        except ValueError:
+            return normalize(str(_json.loads(raw).get("email", "")))
+        except (ValueError, AttributeError):
             pass
     return "unknown"
 
