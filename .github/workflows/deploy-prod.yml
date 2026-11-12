@@ -124,6 +124,21 @@ jobs:
           # Idempotent: a no-op when already at head.
           $COMPOSE run --rm backend alembic upgrade head
 
+      - name: Vendor what the new downloader asks for
+        # **Again, after the rebuild.** The pass above runs the *old* backend image, so an icon
+        # this deploy taught `download_icons` to fetch is not fetched by it. That happened on
+        # the first deploy without committed art: Mora's icon, which no catalogue row names,
+        # was missing until this step existed. The first pass keeps the transition gapless;
+        # this one makes the new code's list the one that holds. Fetches only what is
+        # missing, so it is free on a routine deploy.
+        run: |
+          set -euo pipefail
+          cd "$REPO_DIR"
+          mkdir -p frontend/public/icons
+          $COMPOSE run --rm -T --user "$(id -u):$(id -g)" \
+            -v "$REPO_DIR/frontend/public/icons:/frontend/public/icons" \
+            backend python -m scripts.download_icons
+
       - name: Seed the furnishing suites
         run: |
           set -euo pipefail
@@ -222,18 +237,21 @@ jobs:
         # missing, or a mount pointed at the wrong path, answers `200 text/html` from the SPA
         # fallback unless `/icons/` keeps its `=404`, and either way only the type tells a
         # real file apart. Ayaka has shipped since 1.x, so her portrait is always vendored.
+        # Mora (`UI_ItemIcon_202`) is named by no catalogue row, so it arrives only through
+        # the downloader's own list, and only after the post-rebuild pass.
         run: |
           set -euo pipefail
           cd "$REPO_DIR"
-          path=icons/UI_AvatarIcon_Ayaka.webp
-          type="$($COMPOSE exec -T frontend wget -S -qO /dev/null "http://127.0.0.1/${path}" 2>&1 \
-                  | grep -i '^ *Content-Type:' | head -1 | tr -d '\r' || true)"
-          case "${type}" in
-            *image/webp*) echo "ok  ${path} — ${type# }" ;;
-            *) echo "::error::${path} is served as '${type:-nothing}', not image/webp."
-               echo "::error::The icon mount is empty or wrong — see 'Vendor the catalogue art'."
-               exit 1 ;;
-          esac
+          for path in icons/UI_AvatarIcon_Ayaka.webp icons/UI_ItemIcon_202.webp; do
+            type="$($COMPOSE exec -T frontend wget -S -qO /dev/null "http://127.0.0.1/${path}" 2>&1 \
+                    | grep -i '^ *Content-Type:' | head -1 | tr -d '\r' || true)"
+            case "${type}" in
+              *image/webp*) echo "ok  ${path} — ${type# }" ;;
+              *) echo "::error::${path} is served as '${type:-nothing}', not image/webp."
+                 echo "::error::The icon mount is empty or wrong — see the two vendoring steps."
+                 exit 1 ;;
+            esac
+          done
 
       - name: What the edge is actually serving
         # **The check above probes the origin, and users do not.** It runs `wget` inside the
