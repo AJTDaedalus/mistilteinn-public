@@ -48,3 +48,8 @@
 # move to those majors.
 GHSA-g3hv-75wg-m249  # minimatch <11.0.1 globparts DoS; dev tooling only, no fix in ^10
 GHSA-3g3m-2fjr-6pw4  # glob 9-14.0.1 AbortSignal bypass; pacote (angular cli) only, no fix in ^13
+# @hono/node-server <2.1.6, via @angular/cli -> @modelcontextprotocol/sdk (the CLI's MCP
+# server). Dev tooling only: never in the shipped bundle, and nothing here runs `ng mcp`.
+# The fix (2.1.6+) was published 2026-11-12; take it once it has aged, then drop these.
+GHSA-jpvv-r467-5p4w  # @hono/node-server path-separator bypass; dev-only (Angular CLI MCP server), not shipped
+GHSA-qv5m-9pm6-hqp3  # @hono/node-server unhandled ECONNRESET on WebSocket upgrade; dev-only (Angular CLI MCP server), not shipped
