@@ -98,3 +98,10 @@ screenshots/
 # the account exists only on a local backend — but a token is a token.
 .shoot-token
 backend/var/
+
+# Everything else staged under references/ is local or host material (other people's tools,
+# exports, saved pages) and is never committed. Only the gcsim database configs ship, because
+# tests read them. Listing what is *kept* means a new staging directory is ignored by default
+# instead of needing its own line.
+references/*
+!references/gcsim_db/
