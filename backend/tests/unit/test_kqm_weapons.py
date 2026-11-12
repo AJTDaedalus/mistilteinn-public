@@ -181,7 +181,11 @@ def test_every_recommendation_keeps_kqms_own_words() -> None:
     for nanoka_id in kqm_weapons.captured_characters():
         guide = kqm_weapons.for_character(nanoka_id)
         assert guide is not None
-        assert all(w.note.strip() for w in guide.weapons)
+        if kqm_weapons.notes_withheld():
+            # The public copy withholds the prose (DECISIONS.md §35): all of it, not some.
+            assert not any(w.note for w in guide.weapons)
+        else:
+            assert all(w.note.strip() for w in guide.weapons)
 
 
 def test_a_refinement_is_stripped_from_the_name_and_not_stored() -> None:

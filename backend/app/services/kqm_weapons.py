@@ -171,3 +171,16 @@ def for_character(nanoka_id: str | None) -> CharacterGuide | None:
 def captured_characters() -> tuple[str, ...]:
     """Every nanoka id with a captured guide. For a caller deciding whether to offer the UI."""
     return tuple(_loaded())
+
+
+@cache
+def notes_withheld() -> bool:
+    """Whether this copy of the data carries KQM's `note` text, or withholds it.
+
+    The public copy of the repository blanks every `note` (`DECISIONS.md` §35) and marks the
+    file `"withheld": ["note"]`, so a test can assert whichever state the file declares rather
+    than one that is only true in one of the two trees.
+    """
+    if not _DATA.exists():
+        return False
+    return "note" in json.loads(_DATA.read_text()).get("withheld", [])
