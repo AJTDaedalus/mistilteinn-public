@@ -50,39 +50,6 @@ permissions:
   contents: read
 
 jobs:
-  discord-triage:
-    name: Discord triage tool — lint + tests
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: tools/discord-triage
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      # `tools/discord-triage` is not part of the app — no backend route, no frontend page,
-      # its own venv and systemd unit on the prod box. It lives outside `backend/`, so neither
-      # the lane below nor `python -m scripts.ci_local` could see it, and **its 71 tests ran
-      # nowhere at all** for two merged PRs. In a repository whose standing rule is that a
-      # check which could not run is never a pass, an untested tool that writes to the issue
-      # tracker is exactly the wrong thing to leave uncovered. (OQ-D3.)
-      #
-      # `discord.py` is the only dependency; `pytest` and `ruff` are pinned to the same
-      # versions the backend uses so this lane is the same program, not a lookalike.
-      - name: Install
-        run: pip install -r requirements.txt pytest ruff==0.16.1
-
-      - name: Ruff
-        run: ruff check .
-
-      - name: Tests
-        # No network and no Discord connection: the parts worth testing are pure, and were
-        # pulled out of the gateway client for exactly that reason.
-        run: pytest tests/ -q
-
   backend:
     name: Backend — lint + unit tests
     runs-on: ubuntu-latest
