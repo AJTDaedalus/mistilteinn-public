@@ -1314,3 +1314,19 @@ owner asked for gcsim's terms instead.
 
 Their notices are kept in `THIRD_PARTY_NOTICES.md`.
 
+
+## 35. What the public copy carries (2026-11-12)
+
+**Context.** The public copy is a separate repository built by `release/export.py` and checked
+by `release/gate.py` (private design: `docs/DESIGN_open_source_release.md`). The owner ruled
+on the open questions that design listed.
+
+| question | ruling |
+|---|---|
+| KeqingMains guide prose (`backend/app/data/kqm/weapons.json`, `note`) | **Blanked in every commit of the public copy.** The rankings, names and links stay. The private site keeps showing the quotes. `release/rules.py:BLANK_JSON_FIELDS` does it, and the gate fails any version that still carries text. |
+| Anonymous quotes from Discord bug reports | Ship. Audit B3 objected to names, and the gate refuses names. |
+| Links to the private repository's issues | Leave them. They are harmless 404s for the public. |
+| Operator messages pointing at the private `DEPLOY.md` | Reworded to be self-contained: the preflight error, `send_test_email`, and a comment in `gcsim-loader.ts`. |
+| F1's residual case (a victim clicking a link someone else triggered) | Keep as is for now. Asking for the password on the verify page is a UX change for later. |
+| Closed-beta data (the YuanShen pin is a closed-beta build; beta characters are seeded) | **Deferred, and it holds the launch.** Removing it means code changes, not a filter rule. |
+| A private rehearsal repository | Approved: Actions off, no runners, push only a gated export. |

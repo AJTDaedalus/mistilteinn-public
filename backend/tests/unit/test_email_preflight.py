@@ -125,7 +125,9 @@ def test_production_refuses_to_boot() -> None:
         enforce_production_email(_prod(PUBLIC_BASE_URL="http://localhost:4201"))
 
     # The message has to carry the fix, not just the fault: whoever sees it is mid-deploy.
-    assert "DEPLOY.md" in str(caught.value)
+    # Self-contained: the runbook is private, and the public copy must not point at it.
+    assert "SPF, DKIM and DMARC" in str(caught.value)
+    assert "DEPLOY.md" not in str(caught.value)
 
 
 def test_a_good_production_configuration_boots() -> None:

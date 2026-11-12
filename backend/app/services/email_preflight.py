@@ -119,6 +119,7 @@ def enforce_production_email(settings: Settings) -> None:
         raise EmailConfigurationError(
             f"Refusing to start: mail is configured in a way that fails silently.\n"
             f"  - {joined}\n"
-            f"See docs/DEPLOY.md §4a. Set EMAIL_PROVIDER=console and "
+            f"The sending domain needs SPF, DKIM and DMARC records for the mail provider "
+            f"(Resend lists them under Domains). Set EMAIL_PROVIDER=console and "
             f"AUTO_APPROVE_ON_VERIFY=false to run without mail.",
         )
