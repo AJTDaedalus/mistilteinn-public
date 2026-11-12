@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from scripts.ci_local import _ADAPTATIONS, NOT_RUN_LOCALLY, WORKFLOWS, collect
+from scripts.ci_local import _ADAPTATIONS, NOT_RUN_LOCALLY, WORKFLOWS, collect, workflows
 
 REPO = Path(__file__).resolve().parents[3]
 
@@ -135,3 +135,25 @@ def test_every_workflow_is_either_run_here_or_listed_as_not_run():
 def test_every_excluded_workflow_states_why():
     for name, reason in NOT_RUN_LOCALLY.items():
         assert len(reason) > 30, f"{name} is excluded without a real reason: {reason!r}"
+
+
+def test_a_tool_without_its_workflow_refuses_to_run(tmp_path: Path) -> None:
+    """The triage job lives in its own file so the public export can drop both together.
+
+    In the private tree, deleting the file must not quietly delete the tool's 100-odd tests.
+    """
+    (tmp_path / "tools" / "discord-triage").mkdir(parents=True)
+    (tmp_path / ".github" / "workflows").mkdir(parents=True)
+    with pytest.raises(FileNotFoundError, match="discord-triage"):
+        workflows(tmp_path)
+
+
+def test_a_tree_without_the_tool_runs_without_its_workflow(tmp_path: Path) -> None:
+    (tmp_path / ".github" / "workflows").mkdir(parents=True)
+    assert "triage.yml" not in workflows(tmp_path)
+
+
+def test_this_tree_runs_the_triage_workflow_exactly_when_it_has_the_tool() -> None:
+    """True in both trees: the private one has the tool, the public export has neither."""
+    has_tool = (REPO / "tools" / "discord-triage").is_dir()
+    assert ("triage.yml" in WORKFLOWS) == has_tool

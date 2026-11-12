@@ -78,8 +78,32 @@ import yaml
 
 REPO = Path(__file__).resolve().parents[2]
 
-#: The workflows this runs. Checking workflows, not every workflow.
-WORKFLOWS = ("test.yml", "security.yml")
+#: The workflows this always runs. Checking workflows, not every workflow.
+REQUIRED_WORKFLOWS = ("test.yml", "security.yml")
+
+#: Workflows that test a tool outside the app, run whenever that tool's directory exists.
+#: The public export drops the tool and its workflow together (`release/rules.py`), and the
+#: private repository must not lose the job by accident, so **a present tool with a missing
+#: workflow is an error**, never a quiet omission.
+TOOL_WORKFLOWS = {"triage.yml": "tools/discord-triage"}
+
+
+def workflows(root: Path = REPO) -> tuple[str, ...]:
+    """The workflow files to run for the tree at `root`."""
+    present = []
+    for workflow, tool in TOOL_WORKFLOWS.items():
+        if not (root / tool).is_dir():
+            continue
+        if not (root / ".github" / "workflows" / workflow).is_file():
+            raise FileNotFoundError(
+                f"{tool}/ exists but .github/workflows/{workflow} does not: its tests would "
+                "silently stop running"
+            )
+        present.append(workflow)
+    return REQUIRED_WORKFLOWS + tuple(present)
+
+
+WORKFLOWS = workflows()
 
 #: Workflows deliberately **not** run here, each with the reason. A file that is neither
 #: run nor listed fails `test_ci_local_covers_the_workflows.py` — the same rule the
@@ -238,7 +262,7 @@ def _adapt_lines(command: str) -> tuple[str, list[tuple[str, Adaptation]]]:
 def collect(root: Path = REPO, *, include_disabled: bool = False) -> list[Step]:
     """Every step CI would run, in workflow order, read from the YAML itself."""
     steps: list[Step] = []
-    for workflow in WORKFLOWS:
+    for workflow in workflows(root):
         document = yaml.safe_load((root / ".github" / "workflows" / workflow).read_text())
         for job_id, job in document["jobs"].items():
             # `if: false` is how this repo disables a job (the kit harness). Honour it —
