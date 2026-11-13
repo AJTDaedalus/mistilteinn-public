@@ -1401,3 +1401,35 @@ The owner ruled on `DESIGN_team_math_fallback.md` §4.
   (`test_go_single_hit_fixtures.py`, GO @ `2c13fc40`) are the first under D-F4.
 
 D-F1, D-F2 and D-F5 stand as recommended in the DESIGN.
+
+## 39. Three rulings on the formula estimate and the recipe, and the EM fix they approved (2026-11-13)
+
+The owner ruled on three questions raised while building math-fallback P1 (PR #368).
+
+- **(i) Formula-estimate conditionals default to: self-triggered conditions ON at their
+  maximum, situational ones OFF, and every one of them a visible toggle.** A condition the
+  character meets by playing their own kit (stacks they build, a buff their own skill grants)
+  is assumed met in full; one that depends on the team, the enemy or the fight (a teammate's
+  buff, an enemy state, an HP threshold) is assumed not met until the user says otherwise. No
+  condition is applied silently: each one is listed with the estimate and can be flipped.
+- **(ii) The gcsim-recipe EM defect is to be fixed** (*"Fix it"*). Found while building #368: a
+  gcsim-calibrated recipe scored an EM-scaling hit off the candidate's EM alone and froze
+  gcsim's melt/vaporize multiplier at the calibration's EM, so artifact EM was worth nothing
+  to a vaporize or melt build. Fixed on `fix/recipe-em-scaling`: `parseSample` reads gcsim's
+  own `em`, `reaction_type`, `react_mult` and `react_bonus`, and `evaluateHit` recomputes the
+  multiplier through `damage.ts:amplifyingMultiplier`, the same function the formula recipe
+  and the single-hit kernel use (one mechanic, one implementation). An amplified hit's
+  frozen average is now gcsim's post-reaction `avg_crit_dmg_react`. `recipe-cache.ts` `SCHEMA`
+  went 7 → 8 so cached recipes recalibrate. Measured against gcsim on the owner's own National
+  team (Xiangling, Xingqiu, Bennett, Yelan; +187 EM): gcsim's gain **+15,308.90**, the recipe's
+  **+15,308.90** (1.1e-7, the f32 floor), where the old code predicted 0. Driven in the app:
+  the top 8 builds now all take a 187-EM sands; on `dev` none of the top 8 did (ATK% sands).
+- **(iii) Talent rows the importer refuses are shown greyed out, with their reason, in the hit
+  pickers** rather than hidden. A row the estimate cannot price is still a row the user can see
+  exists, and the reason tells them why it is not offered. Being built on
+  `feat/math-fallback-p1-data`.
+
+**Left open by (ii):** EM converted into *flat damage* (Nahida's Tri-Karma, `ATK × a + EM × b`,
+the second part written as `FlatDmg`) is still a frozen term reported stale, because the
+calibration probe moves `atk%`, `hp%` and `def%` only. Widening the probe to EM is a backend
+schema change (`probe_deltas`) and was not folded into this fix.

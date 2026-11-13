@@ -176,6 +176,9 @@ export interface RecipeHit {
   /**
    * Elemental Mastery the hit already carries before artifacts — character, weapon, set and
    * resonance. A hit scaling off EM, or amplifying, reads this **plus** the candidate's own.
+   *
+   * **Not formula-only any more.** `parseSample` sets it from gcsim's `em` (fix of 2026-11-13);
+   * a recipe cached before then lacks it and `SCHEMA` 8 makes that entry recalibrate.
    */
   calibratedEm?: number;
   /**
@@ -184,6 +187,10 @@ export interface RecipeHit {
    * `ampMultiplier` above is gcsim's frozen total and stays the replay value; when this is
    * present `evaluateHit` recomputes it through `damage.ts:amplifyingMultiplier`, the same
    * function the single-hit kernel uses, so the two cannot disagree about the EM term.
+   *
+   * A gcsim recipe sets it from `reaction_type`, `react_mult` and `react_bonus` when the hit
+   * melted or vaporized and the pair names a reaction the chain knows; otherwise the frozen
+   * total stands.
    */
   amplifying?: { reaction: Amplifying; reactionBonus: number };
   /** Which kind of move this is, so a move-scoped set bonus in the candidate's pool reaches it. */
@@ -414,6 +421,38 @@ interface CalcLog {
   avg_crit_dmg: number;
   damage: number;
   ele: number;
+  /** The snapshot EM — `atk.Snapshot.Stats[attributes.EM]`, `pkg/enemy/damage.go:144`. */
+  em?: number;
+  /** Whether a melt or vaporize applied. `atk.Info.Amped`. */
+  melt_vape?: boolean;
+  /** `"melt"` or `"vaporize"` — `info.ReactionType`, `pkg/core/info/reaction.go:13-14`. */
+  reaction_type?: string;
+  /** The base multiplier, 2 or 1.5 — `pkg/reactable/{melt,vaporize}.go`. */
+  react_mult?: number;
+  /** The character's reaction bonus (Crimson Witch and kin). `char.ReactBonus`. */
+  react_bonus?: number;
+  /**
+   * `avg_crit_dmg` **times the amplifying multiplier** (`damage.go:177`).
+   *
+   * `avg_crit_dmg` is written before amplification (`damage.go:164`), so for a melt or
+   * vaporize hit it is the pre-reaction average and this is the real one.
+   */
+  avg_crit_dmg_react?: number;
+}
+
+/**
+ * gcsim's reaction type and base multiplier, as the damage chain names the reaction.
+ *
+ * `pkg/reactable/melt.go:24,30` — Pyro onto Cryo 2.0, Cryo onto Pyro 1.5; `vaporize.go:26,33`
+ * — Pyro onto Hydro 1.5, Hydro onto Pyro 2. Anything else returns `null` and the hit keeps
+ * gcsim's frozen total: naming a reaction on a guess would move a number gcsim measured.
+ */
+function amplifyingFrom(type: string | undefined, mult: number | undefined): Amplifying | null {
+  const strong = mult === 2;
+  if (!strong && mult !== 1.5) return null;
+  if (type === 'melt') return strong ? 'melt' : 'reverse_melt';
+  if (type === 'vaporize') return strong ? 'vaporize' : 'reverse_vaporize';
+  return null;
 }
 
 interface SampleEntry {
@@ -495,7 +534,13 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
           `The recipe cannot label elements without a reliable pairing.`,
       );
     }
-    hits.push({
+    // **Elemental Mastery, read off the run like every other term.** A calibration carries no
+    // artifact EM, so `em` is everything the hit has before artifacts — character, weapon, set
+    // and team buffs — and a candidate's EM adds to it. Without it an EM-scaling hit was
+    // scored off the candidate's EM alone, and the amplifying multiplier stayed frozen at the
+    // calibration's EM, so artifact EM bought a vaporize or melt build nothing at all.
+    const amplifying = c.melt_vape ? amplifyingFrom(c.reaction_type, c.react_mult) : null;
+    const hit: RecipeHit = {
       abil: c.abil,
       // The calibrated character is the config's first, which is how `build_config` writes it
       // — the build, then its teammates. A hit with no `char_index` is treated as the
@@ -520,8 +565,18 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
       defMultiplier: c.def_mod,
       resMultiplier: c.res_mod,
       ampMultiplier: c.amp_mult_total === 0 ? 1 : c.amp_mult_total,
-      gcsimAverageDamage: c.avg_crit_dmg,
-    });
+      // The amplified average when the hit amplified: `avg_crit_dmg` is the pre-reaction one,
+      // so a vaporizing teammate's frozen hit — and every damage share built from it — read
+      // as a fraction of what gcsim dealt, and `replayHit` could not match it.
+      gcsimAverageDamage: c.melt_vape && typeof c.avg_crit_dmg_react === 'number'
+        ? c.avg_crit_dmg_react
+        : c.avg_crit_dmg,
+    };
+    if (typeof c.em === 'number') hit.calibratedEm = c.em;
+    if (amplifying !== null) {
+      hit.amplifying = { reaction: amplifying, reactionBonus: c.react_bonus ?? 0 };
+    }
+    hits.push(hit);
   }
   const seed = String(parsed?.seed ?? '');
   return {
