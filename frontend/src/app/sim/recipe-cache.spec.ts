@@ -150,6 +150,34 @@ describe('evictRecipes', () => {
   });
 });
 
+describe('a formula estimate never enters the gcsim recipe cache (math-fallback P1, task 8)', () => {
+  const FORMULA = {
+    ...RECIPE,
+    seed: 'formula',
+    meta: {
+      ...RECIPE.meta,
+      seed: 'formula',
+      formula: {
+        kind: 'formula-estimate', comparator: 'genshin-optimizer', assumptions: [],
+        rows: [], sources: [],
+      },
+    },
+  } as unknown as Recipe;
+
+  it('refuses to write one', () => {
+    const store = memory();
+    expect(writeRecipe(store, KEY, FORMULA)).toBe(false);
+    expect(store.length).toBe(0);
+  });
+
+  it('misses on one found under a gcsim key, rather than serving it', () => {
+    // Planted directly, as a stale build or a bug elsewhere could have left it.
+    const store = memory();
+    store.setItem(cacheKey(KEY), JSON.stringify(FORMULA));
+    expect(readRecipe(store, KEY)).toBeNull();
+  });
+});
+
 describe('browserStore', () => {
   it('returns something or null, never throws', () => {
     // Accessing localStorage *throws* where site data is blocked, rather than returning null.
