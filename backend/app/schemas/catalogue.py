@@ -40,9 +40,40 @@ from typing import Any
 from pydantic import BaseModel, computed_field
 
 from app.models.enums import Element, Rarity, StatType, WeaponType
-from app.services import element_symbols, traveler, weapon_symbols
+from app.services import element_symbols, gcsim_status, traveler, weapon_symbols
+from app.services.gcsim_status import GcsimSupport
 
 _FROM_ORM = {"from_attributes": True}
+
+
+class GcsimStatusRead(BaseModel):
+    """What gcsim can simulate of this entry, at the pin — computed on read (D-F1).
+
+    `app/services/gcsim_status.py` defines the three statuses and why weapons and sets only
+    ever take two of them. Published so the catalogue, the team builder and the optimizers
+    know *before* a search what used to surface only as a 422 after one.
+    """
+
+    status: GcsimSupport
+    #: gcsim's own key (`nahida`, `aetherpyro`), or null when it has none.
+    key: str | None = None
+    #: The gcsim commit the answer was read from (`gcsim_keys.pinned_commit()`).
+    pin: str
+    #: `partial` only: the moves the game gives this character that gcsim does not implement.
+    missing_actions: list[str] = []
+    #: `none` only: gcsim_keys' refusal, verbatim — the sentence a search would have failed with.
+    reason: str | None = None
+
+    @classmethod
+    def of(cls, status: gcsim_status.GcsimStatus) -> GcsimStatusRead:
+        """The wire shape of `gcsim_status`'s answer."""
+        return cls(
+            status=status.status,
+            key=status.key,
+            pin=status.pin,
+            missing_actions=list(status.missing_actions),
+            reason=status.reason,
+        )
 
 
 # ---- Characters ------------------------------------------------------------
@@ -261,6 +292,22 @@ class CharacterSummary(WeaponClassed):
         """
         return Rarity(self.rarity).stars
 
+    @computed_field
+    @property
+    def gcsim(self) -> GcsimStatusRead:
+        """Whether gcsim can simulate this character, and if not wholly, what it lacks.
+
+        **On the summary, not only on the detail**, because the surfaces that need it — the
+        catalogue grid, the team builder's slots (through `BuildRead.character`) — are lists.
+        Computed, like `display_name` beside it: D-F1 says a stored column goes stale at every
+        re-pin.
+        """
+        return GcsimStatusRead.of(
+            gcsim_status.for_character(
+                self.nanoka_id, self.name, self.element, self.weapon_type,
+            ),
+        )
+
 
 class CharacterRead(CharacterSummary):
     """A character in full: base stats, curves, ascension table, and the kit rows."""
@@ -353,6 +400,12 @@ class WeaponSummary(WeaponClassed):
         """`5` for `five_star`. The card draws these; nobody reads `four_star`."""
         return Rarity(self.rarity).stars
 
+    @computed_field
+    @property
+    def gcsim(self) -> GcsimStatusRead:
+        """Whether gcsim has this weapon at the pin: `full` or `none`, never `partial`."""
+        return GcsimStatusRead.of(gcsim_status.for_weapon(self.name))
+
 
 class WeaponRead(WeaponSummary):
     """A weapon in full, with its growth curves and refinement rows."""
@@ -417,6 +470,16 @@ class ArtifactSetRead(BaseModel):
     simulable: bool = False
 
     model_config = _FROM_ORM
+
+    @computed_field
+    @property
+    def gcsim(self) -> GcsimStatusRead:
+        """The same answer as `simulable`, in the shape characters and weapons publish.
+
+        `simulable` stays — removing it would not be an additive change — and both are read
+        off one lookup, so they cannot disagree.
+        """
+        return GcsimStatusRead.of(gcsim_status.for_artifact_set(self.name))
 
 
 # ---- Enemies ---------------------------------------------------------------

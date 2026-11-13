@@ -628,6 +628,24 @@
             }
           },
           {
+            "name": "gcsim",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/GcsimSupport"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only entries with this gcsim status at the pin (computed on read).",
+              "title": "Gcsim"
+            },
+            "description": "Only entries with this gcsim status at the pin (computed on read)."
+          },
+          {
             "name": "offset",
             "in": "query",
             "required": false,
@@ -784,6 +802,24 @@
               "default": false,
               "title": "Include Beta"
             }
+          },
+          {
+            "name": "gcsim",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/GcsimSupport"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only entries with this gcsim status at the pin (computed on read).",
+              "title": "Gcsim"
+            },
+            "description": "Only entries with this gcsim status at the pin (computed on read)."
           },
           {
             "name": "offset",
@@ -978,6 +1014,24 @@
               ],
               "title": "Name"
             }
+          },
+          {
+            "name": "gcsim",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/GcsimSupport"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only entries with this gcsim status at the pin (computed on read).",
+              "title": "Gcsim"
+            },
+            "description": "Only entries with this gcsim status at the pin (computed on read)."
           },
           {
             "name": "offset",
@@ -5045,13 +5099,19 @@
             "type": "boolean",
             "title": "Simulable",
             "default": false
+          },
+          "gcsim": {
+            "$ref": "#/components/schemas/GcsimStatusRead",
+            "description": "The same answer as `simulable`, in the shape characters and weapons publish.\n\n`simulable` stays \u2014 removing it would not be an additive change \u2014 and both are read\noff one lookup, so they cannot disagree.",
+            "readOnly": true
           }
         },
         "type": "object",
         "required": [
           "id",
           "nanoka_id",
-          "name"
+          "name",
+          "gcsim"
         ],
         "title": "ArtifactSetRead",
         "description": "One artifact set and its affixes.\n\n`piece_thresholds` is **data**, not the constant `[2, 4]`: 60 of the 65 sets at 7.0.51\nare `[2, 4]` and five are `[1]` \u2014 the \"Prayers\" circlets. A client hardcoding 2pc/4pc\ngets those five wrong, which is why the field is on the summary and not buried."
@@ -6698,6 +6758,11 @@
             "title": "Stars",
             "description": "`5` for `five_star`, from `Rarity.stars`.\n\nPublished for the same reason `WeaponSummary.stars` is: the characters page was\nderiving it with `rarity === 'five_star' ? 5 : 4`, which silently calls anything else\n\u2014 a lower rarity, a null \u2014 a four-star. A second copy of a rule that already exists\nserver-side, and the copy is the one that guesses.",
             "readOnly": true
+          },
+          "gcsim": {
+            "$ref": "#/components/schemas/GcsimStatusRead",
+            "description": "Whether gcsim can simulate this character, and if not wholly, what it lacks.\n\n**On the summary, not only on the detail**, because the surfaces that need it \u2014 the\ncatalogue grid, the team builder's slots (through `BuildRead.character`) \u2014 are lists.\nComputed, like `display_name` beside it: D-F1 says a stored column goes stale at every\nre-pin.",
+            "readOnly": true
           }
         },
         "type": "object",
@@ -6717,7 +6782,8 @@
           "weapon_type_icon",
           "element_icon",
           "display_name",
-          "stars"
+          "stars",
+          "gcsim"
         ],
         "title": "CharacterRead",
         "description": "A character in full: base stats, curves, ascension table, and the kit rows."
@@ -6822,6 +6888,11 @@
             "title": "Stars",
             "description": "`5` for `five_star`, from `Rarity.stars`.\n\nPublished for the same reason `WeaponSummary.stars` is: the characters page was\nderiving it with `rarity === 'five_star' ? 5 : 4`, which silently calls anything else\n\u2014 a lower rarity, a null \u2014 a four-star. A second copy of a rule that already exists\nserver-side, and the copy is the one that guesses.",
             "readOnly": true
+          },
+          "gcsim": {
+            "$ref": "#/components/schemas/GcsimStatusRead",
+            "description": "Whether gcsim can simulate this character, and if not wholly, what it lacks.\n\n**On the summary, not only on the detail**, because the surfaces that need it \u2014 the\ncatalogue grid, the team builder's slots (through `BuildRead.character`) \u2014 are lists.\nComputed, like `display_name` beside it: D-F1 says a stored column goes stale at every\nre-pin.",
+            "readOnly": true
           }
         },
         "type": "object",
@@ -6835,7 +6906,8 @@
           "weapon_type_icon",
           "element_icon",
           "display_name",
-          "stars"
+          "stars",
+          "gcsim"
         ],
         "title": "CharacterSummary",
         "description": "A character as a list entry."
@@ -8015,6 +8087,64 @@
         ],
         "title": "GcsimComparisonRequest",
         "description": "Body for `POST /builds/{id}/compare-weapons/gcsim` (W.6).\n\n**`rotation_id` is required and has no default.** A rotation belongs to a *team*, and a\nbuild can sit in several teams each with several rotations, so there is no rotation this\nendpoint could pick on its own. Inventing one would make the ranking an answer about a\nrotation the user never wrote \u2014 which is the same objection that closed Chunk I's\noptimization half."
+      },
+      "GcsimStatusRead": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/GcsimSupport"
+          },
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          },
+          "pin": {
+            "type": "string",
+            "title": "Pin"
+          },
+          "missing_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Actions",
+            "default": []
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "pin"
+        ],
+        "title": "GcsimStatusRead",
+        "description": "What gcsim can simulate of this entry, at the pin \u2014 computed on read (D-F1).\n\n`app/services/gcsim_status.py` defines the three statuses and why weapons and sets only\never take two of them. Published so the catalogue, the team builder and the optimizers\nknow *before* a search what used to surface only as a 422 after one."
+      },
+      "GcsimSupport": {
+        "type": "string",
+        "enum": [
+          "full",
+          "partial",
+          "none"
+        ],
+        "title": "GcsimSupport",
+        "description": "How much of an entry gcsim can simulate at the pin."
       },
       "GoodImportRequest": {
         "properties": {
@@ -13087,6 +13217,11 @@
             "title": "Stars",
             "description": "`5` for `five_star`. The card draws these; nobody reads `four_star`.",
             "readOnly": true
+          },
+          "gcsim": {
+            "$ref": "#/components/schemas/GcsimStatusRead",
+            "description": "Whether gcsim has this weapon at the pin: `full` or `none`, never `partial`.",
+            "readOnly": true
           }
         },
         "type": "object",
@@ -13099,7 +13234,8 @@
           "weapon_type_display",
           "weapon_type_icon",
           "sub_stat_display",
-          "stars"
+          "stars",
+          "gcsim"
         ],
         "title": "WeaponRead",
         "description": "A weapon in full, with its growth curves and refinement rows."
@@ -13326,6 +13462,11 @@
             "title": "Stars",
             "description": "`5` for `five_star`. The card draws these; nobody reads `four_star`.",
             "readOnly": true
+          },
+          "gcsim": {
+            "$ref": "#/components/schemas/GcsimStatusRead",
+            "description": "Whether gcsim has this weapon at the pin: `full` or `none`, never `partial`.",
+            "readOnly": true
           }
         },
         "type": "object",
@@ -13338,7 +13479,8 @@
           "weapon_type_display",
           "weapon_type_icon",
           "sub_stat_display",
-          "stars"
+          "stars",
+          "gcsim"
         ],
         "title": "WeaponSummary",
         "description": "A weapon as a list entry.\n\n`base_atk` and `sub_stat_type` are nullable because eight rows (the `ITEM_TPS_WEAPON`\nfamily, ids 224001-224008) publish `atk: null` and `sub: null`. They are imported\nvisibly rather than dropped; a client should expect to see them."

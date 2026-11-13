@@ -48,8 +48,9 @@ from app.schemas.catalogue import (
     WeaponSummary,
 )
 from app.schemas.common import PaginatedResponse
-from app.services import gcsim_keys, kqm_weapons
+from app.services import kqm_weapons
 from app.services.element_symbols import all_visions
+from app.services.gcsim_status import GcsimSupport
 from app.services.reactions import offered
 from app.services.unreleased import is_unreleased_class
 from app.services.weapon_symbols import all_classes
@@ -58,6 +59,26 @@ router = APIRouter(tags=["catalogue"])
 
 _Offset = Annotated[int, Query(ge=0)]
 _Limit = Annotated[int, Query(ge=1, le=200)]
+_Gcsim = Annotated[
+    GcsimSupport | None,
+    Query(description="Only entries with this gcsim status at the pin (computed on read)."),
+]
+
+
+def _gcsim_page[T: (CharacterSummary, WeaponSummary, ArtifactSetRead)](
+    items: list[T], gcsim: GcsimSupport, offset: int, limit: int,
+) -> PaginatedResponse[T]:
+    """Filter by gcsim status **after** reading, then paginate — and count the filter.
+
+    The status is not a column (D-F1: computed on read), so SQL cannot filter on it. The
+    catalogue is small enough — 150 characters, 266 weapons, 65 sets — that reading every row
+    matching the other filters and narrowing here costs nothing worth a stored column. `total`
+    counts the narrowed list, the rule this module's docstring sets for every envelope.
+    """
+    kept = [item for item in items if item.gcsim.status is gcsim]
+    return PaginatedResponse(
+        items=kept[offset : offset + limit], total=len(kept), offset=offset, limit=limit,
+    )
 
 
 @router.get("/characters", response_model=PaginatedResponse[CharacterSummary])
@@ -68,6 +89,7 @@ async def list_characters(
     rarity: Rarity | None = None,
     name: str | None = None,
     include_beta: bool = False,
+    gcsim: _Gcsim = None,
     offset: _Offset = 0,
     limit: _Limit = 50,
 ) -> PaginatedResponse[CharacterSummary]:
@@ -83,6 +105,11 @@ async def list_characters(
         "element": element, "weapon_type": weapon_type, "rarity": rarity, "name": name,
         "include_beta": include_beta,
     }
+    if gcsim is not None:
+        every = await repo.search(**filters, offset=0, limit=None)
+        return _gcsim_page(
+            [CharacterSummary.model_validate(row) for row in every], gcsim, offset, limit,
+        )
     rows = await repo.search(**filters, offset=offset, limit=limit)
     return PaginatedResponse(
         items=[CharacterSummary.model_validate(row) for row in rows],
@@ -117,6 +144,7 @@ async def list_weapons(
     rarity: Rarity | None = None,
     name: str | None = None,
     include_beta: bool = False,
+    gcsim: _Gcsim = None,
     offset: _Offset = 0,
     limit: _Limit = 50,
 ) -> PaginatedResponse[WeaponSummary]:
@@ -132,6 +160,11 @@ async def list_weapons(
         "weapon_type": weapon_type, "rarity": rarity, "name": name,
         "include_beta": include_beta,
     }
+    if gcsim is not None:
+        every = await repo.search(**filters, offset=0, limit=None)
+        return _gcsim_page(
+            [WeaponSummary.model_validate(row) for row in every], gcsim, offset, limit,
+        )
     rows = await repo.search(**filters, offset=offset, limit=limit)
     return PaginatedResponse(
         items=[WeaponSummary.model_validate(row) for row in rows],
@@ -192,10 +225,14 @@ async def get_weapon(
 async def list_artifact_sets(
     repo: Annotated[ArtifactSetRepository, Depends(get_artifact_set_repo)],
     name: str | None = None,
+    gcsim: _Gcsim = None,
     offset: _Offset = 0,
     limit: _Limit = 50,
 ) -> PaginatedResponse[ArtifactSetRead]:
     """List artifact sets with their bonus affixes, and whether gcsim can simulate each."""
+    if gcsim is not None:
+        every = await repo.search(name=name, offset=0, limit=None)
+        return _gcsim_page([_set_read(row) for row in every], gcsim, offset, limit)
     rows = await repo.search(name=name, offset=offset, limit=limit)
     return PaginatedResponse(
         items=[_set_read(row) for row in rows],
@@ -215,12 +252,8 @@ def _set_read(row: object) -> ArtifactSetRead:
     which those are.
     """
     read = ArtifactSetRead.model_validate(row)
-    try:
-        gcsim_keys.artifact_set_key(read.name)
-    except gcsim_keys.GcsimKeyError:
-        read.simulable = False
-    else:
-        read.simulable = True
+    # One lookup behind both fields, so `simulable` and `gcsim.status` cannot disagree.
+    read.simulable = read.gcsim.status is GcsimSupport.FULL
     return read
 
 

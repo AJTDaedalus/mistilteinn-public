@@ -9,6 +9,7 @@ import { ElementChip } from '../../shared/element/element';
 import { Combobox, type ComboboxOption } from '../../shared/combobox/combobox';
 import { CatalogueService, type ReactionRead } from '../catalogue/catalogue.service';
 import { CatalogueIcon } from '../../shared/icon/icon';
+import { GcsimBadge, type GcsimStatus } from '../../shared/gcsim-badge/gcsim-badge';
 import { BuildsService, type BuildRead } from '../builds/builds.service';
 import { TEAM_SLOTS, TeamsService, type TeamRead, type TeamSlot } from './teams.service';
 
@@ -26,8 +27,16 @@ interface TeamMember {
   icon: string | null;
   element: string | null;
   elementIcon: string | null;
+  gcsim: GcsimStatus | null;
   level: number;
   weapon: string;
+}
+
+/** The words an option row adds for a character gcsim cannot wholly simulate. */
+function gcsimNote(status: string | undefined): string[] {
+  if (status === 'none') return ['no gcsim'];
+  if (status === 'partial') return ['partial gcsim'];
+  return [];
 }
 
 /**
@@ -48,7 +57,7 @@ interface TeamMember {
  */
 @Component({
   selector: 'page-teams',
-  imports: [FormsModule, RouterLink, CatalogueIcon, Combobox, ElementChip],
+  imports: [FormsModule, RouterLink, CatalogueIcon, Combobox, ElementChip, GcsimBadge],
   templateUrl: './teams.html',
   styleUrl: './teams.scss',
 })
@@ -385,6 +394,7 @@ export class TeamsPage implements OnInit {
         // omission is the point.
         element: build.character?.element ?? null,
         elementIcon: build.character?.element_icon ?? null,
+        gcsim: build.character?.gcsim ?? null,
         level: build.character_level,
         weapon: build.weapon
           ? `${build.weapon.name} · R${build.refinement}`
@@ -406,8 +416,19 @@ export class TeamsPage implements OnInit {
       value: b.id,
       label: b.character?.name || 'No character',
       icon: b.character?.icon ?? null,
-      detail: `C${b.constellation_level} · ${b.weapon_display || 'no weapon'}`,
+      // **The gcsim status rides in the words**, because an option row holds text, not a
+      // component. Only the exceptions are named, as `GcsimBadge` does on a card.
+      detail: [
+        `C${b.constellation_level}`,
+        b.weapon_display || 'no weapon',
+        ...gcsimNote(b.character?.gcsim?.status),
+      ].join(' · '),
     }));
+  }
+
+  /** The `gcsim` block of whoever fills `slot`, for the badge beside its picker. */
+  protected gcsimFor(slot: TeamSlot): GcsimStatus | null {
+    return this.build(this.picked()[slot])?.character?.gcsim ?? null;
   }
 
 }
