@@ -277,6 +277,7 @@ export function liveQuantitiesFor(...recipes: readonly Recipe[]): string[] {
       live.add(FORMULA_ALL_DMG_BONUS);
     }
     if (hit.bonusFromEnergyRecharge !== undefined) live.add('energy_recharge');
+    if (hit.bonusFromEm !== undefined) live.add('elemental_mastery');
     for (const conversion of Object.values(hit.conversions)) {
       for (const q of parts[conversion.from]) live.add(q);
     }

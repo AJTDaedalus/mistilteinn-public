@@ -200,6 +200,13 @@ export interface RecipeHit {
    * `min(cap, perUnit × ER)`. `calibratedEnergyRecharge` is the ER before artifacts.
    */
   bonusFromEnergyRecharge?: { perUnit: number; cap: number; calibratedEnergyRecharge: number };
+  /**
+   * DMG% per point of the hit's **own** total Elemental Mastery — calibrated plus the
+   * candidate's, the same `em` the amplifying term reads. A kit buff whose giver is the
+   * optimized character and reads their EM (Kazuha's A4 on Kazuha, math-fallback P2): a
+   * teammate's EM is a number the server resolves, the subject's moves with every candidate.
+   */
+  bonusFromEm?: number;
 }
 
 /** The moves a set bonus can be scoped to. `formula_effects.MOVES` on the server. */
