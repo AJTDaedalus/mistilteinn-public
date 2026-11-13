@@ -131,6 +131,7 @@
             @for (option of hits(); track $index) {
               <option [value]="$index">
                 {{ enumLabel(option.talent) }} · {{ option.label }}
+                @if (scalingLabel(option); as scaling) { · {{ scaling }} }
               </option>
             }
           </select>

@@ -55,7 +55,10 @@ export class OptimizeService {
     const { data, error } = await this.api.POST('/api/v1/builds/{build_id}/search-context', {
       params: { path: { build_id: buildId } },
       body: {
-        hit: { channel, scope, talent: hit, scaling_stat: 'atk', flat_damage: 0 },
+        // No `scaling_stat`: a named talent's own row says what it scales off, and the
+        // `'atk'` this used to send scored every HP, DEF and EM scaler off ATK (math-fallback
+        // P0). The server returns the resolved stats on `hit`, which is what the kernel reads.
+        hit: { channel, scope, talent: hit, flat_damage: 0 },
         enemy: { level: enemyLevel, resistances: {}, default_resistance: 0.1 },
         compare_to_equipped: false,
       },

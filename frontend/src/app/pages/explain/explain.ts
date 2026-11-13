@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { apiErrorMessage } from '../../api/api-error';
 import { ElementChip } from '../../shared/element/element';
 import { CatalogueIcon } from '../../shared/icon/icon';
+import { scalingLabel } from '../../shared/scaling-label';
 import { EntityToken } from '../../shared/token/token';
 import { BuildsService, type BuildRead } from '../builds/builds.service';
 import {
@@ -61,6 +62,7 @@ export class ExplainPage implements OnInit {
   protected readonly channels = CHANNELS;
   protected readonly scopes = SCOPES;
   protected readonly enumLabel = enumLabel;
+  protected readonly scalingLabel = scalingLabel;
 
   protected readonly loading = signal(true);
   /** Non-null means the page failed to load. Never rendered as "you have no builds". */

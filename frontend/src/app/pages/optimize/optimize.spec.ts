@@ -26,7 +26,8 @@ const AYAKA_BUILD = {
 };
 
 const HITS = [
-  { talent: 'elemental_burst', label: 'Cutting DMG', index: 0, multiplier: 1.9091, hits: 1, exclusive: false },
+  { talent: 'elemental_burst', label: 'Cutting DMG', index: 0, multiplier: 1.9091, hits: 1, exclusive: false,
+    scaling_stat: 'atk', extra_terms: [] },
 ];
 
 const OPTIONS = {
@@ -42,7 +43,7 @@ const OPTIONS = {
 
 const CONTEXT = {
   base: { base_atk: 1000, base_hp: 20000, base_def: 800, crit_rate: 0.05, crit_dmg: 0.5 },
-  hit: { multiplier: 2.0, channel: 'cryo', scaling_stat: 'atk', amplifying: null },
+  hit: { multiplier: 2.0, channel: 'cryo', scaling_stat: 'atk', amplifying: null, extra_terms: [] },
   target: { level: 90, resistance: 0.1, def_reduction: 0, def_ignore: 0 },
   character_level: 90,
   dmg_bonus_quantity: 'cryo_dmg_bonus',
@@ -413,6 +414,48 @@ describe('the two vocabularies must be the same vocabulary', () => {
 
     expect(fromPage).toBeCloseTo(direct('melt'), 6);
     expect(direct('melt')).toBeGreaterThan(direct(null));
+  });
+
+  it("passes a mixed-stat hit's further terms through rather than scoring the first alone", async () => {
+    // Math-fallback P0. `{a} ATK+{b} Max HP` is one hit worth both terms; a page that dropped
+    // `extra_terms` would score it on ATK alone. Compared against the kernel called directly,
+    // as above.
+    const extra = [{ stat: 'hp' as const, multiplier: 0.05 }];
+    const page = pageWith({
+      optimize: {
+        context: vi.fn().mockResolvedValue({
+          ...CONTEXT, hit: { ...CONTEXT.hit, extra_terms: extra },
+        }),
+      } as unknown as Partial<OptimizeService>,
+    });
+    await page['load']();
+
+    await page['run']();
+
+    const fromPage = page['result']()?.builds[0].damage ?? 0;
+    const direct = (extraTerms: { stat: 'hp'; multiplier: number }[]) =>
+      search(
+        inventory().map((p) => ({ id: p.id, slot: p.slot as Slot, setId: p.set_id, stats: p.stats })),
+        {
+          base: CONTEXT.base,
+          hit: {
+            multiplier: CONTEXT.hit.multiplier,
+            scalingStat: 'atk',
+            flatDamage: 0,
+            baseDamageBonus: 0,
+            amplifying: null,
+            reactionBonus: 0,
+            extraTerms,
+          },
+          target: { level: 90, resistance: 0.1, defReduction: 0, defIgnore: 0 },
+          characterLevel: 90,
+          dmgBonusQuantity: 'cryo_dmg_bonus',
+          setBonuses: [],
+        },
+      ).builds[0].damage;
+
+    expect(fromPage).toBeCloseTo(direct(extra), 6);
+    expect(direct(extra)).toBeGreaterThan(direct([]));
   });
 
   it('reports a slot the kernel does not know rather than dropping it silently', async () => {
