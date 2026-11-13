@@ -1330,3 +1330,20 @@ on the open questions that design listed.
 | F1's residual case (a victim clicking a link someone else triggered) | Keep as is for now. Asking for the password on the verify page is a UX change for later. |
 | Closed-beta data (the YuanShen pin is a closed-beta build; beta characters are seeded) | **Deferred, and it holds the launch.** Removing it means code changes, not a filter rule. |
 | A private rehearsal repository | Approved: Actions off, no runners, push only a gated export. |
+
+## 36. The public copy withholds unreleased materials (2026-11-12)
+
+The closed-beta ruling deferred in §35 is settled. The beta *characters* were never in the
+repository: they live in the database, which is seeded from nanoka at deploy time. What the
+YuanShen snapshot does carry is a handful of unreleased material rows in
+`snapshot/planner_economy.json`.
+
+**Owner ruling:** the public copy drops those rows, from every version of the file, and the
+private repo and prod keep them. Prod needs them, because it prices beta characters.
+`release/rules.py:WITHHELD_JSON_KEYS` lists the rows (113094-113097 and 200130). The gate fails
+an export that still carries one. It also fails on any nameless row that is still nameless at
+the export's head, so a re-pin cannot add an unreviewed one. `python -m release.beta_materials`
+lists named beta-only rows from the database at each re-pin.
+
+**The list only grows.** Removing an id after launch would rewrite public history. A withheld
+material that later releases therefore stays unknown in the public copy.
