@@ -1,0 +1,585 @@
+{
+  "_about": "Conditional artifact set bonuses for the formula estimate (math-fallback P1, task 7). Every number is read from the seeded `artifact_set_affixes.param_list` by index ({\"param\": i}); `params` pins the list each entry was curated against, and a tier whose live list differs is refused as stale rather than resolved. Structure (which param buffs what, under which condition) is transcribed from Genshin Optimizer's artifact sheets, `go_root`/<go>, at `go_commit` (MIT). Constants not in a param list carry their own GO citation. Loaded and validated by app/formula/genshin/set_effects.py.",
+  "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+  "go_root": "libs/gi/sheets/src/Artifacts",
+  "tiers": [
+    {
+      "set_id": 10001, "set": "Resolution of Sojourner", "pieces": 4,
+      "params": [0.3, 0, 0, 0, 0, 0, 0, 0],
+      "go": "ResolutionOfSojourner/index.tsx:12,17",
+      "effects": [{"stat": "crit_rate", "moves": ["charged"], "value": {"param": 0}}]
+    },
+    {
+      "set_id": 10002, "set": "Brave Heart", "pieces": 4,
+      "params": [0.3, 0.5, 0, 0, 0, 0, 0, 0],
+      "go": "BraveHeart/index.tsx:13-18,23",
+      "conditions": [{"key": "enemy_above_half_hp", "label": "Enemy above 50% HP", "kind": "toggle", "default": 0, "default_reason": "situational"}],
+      "effects": [{"stat": "dmg_bonus", "value": {"param": 0}, "when": [{"condition": "enemy_above_half_hp", "values": [1]}]}]
+    },
+    {
+      "set_id": 10003, "set": "Defender's Will", "pieces": 4,
+      "params": [0.3, 0, 0, 0, 0, 0, 0, 0],
+      "go": "DefendersWill/index.tsx:15-27",
+      "unmodelled": [{"what": "Elemental RES +30% per party element", "reason": "no damage effect: the wearer's own resistance"}]
+    },
+    {
+      "set_id": 10004, "set": "Tiny Miracle", "pieces": 2,
+      "params": [0.2, 0, 0, 0, 0, 0, 0, 0],
+      "go": "TinyMiracle/index.tsx:16-38",
+      "unmodelled": [{"what": "All Elemental RES +20%", "reason": "no damage effect: the wearer's own resistance"}]
+    },
+    {
+      "set_id": 10004, "set": "Tiny Miracle", "pieces": 4,
+      "params": [0.3, 10, 10, 0, 0, 0, 0, 0],
+      "go": "TinyMiracle/index.tsx:25-38",
+      "unmodelled": [{"what": "Elemental RES +30% after taking that element's DMG", "reason": "no damage effect: the wearer's own resistance"}]
+    },
+    {
+      "set_id": 10005, "set": "Berserker", "pieces": 4,
+      "params": [0.24, 0.7, 0, 0, 0, 0, 0, 0],
+      "go": "Berserker/index.tsx:14-24",
+      "conditions": [{"key": "hp_below_70", "label": "HP below 70%", "kind": "toggle", "default": 0, "default_reason": "situational"}],
+      "effects": [{"stat": "crit_rate", "value": {"param": 0}, "when": [{"condition": "hp_below_70", "values": [1]}]}]
+    },
+    {
+      "set_id": 10006, "set": "Martial Artist", "pieces": 2,
+      "params": [0.15, 0, 0, 0, 0, 0, 0, 0],
+      "go": "MartialArtist/index.tsx:13-18,32-33",
+      "effects": [{"stat": "dmg_bonus", "moves": ["normal", "charged"], "value": {"param": 0}}]
+    },
+    {
+      "set_id": 10006, "set": "Martial Artist", "pieces": 4,
+      "params": [8, 1, 0.25, 0, 0, 0, 0, 0],
+      "go": "MartialArtist/index.tsx:11,19-28",
+      "conditions": [{"key": "after_skill", "label": "After using an Elemental Skill", "kind": "toggle", "default": 1, "default_reason": "self"}],
+      "effects": [{"stat": "dmg_bonus", "moves": ["normal", "charged"], "value": {"param": 2}, "when": [{"condition": "after_skill", "values": [1]}]}]
+    },
+    {
+      "set_id": 10007, "set": "Instructor", "pieces": 4,
+      "params": [8, 120, 0, 0, 0, 0, 0, 0],
+      "go": "Instructor/index.tsx:17-36",
+      "conditions": [{"key": "after_reaction", "label": "After triggering an Elemental Reaction", "kind": "toggle", "default": 0, "default_reason": "situational"}],
+      "effects": [{"stat": "elemental_mastery", "value": {"param": 1}, "when": [{"condition": "after_reaction", "values": [1]}]}]
+    },
+    {
+      "set_id": 10008, "set": "Gambler", "pieces": 2,
+      "params": [0.2, 0, 0, 0, 0, 0, 0, 0],
+      "go": "Gambler/index.tsx:11,15",
+      "effects": [{"stat": "dmg_bonus", "moves": ["skill"], "value": {"param": 0}}]
+    },
+    {
+      "set_id": 10008, "set": "Gambler", "pieces": 4,
+      "params": [15, 1, 0, 0, 0, 0, 0, 0],
+      "go": "Gambler/index.tsx:13-17 (no 4-piece stat)",
+      "unmodelled": [{"what": "Elemental Skill CD reset on a defeat", "reason": "no damage effect: cooldowns are rotation timing, which the estimate does not model"}]
+    },
+    {
+      "set_id": 10009, "set": "The Exile", "pieces": 4,
+      "params": [2, 6, 0, 0, 0, 0, 0, 0],
+      "go": "TheExile/index.tsx:11-16 (no 4-piece stat)",
+      "unmodelled": [{"what": "Energy for the party after a burst", "reason": "no damage effect: energy is not modelled in the estimate (G13)"}]
+    },
+    {
+      "set_id": 10010, "set": "Adventurer", "pieces": 4,
+      "params": [5, 1, 0.06, 0, 0, 0, 0, 0],
+      "go": "Adventurer/index.tsx:19-33",
+      "unmodelled": [{"what": "Healing on opening a chest", "reason": "no damage effect: healing"}]
+    },
+    {
+      "set_id": 10011, "set": "Lucky Dog", "pieces": 4,
+      "params": [300, 0, 0, 0, 0, 0, 0, 0],
+      "go": "LuckyDog/index.tsx:13-23",
+      "unmodelled": [{"what": "Healing on picking up Mora", "reason": "no damage effect: healing"}]
+    },
+    {
+      "set_id": 10012, "set": "Scholar", "pieces": 4,
+      "params": [3, 0, 0, 0, 0, 0, 0, 0],
+      "go": "Scholar/index.tsx:11-16 (no 4-piece stat)",
+      "unmodelled": [{"what": "Energy for bow and catalyst users on particles", "reason": "no damage effect: energy is not modelled in the estimate (G13)"}]
+    },
+    {
+      "set_id": 10013, "set": "Traveling Doctor", "pieces": 4,
+      "params": [0.2, 0, 0, 0, 0, 0, 0, 0],
+      "go": "TravelingDoctor/index.tsx:19-33",
+      "unmodelled": [{"what": "Healing on burst", "reason": "no damage effect: healing"}]
+    },
+    {
+      "set_id": 14001, "set": "Blizzard Strayer", "pieces": 4,
+      "params": [0.2, 0.2, 0, 0, 0, 0, 0, 0],
+      "go": "BlizzardStrayer/index.tsx:19-25,32-35",
+      "conditions": [{"key": "enemy", "label": "Enemy affected by", "kind": "choice", "options": ["cryo", "frozen"], "default": "", "default_reason": "situational"}],
+      "effects": [
+        {"stat": "crit_rate", "value": {"param": 0}, "when": [{"condition": "enemy", "values": ["cryo", "frozen"]}]},
+        {"stat": "crit_rate", "value": {"param": 1}, "when": [{"condition": "enemy", "values": ["frozen"]}]}
+      ]
+    },
+    {
+      "set_id": 14002, "set": "Thundersoother", "pieces": 4,
+      "params": [0.35, 0, 0, 0, 0, 0, 0, 0],
+      "go": "Thundersoother/index.tsx:12-24",
+      "conditions": [{"key": "enemy_electro", "label": "Enemy affected by Electro", "kind": "toggle", "default": 0, "default_reason": "situational"}],
+      "effects": [{"stat": "dmg_bonus", "value": {"param": 0}, "when": [{"condition": "enemy_electro", "values": [1]}]}]
+    },
+    {
+      "set_id": 14003, "set": "Lavawalker", "pieces": 4,
+      "params": [0.35, 0, 0, 0, 0, 0, 0, 0],
+      "go": "Lavawalker/index.tsx:12-23",
+      "conditions": [{"key": "enemy_pyro", "label": "Enemy affected by Pyro", "kind": "toggle", "default": 0, "default_reason": "situational"}],
+      "effects": [{"stat": "dmg_bonus", "value": {"param": 0}, "when": [{"condition": "enemy_pyro", "values": [1]}]}]
+    },
+    {
+      "set_id": 14004, "set": "Maiden Beloved", "pieces": 4,
+      "params": [0.2, 10, 0, 0, 0, 0, 0, 0],
+      "go": "MaidenBeloved/index.tsx:12-26",
+      "unmodelled": [{"what": "Incoming healing +20% for the party", "reason": "no damage effect: healing"}]
+    },
+    {
+      "set_id": 15001, "set": "Gladiator's Finale", "pieces": 4,
+      "params": [0.35, 0, 0, 0, 0, 0, 0, 0],
+      "go": "GladiatorsFinale/index.tsx:18-26,31",
+      "effects": [{"stat": "dmg_bonus", "moves": ["normal"], "value": {"param": 0}, "weapon_types": ["WEAPON_SWORD_ONE_HAND", "WEAPON_CLAYMORE", "WEAPON_POLE"]}]
+    },
+    {
+      "set_id": 15002, "set": "Viridescent Venerer", "pieces": 4,
+      "params": [0.6, 0.4, 10, 0.2, 0, 0, 0, 0],
+      "go": "ViridescentVenerer/index.tsx:21-40,48-50",
+      "conditions": [{"key": "swirled", "label": "Element swirled", "kind": "choice", "options": ["pyro", "hydro", "electro", "cryo"], "default": "", "default_reason": "situational"}],
+      "effects": [{"stat": "enemy_res", "value": {"param": 1, "negate": true}, "element_from": ["swirled"], "when": [{"condition": "swirled", "values": ["pyro", "hydro", "electro", "cryo"]}]}],
+      "unmodelled": [
+        {"what": "Swirl DMG +60%, Stellar Swirl DMG +20%", "reason": "transformative and Stellar reactions are not modelled (P3, G11)"},
+        {"what": "Cryo RES -40% after a Stellar Swirl", "reason": "Stellar reactions are not modelled (P3, G11)"}
+      ]
+    },
+    {
+      "set_id": 15003, "set": "Wanderer's Troupe", "pieces": 4,
+      "params": [0.35, 0, 0, 0, 0, 0, 0, 0],
+      "go": "WanderersTroupe/index.tsx:18-26,31",
+      "effects": [{"stat": "dmg_bonus", "moves": ["charged"], "value": {"param": 0}, "weapon_types": ["WEAPON_CATALYST", "WEAPON_BOW"]}]
+    },
+    {
+      "set_id": 15004, "set": "Glacier and Snowfield", "pieces": 4,
+      "params": [1, 0.15, 10, 0.3, 0, 0, 0, 0],
+      "go": "(none: GO has no sheet for this set at go_commit, and gcsim does not implement it)",
+      "unmodelled": [{"what": "Superconduct +100%, Melt +15%, Cryo DMG +30% after a burst", "reason": "no structure to cite: neither Genshin Optimizer nor gcsim has this set, so transcribing it from its text alone would be prose-parsing"}]
+    },
+    {
+      "set_id": 15005, "set": "Thundering Fury", "pieces": 4,
+      "params": [0.4, 0.8, 0.2, 0.2, 0, 0, 0, 0],
+      "go": "ThunderingFury/index.tsx:12-30",
+      "unmodelled": [
+        {"what": "Overloaded, Electro-Charged, Superconduct and Hyperbloom DMG +40%; Lunar-Charged and Stellar-Conduct +20%", "reason": "transformative, Lunar and Stellar reactions are not modelled (P3, G11)"},
+        {"what": "Aggravate DMG bonus +20%", "reason": "additive reactions are not modelled (P3, G11)"},
+        {"what": "Elemental Skill CD -1s on a reaction", "reason": "no rotation timing in the estimate"}
+      ]
+    },
+    {
+      "set_id": 15006, "set": "Crimson Witch of Flames", "pieces": 4,
+      "params": [0.4, 0.15, 0.15, 0.5, 10, 0, 0, 0],
+      "go": "CrimsonWitchOfFlames/index.tsx:20-56",
+      "conditions": [{"key": "stacks", "label": "Elemental Skill stacks", "kind": "stacks", "max": {"constant": 3, "cite": "CrimsonWitchOfFlames/index.tsx:37 range(1, 3)"}, "default": 3, "default_reason": "self"}],
+      "effects": [
+        {"stat": "reaction_bonus", "reactions": ["vaporize", "reverse_vaporize"], "value": {"param": 1}},
+        {"stat": "reaction_bonus", "reactions": ["melt", "reverse_melt"], "value": {"param": 2}},
+        {"stat": "dmg_bonus", "elements": ["pyro"], "per": "stacks", "value": {"param": 3, "times_tier_prop": {"pieces": 2, "prop": "FIGHT_PROP_FIRE_ADD_HURT"}}}
+      ],
+      "unmodelled": [{"what": "Overloaded, Burning and Burgeon DMG +40%", "reason": "transformative reactions are not modelled (P3, G11)"}]
+    },
+    {
+      "set_id": 15007, "set": "Noblesse Oblige", "pieces": 2,
+      "params": [0.2, 0, 0, 0, 0, 0, 0, 0],
+      "go": "NoblesseOblige/index.tsx:18,30",
+      "effects": [{"stat": "dmg_bonus", "moves": ["burst"], "value": {"param": 0}}]
+    },
+    {
+      "set_id": 15007, "set": "Noblesse Oblige", "pieces": 4,
+      "params": [0.2, 12, 0, 0, 0, 0, 0, 0],
+      "go": "NoblesseOblige/index.tsx:20-38",
+      "conditions": [{"key": "after_burst", "label": "After using an Elemental Burst", "kind": "toggle", "default": 1, "default_reason": "self"}],
+      "effects": [{"stat": "atk_pct", "value": {"param": 0}, "when": [{"condition": "after_burst", "values": [1]}]}]
+    },
+    {
+      "set_id": 15008, "set": "Bloodstained Chivalry", "pieces": 4,
+      "params": [10, 0.5, -5, 0.1, 0, 0, 0, 0],
+      "go": "BloodstainedChivalry/index.tsx:13-28",
+      "conditions": [{"key": "after_defeat", "label": "After defeating an opponent", "kind": "toggle", "default": 0, "default_reason": "situational"}],
+      "effects": [{"stat": "dmg_bonus", "moves": ["charged"], "value": {"param": 1}, "when": [{"condition": "after_defeat", "values": [1]}]}],
+      "unmodelled": [{"what": "Charged Attack stamina cost 0", "reason": "no damage effect: stamina"}]
+    },
+    {
+      "set_id": 15009, "set": "Prayers for Illumination", "pieces": 1,
+      "params": [0.4, 0, 0, 0, 0, 0, 0, 0],
+      "go": "PrayersForIllumination/index.tsx (no stat)",
+      "unmodelled": [{"what": "Shorter time affected by an element", "reason": "no damage effect: an effect on the wearer"}]
+    },
+    {
+      "set_id": 15010, "set": "Prayers for Destiny", "pieces": 1,
+      "params": [0.4, 0, 0, 0, 0, 0, 0, 0],
+      "go": "PrayersForDestiny/index.tsx (no stat)",
+      "unmodelled": [{"what": "Shorter time affected by an element", "reason": "no damage effect: an effect on the wearer"}]
+    },
+    {
+      "set_id": 15011, "set": "Prayers for Wisdom", "pieces": 1,
+      "params": [0.4, 0, 0, 0, 0, 0, 0, 0],
+      "go": "PrayersForWisdom/index.tsx (no stat)",
+      "unmodelled": [{"what": "Shorter time affected by an element", "reason": "no damage effect: an effect on the wearer"}]
+    },
+    {
+      "set_id": 15012, "set": "Prayers to the Firmament", "pieces": 1,
+      "params": [0.4, 0, 0, 0, 0, 0, 0, 0],
+      "go": "(none: GO has no sheet for this set at go_commit)",
+      "unmodelled": [{"what": "Shorter time affected by an element", "reason": "no damage effect: an effect on the wearer"}]
+    },
+    {
+      "set_id": 15013, "set": "Prayers to Springtime", "pieces": 1,
+      "params": [0.4, 0, 0, 0, 0, 0, 0, 0],
+      "go": "PrayersToSpringtime/index.tsx (no stat)",
+      "unmodelled": [{"what": "Shorter time affected by an element", "reason": "no damage effect: an effect on the wearer"}]
+    },
+    {
+      "set_id": 15014, "set": "Archaic Petra", "pieces": 4,
+      "params": [0.35, 10, 0, 0, 0, 0, 0, 0],
+      "go": "ArchaicPetra/index.tsx:24-40,46-49",
+      "conditions": [{"key": "shard", "label": "Crystallize shard picked up", "kind": "choice", "options": ["pyro", "hydro", "electro", "cryo"], "default": "", "default_reason": "situational"}],
+      "effects": [{"stat": "dmg_bonus", "value": {"param": 0}, "element_from": ["shard"], "when": [{"condition": "shard", "values": ["pyro", "hydro", "electro", "cryo"]}]}],
+      "unmodelled": [{"what": "The same bonus after a Lunar-Crystallize reaction", "reason": "Lunar reactions are not modelled (P3, G11); the shard choice covers the bonus itself"}]
+    },
+    {
+      "set_id": 15015, "set": "Retracing Bolide", "pieces": 4,
+      "params": [0.4, 0, 0, 0, 0, 0, 0, 0],
+      "go": "RetracingBolide/index.tsx:12-30",
+      "conditions": [{"key": "shielded", "label": "Protected by a shield", "kind": "toggle", "default": 0, "default_reason": "situational"}],
+      "effects": [{"stat": "dmg_bonus", "moves": ["normal", "charged"], "value": {"param": 0}, "when": [{"condition": "shielded", "values": [1]}]}]
+    },
+    {
+      "set_id": 15016, "set": "Heart of Depth", "pieces": 4,
+      "params": [0.3, 1, 15, 0, 0, 0, 0, 0],
+      "go": "HeartOfDepth/index.tsx:13-25",
+      "conditions": [{"key": "after_skill", "label": "After using an Elemental Skill", "kind": "toggle", "default": 1, "default_reason": "self"}],
+      "effects": [{"stat": "dmg_bonus", "moves": ["normal", "charged"], "value": {"param": 0}, "when": [{"condition": "after_skill", "values": [1]}]}]
+    },
+    {
+      "set_id": 15017, "set": "Tenacity of the Millelith", "pieces": 4,
+      "params": [0.2, 0.3, 3, 0.5, 0, 0, 0, 0],
+      "go": "TenacityOfTheMillelith/index.tsx:19-43",
+      "conditions": [{"key": "skill_hit", "label": "After an Elemental Skill hits", "kind": "toggle", "default": 1, "default_reason": "self"}],
+      "effects": [{"stat": "atk_pct", "value": {"param": 0}, "when": [{"condition": "skill_hit", "values": [1]}]}],
+      "unmodelled": [{"what": "Shield Strength +30%", "reason": "no damage effect: shields"}]
+    },
+    {
+      "set_id": 15018, "set": "Pale Flame", "pieces": 4,
+      "params": [0.09, 7, 0.3, 0.25, 0, 0, 0, 0],
+      "go": "PaleFlame/index.tsx:21-54",
+      "conditions": [{"key": "stacks", "label": "Elemental Skill hit stacks", "kind": "stacks", "max": {"constant": 2, "cite": "PaleFlame/index.tsx:31 range(1, 2)"}, "default": 2, "default_reason": "self"}],
+      "effects": [
+        {"stat": "atk_pct", "per": "stacks", "value": {"param": 0}},
+        {"stat": "dmg_bonus", "elements": ["physical"], "value": {"param": 3}, "when": [{"condition": "stacks", "values": [2]}]}
+      ]
+    },
+    {
+      "set_id": 15019, "set": "Shimenawa's Reminiscence", "pieces": 4,
+      "params": [15, 0.5, 10, 0, 0, 0, 0, 0],
+      "go": "ShimenawasReminiscence/index.tsx:13-29",
+      "conditions": [{"key": "used_energy", "label": "Elemental Skill cast with 15+ Energy", "kind": "toggle", "default": 1, "default_reason": "self"}],
+      "effects": [{"stat": "dmg_bonus", "moves": ["normal", "charged", "plunge"], "value": {"param": 1}, "when": [{"condition": "used_energy", "values": [1]}]}],
+      "unmodelled": [{"what": "Loses 15 Energy", "reason": "no damage effect: energy is not modelled in the estimate (G13)"}]
+    },
+    {
+      "set_id": 15020, "set": "Emblem of Severed Fate", "pieces": 4,
+      "params": [0.25, 0.75, 0, 0, 0, 0, 0, 0],
+      "go": "EmblemOfSeveredFate/index.tsx:13-17,24",
+      "effects": [{"stat": "dmg_bonus_from_energy_recharge", "moves": ["burst"], "value": {"param": 0}, "cap": {"param": 1}}]
+    },
+    {
+      "set_id": 15021, "set": "Husk of Opulent Dreams", "pieces": 4,
+      "params": [0.3, 3, 0.06, 0.06, 6, 0, 0, 0],
+      "go": "HuskOfOpulentDreams/index.tsx:21-53",
+      "conditions": [{"key": "curiosity", "label": "Curiosity stacks", "kind": "stacks", "max": {"constant": 4, "cite": "HuskOfOpulentDreams/index.tsx:29 range(1, 4)"}, "default": 4, "default_reason": "self"}],
+      "effects": [
+        {"stat": "def_pct", "per": "curiosity", "value": {"param": 2}},
+        {"stat": "dmg_bonus", "elements": ["geo"], "per": "curiosity", "value": {"param": 3}}
+      ]
+    },
+    {
+      "set_id": 15022, "set": "Ocean-Hued Clam", "pieces": 4,
+      "params": [3, 0.9, 0, 3.5, 30000, 0, 0, 0],
+      "go": "OceanHuedClam/index.tsx:20-24",
+      "unmodelled": [{"what": "Sea-Dyed Foam: Physical DMG of 90% of healing done", "reason": "a damage instance of its own, scaling off healing; neither is a talent hit of the character optimized"}]
+    },
+    {
+      "set_id": 15023, "set": "Vermillion Hereafter", "pieces": 4,
+      "params": [16, 0.08, 0.1, 4, 0.8, 0, 0, 0],
+      "go": "VermillionHereafter/index.tsx:24-51",
+      "conditions": [
+        {"key": "after_burst", "label": "Nascent Light (after an Elemental Burst)", "kind": "toggle", "default": 1, "default_reason": "self"},
+        {"key": "hp_drops", "label": "HP decreases (stacks)", "kind": "stacks", "max": {"param": 3}, "default": 0, "default_reason": "situational"}
+      ],
+      "effects": [
+        {"stat": "atk_pct", "value": {"param": 1}, "when": [{"condition": "after_burst", "values": [1]}]},
+        {"stat": "atk_pct", "per": "hp_drops", "value": {"param": 2}, "when": [{"condition": "after_burst", "values": [1]}]}
+      ]
+    },
+    {
+      "set_id": 15024, "set": "Echoes of an Offering", "pieces": 4,
+      "params": [0.36, 0.7, 0.05, 0.2, 0.2, 0.2, 0, 0],
+      "go": "EchoesOfAnOffering/index.tsx:22-39,44",
+      "conditions": [{"key": "valley_rite", "label": "Valley Rite active", "kind": "toggle", "default": 0, "default_reason": "situational"}],
+      "effects": [{"stat": "flat_damage_from_atk", "moves": ["normal"], "value": {"param": 1}, "when": [{"condition": "valley_rite", "values": [1]}]}],
+      "unmodelled": [{"what": "The proc chance (36%, +20% per miss)", "reason": "a proc rate is uptime; the toggle states it as on or off, as GO's `on` mode does"}]
+    },
+    {
+      "set_id": 15025, "set": "Deepwood Memories", "pieces": 4,
+      "params": [0.3, 8, 0, 0, 0, 0, 0, 0],
+      "go": "DeepwoodMemories/index.tsx:20-41",
+      "conditions": [{"key": "skill_or_burst_hit", "label": "After an Elemental Skill or Burst hits", "kind": "toggle", "default": 1, "default_reason": "self"}],
+      "effects": [{"stat": "enemy_res", "elements": ["dendro"], "value": {"param": 0, "negate": true}, "when": [{"condition": "skill_or_burst_hit", "values": [1]}]}]
+    },
+    {
+      "set_id": 15026, "set": "Gilded Dreams", "pieces": 4,
+      "params": [0.14, 50, 8, 8, 0, 0, 0, 0],
+      "go": "GildedDreams/index.tsx:30-83",
+      "conditions": [{"key": "after_reaction", "label": "Within 8s of triggering a reaction", "kind": "toggle", "default": 0, "default_reason": "situational"}],
+      "effects": [
+        {"stat": "atk_pct", "value": {"param": 0}, "per_team": "same_element_others", "per_team_max": 3, "when": [{"condition": "after_reaction", "values": [1]}]},
+        {"stat": "elemental_mastery", "value": {"param": 1}, "per_team": "different_element", "per_team_max": 3, "when": [{"condition": "after_reaction", "values": [1]}]}
+      ]
+    },
+    {
+      "set_id": 15027, "set": "Desert Pavilion Chronicle", "pieces": 4,
+      "params": [0.1, 0.4, 15, 0, 0, 0, 0, 0],
+      "go": "DesertPavilionChronicle/index.tsx:14-34",
+      "conditions": [{"key": "charged_hit", "label": "After a Charged Attack hits", "kind": "toggle", "default": 1, "default_reason": "self"}],
+      "effects": [{"stat": "dmg_bonus", "moves": ["normal", "charged", "plunge"], "value": {"param": 1}, "when": [{"condition": "charged_hit", "values": [1]}]}],
+      "unmodelled": [{"what": "Normal Attack SPD +10%", "reason": "no damage effect: attack speed is rotation timing"}]
+    },
+    {
+      "set_id": 15028, "set": "Flower of Paradise Lost", "pieces": 4,
+      "params": [0.4, 0.4, 0.4, 10, 4, 0.25, 1, 0.1],
+      "go": "FlowerOfParadiseLost/index.tsx:24-87",
+      "unmodelled": [{"what": "Bloom, Hyperbloom, Burgeon and Lunar-Bloom DMG, with stacks", "reason": "transformative and Lunar reactions are not modelled (P3, G11)"}]
+    },
+    {
+      "set_id": 15029, "set": "Nymph's Dream", "pieces": 4,
+      "params": [8, 0.07, 0.16, 0.25, 0.04, 0.09, 0.15, 0],
+      "go": "NymphsDream/index.tsx:25-53",
+      "conditions": [{"key": "mirrored_nymph", "label": "Mirrored Nymph stacks", "kind": "stacks", "max": {"constant": 3, "cite": "NymphsDream/index.tsx:26 range(1, 3)"}, "default": 3, "default_reason": "self"}],
+      "effects": [
+        {"stat": "atk_pct", "per": "mirrored_nymph", "by_stack": [{"param": 1}, {"param": 2}, {"param": 3}]},
+        {"stat": "dmg_bonus", "elements": ["hydro"], "per": "mirrored_nymph", "by_stack": [{"param": 4}, {"param": 5}, {"param": 6}]}
+      ]
+    },
+    {
+      "set_id": 15030, "set": "Vourukasha's Glow", "pieces": 4,
+      "params": [0.1, 0.8, 5, 5, 0, 0, 0, 0],
+      "go": "VourukashasGlow/index.tsx:22-56",
+      "conditions": [{"key": "took_dmg", "label": "Times DMG taken (stacks)", "kind": "stacks", "max": {"constant": 5, "cite": "VourukashasGlow/index.tsx:30 range(1, 5)"}, "default": 0, "default_reason": "situational"}],
+      "effects": [
+        {"stat": "dmg_bonus", "moves": ["skill", "burst"], "value": {"param": 0}},
+        {"stat": "dmg_bonus", "moves": ["skill", "burst"], "per": "took_dmg", "value": {"param": 0, "times_param": 1}}
+      ]
+    },
+    {
+      "set_id": 15031, "set": "Marechaussee Hunter", "pieces": 2,
+      "params": [0.15, 0, 0, 0, 0, 0, 0, 0],
+      "go": "MarechausseeHunter/index.tsx:19-20,36-37",
+      "effects": [{"stat": "dmg_bonus", "moves": ["normal", "charged"], "value": {"param": 0}}]
+    },
+    {
+      "set_id": 15031, "set": "Marechaussee Hunter", "pieces": 4,
+      "params": [0.12, 5, 3, 0, 0, 0, 0, 0],
+      "go": "MarechausseeHunter/index.tsx:22-38",
+      "conditions": [{"key": "hp_changes", "label": "HP increases or decreases (stacks)", "kind": "stacks", "max": {"param": 2}, "default": 0, "default_reason": "situational"}],
+      "effects": [{"stat": "crit_rate", "per": "hp_changes", "value": {"param": 0}}]
+    },
+    {
+      "set_id": 15032, "set": "Golden Troupe", "pieces": 2,
+      "params": [0.2, 0, 0, 0, 0, 0, 0, 0],
+      "go": "GoldenTroupe/index.tsx:12-14,28",
+      "effects": [{"stat": "dmg_bonus", "moves": ["skill"], "value": {"param": 0}}]
+    },
+    {
+      "set_id": 15032, "set": "Golden Troupe", "pieces": 4,
+      "params": [0.25, 1, 2, 0, 0, 0, 0, 0],
+      "go": "GoldenTroupe/index.tsx:16-28",
+      "conditions": [{"key": "off_field", "label": "Off-field", "kind": "toggle", "default": 0, "default_reason": "situational"}],
+      "effects": [
+        {"stat": "dmg_bonus", "moves": ["skill"], "value": {"param": 0}},
+        {"stat": "dmg_bonus", "moves": ["skill"], "value": {"param": 0}, "when": [{"condition": "off_field", "values": [1]}]}
+      ]
+    },
+    {
+      "set_id": 15033, "set": "Song of Days Past", "pieces": 4,
+      "params": [6, 10, 5, 0.08, 15000, 0, 0, 0],
+      "go": "SongOfDaysPast/index.tsx:22-50",
+      "conditions": [{"key": "healing", "label": "Healing recorded by Yearning", "kind": "number", "max": {"param": 4}, "step": 1000, "default": 0, "default_reason": "situational"}],
+      "effects": [{"stat": "flat_damage", "moves": ["normal", "charged", "plunge", "skill", "burst"], "per": "healing", "value": {"param": 3}}],
+      "unmodelled": [{"what": "Waves of Days Past ends after 5 hits or 10s", "reason": "a hit budget is rotation timing; like GO, every row's hits receive it"}]
+    },
+    {
+      "set_id": 15034, "set": "Nighttime Whispers in the Echoing Woods", "pieces": 4,
+      "params": [10, 0.2, 1.5, 1, 0, 0, 0, 0],
+      "go": "NighttimeWhispersInTheEchoingWoods/index.tsx:14-35",
+      "conditions": [
+        {"key": "after_skill", "label": "After using an Elemental Skill", "kind": "toggle", "default": 1, "default_reason": "self"},
+        {"key": "crystallize_shield", "label": "Under a Crystallize shield", "kind": "toggle", "default": 0, "default_reason": "situational"}
+      ],
+      "effects": [
+        {"stat": "dmg_bonus", "elements": ["geo"], "value": {"param": 1}, "when": [{"condition": "after_skill", "values": [1]}]},
+        {"stat": "dmg_bonus", "elements": ["geo"], "value": {"param": 1, "times_param": 2}, "when": [{"condition": "after_skill", "values": [1]}, {"condition": "crystallize_shield", "values": [1]}]}
+      ],
+      "unmodelled": [{"what": "The same increase near Lunar-Crystallize Moondrifts", "reason": "Lunar reactions are not modelled (P3, G11); the shield toggle states the increase"}]
+    },
+    {
+      "set_id": 15035, "set": "Fragment of Harmonic Whimsy", "pieces": 4,
+      "params": [0.18, 6, 3, 0, 0, 0, 0, 0],
+      "go": "FragmentOfHarmonicWhimsy/index.tsx:23-41",
+      "conditions": [{"key": "bond_changes", "label": "Bond of Life changes (stacks)", "kind": "stacks", "max": {"param": 2}, "default": 0, "default_reason": "situational"}],
+      "effects": [{"stat": "dmg_bonus", "per": "bond_changes", "value": {"param": 0}}]
+    },
+    {
+      "set_id": 15036, "set": "Unfinished Reverie", "pieces": 4,
+      "params": [5, 0.1, 6, 1, 1, 3, 0, 0],
+      "go": "UnfinishedReverie/index.tsx:23-41",
+      "conditions": [{"key": "stacks", "label": "DMG bonus stacks (Burning opponents nearby)", "kind": "stacks", "max": {"constant": 5, "cite": "UnfinishedReverie/index.tsx:23 range(1, 5)"}, "default": 0, "default_reason": "situational"}],
+      "effects": [{"stat": "dmg_bonus", "per": "stacks", "value": {"param": 1}}]
+    },
+    {
+      "set_id": 15037, "set": "Scroll of the Hero of Cinder City", "pieces": 2,
+      "params": [6, 0, 0, 0, 0, 0, 0, 0],
+      "go": "ScrollOfTheHeroOfCinderCity/index.tsx (no 2-piece stat)",
+      "unmodelled": [{"what": "6 Energy on a party Nightsoul Burst", "reason": "no damage effect: energy is not modelled in the estimate (G13)"}]
+    },
+    {
+      "set_id": 15037, "set": "Scroll of the Hero of Cinder City", "pieces": 4,
+      "params": [0.12, 15, 0.28, 20, 0, 0, 0, 0],
+      "go": "ScrollOfTheHeroOfCinderCity/index.tsx:26-116",
+      "conditions": [
+        {"key": "reaction", "label": "Triggered a reaction with the wearer's element", "kind": "toggle", "default": 0, "default_reason": "situational"},
+        {"key": "other_element", "label": "The other element in that reaction", "kind": "choice", "options": ["anemo", "cryo", "dendro", "electro", "geo", "hydro", "pyro"], "default": "", "default_reason": "situational"},
+        {"key": "nightsoul", "label": "In Nightsoul's Blessing when triggering", "kind": "toggle", "default": 0, "default_reason": "situational"}
+      ],
+      "effects": [
+        {"stat": "dmg_bonus", "element_from": ["wearer", "other_element"], "value": {"param": 0}, "when": [{"condition": "reaction", "values": [1]}]},
+        {"stat": "dmg_bonus", "element_from": ["wearer", "other_element"], "value": {"param": 2}, "when": [{"condition": "reaction", "values": [1]}, {"condition": "nightsoul", "values": [1]}]}
+      ]
+    },
+    {
+      "set_id": 15038, "set": "Obsidian Codex", "pieces": 2,
+      "params": [0.15, 0, 0, 0, 0, 0, 0, 0],
+      "go": "ObsidianCodex/index.tsx:13-21,35",
+      "conditions": [{"key": "nightsoul_on_field", "label": "In Nightsoul's Blessing and on the field", "kind": "toggle", "default": 0, "default_reason": "situational"}],
+      "effects": [{"stat": "dmg_bonus", "value": {"param": 0}, "when": [{"condition": "nightsoul_on_field", "values": [1]}]}]
+    },
+    {
+      "set_id": 15038, "set": "Obsidian Codex", "pieces": 4,
+      "params": [1, 0.4, 6, 1, 0, 0, 0, 0],
+      "go": "ObsidianCodex/index.tsx:23-36",
+      "conditions": [{"key": "nightsoul_consumed", "label": "Consumed a Nightsoul point on the field", "kind": "toggle", "default": 0, "default_reason": "situational"}],
+      "effects": [{"stat": "crit_rate", "value": {"param": 1}, "when": [{"condition": "nightsoul_consumed", "values": [1]}]}]
+    },
+    {
+      "set_id": 15039, "set": "Long Night's Oath", "pieces": 2,
+      "params": [0.25, 0, 0, 0, 0, 0, 0, 0],
+      "go": "LongNightsOath/index.tsx:22-24,44",
+      "effects": [{"stat": "dmg_bonus", "moves": ["plunge"], "value": {"param": 0}}]
+    },
+    {
+      "set_id": 15039, "set": "Long Night's Oath", "pieces": 4,
+      "params": [1, 2, 2, 0.15, 6, 1, 5, 0],
+      "go": "LongNightsOath/index.tsx:26-44",
+      "conditions": [{"key": "radiance", "label": "Radiance Everlasting stacks", "kind": "stacks", "max": {"param": 6}, "default": 5, "default_reason": "self"}],
+      "effects": [{"stat": "dmg_bonus", "moves": ["plunge"], "per": "radiance", "value": {"param": 3}}]
+    },
+    {
+      "set_id": 15040, "set": "Finale of the Deep Galleries", "pieces": 4,
+      "params": [0.6, 0.6, 6, 0, 0, 0, 0, 0],
+      "go": "FinaleOfTheDeepGalleries/index.tsx:15-35",
+      "conditions": [
+        {"key": "zero_energy_no_burst", "label": "0 Energy, no burst DMG in the last 6s", "kind": "toggle", "default": 0, "default_reason": "situational"},
+        {"key": "zero_energy_no_normal", "label": "0 Energy, no Normal Attack DMG in the last 6s", "kind": "toggle", "default": 0, "default_reason": "situational"}
+      ],
+      "effects": [
+        {"stat": "dmg_bonus", "moves": ["normal"], "value": {"param": 0}, "when": [{"condition": "zero_energy_no_burst", "values": [1]}]},
+        {"stat": "dmg_bonus", "moves": ["burst"], "value": {"param": 1}, "when": [{"condition": "zero_energy_no_normal", "values": [1]}]}
+      ]
+    },
+    {
+      "set_id": 15041, "set": "Night of the Sky's Unveiling", "pieces": 4,
+      "params": [4, 0.15, 0.3, 0.1, 0, 0, 0, 0],
+      "go": "NightOfTheSkysUnveiling/index.tsx:26-49",
+      "conditions": [{"key": "gleaming_moon", "label": "Gleaming Moon: Intent, at Moonsign", "kind": "choice", "options": ["nascent_gleam", "ascendant_gleam"], "default": "", "default_reason": "situational"}],
+      "effects": [
+        {"stat": "crit_rate", "value": {"param": 1}, "when": [{"condition": "gleaming_moon", "values": ["nascent_gleam"]}]},
+        {"stat": "crit_rate", "value": {"param": 2}, "when": [{"condition": "gleaming_moon", "values": ["ascendant_gleam"]}]}
+      ],
+      "unmodelled": [{"what": "Lunar Reaction DMG +10% for the party", "reason": "Lunar reactions are not modelled (P3, G11)"}]
+    },
+    {
+      "set_id": 15042, "set": "Silken Moon's Serenade", "pieces": 4,
+      "params": [8, 60, 120, 0.1, 0, 0, 0, 0],
+      "go": "SilkenMoonsSerenade/index.tsx:30-56",
+      "conditions": [{"key": "gleaming_moon", "label": "Gleaming Moon: Devotion, at Moonsign", "kind": "choice", "options": ["nascent_gleam", "ascendant_gleam"], "default": "", "default_reason": "situational"}],
+      "effects": [
+        {"stat": "elemental_mastery", "value": {"param": 1}, "when": [{"condition": "gleaming_moon", "values": ["nascent_gleam"]}]},
+        {"stat": "elemental_mastery", "value": {"param": 2}, "when": [{"condition": "gleaming_moon", "values": ["ascendant_gleam"]}]}
+      ],
+      "unmodelled": [{"what": "Lunar Reaction DMG +10% for the party", "reason": "Lunar reactions are not modelled (P3, G11)"}]
+    },
+    {
+      "set_id": 15043, "set": "Aubade of Morningstar and Moon", "pieces": 4,
+      "params": [0.2, 0.4, 3, 0, 0, 0, 0, 0],
+      "go": "AubadeOfMorningstarAndMoon/index.tsx:25-45",
+      "unmodelled": [{"what": "Lunar Reaction DMG +20%, +40% more at Ascendant Gleam", "reason": "Lunar reactions are not modelled (P3, G11)"}]
+    },
+    {
+      "set_id": 15044, "set": "A Day Carved From Rising Winds", "pieces": 4,
+      "params": [6, 0.25, 0.2, 0, 0, 0, 0, 0],
+      "go": "ADayCarvedFromRisingWinds/index.tsx:16-32",
+      "conditions": [
+        {"key": "pastoral_winds", "label": "After a Normal, Charged, Skill or Burst hit", "kind": "toggle", "default": 1, "default_reason": "self"},
+        {"key": "witchs_homework", "label": "Has completed Witch's Homework (Hexerei)", "kind": "toggle", "default": 0, "default_reason": "situational"}
+      ],
+      "effects": [
+        {"stat": "atk_pct", "value": {"param": 1}, "when": [{"condition": "pastoral_winds", "values": [1]}]},
+        {"stat": "crit_rate", "value": {"param": 2}, "when": [{"condition": "pastoral_winds", "values": [1]}, {"condition": "witchs_homework", "values": [1]}]}
+      ]
+    },
+    {
+      "set_id": 15045, "set": "Celestial Gift", "pieces": 4,
+      "params": [0.2, 20, 0.4, 0, 0, 0, 0, 0],
+      "go": "CelestialGift/index.tsx:30-122",
+      "conditions": [
+        {"key": "guidance", "label": "Light's Guidance (Witch's Homework, after a skill)", "kind": "toggle", "default": 0, "default_reason": "situational"},
+        {"key": "mortal_hymn", "label": "Upgraded to Mortal Hymn (party has Hexerei: Secret Rite)", "kind": "toggle", "default": 0, "default_reason": "situational"}
+      ],
+      "effects": [
+        {"stat": "dmg_bonus", "element_from": ["wearer"], "value": {"param": 0}, "when": [{"condition": "guidance", "values": [1]}, {"condition": "mortal_hymn", "values": [0]}]},
+        {"stat": "dmg_bonus", "element_from": ["wearer"], "value": {"param": 2}, "when": [{"condition": "guidance", "values": [1]}, {"condition": "mortal_hymn", "values": [1]}]}
+      ],
+      "unmodelled": [{"what": "Mortal Hymn's bonus to the active member's element when it differs from the wearer's", "reason": "the rows are the wearer's own hits, so only the wearer's element reaches them"}]
+    },
+    {
+      "set_id": 15046, "set": "Disenchantment in Deep Shadow", "pieces": 4,
+      "params": [0.8, 0.16, 0.4, 0, 0, 0, 0, 0],
+      "go": "DisenchantmentInDeepShadow/index.tsx:12-44",
+      "conditions": [{"key": "enemy_superconduct", "label": "Enemy affected by Superconduct or Stellar-Conduct", "kind": "toggle", "default": 0, "default_reason": "situational"}],
+      "effects": [{"stat": "crit_rate", "value": {"param": 1}, "when": [{"condition": "enemy_superconduct", "values": [1]}]}],
+      "unmodelled": [{"what": "Superconduct DMG +80%, Stellar-Conduct DMG +40%", "reason": "transformative and Stellar reactions are not modelled (P3, G11)"}]
+    },
+    {
+      "set_id": 15047, "set": "Scarlet Proof", "pieces": 4,
+      "params": [0.16, 0.4, 10, 0, 0, 0, 0, 0],
+      "go": "ScarletProof/index.tsx:14-31",
+      "conditions": [{"key": "after_stellar_swirl", "label": "After triggering a Stellar Swirl", "kind": "toggle", "default": 0, "default_reason": "situational"}],
+      "effects": [{"stat": "crit_rate", "value": {"param": 0}, "when": [{"condition": "after_stellar_swirl", "values": [1]}]}],
+      "unmodelled": [{"what": "Stellar Swirl DMG +40%", "reason": "Stellar reactions are not modelled (P3, G11)"}]
+    },
+    {
+      "set_id": 15048, "set": "Heart of the Furnace", "pieces": 4,
+      "params": [0.12, 0.5, 12, 0, 0, 0, 0, 0],
+      "go": "HeartOfTheFurnace/index.tsx:27-63",
+      "conditions": [{"key": "after_stellar_glimmer", "label": "After a Stellar Glimmer reaction", "kind": "toggle", "default": 0, "default_reason": "situational"}],
+      "effects": [{"stat": "atk_pct", "value": {"param": 0}, "when": [{"condition": "after_stellar_glimmer", "values": [1]}]}],
+      "unmodelled": [{"what": "Stellar Glimmer DMG +50% for the party", "reason": "Stellar reactions are not modelled (P3, G11)"}]
+    }
+  ]
+}

@@ -31,6 +31,7 @@
  */
 
 /** Which stat an ability scales off. gcsim states this; it is not inferred. */
+import type { Amplifying } from './damage';
 import type { EnergyCost } from './energy-delay';
 import type { EnergyObservation } from './recipe-energy';
 
@@ -166,6 +167,55 @@ export interface RecipeHit {
   ampMultiplier: number;
   /** What gcsim itself computed, kept so a replay can be checked against it. */
   gcsimAverageDamage: number;
+  // ── Formula-estimate terms (math-fallback P1) ─────────────────────────────────────────
+  //
+  // All optional and all absent on a gcsim recipe, whose behaviour they therefore leave
+  // exactly as it was. `sim/formula-recipe.ts` sets them, because a recipe synthesised from
+  // closed-form math must answer the same question the single-hit kernel answers, and three
+  // of that kernel's terms move with the candidate in ways a frozen gcsim term does not.
+  /**
+   * Elemental Mastery the hit already carries before artifacts — character, weapon, set and
+   * resonance. A hit scaling off EM, or amplifying, reads this **plus** the candidate's own.
+   */
+  calibratedEm?: number;
+  /**
+   * The amplifying reaction, when the multiplier must follow the candidate's EM.
+   *
+   * `ampMultiplier` above is gcsim's frozen total and stays the replay value; when this is
+   * present `evaluateHit` recomputes it through `damage.ts:amplifyingMultiplier`, the same
+   * function the single-hit kernel uses, so the two cannot disagree about the EM term.
+   */
+  amplifying?: { reaction: Amplifying; reactionBonus: number };
+  /** Which kind of move this is, so a move-scoped set bonus in the candidate's pool reaches it. */
+  move?: FormulaMove;
+  /**
+   * DMG% converted from total Energy Recharge — Emblem of Severed Fate's 4-piece,
+   * `min(cap, perUnit × ER)`. `calibratedEnergyRecharge` is the ER before artifacts.
+   */
+  bonusFromEnergyRecharge?: { perUnit: number; cap: number; calibratedEnergyRecharge: number };
+}
+
+/** The moves a set bonus can be scoped to. `formula_effects.MOVES` on the server. */
+export type FormulaMove = 'normal' | 'charged' | 'plunge' | 'skill' | 'burst';
+
+/**
+ * Where a recipe came from, when it did not come from gcsim.
+ *
+ * **The label later UI must show.** A synthesised recipe and a calibrated one are the same
+ * type so the search, ranking and upgrade code take either unchanged; this is what tells
+ * them apart, and it carries every assumption the number rests on (`DESIGN` §2.5: a number
+ * must be able to explain itself).
+ */
+export interface FormulaProvenance {
+  kind: 'formula-estimate';
+  /** The accuracy comparator for this estimate (`DECISIONS.md` §38). */
+  comparator: 'genshin-optimizer';
+  /** Every assumption, in words a user can check: conditions, unmodelled parts, scope gaps. */
+  assumptions: string[];
+  /** The rows the recipe was built from, with their counts. */
+  rows: { id: string; label: string; count: number; move: FormulaMove | null }[];
+  /** Citations of every bonus that contributed. */
+  sources: string[];
 }
 
 /**
@@ -296,6 +346,11 @@ export interface RecipeMeta {
    * `null` if it was never measured. See `recipe-energy.ts`.
    */
   minimumEnergyRecharge: number | null;
+  /**
+   * Present when this recipe was **synthesised from formulas** rather than calibrated from a
+   * gcsim run. Absent means gcsim. `sim/formula-recipe.ts`.
+   */
+  formula?: FormulaProvenance;
 }
 
 export interface Recipe {

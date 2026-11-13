@@ -15,6 +15,7 @@ from app.api.v1.artifacts import router as artifacts_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.builds import router as builds_router
 from app.api.v1.catalogue import router as catalogue_router
+from app.api.v1.formula import router as formula_router
 from app.api.v1.health import router as health_router
 from app.api.v1.optimization_runs import router as optimization_runs_router
 from app.api.v1.planner import router as planner_router
@@ -39,3 +40,4 @@ v1_router.include_router(teapot_router)
 v1_router.include_router(sim_runs_router)
 v1_router.include_router(planner_router)
 v1_router.include_router(wishes_router)
+v1_router.include_router(formula_router)

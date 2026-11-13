@@ -1,9 +1,14 @@
 # TASKS: formula fallback
 
-**Status: P0 (tasks 0–2) done on `feat/math-fallback-p0`, 2026-11-13 — not yet merged.**
-D-F6 was answered *ship P0 now*; P1 onward still waits on owner decisions D-F1–D-F5
-(`DESIGN_team_math_fallback.md` §4). Evidence for each task is in its row and in
-`LOG_mistilteinn.md` §"Math-fallback P0".
+**Status: P0 (tasks 0–2) merged (#367). P1 tasks 5–7 done on `feat/math-fallback-p1-recipe`,
+2026-11-13 — not yet merged.** Tasks 3–4 are on `feat/math-fallback-p1-data`, a separate
+branch; task 8 waits on both. The owner's rulings D-F3 and D-F4 are `DECISIONS.md` §38.
+Evidence for each task is in its row and in `LOG_mistilteinn.md` §"Math-fallback P0" and
+§"Math-fallback P1: the synthetic recipe".
+
+**One owner decision is open from task 7: the default of each set and resonance condition.**
+The rule built is *self-triggered → on, at its maximum; situational → off*. GO defaults every
+conditional off. The LOG entry has the alternatives.
 
 Each task lists its acceptance criteria. "Crossval" means a committed fixture checked against
 gcsim at the pin.
@@ -17,9 +22,9 @@ gcsim at the pin.
 | **P1** | | | |
 | 3 | `gcsim` block on Character/Weapon/ArtifactSet reads, plus a `?gcsim=` filter | `api/v1/{characters,weapons,artifact_sets}.py`, `gcsim_keys.py` | Statuses full/partial/none match the coverage fixture. The OpenAPI diff is additive only. Badge in the team builder |
 | 4 | Import passive and constellation `param_list`, and per-hit `attack[]` / `energy[]` | importer, mappings, migration | `verify_seed` counts. Numbers equal the payloads for the nine fixtures |
-| 5 | Synthetic recipe: (team, builds, rows × counts, conditionals) → `Recipe` | new `sim/formula-recipe.ts` (+ backend mirror if needed) | On a gated team with no kit buffs, terms equal a calibrated recipe stripped of buffs. Multi-target row counts sum correctly |
-| 6 | Elemental resonance | formula buffs | Each resonance cited. Team-element tally tests |
-| 7 | Conditional set bonuses with toggles and defaults | set bonus evaluator | All 60 four-piece and 9 two-piece sets have a condition and a default. Specs for stacks |
+| 5 ✅ | Synthetic recipe: (team, builds, rows × counts, conditionals) → `Recipe` | new `sim/formula-recipe.ts` (+ backend mirror if needed) | On a gated team with no kit buffs, terms equal a calibrated recipe stripped of buffs. Multi-target row counts sum correctly — **done** (`3324256`). Read under D-F4 as: with no buffs, a synthetic hit scores a candidate exactly as the single-hit kernel does. `formula-recipe.spec.ts` checks ATK, HP, DEF, EM, mixed ATK+EM, vaporize and reverse-melt hits, static set pools and the zero-artifact figure, all within 1e-6. A multi-target total is Σ count × hit. Per-row conditionals, move-scoped 2-piece pools, and the Emblem and Echoes conversions are specced, and `searchRecipe` runs on the synthesised set unchanged. `meta.formula` marks the recipe as an estimate. The GO-cited multi-target fixture runs in `formula:verify` |
+| 6 ✅ | Elemental resonance | formula buffs | Each resonance cited. Team-element tally tests — **done** (`a5c909c`). `formula/genshin/resonance.py`: eight resonances, each cited to GO `Resonance.tsx` lines and gcsim `setup.go` lines. Five touch damage: Pyro and Hydro static, Cryo and Geo conditional, Dendro static plus two conditionals. Three have none. Tally tests cover the four-member rule, duplicates, two pairs, Protective Canopy, a Traveler variant and an element-less member. Served at `GET /formula/resonance`. GO-cited Shattering Ice fixture |
+| 7 ✅ | Conditional set bonuses with toggles and defaults | set bonus evaluator | All 60 four-piece and 9 two-piece sets have a condition and a default. Specs for stacks — **done** (`a5c909c`). `app/data/formula/set_effects.json` covers all 60 four-piece, 9 two-piece and 5 one-piece conditional tiers. Numbers are indexes into our pinned `param_list`, withheld as stale if it changes; structure is cited to GO's artifact sheets. Four-piece: 30 modelled, 16 partial, 5 unmodelled with reasons, 9 with no damage effect. Two-piece: 7 modelled, 2 with no damage effect. Served at `GET /formula/set-effects`. Stack specs: Crimson Witch, Pale Flame, Nymph's Dream, Vourukasha's Glow. GO-cited Crimson Witch fixture |
 | 8 | Routing when gcsim refuses (`GcsimKeyError`), offering the estimate; labels; assumptions panel (lite) | optimize, rank and upgrade pages | A Lohen team is optimizable end to end. The result is labelled "Formula estimate". Screenshots at 1280 and 390 |
 | **P2** | | | |
 | 9 | Sheet schema on Pando tags (`SRC_*`, `COND`, scope) and the two-pass team evaluator | `pando/`, new `formula/sheets/` | One worked sheet (Bennett) round-trips. Its buff reaches teammates. Two-pass ordering tested |
