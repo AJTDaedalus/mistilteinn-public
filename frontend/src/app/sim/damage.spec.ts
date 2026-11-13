@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { critMultiplier, defMultiplier, resMultiplier, resolveStat } from './damage';
+import { computeDamage, critMultiplier, defMultiplier, resMultiplier, resolveStat } from './damage';
+import { liveQuantities } from './search';
 
 /**
  * C.3 — the kernel's individual terms.
@@ -42,5 +43,50 @@ describe('the individual terms', () => {
     const separate = defMultiplier(90, 90, 0.2, 0.3);
     const added = defMultiplier(90, 90, 0.5, 0);
     expect(separate).not.toBeCloseTo(added, 6);
+  });
+});
+
+describe('a mixed-stat hit (math-fallback P0)', () => {
+  const target = { level: 90, resistance: 0.1, defReduction: 0, defIgnore: 0 };
+  const plain = {
+    multiplier: 1.5, scalingStat: 'atk' as const, flatDamage: 0, baseDamageBonus: 0.2,
+    amplifying: null, reactionBonus: 0,
+  };
+  const inputs = {
+    scalingValue: 1000, dmgBonus: 0, critRate: 0, critDmg: 0, elementalMastery: 800,
+    characterLevel: 90, target,
+  };
+
+  it('adds each further term to the base after the base damage bonus, as flat damage is', () => {
+    // `a x ATK + b x EM` — Nahida's Tri-Karma. gcsim writes the EM half as `FlatDmg`, so
+    // `baseDamageBonus` multiplies the first term only.
+    const mixed = computeDamage({
+      ...inputs,
+      hit: { ...plain, extraTerms: [{ stat: 'elemental_mastery', multiplier: 3.0 }] },
+      extraScalingValues: [800],
+    });
+
+    expect(mixed).toBeCloseTo((1.5 * 1000 * 1.2 + 3.0 * 800) * 0.5 * 0.9, 1);
+  });
+
+  it('refuses values that do not pair one-to-one with the terms', () => {
+    expect(() =>
+      computeDamage({
+        ...inputs,
+        hit: { ...plain, extraTerms: [{ stat: 'elemental_mastery', multiplier: 3.0 }] },
+      }),
+    ).toThrow(/extra scaling term/);
+  });
+
+  it("keeps every term's stat live, so the search cannot prune the piece that feeds it", () => {
+    const live = liveQuantities({
+      base: {},
+      hit: { ...plain, extraTerms: [{ stat: 'elemental_mastery', multiplier: 3.0 }] },
+      target,
+      characterLevel: 90,
+      dmgBonusQuantity: 'dendro_dmg_bonus',
+    });
+
+    expect(live).toEqual(expect.arrayContaining(['atk_pct', 'elemental_mastery']));
   });
 });

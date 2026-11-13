@@ -49,14 +49,18 @@ export class ExplainService {
       params: { path: { build_id: buildId } },
       body: {
         // Every field openapi-typescript marks required because it carries a server default
-        // is sent explicitly. `scaling_stat` and `flat_damage` on the hit,
-        // `compare_to_equipped` on the request — each reproduces the server's own default, so
-        // the request says what it means rather than relying on two sides agreeing silently.
+        // is sent explicitly. `flat_damage` on the hit, `compare_to_equipped` on the request —
+        // each reproduces the server's own default, so the request says what it means rather
+        // than relying on two sides agreeing silently.
+        //
+        // **`scaling_stat` is deliberately absent.** It used to be `'atk'` here, and the server
+        // took it, so an HP scaler such as Neuvillette was explained off ATK (math-fallback
+        // P0). A named talent's own row says what it scales off; the server refuses a value
+        // that disagrees.
         hit: {
           channel,
           scope,
           talent: hit,
-          scaling_stat: 'atk',
           flat_damage: 0,
         } as HitSpec,
         // False: this page explains **what is equipped**, and the comparison mode answers a

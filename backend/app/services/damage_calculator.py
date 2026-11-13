@@ -165,6 +165,11 @@ class BuildEvaluator:
             def_reduction=self.enemy.def_reduction
             + self._value(stats.def_reduction_node(), scope),
             def_ignore=self.enemy.def_ignore + self._value(stats.def_ignore_node(), scope),
+            # A mixed-stat hit (`# ATK+# Elemental Mastery`) reads each term's stat through
+            # the same table, under the same scope — one lookup for every term.
+            extra_scaling_values=tuple(
+                self._value(_SCALING_NODES[term.stat], scope) for term in hit.extra_terms
+            ),
         )
 
 

@@ -5197,6 +5197,16 @@
           "exclusive": {
             "type": "boolean",
             "title": "Exclusive"
+          },
+          "scaling_stat": {
+            "$ref": "#/components/schemas/ScalingStat"
+          },
+          "extra_terms": {
+            "items": {
+              "$ref": "#/components/schemas/ScalingTermRead"
+            },
+            "type": "array",
+            "title": "Extra Terms"
           }
         },
         "type": "object",
@@ -5206,7 +5216,9 @@
           "index",
           "multiplier",
           "hits",
-          "exclusive"
+          "exclusive",
+          "scaling_stat",
+          "extra_terms"
         ],
         "title": "AvailableHitRead",
         "description": "One hit a build can be asked about, in the terms `HitSpec.talent` takes.\n\nOffered from the **same parse** `resolve_talent_hit` uses, so a page built from this\ncannot name a hit the resolver then refuses \u2014 the picker-matches-validator guarantee this\nrepo applies wherever a user chooses from a list."
@@ -7919,8 +7931,14 @@
             "title": "Channel"
           },
           "scaling_stat": {
-            "$ref": "#/components/schemas/ScalingStat",
-            "default": "atk"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScalingStat"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "scope": {
             "type": "string",
@@ -8128,13 +8146,21 @@
               }
             ],
             "title": "Amplifying"
+          },
+          "extra_terms": {
+            "items": {
+              "$ref": "#/components/schemas/ScalingTermRead"
+            },
+            "type": "array",
+            "title": "Extra Terms"
           }
         },
         "type": "object",
         "required": [
           "multiplier",
           "channel",
-          "scaling_stat"
+          "scaling_stat",
+          "extra_terms"
         ],
         "title": "KernelHit",
         "description": "The hit, resolved. `search.ts`'s `Hit` in its own spelling."
@@ -11058,6 +11084,24 @@
         ],
         "title": "ScalingStat",
         "description": "What a talent's multiplier scales off.\n\ngcsim's `UseHP` / `UseDef` / `UseEM` flags (`damage.go:52-62`), as data on the hit\nrather than flags on a branch: a talent that scales off HP is a *described* talent, not\na special case in the chain (DESIGN \u00a71 A6)."
+      },
+      "ScalingTermRead": {
+        "properties": {
+          "stat": {
+            "$ref": "#/components/schemas/ScalingStat"
+          },
+          "multiplier": {
+            "type": "number",
+            "title": "Multiplier"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stat",
+          "multiplier"
+        ],
+        "title": "ScalingTermRead",
+        "description": "One `multiplier x stat` term beyond a hit's first. `damage.ScalingTerm` on the wire."
       },
       "SearchContextRead": {
         "properties": {

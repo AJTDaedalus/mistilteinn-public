@@ -1380,3 +1380,24 @@ The new wording keeps the owner's AI disclosure and the Discord invitation uncha
 unchanged to the last digit; one engine change (`3f528e2c7`, hitlag) moves real teams by
 fractions of a percent; and the wasm is **2.4-4.2× faster** per iteration. It also changed
 `flush()`'s return shape, which the app now reads through one function.
+
+## 38. The formula fallback: opt-in for every team, measured against Genshin Optimizer (2026-11-13)
+
+The owner ruled on `DESIGN_team_math_fallback.md` §4.
+
+- **D-F3 (yes):** the formula estimate is offered for every team, not only when gcsim refuses.
+  Where gcsim can run, it remains the default and the estimate is a labelled opt-in.
+- **D-F4: the accuracy comparator is Genshin Optimizer, not gcsim.** *"Better comparator for
+  this is GO, it should be very close."* The fallback answers GO's question, a closed-form
+  score with conditionals the user sets, so GO is the oracle for it. gcsim answers a different
+  question, which includes timing, uptime and energy, and comparing against it would mix
+  model error with the deliberate absence of those mechanics. A sheet counts as **verified**
+  when its hits match GO's formula, worked from our own seeded numbers and cited to GO's sheet
+  and formula lines. gcsim still has a role: the existing crossval of the damage *chain*
+  (multipliers, DEF/RES, crit) against gcsim is unchanged. Known constant divergences, such as
+  GO's 25/9 against gcsim's 2.78 EM coefficient for amplifying reactions, follow gcsim and are
+  recorded per fixture.
+- **D-F6 (yes):** P0 ships ahead of the rest. P0's first fixtures
+  (`test_go_single_hit_fixtures.py`, GO @ `2c13fc40`) are the first under D-F4.
+
+D-F1, D-F2 and D-F5 stand as recommended in the DESIGN.

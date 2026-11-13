@@ -32,10 +32,25 @@ const SCALING = {
   def: ['base_def', 'def_pct', 'flat_def'],
 };
 
-function scalingValue(c) {
-  if (c.hit.scaling_stat === 'elemental_mastery') return c.stats.elemental_mastery;
-  const [base, pct, flat] = SCALING[c.hit.scaling_stat];
+function statValue(c, stat) {
+  if (stat === 'elemental_mastery') return c.stats.elemental_mastery;
+  const [base, pct, flat] = SCALING[stat];
   return resolveStat(c.stats[base], c.stats[pct], c.stats[flat]);
+}
+
+function scalingValue(c) {
+  return statValue(c, c.hit.scaling_stat);
+}
+
+// A mixed-stat hit (math-fallback P0) carries `extra_terms`; the pre-P0 cases omit the key.
+// The WGSL case holds one, which is the most any catalogue row carries.
+function extraTerms(c) {
+  const terms = c.hit.extra_terms ?? [];
+  if (terms.length > 1) {
+    console.error(`${c.id} has ${terms.length} extra terms; the WGSL case struct holds one`);
+    process.exit(1);
+  }
+  return terms;
 }
 
 const { cases } = JSON.parse(readFileSync(CASES, 'utf8'));
@@ -85,6 +100,9 @@ cases.forEach((c, i) => {
     ? AMPLIFYING_MULTIPLIER[c.hit.amplifying]
     : 0;
   packed[at + FIELD.reactionBonus] = c.hit.reaction_bonus;
+  const [extra] = extraTerms(c);
+  packed[at + FIELD.extraMultiplier] = extra ? extra.multiplier : 0;
+  packed[at + FIELD.extraScalingValue] = extra ? statValue(c, extra.stat) : 0;
 });
 
 const got = await kernel.computeDamageBatch(packed);
@@ -127,8 +145,10 @@ cases.forEach((c, i) => {
       baseDamageBonus: c.hit.base_damage_bonus,
       amplifying: c.hit.amplifying,
       reactionBonus: c.hit.reaction_bonus,
+      extraTerms: extraTerms(c),
     },
     scalingValue: scalingValue(c),
+    extraScalingValues: extraTerms(c).map((t) => statValue(c, t.stat)),
     dmgBonus: c.dmg_bonus.value,
     critRate: c.stats.crit_rate,
     critDmg: c.stats.crit_dmg,

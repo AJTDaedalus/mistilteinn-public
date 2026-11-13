@@ -30,7 +30,7 @@ from pathlib import Path
 import pytest
 
 from app.formula.genshin import tags
-from app.formula.genshin.damage import Amplifying, Hit, ScalingStat
+from app.formula.genshin.damage import Amplifying, Hit, ScalingStat, ScalingTerm
 from app.pando.calculator import NodeRegistry
 from app.services.damage_calculator import BuildEvaluator, Enemy
 from app.services.stat_calculator import build_log
@@ -60,6 +60,11 @@ def _replay(case: dict) -> dict[str, float]:
         base_damage_bonus=spec["base_damage_bonus"],
         amplifying=Amplifying(spec["amplifying"]) if spec["amplifying"] else None,
         reaction_bonus=spec["reaction_bonus"],
+        # Absent on every pre-P0 case, which is how they stayed byte-identical.
+        extra_terms=tuple(
+            ScalingTerm(ScalingStat(term["stat"]), term["multiplier"])
+            for term in spec.get("extra_terms", [])
+        ),
     )
     enemy_spec = case["enemy"]
     enemy = Enemy(
@@ -105,6 +110,30 @@ def test_the_sweep_covers_every_scaling_stat_channel_and_scope():
     assert {c["hit"]["scope"] for c in cases} == set(tags.SCOPES)
 
 
+def test_the_sweep_covers_mixed_stat_hits_in_every_pairing():
+    """Math-fallback P0: a hit can be `a x ATK + b x EM`. The kernels must add the second
+    term where the chain does, and they are only checked on what the sweep contains."""
+    mixed = [c for c in _payload()["cases"] if c["hit"].get("extra_terms")]
+
+    assert len(mixed) >= 150, f"only {len(mixed)} mixed-stat cases"
+    pairs = {(c["hit"]["scaling_stat"], c["hit"]["extra_terms"][0]["stat"]) for c in mixed}
+    assert len(pairs) == 12, f"only {len(pairs)} of the 12 ordered stat pairs: {pairs}"
+    assert all(len(c["hit"]["extra_terms"]) == 1 for c in mixed), (
+        "the WGSL case struct holds one extra term"
+    )
+    assert any(c["hit"]["base_damage_bonus"] > 0 for c in mixed), (
+        "no mixed case with a base damage bonus — where the second term enters goes untested"
+    )
+
+
+def test_the_mixed_cases_did_not_disturb_the_ordinary_ones():
+    """They come from their own seed. The first 2,000 must still be what they were."""
+    cases = _payload()["cases"]
+
+    assert [c["id"] for c in cases[:2000]] == [f"case-{i:04d}" for i in range(2000)]
+    assert not any("extra_terms" in c["hit"] for c in cases[:2000])
+
+
 def test_the_sweep_covers_every_amplifying_reaction_and_none():
     amplifying = {c["hit"]["amplifying"] for c in _payload()["cases"]}
 
@@ -148,8 +177,12 @@ def test_the_cases_are_deterministic():
     claim worth reviewing, rather than noise that trains people to ignore the diff."""
     from scripts.kernel.generate_cases import generate
 
-    regenerated = generate(count=25)["cases"]
+    regenerated = generate(count=25, mixed=0)["cases"]
     committed = _payload()["cases"][:25]
 
     assert [c["id"] for c in regenerated] == [c["id"] for c in committed]
     assert [c["expected"] for c in regenerated] == [c["expected"] for c in committed]
+
+    mixed = generate(count=0, mixed=25)["cases"]
+    committed_mixed = [c for c in _payload()["cases"] if c["id"].startswith("mixed-")][:25]
+    assert [c["expected"] for c in mixed] == [c["expected"] for c in committed_mixed]

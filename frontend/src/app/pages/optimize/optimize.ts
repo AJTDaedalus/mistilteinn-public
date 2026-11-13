@@ -32,6 +32,7 @@ import { type Amplifying, type ScalingStat } from '../../sim/damage';
 import { SLOTS, type SearchResult, type Slot, search } from '../../sim/search';
 import { BuildsService, type BuildRead } from '../builds/builds.service';
 import { CHANNELS, SCOPES, enumLabel } from '../explain/explain';
+import { scalingLabel } from '../../shared/scaling-label';
 import {
   ExplainService,
   type AvailableHit,
@@ -247,6 +248,7 @@ export class OptimizePage implements OnInit {
   private readonly runs = inject(OptimizationRunsService);
   protected readonly scopes = SCOPES;
   protected readonly enumLabel = enumLabel;
+  protected readonly scalingLabel = scalingLabel;
 
   /** Where the last selection is kept. Read once: it cannot change under the page. */
   private readonly store = browserStore();
@@ -2028,6 +2030,10 @@ export class OptimizePage implements OnInit {
               baseDamageBonus: 0,
               amplifying: context.hit.amplifying as Amplifying | null,
               reactionBonus: 0,
+              // Math-fallback P0: a mixed-stat hit (`# ATK+# Elemental Mastery`) carries its
+              // further terms, and the kernel adds each to the base. Dropping them would score
+              // Nahida's Tri-Karma on its ATK half alone.
+              extraTerms: context.hit.extra_terms,
             },
             target: {
               level: context.target.level,

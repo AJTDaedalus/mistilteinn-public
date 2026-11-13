@@ -6,6 +6,7 @@ whole chain is a port of `pkg/enemy/damage.go:11-130` (`func (e *Enemy) calc`):
     dmgBonus = elemental_bonus[channel] + generic_bonus         # damage.go:47
     a        = TotalATK | MaxHP | TotalDEF | EM                 # damage.go:52-62
     base     = mult * a * (1 + base_dmg_bonus) + flat           # damage.go:65
+               (+ sum of extra `mult_i * stat_i` terms, which gcsim writes as FlatDmg)
     damage   = base * (1 + dmgBonus)                            # damage.go:66
     damage  *= def_multiplier                                   # damage.go:86
     damage  *= res_multiplier                                   # damage.go:95
@@ -34,6 +35,10 @@ from __future__ import annotations
 
 import enum
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 # ---- Constants, each with its line ----------------------------------------
 
@@ -102,6 +107,26 @@ class ScalingStat(enum.StrEnum):
     HP = "hp"
     DEF = "def"
     ELEMENTAL_MASTERY = "elemental_mastery"
+
+
+@dataclass(frozen=True, slots=True)
+class ScalingTerm:
+    """One `multiplier x stat` part of a hit that scales off more than one stat.
+
+    Nahida's Tri-Karma Purification is `ATK x a + EM x b` in **one** instance of damage. gcsim
+    writes the second part as `FlatDmg = em * triKarmaEM`
+    (`internal/characters/nahida/skill.go:219-220`), so an extra term sits where flat damage
+    sits: added after `base_damage_bonus`, before the DMG-bonus multiplier.
+
+    GO (the formula comparator) sums every term into one base — `splitScaleDmgNode`,
+    `libs/gi/sheets/src/Characters/dataUtil.tsx:193-218` — and has no `base_damage_bonus`
+    to place them against, so the two agree whenever that bonus is zero, which it is for
+    every hit the app builds today. `tests/unit/test_go_single_hit_fixtures.py` checks it.
+    """
+
+    stat: ScalingStat
+    #: Already a fraction, like `Hit.multiplier`.
+    multiplier: float
 
 
 class DamageInputError(ValueError):
@@ -216,6 +241,10 @@ class Hit:
     amplifying: Amplifying | None = None
     #: Bonus to that reaction specifically (Crimson Witch 4pc and friends).
     reaction_bonus: float = 0.0
+    #: Further `multiplier x stat` parts of the **same** instance of damage, for a talent
+    #: row such as `# ATK+# Elemental Mastery`. Empty for every single-stat hit. See
+    #: `ScalingTerm` for where they enter the chain.
+    extra_terms: tuple[ScalingTerm, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -276,23 +305,44 @@ def compute_damage(
     resistance: float,
     def_reduction: float = 0.0,
     def_ignore: float = 0.0,
+    extra_scaling_values: Sequence[float] = (),
 ) -> DamageResult:
     """Run the chain for one hit and return the figure with its account.
 
     Takes resolved numbers, not a build: the DAG has already aggregated them, and keeping
     this function free of registry lookups is what lets an optimizer call it millions of
     times without rebuilding a graph per candidate.
+
+    `extra_scaling_values` is the resolved stat for each of `hit.extra_terms`, in order —
+    one per term, and refused when the counts differ rather than zipped short.
     """
-    if hit.multiplier < 0:
+    if hit.multiplier < 0 or any(term.multiplier < 0 for term in hit.extra_terms):
         msg = f"talent multiplier cannot be negative; got {hit.multiplier}"
         raise DamageInputError(msg)
+    if len(extra_scaling_values) != len(hit.extra_terms):
+        msg = (
+            f"the hit has {len(hit.extra_terms)} extra scaling term(s) and "
+            f"{len(extra_scaling_values)} value(s) were resolved for them. Pairing them "
+            f"short would drop a term's damage without saying so."
+        )
+        raise DamageInputError(msg)
 
-    base = hit.multiplier * scaling_value * (1 + hit.base_damage_bonus) + hit.flat_damage
+    extra = sum(
+        term.multiplier * value
+        for term, value in zip(hit.extra_terms, extra_scaling_values, strict=True)
+    )
+    base = (
+        hit.multiplier * scaling_value * (1 + hit.base_damage_bonus) + extra + hit.flat_damage
+    )
     steps = [
         Step(
             "base",
             base,
             f"{hit.multiplier:.4g} x {scaling_value:,.1f} {hit.scaling_stat}"
+            + "".join(
+                f" + {term.multiplier:.4g} x {value:,.1f} {term.stat}"
+                for term, value in zip(hit.extra_terms, extra_scaling_values, strict=True)
+            )
             + (f" + {hit.flat_damage:,.1f} flat" if hit.flat_damage else ""),
         ),
         Step("dmg bonus", 1 + dmg_bonus, f"{dmg_bonus:.1%} on {hit.channel}"),

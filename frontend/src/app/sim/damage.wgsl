@@ -10,8 +10,9 @@
 // WGSL has no f64, which is not a limitation here — it is the reason the tolerance is 1e-6
 // rather than the f64 chain's 1e-7. `docs/CROSSVAL_gcsim.md` measures and argues it.
 
-// One case, flat. 16 floats rather than 15 so each case starts on a 64-byte boundary, which
-// keeps a workgroup's reads contiguous.
+// One case, flat: 17 fields padded to 20 floats. It was 16 (15 and a pad, for 64-byte
+// boundaries) until a hit could carry a second scaling term — `gpu.ts:CASE_STRIDE` says why
+// the alignment was given up rather than doubling the stride to 32.
 struct Case {
   multiplier: f32,
   scaling_value: f32,
@@ -31,7 +32,13 @@ struct Case {
   // reaction inside the shader would buy nothing.
   amplifying_multiplier: f32,
   reaction_bonus: f32,
-  _padding: f32,
+  // A mixed-stat hit's second `multiplier x stat` term (`damage.ts:ScalingTerm`, math-fallback
+  // P0) — Nahida's Tri-Karma is `ATK x a + EM x b`. Both 0 for a single-stat hit.
+  extra_multiplier: f32,
+  extra_scaling_value: f32,
+  _padding0: f32,
+  _padding1: f32,
+  _padding2: f32,
 }
 
 @group(0) @binding(0) var<storage, read> cases: array<Case>;
@@ -73,8 +80,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let c = cases[index];
 
   // The order is the chain's: base_damage_bonus multiplies the scaled stat *before* flat
-  // damage is added, and the DMG bonus applies after.
-  var value = c.multiplier * c.scaling_value * (1.0 + c.base_damage_bonus) + c.flat_damage;
+  // damage is added, and the DMG bonus applies after. A second scaling term enters where
+  // gcsim puts it, as flat damage — after base_damage_bonus.
+  let extra = c.extra_multiplier * c.extra_scaling_value;
+  var value = c.multiplier * c.scaling_value * (1.0 + c.base_damage_bonus) + extra + c.flat_damage;
   value = value * (1.0 + c.dmg_bonus);
   value = value * def_multiplier(c.character_level, c.enemy_level, c.def_reduction, c.def_ignore);
   value = value * res_multiplier(c.resistance);

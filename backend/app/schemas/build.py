@@ -249,7 +249,13 @@ class HitSpec(BaseModel):
     #: One of the seven visions or `physical`.
     channel: str
     #: What the multiplier scales off.
-    scaling_stat: ScalingStat = ScalingStat.ATK
+    #:
+    #: **With a `talent`, leave it out**: the talent's own row says (`{p} Max HP` is HP), and
+    #: a value that disagrees is refused rather than preferred — the page used to send `atk`
+    #: for every talent, and the server took it, so HP scalers were scored off ATK
+    #: (math-fallback P0). With a bare `multiplier` there is no row to read, and omitted
+    #: means ATK, as it always has.
+    scaling_stat: ScalingStat | None = None
     #: Which attack this is — every stat read is resolved under it, so a scope-gated crit
     #: rate is visible exactly when it should be.
     #:
@@ -337,6 +343,14 @@ class EnemySpec(BaseModel):
         }
 
 
+class ScalingTermRead(BaseModel):
+    """One `multiplier x stat` term beyond a hit's first. `damage.ScalingTerm` on the wire."""
+
+    stat: ScalingStat
+    #: Already a fraction, like the hit's own `multiplier`.
+    multiplier: float
+
+
 class AvailableHitRead(BaseModel):
     """One hit a build can be asked about, in the terms `HitSpec.talent` takes.
 
@@ -354,6 +368,11 @@ class AvailableHitRead(BaseModel):
     hits: int
     #: True when it is one of several alternatives and only one of them happens.
     exclusive: bool
+    #: What `multiplier` scales off, read from the talent's own row (`{p} Max HP` is HP).
+    scaling_stat: ScalingStat
+    #: The further terms of a mixed-stat hit — `{a} ATK+{b} Elemental Mastery` is one hit
+    #: with `multiplier` on ATK and one term here on EM. Empty for every single-stat hit.
+    extra_terms: list[ScalingTermRead]
 
 
 class KernelSetBonus(BaseModel):
@@ -372,6 +391,9 @@ class KernelHit(BaseModel):
     channel: str
     scaling_stat: str
     amplifying: str | None = None
+    #: A mixed-stat hit's further terms. The kernel adds `multiplier_i x stat_i` for each to
+    #: the base (`damage.ts:computeDamage`). Empty for every single-stat hit.
+    extra_terms: list[ScalingTermRead]
 
 
 class KernelTarget(BaseModel):

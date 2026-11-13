@@ -14,8 +14,10 @@ const AYAKA_BUILD = {
 };
 
 const HITS = [
-  { talent: 'elemental_burst', label: 'Cutting DMG', index: 0, multiplier: 1.9091, hits: 1, exclusive: false },
-  { talent: 'elemental_burst', label: 'Bloom DMG', index: 0, multiplier: 2.86365, hits: 1, exclusive: false },
+  { talent: 'elemental_burst', label: 'Cutting DMG', index: 0, multiplier: 1.9091, hits: 1, exclusive: false,
+    scaling_stat: 'atk', extra_terms: [] },
+  { talent: 'elemental_burst', label: 'Bloom DMG', index: 0, multiplier: 2.86365, hits: 1, exclusive: false,
+    scaling_stat: 'atk', extra_terms: [] },
 ];
 
 const RESULT = {
@@ -108,10 +110,24 @@ describe('ExplainService', () => {
     );
 
     const body = calls[0].body as Record<string, Record<string, unknown>>;
-    expect(body['hit']['scaling_stat']).toBe('atk');
     expect(body['hit']['flat_damage']).toBe(0);
     expect(body['compare_to_equipped']).toBe(false);
     expect(body['enemy']).toEqual({ level: 90, resistances: {}, default_resistance: 0.1 });
+  });
+
+  it("never states a scaling stat for a named talent — the talent's row does", async () => {
+    // Math-fallback P0. This used to send `'atk'` and the server took it, so Neuvillette,
+    // Furina and every other HP/DEF/EM scaler was explained off ATK. The server now refuses
+    // a stat that contradicts the talent, so sending one could only be wrong or redundant.
+    const { service, calls } = serviceWithCapture();
+
+    await service.explain(
+      'b1', { talent: 'elemental_skill', label: 'Skill DMG', index: 0 },
+      'hydro', 'skill', 90,
+    );
+
+    const hit = (calls[0].body as { hit: Record<string, unknown> }).hit;
+    expect('scaling_stat' in hit).toBe(false);
   });
 });
 

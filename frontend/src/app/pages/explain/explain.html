@@ -62,6 +62,7 @@
             <option [value]="$index">
               {{ enumLabel(option.talent) }} · {{ option.label }}
               @if (option.hits > 1) { (×{{ option.hits }}) }
+              @if (scalingLabel(option); as scaling) { · {{ scaling }} }
             </option>
           }
         </select>

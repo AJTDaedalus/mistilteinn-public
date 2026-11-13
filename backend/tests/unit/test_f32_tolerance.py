@@ -54,14 +54,21 @@ def chain_in_f32(case: dict) -> float:
     f32 = np.float32
     stats, hit, enemy = case["stats"], case["hit"], case["enemy"]
 
-    if hit["scaling_stat"] == "elemental_mastery":
-        scaling = f32(stats[tags.Q_ELEMENTAL_MASTERY])
-    else:
-        base_q, pct_q, flat_q = _SCALING[hit["scaling_stat"]]
-        scaling = f32(stats[base_q]) * (f32(1) + f32(stats[pct_q])) + f32(stats[flat_q])
+    def resolved(stat: str) -> np.float32:
+        if stat == "elemental_mastery":
+            return f32(stats[tags.Q_ELEMENTAL_MASTERY])
+        base_q, pct_q, flat_q = _SCALING[stat]
+        return f32(stats[base_q]) * (f32(1) + f32(stats[pct_q])) + f32(stats[flat_q])
+
+    # A mixed-stat hit's further terms enter where flat damage does (math-fallback P0).
+    extra = f32(0)
+    for term in hit.get("extra_terms", []):
+        extra = extra + f32(term["multiplier"]) * resolved(term["stat"])
 
     value = (
-        f32(hit["multiplier"]) * scaling * (f32(1) + f32(hit["base_damage_bonus"]))
+        f32(hit["multiplier"]) * resolved(hit["scaling_stat"])
+        * (f32(1) + f32(hit["base_damage_bonus"]))
+        + extra
         + f32(hit["flat_damage"])
     )
     value = value * (f32(1) + f32(case["dmg_bonus"]["value"]))

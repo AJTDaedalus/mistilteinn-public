@@ -40,7 +40,7 @@ from app.dependencies import (
     get_weapon_repo,
 )
 from app.formula.genshin import tags
-from app.formula.genshin.damage import Hit
+from app.formula.genshin.damage import Hit, ScalingStat, ScalingTerm
 from app.middleware.rate_limit import WRITE_LIMIT, limiter
 from app.models.enums import LEVELLED_TALENTS, MAX_TALENT_LEVEL
 from app.repositories.artifact import ArtifactRepository
@@ -76,6 +76,7 @@ from app.schemas.build import (
     KernelSetBonus,
     KernelTarget,
     RefusedCandidate,
+    ScalingTermRead,
     SearchContextRead,
     SetEffectRead,
     SimulationNoteRead,
@@ -357,6 +358,11 @@ async def build_hits(
         AvailableHitRead(
             talent=hit.talent, label=hit.label, index=hit.index,
             multiplier=hit.multiplier, hits=hit.hits, exclusive=hit.exclusive,
+            scaling_stat=hit.scaling_stat,
+            extra_terms=[
+                ScalingTermRead(stat=term.stat, multiplier=term.multiplier)
+                for term in hit.extra_terms
+            ],
         )
         for hit in available_hits(build.character, build.talent_levels or {})
     ]
@@ -392,7 +398,13 @@ async def search_context(
     hit = _hit(body.hit, build)
     enemy = await _enemy(body.enemy, enemies)
 
-    base = {c.quantity: c.value for c in _base_contributions(build)}
+    # **Summed per quantity.** `base_atk` has several contributors (the character's curve, the
+    # weapon's, the weapon's ascension) and so does `base_hp`. This was a dict comprehension,
+    # which kept only the last contribution to each quantity — the kernel scored Neuvillette
+    # on his ascension HP bonus alone, 4,697.8 of 14,695. Found driving math-fallback P0.
+    base: dict[str, float] = {}
+    for contribution in _base_contributions(build):
+        base[contribution.quantity] = base.get(contribution.quantity, 0.0) + contribution.value
 
     # Every set the caller owns a piece of, not only the sets currently worn: the search is
     # free to propose a build using pieces from a set this build is not wearing, and a bonus
@@ -409,6 +421,10 @@ async def search_context(
             channel=hit.channel,
             scaling_stat=str(hit.scaling_stat),
             amplifying=str(hit.amplifying) if hit.amplifying is not None else None,
+            extra_terms=[
+                ScalingTermRead(stat=term.stat, multiplier=term.multiplier)
+                for term in hit.extra_terms
+            ],
         ),
         target=KernelTarget(
             level=enemy.level,
@@ -893,6 +909,8 @@ def _hit(spec: HitSpec, build: "Build") -> Hit:
     its real multiplier and the result still looks like a damage figure.
     """
     multiplier = spec.multiplier
+    scaling_stat = spec.scaling_stat or ScalingStat.ATK
+    extra_terms: tuple[ScalingTerm, ...] = ()
     if spec.talent is not None:
         if build.character is None:
             raise HTTPException(
@@ -909,15 +927,29 @@ def _hit(spec: HitSpec, build: "Build") -> Hit:
             )
         except TalentHitUnavailableError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+        # Math-fallback P0: the talent's row names its stat. A body that says otherwise is
+        # stating two stats for one hit, refused for the reason `multiplier`-and-`talent` is.
+        if spec.scaling_stat is not None and spec.scaling_stat != resolved.scaling_stat:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"{spec.talent.label!r} scales off {resolved.scaling_stat}, and the "
+                    f"request says {spec.scaling_stat}. Omit `scaling_stat` with a named "
+                    f"talent: its own row says what it scales off."
+                ),
+            )
         multiplier = resolved.multiplier
+        scaling_stat = resolved.scaling_stat
+        extra_terms = resolved.extra_terms
 
     return Hit(
         multiplier=multiplier,
         channel=spec.channel,
         scope=spec.scope,
-        scaling_stat=spec.scaling_stat,
+        scaling_stat=scaling_stat,
         amplifying=spec.amplifying,
         flat_damage=spec.flat_damage,
+        extra_terms=extra_terms,
     )
 
 
