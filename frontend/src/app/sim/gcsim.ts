@@ -39,7 +39,11 @@ export interface GcsimModule {
   initializeWorker(config: string): void;
   simulate(): unknown;
   aggregate(result: unknown): void;
-  flush(): string;
+  /**
+   * The aggregate. **Two shapes, by pin** — see `flushResult`, which is the only reader.
+   * A string up to gcsim v2.47.2 and on failure; `{result, hash}` from v2.50.0 on.
+   */
+  flush(): unknown;
 }
 
 /** What one run reports. `dps` is null when the result carries no DPS block. */
@@ -139,12 +143,45 @@ export function run(
     mod.aggregate(simulated);
     onProgress?.(i + 1, iterations);
   }
-  const flushed = JSON.parse(mod.flush()) as unknown;
-  const flushFailure = (flushed as { error?: unknown })?.error;
-  if (typeof flushFailure === 'string') {
-    throw new Error(`gcsim failed to aggregate: ${flushFailure}`);
+  return { iterations, ...readResult(flushResult(mod.flush())) };
+}
+
+/**
+ * What `flush()` returned, as the one envelope every reader here understands: `{stats, hash}`.
+ *
+ * **gcsim v2.50.0 changed what `flush()` returns, and the old reading fails.** Up to v2.47.2
+ * it returned a JSON *string*, `{"stats": {…}, "hash": "…"}`. From v2.50.0
+ * (`cmd/wasm/main.go`, gcsim `#3171` *rework share signing*) it returns a JS **object**,
+ * `{result: "<the whole SimulationResult as JSON>", hash}`, and the statistics are under
+ * `result.statistics` — the key the native CLI has always written. `JSON.parse` of the object
+ * throws on `"[object Object]"`; a reader that tolerated that and looked for `.stats` would
+ * have found nothing and returned `null` for every DPS, which ranks every candidate equal.
+ *
+ * **Normalised to the old envelope, deliberately, and only here.** The `stats` block is the
+ * same object gcsim's aggregators flushed in both versions — `cachedResult.Statistics = stats`
+ * at both pins — so nothing inside it is rewritten; only the wrapper is. Keeping the wrapper
+ * means a run-corpus row written before the re-pin and one written after are read by the same
+ * code (`readResult`, `instancesFrom`, `rotation-stats.ts`, the backend's `dps_mean_of`), and
+ * the full `SimulationResult` — config text, character details, every target — does not ride
+ * along into a 256 KB-capped corpus that never wanted it.
+ *
+ * Failure is still a string carrying `error`, at both pins (`marshal(err)`).
+ */
+export function flushResult(flushed: unknown): { stats?: unknown; hash?: unknown } {
+  if (typeof flushed === 'string') {
+    const parsed = JSON.parse(flushed) as { error?: unknown; stats?: unknown; hash?: unknown };
+    if (typeof parsed?.error === 'string') {
+      throw new Error(`gcsim failed to aggregate: ${parsed.error}`);
+    }
+    return parsed;
   }
-  return { iterations, ...readResult(flushed) };
+  const envelope = flushed as { result?: unknown; hash?: unknown } | null;
+  if (typeof envelope?.result !== 'string') {
+    // Neither shape. Saying so beats returning an empty object that reads as "no DPS".
+    throw new Error('gcsim returned an aggregate in a shape this build does not recognise');
+  }
+  const result = JSON.parse(envelope.result) as { statistics?: unknown };
+  return { stats: result.statistics, hash: envelope.hash };
 }
 
 /**

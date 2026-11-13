@@ -48,8 +48,17 @@ if (typeof invalid === 'string' && invalid.includes('"error"')) {
 globalThis.initializeAggregator(cfg);
 globalThis.initializeWorker(cfg);
 globalThis.aggregate(globalThis.simulate());
-const out = JSON.parse(globalThis.flush());
-const actual = out?.stats?.total_damage?.mean;
+// **The raw contract, read by hand on purpose** — this gate is about the wasm, not the app's
+// reader of it (that is `verify-gcsim-runner.mjs`). From gcsim v2.50.0 `flush()` returns an
+// object, `{result: "<SimulationResult JSON>", hash}`, and the statistics sit under
+// `statistics`; up to v2.47.2 it returned a string `{"stats": …}`. A string here therefore
+// means either an older wasm or a failure, and both are worth stopping on.
+const flushed = globalThis.flush();
+if (typeof flushed === 'string' || typeof flushed?.result !== 'string') {
+  console.error('flush() did not return the v2.50.0 {result, hash} envelope:', flushed);
+  process.exit(1);
+}
+const actual = JSON.parse(flushed.result)?.statistics?.total_damage?.mean;
 
 if (actual !== EXPECTED_TOTAL) {
   console.error(

@@ -10,6 +10,8 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { flushResult } from '../src/app/sim/gcsim.ts';
+
 const FRONTEND = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CASES = join(FRONTEND, 'gcsim', 'emitted');
 
@@ -78,7 +80,9 @@ function runSim(cfg) {
   globalThis.initializeAggregator(cfg);
   globalThis.initializeWorker(cfg);
   globalThis.aggregate(globalThis.simulate());
-  return JSON.parse(globalThis.flush());
+  // Read through the app's own reader: `flush()`'s shape changed at gcsim v2.50.0, and a
+  // second hand-rolled reading here is how one copy ends up right and the other wrong.
+  return flushResult(globalThis.flush());
 }
 
 /** How many times each action was used, summed over every character. */

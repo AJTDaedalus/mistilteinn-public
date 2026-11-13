@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { configError, run, simulationError, type GcsimModule } from './gcsim';
+import { configError, flushResult, run, simulationError, type GcsimModule } from './gcsim';
 
 /**
  * W.1 — the runner's logic, against a stub.
@@ -140,5 +140,39 @@ describe('run', () => {
     const mod = stub({ error: 'index out of range [0] with length 0' });
 
     expect(() => run(mod, 'cfg', 1)).toThrow(/index out of range/);
+  });
+});
+
+describe('flushResult', () => {
+  const STATS = { total_damage: { mean: 108.5 }, dps: { mean: 707.2, sd: 86.9 } };
+
+  it('reads the v2.50.0 envelope: an object whose result is the whole SimulationResult', () => {
+    // What the v2.50.0 wasm returns. The statistics sit under `statistics`, inside a JSON
+    // string, beside a hash that is empty for an unsigned build.
+    const flushed = { result: JSON.stringify({ config_file: 'x', statistics: STATS }), hash: '' };
+    expect(flushResult(flushed)).toEqual({ stats: STATS, hash: '' });
+  });
+
+  it('reads the v2.47.2 string the same way, so older corpus rows and new runs agree', () => {
+    expect(flushResult(JSON.stringify({ stats: STATS, hash: 'h' })))
+      .toEqual({ stats: STATS, hash: 'h' });
+  });
+
+  it('scores a v2.50.0 aggregate through run() exactly as it scored the old one', () => {
+    // The silent version of this break: a reader that looked for `.stats` on the new object
+    // returns null DPS for every candidate, and the ranking comes out flat.
+    const mod = stub(OK);
+    mod.flush = vi.fn(() => ({ result: JSON.stringify({ statistics: OK.stats }), hash: '' }));
+    expect(run(mod, 'cfg', 1))
+      .toMatchObject({ totalDamage: 108.5, dps: { mean: 707.2, sd: 86.9 } });
+  });
+
+  it('surfaces a failure string at either pin', () => {
+    expect(() => flushResult('{"error":"index out of range"}')).toThrow(/index out of range/);
+  });
+
+  it('refuses a shape it does not recognise rather than reading it as no DPS', () => {
+    expect(() => flushResult({ stats: STATS })).toThrow(/does not recognise/);
+    expect(() => flushResult(null)).toThrow(/does not recognise/);
   });
 });
