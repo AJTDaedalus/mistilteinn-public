@@ -11,6 +11,8 @@ browser build at the pin (`docs/CROSSVAL_gcsim.md` — never restated here). See
 | `noelle_redhorn_probe_calc.json` | `noelle_redhorn_probe.txt` | 94 | the same at `def%=0.5` — the **probe** that identifies those conversions |
 | `noelle_redhorn_target_calc.json` | `noelle_redhorn_target.txt` | 94 | the same at `def%=0.9 cd=0.4` — a run the recipe must **predict** |
 | `skirk_team_calc.json` | `skirk_team.txt` | 215 | **four characters**, three elements, `+params`, a `for` loop, `energy every`, a custom target, and a real conversion on 18 % of the damage |
+| `xiangling_vape_calc.json` | `xiangling_vape.txt` | 86 | **vaporize**: 10 of Xiangling's 27 hits at ×1.5, teammates' ×2; `em`, `reaction_type`, `react_mult`, `react_bonus`, `avg_crit_dmg_react` |
+| `xiangling_vape_em_calc.json` | `xiangling_vape_em.txt` | 86 | the same at **+250 artifact EM** — the run the EM gate predicts |
 
 ## The probe triple
 
@@ -59,9 +61,11 @@ only the genuine one remains: **`flatDamage` on 91 hits, 18 % of the damage**.
 
 - **Crit rate above 100 %.** All sit under the cap, so the clamp in `effectiveCritRate` is
   gated by the spec's stubs alone.
-- **Amplifying reactions.** No melt or vaporize, so `amp_mult_total` is 0 throughout and only
-  the "absent means 1, not 0" case is exercised against real data.
-- **HP and EM scaling.** `use_def` appears; `use_hp` and `use_em` do not.
+- ~~**Amplifying reactions.**~~ **Closed 2026-11-13** by the `xiangling_vape` pair. Melt is
+  still stub-only (`recipe-eval.spec.ts`), though it travels the same code path as vaporize.
+- **HP and EM scaling.** `use_def` appears; `use_hp` and `use_em` do not. No released
+  character in the owner's roster scales a gcsim hit off EM with `UseEM` — Nahida-style kits
+  put EM into `FlatDmg` instead, which the probe does not yet perturb (see below).
 
 These are gaps in the **gate**, not in the tests — `recipe.spec.ts` covers all of them with
 stubs. The distinction matters: a stub proves the code does what it was written to do, and a
@@ -174,3 +178,29 @@ and this is the shape of file that happens to.
 `npm run gcsim:verify-recipe` replays both and regenerates both. It **exits non-zero when the
 wasm is absent** rather than skipping: a skipped check means *could not check*, never *checked
 and clean*.
+
+## The vaporize pair, and the EM gate (2026-11-13)
+
+`xiangling_vape.txt` is the National core — Xiangling, Xingqiu, Bennett, Yelan — calibrated as a
+calibration is (`er=0.3`, nothing else), and `xiangling_vape_em.txt` is the same at `em=250`.
+They exist to gate the fix the owner approved on 2026-11-13: a gcsim recipe used to freeze the
+amplifying multiplier at the calibration's EM, so **artifact EM was worth nothing** to a
+vaporize or melt build. `verify-gcsim-recipe` predicts the second run from the first:
+
+| | gcsim | recipe |
+|---|---:|---:|
+| gain from +250 EM | 23,461.20 | 23,461.20 (1.1e-7) |
+| before the fix | — | −0.0017 |
+
+The tolerance is **1e-6**, because the multiplier goes through `damage.ts`, which is f32 by
+design (`docs/CROSSVAL_gcsim.md`). Planted defects it catches: a parser that stops naming the
+reaction fails the price check (predicted gain 0.00, Pyronado 24 % out), and one that reads
+`avg_crit_dmg` instead of `avg_crit_dmg_react` fails replay at 1.000e+0.
+
+**Bennett's burst is reported stale in `flatAtk`**, correctly: it is computed from *Bennett's*
+base ATK and lands in Xiangling's flat ATK, so no probe of her stats can resolve it.
+
+**Not covered: EM converted into flat damage** (Nahida's Tri-Karma is `ATK × a + EM × b`, the
+second part written as `FlatDmg`). The probe moves `atk%`, `hp%` and `def%` only, so such a
+term stays frozen and is reported stale. Widening the probe to EM is a backend schema change
+(`probe_deltas`), left as a follow-up rather than folded into this fix.

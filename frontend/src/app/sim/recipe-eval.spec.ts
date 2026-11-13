@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   NO_STATS, energyRatio, evaluateHit, evaluateRecipe, type CandidateStats,
 } from './recipe-eval';
-import type { Recipe, RecipeHit } from './recipe';
+import { computeDamage } from './damage';
+import { parseSample, type Recipe, type RecipeHit } from './recipe';
 
 /**
  * G.4 — applying a candidate's stats to a calibrated hit.
@@ -281,5 +282,134 @@ describe('energyRatio — the denominator is the same ladder', () => {
     // A graceful fallback rather than a throw — but `SCHEMA` 5 makes those entries miss, so
     // this is the belt to that braces.
     expect(energyRatio(recipeWith({}), at(0.279))).toBeCloseTo(151000 / 153417, 9);
+  });
+});
+
+/**
+ * Elemental Mastery on a **gcsim** recipe — the defect PR #368 found and the owner approved
+ * fixing on 2026-11-13.
+ *
+ * gcsim publishes the snapshot EM on every `calc` event (`em`), and for a melt or vaporize hit
+ * the reaction (`reaction_type`), its base multiplier (`react_mult`) and the reaction bonus
+ * (`react_bonus`) — `pkg/enemy/damage.go:105-116` at the pin. A recipe that read none of them
+ * scored an EM-scaling hit off the candidate's EM alone (a zero-EM calibration made it zero
+ * damage) and froze the amplifying multiplier at the calibration's EM, so **artifact EM was
+ * worth nothing** to a vaporize or melt build however much of it a candidate carried.
+ *
+ * Each expectation is the Python oracle's own answer —
+ * `backend/app/formula/genshin/damage.py:compute_damage` with the inputs named beside it — so
+ * the recipe path and the damage chain cannot quietly disagree. Tolerance is `1e-6` relative
+ * where the amplifying term is involved, because it goes through `damage.ts`, which rounds to
+ * f32 as the GPU must (`docs/CROSSVAL_gcsim.md` measures that at 3.51e-07 worst case).
+ */
+describe('elemental mastery on a gcsim-calibrated recipe', () => {
+  /** Character 90 against enemy 100: `190 / (190 + 200)`, gcsim `damage.go`. */
+  const DEF_MOD = 190 / 390;
+  const RES_MOD = 0.9;
+
+  /** A calc/damage pair as gcsim logs it, with the EM and amplifying fields populated. */
+  function sample(over: Record<string, number | string | boolean>): RecipeHit {
+    const logs: Record<string, number | string | boolean> = {
+      abil: 'Skill', talent: 2, total_scaling: 1000, base_atk: 1000, atk_per: 0, flat_atk: 0,
+      base_hp: 10000, base_def: 800, flat_dmg: 0, flat_hp: 0, flat_def: 0, hp_per: 0,
+      def_per: 0, bonus_dmg: 0.5, cr: 0.25, cd: 1, def_mod: DEF_MOD, res_mod: RES_MOD,
+      amp_mult_total: 0, use_hp: false, use_def: false, use_em: false, em: 0,
+      melt_vape: false, reaction_type: '', react_mult: 0, react_bonus: 0,
+      avg_crit_dmg_react: 0, damage: 1, ele: 0, ...over,
+    };
+    const n = (k: string) => logs[k] as number;
+    const preCrit = n('talent') * n('total_scaling') * (1 + n('bonus_dmg')) * DEF_MOD * RES_MOD;
+    // gcsim's own relations, `damage.go:164` and `:173-177`.
+    logs['avg_crit_dmg'] = preCrit * (1 + n('cr') * n('cd'));
+    if (logs['melt_vape']) {
+      const amp = n('react_mult') * (1 + (2.78 * n('em')) / (1400 + n('em')) + n('react_bonus'));
+      logs['amp_mult_total'] = amp;
+      logs['avg_crit_dmg_react'] = n('avg_crit_dmg') * amp;
+    }
+    return parseSample({
+      logs: [
+        { event: 'calc', char_index: 0, logs } as never,
+        { event: 'damage', logs: { abil: 'Skill', ele: 'pyro', 'attack-tag': 4 } },
+      ],
+    }).hits[0];
+  }
+
+  describe('an EM-scaling hit', () => {
+    // 120 EM before artifacts: character, weapon, set and team buffs, as gcsim measured them.
+    const emHit = () => sample({ use_em: true, em: 120, total_scaling: 120 });
+
+    it('counts the EM the character already has, not only the candidate’s', () => {
+      // damage.py: multiplier 2, EM 120, dmg_bonus 0.5, cr 0.25, cd 1, lvl 90 vs 100, res 0.1.
+      expect(evaluateHit(emHit(), stats())).toBeCloseTo(197.3076923076923, 6);
+    });
+
+    it('adds artifact EM on top of it, by exactly what the damage chain says', () => {
+      // damage.py with EM 320 = 120 + the candidate's 200.
+      const gain = evaluateHit(emHit(), stats({ elementalMastery: 200 }))
+        - evaluateHit(emHit(), stats());
+      expect(gain).toBeCloseTo(526.1538461538462 - 197.3076923076923, 6);
+    });
+  });
+
+  describe('a vaporize hit', () => {
+    // Pyro onto Hydro is the 1.5× side — `pkg/reactable/vaporize.go:26` at the pin.
+    const vape = () => sample({
+      melt_vape: true, reaction_type: 'vaporize', react_mult: 1.5, em: 100, react_bonus: 0.15,
+    });
+
+    it('carries gcsim’s amplified average, not the pre-reaction one', () => {
+      // `avg_crit_dmg` is written *before* the amplifying multiplier (`damage.go:164`), so a
+      // vaporizing teammate's frozen hit read as a fraction of its damage. damage.py at EM 100.
+      expect(vape().gcsimAverageDamage).toBeCloseTo(3293.394230769231, 6);
+    });
+
+    it('reproduces the calibration when the candidate carries no EM', () => {
+      const h = vape();
+      expect(Math.abs(evaluateHit(h, stats()) / h.gcsimAverageDamage - 1)).toBeLessThan(1e-6);
+    });
+
+    it('pays for artifact EM through the amplifying multiplier', () => {
+      // damage.py, reverse_vaporize, reaction_bonus 0.15, EM 400 = 100 + the candidate's 300.
+      const h = vape();
+      const predicted = evaluateHit(h, stats({ elementalMastery: 300 }));
+      expect(Math.abs(predicted / 4359.951923076922 - 1)).toBeLessThan(1e-6);
+      // And it agrees with the browser chain the single-hit kernel uses.
+      const chain = computeDamage({
+        hit: {
+          multiplier: 2, scalingStat: 'atk', flatDamage: 0, baseDamageBonus: 0,
+          amplifying: 'reverse_vaporize', reactionBonus: 0.15,
+        },
+        scalingValue: 1000, dmgBonus: 0.5, critRate: 0.25, critDmg: 1, elementalMastery: 400,
+        characterLevel: 90, target: { level: 100, resistance: 0.1, defReduction: 0, defIgnore: 0 },
+      });
+      expect(Math.abs(predicted / chain - 1)).toBeLessThan(1e-6);
+    });
+
+    it.each([
+      ['melt', 2, 'melt'],
+      ['melt', 1.5, 'reverse_melt'],
+      ['vaporize', 2, 'vaporize'],
+      ['vaporize', 1.5, 'reverse_vaporize'],
+    ] as const)('reads %s at ×%s as %s', (type, mult, expected) => {
+      const h = sample({ melt_vape: true, reaction_type: type, react_mult: mult, em: 50 });
+      expect(h.amplifying).toEqual({ reaction: expected, reactionBonus: 0 });
+      expect(h.calibratedEm).toBe(50);
+    });
+
+    it('keeps an amplifying multiplier it cannot name frozen rather than guessing', () => {
+      // A base multiplier gcsim does not use for melt or vaporize: the hit replays as measured
+      // and EM does not move it — the honest default. `ampMultiplier ≠ 1` keeps EM live for
+      // pruning regardless, which over-states the bound and is the safe direction.
+      const h = sample({ melt_vape: true, reaction_type: 'vaporize', react_mult: 1.75, em: 50 });
+      expect(h.amplifying).toBeUndefined();
+      expect(evaluateHit(h, stats({ elementalMastery: 500 })))
+        .toBeCloseTo(evaluateHit(h, stats()), 9);
+    });
+  });
+
+  it('leaves a hit that neither scales off EM nor amplifies untouched by EM', () => {
+    const plain = sample({ em: 80 });
+    expect(evaluateHit(plain, stats({ elementalMastery: 500 })))
+      .toBeCloseTo(plain.gcsimAverageDamage, 9);
   });
 });

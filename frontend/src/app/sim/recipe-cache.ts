@@ -130,7 +130,14 @@ const PREFIX = 'mistilteinn:recipe:';
 // construction and was filed as unresolvable — 183 of the subject's 198 flat-carrying hits on
 // the owner's own team. `RecipeHit` gained `constantTerms`, and a v6 entry has none of them,
 // so the warning would survive on every cached recipe exactly as it survived #227.
-const SCHEMA = 7;
+//
+// **8: a hit carries its EM and its reaction.** `parseSample` now reads gcsim's `em`,
+// `reaction_type`, `react_mult` and `react_bonus` into `calibratedEm` and `amplifying`, and an
+// amplified hit's `gcsimAverageDamage` is the post-reaction average. A v7 entry has none of it,
+// so a cache hit would go on scoring an EM-scaling hit off the candidate's EM alone and
+// holding vaporize/melt at the calibration's multiplier — artifact EM worth nothing, the
+// defect this version exists to retire, served to exactly the users who had searched before.
+const SCHEMA = 8;
 
 export function cacheKey(key: RecipeCacheKey): string {
   return [
