@@ -22,6 +22,7 @@
     "kernel:verify": "node --import ./scripts/ts-resolve.mjs scripts/verify-kernel.mjs",
     "kernel:verify-search": "node --import ./scripts/ts-resolve.mjs scripts/verify-kernel-search.mjs",
     "kernel:verify-gpu": "node --import ./scripts/ts-resolve.mjs scripts/verify-kernel-gpu.mjs",
+    "formula:verify": "node --import ./scripts/ts-resolve.mjs scripts/verify-formula-recipe.mjs",
     "gcsim:verify-runner": "node --import ./scripts/ts-resolve.mjs scripts/verify-gcsim-runner.mjs",
     "gcsim:verify-recipe": "node --import ./scripts/ts-resolve.mjs scripts/verify-gcsim-recipe.mjs",
     "verify": "npm run typecheck && npm run lint && npm test",

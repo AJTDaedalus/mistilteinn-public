@@ -293,6 +293,12 @@ jobs:
         # arithmetic rather than a heuristic and so must agree exactly.
         run: npm run kernel:verify-search
 
+      - name: Verify the formula recipe against the GO-cited fixtures
+        # Math-fallback P1: the synthetic recipe's application of set and resonance buffs,
+        # held to figures worked by hand from Genshin Optimizer's formula (the comparator,
+        # DECISIONS.md §38) in backend/tests/unit/test_go_formula_fixtures.py.
+        run: npm run formula:verify
+
       - name: Install a software Vulkan driver
         # OQ-S4's answer needs this, and the first attempt got it wrong by generalising from
         # a dev box. Runners ship `libvulkan` but **no ICD**, so Dawn fails with
