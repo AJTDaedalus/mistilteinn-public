@@ -4646,6 +4646,75 @@
           }
         ]
       }
+    },
+    "/api/v1/formula/set-effects": {
+      "get": {
+        "tags": [
+          "formula"
+        ],
+        "summary": "Set Effects Route",
+        "description": "Every conditional set tier, resolved against the seeded `param_list`s.\n\nA static tier is absent: it is already a stat pool the kernel applies\n(`/artifacts/set-bonuses`). A conditional tier is **always present**, including the ones\napplying nothing, each with a `status` saying which kind of nothing it is.",
+        "operationId": "set_effects_route_api_v1_formula_set_effects_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormulaSetEffectsRead"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/formula/resonance": {
+      "get": {
+        "tags": [
+          "formula"
+        ],
+        "summary": "Resonance Route",
+        "description": "The resonances a party of these catalogue characters has.\n\nEach id is one member: a team names each character once, and the tally counts members,\nso a repeated id would be a fifth body the game does not allow.",
+        "operationId": "resonance_route_api_v1_formula_resonance_get",
+        "parameters": [
+          {
+            "name": "character_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 4,
+              "title": "Character Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormulaTeamResonanceRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -7581,6 +7650,504 @@
         ],
         "title": "FnNode",
         "description": "`fn name(params) { body }`.\n\nStructural here, and **authored as text** \u2014 owner, 2026-09-03: *\"user defined functions\nalmost need to be written\u2026 they'll have to author them themselves.\"* Measured: of the 41\ncorpus configs defining one, 41 have control flow in the body and 30 take a parameter, so\nthere is no simple-function case a form could have covered."
+      },
+      "FormulaBonusRead": {
+        "properties": {
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/FormulaConditionRead"
+            },
+            "type": "array",
+            "title": "Conditions"
+          },
+          "effects": {
+            "items": {
+              "$ref": "#/components/schemas/FormulaEffectRead"
+            },
+            "type": "array",
+            "title": "Effects"
+          },
+          "unmodelled": {
+            "items": {
+              "$ref": "#/components/schemas/FormulaUnmodelledRead"
+            },
+            "type": "array",
+            "title": "Unmodelled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "conditions",
+          "effects",
+          "unmodelled"
+        ],
+        "title": "FormulaBonusRead",
+        "description": "Conditions, the effects they gate, and what is left out."
+      },
+      "FormulaConditionRead": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "toggle",
+              "stacks",
+              "choice",
+              "number"
+            ],
+            "title": "Kind"
+          },
+          "default": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Default"
+          },
+          "default_reason": {
+            "type": "string",
+            "enum": [
+              "self",
+              "situational"
+            ],
+            "title": "Default Reason"
+          },
+          "max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max"
+          },
+          "step": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step"
+          },
+          "options": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Options"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "kind",
+          "default",
+          "default_reason"
+        ],
+        "title": "FormulaConditionRead",
+        "description": "One assumption a user owns, with its default and why that is the default."
+      },
+      "FormulaEffectRead": {
+        "properties": {
+          "stat": {
+            "type": "string",
+            "title": "Stat"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "elements": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elements"
+          },
+          "element_from": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Element From"
+          },
+          "moves": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Moves"
+          },
+          "reactions": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reactions"
+          },
+          "when": {
+            "items": {
+              "$ref": "#/components/schemas/FormulaWhenRead"
+            },
+            "type": "array",
+            "title": "When"
+          },
+          "per": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per"
+          },
+          "by_stack": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By Stack"
+          },
+          "per_team": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "same_element_others",
+                  "different_element"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Team"
+          },
+          "per_team_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Team Max"
+          },
+          "cap": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cap"
+          },
+          "weapon_types": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weapon Types"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stat",
+          "value",
+          "when"
+        ],
+        "title": "FormulaEffectRead",
+        "description": "One buff, as a number and the scope it reaches. See `formula_effects.Effect`."
+      },
+      "FormulaResonanceRead": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "element": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Element"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "modelled",
+              "partial",
+              "unmodelled",
+              "no_damage_effect"
+            ],
+            "title": "Status"
+          },
+          "bonus": {
+            "$ref": "#/components/schemas/FormulaBonusRead"
+          },
+          "citation": {
+            "type": "string",
+            "title": "Citation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "element",
+          "status",
+          "bonus",
+          "citation"
+        ],
+        "title": "FormulaResonanceRead",
+        "description": "One active resonance."
+      },
+      "FormulaSetEffectsRead": {
+        "properties": {
+          "go_commit": {
+            "type": "string",
+            "title": "Go Commit"
+          },
+          "tiers": {
+            "items": {
+              "$ref": "#/components/schemas/FormulaSetTierRead"
+            },
+            "type": "array",
+            "title": "Tiers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "go_commit",
+          "tiers"
+        ],
+        "title": "FormulaSetEffectsRead",
+        "description": "Every conditional tier of every catalogue set, resolved against the seeded numbers."
+      },
+      "FormulaSetTierRead": {
+        "properties": {
+          "set_id": {
+            "type": "integer",
+            "title": "Set Id"
+          },
+          "set_name": {
+            "type": "string",
+            "title": "Set Name"
+          },
+          "pieces": {
+            "type": "integer",
+            "title": "Pieces"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "modelled",
+              "partial",
+              "unmodelled",
+              "no_damage_effect",
+              "stale",
+              "uncurated"
+            ],
+            "title": "Status"
+          },
+          "bonus": {
+            "$ref": "#/components/schemas/FormulaBonusRead"
+          },
+          "citation": {
+            "type": "string",
+            "title": "Citation"
+          },
+          "problem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem"
+          }
+        },
+        "type": "object",
+        "required": [
+          "set_id",
+          "set_name",
+          "pieces",
+          "status",
+          "bonus",
+          "citation"
+        ],
+        "title": "FormulaSetTierRead",
+        "description": "One conditional tier of one set."
+      },
+      "FormulaTeamResonanceRead": {
+        "properties": {
+          "team_size": {
+            "type": "integer",
+            "title": "Team Size"
+          },
+          "elements": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Elements"
+          },
+          "active": {
+            "items": {
+              "$ref": "#/components/schemas/FormulaResonanceRead"
+            },
+            "type": "array",
+            "title": "Active"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "team_size",
+          "elements",
+          "active"
+        ],
+        "title": "FormulaTeamResonanceRead",
+        "description": "A team's tally and the resonances it has."
+      },
+      "FormulaUnmodelledRead": {
+        "properties": {
+          "what": {
+            "type": "string",
+            "title": "What"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "what",
+          "reason"
+        ],
+        "title": "FormulaUnmodelledRead",
+        "description": "A part of a bonus the estimate does not apply, and why."
+      },
+      "FormulaWhenRead": {
+        "properties": {
+          "condition": {
+            "type": "string",
+            "title": "Condition"
+          },
+          "values": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Values"
+          }
+        },
+        "type": "object",
+        "required": [
+          "condition",
+          "values"
+        ],
+        "title": "FormulaWhenRead",
+        "description": "The effect applies only while `condition` holds one of `values`."
       },
       "FreshDropInputs": {
         "properties": {
