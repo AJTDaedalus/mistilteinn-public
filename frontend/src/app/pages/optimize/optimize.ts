@@ -272,6 +272,32 @@ export class OptimizePage implements OnInit {
 
   protected readonly builds = signal<BuildRead[]>([]);
   protected readonly hits = signal<AvailableHit[]>([]);
+  /**
+   * The hits grouped by talent, each keeping its index into `hits()`.
+   *
+   * **For the closed `<select>`, which is capped at 22rem and truncates** (`.controls select`).
+   * Every option used to start `Normal attack · …`, so the sixteen characters that survived
+   * truncation were the least informative ones and the scaling stat at the end was cut —
+   * `… Equitable Judgment · Max` at 1280px. The talent is now the `<optgroup>` label, which the
+   * open list shows and the closed control does not need, and the option reads hit-first.
+   */
+  protected readonly hitGroups = computed(() => {
+    const groups: { talent: string; items: { index: number; hit: AvailableHit }[] }[] = [];
+    this.hits().forEach((hit, index) => {
+      const talent = enumLabel(hit.talent);
+      let group = groups.find((g) => g.talent === talent);
+      if (!group) groups.push((group = { talent, items: [] }));
+      group.items.push({ index, hit });
+    });
+    return groups;
+  });
+  /** The chosen hit in full, for the select's tooltip — the words truncation may hide. */
+  protected readonly hitTitle = computed(() => {
+    const hit = this.hits()[this.hitIndex()];
+    if (!hit) return null;
+    const scaling = scalingLabel(hit);
+    return [enumLabel(hit.talent), hit.label, ...(scaling ? [scaling] : [])].join(' · ');
+  });
   protected readonly result = signal<SearchResult | null>(null);
   protected readonly candidates = signal<KernelCandidate[]>([]);
   /** Pieces the server could not translate. Shown, never swallowed (OQ-O2). */

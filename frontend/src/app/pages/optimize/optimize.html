@@ -127,12 +127,19 @@
       @if (objective() === 'hit' && buildId()) {
         <label>
           Hit
-          <select aria-label="Hit" [ngModel]="hitIndex()" (ngModelChange)="hitIndex.set(+$event)">
-            @for (option of hits(); track $index) {
-              <option [value]="$index">
-                {{ enumLabel(option.talent) }} · {{ option.label }}
-                @if (scalingLabel(option); as scaling) { · {{ scaling }} }
-              </option>
+          <!-- Grouped by talent so the closed control leads with the hit and its stat, which
+               is what truncation used to cut (`hitGroups`). `[selected]` per option, not
+               `[value]` on the select: the binding runs before `@for` renders the options. -->
+          <select aria-label="Hit" [attr.title]="hitTitle()" (change)="hitIndex.set(+$any($event.target).value)">
+            @for (group of hitGroups(); track group.talent) {
+              <optgroup [label]="group.talent">
+                @for (item of group.items; track item.index) {
+                  <option [value]="item.index" [selected]="item.index === hitIndex()">
+                    {{ item.hit.label }}
+                    @if (scalingLabel(item.hit); as scaling) { · {{ scaling }} }
+                  </option>
+                }
+              </optgroup>
             }
           </select>
         </label>

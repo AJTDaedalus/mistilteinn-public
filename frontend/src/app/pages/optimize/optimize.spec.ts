@@ -793,6 +793,38 @@ describe('OptimizePage marginalForExpanded', () => {
   });
 });
 
+describe('the hit picker under its 22rem cap', () => {
+  const hit = (talent: string, label: string, scaling_stat: string) => ({
+    talent, label, index: 0, multiplier: 1, hits: 1, exclusive: false,
+    scaling_stat, extra_terms: [],
+  });
+
+  it('groups by talent and keeps each hit at its index in hits()', () => {
+    // The talent moved into an <optgroup> because the closed select read
+    // "Normal attack · Charged Attack: Equitable Judgment · Max" at 1280px — it had spent its
+    // width on the part the open list already groups by, and cut the stat.
+    const page = pageWith();
+    page['hits'].set([
+      hit('normal_attack', '1-Hit DMG', 'atk'),
+      hit('elemental_burst', 'Skill DMG', 'hp'),
+      hit('normal_attack', 'Charged Attack: Equitable Judgment', 'hp'),
+    ] as never);
+
+    const groups = page['hitGroups']();
+
+    expect(groups.map((g) => g.items.map((i) => i.index))).toEqual([[0, 2], [1]]);
+    expect(groups[0].items[1].hit.label).toBe('Charged Attack: Equitable Judgment');
+  });
+
+  it('keeps the whole description, stat included, in the tooltip', () => {
+    const page = pageWith();
+    page['hits'].set([hit('normal_attack', 'Charged Attack: Equitable Judgment', 'hp')] as never);
+    page['hitIndex'].set(0);
+
+    expect(page['hitTitle']()).toMatch(/Charged Attack: Equitable Judgment · Max HP$/);
+  });
+});
+
 describe('OptimizePage barWidth', () => {
   /** §14 — the bar is a table cell with a width, so a bad width is a broken style attribute. */
   it('scales against the best line in the same table', () => {

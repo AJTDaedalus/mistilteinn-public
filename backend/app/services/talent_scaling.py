@@ -54,6 +54,14 @@ new patch's vocabulary arrives as a refusal, not as an ATK hit nobody checked.
 The **label** contains `DMG`. Not the format: `Blazing Threshold` and `Nightsoul Point Limit`
 are `P`-formatted percentages that are not damage.
 
+**Or the label is one of eleven exact strings that are damage without saying so** —
+`Aimed Shot`, `Fully-Charged Aimed Shot`, Neuvillette's `Charged Attack: Equitable Judgment`,
+the `DoT` rows (`_DAMAGE_WITHOUT_DMG`). The `DMG` rule alone hid them, so no bow user's aimed
+shot and not Neuvillette's main damage source was ever offered as a hit (math-fallback P1).
+Every other percentage row without `DMG` must match a known non-damage word
+(`_NOT_DAMAGE_WORDS`: healing, costs, shields, buffs, debuffs); one that matches neither is
+**refused by name**, so the classification stays explicit in both directions.
+
 **This is a heuristic over English text and that is a real limitation** — the fixtures are the
 `en` locale. `TASKS_multipliers.md` M.4 is what stops it being taken on trust: gcsim's
 generated tables carry the same numbers, so the parse is checked against an independent
@@ -97,6 +105,50 @@ _DAMAGE = "DMG"
 #:
 #: Treating any of them as a hit produces a multiplier for something that never strikes.
 _NOT_A_HIT = ("Bonus", "Increase", "Absorption", "Reduction", "Resistance", "per ", "Interval")
+
+#: Labels that **are** damage and do not say `DMG`, each one exact (math-fallback P1).
+#:
+#: The `DMG` rule missed them, so Neuvillette's Equitable Judgment and every bow user's aimed
+#: shots were never offered as hits. Surveyed over every level-1 row in the seeded catalogue
+#: (nanoka 7.2.51, 2026-11-13): of the 91 distinct percent-formatted labels without `DMG`,
+#: these eleven are damage and the rest are healing, shields, costs, buffs and debuffs
+#: (`_NOT_DAMAGE_WORDS`). **Every one but `Riptide Slash` has a table of the same label in
+#: gcsim's `talent_multipliers.json`**, which is the independent check that they strike —
+#: `scripts.gcsim.crossval_multipliers` compares their numbers and their scaling stat.
+#: `Riptide Slash` is Tartaglia's melee-stance proc; gcsim models it under another name.
+#:
+#: Exact strings, not a pattern: `Aimed Shot` is damage and `Aimed Shot Charge Time` would
+#: not be, and a substring rule is how the next patch's non-damage row becomes a hit.
+_DAMAGE_WITHOUT_DMG = frozenset({
+    "Aimed Shot",
+    "Aimed Shot Charge Level 1",
+    "Fully-Charged Aimed Shot",
+    "Level 1 Aimed Shot",
+    "Charged Attack",
+    "Charged Attack: Equitable Judgment",
+    "DoT",
+    "Ice Lance DoT",
+    "Pyro DoT",
+    "Coda at Dawn's Tolling DoT",
+    "Riptide Slash",
+})
+
+#: Words that mark a percent-formatted, `DMG`-less label as **not** damage — the other 80 of
+#: the 91 surveyed above, each matched by at least one: healing and regeneration, HP costs and
+#: losses, shields, buffs (`Bonus`, `Increase`, `Ratio`, `Conversion`), debuffs (`Decrease`,
+#: `Reduction`), thresholds and stack caps. A percent row matching none of these and not in
+#: `_DAMAGE_WITHOUT_DMG` is **refused by name** (`RefusedHit.unrecognised`), so a new patch's
+#: wording arrives as a refusal that `crossval_multipliers` reports, never as a silent skip
+#: of a real hit — the gap this table closes.
+_NOT_DAMAGE_WORDS = (
+    "Healing", "Regeneration", "HP Restored", "Life Drain", "HP Loss", "Cost", "Consumption",
+    "Shield", "Absorption", "Bonus", "Increase", "Decrease", "Reduction", "Mitigation",
+    "Ratio", "Conversion", "Inherited HP", "Bond of Life", "Threshold", "Maximum", "Chance",
+)
+
+#: A format code ending in `P` is a percentage — `P`, `F1P`, `F2P`. A row with none is
+#: seconds, a count or an energy cost (`F1`, `I`) and is never a damage multiplier.
+_PERCENT_FORMAT = re.compile(r"\{param\d+:[A-Za-z0-9]*P\}")
 
 #: The row whose value is a burst's energy cost. `Character.burst_energy_cost` has been
 #: nullable since Chunk D precisely because this had never been parsed out.
@@ -219,7 +271,18 @@ def classify_talent_row(desc: list[str] | None, param: list[float] | None) -> Ta
         if not entry:
             continue
         label, _, spec = entry.partition("|")
-        if _DAMAGE not in label or any(word in label for word in _NOT_A_HIT):
+        if not _is_damage_row(label, spec):
+            if _is_unclassified(label, spec):
+                row.refused.append(
+                    RefusedHit(
+                        label=label, spec=spec, unrecognised=True,
+                        reason=(
+                            f"{entry!r}: a percentage row whose label names neither damage "
+                            f"nor a known non-damage quantity. Classify it in "
+                            f"talent_scaling._DAMAGE_WITHOUT_DMG or _NOT_DAMAGE_WORDS."
+                        ),
+                    ),
+                )
             continue
         try:
             row.hits.extend(_hits_from(label, spec, param or []))
@@ -231,6 +294,20 @@ def classify_talent_row(desc: list[str] | None, param: list[float] | None) -> Ta
                 ),
             )
     return row
+
+
+def _is_damage_row(label: str, spec: str) -> bool:
+    """`DMG` in the label and no modifier word, or one of the reviewed exact labels."""
+    if label in _DAMAGE_WITHOUT_DMG:
+        return bool(_PARAM.search(spec))
+    return _DAMAGE in label and not any(word in label for word in _NOT_A_HIT)
+
+
+def _is_unclassified(label: str, spec: str) -> bool:
+    """A percentage row without `DMG` that neither list accounts for."""
+    if _DAMAGE in label or not _PERCENT_FORMAT.search(spec):
+        return False
+    return not any(word in label for word in _NOT_DAMAGE_WORDS)
 
 
 def energy_cost(desc: list[str] | None, param: list[float] | None) -> int | None:
