@@ -10,6 +10,7 @@ import {
 } from './formula-calibration';
 import {
   synthesizeRecipeSet,
+  type FormulaKit,
   type FormulaResonance,
   type FormulaRow,
   type FormulaSetTier,
@@ -209,6 +210,66 @@ describe('conditionGroups', () => {
     };
     expect(conditionGroups([cryo], [], new Set()).map((g) => g.sourceId))
       .toEqual(['resonance:shattering_ice']);
+  });
+});
+
+/**
+ * Math-fallback P2 — a team member's kit, as `/formula/kit-buffs` resolves it: Bennett's field
+ * as flat ATK computed by the server from **his** base ATK (1.008 × 799.16), gated on the field.
+ */
+const BENNETT: FormulaKit = {
+  id: 'kit:bennett', label: 'Bennett (kit)', giver: 'Bennett', build_id: 'b-bennett',
+  status: 'partial', verified: true, citation: 'GO Bennett.ts @ 2c13fc40',
+  giver_stats: { base_atk: 799.16 },
+  bonus: {
+    conditions: [{ key: 'in_field', label: 'Standing in Bennett\'s Inspiration Field',
+      kind: 'toggle', default: 0, default_reason: 'situational' }],
+    effects: [{ stat: 'flat_atk', value: 1.008 * 799.16,
+      when: [{ condition: 'in_field', values: [1] }] }],
+    unmodelled: [{ what: 'A1: Rekindle', reason: 'no damage effect: cooldown' }],
+  },
+};
+
+describe('formulaCalibration with kits (P2)', () => {
+  const kits = { sources: [BENNETT], missing: ['Xingqiu'] };
+
+  it('a teammate\'s kit is off by default, and its toggle adds exactly the server\'s flat ATK', () => {
+    const pools = PIECES.map((p) => p.stats as Record<string, number>);
+    const stats = candidateStatsFrom(pools);
+    const off = evaluateRecipe(formulaCalibration({ ...INPUT, kits }).noFourPiece, stats);
+    const bare = evaluateRecipe(formulaCalibration(INPUT).noFourPiece, stats);
+    expect(off).toBeCloseTo(bare, 6);
+    const on = formulaCalibration({ ...INPUT, kits, conditionals: { 'kit:bennett/in_field': 1 } });
+    const hit = on.noFourPiece.hits[0];
+    expect(hit.calibratedFlat.atk).toBeCloseTo(1.008 * 799.16, 6);
+    expect(evaluateRecipe(on.noFourPiece, stats)).toBeGreaterThan(bare);
+    // In every 4-piece state too: a kit is team-level, like resonance.
+    expect(on.byFourPieceSet.get(15006)!.hits[0].calibratedFlat.atk).toBeCloseTo(1.008 * 799.16, 6);
+  });
+
+  it('names whose kit is modelled, whether it is verified, and who has none', () => {
+    const made = formulaCalibration({ ...INPUT, kits });
+    const said = made.assumptions.join('\n');
+    expect(said).toMatch(/Kit buffs from Bennett: verified against Genshin Optimizer/);
+    expect(said).toMatch(/No kit buffs modelled for Xingqiu/);
+    expect(said).not.toMatch(/teammates' buffs are absent/);
+    expect(said).toMatch(/Bennett \(kit\): Standing in Bennett's Inspiration Field = off/);
+  });
+
+  it('without kits it still says none are modelled (the P1 sentence)', () => {
+    expect(formulaCalibration(INPUT).assumptions.join('\n'))
+      .toMatch(/No kit buffs modelled: talents, passives, constellations/);
+  });
+
+  it('the panel lists each kit with its verification, and each member with no sheet', () => {
+    const groups = conditionGroups([FERVENT], [], new Set(), kits);
+    expect(groups.map((g) => [g.sourceId, g.kind, g.verified])).toEqual([
+      ['resonance:fervent_flames', undefined, undefined],
+      ['kit:bennett', 'kit', true],
+      ['no-kit:Xingqiu', 'no-kit', undefined],
+    ]);
+    expect(groups[1].conditions[0].default_reason).toBe('situational');
+    expect(groups[2].unmodelled[0].reason).toMatch(/no kit sheet/);
   });
 });
 

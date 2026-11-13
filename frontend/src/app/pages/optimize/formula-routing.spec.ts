@@ -114,6 +114,7 @@ function harness(calibrateAll = vi.fn().mockRejectedValue({ detail: LOHEN_REFUSA
   const formula = TestBed.inject(FormulaEstimateService);
   vi.spyOn(formula, 'setTiers').mockResolvedValue([]);
   vi.spyOn(formula, 'resonances').mockResolvedValue([]);
+  vi.spyOn(formula, 'kits').mockResolvedValue({ sources: [], missing: [] });
   const page = TestBed.runInInjectionContext(() => new OptimizePage());
   return { page: page as unknown as Record<string, never>, calibrateAll, store, save, formula };
 }

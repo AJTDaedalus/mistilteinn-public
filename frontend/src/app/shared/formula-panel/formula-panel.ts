@@ -33,7 +33,9 @@ function talentName(raw: string): string {
  * disabled in each picker and named with their reason below it, never dropped (owner,
  * 2026-11-13).
  *
- * **The assumptions** are every conditional from the team's resonance and the sets in scope,
+ * **The assumptions** are every conditional from the team's resonance, the sets in scope and
+ * each member's kit sheet (P2: a kit says whether it is verified against GO, and a member with
+ * no sheet is named as contributing no kit buffs),
  * each a visible control showing its default and why — self-triggered on (at max), situational
  * off (owner, 2026-11-13) — and the source it is cited to; then, after a run, every assumption
  * the recipe itself listed. A number that cannot say what it assumed is the thing this repo
@@ -74,6 +76,9 @@ export class FormulaPanel {
     for (const row of this.refusedHits()) groupFor(row.talent).refused.push(row);
     return groups;
   });
+
+  /** Whether the groups say anything about kits (P2): then they, not a blanket line, do. */
+  protected readonly hasKits = computed(() => this.groups().some((g) => g.kind !== undefined));
 
   /** Groups that carry a control, for the per-row overrides. */
   protected readonly conditional = computed(
@@ -137,13 +142,13 @@ export class FormulaPanel {
     return this.valueOf(group, condition) === condition.default;
   }
 
-  protected defaultText(condition: FormulaCondition): string {
+  protected defaultText(condition: FormulaCondition, group?: ConditionGroup): string {
     const shown = condition.kind === 'toggle'
       ? (condition.default ? 'on' : 'off')
       : condition.default === '' ? 'none' : String(condition.default);
-    const why = condition.default_reason === 'self'
-      ? 'the wearer triggers it'
-      : 'depends on the situation';
+    // A kit's own condition is triggered by the character, not by whoever wears a set.
+    const who = group?.kind === 'kit' ? 'the character triggers it' : 'the wearer triggers it';
+    const why = condition.default_reason === 'self' ? who : 'depends on the situation';
     return `Default ${shown} — ${why}`;
   }
 

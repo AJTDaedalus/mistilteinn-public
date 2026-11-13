@@ -83,6 +83,38 @@ describe('FormulaPanel', () => {
     expect(box.checked).toBe(false);
   });
 
+  it('draws a kit with its verification and a member with no sheet as contributing nothing', () => {
+    const { el, fixture } = render();
+    fixture.componentRef.setInput('groups', [
+      ...GROUPS,
+      {
+        sourceId: 'kit:bennett', label: 'Bennett (kit)', citation: 'GO Bennett.ts', kind: 'kit',
+        verified: true,
+        conditions: [{ key: 'in_field', label: 'Standing in Bennett\'s Inspiration Field',
+          kind: 'toggle', default: 1, default_reason: 'self' }],
+        unmodelled: [],
+      },
+      {
+        sourceId: 'kit:other', label: 'Other (kit)', citation: 'GO Other.ts', kind: 'kit',
+        verified: false, conditions: [], unmodelled: [],
+      },
+      {
+        sourceId: 'no-kit:Xingqiu', label: 'Xingqiu (kit)', citation: '', kind: 'no-kit',
+        conditions: [],
+        unmodelled: [{ what: 'talents, passives and constellations', reason: 'no kit sheet yet' }],
+      },
+    ] satisfies ConditionGroup[]);
+    fixture.detectChanges();
+    const text = el.querySelector('.assumptions')!.textContent!;
+    expect(text).toContain('Verified against GO');
+    expect(text).toContain('Unverified');
+    expect(text).toContain('Default on — the character triggers it');
+    expect(text).toContain('Not applied: talents, passives and constellations (no kit sheet yet)');
+    const nokit = el.querySelector('.assumptions__group--nokit')!;
+    expect(nokit.textContent).not.toContain('nothing to set');
+    expect(nokit.textContent).not.toContain('Source:');
+  });
+
   it('a toggle writes the team-level conditional and marks it changed', () => {
     const { el, fixture, service } = render();
     const box = el.querySelector<HTMLInputElement>('.assumptions__toggle input')!;

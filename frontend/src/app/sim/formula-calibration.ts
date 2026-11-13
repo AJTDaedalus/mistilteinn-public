@@ -29,11 +29,13 @@
  */
 
 import {
+  kitSource,
   resonanceSource,
   synthesizeRecipe,
   synthesizeRecipeSet,
   type ConditionState,
   type FormulaCondition,
+  type FormulaKit,
   type FormulaResonance,
   type FormulaRow,
   type FormulaSetTier,
@@ -63,6 +65,11 @@ export interface FormulaCalibrationInput {
   fourPieceSetIds: readonly number[];
   conditionals?: ConditionState;
   characters?: string[];
+  /**
+   * Every member's kit resolved for the optimized character (`/formula/kit-buffs`, P2), and
+   * the members with no sheet. Absent: no kit buffs, said as such — the P1 behaviour.
+   */
+  kits?: { sources: readonly FormulaKit[]; missing: readonly string[] };
 }
 
 export interface FormulaCalibration {
@@ -104,14 +111,22 @@ function withStatics(row: FormulaRow, statics: readonly SetBonus[]): FormulaRow 
 export function formulaCalibration(input: FormulaCalibrationInput): FormulaCalibration {
   const teamState = input.conditionals ?? {};
   const characters = input.characters ?? [];
-  const resonances = input.resonances.map(resonanceSource);
+  // Kits ride with resonance: team-level sources present in every 4-piece state alike.
+  const resonances = [
+    ...input.resonances.map(resonanceSource),
+    ...(input.kits?.sources ?? []).map(kitSource),
+  ];
+  const coverage = input.kits === undefined ? undefined : {
+    modelled: input.kits.sources.map((k) => ({ name: k.giver, verified: k.verified })),
+    missing: [...input.kits.missing],
+  };
   const tiersBySet = new Map<number, FormulaSetTier[]>();
   for (const tier of input.setTiers) {
     tiersBySet.set(tier.set_id, [...(tiersBySet.get(tier.set_id) ?? []), tier]);
   }
 
   const noFourPiece = synthesizeRecipe(
-    input.rows, resonances, input.team, teamState, characters,
+    input.rows, resonances, input.team, teamState, characters, coverage,
   );
   const byFourPieceSet = new Map<number, Recipe>();
   const withheld: { setId: number; reason: string }[] = [];
@@ -128,7 +143,7 @@ export function formulaCalibration(input: FormulaCalibrationInput): FormulaCalib
     const conditional = tiers.filter((t) => t.pieces <= 4 && usable(t)).map(setSource);
     const recipe = synthesizeRecipe(
       input.rows.map((row) => withStatics(row, statics)),
-      [...resonances, ...conditional], input.team, teamState, characters,
+      [...resonances, ...conditional], input.team, teamState, characters, coverage,
     );
     // The set's whole bonus is inside, so the search must not add its pools again.
     recipe.meta.calibratedSetIds = [setId];
@@ -163,6 +178,13 @@ export interface ConditionGroup {
   citation: string;
   conditions: FormulaCondition[];
   unmodelled: { what: string; reason: string }[];
+  /**
+   * `kit` for a member's sheet, `no-kit` for a member with none (nothing applied, said), and
+   * absent for a resonance or a set — which is how the panel words "the wearer triggers it".
+   */
+  kind?: 'kit' | 'no-kit';
+  /** A kit sheet's verification: a GO-cited fixture checks it, or it is unverified. */
+  verified?: boolean;
 }
 
 /**
@@ -176,12 +198,15 @@ export function conditionGroups(
   resonances: readonly FormulaResonance[],
   setTiers: readonly FormulaSetTier[],
   setIds: ReadonlySet<number>,
+  kits: { sources: readonly FormulaKit[]; missing: readonly string[] } = {
+    sources: [], missing: [],
+  },
 ): ConditionGroup[] {
   const sources = [
     ...resonances.map(resonanceSource),
     ...setTiers.filter((t) => setIds.has(t.set_id) && usable(t)).map(setSource),
   ];
-  return sources
+  const groups: ConditionGroup[] = sources
     .map((s) => ({
       sourceId: s.id,
       label: s.label,
@@ -189,6 +214,33 @@ export function conditionGroups(
       conditions: s.bonus.conditions,
       unmodelled: s.bonus.unmodelled,
     }));
+  // A member's kit is listed **whether or not it has a toggle**, like a static resonance: a
+  // buff applied with nothing to set must still be visible as applied, with its citation.
+  for (const kit of kits.sources) {
+    groups.push({
+      sourceId: kit.id,
+      label: kit.label,
+      citation: kit.citation,
+      conditions: kit.bonus.conditions,
+      unmodelled: kit.bonus.unmodelled,
+      kind: 'kit',
+      verified: kit.verified,
+    });
+  }
+  for (const name of kits.missing) {
+    groups.push({
+      sourceId: `no-kit:${name}`,
+      label: `${name} (kit)`,
+      citation: '',
+      conditions: [],
+      unmodelled: [{
+        what: 'talents, passives and constellations',
+        reason: 'no kit sheet yet: base stats, sets and resonance only',
+      }],
+      kind: 'no-kit',
+    });
+  }
+  return groups;
 }
 
 /** What gcsim refused, read out of its own refusal sentence (`gcsim_keys._resolve`). */
