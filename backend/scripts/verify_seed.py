@@ -42,7 +42,14 @@ from app.data.importers.nanoka_gi_importer import ENTITIES, HttpNanokaTransport
 from app.database import async_session_factory
 from app.models.artifact import ArtifactSet, ArtifactSetAffix
 from app.models.build import EnemyProfile
-from app.models.character import Character, Talent
+from app.models.character import (
+    AscensionPassive,
+    Character,
+    CharacterAttack,
+    CharacterEnergyDrop,
+    Constellation,
+    Talent,
+)
 from app.models.enums import Element, Rarity, StatType, TalentType, WeaponType
 from app.models.seed_provenance import SeedRun
 from app.models.weapon import Weapon, WeaponRefinement
@@ -187,6 +194,33 @@ async def _anchor_values(session: AsyncSession) -> list[tuple[Anchor, Any]]:
             ),
             None if ayaka is None else await _talent_types(session, ayaka.id),
         ),
+        # **The kit numbers, which a migration adds and only a re-seed fills** (formula
+        # fallback task 4). A deploy that ran `alembic upgrade` without `seed_db` leaves
+        # every one of these empty and green everywhere else; this is where it goes red.
+        (
+            Anchor(
+                "Ayaka's A1 passive keeps its numbers",
+                'detail/character_10000002.json: passives[0].param_list — "30% increased '
+                'DMG for 6s"',
+                [0.3, 6],
+            ),
+            None if ayaka is None else await _passive_params(session, ayaka.id, 22101),
+        ),
+        (
+            Anchor(
+                "Ayaka's attack and particle rows were imported",
+                "detail/character_10000002.json: len(attack), len(energy)",
+                (14, 2),
+            ),
+            None if ayaka is None else (
+                await _count_where(
+                    session, CharacterAttack, CharacterAttack.character_id, ayaka.id,
+                ),
+                await _count_where(
+                    session, CharacterEnergyDrop, CharacterEnergyDrop.character_id, ayaka.id,
+                ),
+            ),
+        ),
         (
             Anchor(
                 "the Pyro Traveler survived the string-keyed id",
@@ -264,6 +298,35 @@ async def _talent_types(session: AsyncSession, character_id: str) -> list[Talent
         select(Talent.talent_type).where(Talent.character_id == character_id),
     )
     return sorted(rows.scalars(), key=_PAYLOAD_TALENT_ORDER.index)
+
+
+async def _passive_params(session: AsyncSession, character_id: str, nanoka_id: int) -> Any:
+    """The first two numbers of one passive's `param_list`, or None if it is not there."""
+    params = await session.scalar(
+        select(AscensionPassive.param_list).where(
+            AscensionPassive.character_id == character_id,
+            AscensionPassive.nanoka_id == nanoka_id,
+        ),
+    )
+    return None if params is None else list(params[:2])
+
+
+async def _kit_number_counts(session: AsyncSession) -> dict[str, int]:
+    """How many kit rows carry numbers — printed, so a seed says what it imported."""
+    with_params = func.jsonb_array_length(AscensionPassive.param_list) > 0
+    cons_params = func.jsonb_array_length(Constellation.param_list) > 0
+    return {
+        "passives with param_list": await session.scalar(
+            select(func.count()).select_from(AscensionPassive).where(with_params),
+        ),
+        "constellations with param_list": await session.scalar(
+            select(func.count()).select_from(Constellation).where(cons_params),
+        ),
+        "attack rows": await session.scalar(select(func.count()).select_from(CharacterAttack)),
+        "energy-drop rows": await session.scalar(
+            select(func.count()).select_from(CharacterEnergyDrop),
+        ),
+    }
 
 
 async def _count_where(session: AsyncSession, model: type, column: Any, value: Any) -> int:
@@ -483,8 +546,11 @@ async def main_async(*, live: bool) -> int:
             entity: await session.scalar(select(func.count()).select_from(model))
             for entity, model in ENTITY_MODELS.items()
         }
+        kit = await _kit_number_counts(session)
     for entity, rows in counts.items():
         print(f"  {entity}: {rows} rows")
+    for what, rows in kit.items():
+        print(f"  {what}: {rows}")
     # Flushed so the failure list below cannot appear above the summary it refers to when
     # stdout is a pipe and stderr is not.
     sys.stdout.flush()

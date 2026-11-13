@@ -140,6 +140,8 @@ class CharacterRepository(BaseRepository[Character]):
                 selectinload(Character.talents).selectinload(Talent.scalings),
                 selectinload(Character.constellations),
                 selectinload(Character.ascension_passives),
+                selectinload(Character.attacks),
+                selectinload(Character.energy_drops),
             )
         )
         result = await self.session.execute(stmt)

@@ -80,6 +80,8 @@ class ConstellationRead(BaseModel):
     name: str
     description: str
     icon: str | None = None
+    #: The numbers the description renders, verbatim and padded as the payload pads them.
+    param_list: list[Any] = []
 
     model_config = _FROM_ORM
 
@@ -97,6 +99,51 @@ class AscensionPassiveRead(BaseModel):
     name: str
     description: str
     icon: str | None = None
+    #: The numbers the description renders, verbatim and padded as the payload pads them.
+    param_list: list[Any] = []
+
+    model_config = _FROM_ORM
+
+
+class CharacterAttackRead(BaseModel):
+    """One `attack[]` entry: a damage instance, its element, ICD and gauge, as published.
+
+    `element` is the game's internal spelling (`Fire`, `Electric`, `AntiFire`), not
+    `Element`, and `damage_param` is a string, a number, a list or null as the payload gave
+    it. `models/character.py:CharacterAttack` says why neither is interpreted here.
+    """
+
+    position: int
+    name: str
+    element: str | None = None
+    icd_tag: str | None = None
+    icd_group: str | None = None
+    gauge: float | None = None
+    poise_level: str | None = None
+    poise_value: float | None = None
+    attack_type: str | None = None
+    strike_type: str | None = None
+    damage_param: Any = None
+
+    model_config = _FROM_ORM
+
+
+class CharacterEnergyDropRead(BaseModel):
+    """One `energy[]` entry: a particle drop. `chance` is a **percent**, as published."""
+
+    position: int
+    name: str
+    skill: str | None = None
+    kind: str | None = None
+    element: str | None = None
+    per_drop: float | None = None
+    lifetime: float | None = None
+    chance: float | None = None
+    cd: float | None = None
+    #: Set instead of `cd` when the payload names a parameter rather than giving seconds.
+    cd_ref: str | None = None
+    applications: int | None = None
+    drop_id: int | None = None
 
     model_config = _FROM_ORM
 
@@ -237,6 +284,8 @@ class CharacterRead(CharacterSummary):
     talents: list[TalentRead] = []
     constellations: list[ConstellationRead] = []
     ascension_passives: list[AscensionPassiveRead] = []
+    attacks: list[CharacterAttackRead] = []
+    energy_drops: list[CharacterEnergyDropRead] = []
 
 
 # ---- Weapons ---------------------------------------------------------------

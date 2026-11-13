@@ -15,6 +15,8 @@ from app.models.build import Build, EnemyProfile
 from app.models.character import (
     AscensionPassive,
     Character,
+    CharacterAttack,
+    CharacterEnergyDrop,
     Constellation,
     Talent,
     TalentScaling,
@@ -68,6 +70,8 @@ __all__ = [
     "Build",
     "Character",
     "CharacterAscensionCost",
+    "CharacterAttack",
+    "CharacterEnergyDrop",
     "CharacterRosterEntry",
     "CharacterTalentCost",
     "Constellation",

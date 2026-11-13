@@ -279,6 +279,9 @@ def constellation_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
             "name": entry.get("name", ""),
             "description": entry.get("desc", "") or "",
             "icon": entry.get("icon"),
+            # Verbatim, padding included. The description's numbers, unrendered — the field
+            # weapon refinements and set affixes always kept and this table dropped.
+            "param_list": list(entry.get("param_list") or []),
         }
         for position, entry in enumerate(payload.get("constellations") or [], start=1)
     ]
@@ -304,6 +307,108 @@ def passive_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
                 "name": entry.get("name", ""),
                 "description": entry.get("desc", "") or "",
                 "icon": entry.get("icon"),
+                "param_list": list(entry.get("param_list") or []),
+            },
+        )
+    return rows
+
+
+#: Every key an `attack[]` entry carries at 7.0.51, across all four committed character
+#: payloads (125 entries). A key outside this set raises: dropping it would repeat exactly
+#: the loss this mapping exists to end, and silently.
+_ATTACK_KEYS = frozenset({
+    "name", "icd", "gauge", "poise", "element", "attack_type", "strike_type", "damage_param",
+})
+_ICD_KEYS = frozenset({"tag", "group"})
+_POISE_KEYS = frozenset({"level", "value"})
+
+#: The same for `energy[]` (seven entries over the four payloads).
+_ENERGY_KEYS = frozenset({
+    "name", "skill", "kind", "element", "per_drop", "lifetime", "chance", "cd",
+    "applications", "drop_id",
+})
+
+
+def _sub_object(key: str, field: str, value: object, allowed: frozenset[str]) -> dict:
+    """A nested `{...}` with a known key set; `None` reads as empty, anything else raises."""
+    if value is None:
+        return {}
+    if not isinstance(value, dict) or not set(value) <= allowed:
+        msg = (
+            f"character {key}: attack {field} {value!r} is not an object over "
+            f"{sorted(allowed)}. Refresh tests/fixtures/nanoka_gi/ and extend the mapping "
+            f"rather than dropping the new shape."
+        )
+        raise NanokaMappingError(msg)
+    return value
+
+
+def _refuse_unknown_keys(key: str, kind: str, entry: object, allowed: frozenset[str]) -> None:
+    if not isinstance(entry, dict):
+        msg = f"character {key}: {kind} entry {entry!r} is not an object"
+        raise NanokaMappingError(msg)
+    extra = sorted(set(entry) - allowed)
+    if extra:
+        msg = (
+            f"character {key}: {kind} entry carries {extra}, which the mapping does not "
+            f"know. Refresh tests/fixtures/nanoka_gi/ and extend it rather than dropping them."
+        )
+        raise NanokaMappingError(msg)
+
+
+def attack_rows(key: str, payload: dict[str, Any]) -> list[dict[str, Any]]:
+    """One row per `attack[]` entry: element, ICD, gauge, poise and the damage reference.
+
+    **Kept as published.** `element` is the game's internal spelling (`Fire`, `Electric`,
+    `AntiFire`), `damage_param` is whichever of string / number / list / null the entry gave,
+    and duplicates are kept because the payload repeats an entry once per hit. The formula
+    fallback reads these (`TASKS_team_math_fallback.md` task 4); interpreting them is its job.
+    """
+    rows = []
+    for position, entry in enumerate(payload.get("attack") or []):
+        _refuse_unknown_keys(key, "attack", entry, _ATTACK_KEYS)
+        icd = _sub_object(key, "icd", entry.get("icd"), _ICD_KEYS)
+        poise = _sub_object(key, "poise", entry.get("poise"), _POISE_KEYS)
+        rows.append(
+            {
+                "position": position,
+                "name": entry.get("name", "") or "",
+                "element": entry.get("element"),
+                "icd_tag": icd.get("tag"),
+                "icd_group": icd.get("group"),
+                "gauge": entry.get("gauge"),
+                "poise_level": poise.get("level"),
+                "poise_value": poise.get("value"),
+                "attack_type": entry.get("attack_type"),
+                "strike_type": entry.get("strike_type"),
+                "damage_param": entry.get("damage_param"),
+            },
+        )
+    return rows
+
+
+def energy_rows(key: str, payload: dict[str, Any]) -> list[dict[str, Any]]:
+    """One row per `energy[]` entry — a particle drop, verbatim (`chance` is a percent).
+
+    `cd` is seconds 202 times at 7.2.51, null 33 times, and **a parameter name eight times**
+    (`CD`, `CDTime`, `DropBall_CD`) — found by seeding the live catalogue, not by the four
+    committed fixtures, none of which carries one. A name goes to `cd_ref`; any other shape
+    raises rather than landing in a float column as a guess.
+    """
+    rows = []
+    for position, entry in enumerate(payload.get("energy") or []):
+        _refuse_unknown_keys(key, "energy", entry, _ENERGY_KEYS)
+        cd = entry.get("cd")
+        if isinstance(cd, bool) or not isinstance(cd, (int, float, str, type(None))):
+            msg = f"character {key}: energy cd {cd!r} is neither seconds nor a parameter name"
+            raise NanokaMappingError(msg)
+        rows.append(
+            {
+                "position": position,
+                "name": entry.get("name", "") or "",
+                **{field: entry.get(field) for field in sorted(_ENERGY_KEYS - {"name", "cd"})},
+                "cd": None if isinstance(cd, str) else cd,
+                "cd_ref": cd if isinstance(cd, str) else None,
             },
         )
     return rows

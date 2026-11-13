@@ -5109,6 +5109,12 @@
               }
             ],
             "title": "Icon"
+          },
+          "param_list": {
+            "items": {},
+            "type": "array",
+            "title": "Param List",
+            "default": []
           }
         },
         "type": "object",
@@ -6244,6 +6250,245 @@
         "title": "CallNode",
         "description": "`f(a, b);` \u2014 a call to a user-defined function."
       },
+      "CharacterAttackRead": {
+        "properties": {
+          "position": {
+            "type": "integer",
+            "title": "Position"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "element": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Element"
+          },
+          "icd_tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icd Tag"
+          },
+          "icd_group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icd Group"
+          },
+          "gauge": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gauge"
+          },
+          "poise_level": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poise Level"
+          },
+          "poise_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poise Value"
+          },
+          "attack_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attack Type"
+          },
+          "strike_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strike Type"
+          },
+          "damage_param": {
+            "title": "Damage Param"
+          }
+        },
+        "type": "object",
+        "required": [
+          "position",
+          "name"
+        ],
+        "title": "CharacterAttackRead",
+        "description": "One `attack[]` entry: a damage instance, its element, ICD and gauge, as published.\n\n`element` is the game's internal spelling (`Fire`, `Electric`, `AntiFire`), not\n`Element`, and `damage_param` is a string, a number, a list or null as the payload gave\nit. `models/character.py:CharacterAttack` says why neither is interpreted here."
+      },
+      "CharacterEnergyDropRead": {
+        "properties": {
+          "position": {
+            "type": "integer",
+            "title": "Position"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "skill": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skill"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "element": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Element"
+          },
+          "per_drop": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Drop"
+          },
+          "lifetime": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifetime"
+          },
+          "chance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chance"
+          },
+          "cd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cd"
+          },
+          "cd_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cd Ref"
+          },
+          "applications": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applications"
+          },
+          "drop_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Drop Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "position",
+          "name"
+        ],
+        "title": "CharacterEnergyDropRead",
+        "description": "One `energy[]` entry: a particle drop. `chance` is a **percent**, as published."
+      },
       "CharacterRead": {
         "properties": {
           "weapon_type": {
@@ -6392,6 +6637,22 @@
             },
             "type": "array",
             "title": "Ascension Passives",
+            "default": []
+          },
+          "attacks": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterAttackRead"
+            },
+            "type": "array",
+            "title": "Attacks",
+            "default": []
+          },
+          "energy_drops": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterEnergyDropRead"
+            },
+            "type": "array",
+            "title": "Energy Drops",
             "default": []
           },
           "weapon_type_display": {
@@ -6713,6 +6974,12 @@
               }
             ],
             "title": "Icon"
+          },
+          "param_list": {
+            "items": {},
+            "type": "array",
+            "title": "Param List",
+            "default": []
           }
         },
         "type": "object",
