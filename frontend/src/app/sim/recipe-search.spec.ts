@@ -578,6 +578,38 @@ describe('the branch-and-bound layer', () => {
     expect(bounded.isExact).toBe(true);
   });
 
+  /**
+   * The 2026-11-13 EM fix, at search level. A gcsim vaporize hit now recomputes its amplifying
+   * multiplier from the candidate's EM, so the bound — which scores an optimistic completion
+   * through `evaluateRecipe` — must still over-state: EM enters the multiplier monotonically,
+   * and this checks that it stays admissible with EM as the deciding stat.
+   */
+  it('stays exact on a vaporize recipe where EM decides the winner', () => {
+    const inv = SLOTS.flatMap((slot, s) =>
+      ([
+        // ATK nearly worthless, so the bound has prefixes it can prove lose and actually fires.
+        { atk_pct: 0.01 + 0.001 * s },
+        { elemental_mastery: 187 + s },
+        { crit_dmg: 0.4 + 0.01 * s },
+      ] as Record<string, number>[])
+        .map((stats, k) => ({ id: `${slot}-${k}`, slot, setId: 1, stats } as Candidate)),
+    );
+    const vape = recipe([hit({
+      critRate: 0.6, critDmg: 1, calibratedEm: 100, ampMultiplier: 2.003,
+      amplifying: { reaction: 'reverse_vaporize', reactionBonus: 0.15 },
+    })]);
+    const recipes = { byFourPieceSet: new Map([[1, vape]]), noFourPiece: vape };
+
+    const exhaustive = searchRecipe(inv, { recipes, topN: 100000, fourPieceSets: [1] });
+    const bounded = searchRecipe(inv, { recipes, topN: 3, fourPieceSets: [1] });
+
+    expect(exhaustive.evaluated).toBe(243);
+    expect(bounded.boundPruned).toBeGreaterThan(0);
+    expect(bounded.builds).toEqual(exhaustive.builds.slice(0, 3));
+    // Non-vacuous: the winner carries EM, which a frozen multiplier would have valued at 0.
+    expect(exhaustive.builds[0].artifactIds.some((id) => id.endsWith('-1'))).toBe(true);
+  });
+
   it('searches only the 4-piece states it was asked for', () => {
     // The filter is what makes a real inventory finish at all: unrestricted it is 4.26e10
     // combinations. `docs/FINDINGS_shakedown.md` F2.

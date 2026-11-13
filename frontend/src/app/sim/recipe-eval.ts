@@ -159,8 +159,9 @@ export function evaluateHit(hit: RecipeHit, stats: CandidateStats): number {
 
   // EM has no base or percentage form; a hit scaling off it takes the whole value.
   //
-  // `calibratedEm` is the EM a formula recipe's hit carries before artifacts. A gcsim recipe
-  // has none (`?? 0`), which keeps its arithmetic exactly what it was.
+  // `calibratedEm` is the EM the hit carries before artifacts — gcsim's `em` for a calibrated
+  // recipe, the summed buffs for a formula one. `?? 0` only for a recipe written before either
+  // existed, which `SCHEMA` keeps out of the cache.
   const em = (hit.calibratedEm ?? 0) + stats.elementalMastery;
   const scaling = hit.scaling === 'em' ? em : totalFor(hit, stats, hit.scaling);
 
@@ -170,8 +171,9 @@ export function evaluateHit(hit: RecipeHit, stats: CandidateStats): number {
     + energyRechargeBonus(hit, stats);
   const preCrit = base * (1 + bonus) * hit.defMultiplier * hit.resMultiplier;
   const crit = 1 + effectiveCritRate(hit.critRate + stats.critRate) * (hit.critDmg + stats.critDmg);
-  // A formula recipe's amplifying multiplier follows the candidate's EM, through the same
-  // function the single-hit kernel calls. A gcsim recipe keeps its frozen total.
+  // The amplifying multiplier follows the candidate's EM, through the same function the
+  // single-hit kernel calls — for a gcsim recipe too, from the reaction its `calc` named. Only
+  // a hit whose reaction could not be named keeps gcsim's frozen total.
   const amp = hit.amplifying === undefined
     ? hit.ampMultiplier
     : amplifyingMultiplier(hit.amplifying.reaction, em, hit.amplifying.reactionBonus);

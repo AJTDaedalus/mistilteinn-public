@@ -30,8 +30,9 @@ const SEED = '12345';
 // numbers still match. Noelle + Redhorn Stonethresher covers both, and Redhorn is the weapon
 // this whole plan exists to stop the optimizer getting wrong.
 //
-// Still not covered by either: crit rate above 100 %, and amplifying reactions. Named in
-// `PROVENANCE.md` rather than left for someone to discover from a surviving mutation.
+// Still not covered: crit rate above 100 %. Amplifying reactions were too, until the
+// `xiangling_vape` pair (2026-11-13). Named in `PROVENANCE.md` rather than left for someone to
+// discover from a surviving mutation.
 const CASES = [
   { config: 'rotation_gated.txt', calc: 'rotation_gated_calc.json', minHits: 200, stale: [] },
   {
@@ -62,6 +63,27 @@ const CASES = [
     // hit `char_index` 0, and her DEF-to-ATK conversions are **still reported**. A change that
     // simply silenced the warning would have silenced hers too.
     stale: [],
+  },
+  {
+    // The first **amplifying** fixture: Xiangling vaporizing off Xingqiu and Yelan, with
+    // Bennett. Ten of Xiangling's 27 landed hits vaporize (Pyro onto Hydro, ×1.5), and her
+    // teammates' Hydro onto her Pyro gives the ×2 side. Replaying it is what checks that an
+    // amplified hit's `gcsimAverageDamage` is gcsim's *post*-reaction average — `avg_crit_dmg`
+    // is written before amplification (`pkg/enemy/damage.go:164`), so reading it made every
+    // vaporize hit disagree with its own replay by exactly the multiplier.
+    config: 'xiangling_vape.txt',
+    calc: 'xiangling_vape_calc.json',
+    minHits: 80,
+    // Bennett's burst lands in Xiangling's flat ATK at zero artifact stats. It is computed
+    // from *Bennett's* base ATK, so no probe of hers can resolve it — reported, as it should be.
+    stale: ['flatAtk'],
+  },
+  {
+    // The same rotation at +250 artifact EM — the run the EM gate below predicts.
+    config: 'xiangling_vape_em.txt',
+    calc: 'xiangling_vape_em_calc.json',
+    minHits: 80,
+    stale: ['flatAtk'],
   },
 ];
 
@@ -228,6 +250,80 @@ for (const c of CASES) {
   console.log(
     `recipe predicts an uncalibrated run: ${zero.hits.length} hits, ` +
       `worst rel err ${worst.toExponential(3)}`,
+  );
+}
+
+
+// ── Elemental Mastery, predicted across two artifact-EM builds ─────────────────────────────
+//
+// The defect fixed on 2026-11-13 (owner: "Fix it"): a gcsim recipe froze the amplifying
+// multiplier at the calibration's EM, so **artifact EM was worth exactly nothing** to a
+// vaporize or melt build. `parseSample` now carries each hit's snapshot `em` and its reaction,
+// and `evaluateHit` recomputes the multiplier through `damage.ts:amplifyingMultiplier` — the
+// function the single-hit kernel uses.
+//
+// The claim checked here is the one a search acts on: **the recipe's predicted gain from
+// artifact EM equals the gain gcsim measures**, calibrated at zero artifact EM and predicting
+// a run at +250. Measured at the fix: gcsim +23,461.20, predicted +23,461.20 (1.1e-7 relative),
+// where the frozen multiplier predicted −0.0017.
+//
+// **The tolerance is 1e-6, not the 1e-12 above, and that is argued rather than loosened.**
+// The amplifying term goes through `damage.ts`, which rounds to f32 at every step so the CPU
+// and GPU backends agree (`docs/CROSSVAL_gcsim.md` measures that at 3.51e-07 worst case and
+// sets the kernel's tolerance at 1e-6 from it). Everything else in a hit is still f64.
+{
+  const zero = parseSample(readFileSync(join(FIXTURES, 'xiangling_vape_calc.json'), 'utf8'));
+  const more = parseSample(readFileSync(join(FIXTURES, 'xiangling_vape_em_calc.json'), 'utf8'));
+  const candidate = { ...NO_STATS, elementalMastery: 250 }; // what `_em.txt` adds
+  const EM_TOLERANCE = 1e-6;
+
+  if (zero.hits.length !== more.hits.length) {
+    console.error(
+      `the zero-EM and +EM calibrations disagree on hit count ` +
+        `(${zero.hits.length} vs ${more.hits.length}); EM must not move the rotation.`,
+    );
+    process.exit(1);
+  }
+  // Counted off gcsim's own multiplier, not off `amplifying`: a parser that stopped naming the
+  // reaction must fail the *price* check below, not disappear into this precondition.
+  const amplified = zero.hits.filter((h) => h.mine && h.ampMultiplier !== 1).length;
+  if (amplified === 0) {
+    // A gate on EM over a recipe with nothing amplifying would pass with the defect present.
+    console.error('the vaporize fixture has no amplifying hit of the calibrated character.');
+    process.exit(1);
+  }
+
+  let measured = 0;
+  let predicted = 0;
+  let worst = 0;
+  let worstAbil = '';
+  for (let i = 0; i < zero.hits.length; i++) {
+    const before = evaluateHit(zero.hits[i], NO_STATS);
+    const after = evaluateHit(zero.hits[i], candidate);
+    const actual = more.hits[i].gcsimAverageDamage;
+    measured += actual - zero.hits[i].gcsimAverageDamage;
+    predicted += after - before;
+    const rel = Math.abs(after - actual) / Math.max(Math.abs(actual), 1e-12);
+    if (rel > worst) {
+      worst = rel;
+      worstAbil = zero.hits[i].abil;
+    }
+  }
+  const deltaErr = Math.abs(predicted - measured) / Math.abs(measured);
+  if (!(measured > 0) || !(deltaErr <= EM_TOLERANCE) || !(worst <= EM_TOLERANCE)) {
+    console.error(
+      `the recipe mis-prices artifact EM against gcsim.\n` +
+        `  gcsim's gain ${measured.toFixed(2)}, predicted ${predicted.toFixed(2)} ` +
+        `(rel err ${deltaErr.toExponential(3)})\n` +
+        `  worst hit ${worst.toExponential(3)} on "${worstAbil}", tolerance ` +
+        `${EM_TOLERANCE.toExponential(0)}`,
+    );
+    process.exit(1);
+  }
+  console.log(
+    `artifact EM priced as gcsim prices it: ${amplified} vaporize hits, gain ` +
+      `${measured.toFixed(2)} measured vs ${predicted.toFixed(2)} predicted ` +
+      `(${deltaErr.toExponential(3)}), worst hit ${worst.toExponential(3)}`,
   );
 }
 
