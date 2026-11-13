@@ -47,7 +47,9 @@ from typing import Any
 
 import pytest
 
-from app.formula.genshin import resonance, set_effects
+from app.formula.builder import const
+from app.formula.genshin import resonance, set_effects, sheets, tags
+from app.pando.calculator import NodeRegistry
 from app.schemas.formula import FormulaBonusRead
 from app.services.talent_scaling import parse_talent_row
 
@@ -219,6 +221,257 @@ def _row(row_id: str, label: str, move: str, count: float, row: tuple[str, list[
     }
 
 
+# ── Math-fallback P2: kit sheets (task 10) ──────────────────────────────────────────────────
+#
+# Four more fixtures, the same method: GO's formula worked by hand from its sheets, our numbers.
+# The kit sources are what `sheets.resolve` gives for a stated **giver** — the giver's pass-1
+# stats written out, as the subject's build is — so the committed source is checked against
+# the resolver here and applied by the browser in `formula:verify`. GO's figure is written from
+# GO's sheet independently of the resolver: if the resolver read Bennett's total ATK instead of
+# his base, or missed the C5 level boost, the committed source would change and the browser's
+# total would leave `expected` (`test_a_planted_wrong_buff_fails`).
+#
+# Talent rows verbatim from the seeded catalogue (nanoka 7.2.51, P1 task 4's re-seed).
+BENNETT_BURST_DMG = ("Skill DMG|{param1:P}", [4.1904])
+KAZUHA_BURST_ADD = ("Additional Elemental DMG|{param3:P}", [4.7232, 2.16, 0.648])
+BENNETT_BURST_ROWS = {
+    10: sheets.TalentRow(["Skill DMG|{param1:P}", "ATK Bonus Ratio|{param4:P}"],
+                         [4.1904, 0.108, 1270.2417, 1.008]),
+    13: sheets.TalentRow(["Skill DMG|{param1:P}", "ATK Bonus Ratio|{param4:P}"],
+                         [4.947, 0.1275, 1587.8221, 1.19]),
+}
+BENNETT_CONSTELLATIONS = {1: [0.2] + [0.0] * 9, 2: [0.7, 0.3] + [0.0] * 8,
+                          6: [0.15] + [0.0] * 9}
+KAZUHA_A4_PARAMS = [0.0004, 8.0] + [0.0] * 28
+
+#: A stated Bennett at 90: base ATK is character + weapon (191.16 + 608), the rest artifacts.
+#: Only the base is read by his burst (GO `own.base.atk`, Bennett.ts:100); the flat ATK and
+#: ATK% are here so that reading his **total** instead would show.
+BENNETT_GIVER_STATS = {"base_atk": 799.16, "atk_pct": 0.466, "flat_atk": 311.0}
+BENNETT_BASE = {
+    "base_atk": 799.16, "atk_pct": 0.0, "flat_atk": 0.0, "base_hp": 12397.0, "hp_pct": 0.0,
+    "flat_hp": 0.0, "base_def": 771.0, "def_pct": 0.0, "flat_def": 0.0,
+    "elemental_mastery": 0.0, "crit_rate": 0.05, "crit_dmg": 0.5, "energy_recharge": 1.267,
+}
+BENNETT_ARTIFACTS = {
+    "atk_pct": 0.466, "flat_atk": 311.0, "pyro_dmg_bonus": 0.466, "crit_rate": 0.3,
+    "crit_dmg": 0.6,
+}
+#: A stated Kazuha at 90: base ATK character + weapon; EM 115.2 from his ascension plus a
+#: 165-EM weapon substat, before artifacts.
+KAZUHA_BASE = {
+    "base_atk": 905.0, "atk_pct": 0.0, "flat_atk": 0.0, "base_hp": 13348.0, "hp_pct": 0.0,
+    "flat_hp": 0.0, "base_def": 807.0, "def_pct": 0.0, "flat_def": 0.0,
+    "elemental_mastery": 280.2, "crit_rate": 0.05, "crit_dmg": 0.5, "energy_recharge": 1.0,
+}
+KAZUHA_ARTIFACTS = {"elemental_mastery": 680.0, "flat_atk": 311.0, "crit_rate": 0.2,
+                    "crit_dmg": 0.4}
+#: Kazuha as a teammate: his pass-1 EM, stated (base 280.2 + artifacts 680).
+KAZUHA_GIVER_STATS = {"elemental_mastery": 960.2, "base_atk": 905.0}
+
+
+def _stated_registry(stats: dict[str, float]) -> NodeRegistry:
+    registry = NodeRegistry()
+    for quantity, value in stats.items():
+        registry.register(tags.stat_tag(quantity), const(value))
+    return registry
+
+
+def _bennett_giver(constellation: int, stats: dict[str, float]) -> sheets.Giver:
+    return sheets.Giver(
+        name="Bennett", nanoka_id="10000032", constellation=constellation, ascension_phase=6,
+        talent_levels={"elemental_burst": 10},
+        talent_rows={("elemental_burst", lv): row for lv, row in BENNETT_BURST_ROWS.items()},
+        constellation_params=BENNETT_CONSTELLATIONS, passive_params={},
+        registry=_stated_registry(stats),
+    )
+
+
+def _kazuha_giver(stats: dict[str, float]) -> sheets.Giver:
+    return sheets.Giver(
+        name="Kaedehara Kazuha", nanoka_id="10000047", constellation=0, ascension_phase=6,
+        talent_levels={"elemental_burst": 10}, talent_rows={}, constellation_params={},
+        passive_params={4: KAZUHA_A4_PARAMS}, registry=_stated_registry(stats),
+    )
+
+
+def _kit_source(nanoka_id: str, giver: sheets.Giver, *, subject: bool) -> dict[str, Any]:
+    sheet = sheets.sheet_for(nanoka_id)
+    assert sheet is not None
+    kit = sheets.resolve(sheet, giver, giver_is_subject=subject)
+    return {"id": kit.source_id, "label": kit.label, "citation": kit.citation,
+            "bonus": FormulaBonusRead.of(kit.bonus).model_dump()}
+
+
+def _bennett_on_xiangling(coefficient: float) -> float:
+    """**Fixture 4 — a teammate's kit buff from the giver's own stats.** Xiangling's Pyronado
+    with a **C6** Bennett's field: stored burst 10, so 13 after C5.
+
+    GO: `activeInAreaAtk = prod(inAreaActive, sum(burstAtkRatio, c1AtkRatio), own.base.atk)`
+    into `teamBuff.final.atk` (`pando Bennett.ts:95-101,132`; WR `teamBuff.total.atk`,
+    `index.tsx:98-114,189-192`), `burstAtkRatio` at `own.char.burst`, which C5 raises by 3
+    (`:128`); C6 `teamBuff.premod.dmg_.pyro` 15% (`:107-110,133`).
+    """
+    atk = (XIANGLING_BASE["base_atk"] * (1 + XIANGLING_ARTIFACTS["atk_pct"])
+           + XIANGLING_ARTIFACTS["flat_atk"] + (1.19 + 0.2) * BENNETT_GIVER_STATS["base_atk"])
+    return _go_hit(
+        multiplier=_multiplier(PYRONADO), atk=atk,
+        dmg_bonus=XIANGLING_ARTIFACTS["pyro_dmg_bonus"] + 0.15,
+        crit_rate=XIANGLING_BASE["crit_rate"] + XIANGLING_ARTIFACTS["crit_rate"],
+        crit_dmg=XIANGLING_BASE["crit_dmg"] + XIANGLING_ARTIFACTS["crit_dmg"], em=0.0,
+        amp_base=None, reaction_bonus=0.0, em_coefficient=coefficient,
+    )
+
+
+def _bennett_on_himself(coefficient: float) -> float:
+    """**Fixture 5 — a giver who is the optimized character.** A C0 Bennett's burst DMG, in
+    his own field (the default when he is the subject: his own doing).
+
+    GO: `dmg('burst', info, 'atk', dm.burst.dmg, 'burst')` (`pando Bennett.ts:165`) reads
+    `final.atk`, into which his own `teamBuff.final.atk` reaches (`destIsActive`: he is).
+    """
+    atk = (BENNETT_BASE["base_atk"] * (1 + BENNETT_ARTIFACTS["atk_pct"])
+           + BENNETT_ARTIFACTS["flat_atk"] + 1.008 * BENNETT_BASE["base_atk"])
+    return _go_hit(
+        multiplier=_multiplier(BENNETT_BURST_DMG), atk=atk,
+        dmg_bonus=BENNETT_ARTIFACTS["pyro_dmg_bonus"],
+        crit_rate=BENNETT_BASE["crit_rate"] + BENNETT_ARTIFACTS["crit_rate"],
+        crit_dmg=BENNETT_BASE["crit_dmg"] + BENNETT_ARTIFACTS["crit_dmg"], em=0.0,
+        amp_base=None, reaction_bonus=0.0, em_coefficient=coefficient,
+    )
+
+
+def _kazuha_on_xiangling(coefficient: float) -> float:
+    """**Fixture 6 — a teammate's buff from a stat artifacts move** (the giver's, so a number).
+    Xiangling's Pyronado after Kazuha swirled Pyro.
+
+    GO: `teamBuff.premod.dmg_[ele].add(prod(swirlByEleOn[ele], cmpGE(ascension, 4,
+    prod(percent(dm.passive2.elemas_dmg_), own.premod.eleMas))))` (`pando
+    KaedeharaKazuha.ts:154-166`; WR `index.tsx:107-124`).
+    """
+    atk = (XIANGLING_BASE["base_atk"] * (1 + XIANGLING_ARTIFACTS["atk_pct"])
+           + XIANGLING_ARTIFACTS["flat_atk"])
+    return _go_hit(
+        multiplier=_multiplier(PYRONADO), atk=atk,
+        dmg_bonus=XIANGLING_ARTIFACTS["pyro_dmg_bonus"]
+        + 0.0004 * KAZUHA_GIVER_STATS["elemental_mastery"],
+        crit_rate=XIANGLING_BASE["crit_rate"] + XIANGLING_ARTIFACTS["crit_rate"],
+        crit_dmg=XIANGLING_BASE["crit_dmg"] + XIANGLING_ARTIFACTS["crit_dmg"], em=0.0,
+        amp_base=None, reaction_bonus=0.0, em_coefficient=coefficient,
+    )
+
+
+def _kazuha_on_himself(coefficient: float) -> float:
+    """**Fixture 7 — a self buff from a stat artifacts move, per candidate.** Kazuha's burst
+    "Additional Elemental DMG", having absorbed Pyro, after he swirled Pyro: his A4 reads
+    **his own** EM, base 280.2 plus the candidate's 680.
+
+    GO: `dmg('burst_absorb_pyro', info, 'atk', dm.burst.add, 'burst', {ele: 'pyro', …})`
+    (`pando KaedeharaKazuha.ts:214-219`); A4 as fixture 6, `own` being himself.
+    """
+    em = KAZUHA_BASE["elemental_mastery"] + KAZUHA_ARTIFACTS["elemental_mastery"]
+    atk = KAZUHA_BASE["base_atk"] + KAZUHA_ARTIFACTS["flat_atk"]
+    return _go_hit(
+        multiplier=_multiplier(KAZUHA_BURST_ADD), atk=atk, dmg_bonus=0.0004 * em,
+        crit_rate=KAZUHA_BASE["crit_rate"] + KAZUHA_ARTIFACTS["crit_rate"],
+        crit_dmg=KAZUHA_BASE["crit_dmg"] + KAZUHA_ARTIFACTS["crit_dmg"], em=em,
+        amp_base=None, reaction_bonus=0.0, em_coefficient=coefficient,
+    )
+
+
+def sheet_fixtures() -> list[dict[str, Any]]:
+    """The P2 fixtures: kit buffs from Bennett and Kazuha, as teammates and as themselves."""
+    xiangling = {"element": "pyro", "weapon_type": "WEAPON_POLE"}
+    none = "none: no reaction"
+    return [
+        {
+            "name": "bennett_c6_on_xiangling",
+            "covers": "a teammate's kit buff from the giver's base ATK, with C1, C5 and C6",
+            "go": [
+                "libs/gi/wr/src/formula.ts:357,434-453",
+                "libs/gi/formula/src/data/char/Bennett.ts:59,71,80-82,93-101,107-110,128,132-133",
+                "libs/gi/sheets/src/Characters/Bennett/index.tsx:98-114,133-137,184-196",
+            ],
+            "givers": [{"name": "Bennett", "constellation": 6, "talent_levels":
+                        {"elemental_burst": 10}, "stats": BENNETT_GIVER_STATS}],
+            "team": {**xiangling, "member_elements": ["pyro", "pyro"]},
+            "base": XIANGLING_BASE, "artifacts": XIANGLING_ARTIFACTS, "set_pools": [],
+            "channel": "pyro",
+            "rows": [_row("nado", "Pyronado DMG", "burst", 1, PYRONADO, None)],
+            "sources": [_kit_source("10000032", _bennett_giver(6, BENNETT_GIVER_STATS),
+                                    subject=False)],
+            "conditionals": {"kit:bennett/in_field": 1},
+            "expected": _bennett_on_xiangling(OUR_EM_COEFFICIENT),
+            "go_value": _bennett_on_xiangling(GO_EM_COEFFICIENT),
+            "divergence": none,
+        },
+        {
+            "name": "bennett_burst_on_himself",
+            "covers": "a giver who is the optimized character: his own field, by default",
+            "go": [
+                "libs/gi/wr/src/formula.ts:357,434-453",
+                "libs/gi/formula/src/data/char/Bennett.ts:59,93-101,132,165",
+            ],
+            "givers": [{"name": "Bennett", "constellation": 0, "talent_levels":
+                        {"elemental_burst": 10}, "stats": {"base_atk": BENNETT_BASE["base_atk"]}}],
+            "team": {"element": "pyro", "weapon_type": "WEAPON_SWORD_ONE_HAND",
+                     "member_elements": ["pyro", "anemo"]},
+            "base": BENNETT_BASE, "artifacts": BENNETT_ARTIFACTS, "set_pools": [],
+            "channel": "pyro",
+            "rows": [_row("burst", "Skill DMG", "burst", 1, BENNETT_BURST_DMG, None)],
+            "sources": [_kit_source(
+                "10000032", _bennett_giver(0, {**BENNETT_BASE, **BENNETT_ARTIFACTS}),
+                subject=True)],
+            "conditionals": {},
+            "expected": _bennett_on_himself(OUR_EM_COEFFICIENT),
+            "go_value": _bennett_on_himself(GO_EM_COEFFICIENT),
+            "divergence": none,
+        },
+        {
+            "name": "kazuha_a4_pyro_on_xiangling",
+            "covers": "a teammate's kit buff from the giver's EM (two-pass: his EM first)",
+            "go": [
+                "libs/gi/wr/src/formula.ts:357,434-453",
+                "libs/gi/formula/src/data/char/KaedeharaKazuha.ts:65-67,94-107,154-166",
+                "libs/gi/sheets/src/Characters/KaedeharaKazuha/index.tsx:107-124,234-238",
+            ],
+            "givers": [{"name": "Kaedehara Kazuha", "constellation": 0, "ascension_phase": 6,
+                        "stats": KAZUHA_GIVER_STATS}],
+            "team": {**xiangling, "member_elements": ["pyro", "anemo"]},
+            "base": XIANGLING_BASE, "artifacts": XIANGLING_ARTIFACTS, "set_pools": [],
+            "channel": "pyro",
+            "rows": [_row("nado", "Pyronado DMG", "burst", 1, PYRONADO, None)],
+            "sources": [_kit_source("10000047", _kazuha_giver(KAZUHA_GIVER_STATS),
+                                    subject=False)],
+            "conditionals": {"kit:kaedehara_kazuha/swirl_pyro": 1},
+            "expected": _kazuha_on_xiangling(OUR_EM_COEFFICIENT),
+            "go_value": _kazuha_on_xiangling(GO_EM_COEFFICIENT),
+            "divergence": none,
+        },
+        {
+            "name": "kazuha_a4_on_his_own_burst",
+            "covers": "a self buff from a stat artifacts move: per-candidate EM conversion",
+            "go": [
+                "libs/gi/wr/src/formula.ts:357,434-453",
+                "libs/gi/formula/src/data/char/KaedeharaKazuha.ts:57,65-67,154-166,214-219",
+            ],
+            "givers": [{"name": "Kaedehara Kazuha", "constellation": 0, "ascension_phase": 6,
+                        "stats": "the optimized character: his EM is the candidate's"}],
+            "team": {"element": "anemo", "weapon_type": "WEAPON_SWORD_ONE_HAND",
+                     "member_elements": ["anemo", "pyro"]},
+            "base": KAZUHA_BASE, "artifacts": KAZUHA_ARTIFACTS, "set_pools": [],
+            "channel": "pyro",
+            "rows": [_row("absorb", "Additional Elemental DMG", "burst", 1, KAZUHA_BURST_ADD,
+                          None)],
+            "sources": [_kit_source("10000047", _kazuha_giver({**KAZUHA_BASE}), subject=True)],
+            "conditionals": {"kit:kaedehara_kazuha/swirl_pyro": 1},
+            "expected": _kazuha_on_himself(OUR_EM_COEFFICIENT),
+            "go_value": _kazuha_on_himself(GO_EM_COEFFICIENT),
+            "divergence": none,
+        },
+    ]
+
+
 def build() -> dict[str, Any]:
     """Every fixture, inputs and figures, as the committed file holds them."""
     witch = _set_source(15006, 4, WITCH_PARAMS, [WITCH_TWO_PIECE_ROW])
@@ -290,6 +543,7 @@ def build() -> dict[str, Any]:
             "divergence": "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9",
         },
     ]
+    fixtures.extend(sheet_fixtures())
     for f in fixtures:
         f["relative_divergence_from_go"] = abs(f["expected"] - f["go_value"]) / f["go_value"]
     return {
@@ -330,7 +584,9 @@ def test_the_known_figures():
 def test_the_divergence_is_only_the_em_coefficient():
     data = build()
     by_name = {f["name"]: f for f in data["fixtures"]}
-    assert by_name["shattering_ice_on"]["relative_divergence_from_go"] == 0
+    for name in ("shattering_ice_on", "bennett_c6_on_xiangling", "bennett_burst_on_himself",
+                 "kazuha_a4_pyro_on_xiangling", "kazuha_a4_on_his_own_burst"):
+        assert by_name[name]["relative_divergence_from_go"] == 0, name
     for name in ("crimson_witch_one_stack_reverse_vaporize", "xiangling_multi_target"):
         gap = by_name[name]["relative_divergence_from_go"]
         assert 0 < gap < 2e-4, name
@@ -342,6 +598,32 @@ def test_the_fixtures_would_catch_a_missing_buff():
     no_stack = _xiangling_hit(PYRONADO, _xiangling_totals(fervent=False, witch_stacks=0),
                               vaporize=True, em_coefficient=OUR_EM_COEFFICIENT)
     assert no_stack != pytest.approx(_crimson_witch(OUR_EM_COEFFICIENT), rel=0.01)
+
+
+def test_the_kit_figures():
+    """By hand, so a reader can check them against GO without running anything."""
+    # Pyronado 2.016 x ATK 2,524.33 (735 x 1.5 + 311 + 1.39 x 799.16) x (1 + 0.616) x avgHit
+    # 1.42 x 190/390 x 0.9.
+    assert _bennett_on_xiangling(OUR_EM_COEFFICIENT) == pytest.approx(5120.33, abs=0.01)
+    # Pyronado 2.016 x ATK 1,413.5 x (1 + 0.466 + 0.0004 x 960.2) x 1.42 x 190/390 x 0.9.
+    assert _kazuha_on_xiangling(OUR_EM_COEFFICIENT) == pytest.approx(3282.44, abs=0.01)
+
+
+def test_the_resolver_reads_the_givers_base_atk_not_his_total():
+    """Guards the guard for sheets: a sheet that read Bennett's **total** ATK would resolve a
+    different source, so the committed one — and `formula:verify`'s total — would move. The
+    browser side of the same check plants a wrong value and watches the fixture fail."""
+    committed = {f["name"]: f for f in json.loads(FIXTURE.read_text(encoding="utf-8"))["fixtures"]}
+    sheet = sheets.sheet_for("10000032")
+    assert sheet is not None
+    wrong = sheet.model_copy(update={"effects": tuple(
+        e.model_copy(update={"value": e.value.model_copy(update={"times_stat": "atk"})})
+        if e.value.times_stat else e for e in sheet.effects)})
+    kit = sheets.resolve(wrong, _bennett_giver(6, BENNETT_GIVER_STATS), giver_is_subject=False)
+    wrong_values = [e.value for e in kit.bonus.effects]
+    right_values = [e["value"] for e in
+                    committed["bennett_c6_on_xiangling"]["sources"][0]["bonus"]["effects"]]
+    assert wrong_values != pytest.approx(right_values, rel=1e-3)
 
 
 def write() -> None:

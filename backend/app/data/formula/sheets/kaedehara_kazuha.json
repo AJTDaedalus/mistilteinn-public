@@ -1,0 +1,221 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Kaedehara Kazuha",
+ "nanoka_id": "10000047",
+ "slug": "kaedehara_kazuha",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/KaedeharaKazuha.ts",
+  "wr": "libs/gi/sheets/src/Characters/KaedeharaKazuha/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/kazuha/",
+ "verified_by": [
+  "kazuha_a4_pyro_on_xiangling",
+  "kazuha_a4_on_his_own_burst"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:KaedeharaKazuha.ts:150-151",
+   "gcsim": "kazuha.go:30"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:KaedeharaKazuha.ts:150,152",
+   "gcsim": "kazuha.go:29"
+  }
+ ],
+ "pins": {
+  "passives": {
+   "4": [
+    0.0004,
+    8.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "swirl_pyro",
+   "label": "Kazuha swirled Pyro",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:KaedeharaKazuha.ts:84-87,94-97,102-107; wr:index.tsx:101-106"
+  },
+  {
+   "key": "swirl_hydro",
+   "label": "Kazuha swirled Hydro",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:KaedeharaKazuha.ts:84-87,94-97,102-107; wr:index.tsx:101-106"
+  },
+  {
+   "key": "swirl_electro",
+   "label": "Kazuha swirled Electro",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:KaedeharaKazuha.ts:84-87,94-97,102-107; wr:index.tsx:101-106"
+  },
+  {
+   "key": "swirl_cryo",
+   "label": "Kazuha swirled Cryo",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:KaedeharaKazuha.ts:84-87,94-97,102-107; wr:index.tsx:101-106"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a4_pyro",
+   "label": "A4 Poetics of Fuubutsu: Pyro DMG Bonus + 0.04% per point of Kazuha's EM",
+   "source": "a4",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "elements": [
+    "pyro"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "elemental_mastery"
+   },
+   "when": [
+    {
+     "condition": "swirl_pyro",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:KaedeharaKazuha.ts:65-67,154-166; wr:index.tsx:107-124,234-238",
+   "gcsim": "asc.go:35-88"
+  },
+  {
+   "key": "a4_hydro",
+   "label": "A4 Poetics of Fuubutsu: Hydro DMG Bonus + 0.04% per point of Kazuha's EM",
+   "source": "a4",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "elements": [
+    "hydro"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "elemental_mastery"
+   },
+   "when": [
+    {
+     "condition": "swirl_hydro",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:KaedeharaKazuha.ts:65-67,154-166; wr:index.tsx:107-124,234-238",
+   "gcsim": "asc.go:35-88"
+  },
+  {
+   "key": "a4_electro",
+   "label": "A4 Poetics of Fuubutsu: Electro DMG Bonus + 0.04% per point of Kazuha's EM",
+   "source": "a4",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "elements": [
+    "electro"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "elemental_mastery"
+   },
+   "when": [
+    {
+     "condition": "swirl_electro",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:KaedeharaKazuha.ts:65-67,154-166; wr:index.tsx:107-124,234-238",
+   "gcsim": "asc.go:35-88"
+  },
+  {
+   "key": "a4_cryo",
+   "label": "A4 Poetics of Fuubutsu: Cryo DMG Bonus + 0.04% per point of Kazuha's EM",
+   "source": "a4",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "elements": [
+    "cryo"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "elemental_mastery"
+   },
+   "when": [
+    {
+     "condition": "swirl_cryo",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:KaedeharaKazuha.ts:65-67,154-166; wr:index.tsx:107-124,234-238",
+   "gcsim": "asc.go:35-88"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "a1",
+   "what": "Soumon Swordsmanship: 200% ATK of the absorbed element on the skill's plunge",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c2",
+   "what": "Yamaarashi Tailwind: EM +200 in the burst field, to Kazuha and the active teammate",
+   "reason": "deferred: Kazuha's own C2 EM would feed his A4's EM read, which the two-pass rule does not carry yet (DESIGN §2.6)"
+  },
+  {
+   "source": "c6",
+   "what": "Crimson Momiji: Anemo infusion and Normal/Charged/Plunging DMG +0.2% per point of EM",
+   "reason": "deferred: an infusion (G4) and a self-EM move bonus are not modelled yet"
+  },
+  {
+   "source": "kit",
+   "what": "A4 reads Kazuha's EM from his own build (pass 1)",
+   "reason": "teammates' kit buffs to Kazuha's EM are not fed back into it (DESIGN §2.6); GO's premod EM would include them"
+  }
+ ]
+}

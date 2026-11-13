@@ -86,6 +86,28 @@ for (const f of data.fixtures) {
       failures.push(`${f.name} (passes with no buffs at all)`);
     }
   }
+
+  // Math-fallback P2, task 10 — **a planted wrong kit buff must fail.** Every kit effect 1 %
+  // off, and the classic self-buff mistake (the subject's own EM frozen at his zero-artifact
+  // value instead of moving with the candidate), each have to leave the tolerance.
+  const kits = f.sources.filter((s) => s.id.startsWith('kit:'));
+  if (kits.length > 0) {
+    const planted = (mutate) => f.sources.map((s) => (s.id.startsWith('kit:')
+      ? { ...s, bonus: { ...s.bonus, effects: s.bonus.effects.map(mutate) } }
+      : s));
+    const off = score(f, planted((e) => ({ ...e, value: e.value * 1.01 })));
+    if (Math.abs(off - f.expected) / f.expected <= TOLERANCE) {
+      failures.push(`${f.name} (a kit buff 1% off still passes)`);
+    }
+    if (kits.some((s) => s.bonus.effects.some((e) => e.stat === 'dmg_bonus_from_em'))) {
+      const frozen = score(f, planted((e) => (e.stat === 'dmg_bonus_from_em'
+        ? { ...e, stat: 'dmg_bonus', value: e.value * f.base.elemental_mastery }
+        : e)));
+      if (Math.abs(frozen - f.expected) / f.expected <= TOLERANCE) {
+        failures.push(`${f.name} (a frozen self EM conversion still passes)`);
+      }
+    }
+  }
 }
 
 if (failures.length > 0) {

@@ -62,11 +62,19 @@ AMPLIFYING_REACTIONS: tuple[str, ...] = ("vaporize", "reverse_vaporize", "melt",
 #:   (GO `prod(..., input.total.atk)`), so it moves with every candidate.
 #: - `dmg_bonus_from_energy_recharge` — DMG% of `value` × total Energy Recharge, capped at
 #:   `cap` (GO `min(cap, prod(rate, input.premod.enerRech_))`), likewise per candidate.
+#: - `flat_atk` — flat ATK added after the percentage (GO `total.atk`/`final.atk`), the shape
+#:   a kit buff derived from its giver's stats takes once the giver's stat is a number
+#:   (Bennett's burst, P2 — `sheets.py`).
+#: - `dmg_bonus_from_em` — DMG% of `value` × the **hit owner's own** total Elemental Mastery,
+#:   per candidate. Only a kit buff whose giver is also the optimized character emits it
+#:   (Kazuha's A4 on Kazuha): a teammate's EM is a number, the subject's moves with every
+#:   candidate. GO `prod(percent(x), own.premod.eleMas)`.
 EffectStat = Literal[
     "atk_pct", "hp_pct", "def_pct", "elemental_mastery", "energy_recharge",
     "crit_rate", "crit_dmg",
     "dmg_bonus", "reaction_bonus", "enemy_res",
     "flat_damage", "flat_damage_from_atk", "dmg_bonus_from_energy_recharge",
+    "flat_atk", "dmg_bonus_from_em",
 ]
 
 #: Stats that are kernel quantities and so can also travel in a set-bonus pool.

@@ -114,6 +114,8 @@ _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
         "/api/v1/builds/00000000-0000-0000-0000-000000000001/calibrate",
         {},
     ),
+    # formula estimate — math-fallback P2: kit buffs read the caller's own builds
+    ("GET", "/api/v1/formula/kit-buffs", None),
     # artifacts — G.6b and D.1
     ("GET", "/api/v1/artifacts", None),
     ("GET", "/api/v1/artifacts/inventory", None),
