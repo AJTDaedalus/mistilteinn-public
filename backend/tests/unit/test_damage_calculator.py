@@ -11,7 +11,14 @@ from __future__ import annotations
 import pytest
 
 from app.formula.genshin import tags
-from app.formula.genshin.damage import Amplifying, DamageInputError, Hit, ScalingStat
+from app.formula.genshin.damage import (
+    Amplifying,
+    DamageInputError,
+    Hit,
+    ScalingStat,
+    ScalingTerm,
+    compute_damage,
+)
 from app.formula.genshin.explain import ContributionLog
 from app.pando.calculator import NodeRegistry
 from app.services.damage_calculator import (
@@ -53,6 +60,58 @@ def test_a_hit_scaling_off_hp_reads_hp():
     ))
 
     assert damage == pytest.approx(30000 * 0.5 * 0.9)
+
+
+def test_a_mixed_stat_hit_reads_each_terms_own_stat():
+    """Math-fallback P0: `a x ATK + b x EM` in one hit, as Nahida's Tri-Karma is.
+
+    The second term enters where gcsim puts it — `FlatDmg` (`nahida/skill.go:219-220`) —
+    so it is added after `base_damage_bonus` and before everything else.
+    """
+    log = _build(base_atk=1000.0, elemental_mastery=800.0)
+
+    damage = _damage(log, Hit(
+        multiplier=1.5, channel="dendro", scope="skill",
+        extra_terms=(ScalingTerm(ScalingStat.ELEMENTAL_MASTERY, 3.0),),
+    ))
+
+    assert damage == pytest.approx((1.5 * 1000 + 3.0 * 800) * 0.5 * 0.9)
+
+
+def test_base_damage_bonus_multiplies_only_the_first_term():
+    """gcsim's `BaseDmgBonus` multiplies `mult * stat` and not `FlatDmg` (`damage.go:65`),
+    which is where the second term of a mixed hit lives."""
+    log = _build(base_atk=1000.0, elemental_mastery=800.0)
+
+    damage = _damage(log, Hit(
+        multiplier=1.5, channel="dendro", scope="skill", base_damage_bonus=0.2,
+        extra_terms=(ScalingTerm(ScalingStat.ELEMENTAL_MASTERY, 3.0),),
+    ))
+
+    assert damage == pytest.approx((1.5 * 1000 * 1.2 + 3.0 * 800) * 0.5 * 0.9)
+
+
+def test_the_explanation_names_every_term():
+    log = _build(base_atk=1000.0, base_def=900.0)
+
+    result = evaluate_hit(log.registry, Hit(
+        multiplier=1.5, channel="geo", scope="skill",
+        extra_terms=(ScalingTerm(ScalingStat.DEF, 1.9),),
+    ), ORDINARY, character_level=90)
+
+    assert "1.5 x 1,000.0 atk + 1.9 x 900.0 def" in result.steps[0].detail
+
+
+def test_a_value_count_that_does_not_match_the_terms_is_refused():
+    """Zipping short would drop a term's damage and still return a number."""
+    hit = Hit(multiplier=1.0, channel="geo", scope="skill",
+              extra_terms=(ScalingTerm(ScalingStat.DEF, 1.0),))
+
+    with pytest.raises(DamageInputError, match="extra scaling term"):
+        compute_damage(
+            hit, scaling_value=1.0, dmg_bonus=0, crit_rate=0, crit_dmg=0,
+            elemental_mastery=0, character_level=90, enemy_level=90, resistance=0.1,
+        )
 
 
 # ---- The scope gate -------------------------------------------------------

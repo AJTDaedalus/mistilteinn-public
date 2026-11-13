@@ -253,3 +253,83 @@ def test_a_summing_parser_would_fail_this_file() -> None:
         crossval.parse_talent_row = original
 
     assert spoiled.mismatches, "a summing parser agreed with gcsim — the shape is not covered"
+
+
+# ── the scaling stat against gcsim's tail (math-fallback P0) ─────────────────
+#
+# The committed fixtures are all ATK scalers, so these rows are verbatim from the seeded
+# catalogue (nanoka 7.0.51, level 1) — the HP, DEF and mixed shapes gcsim's tail can speak to.
+# `python -m scripts.gcsim.crossval_multipliers` runs the same check over every seeded
+# character.
+
+NAHIDA_SKILL = [
+    "#{LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} DMG|{param1:F1P}",
+    "Hold DMG|{param2:F1P}",
+    "Tri-Karma Purification DMG|{param3:F1P} ATK+{param4:F1P} Elemental Mastery",
+    "Tri-Karma Purification Trigger Interval|{param5:F1}s",
+]
+NEUVILLETTE_BURST = ["Skill DMG|{param1:F2P} Max HP", "Waterfall DMG|{param2:F2P} Max HP"]
+CHIORI_SKILL = [
+    "Tamoto DMG|{param1:P} ATK+{param2:P} DEF",
+    "Upward Sweep Attack DMG|{param5:P} ATK+{param6:P} DEF",
+]
+YELAN_BURST = [
+    "Skill DMG|{param1:F2P} Max HP", "Exquisite Throw DMG|{param2:F2P} Max HP \u00d73",
+]
+
+SCALERS = [
+    CharacterRows(gcsim_key="nahida", name="Nahida", rows=(
+        ("skill", 1, NAHIDA_SKILL, [0.984, 1.304, 1.032, 2.064, 2.5]),
+    )),
+    CharacterRows(gcsim_key="neuvillette", name="Neuvillette", rows=(
+        ("burst", 1, NEUVILLETTE_BURST, [0.222578, 0.091055]),
+    )),
+    CharacterRows(gcsim_key="chiori", name="Chiori", rows=(
+        ("skill", 1, CHIORI_SKILL, [0.8208, 1.026, 17, 3.6, 1.4928, 1.866]),
+    )),
+    CharacterRows(gcsim_key="yelan", name="Yelan", rows=(
+        ("burst", 1, YELAN_BURST, [0.07308, 0.04872]),
+    )),
+]
+
+
+def test_scaling_stats_agree_with_gcsims_tail() -> None:
+    """Neuvillette's burst is HP, Nahida's Tri-Karma is `[ATK, EM]` in one hit, Chiori's
+    Tamoto is `[ATK, DEF]`, Yelan's throw is HP — each as gcsim's own tail says."""
+    report = compare(SCALERS, load_snapshot())
+
+    assert report.mismatches == [], report.summary()
+    assert report.refusals == [], report.summary()
+    # Neuvillette 2, Nahida 1, Chiori 2, Yelan 2: hits whose tail names every stat.
+    assert report.stats_checked == 7, report.summary()
+
+
+def test_an_atk_only_parser_would_fail_the_stat_check() -> None:
+    """The negative case: the parser as it was before P0 — every hit ATK, a mixed row split
+    into two — must be reported, or the check above proves nothing."""
+    from app.formula.genshin.damage import ScalingStat
+    from app.services.talent_scaling import TalentHit, parse_talent_row
+
+    def atk_only(desc, param):
+        out = []
+        for hit in parse_talent_row(desc, param):
+            out.append(TalentHit(hit.label, hit.multiplier, hit.hits, hit.exclusive))
+            out.extend(
+                TalentHit(hit.label, term.multiplier, hit.hits, hit.exclusive)
+                for term in hit.extra_terms
+            )
+        assert all(h.scaling_stat is ScalingStat.ATK for h in out)
+        return out
+
+    import scripts.gcsim.crossval_multipliers as crossval
+
+    original = crossval.parse_talent_row
+    crossval.parse_talent_row = atk_only
+    try:
+        spoiled = compare(SCALERS, load_snapshot())
+    finally:
+        crossval.parse_talent_row = original
+
+    assert any("Neuvillette" in line for line in spoiled.mismatches), spoiled.mismatches
+    assert any("Tri-Karma" in line for line in spoiled.mismatches), spoiled.mismatches
+    assert not spoiled.ok

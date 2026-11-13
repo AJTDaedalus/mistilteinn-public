@@ -36,6 +36,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -43,10 +44,15 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.database import async_session_factory
+from app.formula.genshin.damage import ScalingStat
 from app.models.character import Character, Talent
 from app.models.enums import TalentType
 from app.services import gcsim_keys
-from app.services.talent_scaling import TalentScalingError, parse_talent_row
+from app.services.talent_scaling import (
+    TalentScalingError,
+    classify_talent_row,
+    parse_talent_row,
+)
 
 REPO = Path(__file__).resolve().parents[3]
 SNAPSHOT = REPO / "backend" / "app" / "data" / "gcsim" / "talent_multipliers.json"
@@ -77,6 +83,9 @@ class Report:
     uncovered: int = 0
     mismatches: list[str] = field(default_factory=list)
     refusals: list[str] = field(default_factory=list)
+    #: Hits whose scaling stat was checked against the words gcsim's `tail` carries (P0).
+    #: Counted so a check that stopped checking is visible, like `matched`.
+    stats_checked: int = 0
 
     @property
     def ok(self) -> bool:
@@ -93,7 +102,8 @@ class Report:
         return (
             f"{self.characters} characters, {self.matched} hits matched, "
             f"{self.uncovered} with no gcsim table, {len(self.mismatches)} mismatched, "
-            f"{len(self.refusals)} refused by the parser"
+            f"{len(self.refusals)} refused by the parser, "
+            f"{self.stats_checked} scaling stats checked against gcsim's tail"
         )
 
 
@@ -127,9 +137,18 @@ def compare(characters: list[CharacterRows], snapshot: dict) -> Report:
         for action, level, labels, params in character.rows:
             try:
                 hits = parse_talent_row(labels, params)
+                unrecognised = [
+                    refused for refused in classify_talent_row(labels, params).refused
+                    if refused.unrecognised
+                ]
             except TalentScalingError as exc:
                 report.refusals.append(f"{character.name} L{level}: {exc}")
                 continue
+            # A tail word the parser has never seen is a refusal *by name*, not a pass: the
+            # next patch's vocabulary must arrive red here rather than as a silent gap.
+            report.refusals.extend(
+                f"{character.name} L{level}: {refused.reason}" for refused in unrecognised
+            )
 
             groups: dict[tuple[str, bool], list] = {}
             for hit in hits:
@@ -145,10 +164,18 @@ def compare(characters: list[CharacterRows], snapshot: dict) -> Report:
                     for table in candidates
                     if level - 1 < len(table["values"])
                 ]
+                # Every term of a mixed-stat hit, not only the first: Nahida's EM half is a
+                # table of its own in gcsim, and a parser that misread it must not pass.
                 agreed = [
-                    any(abs(value - hit.multiplier) < TOLERANCE for value in theirs)
+                    all(
+                        any(abs(value - multiplier) < TOLERANCE for value in theirs)
+                        for multiplier in (
+                            hit.multiplier, *(term.multiplier for term in hit.extra_terms),
+                        )
+                    )
                     for hit in members
                 ]
+                _check_stats(report, character.name, action, level, members, candidates)
                 # Alternatives: gcsim may implement only one of them.
                 if any(agreed) if exclusive else all(agreed):
                     report.matched += len(members)
@@ -158,6 +185,72 @@ def compare(characters: list[CharacterRows], snapshot: dict) -> Report:
                         f"ours={[h.multiplier for h in members]} gcsim={theirs}",
                     )
     return report
+
+
+#: gcsim's tail words, as the payload spells them — the same four the parser reads.
+_GCSIM_STAT_WORDS = {
+    "ATK": ScalingStat.ATK,
+    "Max HP": ScalingStat.HP,
+    "DEF": ScalingStat.DEF,
+    "Elemental Mastery": ScalingStat.ELEMENTAL_MASTERY,
+}
+
+#: A repeat marker, `×3` (U+00D7) or `*4`, which says nothing about the stat.
+_REPEAT = re.compile("[\u00d7*]\\s*\\d+")
+
+
+def tail_stats(tail: str) -> list[ScalingStat] | None:
+    """The stats one gcsim table's `tail` names for its own alternative, in order.
+
+    `tail` is the desc text after the table's own param, with other params as `{N}`:
+    `"ATK+{3} Elemental Mastery"` is `[ATK, EM]`, `"Max HP ×3"` is `[HP]`. Only the words
+    up to the first `/` count — what follows is another alternative.
+
+    `None` when any part carries no stat word (`"+{8} DEF"`, `""`) or a word that is not a
+    stat (`"Cryo + {5} Physical"`): the tail then does not say the stat by itself, and
+    reading one into it would be re-deriving the parser's inheritance rule rather than
+    checking it.
+    """
+    own = _REPEAT.sub("", tail.split("/", 1)[0]).replace("(", "").replace(")", "")
+    words = [re.sub(r"\{\d+\}", "", piece).strip() for piece in own.split("+")]
+    if not all(word in _GCSIM_STAT_WORDS for word in words):
+        return None
+    return [_GCSIM_STAT_WORDS[word] for word in words]
+
+
+def _check_stats(
+    report: Report,
+    name: str,
+    action: str,
+    level: int,
+    hits: list,
+    tables: list[dict],
+) -> None:
+    """Each hit's scaling stats against the words gcsim's tail carries for it (P0).
+
+    The parser used to drop the tail, so every hit was ATK; M.4 compared numbers and could
+    not see it. A hit is checked when a table with its first multiplier has a tail naming
+    every part's stat, and then the parser's `[scaling_stat, *extra_terms]` must be exactly
+    that list — Nahida's Tri-Karma is `[ATK, EM]`, not `[ATK]` twice.
+    """
+    for hit in hits:
+        stats = [hit.scaling_stat, *(term.stat for term in hit.extra_terms)]
+        for table in tables:
+            if level - 1 >= len(table["values"]):
+                continue
+            if abs(table["values"][level - 1] - hit.multiplier) >= TOLERANCE:
+                continue
+            theirs = tail_stats(table["tail"])
+            if theirs is None:
+                continue
+            report.stats_checked += 1
+            if theirs != stats:
+                report.mismatches.append(
+                    f"{name} {action} {hit.label!r} L{level}: ours scales off "
+                    f"{[str(s) for s in stats]}, gcsim's tail {table['tail']!r} says "
+                    f"{[str(s) for s in theirs]}",
+                )
+            break
 
 
 def from_fixtures() -> list[CharacterRows]:

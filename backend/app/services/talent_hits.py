@@ -27,6 +27,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
+from app.formula.genshin.damage import ScalingStat, ScalingTerm
 from app.models.enums import TalentType
 from app.services.talent_scaling import TalentHit, TalentScalingError, parse_talent_row
 
@@ -67,6 +68,10 @@ class AvailableHit:
     hits: int
     #: True when this is one of several alternatives and only one of them happens.
     exclusive: bool
+    #: What `multiplier` scales off, from the row's own words (math-fallback P0).
+    scaling_stat: ScalingStat = ScalingStat.ATK
+    #: A mixed-stat hit's further terms; empty for every single-stat hit.
+    extra_terms: tuple[ScalingTerm, ...] = ()
 
 
 def resolve_talent_hit(
@@ -126,6 +131,7 @@ def available_hits(
                 AvailableHit(
                     talent=talent, label=hit.label, index=index,
                     multiplier=hit.multiplier, hits=hit.hits, exclusive=hit.exclusive,
+                    scaling_stat=hit.scaling_stat, extra_terms=hit.extra_terms,
                 ),
             )
     return offered
