@@ -137,6 +137,9 @@
     padding: 0.75rem 1rem;
     border: 1px solid var(--surface-rule);
     border-radius: 0.4rem;
+
+    /* `display: flex` above beats the `hidden` attribute's UA rule, so it is said again. */
+    &[hidden] { display: none; }
   }
 
   /* Two chips, not a drop-down. `.chip` is already the page's word for "pick one of a small
@@ -148,6 +151,7 @@
     margin: 0;
     padding: 0;
     border: none;
+    flex-wrap: wrap;
   }
 
   /* The rotation list fills the row the `<select>` used to, and stops short of the full
@@ -686,4 +690,14 @@
    label. */
 .filter-actions__cost {
   font-size: var(--text-sm);
+}
+
+/* The formula estimate's chip, label and refusal choice are global (`styles.scss`); only the
+   spacing that is this page's own lives here. */
+.gcsim-choice__dismiss {
+  background: transparent;
+}
+
+.results-label {
+  margin-bottom: var(--space-2);
 }

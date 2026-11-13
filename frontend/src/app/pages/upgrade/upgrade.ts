@@ -1,6 +1,9 @@
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 
 import { apiErrorMessage } from '../../api/api-error';
+import { FormulaLabel } from '../../shared/formula-panel/formula-label';
+import { FormulaPanel } from '../../shared/formula-panel/formula-panel';
+import { gcsimRefusal, type GcsimRefusal } from '../../sim/formula-calibration';
 import { type ResinEstimate } from '../../sim/resin-to-upgrade';
 import { EstimateCancelled } from '../../sim/upgrade-estimate';
 import { ArtifactsService } from '../artifacts/artifacts.service';
@@ -11,6 +14,7 @@ import {
   type UpgradeSlotRow,
 } from '../artifacts/artifact-ranking.service';
 import { OptimizeService } from '../optimize/optimize.service';
+import { FormulaEstimateService } from '../optimize/formula-estimate.service';
 import {
   CalibrationCancelled,
   type CalibrationProgress,
@@ -26,7 +30,7 @@ import {
  */
 @Component({
   selector: 'app-upgrade',
-  imports: [],
+  imports: [FormulaPanel, FormulaLabel],
   templateUrl: './upgrade.html',
   styleUrl: './upgrade.scss',
 })
@@ -36,11 +40,24 @@ export class UpgradePage implements OnInit, OnDestroy {
   private readonly ranking = inject(ArtifactRankingService);
   /** The picker, shared with Rank: choices, scoping and selection. */
   private readonly context = inject(ArtifactsContextService);
+  private readonly formula = inject(FormulaEstimateService);
 
   protected readonly rotationId = this.context.rotationId;
   protected readonly buildId = this.context.buildId;
   protected readonly rotationChoices = this.context.rotationChoices;
   protected readonly buildChoices = this.context.buildChoices;
+  /** gcsim, or the formula estimate (math-fallback P1, task 8). Shared with Rank. */
+  protected readonly mode = this.context.mode;
+  protected readonly teams = this.context.teams;
+  protected readonly formulaTeamId = this.context.formulaTeamId;
+  protected readonly formulaHits = this.context.formulaHits;
+  protected readonly formulaRefused = this.context.formulaRefused;
+  protected readonly formulaGroups = this.context.formulaGroups;
+  protected readonly gcsimBlocked = this.context.gcsimBlocked;
+  /** Whether the rows on screen came from a formula recipe — the label follows them. */
+  protected readonly ranFormula = signal(false);
+  /** What gcsim refused on the last run, when the estimate can answer instead. */
+  protected readonly gcsimRefused = signal<GcsimRefusal | null>(null);
   /** Minimum meaningful gain, in percent. */
   protected readonly gainPercent = signal(1);
 
@@ -61,7 +78,10 @@ export class UpgradePage implements OnInit, OnDestroy {
    * session would otherwise be an enabled button that requests someone else's ids.
    */
   protected readonly canRun = computed(
-    () => this.context.ready() && !this.running() && this.gainPercent() >= 0,
+    () => this.context.ready() && !this.running() && this.gainPercent() >= 0
+      // The formula estimate needs a target for this build before it can score anything.
+      && (this.mode() !== 'formula'
+        || (this.formula.forBuild() === this.buildId() && this.formula.rows().length > 0)),
   );
 
   private cancelled = false;
@@ -94,6 +114,20 @@ export class UpgradePage implements OnInit, OnDestroy {
     this.context.chooseRotation(id);
   }
 
+  protected chooseMode(mode: 'gcsim' | 'formula'): void {
+    this.context.chooseMode(mode);
+  }
+
+  protected chooseFormulaTeam(id: string): void {
+    this.context.chooseFormulaTeam(id);
+  }
+
+  /** From a gcsim refusal: the same build, by formula. The target loads, then Estimate runs it. */
+  protected useFormulaEstimate(): void {
+    this.gcsimRefused.set(null);
+    this.context.useFormulaEstimate();
+  }
+
   protected async run(): Promise<void> {
     if (!this.canRun()) return;
     this.cancelled = false;
@@ -102,11 +136,16 @@ export class UpgradePage implements OnInit, OnDestroy {
     this.rows.set([]);
     this.result.set(null);
     this.estimating.set(false);
-    this.progress.set({ done: 0, total: 1, current: 'starting', loading: true });
+    this.gcsimRefused.set(null);
+    const formula = this.context.formulaRequest();
+    this.ranFormula.set(formula !== null);
+    // No simulator loads for a formula estimate, so the status line must not say one does.
+    this.progress.set(formula ? null : { done: 0, total: 1, current: 'starting', loading: true });
     try {
       const result = await this.ranking.upgradeEstimate({
         buildId: this.buildId(),
         rotationId: this.rotationId(),
+        ...(formula ? { formula } : {}),
         gain: this.gainPercent() / 100,
         onProgress: (p) => this.progress.set(p),
         onCalibrated: () => {
@@ -119,7 +158,13 @@ export class UpgradePage implements OnInit, OnDestroy {
       this.result.set(result);
     } catch (err) {
       const cancelled = err instanceof EstimateCancelled || err instanceof CalibrationCancelled;
-      if (!cancelled) this.error.set(apiErrorMessage(err));
+      if (!cancelled) {
+        // **A refusal the estimate can answer is a choice, not a dead end** (DESIGN §2.5).
+        const message = apiErrorMessage(err);
+        const refused = formula ? null : gcsimRefusal(message);
+        if (refused) this.gcsimRefused.set(refused);
+        else this.error.set(message);
+      }
     } finally {
       this.running.set(false);
       this.estimating.set(false);

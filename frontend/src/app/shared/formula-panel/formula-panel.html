@@ -1,0 +1,201 @@
+<section class="formula" aria-labelledby="formula-target-title">
+  <h2 id="formula-target-title" class="formula__title">Formula target</h2>
+  <p class="hint">
+    The abilities to score and how many times each lands. The score is the damage of this
+    sequence, not DPS: a formula has no timeline.
+  </p>
+
+  <ol class="formula__rows">
+    @for (row of rows(); track row.id; let i = $index) {
+      <li class="formula__row">
+        <label class="formula__field formula__field--hit">
+          <span>Ability {{ i + 1 }}</span>
+          <!-- `[selected]` per option, not `[value]` on the select: the binding runs before
+               `@for` renders the options (memory: select-value-binding-runs-before-for). -->
+          <select (change)="pickHit(row, $any($event.target).value)">
+            @for (group of hitGroups(); track group.talent) {
+              <optgroup [label]="group.talent">
+                @for (hit of group.items; track hitKey(hit)) {
+                  <option
+                    [value]="hitKey(hit)"
+                    [selected]="hitKey(hit) === hitKey(row.hit)"
+                  >{{ hit.label }}</option>
+                }
+                @for (refused of group.refused; track refused.label) {
+                  <option disabled [attr.title]="refused.reason">{{ refused.label }} · not scored</option>
+                }
+              </optgroup>
+            }
+          </select>
+        </label>
+
+        <label class="formula__field">
+          <span>Move</span>
+          <select (change)="pickMove(row, $any($event.target).value)">
+            <option value="" [selected]="row.move === null">Unknown</option>
+            @for (move of moves; track move.value) {
+              <option [value]="move.value" [selected]="row.move === move.value">{{ move.label }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="formula__field formula__field--count">
+          <span>Count</span>
+          <input
+            type="number"
+            min="0.1"
+            step="any"
+            inputmode="decimal"
+            [value]="row.count"
+            (change)="setCount(row, $any($event.target))"
+          />
+        </label>
+
+        <button
+          type="button"
+          class="formula__remove"
+          [disabled]="rows().length === 1"
+          [attr.aria-label]="'Remove ability ' + (i + 1) + ', ' + row.label"
+          (click)="remove(row)"
+        >Remove</button>
+
+        @if (row.move === null) {
+          <p class="formula__note">
+            Move unknown: bonuses limited to a move (normal, charged, skill…) are not applied
+            to this ability.
+          </p>
+        }
+
+        @if (rows().length > 1 && conditional().length) {
+          <details class="formula__overrides">
+            <summary>Conditions for ability {{ i + 1 }} only</summary>
+            @for (group of conditional(); track group.sourceId) {
+              @for (condition of group.conditions; track condition.key) {
+                <label class="formula__override">
+                  <span>{{ group.label }}: {{ condition.label }}</span>
+                  <select (change)="setOverride(row, group, condition, $any($event.target).value)">
+                    <option value="" [selected]="overrideOf(row, group, condition) === ''">Team setting</option>
+                    @for (choice of overrideChoices(condition); track choice[0]) {
+                      <option
+                        [value]="choice[0]"
+                        [selected]="overrideOf(row, group, condition) === choice[0]"
+                      >{{ choice[1] }}</option>
+                    }
+                  </select>
+                </label>
+              }
+            }
+          </details>
+        }
+      </li>
+    }
+  </ol>
+
+  <div class="formula__actions">
+    <button type="button" class="linkish" (click)="add()" [disabled]="!hits().length">
+      Add ability
+    </button>
+  </div>
+
+  <refused-hits [refused]="refusedHits()" />
+
+  <section class="assumptions" aria-labelledby="formula-assumptions-title">
+    <header class="assumptions__head">
+      <h3 id="formula-assumptions-title" class="assumptions__title">Assumptions</h3>
+      @if (conditional().length) {
+        <button type="button" class="linkish" (click)="reset()">Back to defaults</button>
+      }
+    </header>
+
+    @if (!groups().length) {
+      <p class="hint">
+        No conditional set bonus or resonance applies to this team and these sets.
+      </p>
+    }
+
+    @for (group of groups(); track group.sourceId) {
+      <fieldset class="assumptions__group">
+        <legend>{{ group.label }}</legend>
+        @for (condition of group.conditions; track condition.key) {
+          <div class="assumptions__condition">
+            @switch (condition.kind) {
+              @case ('toggle') {
+                <label class="assumptions__toggle">
+                  <input
+                    type="checkbox"
+                    [checked]="!!valueOf(group, condition)"
+                    (change)="setToggle(group, condition, $any($event.target).checked)"
+                  />
+                  <span>{{ condition.label }}</span>
+                </label>
+              }
+              @case ('number') {
+                <label class="assumptions__value">
+                  <span>{{ condition.label }}</span>
+                  <input
+                    type="number"
+                    min="0"
+                    [attr.max]="condition.max ?? null"
+                    [attr.step]="condition.step ?? 'any'"
+                    [value]="valueOf(group, condition)"
+                    (change)="setNumber(group, condition, $any($event.target))"
+                  />
+                </label>
+              }
+              @case ('choice') {
+                <label class="assumptions__value">
+                  <span>{{ condition.label }}</span>
+                  <select (change)="setChoice(group, condition, $any($event.target).value)">
+                    <option value="" [selected]="valueOf(group, condition) === ''">None</option>
+                    @for (option of condition.options ?? []; track option) {
+                      <option [value]="option" [selected]="valueOf(group, condition) === option">{{ option }}</option>
+                    }
+                  </select>
+                </label>
+              }
+              @default {
+                <label class="assumptions__value">
+                  <span>{{ condition.label }}</span>
+                  <select (change)="setChoice(group, condition, $any($event.target).value)">
+                    @for (n of stackChoices(condition); track n) {
+                      <option [value]="n" [selected]="valueOf(group, condition) === n">{{ n }}</option>
+                    }
+                  </select>
+                </label>
+              }
+            }
+            <span class="assumptions__default" [class.assumptions__default--changed]="!isDefault(group, condition)">
+              {{ isDefault(group, condition) ? defaultText(condition) : 'Changed · ' + defaultText(condition) }}
+            </span>
+          </div>
+        }
+        @if (!group.conditions.length) {
+          <p class="assumptions__static">Applied whenever it is active; nothing to set.</p>
+        }
+        @for (part of group.unmodelled; track part.what) {
+          <p class="assumptions__unmodelled">Not applied: {{ part.what }} ({{ part.reason }})</p>
+        }
+        <p class="assumptions__cite">Source: {{ group.citation }}</p>
+      </fieldset>
+    }
+
+    @if (withheld().length) {
+      <p class="warn">Not scored as a 4-piece (data withheld): {{ withheld().join(', ') }}.</p>
+    }
+
+    @if (assumptions().length) {
+      <h4 class="assumptions__subtitle">What the last estimate assumed</h4>
+      <ul class="assumptions__list">
+        @for (line of assumptions(); track line) {
+          <li>{{ line }}</li>
+        }
+      </ul>
+    } @else {
+      <ul class="assumptions__list">
+        <li>No kit buffs: talents, passives, constellations and teammates' buffs are absent.</li>
+        <li>No weapon passives.</li>
+        <li>Transformative, additive and Lunar reactions are not modelled.</li>
+      </ul>
+    }
+  </section>
+</section>

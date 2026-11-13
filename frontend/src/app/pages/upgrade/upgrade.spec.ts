@@ -7,6 +7,7 @@ import { ArtifactsContextService } from '../artifacts/artifacts-context.service'
 import { CalibrationCancelled } from '../optimize/recipe-optimize.service';
 import { ArtifactRankingService, type UpgradeSlotRow } from '../artifacts/artifact-ranking.service';
 import { OptimizeService } from '../optimize/optimize.service';
+import { FormulaEstimateService } from '../optimize/formula-estimate.service';
 import { resinToUpgrade } from '../../sim/resin-to-upgrade';
 import { UpgradePage } from './upgrade';
 
@@ -29,13 +30,25 @@ function row(pBeat: number, factor = 0.5): UpgradeSlotRow {
 function context() {
   const rotationId = signal('');
   const buildId = signal('');
+  // Math-fallback P1, task 8: gcsim or the formula estimate, shared with Rank.
+  const mode = signal<'gcsim' | 'formula'>('gcsim');
+  const formulaRequest = signal<unknown>(null);
   return {
-    rotationId, buildId,
+    rotationId, buildId, mode, formulaRequest,
     rotationChoices: signal([{ id: 'r1', label: 'R' }]),
     buildChoices: signal([{ id: 'b1', label: 'B', detail: '' }]),
-    ready: computed(() => rotationId() === 'r1' && buildId() === 'b1'),
+    ready: computed(() => (mode() === 'formula' || rotationId() === 'r1') && buildId() === 'b1'),
     load: vi.fn().mockResolvedValue(undefined),
     chooseRotation: (id: string) => rotationId.set(id),
+    teams: signal([]),
+    formulaTeamId: signal(''),
+    formulaHits: signal([]),
+    formulaRefused: signal([]),
+    formulaGroups: signal([]),
+    gcsimBlocked: signal<string[]>([]),
+    chooseMode: (m: 'gcsim' | 'formula') => mode.set(m),
+    chooseFormulaTeam: vi.fn(),
+    useFormulaEstimate: () => mode.set('formula'),
   };
 }
 
@@ -131,5 +144,45 @@ describe('UpgradePage', () => {
     await p['run']();
     expect(p['error']()).toContain('no drop model');
     expect(p['running']()).toBe(false);
+  });
+
+  // ── Math-fallback P1, task 8 ────────────────────────────────────────────────────────────
+
+  it('turns a 422 naming a member gcsim cannot run into a choice', async () => {
+    const detail = "gcsim has no character key for 'Kachina' (normalised 'kachina') at pin x.";
+    const p = page(vi.fn().mockRejectedValue({ detail }));
+    p['rotationId'].set('r1');
+    p['buildId'].set('b1');
+    await p['run']();
+    expect(p['error']()).toBe('');
+    expect(p['gcsimRefused']()?.name).toBe('Kachina');
+    p['useFormulaEstimate']();
+    expect(p['mode']()).toBe('formula');
+  });
+
+  it('in formula mode needs a target, sends the formula request and labels the rows', async () => {
+    const upgradeEstimate = vi.fn().mockResolvedValue({
+      rows: [], baseline: 1, gain: 0.01, threshold: 1.01, resinPerRun: 20,
+      weightsCaveat: '', caveats: { unstable: [], staleConversions: [] }, formula: ['x'],
+    });
+    const p = page(upgradeEstimate);
+    const ctx = TestBed.inject(ArtifactsContextService) as unknown as ReturnType<typeof context>;
+    ctx.mode.set('formula');
+    p['buildId'].set('b1');
+    // No target for this build yet: Estimate stays off.
+    expect(p['canRun']()).toBe(false);
+    TestBed.inject(FormulaEstimateService).ensureTarget('b1', [{
+      talent: 'elemental_skill', label: 'Skill DMG', index: 0, multiplier: 1, hits: 1,
+      exclusive: false, scaling_stat: 'atk', extra_terms: [],
+    }] as never);
+    expect(p['canRun']()).toBe(true);
+
+    const request = { build: { id: 'b1' }, team: [], channel: 'geo', scope: 'normal', enemyLevel: 90 };
+    ctx.formulaRequest.set(request);
+    await p['run']();
+    expect(upgradeEstimate.mock.calls[0][0].formula).toEqual(request);
+    expect(p['ranFormula']()).toBe(true);
+    // No simulator loads, so the status line never claimed one did.
+    expect(p['progress']()).toBeNull();
   });
 });

@@ -212,32 +212,65 @@
     <section class="rank-panel" aria-labelledby="rank-panel-title">
       <!-- Not "Rank" again: the tab and the page heading already say it. -->
       <h2 id="rank-panel-title">Against a build</h2>
+      <!-- gcsim by default; the formula estimate is a labelled opt-in for every team (D-F3).
+           Shared with Upgrade, like the rest of the picker. -->
+      <fieldset class="score-mode" aria-label="What scores the build">
+        <button
+          type="button"
+          class="chip"
+          [class.chip--on]="scoreMode() === 'gcsim'"
+          [attr.aria-pressed]="scoreMode() === 'gcsim'"
+          [disabled]="!!rankProgress()"
+          (click)="chooseMode('gcsim')"
+        >gcsim, with a rotation</button>
+        <button
+          type="button"
+          class="chip chip--formula"
+          [class.chip--on]="scoreMode() === 'formula'"
+          [attr.aria-pressed]="scoreMode() === 'formula'"
+          [disabled]="!!rankProgress()"
+          (click)="chooseMode('formula')"
+        >Formula estimate (fast, no simulation)</button>
+      </fieldset>
       <div class="rank-panel__controls">
-        <!-- Rotation first: it names the team, and only that team's four builds can be asked
-             about. Offering all of them produced a 422 on a real run. -->
-        <label>
-          <span>Rotation</span>
-          <select
-            [value]="rankRotationId()"
-            (change)="chooseRotation($any($event.target).value)"
-            [disabled]="!!rankProgress()"
-          >
-            <option value="">Choose a rotation…</option>
-            @for (choice of rotationChoices(); track choice.id) {
-              <option [value]="choice.id" [selected]="choice.id === rankRotationId()">{{ choice.label }}</option>
-            }
-          </select>
-        </label>
+        @if (scoreMode() === 'gcsim') {
+          <!-- Rotation first: it names the team, and only that team's four builds can be asked
+               about. Offering all of them produced a 422 on a real run. -->
+          <label>
+            <span>Rotation</span>
+            <select
+              [value]="rankRotationId()"
+              (change)="chooseRotation($any($event.target).value)"
+              [disabled]="!!rankProgress()"
+            >
+              <option value="">Choose a rotation…</option>
+              @for (choice of rotationChoices(); track choice.id) {
+                <option [value]="choice.id" [selected]="choice.id === rankRotationId()">{{ choice.label }}</option>
+              }
+            </select>
+          </label>
+        } @else {
+          <!-- The estimate needs no rotation. A team is optional: resonance comes from it. -->
+          <label>
+            <span>Team</span>
+            <select (change)="chooseFormulaTeam($any($event.target).value)" [disabled]="!!rankProgress()">
+              <option value="" [selected]="!formulaTeamId()">No team (this build alone)</option>
+              @for (team of teams(); track team.id) {
+                <option [value]="team.id" [selected]="team.id === formulaTeamId()">{{ team.name }}</option>
+              }
+            </select>
+          </label>
+        }
 
         <label>
           <span>Character</span>
           <select
             [value]="rankBuildId()"
             (change)="rankBuildId.set($any($event.target).value)"
-            [disabled]="!!rankProgress() || !rankRotationId()"
+            [disabled]="!!rankProgress() || (scoreMode() === 'gcsim' && !rankRotationId())"
           >
             <option value="">
-              {{ rankRotationId() ? 'Choose a character…' : 'Pick a rotation first' }}
+              {{ scoreMode() === 'formula' || rankRotationId() ? 'Choose a character…' : 'Pick a rotation first' }}
             </option>
             @for (choice of buildChoices(); track choice.id) {
               <option [value]="choice.id" [selected]="choice.id === rankBuildId()">{{ choice.label }} · {{ choice.detail }}</option>
@@ -264,6 +297,35 @@
 
       @if (rankError(); as message) {
         <p class="error" role="alert">{{ message }}</p>
+      }
+
+      <!-- Reasons, not dead ends (DESIGN §2.5): known before the click from the catalogue's
+           gcsim block, or read out of the 422 after it. -->
+      @if (gcsimRefused(); as refused) {
+        <div class="gcsim-choice" role="alert">
+          <p>gcsim can't run {{ refused.name }}. Use the formula estimate?</p>
+          <p class="hint">{{ refused.message }}</p>
+          <button type="button" (click)="useFormulaEstimate()">Use the formula estimate</button>
+        </div>
+      } @else if (gcsimBlocked().length) {
+        <div class="gcsim-choice" role="note">
+          <p>gcsim can't run {{ gcsimBlocked().join(', ') }}. Use the formula estimate?</p>
+          <button type="button" (click)="useFormulaEstimate()">Use the formula estimate</button>
+        </div>
+      }
+
+      @if (scoreMode() === 'formula' && rankBuildId()) {
+        <formula-panel
+          [hits]="formulaHits()"
+          [refusedHits]="formulaRefused()"
+          [groups]="formulaGroups()"
+          [assumptions]="rankFormula() ?? []"
+        />
+      }
+
+      @if (hasRanking() && rankFormula()) {
+        <!-- Every score on the cards below comes from this recipe, so the label sits over them. -->
+        <formula-label />
       }
 
       @if (hasRanking()) {
@@ -295,9 +357,11 @@
                recipe. Most-refused first, so one click unlocks the most of the inventory. -->
           <div
             class="rank-panel__sets"
-            title="These sets are not calibrated, so pieces completing them have no score. About three seconds of simulation each."
+            [attr.title]="rankFormula()
+              ? 'These sets are not in the estimate yet, so pieces completing them have no score. No simulation: adding one is instant.'
+              : 'These sets are not calibrated, so pieces completing them have no score. About three seconds of simulation each.'"
           >
-            <span class="eyebrow">Calibrate</span>
+            <span class="eyebrow">{{ rankFormula() ? 'Add to the estimate' : 'Calibrate' }}</span>
             <div class="chips">
               @for (set of uncalibratedSets(); track set.setId) {
                 <button

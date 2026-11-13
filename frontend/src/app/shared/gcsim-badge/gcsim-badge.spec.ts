@@ -40,13 +40,28 @@ describe('GcsimBadge', () => {
 
   it('names the moves a partial character lacks, readably', () => {
     const el = render({
-      status: 'partial', key: 'jean', pin: PIN,
-      missing_actions: ['high_plunge', 'low_plunge'], reason: null,
+      status: 'partial', key: 'diluc', pin: PIN,
+      missing_actions: ['charge', 'high_plunge', 'low_plunge'], reason: null,
     });
     const badge = el.querySelector('.badge')!;
 
     expect(badge.textContent?.trim()).toBe('Partial gcsim');
-    expect(badge.getAttribute('title')).toBe('gcsim does not implement: high plunge, low plunge.');
+    expect(badge.getAttribute('title'))
+      .toBe('gcsim does not implement: charge, high plunge, low plunge.');
     expect(badge.classList).not.toContain('badge--none');
+  });
+
+  it('marks a full character missing only plunges quietly, with the plunges in the tooltip', () => {
+    // Owner, 2026-11-13: plunges do not make a character partial, but they are still listed.
+    const el = render({
+      status: 'full', key: 'jean', pin: PIN,
+      missing_actions: ['high_plunge', 'low_plunge'], reason: null,
+    });
+    const badge = el.querySelector('.badge')!;
+
+    expect(badge.textContent?.trim()).toBe('No plunge');
+    expect(badge.classList).toContain('badge--quiet');
+    expect(badge.getAttribute('title')).toContain('high plunge, low plunge');
+    expect(badge.getAttribute('title')).toContain('Not partial');
   });
 });

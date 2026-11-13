@@ -68,6 +68,16 @@ export interface RecipeCacheKey {
   context: string;
 }
 
+/**
+ * Whether a recipe was synthesised from formulas (`formula-recipe.ts`) rather than calibrated.
+ *
+ * Said here rather than imported from `formula-calibration.ts`, so the cache depends on the
+ * recipe's shape alone and not on the module that builds formula recipes.
+ */
+function isFormula(recipe: Recipe): boolean {
+  return recipe.meta?.formula?.kind === 'formula-estimate' || recipe.seed === 'formula';
+}
+
 /** Namespaced so clearing recipes cannot take unrelated keys with it. */
 const PREFIX = 'mistilteinn:recipe:';
 
@@ -175,6 +185,8 @@ export { browserStore };
  */
 function isComplete(recipe: Recipe | null): boolean {
   if (recipe === null || typeof recipe !== 'object') return false;
+  // A formula estimate is never a cached gcsim recipe, whatever key it was found under.
+  if (isFormula(recipe)) return false;
   const meta = recipe.meta as Recipe['meta'] | undefined;
   return Array.isArray(recipe.hits)
     && meta !== undefined
@@ -206,6 +218,11 @@ export function writeRecipe(
   store: RecipeStore | null, key: RecipeCacheKey, recipe: Recipe,
 ): boolean {
   if (store === null) return false;
+  // **Refused, not stored.** This cache is keyed by a gcsim calibration's inputs and read back
+  // as one; a formula recipe under such a key would be served to a gcsim search as if gcsim
+  // had produced it — the mixing the estimate's label exists to prevent (math-fallback P1,
+  // task 8). Nothing writes one today; this makes sure nothing can.
+  if (isFormula(recipe)) return false;
   try {
     store.setItem(cacheKey(key), JSON.stringify(recipe));
     return true;

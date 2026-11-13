@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
 
 import type { OptimizationRunSummary, Visibility } from './optimization-runs.service';
 import { OptimizationRunsService } from './optimization-runs.service';
@@ -20,7 +20,7 @@ import { OptimizationRunsService } from './optimization-runs.service';
   templateUrl: './previous-runs.html',
   styleUrl: './previous-runs.scss',
 })
-export class PreviousRuns {
+export class PreviousRuns implements OnInit {
   /** Narrow to one character, when the page already knows which build is being optimised. */
   readonly characterId = input<string | null>(null);
 
@@ -74,6 +74,11 @@ export class PreviousRuns {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  /** A saved formula estimate is labelled as one in the list, never read as a sim run. */
+  protected isFormula(row: OptimizationRunSummary): boolean {
+    return (row.summary as { formula_estimate?: boolean })?.formula_estimate === true;
   }
 
   protected energyModel(row: OptimizationRunSummary): string {

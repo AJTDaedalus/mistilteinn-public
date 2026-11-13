@@ -10,10 +10,14 @@ snapshot and the row's own name, and it changes exactly when the pin does.
 
 - **`none`** — gcsim has no key. `reason` is gcsim_keys' own refusal text, the sentence a
   search would have died with, published before the search instead of after it.
-- **`partial`** — gcsim knows the character but not every move the game gives them.
-  `missing_actions` names them, from `character_implemented_actions` (probed against gcsim
-  itself by `scripts/gcsim/probe_implemented_actions.py`).
-- **`full`** — every move the game gives them is implemented.
+- **`partial`** — gcsim knows the character but lacks a **core move**: the normal attack, the
+  charged (or aimed) attack, the skill or the burst.
+- **`full`** — every core move is implemented.
+
+`missing_actions` names **every** move gcsim lacks of the ones the game gives them, core or
+not, from `character_implemented_actions` (probed against gcsim itself by
+`scripts/gcsim/probe_implemented_actions.py`). So a character gcsim cannot plunge with still
+says so in the tooltip even where the badge says nothing.
 
 **"Every move the game gives them" is not gcsim's ten base actions.** Taken literally, every
 non-bow character would be `partial` for want of `aim` — an aimed shot is a bow's charged
@@ -24,9 +28,12 @@ game's own rule, and it is the same one `gcsim_keys.implemented_actions` documen
 whose charged attack *is* the aimed shot. A bow user who does implement `charge` (Tartaglia's
 melee stance) is not penalised for it, because nothing extra is ever counted against anyone.
 
-Measured at the pin (`test_gcsim_status.py` pins the numbers): most `partial` characters are
-missing **plunges**, which gcsim does not implement for about half the roster. That is real —
-a plunge authored for them fails at run time — and it is the answer the badge gives.
+**Plunges do not make a character `partial`** (owner, 2026-11-13). gcsim implements plunges for
+about half the roster, so before the ruling 70 of 89 `partial` characters were partial for that
+alone, and a badge on most of the roster says nothing a reader can act on. A plunge authored
+for them still fails at run time, which is why plunges stay in `missing_actions`; they just do
+not decide the status. `dash`, `jump` and `walk` are movement and are treated the same way.
+`test_gcsim_status.py` pins the numbers.
 
 **Weapons and artifact sets have no `partial`.** gcsim publishes no per-weapon or per-set
 implementation table at the pin, so the only honest statuses are "has a key" and "does not".
@@ -71,6 +78,11 @@ def expected_actions(weapon_type: WeaponType | str | None) -> tuple[str, ...]:
     return tuple(a for a in gcsim_keys.authorable_actions() if a != not_this_class)
 
 
+#: The moves whose absence makes a character `partial`: normal, charged (a bow's is `aim`),
+#: skill and burst. Plunges and movement are listed in `missing_actions` but do not count.
+CORE_ACTIONS = frozenset({"attack", "charge", "aim", "skill", "burst"})
+
+
 def for_character(
     nanoka_id: str,
     name: str,
@@ -89,7 +101,7 @@ def for_character(
     missing = tuple(
         a for a in expected_actions(weapon_type) if implemented and a not in implemented
     )
-    status = GcsimSupport.PARTIAL if missing else GcsimSupport.FULL
+    status = GcsimSupport.PARTIAL if CORE_ACTIONS.intersection(missing) else GcsimSupport.FULL
     return GcsimStatus(status, key, pin, missing, None)
 
 

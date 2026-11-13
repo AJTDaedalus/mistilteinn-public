@@ -22,7 +22,12 @@ function spoken(action: string): string {
  * **The words are the signal, colour is the second channel** — the rule `ElementChip` and
  * `WeaponMark` already follow. `none` says *No gcsim* and carries gcsim's own refusal as its
  * tooltip; `partial` says *Partial gcsim* and names the moves gcsim does not implement, because
- * "partial" alone would leave the reader to guess which ones (usually plunges).
+ * "partial" alone would leave the reader to guess which ones.
+ *
+ * **Plunges and movement do not make a character partial** (owner, 2026-11-13): `partial` is
+ * a missing normal, charged/aimed, skill or burst. A `full` character gcsim cannot plunge with
+ * still lists the plunges in `missing_actions`, and gets a *quiet* mark — faint, borderless,
+ * "No plunge" — so the tooltip has somewhere to live without ranking beside a real gap.
  */
 @Component({
   selector: 'gcsim-badge',
@@ -31,6 +36,7 @@ function spoken(action: string): string {
       <span
         class="badge"
         [class.badge--none]="gcsim()?.status === 'none'"
+        [class.badge--quiet]="gcsim()?.status === 'full'"
         [attr.title]="detail()"
         [attr.aria-label]="text + '. ' + detail()"
       >{{ text }}</span>
@@ -47,6 +53,10 @@ function spoken(action: string): string {
       font-size: var(--text-xs);
       line-height: 1.5;
       white-space: nowrap;
+    }
+    .badge--quiet {
+      border-color: transparent;
+      color: var(--ink-faint);
     }
     .badge--none {
       border-color: var(--warning);
@@ -65,6 +75,12 @@ export class GcsimBadge {
         return 'No gcsim';
       case 'partial':
         return 'Partial gcsim';
+      case 'full':
+      {
+        const missing = this.gcsim()?.missing_actions ?? [];
+        if (!missing.length) return null;
+        return missing.every((a) => a.endsWith('plunge')) ? 'No plunge' : 'Minor gcsim gaps';
+      }
       default:
         return null;
     }
@@ -77,6 +93,9 @@ export class GcsimBadge {
       return status.reason ?? 'gcsim cannot simulate this at the pinned version.';
     }
     const missing = (status.missing_actions ?? []).map(spoken).join(', ');
-    return `gcsim does not implement: ${missing}.`;
+    return status.status === 'full'
+      ? `gcsim does not implement: ${missing}. Not partial: only a missing normal, charged, `
+        + 'skill or burst makes a character partial.'
+      : `gcsim does not implement: ${missing}.`;
   });
 }
