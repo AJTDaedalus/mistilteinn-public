@@ -122,6 +122,16 @@ describe('liveQuantitiesFor', () => {
     expect(liveQuantitiesFor(recipe([hit({ ampMultiplier: 1.5 })])))
       .toContain('elemental_mastery');
   });
+
+  it('includes elemental mastery when a flat term was resolved to it', () => {
+    // Tri-Karma scales off ATK and does not amplify; its EM lives only in the flat term. Leave
+    // EM out here and every EM piece is dominated on ATK and crit and pruned before scoring.
+    const triKarma = hit({
+      calibratedEm: 380, flatDamage: 1333,
+      conversions: { flatDamage: { from: 'em', perUnit: 3.5088 } },
+    });
+    expect(liveQuantitiesFor(recipe([triKarma]))).toContain('elemental_mastery');
+  });
 });
 
 describe('candidateStatsFrom', () => {
@@ -607,6 +617,36 @@ describe('the branch-and-bound layer', () => {
     expect(bounded.boundPruned).toBeGreaterThan(0);
     expect(bounded.builds).toEqual(exhaustive.builds.slice(0, 3));
     // Non-vacuous: the winner carries EM, which a frozen multiplier would have valued at 0.
+    expect(exhaustive.builds[0].artifactIds.some((id) => id.endsWith('-1'))).toBe(true);
+  });
+
+  /**
+   * EM folded into flat damage, at search level. The flat term is `perUnit × (EM + candidate
+   * EM)`, monotone in EM, so the bound's optimistic completion still over-states; this checks
+   * it stays admissible with that term deciding the winner.
+   */
+  it('stays exact on a recipe whose EM lives only in a flat term', () => {
+    const inv = SLOTS.flatMap((slot, s) =>
+      ([
+        { atk_pct: 0.01 + 0.001 * s },
+        { elemental_mastery: 187 + s },
+        { crit_dmg: 0.05 + 0.01 * s },
+      ] as Record<string, number>[])
+        .map((stats, k) => ({ id: `${slot}-${k}`, slot, setId: 1, stats } as Candidate)),
+    );
+    const triKarma = recipe([hit({
+      critRate: 0.1, critDmg: 0.5, calibratedEm: 380, flatDamage: 3.5088 * 380,
+      conversions: { flatDamage: { from: 'em', perUnit: 3.5088 } },
+    })]);
+    const recipes = { byFourPieceSet: new Map([[1, triKarma]]), noFourPiece: triKarma };
+
+    const exhaustive = searchRecipe(inv, { recipes, topN: 100000, fourPieceSets: [1] });
+    const bounded = searchRecipe(inv, { recipes, topN: 3, fourPieceSets: [1] });
+
+    expect(exhaustive.evaluated).toBe(243);
+    expect(bounded.boundPruned).toBeGreaterThan(0);
+    expect(bounded.builds).toEqual(exhaustive.builds.slice(0, 3));
+    // Non-vacuous: the winner carries EM, which the frozen flat term valued at 0.
     expect(exhaustive.builds[0].artifactIds.some((id) => id.endsWith('-1'))).toBe(true);
   });
 

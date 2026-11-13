@@ -148,6 +148,23 @@ describe('RecipeOptimizeService', () => {
     expect(new Set(written).size).toBe(written.length);
   });
 
+  it('asks the probe to move Elemental Mastery as well as ATK, HP and DEF', async () => {
+    // gcsim writes Tri-Karma's EM part as `FlatDmg = em × k`. A probe that leaves EM alone sees
+    // that term not move and files it constant — artifact EM worth nothing, and no warning.
+    const service = setup();
+    const fetchSpy = vi.mocked(globalThis.fetch);
+    await service.calibrateAll(
+      'b1', 'r1', 'pin', [{ artifactSetIds: [], setIds: [], label: 'baseline' }], () => undefined,
+    );
+
+    const calibrate = fetchSpy.mock.calls
+      .map(([input]) => input as Request)
+      .find((request) => request.url.endsWith('/calibrate'));
+    expect(calibrate).toBeDefined();
+    const body = await calibrate!.clone().json();
+    expect(body.probe_deltas).toEqual({ 'atk%': 0.5, 'hp%': 0.3, 'def%': 0.7, em: 100 });
+  });
+
   it('does not let two weapons share one cache entry', async () => {
     // **The feature shipped broken and every test passed.** The backend substitution had an
     // integration test, the search loop had unit tests, the energy ladder grouping had unit

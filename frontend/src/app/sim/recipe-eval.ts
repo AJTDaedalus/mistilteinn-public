@@ -35,6 +35,7 @@ import {
   type FormulaMove,
   type Recipe,
   type RecipeHit,
+  type TripleStat,
 } from './recipe';
 import { dpsAt } from './recipe-energy';
 
@@ -88,7 +89,7 @@ const FLAT_TERM = { atk: 'flatAtk', hp: 'flatHp', def: 'flatDef' } as const;
 
 /** The candidate's own percentage and flat additions for one stat. */
 function candidateParts(
-  stats: CandidateStats, stat: ConversionSource,
+  stats: CandidateStats, stat: TripleStat,
 ): { percent: number; flat: number } {
   switch (stat) {
     case 'hp':
@@ -108,6 +109,9 @@ function candidateParts(
  * and pretending otherwise would be a confident guess.
  */
 function rawTotal(hit: RecipeHit, stats: CandidateStats, stat: ConversionSource): number {
+  // EM has no base or percentage form, and nothing converts into it here: the hit's snapshot
+  // EM plus the candidate's — the same total an EM-scaling or amplifying hit reads below.
+  if (stat === 'em') return (hit.calibratedEm ?? 0) + stats.elementalMastery;
   const mine = candidateParts(stats, stat);
   return hit.calibratedBase[stat] * (1 + hit.calibratedPercent[stat] + mine.percent)
     + hit.calibratedFlat[stat] + mine.flat;
@@ -137,7 +141,7 @@ function resolvedTerm(
  * fixture that was passing at 1e-16 while a second one was 79 % out.
  */
 export function totalFor(
-  hit: RecipeHit, stats: CandidateStats, stat: ConversionSource,
+  hit: RecipeHit, stats: CandidateStats, stat: TripleStat,
 ): number {
   const mine = candidateParts(stats, stat);
   const flat = resolvedTerm(hit, FLAT_TERM[stat], hit.calibratedFlat[stat], stats);
