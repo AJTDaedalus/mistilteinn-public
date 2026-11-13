@@ -519,6 +519,150 @@ async def test_a_talent_with_no_level_set_is_not_offered(
     assert offered.json() == []
 
 
+# ── the hit's own scaling stat — math-fallback P0 ────────────────────────────
+
+
+async def _burst_row(
+    db: AsyncSession, character: Character, labels: list[str], params: list[float],
+) -> None:
+    """One elemental-burst row at level 9, verbatim labels from the catalogue."""
+    db.add(Talent(
+        character_id=str(character.id), nanoka_id=10087,
+        talent_type=TalentType.ELEMENTAL_BURST, name="O Tides, I Have Returned",
+        description="",
+    ))
+    await db.flush()
+    talent = (await db.execute(
+        select(Talent).where(Talent.character_id == str(character.id)),
+    )).scalars().one()
+    db.add(TalentScaling(talent_id=str(talent.id), level=9, labels=labels, params=params))
+    await db.flush()
+
+
+def _explain_body(hit: dict) -> dict:
+    return {"hit": {"channel": "cryo", "scope": "burst", **hit}, "enemy": {"level": 90}}
+
+
+@pytest.mark.asyncio
+async def test_a_named_hp_talent_scales_off_hp_not_atk(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """Neuvillette's burst is `{param1:F2P} Max HP`. The frontend used to send
+    `scaling_stat: 'atk'` with every named talent, and the server took it — so an HP scaler was
+    scored off ATK. The talent now carries its own stat."""
+    user, _ = authed_user
+    character, weapon, sets = await _catalogue(db_session)
+    await _burst_row(
+        db_session, character,
+        ["Skill DMG|{param1:F2P} Max HP", "Energy Cost|{param2:I}"], [0.378383, 70],
+    )
+    build = await _build_with_five(db_session, user, character, weapon, sets)
+    build.talent_levels = {"elemental_burst": 9}
+    await db_session.flush()
+
+    offered = (await client.get(
+        f"/api/v1/builds/{build.id}/hits", headers=_auth(authed_user),
+    )).json()
+    assert [(h["label"], h["scaling_stat"], h["extra_terms"]) for h in offered] == [
+        ("Skill DMG", "hp", []),
+    ]
+
+    named = await client.post(
+        f"/api/v1/builds/{build.id}/explain", headers=_auth(authed_user),
+        json=_explain_body({"talent": {"talent": "elemental_burst", "label": "Skill DMG"}}),
+    )
+    as_hp = await client.post(
+        f"/api/v1/builds/{build.id}/explain", headers=_auth(authed_user),
+        json=_explain_body({"multiplier": 0.378383, "scaling_stat": "hp"}),
+    )
+    as_atk = await client.post(
+        f"/api/v1/builds/{build.id}/explain", headers=_auth(authed_user),
+        json=_explain_body({"multiplier": 0.378383, "scaling_stat": "atk"}),
+    )
+
+    assert named.status_code == 200, named.text
+    assert named.json()["damage"] == pytest.approx(as_hp.json()["damage"])
+    assert named.json()["damage"] != pytest.approx(as_atk.json()["damage"])
+
+
+@pytest.mark.asyncio
+async def test_a_named_talent_refuses_a_contradicting_scaling_stat(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """A body naming an HP talent and saying `atk` states two stats for one hit — the same
+    shape `multiplier`-and-`talent` is refused for. Saying the same stat is accepted."""
+    user, _ = authed_user
+    character, weapon, sets = await _catalogue(db_session)
+    await _burst_row(db_session, character, ["Skill DMG|{param1:F2P} Max HP"], [0.378383])
+    build = await _build_with_five(db_session, user, character, weapon, sets)
+    build.talent_levels = {"elemental_burst": 9}
+    await db_session.flush()
+    talent = {"talent": "elemental_burst", "label": "Skill DMG"}
+
+    wrong = await client.post(
+        f"/api/v1/builds/{build.id}/explain", headers=_auth(authed_user),
+        json=_explain_body({"talent": talent, "scaling_stat": "atk"}),
+    )
+    same = await client.post(
+        f"/api/v1/builds/{build.id}/explain", headers=_auth(authed_user),
+        json=_explain_body({"talent": talent, "scaling_stat": "hp"}),
+    )
+
+    assert wrong.status_code == 422, wrong.text
+    assert "hp" in wrong.json()["detail"]
+    assert same.status_code == 200, same.text
+
+
+@pytest.mark.asyncio
+async def test_a_mixed_stat_talent_is_one_hit_worth_both_terms(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """Tri-Karma Purification, `{a} ATK+{b} Elemental Mastery`: one hit whose base is
+    `a x ATK + b x EM`. Every factor after the base multiplies it, so the hit's damage is the
+    sum of the two single-stat hits — which is what this checks, against the server itself."""
+    user, _ = authed_user
+    character, weapon, sets = await _catalogue(db_session)
+    await _burst_row(
+        db_session, character,
+        ["Tri-Karma Purification DMG|{param1:F1P} ATK+{param2:F1P} Elemental Mastery"],
+        [1.8576, 3.7152],
+    )
+    build = await _build_with_five(db_session, user, character, weapon, sets)
+    build.talent_levels = {"elemental_burst": 9}
+    # The fixture build carries no EM, which would make the EM half worth zero and this
+    # test unable to tell one term from two.
+    piece = (await db_session.execute(
+        select(Artifact).where(Artifact.build_id == str(build.id)),
+    )).scalars().first()
+    piece.substats = [{"stat": "FIGHT_PROP_ELEMENT_MASTERY", "value": 187.0}]
+    await db_session.flush()
+
+    [offered] = (await client.get(
+        f"/api/v1/builds/{build.id}/hits", headers=_auth(authed_user),
+    )).json()
+    assert offered["scaling_stat"] == "atk"
+    assert offered["multiplier"] == pytest.approx(1.8576)
+    assert offered["extra_terms"] == [
+        {"stat": "elemental_mastery", "multiplier": pytest.approx(3.7152)},
+    ]
+
+    async def damage(hit: dict) -> float:
+        response = await client.post(
+            f"/api/v1/builds/{build.id}/explain", headers=_auth(authed_user),
+            json=_explain_body(hit),
+        )
+        assert response.status_code == 200, response.text
+        return response.json()["damage"]
+
+    named = await damage({"talent": {"talent": "elemental_burst",
+                                     "label": "Tri-Karma Purification DMG"}})
+    atk_half = await damage({"multiplier": 1.8576, "scaling_stat": "atk"})
+    em_half = await damage({"multiplier": 3.7152, "scaling_stat": "elemental_mastery"})
+
+    assert em_half > 0, "the build needs some EM or the EM half proves nothing"
+    assert named == pytest.approx(atk_half + em_half)
+
+
 # ---- A build's equipped stats, in the kernel's own quantities ---------------
 
 

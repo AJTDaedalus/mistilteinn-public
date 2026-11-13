@@ -180,6 +180,31 @@ async def test_the_hit_is_resolved_from_the_named_talent(
     assert hit["multiplier"] == pytest.approx(1.9091)
     assert hit["channel"] == "cryo"
     assert hit["scaling_stat"] == "atk"
+    assert hit["extra_terms"] == []
+
+
+async def test_the_hit_carries_the_talents_own_stats_not_the_callers(
+    authed_client: AsyncClient, db_session: AsyncSession, build: str,
+):
+    """Math-fallback P0. The page used to send `scaling_stat: 'atk'` for every talent, and the
+    kernel scored whatever came back — so an HP scaler was searched off ATK. The talent's
+    own stats come back now, with a mixed row's second term beside the first."""
+    scaling = (await db_session.execute(select(TalentScaling))).scalars().one()
+    scaling.labels = ["Field DMG|{param1:F1P} ATK+{param2:F2P} Max HP"]
+    scaling.params = [1.1, 0.019]
+    await db_session.flush()
+    db_session.expire_all()
+
+    body = _body()
+    body["hit"] = {**body["hit"], "scaling_stat": None,
+                   "talent": {"talent": "elemental_burst", "label": "Field DMG", "index": 0}}
+    response = await authed_client.post(f"{BUILDS}/{build}/search-context", json=body)
+
+    assert response.status_code == 200, response.text
+    hit = response.json()["hit"]
+    assert hit["scaling_stat"] == "atk"
+    assert hit["multiplier"] == pytest.approx(1.1)
+    assert hit["extra_terms"] == [{"stat": "hp", "multiplier": pytest.approx(0.019)}]
 
 
 async def test_set_bonuses_come_back_in_kernel_terms(
