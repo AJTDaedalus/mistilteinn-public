@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 
 import { BuildsService, type BuildRead } from '../builds/builds.service';
 import { RotationsService, type RotationRead, type TeamRoster } from '../rotations/rotations.service';
-import { GCSIM_LOADER, runConfig } from '../optimize/recipe-optimize.service';
+import { GCSIM_LOADER } from '../optimize/recipe-optimize.service';
 import { ArtifactsService } from '../artifacts/artifacts.service';
 import { CatalogueService } from '../catalogue/catalogue.service';
 import { CardPicker, type CardOption } from '../../shared/card-picker/card-picker';
@@ -273,8 +273,12 @@ export class CalculatePage implements OnInit {
       const config = await this.rotationsService.preview(this.teamId(), rotation.steps, true);
 
       this.progress.set(`Simulating ${ITERATIONS} iterations\u2026`);
-      const mod = await this.loadModule();
-      const finished = runConfig(mod, config, ITERATIONS);
+      const gcsim = await this.loadModule();
+      // Progress now reaches the page: gcsim runs in a worker, so the main thread is free to
+      // render it rather than frozen until the last iteration.
+      const finished = await gcsim.run(config, ITERATIONS, (done, total) =>
+        this.progress.set(`Simulating ${done} / ${total} iterations\u2026`),
+      );
 
       // **From the config, not the roster.** Every per-character array is positional against
       // the order the config declares, which is the subject build then teammates — not the
@@ -292,7 +296,7 @@ export class CalculatePage implements OnInit {
       //
       // It doubles the wait, so it runs after the numbers are already on screen.
       this.progress.set('Measuring what energy costs\u2026');
-      const free = runConfig(mod, withFreeEnergy(config), ITERATIONS);
+      const free = await gcsim.run(withFreeEnergy(config), ITERATIONS);
       // Positional against the config's own order, like the names — and `null` for a burst
       // that costs no energy, so a character who cannot be starved is never reported as such.
       const costs = names.map(

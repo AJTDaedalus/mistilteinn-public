@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi } from 'vitest';
 
+import { inlineRunner } from '../../../sim/gcsim-runner';
 import { RotationEditor } from './editor';
 import { RotationsService, type RosterCharacter } from '../rotations.service';
 
@@ -684,13 +685,13 @@ describe('RotationEditor — a failed run is not an empty one', () => {
     page['appendStep']('10000002', 'skill');
     page['measured'].set(null);
 
-    // The module is loaded through `loadGcsim`, which the page calls; stubbing the page's own
+    // The runner is the page's worker by default; stubbing the page's own
     // seam is enough to fix the behaviour under test without a wasm binary in a unit test.
     const failing = {
       validateConfig: () => ({}),
       sample: () => '{"error":"requested next char 1 is not active and next action is not swap"}',
     };
-    await page['runSampleWith'](failing as never);
+    await page['runSampleWith'](inlineRunner(failing as never));
 
     expect(page['measured']()).toBeNull();
     expect(page['sampleError']()).toContain('not active');
@@ -705,10 +706,10 @@ describe('RotationEditor — a failed run is not an empty one', () => {
     } as unknown as RotationsService);
     page['appendStep']('10000002', 'skill');
 
-    await page['runSampleWith']({
+    await page['runSampleWith'](inlineRunner({
       validateConfig: () => '{"error":"unrecognized weapon"}',
       sample: () => '{}',
-    } as never);
+    } as never));
 
     expect(page['sampleError']()).toContain('unrecognized weapon');
     expect(page['sampleError']()).not.toBe('{}');

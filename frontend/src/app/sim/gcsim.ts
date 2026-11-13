@@ -112,7 +112,12 @@ export function sampleError(sampled: string): string | null {
  * `onProgress` exists because this is slow enough to need it: measured against the committed
  * browser build, a 100-iteration 90-second rotation is **7.84 s single-threaded**, so a
  * 59-candidate weapon comparison is minutes rather than seconds. **This is a job with
- * progress, never a request that blocks.**
+ * progress, never a request that blocks.** (That figure is the old pin's; v2.50.0 is 2.4–4.2×
+ * faster — `gcsim-runner.ts` has the current measurement.)
+ *
+ * **The app calls this inside `gcsim.worker.ts`, never on the page.** A `simulate()` that
+ * never returns cannot be interrupted on the thread running it; `gcsim-worker-runner.ts`
+ * holds the deadline and terminates the worker. The Node verify scripts call it directly.
  */
 export function run(
   mod: GcsimModule,
