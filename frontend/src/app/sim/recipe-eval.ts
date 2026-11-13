@@ -27,10 +27,12 @@
  * **to gcsim itself**, by predicting runs it was not calibrated on.
  */
 
+import { amplifyingMultiplier } from './damage';
 import {
   effectiveCritRate,
   type ConversionSource,
   type ConversionTerm,
+  type FormulaMove,
   type Recipe,
   type RecipeHit,
 } from './recipe';
@@ -67,6 +69,12 @@ export interface CandidateStats {
    * bursts on time, and weighed against damage stats below it.
    */
   energyRecharge: number;
+  /**
+   * DMG% that reaches only one kind of move — a set bonus such as Gambler's 2-piece
+   * (`skill`). Read only by a hit that declares its `move`, which only a formula recipe does,
+   * so a gcsim recipe is untouched. Optional: absent is "none".
+   */
+  moveBonus?: Readonly<Partial<Record<FormulaMove, number>>>;
 }
 
 export const NO_STATS: CandidateStats = {
@@ -150,15 +158,32 @@ export function evaluateHit(hit: RecipeHit, stats: CandidateStats): number {
   if (!hit.mine) return hit.gcsimAverageDamage;
 
   // EM has no base or percentage form; a hit scaling off it takes the whole value.
-  const scaling = hit.scaling === 'em'
-    ? stats.elementalMastery
-    : totalFor(hit, stats, hit.scaling);
+  //
+  // `calibratedEm` is the EM a formula recipe's hit carries before artifacts. A gcsim recipe
+  // has none (`?? 0`), which keeps its arithmetic exactly what it was.
+  const em = (hit.calibratedEm ?? 0) + stats.elementalMastery;
+  const scaling = hit.scaling === 'em' ? em : totalFor(hit, stats, hit.scaling);
 
   const base = hit.talent * scaling + resolvedTerm(hit, 'flatDamage', hit.flatDamage, stats);
-  const bonus = hit.bonusDmg + (stats.elementBonus[hit.element] ?? 0) + stats.allElementBonus;
+  const bonus = hit.bonusDmg + (stats.elementBonus[hit.element] ?? 0) + stats.allElementBonus
+    + (hit.move === undefined ? 0 : (stats.moveBonus?.[hit.move] ?? 0))
+    + energyRechargeBonus(hit, stats);
   const preCrit = base * (1 + bonus) * hit.defMultiplier * hit.resMultiplier;
   const crit = 1 + effectiveCritRate(hit.critRate + stats.critRate) * (hit.critDmg + stats.critDmg);
-  return preCrit * crit * hit.ampMultiplier;
+  // A formula recipe's amplifying multiplier follows the candidate's EM, through the same
+  // function the single-hit kernel calls. A gcsim recipe keeps its frozen total.
+  const amp = hit.amplifying === undefined
+    ? hit.ampMultiplier
+    : amplifyingMultiplier(hit.amplifying.reaction, em, hit.amplifying.reactionBonus);
+  return preCrit * crit * amp;
+}
+
+/** Emblem's `min(cap, rate × ER)`, ER being the hit's own plus the candidate's. */
+function energyRechargeBonus(hit: RecipeHit, stats: CandidateStats): number {
+  const conversion = hit.bonusFromEnergyRecharge;
+  if (conversion === undefined) return 0;
+  const er = conversion.calibratedEnergyRecharge + stats.energyRecharge;
+  return Math.min(conversion.cap, conversion.perUnit * er);
 }
 
 /**

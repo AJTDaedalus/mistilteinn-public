@@ -15,7 +15,7 @@
  * a slow better one exists is a downgrade for whoever wanted the fast one.
  */
 
-import type { Recipe } from './recipe';
+import type { FormulaMove, Recipe } from './recipe';
 import { evaluateRecipe, NO_STATS, type CandidateStats } from './recipe-eval';
 import { dpsAt } from './recipe-energy';
 import {
@@ -145,8 +145,16 @@ export function candidateStatsFrom(
   pools: readonly Readonly<Record<string, number>>[],
 ): CandidateStats {
   const elementBonus: Record<string, number> = {};
+  const moveBonus: Partial<Record<FormulaMove, number>> = {};
   for (const pool of pools) {
     for (const quantity of Object.keys(pool)) {
+      // A formula set bonus scoped to a move (`formula:dmg_bonus:skill`). Checked first and
+      // spelled so it cannot end in `_dmg_bonus`, which would file it under an element.
+      if (quantity.startsWith(FORMULA_MOVE_BONUS_PREFIX)) {
+        const move = quantity.slice(FORMULA_MOVE_BONUS_PREFIX.length) as FormulaMove;
+        moveBonus[move] = sum(pools, quantity);
+        continue;
+      }
       if (!quantity.endsWith(DMG_BONUS_SUFFIX)) continue;
       const element = quantity.slice(0, -DMG_BONUS_SUFFIX.length);
       elementBonus[element] = sum(pools, quantity);
@@ -166,8 +174,20 @@ export function candidateStatsFrom(
     // Summed like any other stat, and used unlike any other: ER buys bursts, not damage.
     energyRecharge: sum(pools, 'energy_recharge'),
     elementBonus,
+    // Every channel, from a formula set bonus such as Obsidian Codex's 2-piece. Nothing a
+    // gcsim search passes carries it, so it reads 0 there as it always has.
+    allElementBonus: sum(pools, FORMULA_ALL_DMG_BONUS),
+    moveBonus,
   };
 }
+
+/**
+ * The pool quantity for DMG% that reaches every channel. A formula-only spelling: the kernel's
+ * own vocabulary has per-channel bonuses and nothing generic.
+ */
+export const FORMULA_ALL_DMG_BONUS = 'formula:dmg_bonus';
+/** `formula:dmg_bonus:<move>` — DMG% for one kind of move. */
+export const FORMULA_MOVE_BONUS_PREFIX = 'formula:dmg_bonus:';
 
 /** The 4-piece set a combination reaches, or `null` if it reaches none. */
 export function fourPieceSetOf(setCounts: Readonly<Record<number, number>>): number | null {
@@ -248,7 +268,15 @@ export function liveQuantitiesFor(...recipes: readonly Recipe[]): string[] {
     live.add(`${hit.element}${DMG_BONUS_SUFFIX}`);
     if (hit.scaling === 'em') live.add('elemental_mastery');
     else for (const q of parts[hit.scaling]) live.add(q);
-    if (hit.ampMultiplier !== 1) live.add('elemental_mastery');
+    if (hit.ampMultiplier !== 1 || hit.amplifying !== undefined) live.add('elemental_mastery');
+    // A formula hit reads a move-scoped and an all-channel bonus from set pools, and Emblem
+    // reads ER. Pieces never carry the first two, but the bound's optimistic set term is
+    // built from this list — leave them out and it under-states, which prunes a winner.
+    if (hit.move !== undefined) {
+      live.add(`${FORMULA_MOVE_BONUS_PREFIX}${hit.move}`);
+      live.add(FORMULA_ALL_DMG_BONUS);
+    }
+    if (hit.bonusFromEnergyRecharge !== undefined) live.add('energy_recharge');
     for (const conversion of Object.values(hit.conversions)) {
       for (const q of parts[conversion.from]) live.add(q);
     }
