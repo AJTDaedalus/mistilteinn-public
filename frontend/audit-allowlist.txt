@@ -53,3 +53,11 @@ GHSA-3g3m-2fjr-6pw4  # glob 9-14.0.1 AbortSignal bypass; pacote (angular cli) on
 # The fix (2.1.6+) was published 2026-11-12; take it once it has aged, then drop these.
 GHSA-jpvv-r467-5p4w  # @hono/node-server path-separator bypass; dev-only (Angular CLI MCP server), not shipped
 GHSA-qv5m-9pm6-hqp3  # @hono/node-server unhandled ECONNRESET on WebSocket upgrade; dev-only (Angular CLI MCP server), not shipped
+# hono <4.13.16, the same chain (Angular CLI -> @modelcontextprotocol/sdk). Dev tooling only,
+# never shipped, and nothing here runs `ng mcp`. Published 2026-11-12, alongside the
+# @hono/node-server entries above; take the fix once it has aged, then drop all seven.
+GHSA-3gg2-335m-rxc6  # hono css helper escaping; dev-only (Angular CLI MCP server), not shipped
+GHSA-46wx-v44x-9hh2  # hono csrf() hyperlink auditing; dev-only (Angular CLI MCP server), not shipped
+GHSA-4h7h-rv7c-7m2v  # hono validator('form') multipart skip; dev-only (Angular CLI MCP server), not shipped
+GHSA-4m76-xfj5-7975  # hono mount() path forwarding; dev-only (Angular CLI MCP server), not shipped
+GHSA-h7mg-cq63-vhpq  # hono RegExpRouter wildcard middleware; dev-only (Angular CLI MCP server), not shipped
