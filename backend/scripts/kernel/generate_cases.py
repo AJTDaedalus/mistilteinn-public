@@ -44,11 +44,12 @@ from __future__ import annotations
 
 import json
 import random
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
 from app.formula.genshin import tags
-from app.formula.genshin.damage import Amplifying, Hit, ScalingStat
+from app.formula.genshin.damage import Amplifying, Hit, ScalingStat, ScalingTerm
 from app.pando.calculator import NodeRegistry
 from app.services.damage_calculator import BuildEvaluator, Enemy
 from app.services.stat_calculator import build_log
@@ -56,6 +57,14 @@ from app.services.stat_calculator import build_log
 OUT = Path(__file__).resolve().parents[2] / "tests" / "fixtures" / "kernel" / "cases.json"
 
 SEED = 20260822
+
+#: Mixed-stat hits (math-fallback P0): `a x stat + b x other_stat` in one hit, as Nahida's
+#: Tri-Karma is. Their own seed and their own id prefix, appended after the ordinary cases,
+#: so adding them changed none of the 2,000 that were already committed. One extra term
+#: each, because that is the most any row in the catalogue carries and all the WGSL case
+#: struct holds.
+MIXED_SEED = 20261113
+MIXED_CASES = 200
 
 #: How often an optional field is present. Named rather than inline, so the sweep's shape is
 #: readable: most cases exercise the common path, a healthy minority each rarer one.
@@ -76,7 +85,7 @@ _STATS = (
 )
 
 
-def _case(rng: random.Random, index: int) -> dict[str, Any]:
+def _case(rng: random.Random, index: int, *, mixed: bool = False) -> dict[str, Any]:
     """One randomised build-and-hit, plus what the Python chain says it does."""
     channel = rng.choice(tags.DAMAGE_CHANNELS)
     scaling = rng.choice(list(ScalingStat))
@@ -113,6 +122,13 @@ def _case(rng: random.Random, index: int) -> dict[str, Any]:
             round(rng.uniform(0, 0.4), 4) if rng.random() < _P_REACTION_BONUS else 0.0
         ),
     )
+    if mixed:
+        # Drawn only for mixed cases, which come from their own RNG — so the first 2,000
+        # cases stay byte-identical to the file before P0.
+        hit = replace(hit, extra_terms=(ScalingTerm(
+            rng.choice([stat for stat in ScalingStat if stat is not scaling]),
+            round(rng.uniform(0.05, 4.0), 4),
+        ),))
 
     # Resistance sweeps all three branches of the curve, including the 0.75 boundary this
     # repo deliberately treats as continuous (CROSSVAL_gcsim.md).
@@ -143,20 +159,28 @@ def _case(rng: random.Random, index: int) -> dict[str, Any]:
         registry=log.registry, enemy=enemy, character_level=character_level,
     ).evaluate(hit)
 
+    serialised_hit: dict[str, Any] = {
+        "multiplier": hit.multiplier,
+        "channel": hit.channel,
+        "scope": hit.scope,
+        "scaling_stat": hit.scaling_stat.value,
+        "flat_damage": hit.flat_damage,
+        "base_damage_bonus": hit.base_damage_bonus,
+        "amplifying": hit.amplifying.value if hit.amplifying else None,
+        "reaction_bonus": hit.reaction_bonus,
+    }
+    if mixed:
+        # Only on mixed cases, so the pre-P0 cases diff by nothing at all. Readers take an
+        # absent key as no extra terms.
+        serialised_hit["extra_terms"] = [
+            {"stat": term.stat.value, "multiplier": term.multiplier}
+            for term in hit.extra_terms
+        ]
     return {
-        "id": f"case-{index:04d}",
+        "id": f"mixed-{index:04d}" if mixed else f"case-{index:04d}",
         "stats": stats,
         "dmg_bonus": {"channel": channel, "value": dmg_bonus},
-        "hit": {
-            "multiplier": hit.multiplier,
-            "channel": hit.channel,
-            "scope": hit.scope,
-            "scaling_stat": hit.scaling_stat.value,
-            "flat_damage": hit.flat_damage,
-            "base_damage_bonus": hit.base_damage_bonus,
-            "amplifying": hit.amplifying.value if hit.amplifying else None,
-            "reaction_bonus": hit.reaction_bonus,
-        },
+        "hit": serialised_hit,
         "enemy": {
             "level": enemy.level,
             "resistance": resistance,
@@ -172,9 +196,11 @@ def _case(rng: random.Random, index: int) -> dict[str, Any]:
     }
 
 
-def generate(count: int = 2000) -> dict[str, Any]:
-    """The full case set, deterministically."""
+def generate(count: int = 2000, mixed: int = MIXED_CASES) -> dict[str, Any]:
+    """The full case set, deterministically: `count` ordinary cases, then `mixed` cases
+    whose hit carries a second scaling term, from a second seed."""
     rng = random.Random(SEED)  # noqa: S311 - reproducible fixtures, not a security decision
+    mixed_rng = random.Random(MIXED_SEED)  # noqa: S311 - as above
     return {
         "note": (
             "Expected values produced by this repo's Python damage chain, which "
@@ -183,7 +209,8 @@ def generate(count: int = 2000) -> dict[str, Any]:
             "chain's answers changed and should be reviewed as one."
         ),
         "seed": SEED,
-        "cases": [_case(rng, i) for i in range(count)],
+        "cases": [_case(rng, i) for i in range(count)]
+        + [_case(mixed_rng, i, mixed=True) for i in range(mixed)],
     }
 
 

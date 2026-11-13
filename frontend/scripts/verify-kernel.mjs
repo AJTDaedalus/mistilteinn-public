@@ -26,10 +26,19 @@ const SCALING = {
   def: ['base_def', 'def_pct', 'flat_def'],
 };
 
-function scalingValue(c) {
-  if (c.hit.scaling_stat === 'elemental_mastery') return c.stats.elemental_mastery;
-  const [base, pct, flat] = SCALING[c.hit.scaling_stat];
+function statValue(c, stat) {
+  if (stat === 'elemental_mastery') return c.stats.elemental_mastery;
+  const [base, pct, flat] = SCALING[stat];
   return resolveStat(c.stats[base], c.stats[pct], c.stats[flat]);
+}
+
+function scalingValue(c) {
+  return statValue(c, c.hit.scaling_stat);
+}
+
+// A mixed-stat hit (math-fallback P0) carries `extra_terms`; the pre-P0 cases omit the key.
+function extraTerms(c) {
+  return c.hit.extra_terms ?? [];
 }
 
 function run(c) {
@@ -41,8 +50,10 @@ function run(c) {
       baseDamageBonus: c.hit.base_damage_bonus,
       amplifying: c.hit.amplifying,
       reactionBonus: c.hit.reaction_bonus,
+      extraTerms: extraTerms(c),
     },
     scalingValue: scalingValue(c),
+    extraScalingValues: extraTerms(c).map((t) => statValue(c, t.stat)),
     dmgBonus: c.dmg_bonus.value,
     critRate: c.stats.crit_rate,
     critDmg: c.stats.crit_dmg,

@@ -12,8 +12,13 @@
  * would be slower than the CPU, not faster.
  */
 
-/** Field count per case. 16 rather than 15 so cases start on 64-byte boundaries. */
-export const CASE_STRIDE = 16;
+/**
+ * Field count per case. Was 16 (15 fields and a pad, for 64-byte boundaries); 17 fields since
+ * a hit can carry a second scaling term (math-fallback P0), padded to 20. The alignment was a
+ * read-contiguity nicety, never a correctness requirement — WGSL aligns `f32` to 4 bytes —
+ * and this kernel has no caller yet to measure the difference on.
+ */
+export const CASE_STRIDE = 20;
 
 /** Byte offsets into a case, in `Float32Array` element indices. Mirrors `Case` in the WGSL. */
 export const FIELD = {
@@ -33,6 +38,12 @@ export const FIELD = {
   /** The reaction's own multiplier, or 0 for none. See the WGSL on why not an enum. */
   amplifyingMultiplier: 13,
   reactionBonus: 14,
+  /**
+   * A mixed-stat hit's second term (`damage.ts:ScalingTerm`), multiplier and resolved stat.
+   * 0 and 0 for a single-stat hit. One term, because that is the most any catalogue row has.
+   */
+  extraMultiplier: 15,
+  extraScalingValue: 16,
 } as const;
 
 /** `GPUBufferUsage` / `GPUMapMode` are not globals outside a browser, so the spec values. */

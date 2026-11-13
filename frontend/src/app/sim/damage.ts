@@ -48,6 +48,18 @@ export const AMPLIFYING_MULTIPLIER = {
 
 export type Amplifying = keyof typeof AMPLIFYING_MULTIPLIER;
 
+/**
+ * One further `multiplier x stat` part of a hit. `damage.py:ScalingTerm`.
+ *
+ * Nahida's Tri-Karma Purification is `ATK x a + EM x b` in **one** instance of damage. gcsim
+ * writes the second part as `FlatDmg` (`nahida/skill.go:219-220`), so it enters the base
+ * where flat damage does: after `baseDamageBonus`, before the DMG bonus.
+ */
+export interface ScalingTerm {
+  stat: ScalingStat;
+  multiplier: number;
+}
+
 export interface Hit {
   multiplier: number;
   scalingStat: ScalingStat;
@@ -55,6 +67,8 @@ export interface Hit {
   baseDamageBonus: number;
   amplifying: Amplifying | null;
   reactionBonus: number;
+  /** A mixed-stat hit's further terms. Absent or empty for every single-stat hit. */
+  extraTerms?: readonly ScalingTerm[];
 }
 
 export interface Target {
@@ -132,6 +146,8 @@ export function resolveStat(base: number, percent: number, flat: number): number
 export interface DamageInputs {
   hit: Hit;
   scalingValue: number;
+  /** The resolved stat for each of `hit.extraTerms`, in order. One per term. */
+  extraScalingValues?: readonly number[];
   dmgBonus: number;
   critRate: number;
   critDmg: number;
@@ -150,9 +166,25 @@ export interface DamageInputs {
  */
 export function computeDamage(inputs: DamageInputs): number {
   const { hit, target } = inputs;
+  const terms = hit.extraTerms ?? [];
+  const values = inputs.extraScalingValues ?? [];
+  if (values.length !== terms.length) {
+    // `damage.py:compute_damage` refuses the same thing: pairing them short drops a term's
+    // damage and still returns a number.
+    throw new Error(
+      `the hit has ${terms.length} extra scaling term(s) and ${values.length} value(s) ` +
+        `were resolved for them`,
+    );
+  }
+
+  // Each extra term is `f(multiplier * stat)`, summed in f32 — the order the WGSL computes in.
+  let extra = 0;
+  terms.forEach((term, i) => {
+    extra = f(extra + f(f(term.multiplier) * f(values[i])));
+  });
 
   let value = f(
-    f(f(f(hit.multiplier) * f(inputs.scalingValue)) * f(1 + hit.baseDamageBonus)) +
+    f(f(f(f(hit.multiplier) * f(inputs.scalingValue)) * f(1 + hit.baseDamageBonus)) + extra) +
       hit.flatDamage,
   );
   value = f(value * f(1 + inputs.dmgBonus));

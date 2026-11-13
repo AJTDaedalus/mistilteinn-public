@@ -35,7 +35,14 @@
  * wired up.
  */
 
-import { type DamageInputs, type Hit, type Target, computeDamage, resolveStat } from './damage';
+import {
+  type DamageInputs,
+  type Hit,
+  type ScalingStat,
+  type Target,
+  computeDamage,
+  resolveStat,
+} from './damage';
 
 /** The five slots, in game order. Mirrors `artifact_optimizer.SLOTS`. */
 export const SLOTS = [
@@ -207,6 +214,13 @@ function sum(pools: readonly Readonly<Record<string, number>>[], quantity: strin
   return total;
 }
 
+/** One scaling stat's resolved value over the pools — EM is a plain sum, the rest compose. */
+function scalingValueOf(stat: ScalingStat, pools: readonly Readonly<Record<string, number>>[]): number {
+  if (stat === 'elemental_mastery') return sum(pools, 'elemental_mastery');
+  const [base, pct, flat] = SCALING_PARTS[stat];
+  return resolveStat(sum(pools, base), sum(pools, pct), sum(pools, flat));
+}
+
 /**
  * Which quantities can change this hit's damage.
  *
@@ -221,10 +235,12 @@ function sum(pools: readonly Readonly<Record<string, number>>[], quantity: strin
  */
 export function liveQuantities(context: SearchContext): string[] {
   const live = new Set<string>(['crit_rate', 'crit_dmg', context.dmgBonusQuantity]);
-  if (context.hit.scalingStat === 'elemental_mastery') {
-    live.add('elemental_mastery');
-  } else {
-    for (const q of SCALING_PARTS[context.hit.scalingStat]) live.add(q);
+  // Every term's stat, not only the first: a mixed-stat hit (`# ATK+# Elemental Mastery`)
+  // gains from EM even though its first term is ATK, and pruning on ATK alone would drop
+  // the piece that wins.
+  for (const stat of [context.hit.scalingStat, ...(context.hit.extraTerms ?? []).map((t) => t.stat)]) {
+    if (stat === 'elemental_mastery') live.add('elemental_mastery');
+    else for (const q of SCALING_PARTS[stat]) live.add(q);
   }
   // EM only matters to damage when a reaction reads it.
   if (context.hit.amplifying !== null) live.add('elemental_mastery');
@@ -341,18 +357,10 @@ function score(
     }
   }
 
-  const scalingValue =
-    context.hit.scalingStat === 'elemental_mastery'
-      ? sum(pools, 'elemental_mastery')
-      : resolveStat(
-          sum(pools, SCALING_PARTS[context.hit.scalingStat][0]),
-          sum(pools, SCALING_PARTS[context.hit.scalingStat][1]),
-          sum(pools, SCALING_PARTS[context.hit.scalingStat][2]),
-        );
-
   const inputs: DamageInputs = {
     hit: context.hit,
-    scalingValue,
+    scalingValue: scalingValueOf(context.hit.scalingStat, pools),
+    extraScalingValues: (context.hit.extraTerms ?? []).map((t) => scalingValueOf(t.stat, pools)),
     dmgBonus: sum(pools, context.dmgBonusQuantity),
     critRate: sum(pools, 'crit_rate'),
     critDmg: sum(pools, 'crit_dmg'),
