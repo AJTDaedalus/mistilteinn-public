@@ -8,23 +8,30 @@ The simulator this project runs **in the user's browser** (DESIGN_client_optimiz
 | **Commit** | the single pin in `docs/CROSSVAL_gcsim.md` — never restated here |
 | **Target** | `GOOS=js GOARCH=wasm ./cmd/wasm` — upstream's own browser binding |
 | **Build** | `./scripts/build-gcsim-wasm.sh` |
-| **Notices** | `gcsim.LICENSE.txt` (gcsim's own) and `go.LICENSE.txt` (Go's, for `wasm_exec.js`), written by the build and served beside the artifacts |
+| **Notices** | `gcsim.LICENSE.txt` (gcsim's own, AGPLv3), `gcsim-mit.LICENSE.txt` (gcsim's retained MIT notice) and `go.LICENSE.txt` (Go's, for `wasm_exec.js`), written by the build and served beside the artifacts |
+| **Provenance** | `BUILT_FROM`, the commit built — served too, and read by `/about` to link gcsim's source at exactly that commit |
 
 ## The licence travels with the artifact
 
 Both files are downloaded into every visitor's browser, which is redistribution, and both
-licences require their notice to be retained. gcsim's is MIT **at this pin**; `wasm_exec.js`
-is Go's, BSD-3-Clause, and is the easier one to miss because neither this project nor gcsim
-wrote it. The build writes both beside the artifacts, `angular.json` copies them into the
+licences require their notice to be retained. gcsim's is **AGPLv3 at this pin**, with its MIT
+notice retained for code contributed before the relicence — so two files, and both ship;
+`wasm_exec.js` is Go's, BSD-3-Clause, and is the easier one to miss because neither this
+project nor gcsim wrote it. The build writes both beside the artifacts, `angular.json` copies them into the
 bundle, and the production image **refuses to build** if either is missing — an asset glob
 that matches nothing otherwise succeeds silently, which is exactly how this bundle once
 shipped with no simulator at all.
 
 **gcsim relicensed to AGPLv3 on 2026-09-19** (`05f01a733`), whose §13 covers network use.
-The pin is a release the MIT terms still cover, deliberately. A future re-pin that crosses
-the relicence is not a routine bump: it changes what this site owes its visitors, and
-`tests/unit/test_gcsim_licence_ships_with_the_wasm.py` is where that reasoning is written
-down.
+The pin stayed on v2.47.2, the last MIT release, until the owner decided to cross that line;
+**v2.50.0 crosses it (2026-11-13)**. What that obliges — the notices here, and a source offer
+on every page of the site — is in `docs/CROSSVAL_gcsim.md` §The pin and `docs/DECISIONS.md`
+§37, and `tests/unit/test_gcsim_licence_ships_with_the_wasm.py` holds the build to it.
+
+**`wasm_exec.js` must come from the toolchain that built the wasm.** The build asks
+`go env GOROOT` from *inside* the gcsim clone: with `GOTOOLCHAIN=auto` and a host Go older
+than gcsim's `go.mod`, asking from anywhere else named the host's GOROOT, and the loader
+shipped from Go 1.23 beside a binary from Go 1.27 (found at the v2.50.0 re-pin).
 
 ## Why the artifact is not committed
 

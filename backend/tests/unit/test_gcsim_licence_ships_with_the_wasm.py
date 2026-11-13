@@ -3,10 +3,12 @@
 This site downloads `gcsim.wasm` and `wasm_exec.js` into every visitor's browser. That is
 redistribution, and both licences require the notice to travel with the thing:
 
-- gcsim's own — MIT at the pin (`LICENSE` in its tree). gcsim relicensed to **AGPLv3** on
-  2026-09-19 (`05f01a733`), which is why `docs/CROSSVAL_gcsim.md` pins a release the MIT
-  terms still cover; if that pin ever crosses the relicence, this file's premise changes and
-  the notice that ships has to change with it.
+- gcsim's own — **AGPLv3 at the pin** (`LICENSE` in its tree), plus `LICENSE-MIT`, the
+  notice gcsim retains for code contributed before it relicensed on 2026-09-19
+  (`05f01a733`). The pin crossed that line at v2.50.0 by owner decision (2026-11-13,
+  `docs/CROSSVAL_gcsim.md` §The pin), so both files ship: the AGPL governs the binary as a
+  whole, and MIT still requires its own notice to travel with the parts it covers. The
+  source offer AGPL §13 asks for is in the app itself (the shell footer and `/about`).
 - **Go's**, BSD-3-Clause. `wasm_exec.js` is copied out of `GOROOT`, not out of gcsim — it
   belongs to the Go distribution, and it was the easier of the two to overlook because
   nothing in this repo or gcsim's wrote it.
@@ -29,7 +31,7 @@ BUILD_SCRIPT = REPO / "frontend" / "scripts" / "build-gcsim-wasm.sh"
 DOCKERFILE = REPO / "frontend" / "Dockerfile.prod"
 ANGULAR = REPO / "frontend" / "angular.json"
 
-NOTICES = ("gcsim.LICENSE.txt", "go.LICENSE.txt")
+NOTICES = ("gcsim.LICENSE.txt", "gcsim-mit.LICENSE.txt", "go.LICENSE.txt")
 
 
 @pytest.mark.parametrize("notice", NOTICES)
@@ -71,3 +73,22 @@ def test_angular_copies_the_notices_into_the_bundle():
         "the notices are written into frontend/gcsim/ but nothing copies them into the "
         "bundle, so the deployed site would serve the simulator without them"
     )
+
+
+@pytest.mark.parametrize("source", ["LICENSE", "LICENSE-MIT"])
+def test_both_of_gcsims_licence_files_are_copied(source: str):
+    """AGPLv3 at the pin, with the MIT notice retained — dropping either is a licence breach.
+
+    Asserted on the copy line rather than on the output name, because a script that wrote
+    `gcsim-mit.LICENSE.txt` from `LICENSE` would pass the name checks above and ship the
+    AGPL twice and the MIT notice never.
+    """
+    for path in (BUILD_SCRIPT, DOCKERFILE):
+        # Go's own `LICENSE` is copied out of GOROOT on a line of its own; it is not gcsim's.
+        lines = [
+            ln for ln in path.read_text().splitlines()
+            if ln.strip().startswith("cp ") and "GOROOT" not in ln
+        ]
+        assert any(f"{source} " in ln or f'{source}"' in ln for ln in lines), (
+            f"{path.name} no longer copies gcsim's {source}"
+        )

@@ -1,8 +1,9 @@
 # Third-party notices
 
-Mistilteinn is licensed under the GNU Affero General Public License v3.0 (`LICENSE`). It
-includes, or is built from, the following MIT-licensed work. The MIT licence requires its
-notice to be kept with copies, which is what this file is for.
+Mistilteinn is licensed under the GNU Affero General Public License v3.0 or later
+(`LICENSE`). It includes, or is built from, the following third-party work: MIT-licensed code
+whose licence requires its notice to be kept with copies, and gcsim, which is AGPLv3. This
+file is where those notices are kept.
 
 **Not covered by this repository's licence:** Genshin Impact's names, data and art belong to
 HoYoverse. The art is not in this repository: `backend/scripts/download_icons.py` fetches it
@@ -56,10 +57,38 @@ SOFTWARE.
 ## gcsim
 
 The browser simulator, `gcsim.wasm`, is built from <https://github.com/genshinsim/gcsim> at
-`caf738dc807a646e2eee7e7b572f225dd6deb510` (v2.47.2), unmodified. The build is
-`frontend/scripts/build-gcsim-wasm.sh` and `frontend/Dockerfile.prod`. It is not vendored
-here, and the production bundle ships this notice beside the binary as
-`gcsim/gcsim.LICENSE.txt`.
+`b107b5dc5cb88977bed5270e5d83e64934730d4d` (release v2.50.0), **unmodified**. Its
+Corresponding Source is that commit:
+<https://github.com/genshinsim/gcsim/tree/b107b5dc5cb88977bed5270e5d83e64934730d4d>. The build
+is `frontend/scripts/build-gcsim-wasm.sh` and `frontend/Dockerfile.prod`, which read the pin
+from `docs/CROSSVAL_gcsim.md`; the binary is not vendored here.
+
+**gcsim is licensed under the GNU Affero General Public License v3.0** (or, at your option, any
+later version), effective 2026-09-19. This repository pinned past that relicence on
+2026-11-13 by the owner's decision (`docs/DECISIONS.md` §37). The production bundle ships
+gcsim's full `LICENSE` beside the binary as `gcsim/gcsim.LICENSE.txt`, and the site offers the
+source of both gcsim and this repository on every page, as AGPL §13 requires.
+
+gcsim's own notice, from the head of its `LICENSE` at the pin:
+
+```
+gcsim
+Copyright (c) 2021 The gcsim contributors
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+gcsim is licensed under the AGPLv3 effective 2026-09-19. Released versions up
+to and including v2.47.2 were licensed under the MIT License; see LICENSE-MIT.
+Code originally contributed under the MIT License remains available under those
+terms, and its MIT notice is retained per that license's requirements.
+```
+
+**The MIT notice stays**, because code contributed before the relicence carries it and MIT
+requires it to be kept. gcsim's `LICENSE-MIT` ships beside the binary as
+`gcsim/gcsim-mit.LICENSE.txt`; its licence text is:
 
 ```
 MIT License

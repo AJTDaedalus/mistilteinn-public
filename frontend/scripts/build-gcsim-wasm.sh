@@ -51,9 +51,14 @@ printf '%s\n' "$PIN" > "$OUT/BUILT_FROM"
 
 # The notices travel with the artifacts. We serve both files to every visitor, and both carry
 # licences that require their notice to be retained when they are redistributed: gcsim's own
-# (MIT at the pin) and Go's (BSD-3-Clause), because `wasm_exec.js` is part of the Go
-# distribution rather than anything gcsim or this project wrote.
+# and Go's (BSD-3-Clause), because `wasm_exec.js` is part of the Go distribution rather than
+# anything gcsim or this project wrote.
+#
+# gcsim's is **two files from v2.50.0 on**: `LICENSE` is the AGPLv3 the project has been under
+# since 2026-09-19, and `LICENSE-MIT` is the notice MIT requires to be kept for the code that
+# was contributed under it. Both ship; `docs/CROSSVAL_gcsim.md` §The pin says why.
 cp "$SRC/LICENSE" "$OUT/gcsim.LICENSE.txt"
+cp "$SRC/LICENSE-MIT" "$OUT/gcsim-mit.LICENSE.txt"
 cp "$GOROOT_USED/LICENSE" "$OUT/go.LICENSE.txt"
 
 echo "wrote $OUT/gcsim.wasm ($(du -h "$OUT/gcsim.wasm" | cut -f1)) at $PIN"
