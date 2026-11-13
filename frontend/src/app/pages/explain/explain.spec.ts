@@ -48,6 +48,36 @@ function healthy(explain: Partial<ExplainService> = {}, builds: Partial<BuildsSe
   );
 }
 
+describe('ExplainPage refused hits', () => {
+  // Owner, 2026-11-13: a row the parser refuses is shown, greyed, never offered.
+  const REFUSED = [{
+    talent: 'elemental_burst', label: 'Echo DMG', spec: '{param3:F1P} Normal Attack DMG',
+    reason: "a multiple of the character's Normal Attack DMG, not of a stat",
+  }];
+
+  it('loads them beside the hits without disturbing the offered indices', async () => {
+    const page = healthy({
+      refusedHits: vi.fn().mockResolvedValue(REFUSED),
+    } as unknown as ExplainService);
+    await page['load']();
+    await page['selectBuild']('b1');
+
+    expect(page['refusedHits']()).toEqual(REFUSED);
+    expect(page['hits']()).toEqual(HITS);
+  });
+
+  it('ignores a pick that is not an offered index', async () => {
+    const page = healthy();
+    await page['load']();
+    await page['selectBuild']('b1');
+    page['pickHit']('1');
+
+    page['pickHit']('Elemental burst · Echo DMG · not scored');
+
+    expect(page['hitIndex']()).toBe(1);
+  });
+});
+
 describe('enumLabel', () => {
   it('reads the enum value as a person would write it', () => {
     expect(enumLabel('elemental_burst')).toBe('Elemental burst');

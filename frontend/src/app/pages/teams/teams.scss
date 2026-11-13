@@ -131,6 +131,9 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+
+  // A column stretches its children; the badge is a pill and keeps its own width.
+  gcsim-badge { align-self: flex-start; }
 }
 
 .party__name {

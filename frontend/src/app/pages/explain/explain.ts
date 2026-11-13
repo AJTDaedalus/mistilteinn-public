@@ -8,6 +8,7 @@ import { ElementChip } from '../../shared/element/element';
 import { CatalogueIcon } from '../../shared/icon/icon';
 import { scalingLabel } from '../../shared/scaling-label';
 import { EntityToken } from '../../shared/token/token';
+import { RefusedHits, type RefusedHit } from '../../shared/refused-hits/refused-hits';
 import { BuildsService, type BuildRead } from '../builds/builds.service';
 import {
   ExplainService,
@@ -54,7 +55,9 @@ export function enumLabel(value: string): string {
  */
 @Component({
   selector: 'page-explain',
-  imports: [FormsModule, RouterLink, DecimalPipe, CatalogueIcon, ElementChip, EntityToken],
+  imports: [
+    FormsModule, RouterLink, DecimalPipe, CatalogueIcon, ElementChip, EntityToken, RefusedHits,
+  ],
   templateUrl: './explain.html',
   styleUrl: './explain.scss',
 })
@@ -72,6 +75,8 @@ export class ExplainPage implements OnInit {
 
   protected readonly builds = signal<BuildRead[]>([]);
   protected readonly hits = signal<AvailableHit[]>([]);
+  /** Damage rows the parser refuses: disabled in the picker, reasons listed below it. */
+  protected readonly refusedHits = signal<RefusedHit[]>([]);
   protected readonly result = signal<ExplainResponse | null>(null);
 
   protected readonly buildId = signal('');
@@ -90,6 +95,14 @@ export class ExplainPage implements OnInit {
     () => this.builds().find((b) => b.id === this.buildId()) ?? null,
   );
   protected readonly hit = computed(() => this.hits()[this.hitIndex()] ?? null);
+
+  /** The picker's change, ignoring a refused row's disabled option — it has no index. */
+  protected pickHit(value: unknown): void {
+    const index = Number(value);
+    if (Number.isInteger(index) && index >= 0 && index < this.hits().length) {
+      this.hitIndex.set(index);
+    }
+  }
   protected readonly canScore = computed(
     () => this.hit() !== null && !this.scoring(),
   );
@@ -122,6 +135,7 @@ export class ExplainPage implements OnInit {
   protected async selectBuild(id: string): Promise<void> {
     this.buildId.set(id);
     this.hits.set([]);
+    this.refusedHits.set([]);
     this.hitIndex.set(0);
     this.result.set(null);
     this.actionError.set(null);
@@ -129,6 +143,7 @@ export class ExplainPage implements OnInit {
     try {
       const hits = await this.explainService.hits(id);
       this.hits.set(hits);
+      this.refusedHits.set((await this.explainService.refusedHits?.(id)) ?? []);
       // The element the character deals is the sensible default channel, and it is on the
       // row already — no second request, and no table of character-to-element here.
       const element = this.builds().find((b) => b.id === id)?.character?.element;

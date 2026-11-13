@@ -164,6 +164,20 @@ class Character(TimestampMixin, Base):
         # the phase-gated ones; `nanoka_id` breaks the tie so the order is total.
         order_by="AscensionPassive.unlock_ascension, AscensionPassive.nanoka_id",
     )
+    attacks: Mapped[list[CharacterAttack]] = relationship(
+        lazy=GUARDED_LAZY,
+        back_populates="character",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="CharacterAttack.position",
+    )
+    energy_drops: Mapped[list[CharacterEnergyDrop]] = relationship(
+        lazy=GUARDED_LAZY,
+        back_populates="character",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="CharacterEnergyDrop.position",
+    )
 
     def __repr__(self) -> str:
         return f"<Character {self.name} ({self.element or 'no vision'})>"
@@ -261,6 +275,14 @@ class Constellation(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     icon: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    #: The numbers the description renders inside `<color=…>` markup, verbatim from the
+    #: payload's `param_list` — trailing zeros included, because the payload pads every list
+    #: to a fixed width and trimming would be a reading of the data rather than the data.
+    #: Imported for the formula fallback (`TASKS_team_math_fallback.md` task 4); it was the
+    #: one numeric field the importer dropped while keeping the text that renders it.
+    param_list: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"),
+    )
 
     character: Mapped[Character] = relationship(back_populates="constellations")
 
@@ -311,9 +333,110 @@ class AscensionPassive(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     icon: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    #: The numbers the description renders inside `<color=…>` markup, verbatim from the
+    #: payload's `param_list` — trailing zeros included, because the payload pads every list
+    #: to a fixed width and trimming would be a reading of the data rather than the data.
+    #: Imported for the formula fallback (`TASKS_team_math_fallback.md` task 4); it was the
+    #: one numeric field the importer dropped while keeping the text that renders it.
+    param_list: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"),
+    )
 
     character: Mapped[Character] = relationship(back_populates="ascension_passives")
 
     def __repr__(self) -> str:
         gate = f"A{self.unlock_ascension}" if self.unlock_ascension is not None else "cond"
         return f"<AscensionPassive {self.name} ({gate})>"
+
+
+class CharacterAttack(TimestampMixin, Base):
+    """One entry of the payload's `attack[]`: a damage instance and how it applies.
+
+    **Per character, not per talent.** The payload lists them flat and names no talent; the
+    only link is `damage_param`, which is sometimes the internal name of a talent row
+    (`"Ayaka_ExtraAttack_Damage"`), sometimes a bare multiplier, sometimes a list and
+    sometimes null. Nothing here resolves that link, so it is stored as published (JSONB)
+    and the reading of it is left to whoever needs it (DESIGN_team_math_fallback.md P3).
+
+    **`element` is the game's internal spelling, not `Element`.** The payload says `Fire`,
+    `Ice`, `Electric`, `None`, and spellings that are not a vision at all (`AntiFire`).
+    Mapping them here would be a decision about what `AntiFire` means made in an importer;
+    absent a cited mapping it stays verbatim, the same rule `Data Values` sets for fractions.
+    """
+
+    __tablename__ = "character_attacks"
+    __table_args__ = (
+        UniqueConstraint(
+            "character_id", "position", name="uq_character_attacks_character_id_position",
+        ),
+    )
+
+    id: Mapped[uuid_pk]
+    character_id: Mapped[str] = mapped_column(
+        ForeignKey("characters.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+    #: The entry's index in `attack[]`, from 0. The payload repeats identical entries
+    #: (Ayaka's charged attack is three), so position is the only identity a row has.
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    element: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    icd_tag: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    icd_group: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    #: Elemental gauge units, as published. Null when the payload says null.
+    gauge: Mapped[float | None] = mapped_column(Float, nullable=True)
+    poise_level: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    poise_value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    attack_type: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    strike_type: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    #: A string, a number, a list or null in the payload, and kept as whichever it was.
+    damage_param: Mapped[object | None] = mapped_column(JSONB, nullable=True)
+
+    character: Mapped[Character] = relationship(back_populates="attacks")
+
+    def __repr__(self) -> str:
+        return f"<CharacterAttack #{self.position} {self.name} [{self.element}]>"
+
+
+class CharacterEnergyDrop(TimestampMixin, Base):
+    """One entry of the payload's `energy[]`: a particle drop a skill can produce.
+
+    The basis for a closed-form Energy Recharge estimate (G13), which nothing computes yet.
+    `per_drop` and `chance` are kept exactly as published — `chance` is a **percent** in the
+    payload (`50.0`), not a fraction, and it is not converted: converting on the way in would
+    make every later citation check a converted number (`backend/CLAUDE.md`, Data Values).
+    """
+
+    __tablename__ = "character_energy_drops"
+    __table_args__ = (
+        UniqueConstraint(
+            "character_id", "position", name="uq_character_energy_drops_character_id_position",
+        ),
+    )
+
+    id: Mapped[uuid_pk]
+    character_id: Mapped[str] = mapped_column(
+        ForeignKey("characters.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    #: The internal name of the skill that drops it (`Icespine_Strike_New`), verbatim.
+    skill: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    kind: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    #: A vision name here (`Cryo`), unlike `CharacterAttack.element`; still stored verbatim.
+    element: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    per_drop: Mapped[float | None] = mapped_column(Float, nullable=True)
+    lifetime: Mapped[float | None] = mapped_column(Float, nullable=True)
+    chance: Mapped[float | None] = mapped_column(Float, nullable=True)
+    #: Seconds between drops. **Eight entries at 7.2.51 publish a name here instead** (`CD`,
+    #: `CDTime`, `DropBall_CD`) — a reference into a skill's own parameters, like
+    #: `CharacterAttack.damage_param`. That goes to `cd_ref` and leaves this null, rather than
+    #: one column holding two kinds of thing.
+    cd: Mapped[float | None] = mapped_column(Float, nullable=True)
+    cd_ref: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    applications: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    drop_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    character: Mapped[Character] = relationship(back_populates="energy_drops")
+
+    def __repr__(self) -> str:
+        return f"<CharacterEnergyDrop #{self.position} {self.skill} {self.per_drop}>"

@@ -28,7 +28,7 @@ class ArtifactSetRepository(BaseRepository[ArtifactSet]):
         return stmt
 
     async def search(
-        self, *, name: str | None = None, offset: int = 0, limit: int = 100,
+        self, *, name: str | None = None, offset: int = 0, limit: int | None = 100,
     ) -> Sequence[ArtifactSet]:
         """Filtered, paginated list, each set with its affixes.
 

@@ -539,6 +539,42 @@ async def _burst_row(
     await db.flush()
 
 
+@pytest.mark.asyncio
+async def test_a_refused_row_is_published_beside_the_hits_and_never_in_them(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """Owner, 2026-11-13: refused rows must not vanish from the pickers. `/hits` keeps its
+    promise — everything in it is accepted — and `/hits/refused` carries the rest."""
+    user, _ = authed_user
+    character, weapon, sets = await _catalogue(db_session)
+    await _burst_row(
+        db_session, character,
+        ["Skill DMG|{param1:P}", "Echo DMG|{param2:F1P} Normal Attack DMG"], [1.5, 0.4],
+    )
+    build = await _build_with_five(db_session, user, character, weapon, sets)
+    build.talent_levels = {"elemental_burst": 9}
+    await db_session.flush()
+
+    offered = (await client.get(
+        f"/api/v1/builds/{build.id}/hits", headers=_auth(authed_user),
+    )).json()
+    refused = await client.get(
+        f"/api/v1/builds/{build.id}/hits/refused", headers=_auth(authed_user),
+    )
+
+    assert [h["label"] for h in offered] == ["Skill DMG"]
+    assert refused.status_code == 200, refused.text
+    body = refused.json()
+    assert [(r["talent"], r["label"]) for r in body] == [("elemental_burst", "Echo DMG")]
+    assert "Normal Attack DMG" in body[0]["reason"]
+
+    asked = await client.post(
+        f"/api/v1/builds/{build.id}/explain", headers=_auth(authed_user),
+        json=_explain_body({"talent": {"talent": "elemental_burst", "label": "Echo DMG"}}),
+    )
+    assert asked.status_code == 422, "a refused row must stay unscoreable"
+
+
 def _explain_body(hit: dict) -> dict:
     return {"hit": {"channel": "cryo", "scope": "burst", **hit}, "enemy": {"level": 90}}
 

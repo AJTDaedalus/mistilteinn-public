@@ -76,6 +76,7 @@ from app.schemas.build import (
     KernelSetBonus,
     KernelTarget,
     RefusedCandidate,
+    RefusedHitRead,
     ScalingTermRead,
     SearchContextRead,
     SetEffectRead,
@@ -111,6 +112,7 @@ from app.services.stat_calculator import StatInputError
 from app.services.talent_hits import (
     TalentHitUnavailableError,
     available_hits,
+    refused_hits,
     resolve_talent_hit,
 )
 
@@ -365,6 +367,28 @@ async def build_hits(
             ],
         )
         for hit in available_hits(build.character, build.talent_levels or {})
+    ]
+
+
+@router.get("/{build_id}/hits/refused", response_model=list[RefusedHitRead])
+async def build_refused_hits(
+    build_id: str,
+    builds: Annotated[BuildRepository, Depends(get_owned_build_repo)],
+) -> list[RefusedHitRead]:
+    """The damage rows this build's talents carry that cannot be scored, each with its reason.
+
+    **A sibling of `/hits`, not entries in it.** `/hits` promises that everything it lists is
+    something `HitSpec` accepts, and every consumer relies on that — the search context, the
+    explain call, the kernels. Folding refusals into it would break that promise for every
+    client that does not know to skip them. Here they are published for the pickers to show
+    greyed out (owner, 2026-11-13), from the same rows at the same levels.
+    """
+    build = await _require_full_build(builds, build_id)
+    if build.character is None:
+        return []
+    return [
+        RefusedHitRead(talent=r.talent, label=r.label, spec=r.spec, reason=r.reason)
+        for r in refused_hits(build.character, build.talent_levels or {})
     ]
 
 

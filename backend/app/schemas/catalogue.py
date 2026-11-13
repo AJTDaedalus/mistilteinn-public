@@ -40,9 +40,40 @@ from typing import Any
 from pydantic import BaseModel, computed_field
 
 from app.models.enums import Element, Rarity, StatType, WeaponType
-from app.services import element_symbols, traveler, weapon_symbols
+from app.services import element_symbols, gcsim_status, traveler, weapon_symbols
+from app.services.gcsim_status import GcsimSupport
 
 _FROM_ORM = {"from_attributes": True}
+
+
+class GcsimStatusRead(BaseModel):
+    """What gcsim can simulate of this entry, at the pin — computed on read (D-F1).
+
+    `app/services/gcsim_status.py` defines the three statuses and why weapons and sets only
+    ever take two of them. Published so the catalogue, the team builder and the optimizers
+    know *before* a search what used to surface only as a 422 after one.
+    """
+
+    status: GcsimSupport
+    #: gcsim's own key (`nahida`, `aetherpyro`), or null when it has none.
+    key: str | None = None
+    #: The gcsim commit the answer was read from (`gcsim_keys.pinned_commit()`).
+    pin: str
+    #: `partial` only: the moves the game gives this character that gcsim does not implement.
+    missing_actions: list[str] = []
+    #: `none` only: gcsim_keys' refusal, verbatim — the sentence a search would have failed with.
+    reason: str | None = None
+
+    @classmethod
+    def of(cls, status: gcsim_status.GcsimStatus) -> GcsimStatusRead:
+        """The wire shape of `gcsim_status`'s answer."""
+        return cls(
+            status=status.status,
+            key=status.key,
+            pin=status.pin,
+            missing_actions=list(status.missing_actions),
+            reason=status.reason,
+        )
 
 
 # ---- Characters ------------------------------------------------------------
@@ -80,6 +111,8 @@ class ConstellationRead(BaseModel):
     name: str
     description: str
     icon: str | None = None
+    #: The numbers the description renders, verbatim and padded as the payload pads them.
+    param_list: list[Any] = []
 
     model_config = _FROM_ORM
 
@@ -97,6 +130,51 @@ class AscensionPassiveRead(BaseModel):
     name: str
     description: str
     icon: str | None = None
+    #: The numbers the description renders, verbatim and padded as the payload pads them.
+    param_list: list[Any] = []
+
+    model_config = _FROM_ORM
+
+
+class CharacterAttackRead(BaseModel):
+    """One `attack[]` entry: a damage instance, its element, ICD and gauge, as published.
+
+    `element` is the game's internal spelling (`Fire`, `Electric`, `AntiFire`), not
+    `Element`, and `damage_param` is a string, a number, a list or null as the payload gave
+    it. `models/character.py:CharacterAttack` says why neither is interpreted here.
+    """
+
+    position: int
+    name: str
+    element: str | None = None
+    icd_tag: str | None = None
+    icd_group: str | None = None
+    gauge: float | None = None
+    poise_level: str | None = None
+    poise_value: float | None = None
+    attack_type: str | None = None
+    strike_type: str | None = None
+    damage_param: Any = None
+
+    model_config = _FROM_ORM
+
+
+class CharacterEnergyDropRead(BaseModel):
+    """One `energy[]` entry: a particle drop. `chance` is a **percent**, as published."""
+
+    position: int
+    name: str
+    skill: str | None = None
+    kind: str | None = None
+    element: str | None = None
+    per_drop: float | None = None
+    lifetime: float | None = None
+    chance: float | None = None
+    cd: float | None = None
+    #: Set instead of `cd` when the payload names a parameter rather than giving seconds.
+    cd_ref: str | None = None
+    applications: int | None = None
+    drop_id: int | None = None
 
     model_config = _FROM_ORM
 
@@ -214,6 +292,22 @@ class CharacterSummary(WeaponClassed):
         """
         return Rarity(self.rarity).stars
 
+    @computed_field
+    @property
+    def gcsim(self) -> GcsimStatusRead:
+        """Whether gcsim can simulate this character, and if not wholly, what it lacks.
+
+        **On the summary, not only on the detail**, because the surfaces that need it — the
+        catalogue grid, the team builder's slots (through `BuildRead.character`) — are lists.
+        Computed, like `display_name` beside it: D-F1 says a stored column goes stale at every
+        re-pin.
+        """
+        return GcsimStatusRead.of(
+            gcsim_status.for_character(
+                self.nanoka_id, self.name, self.element, self.weapon_type,
+            ),
+        )
+
 
 class CharacterRead(CharacterSummary):
     """A character in full: base stats, curves, ascension table, and the kit rows."""
@@ -237,6 +331,8 @@ class CharacterRead(CharacterSummary):
     talents: list[TalentRead] = []
     constellations: list[ConstellationRead] = []
     ascension_passives: list[AscensionPassiveRead] = []
+    attacks: list[CharacterAttackRead] = []
+    energy_drops: list[CharacterEnergyDropRead] = []
 
 
 # ---- Weapons ---------------------------------------------------------------
@@ -304,6 +400,12 @@ class WeaponSummary(WeaponClassed):
         """`5` for `five_star`. The card draws these; nobody reads `four_star`."""
         return Rarity(self.rarity).stars
 
+    @computed_field
+    @property
+    def gcsim(self) -> GcsimStatusRead:
+        """Whether gcsim has this weapon at the pin: `full` or `none`, never `partial`."""
+        return GcsimStatusRead.of(gcsim_status.for_weapon(self.name))
+
 
 class WeaponRead(WeaponSummary):
     """A weapon in full, with its growth curves and refinement rows."""
@@ -368,6 +470,16 @@ class ArtifactSetRead(BaseModel):
     simulable: bool = False
 
     model_config = _FROM_ORM
+
+    @computed_field
+    @property
+    def gcsim(self) -> GcsimStatusRead:
+        """The same answer as `simulable`, in the shape characters and weapons publish.
+
+        `simulable` stays — removing it would not be an additive change — and both are read
+        off one lookup, so they cannot disagree.
+        """
+        return GcsimStatusRead.of(gcsim_status.for_artifact_set(self.name))
 
 
 # ---- Enemies ---------------------------------------------------------------
