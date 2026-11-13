@@ -76,8 +76,8 @@
  "conditions": [
   {
    "key": "in_field",
-   "label": "Standing in Bennett's Inspiration Field",
    "kind": "toggle",
+   "label": "Standing in Bennett's Inspiration Field (above 70% HP below C1, assumed as GO does)",
    "default_by": "giver_is_subject",
    "go": "pando:Bennett.ts:90,93-94; wr:index.tsx:107-112"
   },
@@ -180,11 +180,6 @@
   }
  ],
  "unmodelled": [
-  {
-   "source": "talent",
-   "what": "the burst's ATK bonus needs the active character above 70% HP below C1",
-   "reason": "assumed met, as GO does: GO's sheet has no HP condition (pando:Bennett.ts:93-101); gcsim checks it (burst.go:120-126)"
-  },
   {
    "source": "talent",
    "what": "Fantastic Voyage healing",

@@ -586,7 +586,7 @@
             "conditions": [
               {
                 "key": "in_field",
-                "label": "Standing in Bennett's Inspiration Field",
+                "label": "Standing in Bennett's Inspiration Field (above 70% HP below C1, assumed as GO does)",
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
@@ -666,10 +666,6 @@
               }
             ],
             "unmodelled": [
-              {
-                "what": "TALENT: the burst's ATK bonus needs the active character above 70% HP below C1",
-                "reason": "assumed met, as GO does: GO's sheet has no HP condition (pando:Bennett.ts:93-101); gcsim checks it (burst.go:120-126)"
-              },
               {
                 "what": "TALENT: Fantastic Voyage healing",
                 "reason": "no damage effect: healing"
@@ -780,7 +776,7 @@
             "conditions": [
               {
                 "key": "in_field",
-                "label": "Standing in Bennett's Inspiration Field",
+                "label": "Standing in Bennett's Inspiration Field (above 70% HP below C1, assumed as GO does)",
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
@@ -814,10 +810,6 @@
               }
             ],
             "unmodelled": [
-              {
-                "what": "TALENT: the burst's ATK bonus needs the active character above 70% HP below C1",
-                "reason": "assumed met, as GO does: GO's sheet has no HP condition (pando:Bennett.ts:93-101); gcsim checks it (burst.go:120-126)"
-              },
               {
                 "what": "TALENT: Fantastic Voyage healing",
                 "reason": "no damage effect: healing"
