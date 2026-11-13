@@ -12,7 +12,7 @@ branch.
     total = base * (1 + pct) + flat
 
 for HP, ATK and DEF; every other stat is a single additive pool. Source: gcsim
-`pkg/core/attributes/stats.go:44-46` at the pin in `docs/CROSSVAL_gcsim.md`:
+`pkg/core/attributes/stats.go:49-51` at the pin in `docs/CROSSVAL_gcsim.md`:
 
     func (s Stats) MaxHP() float64    { return s[BaseHP]*(1+s[HPP]) + s[HP] }
     func (s Stats) TotalATK() float64 { return s[BaseATK]*(1+s[ATKP]) + s[ATK] }

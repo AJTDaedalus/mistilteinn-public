@@ -15,7 +15,7 @@ is how the branch gets written instead, because there is nothing to declare agai
 The value sets below are read from gcsim at the commit pinned in `docs/CROSSVAL_gcsim.md`
 (`3647a07a7cc3004bc1e79d9bb5f7444de20dceaa`), not from memory:
 
-* quantities — `pkg/core/attributes/stats.go:12-40` (the `Stat` constants)
+* quantities — `pkg/core/attributes/stats.go:14-43` (the `Stat` constants)
 * elements — `pkg/core/attributes/element.go:13-27` (the `Element` constants)
 * scopes — `pkg/core/attacks/attack.go:5-20` (the pre-reaction `AttackTag` constants)
 
@@ -85,13 +85,18 @@ DAMAGE_CHANNELS: tuple[str, ...] = (*VISIONS, "physical")
 #: multiply an existing hit rather than creating a tagged one of their own).
 #:
 #: The delimiter used to be `ReactionAttackStartDelim`; gcsim `387bbb936` removed the
-#: delimiters and `AttackTagNoneStat` ("ignore attacker stats delim", `attack.go:24`) now
+#: delimiters and `AttackTagNoneStat` ("ignore attacker stats delim", `attack.go:27`) now
 #: stands where it did. The **membership of this list did not change**, which is the part
 #: worth checking at a re-pin rather than the name.
 #:
 #: **`AttackTagRelicSkill` (`attack.go:15`) is new and deliberately absent.** It tags damage
 #: an artifact set deals in its own right, and nothing in this repo's chain produces one —
 #: the same reason the reaction tags are out. Add it here when something can emit it.
+#:
+#: v2.50.0 added three more *additional* tags after `AttackTagVarkaSpecial` —
+#: `WrioSSCN5`, `WrioSSCCA` and `SandroneBeam` (`attack.go:23-25`). Like Nightsoul and
+#: the other kit-specific tags beside them they are not scopes a buff gates on, so the
+#: membership below is unchanged again.
 #:
 #: `charged` is gcsim's `AttackTagExtra`; the community and the game's own UI call it a
 #: Charged Attack, and this repo's talent descriptions (`"Charged Attack DMG|{param8:F1P}"`,
@@ -108,7 +113,7 @@ SCOPES: tuple[str, ...] = (
 )
 
 #: Physical-damage interactions and shield-break multipliers key off *how* a hit lands, not
-#: what talent produced it. Source: gcsim `attack.go:87-95` (`StrikeType`), and the same
+#: what talent produced it. Source: gcsim `attack.go:90-98` (`StrikeType`), and the same
 #: vocabulary appears in the nanoka payloads' `attack[].strike_type` — one of the few places
 #: the two sources use identical spellings, which is why it is worth keeping.
 STRIKE_TYPES: tuple[str, ...] = ("default", "pierce", "blunt", "slash", "spear")

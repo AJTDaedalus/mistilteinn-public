@@ -123,7 +123,7 @@ export function critMultiplier(critRate: number, critDmg: number): number {
 
 /**
  * `base * (1 + pct) + flat` — the single-stage stat formula.
- * `backend/app/formula/genshin/stats.py`, cited to gcsim `stats.go:44-46`.
+ * `backend/app/formula/genshin/stats.py`, cited to gcsim `stats.go:49-51`.
  */
 export function resolveStat(base: number, percent: number, flat: number): number {
   return f(f(base * f(1 + percent)) + flat);

@@ -1,601 +1,601 @@
 {
-  "sim_version": "caf738dc807a646e2eee7e7b572f225dd6deb510",
+  "sim_version": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
   "config": "options iteration=1000 duration=90 swap_delay=0;\nenergy every interval=300,600 amount=1;\n\nkamisatoayaka char lvl=90/90 cons=0 talent=9,9,9;\nkamisatoayaka add weapon=\"mistsplitterreforged\" lvl=90/90 refine=1;\nkamisatoayaka add set=\"blizzardstrayer\" count=4;\nkamisatoayaka add stats atk%=0.464 cd=0.62 er=<swept>;\n\ntarget lvl=90 resist=0.1 pos=0,1;\n\nactive kamisatoayaka;\nwhile 1 {\n    if .kamisatoayaka.energy >= 80 {\n        kamisatoayaka burst;\n    }\n    kamisatoayaka skill;\n    kamisatoayaka attack:2;\n}\n",
   "note": "One run per whole ER percent from 100 to 153, 1000 iterations each. Only `er` varies; every other line is identical. `er` is the ER a character has ON TOP of gcsim's base 100%, so er_percent 120 is `er=0.20`.",
   "runs": [
     {
       "er_percent": 100,
       "iterations": 1000,
-      "dps_mean": 2002.771923539574,
-      "dps_sd": 150.77705149552494,
+      "dps_mean": 1999.6780568279344,
+      "dps_sd": 150.32853553139873,
       "burst_casts": 2,
       "burst_casts_mean": 2,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 101,
       "iterations": 1000,
-      "dps_mean": 2000.5788547984594,
-      "dps_sd": 152.28920979160452,
+      "dps_mean": 2005.882141482432,
+      "dps_sd": 157.47953317227356,
       "burst_casts": 2,
       "burst_casts_mean": 2,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 102,
       "iterations": 1000,
-      "dps_mean": 1999.1892386094562,
-      "dps_sd": 149.29552407442773,
+      "dps_mean": 2010.2151640784914,
+      "dps_sd": 150.33584536560747,
       "burst_casts": 2,
       "burst_casts_mean": 2,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 103,
       "iterations": 1000,
-      "dps_mean": 1998.8274066636748,
-      "dps_sd": 157.6362422645738,
+      "dps_mean": 1999.2925431789097,
+      "dps_sd": 153.0031278058171,
       "burst_casts": 2,
       "burst_casts_mean": 2,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 104,
       "iterations": 1000,
-      "dps_mean": 2006.6970490637425,
-      "dps_sd": 154.83676700541767,
+      "dps_mean": 2003.1581992269605,
+      "dps_sd": 155.8897406598281,
       "burst_casts": 2,
       "burst_casts_mean": 2,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 105,
       "iterations": 1000,
-      "dps_mean": 2011.2909918122855,
-      "dps_sd": 155.85422431470042,
+      "dps_mean": 2008.380429535875,
+      "dps_sd": 154.94338673735837,
       "burst_casts": 2,
       "burst_casts_mean": 2,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 106,
       "iterations": 1000,
-      "dps_mean": 2008.2612828302076,
-      "dps_sd": 162.7720042834863,
+      "dps_mean": 2000.3559968551315,
+      "dps_sd": 155.81038638028667,
       "burst_casts": 2,
       "burst_casts_mean": 2,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 107,
       "iterations": 1000,
-      "dps_mean": 2004.604102563101,
-      "dps_sd": 154.4088298075185,
+      "dps_mean": 2003.3228091049111,
+      "dps_sd": 153.58806393530136,
       "burst_casts": 2,
       "burst_casts_mean": 2,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 108,
       "iterations": 1000,
-      "dps_mean": 1999.493205548318,
-      "dps_sd": 156.81567637850142,
+      "dps_mean": 2002.010542552153,
+      "dps_sd": 156.4574753359898,
       "burst_casts": 2,
-      "burst_casts_mean": 2,
+      "burst_casts_mean": 2.0009999999999994,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 109,
       "iterations": 1000,
-      "dps_mean": 1997.2617041456926,
-      "dps_sd": 149.91658912968333,
+      "dps_mean": 1996.9405216846833,
+      "dps_sd": 152.21848201135188,
       "burst_casts": 2,
-      "burst_casts_mean": 2,
+      "burst_casts_mean": 2.0009999999999972,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 110,
       "iterations": 1000,
-      "dps_mean": 2005.317435857497,
-      "dps_sd": 157.85051551097072,
+      "dps_mean": 2006.9234476787612,
+      "dps_sd": 151.2938019301928,
       "burst_casts": 2,
       "burst_casts_mean": 2,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 111,
       "iterations": 1000,
-      "dps_mean": 2004.1679427981037,
-      "dps_sd": 155.78882349566018,
+      "dps_mean": 2007.1309424519247,
+      "dps_sd": 154.0058280630652,
       "burst_casts": 2,
-      "burst_casts_mean": 2.003000000000001,
+      "burst_casts_mean": 2,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 112,
       "iterations": 1000,
-      "dps_mean": 2011.7852878555177,
-      "dps_sd": 156.74364505466485,
+      "dps_mean": 2011.0708852353946,
+      "dps_sd": 159.04407387655303,
       "burst_casts": 2,
-      "burst_casts_mean": 2.007999999999999,
+      "burst_casts_mean": 2.003,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 113,
       "iterations": 1000,
-      "dps_mean": 2020.2867183774792,
-      "dps_sd": 164.84032684776403,
+      "dps_mean": 2007.2465934983368,
+      "dps_sd": 160.16425311959574,
       "burst_casts": 2,
-      "burst_casts_mean": 2.009000000000001,
+      "burst_casts_mean": 2.0049999999999963,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 114,
       "iterations": 1000,
-      "dps_mean": 2007.2105040379986,
-      "dps_sd": 161.92720790897204,
+      "dps_mean": 2005.2153497037723,
+      "dps_sd": 162.39042241017543,
       "burst_casts": 2,
-      "burst_casts_mean": 2.0119999999999947,
+      "burst_casts_mean": 2.0079999999999987,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 115,
       "iterations": 1000,
-      "dps_mean": 2025.0250815107981,
-      "dps_sd": 184.0124193256079,
+      "dps_mean": 2020.2265441778147,
+      "dps_sd": 183.29909989029267,
       "burst_casts": 2,
-      "burst_casts_mean": 2.038000000000004,
+      "burst_casts_mean": 2.032000000000001,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 116,
       "iterations": 1000,
-      "dps_mean": 2027.3612140323178,
-      "dps_sd": 180.48438563043564,
+      "dps_mean": 2029.1330205799802,
+      "dps_sd": 183.8765018182308,
       "burst_casts": 2,
-      "burst_casts_mean": 2.030999999999995,
+      "burst_casts_mean": 2.0309999999999953,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 117,
       "iterations": 1000,
-      "dps_mean": 2047.7135460912725,
-      "dps_sd": 207.3039388357061,
+      "dps_mean": 2048.5783086597685,
+      "dps_sd": 211.56311225995722,
       "burst_casts": 2,
-      "burst_casts_mean": 2.070999999999999,
+      "burst_casts_mean": 2.0710000000000006,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 118,
       "iterations": 1000,
-      "dps_mean": 2084.0259233978095,
-      "dps_sd": 236.73769160681817,
+      "dps_mean": 2062.7404894543424,
+      "dps_sd": 242.71995581957086,
       "burst_casts": 2,
-      "burst_casts_mean": 2.1180000000000008,
+      "burst_casts_mean": 2.1119999999999957,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 119,
       "iterations": 1000,
-      "dps_mean": 2110.0358402507495,
-      "dps_sd": 267.12632845989117,
+      "dps_mean": 2091.948252021219,
+      "dps_sd": 267.89670750799354,
       "burst_casts": 2,
-      "burst_casts_mean": 2.1669999999999976,
+      "burst_casts_mean": 2.153000000000002,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 120,
       "iterations": 1000,
-      "dps_mean": 2131.1907112400654,
-      "dps_sd": 278.13241505267536,
+      "dps_mean": 2104.522133185704,
+      "dps_sd": 266.91514237994824,
       "burst_casts": 2,
-      "burst_casts_mean": 2.2119999999999997,
+      "burst_casts_mean": 2.1830000000000003,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 121,
       "iterations": 1000,
-      "dps_mean": 2137.0549882585406,
-      "dps_sd": 284.67325323521555,
+      "dps_mean": 2129.145051221221,
+      "dps_sd": 288.8408414385147,
       "burst_casts": 2,
-      "burst_casts_mean": 2.233999999999998,
+      "burst_casts_mean": 2.2249999999999996,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 122,
       "iterations": 1000,
-      "dps_mean": 2200.9299990467307,
-      "dps_sd": 317.13111515806617,
+      "dps_mean": 2205.0209003858117,
+      "dps_sd": 323.69199401210193,
       "burst_casts": 2,
-      "burst_casts_mean": 2.349999999999995,
+      "burst_casts_mean": 2.3499999999999983,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 123,
       "iterations": 1000,
-      "dps_mean": 2206.663778345139,
-      "dps_sd": 320.0128305563276,
+      "dps_mean": 2190.2598178185954,
+      "dps_sd": 309.40724808437216,
       "burst_casts": 2,
-      "burst_casts_mean": 2.359999999999999,
+      "burst_casts_mean": 2.3310000000000013,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 124,
       "iterations": 1000,
-      "dps_mean": 2286.0572901915507,
-      "dps_sd": 341.9236556992378,
+      "dps_mean": 2305.784446091688,
+      "dps_sd": 339.3428130312667,
       "burst_casts": 2,
-      "burst_casts_mean": 2.4949999999999988,
+      "burst_casts_mean": 2.519999999999995,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 125,
       "iterations": 1000,
-      "dps_mean": 2299.3782599315014,
-      "dps_sd": 326.76306202579144,
-      "burst_casts": 3,
-      "burst_casts_mean": 2.521999999999996,
+      "dps_mean": 2315.195832416531,
+      "dps_sd": 329.4690382992011,
+      "burst_casts": 2,
+      "burst_casts_mean": 2.537,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 126,
       "iterations": 1000,
-      "dps_mean": 2345.5587934458918,
-      "dps_sd": 332.33148654370666,
-      "burst_casts": 3,
-      "burst_casts_mean": 2.607000000000003,
+      "dps_mean": 2323.635015809912,
+      "dps_sd": 330.99886875544246,
+      "burst_casts": 2,
+      "burst_casts_mean": 2.558999999999998,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 127,
       "iterations": 1000,
-      "dps_mean": 2377.6880775346485,
-      "dps_sd": 319.2000755898625,
-      "burst_casts": 3,
-      "burst_casts_mean": 2.650000000000001,
+      "dps_mean": 2357.8771876669,
+      "dps_sd": 316.0066900830347,
+      "burst_casts": 2,
+      "burst_casts_mean": 2.6250000000000004,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 128,
       "iterations": 1000,
-      "dps_mean": 2448.7824665403655,
-      "dps_sd": 301.67014073447433,
-      "burst_casts": 3,
-      "burst_casts_mean": 2.7790000000000035,
+      "dps_mean": 2439.4048202752433,
+      "dps_sd": 302.6826453147252,
+      "burst_casts": 2,
+      "burst_casts_mean": 2.7609999999999997,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 129,
       "iterations": 1000,
-      "dps_mean": 2443.063996044543,
-      "dps_sd": 300.16950328543385,
-      "burst_casts": 3,
-      "burst_casts_mean": 2.766,
+      "dps_mean": 2439.4073660665877,
+      "dps_sd": 303.98778463104964,
+      "burst_casts": 2,
+      "burst_casts_mean": 2.7589999999999963,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 130,
       "iterations": 1000,
-      "dps_mean": 2499.1914522579905,
-      "dps_sd": 248.3023712312846,
-      "burst_casts": 3,
-      "burst_casts_mean": 2.885000000000003,
+      "dps_mean": 2495.340843303882,
+      "dps_sd": 247.30581233773282,
+      "burst_casts": 2,
+      "burst_casts_mean": 2.8749999999999996,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 131,
       "iterations": 1000,
-      "dps_mean": 2490.174197448068,
-      "dps_sd": 261.5492482164805,
-      "burst_casts": 3,
-      "burst_casts_mean": 2.8570000000000046,
+      "dps_mean": 2513.6138991850567,
+      "dps_sd": 229.63478072179865,
+      "burst_casts": 2,
+      "burst_casts_mean": 2.907000000000002,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 132,
       "iterations": 1000,
-      "dps_mean": 2517.8287440117497,
-      "dps_sd": 238.62425204259407,
-      "burst_casts": 3,
-      "burst_casts_mean": 2.898000000000001,
+      "dps_mean": 2513.7212701213502,
+      "dps_sd": 237.4450985687376,
+      "burst_casts": 2,
+      "burst_casts_mean": 2.9010000000000025,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 133,
       "iterations": 1000,
-      "dps_mean": 2538.93542077455,
-      "dps_sd": 229.97886739853615,
-      "burst_casts": 3,
-      "burst_casts_mean": 2.926000000000002,
+      "dps_mean": 2532.099481894092,
+      "dps_sd": 226.99385264768813,
+      "burst_casts": 2,
+      "burst_casts_mean": 2.9199999999999995,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 134,
       "iterations": 1000,
-      "dps_mean": 2532.10215625897,
-      "dps_sd": 214.35239545268215,
-      "burst_casts": 3,
-      "burst_casts_mean": 2.9430000000000027,
+      "dps_mean": 2540.96322210266,
+      "dps_sd": 225.74143252079364,
+      "burst_casts": 2,
+      "burst_casts_mean": 2.9280000000000026,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 135,
       "iterations": 1000,
-      "dps_mean": 2551.828862980972,
-      "dps_sd": 199.47150698883624,
-      "burst_casts": 3,
-      "burst_casts_mean": 2.9640000000000026,
+      "dps_mean": 2554.650846831545,
+      "dps_sd": 208.37069050863178,
+      "burst_casts": 2,
+      "burst_casts_mean": 2.9549999999999974,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 136,
       "iterations": 1000,
-      "dps_mean": 2543.748017972369,
-      "dps_sd": 201.64081016628336,
-      "burst_casts": 3,
-      "burst_casts_mean": 2.9639999999999995,
+      "dps_mean": 2550.5400526691596,
+      "dps_sd": 197.3915418177671,
+      "burst_casts": 2,
+      "burst_casts_mean": 2.963999999999999,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 137,
       "iterations": 1000,
-      "dps_mean": 2570.8745587651024,
-      "dps_sd": 181.1288396307097,
-      "burst_casts": 3,
-      "burst_casts_mean": 2.995000000000003,
+      "dps_mean": 2572.140393906131,
+      "dps_sd": 172.77225762360158,
+      "burst_casts": 2,
+      "burst_casts_mean": 2.9979999999999967,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 138,
       "iterations": 1000,
-      "dps_mean": 2575.5348879922285,
-      "dps_sd": 173.94013554498306,
-      "burst_casts": 3,
-      "burst_casts_mean": 2.9979999999999967,
+      "dps_mean": 2570.7583330599464,
+      "dps_sd": 186.66431433564688,
+      "burst_casts": 2,
+      "burst_casts_mean": 2.9940000000000007,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 139,
       "iterations": 1000,
-      "dps_mean": 2567.3569390987573,
-      "dps_sd": 184.38067253301594,
-      "burst_casts": 3,
-      "burst_casts_mean": 2.996000000000001,
+      "dps_mean": 2571.2665762537827,
+      "dps_sd": 170.94159926260508,
+      "burst_casts": 2,
+      "burst_casts_mean": 2.9979999999999984,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 140,
       "iterations": 1000,
-      "dps_mean": 2576.716209872927,
-      "dps_sd": 168.64543961180516,
-      "burst_casts": 3,
-      "burst_casts_mean": 2.998000000000002,
+      "dps_mean": 2575.3831613967495,
+      "dps_sd": 172.4396337073417,
+      "burst_casts": 2,
+      "burst_casts_mean": 2.999000000000003,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 141,
       "iterations": 1000,
-      "dps_mean": 2566.3567217462737,
-      "dps_sd": 170.98433752521584,
+      "dps_mean": 2579.8870657334055,
+      "dps_sd": 163.23640790453913,
       "burst_casts": 3,
       "burst_casts_mean": 3,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 142,
       "iterations": 1000,
-      "dps_mean": 2570.3221718502446,
-      "dps_sd": 165.65706192403374,
+      "dps_mean": 2568.517571151103,
+      "dps_sd": 167.60578342490302,
       "burst_casts": 3,
       "burst_casts_mean": 3,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 143,
       "iterations": 1000,
-      "dps_mean": 2561.8394800355277,
-      "dps_sd": 170.77854187835928,
+      "dps_mean": 2572.412065942068,
+      "dps_sd": 169.72900886683328,
       "burst_casts": 3,
       "burst_casts_mean": 3,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 144,
       "iterations": 1000,
-      "dps_mean": 2580.96465284278,
-      "dps_sd": 170.08862304805143,
+      "dps_mean": 2575.4420415811223,
+      "dps_sd": 170.0222440526371,
       "burst_casts": 3,
       "burst_casts_mean": 3,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 145,
       "iterations": 1000,
-      "dps_mean": 2577.1165874273406,
-      "dps_sd": 172.26705033003782,
+      "dps_mean": 2574.705552050465,
+      "dps_sd": 171.172890661444,
       "burst_casts": 3,
       "burst_casts_mean": 3,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 146,
       "iterations": 1000,
-      "dps_mean": 2585.6002922088437,
-      "dps_sd": 173.47467661834096,
+      "dps_mean": 2580.750213400758,
+      "dps_sd": 175.68054098713475,
       "burst_casts": 3,
       "burst_casts_mean": 3,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 147,
       "iterations": 1000,
-      "dps_mean": 2576.648833147952,
-      "dps_sd": 173.5664413658076,
+      "dps_mean": 2583.7463084025007,
+      "dps_sd": 174.4710710776725,
       "burst_casts": 3,
       "burst_casts_mean": 3,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 148,
       "iterations": 1000,
-      "dps_mean": 2573.8321440933955,
-      "dps_sd": 175.15578929267434,
+      "dps_mean": 2564.9233448394743,
+      "dps_sd": 173.59860631372845,
       "burst_casts": 3,
       "burst_casts_mean": 3,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 149,
       "iterations": 1000,
-      "dps_mean": 2582.3200227978473,
-      "dps_sd": 175.0686792641342,
+      "dps_mean": 2572.0488575273516,
+      "dps_sd": 170.75048780722116,
       "burst_casts": 3,
       "burst_casts_mean": 3,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 150,
       "iterations": 1000,
-      "dps_mean": 2593.337331315459,
-      "dps_sd": 172.17613988729053,
+      "dps_mean": 2581.836715004208,
+      "dps_sd": 177.59737113650334,
       "burst_casts": 3,
       "burst_casts_mean": 3,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 151,
       "iterations": 1000,
-      "dps_mean": 2585.1060314820215,
-      "dps_sd": 178.6228467091868,
+      "dps_mean": 2583.4241997773206,
+      "dps_sd": 171.5696189089297,
       "burst_casts": 3,
       "burst_casts_mean": 3,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 152,
       "iterations": 1000,
-      "dps_mean": 2588.491809139154,
-      "dps_sd": 174.47762854866923,
+      "dps_mean": 2590.990812619992,
+      "dps_sd": 175.89779429732104,
       "burst_casts": 3,
       "burst_casts_mean": 3,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     },
     {
       "er_percent": 153,
       "iterations": 1000,
-      "dps_mean": 2587.6104496943326,
-      "dps_sd": 164.66652755887858,
+      "dps_mean": 2592.29178980161,
+      "dps_sd": 172.85722240100034,
       "burst_casts": 3,
       "burst_casts_mean": 3,
       "skill_casts": 9,
       "attack_casts": 18,
-      "cryo_aura_uptime": 0.0
+      "cryo_aura_uptime": 98.05555555555556
     }
   ]
 }

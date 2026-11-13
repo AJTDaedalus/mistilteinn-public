@@ -193,7 +193,8 @@ ER is worth **+7.3 % skipping against +44.4 % waiting**, and the duration column
 skipping is not merely under-pricing ER, it is **blind to the mechanism**, because a skipped
 burst costs no time. Waiting only terminates because of a cited energy drip
 (`gcsim_config.ENERGY_DRIP`, five community configs, three calling it *standard Energy drops*)
-— without one gcsim retries the frame forever and the run grows to 2.4 GB.
+— without one gcsim retries the frame forever (at v2.47.2 the run grew to 2.4 GB; from
+v2.50.0 it spins at ~23 MB and never ends, so nothing kills it).
 `docs/DESIGN_waiting_for_energy.md`.
 
 **The branch and issue backlog is empty as of 2026-09-07.** No open PRs, no open issues, and
@@ -375,13 +376,22 @@ a job with progress, never a request that blocks.
   Measured, not read: `aetherpyro` 90/90 with a Dull Blade, run with the default params and
   again with all three set to 0, moves by BaseATK +10, BaseHP +50, EM +75, CR +0.1, CD +0.2,
   ER +0.2 and 20 % each of ATK/HP/DEF.
-- **gcsim relicensed to AGPLv3 on 2026-09-19 and the pin is deliberately a release tag.**
-  `caf738dc` is **v2.47.2**, the last version gcsim's own `LICENSE-MIT` scopes the old terms
-  to. AGPLv3 §13 covers serving software over a network, which is exactly what this site does
-  with `gcsim.wasm`, so **crossing that line is an owner decision, not a version bump**. The
-  build also ships gcsim's notice and **Go's** (BSD-3-Clause, for `wasm_exec.js`) beside the
-  artifacts — we shipped neither for the whole life of the browser build, and the production
-  image now refuses to build without them.
+- **gcsim is pinned at v2.50.0 (`b107b5dc`), under AGPLv3, by owner decision
+  (2026-11-13).** gcsim relicensed on 2026-09-19 and the pin sat at v2.47.2, the last MIT
+  release, until the owner decided; this repository is now AGPL-3.0-or-later and public. AGPL
+  §13 covers serving software over a network, which is what this site does with `gcsim.wasm`,
+  so **the shell footer offers the source on every page** and `/about` links gcsim at the
+  exact commit served (read from `gcsim/BUILT_FROM`, never restated). The build ships gcsim's
+  `LICENSE` (AGPL) **and** `LICENSE-MIT` (the notice retained for pre-relicence code) and
+  **Go's** (BSD-3-Clause, for `wasm_exec.js`); the production image refuses to build without
+  any of them. `docs/DECISIONS.md` §37.
+
+  **v2.50.0 changed `flush()`'s return shape**, and reading it the old way fails: it is now a
+  JS object `{result: "<SimulationResult JSON>", hash}`, statistics under
+  `result.statistics`. `sim/gcsim.ts:flushResult` is the only reader and normalises it to the
+  old `{stats, hash}` envelope so corpus rows from either pin read the same. The wasm is also
+  **2.4-4.2× faster** per iteration (PGO and gcsim's perf work), so every timing figure in
+  this file from before 2026-11-13 is pessimistic. `docs/RESEARCH_gcsim_repin_2026_11.md`.
 - **Never emit `swap_delay=0` in a gcsim config.** gcsim queues a character swap to land
   `Delays.Swap` frames later, so at zero it **never lands** and any rotation touching a second
   character dies with *"requested next char X is not active and next action is not swap"*.
@@ -434,9 +444,11 @@ a job with progress, never a request that blocks.
   waiting *for*. A cooldown always expires, so waiting on one is safe and models a player.
   Energy may never arrive, and gcsim has **no watchdog**: `actionReadyCheckPhase` retries the
   frame forever, `stopCheck` never consults duration in damage mode, and an unfundable burst
-  blocks the sim while a per-frame stats slice grows until the kernel kills it — measured at
-  **2.4 GB**. A healthy run of the owner's 243-action rotation is **0.03 s and 32 MB**, so a
-  gcsim run using real memory is a hang, not a big simulation.
+  blocks the sim. At v2.47.2 a per-frame stats slice grew until the kernel killed it —
+  measured at **2.4 GB** — so a gcsim run using real memory was a hang. **From v2.50.0 that
+  slice is gone and the hang is silent**: the same config sat at 23 MB for 25 s and kept
+  spinning. Nothing in the browser times a worker out, so the gate is now the only thing
+  between an unfundable burst and a tab that never finishes.
 
   **A gated burst is skipped, so `insufficient_energy` reads 0 for a team plainly starved**;
   the observable signal is the **burst count**. `rotation_signature` and `compile_rotation`

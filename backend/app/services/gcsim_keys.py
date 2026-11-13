@@ -82,7 +82,7 @@ def pinned_commit() -> str:
 
 #: Actions the rotation model **could** name but deliberately does not offer.
 #:
-#: `swap` is excluded because it is **implicit** — `pkg/simulation/run.go:154` has the
+#: `swap` is excluded because it is **implicit** — `pkg/simulation/run.go:248` has the
 #: evaluator insert swaps when the next character is not active, so emitting our own would
 #: double them.
 _NOT_AUTHORED = frozenset({"swap"})
@@ -188,15 +188,20 @@ VARIANT_PARAMS: dict[str, str] = {
 #:   name. Every character declaring `hold_ticks` also declares `hold`, so none is left out.
 #: - **kit minutiae** — `glide_cancel`, `prestack`, `bunny`, `jade`. Execution detail for one
 #:   character each, which a rotation builder that fits on a screen does not ask about.
+#:
+#: **Three joined at the v2.50.0 re-pin (2026-11-13), all quantities:** Sandrone's charged
+#: attack takes `beams` (how many to fire) or `frames` (how long to channel), and gcsim
+#: refuses both at once; Mizuki's skill and walk take `skip_ticks`, a count of 15-frame ticks
+#: to drop. Each is a number per step, not a different move.
 NOT_OFFERED_PARAMS: frozenset[str] = frozenset({
-    "a4_delay", "amulet_delay", "bomb_delay", "bomblets", "bounce", "buffered", "bullets",
-    "bunny", "c2_travel", "c6_travel", "charge_cancel", "collision", "construct_limit",
-    "counter", "direction", "early_cancel", "enter", "enter_delay", "extend", "f", "final",
-    "glide_cancel", "hits", "hold_c4", "hold_nostele", "hold_ticks", "illusion_delay",
-    "jade", "kindling_travel", "man_chai_delay", "marked", "max_amulets", "mine",
-    "mine_delay", "no_limit", "no_meteorite", "nobehind", "noscreen", "perfect",
-    "pickup_droplets", "prestack", "release", "screen", "short", "ticks", "travel",
-    "ushihit", "vivid_travel", "weakspot", "wreath"
+    "a4_delay", "amulet_delay", "beams", "bomb_delay", "bomblets", "bounce", "buffered",
+    "bullets", "bunny", "c2_travel", "c6_travel", "charge_cancel", "collision",
+    "construct_limit", "counter", "direction", "early_cancel", "enter", "enter_delay",
+    "extend", "f", "final", "frames", "glide_cancel", "hits", "hold_c4", "hold_nostele",
+    "hold_ticks", "illusion_delay", "jade", "kindling_travel", "man_chai_delay", "marked",
+    "max_amulets", "mine", "mine_delay", "no_limit", "no_meteorite", "nobehind", "noscreen",
+    "perfect", "pickup_droplets", "prestack", "release", "screen", "short", "skip_ticks",
+    "ticks", "travel", "ushihit", "vivid_travel", "weakspot", "wreath"
 })
 
 

@@ -66,6 +66,14 @@ where her `er=0.583` runs out. The identical config with her at `er=3.0` finishe
 using 32 MB**. That ratio is the diagnostic worth keeping: a healthy run of this size is
 free, so a gcsim run consuming real memory is a hang, not a big simulation.
 
+**From gcsim v2.50.0 the hang no longer announces itself that way.** The stack above is from
+the then-pin; `status.go`'s per-frame `avgUpdate` slice is gone (rewritten in v2.50.0), and
+`actionReadyCheckPhase` now loops on `nextFrame()` itself. The same ungated, duration-less
+config measured at both pins (2026-11-13): v2.47.2 reached **2.2 GB in 24 s**, v2.50.0 sat at
+**23 MB for 25 s** and was still running. A hang is now a silent CPU spin rather than an
+out-of-memory kill — the gate below matters exactly as much, and the memory diagnostic is
+gone. `docs/RESEARCH_gcsim_repin_2026_11.md`.
+
 **This is the failure mode the optimizer exists to find**, which is what made it unshippable
 rather than merely unlucky: the hang happens precisely when a character cannot fund a burst.
 
@@ -130,7 +138,7 @@ file's.
 - **`gcsim_config` sets `target hp=` and emits no `duration`**, so the run ends when the
   actions do. In HP mode gcsim ignores `duration` entirely — measured: the same rotation
   reports 189.3 s whether the config says `duration=90`, `duration=3600` or nothing at all.
-- **No swap actions.** `pkg/simulation/run.go:154`: *"the evaluator should handle adding in
+- **No swap actions.** `pkg/simulation/run.go:248`: *"the evaluator should handle adding in
   implicit swaps if next char is not active"*, with a sanity check that errors if one was
   missed. Emitting our own would double them.
 """

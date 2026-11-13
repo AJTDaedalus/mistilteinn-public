@@ -181,6 +181,9 @@ def test_the_sweep_shows_the_invariant_parts_of_context_are_exactly_invariant():
     assert len({r["skill_casts"] for r in runs}) == 1
     assert len({r["attack_casts"] for r in runs}) == 1
     assert len({round(r["cryo_aura_uptime"], 6) for r in runs}) == 1
+    # Non-zero, because the fixture carried 0.0 in every run until the v2.50.0 re-pin — an
+    # invariance check over a dead field passes whatever gcsim does.
+    assert all(r["cryo_aura_uptime"] > 50 for r in runs)
 
 
 def test_the_sweep_shows_a_five_percent_bucket_is_not_uniformly_safe():

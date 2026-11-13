@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Commit** | `caf738dc807a646e2eee7e7b572f225dd6deb510` — the pin in `docs/CROSSVAL_gcsim.md` |
-| **Produced** | 2026-08-22 for D.2 · regenerated 2026-09-19 at the v2.47.2 re-pin |
+| **Commit** | `b107b5dc5cb88977bed5270e5d83e64934730d4d` — the pin in `docs/CROSSVAL_gcsim.md` |
+| **Produced** | 2026-08-22 for D.2 · regenerated 2026-09-19 at the v2.47.2 re-pin and 2026-11-13 at v2.50.0 |
 | **Analysed in** | `docs/RESEARCH_er_bucketing.md` |
 | **Read by** | `tests/unit/test_sim_retrieval.py` |
 
@@ -24,6 +24,21 @@ first committed sweep reported bucket 120 at **13.3 %** wide; re-running the sam
 answer is stable and the shape the research doc describes is exactly right: the widest
 bucket *is* 120, at **7.3 %**, against 0.3 % at the settled top end. The coupling is real
 and it is smaller than the original sample claimed.
+
+**The widest bucket's width is not stable at 1,000 iterations either — measured
+2026-11-13.** Two fresh sweeps at v2.47.2 gave **11.2 %** and **8.6 %** for bucket 120, and
+two at v2.50.0 gave **7.4 %** and **9.4 %**; the committed v2.50.0 sweep reads **9.6 %**. So
+the 7.3 % above was one draw, not *the* answer. What *is* stable across all five is the shape
+the tests assert: the widest bucket is 120 every time, and the ends stay under 1 %. Treat the
+width as a range, roughly 7-11 %.
+
+**`cryo_aura_uptime` was 0.0 in every run until 2026-11-13**, which made its invariance
+assertion one that could not fail. It is now read from gcsim's
+`statistics.target_aura_uptime[0].sources.cryo.mean` — gcsim's percentage, **98.056** at
+v2.50.0 against **98.074** at v2.47.2 (the hitlag change, `3f528e2c7`, moves it). The test
+now also asserts it is non-zero. The other fields: `burst_casts` is the minimum and
+`burst_casts_mean` the mean of `character_actions[0].sources.burst`; `skill_casts` and
+`attack_casts` are their means (constant, so integers).
 
 This is evidence, not a golden fixture: nothing asserts a specific DPS from it. What the
 tests assert is its *shape* — that skill casts and aura uptime do not move with ER at all,

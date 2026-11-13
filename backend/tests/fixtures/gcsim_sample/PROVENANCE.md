@@ -5,12 +5,12 @@ browser build at the pin (`docs/CROSSVAL_gcsim.md` — never restated here). See
 
 | fixture | config | hits | exercises |
 |---|---|---:|---|
-| `rotation_gated_calc.json` | `rotation_gated.txt` | 221 | ATK scaling, physical + cryo, a real `while 1` gated rotation |
-| `rotation_gated_nostats_calc.json` | `rotation_gated_nostats.txt` | 221 | the **zero-stat calibration** the one above is predicted from |
+| `rotation_gated_calc.json` | `rotation_gated.txt` | 245 | ATK scaling, physical + cryo, a real `while 1` gated rotation |
+| `rotation_gated_nostats_calc.json` | `rotation_gated_nostats.txt` | 245 | the **zero-stat calibration** the one above is predicted from |
 | `noelle_redhorn_calc.json` | `noelle_redhorn.txt` | 94 | **`flat_dmg` on 83 hits** (Redhorn's DEF conversion), **`flat_atk` on 33** (Noelle's burst), `use_def` on 5 |
 | `noelle_redhorn_probe_calc.json` | `noelle_redhorn_probe.txt` | 94 | the same at `def%=0.5` — the **probe** that identifies those conversions |
 | `noelle_redhorn_target_calc.json` | `noelle_redhorn_target.txt` | 94 | the same at `def%=0.9 cd=0.4` — a run the recipe must **predict** |
-| `skirk_team_calc.json` | `skirk_team.txt` | 219 | **four characters**, three elements, `+params`, a `for` loop, `energy every`, a custom target, and a real conversion on 18 % of the damage |
+| `skirk_team_calc.json` | `skirk_team.txt` | 215 | **four characters**, three elements, `+params`, a `for` loop, `energy every`, a custom target, and a real conversion on 18 % of the damage |
 
 ## The probe triple
 
@@ -84,6 +84,38 @@ carries the **element by name** and the attack tag. `calc`'s own `ele` is gcsim'
 candidate's element bonuses reach which hit. They are emitted as a strict pair, one per damage
 instance, ability matching on all 245 in the larger fixture; the parser **verifies** that
 rather than assuming it.
+
+## Regenerated at the 2026-11-13 re-pin to v2.50.0 — and the Noelle triple moved
+
+`caf738dc` → `b107b5dc` (76 Go commits). All six were regenerated, because every one
+changed bytes, and **the hit count of every fixture is unchanged**:
+
+| fixture | hits | total damage | why |
+|---|---|---|---|
+| `noelle_redhorn` | 94 | 159,672.10 → **159,646.23** (−0.016 %) | three `Normal 1` hits each −1.151 % |
+| `noelle_redhorn_probe` | 94 | 185,407.61 → **185,381.73** (−0.014 %) | the same three hits |
+| `noelle_redhorn_target` | 94 | 209,877.63 → **209,851.76** (−0.012 %) | the same three hits |
+| `skirk_team` | 215 | identical | one damage event lands 5 frames earlier (51 → 46) |
+| `rotation_gated`, `_nostats` | 245 | identical | none in `calc`/`damage` |
+
+**The three Noelle hits carry one fewer Husk of Opulent Dreams stack**: `def_per` 1.12 → 1.06
+(6 % a stack) at frames 2548, 3827 and 5106, and every other term follows from it.
+`verify-gcsim-recipe` caught it as a 1.164e-2 drift. **Bisected, not guessed**, with a native
+sampler that reproduces the wasm's `sample()` exactly: `3f528e2c7` *"Fix CharTasks duration
+when added during hitlag (#3115)"* — overlapping hitlag now takes the **max** instead of the
+sum, and character tasks are extended by hitlag the way mods are. The same commit moves the
+Skirk frame. It touches every character with hitlag, so it is an engine change, not a kit fix.
+
+**Everything else that changed is formatting.** gcsim `c3152ad1f` prints stat values to six
+decimals (`def%: 0.30` → `def%: 0.3`, `atk: 1951.66` → `atk: 1951.65665`), which rewrites the
+mod strings inside `damage` events and the `final_stats` of `snapshot` events. Nothing here
+parses those strings. `rotation_gated*` are the full sample payload, not `calc`+`damage` only,
+so they also pick up v2.47.2's never-captured `particle_element` and the new log fields.
+
+**The regeneration reproduces the committed bytes at the old pin**: driving the v2.47.2 wasm
+through the same script rewrites `noelle_redhorn*` and `skirk_team` byte for byte (the
+`rotation_gated*` pair were last captured before v2.47.2, and match it in every `calc` and
+`damage` event). So the diff here is gcsim's, not the capture's.
 
 ## Regenerated at the 2026-09-19 re-pin to v2.47.2 — and one case moved
 

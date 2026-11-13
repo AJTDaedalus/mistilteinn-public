@@ -129,7 +129,7 @@ def test_a_single_repeat_omits_the_colon():
 
 
 def test_no_swap_actions_are_emitted():
-    """`run.go:154`: the evaluator inserts swaps when the next character is not active.
+    """`run.go:248`: the evaluator inserts swaps when the next character is not active.
 
     Emitting our own would double them.
     """

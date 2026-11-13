@@ -53,7 +53,7 @@ _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "crossval"
 PINNED_GCSIM = pinned_commit()
 
 #: gcsim's `character_details[].snapshot` is indexed by its `Stat` enum
-#: (`pkg/core/attributes/stats.go:12-40`). **Four of these seven were confirmed
+#: (`pkg/core/attributes/stats.go:14-43`). **Four of these seven were confirmed
 #: empirically** — HP, ATK, crit rate and EM, by adding a known amount of each to a config
 #: and watching which slot moved — because an off-by-one here would make a passing assertion
 #: meaningless. DEF, CD and ER are read off the enum and agree with non-zero values in the

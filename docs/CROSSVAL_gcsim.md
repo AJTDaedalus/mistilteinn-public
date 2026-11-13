@@ -13,22 +13,32 @@ gcsim is the reference for *correctness and feature scope*, deliberately not for
 | | |
 |---|---|
 | **Repository** | `github.com/genshinsim/gcsim` |
-| **Commit** | `caf738dc807a646e2eee7e7b572f225dd6deb510` |
-| **Dated** | 2026-09-18 |
-| **Title** | `fix taghelper... (#3019)` — release **v2.47.2** |
-| **Pinned** | 2026-09-19 — re-pinned from `a36661d9` for Iansan, Prune, Odette and Cryo Traveler. **A release tag, and that is deliberate**: see the licence note below |
+| **Commit** | `b107b5dc5cb88977bed5270e5d83e64934730d4d` |
+| **Dated** | 2026-11-09 |
+| **Title** | `Add Sandrone (#3269)` — release **v2.50.0** (a lightweight tag on gcsim `main`) |
+| **Pinned** | 2026-11-13 — re-pinned from `caf738dc` (v2.47.2). **The first pin under gcsim's AGPLv3**, deliberately: see the licence note below and `docs/RESEARCH_gcsim_repin_2026_11.md` |
 | **Go toolchain** | `1.27` — gcsim's own `go.mod` at this commit says `go 1.27.0` |
+| **Licence** | **AGPL-3.0** (`LICENSE` at the pin), with the MIT notice retained for code contributed before 2026-09-19 (`LICENSE-MIT`) |
 
-**The pin is a release tag because gcsim relicensed.** `05f01a733` (2026-09-19) moved the
-project from MIT to **AGPLv3**, whose §13 covers exactly what this project does with it —
-serving it to a browser over a network. gcsim's own `LICENSE-MIT` scopes the old terms to
-*"released versions up to and including v2.47.2"*, so that tag is the last point the MIT
-reading is unambiguous. `7305f726f`, the last commit before the relicence, has an MIT tree
-but no release covering it; the difference between the two is one weapon (Jade Vista), and
-a weapon is not worth the ambiguity.
+**This project now runs AGPLv3 gcsim, and that is an owner decision (2026-11-13), not a
+version bump.** gcsim relicensed from MIT to AGPLv3 in `05f01a733` (2026-09-19), and the pin
+stopped at `v2.47.2` — the last release gcsim's `LICENSE-MIT` scopes the old terms to — until
+the owner had decided what crossing that line meant. It is decided: this repository is itself
+AGPL-3.0-or-later and published at `https://github.com/AJTDaedalus/mistilteinn-public`.
 
-Crossing into AGPLv3 is therefore **not a routine re-pin**. It changes what this site owes
-its visitors, and it needs an owner decision rather than a version bump.
+What the move obliges, and where each obligation is met:
+
+- **§13 (network interaction).** The site serves `gcsim.wasm` to every browser, so every
+  visitor is offered the source: the shell footer links this repository, and the About page
+  links both it and gcsim at this exact commit. `docs/DECISIONS.md` §37.
+- **§4–6 (conveying object code).** `gcsim.wasm` ships beside gcsim's `LICENSE` (AGPLv3) and
+  `LICENSE-MIT`, and `wasm_exec.js` beside Go's BSD-3-Clause `LICENSE`; the production image
+  refuses to build without them. The Corresponding Source is gcsim at this commit, unmodified
+  — we build `./cmd/wasm` from a clean checkout and patch nothing.
+- `THIRD_PARTY_NOTICES.md` records both licences and the source URL at the pin.
+
+**A re-pin is still a reviewed step**, for the reason it always was: the numbers move.
+`docs/RESEARCH_gcsim_repin_2026_11.md` is how this one was measured.
 
 **The Go row is load-bearing, not documentation.** `frontend/Dockerfile.prod` builds the
 browser wasm from this pin, and the 2026-08-31 re-pin moved to a gcsim requiring Go 1.27 while
@@ -47,11 +57,11 @@ citations it invalidates — the same rule the YuanShenResources snapshot follow
 
 | Constant or rule | Source at the pin | Used by |
 |---|---|---|
-| stat vocabulary | `pkg/core/attributes/stats.go:12-40` | `formula/genshin/tags.py` |
-| `MaxHP`/`TotalATK`/`TotalDEF` are **single-stage** | `pkg/core/attributes/stats.go:44-46` | `formula/genshin/stats.py` |
+| stat vocabulary | `pkg/core/attributes/stats.go:14-43` — corrected at the 2026-11-13 re-pin; `12-40` was already off at v2.47.2 | `formula/genshin/tags.py` |
+| `MaxHP`/`TotalATK`/`TotalDEF` are **single-stage** | `pkg/core/attributes/stats.go:49-51` | `formula/genshin/stats.py` |
 | element list | `pkg/core/attributes/element.go:7-19` — **rewritten at the 2026-09-19 re-pin** (gcsim `61f578730`): reordered, and `ElementString` no longer exists. The names now live in the generated `element_enumer.go:11` | `formula/genshin/tags.py` |
 | attack-tag (scope) list | `pkg/core/attacks/attack.go:8-17` | `formula/genshin/tags.py` |
-| strike types | `pkg/core/attacks/attack.go:87-95` | `formula/genshin/tags.py` |
+| strike types | `pkg/core/attacks/attack.go:90-98` | `formula/genshin/tags.py` |
 | character base stats: `base * GrowCurve[curve][level-1]` + the ascension row | `pkg/core/player/character/basestat.go:73-101` | `services/stat_calculator.py:add_character` |
 | a character starts at **100% Energy Recharge** (`res[ER] += 1`) | `pkg/core/player/character/basestat.go:82` | `services/stat_calculator.py:BASE_ENERGY_RECHARGE` |
 | base CRIT rate 5% / CRIT DMG 50% — **and the payloads' disagreement with it** | `pkg/core/player/character/basestat.go:82-84` | `models/character.py:base_crit_rate`, migration `55afb8679231` |

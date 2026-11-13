@@ -67,7 +67,7 @@ def test_a_real_action_is_accepted(action: str):
 
 
 def test_swap_is_refused_because_gcsim_inserts_it():
-    """`run.go:154` has the evaluator add swaps when the next character is not active.
+    """`run.go:248` has the evaluator add swaps when the next character is not active.
 
     Emitting our own would double them, so a step cannot name one.
     """

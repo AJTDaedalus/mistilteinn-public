@@ -7,8 +7,14 @@ repo and compares.
 | | |
 |---|---|
 | **Oracle** | `github.com/genshinsim/gcsim` |
-| **Commit** | `caf738dc807a646e2eee7e7b572f225dd6deb510` — the pin in `docs/CROSSVAL_gcsim.md` |
-| **Recorded** | 2026-08-21, task F.7 · regenerated 2026-08-31 and again 2026-09-19, each at the new pin |
+| **Commit** | `b107b5dc5cb88977bed5270e5d83e64934730d4d` — the pin in `docs/CROSSVAL_gcsim.md` |
+| **Recorded** | 2026-08-21, task F.7 · regenerated 2026-08-31, 2026-09-19 and 2026-11-13, each at the new pin |
+
+**The 2026-11-13 re-pin to `b107b5dc` (v2.50.0) changed one field: `sim_version`.** 76 Go
+commits, including an engine change to hitlag and gcsim's whole performance series, and both
+cases — `ayaka_normal_1` and `traveler_normal_1` — regenerate identical in every other field
+after stripping the per-run noise. Totals **108.53039935232651** and **117.49423396988159**,
+unchanged to the last digit; `_nocrit` agrees. Diffed field by field, not eyeballed.
 
 **The 2026-09-19 re-pin to `caf738dc` (v2.47.2) changed two fields, and neither is a
 number.** `sim_version`, and a new `target_details[].particle_element` of `"none"` —
@@ -36,7 +42,7 @@ reviewable diff rather than as a side effect of running the tests.
 # gcsim is not vendored: it is a 35 MB Go binary and building it needs a Go toolchain.
 CASES=$(pwd)/backend/tests/fixtures/crossval      # run this from the repo root
 git clone https://github.com/genshinsim/gcsim /tmp/gcsim && cd /tmp/gcsim
-git checkout caf738dc807a646e2eee7e7b572f225dd6deb510
+git checkout b107b5dc5cb88977bed5270e5d83e64934730d4d
 go build -o gcsim ./cmd/gcsim
 ./gcsim -c "$CASES/ayaka_normal_1.txt" -nb -out "$CASES/ayaka_normal_1.json"
 ```

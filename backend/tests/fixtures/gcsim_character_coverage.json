@@ -1,5 +1,5 @@
 {
-  "pinned_commit_sha": "caf738dc807a646e2eee7e7b572f225dd6deb510",
+  "pinned_commit_sha": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
   "note": "Seeded characters gcsim does not implement at the pin, so nothing here can be simulated in the browser or crossvalidated. A reviewed list, not a runtime surprise: a re-pin that implements one of these shows up as a diff, and a character that stops resolving fails the test rather than failing a user's search.",
   "seeded_total": 150,
   "unimplemented": [
@@ -84,16 +84,6 @@
       "element": "Dendro"
     },
     {
-      "nanoka_id": "10000126",
-      "name": "Zibai",
-      "element": "Geo"
-    },
-    {
-      "nanoka_id": "10000127",
-      "name": "Illuga",
-      "element": "Geo"
-    },
-    {
       "nanoka_id": "10000129",
       "name": "Lohen",
       "element": "Cryo"
@@ -102,11 +92,6 @@
       "nanoka_id": "10000130",
       "name": "Linnea",
       "element": "Geo"
-    },
-    {
-      "nanoka_id": "10000133",
-      "name": "Sandrone",
-      "element": "Cryo"
     },
     {
       "nanoka_id": "10000134",
@@ -127,11 +112,6 @@
       "nanoka_id": "10000143",
       "name": "Vesna",
       "element": "Anemo"
-    },
-    {
-      "nanoka_id": "10000148",
-      "name": "Alyosha",
-      "element": "Electro"
     }
   ]
 }

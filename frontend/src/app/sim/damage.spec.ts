@@ -31,7 +31,7 @@ describe('the individual terms', () => {
   });
 
   it('resolves a stat as base * (1 + pct) + flat, in one stage', () => {
-    // Single-stage, cited to gcsim `stats.go:44-46`. Applying the percentage after the flat
+    // Single-stage, cited to gcsim `stats.go:49-51`. Applying the percentage after the flat
     // would give 2200 here rather than 2100 — a 5% error that no rounding tolerance hides.
     expect(resolveStat(1000, 1.0, 100)).toBeCloseTo(2100, 4);
   });

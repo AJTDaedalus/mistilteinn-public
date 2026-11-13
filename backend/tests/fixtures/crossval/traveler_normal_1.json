@@ -3,7 +3,7 @@
     "major": "4",
     "minor": "2"
   },
-  "sim_version": "caf738dc807a646e2eee7e7b572f225dd6deb510",
+  "sim_version": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
   "modified": false,
   "config_file": "options iteration=1 duration=5 swap_delay=0 debug=true;\n\naetherpyro char lvl=90/90 cons=0 talent=1,1,1;\naetherpyro add weapon=\"dullblade\" lvl=70/70 refine=1;\n\ntarget lvl=90 resist=0.1 pos=0,1;\n\nactive aetherpyro;\naetherpyro attack;\n\n",
   "simulator_settings": {

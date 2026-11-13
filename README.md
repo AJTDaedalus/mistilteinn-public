@@ -74,7 +74,8 @@ Per the BRIEF — none wired up yet:
 - [Dimbreath/AnimeGameData](https://gitlab.com/Dimbreath/AnimeGameData) — raw game files, as
   **committed snapshots only**, never a live-fetch gate
 - [gcsim](https://github.com/genshinsim/gcsim) — crossval oracle, frame-data corpus, and
-  rotation corpus (MIT; KQM-sourced frame data — harvest with attribution)
+  rotation corpus, and the simulator the site serves (AGPL-3.0 after v2.47.2; the pin is
+  v2.50.0 — `docs/CROSSVAL_gcsim.md`; KQM-sourced frame data — harvest with attribution)
 - [frzyc's Genshin Optimizer](https://github.com/frzyc/genshin-optimizer) — secondary kit
   cross-reference; [GOOD format](https://frzyc.github.io/genshin-optimizer/#/doc) for artifact import
 
@@ -83,7 +84,7 @@ Per the BRIEF — none wired up yet:
 Copyright (c) the mistilteinn contributors. This program is free software: you can
 redistribute it and/or modify it under the terms of the GNU Affero General Public License as
 published by the Free Software Foundation, either version 3 of the License, or (at your option)
-any later version. See [`LICENSE`](LICENSE) and, for the MIT-licensed code this builds on,
-[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+any later version. See [`LICENSE`](LICENSE) and, for the third-party code this builds on
+(MIT-licensed code, and gcsim under AGPLv3), [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 Game data and art © miHoYo / HoYoverse, and not covered by this licence. Fan project, not affiliated with miHoYo.

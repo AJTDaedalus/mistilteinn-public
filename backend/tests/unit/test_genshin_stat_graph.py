@@ -33,7 +33,7 @@ def _value(node, **contributions: float) -> float:
 # ---- The stat formula -----------------------------------------------------
 
 def test_atk_is_base_times_one_plus_percent_plus_flat():
-    """gcsim stats.go:45 — `s[BaseATK]*(1+s[ATKP]) + s[ATK]`."""
+    """gcsim stats.go:50 — `s[BaseATK]*(1+s[ATKP]) + s[ATK]`."""
     result = _value(stats.ATK_NODE, base_atk=800.0, atk_pct=0.5, flat_atk=311.0)
 
     assert result == pytest.approx(800.0 * 1.5 + 311.0)
