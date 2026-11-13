@@ -1,6 +1,6 @@
 # DESIGN: a formula fallback, so every team can be optimized
 
-**Status: P0 merged; P1 tasks 5–7 (synthetic recipe, resonance, conditional sets) built on `feat/math-fallback-p1-recipe` (2026-11-13). Owner rulings in `DECISIONS.md` §38: the estimate is opt-in for every team (D-F3), and Genshin Optimizer, not gcsim, is the accuracy comparator for the fallback (D-F4).** §2.4 below predates D-F4. Read "gcsim" there as "GO" for sheet verification; gcsim remains the oracle for the damage chain itself. The owner asked for two things:
+**Status: P0 merged; P1 complete (2026-11-13): tasks 3–7 merged (#368, #369), task 8 (routing, labels, assumptions panel) on `feat/math-fallback-p1-routing`. Plunges no longer make a character `partial` (owner, 2026-11-13). Owner rulings in `DECISIONS.md` §38: the estimate is opt-in for every team (D-F3), and Genshin Optimizer, not gcsim, is the accuracy comparator for the fallback (D-F4).** §2.4 below predates D-F4. Read "gcsim" there as "GO" for sheet verification; gcsim remains the oracle for the damage chain itself. The owner asked for two things:
 - an evaluation of carrying each character's gcsim status in its catalogue entry;
 - a plan for a Genshin Optimizer-style fallback that uses closed-form math instead of
   simulation, so every team can be optimized whatever its gcsim status.
@@ -49,7 +49,10 @@ gcsim: {
 ```
 
 - `partial` means gcsim knows the character but not every base action. Ganyu has no
-  `charge`, and some Travelers have no plunges.
+  `charge`, and some Travelers have no plunges. **Amended by the owner, 2026-11-13:** only a
+  missing normal, charged/aimed, skill or burst makes a character `partial`. Missing plunges
+  (and movement) stay in `missing_actions` and the tooltip. At the pin that moved 75 characters
+  from `partial` to `full`: 114 full, 14 partial, 22 none.
 - A list filter (`?gcsim=none`) and a badge in the team builder make the status visible
   *before* a search is attempted.
 - The fallback (§2) routes on this block (G14).
