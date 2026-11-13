@@ -115,9 +115,13 @@ class ScalingTerm:
 
     Nahida's Tri-Karma Purification is `ATK x a + EM x b` in **one** instance of damage. gcsim
     writes the second part as `FlatDmg = em * triKarmaEM`
-    (`internal/characters/nahida/skill.go:219-220`), and so does GO (the EM half is a flat
-    `dmgInc` premod on Nahida's sheet). So an extra term sits where flat damage sits: added
-    after `base_damage_bonus`, before the DMG-bonus multiplier.
+    (`internal/characters/nahida/skill.go:219-220`), so an extra term sits where flat damage
+    sits: added after `base_damage_bonus`, before the DMG-bonus multiplier.
+
+    GO (the formula comparator) sums every term into one base — `splitScaleDmgNode`,
+    `libs/gi/sheets/src/Characters/dataUtil.tsx:193-218` — and has no `base_damage_bonus`
+    to place them against, so the two agree whenever that bonus is zero, which it is for
+    every hit the app builds today. `tests/unit/test_go_single_hit_fixtures.py` checks it.
     """
 
     stat: ScalingStat
