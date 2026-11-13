@@ -29,6 +29,16 @@ import { CatalogueIcon } from '../../shared/icon/icon';
 import { ArtifactCard } from '../../shared/artifact-card/artifact-card';
 import { EntityToken } from '../../shared/token/token';
 import { RefusedHits } from '../../shared/refused-hits/refused-hits';
+import { FormulaPanel } from '../../shared/formula-panel/formula-panel';
+import { FormulaLabel } from '../../shared/formula-panel/formula-label';
+import {
+  FORMULA_LABEL,
+  FORMULA_SCORE_LABEL,
+  gcsimRefusal,
+  type ConditionGroup,
+  type GcsimRefusal,
+} from '../../sim/formula-calibration';
+import { FormulaEstimateService } from './formula-estimate.service';
 import { type Amplifying, type ScalingStat } from '../../sim/damage';
 import { SLOTS, type SearchResult, type Slot, search } from '../../sim/search';
 import { BuildsService, type BuildRead } from '../builds/builds.service';
@@ -61,6 +71,7 @@ import { damageShare, type CharacterShare } from '../../sim/damage-share';
 import {
   candidateStatsFrom,
   liveQuantitiesFor,
+  pairKey,
   searchRecipe,
 } from '../../sim/recipe-search';
 import {
@@ -240,7 +251,7 @@ export const SLOT_ORDER = [
   imports: [
     FormsModule, RouterLink, DecimalPipe, PercentPipe,
     CardPicker, CatalogueIcon, ElementChip, EntityToken, ArtifactCard, Combobox,
-    PreviousRuns, RefusedHits,
+    PreviousRuns, RefusedHits, FormulaPanel, FormulaLabel,
   ],
   templateUrl: './optimize.html',
   styleUrl: './optimize.scss',
@@ -442,6 +453,12 @@ export class OptimizePage implements OnInit {
     );
   });
 
+  /** Whether the reopened run was a formula estimate — labelled as one, never as a sim run. */
+  protected readonly savedRunIsFormula = computed(
+    () => (this.savedRun()?.objective as { kind?: string } | undefined)?.kind
+      === 'formula-estimate',
+  );
+
   /** The character the page is currently answering for, so saved runs can be narrowed. */
   protected readonly characterId = computed(
     () => this.build()?.character_id ?? null,
@@ -490,6 +507,19 @@ export class OptimizePage implements OnInit {
           weapon_ids: [...this.selectedWeapons()],
           wait_for_energy: this.waitForEnergy(),
           enemy_level: this.enemyLevel,
+          // **A formula result is saved as one, never as a sim run.** `kind` is what the saved
+          // run's view and the list's summary read to label it; the rows and the conditionals
+          // are what the number assumed, kept with it (DESIGN §2.5).
+          ...(this.resultIsFormula() ? {
+            kind: 'formula-estimate',
+            label: FORMULA_LABEL,
+            score_meaning: FORMULA_SCORE_LABEL,
+            rows: this.formulaRows().map((r) => ({
+              label: r.label, count: r.count, move: r.move, overrides: r.overrides,
+            })),
+            conditionals: this.formulaService.conditionals(),
+            assumptions: this.formulaAssumptions(),
+          } : {}),
         },
         snapshot: {
           build: {
@@ -516,7 +546,8 @@ export class OptimizePage implements OnInit {
           : null,
         iterations: found.evaluated,
         character_id: build.character_id ?? null,
-        rotation_id: this.rotationId() || null,
+        // A formula estimate ran no rotation, so it names none.
+        rotation_id: this.resultIsFormula() ? null : this.rotationId() || null,
       });
       this.savedRunId.set(saved.id);
     } catch (caught) {
@@ -658,7 +689,9 @@ export class OptimizePage implements OnInit {
       // known-bad. `loadFilterData` swallows its own failure by design, and treating an empty
       // catalogue as "nothing is simulable" would turn that into a silently disabled feature —
       // the same shape as a gate with nothing able to satisfy it.
-      .filter(([setId]) => catalogue.get(setId)?.simulable !== false)
+      // The formula estimate needs no gcsim key for a set, so it offers every one.
+      .filter(([setId]) => this.objective() === 'formula'
+        || catalogue.get(setId)?.simulable !== false)
       .map(([setId, slots]) => ({
         setId,
         name: catalogue.get(setId)?.name ?? `set ${setId}`,
@@ -1105,9 +1138,12 @@ export class OptimizePage implements OnInit {
    * search scores the damage of one hit. The column had no label at all, which is how a
    * reader ended up unable to say whether `745.2` was DPS, damage or an index.
    */
-  protected readonly scoreLabel = computed(
-    () => (this.objective() === 'rotation' ? 'Team DPS' : 'Hit damage'),
-  );
+  protected readonly scoreLabel = computed(() => {
+    // **What produced the result on screen, not which chip is lit.** A formula result stays a
+    // formula result after the mode is switched, and its number is never DPS (DESIGN §2.5).
+    if (this.resultIsFormula()) return FORMULA_SCORE_LABEL;
+    return this.objective() === 'rotation' ? 'Team DPS' : 'Hit damage';
+  });
 
   protected readonly rows = computed<ResultRow[]>(() => {
     const found = this.result();
@@ -1427,7 +1463,86 @@ export class OptimizePage implements OnInit {
    * front is not the same as inventing the user's data, and the two rules only look opposed:
    * the fields below start empty, this one does not.
    */
-  protected readonly objective = signal<'hit' | 'rotation'>('rotation');
+  protected readonly objective = signal<'hit' | 'rotation' | 'formula'>('rotation');
+
+  // ── The formula estimate (math-fallback P1, task 8) ─────────────────────────────────────
+  //
+  // D-F3 (`DECISIONS.md` §38): offered for **every** team. gcsim stays the default where it can
+  // run; the estimate is a labelled opt-in mode, and where gcsim refuses a member the refusal
+  // becomes a choice rather than a dead end (DESIGN §2.5).
+  private readonly formulaService = inject(FormulaEstimateService);
+  /** The formula target's rows — read by `canSearchFormula`. */
+  protected readonly formulaRows = this.formulaService.rows;
+  /** The conditions the assumptions panel draws, for this team and the sets in scope. */
+  protected readonly formulaGroups = signal<ConditionGroup[]>([]);
+  /** The last formula estimate's own assumptions, `meta.formula.assumptions`. */
+  protected readonly formulaAssumptions = signal<string[]>([]);
+  /** Sets the estimate could not score as a 4-piece, named. */
+  protected readonly formulaWithheld = signal<string[]>([]);
+  /** True when the result on screen came from a formula recipe — the label follows it. */
+  protected readonly resultIsFormula = signal(false);
+  /** What gcsim refused on the last rotation search, when the estimate can answer instead. */
+  protected readonly gcsimRefused = signal<GcsimRefusal | null>(null);
+
+  /** The builds the estimate treats as the team: the chosen team, or the build alone. */
+  protected readonly teamBuilds = computed(() => {
+    const build = this.build();
+    if (!build) return [];
+    const team = this.team();
+    const members = team ? buildsInTeam(team, this.builds()) : [];
+    return members.some((b) => b.id === build.id) ? members : [build];
+  });
+
+  /**
+   * Members gcsim has no key for, **known before anything is run** — the catalogue's `gcsim`
+   * block (task 3). A rotation search with one of them can only end in a 422, so the page says
+   * so up front and offers the estimate.
+   */
+  protected readonly gcsimBlocked = computed(() => this.teamBuilds()
+    .filter((b) => b.character?.gcsim?.status === 'none')
+    .map((b) => b.character?.name ?? 'a member'));
+
+  /** Keep a target for the chosen build while the formula mode is on. */
+  private readonly seedFormulaTarget = effect(() => {
+    const id = this.buildId();
+    const hits = this.hits();
+    if (this.objective() !== 'formula' || !id || !hits.length) return;
+    this.formulaService.ensureTarget(id, hits, this.hitIndex());
+  });
+
+  /** The assumptions panel's conditions follow the team and the sets chosen. */
+  private readonly refreshFormulaGroups = effect(() => {
+    if (this.objective() !== 'formula') return;
+    const team = this.teamBuilds();
+    const pair = this.chosenPair();
+    const sets = [...this.selectedSets(), ...(pair ?? [])];
+    if (!team.length) {
+      this.formulaGroups.set([]);
+      return;
+    }
+    this.formulaService.groups(team, sets)
+      .then((groups) => this.formulaGroups.set(groups))
+      .catch(() => this.formulaGroups.set([]));
+  });
+
+  /** A formula search needs a target for this build and something to search. */
+  protected readonly canSearchFormula = computed(
+    () => !this.searching()
+      && this.formulaRows().length > 0
+      && this.formulaService.forBuild() === this.buildId()
+      && (this.selectedSets().size > 0 || this.chosenPair() !== null),
+  );
+
+  /** "Use the formula estimate" from a gcsim refusal: switch mode and run it. */
+  protected async useFormulaEstimate(): Promise<void> {
+    this.gcsimRefused.set(null);
+    this.objective.set('formula');
+    const hits = this.hits();
+    if (this.buildId() && hits.length) {
+      this.formulaService.ensureTarget(this.buildId(), hits, this.hitIndex());
+    }
+    if (this.canOptimize()) await this.optimizeNow();
+  }
   protected readonly rotations = signal<
     { id: string; name: string; team_id: string }[]
   >([]);
@@ -1734,7 +1849,8 @@ export class OptimizePage implements OnInit {
   private restoreSelections(characterId: string | null): void {
     const found = recallSelections(this.store, characterId);
     if (!found) return;
-    if (found.objective === 'hit' || found.objective === 'rotation') {
+    if (found.objective === 'hit' || found.objective === 'rotation'
+      || found.objective === 'formula') {
       this.objective.set(found.objective);
     }
     const reachable = new Set(this.fourPieceChoices().map((c) => c.setId));
@@ -1991,6 +2107,7 @@ export class OptimizePage implements OnInit {
     // it, which in rotation mode spends a six-second gcsim calibration to return the empty
     // list it had just predicted.
     if (this.impossibleSlots().length > 0) return false;
+    if (this.objective() === 'formula') return this.canSearchFormula();
     return this.objective() === 'rotation' ? this.canSearchRotation() : this.canSearch();
   }
 
@@ -2001,6 +2118,8 @@ export class OptimizePage implements OnInit {
     // that this combination is what the user meant; a filter switched on and off again would
     // otherwise be remembered as a decision.
     this.keepSelections();
+    this.gcsimRefused.set(null);
+    if (this.objective() === 'formula') return this.runFormula();
     return this.objective() === 'rotation' ? this.runRotation() : this.run();
   }
 
@@ -2028,6 +2147,9 @@ export class OptimizePage implements OnInit {
     this.calibration.set(null);
     this.caveats.set(null);
     this.recipeNotes.set(null);
+    this.resultIsFormula.set(false);
+    this.formulaAssumptions.set([]);
+    this.formulaWithheld.set([]);
   }
 
   protected async run(): Promise<void> {
@@ -2254,10 +2376,100 @@ export class OptimizePage implements OnInit {
       this.comparator.set(this.comparatorFrom(pieces, calibrated));
     } catch (err) {
       this.result.set(null);
-      this.actionError.set(apiErrorMessage(err));
+      const message = apiErrorMessage(err);
+      // **A refusal the estimate can answer is a choice, not an error** (DESIGN §2.5, G14).
+      // Anything else — a network failure, a validation error — stays an error.
+      const refused = gcsimRefusal(message);
+      if (refused) this.gcsimRefused.set(refused);
+      else this.actionError.set(message);
     } finally {
       this.searching.set(false);
       this.calibrating.set(null);
+    }
+  }
+
+  /**
+   * Search against a **formula recipe** instead of a gcsim calibration.
+   *
+   * Math-fallback P1, task 8. The same `searchRecipe` the rotation search runs, over recipes
+   * synthesised from the build's own hits, its sets' conditional bonuses and the team's
+   * resonance (`formula-calibration.ts`). **No gcsim, no recipe cache, no run corpus**: the
+   * estimate is rebuilt from the API on every search, and nothing it produces is written where
+   * a gcsim recipe or sim run could be read back as one.
+   */
+  protected async runFormula(): Promise<void> {
+    const id = this.buildId();
+    const build = this.build();
+    if (!id || !build) return;
+    this.actionError.set(null);
+    this.equipped.set(null);
+    this.result.set(null);
+    this.weaponResults.set([]);
+    this.searching.set(true);
+    try {
+      const snapshot = await this.optimize.inventory();
+      this.candidates.set(snapshot.artifacts);
+      this.unreadable.set(snapshot.unreadable);
+      this.truncated.set(snapshot.truncated);
+      const pieces = this.constrained(
+        snapshot.artifacts.filter((piece) => this.isKnownSlot(piece)),
+      );
+      const chosen = this.reachableSets(pieces).filter((setId) => this.isSelected(setId));
+      const pair = this.chosenPair();
+
+      const { calibration, formula } = await this.formulaService.estimate({
+        buildId: id,
+        build,
+        team: this.teamBuilds(),
+        channel: this.channel,
+        scope: this.scope,
+        enemyLevel: this.enemyLevel,
+        fourPieceSetIds: chosen,
+      });
+      // A 2+2 is the no-set recipe plus both sets' pools, which the search adds — so the pair
+      // state is the baseline recipe, keyed as the search expects.
+      const byPair = new Map(calibration.byPair);
+      if (pair) byPair.set(pairKey(pair[0], pair[1]), formula.noFourPiece);
+
+      const found = searchRecipe(
+        pieces.map((piece) => ({
+          id: piece.id,
+          slot: piece.slot as Slot,
+          setId: piece.set_id ?? -1,
+          stats: piece.stats,
+        })),
+        {
+          recipes: {
+            byFourPieceSet: calibration.byFourPieceSet,
+            byPair,
+            noFourPiece: formula.noFourPiece,
+          },
+          setBonuses: formula.setBonuses,
+          fourPieceSets: chosen,
+          twoPiecePairs: pair === null ? [] : [pair],
+        },
+      );
+      this.resultIsFormula.set(true);
+      this.result.set(found);
+      const winner = found.builds[0];
+      const byId = new Map(pieces.map((piece) => [piece.id, piece.stats]));
+      this.scoredRecipe.set(calibration.byFourPieceSet.get(chosen[0]) ?? formula.noFourPiece);
+      this.winningPools.set(
+        winner ? winner.artifactIds.map((pieceId) => byId.get(pieceId) ?? {}) : null,
+      );
+      this.recipeNotes.set({ uncoveredSets: found.uncoveredSets, boundPruned: found.boundPruned });
+      this.calibration.set(calibration);
+      this.caveats.set(calibration.caveats);
+      this.comparator.set(this.comparatorFrom(pieces, calibration));
+      this.formulaAssumptions.set(formula.assumptions);
+      this.formulaWithheld.set(
+        formula.withheld.map((w) => `${this.setLabel(w.setId)} (${w.reason})`),
+      );
+    } catch (err) {
+      this.result.set(null);
+      this.actionError.set(apiErrorMessage(err));
+    } finally {
+      this.searching.set(false);
     }
   }
 
@@ -2285,7 +2497,9 @@ export class OptimizePage implements OnInit {
     // matter rather than an arbitrary third.
     return [...this.slotsBySet(pieces)]
       .filter(([, slots]) => slots.size >= 4)
-      .filter(([setId]) => catalogue.get(setId)?.simulable !== false)
+      // A formula estimate needs no gcsim key for a set (`fourPieceChoices` says the same).
+      .filter(([setId]) => this.objective() === 'formula'
+        || catalogue.get(setId)?.simulable !== false)
       .sort((a, b) => b[1].size - a[1].size || a[0] - b[0])
       .map(([setId]) => setId);
   }

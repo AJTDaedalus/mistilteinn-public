@@ -30,6 +30,9 @@
           <h2>{{ run.name || 'Untitled run' }}</h2>
           <button type="button" (click)="closeSavedRun()">Close</button>
         </header>
+        @if (savedRunIsFormula()) {
+          <formula-label [detail]="false" />
+        }
         @if (savedRunIsStale()) {
           <p class="saved-run__stale" role="status">
             Gear has changed since this ran.
@@ -91,6 +94,15 @@
           [attr.aria-pressed]="objective() === 'hit'"
           (click)="objective.set('hit')"
         >For a single hit</button>
+        <!-- **The formula estimate, opt-in for every team** (D-F3, `DECISIONS.md` §38). gcsim
+             stays the default; this is labelled for what it is wherever its result shows. -->
+        <button
+          type="button"
+          class="chip chip--formula"
+          [class.chip--on]="objective() === 'formula'"
+          [attr.aria-pressed]="objective() === 'formula'"
+          (click)="objective.set('formula')"
+        >Formula estimate (fast, no simulation)</button>
       </fieldset>
     </div>
 
@@ -153,7 +165,7 @@
            reads neither. Seen on a screenshot sitting beside "Optimize with rotation", which
            is a setting that looks like it matters and does not. Enemy level stays: it reaches
            the gcsim config too. -->
-      @if (objective() === 'hit' && buildId()) {
+      @if ((objective() === 'hit' || objective() === 'formula') && buildId()) {
         <label>
           Element
           <select aria-label="Element" [(ngModel)]="channel">
@@ -191,8 +203,29 @@
     @if (buildId() && objective() === 'hit' && !hit()) {
       <p class="hint">This build has no talent levels set.</p>
     }
-    @if (!buildId() && objective() === 'hit') {
+    @if (!buildId() && (objective() === 'hit' || objective() === 'formula')) {
       <p class="hint">Choose a build first.</p>
+    }
+
+    <!-- **Known before the click** (task 3's gcsim block): a rotation search with a member
+         gcsim has no key for can only end in a 422, so the choice is offered up front. -->
+    @if (objective() === 'rotation' && gcsimBlocked().length) {
+      <div class="gcsim-choice" role="note">
+        <p>
+          gcsim can't run {{ gcsimBlocked().join(', ') }}. Use the formula estimate?
+        </p>
+        <button type="button" (click)="useFormulaEstimate()">Use the formula estimate</button>
+      </div>
+    }
+
+    @if (objective() === 'formula' && buildId()) {
+      <formula-panel
+        [hits]="hits()"
+        [refusedHits]="refusedHits()"
+        [groups]="formulaGroups()"
+        [assumptions]="formulaAssumptions()"
+        [withheld]="formulaWithheld()"
+      />
     }
 
     <!-- The rotation objective (R.8/R.9).
@@ -205,7 +238,9 @@
          the single-hit search while ignoring everything set below it. Choosing a rotation and
          a 4-piece and then pressing the wrong button is how a filter looks like it did
          nothing. One button, at the end, after everything it reads. -->
-    <div class="objective">
+    <!-- Hidden outside rotation mode: it holds only the rotation picker, and otherwise drew an
+         empty bordered box between the controls and the next section. -->
+    <div class="objective" [hidden]="objective() !== 'rotation'">
 
       @if (objective() === 'rotation') {
         <!-- A `<span>`, not a `<label>`: a label must wrap a real form control, and the
@@ -279,8 +314,8 @@
       </fieldset>
     }
 
-    @if (objective() === 'rotation') {
-      @if (!rotations().length) {
+    @if (objective() === 'rotation' || objective() === 'formula') {
+      @if (objective() === 'rotation' && !rotations().length) {
         <!-- "searching against it" was reported as odd, and it was: the search runs the
              rotation, it does not search it (#274). It also has an action, so it links. -->
         <p class="hint">
@@ -323,7 +358,7 @@
                text, indistinguishable from a caption — and it appeared before you had picked
                anything, warning about something you had not done. It is a real limitation and
                it should look like one, at the moment it applies. -->
-          @if (unsimulableSets().length && selectedSets().size) {
+          @if (objective() === 'rotation' && unsimulableSets().length && selectedSets().size) {
             <p class="warn set-filter__caveat">
               gcsim cannot simulate {{ unsimulableSets().join(', ') }}.
             </p>
@@ -353,6 +388,7 @@
                  inventory could field four of, which is ~28 calibrations at roughly six
                  seconds each, and nobody would wait for that. "None" undid a selection the
                  picker already clears. -->
+            @if (objective() === 'rotation') {
             <div class="filter-actions">
               <!-- **Say what is being counted.** This read as a bare `1 calibration` floating
                    beside the 2-piece picker, in mono, with nothing saying what a calibration
@@ -366,6 +402,7 @@
                 }
               </span>
             </div>
+            }
           </div>
 
           <!-- The energy model. Owner's ruling: waiting is an *option*, off by default, so
@@ -379,6 +416,7 @@
                control belonging to body copy. It was `align-items` losing a specificity
                fight to a `label` rule elsewhere on the page, and the answer is not a stronger
                selector: the markup now says what the box is for. -->
+          @if (objective() === 'rotation') {
           <div class="energy-model">
             <label class="energy-model__choice">
               <input
@@ -423,6 +461,7 @@
               }
             }
           </div>
+          }
 
           <!-- The set half of the guide. Captured since 2026-09-02 and read by nothing until
                2026-09-04 — 346 rows served to no caller. -->
@@ -568,6 +607,21 @@
       <p class="error" role="alert">{{ message }}</p>
     }
 
+    <!-- **Reasons, not dead ends** (DESIGN §2.5, G14): the 422 that named a member gcsim
+         cannot run is a choice. gcsim's own sentence stays visible beside it. -->
+    @if (gcsimRefused(); as refused) {
+      <div class="gcsim-choice" role="alert">
+        <p>gcsim can't run {{ refused.name }}. Use the formula estimate?</p>
+        <p class="hint">{{ refused.message }}</p>
+        <div class="gcsim-choice__actions">
+          <button type="button" (click)="useFormulaEstimate()">Use the formula estimate</button>
+          <button type="button" class="gcsim-choice__dismiss" (click)="gcsimRefused.set(null)">
+            Not now
+          </button>
+        </div>
+      </div>
+    }
+
     @if (unreadable().length) {
       <!-- OQ-O2: reported, never swallowed. A search over an inventory quietly missing
            pieces recommends the best of what it was shown. -->
@@ -588,6 +642,9 @@ Only part of your inventory was searched.
     }
 
     @if (result(); as found) {
+      @if (resultIsFormula()) {
+        <formula-label class="results-label" />
+      }
       <!-- **Saving is offered, never automatic.** A search a user was only trying out should
            not accumulate in their library — the list is a record they curate, and a page that
            saved every run would make it a log they have to prune. -->

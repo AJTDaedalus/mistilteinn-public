@@ -344,6 +344,42 @@ dialog,
   box-shadow: var(--glow-brass);
 }
 
+// ── The formula estimate (math-fallback P1, task 8) ──────────────────────────────────────
+//
+// **A style distinct from gcsim results** (`DESIGN_team_math_fallback.md` §2.5): dashed amber,
+// which no gcsim surface uses, on the mode chip, the result label and the refusal choice alike.
+// Global because Optimize, Rank and Upgrade all draw them; three copies would drift.
+.chip--formula {
+  border-style: dashed;
+}
+
+.score-mode {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.gcsim-choice {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  margin: var(--space-2) 0;
+  padding: var(--space-3);
+  border: 1px dashed var(--amber);
+  border-radius: var(--radius-1);
+
+  p { margin: 0; }
+}
+
+.gcsim-choice__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 // A row of chips, and the text inside one. Both lived only in `builds.scss` while `/teams`
 // drew the same filter with `.vision` and `.vision--on` — **classes with no rule anywhere**,
 // so its six element buttons were unstyled and pressing one produced no pressed state at all.

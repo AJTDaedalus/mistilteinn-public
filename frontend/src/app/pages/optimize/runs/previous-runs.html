@@ -51,7 +51,11 @@
             @if (margin(row.margin); as ahead) {
               <span class="runs__margin">{{ ahead }}</span>
             }
-            <span class="runs__meta">{{ energyModel(row) }}</span>
+            @if (isFormula(row)) {
+              <span class="runs__badge runs__badge--formula" title="Formula estimate — no simulation">Formula estimate</span>
+            } @else {
+              <span class="runs__meta">{{ energyModel(row) }}</span>
+            }
             <span class="runs__meta">{{ row.iterations }} iterations</span>
             @if (shared(row.visibility)) {
               <span class="runs__badge">shared</span>

@@ -39,6 +39,8 @@
 
 .runs__open {
   display: flex;
+  /* Wraps at phone width: the score, margin and meta overran 390px, more so with a badge. */
+  flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-3);
   width: 100%;
@@ -69,4 +71,11 @@
   border-radius: var(--radius-pill);
   color: var(--ink-dim);
   font-size: var(--text-xs);
+}
+
+/* The formula estimate's own style (DESIGN §2.5): dashed amber, as everywhere it shows. */
+.runs__badge--formula {
+  border-style: dashed;
+  border-color: var(--amber);
+  color: var(--amber);
 }

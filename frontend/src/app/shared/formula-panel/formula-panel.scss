@@ -1,0 +1,211 @@
+:host {
+  display: block;
+  margin-block: var(--space-3);
+}
+
+.formula {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px dashed var(--amber);
+  border-radius: var(--radius-2);
+  background: var(--surface);
+}
+
+.formula__title,
+.assumptions__title {
+  margin: 0;
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  font-size: var(--text-lg);
+  color: var(--amber);
+}
+
+.assumptions__title {
+  font-size: var(--text-md);
+}
+
+.formula__rows {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.formula__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2) var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--surface-rule);
+}
+
+.formula__field {
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--ink-dim);
+  min-width: 0;
+
+  select,
+  input {
+    max-width: 100%;
+  }
+}
+
+.formula__field--hit {
+  flex: 1 1 16rem;
+
+  select {
+    width: 100%;
+  }
+}
+
+.formula__field--count input {
+  width: 6rem;
+}
+
+.formula__note,
+.assumptions__static,
+.assumptions__unmodelled,
+.assumptions__cite {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+}
+
+.formula__note {
+  color: var(--warning);
+}
+
+.formula__overrides {
+  flex-basis: 100%;
+  font-size: var(--text-sm);
+
+  summary {
+    cursor: pointer;
+    color: var(--ink-dim);
+  }
+}
+
+.formula__override {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  color: var(--ink-dim);
+}
+
+.linkish {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brass-hi);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-sm);
+
+  &:disabled {
+    color: var(--ink-faint);
+    cursor: default;
+  }
+}
+
+.assumptions {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+}
+
+.assumptions__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.assumptions__group {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--surface-rule);
+  border-radius: var(--radius-1);
+  min-width: 0;
+
+  legend {
+    padding: 0 var(--space-1);
+    color: var(--ink);
+    font-size: var(--text-sm);
+  }
+}
+
+.assumptions__condition {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+}
+
+.assumptions__toggle,
+.assumptions__value {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--ink);
+  font-size: var(--text-sm);
+}
+
+.assumptions__value {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+
+  select {
+    max-width: 100%;
+  }
+}
+
+.assumptions__value input {
+  width: 5rem;
+}
+
+/* Citations are file paths and line ranges with no spaces; at 390px they pushed the page
+   sideways until they were allowed to break anywhere. */
+.assumptions__cite,
+.assumptions__unmodelled,
+.assumptions__list,
+.formula__note {
+  overflow-wrap: anywhere;
+}
+
+.assumptions__default {
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+}
+
+.assumptions__default--changed {
+  color: var(--warning);
+}
+
+.assumptions__subtitle {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--ink-dim);
+}
+
+.assumptions__list {
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--ink-dim);
+
+  li + li {
+    margin-top: var(--space-1);
+  }
+}

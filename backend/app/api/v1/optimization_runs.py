@@ -34,11 +34,17 @@ _Repo = Annotated[OptimizationRunRepository, Depends(get_optimization_run_repo)]
 def _summary(run: object) -> dict:
     """The fields a list row needs, drawn from `objective` so no second fetch is required."""
     objective = getattr(run, "objective", None) or {}
+    # A formula estimate (math-fallback P1, task 8) ran no simulation, so it has no energy
+    # model, and its row must say what it is rather than read as a sim run.
+    formula = objective.get("kind") == "formula-estimate"
     return {
         "sets": objective.get("artifact_set_ids") or [],
         "weapons": objective.get("weapon_ids") or [],
-        "energy_model": "waiting" if objective.get("wait_for_energy") else "skipping",
+        "energy_model": None if formula else (
+            "waiting" if objective.get("wait_for_energy") else "skipping"
+        ),
         "enemy": objective.get("enemy"),
+        "formula_estimate": formula,
     }
 
 
