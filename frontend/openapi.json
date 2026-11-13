@@ -628,6 +628,24 @@
             }
           },
           {
+            "name": "gcsim",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/GcsimSupport"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only entries with this gcsim status at the pin (computed on read).",
+              "title": "Gcsim"
+            },
+            "description": "Only entries with this gcsim status at the pin (computed on read)."
+          },
+          {
             "name": "offset",
             "in": "query",
             "required": false,
@@ -784,6 +802,24 @@
               "default": false,
               "title": "Include Beta"
             }
+          },
+          {
+            "name": "gcsim",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/GcsimSupport"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only entries with this gcsim status at the pin (computed on read).",
+              "title": "Gcsim"
+            },
+            "description": "Only entries with this gcsim status at the pin (computed on read)."
           },
           {
             "name": "offset",
@@ -978,6 +1014,24 @@
               ],
               "title": "Name"
             }
+          },
+          {
+            "name": "gcsim",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/GcsimSupport"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only entries with this gcsim status at the pin (computed on read).",
+              "title": "Gcsim"
+            },
+            "description": "Only entries with this gcsim status at the pin (computed on read)."
           },
           {
             "name": "offset",
@@ -2115,6 +2169,58 @@
                     "$ref": "#/components/schemas/AvailableHitRead"
                   },
                   "title": "Response Build Hits Api V1 Builds  Build Id  Hits Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/builds/{build_id}/hits/refused": {
+      "get": {
+        "tags": [
+          "builds"
+        ],
+        "summary": "Build Refused Hits",
+        "description": "The damage rows this build's talents carry that cannot be scored, each with its reason.\n\n**A sibling of `/hits`, not entries in it.** `/hits` promises that everything it lists is\nsomething `HitSpec` accepts, and every consumer relies on that \u2014 the search context, the\nexplain call, the kernels. Folding refusals into it would break that promise for every\nclient that does not know to skip them. Here they are published for the pickers to show\ngreyed out (owner, 2026-11-13), from the same rows at the same levels.",
+        "operationId": "build_refused_hits_api_v1_builds__build_id__hits_refused_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "build_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Build Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RefusedHitRead"
+                  },
+                  "title": "Response Build Refused Hits Api V1 Builds  Build Id  Hits Refused Get"
                 }
               }
             }
@@ -5114,13 +5220,19 @@
             "type": "boolean",
             "title": "Simulable",
             "default": false
+          },
+          "gcsim": {
+            "$ref": "#/components/schemas/GcsimStatusRead",
+            "description": "The same answer as `simulable`, in the shape characters and weapons publish.\n\n`simulable` stays \u2014 removing it would not be an additive change \u2014 and both are read\noff one lookup, so they cannot disagree.",
+            "readOnly": true
           }
         },
         "type": "object",
         "required": [
           "id",
           "nanoka_id",
-          "name"
+          "name",
+          "gcsim"
         ],
         "title": "ArtifactSetRead",
         "description": "One artifact set and its affixes.\n\n`piece_thresholds` is **data**, not the constant `[2, 4]`: 60 of the 65 sets at 7.0.51\nare `[2, 4]` and five are `[1]` \u2014 the \"Prayers\" circlets. A client hardcoding 2pc/4pc\ngets those five wrong, which is why the field is on the summary and not buried."
@@ -5178,6 +5290,12 @@
               }
             ],
             "title": "Icon"
+          },
+          "param_list": {
+            "items": {},
+            "type": "array",
+            "title": "Param List",
+            "default": []
           }
         },
         "type": "object",
@@ -6313,6 +6431,245 @@
         "title": "CallNode",
         "description": "`f(a, b);` \u2014 a call to a user-defined function."
       },
+      "CharacterAttackRead": {
+        "properties": {
+          "position": {
+            "type": "integer",
+            "title": "Position"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "element": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Element"
+          },
+          "icd_tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icd Tag"
+          },
+          "icd_group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icd Group"
+          },
+          "gauge": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gauge"
+          },
+          "poise_level": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poise Level"
+          },
+          "poise_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poise Value"
+          },
+          "attack_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attack Type"
+          },
+          "strike_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strike Type"
+          },
+          "damage_param": {
+            "title": "Damage Param"
+          }
+        },
+        "type": "object",
+        "required": [
+          "position",
+          "name"
+        ],
+        "title": "CharacterAttackRead",
+        "description": "One `attack[]` entry: a damage instance, its element, ICD and gauge, as published.\n\n`element` is the game's internal spelling (`Fire`, `Electric`, `AntiFire`), not\n`Element`, and `damage_param` is a string, a number, a list or null as the payload gave\nit. `models/character.py:CharacterAttack` says why neither is interpreted here."
+      },
+      "CharacterEnergyDropRead": {
+        "properties": {
+          "position": {
+            "type": "integer",
+            "title": "Position"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "skill": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skill"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "element": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Element"
+          },
+          "per_drop": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Drop"
+          },
+          "lifetime": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifetime"
+          },
+          "chance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chance"
+          },
+          "cd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cd"
+          },
+          "cd_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cd Ref"
+          },
+          "applications": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applications"
+          },
+          "drop_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Drop Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "position",
+          "name"
+        ],
+        "title": "CharacterEnergyDropRead",
+        "description": "One `energy[]` entry: a particle drop. `chance` is a **percent**, as published."
+      },
       "CharacterRead": {
         "properties": {
           "weapon_type": {
@@ -6463,6 +6820,22 @@
             "title": "Ascension Passives",
             "default": []
           },
+          "attacks": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterAttackRead"
+            },
+            "type": "array",
+            "title": "Attacks",
+            "default": []
+          },
+          "energy_drops": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterEnergyDropRead"
+            },
+            "type": "array",
+            "title": "Energy Drops",
+            "default": []
+          },
           "weapon_type_display": {
             "type": "string",
             "title": "Weapon Type Display",
@@ -6506,6 +6879,11 @@
             "title": "Stars",
             "description": "`5` for `five_star`, from `Rarity.stars`.\n\nPublished for the same reason `WeaponSummary.stars` is: the characters page was\nderiving it with `rarity === 'five_star' ? 5 : 4`, which silently calls anything else\n\u2014 a lower rarity, a null \u2014 a four-star. A second copy of a rule that already exists\nserver-side, and the copy is the one that guesses.",
             "readOnly": true
+          },
+          "gcsim": {
+            "$ref": "#/components/schemas/GcsimStatusRead",
+            "description": "Whether gcsim can simulate this character, and if not wholly, what it lacks.\n\n**On the summary, not only on the detail**, because the surfaces that need it \u2014 the\ncatalogue grid, the team builder's slots (through `BuildRead.character`) \u2014 are lists.\nComputed, like `display_name` beside it: D-F1 says a stored column goes stale at every\nre-pin.",
+            "readOnly": true
           }
         },
         "type": "object",
@@ -6525,7 +6903,8 @@
           "weapon_type_icon",
           "element_icon",
           "display_name",
-          "stars"
+          "stars",
+          "gcsim"
         ],
         "title": "CharacterRead",
         "description": "A character in full: base stats, curves, ascension table, and the kit rows."
@@ -6630,6 +7009,11 @@
             "title": "Stars",
             "description": "`5` for `five_star`, from `Rarity.stars`.\n\nPublished for the same reason `WeaponSummary.stars` is: the characters page was\nderiving it with `rarity === 'five_star' ? 5 : 4`, which silently calls anything else\n\u2014 a lower rarity, a null \u2014 a four-star. A second copy of a rule that already exists\nserver-side, and the copy is the one that guesses.",
             "readOnly": true
+          },
+          "gcsim": {
+            "$ref": "#/components/schemas/GcsimStatusRead",
+            "description": "Whether gcsim can simulate this character, and if not wholly, what it lacks.\n\n**On the summary, not only on the detail**, because the surfaces that need it \u2014 the\ncatalogue grid, the team builder's slots (through `BuildRead.character`) \u2014 are lists.\nComputed, like `display_name` beside it: D-F1 says a stored column goes stale at every\nre-pin.",
+            "readOnly": true
           }
         },
         "type": "object",
@@ -6643,7 +7027,8 @@
           "weapon_type_icon",
           "element_icon",
           "display_name",
-          "stars"
+          "stars",
+          "gcsim"
         ],
         "title": "CharacterSummary",
         "description": "A character as a list entry."
@@ -6782,6 +7167,12 @@
               }
             ],
             "title": "Icon"
+          },
+          "param_list": {
+            "items": {},
+            "type": "array",
+            "title": "Param List",
+            "default": []
           }
         },
         "type": "object",
@@ -8315,6 +8706,64 @@
         ],
         "title": "GcsimComparisonRequest",
         "description": "Body for `POST /builds/{id}/compare-weapons/gcsim` (W.6).\n\n**`rotation_id` is required and has no default.** A rotation belongs to a *team*, and a\nbuild can sit in several teams each with several rotations, so there is no rotation this\nendpoint could pick on its own. Inventing one would make the ranking an answer about a\nrotation the user never wrote \u2014 which is the same objection that closed Chunk I's\noptimization half."
+      },
+      "GcsimStatusRead": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/GcsimSupport"
+          },
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          },
+          "pin": {
+            "type": "string",
+            "title": "Pin"
+          },
+          "missing_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Actions",
+            "default": []
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "pin"
+        ],
+        "title": "GcsimStatusRead",
+        "description": "What gcsim can simulate of this entry, at the pin \u2014 computed on read (D-F1).\n\n`app/services/gcsim_status.py` defines the three statuses and why weapons and sets only\never take two of them. Published so the catalogue, the team builder and the optimizers\nknow *before* a search what used to surface only as a 422 after one."
+      },
+      "GcsimSupport": {
+        "type": "string",
+        "enum": [
+          "full",
+          "partial",
+          "none"
+        ],
+        "title": "GcsimSupport",
+        "description": "How much of an entry gcsim can simulate at the pin."
       },
       "GoodImportRequest": {
         "properties": {
@@ -10607,6 +11056,34 @@
         ],
         "title": "RefusedCandidate",
         "description": "A candidate that could not be turned into a config, and why.\n\n**Reported, never dropped.** A silently omitted candidate is a ranking that is missing a\nweapon the user asked about, presented as though it had considered it \u2014 and the omission\nis invisible precisely because the result still looks like a complete answer."
+      },
+      "RefusedHitRead": {
+        "properties": {
+          "talent": {
+            "$ref": "#/components/schemas/TalentType"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "spec": {
+            "type": "string",
+            "title": "Spec"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "talent",
+          "label",
+          "spec",
+          "reason"
+        ],
+        "title": "RefusedHitRead",
+        "description": "A damage row the build's talents carry that cannot be scored, and why.\n\n**Not a hit.** It has no multiplier and `HitSpec` will not accept it; it is published so a\npicker can show it greyed out with its reason instead of leaving it out (owner,\n2026-11-13) \u2014 Windsunder Arrow missing from Venti's list reads as a broken picker."
       },
       "RegisterRequest": {
         "properties": {
@@ -13387,6 +13864,11 @@
             "title": "Stars",
             "description": "`5` for `five_star`. The card draws these; nobody reads `four_star`.",
             "readOnly": true
+          },
+          "gcsim": {
+            "$ref": "#/components/schemas/GcsimStatusRead",
+            "description": "Whether gcsim has this weapon at the pin: `full` or `none`, never `partial`.",
+            "readOnly": true
           }
         },
         "type": "object",
@@ -13399,7 +13881,8 @@
           "weapon_type_display",
           "weapon_type_icon",
           "sub_stat_display",
-          "stars"
+          "stars",
+          "gcsim"
         ],
         "title": "WeaponRead",
         "description": "A weapon in full, with its growth curves and refinement rows."
@@ -13626,6 +14109,11 @@
             "title": "Stars",
             "description": "`5` for `five_star`. The card draws these; nobody reads `four_star`.",
             "readOnly": true
+          },
+          "gcsim": {
+            "$ref": "#/components/schemas/GcsimStatusRead",
+            "description": "Whether gcsim has this weapon at the pin: `full` or `none`, never `partial`.",
+            "readOnly": true
           }
         },
         "type": "object",
@@ -13638,7 +14126,8 @@
           "weapon_type_display",
           "weapon_type_icon",
           "sub_stat_display",
-          "stars"
+          "stars",
+          "gcsim"
         ],
         "title": "WeaponSummary",
         "description": "A weapon as a list entry.\n\n`base_atk` and `sub_stat_type` are nullable because eight rows (the `ITEM_TPS_WEAPON`\nfamily, ids 224001-224008) publish `atk: null` and `sub: null`. They are imported\nvisibly rather than dropped; a client should expect to see them."

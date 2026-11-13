@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 
 import { ElementChip } from '../../shared/element/element';
 import { CatalogueIcon } from '../../shared/icon/icon';
+import { GcsimBadge } from '../../shared/gcsim-badge/gcsim-badge';
 import { WeaponMark } from '../../shared/weapon-mark/weapon-mark';
 
 import { catalogueList } from './catalogue-list';
@@ -33,7 +34,7 @@ const ELEMENTS: readonly { value: string; icon: string | null }[] = [
  */
 @Component({
   selector: 'page-characters',
-  imports: [FormsModule, CatalogueIcon, ElementChip, WeaponMark],
+  imports: [FormsModule, CatalogueIcon, ElementChip, GcsimBadge, WeaponMark],
   templateUrl: './characters.html',
   styleUrl: './catalogue.scss',
 })

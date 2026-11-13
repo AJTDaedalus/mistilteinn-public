@@ -117,6 +117,8 @@
                 [label]="character.weapon_type_display"
                 [size]="16"
               />
+              <!-- Only the exceptions: nothing for a character gcsim simulates fully. -->
+              <gcsim-badge [gcsim]="character.gcsim" />
             </span>
           </span>
         </li>

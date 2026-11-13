@@ -56,6 +56,8 @@
                 placeholder="None"
                 (valueChange)="pick(slot, $event ?? '')"
               />
+              <!-- Before the search, not after its 422: whether gcsim can run this member. -->
+              <gcsim-badge [gcsim]="gcsimFor(slot)" />
             </li>
           }
         </ol>
@@ -155,6 +157,7 @@
                         <span class="party__who">
                           <span class="party__name">{{ member.name }}</span>
                           <span class="party__meta">Lv{{ member.level }} · {{ member.weapon }}</span>
+                          <gcsim-badge [gcsim]="member.gcsim" />
                         </span>
                       </span>
                     }

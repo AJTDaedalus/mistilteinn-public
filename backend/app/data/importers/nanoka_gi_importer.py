@@ -39,10 +39,12 @@ from app.data.importers.nanoka_gi_mappings import (
     NanokaMappingError,
     artifact_affix_rows,
     artifact_set_fields,
+    attack_rows,
     character_ascension_cost_rows,
     character_fields,
     constellation_rows,
     enemy_profile_fields,
+    energy_rows,
     is_statless_monster,
     is_weapon_skin,
     material_rows,
@@ -55,7 +57,15 @@ from app.data.importers.nanoka_gi_mappings import (
 )
 from app.models.artifact import ArtifactSet, ArtifactSetAffix
 from app.models.build import EnemyProfile
-from app.models.character import AscensionPassive, Character, Constellation, Talent, TalentScaling
+from app.models.character import (
+    AscensionPassive,
+    Character,
+    CharacterAttack,
+    CharacterEnergyDrop,
+    Constellation,
+    Talent,
+    TalentScaling,
+)
 from app.models.planner import (
     CharacterAscensionCost,
     CharacterTalentCost,
@@ -446,6 +456,10 @@ class NanokaGIImporter(BaseImporter):
             self.session.add(Constellation(character_id=character.id, **row))
         for row in passive_rows(payload):
             self.session.add(AscensionPassive(character_id=character.id, **row))
+        for row in attack_rows(key, payload):
+            self.session.add(CharacterAttack(character_id=character.id, **row))
+        for row in energy_rows(key, payload):
+            self.session.add(CharacterEnergyDrop(character_id=character.id, **row))
 
         await self._ensure_exp_materials()
         await self._write_materials(payload)
@@ -558,7 +572,7 @@ class NanokaGIImporter(BaseImporter):
                 row.icon = eco.icon(material_id)
 
     async def _delete_children(self, character_id: str) -> None:
-        """Drop a character's talents, constellations and passives.
+        """Drop a character's talents, constellations, passives, attacks and energy drops.
 
         `talent_scalings` is not deleted explicitly: its FK is `ON DELETE CASCADE`, and the
         DELETE below is emitted as SQL rather than through the ORM's cascade, so the
@@ -568,6 +582,8 @@ class NanokaGIImporter(BaseImporter):
             Talent,
             Constellation,
             AscensionPassive,
+            CharacterAttack,
+            CharacterEnergyDrop,
             CharacterAscensionCost,
             CharacterTalentCost,
         ):

@@ -29,7 +29,12 @@ from typing import TYPE_CHECKING, Protocol
 
 from app.formula.genshin.damage import ScalingStat, ScalingTerm
 from app.models.enums import TalentType
-from app.services.talent_scaling import TalentHit, TalentScalingError, parse_talent_row
+from app.services.talent_scaling import (
+    TalentHit,
+    TalentScalingError,
+    classify_talent_row,
+    parse_talent_row,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
@@ -141,6 +146,64 @@ def _hits_for(
     character: _Character, talent_levels: Mapping[str, int], talent: TalentType,
 ) -> list[TalentHit]:
     """The hits of one talent at the level this build has it."""
+    row = _row_for(character, talent_levels, talent)
+    try:
+        return parse_talent_row(list(row.labels or []), list(row.params or []))
+    except TalentScalingError as exc:
+        raise TalentHitUnavailableError(str(exc)) from exc
+
+
+@dataclass(frozen=True)
+class RefusedTalentHit:
+    """A damage row the parser recognised and will not score, with its reason.
+
+    Owner, 2026-11-13: these must not **vanish** from the hit pickers. Venti's Windsunder
+    Arrow and Yoimiya's Blazing Arrow are real attacks the player knows by name; a picker that
+    silently lacks them reads as a bug in the picker. Published beside the offered hits so a
+    page can show them, greyed out, with the parser's reason — never as something to choose,
+    because the chain cannot compute them (`talent_scaling._REFUSED_WORDS`).
+    """
+
+    talent: TalentType
+    label: str
+    #: The row's format string after the `|`, verbatim — what was refused.
+    spec: str
+    reason: str
+
+
+def refused_hits(
+    character: _Character, talent_levels: Mapping[str, int],
+) -> list[RefusedTalentHit]:
+    """Every damage row this build's talents carry that the parser refuses, by name.
+
+    The same rows, at the same levels, that `available_hits` reads — so a refused entry sits
+    beside the offered hits of the very table it came from. A talent with no level, or a row
+    the parser cannot read at all, contributes nothing here: those are absences
+    `available_hits` already explains, not refusals of a recognised hit.
+    """
+    refused: list[RefusedTalentHit] = []
+    for talent in TalentType:
+        try:
+            row = _row_for(character, talent_levels, talent)
+            classified = classify_talent_row(list(row.labels or []), list(row.params or []))
+        except (TalentHitUnavailableError, TalentScalingError):
+            continue
+        refused.extend(
+            RefusedTalentHit(
+                talent=talent, label=r.label, spec=r.spec,
+                # The parser prefixes the row it refused; the label and spec are already
+                # fields here, so the reason a picker shows is the sentence alone.
+                reason=r.reason.removeprefix(f"{f'{r.label}|{r.spec}'!r}: "),
+            )
+            for r in classified.refused
+        )
+    return refused
+
+
+def _row_for(
+    character: _Character, talent_levels: Mapping[str, int], talent: TalentType,
+) -> _Scaling:
+    """One talent's published row at the level this build has it."""
     found = next((t for t in character.talents if t.talent_type == talent), None)
     if found is None:
         msg = f"{character.name} has no {talent.value} talent."
@@ -163,8 +226,4 @@ def _hits_for(
             f"different talent level."
         )
         raise TalentHitUnavailableError(msg)
-
-    try:
-        return parse_talent_row(list(row.labels or []), list(row.params or []))
-    except TalentScalingError as exc:
-        raise TalentHitUnavailableError(str(exc)) from exc
+    return row

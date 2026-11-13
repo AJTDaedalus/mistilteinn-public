@@ -375,6 +375,22 @@ class AvailableHitRead(BaseModel):
     extra_terms: list[ScalingTermRead]
 
 
+class RefusedHitRead(BaseModel):
+    """A damage row the build's talents carry that cannot be scored, and why.
+
+    **Not a hit.** It has no multiplier and `HitSpec` will not accept it; it is published so a
+    picker can show it greyed out with its reason instead of leaving it out (owner,
+    2026-11-13) — Windsunder Arrow missing from Venti's list reads as a broken picker.
+    """
+
+    talent: TalentType
+    label: str
+    #: The row's format string, verbatim: what the parser was asked to read.
+    spec: str
+    #: The parser's refusal, in its own words.
+    reason: str
+
+
 class KernelSetBonus(BaseModel):
     """One tier of one set, in the terms the browser kernel reads."""
 

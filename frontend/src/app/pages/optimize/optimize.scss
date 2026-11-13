@@ -664,9 +664,21 @@
 /* A `<select>` sizes itself to its longest option, and a hit reads
    "Elemental Skill · Cutting Torrent (Charged, fully charged)" — so this one grew from 40px to
    660px on selection and reflowed the whole control bar onto two lines. A field that changes
-   width sixteen-fold when you use it makes the panel feel unstable; it truncates now instead. */
+   width sixteen-fold when you use it makes the panel feel unstable; it truncates now instead.
+
+   **28rem, and never wider than the phone it is on.** At 22rem the closed hit picker cut the
+   scaling stat — `Charged Attack: Equitable Judgment · Max` — which is the word that says what
+   the search will chase. The talent moved into an `<optgroup>` (optimize.ts `hitGroups`) and
+   the cap grew enough for the longest hit-and-stat the owner's builds offer; the full line is
+   also the control's tooltip. The viewport term keeps it inside a 390px screen, where 22rem
+   already ran 40px past the edge. */
 .controls select {
-  max-width: 22rem;
+  max-width: min(28rem, calc(100vw - 6rem));
+}
+
+/* The refused-hit reasons take a whole row of the controls bar rather than a slot in it. */
+.hit-refusals {
+  flex-basis: 100%;
 }
 
 /* The calibration cost sentence. Prose, not a readout, so it takes the body face and lets

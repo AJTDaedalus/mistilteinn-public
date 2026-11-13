@@ -793,6 +793,82 @@ describe('OptimizePage marginalForExpanded', () => {
   });
 });
 
+describe('the hit picker under its 22rem cap', () => {
+  const hit = (talent: string, label: string, scaling_stat: string) => ({
+    talent, label, index: 0, multiplier: 1, hits: 1, exclusive: false,
+    scaling_stat, extra_terms: [],
+  });
+
+  it('groups by talent and keeps each hit at its index in hits()', () => {
+    // The talent moved into an <optgroup> because the closed select read
+    // "Normal attack · Charged Attack: Equitable Judgment · Max" at 1280px — it had spent its
+    // width on the part the open list already groups by, and cut the stat.
+    const page = pageWith();
+    page['hits'].set([
+      hit('normal_attack', '1-Hit DMG', 'atk'),
+      hit('elemental_burst', 'Skill DMG', 'hp'),
+      hit('normal_attack', 'Charged Attack: Equitable Judgment', 'hp'),
+    ] as never);
+
+    const groups = page['hitGroups']();
+
+    expect(groups.map((g) => g.items.map((i) => i.index))).toEqual([[0, 2], [1]]);
+    expect(groups[0].items[1].hit.label).toBe('Charged Attack: Equitable Judgment');
+  });
+
+  it('files a refused row under its talent, beside the hits, without moving their indices', () => {
+    // Owner, 2026-11-13: Windsunder Arrow must not vanish. It is drawn disabled in its
+    // talent's group; the selectable hits keep the indices `/explain` resolves by.
+    const page = pageWith();
+    page['hits'].set([hit('normal_attack', '1-Hit DMG', 'atk')] as never);
+    page['refusedHits'].set([{
+      talent: 'normal_attack', label: 'Windsunder Arrow DMG',
+      spec: '{param12:F1P} Normal Attack DMG', reason: 'a multiple of Normal Attack DMG',
+    }]);
+
+    const [group] = page['hitGroups']();
+
+    expect(group.items.map((i) => i.index)).toEqual([0]);
+    expect(group.refused.map((r) => r.label)).toEqual(['Windsunder Arrow DMG']);
+  });
+
+  it('ignores a forced pick of a refused row, which has no index', () => {
+    const page = pageWith();
+    page['hits'].set([hit('normal_attack', '1-Hit DMG', 'atk')] as never);
+    page['hitIndex'].set(0);
+
+    page['pickHit']('Windsunder Arrow DMG · not scored');
+    page['pickHit']('7');
+
+    expect(page['hitIndex']()).toBe(0);
+  });
+
+  it('loads the refused rows with the hits', async () => {
+    const refused = [{
+      talent: 'normal_attack', label: 'Windsunder Arrow DMG', spec: '', reason: 'r',
+    }];
+    const page = pageWith({
+      explain: {
+        hits: vi.fn().mockResolvedValue(HITS),
+        refusedHits: vi.fn().mockResolvedValue(refused),
+      } as unknown as Partial<ExplainService>,
+    });
+    await page['load']();
+    await page['selectBuild']('b1');
+
+    expect(page['refusedHits']()).toEqual(refused);
+    expect(page['hits']()).toEqual(HITS);
+  });
+
+  it('keeps the whole description, stat included, in the tooltip', () => {
+    const page = pageWith();
+    page['hits'].set([hit('normal_attack', 'Charged Attack: Equitable Judgment', 'hp')] as never);
+    page['hitIndex'].set(0);
+
+    expect(page['hitTitle']()).toMatch(/Charged Attack: Equitable Judgment · Max HP$/);
+  });
+});
+
 describe('OptimizePage barWidth', () => {
   /** §14 — the bar is a table cell with a width, so a bad width is a broken style attribute. */
   it('scales against the best line in the same table', () => {

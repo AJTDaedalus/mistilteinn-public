@@ -84,7 +84,7 @@ class CharacterRepository(BaseRepository[Character]):
         name: str | None = None,
         include_beta: bool = False,
         offset: int = 0,
-        limit: int = 100,
+        limit: int | None = 100,
     ) -> Sequence[Character]:
         """Filtered, paginated list. No relationships — a list of 150 does not need them."""
         stmt = (
@@ -140,6 +140,8 @@ class CharacterRepository(BaseRepository[Character]):
                 selectinload(Character.talents).selectinload(Talent.scalings),
                 selectinload(Character.constellations),
                 selectinload(Character.ascension_passives),
+                selectinload(Character.attacks),
+                selectinload(Character.energy_drops),
             )
         )
         result = await self.session.execute(stmt)

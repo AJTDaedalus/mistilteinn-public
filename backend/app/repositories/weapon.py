@@ -62,7 +62,7 @@ class WeaponRepository(BaseRepository[Weapon]):
         name: str | None = None,
         include_beta: bool = False,
         offset: int = 0,
-        limit: int = 100,
+        limit: int | None = 100,
     ) -> Sequence[Weapon]:
         """Filtered, paginated list."""
         stmt = (

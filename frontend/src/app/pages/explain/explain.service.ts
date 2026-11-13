@@ -5,6 +5,7 @@ import type { components } from '../../api/api.types';
 
 export type ExplainResponse = components['schemas']['ExplainResponse'];
 export type AvailableHit = components['schemas']['AvailableHitRead'];
+export type RefusedHit = components['schemas']['RefusedHitRead'];
 export type StatAccount = components['schemas']['StatAccountRead'];
 export type HitSpec = components['schemas']['HitSpec'];
 
@@ -26,6 +27,21 @@ export class ExplainService {
       params: { path: { build_id: buildId } },
     });
     if (error) throw new Error('Could not load this build’s talents');
+    return data;
+  }
+
+  /**
+   * The damage rows this build has that cannot be scored, each with the parser's reason.
+   *
+   * Owner, 2026-11-13: they must not vanish from the hit pickers. Shown greyed out, never
+   * offered — `/hits` stays the list of things `/explain` accepts. **Best effort**: a failure
+   * here leaves the picker as it was rather than failing the page over an annotation.
+   */
+  async refusedHits(buildId: string): Promise<RefusedHit[]> {
+    const { data, error } = await this.api.GET('/api/v1/builds/{build_id}/hits/refused', {
+      params: { path: { build_id: buildId } },
+    });
+    if (error) return [];
     return data;
   }
 
