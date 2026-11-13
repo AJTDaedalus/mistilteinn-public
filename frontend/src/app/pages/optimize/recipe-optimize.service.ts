@@ -2,10 +2,11 @@ import { InjectionToken, Injectable, inject } from '@angular/core';
 
 import { injectApi } from '../../api/api.client';
 import { calibrate } from '../../sim/calibrate';
-import { readResult, run as runConfig, type GcsimModule } from '../../sim/gcsim';
+import { readResult } from '../../sim/gcsim';
+import { GcsimTimeoutError, type GcsimRunner } from '../../sim/gcsim-runner';
 import { SimRunsService } from '../../sim/sim-runs.service';
 import { RotationsService } from '../rotations/rotations.service';
-import { loadGcsim } from '../../sim/gcsim-loader';
+import { gcsimRunner } from '../../sim/gcsim-worker-runner';
 import type { Recipe } from '../../sim/recipe';
 import { stabilityFrom } from '../../sim/recipe';
 import type { EnergyObservation } from '../../sim/recipe-energy';
@@ -20,15 +21,18 @@ import { energyShortfall, type EnergyShortfall } from '../../sim/recipe-energy';
 import { energyCost, subjectIsShort, type EnergyCost } from '../../sim/energy-delay';
 
 /**
- * How the gcsim module is obtained, and where recipes are kept.
+ * How the gcsim runner is obtained, and where recipes are kept.
+ *
+ * The default is the page's Web Worker runner (`gcsim-worker-runner.ts`), which gives every run
+ * a deadline and kills a hung simulation; a spec supplies `inlineRunner(stub)`.
  *
  * **Injected rather than imported**, so a test can supply both without mocking a module —
  * which Angular's test system refuses for relative imports, and which would couple every test
  * to how this file happens to get its dependencies rather than to what it does with them.
  */
-export const GCSIM_LOADER = new InjectionToken<() => Promise<GcsimModule>>('GCSIM_LOADER', {
+export const GCSIM_LOADER = new InjectionToken<() => Promise<GcsimRunner>>('GCSIM_LOADER', {
   providedIn: 'root',
-  factory: () => loadGcsim,
+  factory: () => gcsimRunner,
 });
 
 export const RECIPE_STORE = new InjectionToken<RecipeStore | null>('RECIPE_STORE', {
@@ -361,7 +365,7 @@ export class RecipeOptimizeService {
     };
 
     onProgress({ done: 0, total: targets.length, current: '', loading: true });
-    const mod = await this.loadModule();
+    const gcsim = await this.loadModule();
 
     // **What the cache is actually keyed on.** `rotationId` is an id: editing a rotation's
     // steps, or changing who is on its team, leaves it unchanged, and the recipe for the old
@@ -446,7 +450,7 @@ export class RecipeOptimizeService {
             // Read with `readResult`, the same function a fresh run uses. A second parser
             // would eventually disagree with it about what a cached run scored.
             ? { iterations: AGGREGATE_RUNS, ...readResult(corpusRaw) }
-            : runConfig(mod, configs.baseline, AGGREGATE_RUNS);
+            : await gcsim.run(configs.baseline, AGGREGATE_RUNS);
         // **The same run with energy free, because a gated rotation hides the shortfall.**
         // The compiler gates every step on `.ready`, so gcsim never *attempts* an unaffordable
         // burst and records no `insufficient_energy` — measured at 0 for all four characters
@@ -454,7 +458,7 @@ export class RecipeOptimizeService {
         // Comparing against `ignore_burst_energy` is what gcsim's own substat optimizer does,
         // and it is the only way a gated rotation can say what energy costs.
         const freeEnergy = aggregate
-          ? runConfig(mod, withFreeEnergy(configs.baseline), AGGREGATE_RUNS)
+          ? await gcsim.run(withFreeEnergy(configs.baseline), AGGREGATE_RUNS)
           : null;
         // Offered to the cache, never awaited for correctness. `DECISIONS.md` §25: the
         // corpus accumulates from real searches, and a user whose search finished must not be
@@ -481,7 +485,9 @@ export class RecipeOptimizeService {
         // Only the optimized character's own shortfall triggers their ladder — see
         // `subjectIsShort`. Index 0 is the subject of the config.
         const subjectShort = subjectIsShort(cost, party[0] ?? '');
-        const { burst, sweep } = this.energySweep(mod, configs, instances, subjectShort);
+        const { burst, sweep } = await this.energySweep(
+          gcsim, configs, instances, subjectShort,
+        );
 
         // Names for `RecipeHit.owner`, so a result can show the damage share per character.
         // Set before `calibrate` writes the recipe to the cache, or a cache hit comes back
@@ -528,10 +534,12 @@ export class RecipeOptimizeService {
           return recipe;
         };
 
+        const baselineLog = await gcsim.sample(configs.baseline, SEED);
+        const probeLog = await gcsim.sample(configs.probe, SEED);
         const calibrated = calibrate(
           {
-            baseline: mod.sample(configs.baseline, SEED),
-            probe: mod.sample(configs.probe, SEED),
+            baseline: baselineLog,
+            probe: probeLog,
             instances,
             energySweep: sweep,
           },
@@ -674,12 +682,12 @@ export class RecipeOptimizeService {
    * defines "performs as calibrated" and `stabilityFrom` is the only thing that knows which
    * one moved.
    */
-  private energySweep(
-    mod: GcsimModule,
+  private async energySweep(
+    gcsim: GcsimRunner,
     configs: { baseline: string; energy_recharge: number; characters: string[] },
     instances: Readonly<Record<string, { mean: number; sd: number }>>,
     shortOfEnergy = false,
-  ): { burst: string | null; sweep: EnergyObservation[] | undefined } {
+  ): Promise<{ burst: string | null; sweep: EnergyObservation[] | undefined }> {
     // **Unstable *or* short.** The original trigger was instability alone — a burst count that
     // varies between iterations. That misses the commonest case entirely: the owner's Furina
     // casts exactly 2 bursts every single iteration where free energy casts 5. Perfectly
@@ -718,13 +726,18 @@ export class RecipeOptimizeService {
       let counts: Record<string, { mean: number; sd: number }>;
       let rungDps: number | null;
       try {
-        const run = runConfig(mod, text, ENERGY_LADDER_RUNS);
+        const run = await gcsim.run(text, ENERGY_LADDER_RUNS);
         counts = instancesFrom(run.raw, configs.characters);
         // **What the rung is actually for.** The burst *count* is not what ER buys: the owner's
         // Furina is 98.3 % skill damage and 1.5 % burst, because her burst buffs the team and
         // removes the delay rather than hitting hard. DPS at each rung carries all of that.
         rungDps = run.dps?.mean ?? null;
-      } catch {
+      } catch (error) {
+        // **A hang is not a gap.** A rung that ran out its deadline would otherwise be skipped
+        // and the next rung — the same rotation at a different ER — would very likely hang the
+        // same way, so the search would pay the deadline once per rung and then present a
+        // ladder full of holes as a measurement. The calibration fails with the timeout instead.
+        if (error instanceof GcsimTimeoutError) throw error;
         // A rung gcsim refuses is a gap in the ladder, not a failed search.
         continue;
       }
@@ -795,6 +808,3 @@ export class RecipeOptimizeService {
     };
   }
 }
-
-/** Re-exported so a caller can drive gcsim without importing two modules. */
-export { runConfig };
