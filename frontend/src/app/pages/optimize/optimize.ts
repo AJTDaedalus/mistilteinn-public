@@ -28,6 +28,7 @@ import { ElementChip } from '../../shared/element/element';
 import { CatalogueIcon } from '../../shared/icon/icon';
 import { ArtifactCard } from '../../shared/artifact-card/artifact-card';
 import { EntityToken } from '../../shared/token/token';
+import { RefusedHits } from '../../shared/refused-hits/refused-hits';
 import { type Amplifying, type ScalingStat } from '../../sim/damage';
 import { SLOTS, type SearchResult, type Slot, search } from '../../sim/search';
 import { BuildsService, type BuildRead } from '../builds/builds.service';
@@ -36,6 +37,7 @@ import { scalingLabel } from '../../shared/scaling-label';
 import {
   ExplainService,
   type AvailableHit,
+  type RefusedHit,
   type ExplainResponse,
 } from '../explain/explain.service';
 import { ArtifactsService } from '../artifacts/artifacts.service';
@@ -238,7 +240,7 @@ export const SLOT_ORDER = [
   imports: [
     FormsModule, RouterLink, DecimalPipe, PercentPipe,
     CardPicker, CatalogueIcon, ElementChip, EntityToken, ArtifactCard, Combobox,
-    PreviousRuns,
+    PreviousRuns, RefusedHits,
   ],
   templateUrl: './optimize.html',
   styleUrl: './optimize.scss',
@@ -272,6 +274,8 @@ export class OptimizePage implements OnInit {
 
   protected readonly builds = signal<BuildRead[]>([]);
   protected readonly hits = signal<AvailableHit[]>([]);
+  /** Damage rows the parser refuses — drawn disabled in the picker, with their reasons. */
+  protected readonly refusedHits = signal<RefusedHit[]>([]);
   /**
    * The hits grouped by talent, each keeping its index into `hits()`.
    *
@@ -282,13 +286,21 @@ export class OptimizePage implements OnInit {
    * open list shows and the closed control does not need, and the option reads hit-first.
    */
   protected readonly hitGroups = computed(() => {
-    const groups: { talent: string; items: { index: number; hit: AvailableHit }[] }[] = [];
-    this.hits().forEach((hit, index) => {
-      const talent = enumLabel(hit.talent);
+    const groups: {
+      talent: string;
+      items: { index: number; hit: AvailableHit }[];
+      refused: RefusedHit[];
+    }[] = [];
+    const groupFor = (raw: string) => {
+      const talent = enumLabel(raw);
       let group = groups.find((g) => g.talent === talent);
-      if (!group) groups.push((group = { talent, items: [] }));
-      group.items.push({ index, hit });
-    });
+      if (!group) groups.push((group = { talent, items: [], refused: [] }));
+      return group;
+    };
+    this.hits().forEach((hit, index) => groupFor(hit.talent).items.push({ index, hit }));
+    // **Disabled options in the talent they belong to**, after its real hits: visible where a
+    // player looks for Windsunder Arrow, and unselectable, because `/explain` refuses them.
+    for (const row of this.refusedHits()) groupFor(row.talent).refused.push(row);
     return groups;
   });
   /** The chosen hit in full, for the select's tooltip — the words truncation may hide. */
@@ -298,6 +310,20 @@ export class OptimizePage implements OnInit {
     const scaling = scalingLabel(hit);
     return [enumLabel(hit.talent), hit.label, ...(scaling ? [scaling] : [])].join(' · ');
   });
+
+  /**
+   * The picker's change, ignoring anything that is not one of `hits()`' indices.
+   *
+   * A refused row is a disabled option with no `value`, so a script that forces it would hand
+   * this its text — `+'2-Hit Hold DMG · not scored'` is NaN, and a NaN index is a page with
+   * no hit and no message. A person cannot pick one; this keeps a program from doing it either.
+   */
+  protected pickHit(value: string): void {
+    const index = Number(value);
+    if (Number.isInteger(index) && index >= 0 && index < this.hits().length) {
+      this.hitIndex.set(index);
+    }
+  }
   protected readonly result = signal<SearchResult | null>(null);
   protected readonly candidates = signal<KernelCandidate[]>([]);
   /** Pieces the server could not translate. Shown, never swallowed (OQ-O2). */
@@ -1754,6 +1780,10 @@ export class OptimizePage implements OnInit {
     }
     try {
       this.hits.set(await this.explain.hits(id));
+      // Shown greyed beside the picker, never offered; best effort (owner, 2026-11-13).
+      // `?.` because older test doubles of the service predate it, and an annotation must
+      // not be what fails a page.
+      this.refusedHits.set((await this.explain.refusedHits?.(id)) ?? []);
       // What this character is wearing now — the comparator every result is a percentage of
       // (§11). Its own failure is swallowed on purpose: without it the page falls back to
       // ranking against rank 1, which is a worse comparison but not a broken page.

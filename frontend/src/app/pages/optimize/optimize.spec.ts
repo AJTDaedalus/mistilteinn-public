@@ -816,6 +816,50 @@ describe('the hit picker under its 22rem cap', () => {
     expect(groups[0].items[1].hit.label).toBe('Charged Attack: Equitable Judgment');
   });
 
+  it('files a refused row under its talent, beside the hits, without moving their indices', () => {
+    // Owner, 2026-11-13: Windsunder Arrow must not vanish. It is drawn disabled in its
+    // talent's group; the selectable hits keep the indices `/explain` resolves by.
+    const page = pageWith();
+    page['hits'].set([hit('normal_attack', '1-Hit DMG', 'atk')] as never);
+    page['refusedHits'].set([{
+      talent: 'normal_attack', label: 'Windsunder Arrow DMG',
+      spec: '{param12:F1P} Normal Attack DMG', reason: 'a multiple of Normal Attack DMG',
+    }]);
+
+    const [group] = page['hitGroups']();
+
+    expect(group.items.map((i) => i.index)).toEqual([0]);
+    expect(group.refused.map((r) => r.label)).toEqual(['Windsunder Arrow DMG']);
+  });
+
+  it('ignores a forced pick of a refused row, which has no index', () => {
+    const page = pageWith();
+    page['hits'].set([hit('normal_attack', '1-Hit DMG', 'atk')] as never);
+    page['hitIndex'].set(0);
+
+    page['pickHit']('Windsunder Arrow DMG · not scored');
+    page['pickHit']('7');
+
+    expect(page['hitIndex']()).toBe(0);
+  });
+
+  it('loads the refused rows with the hits', async () => {
+    const refused = [{
+      talent: 'normal_attack', label: 'Windsunder Arrow DMG', spec: '', reason: 'r',
+    }];
+    const page = pageWith({
+      explain: {
+        hits: vi.fn().mockResolvedValue(HITS),
+        refusedHits: vi.fn().mockResolvedValue(refused),
+      } as unknown as Partial<ExplainService>,
+    });
+    await page['load']();
+    await page['selectBuild']('b1');
+
+    expect(page['refusedHits']()).toEqual(refused);
+    expect(page['hits']()).toEqual(HITS);
+  });
+
   it('keeps the whole description, stat included, in the tooltip', () => {
     const page = pageWith();
     page['hits'].set([hit('normal_attack', 'Charged Attack: Equitable Judgment', 'hp')] as never);

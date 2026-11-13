@@ -676,6 +676,11 @@
   max-width: min(28rem, calc(100vw - 6rem));
 }
 
+/* The refused-hit reasons take a whole row of the controls bar rather than a slot in it. */
+.hit-refusals {
+  flex-basis: 100%;
+}
+
 /* The calibration cost sentence. Prose, not a readout, so it takes the body face and lets
    only the numbers inside it be mono — a bare `1 calibration` in mono read as a stat with no
    label. */

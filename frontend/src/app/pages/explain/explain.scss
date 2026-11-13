@@ -74,3 +74,9 @@
   .sim { margin: 0; }
 }
 
+
+/* The refused-hit reasons take their own row at the end of the controls, not a slot in it. */
+.hit-refusals {
+  flex-basis: 100%;
+  order: 99;
+}
