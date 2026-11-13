@@ -4,6 +4,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { CatalogueIcon } from './shared/icon/icon';
 import { Emblem } from './shared/emblem/emblem';
 import { AuthService } from './api/auth.service';
+import { SOURCE_CODE } from './shared/source';
 
 @Component({
   selector: 'app-root',
@@ -14,6 +15,9 @@ import { AuthService } from './api/auth.service';
 export class App {
   protected auth = inject(AuthService);
   private router = inject(Router);
+
+  /** The AGPL §13 source offer the footer carries. */
+  protected readonly source = SOURCE_CODE;
 
   async signOut(): Promise<void> {
     await this.auth.logout();

@@ -192,6 +192,13 @@
   }
 }
 
+.shell__footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-4);
+}
+
 // Two nav groups: the caller's own work, then the game's reference data. Eleven peers in
 // one row is a list rather than a menu, and it read as one.
 .shell__group {

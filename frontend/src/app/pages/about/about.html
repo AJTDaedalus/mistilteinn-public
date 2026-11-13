@@ -4,9 +4,9 @@
   </header>
 
   <p class="about__disclosure">
-    Mistilteinn was developed using AI. It is currently closed source until I have time to do a
-    security review, but the intention is to make it open source. You may join us at the
-    following Discord if you’d like to discuss bugs, new features, or the app overall.
+    Mistilteinn was developed using AI. It is open source under the GNU Affero General Public
+    License, version 3 or later. You may join us at the following Discord if you’d like to
+    discuss bugs, new features, or the app overall.
   </p>
 
   <p>
@@ -14,6 +14,31 @@
       Join the Discord
     </a>
   </p>
+
+  <!-- **The source offer AGPL §13 requires**, for this site and for the simulator it serves.
+       The gcsim link names the commit of the binary this visitor downloaded, read from
+       `gcsim/BUILT_FROM`; until that is read it names the repository, which is still an
+       offer. docs/DECISIONS.md §37. -->
+  <h2>Source code</h2>
+  <ul class="source">
+    <li>
+      <a class="source__link" [href]="source.url" target="_blank" rel="noopener noreferrer">
+        Mistilteinn’s source code</a>
+      <span class="credit__licence">{{ source.licence }}</span>
+    </li>
+    <li>
+      <a class="source__link" [href]="gcsimSource()" target="_blank" rel="noopener noreferrer">
+        gcsim’s source code</a>
+      @if (gcsimCommit(); as commit) {
+        <span class="mono source__commit">at {{ commit.slice(0, 12) }}</span>
+      }
+      — the simulator that runs in your browser, built from it unmodified. AGPL-3.0
+      (<a href="/gcsim/gcsim.LICENSE.txt" target="_blank" rel="noopener noreferrer">licence</a>),
+      with gcsim’s
+      <a href="/gcsim/gcsim-mit.LICENSE.txt" target="_blank" rel="noopener noreferrer">MIT
+        notice</a> for code contributed before it relicensed.
+    </li>
+  </ul>
 
   <h2>Credits</h2>
   <ul class="credits">

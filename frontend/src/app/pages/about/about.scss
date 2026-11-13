@@ -69,3 +69,29 @@
 }
 
 .credit__body { color: var(--ink-dim); margin-top: var(--space-1) !important; }
+
+/* The source offer: two plain entries, styled like the credits so it reads as part of the
+   page rather than as a banner. */
+.source {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    border-left: 2px solid var(--surface-rule);
+    padding-left: var(--space-3);
+  }
+}
+
+.source__link {
+  color: var(--brass-hi);
+  font-weight: 600;
+}
+
+.source__commit {
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+}

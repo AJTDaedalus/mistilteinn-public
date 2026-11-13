@@ -59,6 +59,12 @@
 
   <footer class="shell__footer mono">
     <span>v0.1 · dev build</span>
-    <a routerLink="/about" routerLinkActive="active">About</a>
+    <!-- **The source offer is on every page, signed in or not** (AGPL §13): whoever interacts
+         with the site is owed it, and the sign-in page is a page they interact with. -->
+    <span class="shell__footer-links">
+      <a class="shell__source" [href]="source.url" target="_blank" rel="noopener noreferrer">
+        {{ source.label }}</a>
+      <a routerLink="/about" routerLinkActive="active">About</a>
+    </span>
   </footer>
 </div>

@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
 import { AboutPage } from './about';
+import { SOURCE_CODE } from '../../shared/source';
 
 function open(): any {
   TestBed.configureTestingModule({});
@@ -21,15 +22,16 @@ describe('AboutPage', () => {
 
   describe('credits', () => {
     /**
-     * gcsim ships in the browser build as WebAssembly under MIT and Go's `wasm_exec.js`
-     * loads it under BSD-3-Clause. Both licences require their notice to travel with the
-     * binary, so these two are **obligations, not thanks** — and this page is where a reader
-     * is told the full text exists beside the artifacts.
+     * gcsim ships in the browser build as WebAssembly under **AGPLv3** (pinned past its
+     * relicence at v2.50.0, owner 2026-11-13) and Go's `wasm_exec.js` loads it under
+     * BSD-3-Clause. Both licences require their notice to travel with the binary, so these two
+     * are **obligations, not thanks** — and this page is where a reader is told the full text
+     * exists beside the artifacts.
      */
     it('carries the licences the build is obliged to name', () => {
       const credits = open().credits as { name: string; licence: string | null }[];
       const find = (name: string) => credits.find((c) => c.name === name)!;
-      expect(find('gcsim').licence).toContain('MIT');
+      expect(find('gcsim').licence).toContain('AGPL-3.0');
       expect(find('The Go authors').licence).toContain('BSD-3-Clause');
     });
 
@@ -95,6 +97,47 @@ describe('AboutPage', () => {
     it('has no duplicate entries', () => {
       const names = open().credits.map((c: any) => c.name);
       expect(new Set(names).size).toBe(names.length);
+    });
+  });
+
+  /**
+   * AGPL §13: a network service offers its users the source. The page states both offers —
+   * this site's and the gcsim it serves — and the gcsim one names the commit of the binary
+   * actually served, read from the build's own provenance rather than restated.
+   */
+  describe('the source offer', () => {
+    const SHA = 'b'.repeat(40);
+    const respond = (body: string, ok = true) =>
+      (async () => ({ ok, text: async () => body })) as unknown as typeof fetch;
+
+    it('offers this site’s source, from the one constant the footer also uses', () => {
+      expect(open().source).toBe(SOURCE_CODE);
+      expect(SOURCE_CODE.url).toBe('https://github.com/AJTDaedalus/mistilteinn-public');
+    });
+
+    it('links gcsim at the exact commit the served wasm was built from', async () => {
+      const page = open();
+      await page.readBuiltFrom(respond(`${SHA}\n`));
+      expect(page.gcsimCommit()).toBe(SHA);
+      expect(page.gcsimSource()).toBe(`https://github.com/genshinsim/gcsim/tree/${SHA}`);
+    });
+
+    it('keeps offering the repository when the commit cannot be read', async () => {
+      // The SPA catch-all answers a missing file with 200 and the index page. Trusting the
+      // status would put HTML into a URL; the body is checked as a SHA instead.
+      open(); // configures TestBed once; each page below is a fresh instance in it
+      for (const fetcher of [respond('<!doctype html>'), respond(SHA, false), undefined]) {
+        const page = TestBed.runInInjectionContext(() => new AboutPage()) as any;
+        await page.readBuiltFrom(fetcher);
+        expect(page.gcsimCommit()).toBeNull();
+        expect(page.gcsimSource()).toBe('https://github.com/genshinsim/gcsim');
+      }
+    });
+
+    it('survives a fetch that throws', async () => {
+      const page = open();
+      await page.readBuiltFrom((async () => { throw new Error('offline'); }) as unknown as typeof fetch);
+      expect(page.gcsimSource()).toBe('https://github.com/genshinsim/gcsim');
     });
   });
 });

@@ -1347,3 +1347,36 @@ lists named beta-only rows from the database at each re-pin.
 
 **The list only grows.** Removing an id after launch would rewrite public history. A withheld
 material that later releases therefore stays unknown in the public copy.
+
+## 37. gcsim crosses into AGPLv3, and the site offers its source (2026-11-13)
+
+**Ruling (owner):** re-pin gcsim from v2.47.2 (`caf738dc`, the last MIT release) to the
+latest release, **v2.50.0** (`b107b5dc`), accepting gcsim's AGPLv3. This repository is already
+AGPL-3.0-or-later (§34) and published at `https://github.com/AJTDaedalus/mistilteinn-public`,
+which is what made the move possible.
+
+**Why it was a decision and not a bump.** The site serves `gcsim.wasm` to every visitor, and
+AGPLv3 §13 asks a program users interact with over a network to offer them its source. §34
+adopted AGPL for this repository and explicitly did not move the pin; this ruling does.
+
+**What the move obliges, and how each part is met:**
+
+| obligation | met by |
+|---|---|
+| Convey the object code with its licence (§4–6) | The build copies gcsim's `LICENSE` (AGPLv3) to `gcsim/gcsim.LICENSE.txt` and its `LICENSE-MIT` to `gcsim/gcsim-mit.LICENSE.txt` beside the wasm, and Go's BSD notice for `wasm_exec.js` as before. `Dockerfile.prod` refuses an image without any of them. `test_gcsim_licence_ships_with_the_wasm.py` checks the names *and* that each comes from the right source file. |
+| Keep the MIT notice for MIT-contributed code | `gcsim-mit.LICENSE.txt` ships, and `THIRD_PARTY_NOTICES.md` carries both texts. |
+| Offer Corresponding Source to network users (§13) | **A footer link, "Source code (AGPL-3.0)", on every page including sign-in** (`shared/source.ts`), and a *Source code* section on `/about` linking this repository and gcsim. |
+| Name the exact gcsim source | `/about` reads `gcsim/BUILT_FROM` — written by the build that produced the wasm beside it — and links `github.com/genshinsim/gcsim/tree/<that commit>`. It falls back to the repository link, never to nothing. The commit is not restated in the frontend, for the reason `test_gcsim_pin_is_single.py` exists. |
+
+**We build gcsim unmodified**, from a clean checkout of the pin, so its Corresponding Source is
+upstream's own tree at that commit. If this repository ever patches gcsim, the patched source
+has to be published too, and the `/about` link would need to point at it instead.
+
+**The About page's "currently closed source" sentence went with it.** It had been false since
+the public copy was published, and leaving it beside a source link would contradict the offer.
+The new wording keeps the owner's AI disclosure and the Discord invitation unchanged.
+
+**Measured cost of the move** (`docs/RESEARCH_gcsim_repin_2026_11.md`): the damage chain is
+unchanged to the last digit; one engine change (`3f528e2c7`, hitlag) moves real teams by
+fractions of a percent; and the wasm is **2.4-4.2× faster** per iteration. It also changed
+`flush()`'s return shape, which the app now reads through one function.
