@@ -166,6 +166,32 @@ async def test_the_base_is_keyed_by_kernel_quantity_not_fight_prop(
     assert base["base_atk"] > 0
 
 
+async def test_the_base_sums_every_contribution_to_a_quantity(
+    authed_client: AsyncClient, db_session: AsyncSession, build: str,
+):
+    """Found driving math-fallback P0. `base_atk` has two contributors — the character's
+    curve and the weapon's — and `base_hp` has the curve and the ascension bonus. The base
+    was a dict comprehension over the contributions, so each quantity kept only the **last**
+    one: Neuvillette's `base_hp` reached the kernel as his ascension bonus alone (4,697.8 of
+    14,695), and the single-hit search scored every build on a fraction of its base.
+
+    Checked against `/explain`'s own account of the same quantities, which sums them."""
+    db_session.expire_all()
+
+    base = (await authed_client.post(
+        f"{BUILDS}/{build}/search-context", json=_body(),
+    )).json()["base"]
+    explained = (await authed_client.post(f"{BUILDS}/{build}/explain", json=_body())).json()
+    accounts = {s["quantity"]: s for s in explained["stats"]}
+
+    for quantity in ("base_atk", "base_hp", "base_def"):
+        assert len(accounts[quantity]["parts"]) >= 1, quantity
+        assert base[quantity] == pytest.approx(accounts[quantity]["sum_of_parts"]), quantity
+    # The weapon's base ATK and the character's are both in it: the fixture's Mistsplitter is
+    # most of the figure, so a base that kept one contributor fails here.
+    assert len(accounts["base_atk"]["parts"]) >= 2
+
+
 async def test_the_hit_is_resolved_from_the_named_talent(
     authed_client: AsyncClient, db_session: AsyncSession, build: str,
 ):

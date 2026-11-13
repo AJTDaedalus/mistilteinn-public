@@ -398,7 +398,13 @@ async def search_context(
     hit = _hit(body.hit, build)
     enemy = await _enemy(body.enemy, enemies)
 
-    base = {c.quantity: c.value for c in _base_contributions(build)}
+    # **Summed per quantity.** `base_atk` has several contributors (the character's curve, the
+    # weapon's, the weapon's ascension) and so does `base_hp`. This was a dict comprehension,
+    # which kept only the last contribution to each quantity — the kernel scored Neuvillette
+    # on his ascension HP bonus alone, 4,697.8 of 14,695. Found driving math-fallback P0.
+    base: dict[str, float] = {}
+    for contribution in _base_contributions(build):
+        base[contribution.quantity] = base.get(contribution.quantity, 0.0) + contribution.value
 
     # Every set the caller owns a piece of, not only the sets currently worn: the search is
     # free to propose a build using pieces from a set this build is not wearing, and a bonus
