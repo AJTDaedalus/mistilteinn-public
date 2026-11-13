@@ -110,6 +110,20 @@ describe('parseSample', () => {
     expect(r.seed).toBe('7');
   });
 
+  it('drops damage that landed on the player rather than on an enemy', () => {
+    // A bloom's self-damage is logged as a `calc` against target key 0 — the player
+    // (`pkg/core/combat/player.go:9`), from `pkg/avatar/avatar.go` with no `total_scaling` at
+    // all. It is damage *taken*, not dealt: carried, it inflated a bloom team's score and
+    // replayed as NaN.
+    const r = parseSample({ logs: [
+      dmg(), calc({ target: 1 }),
+      dmg({ abil: 'bloom (self damage)' }),
+      calc({ abil: 'bloom (self damage)', target: 0, total_scaling: undefined, talent: 0 }),
+    ] });
+
+    expect(r.hits.map((h) => h.abil)).toEqual(['Normal 1']);
+  });
+
   it('drops hits gcsim reported as landing zero damage', () => {
     // Queued actions that never connected. Carrying them puts entries in the recipe whose
     // damage_grp_mult is 0 while every other term is populated — indistinguishable from a

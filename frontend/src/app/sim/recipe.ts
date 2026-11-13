@@ -438,6 +438,11 @@ interface CalcLog {
    * vaporize hit it is the pre-reaction average and this is the real one.
    */
   avg_crit_dmg_react?: number;
+  /**
+   * The target's key. **0 is the player** (`pkg/core/combat/player.go:9`); enemies are keyed
+   * from 1. A bloom's self-damage is logged as a `calc` against it, by `pkg/avatar/avatar.go`.
+   */
+  target?: number;
 }
 
 /**
@@ -453,6 +458,23 @@ function amplifyingFrom(type: string | undefined, mult: number | undefined): Amp
   if (type === 'melt') return strong ? 'melt' : 'reverse_melt';
   if (type === 'vaporize') return strong ? 'vaporize' : 'reverse_vaporize';
   return null;
+}
+
+/** gcsim's target key for the player — `pkg/core/combat/player.go:9`. */
+const PLAYER_TARGET = 0;
+
+/**
+ * Whether a `calc` is a hit the recipe carries — **one predicate, because two readers pair by
+ * position**: `parseSample` builds the hits and `staleConversionsIn` re-reads the calcs, and
+ * a filter applied in one and not the other misaligns every index after the first skip.
+ *
+ * Two kinds are dropped. A hit that landed zero damage is a queued action that never
+ * connected. And **damage the player took is not damage dealt**: a bloom's self-damage is a
+ * `calc` against target 0, from gcsim's avatar path with no `total_scaling` at all — carried,
+ * it added to a bloom team's score and replayed as NaN.
+ */
+function lands(c: CalcLog): boolean {
+  return c.damage !== 0 && c.target !== PLAYER_TARGET;
 }
 
 interface SampleEntry {
@@ -523,7 +545,7 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
   const hits: RecipeHit[] = [];
   for (let i = 0; i < calcs.length; i++) {
     const c = calcs[i];
-    if (!c || c.damage === 0) continue;
+    if (!c || !lands(c)) continue;
     // Pair by position, and **verify** rather than assume: a mismatch means the pairing
     // premise is wrong, and silently mislabelling every hit's element is exactly the kind of
     // wrong-but-plausible this repo keeps legislating against.
@@ -605,7 +627,7 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
  * 83 hits carrying 2 % of the damage is a footnote, and 5 hits carrying 40 % is not.
  */
 function staleConversionsIn(hits: RecipeHit[], calcs: CalcLog[]): StaleConversion[] {
-  const landed = calcs.filter((c) => c.damage !== 0);
+  const landed = calcs.filter(lands);
   const reads = new Map(TERMS.map((t) => [t.term, t.fromCalc]));
   // At parse time every present term is frozen — nothing has been resolved yet. Counting the
   // owner's Skirk rotation without the `mine` filter reported 89.3 % of the damage as an
