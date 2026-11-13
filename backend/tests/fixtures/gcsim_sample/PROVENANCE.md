@@ -13,6 +13,12 @@ browser build at the pin (`docs/CROSSVAL_gcsim.md` — never restated here). See
 | `skirk_team_calc.json` | `skirk_team.txt` | 215 | **four characters**, three elements, `+params`, a `for` loop, `energy every`, a custom target, and a real conversion on 18 % of the damage |
 | `xiangling_vape_calc.json` | `xiangling_vape.txt` | 86 | **vaporize**: 10 of Xiangling's 27 hits at ×1.5, teammates' ×2; `em`, `reaction_type`, `react_mult`, `react_bonus`, `avg_crit_dmg_react` |
 | `xiangling_vape_em_calc.json` | `xiangling_vape_em.txt` | 86 | the same at **+250 artifact EM** — the run the EM gate predicts |
+| `sethos_calc.json` | `sethos.txt` | 67 | **EM folded into flat damage**, and nothing else: 19 of Sethos's hits carry `FlatDmg = em × k` |
+| `sethos_probe_calc.json` | `sethos_probe.txt` | 67 | the same under the **widened probe** (`atk%=0.5 def%=0.7 em=100 hp%=0.3`) |
+| `sethos_em_calc.json` | `sethos_em.txt` | 67 | the same at **+300 artifact EM** — the run the EM-in-flat gate predicts |
+| `nahida_calc.json` | `nahida.txt` | 90 | Tri-Karma's EM in flat, **A4's EM-driven DMG% and CRIT Rate**, and bloom hits — 12 self-damage events against the player, dropped |
+| `nahida_probe_calc.json` | `nahida_probe.txt` | 90 | the same under the widened probe |
+| `nahida_em_calc.json` | `nahida_em.txt` | 90 | the same at **+300 artifact EM** |
 
 ## The probe triple
 
@@ -65,7 +71,8 @@ only the genuine one remains: **`flatDamage` on 91 hits, 18 % of the damage**.
   still stub-only (`recipe-eval.spec.ts`), though it travels the same code path as vaporize.
 - **HP and EM scaling.** `use_def` appears; `use_hp` and `use_em` do not. No released
   character in the owner's roster scales a gcsim hit off EM with `UseEM` — Nahida-style kits
-  put EM into `FlatDmg` instead, which the probe does not yet perturb (see below).
+  put EM into `FlatDmg` instead, which the probe has moved since 2026-11-13 (see the
+  `sethos` and `nahida` triples below).
 
 These are gaps in the **gate**, not in the tests — `recipe.spec.ts` covers all of them with
 stubs. The distinction matters: a stub proves the code does what it was written to do, and a
@@ -200,7 +207,63 @@ reaction fails the price check (predicted gain 0.00, Pyronado 24 % out), and one
 **Bennett's burst is reported stale in `flatAtk`**, correctly: it is computed from *Bennett's*
 base ATK and lands in Xiangling's flat ATK, so no probe of her stats can resolve it.
 
-**Not covered: EM converted into flat damage** (Nahida's Tri-Karma is `ATK × a + EM × b`, the
-second part written as `FlatDmg`). The probe moves `atk%`, `hp%` and `def%` only, so such a
-term stays frozen and is reported stale. Widening the probe to EM is a backend schema change
-(`probe_deltas`), left as a follow-up rather than folded into this fix.
+~~**Not covered: EM converted into flat damage.**~~ **Closed 2026-11-13** by the `sethos` and
+`nahida` triples below. (The sentence that stood here also said such a term *"is reported
+stale"*. It was not: the probe never moved it, so #229's rule filed it **constant** and the
+stale list said nothing at all — measured on the Nahida fixture, all 13 of her EM-bearing
+flat terms, and a predicted gain of 0 against gcsim's +31,673.)
+
+## The EM-in-flat triples (2026-11-13)
+
+gcsim writes the EM part of a hit as `FlatDmg = em × k` — Nahida's Tri-Karma
+(`internal/characters/nahida/skill.go:219-220`), Sethos's Shadowpiercing Shot and Dusk Bolts
+(`sethos/aimed.go:153,157`, `attack.go:70`), Alhaitham's projections (`alhaitham/skill.go`),
+Lan Yan (`lanyan/attack.go:142`, `burst.go:39`), and two weapons — Light of Foliar Incision
+and Hunter's Path (`internal/weapons/{sword/foliar,bow/hunterspath}`). The probe now moves EM by a flat **+100** in the same run as `atk%`, `hp%`
+and `def%`, and `resolveConversions` treats EM as a fourth source: its "total" is the hit's
+own snapshot `em`, so a term proportional to it matches EM's ratio and nothing else's.
+
+Each triple is a calibration (`er=0.3`, nothing else), its probe, and a run at **+300 artifact
+EM**. Captured in the browser build at the pin, seed `12345`, by the same calc+damage filter as
+the rest — which reproduces `xiangling_vape_calc.json` byte for byte.
+
+**Sethos is the price check**, because his EM enters `FlatDmg` and nothing else (no A4-style
+DMG% conversion, no reaction he triggers on this team — Fischl, Zhongli, Beidou):
+
+| | gcsim | recipe |
+|---|---:|---:|
+| gain from +300 EM | 16,428.81 | 16,428.81 (2.2e-16) |
+| before the probe moved EM | — | 0.00 |
+
+f64 throughout, so the tolerance is the 1e-12 transcription budget. 19 hits resolve to EM, none
+stay unresolved.
+
+**Nahida is the honesty check.** Her five Tri-Karma flat terms resolve to EM and follow
+gcsim's own `flat_dmg` at +300 EM **exactly** (0.0e+0). Two more things move with her EM and
+neither is priced, so both are **reported**:
+
+- **A4 turns EM above 200 into Tri-Karma DMG% (0.1 %/EM, cap 80 %) and CRIT Rate (0.03 %/EM,
+  cap 24 %)** (`nahida/asc.go`). The probe sees both move, and the recipe names them
+  `bonusDmg` and `critRate`. It does not price them: a two-point probe measures a slope and
+  cannot see the threshold or the cap, so extrapolating it would overstate every build past
+  ~1,000 total EM. That is an owner decision, recorded in `docs/DECISIONS.md` §39.
+- **Bloom** is gcsim's transformative curve in EM, landing in `flat_dmg` of a hit with no
+  talent at all. It moves non-proportionally, so it stays unresolved and is reported
+  `flatDamage`. (Spread and aggravate would be the same: `pkg/reactable/catalyze.go` adds the
+  catalyze bonus — from live, not snapshot, EM — to the same `FlatDmg`.)
+
+So the recipe now prices **5,455.81 of gcsim's 31,673.41** gain from +300 EM on this team
+(17.2 %), and the stale list says where the rest is. The old probe priced 0 and said nothing.
+
+**Self-damage is not damage dealt.** A bloom's self-damage is a `calc` against target key 0,
+the player (`pkg/core/combat/player.go:9`), logged from `pkg/avatar/avatar.go` with no
+`total_scaling`. `parseSample` carried it — inflating any bloom team's score, and replaying as
+NaN — until this fixture made it visible. It is now dropped by the same predicate that drops a
+zero-damage hit, so `staleConversionsIn`'s positional re-read stays aligned (a first cut
+filtered one reader and not the other, and reported Nahida's `flatAtk` and `flatHp` stale off
+her teammates' rows).
+
+Planted defects the gate catches: EM removed from the sources (Sethos: 0 resolved, 19
+unresolved), EM's total ignoring the candidate (predicted gain 0.00), the percentage-term report
+removed (Nahida: stale `[flatDamage]` only), and self-damage kept (Nahida replay NaN). Each is
+also caught by the specs.

@@ -85,6 +85,23 @@ const CASES = [
     minHits: 80,
     stale: ['flatAtk'],
   },
+  // **EM folded into flat damage** (2026-11-13): a calibration, its probe and a +300 EM run
+  // for each of two characters. Sethos is the clean case — his EM enters only `FlatDmg`
+  // (`internal/characters/sethos/{aimed,attack}.go`) — and Nahida the real one, whose
+  // Tri-Karma carries an EM-driven A4 and whose bloom team adds transformative hits.
+  // Every flat term is reported at parse time: nothing has been resolved yet.
+  { config: 'sethos.txt', calc: 'sethos_calc.json', minHits: 60, stale: ['flatDamage'] },
+  {
+    config: 'sethos_probe.txt', calc: 'sethos_probe_calc.json', minHits: 60,
+    stale: ['flatDamage'],
+  },
+  { config: 'sethos_em.txt', calc: 'sethos_em_calc.json', minHits: 60, stale: ['flatDamage'] },
+  { config: 'nahida.txt', calc: 'nahida_calc.json', minHits: 80, stale: ['flatDamage'] },
+  {
+    config: 'nahida_probe.txt', calc: 'nahida_probe_calc.json', minHits: 80,
+    stale: ['flatDamage'],
+  },
+  { config: 'nahida_em.txt', calc: 'nahida_em_calc.json', minHits: 80, stale: ['flatDamage'] },
 ];
 
 // The decomposition is exact in float64, so this is a float-noise budget, not a tolerance for
@@ -391,5 +408,153 @@ for (const c of CASES) {
     `probe resolved ${resolved} conversions (${unresolved} unresolved): ` +
       `hit-time prediction ${(before * 100).toFixed(2)}% → ${after.toExponential(3)}, ` +
       `still stale [${stale.join(', ')}]`,
+  );
+}
+
+
+// ── Elemental Mastery folded into flat damage ──────────────────────────────────────────────
+//
+// The gap DECISIONS §39 left open. gcsim writes the EM part of a hit such as Sethos's
+// Shadowpiercing Shot or Nahida's Tri-Karma as `FlatDmg = em × k`. With EM outside the probe
+// that term did not move, so `resolveConversions` filed it **constant**: artifact EM was
+// worth nothing to it and no warning said so. The probe now moves EM by +100, and the term
+// resolves to `from: 'em'` like a Redhorn DEF term resolves to `from: 'def'`.
+//
+// **Sethos is the price check.** His EM enters nothing but `FlatDmg`, so the recipe's whole
+// predicted gain from +300 artifact EM must equal gcsim's measured gain. Everything is f64 —
+// no amplifying term — so the tolerance is the 1e-12 transcription budget, not the EM gate's
+// f32 one.
+{
+  const baseline = parseSample(readFileSync(join(FIXTURES, 'sethos_calc.json'), 'utf8'));
+  const probe = parseSample(readFileSync(join(FIXTURES, 'sethos_probe_calc.json'), 'utf8'));
+  const more = parseSample(readFileSync(join(FIXTURES, 'sethos_em_calc.json'), 'utf8'));
+  const candidate = { ...NO_STATS, elementalMastery: 300 }; // what `sethos_em.txt` adds
+
+  const gain = () => {
+    let measured = 0;
+    let predicted = 0;
+    let worst = 0;
+    let worstAbil = '';
+    for (let i = 0; i < baseline.hits.length; i++) {
+      const h = baseline.hits[i];
+      const after = evaluateHit(h, candidate);
+      const actual = more.hits[i].gcsimAverageDamage;
+      measured += actual - h.gcsimAverageDamage;
+      predicted += after - evaluateHit(h, NO_STATS);
+      const rel = Math.abs(after - actual) / Math.max(Math.abs(actual), 1e-12);
+      if (rel > worst) {
+        worst = rel;
+        worstAbil = h.abil;
+      }
+    }
+    return { measured, predicted, worst, worstAbil };
+  };
+
+  if (baseline.hits.length !== more.hits.length || baseline.hits.length !== probe.hits.length) {
+    console.error('the Sethos triple disagrees on hit count; EM must not move the rotation.');
+    process.exit(1);
+  }
+  // Before resolution the flat term is frozen, so the recipe predicts no gain at all — the
+  // defect, measured rather than asserted. If this ever reads non-zero the case has stopped
+  // demonstrating anything.
+  const frozen = gain();
+  const { resolved, unresolved } = resolveConversions(baseline, probe);
+  const priced = gain();
+  const fromEm = baseline.hits.filter((h) => h.mine && h.conversions.flatDamage?.from === 'em');
+  const deltaErr = Math.abs(priced.predicted - priced.measured) / Math.abs(priced.measured);
+
+  if (frozen.predicted !== 0 || fromEm.length === 0 || unresolved !== 0
+    || baseline.meta.staleConversions.length !== 0) {
+    console.error(
+      `the probe did not resolve Sethos's EM-in-flat terms.\n` +
+        `  frozen gain ${frozen.predicted.toFixed(2)} (expected 0), resolved ${resolved}, ` +
+        `unresolved ${unresolved}, from EM ${fromEm.length}, stale ` +
+        `[${baseline.meta.staleConversions.map((c) => c.term)}]`,
+    );
+    process.exit(1);
+  }
+  if (!(priced.measured > 0) || !(deltaErr <= TOLERANCE) || !(priced.worst <= TOLERANCE)) {
+    console.error(
+      `the recipe mis-prices EM folded into flat damage against gcsim.\n` +
+        `  gcsim's gain ${priced.measured.toFixed(2)}, predicted ${priced.predicted.toFixed(2)} ` +
+        `(rel err ${deltaErr.toExponential(3)})\n` +
+        `  worst hit ${priced.worst.toExponential(3)} on "${priced.worstAbil}", tolerance ` +
+        `${TOLERANCE.toExponential(0)}`,
+    );
+    process.exit(1);
+  }
+  console.log(
+    `EM in flat damage priced as gcsim prices it: ${fromEm.length} Sethos hits resolved to EM, ` +
+      `gain ${priced.measured.toFixed(2)} measured vs ${priced.predicted.toFixed(2)} predicted ` +
+      `(${deltaErr.toExponential(3)}; frozen predicted ${frozen.predicted.toFixed(2)}), ` +
+      `worst hit ${priced.worst.toExponential(3)}`,
+  );
+}
+
+// **Nahida is the honesty check.** Her Tri-Karma's flat term resolves to EM exactly — checked
+// here against gcsim's own `flat_dmg` at +300 EM — but two more things move with her EM and
+// neither is priced: her A4 turns EM above 200 into Tri-Karma DMG% and CRIT Rate (capped, so a
+// two-point slope would be a guess past the cap), and her bloom hits' damage is gcsim's
+// transformative EM curve. Both must be **reported**, not silently frozen — the old probe
+// filed every one of these thirteen terms `constant` and the stale list was empty.
+{
+  const baseline = parseSample(readFileSync(join(FIXTURES, 'nahida_calc.json'), 'utf8'));
+  const probe = parseSample(readFileSync(join(FIXTURES, 'nahida_probe_calc.json'), 'utf8'));
+  const more = parseSample(readFileSync(join(FIXTURES, 'nahida_em_calc.json'), 'utf8'));
+  const EM = 300; // what `nahida_em.txt` adds
+  resolveConversions(baseline, probe);
+
+  const triKarma = baseline.hits
+    .map((h, i) => ({ h, i }))
+    .filter(({ h }) => h.mine && h.abil.startsWith('Tri-Karma'));
+  let worst = 0;
+  for (const { h, i } of triKarma) {
+    const conversion = h.conversions.flatDamage;
+    if (conversion?.from !== 'em') {
+      console.error(`Tri-Karma hit ${i} did not resolve to EM: ${JSON.stringify(conversion)}`);
+      process.exit(1);
+    }
+    const predicted = conversion.perUnit * (h.calibratedEm + EM);
+    const actual = more.hits[i].flatDamage;
+    worst = Math.max(worst, Math.abs(predicted - actual) / actual);
+  }
+  if (triKarma.length === 0 || !(worst <= TOLERANCE)) {
+    console.error(
+      `Tri-Karma's EM-in-flat term does not follow gcsim: ${triKarma.length} hits, ` +
+        `worst ${worst.toExponential(3)}`,
+    );
+    process.exit(1);
+  }
+
+  const stale = baseline.meta.staleConversions.map((c) => c.term).sort();
+  const staleFlat = baseline.hits.filter(
+    (h) => h.mine && h.flatDamage !== 0 && h.conversions.flatDamage === undefined,
+  );
+  if (JSON.stringify(stale) !== JSON.stringify(['bonusDmg', 'critRate', 'flatDamage'])
+    || staleFlat.some((h) => h.abil.startsWith('Tri-Karma'))
+    || !staleFlat.every((h) => h.abil.startsWith('bloom'))) {
+    console.error(
+      `Nahida's unpriced EM effects are not reported as they should be.\n` +
+        `  stale [${stale}], unresolved flat on [${[...new Set(staleFlat.map((h) => h.abil))]}]\n` +
+        `A recipe that resolves the part it can and goes quiet about the rest is worse than ` +
+        `one that warned about all of it.`,
+    );
+    process.exit(1);
+  }
+
+  // How much of gcsim's measured gain the recipe now prices — reported, not gated, because the
+  // remainder is exactly what the stale list above names.
+  let measured = 0;
+  let predicted = 0;
+  const candidate = { ...NO_STATS, elementalMastery: EM };
+  for (let i = 0; i < baseline.hits.length; i++) {
+    measured += more.hits[i].gcsimAverageDamage - baseline.hits[i].gcsimAverageDamage;
+    predicted += evaluateHit(baseline.hits[i], candidate) - evaluateHit(baseline.hits[i], NO_STATS);
+  }
+  console.log(
+    `Nahida: ${triKarma.length} Tri-Karma flat terms follow gcsim (worst ` +
+      `${worst.toExponential(3)}); still reported [${stale.join(', ')}] — the recipe prices ` +
+      `${predicted.toFixed(2)} of gcsim's ${measured.toFixed(2)} gain from +${EM} EM ` +
+      `(${((predicted / measured) * 100).toFixed(1)} %), where the old probe priced 0`,
   );
 }
