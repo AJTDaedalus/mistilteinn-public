@@ -9,6 +9,7 @@ import {
 } from './recipe-optimize.service';
 import { API_BASE_URL } from '../../api/api.client';
 import type { RecipeStore } from '../../sim/recipe-cache';
+import { inlineRunner } from '../../sim/gcsim-runner';
 
 /**
  * R.8 — calibrating one recipe per 4-piece state, and saying what they do not cover.
@@ -95,7 +96,7 @@ function setup(over: { cached?: unknown; sample?: (cfg: string) => string } = {}
   TestBed.configureTestingModule({
     providers: [
       { provide: API_BASE_URL, useValue: 'http://test.local' },
-      { provide: GCSIM_LOADER, useValue: () => Promise.resolve(gcsim) },
+      { provide: GCSIM_LOADER, useValue: () => Promise.resolve(inlineRunner(gcsim)) },
       { provide: RECIPE_STORE, useValue: store(over.cached) },
     ],
   });
@@ -132,7 +133,7 @@ describe('RecipeOptimizeService', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: API_BASE_URL, useValue: 'http://test.local' },
-        { provide: GCSIM_LOADER, useValue: () => Promise.resolve(gcsimStub()) },
+        { provide: GCSIM_LOADER, useValue: () => Promise.resolve(inlineRunner(gcsimStub())) },
         { provide: RECIPE_STORE, useValue: recording },
       ],
     });
@@ -179,7 +180,7 @@ describe('RecipeOptimizeService', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: API_BASE_URL, useValue: 'http://test.local' },
-        { provide: GCSIM_LOADER, useValue: () => Promise.resolve(gcsimStub()) },
+        { provide: GCSIM_LOADER, useValue: () => Promise.resolve(inlineRunner(gcsimStub())) },
         { provide: RECIPE_STORE, useValue: recording },
       ],
     });

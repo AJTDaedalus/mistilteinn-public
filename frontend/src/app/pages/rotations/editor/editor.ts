@@ -10,8 +10,9 @@ import { ElementChip } from '../../../shared/element/element';
 import { CatalogueIcon } from '../../../shared/icon/icon';
 import { EntityToken } from '../../../shared/token/token';
 import { rosterOptions } from '../../../shared/team-scope';
-import { configError, sampleError, type GcsimModule } from '../../../sim/gcsim';
-import { loadGcsim } from '../../../sim/gcsim-loader';
+import { sampleError } from '../../../sim/gcsim';
+import type { GcsimRunner } from '../../../sim/gcsim-runner';
+import { gcsimRunner } from '../../../sim/gcsim-worker-runner';
 import { onFieldIntervals, type OnFieldInterval } from '../../../sim/sample-timeline';
 import { RotationTimeline } from '../timeline/timeline';
 import {
@@ -197,24 +198,27 @@ export class RotationEditor {
   }
 
   /**
-   * The body of `runSample`, with the wasm module as a seam.
+   * The body of `runSample`, with the gcsim runner as a seam.
+   *
+   * The default is the page's worker runner, so a sample that hangs — an action that can never
+   * become ready — is killed at its deadline and reported here, rather than freezing the tab.
    *
    * A unit test needs to drive gcsim's *failure* shapes, and loading a 40 MB binary to do it
    * would make the test slower than the feature. `runSample()` is what the template calls.
    */
-  protected async runSampleWith(module: GcsimModule | null): Promise<void> {
+  protected async runSampleWith(runner: GcsimRunner | null): Promise<void> {
     if (this.steps().length === 0 || !this.teamId()) return;
     this.sampling.set(true);
     this.sampleError.set(null);
     try {
       const config = await this.rotations.preview(this.teamId(), this.steps(), true);
-      const mod = module ?? await loadGcsim();
-      const rejected = configError(mod.validateConfig(config));
+      const gcsim = runner ?? await gcsimRunner();
+      const rejected = await gcsim.validate(config);
       if (rejected !== null) throw new Error(`gcsim rejected the config: ${rejected}`);
       // A fixed seed. gcsim rolls crit, so a run repeated at a different seed moves for a
       // reason that has nothing to do with the rotation — and the timeline's whole claim is
       // that what changed on it is what the author changed.
-      const raw = mod.sample(config, '1');
+      const raw = await gcsim.sample(config, '1');
       // **`sample()` reports failure by returning `{"error": …}`, not by throwing** —
       // `cmd/wasm/main.go` marshals the error like any other result. `JSON.parse` succeeds, the
       // parsed object has no `logs`, and the timeline would have entered measured mode and
