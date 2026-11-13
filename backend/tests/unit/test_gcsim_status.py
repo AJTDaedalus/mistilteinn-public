@@ -46,10 +46,12 @@ def test_the_coverage_list_is_at_the_same_pin_as_the_answer():
 def test_the_distribution_at_the_pin():
     """Pinned so a re-pin that moves anyone is a diff someone reads.
 
-    `partial` is mostly plunges: 70 of the 89 lack only `high_plunge`/`low_plunge`.
+    Before the owner's plunge ruling (2026-11-13) this was 39 / 89 / 22, and 70 of the 89 lacked
+    only `high_plunge`/`low_plunge`. Those 70, plus 5 lacking one plunge, are `full` now: 14
+    `partial` characters remain, every one missing a charged attack.
     """
     assert Counter(s.status for s in _all().values()) == {
-        GcsimSupport.FULL: 39, GcsimSupport.PARTIAL: 89, GcsimSupport.NONE: 22,
+        GcsimSupport.FULL: 114, GcsimSupport.PARTIAL: 14, GcsimSupport.NONE: 22,
     }
     plunges_only = sum(
         1 for s in _all().values() if s.missing_actions == ("high_plunge", "low_plunge")
@@ -70,7 +72,27 @@ def test_full_and_partial_carry_the_key_and_no_reason():
         if status.status is not GcsimSupport.NONE:
             assert status.key
             assert status.reason is None
-            assert bool(status.missing_actions) == (status.status is GcsimSupport.PARTIAL)
+            core_missing = gcsim_status.CORE_ACTIONS.intersection(status.missing_actions)
+            assert bool(core_missing) == (status.status is GcsimSupport.PARTIAL)
+
+
+def test_missing_plunges_alone_are_full_but_still_listed():
+    """Owner, 2026-11-13: partial only for a missing normal, charged/aimed, skill or burst.
+
+    The plunges stay in `missing_actions`, so the tooltip still says gcsim cannot plunge.
+    """
+    plunge_only = [
+        s for s in _all().values()
+        if s.missing_actions and set(s.missing_actions) <= {"high_plunge", "low_plunge"}
+    ]
+    assert len(plunge_only) == 75
+    assert {s.status for s in plunge_only} == {GcsimSupport.FULL}
+
+
+def test_diluc_lacking_a_charged_attack_and_plunges_is_partial():
+    statuses = [s for s in _all().values() if "charge" in s.missing_actions]
+    assert statuses
+    assert {s.status for s in statuses} == {GcsimSupport.PARTIAL}
 
 
 def test_a_sword_user_is_not_partial_for_want_of_an_aimed_shot():
