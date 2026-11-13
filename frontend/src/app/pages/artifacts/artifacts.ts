@@ -17,6 +17,13 @@ import {
 import { type OutcomeDistribution } from '../../sim/artifact-outcome';
 import { type CalibrationProgress } from '../optimize/recipe-optimize.service';
 import { ArtifactsContextService } from './artifacts-context.service';
+import { FormulaLabel } from '../../shared/formula-panel/formula-label';
+import { FormulaPanel } from '../../shared/formula-panel/formula-panel';
+import { gcsimRefusal, type GcsimRefusal } from '../../sim/formula-calibration';
+import {
+  FormulaEstimateService,
+  type FormulaRequest,
+} from '../optimize/formula-estimate.service';
 import {
   ArtifactsService,
   type ArtifactOptions,
@@ -211,7 +218,7 @@ export function comparator(key: SortKey): (a: ArtifactRow, b: ArtifactRow) => nu
  */
 @Component({
   selector: 'page-artifacts',
-  imports: [FormsModule, CatalogueIcon, CardPicker, SubstatBars],
+  imports: [FormsModule, CatalogueIcon, CardPicker, SubstatBars, FormulaPanel, FormulaLabel],
   templateUrl: './artifacts.html',
   styleUrl: './artifacts.scss',
 })
@@ -350,6 +357,42 @@ export class ArtifactsPage implements OnInit, OnDestroy {
   protected readonly rotationChoices = this.context.rotationChoices;
   protected readonly rankBuildId = this.context.buildId;
   protected readonly rankRotationId = this.context.rotationId;
+  /** gcsim, or the formula estimate (math-fallback P1, task 8). Shared with Upgrade. */
+  protected readonly scoreMode = this.context.mode;
+  protected readonly teams = this.context.teams;
+  protected readonly formulaTeamId = this.context.formulaTeamId;
+  protected readonly formulaHits = this.context.formulaHits;
+  protected readonly formulaRefused = this.context.formulaRefused;
+  protected readonly formulaGroups = this.context.formulaGroups;
+  protected readonly gcsimBlocked = this.context.gcsimBlocked;
+  private readonly formulaService = inject(FormulaEstimateService);
+  /**
+   * The formula estimate's assumptions when the ranking on screen came from one, else `null`.
+   * The label follows the ranking, not the mode chip.
+   */
+  protected readonly rankFormula = signal<string[] | null>(null);
+  /** What gcsim refused on the last ranking, when the estimate can answer instead. */
+  protected readonly gcsimRefused = signal<GcsimRefusal | null>(null);
+
+  /** The formula half of every ranking request, or nothing in gcsim mode. */
+  private formulaPart(): { formula?: Omit<FormulaRequest, 'buildId' | 'fourPieceSetIds'> } {
+    const formula = this.context.formulaRequest();
+    return formula ? { formula } : {};
+  }
+
+  protected chooseMode(mode: 'gcsim' | 'formula'): void {
+    this.context.chooseMode(mode);
+  }
+
+  protected chooseFormulaTeam(id: string): void {
+    this.context.chooseFormulaTeam(id);
+  }
+
+  /** From a gcsim refusal: the same build, by formula. The target loads; Rank then runs it. */
+  protected useFormulaEstimate(): void {
+    this.gcsimRefused.set(null);
+    this.context.useFormulaEstimate();
+  }
 
   /**
    * Which tab this instance is: **Inventory** (import, filter, the cards) or **Rank** (the
@@ -511,7 +554,12 @@ export class ArtifactsPage implements OnInit, OnDestroy {
   protected readonly upgradableOnly = signal(false);
 
   protected readonly canRank = computed(
-    () => !!this.rankBuildId() && !!this.rankRotationId() && !this.rankProgress(),
+    () => !!this.rankBuildId() && !this.rankProgress()
+      && (this.scoreMode() === 'formula'
+        // The formula estimate needs a target for this build, not a rotation.
+        ? this.formulaService.forBuild() === this.rankBuildId()
+          && this.formulaService.rows().length > 0
+        : !!this.rankRotationId()),
   );
   protected readonly hasRanking = computed(() => this.ranked().size > 0);
 
@@ -645,14 +693,21 @@ export class ArtifactsPage implements OnInit, OnDestroy {
   protected async rankAgainstBuild(): Promise<void> {
     if (!this.canRank()) return;
     this.rankError.set('');
-    this.rankProgress.set({ done: 0, total: 1, current: 'starting', loading: true });
+    this.gcsimRefused.set(null);
+    const formula = this.formulaPart();
+    // No simulator loads for a formula estimate; the status line says what is happening.
+    this.rankProgress.set(formula.formula
+      ? { done: 0, total: 1, current: 'the formula estimate', loading: false }
+      : { done: 0, total: 1, current: 'starting', loading: true });
     try {
       const result = await this.rankingService.rank({
         buildId: this.rankBuildId(),
         rotationId: this.rankRotationId(),
         onProgress: (progress) => this.rankProgress.set(progress),
         extraSets: this.extraSets(),
+        ...formula,
       });
+      this.rankFormula.set(result.formula ?? null);
       this.ranked.set(new Map(result.rows.map((row) => [row.id, row])));
       this.uncalibratedSets.set(result.uncalibratedSets);
       this.rankBaseline.set(result.baseline);
@@ -666,8 +721,13 @@ export class ArtifactsPage implements OnInit, OnDestroy {
       // the page is usable with the single-slot numbers while these refine.
       void this.sweepBroadened(this.SWEEP_DEFAULT);
     } catch (err) {
-      this.rankError.set(apiErrorMessage(err));
+      // **A refusal the estimate can answer is a choice, not a dead end** (DESIGN §2.5).
+      const message = apiErrorMessage(err);
+      const refused = formula.formula ? null : gcsimRefusal(message);
+      if (refused) this.gcsimRefused.set(refused);
+      else this.rankError.set(message);
       this.ranked.set(new Map());
+      this.rankFormula.set(null);
       this.uncalibratedSets.set([]);
     } finally {
       this.rankProgress.set(null);
@@ -694,6 +754,7 @@ export class ArtifactsPage implements OnInit, OnDestroy {
         buildId: this.rankBuildId(),
         rotationId: this.rankRotationId(),
         extraSets: this.extraSets(),
+        ...this.formulaPart(),
         artifactIds: ids,
         onSweepProgress: (done, total) => this.sweepProgress.set({ done, total }),
         // **Each piece as it settles**, not the whole map at the end. Merged rather than
@@ -756,6 +817,7 @@ export class ArtifactsPage implements OnInit, OnDestroy {
         rotationId: this.rankRotationId(),
         artifactId: row.id,
         extraSets: this.extraSets(),
+        ...this.formulaPart(),
       }));
     } catch (err) {
       this.diveError.set(apiErrorMessage(err));
@@ -782,6 +844,7 @@ export class ArtifactsPage implements OnInit, OnDestroy {
         rotationId: this.rankRotationId(),
         artifactId: row.id,
         extraSets: this.extraSets(),
+        ...this.formulaPart(),
         // Paging away, or asking about another piece, aborts the walk rather than leaving it
         // to finish into a panel nobody is looking at.
         shouldCancel: () => this.outcomesId() !== row.id,

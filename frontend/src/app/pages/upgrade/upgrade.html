@@ -7,27 +7,61 @@
     </p>
   </header>
 
+  <!-- gcsim by default; the formula estimate is a labelled opt-in for every team (D-F3). The
+       choice is shared with Rank, like the rest of the picker. -->
+  <fieldset class="score-mode" aria-label="What scores the build">
+    <button
+      type="button"
+      class="chip"
+      [class.chip--on]="mode() === 'gcsim'"
+      [attr.aria-pressed]="mode() === 'gcsim'"
+      [disabled]="running()"
+      (click)="chooseMode('gcsim')"
+    >gcsim, with a rotation</button>
+    <button
+      type="button"
+      class="chip chip--formula"
+      [class.chip--on]="mode() === 'formula'"
+      [attr.aria-pressed]="mode() === 'formula'"
+      [disabled]="running()"
+      (click)="chooseMode('formula')"
+    >Formula estimate (fast, no simulation)</button>
+  </fieldset>
+
   <div class="controls">
-    <!-- Rotation first, as on Rank: it names the team, and only that team's builds can be asked
-         about. The choice is shared with Rank, so it is made once. -->
-    <label>
-      <span>Rotation</span>
-      <select (change)="chooseRotation($any($event.target).value)" [disabled]="running()">
-        <option value="" [selected]="!rotationId()">Choose a rotation…</option>
-        @for (choice of rotationChoices(); track choice.id) {
-          <option [value]="choice.id" [selected]="choice.id === rotationId()">{{ choice.label }}</option>
-        }
-      </select>
-    </label>
+    @if (mode() === 'gcsim') {
+      <!-- Rotation first, as on Rank: it names the team, and only that team's builds can be
+           asked about. The choice is shared with Rank, so it is made once. -->
+      <label>
+        <span>Rotation</span>
+        <select (change)="chooseRotation($any($event.target).value)" [disabled]="running()">
+          <option value="" [selected]="!rotationId()">Choose a rotation…</option>
+          @for (choice of rotationChoices(); track choice.id) {
+            <option [value]="choice.id" [selected]="choice.id === rotationId()">{{ choice.label }}</option>
+          }
+        </select>
+      </label>
+    } @else {
+      <!-- The estimate needs no rotation. A team is optional: it is where resonance comes from. -->
+      <label>
+        <span>Team</span>
+        <select (change)="chooseFormulaTeam($any($event.target).value)" [disabled]="running()">
+          <option value="" [selected]="!formulaTeamId()">No team (this build alone)</option>
+          @for (team of teams(); track team.id) {
+            <option [value]="team.id" [selected]="team.id === formulaTeamId()">{{ team.name }}</option>
+          }
+        </select>
+      </label>
+    }
 
     <label>
       <span>Character</span>
       <select
         (change)="buildId.set($any($event.target).value)"
-        [disabled]="running() || !rotationId()"
+        [disabled]="running() || (mode() === 'gcsim' && !rotationId())"
       >
         <option value="" [selected]="!buildId()">
-          {{ rotationId() ? 'Choose a character…' : 'Pick a rotation first' }}
+          {{ mode() === 'formula' || rotationId() ? 'Choose a character…' : 'Pick a rotation first' }}
         </option>
         @for (choice of buildChoices(); track choice.id) {
           <option [value]="choice.id" [selected]="choice.id === buildId()">
@@ -66,6 +100,15 @@
     that adds 0.01% would count.
   </p>
 
+  @if (mode() === 'formula' && buildId()) {
+    <formula-panel
+      [hits]="formulaHits()"
+      [refusedHits]="formulaRefused()"
+      [groups]="formulaGroups()"
+      [assumptions]="result()?.formula ?? []"
+    />
+  }
+
   @if (progress(); as p) {
     <p class="muted" role="status">
       @if (p.loading) {
@@ -82,7 +125,25 @@
     <p class="error" role="alert">{{ message }}</p>
   }
 
+  <!-- Reasons, not dead ends (DESIGN §2.5): known before the click from the catalogue's gcsim
+       block, or read out of the 422 after it. -->
+  @if (gcsimRefused(); as refused) {
+    <div class="gcsim-choice" role="alert">
+      <p>gcsim can't run {{ refused.name }}. Use the formula estimate?</p>
+      <p class="hint">{{ refused.message }}</p>
+      <button type="button" (click)="useFormulaEstimate()">Use the formula estimate</button>
+    </div>
+  } @else if (gcsimBlocked().length) {
+    <div class="gcsim-choice" role="note">
+      <p>gcsim can't run {{ gcsimBlocked().join(', ') }}. Use the formula estimate?</p>
+      <button type="button" (click)="useFormulaEstimate()">Use the formula estimate</button>
+    </div>
+  }
+
   @if (rows().length) {
+    @if (ranFormula()) {
+      <formula-label class="results-label" />
+    }
     <div class="table-scroll">
       <table class="estimates">
         <caption class="visually-hidden">Resin until each slot improves</caption>

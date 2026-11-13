@@ -60,6 +60,10 @@ import {
   type KernelCandidate,
   OptimizeService,
 } from '../optimize/optimize.service';
+import {
+  FormulaEstimateService,
+  type FormulaRequest,
+} from '../optimize/formula-estimate.service';
 import { ArtifactsService } from './artifacts.service';
 
 export interface RankingRow extends RankedArtifact {
@@ -106,6 +110,11 @@ export interface RankingResult {
    */
   uncalibratedSets: { setId: number; uuid: string; name: string; pieces: number }[];
   caveats: { unstable: string[]; staleConversions: string[] };
+  /**
+   * The formula estimate's assumptions when the scores came from a formula recipe, `null` for
+   * gcsim. **What the page labels the result by** (DESIGN §2.5), read off the recipe itself.
+   */
+  formula?: string[] | null;
 }
 
 /** One slot's before-and-after in a deep dive's winning build. */
@@ -193,6 +202,8 @@ export interface UpgradeResult {
   rainbow: boolean;
   weightsCaveat: string;
   caveats: { unstable: string[]; staleConversions: string[] };
+  /** As `RankingResult.formula`: the estimate's assumptions, or `null` for gcsim. */
+  formula?: string[] | null;
 }
 
 /** What `rank` needs to know before it can start. */
@@ -208,6 +219,13 @@ export interface RankingRequest {
    * and driven by the user asking about a specific set rather than by calibrating all 65.
    */
   extraSets?: readonly { uuid: string; setId: number; name: string }[];
+  /**
+   * Score with the **formula estimate** instead of a gcsim calibration (math-fallback P1,
+   * task 8). `rotationId` is then unread, and nothing reaches gcsim, the recipe cache or the
+   * run corpus. The states built are the ones a gcsim ranking would calibrate (the worn
+   * 4-piece and `extraSets`); asking for another costs requests, not a simulation.
+   */
+  formula?: Omit<FormulaRequest, 'buildId' | 'fourPieceSetIds'>;
 }
 
 /** What every question about one build starts from. `ArtifactRankingService.buildState`. */
@@ -295,6 +313,7 @@ export class ArtifactRankingService {
   private readonly optimize = inject(OptimizeService);
   private readonly artifacts = inject(ArtifactsService);
   private readonly recipes = inject(RecipeOptimizeService);
+  private readonly formula = inject(FormulaEstimateService);
 
   /**
    * Everything the four ways of asking about a build share: what it wears, the recipe it is in
@@ -337,7 +356,21 @@ export class ArtifactRankingService {
     // is what a real build looks like. Calibrating only the no-4-piece baseline made the
     // feature unusable for most of them.
     const wornFour = fourPieceSetOf(counts);
-    const calibration = await this.recipes.calibrateAll(
+    // **The formula path never reaches gcsim, the recipe cache or the run corpus.**
+    const calibration = request.formula
+      ? (await this.formula.estimate({
+        ...request.formula,
+        buildId: request.buildId,
+        // **The same states a gcsim ranking calibrates**: the worn 4-piece and any asked for.
+        // Every set would be cheap to build, but the broadened sweep walks every state it is
+        // given per piece, and 65 of them froze the tab when driven. Another set is one click
+        // (`uncalibratedSets`), and for a formula recipe that click costs nothing.
+        fourPieceSetIds: [
+          ...(wornFour === null ? [] : [wornFour]),
+          ...(request.extraSets ?? []).map((set) => set.setId),
+        ],
+      })).calibration
+      : await this.recipes.calibrateAll(
       request.buildId,
       request.rotationId,
       snapshot.version,
@@ -537,6 +570,7 @@ export class ArtifactRankingService {
         unstable: recipe.meta?.unstable ?? [],
         staleConversions: (recipe.meta?.staleConversions ?? []).map((c) => c.term),
       },
+      formula: recipe.meta?.formula?.assumptions ?? null,
     };
   }
 
@@ -728,6 +762,7 @@ export class ArtifactRankingService {
         unstable: recipe.meta?.unstable ?? [],
         staleConversions: (recipe.meta?.staleConversions ?? []).map((c) => c.term),
       },
+      formula: recipe.meta?.formula?.assumptions ?? null,
     };
   }
 
