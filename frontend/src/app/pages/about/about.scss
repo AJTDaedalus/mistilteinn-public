@@ -92,6 +92,9 @@
 }
 
 .source__commit {
+  /* Angular strips the template whitespace between the link and this span, so the gap is
+     drawn here — the first render read "gcsim's source codeat b107…". */
+  margin-inline-start: var(--space-1);
   color: var(--ink-dim);
   font-size: var(--text-xs);
 }
