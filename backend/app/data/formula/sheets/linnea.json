@@ -1,0 +1,333 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Linnea",
+ "nanoka_id": "10000130",
+ "slug": "linnea",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Linnea.ts",
+  "wr": "libs/gi/sheets/src/Characters/Linnea/index.tsx"
+ },
+ "verified_by": [
+  "linnea_c4_on_her_own_pummeler"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Linnea.ts:238-240; wr:index.tsx:332-338; game data agrees: YuanShenResources f11cf545 BinOutput/Talent/AvatarTalents/ConfigTalent_Linnea.json Linnea_Constellation_3 (talent index 2, +3)"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Linnea.ts:238-240; wr:index.tsx:332-338; game data agrees: YuanShenResources f11cf545 BinOutput/Talent/AvatarTalents/ConfigTalent_Linnea.json Linnea_Constellation_5 (talent index 9, +3)"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "2": [
+    0.4,
+    8.0,
+    1.5,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    5.0,
+    0.25,
+    0.25,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    0.15,
+    0.3,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.05,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "lumi_present",
+   "label": "Lumi is present on the field",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Linnea.ts:106-109,121-132"
+  },
+  {
+   "key": "moonsign_gleam",
+   "label": "Ascendant Gleam: two or more Moonsign characters in the party",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:Linnea.ts:126-130"
+  },
+  {
+   "key": "subject_moonsign",
+   "label": "The optimized character is a Moonsign character",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:Linnea.ts:119,135-136; wr:index.tsx:142-156"
+  },
+  {
+   "key": "c2_moondrift",
+   "label": "Moondrift (C2)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Linnea.ts:106-109,199-208"
+  },
+  {
+   "key": "c4_moondrift",
+   "label": "Moondrift (C4)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Linnea.ts:106-109,213-218"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a1_geo_res",
+   "label": "A1 Field Observation Notes: opponents' Geo RES - while Lumi is present",
+   "source": "a1",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "geo"
+   ],
+   "value": {
+    "passive": 1,
+    "param": 0,
+    "negate": true
+   },
+   "when": [
+    {
+     "condition": "lumi_present",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "moonsign_gleam",
+     "values": [
+      0
+     ]
+    }
+   ],
+   "go": "pando:Linnea.ts:62-65,121-132,254-255"
+  },
+  {
+   "key": "a1_geo_res_gleam",
+   "label": "A1 Field Observation Notes: opponents' Geo RES - (Ascendant Gleam)",
+   "source": "a1",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "geo"
+   ],
+   "value": {
+    "passive": 1,
+    "param": 1,
+    "negate": true
+   },
+   "when": [
+    {
+     "condition": "lumi_present",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "moonsign_gleam",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Linnea.ts:62-65,121-132,254-255"
+  },
+  {
+   "key": "a4_em",
+   "label": "A4 Universal Naturalist Archive: the active Moonsign character's EM + 5% of Linnea's DEF",
+   "source": "a4",
+   "receivers": "active",
+   "stat": "elemental_mastery",
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "def"
+   },
+   "when": [
+    {
+     "condition": "subject_moonsign",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Linnea.ts:66-68,118-119,134-141,242,251; wr:index.tsx:142-156,339,346"
+  },
+  {
+   "key": "c2_crit_dmg",
+   "label": "C2 Tidings of Joy and Sorrow: Hydro and Geo party members' CRIT DMG +",
+   "source": "c2",
+   "receivers": "team",
+   "stat": "crit_dmg",
+   "receiver_elements": [
+    "hydro",
+    "geo"
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "c2_moondrift",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Linnea.ts:84-88,199-208,252"
+  },
+  {
+   "key": "c4_self_def",
+   "label": "C4 Expert Instinct: Linnea's DEF +",
+   "source": "c4",
+   "receivers": "self",
+   "stat": "def_pct",
+   "value": {
+    "constellation": 4,
+    "param": 1
+   },
+   "go": "pando:Linnea.ts:89-93,219-223,243"
+  },
+  {
+   "key": "c4_active_def",
+   "label": "C4 Expert Instinct: the active character's DEF + in Moondrift",
+   "source": "c4",
+   "receivers": "active",
+   "stat": "def_pct",
+   "value": {
+    "constellation": 4,
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "c4_moondrift",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Linnea.ts:89-93,213-218,253"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "kit",
+   "what": "Moonsign Benediction: Lunar-Crystallize base DMG from Linnea's DEF",
+   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+  },
+  {
+   "source": "kit",
+   "what": "Ascendant Gleam, derived from the team",
+   "reason": "two or more Moonsign characters in the party (Ascendant Gleam) — a team-composition condition the user sets; not derived from the team yet"
+  },
+  {
+   "source": "kit",
+   "what": "Master Adventurer: an extra fully-charged shot at 20%",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c1",
+   "what": "Provisional Classification: Lunar-Crystallize DMG from DEF on Lumi's hits",
+   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+  },
+  {
+   "source": "c2",
+   "what": "Tidings of Joy and Sorrow: Million Ton Crush CRIT DMG",
+   "reason": "scoped to one talent row: the format scopes by element and move, not by row"
+  },
+  {
+   "source": "c6",
+   "what": "Golden Beagle's Dream: Lunar-Crystallize DMG",
+   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+  },
+  {
+   "source": "talent",
+   "what": "Burst healing",
+   "reason": "no damage effect: healing"
+  }
+ ]
+}

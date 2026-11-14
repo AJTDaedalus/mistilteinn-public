@@ -1,0 +1,268 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Kachina",
+ "nanoka_id": "10000100",
+ "slug": "kachina",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Kachina.ts",
+  "wr": "libs/gi/sheets/src/Characters/Kachina/index.tsx"
+ },
+ "verified_by": [
+  "kachina_a4_on_her_own_skill"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Kachina.ts:106-108; wr:index.tsx:145-151; game data agrees: YuanShenResources f11cf545 BinOutput/Talent/AvatarTalents/ConfigTalent_Kachina.json Kachina_Constellation_3 (talent index 2, +3)"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Kachina.ts:106-108; wr:index.tsx:145-151; game data agrees: YuanShenResources f11cf545 BinOutput/Talent/AvatarTalents/ConfigTalent_Kachina.json Kachina_Constellation_5 (talent index 9, +3)"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "4": [
+    0.08,
+    0.12,
+    0.16,
+    0.2,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    0.2,
+    12.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.2,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "a1_nightsoul_burst",
+   "label": "A party member triggered Nightsoul Burst (Kachina's own Natlan hits can)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Kachina.ts:83-84,88-90; wr:index.tsx:88-97"
+  },
+  {
+   "key": "c4_opponents",
+   "label": "Opponents within Turbo Twirly's range",
+   "kind": "stacks",
+   "default_by": "situational",
+   "max": 4,
+   "go": "pando:Kachina.ts:85-86,97-101; wr:index.tsx:104-111,273-277"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a1_geo",
+   "label": "A1 Mountain Echoes: Geo DMG Bonus after a Nightsoul Burst",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "geo"
+   ],
+   "value": {
+    "passive": 1,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "a1_nightsoul_burst",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Kachina.ts:55-58,88-90,110; wr:index.tsx:92-97,153"
+  },
+  {
+   "key": "a4_skill_flat",
+   "label": "A4 The Weight of Stone: Turbo Twirly DMG + 20% of Kachina's DEF",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "skill"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "def"
+   },
+   "go": "pando:Kachina.ts:59-61,91-96,111"
+  },
+  {
+   "key": "c4_def_1",
+   "label": "C4 More Foes, More Caution: party DEF +, 1 opponent",
+   "source": "c4",
+   "receivers": "team",
+   "stat": "def_pct",
+   "value": {
+    "constellation": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "c4_opponents",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Kachina.ts:69-71,97-101,112-113; wr:index.tsx:104-111,155-157"
+  },
+  {
+   "key": "c4_def_2",
+   "label": "C4 More Foes, More Caution: party DEF +, 2 opponents",
+   "source": "c4",
+   "receivers": "team",
+   "stat": "def_pct",
+   "value": {
+    "constellation": 4,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "c4_opponents",
+     "values": [
+      2
+     ]
+    }
+   ],
+   "go": "pando:Kachina.ts:69-71,97-101,112-113; wr:index.tsx:104-111,155-157"
+  },
+  {
+   "key": "c4_def_3",
+   "label": "C4 More Foes, More Caution: party DEF +, 3 opponents",
+   "source": "c4",
+   "receivers": "team",
+   "stat": "def_pct",
+   "value": {
+    "constellation": 4,
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "c4_opponents",
+     "values": [
+      3
+     ]
+    }
+   ],
+   "go": "pando:Kachina.ts:69-71,97-101,112-113; wr:index.tsx:104-111,155-157"
+  },
+  {
+   "key": "c4_def_4",
+   "label": "C4 More Foes, More Caution: party DEF +, 4 opponents",
+   "source": "c4",
+   "receivers": "team",
+   "stat": "def_pct",
+   "value": {
+    "constellation": 4,
+    "param": 3
+   },
+   "when": [
+    {
+     "condition": "c4_opponents",
+     "values": [
+      4
+     ]
+    }
+   ],
+   "go": "pando:Kachina.ts:69-71,97-101,112-113; wr:index.tsx:104-111,155-157"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Turbo Twirly and Time to Get Serious! damage",
+   "reason": "these are target rows, not buffs"
+  },
+  {
+   "source": "c1",
+   "what": "Shards Are Gems Too: Energy from Crystallize shards",
+   "reason": "no damage effect: energy"
+  },
+  {
+   "source": "c2",
+   "what": "Never Leave Home Without... Turbo Twirly: Nightsoul points",
+   "reason": "no damage effect: Nightsoul points"
+  },
+  {
+   "source": "c6",
+   "what": "This Time, I've Gotta Win: an extra Geo hit of 200% DEF",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  }
+ ]
+}

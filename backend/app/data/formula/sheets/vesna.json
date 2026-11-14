@@ -1,0 +1,269 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Vesna",
+ "nanoka_id": "10000143",
+ "slug": "vesna",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Vesna.ts",
+  "wr": "libs/gi/sheets/src/Characters/Vesna/index.tsx"
+ },
+ "verified_by": [
+  "vesna_a4_c4_on_her_own_skill"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "wr:index.tsx:360-369; game data agrees: YuanShenResources f11cf545 BinOutput/Talent/AvatarTalents/ConfigTalent_Vesna.json Vesna_Constellation_3 (talent index 2, +3); the pando file at this commit swaps them (Vesna.ts:202-204), and the WR sheet and the game data agree against it"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "wr:index.tsx:360-369; game data agrees: YuanShenResources f11cf545 BinOutput/Talent/AvatarTalents/ConfigTalent_Vesna.json Vesna_Constellation_5 (talent index 9, +3); the pando file at this commit swaps them (Vesna.ts:202-204), and the WR sheet and the game data agree against it"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "2": [
+    0.4,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    2.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "4": [
+    0.06,
+    25.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "stellar_radiance",
+   "label": "Stellar Radiance: Stellar Swirl",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:Vesna.ts:106-107,116-118"
+  },
+  {
+   "key": "a1_stacks",
+   "label": "Disciplinary Action stacks",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 6,
+   "go": "pando:Vesna.ts:108-114"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a4_atk",
+   "label": "A4 Truth Prevails: ATK + per Anemo and Cryo party member",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "per_team_elements": [
+    "anemo",
+    "cryo"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "stellar_radiance",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Vesna.ts:73-76,134-146,206"
+  },
+  {
+   "key": "a4_em",
+   "label": "A4 Truth Prevails: EM + per Pyro, Hydro, Electro, Dendro and Geo party member",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "per_team_elements": [
+    "pyro",
+    "hydro",
+    "electro",
+    "dendro",
+    "geo"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "stellar_radiance",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Vesna.ts:73-76,147-165,207"
+  },
+  {
+   "key": "c4_atk",
+   "label": "C4 Glory to Our Forebears: A4's ATK again, x the C4 multiplier",
+   "source": "c4",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "per_team_elements": [
+    "anemo",
+    "cryo"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_param": {
+     "constellation": 4,
+     "param": 0
+    }
+   },
+   "when": [
+    {
+     "condition": "stellar_radiance",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Vesna.ts:88-90,130-146,206"
+  },
+  {
+   "key": "c4_em",
+   "label": "C4 Glory to Our Forebears: A4's EM again, x the C4 multiplier",
+   "source": "c4",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "per_team_elements": [
+    "pyro",
+    "hydro",
+    "electro",
+    "dendro",
+    "geo"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 1,
+    "times_param": {
+     "constellation": 4,
+     "param": 0
+    }
+   },
+   "when": [
+    {
+     "condition": "stellar_radiance",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Vesna.ts:88-90,130-133,147-165,207"
+  },
+  {
+   "key": "c2_atk",
+   "label": "C2 Kolo of Spring's Arrival: ATK + at maximum Disciplinary Action stacks",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "a1_stacks",
+     "values": [
+      6
+     ]
+    }
+   ],
+   "go": "pando:Vesna.ts:85-87,173-177,210"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "kit",
+   "what": "Stellar Jubilee: Stellar Swirl base DMG from ATK",
+   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+  },
+  {
+   "source": "a1",
+   "what": "Rite of Spring's Procession: Spirit Blade DMG multiplier per stack",
+   "reason": "a multiplier on one hit's base damage (GO `baseMulti`): the format has no base-multiplier stat"
+  },
+  {
+   "source": "c1",
+   "what": "Winter's Farewell Feast: Stellar Swirl DMG in Armed for Action",
+   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+  },
+  {
+   "source": "c6",
+   "what": "Unwavering Ardor: Stellar Swirl DMG and the Transpose hits",
+   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13); the hits are a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "talent",
+   "what": "Armed for Action: Anemo infusion",
+   "reason": "an infusion changes a hit's element, which the estimate does not model (G4)"
+  },
+  {
+   "source": "talent",
+   "what": "Stellar Swirl hits of the skill and burst",
+   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+  }
+ ]
+}

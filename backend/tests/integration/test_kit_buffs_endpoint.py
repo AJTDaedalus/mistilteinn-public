@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from app.formula.genshin import sheets
 from app.models.artifact import Artifact, ArtifactSet
 from app.models.build import Build
 from app.models.character import (
@@ -245,3 +246,34 @@ async def test_the_subject_must_be_a_member_and_builds_must_be_the_callers(
         "member_build_id": [team["xiangling"], team["xiangling"]],
     })
     assert repeated.status_code == 422
+
+
+async def test_team_elements_reach_a_sheet_that_counts_them(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+    team: dict[str, str],
+):
+    """Task 11: Vesna's A4 counts the party's Anemo/Cryo members and the others (GO
+    `team.common.count.<ele>`), so the route must hand `resolve` every member's element. With
+    Kazuha and Vesna (Anemo) and Xiangling and Bennett (Pyro): ATK 6% x 2 and EM 25 x 2."""
+    user, _ = authed_user
+    vesna = await _character(
+        db_session, nanoka_id="10000143", name="Vesna", element=Element.ANEMO,
+        weapon_type=WeaponType.SWORD, base_atk=27.6, burst=None,
+    )
+    sheet = next(s for s in sheets.all_sheets().values() if s.slug == "vesna")
+    db_session.add(AscensionPassive(
+        character_id=str(vesna.id), nanoka_id=1431, unlock_ascension=4, name="Truth Prevails",
+        description="", param_list=list(sheet.pins.passives[4]),
+    ))
+    build_id = str((await _build(db_session, str(user.id), vesna)).id)
+    await db_session.flush()
+    db_session.expire_all()
+    response = await authed_client.get(KIT, params={
+        "subject_build_id": build_id,
+        "member_build_id": [team["xiangling"], team["bennett"], team["kazuha"], build_id],
+    })
+    assert response.status_code == 200, response.text
+    by_id = {s["id"]: s for s in response.json()["sources"]}
+    effects = {e["stat"]: e["value"] for e in by_id["kit:vesna"]["bonus"]["effects"]}
+    assert effects == {"atk_pct": pytest.approx(sheet.pins.passives[4][0] * 2),
+                       "elemental_mastery": pytest.approx(sheet.pins.passives[4][1] * 2)}

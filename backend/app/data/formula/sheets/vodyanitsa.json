@@ -1,0 +1,331 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Vodyanitsa",
+ "nanoka_id": "10000140",
+ "slug": "vodyanitsa",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Vodyanitsa.ts",
+  "wr": "libs/gi/sheets/src/Characters/Vodyanitsa/index.tsx"
+ },
+ "verified_by": [
+  "vodyanitsa_res_on_her_own_skill"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "wr:index.tsx:367-373; game data agrees: YuanShenResources f11cf545 BinOutput/Talent/AvatarTalents/ConfigTalent_Vodyanitsa.json Vodyanitsa_Constellation_3 (talent index 2, +3); the pando file at this commit swaps them (Vodyanitsa.ts:275-276), and the WR sheet and the game data agree against it"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "wr:index.tsx:367-373; game data agrees: YuanShenResources f11cf545 BinOutput/Talent/AvatarTalents/ConfigTalent_Vodyanitsa.json Vodyanitsa_Constellation_5 (talent index 9, +3); the pando file at this commit swaps them (Vodyanitsa.ts:275-276), and the WR sheet and the game data agree against it"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_skill": [
+    "Hydro/Cryo RES Reduction|{param8:F1P}"
+   ]
+  },
+  "constellations": {
+   "1": [
+    0.008,
+    5.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "2": [
+    0.5,
+    0.6,
+    5.0,
+    9.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.4,
+    0.5,
+    0.2,
+    6.0,
+    3.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    0.25,
+    0.6,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    0.35,
+    6.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "skill_hit",
+   "label": "Opponent hit by Vodyanitsa's Elemental Skill",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Vodyanitsa.ts:110-112,121-124"
+  },
+  {
+   "key": "skill_song",
+   "label": "In the Song of Ages Past state",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Vodyanitsa.ts:110-112,126-128,260-270"
+  },
+  {
+   "key": "a1_vortex",
+   "label": "After generating or detonating a Wandering Vortex",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Vodyanitsa.ts:110-112,130-132"
+  },
+  {
+   "key": "c1_heal",
+   "label": "After triggering the healing effect of Song of Ages Past",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Vodyanitsa.ts:110-112,201-203"
+  },
+  {
+   "key": "c2_state",
+   "label": "Two Voices in Black and White state",
+   "kind": "choice",
+   "default_by": "situational",
+   "options": [
+    "voice",
+    "vortex"
+   ],
+   "go": "pando:Vodyanitsa.ts:113,205-233"
+  },
+  {
+   "key": "c4_above",
+   "label": "HP at or above 40% (stacks)",
+   "kind": "stacks",
+   "default_by": "situational",
+   "max": 3,
+   "go": "pando:Vodyanitsa.ts:114-119,247-258"
+  }
+ ],
+ "effects": [
+  {
+   "key": "skill_res",
+   "label": "Elemental Skill: opponents' Hydro and Cryo RES -",
+   "source": "talent",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "hydro",
+    "cryo"
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Hydro/Cryo RES Reduction",
+    "negate": true
+   },
+   "when": [
+    {
+     "condition": "skill_hit",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Vodyanitsa.ts:59,121-124,296-297"
+  },
+  {
+   "key": "a1_anemo_res",
+   "label": "A1 The Last Djeguako Songstress: opponents' Anemo RES -",
+   "source": "a1",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "anemo"
+   ],
+   "value": {
+    "passive": 1,
+    "param": 0,
+    "negate": true
+   },
+   "when": [
+    {
+     "condition": "a1_vortex",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Vodyanitsa.ts:69-72,130-132,298"
+  },
+  {
+   "key": "c1_atk",
+   "label": "C1 Waters in Full Splendor: party ATK + 0.8% of Vodyanitsa's Max HP",
+   "source": "c1",
+   "receivers": "team",
+   "stat": "flat_atk",
+   "value": {
+    "constellation": 1,
+    "param": 0,
+    "times_stat": "hp"
+   },
+   "when": [
+    {
+     "condition": "c1_heal",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Vodyanitsa.ts:82-85,201-203,279"
+  },
+  {
+   "key": "c2_crit_dmg",
+   "label": "C2 Echoes That Pierce the Snow: the active character's Hydro and Cryo CRIT DMG +",
+   "source": "c2",
+   "receivers": "active",
+   "stat": "crit_dmg",
+   "elements": [
+    "hydro",
+    "cryo"
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "c2_state",
+     "values": [
+      "voice"
+     ]
+    }
+   ],
+   "go": "pando:Vodyanitsa.ts:86-91,205-220,290-291"
+  },
+  {
+   "key": "c4_hp",
+   "label": "C4 Melancholic Voice Upon the Gentle Waters: Max HP + per stack",
+   "source": "c4",
+   "receivers": "self",
+   "stat": "hp_pct",
+   "per": "c4_above",
+   "value": {
+    "constellation": 4,
+    "param": 2
+   },
+   "go": "pando:Vodyanitsa.ts:92-98,247-258,278"
+  },
+  {
+   "key": "c6_dmg",
+   "label": "C6 Neverending Song of Revelry: party Hydro and Cryo DMG Bonus in Song of Ages Past",
+   "source": "c6",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "elements": [
+    "hydro",
+    "cryo"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "skill_song",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Vodyanitsa.ts:99-102,265-270,294-295"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "a4",
+   "what": "Dirge of the Fandyr: Hydro/Cryo/Stellar Swirl DMG + from Max HP above a threshold, capped",
+   "reason": "a thresholded, capped conversion of Vodyanitsa's HP: the format has no threshold or cap on a value yet"
+  },
+  {
+   "source": "talent",
+   "what": "Song of Ages Past: burst DMG multiplier",
+   "reason": "a multiplier on one hit's base damage (GO `baseMulti`): the format has no base-multiplier stat"
+  },
+  {
+   "source": "talent",
+   "what": "Song of Ages Past healing",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "c2",
+   "what": "Two Voices in Black and White (vortex): Stellar Swirl CRIT DMG",
+   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+  },
+  {
+   "source": "c4",
+   "what": "Melancholic Voice Upon the Gentle Waters: healing bonus below 40% HP",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "c6",
+   "what": "Neverending Song of Revelry: Stellar Swirl DMG",
+   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+  }
+ ]
+}
