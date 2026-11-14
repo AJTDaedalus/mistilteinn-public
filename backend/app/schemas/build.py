@@ -494,6 +494,11 @@ class SearchContextRead(BaseModel):
     #: named because it sums that one quantity and ignores the other seven.
     dmg_bonus_quantity: str
     set_bonuses: list[KernelSetBonus]
+    #: The reaction level multiplier at `character_level` (`ElementCoeffExcelConfigData.
+    #: playerElementLevelCo`, `app.data.snapshot.reaction_level_multiplier`): what a
+    #: transformative, additive or Lunar reaction this character triggers starts from. Sent so
+    #: the browser's reaction terms (`damage.ts`) never need a copy of the table.
+    reaction_level_multiplier: float
 
 
 class ExplainRequest(BaseModel):

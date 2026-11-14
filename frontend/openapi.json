@@ -5019,7 +5019,7 @@
           "reverse_vaporize"
         ],
         "title": "Amplifying",
-        "description": "The four amplifying reactions, by *which element triggers*.\n\nThe multiplier depends on the triggering element, not on the pair. Sources, both at the\npin: `pkg/reactable/melt.go` (Pyro onto Cryo \u2192 2.0; Cryo onto Pyro \u2192 1.5) and\n`pkg/reactable/vaporize.go` (Hydro onto Pyro \u2192 2.0; Pyro onto Hydro \u2192 1.5).\n\nTransformative and additive reactions are **not** here: the BRIEF's ship order puts them\nafter the gauge engine, and gcsim computes them on a different path entirely\n(`calcDirectReaction`, with its own `6*em/(2000+em)` bonus). Adding them to this enum\nwould invite them into a chain that cannot express them."
+        "description": "The four amplifying reactions, by *which element triggers*.\n\nThe multiplier depends on the triggering element, not on the pair. Sources, both at the\npin: `pkg/reactable/melt.go` (Pyro onto Cryo \u2192 2.0; Cryo onto Pyro \u2192 1.5) and\n`pkg/reactable/vaporize.go` (Hydro onto Pyro \u2192 2.0; Pyro onto Hydro \u2192 1.5).\n\nTransformative, additive and Lunar reactions are **not** here: gcsim computes them on\ntheir own path (`combat.CalcReactionDmg` and its siblings), and so does\n`reactions.py` (math-fallback P3). An additive reaction reaches this chain only as\n`Hit.additive`, the flat damage gcsim adds to the triggering hit's `FlatDmg`."
       },
       "ArtifactEquip": {
         "properties": {
@@ -12513,6 +12513,10 @@
             },
             "type": "array",
             "title": "Set Bonuses"
+          },
+          "reaction_level_multiplier": {
+            "type": "number",
+            "title": "Reaction Level Multiplier"
           }
         },
         "type": "object",
@@ -12522,7 +12526,8 @@
           "target",
           "character_level",
           "dmg_bonus_quantity",
-          "set_bonuses"
+          "set_bonuses",
+          "reaction_level_multiplier"
         ],
         "title": "SearchContextRead",
         "description": "Everything `search.ts`'s `SearchContext` needs except the inventory.\n\nO.1. The inventory has its own home \u2014 `/artifacts/inventory`, which is ETag'd because the\nbrowser holds it across searches (OQ-S3). This is the per-build, per-hit half.\n\n**Published, not recomputed.** Every figure here is one the server already works out for\n`/explain`: the base from `build_assembler.base_contributions`, set bonuses from the same\nmodule, the hit through `resolve_talent_hit`. A second assembly of \"what a build starts\nfrom\" is how two definitions of it begin \u2014 which `build_assembler` records having already\nhappened once.\n\n`base` is keyed by **kernel quantity**, which is the reason this endpoint exists at all:\nthe kernel reads `base_atk` and the source spells it `FIGHT_PROP_BASE_ATTACK`, and the\nmapping between them decides what every stat means."
