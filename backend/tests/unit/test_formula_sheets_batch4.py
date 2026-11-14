@@ -394,6 +394,46 @@ def test_a_part_past_the_rows_parameters_is_withheld():
         sheets.ParamRef(talent="elemental_burst", row="Energy Cost", param=0)
 
 
+# ── raised stack maxima, revisited (Nefer's C2, Valeriy's C4) ────────────────────────────
+
+
+@pytest.mark.parametrize(("constellation", "stacks", "em"), [
+    (0, 3, "a1"), (1, 3, "a1"), (2, 3, None), (2, 4, None), (2, 5, "c2"),
+])
+def test_nefers_c2_raises_the_veils_to_five_and_replaces_the_a1_em(
+    constellation: int, stacks: int, em: str | None,
+):
+    """GO `cmpGE(constellation, 2, cmpGE(stacks, 5, c2), cmpGE(stacks, 3, a1))`: from C2 the EM
+    is C2's at five Veils and nothing below — A1's at three does not survive alongside it."""
+    nefer = _sheet("nefer")
+    kit = sheets.resolve(nefer, _giver(nefer, constellation=constellation),
+                         giver_is_subject=True, receiver_element="dendro",
+                         team_elements=["dendro", "hydro"])
+    veils = next(c for c in kit.bonus.conditions if c.key == "veil_stacks")
+    assert veils.max == (5 if constellation >= 2 else 3)
+    assert veils.default == veils.max
+    applied = [e for e in _effects(kit, "elemental_mastery")
+               if all(stacks in w.values for w in e.when if w.condition == "veil_stacks")]
+    expected = {"a1": [nefer.pins.passives[1][2]], "c2": [nefer.pins.constellations[2][2]],
+                None: []}[em]
+    assert [e.value for e in applied] == expected
+
+
+def test_valeriys_c4_raises_the_momentum_limit_by_a_cited_thirty():
+    valeriy = _sheet("valeriy")
+    for constellation, top in ((3, 100), (4, 130)):
+        kit = sheets.resolve(valeriy, _giver(valeriy, constellation=constellation, atk=2000.0),
+                             giver_is_subject=True, receiver_element="electro",
+                             team_elements=["electro"])
+        momentum = next(c for c in kit.bonus.conditions if c.key == "momentum")
+        assert (momentum.max, momentum.default) == (top, top)
+    with pytest.raises(ValidationError, match="by a parameter or a constant"):
+        sheets.SheetCondition(
+            key="x", label="x", kind="stacks", default_by="self", max=3, go="x",
+            max_raise={"constellation": 2, "param": 0},
+            max_raise_cited={"constellation": 2, "add": {"constant": 2.0, "cite": "x"}})
+
+
 # ── the fixtures: only the EM coefficient may divide them from GO ─────────────────────────
 
 

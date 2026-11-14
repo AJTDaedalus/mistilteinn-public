@@ -396,6 +396,10 @@ class SheetCondition(_Strict):
     #: Furina's C1 raises the Fanfare limit by its 100 (GO `sum(maxFanfare, cmpGE(constellation,
     #: 1, fanfareLimitInc))`). Pinned like any value.
     max_raise: ParamRef | None = None
+    #: The same raise by a number no seeded list carries, cited: Valeriy's C4 adds 30 to the
+    #: Impact Momentum limit (GO `momentumLimitInc: 30`, a literal; his C4 list holds only its
+    #: charging efficiency).
+    max_raise_cited: CountBonus | None = None
     go: str
 
     @model_validator(mode="after")
@@ -405,8 +409,11 @@ class SheetCondition(_Strict):
                              "only a situational one (none chosen) is derivable")
         if self.kind in ("stacks", "number") and self.max is None:
             raise ValueError(f"{self.key}: a {self.kind} names its max")
-        if self.max_raise is not None and self.kind not in ("stacks", "number"):
+        if ((self.max_raise is not None or self.max_raise_cited is not None)
+                and self.kind not in ("stacks", "number")):
             raise ValueError(f"{self.key}: only a stacks or number condition has a max to raise")
+        if self.max_raise is not None and self.max_raise_cited is not None:
+            raise ValueError(f"{self.key}: a maximum is raised by a parameter or a constant")
         return self
 
     def resolve(self, *, giver_is_subject: bool, raised: float = 0.0) -> Condition:
@@ -458,6 +465,9 @@ class SheetEffect(_Strict):
     #: Also needs this ascension phase (GO `cmpGE(ascension, 4, …)` inside a constellation's
     #: buff: Escoffier's C1 reads her A4's count).
     min_ascension: int | None = None
+    #: Holds only **below** this constellation, i.e. up to it: GO `cmpGE(constellation, 2,
+    #: <C2 value>, <C0 value>)` replaces Nefer's A1 EM at 3 Veils by her C2's at 5.
+    max_constellation: int | None = None
     #: The giver's own talent rows it reaches (Nahida's burst bonus, Tri-Karma Purification
     #: only: GO adds it inside that one formula). Only a `self` effect names rows.
     rows: tuple[TalentRowScope, ...] | None = None
@@ -590,6 +600,7 @@ class Sheet(_Strict):
                                      f"{ref.row!r} row")
         if effect.by_stack and not any(
             c.key == effect.per and c.max is not None and c.max_raise is None
+            and c.max_raise_cited is None
             for c in self.conditions
         ):
             raise ValueError(f"{self.slug}/{effect.key}: a stack table reads a condition with "
@@ -921,6 +932,9 @@ def _raised(sheet: Sheet, giver: Giver, condition: SheetCondition,
             unmodelled: list[Unmodelled]) -> float:
     """What an unlocked `max_raise` adds to a condition's maximum; a stale pin keeps the
     maximum unraised and says so."""
+    cited = condition.max_raise_cited
+    if cited is not None:
+        return cited.add.constant if giver.constellation >= cited.constellation else 0.0
     ref = condition.max_raise
     if ref is None:
         return 0.0
@@ -971,6 +985,9 @@ def resolve(
         if not _unlocked(effect.source, giver):
             continue
         if effect.min_ascension is not None and giver.ascension_phase < effect.min_ascension:
+            continue
+        if (effect.max_constellation is not None
+                and giver.constellation > effect.max_constellation):
             continue
         if not _reaches(effect.receivers, giver_is_subject=giver_is_subject):
             continue

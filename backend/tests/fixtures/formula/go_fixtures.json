@@ -1562,7 +1562,7 @@
               },
               {
                 "key": "veils_consumed",
-                "label": "Veils of Falsehood consumed by Nefer's burst (3 below C2)",
+                "label": "Veils of Falsehood consumed by Nefer's burst (3, or 5 from C2)",
                 "kind": "stacks",
                 "default": 3.0,
                 "default_reason": "self",
@@ -1572,7 +1572,7 @@
               },
               {
                 "key": "veil_stacks",
-                "label": "Veil of Falsehood stacks (3 below C2)",
+                "label": "Veil of Falsehood stacks (3, or 5 from C2)",
                 "kind": "stacks",
                 "default": 3.0,
                 "default_reason": "self",
@@ -2339,7 +2339,7 @@
               },
               {
                 "key": "momentum",
-                "label": "Stacks of Impact Momentum consumed (100 below C4)",
+                "label": "Stacks of Impact Momentum consumed (100, or 130 from C4)",
                 "kind": "number",
                 "default": 100.0,
                 "default_reason": "self",
@@ -7991,6 +7991,208 @@
       },
       "expected": 3498.9799554166157,
       "go_value": 3498.9799554166157,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "nefer_c2_five_veils_on_her_own_burst",
+      "covers": "a stack maximum raised by C2 (3 to 5), and an EM buff that C2 replaces rather than adds",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,490-514",
+        "libs/gi/formula/src/data/char/Nefer.ts:91-94,115-166,212-213,270-276"
+      ],
+      "givers": [
+        {
+          "name": "Nefer",
+          "constellation": 2,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_burst": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "dendro",
+        "weapon_type": "WEAPON_CATALYST",
+        "member_elements": [
+          "dendro",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 820.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12560.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 790.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 265.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "elemental_mastery": 400.0,
+        "flat_atk": 311.0,
+        "dendro_dmg_bonus": 0.466,
+        "crit_rate": 0.35,
+        "crit_dmg": 0.5
+      },
+      "set_pools": [],
+      "channel": "dendro",
+      "rows": [
+        {
+          "id": "hit1",
+          "label": "1-Hit DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "1-Hit DMG|{param1:F1P} ATK+{param2:F1P} Elemental Mastery",
+            "params": [
+              4.04352,
+              8.08704
+            ]
+          },
+          "multiplier": 4.04352,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "extra_terms": [
+            {
+              "stat": "elemental_mastery",
+              "multiplier": 8.08704
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:nefer",
+          "label": "Nefer (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Nefer.ts (pando), libs/gi/sheets/src/Characters/Nefer/index.tsx (wr) @ 2c13fc40 \u2014 burst_veils pando:Nefer.ts:71,123-137,212; wr:index.tsx:115-140; c2_em pando:Nefer.ts:92-94,153-166,213; wr:index.tsx:98-101,169-185",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "moonsign_gleam",
+                "label": "Ascendant Gleam: two or more Moonsign characters in the party",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "veils_consumed",
+                "label": "Veils of Falsehood consumed by Nefer's burst (3, or 5 from C2)",
+                "kind": "stacks",
+                "default": 5.0,
+                "default_reason": "self",
+                "max": 5.0,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "veil_stacks",
+                "label": "Veil of Falsehood stacks (3, or 5 from C2)",
+                "kind": "stacks",
+                "default": 5.0,
+                "default_reason": "self",
+                "max": 5.0,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.4,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "moonsign_gleam",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": "veils_consumed",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "elemental_mastery",
+                "value": 200.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "veil_stacks",
+                    "values": [
+                      5.0
+                    ]
+                  },
+                  {
+                    "condition": "moonsign_gleam",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A1: A Wager of Moonlight: Phantasm Performance MV multiplier per Veil stack",
+                "reason": "a multiplier on one hit's base damage (GO `baseMulti`): the format has no base-multiplier stat"
+              },
+              {
+                "what": "KIT: Moonsign Benediction: Lunar-Bloom base DMG from Nefer's EM",
+                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+              },
+              {
+                "what": "KIT: Ascendant Gleam, derived from the team",
+                "reason": "two or more Moonsign characters in the party (Ascendant Gleam) \u2014 a team-composition condition the user sets; not derived from the team yet"
+              },
+              {
+                "what": "KIT: Phantasm Performance (Shades) Lunar-Bloom hits",
+                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+              },
+              {
+                "what": "C1: Planning Breeds Success: Lunar-Bloom additional MV",
+                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:nefer/moonsign_gleam": 1
+      },
+      "expected": 27313.460548105424,
+      "go_value": 27313.460548105424,
       "divergence": "none: no reaction",
       "relative_divergence_from_go": 0.0
     }

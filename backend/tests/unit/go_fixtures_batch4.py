@@ -498,6 +498,44 @@ def _raiden_fixtures() -> list[dict[str, Any]]:
     ]
 
 
+# Nefer at C2, revisited now that a stack maximum can be raised: five Veils, 200 EM.
+
+
+def _nefer_c2(_: float) -> float:
+    """GO: the Veil count runs to 5 from C2 (`allNumConditionals(…, 0, 5)`, `veilStacksCapped`,
+    `pando Nefer.ts:115-121`), so the burst bonus is 5 × the burst row (`:123-137,212`) and the
+    EM is C2's `newEleMas` at 5 stacks in place of A1's at 3 (`:153-166,213`)."""
+    nefer = sheets.sheet_for("10000122")
+    assert nefer is not None
+    stats = base._stats(base.NEFER_BASE, base.NEFER_ARTIFACTS)
+    em = stats["elemental_mastery"] + nefer.pins.constellations[2][2]
+    hit = base._multiplier(base.NEFER_BURST_HIT1)
+    em_part = base.NEFER_BURST_HIT1[1][1]
+    return _go_hit(base_damage=hit * base._total(stats, "atk") + em_part * em,
+                   dmg_bonus=stats["dendro_dmg_bonus"] + 5 * base.NEFER_BURST_10[4],
+                   crit_rate=stats["crit_rate"], crit_dmg=stats["crit_dmg"])
+
+
+def _nefer_fixture() -> dict[str, Any]:
+    cons, pas = base._pinned("10000122")
+    return _fixture(
+        "nefer_c2_five_veils_on_her_own_burst",
+        "a stack maximum raised by C2 (3 to 5), and an EM buff that C2 replaces rather than adds",
+        [FORMULA, f"{PANDO}Nefer.ts:91-94,115-166,212-213,270-276"],
+        {"name": "Nefer", "constellation": 2, "ascension_phase": 6,
+         "talent_levels": {"elemental_burst": 10}, "stats": "the optimized character"},
+        {"element": "dendro", "weapon_type": "WEAPON_CATALYST",
+         "member_elements": ["dendro", "hydro"]},
+        base.NEFER_BASE, base.NEFER_ARTIFACTS, "dendro",
+        base._row("hit1", "1-Hit DMG", "burst", 1, base.NEFER_BURST_HIT1, None),
+        _kit("10000122", base._ungated_giver(
+            "Nefer", "10000122", constellation=2, talent_levels={"elemental_burst": 10},
+            talent_rows={("elemental_burst", 10): sheets.TalentRow(base.NEFER_BURST_LABELS,
+                                                                   base.NEFER_BURST_10)},
+            cons=cons, passives=pas, stats=base.NEFER_BASE), subject=True),
+        {"kit:nefer/moonsign_gleam": 1}, _nefer_c2)
+
+
 def _buffers() -> list[dict[str, Any]]:
     xiangling = {"element": "pyro", "weapon_type": "WEAPON_POLE"}
     nado = base._row("nado", "Pyronado DMG", "burst", 1, base.PYRONADO, None)
@@ -665,4 +703,5 @@ def _buffers() -> list[dict[str, Any]]:
         {"kit:mona/omen": 1, "kit:mona/c1_omen": 1}, _mona_on_xiangling,
         "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9"))
     out.extend(_raiden_fixtures())
+    out.append(_nefer_fixture())
     return out

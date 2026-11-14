@@ -106,12 +106,19 @@
   },
   {
    "key": "momentum",
-   "label": "Stacks of Impact Momentum consumed (100 below C4)",
+   "label": "Stacks of Impact Momentum consumed (100, or 130 from C4)",
    "kind": "number",
    "default_by": "giver_is_subject",
    "max": 100,
    "step": 5,
-   "go": "wr:index.tsx:163-178"
+   "go": "wr:index.tsx:96-99,163-178",
+   "max_raise_cited": {
+    "constellation": 4,
+    "add": {
+     "constant": 30.0,
+     "cite": "GO WR Valeriy index.tsx:96-99 `momentumLimitInc: 30` (a literal; his C4 param_list holds only its charging efficiency), read at :163-178"
+    }
+   }
   },
   {
    "key": "c2_skill",
@@ -239,11 +246,6 @@
    "source": "kit",
    "what": "Stellar Radiance branch: Stellar-Conduct DMG from ATK, and Electro/Stellar-Conduct CRIT DMG at C6",
    "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
-  },
-  {
-   "source": "c4",
-   "what": "Fortitude Unshaken by Attrition: Impact Momentum limit +30",
-   "reason": "the format's number conditions have a fixed maximum; the estimate keeps 100"
   },
   {
    "source": "c6",
