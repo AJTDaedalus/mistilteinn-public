@@ -325,6 +325,7 @@
 
       @if (scoreMode() === 'formula' && rankBuildId()) {
         <formula-panel
+          [element]="formulaElement()"
           [hits]="formulaHits()"
           [refusedHits]="formulaRefused()"
           [groups]="formulaGroups()"

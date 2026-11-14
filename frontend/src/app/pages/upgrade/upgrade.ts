@@ -51,6 +51,7 @@ export class UpgradePage implements OnInit, OnDestroy {
   protected readonly teams = this.context.teams;
   protected readonly formulaTeamId = this.context.formulaTeamId;
   protected readonly formulaHits = this.context.formulaHits;
+  protected readonly formulaElement = this.context.formulaElement;
   protected readonly formulaRefused = this.context.formulaRefused;
   protected readonly formulaGroups = this.context.formulaGroups;
   protected readonly gcsimBlocked = this.context.gcsimBlocked;

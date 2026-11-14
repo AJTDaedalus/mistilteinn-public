@@ -268,6 +268,13 @@ export function liveQuantitiesFor(...recipes: readonly Recipe[]): string[] {
     em: ['elemental_mastery'],
   };
   for (const hit of recipes.flatMap((recipe) => recipe.hits)) {
+    // A reaction instance (P3) reads the trigger's EM and, for a Lunar one, CRIT (always
+    // live) — never a DMG% or a scaling stat, so neither is made live for it.
+    if (hit.reaction !== undefined) {
+      live.add('elemental_mastery');
+      continue;
+    }
+    if (hit.additive !== undefined) live.add('elemental_mastery');
     live.add(`${hit.element}${DMG_BONUS_SUFFIX}`);
     if (hit.scaling === 'em') live.add('elemental_mastery');
     else for (const q of parts[hit.scaling]) live.add(q);

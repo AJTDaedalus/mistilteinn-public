@@ -41,7 +41,11 @@ function score(f, sources) {
     hit: r.hit ?? null,
     count: r.count,
     conditionals: r.conditionals,
+    // A reaction row and an additive talent row (math-fallback P3).
+    reaction: r.reaction ?? null,
+    additive: r.additive ?? null,
     context: {
+      reactionLevelMultiplier: data.reaction_level_multiplier,
       base: f.base,
       hit: {
         multiplier: r.multiplier,
@@ -114,7 +118,13 @@ for (const f of data.fixtures) {
     const off = score(f, planted((e) => ({
       ...e, value: e.value * 1.01, ...(e.cap != null ? { cap: e.cap * 1.01 } : {}),
     })));
-    if (Math.abs(off - f.expected) / f.expected <= TOLERANCE) {
+    if (f.kit_must_not_reach) {
+      // The kit is there to prove it does **not** reach these rows (a DMG% on a reaction
+      // row, P3): moving every one of its values must change nothing.
+      if (Math.abs(off - f.expected) / f.expected > TOLERANCE) {
+        failures.push(`${f.name} (a kit buff that must not reach the rows moved the figure)`);
+      }
+    } else if (Math.abs(off - f.expected) / f.expected <= TOLERANCE) {
       failures.push(`${f.name} (a kit buff 1% off still passes)`);
     }
     // Task 11 and the capped conversions (DECISIONS §40) — **the classic self-buff mistake**:

@@ -162,6 +162,8 @@ export class ArtifactsContextService {
 
   /** The chosen build's hits, for the formula target's pickers. */
   readonly formulaHits = signal<AvailableHit[]>([]);
+  /** The chosen build's element, lower case: which additive reaction its abilities trigger. */
+  readonly formulaElement = computed(() => this.build()?.character?.element?.toLowerCase() ?? '');
   /** Rows the parser refuses — greyed in the pickers with their reasons (owner, 2026-11-13). */
   readonly formulaRefused = signal<RefusedHit[]>([]);
   /** The conditions the assumptions panel draws: the team's resonance and the worn sets. */

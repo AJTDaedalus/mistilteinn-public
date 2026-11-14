@@ -48,12 +48,33 @@ MOVES: tuple[str, ...] = ("normal", "charged", "plunge", "skill", "burst")
 #: directions of its reaction (GO `vaporize_dmg_` reads into forward and reverse alike).
 AMPLIFYING_REACTIONS: tuple[str, ...] = ("vaporize", "reverse_vaporize", "melt", "reverse_melt")
 
+#: The reactions P3 prices (`reactions.py`), in its spelling: a reaction row's own, or the
+#: additive one a talent row triggers. A `reaction_bonus` naming one reaches exactly that.
+TRANSFORMATIVE_REACTIONS: tuple[str, ...] = (
+    "overloaded", "electro_charged", "superconduct", "swirl", "shattered", "burning", "bloom",
+    "hyperbloom", "burgeon",
+)
+ADDITIVE_REACTIONS: tuple[str, ...] = ("spread", "aggravate")
+LUNAR_REACTIONS: tuple[str, ...] = ("lunar_charged", "lunar_crystallize")
+#: GO `canCrit` (`StatConstants.ts:29-131`) and swirl's own crit (`trans.ts:128-147`): the only
+#: reactions a `reaction_crit_*` effect may name.
+CRITTABLE_REACTIONS: tuple[str, ...] = ("swirl", "burning", "bloom", "hyperbloom", "burgeon")
+REACTIONS: tuple[str, ...] = (
+    AMPLIFYING_REACTIONS + TRANSFORMATIVE_REACTIONS + ADDITIVE_REACTIONS + LUNAR_REACTIONS
+)
+
 #: Stats an effect can write. The first block are kernel quantities, added to the hit's own
 #: pool exactly as an artifact stat would be. The rest are scoped or derived terms with no
 #: pool of their own:
 #:
 #: - `dmg_bonus` — DMG%, reaching `elements` (None = every channel, GO's `all_dmg_`).
-#: - `reaction_bonus` — added to an amplifying reaction's multiplier (GO `vaporize_dmg_`).
+#: - `reaction_bonus` — added to a reaction's EM bracket: an amplifying one's multiplier (GO
+#:   `vaporize_dmg_`), or since P3 a transformative, additive or Lunar one's (GO
+#:   `<reaction>_dmg_`, `trans.ts:48`, `formula.ts:417`, `special.ts:41`).
+#: - `reaction_crit_rate`, `reaction_crit_dmg` — a reaction's own CRIT (GO
+#:   `<reaction>_critRate_`/`_critDMG_`), only on a reaction that can crit (P3).
+#: - `lunar_base_dmg_bonus` — a Lunar reaction's base DMG bonus (GO `<reaction>_baseDmg_`,
+#:   gcsim `BaseDmgBonus`) (P3).
 #: - `enemy_res` — the target's resistance to `elements`, negative for a shred
 #:   (GO `<ele>_enemyRes_`).
 #: - `flat_damage` — flat damage added to the base, times the `per` condition's value
@@ -117,7 +138,13 @@ EffectStat = Literal[
     "flat_def", "def_reduction", "def_ignore",
     "flat_atk_from_def", "base_atk", "base_dmg_bonus",
     "dmg_bonus_from_hp", "crit_rate_from_em", "flat_atk_from_hp",
+    "reaction_crit_rate", "reaction_crit_dmg", "lunar_base_dmg_bonus",
 ]
+
+#: Stats that reach only the reactions they name, and so must name them.
+REACTION_SCOPED: frozenset[str] = frozenset({
+    "reaction_bonus", "reaction_crit_rate", "reaction_crit_dmg", "lunar_base_dmg_bonus",
+})
 
 #: The per-candidate conversions a kit whose giver is the subject emits: each may carry a
 #: `threshold` and a `cap` (`DECISIONS.md` §40). Emblem's Energy Recharge conversion is a set
@@ -248,7 +275,7 @@ class Effect(_Model):
     #: reaches her Tri-Karma Purification and not her press): a teammate cannot know another
     #: character's row labels, so a buff to a teammate is scoped by move instead.
     rows: tuple[TalentRowScope, ...] | None = None
-    #: `reaction_bonus` only: which amplifying reactions it reaches.
+    #: A reaction-scoped stat (`REACTION_SCOPED`) only: which reactions it reaches.
     reactions: tuple[str, ...] | None = None
     #: Every one must hold for the effect to apply.
     when: tuple[When, ...] = ()
@@ -277,11 +304,7 @@ class Effect(_Model):
         for move in self.moves or ():
             if move not in MOVES:
                 raise ValueError(f"{move!r} is not one of {MOVES}")
-        if self.stat == "reaction_bonus":
-            if not self.reactions or set(self.reactions) - set(AMPLIFYING_REACTIONS):
-                raise ValueError("a reaction bonus names amplifying reactions")
-        elif self.reactions is not None:
-            raise ValueError(f"only a reaction bonus names reactions, not {self.stat}")
+        self._reactions_well_formed()
         if self.stat == "enemy_res" and self.elements is None and self.element_from is None:
             raise ValueError("a resistance shred names its element")
         if self.by_stack is not None and self.per is None:
@@ -289,6 +312,21 @@ class Effect(_Model):
         if (self.per_team is None) != (self.per_team_max is None):
             raise ValueError("`per_team` and `per_team_max` come together")
         return self
+
+    def _reactions_well_formed(self) -> None:
+        if self.stat not in REACTION_SCOPED:
+            if self.reactions is not None:
+                msg = f"only a reaction-scoped stat names reactions, not {self.stat}"
+                raise ValueError(msg)
+            return
+        if not self.reactions or set(self.reactions) - set(REACTIONS):
+            raise ValueError(f"a {self.stat} names reactions from {REACTIONS}")
+        if self.stat.startswith("reaction_crit") and set(self.reactions) - set(
+            CRITTABLE_REACTIONS,
+        ):
+            raise ValueError("a reaction CRIT names only reactions that can crit")
+        if self.stat == "lunar_base_dmg_bonus" and set(self.reactions) - set(LUNAR_REACTIONS):
+            raise ValueError("a Lunar base DMG bonus names Lunar reactions")
 
     @model_validator(mode="after")
     def _capped(self) -> Effect:

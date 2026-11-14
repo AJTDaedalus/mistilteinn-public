@@ -27,7 +27,7 @@
  * **to gcsim itself**, by predicting runs it was not calibrated on.
  */
 
-import { amplifyingMultiplier } from './damage';
+import { additiveFlat, amplifyingMultiplier, lunarBase, transformativeBase } from './damage';
 import {
   cappedAmount,
   effectiveCritRate,
@@ -36,6 +36,7 @@ import {
   type FormulaMove,
   type PercentTerm,
   type Recipe,
+  type ReactionTerm,
   type RecipeHit,
   type TripleStat,
 } from './recipe';
@@ -172,9 +173,12 @@ export function evaluateHit(hit: RecipeHit, stats: CandidateStats): number {
   // recipe, the summed buffs for a formula one. `?? 0` only for a recipe written before either
   // existed, which `SCHEMA` keeps out of the cache.
   const em = (hit.calibratedEm ?? 0) + stats.elementalMastery;
+  // A reaction instance is not `talent × scaling`: its own function prices it (P3).
+  if (hit.reaction !== undefined) return evaluateReaction(hit, hit.reaction, em, stats);
   const scaling = hit.scaling === 'em' ? em : totalFor(hit, stats, hit.scaling);
 
-  const base = hit.talent * scaling + resolvedTerm(hit, 'flatDamage', hit.flatDamage, stats);
+  const base = hit.talent * scaling + resolvedTerm(hit, 'flatDamage', hit.flatDamage, stats)
+    + additiveTerm(hit, em);
   const bonus = hit.bonusDmg + (stats.elementBonus[hit.element] ?? 0) + stats.allElementBonus
     + (hit.move === undefined ? 0 : (stats.moveBonus?.[hit.move] ?? 0))
     + energyRechargeBonus(hit, stats)
@@ -190,6 +194,34 @@ export function evaluateHit(hit: RecipeHit, stats: CandidateStats): number {
     ? hit.ampMultiplier
     : amplifyingMultiplier(hit.amplifying.reaction, em, hit.amplifying.reactionBonus);
   return preCrit * crit * amp;
+}
+
+/**
+ * A transformative or Lunar reaction instance for this candidate (math-fallback P3).
+ *
+ * Only what reaches reaction damage moves: the trigger's EM, and for a Lunar reaction their
+ * CRIT (gcsim `lunarcharged.go:140-150`, GO `special.ts:43-75`). No DMG% and no DEF — gcsim
+ * skips both for a reaction (`damage.go:22-43`, `IgnoreDefPercent: 1`). The RES multiplier was
+ * resolved when the hit was made, in `resMultiplier`, from the reaction's own element.
+ */
+function evaluateReaction(
+  hit: RecipeHit, term: ReactionTerm, em: number, stats: CandidateStats,
+): number {
+  if (term.kind === 'transformative') {
+    return term.count * transformativeBase(term.reaction, term.levelBase, em, term.reactionBonus)
+      * hit.resMultiplier * (1 + effectiveCritRate(term.critRate) * term.critDmg);
+  }
+  const critRate = hit.critRate + stats.critRate;
+  const critDmg = hit.critDmg + stats.critDmg;
+  return term.count * term.weight
+    * lunarBase(term.reaction, term.levelBase, em, term.reactionBonus, term.baseDmgBonus)
+    * hit.resMultiplier * (1 + effectiveCritRate(critRate) * critDmg);
+}
+
+/** Spread or aggravate on a talent hit: its flat damage at this candidate's EM, × count. */
+function additiveTerm(hit: RecipeHit, em: number): number {
+  const a = hit.additive;
+  return a === undefined ? 0 : a.count * additiveFlat(a.reaction, a.levelBase, em, a.reactionBonus);
 }
 
 /**

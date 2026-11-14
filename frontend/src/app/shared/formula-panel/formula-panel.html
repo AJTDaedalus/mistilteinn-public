@@ -1,13 +1,33 @@
 <section class="formula" aria-labelledby="formula-target-title">
   <h2 id="formula-target-title" class="formula__title">Formula target</h2>
   <p class="hint">
-    The abilities to score and how many times each lands. The score is the damage of this
-    sequence, not DPS: a formula has no timeline.
+    The abilities and reactions to score and how many times each lands. The score is the
+    damage of this sequence, not DPS: a formula has no timeline.
   </p>
 
   <ol class="formula__rows">
     @for (row of rows(); track row.id; let i = $index) {
       <li class="formula__row">
+        @if (row.reaction; as reaction) {
+        <label class="formula__field formula__field--hit">
+          <span>Reaction {{ i + 1 }}</span>
+          <select (change)="pickReaction(row, $any($event.target).value)">
+            @for (r of reactions; track r.value) {
+              <option [value]="r.value" [selected]="reaction.reaction === r.value">{{ r.label }}</option>
+            }
+          </select>
+        </label>
+        @if (reaction.reaction === 'swirl') {
+          <label class="formula__field">
+            <span>Swirled</span>
+            <select (change)="pickSwirled(row, $any($event.target).value)">
+              @for (e of swirlElements; track e) {
+                <option [value]="e" [selected]="reaction.swirled === e">{{ e }}</option>
+              }
+            </select>
+          </label>
+        }
+        } @else {
         <label class="formula__field formula__field--hit">
           <span>Ability {{ i + 1 }}</span>
           <!-- `[selected]` per option, not `[value]` on the select: the binding runs before
@@ -39,6 +59,19 @@
           </select>
         </label>
 
+        @if (additives().length) {
+          <label class="formula__field">
+            <span>Reaction</span>
+            <select (change)="pickAdditive(row, $any($event.target).value)">
+              <option value="" [selected]="!row.additive">None</option>
+              @for (a of additives(); track a) {
+                <option [value]="a" [selected]="row.additive === a">{{ a === 'spread' ? 'Spread' : 'Aggravate' }}</option>
+              }
+            </select>
+          </label>
+        }
+        }
+
         <label class="formula__field formula__field--count">
           <span>Count</span>
           <input
@@ -55,11 +88,16 @@
           type="button"
           class="formula__remove"
           [disabled]="rows().length === 1"
-          [attr.aria-label]="'Remove ability ' + (i + 1) + ', ' + row.label"
+          [attr.aria-label]="'Remove row ' + (i + 1) + ', ' + row.label"
           (click)="remove(row)"
         >Remove</button>
 
-        @if (row.move === null) {
+        @if (row.reaction) {
+          <p class="formula__note">
+            Triggered by the optimized character: their Elemental Mastery and level apply. The
+            count is your assumption; no gauge or cooldown is simulated.
+          </p>
+        } @else if (row.move === null) {
           <p class="formula__note">
             Move unknown: bonuses limited to a move (normal, charged, skill…) are not applied
             to this ability.
@@ -68,7 +106,7 @@
 
         @if (rows().length > 1 && conditional().length) {
           <details class="formula__overrides">
-            <summary>Conditions for ability {{ i + 1 }} only</summary>
+            <summary>Conditions for {{ row.reaction ? "reaction" : "ability" }} {{ i + 1 }} only</summary>
             @for (group of conditional(); track group.sourceId) {
               @for (condition of group.conditions; track condition.key) {
                 <label class="formula__override">
@@ -94,6 +132,9 @@
   <div class="formula__actions">
     <button type="button" class="linkish" (click)="add()" [disabled]="!hits().length">
       Add ability
+    </button>
+    <button type="button" class="linkish" (click)="addReaction()" [disabled]="!hits().length">
+      Add reaction
     </button>
   </div>
 
@@ -207,7 +248,8 @@
           <li>No kit buffs: talents, passives, constellations and teammates' buffs are absent.</li>
         }
         <li>No weapon passives.</li>
-        <li>Transformative, additive and Lunar reactions are not modelled.</li>
+        <li>Reactions: only the rows above. Add a reaction row, or spread/aggravate on an
+          ability, to count transformative, additive or Lunar reaction damage.</li>
       </ul>
     }
   </section>

@@ -78,6 +78,12 @@ export interface SearchContext {
   characterLevel: number;
   /** Which damage-bonus quantity this hit reads, e.g. `cryo_dmg_bonus`. */
   dmgBonusQuantity: string;
+  /**
+   * The reaction level multiplier at `characterLevel` (`/search-context`'s
+   * `reaction_level_multiplier`). Read only by a formula recipe's reaction terms (P3); the
+   * single-hit kernel has no reaction row.
+   */
+  reactionLevelMultiplier?: number;
   setBonuses?: readonly SetBonus[];
   topN?: number;
   /**
