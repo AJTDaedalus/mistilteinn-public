@@ -1,0 +1,240 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Eula",
+ "nanoka_id": "10000051",
+ "slug": "eula",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Eula.ts",
+  "wr": "libs/gi/sheets/src/Characters/Eula/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/eula/",
+ "verified_by": [
+  "eula_lightfall_on_her_own_sword"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:Eula.ts:120-121",
+   "gcsim": "eula.go:24"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:Eula.ts:120,122",
+   "gcsim": "eula.go:25"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_burst": [
+    "DMG Per Stack|{param3:F1P}"
+   ],
+   "elemental_skill": [
+    "Cryo RES Decrease|{param5:P}",
+    "Physical RES Decrease|{param4:P}"
+   ]
+  },
+  "constellations": {
+   "1": [
+    0.3,
+    6.0,
+    18.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.25,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "lightfall",
+   "label": "Lightfall Sword energy stacks",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 30,
+   "step": 1,
+   "go": "pando:Eula.ts:89,109-115"
+  },
+  {
+   "key": "consumed",
+   "label": "Grimheart consumed by her Hold skill",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Eula.ts:86-87,97-102"
+  },
+  {
+   "key": "tidal",
+   "label": "After Grimheart is consumed (C1)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Eula.ts:86-87,103-105"
+  },
+  {
+   "key": "low_hp",
+   "label": "Opponent below 50% HP (C4)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:Eula.ts:86-87,106-108"
+  }
+ ],
+ "effects": [
+  {
+   "key": "lightfall",
+   "label": "Glacial Illumination: Lightfall Sword DMG + ATK per stack",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "rows": [
+    {
+     "talent": "elemental_burst",
+     "label": "Lightfall Sword Base DMG"
+    }
+   ],
+   "value": {
+    "talent": "elemental_burst",
+    "row": "DMG Per Stack",
+    "times_stat": "atk"
+   },
+   "per": "lightfall",
+   "go": "pando:Eula.ts:62-69,109-115,142-149"
+  },
+  {
+   "key": "cryo_res",
+   "label": "Icetide Vortex: opponent Cryo RES",
+   "source": "talent",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "cryo"
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Cryo RES Decrease",
+    "negate": true
+   },
+   "when": [
+    {
+     "condition": "consumed",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Eula.ts:47-61,97-99,127"
+  },
+  {
+   "key": "phys_res",
+   "label": "Icetide Vortex: opponent Physical RES",
+   "source": "talent",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "physical"
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Physical RES Decrease",
+    "negate": true
+   },
+   "when": [
+    {
+     "condition": "consumed",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Eula.ts:47-61,100-102,128"
+  },
+  {
+   "key": "c1_phys",
+   "label": "C1 Tidal Illusion: Physical DMG",
+   "source": "c1",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "physical"
+   ],
+   "value": {
+    "constellation": 1,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "tidal",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Eula.ts:73-75,103-105,125"
+  },
+  {
+   "key": "c4_sword",
+   "label": "C4 The Obstinacy of One's Inferiors: Lightfall Sword DMG",
+   "source": "c4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "rows": [
+    {
+     "talent": "elemental_burst",
+     "label": "Lightfall Sword Base DMG"
+    }
+   ],
+   "value": {
+    "constellation": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "low_hp",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Eula.ts:76-78,106-108,142-149"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Icetide Vortex: Grimheart DEF",
+   "reason": "no damage effect on her ATK-scaling hits"
+  },
+  {
+   "source": "a1",
+   "what": "Roiling Rime: a shattered Lightfall Sword",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "a4",
+   "what": "Wellspring of War-Lust: resets her skill cooldown",
+   "reason": "no damage effect: cooldown"
+  },
+  {
+   "source": "c6",
+   "what": "Noble Obligation: Grimheart stacks and Lightfall stacks on use",
+   "reason": "no damage effect beyond the user's stack conditions"
+  }
+ ]
+}

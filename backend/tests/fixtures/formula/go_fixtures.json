@@ -8700,11 +8700,11 @@
               },
               {
                 "what": "A4: A4 Consider, the Adeptus in Her Realm: plunge DMG from Xianyun's ATK, the ATK capped",
-                "reason": "withheld: it reads Xianyun's own atk, which moves with every candidate, through a cap or a unit the recipe cannot carry per candidate"
+                "reason": "withheld: it reads Xianyun's own atk, which moves with every candidate, through a cap the recipe cannot carry per candidate"
               },
               {
                 "what": "C2: C2 Aloof From the World: the A4 plunge DMG increased",
-                "reason": "withheld: it reads Xianyun's own atk, which moves with every candidate, through a cap or a unit the recipe cannot carry per candidate"
+                "reason": "withheld: it reads Xianyun's own atk, which moves with every candidate, through a cap the recipe cannot carry per candidate"
               }
             ]
           }
@@ -9581,6 +9581,1854 @@
       },
       "expected": 27313.460548105424,
       "go_value": 27313.460548105424,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "hu_tao_a4_c2_on_her_own_blossom",
+      "covers": "self flat damage from her own Max HP on one move (C2), per candidate; a situational self DMG buff (A4)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/HuTao.ts:70-76,116-126,150-151,165"
+      ],
+      "givers": [
+        {
+          "name": "Hu Tao",
+          "constellation": 2,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 715.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 15552.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 876.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "hp_pct": 0.466,
+        "flat_hp": 4780.0,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "blossom",
+          "label": "Blood Blossom DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Blood Blossom DMG|{param3:P}",
+            "params": [
+              0.3,
+              0.06256,
+              1.152
+            ]
+          },
+          "multiplier": 1.152,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:hu_tao",
+          "label": "Hu Tao (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/HuTao.ts (pando), libs/gi/sheets/src/Characters/HuTao/index.tsx (wr) @ 2c13fc40 \u2014 a4_pyro pando:HuTao.ts:70-73,116-118,150; c2_blossom pando:HuTao.ts:74-76,119-126,151; gcsim internal/characters/hutao/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "low_hp",
+                "label": "Hu Tao's HP is at or below 50% (A4)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.33,
+                "elements": [
+                  "pyro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "low_hp",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_hp",
+                "value": 0.1,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "skill"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Guide to Afterlife: ATK from her Max HP, capped at a multiple of her base ATK",
+                "reason": "a capped conversion of her own Max HP (GO `min(prod(atkInc, premod.hp), prod(maxAtkInc, base.atk))`, pando:HuTao.ts:103-112): the recipe carries no cap on a per-candidate term, which is the owner's open question on capped self-conversions (DECISIONS \u00a739); the cap is also a parameter no seeded row label names"
+              },
+              {
+                "what": "TALENT: Guide to Afterlife: Pyro infusion",
+                "reason": "an infusion changes a hit's element, which the estimate does not model (G4)"
+              },
+              {
+                "what": "TALENT: Spirit Soother: HP regeneration",
+                "reason": "no damage effect: healing (its low-HP damage is its own row)"
+              },
+              {
+                "what": "C1: Crimson Bouquet: Charged Attacks cost no stamina in Paramita Papilio",
+                "reason": "no damage effect: stamina"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:hu_tao/low_hp": 1
+      },
+      "expected": 4714.030879220796,
+      "go_value": 4714.030879220796,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "arlecchino_masque_on_her_own_normal",
+      "covers": "self flat damage from her own ATK per point of a user-set Bond of Life, counted per 100 (a talent row), per candidate; a passive held from the start (A0)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Arlecchino.ts:45-49,79-83,119-129,168,181,188-199"
+      ],
+      "givers": [
+        {
+          "name": "Arlecchino",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "normal_attack": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 1016.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 13103.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 763.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "na1",
+          "label": "1-Hit DMG",
+          "move": "normal",
+          "count": 1,
+          "talent_row": {
+            "label": "1-Hit DMG|{param1:F1P}",
+            "params": [
+              0.938961,
+              1.029996,
+              1.29251,
+              0.734264,
+              1.383358,
+              1.687709,
+              1.7952,
+              25.0,
+              1.26378,
+              2.527025,
+              3.15639,
+              2.38,
+              0.075,
+              0.3,
+              40.0
+            ]
+          },
+          "multiplier": 0.938961,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:arlecchino",
+          "label": "Arlecchino (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Arlecchino.ts (pando), libs/gi/sheets/src/Characters/Arlecchino/index.tsx (wr) @ 2c13fc40 \u2014 masque pando:Arlecchino.ts:45-49,119-128,181; a0_pyro pando:Arlecchino.ts:79-83,129,168; gcsim internal/characters/arlecchino/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "bond",
+                "label": "Her Bond of Life, in percentage points of her Max HP (200 is the Bond of Life cap; set it to what your rotation holds)",
+                "kind": "number",
+                "default": 200.0,
+                "default_reason": "self",
+                "max": 200.0,
+                "step": 5.0,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.023799999999999998,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "normal"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "bond",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.4,
+                "elements": [
+                  "pyro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Invitation to a Beheading: Pyro infusion at 30% Bond of Life or more",
+                "reason": "an infusion changes a hit's element, which the estimate does not model (G4): her Normal Attack rows take the element the row is given"
+              },
+              {
+                "what": "A1: Agony Alone May Be Repaid: Bond of Life from a Blood-Debt Directive",
+                "reason": "no damage effect: the Bond of Life amount is the user's condition"
+              },
+              {
+                "what": "A4: Strength Alone Can Defend: RES from her ATK",
+                "reason": "no damage effect: RES"
+              },
+              {
+                "what": "TALENT: Balemoon Rising: healing from Bond of Life",
+                "reason": "no damage effect: healing"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:arlecchino/bond": 145
+      },
+      "expected": 9825.585504016375,
+      "go_value": 9825.585504016375,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "clorinde_a4_c4_on_her_own_burst",
+      "covers": "self CRIT Rate per stack (A4, at its default); burst DMG per point of a user-set Bond of Life (C4); over a five-hit row",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Clorinde.ts:68-74,85-88,147-156,185-186,204"
+      ],
+      "givers": [
+        {
+          "name": "Clorinde",
+          "constellation": 4,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "electro",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "electro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 1009.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12956.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 784.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.242,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "electro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.8
+      },
+      "set_pools": [],
+      "channel": "electro",
+      "rows": [
+        {
+          "id": "burst",
+          "label": "Skill DMG",
+          "move": "burst",
+          "count": 5,
+          "talent_row": {
+            "label": "Skill DMG|{param1:F1P}\u00d75",
+            "params": [
+              2.28384,
+              1.2,
+              15.0,
+              60.0
+            ]
+          },
+          "multiplier": 2.28384,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:clorinde",
+          "label": "Clorinde (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Clorinde.ts (pando), libs/gi/sheets/src/Characters/Clorinde/index.tsx (wr) @ 2c13fc40 \u2014 a4_crit pando:Clorinde.ts:68-74,147-151,185; c4_burst pando:Clorinde.ts:85-88,152-156,186; gcsim internal/characters/clorinde/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "bond_changes",
+                "label": "Bond of Life changes in Night Vigil (A4 stacks)",
+                "kind": "stacks",
+                "default": 2.0,
+                "default_reason": "self",
+                "max": 2.0,
+                "step": 1.0,
+                "options": null
+              },
+              {
+                "key": "bond",
+                "label": "Her Bond of Life when she uses Last Lightfall, in percentage points of her Max HP, up to C4's 200% cap (C4)",
+                "kind": "number",
+                "default": 100.0,
+                "default_reason": "self",
+                "max": 100.0,
+                "step": 5.0,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "crit_rate",
+                "value": 0.1,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "bond_changes",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.02,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "bond",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A1: Dark-Shattering Flame: Normal Attack and burst DMG + a share of her ATK per stack, capped at a flat amount",
+                "reason": "a capped conversion of her own ATK (GO `min(maxDmgInc, prod(atkRatio, final.atk, stacks))`, pando:Clorinde.ts:129-146): the recipe carries no cap on a per-candidate term, the owner's open question on capped self-conversions (DECISIONS \u00a739)"
+              },
+              {
+                "what": "C2: \"Now, As We Face the Perils of the Long Night\": A1's larger share and cap",
+                "reason": "raises A1, which is not modelled (above)"
+              },
+              {
+                "what": "TALENT: Hunter's Vigil: Swift Hunt and Impale the Night are Normal Attacks",
+                "reason": "they are skill-talent rows that GO counts as Normal Attacks (as Skirk's): a teammate's Normal Attack buff reaches them only once the row's move is set to normal; their Electro infusion is the row's element (G4)"
+              },
+              {
+                "what": "TALENT: Hunter's Vigil: healing and Bond of Life",
+                "reason": "no damage effect: healing"
+              },
+              {
+                "what": "C1: \"From This Day, I Pass the Candle's Shadow-Veil\": Nightvigil Shade attacks",
+                "reason": "a damage instance, not a buff: not offered as a target row yet"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:clorinde/bond": 60
+      },
+      "expected": 46946.321087811695,
+      "go_value": 46946.321087811695,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "navia_a4_shrapnel_on_her_own_shardshot",
+      "covers": "a self ATK buff counted by the team's elements, written as two gated effects (A4); Skill DMG per charge beyond three, a cited constant",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Navia.ts:51-53,70-72,100-132,167-168,183-192"
+      ],
+      "givers": [
+        {
+          "name": "Navia",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "geo",
+        "weapon_type": "WEAPON_CLAYMORE",
+        "member_elements": [
+          "geo",
+          "pyro",
+          "hydro",
+          "anemo"
+        ]
+      },
+      "base": {
+        "base_atk": 1053.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12650.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 793.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "geo_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "geo",
+      "rows": [
+        {
+          "id": "shardshot",
+          "label": "Rosula Shardshot Base DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Rosula Shardshot Base DMG|{param1:F1P}",
+            "params": [
+              7.1064
+            ]
+          },
+          "multiplier": 7.1064,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:navia",
+          "label": "Navia (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Navia.ts (pando), libs/gi/sheets/src/Characters/Navia/index.tsx (wr) @ 2c13fc40 \u2014 a1_auto pando:Navia.ts:66-69,117-119,164-166; a4_one pando:Navia.ts:70-72,121-132,167; a4_two pando:Navia.ts:70-72,121-132,167; skill_extra pando:Navia.ts:51-53,111-115,168; gcsim internal/characters/navia/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "after_skill",
+                "label": "After her Elemental Skill (A1)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "extra",
+                "label": "Crystal Shrapnel consumed beyond three (up to six)",
+                "kind": "number",
+                "default": 3.0,
+                "default_reason": "self",
+                "max": 3.0,
+                "step": 1.0,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.4,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "normal",
+                  "charged",
+                  "plunge"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "after_skill",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "atk_pct",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "atk_pct",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.15,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "skill"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "extra",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Ceremonial Crystalshot: the multiplier for how many shards hit",
+                "reason": "GO's table for it is hard-coded and marked `TODO: Verify this` (pando:Navia.ts:100-110); the estimate reads the shardshot's base row as written"
+              },
+              {
+                "what": "A1: Undisclosed Distribution Channels: Geo infusion",
+                "reason": "an infusion changes a hit's element, which the estimate does not model (G4)"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 20644.367115425495,
+      "go_value": 20644.367115425495,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "wriothesley_fist_a4_on_his_own_normal",
+      "covers": "a talent row read as a hit's whole multiplier, written as a base multiplier less 1 (the skill); self ATK per stack (A4)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Wriothesley.ts:44-45,63-66,126-130,170,192-203"
+      ],
+      "givers": [
+        {
+          "name": "Wriothesley",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_skill": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_CATALYST",
+        "member_elements": [
+          "cryo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 1058.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 13592.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 763.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "cryo_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "na1",
+          "label": "1-Hit DMG",
+          "move": "normal",
+          "count": 1,
+          "talent_row": {
+            "label": "1-Hit DMG|{param1:F1P}",
+            "params": [
+              1.054782
+            ]
+          },
+          "multiplier": 1.054782,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:wriothesley",
+          "label": "Wriothesley (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Wriothesley.ts (pando), libs/gi/sheets/src/Characters/Wriothesley/index.tsx (wr) @ 2c13fc40 \u2014 fist pando:Wriothesley.ts:44-45,192-203; a1_rebuke pando:Wriothesley.ts:57-62,141-144,178-188; a4_atk pando:Wriothesley.ts:63-66,126-130,170; gcsim internal/characters/wriothesley/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "chilling",
+                "label": "Chilling Penalty, after his Elemental Skill",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "rebuke",
+                "label": "Gracious Rebuke: his Charged Attack below 60% HP (A1)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "edicts",
+                "label": "Prosecution Edict stacks (A4)",
+                "kind": "stacks",
+                "default": 5.0,
+                "default_reason": "self",
+                "max": 5.0,
+                "step": 1.0,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "base_dmg_bonus",
+                "value": 0.70312,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "normal"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "chilling",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.5,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "charged"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "rebuke",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "atk_pct",
+                "value": 0.06,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "edicts",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A1: There Shall Be a Plea for Justice: the Gracious Rebuke healing",
+                "reason": "no damage effect: healing"
+              },
+              {
+                "what": "KIT: The Hexerei passive: Stellar Radiance, Stellarconduct DMG, and the constellations' Hexerei multipliers",
+                "reason": "the Hexerei party mechanic is not modelled (as for Sucrose and Mona)"
+              },
+              {
+                "what": "A1: There Shall Be a Plea for Justice: keeping Gracious Rebuke off an ordinary Charged Attack",
+                "reason": "GO makes it its own row; the estimate scopes by move, so the toggle reaches every Charged Attack row while on"
+              },
+              {
+                "what": "TALENT: Icefang Rush: HP cost",
+                "reason": "no damage effect: HP"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 3823.7375922901633,
+      "go_value": 3823.7375922901633,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "lyney_a1_a4_on_his_own_pyrotechnic",
+      "covers": "self flat damage from his own ATK scoped to one of his rows (A1), per candidate; a DMG buff growing with the team's other Pyro members, as gated effects (A4)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Lyney.ts:63-70,90,108-121,139,155-163"
+      ],
+      "givers": [
+        {
+          "name": "Lyney",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_skill": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_BOW",
+        "member_elements": [
+          "pyro",
+          "pyro",
+          "pyro",
+          "anemo"
+        ]
+      },
+      "base": {
+        "base_atk": 916.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 11021.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 539.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.242,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.9
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "pyrotechnic",
+          "label": "Pyrotechnic Strike DMG",
+          "move": "charged",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyrotechnic Strike DMG|{param15:F1P}",
+            "params": [
+              0.7667,
+              0.7514,
+              0.5389,
+              0.5389,
+              1.1254,
+              1.12336,
+              2.246244,
+              2.80568,
+              0.867,
+              2.232,
+              3.1104,
+              0.2,
+              1.152,
+              4.0,
+              3.816
+            ]
+          },
+          "multiplier": 3.816,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "hit": {
+            "talent": "normal_attack",
+            "label": "Pyrotechnic Strike DMG"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:lyney",
+          "label": "Lyney (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Lyney.ts (pando), libs/gi/sheets/src/Characters/Lyney/index.tsx (wr) @ 2c13fc40 \u2014 skill_props pando:Lyney.ts:50-55,103-107,138; a1_hat pando:Lyney.ts:63-66,108-110,155-163; a4_dmg pando:Lyney.ts:67-70,111-121,139; a4_one pando:Lyney.ts:67-70,90,111-121,139; a4_two pando:Lyney.ts:67-70,90,111-121,139; gcsim internal/characters/lyney/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "props",
+                "label": "Prop Surplus stacks consumed by his Elemental Skill",
+                "kind": "stacks",
+                "default": 5.0,
+                "default_reason": "self",
+                "max": 5.0,
+                "step": 1.0,
+                "options": null
+              },
+              {
+                "key": "hat",
+                "label": "Grin-Malkin Hat drained his HP (A1)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "pyro_mark",
+                "label": "Opponent affected by Pyro, which his own Pyro attacks apply (A4)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.9576,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "skill"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "props",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.8,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "normal_attack",
+                    "label": "Pyrotechnic Strike DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "hat",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.6,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "pyro_mark",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "pyro_mark",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "pyro_mark",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Card Force Translocation: HP cost and the Grin-Malkin Hat's HP",
+                "reason": "no damage effect: HP"
+              },
+              {
+                "what": "TALENT: Bewildering Lights: HP regeneration per stack",
+                "reason": "no damage effect: healing"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 14517.924244279435,
+      "go_value": 14517.924244279435,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "yoimiya_niwabi_a1_on_her_own_normal",
+      "covers": "a talent row read as a hit's whole multiplier (the skill, a base multiplier less 1); a self DMG buff per stack (A1); over a two-arrow row",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Yoimiya.ts:42-46,54-58,95-101,131,135-142"
+      ],
+      "givers": [
+        {
+          "name": "Yoimiya",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_skill": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_BOW",
+        "member_elements": [
+          "pyro",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 1134.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10164.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 615.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.242,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.9
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "na1",
+          "label": "1-Hit DMG",
+          "move": "normal",
+          "count": 2,
+          "talent_row": {
+            "label": "1-Hit DMG|{param1:F1P}\u00d72",
+            "params": [
+              0.63585
+            ]
+          },
+          "multiplier": 0.63585,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:yoimiya",
+          "label": "Yoimiya (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Yoimiya.ts (pando), libs/gi/sheets/src/Characters/Yoimiya/index.tsx (wr) @ 2c13fc40 \u2014 niwabi pando:Yoimiya.ts:42-46,95-97,135-142; a1_pyro pando:Yoimiya.ts:54-58,98-101,131; gcsim internal/characters/yoimiya/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "niwabi",
+                "label": "Niwabi Fire-Dance, after her Elemental Skill",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "tricks",
+                "label": "Tricks of the Trouble-Maker stacks (A1; A4 reads them too)",
+                "kind": "stacks",
+                "default": 10.0,
+                "default_reason": "self",
+                "max": 10.0,
+                "step": 1.0,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "base_dmg_bonus",
+                "value": 0.61744,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "normal"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "niwabi",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.02,
+                "elements": [
+                  "pyro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "niwabi",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": "tricks",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Niwabi Fire-Dance: Pyro infusion",
+                "reason": "an infusion changes a hit's element, which the estimate does not model (G4): give her Normal Attack rows the Pyro element"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 5215.075676456951,
+      "go_value": 5215.075676456951,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "yoimiya_a4_on_xiangling",
+      "covers": "a teammate ATK buff with a fixed part and a part per the giver's own stack count (A4)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Yoimiya.ts:54-63,93,102-111,133"
+      ],
+      "givers": [
+        {
+          "name": "Yoimiya",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": {}
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado",
+          "label": "Pyronado DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:yoimiya",
+          "label": "Yoimiya (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Yoimiya.ts (pando), libs/gi/sheets/src/Characters/Yoimiya/index.tsx (wr) @ 2c13fc40 \u2014 a4_base pando:Yoimiya.ts:59-63,102-111,133; a4_stack pando:Yoimiya.ts:59-63,102-111,133; gcsim internal/characters/yoimiya/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "tricks",
+                "label": "Tricks of the Trouble-Maker stacks (A1; A4 reads them too)",
+                "kind": "stacks",
+                "default": 10.0,
+                "default_reason": "self",
+                "max": 10.0,
+                "step": 1.0,
+                "options": null
+              },
+              {
+                "key": "aurous",
+                "label": "After her burst, while Aurous Blaze lasts (A4, to her teammates)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "atk_pct",
+                "value": 0.1,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "aurous",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "atk_pct",
+                "value": 0.01,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "aurous",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": "tricks",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Niwabi Fire-Dance: Pyro infusion",
+                "reason": "an infusion changes a hit's element, which the estimate does not model (G4): give her Normal Attack rows the Pyro element"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:yoimiya/aurous": 1
+      },
+      "expected": 2871.495359867077,
+      "go_value": 2871.495359867077,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "ganyu_a1_a4_on_her_own_bloom",
+      "covers": "a self CRIT Rate scoped by move (A1); a field DMG buff to the active character, hers as the subject (A4)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Ganyu.ts:61-67,83-89,102,127-135"
+      ],
+      "givers": [
+        {
+          "name": "Ganyu",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_BOW",
+        "member_elements": [
+          "cryo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 1101.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 9797.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 630.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "cryo_dmg_bonus": 0.466,
+        "crit_rate": 0.25,
+        "crit_dmg": 0.7
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "bloom",
+          "label": "Frostflake Arrow Bloom DMG",
+          "move": "charged",
+          "count": 1,
+          "talent_row": {
+            "label": "Frostflake Arrow Bloom DMG|{param10:P}",
+            "params": [
+              0.6273,
+              0.7038,
+              0.8993,
+              0.8993,
+              0.9537,
+              1.139,
+              0.867,
+              2.232,
+              2.304,
+              3.9168
+            ]
+          },
+          "multiplier": 3.9168,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:ganyu",
+          "label": "Ganyu (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Ganyu.ts (pando), libs/gi/sheets/src/Characters/Ganyu/index.tsx (wr) @ 2c13fc40 \u2014 a1_crit pando:Ganyu.ts:61-64,83-85,116-135; a4_cryo pando:Ganyu.ts:65-67,86-89,102; gcsim internal/characters/ganyu/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "a1_fired",
+                "label": "After she fires a Frostflake Arrow (A1)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "in_field",
+                "label": "In Celestial Shower's field (A4)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "crit_rate",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "charged"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a1_fired",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.2,
+                "elements": [
+                  "cryo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "in_field",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A1: Undivided Heart: keeping its CRIT Rate to Frostflake Arrows",
+                "reason": "GO gives it to the Frostflake Arrow and its bloom only; the estimate scopes by move, so an aimed shot row receives it too while the toggle is on"
+              },
+              {
+                "what": "TALENT: Trail of the Qilin: the Ice Lotus's HP",
+                "reason": "no damage effect: HP"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 9870.099381461976,
+      "go_value": 9870.099381461976,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "eula_lightfall_on_her_own_sword",
+      "covers": "self flat damage from her own ATK per stack scoped to one of her rows (a talent row), per candidate; a Physical RES decrease from her own skill row",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Eula.ts:47-69,100-102,109-115,128,142-149"
+      ],
+      "givers": [
+        {
+          "name": "Eula",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_burst": 10,
+            "elemental_skill": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_CLAYMORE",
+        "member_elements": [
+          "cryo",
+          "electro"
+        ]
+      },
+      "base": {
+        "base_atk": 1131.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 13226.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 751.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "physical_dmg_bonus": 0.583,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "physical",
+      "rows": [
+        {
+          "id": "lightfall",
+          "label": "Lightfall Sword Base DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Lightfall Sword Base DMG|{param2:F1P}",
+            "params": [
+              4.4208,
+              7.2556,
+              1.4824,
+              30.0,
+              20.0,
+              80.0
+            ]
+          },
+          "multiplier": 7.2556,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "hit": {
+            "talent": "elemental_burst",
+            "label": "Lightfall Sword Base DMG"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:eula",
+          "label": "Eula (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Eula.ts (pando), libs/gi/sheets/src/Characters/Eula/index.tsx (wr) @ 2c13fc40 \u2014 lightfall pando:Eula.ts:62-69,109-115,142-149; cryo_res pando:Eula.ts:47-61,97-99,127; phys_res pando:Eula.ts:47-61,100-102,128; gcsim internal/characters/eula/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "lightfall",
+                "label": "Lightfall Sword energy stacks",
+                "kind": "stacks",
+                "default": 30.0,
+                "default_reason": "self",
+                "max": 30.0,
+                "step": 1.0,
+                "options": null
+              },
+              {
+                "key": "consumed",
+                "label": "Grimheart consumed by her Hold skill",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 1.4824,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_burst",
+                    "label": "Lightfall Sword Base DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": "lightfall",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "enemy_res",
+                "value": -0.25,
+                "elements": [
+                  "cryo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "consumed",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "enemy_res",
+                "value": -0.25,
+                "elements": [
+                  "physical"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "consumed",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Icetide Vortex: Grimheart DEF",
+                "reason": "no damage effect on her ATK-scaling hits"
+              },
+              {
+                "what": "A1: Roiling Rime: a shattered Lightfall Sword",
+                "reason": "a damage instance, not a buff: not offered as a target row yet"
+              },
+              {
+                "what": "A4: Wellspring of War-Lust: resets her skill cooldown",
+                "reason": "no damage effect: cooldown"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 128300.59963387295,
+      "go_value": 128300.59963387295,
       "divergence": "none: no reaction",
       "relative_divergence_from_go": 0.0
     }
