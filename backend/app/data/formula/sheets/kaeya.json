@@ -1,0 +1,99 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Kaeya",
+ "nanoka_id": "10000015",
+ "slug": "kaeya",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Kaeya.ts",
+  "wr": "libs/gi/sheets/src/Characters/Kaeya/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/kaeya/",
+ "verified_by": [
+  "kaeya_c1_on_his_own_normal"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Kaeya.ts:82-83",
+   "gcsim": "kaeya.go:24"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Kaeya.ts:82,84",
+   "gcsim": "kaeya.go:25"
+  }
+ ],
+ "pins": {},
+ "conditions": [
+  {
+   "key": "cryo",
+   "label": "Opponent affected by Cryo, which his own Cryo attacks apply (C1)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Kaeya.ts:71,73-80"
+  }
+ ],
+ "effects": [
+  {
+   "key": "c1_crit",
+   "label": "C1 Excellent Blood: Normal and Charged Attack CRIT Rate against Cryo",
+   "source": "c1",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "moves": [
+    "normal",
+    "charged"
+   ],
+   "value": {
+    "constant": 0.15,
+    "cite": "GO pando:Kaeya.ts:55-57 `critRate_: 0.15`; gcsim kaeya/cons.go:32 `m[attributes.CR] = 0.15`; his seeded C1 list is empty"
+   },
+   "when": [
+    {
+     "condition": "cryo",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Kaeya.ts:55-57,73-80,86-87",
+   "gcsim": "cons.go:17-36"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "a0",
+   "what": "Hidden Strength: sprint stamina",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a1",
+   "what": "Cold-Blooded Strike: healing",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a4",
+   "what": "Glacial Heart: Elemental Particles",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c2",
+   "what": "Never-Ending Performance: burst duration",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c4",
+   "what": "Frozen Kiss: a shield",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c6",
+   "what": "Glacial Whirlwind: an extra icicle and Energy",
+   "reason": "an extra hit of an existing row: count it in the target's hit count"
+  }
+ ]
+}

@@ -1,0 +1,108 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Barbara",
+ "nanoka_id": "10000014",
+ "slug": "barbara",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Barbara.ts",
+  "wr": "libs/gi/sheets/src/Characters/Barbara/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/barbara/",
+ "verified_by": [
+  "barbara_c2_on_kokomi"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:Barbara.ts:100-101",
+   "gcsim": "barbara.go:27"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:Barbara.ts:100,102",
+   "gcsim": "barbara.go:28"
+  }
+ ],
+ "pins": {},
+ "conditions": [
+  {
+   "key": "c2_skill",
+   "label": "The active character in her skill's Melody Loop (C2)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Barbara.ts:78,84-90"
+  }
+ ],
+ "effects": [
+  {
+   "key": "c2_hydro",
+   "label": "C2 Vitality Burst: the active character's Hydro DMG in her skill",
+   "source": "c2",
+   "receivers": "active",
+   "stat": "dmg_bonus",
+   "elements": [
+    "hydro"
+   ],
+   "value": {
+    "constant": 0.15,
+    "cite": "GO pando:Barbara.ts:66-69 `hydro_dmg_: 0.15`; gcsim barbara/barbara.go:31-32 `c2buff[attributes.HydroP] = 0.15`; her seeded C2 list is empty"
+   },
+   "when": [
+    {
+     "condition": "c2_skill",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Barbara.ts:66-69,84-90,104",
+   "gcsim": "cons.go:18-31"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "c2",
+   "what": "Vitality Burst: gcsim gives the Hydro DMG to the others only (cons.go:19-23)",
+   "reason": "GO's active character, Barbara included, is followed (the comparator)"
+  },
+  {
+   "source": "talent",
+   "what": "Let the Show Begin♪ and Shining Miracle♪: healing",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a0",
+   "what": "With My Whole Heart♪: an exploration bonus",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a1",
+   "what": "Glorious Season: stamina",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a4",
+   "what": "Encore: skill duration",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c1",
+   "what": "Gleeful Songs: Energy",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c4",
+   "what": "Attentiveness Be My Power: Energy",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c6",
+   "what": "Dedicating Everything to You: revival",
+   "reason": "no damage effect"
+  }
+ ]
+}

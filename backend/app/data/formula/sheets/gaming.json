@@ -1,0 +1,241 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Gaming",
+ "nanoka_id": "10000092",
+ "slug": "gaming",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Gaming.ts",
+  "wr": "libs/gi/sheets/src/Characters/Gaming/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/gaming/",
+ "verified_by": [
+  "gaming_a4_c2_c6_on_his_own_cloudstrider"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Gaming.ts:114-115",
+   "gcsim": "gaming.go:22"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Gaming.ts:114,116",
+   "gcsim": "gaming.go:21"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "2": [
+    0.2,
+    5.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    0.2,
+    0.4,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "4": [
+    0.5,
+    0.2,
+    0.2,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "a4_hp",
+   "label": "His HP at or above 50% (A4)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: an HP threshold, and the estimate does not track his HP, which his skill spends and his A1 restores"
+   },
+   "go": "pando:Gaming.ts:88,95-99"
+  },
+  {
+   "key": "c2_overheal",
+   "label": "Healing that would overflow his Max HP (C2)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: it needs healing past his Max HP, and his skill spends HP on every use"
+   },
+   "go": "pando:Gaming.ts:87,121-123"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a4_cloud",
+   "label": "A4 Air of Prosperity: Charmed Cloudstrider DMG at 50% HP or more",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Plunging Attack: Charmed Cloudstrider DMG"
+    }
+   ],
+   "value": {
+    "passive": 4,
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "a4_hp",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Gaming.ts:60-64,95-99,134-144",
+   "gcsim": "asc.go:48-80"
+  },
+  {
+   "key": "c2_atk",
+   "label": "C2 Plum Blossoms Underfoot: ATK after overflowing healing",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "c2_overheal",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Gaming.ts:68-71,121-123",
+   "gcsim": "cons.go:36-63"
+  },
+  {
+   "key": "c6_crit_rate",
+   "label": "C6 To Tame All Beasts: Charmed Cloudstrider CRIT Rate",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Plunging Attack: Charmed Cloudstrider DMG"
+    }
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 0
+   },
+   "go": "pando:Gaming.ts:75-78,100-104,142",
+   "gcsim": "cons.go:83-100"
+  },
+  {
+   "key": "c6_crit_dmg",
+   "label": "C6 To Tame All Beasts: Charmed Cloudstrider CRIT DMG",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Plunging Attack: Charmed Cloudstrider DMG"
+    }
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 1
+   },
+   "go": "pando:Gaming.ts:75-78,105-109,143",
+   "gcsim": "cons.go:83-100"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Bestial Ascent and Suanni's Gilded Dance: HP cost and healing",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a1",
+   "what": "Dance of Amity: healing",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a4",
+   "what": "Air of Prosperity: Incoming Healing Bonus below 50% HP",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c1",
+   "what": "Bringer of Blessing: healing",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c4",
+   "what": "Soar Across Mountains: Energy",
+   "reason": "no damage effect"
+  }
+ ],
+ "row_moves": [
+  {
+   "talent": "elemental_skill",
+   "labels": [
+    "Plunging Attack: Charmed Cloudstrider DMG"
+   ],
+   "move": "plunge",
+   "go": "pando:Gaming.ts:133-144"
+  }
+ ]
+}

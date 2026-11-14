@@ -1,0 +1,239 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Xinyan",
+ "nanoka_id": "10000044",
+ "slug": "xinyan",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Xinyan.ts",
+  "wr": "libs/gi/sheets/src/Characters/Xinyan/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/xinyan/",
+ "verified_by": [
+  "xinyan_a4_c4_c6_on_her_own_charged"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Xinyan.ts:117-118",
+   "gcsim": "xinyan.go:26"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Xinyan.ts:117,119",
+   "gcsim": "xinyan.go:25"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "2": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    -0.15,
+    12.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    -0.3,
+    0.5,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "4": [
+    0.15,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "shielded",
+   "label": "The active character shielded by Sweeping Fervor (A4)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Xinyan.ts:96,121-123"
+  },
+  {
+   "key": "c4_hit",
+   "label": "Opponents hit by Sweeping Fervor's swing (C4)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Xinyan.ts:96,127-129"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a4_physical",
+   "label": "A4 ...Now That's Rock 'N' Roll!: Physical DMG while shielded",
+   "source": "a4",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "elements": [
+    "physical"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "shielded",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xinyan.ts:69-71,121-123",
+   "gcsim": "asc.go:25-44"
+  },
+  {
+   "key": "c2_crit",
+   "label": "C2 Impromptu Opening: Riff Revolution's Physical DMG CRIT Rate",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "rows": [
+    {
+     "talent": "elemental_burst",
+     "label": "Skill DMG"
+    }
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "go": "pando:Xinyan.ts:77-79,98-102,161-169",
+   "gcsim": "cons.go:52-68"
+  },
+  {
+   "key": "c4_res",
+   "label": "C4 Wildfire Rhythm: opponent Physical RES",
+   "source": "c4",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "physical"
+   ],
+   "value": {
+    "constellation": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "c4_hit",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xinyan.ts:80-83,127-129",
+   "gcsim": "cons.go:70-86"
+  },
+  {
+   "key": "c6_atk",
+   "label": "C6 Rockin' in a Flaming World: Charged Attack ATK + a share of her DEF",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "flat_atk",
+   "moves": [
+    "charged"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 1,
+    "times_stat": "def"
+   },
+   "go": "pando:Xinyan.ts:84-87,108-112,131"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "c6",
+   "what": "Rockin' in a Flaming World: GO's toggle for her Charged Attack ATK",
+   "reason": "scoped here to her Charged Attacks, as the constellation's text gives it; gcsim leaves it unimplemented (cons.go:88-89)",
+   "receiver": "subject"
+  },
+  {
+   "source": "c6",
+   "what": "Rockin' in a Flaming World: Charged Attack stamina",
+   "reason": "no damage effect",
+   "receiver": "subject"
+  },
+  {
+   "source": "a0",
+   "what": "A Rad Recipe: a cooking bonus",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a1",
+   "what": "\"The Show Goes On, Even Without an Audience...\": the shield's level",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c1",
+   "what": "Fatal Acceleration: ATK SPD after a crit",
+   "reason": "attack speed has no closed-form damage effect"
+  },
+  {
+   "source": "talent",
+   "what": "Sweeping Fervor: shields",
+   "reason": "no damage effect"
+  }
+ ]
+}

@@ -1,0 +1,352 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Mualani",
+ "nanoka_id": "10000102",
+ "slug": "mualani",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Mualani.ts",
+  "wr": "libs/gi/sheets/src/Characters/Mualani/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/mualani/",
+ "verified_by": [
+  "mualani_momentum_surging_c1_on_her_own_bite"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Mualani.ts:137-138",
+   "gcsim": "mualani.go:33"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Mualani.ts:137,139",
+   "gcsim": "mualani.go:34"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_skill": [
+    "Wave Momentum DMG Bonus|{param2:F2P} Max HP/Stack",
+    "Sharky's Surging Bite Additional DMG Bonus|{param3:F2P} Max HP"
+   ]
+  },
+  "constellations": {
+   "1": [
+    0.66,
+    0.7,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    8.0,
+    0.75,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "4": [
+    20.0,
+    0.15,
+    0.3,
+    0.45,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "momentum",
+   "label": "Wave Momentum stacks on the bite: 3 makes it a Surging Bite",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 3,
+   "step": 1,
+   "go": "pando:Mualani.ts:88-96,152-155"
+  },
+  {
+   "key": "c1_first",
+   "label": "The first Sharky's Bite after she enters her skill's state (C1)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: only the first bite of each skill gets it; turn it on for that bite"
+   },
+   "go": "pando:Mualani.ts:111-115,156-163"
+  },
+  {
+   "key": "puffer",
+   "label": "Party Nightsoul Bursts before her burst (A4)",
+   "kind": "stacks",
+   "default_by": "situational",
+   "max": 3,
+   "step": 1,
+   "usual": {
+    "value": 0,
+    "reason": "off: it needs party members to trigger Nightsoul Bursts, which the estimate does not check; set it to how many your party triggers"
+   },
+   "go": "pando:Mualani.ts:85,97-110"
+  }
+ ],
+ "effects": [
+  {
+   "key": "wave",
+   "label": "Surfshark Wavebreaker: Sharky's Bite DMG + a share of her Max HP per Wave Momentum stack",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Sharky's Bite Base DMG"
+    }
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Wave Momentum DMG Bonus",
+    "times_stat": "hp"
+   },
+   "per": "momentum",
+   "go": "pando:Mualani.ts:42-44,88-96,122-132,152-155",
+   "gcsim": "attack.go:129,162"
+  },
+  {
+   "key": "surging",
+   "label": "Surfshark Wavebreaker: a Surging Bite's further share of her Max HP",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Sharky's Bite Base DMG"
+    }
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Sharky's Surging Bite Additional DMG Bonus",
+    "times_stat": "hp"
+   },
+   "when": [
+    {
+     "condition": "momentum",
+     "values": [
+      3
+     ]
+    }
+   ],
+   "go": "pando:Mualani.ts:42-45,93-96,155",
+   "gcsim": "attack.go:142-145,162"
+  },
+  {
+   "key": "c1_first",
+   "label": "C1 The Leisurely \"Meztli\"...: the first bite's share of her Max HP",
+   "source": "c1",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Sharky's Bite Base DMG"
+    }
+   ],
+   "value": {
+    "constellation": 1,
+    "param": 0,
+    "times_stat": "hp"
+   },
+   "when": [
+    {
+     "condition": "c1_first",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Mualani.ts:68-71,111-115,156-163",
+   "gcsim": "cons.go:13-23; attack.go:129"
+  },
+  {
+   "key": "a4_burst_1",
+   "label": "A4 Natlan's Greatest Guide: burst DMG + a share of her Max HP at 1 stack",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 1,
+    "times_stat": "hp"
+   },
+   "when": [
+    {
+     "condition": "puffer",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Mualani.ts:56-62,97-110,142",
+   "gcsim": "burst.go:53-57"
+  },
+  {
+   "key": "a4_burst_2",
+   "label": "A4 Natlan's Greatest Guide: burst DMG + a share of her Max HP at 2 stacks",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 2,
+    "times_stat": "hp"
+   },
+   "when": [
+    {
+     "condition": "puffer",
+     "values": [
+      2
+     ]
+    }
+   ],
+   "go": "pando:Mualani.ts:56-62,97-110,142",
+   "gcsim": "burst.go:53-57"
+  },
+  {
+   "key": "a4_burst_3",
+   "label": "A4 Natlan's Greatest Guide: burst DMG + a share of her Max HP at 3 stacks",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 3,
+    "times_stat": "hp"
+   },
+   "when": [
+    {
+     "condition": "puffer",
+     "values": [
+      3
+     ]
+    }
+   ],
+   "go": "pando:Mualani.ts:56-62,97-110,142",
+   "gcsim": "burst.go:53-57"
+  },
+  {
+   "key": "c4_burst",
+   "label": "C4 Sharky Eats Puffies: burst DMG",
+   "source": "c4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "constellation": 4,
+    "param": 1
+   },
+   "go": "pando:Mualani.ts:73-76,116-120,143",
+   "gcsim": "cons.go:50-65"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Surfshark Wavebreaker: GO prices each stack count as its own bite row",
+   "reason": "the catalogue has one Sharky's Bite row; the Wave Momentum condition carries the stack count there",
+   "receiver": "subject"
+  },
+  {
+   "source": "c1",
+   "what": "The Leisurely \"Meztli\"...: GO adds it on the Surging Bite only; gcsim on the first bite of any stack count (cons.go:13-23)",
+   "reason": "its own toggle here, so it applies to the bite you set it on",
+   "receiver": "subject"
+  },
+  {
+   "source": "a0",
+   "what": "Night Realm's Gift: Crests and Troughs and The Trick Is to Keep Smiling!: Nightsoul points and exploration",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a1",
+   "what": "Heat-Resistant Freshwater Floater: Nightsoul points",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c2",
+   "what": "Mualani, Going All Out!: Wave Momentum stacks gained",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c4",
+   "what": "Sharky Eats Puffies: Energy",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c6",
+   "what": "Spirit of the Springs' People: Nightsoul consumption",
+   "reason": "no damage effect"
+  }
+ ],
+ "row_moves": [
+  {
+   "talent": "elemental_skill",
+   "labels": [
+    "Sharky's Bite Base DMG"
+   ],
+   "move": "normal",
+   "go": "pando:Mualani.ts:122-132,152-155"
+  }
+ ]
+}

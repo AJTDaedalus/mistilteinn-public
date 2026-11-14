@@ -539,6 +539,43 @@ A4 is gated at ascension 4 here, as the passive is; GO's sheet gates it at 1 (`p
 noted there). Mika's C6 CRIT DMG has its own GO toggle, folded here into Soulwind as the
 constellation's text gives it.
 
+**Eighth batch** (task 11, 2026-11-14; `feat/math-fallback-p2-sheets-batch8`;
+`test_formula_sheets_batch8.py`, `go_fixtures_batch8.py`).** The twelve the seventh batch said
+needed nothing new, then the newer kits as far as they go without reactions. **No format
+extension**: every effect is a shape an earlier batch built (rows, row moves, `per`, `max_raise`,
+`negate`, `when`-gated stack tables, self conversions from ATK, DEF and HP).
+
+| sheet | main effects | row scope / row moves | named, not applied |
+|---|---|---|---|
+| Amber | A1 burst CRIT Rate, A4 ATK after a weak-spot hit, C2 manual detonation skill DMG (a toggle: GO prices it on its own row), C6 party ATK | — | C1 second arrow |
+| Xinyan | A4 party Physical DMG while shielded, C2 burst Physical CRIT Rate, C4 Physical RES (published negative), C6 Charged Attack ATK from her own DEF (per candidate; gcsim leaves it unimplemented) | C2 on the burst's Skill DMG | C1 ATK SPD |
+| Yanfei | burst Charged Attack DMG (talent row), A1 Pyro DMG per Seal (maximum 3, 4 from C6 by `max_raise`; GO's 4 at any constellation), C2 Charged CRIT Rate (below half HP: off) | — | A4 extra hit |
+| Barbara | C2 Hydro DMG to the active character (a cited 15%) | — | healing; gcsim gives C2 to the others only |
+| Razor | C1 DMG, C2 CRIT Rate (below 30% HP: off), C4 DEF −15% (all cited constants) | — | every Hexerei part; C6 strike |
+| Kaeya | C1 Normal/Charged CRIT Rate against Cryo (cited 15%) | — | — |
+| Qiqi | C2 Normal/Charged DMG against Cryo (cited 15%; her C2 list carries the Hexerei ATK) | — | every Hexerei part |
+| Sayu | C2 kick DMG: flat on the pressed kick, per half-second held on the held and elemental kicks | the three kick rows | C6 Daruma DMG (ATK × EM, a product of two stats) |
+| Diona | C2 skill DMG, C6 EM to the active character above half HP (a toggle: below half HP GO's choice gives healing only) | — | every Hexerei part |
+| Collei | C4 EM to the others after her burst | — | Sprouts, C6 |
+| Yaoyao | C1 Dendro DMG to the active character | — | C4 EM from HP (reactions only) |
+| Gaming | A4 Cloudstrider DMG at 50% HP+, C2 ATK after overflowing healing (both situational, off), C6 Cloudstrider CRIT | A4/C6 on Charmed Cloudstrider; that row → plunge | — |
+| Fischl | C2 Summoning DMG + 200% ATK (per candidate) | Summoning DMG | every Hexerei part; Oz's strikes |
+| Mualani | Wave Momentum per stack and the Surging Bite's share of HP, C1 on the first bite, all flat damage from her Max HP; A4 burst flat damage by Nightsoul Burst count (three gated effects, situational); C4 burst DMG | the bite effects on Sharky's Bite Base DMG; that row → normal | — |
+| Flins | C2 Electro RES −25% under Ascendant Gleam (published positive, negated; Moonsign situational), C4 ATK | his Manifest Flame skill rows → normal / charged | every Lunar-Charged part (P3); A4/C4 EM from ATK |
+
+Fifteen fixtures, one per sheet on its main damage effect; all agree with GO exactly (relative
+≤ 5.2e-8, the f32 floor). **Constants no seeded list carries**, each cited to GO and gcsim:
+Barbara's C2, Razor's C1/C2/C4, Kaeya's C1, Qiqi's C2. **Mualani's bite** carries three flat
+damages from her Max HP on one row (per stack, at three stacks, and C1); the recipe sums
+uncapped conversions, and the fixture agrees. Her C1 is its own toggle: GO adds it on the
+Surging Bite row, gcsim on the first bite at any stack count.
+
+**Not written, with the reason.** Kaveh (bloom DMG and EM), Dori (healing and Energy), Yumemizuki
+Mizuki (swirl), Zibai, Sandrone, Ineffa and Ifa (Lunar/Stellar/swirl reaction DMG and EM): none has
+a non-reaction damage effect a sheet could be verified on, so a sheet would ship unverified on
+nothing (the Tartaglia rule). They wait for P3. Varesa, Illuga and Lauma do have one and were not
+reached.
+
 **Pinned, as `set_effects.json` is.** A constellation or passive list that differs from its pin,
 or a talent row whose label changed or which has no row at the effective level, **withholds
 that effect** and lists it as unmodelled with the reason. It is never read by a stale index.

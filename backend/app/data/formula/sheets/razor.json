@@ -1,0 +1,155 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Razor",
+ "nanoka_id": "10000020",
+ "slug": "razor",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Razor.ts",
+  "wr": "libs/gi/sheets/src/Characters/Razor/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/razor/",
+ "verified_by": [
+  "razor_c1_c2_c4_on_his_own_normal"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:Razor.ts:146-147",
+   "gcsim": "razor.go:24"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:Razor.ts:146,148",
+   "gcsim": "razor.go:25"
+  }
+ ],
+ "pins": {},
+ "conditions": [
+  {
+   "key": "c1_orb",
+   "label": "After picking up an Elemental Orb or Particle (C1)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Razor.ts:107-109,118-120"
+  },
+  {
+   "key": "c2_low",
+   "label": "Opponents below 30% HP (C2)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: it holds only against opponents below 30% HP"
+   },
+   "go": "pando:Razor.ts:107-109,121-123"
+  },
+  {
+   "key": "c4_press",
+   "label": "Opponents hit by his pressed skill (C4)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Razor.ts:107-109,124-126"
+  }
+ ],
+ "effects": [
+  {
+   "key": "c1_dmg",
+   "label": "C1 Wolf's Instinct: DMG after an Elemental Orb or Particle",
+   "source": "c1",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "constant": 0.1,
+    "cite": "GO pando:Razor.ts:80-83 `allDmgInc: 0.1`; gcsim razor/cons.go:19 `c1bonus[attributes.DmgP] = 0.1`; his seeded C1 list is empty"
+   },
+   "when": [
+    {
+     "condition": "c1_orb",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Razor.ts:80-83,118-120,153",
+   "gcsim": "cons.go:17-35"
+  },
+  {
+   "key": "c2_crit",
+   "label": "C2 Suppression: CRIT Rate against opponents below 30% HP",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "value": {
+    "constant": 0.1,
+    "cite": "GO pando:Razor.ts:84-87 `critRateInc: 0.1`; gcsim razor/cons.go:40 `c2bonus[attributes.CR] = 0.1`; his seeded C2 list is empty"
+   },
+   "when": [
+    {
+     "condition": "c2_low",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Razor.ts:84-87,121-123,154",
+   "gcsim": "cons.go:37-55"
+  },
+  {
+   "key": "c4_def",
+   "label": "C4 Bite: opponent DEF after his pressed skill",
+   "source": "c4",
+   "receivers": "enemy",
+   "stat": "def_reduction",
+   "value": {
+    "constant": 0.15,
+    "cite": "GO pando:Razor.ts:88-91 `defDec: 0.15`; gcsim razor/cons.go:86-88 `Value: -0.15`; his seeded C4 list is empty"
+   },
+   "when": [
+    {
+     "condition": "c4_press",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Razor.ts:88-91,124-126,156",
+   "gcsim": "cons.go:80-93"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "kit",
+   "what": "Witch's Eve Rite: Surge of Lightning: Soul Companion flat damage, the extra lightning and C6's CRIT Rate and CRIT DMG under Hexerei",
+   "reason": "the Hexerei party mechanic is not modelled (as for Sucrose and Mona)"
+  },
+  {
+   "source": "a1",
+   "what": "Awakening: skill cooldown",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a4",
+   "what": "Hunger: Energy Recharge at low Energy",
+   "reason": "no damage effect: none of his rows reads Energy Recharge"
+  },
+  {
+   "source": "talent",
+   "what": "Claw and Thunder and Lightning Fang: Energy Recharge, ATK SPD and Electro RES",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a0",
+   "what": "Wolvensprint: sprint stamina",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c6",
+   "what": "Lupus Fulguris: a lightning strike",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  }
+ ]
+}

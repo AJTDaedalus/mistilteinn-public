@@ -1,0 +1,264 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Amber",
+ "nanoka_id": "10000021",
+ "slug": "amber",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Amber.ts",
+  "wr": "libs/gi/sheets/src/Characters/Amber/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/amber/",
+ "verified_by": [
+  "amber_a1_a4_c6_on_her_own_burst"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:Amber.ts:88-89",
+   "gcsim": "amber.go:23"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:Amber.ts:88,90",
+   "gcsim": "amber.go:24"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "2": [
+    2.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    0.15,
+    0.15,
+    10.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    0.1,
+    0.3,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.15,
+    10.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "a4_weak",
+   "label": "An Aimed Shot hit a weak spot (A4)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Amber.ts:83,95-97"
+  },
+  {
+   "key": "c2_manual",
+   "label": "Baron Bunny detonated manually by an arrow (C2)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Amber.ts:139-149"
+  },
+  {
+   "key": "c6_rain",
+   "label": "During Fiery Rain (C6)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Amber.ts:83,98-103"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a1_crit",
+   "label": "A1 Every Arrow Finds Its Target: burst CRIT Rate",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "passive": 1,
+    "param": 0
+   },
+   "go": "pando:Amber.ts:56-58,92-94",
+   "gcsim": "asc.go:12-27"
+  },
+  {
+   "key": "a4_atk",
+   "label": "A4 Precise Shot: ATK after a weak-spot hit",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "passive": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "a4_weak",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Amber.ts:60-62,95-97",
+   "gcsim": "asc.go:32-59"
+  },
+  {
+   "key": "c2_skill",
+   "label": "C2 Bunny Triggered: a manually detonated Baron Bunny's DMG",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "skill"
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "c2_manual",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Amber.ts:67-69,139-149",
+   "gcsim": "cons.go:13-28"
+  },
+  {
+   "key": "c6_atk",
+   "label": "C6 Wildfire: party ATK during Fiery Rain",
+   "source": "c6",
+   "receivers": "team",
+   "stat": "atk_pct",
+   "value": {
+    "constellation": 6,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "c6_rain",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Amber.ts:70-74,101-103",
+   "gcsim": "burst.go:71-83"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "c2",
+   "what": "Bunny Triggered: GO prices the manual detonation on a separate skill row",
+   "reason": "the catalogue has one Explosion DMG row; the toggle carries it there",
+   "receiver": "subject"
+  },
+  {
+   "source": "a0",
+   "what": "Gliding Champion: gliding stamina",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a1",
+   "what": "Every Arrow Finds Its Target: Fiery Rain's area",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c1",
+   "what": "One Arrow to Rule Them All: a second arrow at a share of the shot",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c4",
+   "what": "It's Not Just Any Doll...: skill charges",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c6",
+   "what": "Wildfire: Movement SPD",
+   "reason": "no damage effect"
+  }
+ ]
+}

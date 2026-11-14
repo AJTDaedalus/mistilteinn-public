@@ -1,0 +1,105 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Collei",
+ "nanoka_id": "10000067",
+ "slug": "collei",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Collei.ts",
+  "wr": "libs/gi/sheets/src/Characters/Collei/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/collei/",
+ "verified_by": [
+  "collei_c4_on_nahida"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Collei.ts:91-92",
+   "gcsim": "collei.go:38"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Collei.ts:91,93",
+   "gcsim": "collei.go:37"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "4": [
+    60.0,
+    12.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "after_burst",
+   "label": "After her burst (C4)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Collei.ts:86,100-102"
+  }
+ ],
+ "effects": [
+  {
+   "key": "c4_em",
+   "label": "C4 Gift of the Woods: the others' EM after her burst",
+   "source": "c4",
+   "receivers": "others",
+   "stat": "elemental_mastery",
+   "value": {
+    "constellation": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "after_burst",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Collei.ts:71-74,100-102",
+   "gcsim": "cons.go:60-76"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "a1",
+   "what": "Floral Sidewinder: Sprout DMG",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "a4",
+   "what": "The Languid Wood: Cuilein-Anbar's duration",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c1",
+   "what": "Deepwood Patrol: Energy Recharge off the field",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c2",
+   "what": "Through Hill and Copse: Sprout",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c6",
+   "what": "Forest of Falling Arrows: a miniature Cuilein-Anbar",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  }
+ ]
+}
