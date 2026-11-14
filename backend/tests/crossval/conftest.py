@@ -52,6 +52,7 @@ REQUIRE_DB_ENV = "CROSSVAL_REQUIRE_DB"
 SEEDED: set[tuple[str, str]] = {
     ("character", "10000002"),      # Kamisato Ayaka — the damage-chain case
     ("character", "10000005-2"),    # Pyro Aether — the Traveler story-buff case
+    ("character", "10000022"),      # Venti — the swirl case (math-fallback P3)
     ("weapon", "11101"),            # Dull Blade, which both use for having no passive
 }
 

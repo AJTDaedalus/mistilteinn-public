@@ -435,6 +435,10 @@ export class OptimizePage implements OnInit {
   protected readonly build = computed(
     () => this.builds().find((b) => b.id === this.buildId()) ?? null,
   );
+  /** The build's element, lower case, for the formula panel's reaction choices (P3). */
+  protected readonly formulaElement = computed(
+    () => this.build()?.character?.element?.toLowerCase() ?? '',
+  );
   /** A saved run the user re-opened, rendered instead of re-running the search. */
   protected readonly savedRun = signal<OptimizationRunRead | null>(null);
   /** True when the re-opened run was measured against gear that has since changed. */

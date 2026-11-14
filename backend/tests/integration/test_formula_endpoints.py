@@ -53,13 +53,17 @@ async def test_set_effects_resolve_against_the_seeded_params(
     # The static 2-piece is the kernel's already; only the conditional 4-piece is here.
     assert [t["pieces"] for t in tiers] == [4]
     witch = tiers[0]
-    assert witch["status"] == "partial"
+    # Modelled since P3 (task 13): its Overloaded, Burning and Burgeon part was its last gap.
+    assert witch["status"] == "modelled"
     assert witch["set_name"] == "Crimson Witch of Flames"
     assert "CrimsonWitchOfFlames/index.tsx" in witch["citation"]
     stack = next(e for e in witch["bonus"]["effects"] if e["stat"] == "dmg_bonus")
     assert stack["value"] == pytest.approx(0.075)
     assert witch["bonus"]["conditions"][0]["default"] == 3
-    assert witch["bonus"]["unmodelled"][0]["reason"].startswith("transformative")
+    assert witch["bonus"]["unmodelled"] == []
+    reactions = next(e for e in witch["bonus"]["effects"] if e["stat"] == "reaction_bonus")
+    assert reactions["reactions"] == ["overloaded", "burning", "burgeon"]
+    assert reactions["value"] == pytest.approx(0.4)
 
 
 @pytest.mark.asyncio

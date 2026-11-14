@@ -60,8 +60,8 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from app.formula.builder import const, max_, min_, prod_, read_, sum_, tag_
 from app.formula.genshin import stats, tags
 from app.formula.genshin.formula_effects import (
-    AMPLIFYING_REACTIONS,
     MOVES,
+    REACTIONS,
     Bonus,
     Condition,
     ConditionKind,
@@ -667,8 +667,8 @@ class SheetEffect(_Strict):
             if move not in MOVES:
                 raise ValueError(f"{self.key}: {move!r} is not one of {MOVES}")
         for reaction in self.reactions or ():
-            if reaction not in AMPLIFYING_REACTIONS:
-                raise ValueError(f"{self.key}: {reaction!r} is not an amplifying reaction")
+            if reaction not in REACTIONS:
+                raise ValueError(f"{self.key}: {reaction!r} is not a reaction the estimate prices")
         if self.receivers == "enemy" and self.stat not in ENEMY_STATS:
             raise ValueError(f"{self.key}: an enemy debuff writes one of {ENEMY_STATS}")
         if self.stat in ENEMY_STATS and self.receivers != "enemy":

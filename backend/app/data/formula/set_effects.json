@@ -142,13 +142,13 @@
     {
       "set_id": 15002, "set": "Viridescent Venerer", "pieces": 4,
       "params": [0.6, 0.4, 10, 0.2, 0, 0, 0, 0],
-      "go": "ViridescentVenerer/index.tsx:21-40,48-50",
+      "go": "ViridescentVenerer/index.tsx:21-50",
       "conditions": [{"key": "swirled", "label": "Element swirled", "kind": "choice", "options": ["pyro", "hydro", "electro", "cryo"], "default": "", "default_reason": "situational"}],
-      "effects": [{"stat": "enemy_res", "value": {"param": 1, "negate": true}, "element_from": ["swirled"], "when": [{"condition": "swirled", "values": ["pyro", "hydro", "electro", "cryo"]}]}],
-      "unmodelled": [
-        {"what": "Swirl DMG +60%, Stellar Swirl DMG +20%", "reason": "transformative and Stellar reactions are not modelled (P3, G11)"},
-        {"what": "Cryo RES -40% after a Stellar Swirl", "reason": "Stellar reactions are not modelled (P3, G11)"}
-      ]
+      "effects": [
+        {"stat": "enemy_res", "value": {"param": 1, "negate": true}, "element_from": ["swirled"], "when": [{"condition": "swirled", "values": ["pyro", "hydro", "electro", "cryo"]}]},
+        {"stat": "reaction_bonus", "reactions": ["swirl"], "value": {"param": 0}}
+      ],
+      "unmodelled": [{"what": "Stellar Swirl DMG +20%, and Cryo RES -40% after a Stellar Swirl", "reason": "Stellar reactions are not modelled (P3: refused by name, `reactions.REFUSED`)"}]
     },
     {
       "set_id": 15003, "set": "Wanderer's Troupe", "pieces": 4,
@@ -165,24 +165,28 @@
     {
       "set_id": 15005, "set": "Thundering Fury", "pieces": 4,
       "params": [0.4, 0.8, 0.2, 0.2, 0, 0, 0, 0],
-      "go": "ThunderingFury/index.tsx:12-30",
+      "go": "ThunderingFury/index.tsx:11-31",
+      "effects": [
+        {"stat": "reaction_bonus", "reactions": ["overloaded", "electro_charged", "superconduct", "hyperbloom"], "value": {"param": 0}},
+        {"stat": "reaction_bonus", "reactions": ["aggravate"], "value": {"param": 2}},
+        {"stat": "reaction_bonus", "reactions": ["lunar_charged"], "value": {"param": 3}}
+      ],
       "unmodelled": [
-        {"what": "Overloaded, Electro-Charged, Superconduct and Hyperbloom DMG +40%; Lunar-Charged and Stellar-Conduct +20%", "reason": "transformative, Lunar and Stellar reactions are not modelled (P3, G11)"},
-        {"what": "Aggravate DMG bonus +20%", "reason": "additive reactions are not modelled (P3, G11)"},
+        {"what": "Stellar-Conduct DMG +20%", "reason": "Stellar reactions are not modelled (P3: refused by name, `reactions.REFUSED`)"},
         {"what": "Elemental Skill CD -1s on a reaction", "reason": "no rotation timing in the estimate"}
       ]
     },
     {
       "set_id": 15006, "set": "Crimson Witch of Flames", "pieces": 4,
       "params": [0.4, 0.15, 0.15, 0.5, 10, 0, 0, 0],
-      "go": "CrimsonWitchOfFlames/index.tsx:20-56",
+      "go": "CrimsonWitchOfFlames/index.tsx:20-58",
       "conditions": [{"key": "stacks", "label": "Elemental Skill stacks", "kind": "stacks", "max": {"constant": 3, "cite": "CrimsonWitchOfFlames/index.tsx:37 range(1, 3)"}, "default": 3, "default_reason": "self"}],
       "effects": [
+        {"stat": "reaction_bonus", "reactions": ["overloaded", "burning", "burgeon"], "value": {"param": 0}},
         {"stat": "reaction_bonus", "reactions": ["vaporize", "reverse_vaporize"], "value": {"param": 1}},
         {"stat": "reaction_bonus", "reactions": ["melt", "reverse_melt"], "value": {"param": 2}},
         {"stat": "dmg_bonus", "elements": ["pyro"], "per": "stacks", "value": {"param": 3, "times_tier_prop": {"pieces": 2, "prop": "FIGHT_PROP_FIRE_ADD_HURT"}}}
-      ],
-      "unmodelled": [{"what": "Overloaded, Burning and Burgeon DMG +40%", "reason": "transformative reactions are not modelled (P3, G11)"}]
+      ]
     },
     {
       "set_id": 15007, "set": "Noblesse Oblige", "pieces": 2,
@@ -241,7 +245,7 @@
       "go": "ArchaicPetra/index.tsx:24-40,46-49",
       "conditions": [{"key": "shard", "label": "Crystallize shard picked up", "kind": "choice", "options": ["pyro", "hydro", "electro", "cryo"], "default": "", "default_reason": "situational"}],
       "effects": [{"stat": "dmg_bonus", "value": {"param": 0}, "element_from": ["shard"], "when": [{"condition": "shard", "values": ["pyro", "hydro", "electro", "cryo"]}]}],
-      "unmodelled": [{"what": "The same bonus after a Lunar-Crystallize reaction", "reason": "Lunar reactions are not modelled (P3, G11); the shard choice covers the bonus itself"}]
+      "unmodelled": [{"what": "The same bonus after a Lunar-Crystallize reaction", "reason": "a second way to trigger the same bonus, which the shard choice already states"}]
     },
     {
       "set_id": 15015, "set": "Retracing Bolide", "pieces": 4,
@@ -354,8 +358,13 @@
     {
       "set_id": 15028, "set": "Flower of Paradise Lost", "pieces": 4,
       "params": [0.4, 0.4, 0.4, 10, 4, 0.25, 1, 0.1],
-      "go": "FlowerOfParadiseLost/index.tsx:24-87",
-      "unmodelled": [{"what": "Bloom, Hyperbloom, Burgeon and Lunar-Bloom DMG, with stacks", "reason": "transformative and Lunar reactions are not modelled (P3, G11)"}]
+      "go": "FlowerOfParadiseLost/index.tsx:22-104",
+      "conditions": [{"key": "stacks", "label": "Stacks from triggering Bloom, Hyperbloom or Burgeon", "kind": "stacks", "max": {"param": 4}, "default": 4, "default_reason": "self"}],
+      "effects": [
+        {"stat": "reaction_bonus", "reactions": ["bloom", "hyperbloom", "burgeon"], "value": {"param": 0}},
+        {"stat": "reaction_bonus", "reactions": ["bloom", "hyperbloom", "burgeon"], "per": "stacks", "value": {"param": 0, "times_param": 5}}
+      ],
+      "unmodelled": [{"what": "Lunar-Bloom DMG +10%, and its stacks", "reason": "Lunar-Bloom is refused by name (`reactions.REFUSED`)"}]
     },
     {
       "set_id": 15029, "set": "Nymph's Dream", "pieces": 4,
@@ -426,7 +435,7 @@
         {"stat": "dmg_bonus", "elements": ["geo"], "value": {"param": 1}, "when": [{"condition": "after_skill", "values": [1]}]},
         {"stat": "dmg_bonus", "elements": ["geo"], "value": {"param": 1, "times_param": 2}, "when": [{"condition": "after_skill", "values": [1]}, {"condition": "crystallize_shield", "values": [1]}]}
       ],
-      "unmodelled": [{"what": "The same increase near Lunar-Crystallize Moondrifts", "reason": "Lunar reactions are not modelled (P3, G11); the shield toggle states the increase"}]
+      "unmodelled": [{"what": "The same increase near Lunar-Crystallize Moondrifts", "reason": "a second way to trigger the same increase, which the shield toggle already states"}]
     },
     {
       "set_id": 15035, "set": "Fragment of Harmonic Whimsy", "pieces": 4,
@@ -505,30 +514,40 @@
     {
       "set_id": 15041, "set": "Night of the Sky's Unveiling", "pieces": 4,
       "params": [4, 0.15, 0.3, 0.1, 0, 0, 0, 0],
-      "go": "NightOfTheSkysUnveiling/index.tsx:26-49",
+      "go": "NightOfTheSkysUnveiling/index.tsx:26-62",
       "conditions": [{"key": "gleaming_moon", "label": "Gleaming Moon: Intent, at Moonsign", "kind": "choice", "options": ["nascent_gleam", "ascendant_gleam"], "default": "", "default_reason": "situational"}],
       "effects": [
         {"stat": "crit_rate", "value": {"param": 1}, "when": [{"condition": "gleaming_moon", "values": ["nascent_gleam"]}]},
-        {"stat": "crit_rate", "value": {"param": 2}, "when": [{"condition": "gleaming_moon", "values": ["ascendant_gleam"]}]}
+        {"stat": "crit_rate", "value": {"param": 2}, "when": [{"condition": "gleaming_moon", "values": ["ascendant_gleam"]}]},
+        {"stat": "reaction_bonus", "reactions": ["lunar_charged", "lunar_crystallize"], "value": {"param": 3}, "when": [{"condition": "gleaming_moon", "values": ["nascent_gleam", "ascendant_gleam"]}]}
       ],
-      "unmodelled": [{"what": "Lunar Reaction DMG +10% for the party", "reason": "Lunar reactions are not modelled (P3, G11)"}]
+      "unmodelled": [{"what": "Lunar-Bloom DMG +10%, and a second Gleaming Moon effect from a teammate's set", "reason": "Lunar-Bloom is refused by name (`reactions.REFUSED`); teammates' artifact sets are not modelled"}]
     },
     {
       "set_id": 15042, "set": "Silken Moon's Serenade", "pieces": 4,
       "params": [8, 60, 120, 0.1, 0, 0, 0, 0],
-      "go": "SilkenMoonsSerenade/index.tsx:30-56",
+      "go": "SilkenMoonsSerenade/index.tsx:30-60",
       "conditions": [{"key": "gleaming_moon", "label": "Gleaming Moon: Devotion, at Moonsign", "kind": "choice", "options": ["nascent_gleam", "ascendant_gleam"], "default": "", "default_reason": "situational"}],
       "effects": [
         {"stat": "elemental_mastery", "value": {"param": 1}, "when": [{"condition": "gleaming_moon", "values": ["nascent_gleam"]}]},
-        {"stat": "elemental_mastery", "value": {"param": 2}, "when": [{"condition": "gleaming_moon", "values": ["ascendant_gleam"]}]}
+        {"stat": "elemental_mastery", "value": {"param": 2}, "when": [{"condition": "gleaming_moon", "values": ["ascendant_gleam"]}]},
+        {"stat": "reaction_bonus", "reactions": ["lunar_charged", "lunar_crystallize"], "value": {"param": 3}, "when": [{"condition": "gleaming_moon", "values": ["nascent_gleam", "ascendant_gleam"]}]}
       ],
-      "unmodelled": [{"what": "Lunar Reaction DMG +10% for the party", "reason": "Lunar reactions are not modelled (P3, G11)"}]
+      "unmodelled": [{"what": "Lunar-Bloom DMG +10%, and a second Gleaming Moon effect from a teammate's set", "reason": "Lunar-Bloom is refused by name (`reactions.REFUSED`); teammates' artifact sets are not modelled"}]
     },
     {
       "set_id": 15043, "set": "Aubade of Morningstar and Moon", "pieces": 4,
       "params": [0.2, 0.4, 3, 0, 0, 0, 0, 0],
-      "go": "AubadeOfMorningstarAndMoon/index.tsx:25-45",
-      "unmodelled": [{"what": "Lunar Reaction DMG +20%, +40% more at Ascendant Gleam", "reason": "Lunar reactions are not modelled (P3, G11)"}]
+      "go": "AubadeOfMorningstarAndMoon/index.tsx:25-46",
+      "conditions": [
+        {"key": "off_field", "label": "The wearer off-field when the reaction lands", "kind": "toggle", "default": 0, "default_reason": "situational"},
+        {"key": "moonsign", "label": "Party Moonsign", "kind": "choice", "options": ["nascent_gleam", "ascendant_gleam"], "default": "", "default_reason": "situational"}
+      ],
+      "effects": [
+        {"stat": "reaction_bonus", "reactions": ["lunar_charged", "lunar_crystallize"], "value": {"param": 0}, "when": [{"condition": "off_field", "values": [1]}]},
+        {"stat": "reaction_bonus", "reactions": ["lunar_charged", "lunar_crystallize"], "value": {"param": 1}, "when": [{"condition": "off_field", "values": [1]}, {"condition": "moonsign", "values": ["ascendant_gleam"]}]}
+      ],
+      "unmodelled": [{"what": "Lunar-Bloom DMG, both parts", "reason": "Lunar-Bloom is refused by name (`reactions.REFUSED`)"}]
     },
     {
       "set_id": 15044, "set": "A Day Carved From Rising Winds", "pieces": 4,
@@ -560,10 +579,13 @@
     {
       "set_id": 15046, "set": "Disenchantment in Deep Shadow", "pieces": 4,
       "params": [0.8, 0.16, 0.4, 0, 0, 0, 0, 0],
-      "go": "DisenchantmentInDeepShadow/index.tsx:12-44",
+      "go": "DisenchantmentInDeepShadow/index.tsx:14-45",
       "conditions": [{"key": "enemy_superconduct", "label": "Enemy affected by Superconduct or Stellar-Conduct", "kind": "toggle", "default": 0, "default_reason": "situational"}],
-      "effects": [{"stat": "crit_rate", "value": {"param": 1}, "when": [{"condition": "enemy_superconduct", "values": [1]}]}],
-      "unmodelled": [{"what": "Superconduct DMG +80%, Stellar-Conduct DMG +40%", "reason": "transformative and Stellar reactions are not modelled (P3, G11)"}]
+      "effects": [
+        {"stat": "reaction_bonus", "reactions": ["superconduct"], "value": {"param": 0}},
+        {"stat": "crit_rate", "value": {"param": 1}, "when": [{"condition": "enemy_superconduct", "values": [1]}]}
+      ],
+      "unmodelled": [{"what": "Stellar-Conduct DMG +40%", "reason": "Stellar reactions are not modelled (P3: refused by name, `reactions.REFUSED`)"}]
     },
     {
       "set_id": 15047, "set": "Scarlet Proof", "pieces": 4,
@@ -571,7 +593,7 @@
       "go": "ScarletProof/index.tsx:14-31",
       "conditions": [{"key": "after_stellar_swirl", "label": "After triggering a Stellar Swirl", "kind": "toggle", "default": 0, "default_reason": "situational"}],
       "effects": [{"stat": "crit_rate", "value": {"param": 0}, "when": [{"condition": "after_stellar_swirl", "values": [1]}]}],
-      "unmodelled": [{"what": "Stellar Swirl DMG +40%", "reason": "Stellar reactions are not modelled (P3, G11)"}]
+      "unmodelled": [{"what": "Stellar Swirl DMG +40%", "reason": "Stellar reactions are not modelled (P3: refused by name, `reactions.REFUSED`)"}]
     },
     {
       "set_id": 15048, "set": "Heart of the Furnace", "pieces": 4,
@@ -579,7 +601,7 @@
       "go": "HeartOfTheFurnace/index.tsx:27-63",
       "conditions": [{"key": "after_stellar_glimmer", "label": "After a Stellar Glimmer reaction", "kind": "toggle", "default": 0, "default_reason": "situational"}],
       "effects": [{"stat": "atk_pct", "value": {"param": 0}, "when": [{"condition": "after_stellar_glimmer", "values": [1]}]}],
-      "unmodelled": [{"what": "Stellar Glimmer DMG +50% for the party", "reason": "Stellar reactions are not modelled (P3, G11)"}]
+      "unmodelled": [{"what": "Stellar Glimmer DMG +50% for the party", "reason": "Stellar reactions are not modelled (P3: refused by name, `reactions.REFUSED`)"}]
     }
   ]
 }

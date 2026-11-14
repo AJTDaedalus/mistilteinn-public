@@ -91,6 +91,13 @@
   }
 }
 
+/* "Add ability" and "Add reaction" side by side, apart (P3: two buttons where there was one). */
+.formula__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
 .formula__override {
   display: flex;
   flex-wrap: wrap;

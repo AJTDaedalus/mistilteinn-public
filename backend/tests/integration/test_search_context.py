@@ -145,8 +145,11 @@ async def test_the_context_carries_what_the_kernel_needs(
 
     assert set(context) == {
         "base", "hit", "target", "character_level", "dmg_bonus_quantity", "set_bonuses",
+        "reaction_level_multiplier",
     }
     assert context["character_level"] == 90
+    # The game's level-90 reaction base (P3), which the browser's reaction terms read.
+    assert context["reaction_level_multiplier"] == pytest.approx(1446.853515625)
     assert context["dmg_bonus_quantity"] == "cryo_dmg_bonus"
 
 

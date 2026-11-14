@@ -1616,3 +1616,44 @@ Eight GO fixtures, all exact (relative ≤ 3.7e-8, the f32 floor): Tartaglia on 
 his own Normal Attack, Skirk on Furina's skill, Lohen C3 in High Spirits (10 + 3 + 1), Nilou and
 Sigewinne each below and past their caps. `formula:verify` now also refuses a fixture that passes
 with its raised rows unread.
+
+## 43. P3 starts with reactions: what was built, and the choices made on the way (2026-11-14)
+
+**Owner, 2026-11-14: "Start P3: reactions."** Built on `feat/formula-reactions` (DESIGN §2.7,
+TASKS 13). Weapon passives (task 12) and ER from particles (task 14) wait.
+
+**Choices made, each reversible, recorded for the owner:**
+
+1. **The level table comes from the game data**, `ElementCoeffExcelConfigData.
+   playerElementLevelCo`, committed to the YuanShenResources snapshot, not from gcsim's generated
+   Go or GO's array. Both of those are generated from the same column; a test holds all three to
+   agree (4.6e-8). The server sends the value at the build's level, so the browser has no copy.
+2. **gcsim's DEF rule for reactions, over GO's.** gcsim ignores DEF on every transformative and
+   Lunar instance (`IgnoreDefPercent: 1`); GO's `enemy.transDef` is about 1 − 1e-5. The chain
+   follows gcsim, as §38 has it for constants; each GO fixture records the 1e-5.
+3. **A reaction row is triggered by the optimized character.** Their EM, level and (Lunar) CRIT
+   apply. A teammate's reactions add the same constant to every candidate, so they change no
+   ranking; they are not rows, as a teammate's hits are not.
+4. **Lunar reactions price one contribution, as GO does.** gcsim ranks every contributor and
+   weights them 0.6/0.3/0.05/0.05 (`lunarcharged.go:22`); GO prices the character's whole
+   contribution. Default weight 1 (GO, the comparator); the recipe accepts a stated weight, which
+   the panel does not offer yet. *Owner question: offer the weight, or default to gcsim's 0.6
+   for a solo Lunar trigger?*
+5. **Refused by name, not approximated:** Lunar-Bloom (no reaction-triggered instance in either
+   oracle at its pin), Stellar-Conduct (a kit's direct hit on Polestar stacks), Stellar Swirl
+   (outside the P3 list as given). Each is in `reactions.REFUSED` with its reason, and every set
+   or kit part that reads one stays named.
+6. **Mona's C1 swirl bonus follows GO** (every swirl), where gcsim and her text limit it to a Hydro
+   swirl (`mona/cons.go:71-80`); the effect's label says so. The Klee C2 / Bennett precedent
+   (§38: GO is the comparator). *Owner question: scope it to Hydro?*
+7. **Crittable reactions crit only from reaction-specific stats** (Nahida C2), never the
+   character's CRIT, in both oracles; a CRIT on overloaded, electro-charged, superconduct or
+   shattered is refused by the vocabulary.
+8. **A transformative reaction takes no DMG%**: a kit's DMG% beside a reaction row is computed
+   and ignored. A GO fixture plants it (Kazuha's A4 beside his swirls) and `formula:verify`
+   requires the figure not to move.
+
+**Not done here, named in DESIGN §2.7:** kits' direct Lunar/Stellar hits and Lunar base-damage
+bonuses from a giver's stat (a target-row kind of their own), Nilou's Bountiful Cores (her sheet
+is on a concurrent branch), swirl's amplified and aggravated variants, the remaining
+reaction-led sheets (Kaveh, Dori, Mizuki, Zibai, Sandrone, Ineffa, Ifa).

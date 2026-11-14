@@ -220,6 +220,7 @@
 
     @if (objective() === 'formula' && buildId()) {
       <formula-panel
+        [element]="formulaElement()"
         [hits]="hits()"
         [refusedHits]="refusedHits()"
         [groups]="formulaGroups()"

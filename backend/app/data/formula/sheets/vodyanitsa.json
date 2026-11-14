@@ -387,7 +387,7 @@
   {
    "source": "a4",
    "what": "Dirge of the Fandyr: Chorus (off-field members) and the Stellar Swirl part",
-   "reason": "Chorus reaches party members off the field, and the optimized character is on it for every hit; Stellar Swirl is P3 (TASKS task 13)"
+   "reason": "Chorus reaches party members off the field, and the optimized character is on it for every hit; Stellar Swirl is refused by name (`reactions.REFUSED`)"
   },
   {
    "source": "talent",
@@ -402,7 +402,7 @@
   {
    "source": "c2",
    "what": "Two Voices in Black and White (vortex): Stellar Swirl CRIT DMG",
-   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+   "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
   },
   {
    "source": "c4",
@@ -412,7 +412,7 @@
   {
    "source": "c6",
    "what": "Neverending Song of Revelry: Stellar Swirl DMG",
-   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+   "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
   }
  ]
 }

@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 
 import { injectApi } from '../../api/api.client';
 import type { components } from '../../api/api.types';
-import type { Amplifying, ScalingStat } from '../../sim/damage';
+import type { Additive, Amplifying, ScalingStat } from '../../sim/damage';
 import {
   conditionGroups,
   formulaCalibration,
@@ -11,7 +11,9 @@ import {
 } from '../../sim/formula-calibration';
 import {
   hitMove,
+  reactionLabel,
   type ConditionState,
+  type FormulaReaction,
   type ConditionValue,
   type FormulaKit,
   type FormulaRaisedTalent,
@@ -37,6 +39,14 @@ export interface TargetRow {
   move: FormulaMove | null;
   /** This row's overrides of the team-level conditionals (GO "frames"). */
   overrides: Record<string, ConditionValue>;
+  /**
+   * A reaction row (math-fallback P3): `count` instances triggered by the optimized character.
+   * `hit` still names one of their abilities, only so the estimate can fetch the build's
+   * context (base stats, level, target); the ability itself is not scored.
+   */
+  reaction?: FormulaReaction | null;
+  /** Spread or aggravate on this ability's every hit (P3). */
+  additive?: Additive | null;
 }
 
 /** Everything a formula estimate needs to know about who is being estimated, and where. */
@@ -88,10 +98,25 @@ export function kernelContext(context: SearchContext): KernelContext {
     },
     characterLevel: context.character_level,
     dmgBonusQuantity: context.dmg_bonus_quantity,
+    reactionLevelMultiplier: context.reaction_level_multiplier,
   };
 }
 
 let nextRow = 0;
+
+/** A fresh reaction row (P3): one instance of `reaction`, a starting assumption to edit. */
+export function reactionRowFor(hit: AvailableHit, reaction: FormulaReaction): TargetRow {
+  nextRow += 1;
+  return {
+    id: `row-${nextRow}`,
+    hit: { talent: hit.talent, label: hit.label, index: hit.index },
+    label: reactionLabel(reaction),
+    count: 1,
+    move: null,
+    overrides: {},
+    reaction,
+  };
+}
 
 /** A fresh row for a hit: its move (the sheet's, else the label's guess) and a count of one. */
 export function rowFor(hit: AvailableHit): TargetRow {
@@ -143,6 +168,11 @@ export class FormulaEstimateService {
 
   addRow(hit: AvailableHit): void {
     this.rows.update((rows) => [...rows, rowFor(hit)]);
+  }
+
+  /** Add a reaction row (P3); `hit` only fetches the build's context. */
+  addReactionRow(hit: AvailableHit, reaction: FormulaReaction): void {
+    this.rows.update((rows) => [...rows, reactionRowFor(hit, reaction)]);
   }
 
   removeRow(id: string): void {
@@ -267,10 +297,12 @@ export class FormulaEstimateService {
       id: row.id,
       label: row.label,
       move: row.move,
-      hit: { talent: row.hit.talent, label: row.hit.label, index: row.hit.index },
+      hit: row.reaction ? null : { talent: row.hit.talent, label: row.hit.label, index: row.hit.index },
       count: row.count,
       context: kernelContext(contexts[i]),
       conditionals: row.overrides,
+      reaction: row.reaction ?? null,
+      additive: row.reaction ? null : row.additive ?? null,
     }));
     const character = request.build.character;
     const lower = (e: string | null | undefined) => (e ? e.toLowerCase() : null);

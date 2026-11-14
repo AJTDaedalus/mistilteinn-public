@@ -31,7 +31,7 @@
  */
 
 /** Which stat an ability scales off. gcsim states this; it is not inferred. */
-import type { Amplifying } from './damage';
+import type { Additive, Amplifying, Lunar, Transformative } from './damage';
 import type { EnergyCost } from './energy-delay';
 import type { EnergyObservation } from './recipe-energy';
 
@@ -275,7 +275,46 @@ export interface RecipeHit {
   bonusFromEm?: number;
   /** Capped self-conversions into DMG% or CRIT Rate (`StatConversion`), each priced alone. */
   statConversions?: StatConversion[];
+  // ── Reaction terms (math-fallback P3, task 13) ─────────────────────────────────────────
+  //
+  // Formula-only, like the fields above. A reaction instance is a hit of its own whose damage
+  // is `damage.ts`'s reaction function, not `talent × scaling`; an additive reaction is flat
+  // damage on a talent hit. Both read the candidate's EM, and a Lunar one its CRIT too.
+  /** A transformative or Lunar reaction instance: `evaluateHit` prices it alone. */
+  reaction?: ReactionTerm;
+  /** Spread or aggravate on this talent hit: `count × additiveFlat(...)` added to the base. */
+  additive?: { reaction: Additive; levelBase: number; reactionBonus: number; count: number };
 }
+
+/**
+ * A reaction instance a formula recipe scores (`damage.ts:transformativeDamage`/
+ * `lunarDamage`), triggered by the optimized character: their EM (calibrated plus the
+ * candidate's) and level apply.
+ */
+export type ReactionTerm =
+  | {
+    kind: 'transformative';
+    reaction: Transformative;
+    /** `/search-context`'s `reaction_level_multiplier` at the trigger's level. */
+    levelBase: number;
+    reactionBonus: number;
+    /** The reaction's own CRIT (GO `<reaction>_critRate_`), 0 where it cannot crit. */
+    critRate: number;
+    critDmg: number;
+    /** How many instances; damage is linear in it. */
+    count: number;
+  }
+  | {
+    kind: 'lunar';
+    reaction: Lunar;
+    levelBase: number;
+    reactionBonus: number;
+    /** GO `<reaction>_baseDmg_`, gcsim `BaseDmgBonus`. */
+    baseDmgBonus: number;
+    /** The contributor weight (1: GO's whole contribution; gcsim ranks 0.6/0.3/0.05/0.05). */
+    weight: number;
+    count: number;
+  };
 
 /** The moves a set bonus can be scoped to. `formula_effects.MOVES` on the server. */
 export type FormulaMove = 'normal' | 'charged' | 'plunge' | 'skill' | 'burst';

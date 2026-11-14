@@ -1,0 +1,12 @@
+options iteration=1 duration=5 swap_delay=1 debug=true;
+
+ayaka char lvl=90/90 cons=0 talent=1,1,1;
+ayaka add weapon="dullblade" lvl=70/70 refine=1;
+lisa char lvl=90/90 cons=0 talent=1,1,1;
+lisa add weapon="apprenticesnotes" lvl=70/70 refine=1;
+
+target lvl=90 resist=0.1 pos=0,1;
+
+active lisa;
+lisa attack;
+ayaka skill;

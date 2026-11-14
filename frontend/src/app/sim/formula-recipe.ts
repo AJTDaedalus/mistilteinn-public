@@ -46,16 +46,24 @@
  */
 
 import {
+  ADDITIVE,
+  type Additive,
   type Amplifying,
   amplifyingMultiplier,
   defMultiplier,
+  LUNAR,
+  type Lunar,
   resMultiplier,
   type ScalingStat,
+  TRANSFORMATIVE,
+  type Transformative,
+  transformativeElement,
 } from './damage';
 import {
   cappedAmount,
   type ConversionSource, type ConvertedTerm, type FormulaMove, type FormulaProvenance,
-  type Recipe, type RecipeHit, type RecipeScaling, type StatConversion,
+  type ReactionTerm, type Recipe, type RecipeHit, type RecipeScaling,
+  type StatConversion,
 } from './recipe';
 import { evaluateHit, NO_STATS } from './recipe-eval';
 import {
@@ -239,6 +247,27 @@ export interface FormulaRow {
   context: SearchContext;
   /** This row's overrides of the team-level conditionals (GO "frames"). */
   conditionals?: ConditionState;
+  /**
+   * A **reaction row** (math-fallback P3): `count` instances of a transformative or Lunar
+   * reaction triggered by the optimized character, whose EM and level apply. The row's `hit`,
+   * `move` and the context's talent hit are not read; its `base`, `target`, `characterLevel`
+   * and `reactionLevelMultiplier` are.
+   */
+  reaction?: FormulaReaction | null;
+  /** Spread or aggravate on this talent row's every hit: flat damage before its DMG bonus. */
+  additive?: Additive | null;
+}
+
+/** What a reaction row prices (`reactionRowHits`). */
+export interface FormulaReaction {
+  reaction: Transformative | Lunar;
+  /** A swirl's element; required for a swirl, refused for anything else. */
+  swirled?: string | null;
+  /**
+   * A Lunar contribution's weight: 1 is GO's whole contribution (the default); gcsim ranks
+   * every contributor and weights them 0.6/0.3/0.05/0.05 (`lunarcharged.go:22`).
+   */
+  weight?: number;
 }
 
 export interface FormulaTeam {
@@ -403,6 +432,11 @@ interface Buffs {
   baseAtk: number;
   /** Added to the talent term's base-damage multiplier (GO `baseMulti`). */
   baseDmgBonus: number;
+  /** A reaction's own CRIT (GO `<reaction>_critRate_`/`_critDMG_`): Nahida's C2 on bloom. */
+  reactionCritRate: number;
+  reactionCritDmg: number;
+  /** A Lunar reaction's base DMG bonus (GO `<reaction>_baseDmg_`). */
+  lunarBaseDmgBonus: number;
 }
 
 /** A capped self-conversion's threshold and cap (`recipe.ts:cappedAmount`); absent is none. */
@@ -418,6 +452,7 @@ function noBuffs(): Buffs {
     flatLimits: {}, erConversion: null,
     flatAtk: 0, bonusFromEm: 0, flatDef: 0, defReduction: 0, defIgnore: 0,
     atkFrom: null, statConversions: [], baseAtk: 0, baseDmgBonus: 0,
+    reactionCritRate: 0, reactionCritDmg: 0, lunarBaseDmgBonus: 0,
   };
 }
 
@@ -473,6 +508,16 @@ interface HitScope {
   amplifying: Amplifying | null;
   /** The talent row, for a row-scoped kit buff; `null` when the row did not say. */
   hit: { talent: string; label: string } | null;
+  /**
+   * The reaction a `reactions`-scoped effect must name: the amplifying one, the additive one,
+   * or a reaction row's own (P3). Absent is the amplifying reaction alone, as before P3.
+   */
+  reaction?: string | null;
+  /**
+   * A reaction row (P3): it is not a move or a talent row, so a move- or row-scoped effect
+   * simply does not reach it — rather than being reported as unapplied for an unknown move.
+   */
+  reactionRow?: boolean;
 }
 
 /**
@@ -505,6 +550,7 @@ export function applySources(
       if (!effect.when.every((w) => w.values.some((v) => v === state(w.condition)))) continue;
       const elements = elementsOf(effect, team, state);
       if (elements !== null && !elements.has(scope.element)) continue;
+      if (scope.reactionRow && (effect.moves || effect.rows)) continue;
       if (effect.moves) {
         if (scope.move === null) {
           skipped.push(`${source.label}: ${effect.stat} for ${effect.moves.join('/')} not `
@@ -522,9 +568,8 @@ export function applySources(
         const { talent, label } = scope.hit;
         if (!effect.rows.some((r) => r.talent === talent && r.label === label)) continue;
       }
-      if (effect.reactions && !(scope.amplifying && effect.reactions.includes(scope.amplifying))) {
-        continue;
-      }
+      const reaction = scope.reaction === undefined ? scope.amplifying : scope.reaction;
+      if (effect.reactions && !(reaction && effect.reactions.includes(reaction))) continue;
 
       let amount = effect.value;
       if (effect.per) {
@@ -586,6 +631,9 @@ export function applySources(
         case 'flat_atk_from_hp': addAtkFrom(buffs, 'hp', amount, limits, source.id); break;
         case 'base_atk': buffs.baseAtk += amount; break;
         case 'base_dmg_bonus': buffs.baseDmgBonus += amount; break;
+        case 'reaction_crit_rate': buffs.reactionCritRate += amount; break;
+        case 'reaction_crit_dmg': buffs.reactionCritDmg += amount; break;
+        case 'lunar_base_dmg_bonus': buffs.lunarBaseDmgBonus += amount; break;
         case 'dmg_bonus_from_energy_recharge':
           if (buffs.erConversion) throw new Error('two Energy Recharge conversions on one hit');
           buffs.erConversion = { perUnit: amount, cap: effect.cap ?? 0 };
@@ -616,11 +664,15 @@ export function rowHits(
   teamState: ConditionState,
 ): { hits: RecipeHit[]; skipped: string[] } {
   if (!(row.count > 0)) throw new Error(`row ${row.id}: a count must be positive`);
+  if (row.reaction) return reactionRowHits(row, row.reaction, sources, team, teamState);
   const { base, hit, target, characterLevel, dmgBonusQuantity } = row.context;
   const element = elementOfQuantity(dmgBonusQuantity);
+  const additive = additiveOf(row, element, hit.amplifying);
   const { buffs, skipped } = applySources(
-    sources, { element, move: row.move, amplifying: hit.amplifying, hit: row.hit ?? null }, team,
-    row.conditionals ?? {}, teamState,
+    sources, {
+      element, move: row.move, amplifying: hit.amplifying, hit: row.hit ?? null,
+      reaction: hit.amplifying ?? additive?.reaction ?? null,
+    }, team, row.conditionals ?? {}, teamState,
   );
   const flatSources = (Object.keys(buffs.flatFrom) as ConversionSource[])
     .filter((from) => buffs.flatFrom[from] !== 0);
@@ -725,6 +777,8 @@ export function rowHits(
       gcsimAverageDamage: 0,
     };
     if (hit.amplifying !== null) out.amplifying = { reaction: hit.amplifying, reactionBonus };
+    // The additive flat rides on the first term, as the hit's own flat damage does.
+    if (additive && i === 0) out.additive = { ...additive, reactionBonus, count: row.count };
     if (row.move !== null) out.move = row.move;
     if (buffs.bonusFromEm !== 0) out.bonusFromEm = buffs.bonusFromEm;
     if (buffs.statConversions.length > 0) {
@@ -742,6 +796,160 @@ export function rowHits(
     return out;
   });
   return { hits, skipped };
+}
+
+// ── Reactions (math-fallback P3, task 13) ─────────────────────────────────────────────────
+//
+// Kept apart from `rowHits` on purpose: a reaction row shares nothing with a talent row but its
+// context, and the additive term is one optional field on a talent row's hit.
+
+/** The level multiplier a reaction row or an additive hit needs, or a refusal naming it. */
+function levelBaseOf(row: FormulaRow): number {
+  const value = row.context.reactionLevelMultiplier;
+  if (value === undefined || !(value > 0)) {
+    throw new Error(`row ${row.id}: no reaction level multiplier for the trigger's level`);
+  }
+  return value;
+}
+
+/** A talent row's additive reaction, checked against the hit's element. */
+function additiveOf(
+  row: FormulaRow, element: string, amplifying: Amplifying | null,
+): { reaction: Additive; levelBase: number } | null {
+  if (!row.additive) return null;
+  const wanted = ADDITIVE[row.additive].element;
+  if (element !== wanted) {
+    throw new Error(`row ${row.id}: ${row.additive} is triggered by a ${wanted} hit, not ${element}`);
+  }
+  if (amplifying !== null) {
+    throw new Error(`row ${row.id}: a hit amplifies or catalyzes, not both`);
+  }
+  return { reaction: row.additive, levelBase: levelBaseOf(row) };
+}
+
+const isTransformative = (r: string): r is Transformative => r in TRANSFORMATIVE;
+const isLunar = (r: string): r is Lunar => r in LUNAR;
+
+/** The display name of a reaction row, `swirl` with its element. */
+export function reactionLabel(reaction: FormulaReaction): string {
+  const name = reaction.reaction.replace(/_/g, ' ');
+  return reaction.swirled ? `${name} (${reaction.swirled})` : name;
+}
+
+/**
+ * One reaction row's recipe entry: `count` instances triggered by the optimized character.
+ *
+ * What reaches it is what reaches reaction damage in GO and gcsim and nothing else: EM, a bonus
+ * naming this reaction, a RES shred on its element, the reaction's own CRIT (transformative,
+ * only where it can crit) or the character's CRIT and a base DMG bonus (Lunar). A DMG%, an ATK%
+ * or a move-scoped buff is computed and ignored — reaction damage takes none of them
+ * (`reactions.py`).
+ */
+export function reactionRowHits(
+  row: FormulaRow,
+  reaction: FormulaReaction,
+  sources: readonly FormulaSource[],
+  team: FormulaTeam,
+  teamState: ConditionState,
+): { hits: RecipeHit[]; skipped: string[] } {
+  const { base, target } = row.context;
+  const name = reaction.reaction;
+  let element: string;
+  if (isTransformative(name)) {
+    element = transformativeElement(name, reaction.swirled);
+  } else if (isLunar(name)) {
+    if (reaction.swirled) throw new Error(`row ${row.id}: only a swirl takes an element`);
+    element = LUNAR[name].element;
+  } else {
+    throw new Error(`row ${row.id}: ${String(name)} is not a reaction the estimate prices`);
+  }
+  const levelBase = levelBaseOf(row);
+  const { buffs, skipped } = applySources(
+    sources, {
+      element, move: null, amplifying: null, hit: null, reaction: name, reactionRow: true,
+    }, team, row.conditionals ?? {}, teamState,
+  );
+  const b = (q: string): number => base[q] ?? 0;
+  const calibratedEm = b('elemental_mastery') + buffs.em;
+  let term: ReactionTerm;
+  if (isTransformative(name)) {
+    if (!TRANSFORMATIVE[name].crittable && (buffs.reactionCritRate || buffs.reactionCritDmg)) {
+      throw new Error(`row ${row.id}: ${name} cannot crit, and a source gave it a CRIT`);
+    }
+    term = {
+      kind: 'transformative', reaction: name, levelBase, reactionBonus: buffs.reactionBonus,
+      critRate: buffs.reactionCritRate, critDmg: buffs.reactionCritDmg, count: row.count,
+    };
+  } else {
+    const weight = reaction.weight ?? 1;
+    if (!(weight > 0 && weight <= 1)) throw new Error(`row ${row.id}: a weight is in (0, 1]`);
+    term = {
+      kind: 'lunar', reaction: name as Lunar, levelBase, reactionBonus: buffs.reactionBonus,
+      baseDmgBonus: buffs.lunarBaseDmgBonus, weight, count: row.count,
+    };
+  }
+  const zero = { atk: 0, hp: 0, def: 0 };
+  const out: RecipeHit = {
+    abil: row.label,
+    mine: true,
+    owner: 0,
+    attackTag: -1,
+    element,
+    talent: 0,
+    scaling: 'em',
+    flatDamage: 0,
+    conversions: {},
+    constantTerms: [],
+    calibratedScaling: calibratedEm,
+    calibratedBase: zero,
+    calibratedPercent: zero,
+    calibratedFlat: zero,
+    calibratedEm,
+    bonusDmg: 0,
+    // The character's CRIT, read only by a Lunar reaction (a transformative one crits with its
+    // own, in the term).
+    critRate: b('crit_rate') + buffs.critRate,
+    critDmg: b('crit_dmg') + buffs.critDmg,
+    // DEF is ignored by every reaction here (gcsim `IgnoreDefPercent: 1`).
+    defMultiplier: 1,
+    resMultiplier: resMultiplier(target.resistance + buffs.resistance),
+    ampMultiplier: 1,
+    gcsimAverageDamage: 0,
+    reaction: term,
+  };
+  out.gcsimAverageDamage = evaluateHit(out, NO_STATS);
+  return { hits: [out], skipped };
+}
+
+/**
+ * The assumption sentences a target's reactions add: what each row counts, who triggers it,
+ * and the recorded divergences from GO and gcsim (`reactions.py`).
+ */
+export function reactionAssumptions(rows: readonly FormulaRow[], subject: string): string[] {
+  const reactionRows = rows.filter((r) => r.reaction);
+  const additiveRows = rows.filter((r) => r.additive);
+  if (!reactionRows.length && !additiveRows.length) {
+    return ['No reaction rows: transformative, additive and Lunar reaction damage is not counted '
+      + '(add a reaction row, or spread/aggravate on an ability).'];
+  }
+  const who = subject || 'the optimized character';
+  const out: string[] = [];
+  for (const row of reactionRows) {
+    out.push(`${row.count}× ${reactionLabel(row.reaction!)} triggered by ${who}: the count is your `
+      + `assumption (no gauge or ICD is simulated); ${who}'s EM and level apply.`);
+  }
+  for (const row of additiveRows) {
+    out.push(`${row.label}: every hit counted as ${row.additive} (${row.count}×), triggered by ${who}.`);
+  }
+  if (reactionRows.some((r) => isTransformative(r.reaction!.reaction))) {
+    out.push('Transformative reactions ignore DEF, as gcsim does; Genshin Optimizer\'s DEF term '
+      + 'for them is about 1 - 1e-5, a recorded divergence.');
+  }
+  if (reactionRows.some((r) => isLunar(r.reaction!.reaction))) {
+    out.push(`Lunar reactions: ${who}'s own contribution, as Genshin Optimizer prices it; gcsim `
+      + 'ranks every contributor and weights them 0.6/0.3/0.05/0.05.');
+  }
+  return out;
 }
 
 /**
@@ -894,7 +1102,7 @@ export function synthesizeRecipe(
     'Formula estimate: no simulation. Not calibrated by gcsim.',
     ...kitAssumptions(kits),
     'No weapon passives modelled.',
-    'Transformative, additive and Lunar reactions are not modelled.',
+    ...reactionAssumptions(rows, characters[0] ?? ''),
   ]);
   for (const row of rows) {
     const lifted = raiseRow(row, sources, teamState, raised);

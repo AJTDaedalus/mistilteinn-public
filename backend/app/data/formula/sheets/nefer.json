@@ -248,7 +248,7 @@
   {
    "source": "kit",
    "what": "Moonsign Benediction: Lunar-Bloom base DMG from Nefer's EM",
-   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+   "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
   },
   {
    "source": "kit",
@@ -258,17 +258,17 @@
   {
    "source": "kit",
    "what": "Phantasm Performance (Shades) Lunar-Bloom hits",
-   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+   "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
   },
   {
    "source": "c1",
    "what": "Planning Breeds Success: Lunar-Bloom additional MV",
-   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+   "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
   },
   {
    "source": "c6",
    "what": "Victory Flows from the Turning of Tides: Lunar-Bloom DMG and a changed Phantasm hit",
-   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13); the changed hit is a damage instance, not a buff: not offered as a target row yet"
+   "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`); the changed hit is a damage instance, not a buff: not offered as a target row yet"
   }
  ]
 }

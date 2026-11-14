@@ -242,7 +242,7 @@
   {
    "source": "kit",
    "what": "Stellar Jubilee: Stellar Swirl base DMG from ATK",
-   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+   "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
   },
   {
    "source": "a1",
@@ -252,12 +252,12 @@
   {
    "source": "c1",
    "what": "Winter's Farewell Feast: Stellar Swirl DMG in Armed for Action",
-   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+   "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
   },
   {
    "source": "c6",
    "what": "Unwavering Ardor: Stellar Swirl DMG and the Transpose hits",
-   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13); the hits are a damage instance, not a buff: not offered as a target row yet"
+   "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`); the hits are a damage instance, not a buff: not offered as a target row yet"
   },
   {
    "source": "talent",
@@ -267,7 +267,7 @@
   {
    "source": "talent",
    "what": "Stellar Swirl hits of the skill and burst",
-   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+   "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
   }
  ]
 }

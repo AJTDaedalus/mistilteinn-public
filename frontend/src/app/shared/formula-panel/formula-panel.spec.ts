@@ -233,3 +233,42 @@ describe('FormulaPanel, a kit condition\'s default reason', () => {
     expect(text).toContain('Default on — a teammate\'s buff, assumed up as they play it');
   });
 });
+
+/** Math-fallback P3, task 13: reaction rows and the additive reaction on an ability. */
+describe('FormulaPanel reactions', () => {
+  function clickAddReaction(el: HTMLElement): void {
+    const button = [...el.querySelectorAll('button')]
+      .find((b) => b.textContent?.includes('Add reaction'))!;
+    button.click();
+  }
+
+  it('adds a reaction row with a named reaction picker and a swirl element for Anemo', () => {
+    const { el, fixture, service } = render();
+    fixture.componentRef.setInput('element', 'anemo');
+    fixture.detectChanges();
+    clickAddReaction(el);
+    fixture.detectChanges();
+    const row = service.rows().at(-1)!;
+    expect(row.reaction).toEqual({ reaction: 'swirl', swirled: 'pyro' });
+    expect(el.textContent).toContain('Reaction 2');
+    expect(el.textContent).toContain('Swirled');
+    expect(el.textContent).toContain('Triggered by the optimized character');
+    for (const control of el.querySelectorAll('select, input')) {
+      expect(control.closest('label')?.textContent?.trim().length ?? 0).toBeGreaterThan(0);
+    }
+  });
+
+  it('offers only the additive reaction the character\'s element triggers', () => {
+    const { el, fixture } = render();
+    fixture.componentRef.setInput('element', 'dendro');
+    fixture.detectChanges();
+    const options = [...el.querySelectorAll('option')].map((o) => o.textContent?.trim());
+    expect(options).toContain('Spread');
+    expect(options).not.toContain('Aggravate');
+    fixture.componentRef.setInput('element', 'pyro');
+    fixture.detectChanges();
+    const none = [...el.querySelectorAll('option')].map((o) => o.textContent?.trim());
+    expect(none).not.toContain('Spread');
+    expect(none).not.toContain('Aggravate');
+  });
+});

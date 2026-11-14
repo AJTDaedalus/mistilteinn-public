@@ -66,9 +66,16 @@ export interface Hit {
   flatDamage: number;
   baseDamageBonus: number;
   amplifying: Amplifying | null;
+  /** The amplifying reaction's bonus, or the additive one's: a hit triggers at most one. */
   reactionBonus: number;
   /** A mixed-stat hit's further terms. Absent or empty for every single-stat hit. */
   extraTerms?: readonly ScalingTerm[];
+  /**
+   * The additive reaction this hit triggers, if any (math-fallback P3): flat damage added to
+   * the base before the DMG bonus. `damage.py:Hit.additive`, gcsim `catalyze.go:24,43`. Needs
+   * `DamageInputs.reactionLevelMultiplier`.
+   */
+  additive?: Additive | null;
 }
 
 export interface Target {
@@ -145,6 +152,11 @@ export function resolveStat(base: number, percent: number, flat: number): number
 
 export interface DamageInputs {
   hit: Hit;
+  /**
+   * The reaction level multiplier at `characterLevel` (`ElementCoeffExcelConfigData.
+   * playerElementLevelCo`), as the server sends it. Read only by an additive hit.
+   */
+  reactionLevelMultiplier?: number;
   scalingValue: number;
   /** The resolved stat for each of `hit.extraTerms`, in order. One per term. */
   extraScalingValues?: readonly number[];
@@ -183,9 +195,21 @@ export function computeDamage(inputs: DamageInputs): number {
     extra = f(extra + f(f(term.multiplier) * f(values[i])));
   });
 
+  let additive = 0;
+  if (hit.additive) {
+    if (hit.amplifying !== null) {
+      throw new Error('a hit triggers an amplifying or an additive reaction, not both');
+    }
+    if (inputs.reactionLevelMultiplier === undefined) {
+      throw new Error(`an ${hit.additive} hit needs the reaction level multiplier`);
+    }
+    additive = additiveFlat(
+      hit.additive, inputs.reactionLevelMultiplier, inputs.elementalMastery, hit.reactionBonus,
+    );
+  }
   let value = f(
-    f(f(f(f(hit.multiplier) * f(inputs.scalingValue)) * f(1 + hit.baseDamageBonus)) + extra) +
-      hit.flatDamage,
+    f(f(f(f(f(hit.multiplier) * f(inputs.scalingValue)) * f(1 + hit.baseDamageBonus)) + extra) +
+      hit.flatDamage) + additive,
   );
   value = f(value * f(1 + inputs.dmgBonus));
   value = f(
@@ -196,4 +220,145 @@ export function computeDamage(inputs: DamageInputs): number {
     value = f(value * amplifyingMultiplier(hit.amplifying, inputs.elementalMastery, hit.reactionBonus));
   }
   return f(value * critMultiplier(inputs.critRate, inputs.critDmg));
+}
+
+// ── Reactions (math-fallback P3, task 13) ──────────────────────────────────────────────────
+//
+// The mirror of `backend/app/formula/genshin/reactions.py`, bound to it by
+// `backend/tests/fixtures/kernel/reaction_cases.json` (`npm run kernel:verify`), and through it
+// to gcsim (`tests/crossval/test_reaction_crossval.py`). The level multiplier is not here: the
+// server sends it (`/search-context`'s `reaction_level_multiplier`) from the committed game
+// table, so there is one copy of it.
+
+/** `reactions.py:TRANSFORMATIVE_EM_*`: `16·EM/(2000+EM)`, gcsim `reaction.go:38`. */
+const TRANSFORMATIVE_EM = [16, 2000] as const;
+/** `reactions.py:ADDITIVE_EM_*`: `5·EM/(1200+EM)`, gcsim `reaction.go:42`. */
+const ADDITIVE_EM = [5, 1200] as const;
+/** `reactions.py:LUNAR_EM_*`: `6·EM/(2000+EM)`, gcsim `reaction.go:30`. */
+const LUNAR_EM = [6, 2000] as const;
+
+/** `reactions.py:TRANSFORMATIVE`: multiplier, damage element (`null`: the swirled one), crit. */
+export const TRANSFORMATIVE = {
+  overloaded: { multiplier: 2.75, element: 'pyro', crittable: false },
+  electro_charged: { multiplier: 2.0, element: 'electro', crittable: false },
+  superconduct: { multiplier: 1.5, element: 'cryo', crittable: false },
+  swirl: { multiplier: 0.6, element: null, crittable: true },
+  shattered: { multiplier: 3.0, element: 'physical', crittable: false },
+  burning: { multiplier: 0.25, element: 'pyro', crittable: true },
+  bloom: { multiplier: 2.0, element: 'dendro', crittable: true },
+  hyperbloom: { multiplier: 3.0, element: 'dendro', crittable: true },
+  burgeon: { multiplier: 3.0, element: 'dendro', crittable: true },
+} as const;
+
+export type Transformative = keyof typeof TRANSFORMATIVE;
+
+/** `reactions.py:SWIRL_ELEMENTS`. */
+export const SWIRL_ELEMENTS = ['pyro', 'hydro', 'electro', 'cryo'] as const;
+
+/** `reactions.py:ADDITIVE`: multiplier and the element of the hit that triggers it. */
+export const ADDITIVE = {
+  spread: { multiplier: 1.25, element: 'dendro' },
+  aggravate: { multiplier: 1.15, element: 'electro' },
+} as const;
+
+export type Additive = keyof typeof ADDITIVE;
+
+/** `reactions.py:LUNAR`: multiplier and damage element. */
+export const LUNAR = {
+  lunar_charged: { multiplier: 3.0, element: 'electro' },
+  lunar_crystallize: { multiplier: 1.6, element: 'geo' },
+} as const;
+
+export type Lunar = keyof typeof LUNAR;
+
+function emBonus([numerator, denominator]: readonly [number, number], em: number): number {
+  if (em < 0) throw new Error(`elemental mastery cannot be negative; got ${em}`);
+  return f(f(numerator * em) / f(denominator + em));
+}
+
+/** `reactions.py:transformative_element`: whose RES a transformative reaction meets. */
+export function transformativeElement(reaction: Transformative, swirled?: string | null): string {
+  const element = TRANSFORMATIVE[reaction].element;
+  if (element !== null) {
+    if (swirled) throw new Error(`${reaction} carries ${element}; only a swirl takes a swirled element`);
+    return element;
+  }
+  if (!swirled || !(SWIRL_ELEMENTS as readonly string[]).includes(swirled)) {
+    throw new Error(`a swirl carries one of ${SWIRL_ELEMENTS.join('/')}; got ${swirled}`);
+  }
+  return swirled;
+}
+
+/**
+ * The transformative multiplier before RES and crit:
+ * `multiplier × levelBase × (1 + 16·EM/(2000+EM) + reactionBonus)`.
+ */
+export function transformativeBase(
+  reaction: Transformative, levelBase: number, elementalMastery: number, reactionBonus = 0,
+): number {
+  const bracket = f(f(1 + emBonus(TRANSFORMATIVE_EM, elementalMastery)) + reactionBonus);
+  return f(f(TRANSFORMATIVE[reaction].multiplier * f(levelBase)) * bracket);
+}
+
+/**
+ * One transformative reaction's expected damage (`reactions.py:transformative_damage`). DEF is
+ * ignored (gcsim `IgnoreDefPercent: 1`); the CRIT is the **reaction's own**, refused on a
+ * reaction that cannot crit.
+ */
+export function transformativeDamage(inputs: {
+  reaction: Transformative;
+  levelBase: number;
+  elementalMastery: number;
+  resistance: number;
+  reactionBonus?: number;
+  critRate?: number;
+  critDmg?: number;
+}): number {
+  const critRate = inputs.critRate ?? 0;
+  const critDmg = inputs.critDmg ?? 0;
+  if (!TRANSFORMATIVE[inputs.reaction].crittable && (critRate || critDmg)) {
+    throw new Error(`${inputs.reaction} cannot crit`);
+  }
+  const base = transformativeBase(
+    inputs.reaction, inputs.levelBase, inputs.elementalMastery, inputs.reactionBonus ?? 0,
+  );
+  return f(f(base * resMultiplier(inputs.resistance)) * critMultiplier(critRate, critDmg));
+}
+
+/** The flat damage an additive reaction adds to its hit. `reactions.py:additive_flat`. */
+export function additiveFlat(
+  reaction: Additive, levelBase: number, elementalMastery: number, reactionBonus = 0,
+): number {
+  const bracket = f(f(1 + emBonus(ADDITIVE_EM, elementalMastery)) + reactionBonus);
+  return f(f(ADDITIVE[reaction].multiplier * f(levelBase)) * bracket);
+}
+
+/**
+ * The Lunar multiplier before RES and crit:
+ * `multiplier × levelBase × (1 + 6·EM/(2000+EM) + reactionBonus) × (1 + baseDmgBonus)`.
+ */
+export function lunarBase(
+  reaction: Lunar, levelBase: number, elementalMastery: number, reactionBonus = 0,
+  baseDmgBonus = 0,
+): number {
+  const bracket = f(f(1 + emBonus(LUNAR_EM, elementalMastery)) + reactionBonus);
+  return f(f(f(LUNAR[reaction].multiplier * f(levelBase)) * bracket) * f(1 + baseDmgBonus));
+}
+
+/** One character's Lunar contribution with their own CRIT. `reactions.py:lunar_damage`. */
+export function lunarDamage(inputs: {
+  reaction: Lunar;
+  levelBase: number;
+  elementalMastery: number;
+  resistance: number;
+  critRate: number;
+  critDmg: number;
+  reactionBonus?: number;
+  baseDmgBonus?: number;
+}): number {
+  const base = lunarBase(
+    inputs.reaction, inputs.levelBase, inputs.elementalMastery, inputs.reactionBonus ?? 0,
+    inputs.baseDmgBonus ?? 0,
+  );
+  return f(f(base * resMultiplier(inputs.resistance)) * critMultiplier(inputs.critRate, inputs.critDmg));
 }

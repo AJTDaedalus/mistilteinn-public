@@ -332,7 +332,7 @@
   {
    "source": "kit",
    "what": "Moonsign Benediction: Lunar-Crystallize base DMG from Linnea's DEF",
-   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+   "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
   },
   {
    "source": "kit",
@@ -347,12 +347,12 @@
   {
    "source": "c1",
    "what": "Provisional Classification: Lunar-Crystallize DMG from DEF on Lumi's hits",
-   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+   "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
   },
   {
    "source": "c6",
    "what": "Golden Beagle's Dream: Lunar-Crystallize DMG",
-   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+   "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
   },
   {
    "source": "talent",

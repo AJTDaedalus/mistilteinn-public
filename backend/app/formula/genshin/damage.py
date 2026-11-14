@@ -40,6 +40,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from app.formula.genshin.reactions import Additive
+
 # ---- Constants, each with its line ----------------------------------------
 
 #: DEF reduction is capped before it enters the DEF term. gcsim `damage.go:76-78`.
@@ -64,10 +66,10 @@ class Amplifying(enum.StrEnum):
     pin: `pkg/reactable/melt.go` (Pyro onto Cryo → 2.0; Cryo onto Pyro → 1.5) and
     `pkg/reactable/vaporize.go` (Hydro onto Pyro → 2.0; Pyro onto Hydro → 1.5).
 
-    Transformative and additive reactions are **not** here: the BRIEF's ship order puts them
-    after the gauge engine, and gcsim computes them on a different path entirely
-    (`calcDirectReaction`, with its own `6*em/(2000+em)` bonus). Adding them to this enum
-    would invite them into a chain that cannot express them.
+    Transformative, additive and Lunar reactions are **not** here: gcsim computes them on
+    their own path (`combat.CalcReactionDmg` and its siblings), and so does
+    `reactions.py` (math-fallback P3). An additive reaction reaches this chain only as
+    `Hit.additive`, the flat damage gcsim adds to the triggering hit's `FlatDmg`.
     """
 
     #: Pyro applied onto a Cryo aura.
@@ -239,8 +241,12 @@ class Hit:
     base_damage_bonus: float = 0.0
     #: The amplifying reaction this hit triggers, if any.
     amplifying: Amplifying | None = None
-    #: Bonus to that reaction specifically (Crimson Witch 4pc and friends).
+    #: Bonus to that reaction specifically (Crimson Witch 4pc and friends) — the amplifying
+    #: reaction's, or the additive one's: a hit triggers at most one of the two.
     reaction_bonus: float = 0.0
+    #: The additive reaction this hit triggers (spread, aggravate), if any: flat damage added
+    #: to its base before the DMG bonus, gcsim `catalyze.go:24,43` (math-fallback P3).
+    additive: Additive | None = None
     #: Further `multiplier x stat` parts of the **same** instance of damage, for a talent
     #: row such as `# ATK+# Elemental Mastery`. Empty for every single-stat hit. See
     #: `ScalingTerm` for where they enter the chain.
@@ -331,8 +337,21 @@ def compute_damage(
         term.multiplier * value
         for term, value in zip(hit.extra_terms, extra_scaling_values, strict=True)
     )
+    additive = 0.0
+    if hit.additive is not None:
+        if hit.amplifying is not None:
+            msg = "a hit triggers an amplifying or an additive reaction, not both"
+            raise DamageInputError(msg)
+        # Imported here: `reactions` builds on this module's terms.
+        from app.formula.genshin.reactions import additive_flat  # noqa: PLC0415
+
+        additive = additive_flat(
+            hit.additive, character_level=character_level,
+            elemental_mastery=elemental_mastery, reaction_bonus=hit.reaction_bonus,
+        )
     base = (
         hit.multiplier * scaling_value * (1 + hit.base_damage_bonus) + extra + hit.flat_damage
+        + additive
     )
     steps = [
         Step(
@@ -343,7 +362,8 @@ def compute_damage(
                 f" + {term.multiplier:.4g} x {value:,.1f} {term.stat}"
                 for term, value in zip(hit.extra_terms, extra_scaling_values, strict=True)
             )
-            + (f" + {hit.flat_damage:,.1f} flat" if hit.flat_damage else ""),
+            + (f" + {hit.flat_damage:,.1f} flat" if hit.flat_damage else "")
+            + (f" + {additive:,.1f} {hit.additive}" if hit.additive is not None else ""),
         ),
         Step("dmg bonus", 1 + dmg_bonus, f"{dmg_bonus:.1%} on {hit.channel}"),
         Step(

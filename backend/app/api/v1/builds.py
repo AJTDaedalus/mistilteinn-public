@@ -27,6 +27,7 @@ from typing import TYPE_CHECKING, Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from app.api.v1.artifacts import _kernel_stats
+from app.data.snapshot import reaction_level_multiplier
 from app.dependencies import (
     CurrentUser,
     SettingsDep,
@@ -459,6 +460,7 @@ async def search_context(
             resistance=enemy.resistances[hit.channel],
         ),
         character_level=build.character_level,
+        reaction_level_multiplier=reaction_level_multiplier(build.character_level),
         dmg_bonus_quantity=tags.dmg_bonus_q(hit.channel),
         set_bonuses=[
             KernelSetBonus(

@@ -2,15 +2,34 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 
 import type { ConditionGroup } from '../../sim/formula-calibration';
 import {
-  defaultWhy, hitMove, type ConditionValue, type FormulaCondition,
+  defaultWhy, hitMove, reactionLabel, type ConditionValue, type FormulaCondition,
+  type FormulaReaction,
 } from '../../sim/formula-recipe';
 import type { FormulaMove } from '../../sim/recipe';
+import {
+  ADDITIVE, type Additive, type Lunar, SWIRL_ELEMENTS, type Transformative,
+} from '../../sim/damage';
 import {
   FormulaEstimateService,
   type TargetRow,
 } from '../../pages/optimize/formula-estimate.service';
 import type { AvailableHit, RefusedHit } from '../../pages/explain/explain.service';
 import { RefusedHits } from '../refused-hits/refused-hits';
+
+/** The reactions a reaction row can price (P3), in the order a player thinks of them. */
+const REACTIONS: { value: Transformative | Lunar; label: string }[] = [
+  { value: 'hyperbloom', label: 'Hyperbloom' },
+  { value: 'bloom', label: 'Bloom' },
+  { value: 'burgeon', label: 'Burgeon' },
+  { value: 'burning', label: 'Burning' },
+  { value: 'overloaded', label: 'Overloaded' },
+  { value: 'electro_charged', label: 'Electro-Charged' },
+  { value: 'superconduct', label: 'Superconduct' },
+  { value: 'swirl', label: 'Swirl' },
+  { value: 'shattered', label: 'Shattered' },
+  { value: 'lunar_charged', label: 'Lunar-Charged' },
+  { value: 'lunar_crystallize', label: 'Lunar-Crystallize' },
+];
 
 const MOVES: { value: FormulaMove; label: string }[] = [
   { value: 'normal', label: 'Normal attack' },
@@ -61,8 +80,20 @@ export class FormulaPanel {
   readonly assumptions = input<readonly string[]>([]);
   /** Sets whose 4-piece the estimate could not score, already named. */
   readonly withheld = input<readonly string[]>([]);
+  /**
+   * The optimized character's element, lower case (P3): it decides which additive reaction an
+   * ability can trigger and a new swirl row's element. Empty offers both and leaves the recipe
+   * to refuse a mismatch by name.
+   */
+  readonly element = input<string>('');
 
   protected readonly moves = MOVES;
+  protected readonly reactions = REACTIONS;
+  protected readonly swirlElements = SWIRL_ELEMENTS;
+
+  /** The additive reactions this character's abilities can trigger. */
+  protected readonly additives = computed(() => (Object.keys(ADDITIVE) as Additive[])
+    .filter((a) => !this.element() || ADDITIVE[a].element === this.element()));
   protected readonly rows = this.service.rows;
   protected readonly teamState = this.service.conditionals;
 
@@ -131,6 +162,39 @@ export class FormulaPanel {
   protected add(): void {
     const first = this.hits()[0];
     if (first) this.service.addRow(first);
+  }
+
+  // ── Reactions (math-fallback P3) ────────────────────────────────────────────────────────
+
+  /** A new reaction row: a swirl for an Anemo character, else the first reaction. */
+  protected addReaction(): void {
+    const first = this.hits()[0];
+    if (!first) return;
+    const anemo = this.element() === 'anemo';
+    this.service.addReactionRow(first, anemo
+      ? { reaction: 'swirl', swirled: 'pyro' }
+      : { reaction: 'hyperbloom' });
+  }
+
+  protected pickReaction(row: TargetRow, value: string): void {
+    const choice = REACTIONS.find((r) => r.value === value);
+    if (!choice) return;
+    const reaction: FormulaReaction = choice.value === 'swirl'
+      ? { reaction: 'swirl', swirled: row.reaction?.swirled ?? 'pyro' }
+      : { reaction: choice.value };
+    this.service.updateRow(row.id, { reaction, label: reactionLabel(reaction) });
+  }
+
+  protected pickSwirled(row: TargetRow, value: string): void {
+    if (!row.reaction || !(SWIRL_ELEMENTS as readonly string[]).includes(value)) return;
+    const reaction: FormulaReaction = { ...row.reaction, swirled: value };
+    this.service.updateRow(row.id, { reaction, label: reactionLabel(reaction) });
+  }
+
+  protected pickAdditive(row: TargetRow, value: string): void {
+    this.service.updateRow(row.id, {
+      additive: value in ADDITIVE ? value as Additive : null,
+    });
   }
 
   protected remove(row: TargetRow): void {

@@ -102,6 +102,7 @@
 
   @if (mode() === 'formula' && buildId()) {
     <formula-panel
+      [element]="formulaElement()"
       [hits]="formulaHits()"
       [refusedHits]="formulaRefused()"
       [groups]="formulaGroups()"

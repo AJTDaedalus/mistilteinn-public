@@ -8,6 +8,7 @@
     "def_ignore": 0.0
   },
   "character_level": 90,
+  "reaction_level_multiplier": 1446.853515625,
   "fixtures": [
     {
       "name": "crimson_witch_one_stack_reverse_vaporize",
@@ -80,7 +81,7 @@
         {
           "id": "set:15006:4",
           "label": "set 15006 4pc",
-          "citation": "GO libs/gi/sheets/src/Artifacts/CrimsonWitchOfFlames/index.tsx:20-56 @ 2c13fc40",
+          "citation": "GO libs/gi/sheets/src/Artifacts/CrimsonWitchOfFlames/index.tsx:20-58 @ 2c13fc40",
           "bonus": {
             "conditions": [
               {
@@ -96,6 +97,28 @@
               }
             ],
             "effects": [
+              {
+                "stat": "reaction_bonus",
+                "value": 0.4,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "overloaded",
+                  "burning",
+                  "burgeon"
+                ],
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
               {
                 "stat": "reaction_bonus",
                 "value": 0.15,
@@ -159,12 +182,7 @@
                 "talent": null
               }
             ],
-            "unmodelled": [
-              {
-                "what": "Overloaded, Burning and Burgeon DMG +40%",
-                "reason": "transformative reactions are not modelled (P3, G11)"
-              }
-            ]
+            "unmodelled": []
           }
         }
       ],
@@ -434,7 +452,7 @@
         {
           "id": "set:15006:4",
           "label": "set 15006 4pc",
-          "citation": "GO libs/gi/sheets/src/Artifacts/CrimsonWitchOfFlames/index.tsx:20-56 @ 2c13fc40",
+          "citation": "GO libs/gi/sheets/src/Artifacts/CrimsonWitchOfFlames/index.tsx:20-58 @ 2c13fc40",
           "bonus": {
             "conditions": [
               {
@@ -450,6 +468,28 @@
               }
             ],
             "effects": [
+              {
+                "stat": "reaction_bonus",
+                "value": 0.4,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "overloaded",
+                  "burning",
+                  "burgeon"
+                ],
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
               {
                 "stat": "reaction_bonus",
                 "value": 0.15,
@@ -513,12 +553,7 @@
                 "talent": null
               }
             ],
-            "unmodelled": [
-              {
-                "what": "Overloaded, Burning and Burgeon DMG +40%",
-                "reason": "transformative reactions are not modelled (P3, G11)"
-              }
-            ]
+            "unmodelled": []
           }
         }
       ],
@@ -1721,7 +1756,7 @@
               },
               {
                 "what": "KIT: Moonsign Benediction: Lunar-Bloom base DMG from Nefer's EM",
-                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+                "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
               },
               {
                 "what": "KIT: Ascendant Gleam, derived from the team",
@@ -1729,7 +1764,7 @@
               },
               {
                 "what": "KIT: Phantasm Performance (Shades) Lunar-Bloom hits",
-                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+                "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
               }
             ]
           }
@@ -2170,7 +2205,7 @@
             "unmodelled": [
               {
                 "what": "KIT: Moonsign Benediction: Lunar-Crystallize base DMG from Linnea's DEF",
-                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+                "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
               },
               {
                 "what": "KIT: Ascendant Gleam, derived from the team",
@@ -2182,7 +2217,7 @@
               },
               {
                 "what": "C1: Provisional Classification: Lunar-Crystallize DMG from DEF on Lumi's hits",
-                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+                "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
               },
               {
                 "what": "TALENT: Burst healing",
@@ -2351,11 +2386,11 @@
             "unmodelled": [
               {
                 "what": "KIT: Stellar Jubilee: Stellar-Conduct base DMG from EM",
-                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+                "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
               },
               {
                 "what": "KIT: Steady State Core consumption and detonation hits (Stellar-Conduct)",
-                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+                "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
               },
               {
                 "what": "TALENT: Steady State Core Detonation multiplier per Beacon consumed",
@@ -2554,7 +2589,7 @@
             "unmodelled": [
               {
                 "what": "KIT: Stellar Radiance branch: Stellar-Conduct DMG from ATK, and Electro/Stellar-Conduct CRIT DMG at C6",
-                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+                "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
               },
               {
                 "what": "TALENT: Elemental Skill shield",
@@ -2775,7 +2810,7 @@
             "unmodelled": [
               {
                 "what": "A4: Dirge of the Fandyr: Chorus (off-field members) and the Stellar Swirl part",
-                "reason": "Chorus reaches party members off the field, and the optimized character is on it for every hit; Stellar Swirl is P3 (TASKS task 13)"
+                "reason": "Chorus reaches party members off the field, and the optimized character is on it for every hit; Stellar Swirl is refused by name (`reactions.REFUSED`)"
               },
               {
                 "what": "TALENT: Song of Ages Past: burst DMG multiplier",
@@ -3026,7 +3061,7 @@
             "unmodelled": [
               {
                 "what": "KIT: Stellar Jubilee: Stellar Swirl base DMG from ATK",
-                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+                "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
               },
               {
                 "what": "A1: Rite of Spring's Procession: Spirit Blade DMG multiplier per stack",
@@ -3034,7 +3069,7 @@
               },
               {
                 "what": "C1: Winter's Farewell Feast: Stellar Swirl DMG in Armed for Action",
-                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+                "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
               },
               {
                 "what": "TALENT: Armed for Action: Anemo infusion",
@@ -3042,7 +3077,7 @@
               },
               {
                 "what": "TALENT: Stellar Swirl hits of the skill and burst",
-                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+                "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
               }
             ]
           }
@@ -6930,7 +6965,7 @@
         {
           "id": "kit:nahida",
           "label": "Nahida (kit)",
-          "citation": "GO libs/gi/formula/src/data/char/Nahida.ts (pando), libs/gi/sheets/src/Characters/Nahida/index.tsx (wr) @ 2c13fc40 \u2014 a1_em pando:Nahida.ts:79-82,168-182,212; wr:index.tsx:83-86,166-195,362; c2_def pando:Nahida.ts:89-94,230-233; wr:index.tsx:93-100,278-283,359; gcsim internal/characters/nahida/ @ b107b5dc",
+          "citation": "GO libs/gi/formula/src/data/char/Nahida.ts (pando), libs/gi/sheets/src/Characters/Nahida/index.tsx (wr) @ 2c13fc40 \u2014 a1_em pando:Nahida.ts:79-82,168-182,212; wr:index.tsx:83-86,166-195,362; c2_def pando:Nahida.ts:89-94,230-233; wr:index.tsx:93-100,278-283,359; c2_bloom_crit_rate pando:Nahida.ts:90,214-220; c2_bloom_crit_dmg pando:Nahida.ts:91,222-228; gcsim internal/characters/nahida/ @ b107b5dc",
           "bonus": {
             "conditions": [
               {
@@ -6951,6 +6986,17 @@
                 "default": 0.0,
                 "default_reason": "situational",
                 "default_note": "off: it needs a Quicken, Aggravate or Spread party",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "c2_bloom",
+                "label": "Burning, Bloom, Hyperbloom or Burgeon triggered by the party (C2 The Root of All Fullness)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
                 "max": null,
                 "step": null,
                 "options": null
@@ -7006,6 +7052,66 @@
                 "threshold": null,
                 "weapon_types": null,
                 "talent": null
+              },
+              {
+                "stat": "reaction_crit_rate",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "burning",
+                  "bloom",
+                  "hyperbloom",
+                  "burgeon"
+                ],
+                "when": [
+                  {
+                    "condition": "c2_bloom",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_crit_dmg",
+                "value": 1.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "burning",
+                  "bloom",
+                  "hyperbloom",
+                  "burgeon"
+                ],
+                "when": [
+                  {
+                    "condition": "c2_bloom",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
               }
             ],
             "unmodelled": [
@@ -7014,22 +7120,23 @@
                 "reason": "the highest is taken over the teammates' pass-1 Elemental Mastery: the optimized character's moves with every candidate, and GO's `team.premod.eleMas.max` would use it where it is larger"
               },
               {
-                "what": "C2: The Root of All Fullness: Burning, Bloom, Hyperbloom, Burgeon and Lunar-Bloom CRIT",
-                "reason": "transformative and Lunar reaction damage is not modelled yet (P3)"
-              },
-              {
                 "what": "TALENT: Illusory Heart: the Electro and Hydro parts (Tri-Karma trigger interval, Shrine duration)",
                 "reason": "no damage effect: they change how often and how long, not how much a hit deals"
               },
               {
                 "what": "KIT: Teammates' Elemental Mastery buffs (and Nahida's own C4) in the highest EM her A1 reads",
                 "reason": "two-pass rule (DESIGN \u00a72.6): a kit buff never raises a stat another buff reads; GO's `team.premod.eleMas.max` would include them"
+              },
+              {
+                "what": "C2: The Root of All Fullness: Lunar-Bloom CRIT",
+                "reason": "Lunar-Bloom has no reaction-triggered instance at the pins (`reactions.REFUSED`)"
               }
             ]
           }
         }
       ],
       "conditionals": {
+        "kit:nahida/c2_bloom": 1,
         "kit:nahida/a1_field": 1,
         "kit:nahida/c2_quicken": 1
       },
@@ -7127,7 +7234,7 @@
         {
           "id": "kit:nahida",
           "label": "Nahida (kit)",
-          "citation": "GO libs/gi/formula/src/data/char/Nahida.ts (pando), libs/gi/sheets/src/Characters/Nahida/index.tsx (wr) @ 2c13fc40 \u2014 burst_tri_karma pando:Nahida.ts:69-70,120-134,246-255; wr:index.tsx:73-74,115-131,226-231,313-318; c2_def pando:Nahida.ts:89-94,230-233; wr:index.tsx:93-100,278-283,359; c4_em pando:Nahida.ts:95-97,204-210; wr:index.tsx:101-103,285-300,345; gcsim internal/characters/nahida/ @ b107b5dc",
+          "citation": "GO libs/gi/formula/src/data/char/Nahida.ts (pando), libs/gi/sheets/src/Characters/Nahida/index.tsx (wr) @ 2c13fc40 \u2014 burst_tri_karma pando:Nahida.ts:69-70,120-134,246-255; wr:index.tsx:73-74,115-131,226-231,313-318; c2_def pando:Nahida.ts:89-94,230-233; wr:index.tsx:93-100,278-283,359; c4_em pando:Nahida.ts:95-97,204-210; wr:index.tsx:101-103,285-300,345; c2_bloom_crit_rate pando:Nahida.ts:90,214-220; c2_bloom_crit_dmg pando:Nahida.ts:91,222-228; gcsim internal/characters/nahida/ @ b107b5dc",
           "bonus": {
             "conditions": [
               {
@@ -7161,6 +7268,17 @@
                 "default_note": "the estimate scores one target; more opponents in range raise it, so set it to how many you fight",
                 "max": 4.0,
                 "step": 1.0,
+                "options": null
+              },
+              {
+                "key": "c2_bloom",
+                "label": "Burning, Bloom, Hyperbloom or Burgeon triggered by the party (C2 The Root of All Fullness)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
                 "options": null
               }
             ],
@@ -7242,13 +7360,69 @@
                 "threshold": null,
                 "weapon_types": null,
                 "talent": null
+              },
+              {
+                "stat": "reaction_crit_rate",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "burning",
+                  "bloom",
+                  "hyperbloom",
+                  "burgeon"
+                ],
+                "when": [
+                  {
+                    "condition": "c2_bloom",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_crit_dmg",
+                "value": 1.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "burning",
+                  "bloom",
+                  "hyperbloom",
+                  "burgeon"
+                ],
+                "when": [
+                  {
+                    "condition": "c2_bloom",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
               }
             ],
             "unmodelled": [
-              {
-                "what": "C2: The Root of All Fullness: Burning, Bloom, Hyperbloom, Burgeon and Lunar-Bloom CRIT",
-                "reason": "transformative and Lunar reaction damage is not modelled yet (P3)"
-              },
               {
                 "what": "TALENT: Illusory Heart: the Electro and Hydro parts (Tri-Karma trigger interval, Shrine duration)",
                 "reason": "no damage effect: they change how often and how long, not how much a hit deals"
@@ -7256,6 +7430,10 @@
               {
                 "what": "KIT: Teammates' Elemental Mastery buffs (and Nahida's own C4) in the highest EM her A1 reads",
                 "reason": "two-pass rule (DESIGN \u00a72.6): a kit buff never raises a stat another buff reads; GO's `team.premod.eleMas.max` would include them"
+              },
+              {
+                "what": "C2: The Root of All Fullness: Lunar-Bloom CRIT",
+                "reason": "Lunar-Bloom has no reaction-triggered instance at the pins (`reactions.REFUSED`)"
               },
               {
                 "what": "A1: A1 Compassion Illuminated: Elemental Mastery, 25% of the party's highest",
@@ -7268,6 +7446,7 @@
       "conditionals": {
         "kit:nahida/shrine": 1,
         "kit:nahida/c2_quicken": 0,
+        "kit:nahida/c2_bloom": 1,
         "kit:nahida/c4_count": 2
       },
       "expected": 5940.608720802648,
@@ -9579,7 +9758,7 @@
         {
           "id": "kit:mona",
           "label": "Mona (kit)",
-          "citation": "GO libs/gi/formula/src/data/char/Mona.ts (pando), libs/gi/sheets/src/Characters/Mona/index.tsx (wr) @ 2c13fc40 \u2014 omen_dmg pando:Mona.ts:61,130,232; wr:index.tsx:75,129-134,388; c1_vaporize pando:Mona.ts:86,140-142,251-258; wr:index.tsx:100,152-155,392-396; c4_crit_rate pando:Mona.ts:103,146-148,233; wr:index.tsx:117,163-167,401; gcsim internal/characters/mona/ @ b107b5dc",
+          "citation": "GO libs/gi/formula/src/data/char/Mona.ts (pando), libs/gi/sheets/src/Characters/Mona/index.tsx (wr) @ 2c13fc40 \u2014 omen_dmg pando:Mona.ts:61,130,232; wr:index.tsx:75,129-134,388; c1_vaporize pando:Mona.ts:86,140-142,251-258; wr:index.tsx:100,152-155,392-396; c4_crit_rate pando:Mona.ts:103,146-148,233; wr:index.tsx:117,163-167,401; c1_electro_charged pando:Mona.ts:85,131-136,236-247; c1_swirl pando:Mona.ts:87,137-139,248-250; c1_lunar_crystallize pando:Mona.ts:92,143-145,254-259; gcsim internal/characters/mona/ @ b107b5dc",
           "bonus": {
             "conditions": [
               {
@@ -9683,16 +9862,94 @@
                 "threshold": null,
                 "weapon_types": null,
                 "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.15,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "electro_charged",
+                  "lunar_charged"
+                ],
+                "when": [
+                  {
+                    "condition": "c1_omen",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.15,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "swirl"
+                ],
+                "when": [
+                  {
+                    "condition": "c1_omen",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.15,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "lunar_crystallize"
+                ],
+                "when": [
+                  {
+                    "condition": "c1_omen",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
               }
             ],
             "unmodelled": [
               {
                 "what": "KIT: Witch's Eve Rite (Hexerei) and every Hexerei part of her constellations",
                 "reason": "the Hexerei party mechanic is not modelled (as Sucrose's)"
-              },
-              {
-                "what": "C1: Prophecy of Submersion: Electro-Charged, Swirl, Lunar-Charged and Lunar-Crystallize DMG",
-                "reason": "transformative and Lunar reaction damage is not modelled yet (P3)"
               },
               {
                 "what": "A1: \"Come 'n' Get Me, Hag!\": the Phantom's explosion",
@@ -10377,7 +10634,7 @@
               },
               {
                 "what": "KIT: Moonsign Benediction: Lunar-Bloom base DMG from Nefer's EM",
-                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+                "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
               },
               {
                 "what": "KIT: Ascendant Gleam, derived from the team",
@@ -10385,11 +10642,11 @@
               },
               {
                 "what": "KIT: Phantasm Performance (Shades) Lunar-Bloom hits",
-                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+                "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
               },
               {
                 "what": "C1: Planning Breeds Success: Lunar-Bloom additional MV",
-                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+                "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
               }
             ]
           }
@@ -16787,7 +17044,7 @@
             "unmodelled": [
               {
                 "what": "KIT: Moonsign Benediction: Lunar-Crystallize base DMG from Linnea's DEF",
-                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+                "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
               },
               {
                 "what": "KIT: Ascendant Gleam, derived from the team",
@@ -16799,7 +17056,7 @@
               },
               {
                 "what": "C1: Provisional Classification: Lunar-Crystallize DMG from DEF on Lumi's hits",
-                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+                "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
               },
               {
                 "what": "TALENT: Burst healing",
@@ -17070,7 +17327,7 @@
             "unmodelled": [
               {
                 "what": "KIT: Stellar Radiance branch: Stellar-Conduct DMG from ATK, and Electro/Stellar-Conduct CRIT DMG at C6",
-                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+                "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
               },
               {
                 "what": "C1: The Cadence of Suppressive Fire: Energy",
@@ -17828,7 +18085,7 @@
             "unmodelled": [
               {
                 "what": "A4: Dirge of the Fandyr: Chorus (off-field members) and the Stellar Swirl part",
-                "reason": "Chorus reaches party members off the field, and the optimized character is on it for every hit; Stellar Swirl is P3 (TASKS task 13)"
+                "reason": "Chorus reaches party members off the field, and the optimized character is on it for every hit; Stellar Swirl is refused by name (`reactions.REFUSED`)"
               },
               {
                 "what": "TALENT: Song of Ages Past: burst DMG multiplier",
@@ -18050,7 +18307,7 @@
             "unmodelled": [
               {
                 "what": "A4: Dirge of the Fandyr: Chorus (off-field members) and the Stellar Swirl part",
-                "reason": "Chorus reaches party members off the field, and the optimized character is on it for every hit; Stellar Swirl is P3 (TASKS task 13)"
+                "reason": "Chorus reaches party members off the field, and the optimized character is on it for every hit; Stellar Swirl is refused by name (`reactions.REFUSED`)"
               },
               {
                 "what": "TALENT: Song of Ages Past: burst DMG multiplier",
@@ -18246,7 +18503,7 @@
             "unmodelled": [
               {
                 "what": "A4: Dirge of the Fandyr: Chorus (off-field members) and the Stellar Swirl part",
-                "reason": "Chorus reaches party members off the field, and the optimized character is on it for every hit; Stellar Swirl is P3 (TASKS task 13)"
+                "reason": "Chorus reaches party members off the field, and the optimized character is on it for every hit; Stellar Swirl is refused by name (`reactions.REFUSED`)"
               },
               {
                 "what": "TALENT: Song of Ages Past: burst DMG multiplier",
@@ -20188,12 +20445,23 @@
         {
           "id": "kit:baizhu",
           "label": "Baizhu (kit)",
-          "citation": "GO libs/gi/formula/src/data/char/Baizhu.ts (pando), libs/gi/sheets/src/Characters/Baizhu/index.tsx (wr) @ 2c13fc40 \u2014 c4_em pando:Baizhu.ts:88-91,148-150,175; gcsim internal/characters/baizhu/ @ b107b5dc",
+          "citation": "GO libs/gi/formula/src/data/char/Baizhu.ts (pando), libs/gi/sheets/src/Characters/Baizhu/index.tsx (wr) @ 2c13fc40 \u2014 c4_em pando:Baizhu.ts:88-91,148-150,175; a4_burning_bloom pando:Baizhu.ts:73-74,118-127,168-171; a4_spread_aggravate pando:Baizhu.ts:75,128-137,172-173; gcsim internal/characters/baizhu/ @ b107b5dc",
           "bonus": {
             "conditions": [
               {
                 "key": "c4_after",
                 "label": "After his burst (C4)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "a4_after_heal",
+                "label": "After Baizhu heals the party (A4 All Things Are of the Earth)",
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "teammate",
@@ -20228,6 +20496,64 @@
                 "threshold": null,
                 "weapon_types": null,
                 "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "burning",
+                  "bloom",
+                  "hyperbloom",
+                  "burgeon"
+                ],
+                "when": [
+                  {
+                    "condition": "a4_after_heal",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "spread",
+                  "aggravate"
+                ],
+                "when": [
+                  {
+                    "condition": "a4_after_heal",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
               }
             ],
             "unmodelled": [
@@ -20236,22 +20562,23 @@
                 "reason": "no damage effect"
               },
               {
-                "what": "A4: All Things Are of the Earth: Burning, Bloom, Hyperbloom, Burgeon, Spread, Aggravate and Lunar-Bloom DMG from his Max HP",
-                "reason": "transformative, additive and Lunar reaction damage is not priced by the estimate yet (P3, task 13)"
-              },
-              {
                 "what": "C2: Incisive Discernment: an extra attack and its healing",
                 "reason": "a damage instance, not a buff: not offered as a target row yet"
               },
               {
                 "what": "TALENT: Holistic Revivification: shield and healing",
                 "reason": "no damage effect"
+              },
+              {
+                "what": "A4: All Things Are of the Earth: Lunar-Bloom DMG from his Max HP",
+                "reason": "Lunar-Bloom has no reaction-triggered instance at the pins (`reactions.REFUSED`)"
               }
             ]
           }
         }
       ],
       "conditionals": {
+        "kit:baizhu/a4_after_heal": 1,
         "kit:baizhu/c4_after": 1
       },
       "expected": 3817.3398840982945,
@@ -28314,11 +28641,11 @@
             "unmodelled": [
               {
                 "what": "KIT: Moonsign Benediction, Symphony of Winter, the burst's Lunar-Charged phases and C6: Lunar-Charged DMG",
-                "reason": "a Lunar reaction's damage, which the estimate does not model yet (P3)"
+                "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
               },
               {
                 "what": "A4: Whispering Flame: EM from his ATK, capped (C4 raises it)",
-                "reason": "a capped conversion of his ATK into EM, which the recipe does not carry; his EM reaches only reaction damage (P3)"
+                "reason": "a capped conversion of his ATK into EM, which the recipe does not carry; his EM reaches only reaction damage, and a reaction row reads the optimized character's own"
               },
               {
                 "what": "TALENT: Ancient Rite: Arcane Light: the Electro infusion in Manifest Flame",
@@ -30302,6 +30629,2218 @@
       "divergence": "none: no reaction",
       "cap_state": "past",
       "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "hyperbloom_thundering_fury_nahida_c2",
+      "covers": "transformative reaction rows: a set's reaction bonus, a teammate's EM, and a teammate's reaction CRIT; the trigger's own CRIT does not reach a transformative reaction",
+      "go": [
+        "libs/gi/wr/src/reaction/trans.ts:36-108",
+        "libs/gi/keymap/src/StatConstants.ts:29-131,151-158",
+        "libs/gi/sheets/src/Artifacts/ThunderingFury/index.tsx:11-31",
+        "libs/gi/formula/src/data/char/Nahida.ts:79-94,112-116,168-182,212-228"
+      ],
+      "givers": [
+        {
+          "name": "Fischl",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        },
+        {
+          "name": "Nahida",
+          "constellation": 2,
+          "ascension_phase": 6,
+          "stats": {
+            "elemental_mastery": 880.0
+          }
+        }
+      ],
+      "team": {
+        "element": "electro",
+        "weapon_type": "WEAPON_BOW",
+        "member_elements": [
+          "electro",
+          "dendro",
+          "hydro",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 754.0,
+        "atk_pct": 0.24,
+        "flat_atk": 0.0,
+        "base_hp": 9189.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 594.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "elemental_mastery": 600.0,
+        "flat_atk": 311.0,
+        "crit_rate": 0.6,
+        "crit_dmg": 1.2
+      },
+      "set_pools": [],
+      "channel": "electro",
+      "rows": [
+        {
+          "id": "hyperbloom",
+          "label": "hyperbloom",
+          "move": null,
+          "count": 3,
+          "reaction": {
+            "reaction": "hyperbloom"
+          },
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "set:15005:4",
+          "label": "set 15005 4pc",
+          "citation": "GO libs/gi/sheets/src/Artifacts/ThunderingFury/index.tsx:11-31 @ 2c13fc40",
+          "bonus": {
+            "conditions": [],
+            "effects": [
+              {
+                "stat": "reaction_bonus",
+                "value": 0.4,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "overloaded",
+                  "electro_charged",
+                  "superconduct",
+                  "hyperbloom"
+                ],
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "aggravate"
+                ],
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "lunar_charged"
+                ],
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "Stellar-Conduct DMG +20%",
+                "reason": "Stellar reactions are not modelled (P3: refused by name, `reactions.REFUSED`)"
+              },
+              {
+                "what": "Elemental Skill CD -1s on a reaction",
+                "reason": "no rotation timing in the estimate"
+              }
+            ]
+          }
+        },
+        {
+          "id": "kit:nahida",
+          "label": "Nahida (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Nahida.ts (pando), libs/gi/sheets/src/Characters/Nahida/index.tsx (wr) @ 2c13fc40 \u2014 a1_em pando:Nahida.ts:79-82,168-182,212; wr:index.tsx:83-86,166-195,362; c2_def pando:Nahida.ts:89-94,230-233; wr:index.tsx:93-100,278-283,359; c2_bloom_crit_rate pando:Nahida.ts:90,214-220; c2_bloom_crit_dmg pando:Nahida.ts:91,222-228; gcsim internal/characters/nahida/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "a1_field",
+                "label": "The active character is in the Shrine of Maya (A1 Compassion Illuminated)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "usual",
+                "default_note": "her teams fight inside her Shrine of Maya: that is what her burst is for",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "c2_quicken",
+                "label": "Opponents marked by Seeds of Skandha were hit by Quicken, Aggravate or Spread (C2 The Root of All Fullness)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "off: it needs a Quicken, Aggravate or Spread party",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "c2_bloom",
+                "label": "Burning, Bloom, Hyperbloom or Burgeon triggered by the party (C2 The Root of All Fullness)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "elemental_mastery",
+                "value": 220.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a1_field",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "def_reduction",
+                "value": 0.3,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c2_quicken",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_crit_rate",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "burning",
+                  "bloom",
+                  "hyperbloom",
+                  "burgeon"
+                ],
+                "when": [
+                  {
+                    "condition": "c2_bloom",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_crit_dmg",
+                "value": 1.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "burning",
+                  "bloom",
+                  "hyperbloom",
+                  "burgeon"
+                ],
+                "when": [
+                  {
+                    "condition": "c2_bloom",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A1: Compassion Illuminated when the optimized character's own Elemental Mastery is the party's highest",
+                "reason": "the highest is taken over the teammates' pass-1 Elemental Mastery: the optimized character's moves with every candidate, and GO's `team.premod.eleMas.max` would use it where it is larger"
+              },
+              {
+                "what": "TALENT: Illusory Heart: the Electro and Hydro parts (Tri-Karma trigger interval, Shrine duration)",
+                "reason": "no damage effect: they change how often and how long, not how much a hit deals"
+              },
+              {
+                "what": "KIT: Teammates' Elemental Mastery buffs (and Nahida's own C4) in the highest EM her A1 reads",
+                "reason": "two-pass rule (DESIGN \u00a72.6): a kit buff never raises a stat another buff reads; GO's `team.premod.eleMas.max` would include them"
+              },
+              {
+                "what": "C2: The Root of All Fullness: Lunar-Bloom CRIT",
+                "reason": "Lunar-Bloom has no reaction-triggered instance at the pins (`reactions.REFUSED`)"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:nahida/a1_field": 1,
+        "kit:nahida/shrine": 1,
+        "kit:nahida/c2_quicken": 0,
+        "kit:nahida/c4_count": 0,
+        "kit:nahida/c2_bloom": 1
+      },
+      "expected": 85118.57702892287,
+      "go_value": 85117.72585165585,
+      "divergence": "transformative DEF: gcsim ignores DEF (1, ours) against GO's enemy.transDef, about 1 - 1e-5",
+      "relative_divergence_from_go": 1.0000000099869136e-05
+    },
+    {
+      "name": "swirl_viridescent_venerer_on_kazuha",
+      "covers": "swirl rows of two elements: the set's RES shred reaches only the swirled element's, its swirl bonus both; the subject's own DMG% conversion reaches neither",
+      "go": [
+        "libs/gi/wr/src/reaction/trans.ts:36-108",
+        "libs/gi/keymap/src/StatConstants.ts:29-131,151-158",
+        "libs/gi/sheets/src/Artifacts/ViridescentVenerer/index.tsx:21-50",
+        "libs/gi/formula/src/data/char/KaedeharaKazuha.ts:65-67,94-107,154-166"
+      ],
+      "givers": [
+        {
+          "name": "Kaedehara Kazuha",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "anemo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "anemo",
+          "pyro",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 905.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 13348.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 807.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 280.2,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "elemental_mastery": 680.0,
+        "flat_atk": 311.0,
+        "crit_rate": 0.2,
+        "crit_dmg": 0.4
+      },
+      "set_pools": [],
+      "channel": "anemo",
+      "rows": [
+        {
+          "id": "swirl_pyro",
+          "label": "swirl (pyro)",
+          "move": null,
+          "count": 2,
+          "reaction": {
+            "reaction": "swirl",
+            "swirled": "pyro"
+          },
+          "conditionals": {}
+        },
+        {
+          "id": "swirl_hydro",
+          "label": "swirl (hydro)",
+          "move": null,
+          "count": 1,
+          "reaction": {
+            "reaction": "swirl",
+            "swirled": "hydro"
+          },
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "set:15002:4",
+          "label": "set 15002 4pc",
+          "citation": "GO libs/gi/sheets/src/Artifacts/ViridescentVenerer/index.tsx:21-50 @ 2c13fc40",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "swirled",
+                "label": "Element swirled",
+                "kind": "choice",
+                "default": "",
+                "default_reason": "situational",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": [
+                  "pyro",
+                  "hydro",
+                  "electro",
+                  "cryo"
+                ]
+              }
+            ],
+            "effects": [
+              {
+                "stat": "enemy_res",
+                "value": -0.4,
+                "elements": null,
+                "element_from": [
+                  "swirled"
+                ],
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "swirled",
+                    "values": [
+                      "pyro",
+                      "hydro",
+                      "electro",
+                      "cryo"
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.6,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "swirl"
+                ],
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "Stellar Swirl DMG +20%, and Cryo RES -40% after a Stellar Swirl",
+                "reason": "Stellar reactions are not modelled (P3: refused by name, `reactions.REFUSED`)"
+              }
+            ]
+          }
+        },
+        {
+          "id": "kit:kaedehara_kazuha",
+          "label": "Kaedehara Kazuha (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/KaedeharaKazuha.ts (pando), libs/gi/sheets/src/Characters/KaedeharaKazuha/index.tsx (wr) @ 2c13fc40 \u2014 a4_pyro pando:KaedeharaKazuha.ts:65-67,154-166; wr:index.tsx:107-124,234-238; a4_hydro pando:KaedeharaKazuha.ts:65-67,154-166; wr:index.tsx:107-124,234-238; a4_electro pando:KaedeharaKazuha.ts:65-67,154-166; wr:index.tsx:107-124,234-238; a4_cryo pando:KaedeharaKazuha.ts:65-67,154-166; wr:index.tsx:107-124,234-238; gcsim internal/characters/kazuha/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "swirl_pyro",
+                "label": "Kazuha swirled Pyro",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "Off: the optimized character is not Pyro. he swirls the element of the carry he buffs",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "swirl_hydro",
+                "label": "Kazuha swirled Hydro",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "Off: the optimized character is not Hydro. he swirls the element of the carry he buffs",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "swirl_electro",
+                "label": "Kazuha swirled Electro",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "Off: the optimized character is not Electro. he swirls the element of the carry he buffs",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "swirl_cryo",
+                "label": "Kazuha swirled Cryo",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "Off: the optimized character is not Cryo. he swirls the element of the carry he buffs",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus_from_em",
+                "value": 0.0004,
+                "elements": [
+                  "pyro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "swirl_pyro",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "dmg_bonus_from_em",
+                "value": 0.0004,
+                "elements": [
+                  "hydro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "swirl_hydro",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "dmg_bonus_from_em",
+                "value": 0.0004,
+                "elements": [
+                  "electro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "swirl_electro",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "dmg_bonus_from_em",
+                "value": 0.0004,
+                "elements": [
+                  "cryo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "swirl_cryo",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A1: Soumon Swordsmanship: 200% ATK of the absorbed element on the skill's plunge",
+                "reason": "a damage instance, not a buff: not offered as a target row yet"
+              },
+              {
+                "what": "KIT: A4 reads Kazuha's EM from his own build (pass 1)",
+                "reason": "teammates' kit buffs to Kazuha's EM are not fed back into it (DESIGN \u00a72.6); GO's premod EM would include them"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "set:15002:4/swirled": "pyro",
+        "kit:kaedehara_kazuha/swirl_pyro": 1,
+        "kit:kaedehara_kazuha/swirl_hydro": 1,
+        "kit:kaedehara_kazuha/swirl_electro": 0,
+        "kit:kaedehara_kazuha/swirl_cryo": 0
+      },
+      "expected": 18862.116564691576,
+      "go_value": 18861.927945410236,
+      "divergence": "transformative DEF: gcsim ignores DEF (1, ours) against GO's enemy.transDef, about 1 - 1e-5",
+      "kit_must_not_reach": true,
+      "relative_divergence_from_go": 1.0000000099980363e-05
+    },
+    {
+      "name": "aggravate_keqing_thundering_fury",
+      "covers": "an additive reaction on a talent row: flat damage inside the base, under the hit's DMG bonus, DEF, RES and CRIT, with a set's aggravate bonus",
+      "go": [
+        "libs/gi/wr/src/formula.ts:405-453",
+        "libs/gi/keymap/src/StatConstants.ts:29-131,151-158",
+        "libs/gi/sheets/src/Artifacts/ThunderingFury/index.tsx:11-31"
+      ],
+      "givers": [
+        {
+          "name": "Keqing",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "electro",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "electro",
+          "dendro"
+        ]
+      },
+      "base": {
+        "base_atk": 931.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 13103.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 799.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "electro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 120.0
+      },
+      "set_pools": [
+        {
+          "electro_dmg_bonus": 0.15
+        }
+      ],
+      "channel": "electro",
+      "rows": [
+        {
+          "id": "last",
+          "label": "Last Attack DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Last Attack DMG|{param3:P}",
+            "params": [
+              1.87,
+              0.51,
+              4.012
+            ]
+          },
+          "multiplier": 4.012,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "additive": "aggravate"
+        }
+      ],
+      "sources": [
+        {
+          "id": "set:15005:4",
+          "label": "set 15005 4pc",
+          "citation": "GO libs/gi/sheets/src/Artifacts/ThunderingFury/index.tsx:11-31 @ 2c13fc40",
+          "bonus": {
+            "conditions": [],
+            "effects": [
+              {
+                "stat": "reaction_bonus",
+                "value": 0.4,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "overloaded",
+                  "electro_charged",
+                  "superconduct",
+                  "hyperbloom"
+                ],
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "aggravate"
+                ],
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "lunar_charged"
+                ],
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "Stellar-Conduct DMG +20%",
+                "reason": "Stellar reactions are not modelled (P3: refused by name, `reactions.REFUSED`)"
+              },
+              {
+                "what": "Elemental Skill CD -1s on a reaction",
+                "reason": "no rotation timing in the estimate"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 10437.14851990118,
+      "go_value": 10437.14851990118,
+      "divergence": "none: an additive reaction takes the hit's own DEF",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "spread_nahida_baizhu_a4",
+      "covers": "an additive reaction on a mixed ATK + EM row (the flat term once), with a teammate's reaction bonus from his Max HP, capped at 50,000",
+      "go": [
+        "libs/gi/wr/src/formula.ts:405-453",
+        "libs/gi/keymap/src/StatConstants.ts:29-131,151-158",
+        "libs/gi/formula/src/data/char/Baizhu.ts:72-77,118-137,168-173"
+      ],
+      "givers": [
+        {
+          "name": "Nahida",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        },
+        {
+          "name": "Baizhu",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": {
+            "base_hp": 13348.0,
+            "hp_pct": 1.398,
+            "flat_hp": 4780.0
+          }
+        }
+      ],
+      "team": {
+        "element": "dendro",
+        "weapon_type": "WEAPON_CATALYST",
+        "member_elements": [
+          "dendro",
+          "dendro",
+          "electro"
+        ]
+      },
+      "base": {
+        "base_atk": 841.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10360.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 630.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 115.2,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "elemental_mastery": 187.0,
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "dendro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "dendro",
+      "rows": [
+        {
+          "id": "karma",
+          "label": "Tri-Karma Purification DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Tri-Karma Purification DMG|{param3:F1P} ATK+{param4:F1P} Elemental Mastery",
+            "params": [
+              1.7712,
+              2.3472,
+              1.8576,
+              3.7152
+            ]
+          },
+          "multiplier": 1.8576,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "extra_terms": [
+            {
+              "stat": "elemental_mastery",
+              "multiplier": 3.7152
+            }
+          ],
+          "additive": "spread"
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:baizhu",
+          "label": "Baizhu (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Baizhu.ts (pando), libs/gi/sheets/src/Characters/Baizhu/index.tsx (wr) @ 2c13fc40 \u2014 a4_burning_bloom pando:Baizhu.ts:73-74,118-127,168-171; a4_spread_aggravate pando:Baizhu.ts:75,128-137,172-173; gcsim internal/characters/baizhu/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "a4_after_heal",
+                "label": "After Baizhu heals the party (A4 All Things Are of the Earth)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "reaction_bonus",
+                "value": 0.7357700800000001,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "burning",
+                  "bloom",
+                  "hyperbloom",
+                  "burgeon"
+                ],
+                "when": [
+                  {
+                    "condition": "a4_after_heal",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.294308032,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "spread",
+                  "aggravate"
+                ],
+                "when": [
+                  {
+                    "condition": "a4_after_heal",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A1: Five Fortunes Forever: Healing Bonus below 50% HP",
+                "reason": "no damage effect"
+              },
+              {
+                "what": "TALENT: Holistic Revivification: shield and healing",
+                "reason": "no damage effect"
+              },
+              {
+                "what": "A4: All Things Are of the Earth: Lunar-Bloom DMG from his Max HP",
+                "reason": "Lunar-Bloom has no reaction-triggered instance at the pins (`reactions.REFUSED`)"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:baizhu/active_hp": "above",
+        "kit:baizhu/c4_after": 0,
+        "kit:baizhu/a4_after_heal": 1
+      },
+      "expected": 7256.21299485849,
+      "go_value": 7256.21299485849,
+      "divergence": "none: an additive reaction takes the hit's own DEF",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "burgeon_burning_overloaded_crimson_witch",
+      "covers": "three transformative rows of different multipliers under one set bonus",
+      "go": [
+        "libs/gi/wr/src/reaction/trans.ts:36-108",
+        "libs/gi/keymap/src/StatConstants.ts:29-131,151-158",
+        "libs/gi/sheets/src/Artifacts/CrimsonWitchOfFlames/index.tsx:20-58"
+      ],
+      "givers": [
+        {
+          "name": "Xiangling",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "dendro",
+          "hydro",
+          "electro"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [
+        {
+          "pyro_dmg_bonus": 0.15
+        }
+      ],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "burgeon",
+          "label": "burgeon",
+          "move": null,
+          "count": 2,
+          "reaction": {
+            "reaction": "burgeon"
+          },
+          "conditionals": {}
+        },
+        {
+          "id": "burning",
+          "label": "burning",
+          "move": null,
+          "count": 4,
+          "reaction": {
+            "reaction": "burning"
+          },
+          "conditionals": {}
+        },
+        {
+          "id": "overloaded",
+          "label": "overloaded",
+          "move": null,
+          "count": 1,
+          "reaction": {
+            "reaction": "overloaded"
+          },
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "set:15006:4",
+          "label": "set 15006 4pc",
+          "citation": "GO libs/gi/sheets/src/Artifacts/CrimsonWitchOfFlames/index.tsx:20-58 @ 2c13fc40",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "stacks",
+                "label": "Elemental Skill stacks",
+                "kind": "stacks",
+                "default": 3.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": 3.0,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "reaction_bonus",
+                "value": 0.4,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "overloaded",
+                  "burning",
+                  "burgeon"
+                ],
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.15,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "vaporize",
+                  "reverse_vaporize"
+                ],
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.15,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "melt",
+                  "reverse_melt"
+                ],
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.075,
+                "elements": [
+                  "pyro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "stacks",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "set:15006:4/stacks": 3
+      },
+      "expected": 34204.893744829955,
+      "go_value": 34204.551699309544,
+      "divergence": "transformative DEF: gcsim ignores DEF (1, ours) against GO's enemy.transDef, about 1 - 1e-5",
+      "relative_divergence_from_go": 1.0000000099909805e-05
+    },
+    {
+      "name": "bloom_flower_of_paradise_lost",
+      "covers": "a reaction bonus per stack (a set condition), and a 2-piece's EM in the pool reaching a reaction row",
+      "go": [
+        "libs/gi/wr/src/reaction/trans.ts:36-108",
+        "libs/gi/keymap/src/StatConstants.ts:29-131,151-158",
+        "libs/gi/sheets/src/Artifacts/FlowerOfParadiseLost/index.tsx:22-104"
+      ],
+      "givers": [
+        {
+          "name": "Nahida",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "dendro",
+        "weapon_type": "WEAPON_CATALYST",
+        "member_elements": [
+          "dendro",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 841.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10360.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 630.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 115.2,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "elemental_mastery": 187.0,
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "dendro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [
+        {
+          "elemental_mastery": 80.0
+        }
+      ],
+      "channel": "dendro",
+      "rows": [
+        {
+          "id": "bloom",
+          "label": "bloom",
+          "move": null,
+          "count": 2,
+          "reaction": {
+            "reaction": "bloom"
+          },
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "set:15028:4",
+          "label": "set 15028 4pc",
+          "citation": "GO libs/gi/sheets/src/Artifacts/FlowerOfParadiseLost/index.tsx:22-104 @ 2c13fc40",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "stacks",
+                "label": "Stacks from triggering Bloom, Hyperbloom or Burgeon",
+                "kind": "stacks",
+                "default": 4.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": 4.0,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "reaction_bonus",
+                "value": 0.4,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "bloom",
+                  "hyperbloom",
+                  "burgeon"
+                ],
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.1,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "bloom",
+                  "hyperbloom",
+                  "burgeon"
+                ],
+                "when": [],
+                "per": "stacks",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "Lunar-Bloom DMG +10%, and its stacks",
+                "reason": "Lunar-Bloom is refused by name (`reactions.REFUSED`)"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "set:15028:4/stacks": 4
+      },
+      "expected": 22746.475959446627,
+      "go_value": 22746.248496959386,
+      "divergence": "transformative DEF: gcsim ignores DEF (1, ours) against GO's enemy.transDef, about 1 - 1e-5",
+      "relative_divergence_from_go": 1.0000000099845319e-05
+    },
+    {
+      "name": "superconduct_disenchantment",
+      "covers": "a superconduct row under a set's superconduct bonus",
+      "go": [
+        "libs/gi/wr/src/reaction/trans.ts:36-108",
+        "libs/gi/keymap/src/StatConstants.ts:29-131,151-158",
+        "libs/gi/sheets/src/Artifacts/DisenchantmentInDeepShadow/index.tsx:14-45"
+      ],
+      "givers": [
+        {
+          "name": "Kaeya",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "cryo",
+          "electro"
+        ]
+      },
+      "base": {
+        "base_atk": 788.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 11636.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 792.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "elemental_mastery": 50.0,
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "superconduct",
+          "label": "superconduct",
+          "move": null,
+          "count": 1,
+          "reaction": {
+            "reaction": "superconduct"
+          },
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "set:15046:4",
+          "label": "set 15046 4pc",
+          "citation": "GO libs/gi/sheets/src/Artifacts/DisenchantmentInDeepShadow/index.tsx:14-45 @ 2c13fc40",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "enemy_superconduct",
+                "label": "Enemy affected by Superconduct or Stellar-Conduct",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "reaction_bonus",
+                "value": 0.8,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "superconduct"
+                ],
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "crit_rate",
+                "value": 0.16,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "enemy_superconduct",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "Stellar-Conduct DMG +40%",
+                "reason": "Stellar reactions are not modelled (P3: refused by name, `reactions.REFUSED`)"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "set:15046:4/enemy_superconduct": 1
+      },
+      "expected": 4278.098821932165,
+      "go_value": 4278.056041371325,
+      "divergence": "transformative DEF: gcsim ignores DEF (1, ours) against GO's enemy.transDef, about 1 - 1e-5",
+      "relative_divergence_from_go": 1.0000000099781326e-05
+    },
+    {
+      "name": "lunar_charged_flins_night_of_the_skys_unveiling",
+      "covers": "a Lunar row: the trigger's own CRIT and a set's CRIT Rate reach it, a set's Lunar bonus and the kit's Electro RES shred too; the kit's ATK does not",
+      "go": [
+        "libs/gi/wr/src/reaction/special.ts:26-122",
+        "libs/gi/keymap/src/StatConstants.ts:29-131,151-158",
+        "libs/gi/wr/src/reaction/lunar.ts:10-40",
+        "libs/gi/sheets/src/Artifacts/NightOfTheSkysUnveiling/index.tsx:26-62",
+        "libs/gi/formula/src/data/char/Flins.ts:81-91,124-131,176-177"
+      ],
+      "givers": [
+        {
+          "name": "Flins",
+          "constellation": 2,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "electro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "electro",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 1018.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12491.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 809.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6,
+        "electro_dmg_bonus": 0.466,
+        "elemental_mastery": 200.0
+      },
+      "set_pools": [],
+      "channel": "electro",
+      "rows": [
+        {
+          "id": "lc",
+          "label": "lunar-charged",
+          "move": null,
+          "count": 2,
+          "reaction": {
+            "reaction": "lunar_charged"
+          },
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "set:15041:4",
+          "label": "set 15041 4pc",
+          "citation": "GO libs/gi/sheets/src/Artifacts/NightOfTheSkysUnveiling/index.tsx:26-62 @ 2c13fc40",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "gleaming_moon",
+                "label": "Gleaming Moon: Intent, at Moonsign",
+                "kind": "choice",
+                "default": "",
+                "default_reason": "situational",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": [
+                  "nascent_gleam",
+                  "ascendant_gleam"
+                ]
+              }
+            ],
+            "effects": [
+              {
+                "stat": "crit_rate",
+                "value": 0.15,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "gleaming_moon",
+                    "values": [
+                      "nascent_gleam"
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "crit_rate",
+                "value": 0.3,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "gleaming_moon",
+                    "values": [
+                      "ascendant_gleam"
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.1,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "lunar_charged",
+                  "lunar_crystallize"
+                ],
+                "when": [
+                  {
+                    "condition": "gleaming_moon",
+                    "values": [
+                      "nascent_gleam",
+                      "ascendant_gleam"
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "Lunar-Bloom DMG +10%, and a second Gleaming Moon effect from a teammate's set",
+                "reason": "Lunar-Bloom is refused by name (`reactions.REFUSED`); teammates' artifact sets are not modelled"
+              }
+            ]
+          }
+        },
+        {
+          "id": "kit:flins",
+          "label": "Flins (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Flins.ts (pando), libs/gi/sheets/src/Characters/Flins/index.tsx (wr) @ 2c13fc40 \u2014 c2_res pando:Flins.ts:81-86,124-130,176; gcsim internal/characters/flins/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "c2_hit",
+                "label": "Opponents hit by his Electro DMG after Northland Spearstorm (C2)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "moonsign",
+                "label": "Ascendant Gleam: two or more Moonsign characters in the party",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "off: a party composition the estimate does not check; turn it on if your party has it",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "enemy_res",
+                "value": -0.25,
+                "elements": [
+                  "electro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c2_hit",
+                    "values": [
+                      1.0
+                    ]
+                  },
+                  {
+                    "condition": "moonsign",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "KIT: Moonsign Benediction, Symphony of Winter, the burst's Lunar-Charged phases and C6: Lunar-Charged DMG",
+                "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
+              },
+              {
+                "what": "A4: Whispering Flame: EM from his ATK, capped (C4 raises it)",
+                "reason": "a capped conversion of his ATK into EM, which the recipe does not carry; his EM reaches only reaction damage, and a reaction row reads the optimized character's own"
+              },
+              {
+                "what": "TALENT: Ancient Rite: Arcane Light: the Electro infusion in Manifest Flame",
+                "reason": "the skill-talent rows are Electro already; his ordinary Normal Attacks keep their Physical channel"
+              },
+              {
+                "what": "C1: Part the Veil of Snow: Northland Spearstorm cooldown and Energy",
+                "reason": "no damage effect"
+              },
+              {
+                "what": "C2: The Devil's Wall: an extra Electro hit",
+                "reason": "a damage instance, not a buff: not offered as a target row yet"
+              },
+              {
+                "what": "A0: A Light in the Dark: an exploration bonus",
+                "reason": "no damage effect"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "set:15041:4/gleaming_moon": "ascendant_gleam",
+        "kit:flins/c2_hit": 1,
+        "kit:flins/moonsign": 1
+      },
+      "expected": 30167.84638354101,
+      "go_value": 30167.544708090914,
+      "divergence": "transformative DEF: gcsim ignores DEF (1, ours) against GO's enemy.transDef, about 1 - 1e-5",
+      "relative_divergence_from_go": 1.0000000099971674e-05
+    },
+    {
+      "name": "lunar_crystallize_aubade_mona_c4",
+      "covers": "a Lunar-Crystallize row: a set's two conditional Lunar bonuses, a teammate's reaction bonus and CRIT Rate; the teammate's DMG% does not reach it",
+      "go": [
+        "libs/gi/wr/src/reaction/special.ts:26-122",
+        "libs/gi/keymap/src/StatConstants.ts:29-131,151-158",
+        "libs/gi/sheets/src/Artifacts/AubadeOfMorningstarAndMoon/index.tsx:25-46",
+        "libs/gi/formula/src/data/char/Mona.ts:84-92,103,128-148,232-259"
+      ],
+      "givers": [
+        {
+          "name": "a Geo trigger",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        },
+        {
+          "name": "Mona",
+          "constellation": 4,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_burst": 10
+          },
+          "stats": {}
+        }
+      ],
+      "team": {
+        "element": "geo",
+        "weapon_type": "WEAPON_CLAYMORE",
+        "member_elements": [
+          "geo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 850.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12000.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 800.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "elemental_mastery": 300.0,
+        "flat_atk": 311.0,
+        "crit_rate": 0.4,
+        "crit_dmg": 0.8,
+        "geo_dmg_bonus": 0.466
+      },
+      "set_pools": [],
+      "channel": "geo",
+      "rows": [
+        {
+          "id": "lcr",
+          "label": "lunar-crystallize",
+          "move": null,
+          "count": 3,
+          "reaction": {
+            "reaction": "lunar_crystallize"
+          },
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "set:15043:4",
+          "label": "set 15043 4pc",
+          "citation": "GO libs/gi/sheets/src/Artifacts/AubadeOfMorningstarAndMoon/index.tsx:25-46 @ 2c13fc40",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "off_field",
+                "label": "The wearer off-field when the reaction lands",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "moonsign",
+                "label": "Party Moonsign",
+                "kind": "choice",
+                "default": "",
+                "default_reason": "situational",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": [
+                  "nascent_gleam",
+                  "ascendant_gleam"
+                ]
+              }
+            ],
+            "effects": [
+              {
+                "stat": "reaction_bonus",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "lunar_charged",
+                  "lunar_crystallize"
+                ],
+                "when": [
+                  {
+                    "condition": "off_field",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.4,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "lunar_charged",
+                  "lunar_crystallize"
+                ],
+                "when": [
+                  {
+                    "condition": "off_field",
+                    "values": [
+                      1.0
+                    ]
+                  },
+                  {
+                    "condition": "moonsign",
+                    "values": [
+                      "ascendant_gleam"
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "Lunar-Bloom DMG, both parts",
+                "reason": "Lunar-Bloom is refused by name (`reactions.REFUSED`)"
+              }
+            ]
+          }
+        },
+        {
+          "id": "kit:mona",
+          "label": "Mona (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Mona.ts (pando), libs/gi/sheets/src/Characters/Mona/index.tsx (wr) @ 2c13fc40 \u2014 omen_dmg pando:Mona.ts:61,130,232; wr:index.tsx:75,129-134,388; c1_vaporize pando:Mona.ts:86,140-142,251-258; wr:index.tsx:100,152-155,392-396; c4_crit_rate pando:Mona.ts:103,146-148,233; wr:index.tsx:117,163-167,401; c1_electro_charged pando:Mona.ts:85,131-136,236-247; c1_swirl pando:Mona.ts:87,137-139,248-250; c1_lunar_crystallize pando:Mona.ts:92,143-145,254-259; gcsim internal/characters/mona/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "omen",
+                "label": "The opponent is affected by Omen (Stellaris Phantasm)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "c1_omen",
+                "label": "Party members' reactions on an opponent affected by Omen (C1 Prophecy of Submersion)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "off: it depends on the party's reactions on an Omen-affected opponent",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.6,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "omen",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.15,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "vaporize",
+                  "reverse_vaporize"
+                ],
+                "when": [
+                  {
+                    "condition": "c1_omen",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "crit_rate",
+                "value": 0.15,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "omen",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.15,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "electro_charged",
+                  "lunar_charged"
+                ],
+                "when": [
+                  {
+                    "condition": "c1_omen",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.15,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "swirl"
+                ],
+                "when": [
+                  {
+                    "condition": "c1_omen",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.15,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "lunar_crystallize"
+                ],
+                "when": [
+                  {
+                    "condition": "c1_omen",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "KIT: Witch's Eve Rite (Hexerei) and every Hexerei part of her constellations",
+                "reason": "the Hexerei party mechanic is not modelled (as Sucrose's)"
+              },
+              {
+                "what": "A1: \"Come 'n' Get Me, Hag!\": the Phantom's explosion",
+                "reason": "a damage instance, not a buff: not offered as a target row yet"
+              },
+              {
+                "what": "C2: Lunar Chain: Charged Attack follow-ups",
+                "reason": "a damage instance, not a buff: not offered as a target row yet"
+              },
+              {
+                "what": "TALENT: Stellaris Phantasm: the Illusory Bubble",
+                "reason": "no damage effect: crowd control"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "set:15043:4/off_field": 1,
+        "set:15043:4/moonsign": "ascendant_gleam",
+        "kit:mona/omen": 1,
+        "kit:mona/c1_omen": 1,
+        "kit:mona/c6_stacks": 0
+      },
+      "expected": 31824.30147904076,
+      "go_value": 31823.98323920519,
+      "divergence": "transformative DEF: gcsim ignores DEF (1, ours) against GO's enemy.transDef, about 1 - 1e-5",
+      "relative_divergence_from_go": 1.0000000099896248e-05
     }
   ]
 }

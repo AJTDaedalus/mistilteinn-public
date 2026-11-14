@@ -170,6 +170,13 @@
     "reason": "the estimate scores one target; more opponents in range raise it, so set it to how many you fight"
    },
    "go": "pando:Nahida.ts:115,204-210; wr:index.tsx:285-300,345"
+  },
+  {
+   "key": "c2_bloom",
+   "label": "Burning, Bloom, Hyperbloom or Burgeon triggered by the party (C2 The Root of All Fullness)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Nahida.ts:112,214-228; wr:index.tsx:270-277,359"
   }
  ],
  "effects": [
@@ -329,6 +336,60 @@
    ],
    "go": "pando:Nahida.ts:83-87,184-186,191-197,246-254",
    "gcsim": "asc.go:62-99"
+  },
+  {
+   "key": "c2_bloom_crit_rate",
+   "label": "C2 The Root of All Fullness: Burning, Bloom, Hyperbloom and Burgeon CRIT Rate",
+   "source": "c2",
+   "receivers": "team",
+   "stat": "reaction_crit_rate",
+   "reactions": [
+    "burning",
+    "bloom",
+    "hyperbloom",
+    "burgeon"
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "c2_bloom",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Nahida.ts:90,214-220",
+   "gcsim": "internal/characters/nahida/cons.go:42-44"
+  },
+  {
+   "key": "c2_bloom_crit_dmg",
+   "label": "C2 The Root of All Fullness: Burning, Bloom, Hyperbloom and Burgeon CRIT DMG",
+   "source": "c2",
+   "receivers": "team",
+   "stat": "reaction_crit_dmg",
+   "reactions": [
+    "burning",
+    "bloom",
+    "hyperbloom",
+    "burgeon"
+   ],
+   "value": {
+    "constant": 1.0,
+    "cite": "GO pando Nahida.ts:91 `critDMG_: 1`; gcsim cons.go:45 `Stats[CD] = 1`; her C2 list carries no 100%"
+   },
+   "when": [
+    {
+     "condition": "c2_bloom",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Nahida.ts:91,222-228",
+   "gcsim": "internal/characters/nahida/cons.go:45"
   }
  ],
  "unmodelled": [
@@ -337,11 +398,6 @@
    "what": "Compassion Illuminated when the optimized character's own Elemental Mastery is the party's highest",
    "reason": "the highest is taken over the teammates' pass-1 Elemental Mastery: the optimized character's moves with every candidate, and GO's `team.premod.eleMas.max` would use it where it is larger",
    "receiver": "teammate"
-  },
-  {
-   "source": "c2",
-   "what": "The Root of All Fullness: Burning, Bloom, Hyperbloom, Burgeon and Lunar-Bloom CRIT",
-   "reason": "transformative and Lunar reaction damage is not modelled yet (P3)"
   },
   {
    "source": "c6",
@@ -357,6 +413,11 @@
    "source": "kit",
    "what": "Teammates' Elemental Mastery buffs (and Nahida's own C4) in the highest EM her A1 reads",
    "reason": "two-pass rule (DESIGN \u00a72.6): a kit buff never raises a stat another buff reads; GO's `team.premod.eleMas.max` would include them"
+  },
+  {
+   "source": "c2",
+   "what": "The Root of All Fullness: Lunar-Bloom CRIT",
+   "reason": "Lunar-Bloom has no reaction-triggered instance at the pins (`reactions.REFUSED`)"
   }
  ]
 }

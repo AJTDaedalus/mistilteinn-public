@@ -89,6 +89,26 @@ def growth_curve(kind: CurveKind, name: str, level: int) -> float:
     return float(value)
 
 
+def reaction_level_multiplier(level: int) -> float:
+    """The reaction level multiplier at a character level (math-fallback P3, task 13).
+
+    `ElementCoeffExcelConfigData.playerElementLevelCo`: what every transformative, additive
+    and Lunar reaction's damage starts from, at the **triggering** character's level (gcsim
+    `combat.CalcReactionBaseDmg`, `pkg/core/combat/reaction.go:13-18`; GO `transMulti1`,
+    `libs/gi/wr/src/reaction/multi.ts:26-30`). Raises for a level the table does not carry,
+    as `growth_curve` does: a clamped or defaulted level would be a plausible wrong number.
+    """
+    levels = _load("reaction_level_multipliers")["levels"]
+    value = levels.get(str(level))
+    if value is None:
+        msg = (
+            f"no reaction level multiplier for level {level} (the table covers "
+            f"1..{len(levels)}). A level outside it is a caller bug, not a value to clamp."
+        )
+        raise SnapshotUnavailableError(msg)
+    return float(value)
+
+
 def artifact_upgrade_levels(rarity: int) -> tuple[int, ...]:
     """The artifact levels at which a piece of this rarity gains a substat roll.
 

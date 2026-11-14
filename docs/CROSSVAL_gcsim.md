@@ -78,6 +78,11 @@ citations it invalidates — the same rule the YuanShenResources snapshot follow
 | the Traveler's three story-quest buffs, and that they are **default-on** | `internal/characters/traveler/common/storybuffs.go:26-57` | `formula/genshin/story_buffs.py` |
 | melt multipliers: Pyro→Cryo 2.0, Cryo→Pyro 1.5 | `pkg/reactable/melt.go:23,30` | `formula/genshin/damage.py:_AMP_MULTIPLIERS` |
 | vaporize multipliers: Hydro→Pyro 2.0, Pyro→Hydro 1.5 | `pkg/reactable/vaporize.go:26,33` | `formula/genshin/damage.py:_AMP_MULTIPLIERS` |
+| reaction level base: `reactionLvlBase[lvl-1]`, the game's `playerElementLevelCo` (P3) | `pkg/core/combat/reaction.go:13-18`, `reaction.dm.go` (generated) | `data/yuanshen/snapshot/reaction_level_multipliers.json`, held to it by `test_reaction_damage.py` |
+| transformative: `k × lvl × (1 + 16·EM/(2000+EM) + bonus)`, no DMG%, DEF ignored | `pkg/core/combat/reaction.go:33-39`; `pkg/enemy/damage.go:22-43`; `IgnoreDefPercent: 1` in each reaction | `formula/genshin/reactions.py:transformative_damage`; crossval `tests/crossval/test_reaction_crossval.py` |
+| transformative multipliers (overloaded 2.75, EC 2, superconduct 1.5, swirl 0.6, shatter 3, burning 0.25, bloom 2, burgeon 3, hyperbloom 3) | `pkg/reactable/{overload,electrocharged,superconduct,swirl,freeze,burning}.go`, `internal/template/dendrocore/dendrocore.go:16-18` | `reactions.py:TRANSFORMATIVE` |
+| additive: `{1.25 spread, 1.15 aggravate} × lvl × (1 + 5·EM/(1200+EM) + bonus)` into `FlatDmg` | `pkg/core/combat/reaction.go:41-43`, `pkg/reactable/catalyze.go:24,43` | `reactions.py:additive_flat`, `damage.py:Hit.additive` |
+| Lunar: `{3 LC, 1.6 LCr} × lvl × (1 + 6·EM/(2000+EM) + bonus) × (1 + BaseDmgBonus)`, the contributor's own CRIT | `pkg/core/combat/reaction.go:20-31`, `pkg/reactable/lunarcharged.go:22,140-185` | `reactions.py:lunar_damage` (one contribution; gcsim's ranked weights recorded, `DECISIONS.md` §42) |
 
 Extend this table in the same commit that adds the citation. A constant whose row is missing
 here is a constant nobody can re-check.
