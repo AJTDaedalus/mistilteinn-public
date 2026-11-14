@@ -163,3 +163,13 @@ def test_a_reference_past_the_pinned_list_is_refused():
     data["effects"][0]["value"]["param"] = 99
     with pytest.raises(ValueError, match="not pinned"):
         weapon_passives.WeaponPassive.model_validate(data)
+
+
+def test_a_condition_no_effect_reads_is_refused():
+    """Found curating Thrilling Tales: its effect had lost its `when`, so its toggle switched
+    nothing and the buff was always on. The schema now refuses the shape."""
+    path = weapon_passives._DATA / "thrilling_tales_of_dragon_slayers.json"
+    data = json.loads(path.read_text())
+    data["effects"][0].pop("when")
+    with pytest.raises(ValueError, match="no effect reads this condition"):
+        weapon_passives.WeaponPassive.model_validate(data)

@@ -252,13 +252,22 @@ class WeaponPassive(sheets._Strict):  # noqa: SLF001
             for index in effect.value.params_read():
                 if any(index >= n for n in lengths):
                     raise ValueError(f"{self.slug}/{effect.key}: param {index} is not pinned")
-        for condition in self.conditions:
-            if condition.max_raise is not None or condition.max_raise_cited is not None:
-                raise ValueError(f"{self.slug}/{condition.key}: a weapon has no constellation "
-                                 "to raise a maximum")
+        self._check_conditions()
         if not self.effects and not self.unmodelled:
             raise ValueError(f"{self.slug}: a passive with no effect says why in `unmodelled`")
         return self
+
+    def _check_conditions(self) -> None:
+        read = ({w.condition for e in self.effects for w in e.when}
+                | {e.per for e in self.effects if e.per is not None})
+        for condition in self.conditions:
+            # A condition nothing reads is a toggle wired to nothing — and, found curating
+            # Thrilling Tales, the sign of an effect that forgot its `when`.
+            if condition.key not in read:
+                raise ValueError(f"{self.slug}/{condition.key}: no effect reads this condition")
+            if condition.max_raise is not None or condition.max_raise_cited is not None:
+                raise ValueError(f"{self.slug}/{condition.key}: a weapon has no constellation "
+                                 "to raise a maximum")
 
 
 @cache

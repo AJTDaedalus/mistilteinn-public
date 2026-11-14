@@ -34916,7 +34916,19 @@
           "label": "Thrilling Tales of Dragon Slayers R5 (Kamisato Ayato)",
           "citation": "GO libs/gi/sheets/src/Weapons/Catalyst/ThrillingTalesOfDragonSlayers/index.tsx @ 2c13fc40 \u2014 atk :19,23-40; gcsim internal/weapons/catalyst/thrilling/thrilling.go @ b107b5dc",
           "bonus": {
-            "conditions": [],
+            "conditions": [
+              {
+                "key": "heritage",
+                "label": "The wielder switched out, this character entering",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
             "effects": [
               {
                 "stat": "atk_pct",
@@ -34926,7 +34938,14 @@
                 "moves": null,
                 "rows": null,
                 "reactions": null,
-                "when": [],
+                "when": [
+                  {
+                    "condition": "heritage",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
                 "per": null,
                 "by_stack": null,
                 "per_team": null,

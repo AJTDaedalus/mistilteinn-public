@@ -80,6 +80,14 @@
    "value": {
     "param": 0
    },
+   "when": [
+    {
+     "condition": "heritage",
+     "values": [
+      1
+     ]
+    }
+   ],
    "go": "19,23-40"
   }
  ],
