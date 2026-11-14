@@ -1,0 +1,371 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Mavuika",
+ "nanoka_id": "10000106",
+ "slug": "mavuika",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Mavuika.ts",
+  "wr": "libs/gi/sheets/src/Characters/Mavuika/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/mavuika/",
+ "verified_by": [
+  "mavuika_c2_on_her_own_burst"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:Mavuika.ts:227-228; wr:index.tsx:419",
+   "gcsim": "mavuika.go:51"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:Mavuika.ts:227,229; wr:index.tsx:420",
+   "gcsim": "mavuika.go:52"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_burst": [
+    "Sunfell Slice DMG Bonus|{param3:F1P} ATK per Fighting Spirit"
+   ]
+  },
+  "passives": {
+   "1": [
+    0.3,
+    10.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.0001,
+    20.0,
+    200.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "constellations": {
+   "1": [
+    40.0,
+    0.25,
+    0.4,
+    8.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "2": [
+    200.0,
+    0.2,
+    0.6,
+    0.9,
+    1.2,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.1,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "fighting_spirit",
+   "label": "Fighting Spirit consumed by Hour of Burning Skies",
+   "kind": "number",
+   "default_by": "giver_is_subject",
+   "max": 200,
+   "step": 10,
+   "go": "pando:Mavuika.ts:109,120-121,125-127; wr:index.tsx:123-136"
+  },
+  {
+   "key": "a1_nightsoul_burst",
+   "label": "A party member triggered Nightsoul Burst (Mavuika's own Natlan hits can) (A1)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Mavuika.ts:117-119,148-150; wr:index.tsx:159-166"
+  },
+  {
+   "key": "a4_after_burst",
+   "label": "Just after Hour of Burning Skies (A4 at its peak; below C4 it decays over 20s)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Mavuika.ts:110,122-123,151-164; wr:index.tsx:167-199"
+  },
+  {
+   "key": "c1_gain_spirit",
+   "label": "After gaining Fighting Spirit (C1)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Mavuika.ts:117-119,165-167; wr:index.tsx:201-208"
+  },
+  {
+   "key": "c2_form",
+   "label": "In either form of her Elemental Skill (C2)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Mavuika.ts:117-119,168-176; wr:index.tsx:209-219"
+  },
+  {
+   "key": "c2_flamestrider",
+   "label": "In Flamestrider form (C2)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Mavuika.ts:117-119,199-205; wr:index.tsx:210,249-257"
+  }
+ ],
+ "effects": [
+  {
+   "key": "burst_sunfell",
+   "label": "Hour of Burning Skies: Sunfell Slice DMG + ATK per Fighting Spirit",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "talent": "elemental_burst",
+    "row": "Sunfell Slice DMG Bonus",
+    "times_stat": "atk"
+   },
+   "per": "fighting_spirit",
+   "go": "pando:Mavuika.ts:66,125-136,234; wr:index.tsx:123-136",
+   "gcsim": "burst.go:42-69,104-109"
+  },
+  {
+   "key": "a1_atk",
+   "label": "A1 Gift of Flaming Flowers: ATK",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "passive": 1,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "a1_nightsoul_burst",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Mavuika.ts:74-77,148-150,231; wr:index.tsx:159-166",
+   "gcsim": "asc.go:18-32"
+  },
+  {
+   "key": "a4_dmg",
+   "label": "A4 \"Kiongozi\": DMG Bonus per Fighting Spirit for the active character",
+   "source": "a4",
+   "receivers": "active",
+   "stat": "dmg_bonus",
+   "value": {
+    "constant": 0.002,
+    "cite": "GO pando:Mavuika.ts:78-83 `passive2[0][0] * 20` (wr:index.tsx:90-95) and gcsim asc.go:50 `burstStacks*0.002` agree; the seeded A4 list publishes 0.0001"
+   },
+   "per": "fighting_spirit",
+   "when": [
+    {
+     "condition": "a4_after_burst",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Mavuika.ts:78-83,151-164,236-242; wr:index.tsx:167-199",
+   "gcsim": "asc.go:34-67"
+  },
+  {
+   "key": "c1_atk",
+   "label": "C1 The Night-Lord's Explication: ATK",
+   "source": "c1",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "constellation": 1,
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "c1_gain_spirit",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Mavuika.ts:84-89,165-167,231; wr:index.tsx:201-208",
+   "gcsim": "cons.go:17-44"
+  },
+  {
+   "key": "c2_base_atk",
+   "label": "C2 The Ashen Price: base ATK",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "base_atk",
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "c2_form",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Mavuika.ts:90-96,168-176,232; wr:index.tsx:209-219",
+   "gcsim": "cons.go:46-61"
+  },
+  {
+   "key": "c2_burst",
+   "label": "C2 The Ashen Price: Sunfell Slice DMG + a share of ATK in Flamestrider form",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 4,
+    "times_stat": "atk"
+   },
+   "when": [
+    {
+     "condition": "c2_flamestrider",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Mavuika.ts:90-96,199-205,234; wr:index.tsx:249-257",
+   "gcsim": "cons.go:104-112"
+  },
+  {
+   "key": "c4_dmg",
+   "label": "C4 The Leader's Resolve: A4's DMG Bonus raised, and it no longer decays",
+   "source": "c4",
+   "receivers": "active",
+   "stat": "dmg_bonus",
+   "value": {
+    "constellation": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "a4_after_burst",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "min_ascension": 4,
+   "go": "pando:Mavuika.ts:97-99,206-214,236-242; wr:index.tsx:259-268",
+   "gcsim": "cons.go:114-126"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Hour of Burning Skies: Flamestrider Normal and Charged Attack DMG + ATK per Fighting Spirit",
+   "reason": "the Flamestrider attacks are rows of her skill talent, so a buff limited to them cannot be scoped by move without also reaching her ordinary attacks"
+  },
+  {
+   "source": "a4",
+   "what": "\"Kiongozi\" decaying over 20s after the burst",
+   "reason": "a time-varying buff: the toggle applies its peak, the moment after the burst"
+  },
+  {
+   "source": "c1",
+   "what": "The Night-Lord's Explication: Nightsoul points and Fighting Spirit gain",
+   "reason": "no damage effect: resources"
+  },
+  {
+   "source": "c2",
+   "what": "The Ashen Price: opponents' DEF reduced near the Ring of Searing Radiance",
+   "reason": "enemy DEF reduction: the format has no `def_reduction` effect stat yet"
+  },
+  {
+   "source": "c2",
+   "what": "The Ashen Price: Flamestrider Normal and Charged Attack DMG + a share of ATK",
+   "reason": "the Flamestrider attacks are rows of her skill talent, so a buff limited to them cannot be scoped by move without also reaching her ordinary attacks"
+  },
+  {
+   "source": "c6",
+   "what": "\"Humanity's Name\" Unfettered: extra hits from the Ring and from Flamestrider",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  }
+ ]
+}

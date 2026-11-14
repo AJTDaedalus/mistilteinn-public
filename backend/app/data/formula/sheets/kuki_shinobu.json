@@ -1,0 +1,166 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Kuki Shinobu",
+ "nanoka_id": "10000065",
+ "slug": "kuki_shinobu",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/KukiShinobu.ts",
+  "wr": "libs/gi/sheets/src/Characters/KukiShinobu/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/kuki/",
+ "verified_by": [
+  "kuki_a4_on_her_own_ring"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:KukiShinobu.ts:112-113; wr:index.tsx:167",
+   "gcsim": "kuki.go:22"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:KukiShinobu.ts:112,114; wr:index.tsx:168",
+   "gcsim": "kuki.go:21"
+  }
+ ],
+ "pins": {
+  "passives": {
+   "4": [
+    0.75,
+    0.25,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "constellations": {
+   "6": [
+    0.25,
+    15.0,
+    150.0,
+    60.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "c6_low_hp",
+   "label": "Kuki Shinobu's HP fell below 25% (C6)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:KukiShinobu.ts:93-94,107; wr:index.tsx:116-121,395-410"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a4_skill",
+   "label": "A4 Heart's Repose: Elemental Skill DMG + 25% of her Elemental Mastery",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "skill"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 1,
+    "times_stat": "elemental_mastery"
+   },
+   "go": "pando:KukiShinobu.ts:66-69,102-106,118-119; wr:index.tsx:111-114,170",
+   "gcsim": "asc.go:41-46"
+  },
+  {
+   "key": "c6_em",
+   "label": "C6 To Ward Weakness: Elemental Mastery",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "constellation": 6,
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "c6_low_hp",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:KukiShinobu.ts:80-85,107,117; wr:index.tsx:116-121,171",
+   "gcsim": "cons.go:63-95"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Sanctifying Ring: Grass Ring of Sanctification healing",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "a1",
+   "what": "Breaking Free: Healing Bonus below 50% HP",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "a4",
+   "what": "Heart's Repose: Grass Ring healing from her Elemental Mastery",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "c1",
+   "what": "To Cloister Compassion: Gyoei Narukami Kariyama Rite's AoE",
+   "reason": "no damage effect: area"
+  },
+  {
+   "source": "c2",
+   "what": "To Forsake Fortune: Grass Ring duration",
+   "reason": "no damage effect: duration"
+  },
+  {
+   "source": "c4",
+   "what": "To Sever Sealing: an extra hit from her Max HP",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c6",
+   "what": "To Ward Weakness: surviving fatal damage",
+   "reason": "no damage effect"
+  }
+ ]
+}

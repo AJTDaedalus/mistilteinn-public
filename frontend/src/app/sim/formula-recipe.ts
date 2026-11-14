@@ -334,6 +334,12 @@ interface Buffs {
   defReduction: number;
   /** The target's DEF ignored by this hit (Raiden's C2), the chain's other DEF input. */
   defIgnore: number;
+  /** Flat ATK per point of the hit owner's own total DEF (Noelle's Sweeping Time on herself). */
+  atkFromDef: number;
+  /** Base ATK, before the percentage (Mavuika's C2). */
+  baseAtk: number;
+  /** Added to the talent term's base-damage multiplier (GO `baseMulti`). */
+  baseDmgBonus: number;
 }
 
 function noBuffs(): Buffs {
@@ -342,6 +348,7 @@ function noBuffs(): Buffs {
     reactionBonus: 0, resistance: 0, flatDamage: 0, flatFrom: { atk: 0, hp: 0, def: 0, em: 0 },
     erConversion: null,
     flatAtk: 0, bonusFromEm: 0, flatDef: 0, defReduction: 0, defIgnore: 0,
+    atkFromDef: 0, baseAtk: 0, baseDmgBonus: 0,
   };
 }
 
@@ -443,6 +450,9 @@ export function applySources(
         case 'flat_def': buffs.flatDef += amount; break;
         case 'def_reduction': buffs.defReduction += amount; break;
         case 'def_ignore': buffs.defIgnore += amount; break;
+        case 'flat_atk_from_def': buffs.atkFromDef += amount; break;
+        case 'base_atk': buffs.baseAtk += amount; break;
+        case 'base_dmg_bonus': buffs.baseDmgBonus += amount; break;
         case 'dmg_bonus_from_energy_recharge':
           if (buffs.erConversion) throw new Error('two Energy Recharge conversions on one hit');
           buffs.erConversion = { perUnit: amount, cap: effect.cap ?? 0 };
@@ -493,7 +503,9 @@ export function rowHits(
     throw new Error(`row ${row.id}: a constant flat term and an ATK conversion on one hit`);
   }
   const b = (q: string): number => base[q] ?? 0;
-  const calibratedBase = { atk: b('base_atk'), hp: b('base_hp'), def: b('base_def') };
+  const calibratedBase = {
+    atk: b('base_atk') + buffs.baseAtk, hp: b('base_hp'), def: b('base_def'),
+  };
   const calibratedPercent = {
     atk: b('atk_pct') + buffs.percent.atk,
     hp: b('hp_pct') + buffs.percent.hp,
@@ -505,15 +517,30 @@ export function rowHits(
   const calibratedEm = b('elemental_mastery') + buffs.em;
   const reactionBonus = hit.reactionBonus + buffs.reactionBonus;
 
+  if (buffs.baseDmgBonus !== 0 && (hit.extraTerms ?? []).length > 0) {
+    // Which terms a base multiplier reaches on a mixed-stat hit is not something any sheet
+    // has needed to say; refused rather than guessed.
+    throw new Error(`row ${row.id}: a base-damage multiplier on a mixed-stat hit`);
+  }
   const terms: { stat: ScalingStat; multiplier: number }[] = [
-    { stat: hit.scalingStat, multiplier: hit.multiplier * (1 + hit.baseDamageBonus) },
+    {
+      stat: hit.scalingStat,
+      multiplier: hit.multiplier * (1 + hit.baseDamageBonus + buffs.baseDmgBonus),
+    },
     ...(hit.extraTerms ?? []),
   ];
+  // ATK from the hit owner's own DEF lands in flat ATK beside its constants, resolved per
+  // candidate (`recipe-eval.ts:resolvedTerm`), so every ATK-scaling term reads it.
+  const atkFromDef = buffs.atkFromDef !== 0
+    ? { from: 'def' as const, perUnit: buffs.atkFromDef, offset: calibratedFlat.atk }
+    : null;
+  const zeroDef = calibratedBase.def * (1 + calibratedPercent.def) + calibratedFlat.def;
   const hits = terms.map((term, i): RecipeHit => {
     const scaling = RECIPE_SCALING[term.stat];
     const total = scaling === 'em'
       ? calibratedEm
-      : calibratedBase[scaling] * (1 + calibratedPercent[scaling]) + calibratedFlat[scaling];
+      : calibratedBase[scaling] * (1 + calibratedPercent[scaling]) + calibratedFlat[scaling]
+        + (scaling === 'atk' && atkFromDef ? atkFromDef.perUnit * zeroDef : 0);
     const flatDamage = i === 0 ? (hit.flatDamage + buffs.flatDamage) * row.count : 0;
     const out: RecipeHit = {
       abil: terms.length > 1 ? `${row.label} [${term.stat}]` : row.label,
@@ -524,13 +551,16 @@ export function rowHits(
       talent: term.multiplier * row.count,
       scaling,
       flatDamage,
-      conversions: i === 0 && converted
-        ? {
-          flatDamage: {
-            from: flatSources[0], perUnit: buffs.flatFrom[flatSources[0]] * row.count,
-          },
-        }
-        : {},
+      conversions: {
+        ...(i === 0 && converted
+          ? {
+            flatDamage: {
+              from: flatSources[0], perUnit: buffs.flatFrom[flatSources[0]] * row.count,
+            },
+          }
+          : {}),
+        ...(atkFromDef ? { flatAtk: atkFromDef } : {}),
+      },
       constantTerms: [],
       calibratedScaling: total,
       calibratedBase,

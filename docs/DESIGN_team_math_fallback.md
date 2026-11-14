@@ -285,6 +285,49 @@ collision row, which per-row conditionals allow.
 above is gone). Vodyanitsa's A4 still needs a **threshold** (HP above 40,000) and is a self
 conversion, so `cap` alone does not unlock it.
 
+**Added for the DPS characters (task 11, third batch), each small and in the format's spirit:**
+
+| addition | where | why |
+|---|---|---|
+| `nth` on a talent value | `ValueRef` | the n-th parameter a row's format string names: Skirk's `0/1/2/3 Void Rift Absorption DMG Bonus|{param4}/{param5}/{param6}/{param7}` is one row with four values, one per absorbed count (GO `talentSubscript(burst, void_dmg_[k])`). A row naming fewer is withheld through its pinned label |
+| `stat_unit` on a `per` value | `ValueRef`, `SheetEffect` | the unit counts the condition when there is no stat: Neuvillette's A4 is 0.6% Hydro DMG per percentage point of HP above 30%, and the seeded list carries 0.6 (GO `passive2[2][0] / 100`; gcsim `(hpRatio - 0.3) * 0.6`). A unit with neither a stat nor a `per` is refused |
+| `flat_atk_from_def` | `EffectStat`, `SELF_CONVERSIONS`, `formula-recipe.ts`, `recipe.ts` | Noelle's Sweeping Time on herself: ATK + a share of her own DEF (GO `ownBuff.premod.atk.add(prod(own.premod.def, …))`). The recipe carries it as a resolved flat-ATK conversion from DEF, with the flat ATK's constant part beside it (`ResolvedConversion.offset`, absent = 0 for every probe-resolved conversion), so a teammate's flat ATK (Bennett's burst) on the same hit is kept and every ATK-scaling term reads it |
+| `base_atk` | `EffectStat`, `formula-recipe.ts` | base ATK before the percentage (GO `ownBuff.base.atk`, Mavuika's C2 +200), so every ATK% multiplies it |
+| `base_dmg_bonus` | `EffectStat`, `formula-recipe.ts` | GO `baseMulti` on the talent term, the `baseDamageBonus` the single-hit kernel already had: Neuvillette's A1 (×1.1/1.25/1.6 by stack) and Skirk's A4, each read by a `when` on the stack count. A mixed-stat hit with one is refused rather than guessed |
+
+**Constants no seeded list carries.** Mavuika's A4 is 0.2% DMG per point of Fighting Spirit. The
+seeded A4 list publishes 0.0001; GO multiplies it by 20 (`pando Mavuika.ts:80`, with a `TODO` that
+says so) and gcsim writes `burstStacks*0.002` (`asc.go:50`). The sheet uses a `constant` 0.002 citing
+both.
+
+**Scoped by move where GO scopes by row, said in each sheet.** The estimate scopes a buff by move,
+not by talent row. Three sheets carry buffs that GO limits to a subset of one move: Neuvillette's A1
+and C2 (Equitable Judgment only, not the ordinary Charged Attack), Skirk's Void Rift bonus, A4 and C2
+(the Seven-Phase Flash attacks only, not her ordinary ones). They are applied to the whole move and
+the over-reach is named in `unmodelled`. A row for the attack GO excludes would read high; the
+characters' players do not use those rows in the modes the buffs belong to. Mavuika's Flamestrider
+Normal and Charged Attack bonuses are **not** applied, because her ordinary physical attacks are rows
+people do use.
+
+**Found: Skirk's Seven-Phase Flash and Mavuika's Flamestrider attacks are skill-talent rows.**
+`suggestMove` gives every elemental-skill row the move `skill`. GO counts them as normal, charged and
+plunging attacks. A teammate's Normal Attack buff, and Skirk's own, reach those rows only once the
+user sets the row's move. Both sheets say so. Deriving the move from the label would be the guess
+`suggestMove` refuses to make; the per-hit `attack[]` import (task 4) is the real source.
+
+**Still not added, and named in the sheets:** enemy DEF reduction (Ayaka's C4, Mavuika's C2 ring
+form), a buff scoped to one talent row (above), a time-decaying buff (Mavuika's A4 is applied at its
+peak, a toggle), the A4 multiplier on the flat part of Skirk's burst (GO multiplies both parts; the
+base multiplier here reaches the talent term only), and a team talent-level passive (Skirk's skill +1
+in a Hydro and Cryo party). No capped self-conversion was needed: Neuvillette's A4 is a user-set HP
+condition in GO, not a conversion of his Max HP.
+
+**Found driving it, and fixed: picking another ability kept the old row's move.** `formula-panel`'s
+`pickHit` replaced the hit and left `move` as it was, so a row first made for a 1-Hit DMG (normal)
+and switched to Skirk's Final Slash stayed a normal attack, and her burst-scoped Serpent's Subtlety
+silently missed it: the drive's first run read the same top build with the condition at 22 and at 0.
+A new ability now takes `suggestMove`'s move, as a new row does.
+
 **Pinned, as `set_effects.json` is.** A constellation or passive list that differs from its pin,
 or a talent row whose label changed or which has no row at the effective level, **withholds
 that effect** and lists it as unmodelled with the reason. It is never read by a stale index.

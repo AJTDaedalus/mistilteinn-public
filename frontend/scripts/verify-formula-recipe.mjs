@@ -138,6 +138,17 @@ for (const f of data.fixtures) {
         failures.push(`${f.name} (a frozen self flat-damage conversion still passes)`);
       }
     }
+    // Task 11, third batch — and for ATK from the subject's own DEF (Noelle's Sweeping Time):
+    // frozen as flat ATK at the zero-artifact DEF instead of moving with the candidate's.
+    if (kits.some((s) => s.bonus.effects.some((e) => e.stat === 'flat_atk_from_def'))) {
+      const zeroDef = f.base.base_def * (1 + f.base.def_pct) + f.base.flat_def;
+      const frozen = score(f, planted((e) => (e.stat === 'flat_atk_from_def'
+        ? { ...e, stat: 'flat_atk', value: e.value * zeroDef }
+        : e)));
+      if (Math.abs(frozen - f.expected) / f.expected <= TOLERANCE) {
+        failures.push(`${f.name} (a frozen self ATK-from-DEF conversion still passes)`);
+      }
+    }
   }
 }
 

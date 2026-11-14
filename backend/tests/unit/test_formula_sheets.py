@@ -88,9 +88,13 @@ BATCH4 = {"nahida", "kujou_sara", "shenhe", "yun_jin", "gorou", "xilonen", "xian
           "raiden_shogun"}
 
 
+#: Task 11, third batch: the DPS characters in the owner's saved teams that had no sheet.
+DPS = {"skirk", "neuvillette", "kamisato_ayaka", "noelle", "mavuika", "kuki_shinobu"}
+
+
 def test_every_sheet_loads_and_is_named_after_its_slug():
     assert {s.slug for s in sheets.all_sheets().values()} == {
-        "bennett", "kaedehara_kazuha", *UNGATED, *BUFFERS, *BATCH4}
+        "bennett", "kaedehara_kazuha", *UNGATED, *BUFFERS, *BATCH4, *DPS}
 
 
 def test_every_sheet_is_cited_to_the_pinned_go_and_gcsim_commits():

@@ -138,6 +138,9 @@ SELF_CONVERSIONS: dict[tuple[str, str], EffectStat] = {
     # and the same from EM: the recipe resolves a flat term from any of its four sources.
     ("flat_damage", tags.Q_HP): "flat_damage_from_hp",
     ("flat_damage", tags.Q_ELEMENTAL_MASTERY): "flat_damage_from_em",
+    # Noelle's Sweeping Time on herself: ATK from her own DEF (GO `ownBuff.premod.atk.add(
+    # prod(own.premod.def, …))`), carried per candidate into every ATK-scaling term.
+    ("flat_atk", tags.Q_DEF): "flat_atk_from_def",
 }
 
 DefaultBy = Literal["self", "situational", "giver_is_subject"]
@@ -300,6 +303,10 @@ class ValueRef(_Strict):
 
     talent: str | None = None
     row: str | None = None
+    #: With `talent`: which of the row's parameters, in the order its format string names them
+    #: (Skirk's "0/1/2/3 Void Rift Absorption DMG Bonus|{param4}/{param5}/{param6}/{param7}",
+    #: `nth: 2` → `params[5]`). Absent is the first.
+    nth: int | None = None
     constellation: int | None = None
     passive: int | None = None
     param: int | None = None
@@ -316,7 +323,9 @@ class ValueRef(_Strict):
     #: Multiplied by a second seeded parameter: GO `prod(percent(a4), c4)`.
     times_param: ParamRef | None = None
     #: With `times_stat`: the stat is counted per this many points (GO `prod(percent(x), hp,
-    #: 1 / 1000)`, "per 1,000 Max HP"). A number, so it carries its citation.
+    #: 1 / 1000)`, "per 1,000 Max HP"). Without one, on an effect with `per`: the condition is
+    #: counted per this many (GO `hydro_dmg_: passive2[2][0] / 100`, Neuvillette's A4 per
+    #: percentage point of HP). A number, so it carries its citation.
     stat_unit: Cited | None = None
     #: The most the value can be: GO `min(…, percent(max))`, the maximum a seeded parameter.
     cap: ParamRef | None = None
@@ -354,8 +363,8 @@ class ValueRef(_Strict):
             raise ValueError("an ascension passive unlocks at phase 1 or 4")
         if self.times_stat is not None and self.times_stat not in GIVER_STATS:
             raise ValueError(f"times_stat must be one of {sorted(GIVER_STATS)}")
-        if self.stat_unit is not None and self.times_stat is None:
-            raise ValueError("a stat unit belongs to a value that reads a stat")
+        if self.nth is not None and (self.talent is None or self.nth < 0):
+            raise ValueError("`nth` picks a parameter of a talent row")
         if self.index_by_team is not None and self.param is None:
             raise ValueError("a team-indexed value reads a constellation or passive list")
         return self
@@ -512,6 +521,10 @@ class SheetEffect(_Strict):
         for element in (*(self.receiver_elements or ()), *(self.per_team_elements or ())):
             if element not in VISIONS:
                 raise ValueError(f"{self.key}: {element!r} is not one of {VISIONS}")
+        if (self.value.stat_unit is not None and self.value.times_stat is None
+                and self.per is None):
+            raise ValueError(f"{self.key}: a unit counts a stat (`times_stat`) or a condition "
+                             "(`per`)")
         return self
 
 
@@ -759,9 +772,12 @@ def _talent_parameter(sheet: Sheet, giver: Giver, ref: ValueRef, *, shift: int) 
             )
         label = found_label
     found = _PARAM.findall(label.split("|", 1)[1])
-    if len(found) <= ref.part:
-        raise _Withheld(f"{talent} row {label!r} names no parameter {ref.part}")
-    index = int(found[ref.part]) - 1
+    # `nth` (the DPS batch) and `part` (the fourth batch) name the same thing, which parameter
+    # of the row; a sheet sets at most one.
+    which = ref.nth if ref.nth is not None else ref.part
+    if len(found) <= which:
+        raise _Withheld(f"{talent} row {label!r} names no parameter {which}")
+    index = int(found[which]) - 1
     if index >= len(row.params):
         raise _Withheld(f"{talent} row {label!r} has no param{index + 1} at this level")
     return float(row.params[index])
@@ -829,6 +845,8 @@ def _value_node(
             stat = min_(stat, const(_extra(sheet, giver, ref.stat_cap)))
         node = prod_(factor, const(unit), stat)
     else:
+        if ref.stat_unit is not None:  # per `stat_unit` of the `per` condition
+            return prod_(factor, const(1.0 / ref.stat_unit.constant))
         return factor
     if ref.cap is not None:
         node = min_(node, const(_extra(sheet, giver, ref.cap)))

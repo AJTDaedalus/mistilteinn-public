@@ -438,6 +438,51 @@ describe('kit buffs (P2)', () => {
     }
   });
 
+  it("ATK from the subject's own DEF sits beside a teammate's flat ATK (Noelle's burst)", () => {
+    // Bennett's 805.6 flat ATK and 68% of the candidate's DEF, both in the ATK the hit reads.
+    // The pieces carry no DEF, so the candidate's DEF is the base 700.
+    const kits = [KIT('flat_atk', 805.6), KIT('flat_atk_from_def', 0.68)];
+    const recipe = synthesizeRecipe([row(context())], kits, TEAM);
+    const kernel = kernelScore(context({}, { flat_atk: 805.6 + 0.68 * 700 }));
+    const got = evaluateRecipe(recipe, candidateStatsFrom(PIECES.map((p) => p.stats)));
+    expect(Math.abs(got - kernel) / kernel).toBeLessThan(TOLERANCE);
+    const [hit] = recipe.hits;
+    expect(hit.conversions.flatAtk).toEqual({ from: 'def', perUnit: 0.68, offset: 805.6 });
+    // More DEF %, more ATK: the conversion moves with the candidate, and DEF stays live.
+    const more = candidateStatsFrom([{ def_pct: 1.0 }]);
+    expect(evaluateHit(hit, more)).toBeGreaterThan(evaluateHit(hit, candidateStatsFrom([])));
+    expect(liveQuantitiesFor(recipe)).toContain('def_pct');
+  });
+
+  it('ATK from DEF does not reach a hit that scales on DEF', () => {
+    const ctx = context({ scalingStat: 'def' });
+    const bare = rowHits(row(ctx), [], TEAM, {}).hits[0];
+    const [hit] = rowHits(row(ctx), [KIT('flat_atk_from_def', 0.68)], TEAM, {}).hits;
+    const stats = candidateStatsFrom([{ def_pct: 0.5 }]);
+    expect(evaluateHit(hit, stats)).toBeCloseTo(evaluateHit(bare, stats), 6);
+  });
+
+  it("base ATK from a kit is base ATK the kernel would see, under every ATK% (Mavuika's C2)",
+    () => {
+      const recipe = synthesizeRecipe([row(context())], [KIT('base_atk', 200)], TEAM);
+      const kernel = kernelScore(context({}, { base_atk: 1100 }));
+      const got = evaluateRecipe(recipe, candidateStatsFrom(PIECES.map((p) => p.stats)));
+      expect(Math.abs(got - kernel) / kernel).toBeLessThan(TOLERANCE);
+    });
+
+  it("a base-damage multiplier is the kernel's baseDamageBonus (Neuvillette's A1)", () => {
+    const recipe = synthesizeRecipe([row(context())], [KIT('base_dmg_bonus', 0.6)], TEAM);
+    const kernel = kernelScore(context({ baseDamageBonus: 0.6 }));
+    const got = evaluateRecipe(recipe, candidateStatsFrom(PIECES.map((p) => p.stats)));
+    expect(Math.abs(got - kernel) / kernel).toBeLessThan(TOLERANCE);
+  });
+
+  it('refuses a base-damage multiplier on a mixed-stat hit rather than guess its terms', () => {
+    const ctx = context({ extraTerms: [{ stat: 'elemental_mastery', multiplier: 1 }] });
+    expect(() => rowHits(row(ctx), [KIT('base_dmg_bonus', 0.6)], TEAM, {}))
+      .toThrow(/mixed-stat/);
+  });
+
   it('refuses flat damage converted from ATK and DEF on one hit', () => {
     expect(() => rowHits(row(context()), [KIT('flat_damage_from_atk', 0.4),
       KIT('flat_damage_from_def', 0.2)], TEAM, {})).toThrow(/converted from atk and def/);
