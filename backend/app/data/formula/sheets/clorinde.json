@@ -1,0 +1,222 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Clorinde",
+ "nanoka_id": "10000098",
+ "slug": "clorinde",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Clorinde.ts",
+  "wr": "libs/gi/sheets/src/Characters/Clorinde/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/clorinde/",
+ "verified_by": [
+  "clorinde_a4_c4_on_her_own_burst"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Clorinde.ts:179-180",
+   "gcsim": "clorinde.go:32"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Clorinde.ts:179,181",
+   "gcsim": "clorinde.go:31"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "4": [
+    0.02,
+    2.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    0.1,
+    0.7,
+    1.0,
+    0.8,
+    2.0,
+    6.0,
+    12.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "4": [
+    1.0,
+    1.0,
+    0.1,
+    15.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "bond_changes",
+   "label": "Bond of Life changes in Night Vigil (A4 stacks)",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 2,
+   "step": 1,
+   "go": "pando:Clorinde.ts:68-74,114-120"
+  },
+  {
+   "key": "bond",
+   "label": "Her Bond of Life when she uses Last Lightfall, in percentage points of her Max HP, up to C4's 200% cap (C4)",
+   "kind": "number",
+   "default_by": "self",
+   "max": 100,
+   "step": 5,
+   "go": "pando:Clorinde.ts:85-88,121-127"
+  },
+  {
+   "key": "after_skill",
+   "label": "In Night Vigil, after her Elemental Skill (C6)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Clorinde.ts:105-106,157-162"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a4_crit",
+   "label": "A4 Lawful Remuneration: CRIT Rate per Bond of Life change",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "value": {
+    "passive": 4,
+    "param": 2
+   },
+   "per": "bond_changes",
+   "go": "pando:Clorinde.ts:68-74,147-151,185"
+  },
+  {
+   "key": "c4_burst",
+   "label": "C4 \"To Enshrine Tears, Life, and Love\": burst DMG per point of Bond of Life",
+   "source": "c4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "constellation": 4,
+    "param": 0
+   },
+   "per": "bond",
+   "go": "pando:Clorinde.ts:85-88,152-156,186"
+  },
+  {
+   "key": "c6_rate",
+   "label": "C6 \"And So Shall I Never Despair\": CRIT Rate",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "value": {
+    "constellation": 6,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "after_skill",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Clorinde.ts:89-97,157-159,187"
+  },
+  {
+   "key": "c6_dmg",
+   "label": "C6 \"And So Shall I Never Despair\": CRIT DMG",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "value": {
+    "constellation": 6,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "after_skill",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Clorinde.ts:89-97,160-162,188"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "a1",
+   "what": "Dark-Shattering Flame: Normal Attack and burst DMG + a share of her ATK per stack, capped at a flat amount",
+   "reason": "a capped conversion of her own ATK (GO `min(maxDmgInc, prod(atkRatio, final.atk, stacks))`, pando:Clorinde.ts:129-146): the recipe carries no cap on a per-candidate term, the owner's open question on capped self-conversions (DECISIONS \u00a739)"
+  },
+  {
+   "source": "c2",
+   "what": "\"Now, As We Face the Perils of the Long Night\": A1's larger share and cap",
+   "reason": "raises A1, which is not modelled (above)"
+  },
+  {
+   "source": "talent",
+   "what": "Hunter's Vigil: Swift Hunt and Impale the Night are Normal Attacks",
+   "reason": "they are skill-talent rows that GO counts as Normal Attacks (as Skirk's): a teammate's Normal Attack buff reaches them only once the row's move is set to normal; their Electro infusion is the row's element (G4)"
+  },
+  {
+   "source": "talent",
+   "what": "Hunter's Vigil: healing and Bond of Life",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "c1",
+   "what": "\"From This Day, I Pass the Candle's Shadow-Veil\": Nightvigil Shade attacks",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c6",
+   "what": "\"And So Shall I Never Despair\": Glimbright Shade attacks and damage reduction",
+   "reason": "a damage instance, not a buff; damage reduction has no damage effect"
+  }
+ ]
+}

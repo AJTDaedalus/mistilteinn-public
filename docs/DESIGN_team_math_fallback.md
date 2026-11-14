@@ -328,6 +328,55 @@ and switched to Skirk's Final Slash stayed a normal attack, and her burst-scoped
 silently missed it: the drive's first run read the same top build with the condition at 22 and at 0.
 A new ability now takes `suggestMove`'s move, as a new row does.
 
+**Added for the fifth batch (task 11: Hu Tao, Arlecchino, Clorinde, Navia, Wriothesley, Lyney,
+Yoimiya, Ganyu, Eula, Arataki Itto, Cyno), each small and tested (`test_formula_sheets_dps2.py`):**
+
+| addition | where | why |
+|---|---|---|
+| source `a0`, `passive: 0` | `Source`, `PASSIVE_PHASES`, `kit_buffs.giver_of` | the passive a character holds from ascension 0 (`ascension_passives.unlock_ascension` 0): Arlecchino's Balemoon Pyro DMG (GO `passive3`, ungated). `kit_buffs` now reads phase-0 lists; a passive with no phase (the locked Hexerei ones) is still dropped |
+| `offset` on a value | `ValueRef` | a talent row that is a hit's **whole** multiplier ("Enhanced Repelling Fist DMG\|{param1} Normal Attack DMG", GO `prod(auto row, skill row, atk)` / `baseMulti: skillMult`) written as `base_dmg_bonus`, which adds to the default multiplier of 1 — so the value is the row plus a cited −1. Wriothesley's Chilling Penalty, Yoimiya's Niwabi. Only on a plain parameter (no stat, cap or team max) |
+| a unit on a self conversion | `sheets._effect_node` | a unit is a constant divisor, so the per-candidate coefficient carries it: Arlecchino's Masque is the Normal Attack row × her ATK per Bond of Life percentage point / 100 (GO `Number(per) / 100`). A cap or a stat cap on a self conversion is still withheld |
+
+No frontend change: every effect these sheets write was already carried by the recipe.
+Arataki Itto's Kesagiri carries ATK from his own DEF (`flat_atk_from_def`) and flat damage from his
+own DEF (`flat_damage_from_def`) on the **same** hit; Cyno's flat damage from EM reads the EM his own
+burst adds. Both are checked by fixture, both agree with GO exactly.
+
+**Counts written as gated effects, no new mechanic.** Navia's A4 (ATK × min(Pyro/Electro/Cryo/Hydro
+members, 2), GO `cmpGE(n, 2, 2x, cmpGE(n, 1, x))`) and Lyney's A4 extra (×min(Pyro − 1, 2)) are two
+effects each with `team_gate` counts `at_least` 1 and 2 (Lyney 2 and 3). Navia's shrapnel is two
+number conditions (the first three for C2's CRIT Rate; beyond three for the skill DMG and C6), since
+`per` multiplies by the condition and GO reads `min(n, 3)` and `n − 3` of one count.
+
+**Bond of Life is a number condition, `self` at its maximum.** Arlecchino's (0–200, the Bond cap,
+GO's list 10..200) and Clorinde's C4 (0–100 points, where C4's 2% per point reaches its own 200%
+cap). §39 puts a self-built condition at its maximum, so Arlecchino's Masque defaults to 200%
+Bond; her own A1 gives 130% from one Blood-Debt Directive and real rotations sit near there. The
+label says so and the owner may want the default lower — see the LOG's owner decisions.
+
+**Constants no seeded list carries.** Navia's 15% Skill DMG per Crystal Shrapnel beyond three is
+the seeded skill row's `param2`, which no row label names (GO `skill[1][0]`, gcsim `0.15 * excess`;
+the test checks the constant against the seeded parameter). Ganyu's C4 5% per stack is GO's literal
+`percent(0.05)` and gcsim's `* 0.05`; her C4 list is all zeros.
+
+**Named, not applied (the batch's open edges):**
+
+- **Capped self-conversions** (`DECISIONS.md` §39's open question): Hu Tao's Guide to Afterlife
+  ATK from Max HP (capped at a multiple of base ATK — her main buff, and its cap is a parameter no
+  seeded label names), Clorinde's A1 (a share of ATK per stack up to a flat cap, raised by C2).
+  Alhaitham's and Tighnari's A4 (DMG% from EM, capped) are the same shape, which is why those two
+  were **skipped** in this batch rather than shipped without their main effect.
+- **Infusions** (G4): Hu Tao, Arlecchino (at 30% Bond), Navia (A1), Yoimiya, Wriothesley's fist
+  is Cryo already, Itto, Clorinde's Night Vigil, Cyno's Pactsworn attacks.
+- **Skill- or burst-talent rows that are Normal Attacks** (as Skirk's): Clorinde's Swift Hunt,
+  Cyno's Pactsworn attacks. Cyno's A4 names his burst rows, so it reaches them either way.
+- **Move scope over GO's row scope**: Wriothesley's Gracious Rebuke (every Charged Attack row
+  while the toggle is on), Ganyu's A1 (aimed shots too), Navia's C2/C6 (Surging Blade too).
+- **Navia's shots-hit base multiplier**: GO's table is hard-coded and marked `TODO: Verify this`;
+  the estimate reads the shardshot's base row (GO's default of 0 shots gives the same 1×).
+- **The Hexerei mechanic** (Wriothesley's, Cyno's Stellar parts), damage instances (Arlecchino's
+  C2, Clorinde's C1/C6, Lyney's C6, Eula's A1, Yoimiya's C6, Cyno's Duststalker Bolts).
+
 **Pinned, as `set_effects.json` is.** A constellation or passive list that differs from its pin,
 or a talent row whose label changed or which has no row at the effective level, **withholds
 that effect** and lists it as unmodelled with the reason. It is never read by a stale index.

@@ -1,0 +1,355 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Lyney",
+ "nanoka_id": "10000084",
+ "slug": "lyney",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Lyney.ts",
+  "wr": "libs/gi/sheets/src/Characters/Lyney/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/lyney/",
+ "verified_by": [
+  "lyney_a1_a4_on_his_own_pyrotechnic"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "normal_attack",
+   "go": "pando:Lyney.ts:134-135",
+   "gcsim": "lyney.go:31"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Lyney.ts:134,136",
+   "gcsim": "lyney.go:30"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_skill": [
+    "Skill DMG Bonus|{param2:F1P} ATK/Stack"
+   ]
+  },
+  "constellations": {
+   "2": [
+    0.2,
+    2.0,
+    3.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.2,
+    6.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    3.0,
+    0.8,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.6,
+    0.2,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "props",
+   "label": "Prop Surplus stacks consumed by his Elemental Skill",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 5,
+   "step": 1,
+   "go": "pando:Lyney.ts:91-92,103-107"
+  },
+  {
+   "key": "hat",
+   "label": "Grin-Malkin Hat drained his HP (A1)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Lyney.ts:93-94,108-110"
+  },
+  {
+   "key": "pyro_mark",
+   "label": "Opponent affected by Pyro, which his own Pyro attacks apply (A4)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Lyney.ts:93-94,111-121"
+  },
+  {
+   "key": "c2_stacks",
+   "label": "On the field, stacks over time (C2)",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 3,
+   "step": 1,
+   "go": "pando:Lyney.ts:95-101,122-126"
+  },
+  {
+   "key": "c4_hit",
+   "label": "After his Charged Attack hits (C4)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Lyney.ts:93-94,127-129"
+  }
+ ],
+ "effects": [
+  {
+   "key": "skill_props",
+   "label": "Bewildering Lights: Skill DMG + ATK per Prop Surplus",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "skill"
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Skill DMG Bonus",
+    "times_stat": "atk"
+   },
+   "per": "props",
+   "go": "pando:Lyney.ts:50-55,103-107,138"
+  },
+  {
+   "key": "a1_hat",
+   "label": "A1 Perilous Performance: Pyrotechnic Strike DMG + a share of ATK",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "rows": [
+    {
+     "talent": "normal_attack",
+     "label": "Pyrotechnic Strike DMG"
+    }
+   ],
+   "value": {
+    "passive": 1,
+    "param": 1,
+    "times_stat": "atk"
+   },
+   "when": [
+    {
+     "condition": "hat",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Lyney.ts:63-66,108-110,155-163"
+  },
+  {
+   "key": "a4_dmg",
+   "label": "A4 Conclusive Ovation: DMG against an opponent affected by Pyro",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "passive": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "pyro_mark",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Lyney.ts:67-70,111-121,139"
+  },
+  {
+   "key": "a4_one",
+   "label": "A4 Conclusive Ovation: further DMG with one other Pyro member",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "passive": 4,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "pyro_mark",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "team_gate": {
+    "counts": [
+     {
+      "elements": [
+       "pyro"
+      ],
+      "at_least": 2
+     }
+    ]
+   },
+   "go": "pando:Lyney.ts:67-70,90,111-121,139"
+  },
+  {
+   "key": "a4_two",
+   "label": "A4 Conclusive Ovation: further DMG with a second other Pyro member",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "passive": 4,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "pyro_mark",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "team_gate": {
+    "counts": [
+     {
+      "elements": [
+       "pyro"
+      ],
+      "at_least": 3
+     }
+    ]
+   },
+   "go": "pando:Lyney.ts:67-70,90,111-121,139"
+  },
+  {
+   "key": "c2_crit",
+   "label": "C2 Loquacious Cajoling: CRIT DMG per stack",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "per": "c2_stacks",
+   "go": "pando:Lyney.ts:71-75,122-126,140"
+  },
+  {
+   "key": "c4_res",
+   "label": "C4 Well-Versed, Well-Rehearsed: opponent Pyro RES",
+   "source": "c4",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "pyro"
+   ],
+   "value": {
+    "constellation": 4,
+    "param": 0,
+    "negate": true
+   },
+   "when": [
+    {
+     "condition": "c4_hit",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Lyney.ts:76-79,127-129,141"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Card Force Translocation: HP cost and the Grin-Malkin Hat's HP",
+   "reason": "no damage effect: HP"
+  },
+  {
+   "source": "talent",
+   "what": "Bewildering Lights: HP regeneration per stack",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "c1",
+   "what": "Whimsical Wonders: a second Grin-Malkin Hat",
+   "reason": "a damage instance, not a buff: count it in the row"
+  },
+  {
+   "source": "c6",
+   "what": "Guarded Smile: an extra Pyrotechnic Strike",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  }
+ ]
+}

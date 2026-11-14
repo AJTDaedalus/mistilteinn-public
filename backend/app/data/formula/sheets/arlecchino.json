@@ -1,0 +1,278 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Arlecchino",
+ "nanoka_id": "10000096",
+ "slug": "arlecchino",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Arlecchino.ts",
+  "wr": "libs/gi/sheets/src/Characters/Arlecchino/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/arlecchino/",
+ "verified_by": [
+  "arlecchino_masque_on_her_own_normal"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "normal_attack",
+   "go": "pando:Arlecchino.ts:164-165",
+   "gcsim": "arlecchino.go:27"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Arlecchino.ts:164,166",
+   "gcsim": "arlecchino.go:28"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "normal_attack": [
+    "Masque of the Red Death Increase|{param12:F2P}"
+   ]
+  },
+  "constellations": {
+   "1": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    0.1,
+    0.7,
+    20.0,
+    15.0,
+    7.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "0": [
+    0.4,
+    2.0,
+    60.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "bond",
+   "label": "Her Bond of Life, in percentage points of her Max HP (200 is the Bond of Life cap; set it to what your rotation holds)",
+   "kind": "number",
+   "default_by": "self",
+   "max": 200,
+   "step": 5,
+   "go": "pando:Arlecchino.ts:107,114-115,119-122"
+  },
+  {
+   "key": "after_skill",
+   "label": "After her Elemental Skill (C6)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Arlecchino.ts:116-117,154-159"
+  }
+ ],
+ "effects": [
+  {
+   "key": "masque",
+   "label": "Masque of the Red Death: Normal Attack DMG + ATK per point of Bond of Life",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "talent": "normal_attack",
+    "row": "Masque of the Red Death Increase",
+    "times_stat": "atk",
+    "stat_unit": {
+     "constant": 100,
+     "cite": "GO pando:Arlecchino.ts:107,120-121 reads the Bond of Life in percentage points and divides by 100 (`Number(per) / 100`); gcsim attack.go:177 `CurrentHPDebt() / MaxHP()`"
+    }
+   },
+   "per": "bond",
+   "go": "pando:Arlecchino.ts:45-49,119-128,181",
+   "gcsim": "attack.go:177"
+  },
+  {
+   "key": "c1_masque",
+   "label": "C1 \"All Reprisals and Arrears, Mine to Bear...\": the Masque's Normal Attack DMG + a further share of ATK per point of Bond of Life",
+   "source": "c1",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "constellation": 1,
+    "param": 0,
+    "times_stat": "atk",
+    "stat_unit": {
+     "constant": 100,
+     "cite": "GO pando:Arlecchino.ts:107,120-121,141-145, the Bond of Life in percentage points / 100"
+    }
+   },
+   "per": "bond",
+   "go": "pando:Arlecchino.ts:84-86,141-145,197",
+   "gcsim": "attack.go:177"
+  },
+  {
+   "key": "a0_pyro",
+   "label": "The Balemoon Alone May Know: Pyro DMG",
+   "source": "a0",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "pyro"
+   ],
+   "value": {
+    "passive": 0,
+    "param": 0
+   },
+   "go": "pando:Arlecchino.ts:79-83,129,168",
+   "gcsim": "asc.go:17"
+  },
+  {
+   "key": "c6_burst",
+   "label": "C6 \"From This Day On, We Shall Delight in New Life Together.\": Balemoon Rising DMG + ATK per point of Bond of Life",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 4,
+    "times_stat": "atk",
+    "stat_unit": {
+     "constant": 100,
+     "cite": "GO pando:Arlecchino.ts:107,120-121,149-153, the Bond of Life in percentage points / 100"
+    }
+   },
+   "per": "bond",
+   "go": "pando:Arlecchino.ts:98-104,149-153,182"
+  },
+  {
+   "key": "c6_rate",
+   "label": "C6 \"From This Day On, We Shall Delight in New Life Together.\": Normal Attack and burst CRIT Rate",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "moves": [
+    "normal",
+    "burst"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "after_skill",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Arlecchino.ts:98-104,154-156,183,185"
+  },
+  {
+   "key": "c6_dmg",
+   "label": "C6 \"From This Day On, We Shall Delight in New Life Together.\": Normal Attack and burst CRIT DMG",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "moves": [
+    "normal",
+    "burst"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "after_skill",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Arlecchino.ts:98-104,157-159,184,186"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Invitation to a Beheading: Pyro infusion at 30% Bond of Life or more",
+   "reason": "an infusion changes a hit's element, which the estimate does not model (G4): her Normal Attack rows take the element the row is given"
+  },
+  {
+   "source": "a1",
+   "what": "Agony Alone May Be Repaid: Bond of Life from a Blood-Debt Directive",
+   "reason": "no damage effect: the Bond of Life amount is the user's condition"
+  },
+  {
+   "source": "a4",
+   "what": "Strength Alone Can Defend: RES from her ATK",
+   "reason": "no damage effect: RES"
+  },
+  {
+   "source": "talent",
+   "what": "Balemoon Rising: healing from Bond of Life",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "c2",
+   "what": "\"All Rewards and Retribution, Mine to Bestow...\": Balemoon Bloodfire and RES",
+   "reason": "a damage instance, not a buff: not offered as a target row yet; RES has no damage effect"
+  },
+  {
+   "source": "c4",
+   "what": "\"You Shall Love and Protect Each Other Henceforth...\": cooldown and Energy",
+   "reason": "no damage effect: energy"
+  }
+ ]
+}

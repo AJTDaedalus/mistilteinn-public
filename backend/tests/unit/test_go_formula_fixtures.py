@@ -1679,6 +1679,9 @@ def build() -> dict[str, Any]:
     # Imported here: that module imports this one for its helpers.
     from tests.unit.go_fixtures_batch4 import batch4_fixtures
     fixtures.extend(batch4_fixtures())
+    # Task 11, fifth batch (the next DPS characters), the same way.
+    from tests.unit.go_fixtures_batch5 import batch5_fixtures
+    fixtures.extend(batch5_fixtures())
     for f in fixtures:
         f["relative_divergence_from_go"] = abs(f["expected"] - f["go_value"]) / f["go_value"]
     return {

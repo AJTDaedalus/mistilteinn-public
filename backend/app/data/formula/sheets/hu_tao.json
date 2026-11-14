@@ -1,0 +1,297 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Hu Tao",
+ "nanoka_id": "10000046",
+ "slug": "hu_tao",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/HuTao.ts",
+  "wr": "libs/gi/sheets/src/Characters/HuTao/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/hutao/",
+ "verified_by": [
+  "hu_tao_a4_c2_on_her_own_blossom"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:HuTao.ts:140-141",
+   "gcsim": "hutao.go:33"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:HuTao.ts:140,142",
+   "gcsim": "hutao.go:34"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "2": [
+    0.1,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.12,
+    15.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    0.25,
+    10.0,
+    2.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    0.12,
+    8.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.5,
+    0.33,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "flutter",
+   "label": "Paramita Papilio has just ended (A1, to her teammates)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:HuTao.ts:94-101,113-115"
+  },
+  {
+   "key": "low_hp",
+   "label": "Hu Tao's HP is at or below 50% (A4)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:HuTao.ts:94-101,116-118"
+  },
+  {
+   "key": "rest",
+   "label": "An opponent marked by her Blood Blossom was just defeated nearby (C4, to her teammates)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:HuTao.ts:94-101,127-129"
+  },
+  {
+   "key": "embrace",
+   "label": "Her HP fell below 25% and C6 triggered",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:HuTao.ts:94-101,130-132"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a1_crit",
+   "label": "A1 Flutter By: CRIT Rate to her teammates after Paramita Papilio",
+   "source": "a1",
+   "receivers": "others",
+   "stat": "crit_rate",
+   "value": {
+    "passive": 1,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "flutter",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:HuTao.ts:66-69,113-115,149"
+  },
+  {
+   "key": "a4_pyro",
+   "label": "A4 Sanguine Rouge: Pyro DMG at or below 50% HP",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "pyro"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "low_hp",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:HuTao.ts:70-73,116-118,150",
+   "gcsim": "asc.go:44"
+  },
+  {
+   "key": "c2_blossom",
+   "label": "C2 Ominous Rainfall: Blood Blossom DMG + a share of her Max HP",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "skill"
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 0,
+    "times_stat": "hp"
+   },
+   "go": "pando:HuTao.ts:74-76,119-126,151"
+  },
+  {
+   "key": "c4_crit",
+   "label": "C4 Garden of Eternal Rest: CRIT Rate to her teammates",
+   "source": "c4",
+   "receivers": "others",
+   "stat": "crit_rate",
+   "value": {
+    "constellation": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "rest",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:HuTao.ts:77-80,127-129,152",
+   "gcsim": "cons.go:70"
+  },
+  {
+   "key": "c6_crit",
+   "label": "C6 Butterfly's Embrace: CRIT Rate",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "value": {
+    "constellation": 6,
+    "param": 3
+   },
+   "when": [
+    {
+     "condition": "embrace",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:HuTao.ts:81-86,130-132,153",
+   "gcsim": "cons.go:18"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Guide to Afterlife: ATK from her Max HP, capped at a multiple of her base ATK",
+   "reason": "a capped conversion of her own Max HP (GO `min(prod(atkInc, premod.hp), prod(maxAtkInc, base.atk))`, pando:HuTao.ts:103-112): the recipe carries no cap on a per-candidate term, which is the owner's open question on capped self-conversions (DECISIONS \u00a739); the cap is also a parameter no seeded row label names"
+  },
+  {
+   "source": "talent",
+   "what": "Guide to Afterlife: Pyro infusion",
+   "reason": "an infusion changes a hit's element, which the estimate does not model (G4)"
+  },
+  {
+   "source": "talent",
+   "what": "Spirit Soother: HP regeneration",
+   "reason": "no damage effect: healing (its low-HP damage is its own row)"
+  },
+  {
+   "source": "c1",
+   "what": "Crimson Bouquet: Charged Attacks cost no stamina in Paramita Papilio",
+   "reason": "no damage effect: stamina"
+  },
+  {
+   "source": "c6",
+   "what": "Butterfly's Embrace: Elemental and Physical RES, and no death",
+   "reason": "no damage effect: RES and survival"
+  }
+ ]
+}

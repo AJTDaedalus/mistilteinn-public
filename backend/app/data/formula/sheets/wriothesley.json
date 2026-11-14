@@ -1,0 +1,344 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Wriothesley",
+ "nanoka_id": "10000086",
+ "slug": "wriothesley",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Wriothesley.ts",
+  "wr": "libs/gi/sheets/src/Characters/Wriothesley/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/wriothesley/",
+ "verified_by": [
+  "wriothesley_fist_a4_on_his_own_normal"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "normal_attack",
+   "go": "pando:Wriothesley.ts:166-167",
+   "gcsim": "wriothesley.go:29"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Wriothesley.ts:166,168",
+   "gcsim": "wriothesley.go:30"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_skill": [
+    "Enhanced Repelling Fist DMG|{param1:F1P} Normal Attack DMG"
+   ]
+  },
+  "constellations": {
+   "1": [
+    2.5,
+    1.5,
+    4.0,
+    0.5,
+    0.5,
+    5.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    0.1,
+    0.8,
+    1.0,
+    0.1,
+    0.8,
+    0.2,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "2": [
+    0.4,
+    0.25,
+    0.3,
+    -0.1,
+    0.2,
+    0.5,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    0.6,
+    0.5,
+    0.3,
+    5.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.06,
+    5.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "chilling",
+   "label": "Chilling Penalty, after his Elemental Skill",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Wriothesley.ts:44-49,192-203"
+  },
+  {
+   "key": "rebuke",
+   "label": "Gracious Rebuke: his Charged Attack below 60% HP (A1)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Wriothesley.ts:57-62,141-144,178-188"
+  },
+  {
+   "key": "edicts",
+   "label": "Prosecution Edict stacks (A4)",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 5,
+   "step": 1,
+   "go": "pando:Wriothesley.ts:63-66,117-122"
+  }
+ ],
+ "effects": [
+  {
+   "key": "fist",
+   "label": "Chilling Penalty: Normal Attacks deal a multiple of their DMG (the skill row, as a base multiplier)",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "base_dmg_bonus",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Enhanced Repelling Fist DMG",
+    "offset": {
+     "constant": -1,
+     "cite": "GO pando:Wriothesley.ts:192-203 multiplies the Normal Attack row by the skill row; as a base multiplier added to 1 (GO `baseMulti` default 1) it is the row less 1"
+    }
+   },
+   "when": [
+    {
+     "condition": "chilling",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Wriothesley.ts:44-45,192-203"
+  },
+  {
+   "key": "a1_rebuke",
+   "label": "A1 There Shall Be a Plea for Justice: Gracious Rebuke DMG (every Charged Attack row while on)",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "charged"
+   ],
+   "value": {
+    "passive": 1,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "rebuke",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Wriothesley.ts:57-62,141-144,178-188"
+  },
+  {
+   "key": "c1_rebuke",
+   "label": "C1 Terror for the Evildoers: Gracious Rebuke DMG",
+   "source": "c1",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "charged"
+   ],
+   "value": {
+    "constellation": 1,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "rebuke",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Wriothesley.ts:75-82,141-144,185"
+  },
+  {
+   "key": "c6_rate",
+   "label": "C6 Esteem for the Innocent: Gracious Rebuke CRIT Rate",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "moves": [
+    "charged"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "rebuke",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Wriothesley.ts:101-108,151-155,186"
+  },
+  {
+   "key": "c6_dmg",
+   "label": "C6 Esteem for the Innocent: Gracious Rebuke CRIT DMG",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "moves": [
+    "charged"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "rebuke",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Wriothesley.ts:101-108,156-160,187"
+  },
+  {
+   "key": "a4_atk",
+   "label": "A4 There Shall Be a Reckoning for Sin: ATK per Prosecution Edict",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "passive": 4,
+    "param": 0
+   },
+   "per": "edicts",
+   "go": "pando:Wriothesley.ts:63-66,126-130,170"
+  },
+  {
+   "key": "c2_burst",
+   "label": "C2 Shackles for the Arrogant: burst DMG per Prosecution Edict",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "per": "edicts",
+   "min_ascension": 4,
+   "go": "pando:Wriothesley.ts:83-90,131-135,171"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "a1",
+   "what": "There Shall Be a Plea for Justice: the Gracious Rebuke healing",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "kit",
+   "what": "The Hexerei passive: Stellar Radiance, Stellarconduct DMG, and the constellations' Hexerei multipliers",
+   "reason": "the Hexerei party mechanic is not modelled (as for Sucrose and Mona)"
+  },
+  {
+   "source": "a1",
+   "what": "There Shall Be a Plea for Justice: keeping Gracious Rebuke off an ordinary Charged Attack",
+   "reason": "GO makes it its own row; the estimate scopes by move, so the toggle reaches every Charged Attack row while on"
+  },
+  {
+   "source": "talent",
+   "what": "Icefang Rush: HP cost",
+   "reason": "no damage effect: HP"
+  },
+  {
+   "source": "c4",
+   "what": "Redemption for the Suffering: ATK SPD and healing",
+   "reason": "no closed-form damage effect: attack speed and healing"
+  }
+ ]
+}
