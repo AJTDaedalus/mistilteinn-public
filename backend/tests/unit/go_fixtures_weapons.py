@@ -324,6 +324,8 @@ def weapon_fixtures() -> list[dict[str, Any]]:
         _figure(rb, ra, b8.RAZOR_NA_1, "physical", {"atk_pct": 0.2})))
     # The later batches, kept in their own modules as the kit batches are.
     from tests.unit.go_fixtures_weapons2 import five_star_fixtures
+    from tests.unit.go_fixtures_weapons3 import four_star_fixtures
     out.extend(five_star_fixtures())
+    out.extend(four_star_fixtures())
     return out
 

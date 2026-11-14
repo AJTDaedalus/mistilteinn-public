@@ -61,7 +61,8 @@ def test_every_file_is_verified_by_fixtures_that_exist_and_name_it():
     fixtures = json.loads(FIXTURES.read_text(encoding="utf-8"))["fixtures"]
     names = {f["name"] for f in fixtures}
     for passive in weapon_passives.all_passives().values():
-        assert passive.verified_by, f"{passive.slug} ships unverified"
+        # A passive with no damage effect (Favonius's energy) has nothing a fixture could check.
+        assert passive.verified_by or not passive.effects, f"{passive.slug} ships unverified"
         assert set(passive.verified_by) <= names, passive.slug
         sid = weapon_passives.source_id(passive)
         carrying = {f["name"] for f in fixtures

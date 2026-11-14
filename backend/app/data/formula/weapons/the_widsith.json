@@ -1,0 +1,149 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "The Widsith",
+ "nanoka_id": "14402",
+ "slug": "the_widsith",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Catalyst/TheWidsith/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/catalyst/widsith/widsith.go",
+ "verified_by": [
+  "the_widsith_r1_aria_on_lisa",
+  "the_widsith_r5_recitative_on_lisa"
+ ],
+ "pins": {
+  "1": [
+   0.6,
+   0.48,
+   240.0,
+   10.0,
+   30.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.75,
+   0.6,
+   300.0,
+   10.0,
+   30.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.9,
+   0.72,
+   360.0,
+   10.0,
+   30.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   1.05,
+   0.84,
+   420.0,
+   10.0,
+   30.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   1.2,
+   0.96,
+   480.0,
+   10.0,
+   30.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "song",
+   "label": "Theme song on entering the field",
+   "kind": "choice",
+   "default_by": "self",
+   "options": [
+    "recitative",
+    "aria",
+    "interlude"
+   ],
+   "usual": {
+    "value": "",
+    "reason": "None: the song is random on entering the field; choose the one to assume"
+   },
+   "go": "16"
+  }
+ ],
+ "effects": [
+  {
+   "key": "atk",
+   "label": "Recitative: ATK%",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "song",
+     "values": [
+      "recitative"
+     ]
+    }
+   ],
+   "go": "12,17-21,38-46"
+  },
+  {
+   "key": "ele",
+   "label": "Aria: Elemental DMG, every element",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 1
+   },
+   "elements": [
+    "pyro",
+    "hydro",
+    "electro",
+    "cryo",
+    "anemo",
+    "geo",
+    "dendro"
+   ],
+   "when": [
+    {
+     "condition": "song",
+     "values": [
+      "aria"
+     ]
+    }
+   ],
+   "go": "13,22-31,38-46"
+  },
+  {
+   "key": "em",
+   "label": "Interlude: Elemental Mastery",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "song",
+     "values": [
+      "interlude"
+     ]
+    }
+   ],
+   "go": "14,32-36,38-46"
+  }
+ ]
+}
