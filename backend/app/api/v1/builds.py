@@ -42,7 +42,7 @@ from app.dependencies import (
 from app.formula.genshin import tags
 from app.formula.genshin.damage import Hit, ScalingStat, ScalingTerm
 from app.middleware.rate_limit import WRITE_LIMIT, limiter
-from app.models.enums import LEVELLED_TALENTS, MAX_TALENT_LEVEL
+from app.models.enums import LEVELLED_TALENTS, MAX_STORED_TALENT_LEVEL
 from app.repositories.artifact import ArtifactRepository
 from app.repositories.artifact_set import ArtifactSetRepository
 from app.repositories.build import BuildRepository
@@ -228,7 +228,7 @@ async def build_options(_: CurrentUser) -> BuildOptions:
     """
     return BuildOptions(
         talents=[str(talent) for talent in LEVELLED_TALENTS],
-        max_talent_level=MAX_TALENT_LEVEL,
+        max_talent_level=MAX_STORED_TALENT_LEVEL,
     )
 
 

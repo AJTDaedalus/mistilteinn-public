@@ -6,12 +6,13 @@ from pydantic import BaseModel, Field, computed_field, field_validator, model_va
 
 from app.formula.genshin import tags
 from app.formula.genshin.damage import Amplifying, ScalingStat
-from app.models.enums import LEVELLED_TALENTS, MAX_TALENT_LEVEL, TalentType
+from app.models.enums import LEVELLED_TALENTS, MAX_STORED_TALENT_LEVEL, TalentType
 from app.schemas.catalogue import CharacterSummary, WeaponSummary
+from app.services.talent_boosts import TalentBoostError, effective_talent_levels
 
 
 def _validated_talents(levels: dict[str, int]) -> dict[str, int]:
-    """Refuse a talent key nothing renders, or a level outside 1-15.
+    """Refuse a talent key nothing renders, or a level outside 1-10.
 
     The key check is the load-bearing one. `gcsim_config._talents` reads a missing key as
     level 1, so `{{"burst": 9}}` — which looks entirely reasonable — stores a 9 that nothing
@@ -31,11 +32,15 @@ def _validated_talents(levels: dict[str, int]) -> dict[str, int]:
             f"as level 1, so the talent simulates far weaker than it is."
         )
         raise ValueError(msg)
-    out_of_range = sorted(k for k, v in levels.items() if not 1 <= v <= MAX_TALENT_LEVEL)
+    out_of_range = sorted(
+        k for k, v in levels.items() if not 1 <= v <= MAX_STORED_TALENT_LEVEL
+    )
     if out_of_range:
         msg = (
-            f"{out_of_range} are outside 1-{MAX_TALENT_LEVEL}. The cap is "
-            f"{MAX_TALENT_LEVEL} rather than 10 because C3 and C5 each add three levels."
+            f"{out_of_range} are outside 1-{MAX_STORED_TALENT_LEVEL}. Talent levels are "
+            f"stored without constellation boosts — as a GOOD export carries them and gcsim "
+            f"reads them — so enter the level shown before C3/C5 add their three; the "
+            f"boosted level is worked out from the constellation."
         )
         raise ValueError(msg)
     return levels
@@ -64,7 +69,7 @@ class BuildCreate(BaseModel):
     weapon_level: int = Field(90, ge=1, le=90)
     refinement: int = Field(1, ge=1, le=5)
     constellation_level: int = Field(0, ge=0, le=6)
-    #: Keyed by `TalentType` value. 1-15, because constellations raise the cap past 10.
+    #: Keyed by `TalentType` value. 1-10: base levels, without the C3/C5 boost (2026-11-14).
     talent_levels: dict[str, int] = {}
     notes: str = ""
 
@@ -187,6 +192,42 @@ class BuildRead(BaseModel):
     #: describe a character the same way.
     character: CharacterSummary | None = None
     weapon: WeaponSummary | None = None
+
+    @computed_field
+    @property
+    def effective_talent_levels(self) -> dict[str, int] | None:
+        """The levels this build's hits are read at: `talent_levels` plus C3/C5 boosts.
+
+        Owner ruling, 2026-11-14: a stored level is a base level, capped at 10, and the
+        boosted one is shown beside it rather than typed into it. The same function the hit
+        readers use (`talent_boosts.effective_talent_levels`, via `builds._hit_levels`), so
+        what the editor shows and what `/explain` multiplies cannot disagree.
+
+        `None` exactly when that function refuses — a C3+ character no derived table covers —
+        with the reason in `talent_boost_refusal`. Never the stored levels standing in for an
+        answer: below a table, a boosted talent would read three levels low and look settled.
+        """
+        try:
+            return self._effective()
+        except TalentBoostError:
+            return None
+
+    @computed_field
+    @property
+    def talent_boost_refusal(self) -> str | None:
+        """Why `effective_talent_levels` is `None`, verbatim from #374's refusal."""
+        try:
+            self._effective()
+        except TalentBoostError as exc:
+            return str(exc)
+        return None
+
+    def _effective(self) -> dict[str, int]:
+        if self.character is None:
+            return dict(self.talent_levels)
+        return effective_talent_levels(
+            self.character, self.constellation_level, self.talent_levels,
+        )
 
     model_config = {"from_attributes": True}
 

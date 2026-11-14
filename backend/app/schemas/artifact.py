@@ -488,6 +488,10 @@ class BuildImportSummary(BaseModel):
     no_weapon_in_export: list[str] = []
     #: Pieces taken from a build that was already wearing them.
     reassigned: list[str] = []
+    #: Characters given no build because the export's talent levels are outside 1-10,
+    #: `"character: reason"`. Stored talent levels are base levels, without the C3/C5 boost
+    #: (owner ruling, 2026-11-14), so a 13 is refused rather than clamped or stored.
+    refused_talents: list[str] = []
 
 
 class GoodImportResponse(BaseModel):

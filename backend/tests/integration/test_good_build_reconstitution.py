@@ -328,3 +328,38 @@ async def test_only_equipped_characters_get_a_build(
 
     assert report.created == 1
     assert report.unresolved == []
+
+
+async def test_a_character_with_an_out_of_range_talent_gets_no_build_and_is_named(
+    db_session: AsyncSession, owner: User, catalogue: dict,
+) -> None:
+    """Owner ruling, 2026-11-14: stored talent levels are base levels, 1-10.
+
+    Refused per character, like an unresolvable one: the rest of the import goes ahead, the
+    character is still owned, and their worn pieces stay in the inventory unequipped rather
+    than on a build carrying a level the user did not have.
+    """
+    flower = await _row(db_session, owner, ArtifactSlot.FLOWER)
+    refusal = "talent level burst 13 is outside 1-10"
+    parsed = GoodImportResult(
+        artifacts=(_piece("KamisatoAyaka", ArtifactSlot.FLOWER, 0),),
+        rejected=(), source="s", version=3,
+        characters=(ParsedCharacter(
+            key="KamisatoAyaka", level=90, ascension=6, constellation=3,
+            talents={"normal_attack": 9, "elemental_skill": 9, "elemental_burst": 10},
+            talent_refusal=refusal,
+        ),),
+        weapons=(ParsedWeapon(key="FavoniusSword", level=90, ascension=6, refinement=5,
+                              location="KamisatoAyaka"),),
+    )
+
+    report = await rebuild_builds(
+        db_session, owner_id=str(owner.id), parsed=parsed, stored={0: flower},
+    )
+
+    assert report.created == 0
+    assert report.refused_talents == [f"Kamisato Ayaka: {refusal}"]
+    assert report.roster_written == 1, "owning a character does not depend on its talents"
+    assert (await db_session.execute(select(Build))).scalars().all() == []
+    await db_session.refresh(flower)
+    assert flower.build_id is None

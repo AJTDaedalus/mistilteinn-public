@@ -46,9 +46,11 @@ class Build(TimestampMixin, Base):
     belongs: the collection is a shelf, the team is the thing being simulated.
 
     `talent_levels` is JSONB keyed by `TalentType` value — normal attack, elemental skill
-    and elemental burst each level 1-15 independently (constellations can raise the cap to
-    13, which is why there is no `CheckConstraint` pinning it to 10). Stored as one unit
-    because it is always read as one.
+    and elemental burst each level 1-10 independently. These are **base** levels, without
+    the +3 a C3/C5 adds (owner ruling, 2026-11-14 — `MAX_STORED_TALENT_LEVEL`); the boosted
+    level is derived on read (`BuildRead.effective_talent_levels`). The bound is enforced by
+    every write path's validator rather than a `CheckConstraint`, because a JSONB value has
+    no column to constrain. Stored as one unit because it is always read as one.
     """
 
     __tablename__ = "builds"

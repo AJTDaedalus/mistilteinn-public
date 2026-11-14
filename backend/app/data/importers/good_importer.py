@@ -38,7 +38,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any
 
-from app.models.enums import ArtifactSlot, Rarity
+from app.models.enums import MAX_STORED_TALENT_LEVEL, ArtifactSlot, Rarity
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -156,6 +156,12 @@ class ParsedCharacter:
     #: renamed to this repo's `TalentType` spellings at the boundary, so nothing downstream
     #: carries GO's vocabulary.
     talents: dict[str, int]
+    #: Why this character's talents cannot be stored, or `None`. **The character is still
+    #: parsed** — ownership and the roster do not depend on talent levels — but no build is
+    #: made from it: `good_build_service` reports it per character instead (owner ruling,
+    #: 2026-11-14). Set for a level that is present and outside 1-10, never for one the
+    #: export omits.
+    talent_refusal: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -360,6 +366,7 @@ def _parse_characters(records: Iterable[Any]) -> list[ParsedCharacter]:
             continue
         talents = record.get("talent")
         talents = talents if isinstance(talents, dict) else {}
+        refused = _talents_out_of_range(talents)
         parsed.append(
             ParsedCharacter(
                 key=key,
@@ -371,12 +378,43 @@ def _parse_characters(records: Iterable[Any]) -> list[ParsedCharacter]:
                     else None
                 ),
                 talents={
-                    ours: _bounded(talents.get(theirs), 1, 15, 1)
+                    ours: _bounded(talents.get(theirs), 1, MAX_STORED_TALENT_LEVEL, 1)
                     for theirs, ours in _TALENTS.items()
                 },
+                talent_refusal=refused,
             )
         )
     return parsed
+
+
+def _talents_out_of_range(talents: dict[str, Any]) -> str | None:
+    """The reason a character's talent block cannot be stored, or `None`.
+
+    **Refused, not clamped** — the one place this parser does not `_bounded` a level, and the
+    exception is deliberate (owner ruling, 2026-11-14). GOOD stores talent levels *without*
+    constellation boosts, and gcsim refuses one above 10. A 13 is almost always a level read
+    *with* the boost, so clamping it to 10 would quietly store a different number than the
+    file says, and keeping it would count the boost twice once C3/C5 add their three again.
+    Neither is a guess this importer should make for the user.
+
+    A level the export omits, or one that is not a number at all, still falls back to 1 below:
+    that is "the export did not say", not a claim about the character.
+    """
+    bad = []
+    for theirs in _TALENTS:
+        value = talents.get(theirs)
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            continue
+        if value != int(value) or not 1 <= value <= MAX_STORED_TALENT_LEVEL:
+            bad.append(f"{theirs} {value}")
+    if not bad:
+        return None
+    return (
+        f"talent level {', '.join(bad)} is outside 1-{MAX_STORED_TALENT_LEVEL}. GOOD stores "
+        f"talent levels without constellation boosts, so a level above "
+        f"{MAX_STORED_TALENT_LEVEL} usually means the scanner read the boosted one; no build "
+        f"was made, and this character's equipped pieces stay in the inventory unequipped"
+    )
 
 
 def _parse_weapons(records: Iterable[Any]) -> list[ParsedWeapon]:

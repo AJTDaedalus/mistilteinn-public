@@ -41,6 +41,7 @@ from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 
+from app.models.enums import MAX_STORED_TALENT_LEVEL
 from app.services import gcsim_keys
 from app.services.gcsim_keys import GcsimKeyError
 
@@ -60,7 +61,8 @@ BOOST = 3
 FIRST_BOOSTING_CONSTELLATION = 3
 
 #: A base talent level's ceiling: gcsim's `character.go:163-174` refuses anything above it.
-BASE_TALENT_CAP = 10
+#: The same number every write path stores up to (`MAX_STORED_TALENT_LEVEL`, 2026-11-14).
+BASE_TALENT_CAP = MAX_STORED_TALENT_LEVEL
 
 
 class TalentBoostError(LookupError):
