@@ -108,3 +108,13 @@ STATED: dict[str, dict[str, Any]] = {'xiangling_multi_target': {'set:15006:4/sta
                                                'kit:alhaitham/excess_mirror': 1},
  'tighnari_a1_a4_below_cap_on_his_own_wreath': {'kit:tighnari/wreath': 1},
  'tighnari_a4_past_cap_c2_on_his_own_wreath': {'kit:tighnari/wreath': 1}}
+
+# Math-fallback P3 (task 13): conditions the reaction effects added to sheets these fixtures
+# already used. They gate effects that reach only reaction rows, which none of these fixtures
+# has, so stating them changes no figure; they are stated so no fixture relies on a default.
+for _name, _key in (
+    ("nahida_a1_c2_on_xiangling", "kit:nahida/c2_bloom"),
+    ("nahida_burst_c4_on_her_own_tri_karma", "kit:nahida/c2_bloom"),
+    ("baizhu_c4_on_nahida", "kit:baizhu/a4_after_heal"),
+):
+    STATED.setdefault(_name, {})[_key] = 1

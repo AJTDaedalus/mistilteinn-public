@@ -86,6 +86,38 @@
     0.0,
     0.0,
     0.0
+   ],
+   "4": [
+    6.0,
+    0.02,
+    0.008,
+    50000.0,
+    0.007,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
    ]
   }
  },
@@ -111,6 +143,13 @@
    "kind": "toggle",
    "default_by": "giver_is_subject",
    "go": "pando:Baizhu.ts:103-104,148-150"
+  },
+  {
+   "key": "a4_after_heal",
+   "label": "After Baizhu heals the party (A4 All Things Are of the Earth)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Baizhu.ts:103-104,118-145"
   }
  ],
  "effects": [
@@ -172,6 +211,76 @@
     "times_stat": "hp"
    },
    "go": "pando:Baizhu.ts:92-95,151-155,167"
+  },
+  {
+   "key": "a4_burning_bloom",
+   "label": "A4 All Things Are of the Earth: party Burning, Bloom, Hyperbloom and Burgeon DMG per 1,000 of his Max HP, up to 50,000",
+   "source": "a4",
+   "receivers": "team",
+   "stat": "reaction_bonus",
+   "reactions": [
+    "burning",
+    "bloom",
+    "hyperbloom",
+    "burgeon"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 1,
+    "times_stat": "hp",
+    "stat_unit": {
+     "constant": 1000.0,
+     "cite": "GO pando Baizhu.ts:124 `prod(percent(burningBloom_dmg_), final.hp, 1 / 1000)`; gcsim asc.go:62 `c.MaxHP() / 1000.0`; no seeded list carries the 1,000"
+    },
+    "stat_cap": {
+     "passive": 4,
+     "param": 3
+    }
+   },
+   "when": [
+    {
+     "condition": "a4_after_heal",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Baizhu.ts:73-74,118-127,168-171",
+   "gcsim": "internal/characters/baizhu/asc.go:51-80"
+  },
+  {
+   "key": "a4_spread_aggravate",
+   "label": "A4 All Things Are of the Earth: party Spread and Aggravate DMG per 1,000 of his Max HP, up to 50,000",
+   "source": "a4",
+   "receivers": "team",
+   "stat": "reaction_bonus",
+   "reactions": [
+    "spread",
+    "aggravate"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 2,
+    "times_stat": "hp",
+    "stat_unit": {
+     "constant": 1000.0,
+     "cite": "GO pando Baizhu.ts:124 `prod(percent(burningBloom_dmg_), final.hp, 1 / 1000)`; gcsim asc.go:62 `c.MaxHP() / 1000.0`; no seeded list carries the 1,000"
+    },
+    "stat_cap": {
+     "passive": 4,
+     "param": 3
+    }
+   },
+   "when": [
+    {
+     "condition": "a4_after_heal",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Baizhu.ts:75,128-137,172-173",
+   "gcsim": "internal/characters/baizhu/asc.go:51-80"
   }
  ],
  "unmodelled": [
@@ -179,11 +288,6 @@
    "source": "a1",
    "what": "Five Fortunes Forever: Healing Bonus below 50% HP",
    "reason": "no damage effect"
-  },
-  {
-   "source": "a4",
-   "what": "All Things Are of the Earth: Burning, Bloom, Hyperbloom, Burgeon, Spread, Aggravate and Lunar-Bloom DMG from his Max HP",
-   "reason": "transformative, additive and Lunar reaction damage is not priced by the estimate yet (P3, task 13)"
   },
   {
    "source": "c2",
@@ -194,6 +298,11 @@
    "source": "talent",
    "what": "Holistic Revivification: shield and healing",
    "reason": "no damage effect"
+  },
+  {
+   "source": "a4",
+   "what": "All Things Are of the Earth: Lunar-Bloom DMG from his Max HP",
+   "reason": "Lunar-Bloom has no reaction-triggered instance at the pins (`reactions.REFUSED`)"
   }
  ]
 }

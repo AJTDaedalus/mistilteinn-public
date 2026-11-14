@@ -68,8 +68,11 @@ def test_every_pinned_tier_resolves_without_a_problem(resolved):
 
 def test_the_status_counts_are_what_the_report_says(resolved):
     counts = Counter((k[1], t.status) for k, t in resolved.items())
+    # P3 (task 13): Thundering Fury, Flower of Paradise Lost and Aubade gained their reaction
+    # effects (unmodelled -> partial: each keeps a Stellar, Lunar-Bloom or timing part), and
+    # Crimson Witch its last unmodelled part (partial -> modelled).
     assert counts == {
-        (4, "modelled"): 30, (4, "partial"): 16, (4, "unmodelled"): 5,
+        (4, "modelled"): 31, (4, "partial"): 18, (4, "unmodelled"): 2,
         (4, "no_damage_effect"): 9,
         (2, "modelled"): 7, (2, "no_damage_effect"): 2,
         (1, "no_damage_effect"): 5,
@@ -109,8 +112,39 @@ def test_crimson_witch_stack_is_half_its_two_piece(resolved):
     assert witch.conditions[0].default == 3
     reactions = [(e.reactions, e.value) for e in witch.effects if e.stat == "reaction_bonus"]
     assert reactions == [
+        # P3: Overloaded, Burning and Burgeon +40% (GO `:28-34,52-56`).
+        (("overloaded", "burning", "burgeon"), 0.4),
         (("vaporize", "reverse_vaporize"), 0.15), (("melt", "reverse_melt"), 0.15),
     ]
+
+
+def test_the_reaction_parts_p3_wired(resolved):
+    """Each reaction bonus P3 (task 13) unlocked, at GO's value from our pinned list."""
+    def bonus(set_id: int) -> list[tuple[tuple[str, ...] | None, float]]:
+        return [(e.reactions, round(e.value, 6)) for e in resolved[(set_id, 4)].bonus.effects
+                if e.stat == "reaction_bonus"]
+
+    # GO `ViridescentVenerer/index.tsx:21`: swirl_dmg_ 0.6.
+    assert bonus(15002) == [(("swirl",), 0.6)]
+    # GO `ThunderingFury/index.tsx:12-17`: 0.4 to four reactions, aggravate and Lunar-Charged 0.2.
+    assert bonus(15005) == [
+        (("overloaded", "electro_charged", "superconduct", "hyperbloom"), 0.4),
+        (("aggravate",), 0.2), (("lunar_charged",), 0.2),
+    ]
+    # GO `FlowerOfParadiseLost/index.tsx:24-58`: 0.4, and stack × 0.1 (40% × 25%) to 4 stacks.
+    assert bonus(15028) == [
+        (("bloom", "hyperbloom", "burgeon"), 0.4), (("bloom", "hyperbloom", "burgeon"), 0.1),
+    ]
+    flower = resolved[(15028, 4)].bonus
+    assert flower.effects[1].per == "stacks"
+    assert flower.conditions[0].max == 4
+    # GO `DisenchantmentInDeepShadow/index.tsx:19-23`: superconduct_dmg_ 0.8.
+    assert bonus(15046)[0] == (("superconduct",), 0.8)
+    # GO Night/Silken `nonStackBuff(..., percent(0.1))`, Aubade 0.2 and 0.4.
+    assert bonus(15041) == [(("lunar_charged", "lunar_crystallize"), 0.1)]
+    assert bonus(15042) == [(("lunar_charged", "lunar_crystallize"), 0.1)]
+    assert bonus(15043) == [(("lunar_charged", "lunar_crystallize"), 0.2),
+                            (("lunar_charged", "lunar_crystallize"), 0.4)]
 
 
 def test_value_forms(resolved):

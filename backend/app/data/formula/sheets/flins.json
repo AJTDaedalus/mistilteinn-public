@@ -125,12 +125,12 @@
   {
    "source": "kit",
    "what": "Moonsign Benediction, Symphony of Winter, the burst's Lunar-Charged phases and C6: Lunar-Charged DMG",
-   "reason": "a Lunar reaction's damage, which the estimate does not model yet (P3)"
+   "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
   },
   {
    "source": "a4",
    "what": "Whispering Flame: EM from his ATK, capped (C4 raises it)",
-   "reason": "a capped conversion of his ATK into EM, which the recipe does not carry; his EM reaches only reaction damage (P3)",
+   "reason": "a capped conversion of his ATK into EM, which the recipe does not carry; his EM reaches only reaction damage, and a reaction row reads the optimized character's own",
    "receiver": "subject"
   },
   {

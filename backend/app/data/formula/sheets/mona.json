@@ -229,6 +229,77 @@
     "times_stat": "energy_recharge"
    },
    "go": "pando:Mona.ts:74,154-158,231; wr:index.tsx:88,367-373,384"
+  },
+  {
+   "key": "c1_electro_charged",
+   "label": "C1 Prophecy of Submersion: party Electro-Charged and Lunar-Charged DMG against Omen",
+   "source": "c1",
+   "receivers": "team",
+   "stat": "reaction_bonus",
+   "reactions": [
+    "electro_charged",
+    "lunar_charged"
+   ],
+   "value": {
+    "constellation": 1,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "c1_omen",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Mona.ts:85,131-136,236-247"
+  },
+  {
+   "key": "c1_swirl",
+   "label": "C1 Prophecy of Submersion: party Swirl DMG against Omen (every swirl, as GO applies it; gcsim and the text limit it to a Hydro swirl)",
+   "source": "c1",
+   "receivers": "team",
+   "stat": "reaction_bonus",
+   "reactions": [
+    "swirl"
+   ],
+   "value": {
+    "constellation": 1,
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "c1_omen",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Mona.ts:87,137-139,248-250",
+   "gcsim": "internal/characters/mona/cons.go:71-80 (Hydro swirl only)"
+  },
+  {
+   "key": "c1_lunar_crystallize",
+   "label": "C1 Prophecy of Submersion: party Lunar-Crystallize DMG against Omen",
+   "source": "c1",
+   "receivers": "team",
+   "stat": "reaction_bonus",
+   "reactions": [
+    "lunar_crystallize"
+   ],
+   "value": {
+    "constellation": 1,
+    "param": 7
+   },
+   "when": [
+    {
+     "condition": "c1_omen",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Mona.ts:92,143-145,254-259"
   }
  ],
  "unmodelled": [
@@ -236,11 +307,6 @@
    "source": "kit",
    "what": "Witch's Eve Rite (Hexerei) and every Hexerei part of her constellations",
    "reason": "the Hexerei party mechanic is not modelled (as Sucrose's)"
-  },
-  {
-   "source": "c1",
-   "what": "Prophecy of Submersion: Electro-Charged, Swirl, Lunar-Charged and Lunar-Crystallize DMG",
-   "reason": "transformative and Lunar reaction damage is not modelled yet (P3)"
   },
   {
    "source": "a1",

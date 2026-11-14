@@ -280,12 +280,12 @@
   {
    "source": "kit",
    "what": "Stellar Jubilee: Stellar-Conduct base DMG from EM",
-   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+   "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
   },
   {
    "source": "kit",
    "what": "Steady State Core consumption and detonation hits (Stellar-Conduct)",
-   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+   "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
   },
   {
    "source": "talent",
@@ -300,12 +300,12 @@
   {
    "source": "c4",
    "what": "The Isotopes Born of Decay: a Stellar-Conduct hit",
-   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+   "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`)"
   },
   {
    "source": "c6",
    "what": "Elemental Transition at the Gate of Reason: Stellar-Conduct DMG and Steady State multiplier",
-   "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13); the multiplier is a multiplier on one hit's base damage (GO `baseMulti`): the format has no base-multiplier stat"
+   "reason": "a kit's own Lunar or Stellar damage: P3 prices reaction instances (Lunar-Charged, Lunar-Crystallize), not a kit's direct Lunar hits, Lunar base-damage bonuses or the Stellar reactions (`reactions.REFUSED`); the multiplier is a multiplier on one hit's base damage (GO `baseMulti`): the format has no base-multiplier stat"
   }
  ]
 }

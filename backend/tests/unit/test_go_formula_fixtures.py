@@ -47,6 +47,7 @@ from typing import Any
 
 import pytest
 
+from app.data.snapshot import reaction_level_multiplier
 from app.formula.builder import const
 from app.formula.genshin import resonance, set_effects, sheets, tags
 from app.pando.calculator import NodeRegistry
@@ -1703,6 +1704,9 @@ def build() -> dict[str, Any]:
     # Task 11, eighth batch (the small sheets of ordinary buffs).
     from tests.unit.go_fixtures_batch8 import batch8_fixtures
     fixtures.extend(batch8_fixtures())
+    # Math-fallback P3, task 13: transformative, additive and Lunar reactions.
+    from tests.unit.go_fixtures_reactions import reaction_fixtures
+    fixtures.extend(reaction_fixtures())
     # No fixture relies on a default (DECISIONS §40 (ii) changed them): every condition each
     # one reads is stated, the older ones' through `STATED`.
     from tests.unit.go_fixtures_stated import STATED
@@ -1720,6 +1724,8 @@ def build() -> dict[str, Any]:
         "go_commit": GO_COMMIT,
         "target": {"level": 100, "resistance": 0.1, "def_reduction": 0.0, "def_ignore": 0.0},
         "character_level": 90,
+        # What `/search-context` sends at level 90 (P3): the reaction rows' level base.
+        "reaction_level_multiplier": reaction_level_multiplier(90),
         "fixtures": fixtures,
     }
 
