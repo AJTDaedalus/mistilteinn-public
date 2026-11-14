@@ -84,9 +84,13 @@ BUFFERS = {"furina", "xingqiu", "xiangling", "citlali", "yelan", "escoffier", "c
            "jean", "zhongli", "faruzan", "sucrose"}
 
 
+#: Task 11, third batch: the DPS characters in the owner's saved teams that had no sheet.
+DPS = {"skirk", "neuvillette", "kamisato_ayaka", "noelle", "mavuika", "kuki_shinobu"}
+
+
 def test_every_sheet_loads_and_is_named_after_its_slug():
     assert {s.slug for s in sheets.all_sheets().values()} == {
-        "bennett", "kaedehara_kazuha", *UNGATED, *BUFFERS}
+        "bennett", "kaedehara_kazuha", *UNGATED, *BUFFERS, *DPS}
 
 
 def test_every_sheet_is_cited_to_the_pinned_go_and_gcsim_commits():

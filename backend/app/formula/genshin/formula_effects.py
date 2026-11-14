@@ -75,6 +75,15 @@ AMPLIFYING_REACTIONS: tuple[str, ...] = ("vaporize", "reverse_vaporize", "melt",
 #:   per candidate. Only a kit buff whose giver is also the optimized character emits it
 #:   (Kazuha's A4 on Kazuha): a teammate's EM is a number, the subject's moves with every
 #:   candidate. GO `prod(percent(x), own.premod.eleMas)`.
+#: - `flat_atk_from_def` — flat ATK of `value` × the **hit owner's own** total DEF, per
+#:   candidate (Noelle's Sweeping Time, P2 task 11: GO `ownBuff.premod.atk.add(prod(
+#:   own.premod.def, …))`). Only a giver who is the optimized character emits it; it reaches
+#:   every ATK-scaling term of a hit and moves with the candidate's DEF.
+#: - `base_atk` — base ATK added before the percentage (GO `ownBuff.base.atk`, Mavuika's C2),
+#:   so every ATK% multiplies it.
+#: - `base_dmg_bonus` — added to the hit's base-damage multiplier on its talent term (GO
+#:   `baseMulti`: `talent × stat × (1 + x)`), the `baseDamageBonus` the single-hit kernel
+#:   already carries (Neuvillette's A1, Skirk's A4).
 EffectStat = Literal[
     "atk_pct", "hp_pct", "def_pct", "elemental_mastery", "energy_recharge",
     "crit_rate", "crit_dmg",
@@ -83,6 +92,7 @@ EffectStat = Literal[
     "flat_damage_from_em",
     "dmg_bonus_from_energy_recharge",
     "flat_atk", "dmg_bonus_from_em",
+    "flat_atk_from_def", "base_atk", "base_dmg_bonus",
 ]
 
 #: Stats that are kernel quantities and so can also travel in a set-bonus pool.

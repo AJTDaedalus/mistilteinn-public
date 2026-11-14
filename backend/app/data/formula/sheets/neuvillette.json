@@ -1,0 +1,271 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Neuvillette",
+ "nanoka_id": "10000087",
+ "slug": "neuvillette",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Neuvillette.ts",
+  "wr": "libs/gi/sheets/src/Characters/Neuvillette/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/neuvillette/",
+ "verified_by": [
+  "neuvillette_a1_a4_on_his_own_judgment"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "normal_attack",
+   "go": "pando:Neuvillette.ts:111-112; wr:index.tsx:189",
+   "gcsim": "neuvillette.go:35"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Neuvillette.ts:111,113; wr:index.tsx:188",
+   "gcsim": "neuvillette.go:36"
+  }
+ ],
+ "pins": {
+  "passives": {
+   "1": [
+    0.1,
+    0.25,
+    0.6,
+    30.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.3,
+    0.8,
+    0.6,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "constellations": {
+   "2": [
+    0.14,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "a1_stacks",
+   "label": "A1 stacks: Hydro-related reactions the party triggered",
+   "kind": "number",
+   "default_by": "situational",
+   "max": 3,
+   "step": 1,
+   "go": "pando:Neuvillette.ts:86-87,91-96; wr:index.tsx:94-105,245-262"
+  },
+  {
+   "key": "a4_hp",
+   "label": "Neuvillette's current HP above 30%, in percentage points (A4)",
+   "kind": "number",
+   "default_by": "situational",
+   "max": 50,
+   "step": 1,
+   "go": "pando:Neuvillette.ts:88-89,97-101; wr:index.tsx:108-117,357-370"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a1_judgment_1",
+   "label": "A1 Heir to the Ancient Sea's Authority: base DMG at 1 stack; GO and gcsim apply it to Charged Attack: Equitable Judgment, and it reaches every Charged Attack row here",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "base_dmg_bonus",
+   "moves": [
+    "charged"
+   ],
+   "value": {
+    "passive": 1,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "a1_stacks",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Neuvillette.ts:58-66,91-96,122-130; wr:index.tsx:94-105,147,171",
+   "gcsim": "asc.go:21-60"
+  },
+  {
+   "key": "a1_judgment_2",
+   "label": "A1 Heir to the Ancient Sea's Authority: base DMG at 2 stacks; GO and gcsim apply it to Charged Attack: Equitable Judgment, and it reaches every Charged Attack row here",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "base_dmg_bonus",
+   "moves": [
+    "charged"
+   ],
+   "value": {
+    "passive": 1,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "a1_stacks",
+     "values": [
+      2
+     ]
+    }
+   ],
+   "go": "pando:Neuvillette.ts:58-66,91-96,122-130; wr:index.tsx:94-105,147,171",
+   "gcsim": "asc.go:21-60"
+  },
+  {
+   "key": "a1_judgment_3",
+   "label": "A1 Heir to the Ancient Sea's Authority: base DMG at 3 stacks; GO and gcsim apply it to Charged Attack: Equitable Judgment, and it reaches every Charged Attack row here",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "base_dmg_bonus",
+   "moves": [
+    "charged"
+   ],
+   "value": {
+    "passive": 1,
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "a1_stacks",
+     "values": [
+      3
+     ]
+    }
+   ],
+   "go": "pando:Neuvillette.ts:58-66,91-96,122-130; wr:index.tsx:94-105,147,171",
+   "gcsim": "asc.go:21-60"
+  },
+  {
+   "key": "a4_hydro",
+   "label": "A4 Discipline of the Supreme Arbitration: Hydro DMG per point of HP above 30%",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "hydro"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 2,
+    "stat_unit": {
+     "constant": 100,
+     "cite": "GO pando:Neuvillette.ts:70 `passive2[2][0] / 100` (wr:index.tsx:83); gcsim asc.go:113 `(hpRatio - 0.3) * 0.6`; the seeded A4 list carries 0.6 per 100 points"
+    }
+   },
+   "per": "a4_hp",
+   "go": "pando:Neuvillette.ts:67-72,97-101,115; wr:index.tsx:79-84,108-117,190",
+   "gcsim": "asc.go:64-120"
+  },
+  {
+   "key": "c2_crit",
+   "label": "C2 Juridical Exhortation: CRIT DMG per A1 stack; GO and gcsim apply it to Charged Attack: Equitable Judgment, and it reaches every Charged Attack row here",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "moves": [
+    "charged"
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "per": "a1_stacks",
+   "go": "pando:Neuvillette.ts:73-75,102-106,129,153; wr:index.tsx:119-127,143,176",
+   "gcsim": "cons.go:29-45"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "a1",
+   "what": "Keeping Heir to the Ancient Sea's Authority and C2 off the ordinary Charged Attack",
+   "reason": "GO and gcsim give them to Equitable Judgment only; the estimate scopes a buff by move, so an ordinary Charged Attack row receives them too"
+  },
+  {
+   "source": "talent",
+   "what": "As Water Seeks Equilibrium: Equitable Judgment's HP drain and droplet healing",
+   "reason": "no damage effect: HP and healing"
+  },
+  {
+   "source": "c1",
+   "what": "Venerable Institution: one A1 stack on entering combat, and interruption resistance",
+   "reason": "no damage effect: the A1 stack count is the user's"
+  },
+  {
+   "source": "c4",
+   "what": "Crown of Commiseration: Sourcewater Droplets while healed",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "c6",
+   "what": "Wrathful Recompense: extra currents during Equitable Judgment",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  }
+ ]
+}

@@ -134,6 +134,9 @@ SELF_CONVERSIONS: dict[tuple[str, str], EffectStat] = {
     # and the same from EM: the recipe resolves a flat term from any of its four sources.
     ("flat_damage", tags.Q_HP): "flat_damage_from_hp",
     ("flat_damage", tags.Q_ELEMENTAL_MASTERY): "flat_damage_from_em",
+    # Noelle's Sweeping Time on herself: ATK from her own DEF (GO `ownBuff.premod.atk.add(
+    # prod(own.premod.def, …))`), carried per candidate into every ATK-scaling term.
+    ("flat_atk", tags.Q_DEF): "flat_atk_from_def",
 }
 
 DefaultBy = Literal["self", "situational", "giver_is_subject"]
@@ -222,6 +225,10 @@ class ValueRef(_Strict):
 
     talent: str | None = None
     row: str | None = None
+    #: With `talent`: which of the row's parameters, in the order its format string names them
+    #: (Skirk's "0/1/2/3 Void Rift Absorption DMG Bonus|{param4}/{param5}/{param6}/{param7}",
+    #: `nth: 2` → `params[5]`). Absent is the first.
+    nth: int | None = None
     constellation: int | None = None
     passive: int | None = None
     param: int | None = None
@@ -234,7 +241,9 @@ class ValueRef(_Strict):
     #: Multiplied by a second seeded parameter: GO `prod(percent(a4), c4)`.
     times_param: ParamRef | None = None
     #: With `times_stat`: the stat is counted per this many points (GO `prod(percent(x), hp,
-    #: 1 / 1000)`, "per 1,000 Max HP"). A number, so it carries its citation.
+    #: 1 / 1000)`, "per 1,000 Max HP"). Without one, on an effect with `per`: the condition is
+    #: counted per this many (GO `hydro_dmg_: passive2[2][0] / 100`, Neuvillette's A4 per
+    #: percentage point of HP). A number, so it carries its citation.
     stat_unit: Cited | None = None
     #: The most the value can be: GO `min(…, percent(max))`, the maximum a seeded parameter.
     cap: ParamRef | None = None
@@ -262,8 +271,8 @@ class ValueRef(_Strict):
             raise ValueError("an ascension passive unlocks at phase 1 or 4")
         if self.times_stat is not None and self.times_stat not in GIVER_STATS:
             raise ValueError(f"times_stat must be one of {sorted(GIVER_STATS)}")
-        if self.stat_unit is not None and self.times_stat is None:
-            raise ValueError("a stat unit belongs to a value that reads a stat")
+        if self.nth is not None and (self.talent is None or self.nth < 0):
+            raise ValueError("`nth` picks a parameter of a talent row")
         if self.index_by_team is not None and self.param is None:
             raise ValueError("a team-indexed value reads a constellation or passive list")
         return self
@@ -371,6 +380,10 @@ class SheetEffect(_Strict):
         for element in (*(self.receiver_elements or ()), *(self.per_team_elements or ())):
             if element not in VISIONS:
                 raise ValueError(f"{self.key}: {element!r} is not one of {VISIONS}")
+        if (self.value.stat_unit is not None and self.value.times_stat is None
+                and self.per is None):
+            raise ValueError(f"{self.key}: a unit counts a stat (`times_stat`) or a condition "
+                             "(`per`)")
         return self
 
 
@@ -590,10 +603,11 @@ def _parameter(sheet: Sheet, giver: Giver, ref: ValueRef, *, shift: int = 0) -> 
                 f"{ref.talent} row {ref.row!r} changed since curation: pinned "
                 f"{pinned[ref.row or '']!r}, seeded {label!r}",
             )
-        found = _PARAM.search(label.split("|", 1)[1])
-        if found is None:
-            raise _Withheld(f"{ref.talent} row {label!r} names no parameter")
-        return float(row.params[int(found.group(1)) - 1])
+        named = _PARAM.findall(label.split("|", 1)[1])
+        nth = ref.nth or 0
+        if nth >= len(named):
+            raise _Withheld(f"{ref.talent} row {label!r} names no parameter {nth}")
+        return float(row.params[int(named[nth]) - 1])
     if ref.constellation is not None:
         live, pin, name = (giver.constellation_params.get(ref.constellation),
                            sheet.pins.constellations[ref.constellation], f"C{ref.constellation}")
@@ -635,6 +649,8 @@ def _value_node(sheet: Sheet, giver: Giver, effect: SheetEffect, *, shift: int =
     ref = effect.value
     factor = const(_number(sheet, giver, ref, shift=shift))
     if ref.times_stat is None:
+        if ref.stat_unit is not None:  # per `stat_unit` of the `per` condition
+            return prod_(factor, const(1.0 / ref.stat_unit.constant))
         return factor
     unit = 1.0 if ref.stat_unit is None else 1.0 / ref.stat_unit.constant
     node = prod_(factor, const(unit), GIVER_STATS[ref.times_stat])

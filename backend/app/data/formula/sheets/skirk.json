@@ -1,0 +1,540 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Skirk",
+ "nanoka_id": "10000114",
+ "slug": "skirk",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Skirk.ts",
+  "wr": "libs/gi/sheets/src/Characters/Skirk/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/skirk/",
+ "verified_by": [
+  "skirk_serpent_on_her_own_burst"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:Skirk.ts:283-284; wr:index.tsx:389",
+   "gcsim": "skirk.go:38"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:Skirk.ts:283,285; wr:index.tsx:388",
+   "gcsim": "skirk.go:37"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_burst": [
+    "Serpent's Subtlety Bonus|{param3:F2P} ATK Per Point",
+    "0/1/2/3 Void Rift Absorption DMG Bonus|{param4:F1P}/{param5:F1P}/{param6:F1P}/{param7:F1P}"
+   ]
+  },
+  "passives": {
+   "4": [
+    20.0,
+    0.1,
+    0.2,
+    0.7,
+    0.05,
+    0.15,
+    0.6,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "constellations": {
+   "2": [
+    10.0,
+    12.5,
+    0.7,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.1,
+    0.2,
+    0.4,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "serpent_over",
+   "label": "Serpent's Subtlety above 50 when Havoc: Ruin is used",
+   "kind": "number",
+   "default_by": "self",
+   "max": 12,
+   "step": 1,
+   "max_raise": {
+    "constellation": 2,
+    "param": 0
+   },
+   "go": "pando:Skirk.ts:72-76,138-144,159-164; wr:index.tsx:180-201"
+  },
+  {
+   "key": "void_rifts",
+   "label": "Void Rifts absorbed after her burst",
+   "kind": "choice",
+   "default_by": "situational",
+   "options": [
+    "0",
+    "1",
+    "2",
+    "3"
+   ],
+   "go": "pando:Skirk.ts:134-135,173-190; wr:index.tsx:159-166"
+  },
+  {
+   "key": "a4_stacks",
+   "label": "A4 stacks: Hydro or Cryo teammates' skills and bursts hit opponents",
+   "kind": "number",
+   "default_by": "situational",
+   "max": 3,
+   "step": 1,
+   "go": "pando:Skirk.ts:136-137,146-157; wr:index.tsx:167-180"
+  },
+  {
+   "key": "c2_after_burst",
+   "label": "After her burst (C2)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Skirk.ts:132-133,192-195; wr:index.tsx:218-225"
+  }
+ ],
+ "effects": [
+  {
+   "key": "burst_serpent",
+   "label": "Havoc: Ruin: DMG + ATK per point of Serpent's Subtlety above 50",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "talent": "elemental_burst",
+    "row": "Serpent's Subtlety Bonus",
+    "times_stat": "atk"
+   },
+   "per": "serpent_over",
+   "go": "pando:Skirk.ts:72-76,159-171,276; wr:index.tsx:194-201,230",
+   "gcsim": "burst.go:52-80"
+  },
+  {
+   "key": "void_0",
+   "label": "Havoc: Ruin: Normal Attack DMG after absorbing 0 Void Rifts, which GO gives the Seven-Phase Flash attacks (rows of her skill talent: set their move to normal, charged or plunge as GO does)",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "talent": "elemental_burst",
+    "row": "0/1/2/3 Void Rift Absorption DMG Bonus",
+    "nth": 0
+   },
+   "when": [
+    {
+     "condition": "void_rifts",
+     "values": [
+      "0"
+     ]
+    }
+   ],
+   "go": "pando:Skirk.ts:76-82,173-190,289; wr:index.tsx:159-166,390",
+   "gcsim": "burst.go:96-127"
+  },
+  {
+   "key": "void_1",
+   "label": "Havoc: Ruin: Normal Attack DMG after absorbing 1 Void Rifts, which GO gives the Seven-Phase Flash attacks (rows of her skill talent: set their move to normal, charged or plunge as GO does)",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "talent": "elemental_burst",
+    "row": "0/1/2/3 Void Rift Absorption DMG Bonus",
+    "nth": 1
+   },
+   "when": [
+    {
+     "condition": "void_rifts",
+     "values": [
+      "1"
+     ]
+    }
+   ],
+   "go": "pando:Skirk.ts:76-82,173-190,289; wr:index.tsx:159-166,390",
+   "gcsim": "burst.go:96-127"
+  },
+  {
+   "key": "void_2",
+   "label": "Havoc: Ruin: Normal Attack DMG after absorbing 2 Void Rifts, which GO gives the Seven-Phase Flash attacks (rows of her skill talent: set their move to normal, charged or plunge as GO does)",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "talent": "elemental_burst",
+    "row": "0/1/2/3 Void Rift Absorption DMG Bonus",
+    "nth": 2
+   },
+   "when": [
+    {
+     "condition": "void_rifts",
+     "values": [
+      "2"
+     ]
+    }
+   ],
+   "go": "pando:Skirk.ts:76-82,173-190,289; wr:index.tsx:159-166,390",
+   "gcsim": "burst.go:96-127"
+  },
+  {
+   "key": "void_3",
+   "label": "Havoc: Ruin: Normal Attack DMG after absorbing 3 Void Rifts, which GO gives the Seven-Phase Flash attacks (rows of her skill talent: set their move to normal, charged or plunge as GO does)",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "talent": "elemental_burst",
+    "row": "0/1/2/3 Void Rift Absorption DMG Bonus",
+    "nth": 3
+   },
+   "when": [
+    {
+     "condition": "void_rifts",
+     "values": [
+      "3"
+     ]
+    }
+   ],
+   "go": "pando:Skirk.ts:76-82,173-190,289; wr:index.tsx:159-166,390",
+   "gcsim": "burst.go:96-127"
+  },
+  {
+   "key": "a4_normal_1",
+   "label": "A4 Return to Oblivion: Normal Attack base DMG at 1 stack, which GO gives the Seven-Phase Flash attacks (rows of her skill talent: set their move to normal, charged or plunge as GO does)",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "base_dmg_bonus",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "a4_stacks",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Skirk.ts:90-96,146-151,247-262,300-302",
+   "gcsim": "asc.go:22,138-150"
+  },
+  {
+   "key": "a4_normal_2",
+   "label": "A4 Return to Oblivion: Normal Attack base DMG at 2 stacks, which GO gives the Seven-Phase Flash attacks (rows of her skill talent: set their move to normal, charged or plunge as GO does)",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "base_dmg_bonus",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "a4_stacks",
+     "values": [
+      2
+     ]
+    }
+   ],
+   "go": "pando:Skirk.ts:90-96,146-151,247-262,300-302",
+   "gcsim": "asc.go:22,138-150"
+  },
+  {
+   "key": "a4_normal_3",
+   "label": "A4 Return to Oblivion: Normal Attack base DMG at 3 stacks, which GO gives the Seven-Phase Flash attacks (rows of her skill talent: set their move to normal, charged or plunge as GO does)",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "base_dmg_bonus",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 3
+   },
+   "when": [
+    {
+     "condition": "a4_stacks",
+     "values": [
+      3
+     ]
+    }
+   ],
+   "go": "pando:Skirk.ts:90-96,146-151,247-262,300-302",
+   "gcsim": "asc.go:22,138-150"
+  },
+  {
+   "key": "a4_burst_1",
+   "label": "A4 Return to Oblivion: Havoc: Ruin base DMG at 1 stack",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "base_dmg_bonus",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 4
+   },
+   "when": [
+    {
+     "condition": "a4_stacks",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Skirk.ts:97-101,152-157,265-277,307-308",
+   "gcsim": "asc.go:23,152-154; burst.go:65,79"
+  },
+  {
+   "key": "a4_burst_2",
+   "label": "A4 Return to Oblivion: Havoc: Ruin base DMG at 2 stacks",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "base_dmg_bonus",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 5
+   },
+   "when": [
+    {
+     "condition": "a4_stacks",
+     "values": [
+      2
+     ]
+    }
+   ],
+   "go": "pando:Skirk.ts:97-101,152-157,265-277,307-308",
+   "gcsim": "asc.go:23,152-154; burst.go:65,79"
+  },
+  {
+   "key": "a4_burst_3",
+   "label": "A4 Return to Oblivion: Havoc: Ruin base DMG at 3 stacks",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "base_dmg_bonus",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 6
+   },
+   "when": [
+    {
+     "condition": "a4_stacks",
+     "values": [
+      3
+     ]
+    }
+   ],
+   "go": "pando:Skirk.ts:97-101,152-157,265-277,307-308",
+   "gcsim": "asc.go:23,152-154; burst.go:65,79"
+  },
+  {
+   "key": "c2_atk",
+   "label": "C2 Into the Abyss: ATK after her burst, which GO gives the Seven-Phase Flash attacks (rows of her skill talent: set their move to normal, charged or plunge as GO does)",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "moves": [
+    "normal",
+    "charged",
+    "plunge"
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "c2_after_burst",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Skirk.ts:106-110,192-195,236-262,287; wr:index.tsx:218-229,391",
+   "gcsim": "cons.go:64-89"
+  },
+  {
+   "key": "c4_atk_1",
+   "label": "C4 Fractured Flow: ATK at 1 A4 stack",
+   "source": "c4",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "constellation": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "a4_stacks",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "min_ascension": 4,
+   "go": "pando:Skirk.ts:111-117,196-204,288; wr:index.tsx:241-255,391",
+   "gcsim": "cons.go:91-105"
+  },
+  {
+   "key": "c4_atk_2",
+   "label": "C4 Fractured Flow: ATK at 2 A4 stacks",
+   "source": "c4",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "constellation": 4,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "a4_stacks",
+     "values": [
+      2
+     ]
+    }
+   ],
+   "min_ascension": 4,
+   "go": "pando:Skirk.ts:111-117,196-204,288; wr:index.tsx:241-255,391",
+   "gcsim": "cons.go:91-105"
+  },
+  {
+   "key": "c4_atk_3",
+   "label": "C4 Fractured Flow: ATK at 3 A4 stacks",
+   "source": "c4",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "constellation": 4,
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "a4_stacks",
+     "values": [
+      3
+     ]
+    }
+   ],
+   "min_ascension": 4,
+   "go": "pando:Skirk.ts:111-117,196-204,288; wr:index.tsx:241-255,391",
+   "gcsim": "cons.go:91-105"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "kit",
+   "what": "Seven-Phase Flash attacks offered as skill rows",
+   "reason": "the catalogue lists them under her skill talent, so a row starts with move `skill`; GO counts them as normal, charged and plunging attacks, and this sheet's Normal Attack buffs reach them only once the row's move says so"
+  },
+  {
+   "source": "kit",
+   "what": "Mutual Weapons Mentorship: the party's Elemental Skill level +1 in a Hydro and Cryo party",
+   "reason": "a talent-level boost a passive gives the team, which the estimate does not model"
+  },
+  {
+   "source": "a4",
+   "what": "Keeping Return to Oblivion, C2 and the Void Rift bonus off her ordinary attacks",
+   "reason": "GO gives them to the Seven-Phase Flash attacks only; the estimate scopes a buff by move, so an ordinary Normal, Charged or Plunging Attack row receives them too"
+  },
+  {
+   "source": "a4",
+   "what": "Return to Oblivion's burst multiplier on the Serpent's Subtlety part of Havoc: Ruin",
+   "reason": "GO multiplies both parts; the base-damage multiplier here reaches the talent term only"
+  },
+  {
+   "source": "c2",
+   "what": "Into the Abyss: its ATK in the Serpent's Subtlety part of Havoc: Ruin",
+   "reason": "GO reads her total ATK, C2 included, for that part; here C2 reaches the scoped attacks only"
+  },
+  {
+   "source": "a1",
+   "what": "Reason Beyond Reason: Void Rifts and Serpent's Subtlety",
+   "reason": "no damage effect: resources"
+  },
+  {
+   "source": "c1",
+   "what": "Far to Fall: a crystal blade's extra hit",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c6",
+   "what": "To the Source: extra hits",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  }
+ ]
+}
