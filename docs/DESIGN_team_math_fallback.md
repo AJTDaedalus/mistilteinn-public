@@ -322,6 +322,23 @@ surface's numbers beyond the scope of P2, and the boost table it needs (which co
 boosts which talent) is per character data that sheets now carry for two characters only. It
 is the next task proposed in `TASKS_team_math_fallback.md` (9b).
 
+**Fixed in 9b (2026-11-13).** `app/services/talent_boosts.py` holds the rule and the table. The
+table is never hand-written: gcsim's `NewChar` assignments (`keys.json:character_talent_boosts`)
+first, GO's sheets (`data/formula/talent_boosts_go.json`) for characters gcsim lacks, both
+generated at their pins. Who reads which level:
+
+| surface | level | why |
+|---|---|---|
+| `/hits`, `/hits/refused`, `/explain`, `/search-context` (so single-hit Optimize and the formula estimate) | effective | GO and gcsim both read the boosted row (`api/v1/builds._hit_levels`) |
+| kit sheets (givers) | effective | `sheets.effective_level`; its `talent_boosts` are test-held equal to the table |
+| gcsim config | stored | gcsim adds `SkillCon`/`BurstCon`/`NormalCon` itself and refuses a level above 10 |
+| planner | stored | a constellation costs no books or crowns |
+| storage, GOOD import | stored | GOOD's own number; nothing exports GOOD, so there is no round trip to compound |
+
+Not modelled: talent-level boosts a passive gives the **team** (Tartaglia's +1 normal attack,
+gcsim `ChildePassive`; Skirk's and Lohen's skill boosts, GO `teamBuff.premod.skillBoost`).
+They are not constellations and not this table's question.
+
 ## 3. Phases
 
 Each phase ends in something usable.
