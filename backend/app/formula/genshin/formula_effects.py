@@ -99,6 +99,15 @@ AMPLIFYING_REACTIONS: tuple[str, ...] = ("vaporize", "reverse_vaporize", "melt",
 #: - `flat_atk_from_hp` — flat ATK of `value` × the hit owner's own total HP, per candidate:
 #:   Hu Tao's Guide to Afterlife (GO `ownBuff.premod.atk.add(min(prod(percent(x),
 #:   own.premod.hp), prod(percent(max), own.base.atk)))`).
+#: - `crit_rate_from_hp`, `crit_dmg_from_hp` — CRIT Rate / CRIT DMG of `value` × the hit
+#:   owner's own total HP, per candidate, each capped alone: Nilou's C6 (GO `min(prod(
+#:   percent(x), final.hp, 1 / 1000), percent(max))`) and Sigewinne's C6 on her burst (owner
+#:   approval 2026-11-14, `DECISIONS.md` §42).
+#: - `talent_level` — the receiver's level in `talent` raised by `value` (a whole number):
+#:   Tartaglia's Master of Weaponry (+1 Normal Attack for the party, GO `teamBuff.char.auto`,
+#:   gcsim `ChildePassive`), Skirk's Mutual Weapons Mentorship and Lohen's High Spirits (+1
+#:   Elemental Skill). **Not a stat**: the browser reads the receiver's row at the raised level
+#:   from `/formula/kit-buffs`' `raised_talents`, for the formula estimate only (§42).
 #:
 #: **Capped self-conversions** (owner ruling 2026-11-14, `DECISIONS.md` §40). Each `*_from_*`
 #: stat a giver who is the subject emits may carry a `threshold` (the stat counts only above
@@ -117,6 +126,8 @@ EffectStat = Literal[
     "flat_def", "def_reduction", "def_ignore",
     "flat_atk_from_def", "base_atk", "base_dmg_bonus",
     "dmg_bonus_from_hp", "crit_rate_from_em", "flat_atk_from_hp",
+    "crit_rate_from_hp", "crit_dmg_from_hp",
+    "talent_level",
 ]
 
 #: The per-candidate conversions a kit whose giver is the subject emits: each may carry a
@@ -124,9 +135,13 @@ EffectStat = Literal[
 #: bonus with a cap of its own and no threshold.
 CAPPABLE_CONVERSIONS: frozenset[str] = frozenset({
     "dmg_bonus_from_em", "dmg_bonus_from_hp", "crit_rate_from_em",
+    "crit_rate_from_hp", "crit_dmg_from_hp",
     "flat_atk_from_def", "flat_atk_from_hp",
     "flat_damage_from_atk", "flat_damage_from_hp", "flat_damage_from_def", "flat_damage_from_em",
 })
+
+#: The talents a `talent_level` effect can raise, in `TalentType`'s spelling.
+TALENT_LEVEL_TALENTS: tuple[str, ...] = ("normal_attack", "elemental_skill", "elemental_burst")
 
 #: Stats that are kernel quantities and so can also travel in a set-bonus pool.
 POOL_STATS: frozenset[str] = frozenset({
@@ -266,6 +281,24 @@ class Effect(_Model):
     threshold: float | None = None
     #: Applies only to a wearer of one of these weapon classes (`WeaponType` values).
     weapon_types: tuple[str, ...] | None = None
+    #: `talent_level` only: the talent whose level it raises (`normal_attack`,
+    #: `elemental_skill`, `elemental_burst`).
+    talent: str | None = None
+
+    @model_validator(mode="after")
+    def _talent_level(self) -> Effect:
+        if (self.stat == "talent_level") != (self.talent is not None):
+            raise ValueError("a talent-level raise, and only one, names its talent")
+        if self.stat == "talent_level":
+            if self.talent not in TALENT_LEVEL_TALENTS:
+                raise ValueError(f"{self.talent!r} is not one of {TALENT_LEVEL_TALENTS}")
+            if self.value != int(self.value) or self.value < 1:
+                raise ValueError("a talent level is raised by a whole number of levels")
+            if any(x is not None for x in (self.elements, self.element_from, self.moves,
+                                           self.rows, self.per, self.per_team)):
+                raise ValueError("a talent-level raise reaches the talent's every row; it "
+                                 "names no element, move, row or count")
+        return self
 
     @model_validator(mode="after")
     def _well_formed(self) -> Effect:

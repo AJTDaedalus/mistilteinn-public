@@ -1,0 +1,122 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Tartaglia",
+ "nanoka_id": "10000033",
+ "slug": "tartaglia",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Tartaglia.ts",
+  "wr": "libs/gi/sheets/src/Characters/Tartaglia/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/tartaglia/",
+ "verified_by": [
+  "tartaglia_a0_on_xiangling_normal_attack",
+  "tartaglia_a0_on_his_own_riptide_flash"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Tartaglia.ts:103-104; wr:index.tsx:194,199",
+   "gcsim": "tartaglia.go:36"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Tartaglia.ts:103,105; wr:index.tsx:195,200",
+   "gcsim": "tartaglia.go:37"
+  }
+ ],
+ "pins": {},
+ "conditions": [],
+ "effects": [
+  {
+   "key": "a0_auto_level",
+   "label": "Master of Weaponry: the party's Normal Attack level +1",
+   "source": "a0",
+   "receivers": "team",
+   "stat": "talent_level",
+   "talent": "normal_attack",
+   "value": {
+    "constant": 1,
+    "cite": "GO pando:Tartaglia.ts:77-79 `passive: { auto_boost: 1 }` (a literal; his phase-0 passive list is all zeros), wr:index.tsx:192 `nodePassive = constant(1)`; gcsim pkg/core/player/character/character.go:224-226 `add++` under `keys.ChildePassive`"
+   },
+   "go": "pando:Tartaglia.ts:77-79,107-108; wr:index.tsx:192,202-206",
+   "gcsim": "tartaglia.go:52-54; pkg/core/player/character/character.go:221-234"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "a1",
+   "what": "Never Ending: Riptide duration",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a4",
+   "what": "Sword of Torrents: Riptide applied on a melee CRIT",
+   "reason": "no damage effect (Riptide's own hits are rows: Riptide Flash, Slash, Blast)"
+  },
+  {
+   "source": "c1",
+   "what": "Foul Legacy: Tide Withholder: skill CD",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c2",
+   "what": "Foul Legacy: Understream: Energy",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c4",
+   "what": "Abyssal Mayhem: Hydrospout: extra Riptide Flash and Slash hits",
+   "reason": "a count of hits, which the target's row counts say"
+  },
+  {
+   "source": "c6",
+   "what": "Havoc: Formless Blade: skill CD reset",
+   "reason": "no damage effect"
+  }
+ ],
+ "row_moves": [
+  {
+   "talent": "normal_attack",
+   "labels": [
+    "Aimed Shot",
+    "Fully-Charged Aimed Shot"
+   ],
+   "move": "charged",
+   "go": "pando:Tartaglia.ts:113-118"
+  },
+  {
+   "talent": "normal_attack",
+   "labels": [
+    "Riptide Flash DMG",
+    "Riptide Burst DMG"
+   ],
+   "move": "normal",
+   "go": "pando:Tartaglia.ts:119-124"
+  },
+  {
+   "talent": "elemental_skill",
+   "labels": [
+    "1-Hit DMG",
+    "2-Hit DMG",
+    "3-Hit DMG",
+    "4-Hit DMG",
+    "5-Hit DMG",
+    "6-Hit DMG"
+   ],
+   "move": "normal",
+   "go": "pando:Tartaglia.ts:91-98,129-135"
+  },
+  {
+   "talent": "elemental_skill",
+   "labels": [
+    "Charged Attack DMG"
+   ],
+   "move": "charged",
+   "go": "pando:Tartaglia.ts:91-98,136-137"
+  }
+ ]
+}

@@ -83,6 +83,9 @@ export type ConversionTerm = 'flatDamage' | 'flatAtk' | 'flatHp' | 'flatDef';
  */
 export type PercentTerm = 'bonusDmg' | 'critRate';
 
+/** The terms a formula recipe's capped self-conversion lands in (`StatConversion`). */
+export type ConvertedTerm = PercentTerm | 'critDmg';
+
 /** Any term a stale-conversion report can name. */
 export type StaleTerm = ConversionTerm | PercentTerm;
 
@@ -113,9 +116,12 @@ export interface ResolvedConversion {
  * Rate from EM above 200, capped at 80% / 24%), Furina's A4 (Salon DMG% from HP, capped at 28%),
  * Alhaitham's and Tighnari's A4 (DMG% from EM, capped). Each is evaluated on its own, never
  * summed with another before its cap: `min(a, x) + min(b, y)` is not `min(a + b, x + y)`.
+ * Nilou's and Sigewinne's C6 convert Max HP into CRIT Rate and CRIT DMG (owner approval
+ * 2026-11-14, `DECISIONS.md` §42), which is why `critDmg` is a term here and not in
+ * `PercentTerm`: no probe ever reports it, so it is not a stale-term name.
  */
 export interface StatConversion {
-  into: PercentTerm;
+  into: ConvertedTerm;
   from: ConversionSource;
   perUnit: number;
   threshold?: number;

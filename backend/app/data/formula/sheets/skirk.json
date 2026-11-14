@@ -12,7 +12,8 @@
  "gcsim": "internal/characters/skirk/",
  "verified_by": [
   "skirk_serpent_on_her_own_burst",
-  "skirk_a4_c2_void_on_her_own_seven_phase_flash"
+  "skirk_a4_c2_void_on_her_own_seven_phase_flash",
+  "skirk_a0_on_furina_usher"
  ],
  "talent_boosts": [
   {
@@ -589,14 +590,33 @@
    "min_ascension": 4,
    "go": "pando:Skirk.ts:111-117,196-204,288; wr:index.tsx:241-255,391",
    "gcsim": "cons.go:91-105"
+  },
+  {
+   "key": "a0_skill_level",
+   "label": "Mutual Weapons Mentorship: the party's Elemental Skill level +1 in a Hydro and Cryo party",
+   "source": "a0",
+   "receivers": "team",
+   "stat": "talent_level",
+   "talent": "elemental_skill",
+   "value": {
+    "constant": 1,
+    "cite": "GO pando:Skirk.ts:206-219 `cmpEq(sum(cryo, hydro), sum(all), 1)` (a literal 1; her phase-0 passive list is all zeros); gcsim pkg/core/player/character/character.go:239-241 `add++` under `keys.SkirkPassive`"
+   },
+   "team_gate": {
+    "only": [
+     "hydro",
+     "cryo"
+    ],
+    "includes": [
+     "hydro",
+     "cryo"
+    ]
+   },
+   "go": "pando:Skirk.ts:206-219,290-291; wr:index.tsx:204-216,393-397",
+   "gcsim": "skirk.go:69-96; pkg/core/player/character/character.go:236-249"
   }
  ],
  "unmodelled": [
-  {
-   "source": "kit",
-   "what": "Mutual Weapons Mentorship: the party's Elemental Skill level +1 in a Hydro and Cryo party",
-   "reason": "a talent-level boost a passive gives the team, which the estimate does not model"
-  },
   {
    "source": "a4",
    "what": "Return to Oblivion's burst multiplier on the Serpent's Subtlety part of Havoc: Ruin",

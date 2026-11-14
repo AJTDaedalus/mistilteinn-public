@@ -389,7 +389,9 @@ def rowscope_fixtures() -> list[dict[str, Any]]:
         base._kit_source("10000129", base._ungated_giver(
             "Lohen", "10000129", constellation=6, cons=cons, passives=pas, stats=LOHEN_BASE),
             subject=True),
+        # High Spirits off, GO's default, at which this figure was worked: its +1 skill level
+        # (DECISIONS §42) has its own fixture, `lohen_c3_high_spirits_on_his_own_skill_attack`.
         {"kit:lohen/a4_master_cryo": 0, "kit:lohen/c2_blade": 0,
-         "kit:lohen/c6_burst_master": 0},
+         "kit:lohen/c6_burst_master": 0, "kit:lohen/high_spirits": 0},
         _lohen_etch))
     return out

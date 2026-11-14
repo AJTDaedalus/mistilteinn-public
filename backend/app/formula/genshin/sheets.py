@@ -50,7 +50,7 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
@@ -155,6 +155,11 @@ SELF_CONVERSIONS: dict[tuple[str, str], EffectStat] = {
     ("flat_atk", tags.Q_HP): "flat_atk_from_hp",
     ("dmg_bonus", tags.Q_HP): "dmg_bonus_from_hp",
     ("crit_rate", tags.Q_ELEMENTAL_MASTERY): "crit_rate_from_em",
+    # CRIT from her own Max HP, each capped alone (owner approval 2026-11-14, `DECISIONS.md`
+    # §42): Nilou's C6 on every hit, Sigewinne's C6 on her burst (GO `min(prod(percent(x),
+    # final.hp, 1 / 1000), percent(max))`).
+    ("crit_rate", tags.Q_HP): "crit_rate_from_hp",
+    ("crit_dmg", tags.Q_HP): "crit_dmg_from_hp",
 }
 
 DefaultBy = Literal["self", "situational", "giver_is_subject"]
@@ -625,10 +630,36 @@ class SheetEffect(_Strict):
     #: the condition's maximum (GO `subscript(stacks - 1, [p0, p1, …])`: Nahida's C4 by the
     #: opponent count, Xianyun's A1 by the plunge-stack count). The value names the first entry.
     by_stack: bool = False
+    #: `talent_level` only: the talent it raises (Tartaglia's Master of Weaponry, the
+    #: party's Normal Attack). The value is the number of levels, a cited constant.
+    talent: str | None = None
     #: GO sheet file:lines (relative to the sheet's `go` roots).
     go: str
     #: gcsim file:lines at the pin, where gcsim implements the same buff.
     gcsim: str | None = None
+
+    @model_validator(mode="after")
+    def _talent_level(self) -> SheetEffect:
+        """A talent-level raise (owner approval 2026-11-14, `DECISIONS.md` §42) is a whole
+        number of levels, written as GO and gcsim write it — a literal 1, so a cited constant —
+        and reaches every row of its talent: it names no element, move, row, count or stat."""
+        if (self.stat == "talent_level") != (self.talent is not None):
+            raise ValueError(f"{self.key}: a talent-level raise, and only one, names its talent")
+        if self.stat != "talent_level":
+            return self
+        if self.talent not in TALENTS:
+            raise ValueError(f"{self.key}: {self.talent!r} is not one of {TALENTS}")
+        ref = self.value
+        if (ref.constant is None or ref.constant != int(ref.constant) or ref.constant < 1
+                or ref.times_stat is not None or ref.times_param is not None
+                or ref.times_constant is not None or ref.cap is not None):
+            raise ValueError(f"{self.key}: a talent level is raised by a cited whole number")
+        if self.receivers == "enemy":
+            raise ValueError(f"{self.key}: an enemy has no talents")
+        if any(x is not None for x in (self.elements, self.moves, self.reactions, self.rows,
+                                       self.per, self.per_team_elements)) or self.by_stack:
+            raise ValueError(f"{self.key}: a talent-level raise reaches the talent's every row")
+        return self
 
     @model_validator(mode="after")
     def _scoped(self) -> SheetEffect:
@@ -767,7 +798,26 @@ class Sheet(_Strict):
         named = [(m.talent, label) for m in self.row_moves for label in m.labels]
         if len(set(named)) != len(named):
             raise ValueError(f"{self.slug}: a row is given two moves")
+        self._check_conditional_raises()
         return self
+
+    def _check_conditional_raises(self) -> None:
+        """A talent-level raise gated on a condition (Lohen's High Spirits) reaches the
+        receiver's **rows** in the browser, per row of the target; the giver's own sheet values
+        are resolved here, where conditions are not evaluated (`Giver.talent_raises` holds the
+        unconditional ones only). So a sheet whose values read a row of the talent such a raise
+        lifts would read it a level low while the hits read it high — refused rather than
+        allowed to disagree with itself."""
+        gated = {e.talent for e in self.effects if e.stat == "talent_level" and e.when}
+        for effect in self.effects:
+            refs = [effect.value, *effect.value.params_read()]
+            for ref in refs:
+                talent = ref.talent
+                if talent is not None and talent in gated:
+                    raise ValueError(
+                        f"{self.slug}/{effect.key}: reads a {talent} row that a conditional "
+                        "talent-level raise in this sheet lifts",
+                    )
 
     def move_of(self, talent: str, label: str) -> str | None:
         """The move GO gives this talent row, where the sheet names one."""
@@ -879,6 +929,10 @@ class Giver:
     #: By unlock ascension phase (0, 1 or 4).
     passive_params: Mapping[int, Sequence[float]]
     registry: NodeRegistry
+    #: Levels another kit (or this one) adds to a talent unconditionally — Tartaglia's +1
+    #: Normal Attack for the party, Skirk's +1 Elemental Skill in a Hydro and Cryo party
+    #: (`kit_buffs.talent_raises`, `DECISIONS.md` §42). Added after the constellation boosts.
+    talent_raises: Mapping[str, int] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -907,11 +961,14 @@ _PARAM = re.compile(r"\{param(\d+)")
 
 
 def effective_level(sheet: Sheet, giver: Giver, talent: str) -> int:
-    """The giver's level in a talent, with their constellation boosts.
+    """The giver's level in a talent, with their constellation boosts and any kit's
+    unconditional talent-level raise (`Giver.talent_raises`, `DECISIONS.md` §42).
 
     GOOD stores levels **without** constellation boosts (the importer copies its `talent`
     block verbatim, `good_build_service.py`), and both comparators add them: GO
-    `ownBuff.char.burst.add(cmpGE(constellation, 5, 3))` and gcsim `c.BurstCon = 5`.
+    `ownBuff.char.burst.add(cmpGE(constellation, 5, 3))` and gcsim `c.BurstCon = 5`. The
+    order does not matter (a sum), and no cap is applied beyond the table: a level the
+    catalogue publishes no row for withholds the effect that reads it.
     """
     level = giver.talent_levels.get(talent)
     if level is None:
@@ -919,7 +976,9 @@ def effective_level(sheet: Sheet, giver: Giver, talent: str) -> int:
     for boost in sheet.talent_boosts:
         if boost.talent == talent and giver.constellation >= boost.constellation:
             level += 3
-    return level
+    # A kit's unconditional talent-level raise, after the constellation (`DECISIONS.md` §42):
+    # GO `premod.<t> = base + <t>Boost` sums both, gcsim's `TalentLvlAttack` adds both.
+    return level + giver.talent_raises.get(talent, 0)
 
 
 def _number(sheet: Sheet, giver: Giver, ref: ValueRef, *, shift: int = 0) -> float:
@@ -1028,11 +1087,51 @@ def _parameter(sheet: Sheet, giver: Giver, ref: ValueRef, *, shift: int = 0) -> 
 
 
 def _unlocked(source: str, giver: Giver) -> bool:
+    return _unlocked_at(source, giver.constellation, giver.ascension_phase)
+
+
+def _unlocked_at(source: str, constellation: int, ascension_phase: int) -> bool:
     if source == "talent":
         return True
     if source in ("a0", "a1", "a4"):
-        return giver.ascension_phase >= int(source[1])
-    return giver.constellation >= int(source[1])
+        return ascension_phase >= int(source[1])
+    return constellation >= int(source[1])
+
+
+def talent_raises(
+    sheet: Sheet, *, constellation: int, ascension_phase: int, giver_is_receiver: bool,
+    receiver_is_subject: bool, receiver_element: str | None,
+    team_elements: Sequence[str | None],
+) -> dict[str, int]:
+    """The talent levels this sheet's **unconditional** raises add to one team member
+    (owner approval 2026-11-14, `DECISIONS.md` §42): Tartaglia's +1 Normal Attack to everyone,
+    himself included; Skirk's +1 Elemental Skill to everyone in a Hydro and Cryo party.
+
+    Read for every member as a **giver** (`Giver.talent_raises`), so a buff a teammate reads
+    off one of their own talent rows is read at the raised level, as GO reads it (Shenhe's
+    Icy Quill in Skirk's party). A raise gated on a condition (Lohen's High Spirits) is not
+    here: conditions are the browser's, per row, and `Sheet._check_conditional_raises`
+    refuses a sheet whose own values would read such a talent. `active` reaches only the
+    optimized character, who is the one on the field when they hit (receiver rule 3)."""
+    out: dict[str, int] = {}
+    for effect in sheet.effects:
+        if effect.stat != "talent_level" or effect.when or effect.talent is None:
+            continue
+        if not _unlocked_at(effect.source, constellation, ascension_phase):
+            continue
+        if effect.min_ascension is not None and ascension_phase < effect.min_ascension:
+            continue
+        if effect.max_constellation is not None and constellation > effect.max_constellation:
+            continue
+        reaches = {
+            "self": giver_is_receiver, "others": not giver_is_receiver, "team": True,
+            "active": receiver_is_subject, "enemy": False,
+        }[effect.receivers]
+        if not reaches or _team_factor(effect, receiver_element=receiver_element,
+                                       team_elements=team_elements) == 0:
+            continue
+        out[effect.talent] = out.get(effect.talent, 0) + int(effect.value.constant or 0)
+    return out
 
 
 def _reaches(receivers: str, *, giver_is_subject: bool) -> bool:
@@ -1300,7 +1399,7 @@ def resolve(
             stat=made.stat, value=by_stack[-1] if by_stack else value,
             elements=effect.elements, moves=effect.moves, rows=effect.rows,
             reactions=effect.reactions, when=effect.when, per=effect.per, by_stack=by_stack,
-            cap=cap, threshold=made.threshold,
+            cap=cap, threshold=made.threshold, talent=effect.talent,
         ))
         used_conditions.update(w.condition for w in effect.when)
         if effect.per is not None:

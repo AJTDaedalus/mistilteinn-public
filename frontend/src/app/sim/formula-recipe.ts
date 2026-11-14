@@ -54,7 +54,7 @@ import {
 } from './damage';
 import {
   cappedAmount,
-  type ConversionSource, type FormulaMove, type FormulaProvenance, type PercentTerm,
+  type ConversionSource, type ConvertedTerm, type FormulaMove, type FormulaProvenance,
   type Recipe, type RecipeHit, type RecipeScaling, type StatConversion,
 } from './recipe';
 import { evaluateHit, NO_STATS } from './recipe-eval';
@@ -115,6 +115,8 @@ export interface FormulaEffect {
   /** A self-conversion's stat counts only above this (Nahida's A4, EM above 200). */
   threshold?: number | null;
   weapon_types?: string[] | null;
+  /** `talent_level` only: the talent whose level it raises (`raiseRow`). */
+  talent?: string | null;
 }
 
 export interface FormulaBonus {
@@ -176,6 +178,29 @@ export interface FormulaKit {
   giver_stats: Record<string, number>;
 }
 
+/**
+ * One talent of the optimized character a kit raises (`/formula/kit-buffs`' `raised_talents`,
+ * owner approval 2026-11-14, `DECISIONS.md` §42): its rows read 1, 2, … levels above the level
+ * `/search-context` reads them at, by the same parse. Formula estimate only — gcsim applies these
+ * raises itself, and a single-hit search has no party to raise anything.
+ */
+export interface FormulaRaisedTalent {
+  talent: string;
+  /** Stored plus constellation boosts: the level a row's own context was read at. */
+  level: number;
+  max_raise: number;
+  rows: {
+    label: string;
+    index: number;
+    raise_by: number;
+    multiplier: number;
+    scaling_stat: string;
+    extra_terms: { stat: string; multiplier: number }[];
+  }[];
+  /** Raises that read no row (past the table's last level), with why. */
+  unavailable: { raise_by: number; reason: string }[];
+}
+
 /** Whose kits the estimate models, for its assumptions. */
 export interface KitCoverage {
   /** Givers whose sheet is applied, with whether it is verified. */
@@ -203,7 +228,7 @@ export interface FormulaRow {
    * The talent row the hit comes from, as `/hits` names it, for a row-scoped kit buff.
    * Absent is "unknown": such a row receives no row-scoped buff, and the recipe says so.
    */
-  hit?: { talent: string; label: string } | null;
+  hit?: { talent: string; label: string; index?: number } | null;
   /** How many times it lands. Decimals allowed, as in GO; must be positive. */
   count: number;
   /**
@@ -436,7 +461,7 @@ function addAtkFrom(
 
 /** A conversion into DMG% or CRIT Rate, priced alone (`StatConversion`). */
 function addStatConversion(
-  buffs: Buffs, into: PercentTerm, from: ConversionSource, amount: number, limits: Limits,
+  buffs: Buffs, into: ConvertedTerm, from: ConversionSource, amount: number, limits: Limits,
 ): void {
   buffs.statConversions.push({ into, from, perUnit: amount, ...limits });
 }
@@ -548,6 +573,12 @@ export function applySources(
         case 'crit_rate_from_em':
           addStatConversion(buffs, 'critRate', 'em', amount, limits);
           break;
+        // CRIT from the hit owner's own Max HP, each capped alone (Nilou's, Sigewinne's C6).
+        case 'crit_rate_from_hp': addStatConversion(buffs, 'critRate', 'hp', amount, limits); break;
+        case 'crit_dmg_from_hp': addStatConversion(buffs, 'critDmg', 'hp', amount, limits); break;
+        // Not a stat: the row's multiplier is swapped for the raised one before this runs
+        // (`raiseRow`, `DECISIONS.md` §42).
+        case 'talent_level': break;
         case 'flat_def': buffs.flatDef += amount; break;
         case 'def_reduction': buffs.defReduction += amount; break;
         case 'def_ignore': buffs.defIgnore += amount; break;
@@ -757,6 +788,93 @@ export function kitAssumptions(coverage: KitCoverage | undefined): string[] {
   return out;
 }
 
+// ── A kit's talent-level raise (owner approval 2026-11-14, `DECISIONS.md` §42) ─────────────
+
+const TALENT_NAME: Record<string, string> = {
+  normal_attack: 'Normal Attack', elemental_skill: 'Elemental Skill',
+  elemental_burst: 'Elemental Burst',
+};
+
+/**
+ * A row read at the level the team's kits raise its talent to: Tartaglia's +1 Normal Attack,
+ * Skirk's +1 Elemental Skill, Lohen's High Spirits.
+ *
+ * Every `talent_level` effect whose `when` holds **for this row** and whose talent is the row's
+ * own is summed (the order is a sum: stored + constellation + kits, as GO and gcsim add them),
+ * and the row's multiplier — and a mixed-stat row's other terms — are replaced by the ones
+ * `raised` publishes at that raise, from the same parse `/search-context` used. Nothing else in
+ * the row changes. A raise this row cannot take is never guessed at: an unknown talent row, a
+ * raise past the table's last level, or no published row each leave the row unraised and say so.
+ */
+export function raiseRow(
+  row: FormulaRow,
+  sources: readonly FormulaSource[],
+  teamState: ConditionState,
+  raised: readonly FormulaRaisedTalent[] = [],
+): { row: FormulaRow; notes: string[] } {
+  const notes: string[] = [];
+  let total = 0;
+  const by: string[] = [];
+  for (const source of sources) {
+    const conditions = conditionsBy(source);
+    for (const effect of source.bonus.effects) {
+      if (effect.stat !== 'talent_level') continue;
+      const holds = effect.when.every((w) => {
+        const condition = conditions.get(w.condition);
+        if (condition === undefined) throw new Error(`${source.id}: no condition ${w.condition}`);
+        const value = valueOf(`${source.id}/${w.condition}`, condition, row.conditionals ?? {},
+          teamState);
+        return w.values.some((v) => v === value);
+      });
+      if (!holds) continue;
+      const talent = effect.talent ?? '';
+      if (!row.hit) {
+        notes.push(`${source.label}: ${TALENT_NAME[talent] ?? talent} level +${effect.value} not `
+          + `applied to ${row.label} — the row's talent row is unknown`);
+        continue;
+      }
+      if (talent !== row.hit.talent) continue;
+      total += effect.value;
+      by.push(`${source.label.replace(/ \(kit\)$/, '')} +${effect.value}`);
+    }
+  }
+  if (total === 0 || !row.hit) return { row, notes };
+  const name = TALENT_NAME[row.hit.talent] ?? row.hit.talent;
+  const talent = raised.find((t) => t.talent === row.hit?.talent);
+  const index = row.hit.index ?? 0;
+  const entry = talent?.rows.find((r) => r.label === row.hit?.label && r.index === index
+    && r.raise_by === total);
+  if (talent === undefined || entry === undefined) {
+    const why = talent?.unavailable.find((u) => u.raise_by === total)?.reason
+      ?? 'no row was published at that level';
+    notes.push(`${row.label}: ${name} +${total} (${by.join(', ')}) not applied — ${why}`);
+    return { row, notes };
+  }
+  if (entry.scaling_stat !== row.context.hit.scalingStat) {
+    notes.push(`${row.label}: ${name} +${total} not applied — the raised row scales off `
+      + `${entry.scaling_stat}, the row off ${row.context.hit.scalingStat}`);
+    return { row, notes };
+  }
+  notes.push(`${row.label}: ${name} read at level ${talent.level + total} `
+    + `(${talent.level} + ${by.join(', ')})`);
+  return {
+    row: {
+      ...row,
+      context: {
+        ...row.context,
+        hit: {
+          ...row.context.hit,
+          multiplier: entry.multiplier,
+          extraTerms: entry.extra_terms.map((t) => ({
+            stat: t.stat as ScalingStat, multiplier: t.multiplier,
+          })),
+        },
+      },
+    },
+    notes,
+  };
+}
+
 /** One recipe for one 4-piece state (or none), over every row. */
 export function synthesizeRecipe(
   rows: readonly FormulaRow[],
@@ -765,6 +883,7 @@ export function synthesizeRecipe(
   teamState: ConditionState = {},
   characters: string[] = [],
   kits?: KitCoverage,
+  raised: readonly FormulaRaisedTalent[] = [],
 ): Recipe {
   if (rows.length === 0) throw new Error('a formula target needs at least one row');
   const ids = new Set(rows.map((r) => r.id));
@@ -778,7 +897,9 @@ export function synthesizeRecipe(
     'Transformative, additive and Lunar reactions are not modelled.',
   ]);
   for (const row of rows) {
-    const made = rowHits(row, sources, team, teamState);
+    const lifted = raiseRow(row, sources, teamState, raised);
+    lifted.notes.forEach((s) => assumptions.add(s));
+    const made = rowHits(lifted.row, sources, team, teamState);
     hits.push(...made.hits);
     made.skipped.forEach((s) => assumptions.add(s));
     for (const source of sources) {

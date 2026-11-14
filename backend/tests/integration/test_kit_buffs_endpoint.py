@@ -336,3 +336,59 @@ async def test_the_party_highest_em_is_read_from_the_teammates_pass_one(
     assert not [e for e in own["bonus"]["effects"] if e["stat"] == "elemental_mastery"]
     assert any(u["reason"].startswith("withheld: it reads the team's highest")
                for u in own["bonus"]["unmodelled"])
+
+
+async def test_a_teammates_talent_level_raise_reaches_the_subjects_rows(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+    team: dict[str, str],
+):
+    """Owner approval 2026-11-14 (DECISIONS §42): Tartaglia's Master of Weaponry raises the
+    party's Normal Attack by 1. `/formula/kit-buffs` carries the effect and the subject's rows
+    one level up; `/search-context` — single-hit, no party — keeps reading the build's own level,
+    and so does gcsim (which applies the raise itself)."""
+    user, _ = authed_user
+    tartaglia = await _character(
+        db_session, nanoka_id="10000033", name="Tartaglia", element=Element.HYDRO,
+        weapon_type=WeaponType.BOW, base_atk=23.5, burst=None,
+    )
+    tartaglia_id = str((await _build(db_session, str(user.id), tartaglia)).id)
+    bennett = await db_session.get(Build, team["bennett"])
+    assert bennett is not None
+    talent = Talent(character_id=str(bennett.character_id), nanoka_id=321,
+                    talent_type=TalentType.NORMAL_ATTACK, name="Strike", description="")
+    db_session.add(talent)
+    await db_session.flush()
+    for level, value in ((10, 0.8858), (11, 0.9529)):
+        db_session.add(TalentScaling(talent_id=str(talent.id), level=level,
+                                     labels=["1-Hit DMG|{param1:F1P}"], params=[value]))
+    bennett.talent_levels = {"elemental_burst": 10, "normal_attack": 10}
+    await db_session.flush()
+    db_session.expire_all()
+
+    response = await authed_client.get(KIT, params={
+        "subject_build_id": team["bennett"], "member_build_id": [team["bennett"], tartaglia_id],
+    })
+    assert response.status_code == 200, response.text
+    body = response.json()
+    by_id = {s["id"]: s for s in body["sources"]}
+    [raise_] = by_id["kit:tartaglia"]["bonus"]["effects"]
+    assert (raise_["stat"], raise_["talent"], raise_["value"]) == (
+        "talent_level", "normal_attack", 1)
+    assert body["raised_talents"] == [{
+        "talent": "normal_attack", "level": 10, "max_raise": 1, "unavailable": [],
+        "rows": [{"label": "1-Hit DMG", "index": 0, "raise_by": 1, "multiplier": 0.9529,
+                  "scaling_stat": "atk", "extra_terms": []}],
+    }]
+
+    context = await authed_client.post(f"/api/v1/builds/{team['bennett']}/search-context", json={
+        "hit": {"channel": "physical", "scope": "normal", "flat_damage": 0.0,
+                "talent": {"talent": "normal_attack", "label": "1-Hit DMG", "index": 0}},
+        "enemy": {"level": 90, "resistances": {}, "default_resistance": 0.1},
+    })
+    assert context.status_code == 200, context.text
+    assert context.json()["hit"]["multiplier"] == pytest.approx(0.8858)
+
+    # Without Tartaglia nothing is raised, and nothing is published.
+    alone = await authed_client.get(KIT, params={
+        "subject_build_id": team["bennett"], "member_build_id": [team["bennett"]]})
+    assert alone.json()["raised_talents"] == []

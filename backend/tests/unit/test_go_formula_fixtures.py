@@ -1703,6 +1703,9 @@ def build() -> dict[str, Any]:
     # Task 11, eighth batch (the small sheets of ordinary buffs).
     from tests.unit.go_fixtures_batch8 import batch8_fixtures
     fixtures.extend(batch8_fixtures())
+    # The talent-level raise and CRIT from Max HP (DECISIONS §42).
+    from tests.unit.go_fixtures_talent_crit import talent_crit_fixtures
+    fixtures.extend(talent_crit_fixtures())
     # No fixture relies on a default (DECISIONS §40 (ii) changed them): every condition each
     # one reads is stated, the older ones' through `STATED`.
     from tests.unit.go_fixtures_stated import STATED
@@ -1760,6 +1763,7 @@ def test_the_committed_fixtures_are_what_the_formula_and_resolver_give():
         assert old["sources"] == new["sources"], old["name"]
         assert old["rows"] == new["rows"], old["name"]
         assert old["conditionals"] == new["conditionals"], old["name"]
+        assert old.get("raised_talents") == new.get("raised_talents"), old["name"]
         assert old["expected"] == pytest.approx(new["expected"], rel=1e-12), old["name"]
         assert old["go_value"] == pytest.approx(new["go_value"], rel=1e-12), old["name"]
 

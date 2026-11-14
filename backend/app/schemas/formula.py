@@ -7,11 +7,14 @@ and two schemas sharing a name rename *each other* in the generated TypeScript.
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel
 
 from app.formula.genshin.formula_effects import Bonus
+
+if TYPE_CHECKING:
+    from app.services.team_talent_levels import RaisedTalent
 
 
 class FormulaWhenRead(BaseModel):
@@ -66,6 +69,9 @@ class FormulaEffectRead(BaseModel):
     cap: float | None = None
     threshold: float | None = None
     weapon_types: list[str] | None = None
+    #: `talent_level` only: the talent whose level it raises (`FormulaTeamKitRead.
+    #: raised_talents` carries the receiver's rows at the raised levels).
+    talent: str | None = None
 
 
 class FormulaUnmodelledRead(BaseModel):
@@ -178,8 +184,68 @@ class FormulaKitMemberRead(BaseModel):
     is_subject: bool
 
 
+class FormulaScalingTermRead(BaseModel):
+    """A further scaling term of a mixed-stat hit (`ATK + EM`)."""
+
+    stat: str
+    multiplier: float
+
+
+class FormulaRaisedHitRead(BaseModel):
+    """One of the optimized character's hits read `raise_by` levels above its unraised level,
+    as `/builds/{id}/search-context` would read it there (`team_talent_levels`)."""
+
+    label: str
+    index: int
+    raise_by: int
+    multiplier: float
+    scaling_stat: str
+    extra_terms: list[FormulaScalingTermRead]
+
+
+class FormulaRaisedUnavailableRead(BaseModel):
+    """A raise that reads no row (past the table's last level), and why."""
+
+    raise_by: int
+    reason: str
+
+
+class FormulaRaisedTalentRead(BaseModel):
+    """A talent of the optimized character a kit's `talent_level` effect raises, and its rows at
+    each raise (owner approval 2026-11-14, `DECISIONS.md` §42). For the formula estimate only:
+    gcsim applies these raises itself, and single-hit surfaces have no party to raise them."""
+
+    talent: str
+    #: Stored level plus constellation boosts: the level `/search-context` reads a row at.
+    level: int
+    #: The most the team's kits add here, every condition on.
+    max_raise: int
+    rows: list[FormulaRaisedHitRead]
+    unavailable: list[FormulaRaisedUnavailableRead]
+
+    @classmethod
+    def of(cls, raised: RaisedTalent) -> FormulaRaisedTalentRead:
+        """The wire form of `team_talent_levels.RaisedTalent`."""
+        return cls(
+            talent=raised.talent, level=raised.level, max_raise=raised.max_raise,
+            rows=[
+                FormulaRaisedHitRead(
+                    label=r.hit.label, index=r.hit.index, raise_by=r.raise_by,
+                    multiplier=r.hit.multiplier, scaling_stat=str(r.hit.scaling_stat),
+                    extra_terms=[FormulaScalingTermRead(stat=str(x.stat), multiplier=x.multiplier)
+                                 for x in r.hit.extra_terms],
+                )
+                for r in raised.rows
+            ],
+            unavailable=[FormulaRaisedUnavailableRead(raise_by=n, reason=why)
+                         for n, why in raised.unavailable],
+        )
+
+
 class FormulaTeamKitRead(BaseModel):
     """Every member's kit buffs for one optimized character, from the two-pass evaluation."""
 
     sources: list[FormulaKitSourceRead]
     members: list[FormulaKitMemberRead]
+    #: The optimized character's rows at the levels the team's talent-level raises reach.
+    raised_talents: list[FormulaRaisedTalentRead] = []

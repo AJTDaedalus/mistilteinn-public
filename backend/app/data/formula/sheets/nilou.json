@@ -11,7 +11,9 @@
  "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
  "gcsim": "internal/characters/nilou/",
  "verified_by": [
-  "nilou_a1_c2_on_nahida"
+  "nilou_a1_c2_on_nahida",
+  "nilou_c6_below_cap_on_her_own_skill",
+  "nilou_c6_past_cap_on_her_own_skill"
  ],
  "talent_boosts": [
   {
@@ -46,6 +48,18 @@
     0.5,
     8.0,
     0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    0.006,
+    0.012,
+    0.3,
+    0.6,
     0.0,
     0.0,
     0.0,
@@ -271,6 +285,50 @@
    ],
    "go": "pando:Nilou.ts:86-90,162-166,190",
    "gcsim": "cons.go:73-74"
+  },
+  {
+   "key": "c6_crit_rate",
+   "label": "C6 Frostbreaker's Melody: CRIT Rate per 1,000 Max HP, capped",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "value": {
+    "constellation": 6,
+    "param": 0,
+    "times_stat": "hp",
+    "stat_unit": {
+     "constant": 1000,
+     "cite": "GO pando:Nilou.ts:167-182 `prod(percent(x), final.hp, 1 / 1000)`; gcsim nilou/cons.go:116,131 `c.MaxHP() * 0.001`; no seeded list carries the 1,000"
+    },
+    "cap": {
+     "constellation": 6,
+     "param": 2
+    }
+   },
+   "go": "pando:Nilou.ts:91-96,167-182,191-192; wr:index.tsx:94-99,168-183,232-233",
+   "gcsim": "cons.go:107-140"
+  },
+  {
+   "key": "c6_crit_dmg",
+   "label": "C6 Frostbreaker's Melody: CRIT DMG per 1,000 Max HP, capped",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "value": {
+    "constellation": 6,
+    "param": 1,
+    "times_stat": "hp",
+    "stat_unit": {
+     "constant": 1000,
+     "cite": "GO pando:Nilou.ts:167-182 `prod(percent(x), final.hp, 1 / 1000)`; gcsim nilou/cons.go:116,131 `c.MaxHP() * 0.001`; no seeded list carries the 1,000"
+    },
+    "cap": {
+     "constellation": 6,
+     "param": 3
+    }
+   },
+   "go": "pando:Nilou.ts:91-96,167-182,191-192; wr:index.tsx:94-99,168-183,232-233",
+   "gcsim": "cons.go:107-140"
   }
  ],
  "unmodelled": [
@@ -293,11 +351,6 @@
    "source": "c4",
    "what": "Fricative Pulse: Energy",
    "reason": "no damage effect"
-  },
-  {
-   "source": "c6",
-   "what": "Frostbreaker's Melody: CRIT Rate and CRIT DMG from her Max HP",
-   "reason": "a capped conversion of her own Max HP into CRIT Rate and CRIT DMG, which the recipe does not carry (it carries CRIT Rate from EM only)"
   }
  ]
 }
