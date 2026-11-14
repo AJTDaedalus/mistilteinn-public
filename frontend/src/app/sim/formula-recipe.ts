@@ -52,7 +52,9 @@ import {
   resMultiplier,
   type ScalingStat,
 } from './damage';
-import type { FormulaMove, FormulaProvenance, Recipe, RecipeHit, RecipeScaling } from './recipe';
+import type {
+  ConversionSource, FormulaMove, FormulaProvenance, Recipe, RecipeHit, RecipeScaling,
+} from './recipe';
 import { evaluateHit, NO_STATS } from './recipe-eval';
 import {
   FORMULA_ALL_DMG_BONUS,
@@ -306,9 +308,11 @@ interface Buffs {
   reactionBonus: number;
   resistance: number;
   flatDamage: number;
-  flatFromAtk: number;
-  /** Flat damage per point of total DEF (a giver who is the subject: Kachina's A4). */
-  flatFromDef: number;
+  /**
+   * Flat damage per point of the hit owner's own total ATK, HP, DEF or EM: a kit whose giver is
+   * the subject (Valeriy's Offensive Directive, Kachina's A4, Zhongli's A4). One source per hit.
+   */
+  flatFrom: Record<ConversionSource, number>;
   erConversion: { perUnit: number; cap: number } | null;
   /** Flat ATK, after the percentage — a kit buff resolved from its giver's stats. */
   flatAtk: number;
@@ -319,7 +323,7 @@ interface Buffs {
 function noBuffs(): Buffs {
   return {
     percent: { atk: 0, hp: 0, def: 0 }, em: 0, er: 0, critRate: 0, critDmg: 0, dmgBonus: 0,
-    reactionBonus: 0, resistance: 0, flatDamage: 0, flatFromAtk: 0, flatFromDef: 0,
+    reactionBonus: 0, resistance: 0, flatDamage: 0, flatFrom: { atk: 0, hp: 0, def: 0, em: 0 },
     erConversion: null,
     flatAtk: 0, bonusFromEm: 0,
   };
@@ -403,8 +407,10 @@ export function applySources(
         case 'reaction_bonus': buffs.reactionBonus += amount; break;
         case 'enemy_res': buffs.resistance += amount; break;
         case 'flat_damage': buffs.flatDamage += amount; break;
-        case 'flat_damage_from_atk': buffs.flatFromAtk += amount; break;
-        case 'flat_damage_from_def': buffs.flatFromDef += amount; break;
+        case 'flat_damage_from_atk': buffs.flatFrom.atk += amount; break;
+        case 'flat_damage_from_hp': buffs.flatFrom.hp += amount; break;
+        case 'flat_damage_from_def': buffs.flatFrom.def += amount; break;
+        case 'flat_damage_from_em': buffs.flatFrom.em += amount; break;
         case 'flat_atk': buffs.flatAtk += amount; break;
         case 'dmg_bonus_from_em': buffs.bonusFromEm += amount; break;
         case 'dmg_bonus_from_energy_recharge':
@@ -443,10 +449,14 @@ export function rowHits(
     sources, { element, move: row.move, amplifying: hit.amplifying }, team,
     row.conditionals ?? {}, teamState,
   );
-  const converted = buffs.flatFromAtk !== 0 || buffs.flatFromDef !== 0;
-  if (buffs.flatFromAtk !== 0 && buffs.flatFromDef !== 0) {
+  const flatSources = (Object.keys(buffs.flatFrom) as ConversionSource[])
+    .filter((from) => buffs.flatFrom[from] !== 0);
+  const converted = flatSources.length > 0;
+  if (flatSources.length > 1) {
     // One resolved conversion per flat term (`recipe.ts:ResolvedConversion`).
-    throw new Error(`row ${row.id}: flat damage converted from both ATK and DEF on one hit`);
+    throw new Error(
+      `row ${row.id}: flat damage converted from ${flatSources.join(' and ')} on one hit`,
+    );
   }
   if (converted && (hit.flatDamage !== 0 || buffs.flatDamage !== 0)) {
     // `resolvedTerm` replaces a converted flat term wholesale, so both cannot ride on one.
@@ -486,9 +496,9 @@ export function rowHits(
       flatDamage,
       conversions: i === 0 && converted
         ? {
-          flatDamage: buffs.flatFromAtk !== 0
-            ? { from: 'atk', perUnit: buffs.flatFromAtk * row.count }
-            : { from: 'def', perUnit: buffs.flatFromDef * row.count },
+          flatDamage: {
+            from: flatSources[0], perUnit: buffs.flatFrom[flatSources[0]] * row.count,
+          },
         }
         : {},
       constantTerms: [],
