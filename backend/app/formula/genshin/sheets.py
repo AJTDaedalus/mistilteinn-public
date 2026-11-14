@@ -87,14 +87,20 @@ _DATA = Path(__file__).resolve().parents[2] / "data" / "formula" / "sheets"
 TALENTS: tuple[str, ...] = ("normal_attack", "elemental_skill", "elemental_burst")
 
 #: Where a buff comes from. `talent` is any of the three levelled talents; `a1`/`a4` the
-#: ascension passives (gated on ascension phase 1 and 4, GO `input.asc`); `c1`…`c6` the
-#: constellations (gated on `constellation >= n`, GO `cmpGE(constellation, n, …)`).
-Source = Literal["talent", "a1", "a4", "c1", "c2", "c3", "c4", "c5", "c6"]
+#: ascension passives (gated on ascension phase 1 and 4, GO `input.asc`); `a0` the passive a
+#: character has from the start (`ascension_passives.unlock_ascension` 0: Arlecchino's
+#: Balemoon, GO `passive3`, ungated); `c1`…`c6` the constellations (gated on
+#: `constellation >= n`, GO `cmpGE(constellation, n, …)`).
+Source = Literal["talent", "a0", "a1", "a4", "c1", "c2", "c3", "c4", "c5", "c6"]
+
+#: The ascension phases a passive's list is read at: 0 (from the start), 1 and 4.
+PASSIVE_PHASES: tuple[int, ...] = (0, 1, 4)
 
 #: The `tags.SRC_*` label each source is attributed to in an explanation.
 SOURCE_LABEL: dict[str, str] = {
     "talent": tags.SRC_TALENT,
-    "a1": tags.SRC_ASCENSION_PASSIVE, "a4": tags.SRC_ASCENSION_PASSIVE,
+    "a0": tags.SRC_ASCENSION_PASSIVE, "a1": tags.SRC_ASCENSION_PASSIVE,
+    "a4": tags.SRC_ASCENSION_PASSIVE,
     **{f"c{n}": tags.SRC_CONSTELLATION for n in range(1, 7)},
 }
 
@@ -341,6 +347,11 @@ class ValueRef(_Strict):
     #: With `times_stat`: the stat is capped at this parameter before it is multiplied (GO
     #: `prod(ratio, min(total.atk, maxAtk))`, Xianyun's A4).
     stat_cap: ParamRef | None = None
+    #: A number added to the parameter, cited: a talent row published as a hit's whole
+    #: multiplier ("Blazing Arrow DMG|{param4} Normal Attack DMG", GO `baseMulti: skillMult`)
+    #: written as a `base_dmg_bonus`, which adds to the default multiplier of 1 — so the value
+    #: is the row less 1 (GO `dmg()`'s `baseMulti` default, `formula/src/data/char/util.ts`).
+    offset: Cited | None = None
 
     @model_validator(mode="after")
     def _one_source(self) -> ValueRef:
@@ -359,8 +370,8 @@ class ValueRef(_Strict):
             raise ValueError("a constellation or passive value names its param index")
         if self.constellation is not None and not 1 <= self.constellation <= MAX_CONSTELLATION:
             raise ValueError("constellations are 1-6")
-        if self.passive is not None and self.passive not in (1, 4):
-            raise ValueError("an ascension passive unlocks at phase 1 or 4")
+        if self.passive is not None and self.passive not in PASSIVE_PHASES:
+            raise ValueError("an ascension passive unlocks at phase 0, 1 or 4")
         if self.times_stat is not None and self.times_stat not in GIVER_STATS:
             raise ValueError(f"times_stat must be one of {sorted(GIVER_STATS)}")
         if self.nth is not None and (self.talent is None or self.nth < 0):
@@ -380,6 +391,10 @@ class ValueRef(_Strict):
                 raise ValueError("a value reads the giver's stat or the team's highest, not both")
         if self.stat_cap is not None and self.times_stat is None:
             raise ValueError("a stat cap belongs to a value that reads a stat")
+        if self.offset is not None and (self.times_stat is not None or self.cap is not None
+                                        or self.times_team_max is not None):
+            raise ValueError("an offset belongs to a plain parameter, not one read with a stat "
+                             "or a cap")
         return self
 
     def params_read(self) -> list[ParamRef]:
@@ -683,7 +698,7 @@ class Giver:
     #: `(talent, level) -> row`, for whichever levels the catalogue publishes.
     talent_rows: Mapping[tuple[str, int], TalentRow]
     constellation_params: Mapping[int, Sequence[float]]
-    #: By unlock ascension phase (1 or 4).
+    #: By unlock ascension phase (0, 1 or 4).
     passive_params: Mapping[int, Sequence[float]]
     registry: NodeRegistry
 
@@ -736,7 +751,8 @@ def _number(sheet: Sheet, giver: Giver, ref: ValueRef, *, shift: int = 0) -> flo
     number = _parameter(sheet, giver, ref, shift=shift)
     if ref.times_param is not None:
         number *= _extra(sheet, giver, ref.times_param)
-    return -number if ref.negate else number
+    number = -number if ref.negate else number
+    return number if ref.offset is None else number + ref.offset.constant
 
 
 def _extra(sheet: Sheet, giver: Giver, extra: ParamRef) -> float:
@@ -808,7 +824,7 @@ def _parameter(sheet: Sheet, giver: Giver, ref: ValueRef, *, shift: int = 0) -> 
 def _unlocked(source: str, giver: Giver) -> bool:
     if source == "talent":
         return True
-    if source in ("a1", "a4"):
+    if source in ("a0", "a1", "a4"):
         return giver.ascension_phase >= int(source[1])
     return giver.constellation >= int(source[1])
 
@@ -877,11 +893,10 @@ def _effect_node(
         return effect.stat, _value_node(sheet, giver, effect, shift=shift, team_max=team_max)
     converted = SELF_CONVERSIONS.get((effect.stat, reads))
     if converted is not None and (effect.value.cap is not None
-                                  or effect.value.stat_unit is not None
                                   or effect.value.stat_cap is not None):
         msg = (
             f"it reads {sheet.character}'s own {reads}, which moves with every candidate, "
-            "through a cap or a unit the recipe cannot carry per candidate"
+            "through a cap the recipe cannot carry per candidate"
         )
         raise _Withheld(msg)
     if converted is None:
@@ -890,7 +905,10 @@ def _effect_node(
             f"the recipe cannot carry {effect.stat} from {reads} per candidate yet"
         )
         raise _Withheld(msg)
-    return converted, const(_number(sheet, giver, effect.value, shift=shift))
+    # A unit is a constant divisor (GO `prod(percent(x), stat, 1 / 100)`), so the per-candidate
+    # coefficient carries it: Arlecchino's Masque per Bond of Life percentage point.
+    unit = 1.0 if effect.value.stat_unit is None else effect.value.stat_unit.constant
+    return converted, const(_number(sheet, giver, effect.value, shift=shift) / unit)
 
 
 def _team_shift(

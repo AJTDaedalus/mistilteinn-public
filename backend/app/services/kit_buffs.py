@@ -105,7 +105,8 @@ def giver_of(build: Build, registry: NodeRegistry) -> sheets.Giver:
         },
         passive_params={
             p.unlock_ascension: list(p.param_list or [])
-            for p in character.ascension_passives if p.unlock_ascension in (1, 4)
+            for p in character.ascension_passives
+            if p.unlock_ascension in sheets.PASSIVE_PHASES
         },
         registry=registry,
     )

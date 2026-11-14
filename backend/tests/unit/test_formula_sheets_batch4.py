@@ -299,7 +299,7 @@ def test_xianyuns_a4_on_herself_is_withheld_and_her_wave_buffs_name_the_row():
                          giver_is_subject=True, receiver_element="anemo",
                          team_elements=["anemo", "pyro"])
     assert _effects(kit, "flat_damage") == []
-    assert any("through a cap or a unit" in u.reason for u in kit.bonus.unmodelled)
+    assert any("through a cap" in u.reason for u in kit.bonus.unmodelled)
     [team_a1, own_a1] = _effects(kit, "crit_rate")
     # Team plunges by move; her own wave by row, only while its move is Skill: never both.
     assert (team_a1.moves, team_a1.rows) == (("plunge",), None)
