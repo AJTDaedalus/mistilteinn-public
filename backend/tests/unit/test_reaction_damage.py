@@ -1,4 +1,4 @@
-"""Math-fallback P3 (task 13): `formula/genshin/reactions.py`, the transformative, additive and Lunar terms.
+"""Math-fallback P3 (task 13): `formula/genshin/reactions.py`, the reaction terms.
 
 The gcsim crossval for the chain is `tests/crossval/test_reaction_crossval.py` (overloaded,
 swirl, superconduct, from committed runs). These are the unit checks: the level table against
