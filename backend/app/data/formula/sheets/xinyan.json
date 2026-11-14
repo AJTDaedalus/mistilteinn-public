@@ -206,12 +206,14 @@
   {
    "source": "c6",
    "what": "Rockin' in a Flaming World: GO's toggle for her Charged Attack ATK",
-   "reason": "scoped here to her Charged Attacks, as the constellation's text gives it; gcsim leaves it unimplemented (cons.go:88-89)"
+   "reason": "scoped here to her Charged Attacks, as the constellation's text gives it; gcsim leaves it unimplemented (cons.go:88-89)",
+   "receiver": "subject"
   },
   {
    "source": "c6",
    "what": "Rockin' in a Flaming World: Charged Attack stamina",
-   "reason": "no damage effect"
+   "reason": "no damage effect",
+   "receiver": "subject"
   },
   {
    "source": "a0",

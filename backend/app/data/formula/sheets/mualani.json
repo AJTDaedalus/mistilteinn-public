@@ -304,12 +304,14 @@
   {
    "source": "talent",
    "what": "Surfshark Wavebreaker: GO prices each stack count as its own bite row",
-   "reason": "the catalogue has one Sharky's Bite row; the Wave Momentum condition carries the stack count there"
+   "reason": "the catalogue has one Sharky's Bite row; the Wave Momentum condition carries the stack count there",
+   "receiver": "subject"
   },
   {
    "source": "c1",
    "what": "The Leisurely \"Meztli\"...: GO adds it on the Surging Bite only; gcsim on the first bite of any stack count (cons.go:13-23)",
-   "reason": "its own toggle here, so it applies to the bite you set it on"
+   "reason": "its own toggle here, so it applies to the bite you set it on",
+   "receiver": "subject"
   },
   {
    "source": "a0",

@@ -82,7 +82,8 @@
   {
    "source": "c4",
    "what": "Winsome: her own EM from her Max HP, capped",
-   "reason": "a capped conversion of her HP into EM, which the recipe does not carry; her EM reaches only reaction damage (P3)"
+   "reason": "a capped conversion of her HP into EM, which the recipe does not carry; her EM reaches only reaction damage (P3)",
+   "receiver": "subject"
   },
   {
    "source": "talent",

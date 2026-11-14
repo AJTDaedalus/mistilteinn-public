@@ -103,7 +103,8 @@
   {
    "source": "c6",
    "what": "Sleep O'Clock: Muji-Muji Daruma DMG from her ATK times her Elemental Mastery",
-   "reason": "a product of two of her stats, which no conversion carries"
+   "reason": "a product of two of her stats, which no conversion carries",
+   "receiver": "subject"
   },
   {
    "source": "talent",

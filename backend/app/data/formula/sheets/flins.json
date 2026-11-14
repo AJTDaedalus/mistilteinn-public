@@ -130,12 +130,14 @@
   {
    "source": "a4",
    "what": "Whispering Flame: EM from his ATK, capped (C4 raises it)",
-   "reason": "a capped conversion of his ATK into EM, which the recipe does not carry; his EM reaches only reaction damage (P3)"
+   "reason": "a capped conversion of his ATK into EM, which the recipe does not carry; his EM reaches only reaction damage (P3)",
+   "receiver": "subject"
   },
   {
    "source": "talent",
    "what": "Ancient Rite: Arcane Light: the Electro infusion in Manifest Flame",
-   "reason": "the skill-talent rows are Electro already; his ordinary Normal Attacks keep their Physical channel"
+   "reason": "the skill-talent rows are Electro already; his ordinary Normal Attacks keep their Physical channel",
+   "receiver": "subject"
   },
   {
    "source": "c1",

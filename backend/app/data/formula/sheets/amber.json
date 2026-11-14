@@ -232,7 +232,8 @@
   {
    "source": "c2",
    "what": "Bunny Triggered: GO prices the manual detonation on a separate skill row",
-   "reason": "the catalogue has one Explosion DMG row; the toggle carries it there"
+   "reason": "the catalogue has one Explosion DMG row; the toggle carries it there",
+   "receiver": "subject"
   },
   {
    "source": "a0",
