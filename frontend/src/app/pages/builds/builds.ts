@@ -104,7 +104,9 @@ export class BuildsPage implements OnInit {
   protected readonly characters = signal<CharacterSummary[]>([]);
   protected readonly weapons = signal<WeaponSummary[]>([]);
   protected readonly talents = signal<string[]>([]);
-  protected readonly maxTalent = signal(15);
+  /** Until `/builds/options` answers. Ten, not fifteen: a stored level is a base level, without
+   *  the C3/C5 boost (owner ruling, 2026-11-14), and the server refuses anything above it. */
+  protected readonly maxTalent = signal(10);
 
   /** The build being edited, or null while composing a new one. */
   /**
@@ -569,6 +571,46 @@ export class BuildsPage implements OnInit {
   protected talentLevel(talent: string): number {
     return this.fields.talent_levels[talent] ?? 1;
   }
+
+  /**
+   * The level this talent's hits are read at, when the constellation raises it — or `null`.
+   *
+   * Owner ruling, 2026-11-14: **a stored level is a base level, capped at 10**, as a GOOD
+   * export carries it and gcsim reads it. The input holds that number; this is shown beside
+   * it ("→ 12 with C3"), never folded into it — folding it in is how a 13 got stored and then
+   * refused by every hit read as already boosted (#374).
+   *
+   * Computed here, from the server's derived table on the character (`talent_boosts`), rather
+   * than read off `BuildRead.effective_talent_levels`, because the constellation box is being
+   * edited and the saved build does not know about the edit yet. The table, the amount and
+   * the constellation all come from the server; only the addition is done here.
+   */
+  protected talentBoost(talent: string): { level: number; constellation: number } | null {
+    const boosts = this.character()?.talent_boosts;
+    if (!boosts) return null;
+    // A base level the server will refuse has no boosted level: typing 13 drew "→ 16 with C3"
+    // beside a box about to be rejected, which reads as an answer.
+    const base = this.talentLevel(talent);
+    if (!(base >= 1 && base <= this.maxTalent())) return null;
+    const applied = boosts.filter(
+      (b) => b.talent === talent && this.fields.constellation_level >= b.constellation,
+    );
+    if (applied.length === 0) return null;
+    return {
+      level: base + applied.reduce((sum, b) => sum + b.levels, 0),
+      constellation: Math.max(...applied.map((b) => b.constellation)),
+    };
+  }
+
+  /**
+   * True when a character is chosen and no derived table says which talents their C3 and C5
+   * raise. Said on screen, because showing no "→" would read as "this constellation boosts
+   * nothing", which is a claim nobody has made.
+   */
+  protected readonly boostsUnknown = computed(() => {
+    const chosen = this.character();
+    return chosen !== null && chosen.talent_boosts === null;
+  });
 
   protected setTalent(talent: string, level: number): void {
     this.fields = {

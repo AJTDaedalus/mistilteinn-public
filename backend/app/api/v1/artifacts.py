@@ -474,6 +474,7 @@ async def import_good(
             unresolved_weapons=sorted(report.unresolved_weapons),
             no_weapon_in_export=sorted(report.no_weapon_in_export),
             reassigned=sorted(report.reassigned),
+            refused_talents=sorted(report.refused_talents),
         )
 
     # **After the builds**, because the equip link is made through them — and unconditionally,

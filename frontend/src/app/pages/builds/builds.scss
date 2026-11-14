@@ -67,7 +67,21 @@
     gap: var(--space-1) var(--space-4);
 
     input { width: 3.5rem; }
-    label { text-transform: capitalize; }
+    // At phone width the boosted level wraps under the box rather than breaking the
+    // talent's own name in two.
+    label { text-transform: capitalize; flex-wrap: wrap; }
+    .talent-name { white-space: nowrap; }
+
+    // Data, not identity: the boosted level is a number the build reads at, so it takes the
+    // cool accent rather than brass.
+    .boost {
+      font-size: var(--text-sm);
+      color: var(--mint-hi);
+      text-transform: none;
+      white-space: nowrap;
+    }
+
+    .boost-unknown { flex-basis: 100%; }
   }
 
   .notes input { flex: 1; }

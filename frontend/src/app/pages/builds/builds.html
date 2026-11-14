@@ -386,18 +386,35 @@
         <legend>Talents</legend>
         <!-- Drawn from `/builds/options`, which publishes `LEVELLED_TALENTS`. A list here
              would be a third copy of it — and a misspelling renders as level 1. -->
+        <!-- Stored levels are base levels, 1-10 (owner ruling, 2026-11-14). The boosted level
+             a C3/C5 gives is shown beside the box and never typed into it. -->
         @for (talent of talents(); track talent) {
+          @let boost = talentBoost(talent);
           <label>
-            {{ talent.replace('_', ' ') }}
+            <span class="talent-name">{{ talent.replace('_', ' ') }}</span>
             <input
               type="number"
               min="1"
               [max]="maxTalent()"
               [attr.aria-label]="talent"
+              [attr.aria-describedby]="boost ? 'talent-boost-' + talent : null"
               [value]="talentLevel(talent)"
               (change)="setTalent(talent, +$any($event.target).value)"
             />
+            @if (boost) {
+              <span class="boost mono" [id]="'talent-boost-' + talent">
+                <span aria-hidden="true">→</span>
+                <span class="visually-hidden">boosted to</span>
+                {{ boost.level }} with C{{ boost.constellation }}
+              </span>
+            }
           </label>
+        }
+        @if (boostsUnknown()) {
+          <p class="hint boost-unknown">
+            Which talents this character's C3 and C5 raise is not known here, so no boosted
+            level is shown.
+          </p>
         }
       </fieldset>
 
