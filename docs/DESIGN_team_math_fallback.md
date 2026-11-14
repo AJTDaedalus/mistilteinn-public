@@ -1,6 +1,6 @@
 # DESIGN: a formula fallback, so every team can be optimized
 
-**Status: P0 merged; P1 complete and merged (#367–#371). P3's reactions built on `feat/formula-reactions` (2026-11-14, §2.7; owner go-ahead `DECISIONS.md` §42). P2 foundation built on `feat/math-fallback-p2-sheets` (2026-11-13): the sheet schema, the two-pass team evaluation, GO fixtures, and sheets for Bennett and Kazuha (§2.6). Plunges no longer make a character `partial` (owner, 2026-11-13). Owner rulings in `DECISIONS.md` §38: the estimate is opt-in for every team (D-F3), and Genshin Optimizer, not gcsim, is the accuracy comparator for the fallback (D-F4).** §2.4 below predates D-F4. Read "gcsim" there as "GO" for sheet verification; gcsim remains the oracle for the damage chain itself. The owner asked for two things:
+**Status: P0 merged; P1 complete and merged (#367–#371). P3's reactions built on `feat/formula-reactions` (2026-11-14, §2.7; owner go-ahead `DECISIONS.md` §43). P2 foundation built on `feat/math-fallback-p2-sheets` (2026-11-13): the sheet schema, the two-pass team evaluation, GO fixtures, and sheets for Bennett and Kazuha (§2.6). Plunges no longer make a character `partial` (owner, 2026-11-13). Owner rulings in `DECISIONS.md` §38: the estimate is opt-in for every team (D-F3), and Genshin Optimizer, not gcsim, is the accuracy comparator for the fallback (D-F4).** §2.4 below predates D-F4. Read "gcsim" there as "GO" for sheet verification; gcsim remains the oracle for the damage chain itself. The owner asked for two things:
 - an evaluation of carrying each character's gcsim status in its catalogue entry;
 - a plan for a Genshin Optimizer-style fallback that uses closed-form math instead of
   simulation, so every team can be optimized whatever its gcsim status.
@@ -576,6 +576,44 @@ a non-reaction damage effect a sheet could be verified on, so a sheet would ship
 nothing (the Tartaglia rule). They wait for P3. Varesa, Illuga and Lauma do have one and were not
 reached.
 
+**A kit's talent-level raise and CRIT from Max HP (owner approval 2026-11-14, `DECISIONS.md` §42;
+`feat/formula-team-talent-crit-hp`; `test_formula_sheets_talent_crit.py`, `go_fixtures_talent_crit.py`,
+`talent-crit.spec.ts`).** The two edges every batch since the sixth named as an owner question.
+
+| addition | where | why |
+|---|---|---|
+| `talent_level` effect stat, with `talent` | `formula_effects.Effect`, `sheets.SheetEffect`, `FormulaEffectRead` | a raise of the receiver's level in one talent, a cited whole number (GO and gcsim write a literal 1). Reaches every row of its talent, so it names no element, move, row or count; a `when` is allowed (Lohen's High Spirits) |
+| `raised_talents` | `team_talent_levels.raised_talents`, `kit_buffs.subject_raised_talents`, `FormulaTeamKitRead` | the subject's rows at each raise up to the sum of every raise they receive (conditional ones too), from `talent_hits.available_hits` — the parse `/search-context` reads a row with. A raise past the table's last row is published as unavailable, with why |
+| `raiseRow` | `formula-recipe.ts` (its own function, before `rowHits`) | per row: sum the raises whose `when` holds for that row and whose talent is the row's, swap the multiplier (and a mixed row's other terms) for the published one, say "read at level N (base + giver +1)". An unknown talent row, no published row or a scaling stat that differs leaves the row unraised and says so; nothing is guessed |
+| `Giver.talent_raises`, `sheets.talent_raises`, `kit_buffs.member_raises` | `sheets.effective_level` | a teammate's **unconditional** raise reaches a giver's own values read off a talent row (Shenhe's Icy Quill at skill + 1 in Skirk's party, as GO reads `own.char.skill`). Conditional raises are the browser's, per row; `Sheet._check_conditional_raises` refuses a sheet whose values read a talent its own conditional raise lifts |
+| `crit_rate_from_hp`, `crit_dmg_from_hp` | `SELF_CONVERSIONS`, `CAPPABLE_CONVERSIONS`, `formula-recipe.ts`, `recipe.ts:ConvertedTerm`, `recipe-eval.ts` | CRIT from the subject's own Max HP per candidate, each capped alone (`StatConversion`, `cappedAmount`). `critDmg` is a `ConvertedTerm` and not a `PercentTerm`, which names terms a gcsim probe reports |
+
+**Ordering and caps.** Read level = stored (at most 10, §40 (v)) + constellation boosts (3 each,
+9b) + kit raises: a sum, as GO's `premod.<t> = base + <t>Boost` and gcsim's `TalentLvlAttack`
+both compute it. 10 + 3 + 1 = 14; Lohen C3 in High Spirits in Skirk's party reaches 15, the
+table's last row. No cap is applied beyond the table (GO has none; gcsim's +5 is never reached).
+
+**Surfaces.** The formula estimate only. `/hits`, `/explain`, `/search-context` (single-hit
+Optimize) keep stored + constellation: a build there has no party and so no giver. gcsim applies
+the raises itself (`ChildePassive`, `SkirkPassive`) and is untouched: its config carries stored
+levels.
+
+| sheet | added | GO |
+|---|---|---|
+| Tartaglia (new) | Master of Weaponry: the party's Normal Attack +1, himself included (his **phase-0** passive, not an A1); row moves for his aimed shots, Riptide Flash/Burst (normal) and melee-stance skill rows (normal, charged). Nothing else in his kit is a damage effect | `pando Tartaglia.ts:77-79,107-124,129-137` |
+| Skirk | Mutual Weapons Mentorship: the party's Elemental Skill +1, team-gated (only Hydro and Cryo, one of each) | `pando Skirk.ts:206-219,290-291` |
+| Lohen | High Spirits: **his own** Elemental Skill +1 (GO `ownBuff`; not a raise to teammates), a self toggle | `pando Lohen.ts:132,197-199` |
+| Nilou | C6: CRIT Rate 0.6% and CRIT DMG 1.2% per 1,000 Max HP, to 30% / 60%, every hit | `pando Nilou.ts:91-96,167-182,191-192` |
+| Sigewinne | C6: burst CRIT Rate 0.4% and CRIT DMG 2.2% per 1,000 Max HP, to 20% / 110%; a self toggle "after she heals" (GO applies it at C6 without reading its own toggle) | `pando Sigewinne.ts:89-95,182-197,209-210` |
+
+Eight GO fixtures, all exact (relative ≤ 3.7e-8): Tartaglia on Xiangling's 1-Hit (Physical) and
+on his own Riptide Flash, Skirk on Furina's Gentilhomme Usher, Lohen C3 in High Spirits on his
+Masterstroke 1-Hit (level 14), Nilou's and Sigewinne's C6 each below and past both caps (which
+bind at 50,000 HP for each). A raise fixture carries `raised_talents`, its row's own multiplier is
+the unraised one, and `formula:verify` fails it if it passes with the raised rows dropped. The
+older `lohen_c6_on_his_own_etch` now states High Spirits off, GO's default it was worked at.
+`formula:verify` 139/139.
+
 **Pinned, as `set_effects.json` is.** A constellation or passive list that differs from its pin,
 or a talent row whose label changed or which has no row at the effective level, **withholds
 that effect** and lists it as unmodelled with the reason. It is never read by a stale index.
@@ -687,12 +725,14 @@ generated at their pins. Who reads which level:
 
 Not modelled: talent-level boosts a passive gives the **team** (Tartaglia's +1 normal attack,
 gcsim `ChildePassive`; Skirk's and Lohen's skill boosts, GO `teamBuff.premod.skillBoost`).
-They are not constellations and not this table's question.
+They are not constellations and not this table's question. *Built since as a kit effect for the
+formula estimate (`DECISIONS.md` §42; "A kit's talent-level raise" above); Lohen's turned out to
+be his own skill only.*
 
 ### 2.7 Reactions (P3, task 13; built 2026-11-14)
 
 **Owner, 2026-11-14: "Start P3: reactions."** Branch `feat/formula-reactions`; rulings and choices
-in `DECISIONS.md` §42. Weapon passives (task 12) and ER from particles (task 14) are not started.
+in `DECISIONS.md` §43. Weapon passives (task 12) and ER from particles (task 14) are not started.
 
 **Where it lives.** `backend/app/formula/genshin/reactions.py` (the chain),
 `app/data/yuanshen/snapshot/reaction_level_multipliers.json` (the level table), `damage.ts`

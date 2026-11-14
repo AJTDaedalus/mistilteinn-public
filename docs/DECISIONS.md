@@ -1567,7 +1567,57 @@ already carried it. Lead Vocal is flat Hydro/Cryo damage from her Max HP above 4
 1,000, capped at 3,500: a number for a teammate, and a per-build conversion on herself. Chorus
 (off-field members) is named as not applied.
 
-## 42. P3 starts with reactions: what was built, and the choices made on the way (2026-11-14)
+## 42. A kit's talent-level raise and CRIT from Max HP, in the formula estimate (2026-11-14)
+
+The owner **approved both mechanics on 2026-11-14**: the two edges every sheet batch since the
+sixth had named as "not built, owner question" (DESIGN §2.6). Built on
+`feat/formula-team-talent-crit-hp`.
+
+**(i) A kit's talent-level raise.** Three kits raise a talent's level for whoever receives them,
+and none of it is a constellation, so 9b's table (`talent_boosts.py`) never covered them:
+
+- **Tartaglia's Master of Weaponry**: the party's Normal Attack +1, himself included. Verified,
+  it is his **phase-0** passive (`ascension_passives.unlock_ascension` 0), not an A1 (GO
+  `passive3`, `teamBuff.char.auto.add(1)`; gcsim `keys.ChildePassive` on every member);
+- **Skirk's Mutual Weapons Mentorship**: the party's Elemental Skill +1 while every member is
+  Hydro or Cryo with at least one of each (GO `teamBuff.char.skill`; gcsim `keys.SkirkPassive`);
+- **Lohen's High Spirits**: verified to be **his own** Elemental Skill +1 for 9s after he uses
+  it — GO `ownBuff`, and his passive's text says "the Skill Level of Unforeseen Strike" — not a
+  raise to teammates. A `self` toggle, on by default (his own doing).
+
+The +1 is a cited constant in all three (no seeded list carries it). **Ordering:** the level a row
+is read at is `stored + constellation boosts + kit raises`, a sum, as GO (`premod.<t> = base +
+<t>Boost`) and gcsim (`TalentLvlAttack`'s `add`) compute it, so the order is immaterial.
+**Caps:** stored levels are at most 10 (§40 (v)), so 10 + 3 + 1 = 14; Lohen at C3 in High
+Spirits in Skirk's party reaches 15, the table's last row. GO adds without a cap and gcsim caps
+the total boost at +5, which none of its kits reaches; past the table nothing is read, and the
+estimate says the raise was not applied.
+
+**Surfaces.** The formula estimate only. `/formula/kit-buffs` carries the `talent_level` effect
+(with its `when`) and `raised_talents` — the subject's rows at each raise, from the same parse
+`/search-context` reads — and the browser swaps a row's multiplier per row of the target
+(`formula-recipe.ts:raiseRow`). **Not** `/hits`, `/explain` or `/search-context` (single-hit
+Optimize): a build there has no party, so there is no giver to raise anything — decided rather
+than defaulted, and the reason a teammate's raise lives where the team does. **Not gcsim**: it
+applies all three itself and refuses a configured level above 10. A teammate's unconditional
+raise also reaches a **giver's own values** read off a talent row (Shenhe's Icy Quill in Skirk's
+party, read at skill + 1, as GO reads it); a conditional raise does not, and a sheet whose values
+would read a talent its own conditional raise lifts is refused by the schema.
+
+**(ii) CRIT from Max HP.** A per-candidate self-conversion into CRIT Rate and CRIT DMG, each
+capped alone, on §40's machinery (`StatConversion`, `cappedAmount`): `crit_rate_from_hp` and
+`crit_dmg_from_hp`. **Nilou's C6** (0.6% / 1.2% per 1,000 Max HP, to 30% / 60%, every hit) and
+**Sigewinne's C6** (0.4% / 2.2% per 1,000, to 20% / 110%, her burst; a self toggle "after she
+heals", on — GO applies it at C6 without reading its own toggle). No other sheet named the shape.
+`cappedAmount` is monotone in HP and the crit multiplier is monotone in both terms, so the search
+bound stays admissible (a spec shows bounded == exhaustive with the cap deciding the mix).
+
+Eight GO fixtures, all exact (relative ≤ 3.7e-8, the f32 floor): Tartaglia on a teammate's and on
+his own Normal Attack, Skirk on Furina's skill, Lohen C3 in High Spirits (10 + 3 + 1), Nilou and
+Sigewinne each below and past their caps. `formula:verify` now also refuses a fixture that passes
+with its raised rows unread.
+
+## 43. P3 starts with reactions: what was built, and the choices made on the way (2026-11-14)
 
 **Owner, 2026-11-14: "Start P3: reactions."** Built on `feat/formula-reactions` (DESIGN §2.7,
 TASKS 13). Weapon passives (task 12) and ER from particles (task 14) wait.

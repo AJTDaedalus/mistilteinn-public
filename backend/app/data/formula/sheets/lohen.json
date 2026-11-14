@@ -10,7 +10,8 @@
  },
  "verified_by": [
   "lohen_a4_on_xiangling",
-  "lohen_c6_on_his_own_etch"
+  "lohen_c6_on_his_own_etch",
+  "lohen_c3_high_spirits_on_his_own_skill_attack"
  ],
  "talent_boosts": [
   {
@@ -115,6 +116,13 @@
    "kind": "toggle",
    "default_by": "self",
    "go": "pando:Lohen.ts:173-175; wr:index.tsx:204-208"
+  },
+  {
+   "key": "high_spirits",
+   "label": "High Spirits, for 9s after his Elemental Skill (A0)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Lohen.ts:132,197-199; wr:index.tsx:176-177,298-303,509-524"
   }
  ],
  "effects": [
@@ -218,6 +226,27 @@
     }
    ],
    "go": "pando:Lohen.ts:112-115,173-175,205; wr:index.tsx:204-208,289"
+  },
+  {
+   "key": "a0_skill_level",
+   "label": "When the Mood Strikes: High Spirits, his own Elemental Skill level +1",
+   "source": "a0",
+   "receivers": "self",
+   "stat": "talent_level",
+   "talent": "elemental_skill",
+   "value": {
+    "constant": 1,
+    "cite": "GO pando:Lohen.ts:199 `a0HighSpirits.ifOn(1)`, wr:index.tsx:177 `equal(cond, 'on', 1)` (a literal 1; his phase-0 list holds the 9s duration and other numbers)"
+   },
+   "when": [
+    {
+     "condition": "high_spirits",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Lohen.ts:132,197-199; wr:index.tsx:176-177,298-303"
   }
  ],
  "unmodelled": [
@@ -225,11 +254,6 @@
    "source": "talent",
    "what": "Will to Win consumed: the Etched and burst DMG multipliers",
    "reason": "a multiplier on one hit's base damage (GO `baseMulti`): the format has no base-multiplier stat"
-  },
-  {
-   "source": "kit",
-   "what": "High Spirits: skill talent +1 while active",
-   "reason": "a conditional talent-level boost: the format's talent boosts are constellation-gated only"
   },
   {
    "source": "kit",

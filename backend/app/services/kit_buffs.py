@@ -25,12 +25,14 @@ Their equipped artifacts never leak into the estimate as a number.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from app.formula.genshin import sheets
 from app.pando.calculator import Calculator
 from app.services import artifact_optimizer, build_assembler
+from app.services.talent_boosts import TalentBoostError
+from app.services.team_talent_levels import RaisedTalent, raised_talents
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -66,6 +68,9 @@ class TeamKit:
     giver_stats: dict[str, dict[str, float]]
     #: Each source's giver build id.
     giver_builds: dict[str, str]
+    #: The subject's rows at each level the team's talent-level raises can reach (`DECISIONS.md`
+    #: §42); empty when no kit raises a talent of theirs.
+    raised_talents: list[RaisedTalent] = field(default_factory=list)
 
 
 def pass_one(build: Build) -> NodeRegistry:
@@ -80,8 +85,11 @@ def pass_one(build: Build) -> NodeRegistry:
     return log.registry
 
 
-def giver_of(build: Build, registry: NodeRegistry) -> sheets.Giver:
-    """A build as the giver a sheet resolves against."""
+def giver_of(
+    build: Build, registry: NodeRegistry, talent_raises: dict[str, int] | None = None,
+) -> sheets.Giver:
+    """A build as the giver a sheet resolves against; `talent_raises` are the levels the
+    team's unconditional talent-level raises add to them (`member_raises`)."""
     character = build.character
     if character is None:
         msg = f"build {build.id} has no character, so it has no kit"
@@ -109,7 +117,52 @@ def giver_of(build: Build, registry: NodeRegistry) -> sheets.Giver:
             if p.unlock_ascension in sheets.PASSIVE_PHASES
         },
         registry=registry,
+        talent_raises=dict(talent_raises or {}),
     )
+
+
+def member_raises(
+    members: Sequence[Build], receiver: Build, subject_build_id: str,
+    elements: Sequence[str | None],
+) -> dict[str, int]:
+    """The talent levels every member's **unconditional** raises add to `receiver` as a giver
+    (`sheets.talent_raises`, `DECISIONS.md` §42): Tartaglia's +1 Normal Attack reaches every
+    member, so a buff a teammate reads off a Normal Attack row is read one level up, as GO does."""
+    out: dict[str, int] = {}
+    for giver in members:
+        character = giver.character
+        sheet = sheets.sheet_for(str(character.nanoka_id)) if character is not None else None
+        if sheet is None:
+            continue
+        found = sheets.talent_raises(
+            sheet, constellation=giver.constellation_level,
+            ascension_phase=giver.ascension_phase,
+            giver_is_receiver=str(giver.id) == str(receiver.id),
+            receiver_is_subject=str(receiver.id) == subject_build_id,
+            receiver_element=_element(receiver), team_elements=elements,
+        )
+        for talent, levels in found.items():
+            out[talent] = out.get(talent, 0) + levels
+    return out
+
+
+def subject_raised_talents(
+    subject: Build, sources: Sequence[sheets.ResolvedKit],
+) -> list[RaisedTalent]:
+    """The subject's rows at every level the resolved kits' `talent_level` effects can lift
+    them to, conditional ones included: the browser gates those per row."""
+    raises: dict[str, int] = {}
+    for source in sources:
+        for effect in source.bonus.effects:
+            if effect.stat == "talent_level" and effect.talent is not None:
+                raises[effect.talent] = raises.get(effect.talent, 0) + int(effect.value)
+    if not raises or subject.character is None:
+        return []
+    try:
+        return raised_talents(subject.character, subject.constellation_level,
+                              dict(subject.talent_levels or {}), raises)
+    except TalentBoostError as exc:
+        raise KitBuffsError(str(exc)) from exc
 
 
 def _element(build: Build) -> str | None:
@@ -170,7 +223,8 @@ def team_kit(members: Sequence[Build], subject_build_id: str) -> TeamKit:
                 is_subject=is_subject,
             ))
             continue
-        giver = giver_of(build, pass_one(build))
+        giver = giver_of(build, pass_one(build),
+                         member_raises(members, build, subject_build_id, elements))
         resolved = sheets.resolve(
             sheet, giver, giver_is_subject=is_subject, receiver_element=subject_element,
             team_elements=elements, team_max=team_max,
@@ -182,6 +236,8 @@ def team_kit(members: Sequence[Build], subject_build_id: str) -> TeamKit:
             build_id=str(build.id), name=name, status=resolved.status,
             verified=resolved.verified, is_subject=is_subject,
         ))
+    subject = next(b for b in members if str(b.id) == subject_build_id)
     return TeamKit(
         sources=sources, members=coverage, giver_stats=giver_stats, giver_builds=giver_builds,
+        raised_talents=subject_raised_talents(subject, sources),
     )

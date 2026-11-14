@@ -16,6 +16,7 @@ import {
   type FormulaReaction,
   type ConditionValue,
   type FormulaKit,
+  type FormulaRaisedTalent,
   type FormulaResonance,
   type FormulaRow,
   type FormulaSetTier,
@@ -66,6 +67,8 @@ export interface FormulaRequest {
 export interface TeamKits {
   sources: FormulaKit[];
   missing: string[];
+  /** The subject's rows at the levels a kit's talent-level raise reaches (`DECISIONS.md` §42). */
+  raisedTalents?: FormulaRaisedTalent[];
 }
 
 /** A calibration and the formula's own reporting, side by side. */
@@ -247,6 +250,7 @@ export class FormulaEstimateService {
       return {
         sources: data.sources as FormulaKit[],
         missing: data.members.filter((m) => m.status === 'no_sheet').map((m) => m.name),
+        raisedTalents: (data.raised_talents ?? []) as FormulaRaisedTalent[],
       };
     })();
     this.kitCache = { key, value };
@@ -293,7 +297,7 @@ export class FormulaEstimateService {
       id: row.id,
       label: row.label,
       move: row.move,
-      hit: row.reaction ? null : { talent: row.hit.talent, label: row.hit.label },
+      hit: row.reaction ? null : { talent: row.hit.talent, label: row.hit.label, index: row.hit.index },
       count: row.count,
       context: kernelContext(contexts[i]),
       conditionals: row.overrides,

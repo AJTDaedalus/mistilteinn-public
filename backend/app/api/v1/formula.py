@@ -23,6 +23,7 @@ from app.schemas.formula import (
     FormulaBonusRead,
     FormulaKitMemberRead,
     FormulaKitSourceRead,
+    FormulaRaisedTalentRead,
     FormulaResonanceRead,
     FormulaSetEffectsRead,
     FormulaSetTierRead,
@@ -156,4 +157,5 @@ async def kit_buffs_route(
             )
             for m in team.members
         ],
+        raised_talents=[FormulaRaisedTalentRead.of(t) for t in team.raised_talents],
     )
