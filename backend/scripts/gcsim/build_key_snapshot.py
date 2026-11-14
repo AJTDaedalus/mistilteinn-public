@@ -292,14 +292,12 @@ _RUNTIME_REFUSALS: dict[str, tuple[str, ...]] = {
 }
 
 
-def _implemented_actions(package: Path, source: Path) -> list[str]:
-    """Which actions this character implements, following embedded implementations.
+def _package_chain(package: Path, source: Path) -> list[Path]:
+    """The Go files of a character's package and of every package it embeds a type from.
 
-    Reads the package's methods, and the methods of any package it embeds a type from. The
-    authority is `internal/template/character/character.go`: an action whose method is not
-    overridden anywhere in that chain returns *"action … not implemented"* at run time.
+    Test files and generated `zz_*` files are skipped: neither carries the character's code.
     """
-    defined: set[str] = set()
+    files: list[Path] = []
     seen: set[Path] = set()
     queue = [package]
     while queue:
@@ -307,11 +305,11 @@ def _implemented_actions(package: Path, source: Path) -> list[str]:
         if current in seen or not current.is_dir():
             continue
         seen.add(current)
-        for go in current.glob("*.go"):
-            text = go.read_text()
-            if go.name.startswith("zz_"):
+        for go in sorted(current.glob("*.go")):
+            if go.name.startswith("zz_") or go.name.endswith("_test.go"):
                 continue
-            defined.update(_METHOD.findall(text))
+            files.append(go)
+            text = go.read_text()
             # Follow one embedded type per struct, to the package its selector imports.
             struct = _CHAR_STRUCT.search(text)
             if struct is None:
@@ -321,6 +319,19 @@ def _implemented_actions(package: Path, source: Path) -> list[str]:
                 target = imports.get(selector)
                 if target is not None:
                     queue.append(source / target)
+    return files
+
+
+def _implemented_actions(package: Path, source: Path) -> list[str]:
+    """Which actions this character implements, following embedded implementations.
+
+    Reads the package's methods, and the methods of any package it embeds a type from. The
+    authority is `internal/template/character/character.go`: an action whose method is not
+    overridden anywhere in that chain returns *"action … not implemented"* at run time.
+    """
+    defined: set[str] = set()
+    for go in _package_chain(package, source):
+        defined.update(_METHOD.findall(go.read_text()))
     return sorted(
         {action for method, action in _ACTION_METHODS.items() if method in defined}
         | set(_ALWAYS),
@@ -331,6 +342,59 @@ def _implemented_for(key: str, package: Path, source: Path) -> list[str]:
     """`_implemented_actions`, minus the actions gcsim refuses at run time for this key."""
     refused = set(_RUNTIME_REFUSALS.get(key, ()))
     return [a for a in _implemented_actions(package, source) if a not in refused]
+
+
+#: `c.BurstCon = 5` — which constellation adds three levels to which talent.
+#:
+#: `pkg/core/player/character/character.go:158-161` defaults all three to -1, `consCheck`
+#: (`:205-219`) panics unless a character sets **exactly two** of them, and `TalentLvlAttack`,
+#: `TalentLvlSkill` and `TalentLvlBurst` (`:221-264`) add 3 once `Base.Cons` reaches the value.
+#: Each character sets them in its `NewChar`, so the assignment is the whole of the fact.
+_TALENT_CON = re.compile(r"^\s*c\.(NormalCon|SkillCon|BurstCon)\s*=\s*(\d+)\s*$", re.M)
+
+#: gcsim's field, in the `TalentType` vocabulary builds store levels under.
+_CON_TALENT = {
+    "NormalCon": "normal_attack",
+    "SkillCon": "elemental_skill",
+    "BurstCon": "elemental_burst",
+}
+
+
+def _talent_boosts(package: Path, source: Path) -> dict[str, int]:
+    """`{talent: constellation}` — the two talents a character's C3 and C5 raise by three.
+
+    Refuses anything but exactly two assignments, to two different talents, at 3 and 5: that
+    is the shape `consCheck` enforces at run time, so any other parse is a parse gone wrong.
+    """
+    found: dict[str, int] = {}
+    for go in _package_chain(package, source):
+        for field, value in _TALENT_CON.findall(go.read_text()):
+            talent = _CON_TALENT[field]
+            if talent in found:
+                msg = f"{package}: {field} is assigned twice in the package chain"
+                raise SystemExit(msg)
+            found[talent] = int(value)
+    if sorted(found.values()) != [3, 5]:
+        msg = f"{package}: expected one talent at C3 and one at C5, parsed {found}"
+        raise SystemExit(msg)
+    return dict(sorted(found.items()))
+
+
+def _character_talent_boosts(
+    source: Path, canonical: list[str],
+) -> dict[str, dict[str, int]]:
+    """`{character key: {talent: constellation}}`, for every character gcsim registers."""
+    by_normalised = {key.replace("_", ""): key for key in canonical}
+    found: dict[str, dict[str, int]] = {}
+    for path in sorted((source / "internal" / "characters").rglob("zz_*.dm.go")):
+        registered = _CHAR_REGISTER.search(path.read_text())
+        if registered is None:
+            continue
+        key = by_normalised.get(registered.group(1).lower())
+        if key is None:
+            continue
+        found[key] = _talent_boosts(path.parent, source)
+    return dict(sorted(found.items()))
 
 
 #: `"arle":  keys.Arlecchino,` — an accepted spelling, then the canonical Go identifier.
@@ -421,6 +485,9 @@ def main() -> None:
     snapshot["character_implemented_actions"] = _character_implemented_actions(
         args.src, snapshot["characters"],
     )
+    snapshot["character_talent_boosts"] = _character_talent_boosts(
+        args.src, snapshot["characters"],
+    )
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(snapshot, indent=2, sort_keys=False) + "\n")
 
@@ -428,7 +495,7 @@ def main() -> None:
         f"{k}={len(snapshot[k])}"
         for k in (
             *_FILES, "actions", "parser_actions", *_ALIAS_FILES, "character_action_params",
-            "character_implemented_actions",
+            "character_implemented_actions", "character_talent_boosts",
         )
     )
     print(f"wrote {OUT.relative_to(REPO)} at {pin}: {counts}")

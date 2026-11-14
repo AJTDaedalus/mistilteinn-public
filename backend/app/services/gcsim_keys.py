@@ -275,6 +275,17 @@ def implemented_actions(key: str) -> frozenset[str]:
     return frozenset(table.get(key, ()))  # type: ignore[arg-type]
 
 
+def character_talent_boosts() -> dict[str, dict[str, int]]:
+    """`{character key: {talent: constellation}}` — which talent each C3 and C5 raises by 3.
+
+    Captured by `scripts/gcsim/build_key_snapshot.py` from each character's `NewChar`
+    (`c.SkillCon = 3`, `c.BurstCon = 5`, …). Read through `app/services/talent_boosts.py`,
+    which is where the boost is applied and where the characters gcsim lacks are covered.
+    """
+    table = _snapshot().get("character_talent_boosts", {})
+    return {key: dict(boosts) for key, boosts in table.items()}  # type: ignore[union-attr]
+
+
 def offerable_actions(key: str | None) -> tuple[str, ...]:
     """The actions **this character** may be given, base actions first then their variants.
 
