@@ -83,10 +83,13 @@ UNGATED = {"kachina", "nefer", "lohen", "linnea", "mitya", "valeriy", "vodyanits
 BUFFERS = {"furina", "xingqiu", "xiangling", "citlali", "yelan", "escoffier", "chevreuse",
            "jean", "zhongli", "faruzan", "sucrose"}
 
+#: Task 11, fourth batch: Nahida (who waited on three mechanics) and the next buffers.
+BATCH4 = {"nahida"}
+
 
 def test_every_sheet_loads_and_is_named_after_its_slug():
     assert {s.slug for s in sheets.all_sheets().values()} == {
-        "bennett", "kaedehara_kazuha", *UNGATED, *BUFFERS}
+        "bennett", "kaedehara_kazuha", *UNGATED, *BUFFERS, *BATCH4}
 
 
 def test_every_sheet_is_cited_to_the_pinned_go_and_gcsim_commits():

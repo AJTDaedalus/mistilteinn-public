@@ -101,6 +101,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": [
                   "vaporize",
                   "reverse_vaporize"
@@ -119,6 +120,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": [
                   "melt",
                   "reverse_melt"
@@ -139,6 +141,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [],
                 "per": "stacks",
@@ -251,6 +254,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -401,6 +405,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [],
                 "per": null,
@@ -438,6 +443,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": [
                   "vaporize",
                   "reverse_vaporize"
@@ -456,6 +462,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": [
                   "melt",
                   "reverse_melt"
@@ -476,6 +483,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [],
                 "per": "stacks",
@@ -602,6 +610,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -624,6 +633,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -648,6 +658,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -792,6 +803,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -962,6 +974,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -986,6 +999,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -1010,6 +1024,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -1034,6 +1049,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -1195,6 +1211,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -1219,6 +1236,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -1243,6 +1261,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -1267,6 +1286,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -1397,6 +1417,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -1421,6 +1442,7 @@
                 "moves": [
                   "skill"
                 ],
+                "rows": null,
                 "reactions": null,
                 "when": [],
                 "per": null,
@@ -1568,6 +1590,7 @@
                 "moves": [
                   "burst"
                 ],
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -1590,6 +1613,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -1736,6 +1760,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -1903,6 +1928,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -1933,6 +1959,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -1961,6 +1988,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -1983,6 +2011,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [],
                 "per": null,
@@ -1998,6 +2027,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -2162,6 +2192,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [],
                 "per": "a1_beacons",
@@ -2177,6 +2208,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [],
                 "per": "a4_stacks",
@@ -2325,6 +2357,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -2355,6 +2388,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -2507,6 +2541,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -2531,6 +2566,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -2673,6 +2709,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -2695,6 +2732,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -2717,6 +2755,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -2739,6 +2778,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -2761,6 +2801,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -2914,6 +2955,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [],
                 "per": "fanfare",
@@ -2929,6 +2971,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [],
                 "per": "c2_overstack",
@@ -3058,6 +3101,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [],
                 "per": null,
@@ -3075,6 +3119,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -3225,6 +3270,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -3249,6 +3295,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -3273,6 +3320,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -3439,6 +3487,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -3464,6 +3513,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -3492,6 +3542,7 @@
                   "skill",
                   "burst"
                 ],
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -3514,6 +3565,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -3649,6 +3701,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [],
                 "per": null,
@@ -3664,6 +3717,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -3699,6 +3753,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [],
                 "per": "a4_stacks",
@@ -3829,6 +3884,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -3853,6 +3909,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -4002,6 +4059,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -4024,6 +4082,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -4161,6 +4220,7 @@
                 "moves": [
                   "skill"
                 ],
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -4185,6 +4245,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -4330,6 +4391,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -4356,6 +4418,7 @@
                   "charged",
                   "plunge"
                 ],
+                "rows": null,
                 "reactions": null,
                 "when": [],
                 "per": null,
@@ -4373,6 +4436,7 @@
                 "moves": [
                   "skill"
                 ],
+                "rows": null,
                 "reactions": null,
                 "when": [],
                 "per": null,
@@ -4390,6 +4454,7 @@
                 "moves": [
                   "burst"
                 ],
+                "rows": null,
                 "reactions": null,
                 "when": [],
                 "per": null,
@@ -4534,6 +4599,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -4558,6 +4624,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -4582,6 +4649,7 @@
                 ],
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -4727,6 +4795,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -4749,6 +4818,7 @@
                 "elements": null,
                 "element_from": null,
                 "moves": null,
+                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -4787,6 +4857,419 @@
       "go_value": 6337.834384850319,
       "divergence": "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9",
       "relative_divergence_from_go": 0.00030752916224804444
+    },
+    {
+      "name": "nahida_a1_c2_on_xiangling",
+      "covers": "a value from the party's highest EM, capped (A1); enemy DEF reduction into the chain's DEF term (C2); into an amplifying reaction",
+      "go": [
+        "libs/gi/wr/src/formula.ts:257,357,434-484,490-514",
+        "libs/gi/formula/src/data/char/Nahida.ts:79-94,168-182,212,230-233"
+      ],
+      "givers": [
+        {
+          "name": "Nahida",
+          "constellation": 2,
+          "ascension_phase": 6,
+          "stats": {
+            "elemental_mastery": 880.0
+          }
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "dendro",
+          "hydro",
+          "anemo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado_vape",
+          "label": "Pyronado DMG (vaporize)",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": "reverse_vaporize",
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:nahida",
+          "label": "Nahida (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Nahida.ts (pando), libs/gi/sheets/src/Characters/Nahida/index.tsx (wr) @ 2c13fc40 \u2014 a1_em pando:Nahida.ts:79-82,168-182,212; wr:index.tsx:83-86,166-195,362; c2_def pando:Nahida.ts:89-94,230-233; wr:index.tsx:93-100,278-283,359; gcsim internal/characters/nahida/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "a1_field",
+                "label": "The active character is in the Shrine of Maya (A1 Compassion Illuminated)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "c2_quicken",
+                "label": "Opponents marked by Seeds of Skandha were hit by Quicken, Aggravate or Spread (C2 The Root of All Fullness)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "elemental_mastery",
+                "value": 220.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a1_field",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "def_reduction",
+                "value": 0.3,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c2_quicken",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A1: Compassion Illuminated when the optimized character's own Elemental Mastery is the party's highest",
+                "reason": "the highest is taken over the teammates' pass-1 Elemental Mastery: the optimized character's moves with every candidate, and GO's `team.premod.eleMas.max` would use it where it is larger"
+              },
+              {
+                "what": "A4: Awakening Elucidated: Tri-Karma Purification DMG and CRIT Rate from her Elemental Mastery above 200",
+                "reason": "a thresholded, capped conversion of the optimized character's own EM, which the recipe cannot carry per candidate: the owner's open question in DECISIONS.md \u00a739"
+              },
+              {
+                "what": "C2: The Root of All Fullness: Burning, Bloom, Hyperbloom, Burgeon and Lunar-Bloom CRIT",
+                "reason": "transformative and Lunar reaction damage is not modelled yet (P3)"
+              },
+              {
+                "what": "TALENT: Illusory Heart: the Electro and Hydro parts (Tri-Karma trigger interval, Shrine duration)",
+                "reason": "no damage effect: they change how often and how long, not how much a hit deals"
+              },
+              {
+                "what": "KIT: Teammates' Elemental Mastery buffs (and Nahida's own C4) in the highest EM her A1 reads",
+                "reason": "two-pass rule (DESIGN \u00a72.6): a kit buff never raises a stat another buff reads; GO's `team.premod.eleMas.max` would include them"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:nahida/a1_field": 1,
+        "kit:nahida/c2_quicken": 1
+      },
+      "expected": 7437.145154966597,
+      "go_value": 7434.885935483439,
+      "divergence": "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9",
+      "relative_divergence_from_go": 0.00030386740331488625
+    },
+    {
+      "name": "nahida_burst_c4_on_her_own_tri_karma",
+      "covers": "a talent row chosen by the team's Pyro count with a constellation counting one more, scoped to one of her own rows; a self EM buff read from a stack table",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,490-514",
+        "libs/gi/formula/src/data/char/Nahida.ts:59-70,95-97,120-134,204-210,246-255"
+      ],
+      "givers": [
+        {
+          "name": "Nahida",
+          "constellation": 4,
+          "ascension_phase": 3,
+          "talent_levels": {
+            "elemental_burst": 10,
+            "elemental_skill": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "dendro",
+        "weapon_type": "WEAPON_CATALYST",
+        "member_elements": [
+          "dendro",
+          "pyro",
+          "hydro",
+          "anemo"
+        ]
+      },
+      "base": {
+        "base_atk": 841.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10360.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 630.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 115.2,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "elemental_mastery": 187.0,
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "dendro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "dendro",
+      "rows": [
+        {
+          "id": "karma",
+          "label": "Tri-Karma Purification DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Tri-Karma Purification DMG|{param3:F1P} ATK+{param4:F1P} Elemental Mastery",
+            "params": [
+              2.091,
+              2.771,
+              2.193,
+              4.386
+            ]
+          },
+          "multiplier": 2.193,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "extra_terms": [
+            {
+              "stat": "elemental_mastery",
+              "multiplier": 4.386
+            }
+          ],
+          "hit": {
+            "talent": "elemental_skill",
+            "label": "Tri-Karma Purification DMG"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:nahida",
+          "label": "Nahida (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Nahida.ts (pando), libs/gi/sheets/src/Characters/Nahida/index.tsx (wr) @ 2c13fc40 \u2014 burst_tri_karma pando:Nahida.ts:69-70,120-134,246-255; wr:index.tsx:73-74,115-131,226-231,313-318; c2_def pando:Nahida.ts:89-94,230-233; wr:index.tsx:93-100,278-283,359; c4_em pando:Nahida.ts:95-97,204-210; wr:index.tsx:101-103,285-300,345; gcsim internal/characters/nahida/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "shrine",
+                "label": "Shrine of Maya is active (Illusory Heart)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "c2_quicken",
+                "label": "Opponents marked by Seeds of Skandha were hit by Quicken, Aggravate or Spread (C2 The Root of All Fullness)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "c4_count",
+                "label": "Opponents near Nahida affected by Seeds of Skandha (C4 The Stem of Manifest Inference)",
+                "kind": "number",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": 4.0,
+                "step": 1.0,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.40176,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Tri-Karma Purification DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "shrine",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "def_reduction",
+                "value": 0.3,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c2_quicken",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "elemental_mastery",
+                "value": 160.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "c4_count",
+                "by_stack": [
+                  100.0,
+                  120.0,
+                  140.0,
+                  160.0
+                ],
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A1: Compassion Illuminated when the optimized character's own Elemental Mastery is the party's highest",
+                "reason": "the highest is taken over the teammates' pass-1 Elemental Mastery: the optimized character's moves with every candidate, and GO's `team.premod.eleMas.max` would use it where it is larger"
+              },
+              {
+                "what": "C2: The Root of All Fullness: Burning, Bloom, Hyperbloom, Burgeon and Lunar-Bloom CRIT",
+                "reason": "transformative and Lunar reaction damage is not modelled yet (P3)"
+              },
+              {
+                "what": "TALENT: Illusory Heart: the Electro and Hydro parts (Tri-Karma trigger interval, Shrine duration)",
+                "reason": "no damage effect: they change how often and how long, not how much a hit deals"
+              },
+              {
+                "what": "KIT: Teammates' Elemental Mastery buffs (and Nahida's own C4) in the highest EM her A1 reads",
+                "reason": "two-pass rule (DESIGN \u00a72.6): a kit buff never raises a stat another buff reads; GO's `team.premod.eleMas.max` would include them"
+              },
+              {
+                "what": "A1: A1 Compassion Illuminated: Elemental Mastery, 25% of the party's highest",
+                "reason": "withheld: it reads the team's highest elemental_mastery, which includes Nahida's own, and that moves with every candidate through a cap the recipe cannot carry per candidate"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:nahida/c4_count": 2
+      },
+      "expected": 5940.608720802648,
+      "go_value": 5940.608720802648,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
     }
   ]
 }

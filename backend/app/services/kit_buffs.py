@@ -29,6 +29,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from app.formula.genshin import sheets
+from app.pando.calculator import Calculator
 from app.services import artifact_optimizer, build_assembler
 
 if TYPE_CHECKING:
@@ -118,6 +119,31 @@ def _element(build: Build) -> str | None:
     return str(character.element).lower()
 
 
+def _team_max(members: Sequence[Build], subject_build_id: str) -> dict[str, float]:
+    """The highest pass-1 value of each stat a sheet in this team reads team-wide
+    (`ValueRef.times_team_max`, Nahida's A1), over every member **but the subject**.
+
+    Pass 1 for each, so no kit buff is in it (rule 1). The subject is left out because their
+    stats move with every candidate; a value that reads this is withheld when the subject is
+    its giver, and otherwise says in its sheet that the subject's own stat never enters it.
+    """
+    wanted = sorted({
+        stat for b in members if b.character is not None
+        for sheet in [sheets.sheet_for(str(b.character.nanoka_id))] if sheet is not None
+        for stat in sheets.team_stats_read(sheet)
+    })
+    if not wanted:
+        return {}
+    others = [b for b in members if str(b.id) != subject_build_id]
+    out: dict[str, float] = {}
+    for stat in wanted:
+        values = [float(Calculator(pass_one(b)).compute(sheets.GIVER_STATS[stat]))
+                  for b in others]
+        if values:
+            out[stat] = max(values)
+    return out
+
+
 def team_kit(members: Sequence[Build], subject_build_id: str) -> TeamKit:
     """Pass 1 for every member with a sheet, then pass 2 for the subject as receiver."""
     if not any(str(b.id) == subject_build_id for b in members):
@@ -131,6 +157,7 @@ def team_kit(members: Sequence[Build], subject_build_id: str) -> TeamKit:
     # (Linnea's C2 reaches Hydro and Geo receivers; Vesna's A4 counts Anemo and Cryo members).
     elements = [_element(b) for b in members]
     subject_element = next(_element(b) for b in members if str(b.id) == subject_build_id)
+    team_max = _team_max(members, subject_build_id)
     for build in members:
         character = build.character
         name = character.name if character is not None else "Build"
@@ -145,10 +172,10 @@ def team_kit(members: Sequence[Build], subject_build_id: str) -> TeamKit:
         giver = giver_of(build, pass_one(build))
         resolved = sheets.resolve(
             sheet, giver, giver_is_subject=is_subject, receiver_element=subject_element,
-            team_elements=elements,
+            team_elements=elements, team_max=team_max,
         )
         sources.append(resolved)
-        giver_stats[resolved.source_id] = sheets.stats_read(sheet, giver)
+        giver_stats[resolved.source_id] = sheets.stats_read(sheet, giver, team_max)
         giver_builds[resolved.source_id] = str(build.id)
         coverage.append(MemberKit(
             build_id=str(build.id), name=name, status=resolved.status,

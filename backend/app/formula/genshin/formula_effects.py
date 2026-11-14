@@ -75,6 +75,14 @@ AMPLIFYING_REACTIONS: tuple[str, ...] = ("vaporize", "reverse_vaporize", "melt",
 #:   per candidate. Only a kit buff whose giver is also the optimized character emits it
 #:   (Kazuha's A4 on Kazuha): a teammate's EM is a number, the subject's moves with every
 #:   candidate. GO `prod(percent(x), own.premod.eleMas)`.
+#: - `flat_def` — flat DEF added after the percentage (GO `premod.def`): Gorou's banner, a
+#:   talent row's number (task 11, fourth batch).
+#: - `def_reduction` — the target's DEF reduced by this fraction (GO `enemyDefRed_`, summed and
+#:   capped at 90% in `enemy.def`, `formula.ts:490-510`): Nahida's C2. It reaches the DEF term
+#:   the chain already carries (`damage.py:def_multiplier`, `damage.ts:defMultiplier`), so the
+#:   term itself is unchanged; only its input gains a source.
+#: - `def_ignore` — the hit ignores this fraction of the target's DEF (GO `enemyDefIgn_`):
+#:   Raiden's C2 on her own hits. The chain's other DEF input, multiplied separately.
 EffectStat = Literal[
     "atk_pct", "hp_pct", "def_pct", "elemental_mastery", "energy_recharge",
     "crit_rate", "crit_dmg",
@@ -83,6 +91,7 @@ EffectStat = Literal[
     "flat_damage_from_em",
     "dmg_bonus_from_energy_recharge",
     "flat_atk", "dmg_bonus_from_em",
+    "flat_def", "def_reduction", "def_ignore",
 ]
 
 #: Stats that are kernel quantities and so can also travel in a set-bonus pool.
@@ -163,6 +172,14 @@ class When(_Model):
     values: tuple[float | str, ...]
 
 
+class TalentRowScope(_Model):
+    """One of the hit owner's talent rows, as `/builds/{id}/hits` names it: the talent and the
+    row label before its `|` (`talent_hits.AvailableHit`)."""
+
+    talent: str
+    label: str
+
+
 class Effect(_Model):
     """One buff, resolved to a number."""
 
@@ -177,6 +194,11 @@ class Effect(_Model):
     element_from: tuple[ElementSource, ...] | None = None
     #: Moves it reaches; None means every move.
     moves: tuple[str, ...] | None = None
+    #: The hit owner's own talent rows it reaches, as `TalentRowScope`s; None means every row.
+    #: Only a kit buff its giver applies to their own hits names a row (Nahida's burst bonus
+    #: reaches her Tri-Karma Purification and not her press): a teammate cannot know another
+    #: character's row labels, so a buff to a teammate is scoped by move instead.
+    rows: tuple[TalentRowScope, ...] | None = None
     #: `reaction_bonus` only: which amplifying reactions it reaches.
     reactions: tuple[str, ...] | None = None
     #: Every one must hold for the effect to apply.

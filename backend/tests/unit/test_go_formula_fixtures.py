@@ -1407,6 +1407,10 @@ def build() -> dict[str, Any]:
     fixtures.extend(sheet_fixtures())
     fixtures.extend(ungated_fixtures())
     fixtures.extend(buffer_fixtures())
+    # Task 11, fourth batch (Nahida and the next buffers): their own module, the same method.
+    # Imported here: that module imports this one for its helpers.
+    from tests.unit.go_fixtures_batch4 import batch4_fixtures
+    fixtures.extend(batch4_fixtures())
     for f in fixtures:
         f["relative_divergence_from_go"] = abs(f["expected"] - f["go_value"]) / f["go_value"]
     return {

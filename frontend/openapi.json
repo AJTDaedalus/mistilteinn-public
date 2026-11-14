@@ -8275,6 +8275,20 @@
             ],
             "title": "Moves"
           },
+          "rows": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FormulaTalentRowRead"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rows"
+          },
           "reactions": {
             "anyOf": [
               {
@@ -8614,6 +8628,25 @@
         ],
         "title": "FormulaSetTierRead",
         "description": "One conditional tier of one set."
+      },
+      "FormulaTalentRowRead": {
+        "properties": {
+          "talent": {
+            "type": "string",
+            "title": "Talent"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "talent",
+          "label"
+        ],
+        "title": "FormulaTalentRowRead",
+        "description": "One of the hit owner's own talent rows an effect is scoped to. See\n`formula_effects.TalentRowScope`."
       },
       "FormulaTeamKitRead": {
         "properties": {

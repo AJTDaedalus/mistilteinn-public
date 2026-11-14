@@ -36,6 +36,8 @@ function score(f, sources) {
     id: r.id,
     label: r.label,
     move: r.move,
+    // The talent row, for a row-scoped kit buff (Nahida's burst bonus on Tri-Karma).
+    hit: r.hit ?? null,
     count: r.count,
     conditionals: r.conditionals,
     context: {
@@ -86,6 +88,15 @@ for (const f of data.fixtures) {
     const bare = score(f, []);
     if (Math.abs(bare - f.expected) / f.expected < 1e-3) {
       failures.push(`${f.name} (passes with no buffs at all)`);
+    }
+  }
+
+  // Task 11, fourth batch — a row-scoped kit buff (Nahida's burst bonus on Tri-Karma) must
+  // depend on the row naming its talent row: unnamed, it is skipped and the figure must miss.
+  if (f.rows.some((r) => r.hit)) {
+    const unnamed = score({ ...f, rows: f.rows.map(({ hit: _hit, ...r }) => r) }, f.sources);
+    if (Math.abs(unnamed - f.expected) / f.expected <= TOLERANCE) {
+      failures.push(`${f.name} (passes with its row-scoped buff unscoped)`);
     }
   }
 
