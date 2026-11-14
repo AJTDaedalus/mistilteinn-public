@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 
 import type { ConditionGroup } from '../../sim/formula-calibration';
-import type { ConditionValue, FormulaCondition } from '../../sim/formula-recipe';
+import {
+  suggestMove, type ConditionValue, type FormulaCondition,
+} from '../../sim/formula-recipe';
 import type { FormulaMove } from '../../sim/recipe';
 import {
   FormulaEstimateService,
@@ -99,7 +101,12 @@ export class FormulaPanel {
     const hit = this.hits().find((h) => this.hitKey(h) === key);
     if (!hit) return;
     const fresh = { talent: hit.talent, label: hit.label, index: hit.index };
-    this.service.updateRow(row.id, { hit: fresh, label: hit.label });
+    // **The move belongs to the hit it was set for.** Kept across a change of ability, a row
+    // first made for a 1-Hit DMG and switched to a burst's slash stayed a normal attack, so a
+    // burst-scoped kit buff (Skirk's Serpent's Subtlety) silently missed it — found driving it.
+    this.service.updateRow(row.id, {
+      hit: fresh, label: hit.label, move: suggestMove(hit.talent, hit.label),
+    });
   }
 
   protected pickMove(row: TargetRow, value: string): void {

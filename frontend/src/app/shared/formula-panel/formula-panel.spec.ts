@@ -167,6 +167,21 @@ describe('FormulaPanel picker identity', () => {
   });
 });
 
+describe('FormulaPanel picking another ability', () => {
+  it('takes the new ability\'s move rather than keeping the old one', () => {
+    // Driven: a row made for a 1-Hit DMG (normal) and switched to a burst row stayed a normal
+    // attack, so a burst-scoped kit buff missed it without a word.
+    const { el, fixture, service } = render();
+    service.updateRow(service.rows()[0].id, { move: 'normal' });
+    fixture.detectChanges();
+    const select = el.querySelector<HTMLSelectElement>('.formula__field--hit select')!;
+    const skill = [...select.options].find((o) => o.textContent?.trim() === 'Skill DMG')!;
+    select.value = skill.value;
+    select.dispatchEvent(new Event('change'));
+    expect(service.rows()[0].move).toBe('skill');
+  });
+});
+
 describe('FormulaLabel', () => {
   it('says formula estimate, no simulation, and never DPS', () => {
     TestBed.configureTestingModule({ imports: [FormulaLabel] });
