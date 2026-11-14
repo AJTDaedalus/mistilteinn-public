@@ -92,6 +92,20 @@ AMPLIFYING_REACTIONS: tuple[str, ...] = ("vaporize", "reverse_vaporize", "melt",
 #: - `base_dmg_bonus` — added to the hit's base-damage multiplier on its talent term (GO
 #:   `baseMulti`: `talent × stat × (1 + x)`), the `baseDamageBonus` the single-hit kernel
 #:   already carries (Neuvillette's A1, Skirk's A4).
+#: - `dmg_bonus_from_hp` — DMG% of `value` × the **hit owner's own** total HP, per candidate:
+#:   Furina's A4 on her Salon members (GO `min(prod(final.hp, 1 / 1000, percent(x)), max)`).
+#: - `crit_rate_from_em` — CRIT Rate of `value` × the hit owner's own total EM, per candidate:
+#:   Nahida's A4 on Tri-Karma (GO `prod(percent(x), min(max(final.eleMas - 200, 0), 800))`).
+#: - `flat_atk_from_hp` — flat ATK of `value` × the hit owner's own total HP, per candidate:
+#:   Hu Tao's Guide to Afterlife (GO `ownBuff.premod.atk.add(min(prod(percent(x),
+#:   own.premod.hp), prod(percent(max), own.base.atk)))`).
+#:
+#: **Capped self-conversions** (owner ruling 2026-11-14, `DECISIONS.md` §40). Each `*_from_*`
+#: stat a giver who is the subject emits may carry a `threshold` (the stat counts only above
+#: it) and a `cap` (the most the term can grant, in the term's own units), and the recipe prices
+#: `min(value × max(stat - threshold, 0), cap)` per candidate. A min of a monotone term is
+#: monotone, so the search's bound stays sound. `dmg_bonus_from_energy_recharge` always has a
+#: cap (Emblem); the others carry one only when the kit says so.
 EffectStat = Literal[
     "atk_pct", "hp_pct", "def_pct", "elemental_mastery", "energy_recharge",
     "crit_rate", "crit_dmg",
@@ -102,7 +116,17 @@ EffectStat = Literal[
     "flat_atk", "dmg_bonus_from_em",
     "flat_def", "def_reduction", "def_ignore",
     "flat_atk_from_def", "base_atk", "base_dmg_bonus",
+    "dmg_bonus_from_hp", "crit_rate_from_em", "flat_atk_from_hp",
 ]
+
+#: The per-candidate conversions a kit whose giver is the subject emits: each may carry a
+#: `threshold` and a `cap` (`DECISIONS.md` §40). Emblem's Energy Recharge conversion is a set
+#: bonus with a cap of its own and no threshold.
+CAPPABLE_CONVERSIONS: frozenset[str] = frozenset({
+    "dmg_bonus_from_em", "dmg_bonus_from_hp", "crit_rate_from_em",
+    "flat_atk_from_def", "flat_atk_from_hp",
+    "flat_damage_from_atk", "flat_damage_from_hp", "flat_damage_from_def", "flat_damage_from_em",
+})
 
 #: Stats that are kernel quantities and so can also travel in a set-bonus pool.
 POOL_STATS: frozenset[str] = frozenset({
@@ -220,8 +244,11 @@ class Effect(_Model):
     #: Multiply by a count of teammates (Gilded Dreams), capped at `per_team_max`.
     per_team: Literal["same_element_others", "different_element"] | None = None
     per_team_max: int | None = None
-    #: `dmg_bonus_from_energy_recharge`: the most it can grant.
+    #: `dmg_bonus_from_energy_recharge` (always) or a capped self-conversion (Hu Tao's ATK from
+    #: HP, Nahida's A4): the most it can grant, in the term's own units, after any `per`.
     cap: float | None = None
+    #: A self-conversion's stat counts only above this (Nahida's A4, EM above 200).
+    threshold: float | None = None
     #: Applies only to a wearer of one of these weapon classes (`WeaponType` values).
     weapon_types: tuple[str, ...] | None = None
 
@@ -242,12 +269,21 @@ class Effect(_Model):
             raise ValueError(f"only a reaction bonus names reactions, not {self.stat}")
         if self.stat == "enemy_res" and self.elements is None and self.element_from is None:
             raise ValueError("a resistance shred names its element")
-        if (self.stat == "dmg_bonus_from_energy_recharge") != (self.cap is not None):
-            raise ValueError("a cap belongs to, and only to, an Energy Recharge conversion")
         if self.by_stack is not None and self.per is None:
             raise ValueError("`by_stack` needs the stacks condition it reads (`per`)")
         if (self.per_team is None) != (self.per_team_max is None):
             raise ValueError("`per_team` and `per_team_max` come together")
+        return self
+
+    @model_validator(mode="after")
+    def _capped(self) -> Effect:
+        if self.stat == "dmg_bonus_from_energy_recharge" and self.cap is None:
+            raise ValueError("an Energy Recharge conversion carries its cap")
+        if (self.cap is not None and self.stat != "dmg_bonus_from_energy_recharge"
+                and self.stat not in CAPPABLE_CONVERSIONS):
+            raise ValueError(f"a cap belongs to a per-candidate conversion, not {self.stat}")
+        if self.threshold is not None and self.stat not in CAPPABLE_CONVERSIONS:
+            raise ValueError(f"a threshold belongs to a self-conversion, not {self.stat}")
         return self
 
 

@@ -94,11 +94,13 @@ DPS = {"skirk", "neuvillette", "kamisato_ayaka", "noelle", "mavuika", "kuki_shin
 #: Task 11, fifth batch: the next popular DPS characters without a sheet, in the owner's order.
 DPS2 = {"hu_tao", "arlecchino", "clorinde", "navia", "wriothesley", "lyney", "yoimiya", "ganyu",
         "eula", "arataki_itto", "cyno"}
+#: Written with the capped self-conversions (DECISIONS §40), whose A4s are exactly that shape.
+CAPPED = {"alhaitham", "tighnari"}
 
 
 def test_every_sheet_loads_and_is_named_after_its_slug():
     assert {s.slug for s in sheets.all_sheets().values()} == {
-        "bennett", "kaedehara_kazuha", *UNGATED, *BUFFERS, *BATCH4, *DPS, *DPS2}
+        "bennett", "kaedehara_kazuha", *UNGATED, *BUFFERS, *BATCH4, *DPS, *DPS2, *CAPPED}
 
 
 def test_every_sheet_is_cited_to_the_pinned_go_and_gcsim_commits():

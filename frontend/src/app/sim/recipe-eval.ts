@@ -29,10 +29,12 @@
 
 import { amplifyingMultiplier } from './damage';
 import {
+  cappedAmount,
   effectiveCritRate,
   type ConversionSource,
   type ConversionTerm,
   type FormulaMove,
+  type PercentTerm,
   type Recipe,
   type RecipeHit,
   type TripleStat,
@@ -129,7 +131,10 @@ function resolvedTerm(
 ): number {
   const conversion = hit.conversions[term];
   if (conversion === undefined) return frozen;
-  return conversion.perUnit * rawTotal(hit, stats, conversion.from) + (conversion.offset ?? 0);
+  return cappedAmount(
+    conversion.perUnit, rawTotal(hit, stats, conversion.from), conversion.threshold,
+    conversion.cap,
+  ) + (conversion.offset ?? 0);
 }
 
 /**
@@ -173,9 +178,11 @@ export function evaluateHit(hit: RecipeHit, stats: CandidateStats): number {
   const bonus = hit.bonusDmg + (stats.elementBonus[hit.element] ?? 0) + stats.allElementBonus
     + (hit.move === undefined ? 0 : (stats.moveBonus?.[hit.move] ?? 0))
     + energyRechargeBonus(hit, stats)
-    + (hit.bonusFromEm ?? 0) * em;
+    + (hit.bonusFromEm ?? 0) * em
+    + converted(hit, stats, 'bonusDmg');
   const preCrit = base * (1 + bonus) * hit.defMultiplier * hit.resMultiplier;
-  const crit = 1 + effectiveCritRate(hit.critRate + stats.critRate) * (hit.critDmg + stats.critDmg);
+  const critRate = hit.critRate + stats.critRate + converted(hit, stats, 'critRate');
+  const crit = 1 + effectiveCritRate(critRate) * (hit.critDmg + stats.critDmg);
   // The amplifying multiplier follows the candidate's EM, through the same function the
   // single-hit kernel calls — for a gcsim recipe too, from the reaction its `calc` named. Only
   // a hit whose reaction could not be named keeps gcsim's frozen total.
@@ -183,6 +190,21 @@ export function evaluateHit(hit: RecipeHit, stats: CandidateStats): number {
     ? hit.ampMultiplier
     : amplifyingMultiplier(hit.amplifying.reaction, em, hit.amplifying.reactionBonus);
   return preCrit * crit * amp;
+}
+
+/**
+ * The hit's capped self-conversions into one percentage term (`RecipeHit.statConversions`),
+ * each from the hit owner's own total — the same `rawTotal` a resolved flat conversion reads —
+ * and each capped on its own (owner ruling 2026-11-14, `DECISIONS.md` §40).
+ */
+function converted(hit: RecipeHit, stats: CandidateStats, into: PercentTerm): number {
+  if (hit.statConversions === undefined) return 0;
+  let total = 0;
+  for (const c of hit.statConversions) {
+    if (c.into !== into) continue;
+    total += cappedAmount(c.perUnit, rawTotal(hit, stats, c.from), c.threshold, c.cap);
+  }
+  return total;
 }
 
 /** Emblem's `min(cap, rate × ER)`, ER being the hit's own plus the candidate's. */

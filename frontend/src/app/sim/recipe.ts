@@ -97,6 +97,29 @@ export interface ResolvedConversion {
    * Noelle's ATK from DEF lands in flat ATK, where Bennett's burst already sits (P2, task 11).
    */
   offset?: number;
+  /**
+   * A formula recipe's capped self-conversion (`cappedAmount`): the converted part is
+   * `min(perUnit × max(source − threshold, 0), cap)` before `offset` is added. Absent on every
+   * probe-resolved conversion, which is linear. Hu Tao's ATK from her Max HP (capped at 400% of
+   * her base ATK), Clorinde's A1 flat damage from her ATK (capped at 1,800).
+   */
+  threshold?: number;
+  cap?: number;
+}
+
+/**
+ * A percentage term converted from the hit owner's own stat, per candidate, with an optional
+ * threshold and cap — `cappedAmount` again. Formula recipes only: Nahida's A4 (DMG% and CRIT
+ * Rate from EM above 200, capped at 80% / 24%), Furina's A4 (Salon DMG% from HP, capped at 28%),
+ * Alhaitham's and Tighnari's A4 (DMG% from EM, capped). Each is evaluated on its own, never
+ * summed with another before its cap: `min(a, x) + min(b, y)` is not `min(a + b, x + y)`.
+ */
+export interface StatConversion {
+  into: PercentTerm;
+  from: ConversionSource;
+  perUnit: number;
+  threshold?: number;
+  cap?: number;
 }
 
 /** One damage instance, decomposed. */
@@ -244,6 +267,8 @@ export interface RecipeHit {
    * teammate's EM is a number the server resolves, the subject's moves with every candidate.
    */
   bonusFromEm?: number;
+  /** Capped self-conversions into DMG% or CRIT Rate (`StatConversion`), each priced alone. */
+  statConversions?: StatConversion[];
 }
 
 /** The moves a set bonus can be scoped to. `formula_effects.MOVES` on the server. */
@@ -546,6 +571,26 @@ interface DamageLog {
  */
 export function effectiveCritRate(critRate: number): number {
   return Math.min(Math.max(critRate, 0), 1);
+}
+
+/**
+ * A capped self-conversion's amount at one total of its source stat:
+ * `min(perUnit × max(stat − threshold, 0), cap)`, an absent threshold 0 and an absent cap none.
+ *
+ * Owner ruling 2026-11-14 (`docs/DECISIONS.md` §40): a formula estimate prices Hu Tao's ATK
+ * from HP, Nahida's A4 and their kin **exactly per build**. The shape is GO's — `min(prod(x,
+ * stat), max)` (`pando HuTao.ts:104-112`), `min(max(sum(eleMas, -200), 0), 800)` (`Nahida.ts:
+ * 184-186`) — and it is **non-decreasing in `stat`** for a non-negative `perUnit`: a `max` with 0
+ * and a `min` with a constant both preserve monotonicity. That is what keeps `searchRecipe`'s
+ * bound admissible: more of the source stat never lowers the term, so the optimistic
+ * completion still dominates every real one.
+ */
+export function cappedAmount(
+  perUnit: number, stat: number, threshold?: number, cap?: number,
+): number {
+  const counted = threshold === undefined ? stat : Math.max(stat - threshold, 0);
+  const amount = perUnit * counted;
+  return cap === undefined ? amount : Math.min(amount, cap);
 }
 
 /**

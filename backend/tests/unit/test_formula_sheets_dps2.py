@@ -160,14 +160,20 @@ def test_an_offset_belongs_to_a_plain_parameter():
 # ── Hu Tao: the capped conversion is named, C2 moves with her HP ─────────────────────────
 
 
-def test_hu_tao_names_her_capped_skill_conversion_and_converts_c2_per_candidate():
+def test_hu_tao_prices_her_capped_skill_conversion_and_converts_c2_per_candidate():
+    """Her Guide to Afterlife ATK from Max HP was named and withheld here until the owner's
+    2026-11-14 ruling (DECISIONS §40); now a capped conversion (`test_formula_sheets_capped`)."""
     hu = _sheet("hu_tao")
-    kit = sheets.resolve(hu, _giver(hu, constellation=6), giver_is_subject=True)
-    assert "capped conversion of her own Max HP" in _unmodelled(kit)
-    assert "DECISIONS §39" in _unmodelled(kit)
-    assert [(e.stat, e.moves, e.value) for e in kit.bonus.effects
+    rows = {("elemental_skill", 13): (["ATK Increase|{param2:F2P} Max HP"],
+                                      [0.3, 0.07153, 1.36, 8.0, 9.0, 16.0, 4.0])}
+    kit = sheets.resolve(hu, _giver(hu, constellation=6, rows=rows,
+                                    levels={"elemental_skill": 10}, base_atk=715.0),
+                         giver_is_subject=True)
+    assert "capped conversion" not in _unmodelled(kit)
+    assert [(e.stat, e.moves, e.value, e.cap) for e in kit.bonus.effects
             if e.stat.startswith("flat")] == [
-        ("flat_damage_from_hp", ("skill",), hu.pins.constellations[2][0])]
+        ("flat_atk_from_hp", None, 0.07153, pytest.approx(4.0 * 715.0)),
+        ("flat_damage_from_hp", ("skill",), hu.pins.constellations[2][0], None)]
     # A1 and C4 are for her teammates; C6 is her own.
     assert _by_key(kit, hu)["crit_rate"] == [hu.pins.constellations[6][3]]
 
@@ -183,10 +189,14 @@ def test_hu_taos_a1_and_c4_reach_her_teammates_off_by_default():
 # ── Clorinde: the capped A1 named; C4 per Bond of Life ───────────────────────────────────
 
 
-def test_clorinde_names_her_capped_a1_and_reads_c4_per_point():
+def test_clorinde_prices_her_capped_a1_and_reads_c4_per_point():
     clorinde = _sheet("clorinde")
     kit = sheets.resolve(clorinde, _giver(clorinde, constellation=6), giver_is_subject=True)
-    assert "capped conversion of her own ATK" in _unmodelled(kit)
+    assert "capped conversion" not in _unmodelled(kit)
+    # At C6 the C2 numbers replace A1's, once on her burst and once on her Night Vigil rows.
+    assert sorted((e.value, e.cap) for e in kit.bonus.effects
+                  if e.stat == "flat_damage_from_atk") == [
+        (clorinde.pins.constellations[2][1], clorinde.pins.constellations[2][0])] * 2
     [c4] = [e for e in kit.bonus.effects if e.per == "bond"]
     assert (c4.stat, c4.moves, c4.value) == ("dmg_bonus", ("burst",),
                                              clorinde.pins.constellations[4][0])

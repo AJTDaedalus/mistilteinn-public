@@ -1,0 +1,310 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Tighnari",
+ "nanoka_id": "10000069",
+ "slug": "tighnari",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Tighnari.ts",
+  "wr": "libs/gi/sheets/src/Characters/Tighnari/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/tighnari/",
+ "verified_by": [
+  "tighnari_a1_a4_below_cap_on_his_own_wreath",
+  "tighnari_a4_past_cap_c2_on_his_own_wreath",
+  "tighnari_c4_react_on_xiangling"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:Tighnari.ts:123-124",
+   "gcsim": "tighnari.go:21"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:Tighnari.ts:123,125",
+   "gcsim": "tighnari.go:22"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "1": [
+    0.15,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "2": [
+    0.2,
+    6.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    60.0,
+    8.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    50.0,
+    4.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.0006,
+    0.6,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "wreath",
+   "label": "After he fires a Wreath Arrow (A1)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Tighnari.ts:89,92-94"
+  },
+  {
+   "key": "enemy_in_field",
+   "label": "An opponent is inside his Vijnana-Khanda Field (C2)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:Tighnari.ts:89,108-110"
+  },
+  {
+   "key": "c4",
+   "label": "After his burst (C4): 'after' alone, or 'react' when it also triggered a Dendro reaction",
+   "kind": "choice",
+   "default_by": "situational",
+   "options": [
+    "after",
+    "react"
+   ],
+   "go": "pando:Tighnari.ts:90,111-118"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a1_em",
+   "label": "A1 Keen Sight: Elemental Mastery after a Wreath Arrow",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "passive": 1,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "wreath",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Tighnari.ts:58-61,92-94,127",
+   "gcsim": "asc.go:11-24"
+  },
+  {
+   "key": "a4_charged_burst",
+   "label": "A4 Scholarly Blade: Charged Attack and burst DMG per point of his EM, capped",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "elemental_mastery",
+    "cap": {
+     "passive": 4,
+     "param": 1
+    }
+   },
+   "moves": [
+    "charged",
+    "burst"
+   ],
+   "go": "pando:Tighnari.ts:62-65,95-102,128-129",
+   "gcsim": "asc.go:26-48"
+  },
+  {
+   "key": "c1_crit",
+   "label": "C1 Beginnings Determined at the Roots: Charged Attack CRIT Rate",
+   "source": "c1",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "value": {
+    "constellation": 1,
+    "param": 0
+   },
+   "moves": [
+    "charged"
+   ],
+   "go": "pando:Tighnari.ts:66-68,103-107,130",
+   "gcsim": "cons.go:13-16"
+  },
+  {
+   "key": "c2_dendro",
+   "label": "C2 Origins Known From the Stem: Dendro DMG while an opponent is in his field",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "dendro"
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "enemy_in_field",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Tighnari.ts:69-72,108-110,131",
+   "gcsim": "cons.go:28-46"
+  },
+  {
+   "key": "c4_em",
+   "label": "C4 Withering Glimpsed in the Leaves: party Elemental Mastery after his burst",
+   "source": "c4",
+   "receivers": "team",
+   "stat": "elemental_mastery",
+   "value": {
+    "constellation": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "c4",
+     "values": [
+      "after",
+      "react"
+     ]
+    }
+   ],
+   "go": "pando:Tighnari.ts:73-76,111-118,132",
+   "gcsim": "cons.go:49-69"
+  },
+  {
+   "key": "c4_em_react",
+   "label": "C4 Withering Glimpsed in the Leaves: the same again when the burst triggered a reaction",
+   "source": "c4",
+   "receivers": "team",
+   "stat": "elemental_mastery",
+   "value": {
+    "constellation": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "c4",
+     "values": [
+      "react"
+     ]
+    }
+   ],
+   "go": "pando:Tighnari.ts:73-76,111-118,132",
+   "gcsim": "cons.go:71-100"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Breakthrough Barb: Wreath and Clusterbloom Arrows are Charged Attacks",
+   "reason": "their rows' move is not derived from the label (`suggestMove`): set it to charged for A4 and C1 to reach them"
+  },
+  {
+   "source": "talent",
+   "what": "Vijnana-Phala Mine: Vijnana Penetrator state",
+   "reason": "no damage effect itself: it shortens the Wreath Arrow's charge time"
+  },
+  {
+   "source": "c6",
+   "what": "Karma Adjudged From the Leaden Fruit: Wreath Arrow charge time, and an extra Clusterbloom Arrow",
+   "reason": "charge time has no per-hit damage effect; the extra arrow is a damage instance, not a buff: not offered as a target row yet"
+  }
+ ]
+}

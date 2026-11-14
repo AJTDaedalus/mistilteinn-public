@@ -1443,7 +1443,9 @@ priced — see the open questions below.
 
 **Open questions from that fix, for the owner:**
 
-- **Should a capped EM → DMG% / CRIT Rate conversion be priced?** Nahida's A4 (0.1 % DMG and
+- **Should a capped EM → DMG% / CRIT Rate conversion be priced?** *Answered 2026-11-14 (§40):
+  in the formula estimate, yes, exactly per build; gcsim-calibrated recipes keep reporting it, as
+  below.* Nahida's A4 (0.1 % DMG and
   0.03 % CR per EM above 200, capped at 80 % / 24 %) is about half of what EM is worth to
   Tri-Karma. The probe now *sees* it and the recipe reports it as stale `bonusDmg` / `critRate`.
   Pricing it at the probe's slope would be exact between the threshold and the cap and would
@@ -1459,3 +1461,47 @@ priced — see the open questions below.
   does not publish for catalyze) — a feature, not a follow-up.
 - **Found on the way, fixed:** a bloom's self-damage (a `calc` against target 0, the player) was
   carried as damage dealt and replayed as NaN. Recipes now drop it.
+
+## 40. Six rulings on the formula estimate's kits, and capped self-conversions priced per build (2026-11-14)
+
+The owner ruled on the open edges of math-fallback P2 (`DESIGN_team_math_fallback.md` §2.6,
+fifth batch) and on §39's open question.
+
+- **(i) Capped self-conversions are priced exactly per build in the formula estimate.** *"Price
+  exactly per build."* A kit value that reads the optimized character's own artifact-moved stat
+  through a cap or a threshold is `min(k × max(stat − threshold, 0), cap)`, computed for each
+  candidate build, where it used to be withheld by name. **gcsim-calibrated recipes are
+  unchanged**: they keep reporting such a term as unpriced (stale `bonusDmg` / `critRate`),
+  because a two-point probe sees a slope and not the cap — the reason §39 left it open. The
+  formula estimate has no such problem: its cap is read from the sheet and exact. **Built on
+  `feat/formula-capped-conversions`**: Hu Tao's Guide to Afterlife (ATK from Max HP, capped at
+  400% of base ATK), Clorinde's A1 and C2, Nahida's A4 (DMG% and CRIT Rate above 200 EM, 800
+  counted), Furina's A4 (Salon DMG% from HP, capped at 28%), and Xianyun's A4 on her own plunges
+  (its stat cap, previously withheld for the same reason); Alhaitham and Tighnari, skipped for
+  exactly this shape, now have full sheets. Each has a GO fixture below its cap and one past it,
+  all agreeing with GO exactly. The shape is non-decreasing in its stat, so the search bound
+  stays admissible (a spec shows bounded == exhaustive with the cap deciding the winner).
+  **Still withheld:** Nahida's A1 on herself (the party's highest EM, which includes her own, into
+  her own EM: a conversion *into* EM, not this shape) and Chevreuse's A4 on herself (ATK% from
+  HP, a pair the recipe does not carry).
+- **(ii) Teammate kit buffs and the main situational self-buffs will default ON at their usual
+  values.** This amends §39 (i)'s "situational off" for those cases: a formula estimate with every
+  teammate's buff off by default answers a question nobody asks. **Being built on a later
+  branch**; until it lands §39 (i) stands as written, and this branch follows it (Clorinde's A1
+  stacks, which the party's reactions build, default to 0).
+- **(iii) Cited constants are accepted where the seeded data is zero or wrong.** Confirms what the
+  sheets already do: Xingqiu's A4 and C2, Zhongli's Jade Shield RES shred, Mavuika's A4 (0.002
+  per Fighting Spirit where the seeded list says 0.0001). Each stays a `constant` value citing
+  GO's and gcsim's lines, never a silent number.
+- **(iv) Per-row buff scoping and attack types from the imported per-hit data are approved.** The
+  estimate scopes a buff by move today and by talent row only where a sheet names rows; the
+  per-hit `attack[]` import (task 4) is to supply each row's real attack type and scope, ending
+  the "skill-talent rows that are Normal Attacks" caveats (Skirk, Mavuika, Clorinde, Cyno) and
+  the move-over-row over-reach. **Later branch.**
+- **(v) Stored talent levels are capped at 10, with the boosted level shown.** GOOD's levels
+  exclude constellation boosts (§2.6 rule 6, task 9b); storage keeps that number, at most 10, and
+  the UI shows the effective level beside it. **Parallel branch** (`feat/talent-level-cap`).
+- **(vi) Vodyanitsa's threshold value is approved.** Her A4 (flat damage from her HP above
+  40,000, capped) needs a threshold on a value; the threshold this branch adds to the sheet format
+  (`ValueRef.threshold`) is the mechanism, but her term is flat damage from HP *above a
+  threshold* on top of a cap, and is **built on a later branch** with its own fixture.

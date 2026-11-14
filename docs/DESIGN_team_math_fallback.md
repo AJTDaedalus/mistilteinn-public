@@ -246,8 +246,8 @@ list, her C2 list carries only its duration, and gcsim writes 0.15 (`cons.go:35`
 **Still not added at the second batch, and added in the fourth:** a value from the team's
 **highest** stat (Nahida's A1), a talent row chosen by a team count (Nahida's burst), enemy DEF
 reduction (Nahida's C2) — see the table below. Still not added: a capped conversion of the
-subject's own stat (Furina's A4, Nahida's A4 — the owner's open question in `DECISIONS.md` §39)
-and the Hexerei party mechanic (Sucrose's Witch's Eve Rite, Mona's lock parts).
+subject's own stat (Furina's A4, Nahida's A4 — the owner's open question in `DECISIONS.md` §39,
+priced since §40: see "Capped self-conversions" below) and the Hexerei party mechanic (Sucrose's Witch's Eve Rite, Mona's lock parts).
 
 **Added for the fourth batch (task 11: Nahida, Kujou Sara, Shenhe, Yun Jin, Gorou, Xilonen,
 Xianyun, Mona, Raiden Shogun; Nefer's and Valeriy's raised maxima), each small and tested:**
@@ -365,7 +365,8 @@ the test checks the constant against the seeded parameter). Ganyu's C4 5% per st
   ATK from Max HP (capped at a multiple of base ATK — her main buff, and its cap is a parameter no
   seeded label names), Clorinde's A1 (a share of ATK per stack up to a flat cap, raised by C2).
   Alhaitham's and Tighnari's A4 (DMG% from EM, capped) are the same shape, which is why those two
-  were **skipped** in this batch rather than shipped without their main effect.
+  were **skipped** in this batch rather than shipped without their main effect. *Priced since
+  2026-11-14 (`DECISIONS.md` §40), and both skipped sheets written: see the next table.*
 - **Infusions** (G4): Hu Tao, Arlecchino (at 30% Bond), Navia (A1), Yoimiya, Wriothesley's fist
   is Cryo already, Itto, Clorinde's Night Vigil, Cyno's Pactsworn attacks.
 - **Skill- or burst-talent rows that are Normal Attacks** (as Skirk's): Clorinde's Swift Hunt,
@@ -376,6 +377,52 @@ the test checks the constant against the seeded parameter). Ganyu's C4 5% per st
   the estimate reads the shardshot's base row (GO's default of 0 shots gives the same 1×).
 - **The Hexerei mechanic** (Wriothesley's, Cyno's Stellar parts), damage instances (Arlecchino's
   C2, Clorinde's C1/C6, Lyney's C6, Eula's A1, Yoimiya's C6, Cyno's Duststalker Bolts).
+
+**Capped self-conversions, priced per build (owner ruling 2026-11-14, `DECISIONS.md` §40; branch
+`feat/formula-capped-conversions`; `test_formula_sheets_capped.py`, `capped-conversions.spec.ts`).**
+A kit value read from the optimized character's own artifact-moved stat through a cap or a
+threshold resolves to a per-candidate conversion carrying both, and the recipe prices
+`min(k × max(stat − threshold, 0), cap)` for every candidate (`recipe.ts:cappedAmount`). gcsim
+recipes are untouched: a probe still cannot see a cap, and still reports such a term.
+
+| addition | where | why |
+|---|---|---|
+| `threshold` on a value | `ValueRef`, `Effect`, `FormulaEffect`, `ResolvedConversion`, `StatConversion` | the stat counts only above a pinned parameter (GO `max(sum(final.eleMas, -200), 0)`, Nahida's A4). Applied before `stat_cap`, which then bounds the counted stat (her 800) |
+| `cap_times_stat` on a value | `ValueRef` | the cap times a giver stat (GO `prod(percent(maxAtkInc), own.base.atk)`, Hu Tao's 400% of base ATK). On the subject it must be a static stat, or the cap would move and is withheld |
+| `unnamed` on a talent parameter | `ParamRef` | a row's published parameter no label names, by index, pinned through the row's label: Hu Tao's `params[6]` (GO `skill[6][0]`). Withheld if a seeded label comes to name that index |
+| a cap on a self-conversion | `sheets._effect_node`, `Effect.cap` | was withheld; now the cap travels in the term's units — the `cap` parameter (× `cap_times_stat`), or `stat_cap` × the coefficient, the smaller if both. A `per` multiplies the slope and leaves the cap (Clorinde's A1 caps the stacked total, GO `min(max, prod(ratio, atk, stacks))`) |
+| `flat_atk_from_hp`, `dmg_bonus_from_hp`, `crit_rate_from_em` | `EffectStat`, `SELF_CONVERSIONS` | Hu Tao's skill ATK, Furina's A4, Nahida's A4 CRIT Rate. `flat_atk_from_hp` rides the same resolved flat-ATK conversion as Noelle's from DEF (one per hit); the DMG%/CRIT Rate ones are `RecipeHit.statConversions`, each capped alone — `min(a, x) + min(b, y)` is not `min(a + b, x + y)` — read from the hit owner's own `rawTotal` |
+| a cap on a resolved flat conversion | `ResolvedConversion.cap`/`.threshold` | a row's count folds into the slope and the cap (`n × min(k s, c) = min(n k s, n c)`); a second conversion beside a capped one on the same term is refused |
+
+**The bound.** `cappedAmount` is non-decreasing in its stat for a non-negative slope (a `max` with
+0 and a `min` with a constant both keep monotonicity), so the optimistic completion still
+dominates every real one and `searchRecipe` stays exact; `liveQuantitiesFor` keeps each
+conversion's source live. `capped-conversions.spec.ts` shows bounded == exhaustive over 243
+combinations with the cap deciding the winner (a mix of EM or HP pieces and others, where the
+uncapped recipe would go all-in), for Nahida's shape and Hu Tao's.
+
+**Planted errors** (`formula:verify`): every fixture with a capped conversion states `cap_state`;
+ignoring the cap must fail a `past` figure and change nothing on a `below` one; freezing the stat
+at the zero-artifact build must fail wherever the conversion reaches the row; the 1% plant scales
+the cap too. Mutating `cappedAmount` to ignore caps fails all six past-cap fixtures; reading the
+conversions' stat at zero artifacts fails all eight Nahida, Furina, Alhaitham and Tighnari
+fixtures, both sides of the cap.
+
+| sheet | conversion | GO |
+|---|---|---|
+| Hu Tao | Paramita ATK = min(6.256% × premod HP, 4 × base ATK); Paramita a `self` toggle | `pando HuTao.ts:48-56,103-112,144` |
+| Clorinde | A1 flat damage = min(20% × ATK × stacks, 1,800) on her burst (by move) and Night Vigil rows (by row); C2 replaces it with 30% / 2,700 (`max_constellation` / `min_ascension`); stacks situational | `pando Clorinde.ts:62-67,81-84,129-146,164-174,184` |
+| Nahida | A4 DMG% 0.1% and CRIT Rate 0.03% per EM above 200, 800 counted, on Tri-Karma | `pando Nahida.ts:83-87,184-197,246-255` |
+| Furina | A4 Salon DMG% 0.7% per 1,000 HP (a cited unit), capped at 28%, on the three Salon rows | `pando Furina.ts:73-77,143-150,180-191` |
+| Xianyun | A4 on her own plunges (its stat cap, withheld until now) | `pando Xianyun.ts:79-80,122-134` |
+| Alhaitham (new) | A4 0.1% DMG per EM up to 100% on his projections (rows) and burst; C2 EM per Debate stack; C4 EM to the others per mirror consumed, and Dendro DMG per mirror generated (3 − consumed; 3 at C6) as `when`-gated effects; C6 CRIT | `pando Alhaitham.ts` |
+| Tighnari (new) | A4 0.06% DMG per EM up to 60% on Charged Attacks and burst; A1 EM; C1 Charged CRIT Rate; C2 Dendro DMG; C4 party EM, twice on a reaction (two effects, GO `eleMas * 2`) | `pando Tighnari.ts` |
+
+**Still withheld:** Nahida's A1 on herself (a conversion *into* EM from the party's highest, her
+own included), Chevreuse's A4 on herself (ATK% from HP, a pair the recipe does not carry),
+Raiden's and Mona's A4 (a second ER conversion per hit), Vodyanitsa's A4 (§40 (vi), a later
+branch). Alhaitham's C4 Dendro DMG follows GO's pando port, which loses WR's "0 consumed at C6"
+state; said in his sheet.
 
 **Pinned, as `set_effects.json` is.** A constellation or passive list that differs from its pin,
 or a talent row whose label changed or which has no row at the effective level, **withholds

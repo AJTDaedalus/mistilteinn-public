@@ -11,7 +11,9 @@
  "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
  "gcsim": "internal/characters/clorinde/",
  "verified_by": [
-  "clorinde_a4_c4_on_her_own_burst"
+  "clorinde_a4_c4_on_her_own_burst",
+  "clorinde_a1_below_cap_on_her_own_burst",
+  "clorinde_c2_a1_past_cap_on_her_own_burst"
  ],
  "talent_boosts": [
   {
@@ -29,6 +31,18 @@
  ],
  "pins": {
   "constellations": {
+   "2": [
+    2700.0,
+    0.3,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
    "4": [
     0.02,
     2.0,
@@ -55,6 +69,38 @@
    ]
   },
   "passives": {
+   "1": [
+    15.0,
+    1800.0,
+    0.2,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
    "4": [
     1.0,
     1.0,
@@ -91,6 +137,15 @@
  },
  "conditions": [
   {
+   "key": "a1_stacks",
+   "label": "Dark-Shattering Flame stacks: Electro reactions triggered by the party during Night Vigil (A1)",
+   "kind": "stacks",
+   "default_by": "situational",
+   "max": 3,
+   "step": 1,
+   "go": "pando:Clorinde.ts:62-67,107-113"
+  },
+  {
    "key": "bond_changes",
    "label": "Bond of Life changes in Night Vigil (A4 stacks)",
    "kind": "stacks",
@@ -117,6 +172,112 @@
   }
  ],
  "effects": [
+  {
+   "key": "a1_burst",
+   "label": "A1 Dark-Shattering Flame: Last Lightfall DMG + a share of her ATK per stack, the total capped",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "value": {
+    "passive": 1,
+    "param": 2,
+    "times_stat": "atk",
+    "cap": {
+     "passive": 1,
+     "param": 1
+    }
+   },
+   "per": "a1_stacks",
+   "moves": [
+    "burst"
+   ],
+   "max_constellation": 1,
+   "go": "pando:Clorinde.ts:62-67,129-146,164-174,184,197-201",
+   "gcsim": "asc.go:24-34,60-74"
+  },
+  {
+   "key": "a1_vigil",
+   "label": "A1 Dark-Shattering Flame: Swift Hunt and Impale the Night DMG + a share of her ATK per stack, the total capped",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "value": {
+    "passive": 1,
+    "param": 2,
+    "times_stat": "atk",
+    "cap": {
+     "passive": 1,
+     "param": 1
+    }
+   },
+   "per": "a1_stacks",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Swift Hunt DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Impale the Night DMG"
+    }
+   ],
+   "max_constellation": 1,
+   "go": "pando:Clorinde.ts:62-67,129-146,164-174,184,197-201",
+   "gcsim": "asc.go:24-34,60-74"
+  },
+  {
+   "key": "c2_burst",
+   "label": "C2 \"Now, As We Face the Perils of the Long Night\": A1's larger share and cap on Last Lightfall",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "value": {
+    "constellation": 2,
+    "param": 1,
+    "times_stat": "atk",
+    "cap": {
+     "constellation": 2,
+     "param": 0
+    }
+   },
+   "per": "a1_stacks",
+   "moves": [
+    "burst"
+   ],
+   "min_ascension": 1,
+   "go": "pando:Clorinde.ts:81-84,129-146,164-174,184,197-201",
+   "gcsim": "asc.go:24-34,60-74"
+  },
+  {
+   "key": "c2_vigil",
+   "label": "C2 \"Now, As We Face the Perils of the Long Night\": A1's larger share and cap on Swift Hunt and Impale the Night",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "value": {
+    "constellation": 2,
+    "param": 1,
+    "times_stat": "atk",
+    "cap": {
+     "constellation": 2,
+     "param": 0
+    }
+   },
+   "per": "a1_stacks",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Swift Hunt DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Impale the Night DMG"
+    }
+   ],
+   "min_ascension": 1,
+   "go": "pando:Clorinde.ts:81-84,129-146,164-174,184,197-201",
+   "gcsim": "asc.go:24-34,60-74"
+  },
   {
    "key": "a4_crit",
    "label": "A4 Lawful Remuneration: CRIT Rate per Bond of Life change",
@@ -188,16 +349,6 @@
   }
  ],
  "unmodelled": [
-  {
-   "source": "a1",
-   "what": "Dark-Shattering Flame: Normal Attack and burst DMG + a share of her ATK per stack, capped at a flat amount",
-   "reason": "a capped conversion of her own ATK (GO `min(maxDmgInc, prod(atkRatio, final.atk, stacks))`, pando:Clorinde.ts:129-146): the recipe carries no cap on a per-candidate term, the owner's open question on capped self-conversions (DECISIONS \u00a739)"
-  },
-  {
-   "source": "c2",
-   "what": "\"Now, As We Face the Perils of the Long Night\": A1's larger share and cap",
-   "reason": "raises A1, which is not modelled (above)"
-  },
   {
    "source": "talent",
    "what": "Hunter's Vigil: Swift Hunt and Impale the Night are Normal Attacks",

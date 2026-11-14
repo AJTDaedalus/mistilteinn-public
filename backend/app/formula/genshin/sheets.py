@@ -57,7 +57,7 @@ from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.formula.builder import const, min_, prod_, read_, tag_
+from app.formula.builder import const, max_, min_, prod_, read_, sum_, tag_
 from app.formula.genshin import stats, tags
 from app.formula.genshin.formula_effects import (
     AMPLIFYING_REACTIONS,
@@ -147,6 +147,12 @@ SELF_CONVERSIONS: dict[tuple[str, str], EffectStat] = {
     # Noelle's Sweeping Time on herself: ATK from her own DEF (GO `ownBuff.premod.atk.add(
     # prod(own.premod.def, …))`), carried per candidate into every ATK-scaling term.
     ("flat_atk", tags.Q_DEF): "flat_atk_from_def",
+    # The capped self-conversions the owner ruled priced exactly per build (2026-11-14,
+    # `DECISIONS.md` §40): Hu Tao's ATK from her Max HP, Furina's A4 DMG from her Max HP,
+    # Nahida's A4 CRIT Rate from her EM. Each carries its cap and threshold to the recipe.
+    ("flat_atk", tags.Q_HP): "flat_atk_from_hp",
+    ("dmg_bonus", tags.Q_HP): "dmg_bonus_from_hp",
+    ("crit_rate", tags.Q_ELEMENTAL_MASTERY): "crit_rate_from_em",
 }
 
 DefaultBy = Literal["self", "situational", "giver_is_subject"]
@@ -168,6 +174,12 @@ class ParamRef(_Strict):
     param: int | None = None
     talent: str | None = None
     row: str | None = None
+    #: With `talent`: the row's published parameter at this **0-based index**, one that no
+    #: label's format string names (Hu Tao's skill `params[6]`, the 400% base-ATK cap of her
+    #: Guide to Afterlife: GO `skillParam_gen.skill[6][0]`, `maxAtkInc`). `row` still names the
+    #: pinned label the talent was curated against, so a re-seed that changes the row withholds
+    #: it; a seeded row whose labels come to name the index withholds it too.
+    unnamed: int | None = None
 
     @model_validator(mode="after")
     def _one_list(self) -> ParamRef:
@@ -178,8 +190,12 @@ class ParamRef(_Strict):
         if self.talent is not None:
             if self.talent not in TALENTS or not self.row or self.param is not None:
                 raise ValueError("a talent parameter names a talent and a row, not a param")
+            if self.unnamed is not None and self.unnamed < 0:
+                raise ValueError("an unnamed talent parameter is a 0-based index")
         elif self.param is None:
             raise ValueError("a constellation or passive parameter names its index")
+        elif self.unnamed is not None:
+            raise ValueError("`unnamed` indexes a talent row's parameters")
         return self
 
 
@@ -352,6 +368,14 @@ class ValueRef(_Strict):
     #: written as a `base_dmg_bonus`, which adds to the default multiplier of 1 — so the value
     #: is the row less 1 (GO `dmg()`'s `baseMulti` default, `formula/src/data/char/util.ts`).
     offset: Cited | None = None
+    #: With `times_stat`: the stat counts only above this parameter (GO `max(sum(final.eleMas,
+    #: -eleMas_min), 0)`, Nahida's A4 above 200 EM). Applied before `stat_cap`, so a stat cap
+    #: then bounds the **counted** stat (her 800).
+    threshold: ParamRef | None = None
+    #: With `cap`: the cap is multiplied by this giver stat (GO `prod(percent(maxAtkInc),
+    #: own.base.atk)`, Hu Tao's 400% of her base ATK). On a giver who is the subject it must be
+    #: one artifacts do not move, or the cap itself would move and is withheld.
+    cap_times_stat: str | None = None
 
     @model_validator(mode="after")
     def _one_source(self) -> ValueRef:
@@ -391,6 +415,13 @@ class ValueRef(_Strict):
                 raise ValueError("a value reads the giver's stat or the team's highest, not both")
         if self.stat_cap is not None and self.times_stat is None:
             raise ValueError("a stat cap belongs to a value that reads a stat")
+        if self.threshold is not None and self.times_stat is None:
+            raise ValueError("a threshold belongs to a value that reads a stat")
+        if self.cap_times_stat is not None:
+            if self.cap is None:
+                raise ValueError("`cap_times_stat` multiplies a cap")
+            if self.cap_times_stat not in GIVER_STATS:
+                raise ValueError(f"cap_times_stat must be one of {sorted(GIVER_STATS)}")
         if self.offset is not None and (self.times_stat is not None or self.cap is not None
                                         or self.times_team_max is not None):
             raise ValueError("an offset belongs to a plain parameter, not one read with a stat "
@@ -399,7 +430,8 @@ class ValueRef(_Strict):
 
     def params_read(self) -> list[ParamRef]:
         """The extra parameters this value reads besides its own: pinned like it."""
-        return [p for p in (self.times_param, self.cap, self.stat_cap) if p is not None]
+        return [p for p in (self.times_param, self.cap, self.stat_cap, self.threshold)
+                if p is not None]
 
 
 class SheetCondition(_Strict):
@@ -756,10 +788,36 @@ def _number(sheet: Sheet, giver: Giver, ref: ValueRef, *, shift: int = 0) -> flo
 
 
 def _extra(sheet: Sheet, giver: Giver, extra: ParamRef) -> float:
+    if extra.unnamed is not None:
+        return _unnamed_parameter(sheet, giver, extra)
     return _parameter(sheet, giver, ValueRef(
         constellation=extra.constellation, passive=extra.passive, param=extra.param,
         talent=extra.talent, row=extra.row,
     ))
+
+
+def _unnamed_parameter(sheet: Sheet, giver: Giver, ref: ParamRef) -> float:
+    """A talent row's parameter that no label names, by index, at the giver's effective level:
+    only while the row's pinned label is unchanged and no seeded label has come to name it."""
+    talent = ref.talent or ""
+    level = effective_level(sheet, giver, talent)
+    row = giver.talent_rows.get((talent, level))
+    if row is None:
+        raise _Withheld(f"{talent} has no published row at level {level}")
+    pinned = {lab.split("|", 1)[0]: lab for lab in sheet.pins.talent_rows[talent]}
+    found = next((lab for lab in row.labels if lab.split("|", 1)[0] == ref.row), None)
+    if found is None or found != pinned[ref.row or ""]:
+        raise _Withheld(f"{talent} row {ref.row!r} changed since curation: pinned "
+                        f"{pinned[ref.row or '']!r}, seeded {found!r}")
+    index = ref.unnamed or 0
+    named = {int(n) - 1 for lab in row.labels if "|" in lab
+             for n in _PARAM.findall(lab.split("|", 1)[1])}
+    if index in named:
+        raise _Withheld(f"{talent} param{index + 1} is named by a seeded label now; read it by "
+                        "that label instead")
+    if index >= len(row.params):
+        raise _Withheld(f"{talent} has no param{index + 1} at level {level}")
+    return float(row.params[index])
 
 
 def _talent_parameter(sheet: Sheet, giver: Giver, ref: ValueRef, *, shift: int) -> float:
@@ -857,6 +915,8 @@ def _value_node(
     elif ref.times_stat is not None:
         unit = 1.0 if ref.stat_unit is None else 1.0 / ref.stat_unit.constant
         stat = GIVER_STATS[ref.times_stat]
+        if ref.threshold is not None:
+            stat = max_(sum_(stat, const(-_extra(sheet, giver, ref.threshold))), const(0.0))
         if ref.stat_cap is not None:
             stat = min_(stat, const(_extra(sheet, giver, ref.stat_cap)))
         node = prod_(factor, const(unit), stat)
@@ -865,14 +925,35 @@ def _value_node(
             return prod_(factor, const(1.0 / ref.stat_unit.constant))
         return factor
     if ref.cap is not None:
-        node = min_(node, const(_extra(sheet, giver, ref.cap)))
+        node = min_(node, _cap_node(sheet, giver, ref))
     return node
+
+
+def _cap_node(sheet: Sheet, giver: Giver, ref: ValueRef) -> AnyNode:
+    """A value's cap: its parameter, times a giver stat where it names one (Hu Tao's 400% of
+    her base ATK, GO `prod(percent(maxAtkInc), own.base.atk)`)."""
+    assert ref.cap is not None
+    cap = const(_extra(sheet, giver, ref.cap))
+    if ref.cap_times_stat is None:
+        return cap
+    return prod_(cap, GIVER_STATS[ref.cap_times_stat])
+
+
+@dataclass(frozen=True, slots=True)
+class _Resolving:
+    """What `_effect_node` hands `resolve`: the stat, its value's node and, for a capped
+    self-conversion, the cap's node (in the term's own units) and the threshold."""
+
+    stat: EffectStat
+    node: AnyNode
+    cap: AnyNode | None = None
+    threshold: float | None = None
 
 
 def _effect_node(
     sheet: Sheet, giver: Giver, effect: SheetEffect, *, giver_is_subject: bool, shift: int = 0,
     team_max: Mapping[str, float] | None = None,
-) -> tuple[EffectStat, AnyNode]:
+) -> _Resolving:
     """The stat an effect writes and the node of its value, for this receiver.
 
     When the giver is the optimized character and the value reads one of their stats that
@@ -880,6 +961,13 @@ def _effect_node(
     candidate. So it becomes the per-candidate conversion the recipe can carry, valued at the
     coefficient alone, or it is withheld by name. The team's highest stat is withheld outright
     for a giver who is the subject: their own value, which moves, may be the highest.
+
+    **A capped or thresholded conversion is priced per candidate** (owner ruling 2026-11-14,
+    `DECISIONS.md` §40): the recipe evaluates `min(coefficient × max(stat − threshold, 0),
+    cap)` for each build. The cap travels in the term's own units — a `cap` parameter (times a
+    static giver stat, Hu Tao's base ATK), or a `stat_cap` on the counted stat turned into one
+    (Nahida's 800 EM × 0.1% = 80%), the smaller where both are given. A cap that would itself
+    move with the candidate is still withheld.
     """
     if giver_is_subject and effect.value.times_team_max is not None:
         msg = (
@@ -890,25 +978,34 @@ def _effect_node(
         raise _Withheld(msg)
     reads = effect.value.times_stat
     if not (giver_is_subject and reads is not None and reads not in STATIC_STATS):
-        return effect.stat, _value_node(sheet, giver, effect, shift=shift, team_max=team_max)
+        return _Resolving(effect.stat, _value_node(sheet, giver, effect, shift=shift,
+                                                   team_max=team_max))
+    ref = effect.value
     converted = SELF_CONVERSIONS.get((effect.stat, reads))
-    if converted is not None and (effect.value.cap is not None
-                                  or effect.value.stat_cap is not None):
-        msg = (
-            f"it reads {sheet.character}'s own {reads}, which moves with every candidate, "
-            "through a cap the recipe cannot carry per candidate"
-        )
-        raise _Withheld(msg)
     if converted is None:
         msg = (
             f"it reads {sheet.character}'s own {reads}, which moves with every candidate, and "
             f"the recipe cannot carry {effect.stat} from {reads} per candidate yet"
         )
         raise _Withheld(msg)
+    if ref.cap_times_stat is not None and ref.cap_times_stat not in STATIC_STATS:
+        msg = (
+            f"its cap reads {sheet.character}'s own {ref.cap_times_stat}, which moves with every "
+            "candidate, so the cap itself would move"
+        )
+        raise _Withheld(msg)
     # A unit is a constant divisor (GO `prod(percent(x), stat, 1 / 100)`), so the per-candidate
     # coefficient carries it: Arlecchino's Masque per Bond of Life percentage point.
-    unit = 1.0 if effect.value.stat_unit is None else effect.value.stat_unit.constant
-    return converted, const(_number(sheet, giver, effect.value, shift=shift) / unit)
+    unit = 1.0 if ref.stat_unit is None else ref.stat_unit.constant
+    coefficient = _number(sheet, giver, ref, shift=shift) / unit
+    caps: list[AnyNode] = []
+    if ref.cap is not None:
+        caps.append(_cap_node(sheet, giver, ref))
+    if ref.stat_cap is not None:
+        caps.append(const(coefficient * _extra(sheet, giver, ref.stat_cap)))
+    cap = None if not caps else caps[0] if len(caps) == 1 else min_(*caps)
+    threshold = None if ref.threshold is None else _extra(sheet, giver, ref.threshold)
+    return _Resolving(converted, const(coefficient), cap, threshold)
 
 
 def _team_shift(
@@ -1035,26 +1132,21 @@ def resolve(
                 # Like a locked constellation: this receiver is not one the effect reaches.
                 continue
             by_stack = _stack_table(sheet, giver, effect) if effect.by_stack else None
-            stat, node = _effect_node(sheet, giver, effect, giver_is_subject=giver_is_subject,
-                                      shift=shift, team_max=team_max)
-            # Registered under `{sheet, name}` and evaluated with both cleared, so the
-            # formula's own stat reads gather the giver's stats — and not, through the subset
-            # rule, the formula itself (a read under `{sheet, name, q}` would match it).
-            giver.registry.register(
-                tags.formula_tag(sheet.slug, effect.key), tag_(node, _CLEAR_FORMULA),
-            )
-            value = factor * float(calculator.compute(
-                read_(tags.formula_tag(sheet.slug, effect.key), "unique"),
-            ))
+            made = _effect_node(sheet, giver, effect, giver_is_subject=giver_is_subject,
+                                shift=shift, team_max=team_max)
+            value = factor * _evaluate(calculator, giver, sheet, effect.key, made.node)
+            cap = (None if made.cap is None
+                   else _evaluate(calculator, giver, sheet, f"{effect.key}.cap", made.cap))
         except _Withheld as why:
             unmodelled.append(Unmodelled(
                 what=f"{effect.source.upper()}: {effect.label}", reason=f"withheld: {why}",
             ))
             continue
         effects.append(Effect(
-            stat=stat, value=by_stack[-1] if by_stack else value, elements=effect.elements,
-            moves=effect.moves, rows=effect.rows, reactions=effect.reactions, when=effect.when,
-            per=effect.per, by_stack=by_stack,
+            stat=made.stat, value=by_stack[-1] if by_stack else value,
+            elements=effect.elements, moves=effect.moves, rows=effect.rows,
+            reactions=effect.reactions, when=effect.when, per=effect.per, by_stack=by_stack,
+            cap=cap, threshold=made.threshold,
         ))
         used_conditions.update(w.condition for w in effect.when)
         if effect.per is not None:
@@ -1086,6 +1178,18 @@ def resolve(
     )
 
 
+def _evaluate(calculator: Calculator, giver: Giver, sheet: Sheet, name: str,
+              node: AnyNode) -> float:
+    """One sheet formula's value in the giver's context.
+
+    Registered under `{sheet, name}` and evaluated with both cleared, so the formula's own stat
+    reads gather the giver's stats — and not, through the subset rule, the formula itself (a
+    read under `{sheet, name, q}` would match it).
+    """
+    giver.registry.register(tags.formula_tag(sheet.slug, name), tag_(node, _CLEAR_FORMULA))
+    return float(calculator.compute(read_(tags.formula_tag(sheet.slug, name), "unique")))
+
+
 def _stack_table(sheet: Sheet, giver: Giver, effect: SheetEffect) -> tuple[float, ...]:
     """A `by_stack` effect's values at 1, 2, … stacks up to its condition's maximum: the
     list's consecutive entries from the value's own (`SheetEffect.by_stack`)."""
@@ -1109,7 +1213,8 @@ def stats_read(
     team-wide highest a value read is reported as `team_max_<stat>`.
     """
     calculator = Calculator(giver.registry)
-    read = sorted({e.value.times_stat for e in sheet.effects if e.value.times_stat})
+    read = sorted({s for e in sheet.effects
+                   for s in (e.value.times_stat, e.value.cap_times_stat) if s})
     out = {stat: float(calculator.compute(GIVER_STATS[stat])) for stat in read}
     for stat in team_stats_read(sheet):
         if team_max is not None and stat in team_max:

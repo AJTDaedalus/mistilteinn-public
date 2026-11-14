@@ -284,6 +284,13 @@ export function liveQuantitiesFor(...recipes: readonly Recipe[]): string[] {
     for (const conversion of Object.values(hit.conversions)) {
       for (const q of parts[conversion.from]) live.add(q);
     }
+    // A capped self-conversion (Nahida's A4, Furina's A4) reads its source stat on a hit that
+    // may not scale off it. Below its cap the source buys damage; past it, nothing — but a piece
+    // can only be pruned on a quantity the bound sees, and `cappedAmount` is monotone, so the
+    // quantity stays live and the bound stays admissible (DECISIONS §40).
+    for (const conversion of hit.statConversions ?? []) {
+      for (const q of parts[conversion.from]) live.add(q);
+    }
   }
   return [...live].sort();
 }

@@ -11,7 +11,9 @@
  "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
  "gcsim": "internal/characters/hutao/",
  "verified_by": [
-  "hu_tao_a4_c2_on_her_own_blossom"
+  "hu_tao_a4_c2_on_her_own_blossom",
+  "hu_tao_paramita_below_cap_on_her_own_blossom",
+  "hu_tao_paramita_past_cap_on_her_own_blossom"
  ],
  "talent_boosts": [
   {
@@ -28,6 +30,11 @@
   }
  ],
  "pins": {
+  "talent_rows": {
+   "elemental_skill": [
+    "ATK Increase|{param2:F2P} Max HP"
+   ]
+  },
   "constellations": {
    "2": [
     0.1,
@@ -135,6 +142,13 @@
  },
  "conditions": [
   {
+   "key": "paramita",
+   "label": "In Paramita Papilio, her Elemental Skill (ATK from her Max HP)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:HuTao.ts:94-101,104"
+  },
+  {
    "key": "flutter",
    "label": "Paramita Papilio has just ended (A1, to her teammates)",
    "kind": "toggle",
@@ -164,6 +178,34 @@
   }
  ],
  "effects": [
+  {
+   "key": "skill_atk",
+   "label": "Guide to Afterlife: ATK from her Max HP, capped at 400% of her base ATK",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "flat_atk",
+   "value": {
+    "talent": "elemental_skill",
+    "row": "ATK Increase",
+    "times_stat": "hp",
+    "cap": {
+     "talent": "elemental_skill",
+     "row": "ATK Increase",
+     "unnamed": 6
+    },
+    "cap_times_stat": "base_atk"
+   },
+   "when": [
+    {
+     "condition": "paramita",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:HuTao.ts:48-56,103-112,144",
+   "gcsim": "skill.go:33-38"
+  },
   {
    "key": "a1_crit",
    "label": "A1 Flutter By: CRIT Rate to her teammates after Paramita Papilio",
@@ -268,11 +310,6 @@
   }
  ],
  "unmodelled": [
-  {
-   "source": "talent",
-   "what": "Guide to Afterlife: ATK from her Max HP, capped at a multiple of her base ATK",
-   "reason": "a capped conversion of her own Max HP (GO `min(prod(atkInc, premod.hp), prod(maxAtkInc, base.atk))`, pando:HuTao.ts:103-112): the recipe carries no cap on a per-candidate term, which is the owner's open question on capped self-conversions (DECISIONS \u00a739); the cap is also a parameter no seeded row label names"
-  },
   {
    "source": "talent",
    "what": "Guide to Afterlife: Pyro infusion",
