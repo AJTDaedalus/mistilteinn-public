@@ -27286,6 +27286,627 @@
       "go_value": 12517.124775409995,
       "divergence": "none: no reaction",
       "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "fischl_c2_on_her_own_summoning",
+      "covers": "self flat damage from her own ATK scoped to one skill row (C2), per candidate",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Fischl.ts:73-75,136-146"
+      ],
+      "givers": [
+        {
+          "name": "Fischl",
+          "constellation": 2,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "electro",
+        "weapon_type": "WEAPON_BOW",
+        "member_elements": [
+          "electro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 754.0,
+        "atk_pct": 0.24,
+        "flat_atk": 0.0,
+        "base_hp": 9189.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 594.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6,
+        "electro_dmg_bonus": 0.466
+      },
+      "set_pools": [],
+      "channel": "electro",
+      "rows": [
+        {
+          "id": "summon",
+          "label": "Summoning DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Summoning DMG|{param2:P}",
+            "params": [
+              1.5984,
+              2.07792
+            ]
+          },
+          "multiplier": 2.07792,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "hit": {
+            "talent": "elemental_skill",
+            "label": "Summoning DMG"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:fischl",
+          "label": "Fischl (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Fischl.ts (pando), libs/gi/sheets/src/Characters/Fischl/index.tsx (wr) @ 2c13fc40 \u2014 c2_summon pando:Fischl.ts:73-75,136-146; gcsim internal/characters/fischl/ @ b107b5dc",
+          "bonus": {
+            "conditions": [],
+            "effects": [
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 2.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Summoning DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "KIT: Witch's Eve Rite: Phantasmal Nocturne: ATK on Overloaded and EM on Electro-Charged/Lunar-Charged for her and the active character, doubled by C6",
+                "reason": "the Hexerei party mechanic is not modelled (as for Sucrose and Mona)"
+              },
+              {
+                "what": "A1: Stellar Predator: Oz's strike on a Fully-Charged Aimed Shot",
+                "reason": "a damage instance, not a buff: not offered as a target row yet"
+              },
+              {
+                "what": "A4: Undone Be Thy Sinful Hex: Oz's strike on Electro reactions",
+                "reason": "a damage instance, not a buff: not offered as a target row yet"
+              },
+              {
+                "what": "C1: Gaze of the Deep: Oz's strike on her Normal Attacks",
+                "reason": "a damage instance, not a buff: not offered as a target row yet"
+              },
+              {
+                "what": "A0: Mein Hausgarten: an exploration bonus",
+                "reason": "no damage effect"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 5798.917974565434,
+      "go_value": 5798.917974565434,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "mualani_momentum_surging_c1_on_her_own_bite",
+      "covers": "three flat damages from her own Max HP on one skill row GO deals as a Normal Attack (a row move): per Wave Momentum stack (talent row), at three stacks (talent row) and on the first bite (C1), per candidate",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Mualani.ts:42-45,68-71,88-96,111-115,122-132,152-163"
+      ],
+      "givers": [
+        {
+          "name": "Mualani",
+          "constellation": 1,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_skill": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "hydro",
+        "weapon_type": "WEAPON_CATALYST",
+        "member_elements": [
+          "hydro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 616.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 15185.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 569.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.242,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "hp_pct": 0.932,
+        "flat_hp": 4780.0,
+        "flat_atk": 311.0,
+        "hydro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "hydro",
+      "rows": [
+        {
+          "id": "bite",
+          "label": "Sharky's Bite Base DMG",
+          "move": "normal",
+          "count": 1,
+          "talent_row": {
+            "label": "Sharky's Bite Base DMG|{param1:F2P} Max HP",
+            "params": [
+              0.15624
+            ]
+          },
+          "multiplier": 0.15624,
+          "scaling_stat": "hp",
+          "amplifying": null,
+          "conditionals": {},
+          "hit": {
+            "talent": "elemental_skill",
+            "label": "Sharky's Bite Base DMG"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:mualani",
+          "label": "Mualani (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Mualani.ts (pando), libs/gi/sheets/src/Characters/Mualani/index.tsx (wr) @ 2c13fc40 \u2014 wave pando:Mualani.ts:42-44,88-96,122-132,152-155; surging pando:Mualani.ts:42-45,93-96,155; c1_first pando:Mualani.ts:68-71,111-115,156-163; a4_burst_1 pando:Mualani.ts:56-62,97-110,142; a4_burst_2 pando:Mualani.ts:56-62,97-110,142; a4_burst_3 pando:Mualani.ts:56-62,97-110,142; gcsim internal/characters/mualani/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "momentum",
+                "label": "Wave Momentum stacks on the bite: 3 makes it a Surging Bite",
+                "kind": "stacks",
+                "default": 3.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": 3.0,
+                "step": 1.0,
+                "options": null
+              },
+              {
+                "key": "c1_first",
+                "label": "The first Sharky's Bite after she enters her skill's state (C1)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "off: only the first bite of each skill gets it; turn it on for that bite",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "puffer",
+                "label": "Party Nightsoul Bursts before her burst (A4)",
+                "kind": "stacks",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "off: it needs party members to trigger Nightsoul Bursts, which the estimate does not check; set it to how many your party triggers",
+                "max": 3.0,
+                "step": 1.0,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "flat_damage_from_hp",
+                "value": 0.07812,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Sharky's Bite Base DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": "momentum",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_hp",
+                "value": 0.3906,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Sharky's Bite Base DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "momentum",
+                    "values": [
+                      3.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_hp",
+                "value": 0.66,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Sharky's Bite Base DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c1_first",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_hp",
+                "value": 0.15,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "puffer",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_hp",
+                "value": 0.3,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "puffer",
+                    "values": [
+                      2.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_hp",
+                "value": 0.45,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "puffer",
+                    "values": [
+                      3.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Surfshark Wavebreaker: GO prices each stack count as its own bite row",
+                "reason": "the catalogue has one Sharky's Bite row; the Wave Momentum condition carries the stack count there"
+              },
+              {
+                "what": "C1: The Leisurely \"Meztli\"...: GO adds it on the Surging Bite only; gcsim on the first bite of any stack count (cons.go:13-23)",
+                "reason": "its own toggle here, so it applies to the bite you set it on"
+              },
+              {
+                "what": "A0: Night Realm's Gift: Crests and Troughs and The Trick Is to Keep Smiling!: Nightsoul points and exploration",
+                "reason": "no damage effect"
+              },
+              {
+                "what": "A1: Heat-Resistant Freshwater Floater: Nightsoul points",
+                "reason": "no damage effect"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:mualani/momentum": 3,
+        "kit:mualani/c1_first": 1,
+        "kit:mualani/puffer": 0
+      },
+      "expected": 50449.07589992538,
+      "go_value": 50449.07589992538,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "flins_c2_c4_on_his_own_manifest_flame",
+      "covers": "a self ATK% (C4) and an enemy Electro RES decrease published positive and negated, behind two conditions, one a party composition stated on (C2), on a skill row GO deals as a Normal Attack",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Flins.ts:81-91,104-105,124-131,176-177,193-200"
+      ],
+      "givers": [
+        {
+          "name": "Flins",
+          "constellation": 4,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "electro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "electro",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 1018.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12491.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 809.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6,
+        "electro_dmg_bonus": 0.466
+      },
+      "set_pools": [],
+      "channel": "electro",
+      "rows": [
+        {
+          "id": "na1",
+          "label": "1-Hit DMG",
+          "move": "normal",
+          "count": 1,
+          "talent_row": {
+            "label": "1-Hit DMG|{param1:F1P}",
+            "params": [
+              1.048464
+            ]
+          },
+          "multiplier": 1.048464,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:flins",
+          "label": "Flins (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Flins.ts (pando), libs/gi/sheets/src/Characters/Flins/index.tsx (wr) @ 2c13fc40 \u2014 c2_res pando:Flins.ts:81-86,124-130,176; c4_atk pando:Flins.ts:87-91,131,177; gcsim internal/characters/flins/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "c2_hit",
+                "label": "Opponents hit by his Electro DMG after Northland Spearstorm (C2)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "moonsign",
+                "label": "Ascendant Gleam: two or more Moonsign characters in the party",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "off: a party composition the estimate does not check; turn it on if your party has it",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "enemy_res",
+                "value": -0.25,
+                "elements": [
+                  "electro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c2_hit",
+                    "values": [
+                      1.0
+                    ]
+                  },
+                  {
+                    "condition": "moonsign",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "atk_pct",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "KIT: Moonsign Benediction, Symphony of Winter, the burst's Lunar-Charged phases and C6: Lunar-Charged DMG",
+                "reason": "a Lunar reaction's damage, which the estimate does not model yet (P3)"
+              },
+              {
+                "what": "A4: Whispering Flame: EM from his ATK, capped (C4 raises it)",
+                "reason": "a capped conversion of his ATK into EM, which the recipe does not carry; his EM reaches only reaction damage (P3)"
+              },
+              {
+                "what": "TALENT: Ancient Rite: Arcane Light: the Electro infusion in Manifest Flame",
+                "reason": "the skill-talent rows are Electro already; his ordinary Normal Attacks keep their Physical channel"
+              },
+              {
+                "what": "C1: Part the Veil of Snow: Northland Spearstorm cooldown and Energy",
+                "reason": "no damage effect"
+              },
+              {
+                "what": "C2: The Devil's Wall: an extra Electro hit",
+                "reason": "a damage instance, not a buff: not offered as a target row yet"
+              },
+              {
+                "what": "A0: A Light in the Dark: an exploration bonus",
+                "reason": "no damage effect"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:flins/c2_hit": 1,
+        "kit:flins/moonsign": 1
+      },
+      "expected": 2454.719369403598,
+      "go_value": 2454.719369403598,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
     }
   ]
 }

@@ -249,6 +249,73 @@ def _gaming(_: float) -> float:
                 extra_dmg=0.2, extra_cr=0.2, extra_cd=0.4)
 
 
+# ── Fischl: Summoning DMG with C2 ──────────────────────────────────────────────────────────
+
+FISCHL_SUMMON = ("Summoning DMG|{param2:P}", [1.5984, 2.07792])
+FISCHL_BASE = base._base_stats(base_atk=754.0, atk_pct=0.24, base_hp=9189.0, base_def=594.0)
+FISCHL_ARTIFACTS = {**ARTIFACTS, "electro_dmg_bonus": 0.466}
+
+
+def _fischl(_: float) -> float:
+    """**Fischl, C2, on her own Summoning DMG**: 200% of her ATK added to the row's multiplier.
+
+    GO: `skill_summon = prod(sum(summonDmg, cmpGE(constellation, 2, c2)), final.atk)` (`pando
+    Fischl.ts:73-75,136-146`)."""
+    stats = base._stats(FISCHL_BASE, FISCHL_ARTIFACTS)
+    atk = base._total(stats, "atk")
+    return _hit(stats, base_damage=base._multiplier(FISCHL_SUMMON) * atk, flat=2.0 * atk,
+                channel="electro")
+
+
+# ── Mualani: a Surging Bite, the first of her skill (C1) ───────────────────────────────────
+
+MUALANI_SKILL_LABELS = ["Sharky's Bite Base DMG|{param1:F2P} Max HP",
+                        "Wave Momentum DMG Bonus|{param2:F2P} Max HP/Stack",
+                        "Sharky's Surging Bite Additional DMG Bonus|{param3:F2P} Max HP",
+                        "Sharky's Bite CD|{param4:F1}s", "Nightsoul Point Limit|{param5:F1}",
+                        "CD|{param6:F1}s"]
+MUALANI_SKILL_10 = [0.15624, 0.07812, 0.3906, 1.8, 60.0, 6.0]
+MUALANI_BITE = ("Sharky's Bite Base DMG|{param1:F2P} Max HP", [0.15624])
+MUALANI_BASE = base._base_stats(base_atk=616.0, base_hp=15185.0, base_def=569.0,
+                                crit_rate=0.242)
+MUALANI_ARTIFACTS = {"hp_pct": 0.932, "flat_hp": 4780.0, "flat_atk": 311.0,
+                     "hydro_dmg_bonus": 0.466, "crit_rate": 0.3, "crit_dmg": 0.6}
+
+
+def _mualani(_: float) -> float:
+    """**Mualani, C1, on her own Sharky's Bite** at three Wave Momentum stacks (a Surging
+    Bite), the first of her skill: 7.812% of her Max HP per stack, the Surging Bite's 39.06%,
+    and C1's 66%, all added to the bite's base.
+
+    GO: `sharkBite('skill_surgingDmg', surging_bite_dmgInc)` with `surging_bite_dmgInc =
+    sum(prod(3, wave), prod(surgingDmgBonus, final.hp))` (`pando Mualani.ts:88-96,122-132,155`);
+    the C1 row adds `prod(c1, final.hp)` to it (`:111-115,156-163`)."""
+    stats = base._stats(MUALANI_BASE, MUALANI_ARTIFACTS)
+    hp = base._total(stats, "hp")
+    return _hit(stats, base_damage=base._multiplier(MUALANI_BITE) * hp,
+                flat=(3 * 0.07812 + 0.3906 + 0.66) * hp, channel="hydro")
+
+
+# ── Flins: a Manifest Flame 1-Hit, C2 and C4 ───────────────────────────────────────────────
+
+FLINS_NA_1 = ("1-Hit DMG|{param1:F1P}", [1.048464])
+FLINS_BASE = base._base_stats(base_atk=1018.0, base_hp=12491.0, base_def=809.0,
+                              crit_dmg=0.884)
+FLINS_ARTIFACTS = {**ARTIFACTS, "electro_dmg_bonus": 0.466}
+
+
+def _flins(_: float) -> float:
+    """**Flins, C4, on his own Manifest Flame 1-Hit DMG** (a skill row GO deals as an Electro
+    Normal Attack), the opponent hit by his Electro DMG under Ascendant Gleam: C2's Electro RES
+    -25%, C4's 20% ATK.
+
+    GO: `skill_na1` (`pando Flins.ts:193-200`); `c2_electro_enemyRes_` (`:81-86,124-130,176`);
+    `c4_atk_` (`:87-91,131,177`)."""
+    stats = base._stats(FLINS_BASE, FLINS_ARTIFACTS)
+    return _hit(stats, base_damage=base._multiplier(FLINS_NA_1)
+                * base._total(stats, "atk", extra_pct=0.2), channel="electro", res=0.1 - 0.25)
+
+
 def batch8_fixtures() -> list[dict[str, Any]]:
     """Task 11, eighth batch: one fixture per sheet on its main damage effect."""
     fx = base._buffer
@@ -409,4 +476,52 @@ def batch8_fixtures() -> list[dict[str, Any]]:
                      "elemental_skill", "Plunging Attack: Charmed Cloudstrider DMG"),
         b4._kit("10000092", _giver("Gaming", "10000092", 6, GAMING_BASE), subject=True),
         {"kit:gaming/a4_hp": 1, "kit:gaming/c2_overheal": 1}, _gaming))
+
+    out.append(fx(
+        "fischl_c2_on_her_own_summoning",
+        "self flat damage from her own ATK scoped to one skill row (C2), per candidate",
+        [FORMULA, f"{PANDO}Fischl.ts:73-75,136-146"],
+        _subject("Fischl", 2),
+        {"element": "electro", "weapon_type": "WEAPON_BOW",
+         "member_elements": ["electro", "pyro"]},
+        FISCHL_BASE, FISCHL_ARTIFACTS, "electro",
+        b4._with_hit(base._row("summon", "Summoning DMG", "skill", 1, FISCHL_SUMMON, None),
+                     "elemental_skill", "Summoning DMG"),
+        b4._kit("10000031", _giver("Fischl", "10000031", 2, FISCHL_BASE), subject=True),
+        {}, _fischl))
+
+    out.append(fx(
+        "mualani_momentum_surging_c1_on_her_own_bite",
+        "three flat damages from her own Max HP on one skill row GO deals as a Normal Attack "
+        "(a row move): per Wave Momentum stack (talent row), at three stacks (talent row) and "
+        "on the first bite (C1), per candidate",
+        [FORMULA, f"{PANDO}Mualani.ts:42-45,68-71,88-96,111-115,122-132,152-163"],
+        _subject("Mualani", 1, {"elemental_skill": 10}),
+        {"element": "hydro", "weapon_type": "WEAPON_CATALYST",
+         "member_elements": ["hydro", "pyro"]},
+        MUALANI_BASE, MUALANI_ARTIFACTS, "hydro",
+        b4._with_hit(base._row("bite", "Sharky's Bite Base DMG", "normal", 1, MUALANI_BITE,
+                               None),
+                     "elemental_skill", "Sharky's Bite Base DMG"),
+        b4._kit("10000102", _giver("Mualani", "10000102", 1, MUALANI_BASE,
+                                   levels={"elemental_skill": 10},
+                                   rows={("elemental_skill", 10): (MUALANI_SKILL_LABELS,
+                                                                   MUALANI_SKILL_10)}),
+                subject=True),
+        {"kit:mualani/momentum": 3, "kit:mualani/c1_first": 1, "kit:mualani/puffer": 0},
+        _mualani))
+
+    out.append(fx(
+        "flins_c2_c4_on_his_own_manifest_flame",
+        "a self ATK% (C4) and an enemy Electro RES decrease published positive and negated, "
+        "behind two conditions, one a party composition stated on (C2), on a skill row GO deals "
+        "as a Normal Attack",
+        [FORMULA, f"{PANDO}Flins.ts:81-91,104-105,124-131,176-177,193-200"],
+        _subject("Flins", 4),
+        {"element": "electro", "weapon_type": "WEAPON_POLE",
+         "member_elements": ["electro", "hydro"]},
+        FLINS_BASE, FLINS_ARTIFACTS, "electro",
+        base._row("na1", "1-Hit DMG", "normal", 1, FLINS_NA_1, None),
+        b4._kit("10000120", _giver("Flins", "10000120", 4, FLINS_BASE), subject=True),
+        {"kit:flins/c2_hit": 1, "kit:flins/moonsign": 1}, _flins))
     return out

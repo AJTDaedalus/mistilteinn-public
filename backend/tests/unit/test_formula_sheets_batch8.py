@@ -1,5 +1,6 @@
 """Math-fallback P2, task 11 (eighth batch): the small sheets of ordinary buffs — Amber, Xinyan,
-Yanfei, Barbara, Razor, Kaeya, Qiqi, Sayu, Diona, Collei, Yaoyao and Gaming
+Yanfei, Barbara, Razor, Kaeya, Qiqi, Sayu, Diona, Collei, Yaoyao and Gaming — then three of the
+newer kits: Fischl (her non-Hexerei part), Mualani and Flins (his non-Lunar parts)
 (`docs/DESIGN_team_math_fallback.md` §2.6, eighth-batch table). No format extension was needed.
 
 Each sheet's GO agreement on its main effect is `test_go_formula_fixtures.py`'s job (fixtures in
@@ -21,7 +22,7 @@ from app.formula.genshin import sheets
 from tests.unit.test_formula_sheets_batch6 import _giver, _sheet, _unmodelled, _values
 
 BATCH8 = ("amber", "xinyan", "yanfei", "barbara", "razor", "kaeya", "qiqi", "sayu", "diona",
-          "collei", "yaoyao", "gaming")
+          "collei", "yaoyao", "gaming", "fischl", "mualani", "flins")
 
 
 # ── who each kit reaches ────────────────────────────────────────────────────────────────────
@@ -178,11 +179,86 @@ def test_each_new_condition_defaults_by_the_rule(slug, key, subject, value, reas
     ("sayu", "a product of two of her stats"),
     ("yaoyao", "capped conversion of her HP into EM"),
     ("amber", "separate skill row"),
+    ("fischl", "Hexerei"),
+    ("flins", "Lunar"),
 ])
 def test_the_parts_each_kit_leaves_out_are_named(slug, named):
     sheet = _sheet(slug)
     kit = sheets.resolve(sheet, _giver(sheet, constellation=6), giver_is_subject=True)
     assert named in _unmodelled(kit)
+
+
+# ── the newer kits: Fischl, Mualani, Flins ──────────────────────────────────────────────────
+
+MUALANI_SKILL = (["Sharky's Bite Base DMG|{param1:F2P} Max HP",
+                  "Wave Momentum DMG Bonus|{param2:F2P} Max HP/Stack",
+                  "Sharky's Surging Bite Additional DMG Bonus|{param3:F2P} Max HP"],
+                 [0.15624, 0.07812, 0.3906])
+
+
+@pytest.mark.parametrize(("stacks", "first", "slope"), [
+    (0, 0, 0.0),
+    (2, 0, 2 * 0.07812),
+    (3, 0, 3 * 0.07812 + 0.3906),        # a Surging Bite
+    (3, 1, 3 * 0.07812 + 0.3906 + 0.66),
+])
+def test_mualanis_bite_adds_her_hp_per_stack_and_on_a_surging_bite(stacks, first, slope):
+    """GO's four bite rows (`pando Mualani.ts:88-96,152-163`), on the catalogue's one: the
+    subject's conversions that reach it under each state sum to GO's added share of Max HP."""
+    mualani = _sheet("mualani")
+    kit = sheets.resolve(mualani, _giver(mualani, constellation=1,
+                                         levels={"elemental_skill": 10},
+                                         rows={("elemental_skill", 10): MUALANI_SKILL}),
+                         giver_is_subject=True)
+    state = {"momentum": stacks, "c1_first": first}
+    total = 0.0
+    for e in kit.bonus.effects:
+        if e.stat != "flat_damage_from_hp" or e.moves:
+            continue
+        if all(state[w.condition] in w.values for w in e.when):
+            total += e.value * (stacks if e.per else 1)
+    assert total == pytest.approx(slope)
+    assert sheets.row_move("10000102", "elemental_skill", "Sharky's Bite Base DMG") == "normal"
+
+
+@pytest.mark.parametrize(("stacks", "share"), [(1, 0.15), (2, 0.3), (3, 0.45)])
+def test_mualanis_a4_reads_its_table_by_stack(stacks, share):
+    mualani = _sheet("mualani")
+    kit = sheets.resolve(mualani, _giver(mualani), giver_is_subject=True)
+    [effect] = [e for e in kit.bonus.effects if e.moves == ("burst",) and e.when
+                and e.when[0].condition == "puffer" and stacks in e.when[0].values]
+    assert effect.value == pytest.approx(share)
+
+
+def test_fischls_c2_is_a_per_candidate_conversion_on_summoning_dmg():
+    fischl = _sheet("fischl")
+    kit = sheets.resolve(fischl, _giver(fischl, constellation=2), giver_is_subject=True)
+    [c2] = kit.bonus.effects
+    assert (c2.stat, c2.value) == ("flat_damage_from_atk", fischl.pins.constellations[2][0])
+    assert [r.label for r in c2.rows or ()] == ["Summoning DMG"]
+
+
+def test_flins_c2_shred_needs_both_its_conditions_and_his_skill_rows_are_attacks():
+    flins = _sheet("flins")
+    kit = sheets.resolve(flins, _giver(flins, constellation=2), giver_is_subject=False)
+    [c2] = [e for e in kit.bonus.effects if e.stat == "enemy_res"]
+    assert c2.value == pytest.approx(-flins.pins.constellations[2][2])
+    assert {w.condition for w in c2.when} == {"c2_hit", "moonsign"}
+    assert sheets.row_move("10000120", "elemental_skill", "3-Hit DMG") == "normal"
+    assert sheets.row_move("10000120", "elemental_skill", "Charged Attack DMG") == "charged"
+    assert sheets.row_move("10000120", "normal_attack", "3-Hit DMG") is None
+
+
+@pytest.mark.parametrize(("slug", "key", "value", "reason"), [
+    ("mualani", "momentum", 3, "self"),
+    ("mualani", "c1_first", 0, "situational"),
+    ("mualani", "puffer", 0, "situational"),
+    ("flins", "moonsign", 0, "situational"),
+])
+def test_the_newer_kits_conditions_default_by_the_rule(slug, key, value, reason):
+    condition = next(c for c in _sheet(slug).conditions if c.key == key)
+    c = condition.resolve(giver_is_subject=True, receiver_element="hydro")
+    assert (c.default, c.default_reason) == (value, reason)
 
 
 def test_every_batch8_sheet_is_verified_and_names_what_it_leaves_out():

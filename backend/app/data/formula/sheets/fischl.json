@@ -1,0 +1,106 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Fischl",
+ "nanoka_id": "10000031",
+ "slug": "fischl",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Fischl.ts",
+  "wr": "libs/gi/sheets/src/Characters/Fischl/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/fischl/",
+ "verified_by": [
+  "fischl_c2_on_her_own_summoning"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Fischl.ts:112-113",
+   "gcsim": "fischl.go:32"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Fischl.ts:112,114",
+   "gcsim": "fischl.go:33"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "2": [
+    2.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [],
+ "effects": [
+  {
+   "key": "c2_summon",
+   "label": "C2 Devourer of All Sins: Summoning DMG + a share of her ATK",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Summoning DMG"
+    }
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 0,
+    "times_stat": "atk"
+   },
+   "go": "pando:Fischl.ts:73-75,136-146",
+   "gcsim": "skill.go:62-63"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "kit",
+   "what": "Witch's Eve Rite: Phantasmal Nocturne: ATK on Overloaded and EM on Electro-Charged/Lunar-Charged for her and the active character, doubled by C6",
+   "reason": "the Hexerei party mechanic is not modelled (as for Sucrose and Mona)"
+  },
+  {
+   "source": "a1",
+   "what": "Stellar Predator: Oz's strike on a Fully-Charged Aimed Shot",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "a4",
+   "what": "Undone Be Thy Sinful Hex: Oz's strike on Electro reactions",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c1",
+   "what": "Gaze of the Deep: Oz's strike on her Normal Attacks",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c4",
+   "what": "Her Pilgrimage of Bleak: a burst hit and healing",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c6",
+   "what": "Evernight Raven: Oz's joint attacks and duration",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "a0",
+   "what": "Mein Hausgarten: an exploration bonus",
+   "reason": "no damage effect"
+  }
+ ]
+}

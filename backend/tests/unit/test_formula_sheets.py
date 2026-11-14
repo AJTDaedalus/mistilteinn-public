@@ -104,9 +104,9 @@ BATCH6 = {"chasca", "kinich", "wanderer", "keqing", "sangonomiya_kokomi", "yae_m
 BATCH7 = {"xiao", "venti", "nilou", "albedo", "chiori", "sigewinne", "sethos", "shikanoin_heizou",
           "freminet", "rosaria", "candace", "mika", "diluc", "klee", "lisa", "ningguang",
           "chongyun"}
-#: Task 11's eighth batch: the small sheets of ordinary buffs.
+#: Task 11's eighth batch: the small sheets of ordinary buffs, then Fischl, Mualani and Flins.
 BATCH8 = {"amber", "xinyan", "yanfei", "barbara", "razor", "kaeya", "qiqi", "sayu", "diona",
-          "collei", "yaoyao", "gaming"}
+          "collei", "yaoyao", "gaming", "fischl", "mualani", "flins"}
 
 
 def test_every_sheet_loads_and_is_named_after_its_slug():
