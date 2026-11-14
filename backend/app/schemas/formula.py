@@ -29,8 +29,12 @@ class FormulaConditionRead(BaseModel):
     kind: Literal["toggle", "stacks", "choice", "number"]
     default: float | str
     #: `self` — the wearer triggers it in ordinary play, so it defaults on at its maximum;
-    #: `situational` — it depends on the enemy, the team or the moment, so it defaults off.
-    default_reason: Literal["self", "situational"]
+    #: `situational` — it depends on the enemy, the team or the moment, so it defaults off;
+    #: `usual` — a kit condition at its curated usual value; `teammate` — a teammate's kit
+    #: buff, on at its maximum (`DECISIONS.md` §40 (ii)).
+    default_reason: Literal["self", "situational", "usual", "teammate"]
+    #: Why the default is what it is, in one line, for a kit condition.
+    default_note: str | None = None
     max: float | None = None
     step: float | None = None
     options: list[str] | None = None

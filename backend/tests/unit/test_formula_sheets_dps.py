@@ -30,8 +30,13 @@ NOELLE_BURST_LABELS = ["Burst DMG|{param1:P}", "Skill DMG|{param2:P}", "ATK Bonu
 NOELLE_BURST = {9: [1.1424, 1.5776, 0.68], 12: [1.344, 1.856, 0.8]}
 MAVUIKA_BURST_LABELS = ["Skill DMG|{param1:F1P}",
                         "Crucible of Death and Life Duration|{param2:F1}s",
-                        "Sunfell Slice DMG Bonus|{param3:F1P} ATK per Fighting Spirit"]
-MAVUIKA_BURST_10 = [8.0064, 7.0, 0.0288]
+                        "Sunfell Slice DMG Bonus|{param3:F1P} ATK per Fighting Spirit",
+                        ("Flamestrider Normal Attack DMG Bonus|{param4:F2P} ATK per "
+                         "Fighting Spirit"),
+                        ("Flamestrider Charged Attack DMG Bonus|{param5:F2P} ATK per "
+                         "Fighting Spirit")]
+MAVUIKA_BURST_10 = [8.0064, 7.0, 0.0288, 0.0051, 0.0102]
+FLAMESTRIDER_NA = {f"Flamestrider Normal Attack {n}-Hit DMG" for n in range(1, 6)}
 
 
 def _sheet(slug: str) -> sheets.Sheet:
@@ -81,7 +86,8 @@ def test_each_void_rift_count_reads_its_own_parameter_of_the_one_row():
     assert by_rifts == {"0": pytest.approx(0.08), "1": pytest.approx(0.12),
                         "2": pytest.approx(0.16), "3": pytest.approx(0.2)}
     rifts = _condition(kit, "void_rifts")
-    assert (rifts.default, rifts.default_reason) == ("", "situational")  # type: ignore[attr-defined]
+    # No usual count is documented, so the most (§40 (ii)), said.
+    assert (rifts.default, rifts.default_reason) == ("3", "usual")  # type: ignore[attr-defined]
 
 
 def test_a_row_that_names_fewer_parameters_withholds_the_missing_ones():
@@ -113,20 +119,24 @@ def test_serpents_subtlety_is_self_flat_damage_per_point_raised_by_c2():
     assert _condition(c2, "serpent_over").default == 12 + raise_by  # type: ignore[attr-defined]
 
 
-def test_skirks_a4_and_c4_are_read_by_the_stack_count_and_default_off():
+def test_skirks_a4_and_c4_are_read_by_the_stack_count_and_default_on():
     skirk = _sheet("skirk")
     kit = sheets.resolve(skirk, _skirk(constellation=4), giver_is_subject=True)
     a4 = skirk.pins.passives[4]
-    by_move = {(e.moves, e.when[0].values[0]): e.value for e in kit.bonus.effects
-               if e.stat == "base_dmg_bonus"}
-    assert by_move == {(("normal",), 1): pytest.approx(a4[1]), (("normal",), 2): a4[2],
-                       (("normal",), 3): a4[3], (("burst",), 1): a4[4], (("burst",), 2): a4[5],
-                       (("burst",), 3): a4[6]}
+    # A4's normal-attack multiplier reaches the Seven-Phase Flash rows of her skill talent
+    # alone (DECISIONS §40 (iv)); its burst one, her burst by move.
+    flash = tuple(("elemental_skill", f"{n}-Hit DMG") for n in range(1, 6))
+    by_scope = {(e.moves, tuple((r.talent, r.label) for r in e.rows or ()),
+                 e.when[0].values[0]): e.value
+                for e in kit.bonus.effects if e.stat == "base_dmg_bonus"}
+    assert by_scope == {(None, flash, 1): pytest.approx(a4[1]), (None, flash, 2): a4[2],
+                        (None, flash, 3): a4[3], (("burst",), (), 1): a4[4],
+                        (("burst",), (), 2): a4[5], (("burst",), (), 3): a4[6]}
     c4 = {e.when[0].values[0]: e.value for e in kit.bonus.effects
           if e.stat == "atk_pct" and e.when[0].condition == "a4_stacks"}
     assert c4 == dict(zip((1, 2, 3), skirk.pins.constellations[4][:3], strict=True))
     stacks = _condition(kit, "a4_stacks")
-    assert (stacks.default, stacks.max) == (0, 3)  # type: ignore[attr-defined]
+    assert (stacks.default, stacks.max) == (3, 3)  # type: ignore[attr-defined]
 
 
 # ── a unit on a `per` condition (Neuvillette's A4) ───────────────────────────────────────
@@ -140,6 +150,7 @@ def test_neuvillettes_a4_is_per_percentage_point_of_hp_counted_per_100():
     assert a4.value == pytest.approx(neuvillette.pins.passives[4][2] / 100)
     hp = _condition(kit, "a4_hp")
     assert (hp.default, hp.default_reason, hp.max) == (0, "situational", 50)  # type: ignore[attr-defined]
+    assert "no usual value is documented" in hp.default_note  # type: ignore[attr-defined]
 
 
 def test_a_unit_counts_a_stat_or_a_condition_and_nothing_else():
@@ -155,8 +166,13 @@ def test_neuvillettes_a1_is_a_base_multiplier_on_charged_attacks_by_stack():
     a1 = {e.when[0].values[0]: e.value for e in kit.bonus.effects if e.stat == "base_dmg_bonus"}
     assert a1 == dict(zip((1, 2, 3), neuvillette.pins.passives[1][:3], strict=True))
     [c2] = [e for e in kit.bonus.effects if e.stat == "crit_dmg"]
-    assert (c2.per, c2.moves, c2.value) == ("a1_stacks", ("charged",),
+    assert (c2.per, c2.moves, c2.value) == ("a1_stacks", None,
                                             neuvillette.pins.constellations[2][0])
+    # Equitable Judgment alone, as GO and gcsim give them (DECISIONS §40 (iv)).
+    judgment = [("normal_attack", "Charged Attack: Equitable Judgment")]
+    for effect in kit.bonus.effects:
+        if effect.stat in ("crit_dmg", "base_dmg_bonus"):
+            assert [(r.talent, r.label) for r in effect.rows or ()] == judgment
 
 
 # ── ATK from the subject's own DEF (Noelle's Sweeping Time) ──────────────────────────────
@@ -202,20 +218,27 @@ def test_mavuika_on_herself_at_c2():
     mavuika = _sheet("mavuika")
     kit = sheets.resolve(mavuika, _mavuika(constellation=2), giver_is_subject=True)
     assert _effects(kit, "base_atk") == [mavuika.pins.constellations[2][0]]
+    c2 = mavuika.pins.constellations[2]
     assert sorted(_effects(kit, "flat_damage_from_atk")) == pytest.approx(
-        sorted([0.0288, mavuika.pins.constellations[2][4]]))
+        sorted([0.0288, 0.0051, 0.0102, c2[2], c2[3], c2[4]]))
+    # The Flamestrider bonuses reach her skill talent's Flamestrider rows alone (§40 (iv)).
+    flame = [e for e in kit.bonus.effects if e.value in (0.0051, c2[2])]
+    assert all({r.label for r in e.rows or ()} == FLAMESTRIDER_NA for e in flame)
+    assert len(flame) == 2
     assert sorted(_effects(kit, "atk_pct")) == pytest.approx(
         sorted([mavuika.pins.passives[1][0], mavuika.pins.constellations[1][2]]))
     assert _condition(kit, "fighting_spirit").default == 200  # type: ignore[attr-defined]
 
 
-def test_mavuikas_a4_reaches_a_teammate_off_by_default_and_c4_needs_a4():
+def test_mavuikas_a4_reaches_a_teammate_on_by_default_and_c4_needs_a4():
     mavuika = _sheet("mavuika")
     kit = sheets.resolve(mavuika, _mavuika(constellation=4), giver_is_subject=False)
     assert sorted(_effects(kit, "dmg_bonus")) == pytest.approx(
         sorted([0.002, mavuika.pins.constellations[4][0]]))
-    assert _condition(kit, "a4_after_burst").default == 0  # type: ignore[attr-defined]
-    assert _condition(kit, "fighting_spirit").default == 0  # type: ignore[attr-defined]
+    # A teammate's buffs default on (§40 (ii)): her burst at its usual 200 Fighting Spirit.
+    assert _condition(kit, "a4_after_burst").default == 1  # type: ignore[attr-defined]
+    assert _condition(kit, "a4_after_burst").default_reason == "teammate"  # type: ignore[attr-defined]
+    assert _condition(kit, "fighting_spirit").default == 200  # type: ignore[attr-defined]
     low = sheets.resolve(mavuika, _giver(mavuika, constellation=4, ascension=3),
                          giver_is_subject=False)
     assert _effects(low, "dmg_bonus") == []

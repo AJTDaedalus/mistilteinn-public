@@ -79,6 +79,10 @@
    "kind": "toggle",
    "label": "Standing in Bennett's Inspiration Field (above 70% HP below C1, assumed as GO does)",
    "default_by": "giver_is_subject",
+   "usual": {
+    "value": 1,
+    "reason": "his teams fight inside his field: that is what his burst is for (above 70% HP below C1, assumed as GO does)"
+   },
    "go": "pando:Bennett.ts:90,93-94; wr:index.tsx:107-112"
   },
   {
@@ -86,6 +90,10 @@
    "label": "Bennett below 70% HP",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: his HP falls below 70% only when the fight damages him"
+   },
    "go": "pando:Bennett.ts:91,102-106; wr:index.tsx:144-149"
   }
  ],

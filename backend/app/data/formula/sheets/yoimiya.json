@@ -149,6 +149,10 @@
    "label": "After her burst, while Aurous Blaze lasts (A4, to her teammates)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "her burst opens her rotation, and her teammates' off-field damage lands under it"
+   },
    "go": "pando:Yoimiya.ts:89,102-111"
   },
   {
@@ -156,6 +160,10 @@
    "label": "An opponent affected by Aurous Blaze was defeated (C1)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: it needs an opponent under Aurous Blaze to be defeated"
+   },
    "go": "pando:Yoimiya.ts:91,112-116"
   },
   {

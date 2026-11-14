@@ -11,7 +11,8 @@
  "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
  "gcsim": "internal/characters/skirk/",
  "verified_by": [
-  "skirk_serpent_on_her_own_burst"
+  "skirk_serpent_on_her_own_burst",
+  "skirk_a4_c2_void_on_her_own_seven_phase_flash"
  ],
  "talent_boosts": [
   {
@@ -120,6 +121,10 @@
     "2",
     "3"
    ],
+   "usual": {
+    "value": "3",
+    "reason": "three: no usual count is documented, so the most her burst can absorb"
+   },
    "go": "pando:Skirk.ts:134-135,173-190; wr:index.tsx:159-166"
   },
   {
@@ -129,6 +134,11 @@
    "default_by": "situational",
    "max": 3,
    "step": 1,
+   "usual": {
+    "value": 3,
+    "reason": "each Hydro or Cryo teammate grants one, and she is played with three of them",
+    "cite": "KQM Skirk quick guide, keqingmains.com/q/skirk-quickguide/: 'The vast majority of Skirk's kit is locked to teams with only Hydro and Cryo characters'"
+   },
    "go": "pando:Skirk.ts:136-137,146-157; wr:index.tsx:167-180"
   },
   {
@@ -160,7 +170,7 @@
   },
   {
    "key": "void_0",
-   "label": "Havoc: Ruin: Normal Attack DMG after absorbing 0 Void Rifts, which GO gives the Seven-Phase Flash attacks (rows of her skill talent: set their move to normal, charged or plunge as GO does)",
+   "label": "Havoc: Ruin: Normal Attack DMG after absorbing 0 Void Rifts, which GO gives the Seven-Phase Flash attacks (rows of her skill talent: set their move to normal, charged or plunge as GO does) (GO adds it to every Normal Attack, `premod.dmg_.normal`, pando:Skirk.ts:289; her Seven-Phase Flash attacks are Normal Attacks by their row's move)",
    "source": "talent",
    "receivers": "self",
    "stat": "dmg_bonus",
@@ -185,7 +195,7 @@
   },
   {
    "key": "void_1",
-   "label": "Havoc: Ruin: Normal Attack DMG after absorbing 1 Void Rifts, which GO gives the Seven-Phase Flash attacks (rows of her skill talent: set their move to normal, charged or plunge as GO does)",
+   "label": "Havoc: Ruin: Normal Attack DMG after absorbing 1 Void Rifts, which GO gives the Seven-Phase Flash attacks (rows of her skill talent: set their move to normal, charged or plunge as GO does) (GO adds it to every Normal Attack, `premod.dmg_.normal`, pando:Skirk.ts:289; her Seven-Phase Flash attacks are Normal Attacks by their row's move)",
    "source": "talent",
    "receivers": "self",
    "stat": "dmg_bonus",
@@ -210,7 +220,7 @@
   },
   {
    "key": "void_2",
-   "label": "Havoc: Ruin: Normal Attack DMG after absorbing 2 Void Rifts, which GO gives the Seven-Phase Flash attacks (rows of her skill talent: set their move to normal, charged or plunge as GO does)",
+   "label": "Havoc: Ruin: Normal Attack DMG after absorbing 2 Void Rifts, which GO gives the Seven-Phase Flash attacks (rows of her skill talent: set their move to normal, charged or plunge as GO does) (GO adds it to every Normal Attack, `premod.dmg_.normal`, pando:Skirk.ts:289; her Seven-Phase Flash attacks are Normal Attacks by their row's move)",
    "source": "talent",
    "receivers": "self",
    "stat": "dmg_bonus",
@@ -235,7 +245,7 @@
   },
   {
    "key": "void_3",
-   "label": "Havoc: Ruin: Normal Attack DMG after absorbing 3 Void Rifts, which GO gives the Seven-Phase Flash attacks (rows of her skill talent: set their move to normal, charged or plunge as GO does)",
+   "label": "Havoc: Ruin: Normal Attack DMG after absorbing 3 Void Rifts, which GO gives the Seven-Phase Flash attacks (rows of her skill talent: set their move to normal, charged or plunge as GO does) (GO adds it to every Normal Attack, `premod.dmg_.normal`, pando:Skirk.ts:289; her Seven-Phase Flash attacks are Normal Attacks by their row's move)",
    "source": "talent",
    "receivers": "self",
    "stat": "dmg_bonus",
@@ -264,8 +274,27 @@
    "source": "a4",
    "receivers": "self",
    "stat": "base_dmg_bonus",
-   "moves": [
-    "normal"
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "1-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "2-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "3-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "4-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "5-Hit DMG"
+    }
    ],
    "value": {
     "passive": 4,
@@ -279,7 +308,7 @@
      ]
     }
    ],
-   "go": "pando:Skirk.ts:90-96,146-151,247-262,300-302",
+   "go": "pando:Skirk.ts:90-96,146-151,247-262,300-302; pando:Skirk.ts:298-302 (the Seven-Phase Flash attacks only)",
    "gcsim": "asc.go:22,138-150"
   },
   {
@@ -288,8 +317,27 @@
    "source": "a4",
    "receivers": "self",
    "stat": "base_dmg_bonus",
-   "moves": [
-    "normal"
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "1-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "2-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "3-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "4-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "5-Hit DMG"
+    }
    ],
    "value": {
     "passive": 4,
@@ -303,7 +351,7 @@
      ]
     }
    ],
-   "go": "pando:Skirk.ts:90-96,146-151,247-262,300-302",
+   "go": "pando:Skirk.ts:90-96,146-151,247-262,300-302; pando:Skirk.ts:298-302 (the Seven-Phase Flash attacks only)",
    "gcsim": "asc.go:22,138-150"
   },
   {
@@ -312,8 +360,27 @@
    "source": "a4",
    "receivers": "self",
    "stat": "base_dmg_bonus",
-   "moves": [
-    "normal"
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "1-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "2-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "3-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "4-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "5-Hit DMG"
+    }
    ],
    "value": {
     "passive": 4,
@@ -327,7 +394,7 @@
      ]
     }
    ],
-   "go": "pando:Skirk.ts:90-96,146-151,247-262,300-302",
+   "go": "pando:Skirk.ts:90-96,146-151,247-262,300-302; pando:Skirk.ts:298-302 (the Seven-Phase Flash attacks only)",
    "gcsim": "asc.go:22,138-150"
   },
   {
@@ -408,10 +475,39 @@
    "source": "c2",
    "receivers": "self",
    "stat": "atk_pct",
-   "moves": [
-    "normal",
-    "charged",
-    "plunge"
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "1-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "2-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "3-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "4-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "5-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Charged Attack DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Plunge DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Low/High Plunge DMG"
+    }
    ],
    "value": {
     "constellation": 2,
@@ -425,7 +521,7 @@
      ]
     }
    ],
-   "go": "pando:Skirk.ts:106-110,192-195,236-262,287; wr:index.tsx:218-229,391",
+   "go": "pando:Skirk.ts:106-110,192-195,236-262,287; wr:index.tsx:218-229,391; pando:Skirk.ts:192-195,236-241,264-274 (inverted on her ordinary attacks and her burst)",
    "gcsim": "cons.go:64-89"
   },
   {
@@ -498,18 +594,8 @@
  "unmodelled": [
   {
    "source": "kit",
-   "what": "Seven-Phase Flash attacks offered as skill rows",
-   "reason": "the catalogue lists them under her skill talent, so a row starts with move `skill`; GO counts them as normal, charged and plunging attacks, and this sheet's Normal Attack buffs reach them only once the row's move says so"
-  },
-  {
-   "source": "kit",
    "what": "Mutual Weapons Mentorship: the party's Elemental Skill level +1 in a Hydro and Cryo party",
    "reason": "a talent-level boost a passive gives the team, which the estimate does not model"
-  },
-  {
-   "source": "a4",
-   "what": "Keeping Return to Oblivion, C2 and the Void Rift bonus off her ordinary attacks",
-   "reason": "GO gives them to the Seven-Phase Flash attacks only; the estimate scopes a buff by move, so an ordinary Normal, Charged or Plunging Attack row receives them too"
   },
   {
    "source": "a4",
@@ -535,6 +621,37 @@
    "source": "c6",
    "what": "To the Source: extra hits",
    "reason": "a damage instance, not a buff: not offered as a target row yet"
+  }
+ ],
+ "row_moves": [
+  {
+   "talent": "elemental_skill",
+   "labels": [
+    "1-Hit DMG",
+    "2-Hit DMG",
+    "3-Hit DMG",
+    "4-Hit DMG",
+    "5-Hit DMG"
+   ],
+   "move": "normal",
+   "go": "pando:Skirk.ts:246-262,298-306"
+  },
+  {
+   "talent": "elemental_skill",
+   "labels": [
+    "Charged Attack DMG"
+   ],
+   "move": "charged",
+   "go": "pando:Skirk.ts:246-262,298-306"
+  },
+  {
+   "talent": "elemental_skill",
+   "labels": [
+    "Plunge DMG",
+    "Low/High Plunge DMG"
+   ],
+   "move": "plunge",
+   "go": "pando:Skirk.ts:246-262,298-306"
   }
  ]
 }

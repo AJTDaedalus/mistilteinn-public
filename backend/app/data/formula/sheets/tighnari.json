@@ -148,6 +148,10 @@
    "label": "An opponent is inside his Vijnana-Khanda Field (C2)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "his skill places the field on the opponent"
+   },
    "go": "pando:Tighnari.ts:89,108-110"
   },
   {
@@ -159,6 +163,10 @@
     "after",
     "react"
    ],
+   "usual": {
+    "value": "after",
+    "reason": "'after': he bursts every rotation; 'react' needs a Dendro reaction, which depends on the party"
+   },
    "go": "pando:Tighnari.ts:90,111-118"
   }
  ],

@@ -142,7 +142,7 @@
 
   @if (rows().length) {
     @if (ranFormula()) {
-      <formula-label class="results-label" />
+      <formula-label class="results-label" [assumptions]="result()?.formula ?? []" />
     }
     <div class="table-scroll">
       <table class="estimates">

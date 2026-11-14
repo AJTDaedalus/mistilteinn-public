@@ -113,6 +113,10 @@
    "label": "A party member triggered Overloaded (A1)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "her A1 reaches only a Pyro-and-Electro party, whose reaction is Overloaded, so a party member triggers it throughout"
+   },
    "go": "pando:Chevreuse.ts:64-66,95,103-114,147-148; wr:index.tsx:76-78,102-116,220-221"
   },
   {

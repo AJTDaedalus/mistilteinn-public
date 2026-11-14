@@ -872,7 +872,9 @@ def ungated_fixtures() -> list[dict[str, Any]]:
             talent_rows={("elemental_skill", 10): sheets.TalentRow(VODYANITSA_SKILL_LABELS,
                                                                    VODYANITSA_SKILL_10)},
             cons=cons, passives=pas, stats=VODYANITSA_BASE), subject=True)],
-        "conditionals": {}, "expected": _vodyanitsa(OUR_EM_COEFFICIENT),
+        # Worked without her A4, added since (DECISIONS §40 (vi)), so it is stated off here.
+        "conditionals": {"kit:vodyanitsa/a4_lead_vocal": 0},
+        "expected": _vodyanitsa(OUR_EM_COEFFICIENT),
         "go_value": _vodyanitsa(GO_EM_COEFFICIENT), "divergence": none,
     })
 
@@ -1555,8 +1557,10 @@ def dps_fixtures() -> list[dict[str, Any]]:
         {"element": "hydro", "weapon_type": "WEAPON_CATALYST",
          "member_elements": ["hydro", "hydro"]},
         NEUVILLETTE_BASE, NEUVILLETTE_ARTIFACTS, "hydro",
-        _row("judgment", "Charged Attack: Equitable Judgment", "charged", 1,
-             NEUVILLETTE_JUDGMENT, None),
+        # Named, for his row-scoped A1 and C2 (DECISIONS §40 (iv)).
+        {**_row("judgment", "Charged Attack: Equitable Judgment", "charged", 1,
+                NEUVILLETTE_JUDGMENT, None),
+         "hit": {"talent": "normal_attack", "label": "Charged Attack: Equitable Judgment"}},
         _kit_source("10000087", _ungated_giver(
             "Neuvillette", "10000087", cons=cons, passives=pas, stats=NEUVILLETTE_BASE),
             subject=True),
@@ -1685,6 +1689,17 @@ def build() -> dict[str, Any]:
     # The capped self-conversions (DECISIONS §40), and the Alhaitham and Tighnari sheets.
     from tests.unit.go_fixtures_capped import capped_fixtures
     fixtures.extend(capped_fixtures())
+    # Row-scoped buffs and per-row moves (DECISIONS §40 (iv)).
+    from tests.unit.go_fixtures_rowscope import rowscope_fixtures, vodyanitsa_fixtures
+    fixtures.extend(rowscope_fixtures())
+    # Vodyanitsa's thresholded, capped A4 (DECISIONS §40 (vi)).
+    fixtures.extend(vodyanitsa_fixtures())
+    # No fixture relies on a default (DECISIONS §40 (ii) changed them): every condition each
+    # one reads is stated, the older ones' through `STATED`.
+    from tests.unit.go_fixtures_stated import STATED
+    for f in fixtures:
+        f["conditionals"] = {**STATED.get(f["name"], {}), **f["conditionals"]}
+        _states_every_condition(f)
     for f in fixtures:
         f["relative_divergence_from_go"] = abs(f["expected"] - f["go_value"]) / f["go_value"]
     return {
@@ -1700,6 +1715,33 @@ def build() -> dict[str, Any]:
     }
 
 
+def _states_every_condition(fixture: dict[str, Any]) -> None:
+    """Refuse a fixture that leaves any of its sources' conditions to the default: stated at
+    the team level, or in every row."""
+    for source in fixture["sources"]:
+        for condition in source["bonus"]["conditions"]:
+            key = f"{source['id']}/{condition['key']}"
+            if key in fixture["conditionals"]:
+                continue
+            if all(key in row.get("conditionals", {}) for row in fixture["rows"]):
+                continue
+            msg = f"{fixture['name']}: {key} is left to its default; state it"
+            raise ValueError(msg)
+
+
+def test_every_fixture_states_every_condition():
+    """A change of default (§40 (ii)) cannot move a fixture's inputs: each states them all."""
+    for fixture in json.loads(FIXTURE.read_text(encoding="utf-8"))["fixtures"]:
+        _states_every_condition(fixture)
+
+
+def test_a_fixture_leaving_a_condition_to_its_default_is_refused():
+    fixture = next(f for f in build()["fixtures"] if f["name"] == "bennett_burst_on_himself")
+    fixture["conditionals"] = {}
+    with pytest.raises(ValueError, match="left to its default"):
+        _states_every_condition(fixture)
+
+
 def test_the_committed_fixtures_are_what_the_formula_and_resolver_give():
     committed = json.loads(FIXTURE.read_text(encoding="utf-8"))
     built = json.loads(json.dumps(build()))
@@ -1708,6 +1750,7 @@ def test_the_committed_fixtures_are_what_the_formula_and_resolver_give():
     for old, new in zip(committed["fixtures"], built["fixtures"], strict=True):
         assert old["sources"] == new["sources"], old["name"]
         assert old["rows"] == new["rows"], old["name"]
+        assert old["conditionals"] == new["conditionals"], old["name"]
         assert old["expected"] == pytest.approx(new["expected"], rel=1e-12), old["name"]
         assert old["go_value"] == pytest.approx(new["go_value"], rel=1e-12), old["name"]
 

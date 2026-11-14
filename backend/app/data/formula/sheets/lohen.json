@@ -9,7 +9,8 @@
   "wr": "libs/gi/sheets/src/Characters/Lohen/index.tsx"
  },
  "verified_by": [
-  "lohen_a4_on_xiangling"
+  "lohen_a4_on_xiangling",
+  "lohen_c6_on_his_own_etch"
  ],
  "talent_boosts": [
   {
@@ -91,6 +92,10 @@
    "label": "After a nearby party member triggers a Cryo reaction while in Masterstroke mode",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: it needs a party member's Cryo reaction while he is in Masterstroke mode, which depends on the party"
+   },
    "go": "pando:Lohen.ts:129-136,156-161; wr:index.tsx:159-174"
   },
   {
@@ -98,6 +103,10 @@
    "label": "Evilsbane Blade triggered",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: it needs Evilsbane Blade to trigger"
+   },
    "go": "pando:Lohen.ts:165-167; wr:index.tsx:191-197"
   },
   {
@@ -171,18 +180,21 @@
   },
   {
    "key": "c6_etch_crit",
-   "label": "C6: Etched Into Bone and Soul CRIT DMG + (every Elemental Skill-move hit)",
+   "label": "C6: Etched Into Bone and Soul CRIT DMG +",
    "source": "c6",
    "receivers": "self",
    "stat": "crit_dmg",
-   "moves": [
-    "skill"
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Etched Into Bone and Soul DMG"
+    }
    ],
    "value": {
     "constellation": 6,
     "param": 1
    },
-   "go": "pando:Lohen.ts:112-115,168-172,223-231; wr:index.tsx:199-203,249"
+   "go": "pando:Lohen.ts:112-115,168-172,223-231; wr:index.tsx:199-203,249; pando:Lohen.ts:223-231 (the Etched hit alone)"
   },
   {
    "key": "c6_burst_crit",
@@ -243,11 +255,37 @@
    "source": "c4",
    "what": "Radiant Love, Laughing Death: Energy",
    "reason": "no damage effect: energy"
+  }
+ ],
+ "row_moves": [
+  {
+   "talent": "elemental_skill",
+   "labels": [
+    "1-Hit DMG",
+    "2-Hit DMG",
+    "3-Hit DMG",
+    "4-Hit DMG",
+    "5-Hit DMG"
+   ],
+   "move": "normal",
+   "go": "pando:Lohen.ts:177-200,218-222"
   },
   {
-   "source": "c6",
-   "what": "C6's Etched CRIT DMG limited to the Etched hit alone",
-   "reason": "the format scopes by move, so the estimate applies it to every row whose move is the Elemental Skill"
+   "talent": "elemental_skill",
+   "labels": [
+    "Charged Attack DMG"
+   ],
+   "move": "charged",
+   "go": "pando:Lohen.ts:177-200,218-222"
+  },
+  {
+   "talent": "elemental_skill",
+   "labels": [
+    "Plunge DMG",
+    "Low/High Plunge DMG"
+   ],
+   "move": "plunge",
+   "go": "pando:Lohen.ts:177-200,218-222"
   }
  ]
 }

@@ -144,12 +144,19 @@
  "effects": [
   {
    "key": "a1_crit",
-   "label": "A1 Undivided Heart: Frostflake Arrow CRIT Rate (every Charged Attack row while on)",
+   "label": "A1 Undivided Heart: Frostflake Arrow and Bloom CRIT Rate",
    "source": "a1",
    "receivers": "self",
    "stat": "crit_rate",
-   "moves": [
-    "charged"
+   "rows": [
+    {
+     "talent": "normal_attack",
+     "label": "Frostflake Arrow DMG"
+    },
+    {
+     "talent": "normal_attack",
+     "label": "Frostflake Arrow Bloom DMG"
+    }
    ],
    "value": {
     "passive": 1,
@@ -230,11 +237,6 @@
  ],
  "unmodelled": [
   {
-   "source": "a1",
-   "what": "Undivided Heart: keeping its CRIT Rate to Frostflake Arrows",
-   "reason": "GO gives it to the Frostflake Arrow and its bloom only; the estimate scopes by move, so an aimed shot row receives it too while the toggle is on"
-  },
-  {
    "source": "talent",
    "what": "Trail of the Qilin: the Ice Lotus's HP",
    "reason": "no damage effect: HP"
@@ -253,6 +255,19 @@
    "source": "c6",
    "what": "The Clement: a free Frostflake Arrow",
    "reason": "no closed-form damage effect: timing"
+  }
+ ],
+ "row_moves": [
+  {
+   "talent": "normal_attack",
+   "labels": [
+    "Aimed Shot",
+    "Aimed Shot Charge Level 1",
+    "Frostflake Arrow DMG",
+    "Frostflake Arrow Bloom DMG"
+   ],
+   "move": "charged",
+   "go": "pando:Ganyu.ts:110-135"
   }
  ]
 }

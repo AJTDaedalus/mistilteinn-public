@@ -158,6 +158,10 @@
    "default_by": "situational",
    "max": 50,
    "step": 1,
+   "usual": {
+    "value": "max",
+    "reason": "at the cap: no usual count is documented, and the party's Cryo hits build it"
+   },
    "go": "pando:Shenhe.ts:77-78,96-101,136,145; wr:index.tsx:84-85,150-161,188"
   }
  ],

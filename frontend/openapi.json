@@ -5455,6 +5455,24 @@
             },
             "type": "array",
             "title": "Extra Terms"
+          },
+          "move": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "normal",
+                  "charged",
+                  "plunge",
+                  "skill",
+                  "burst"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Move"
           }
         },
         "type": "object",
@@ -8244,9 +8262,22 @@
             "type": "string",
             "enum": [
               "self",
-              "situational"
+              "situational",
+              "usual",
+              "teammate"
             ],
             "title": "Default Reason"
+          },
+          "default_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Note"
           },
           "max": {
             "anyOf": [

@@ -498,7 +498,9 @@ def batch5_fixtures() -> list[dict[str, Any]]:
         _subject("Ganyu", 0),
         {"element": "cryo", "weapon_type": "WEAPON_BOW", "member_elements": ["cryo", "hydro"]},
         GANYU_BASE, GANYU_ARTIFACTS, "cryo",
-        base._row("bloom", "Frostflake Arrow Bloom DMG", "charged", 1, GANYU_BLOOM, None),
+        b4._with_hit(base._row("bloom", "Frostflake Arrow Bloom DMG", "charged", 1,
+                               GANYU_BLOOM, None),
+                     "normal_attack", "Frostflake Arrow Bloom DMG"),
         b4._kit("10000037", _own("Ganyu", "10000037", 0, GANYU_BASE), subject=True),
         {}, _ganyu))
 

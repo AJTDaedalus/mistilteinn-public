@@ -117,6 +117,11 @@
    "default_by": "situational",
    "max": 3,
    "step": 1,
+   "usual": {
+    "value": 2,
+    "reason": "two stacks, as in his Furina teams at C0 (one in a Hydro-and-Cryo party, three with Electro, Pyro and Dendro teammates)",
+    "cite": "KQM Furina quick guide, keqingmains.com/q/furina-quickguide/: 'While Neuvillette can only gain two of his A1 stacks at C0'"
+   },
    "go": "pando:Neuvillette.ts:86-87,91-96; wr:index.tsx:94-105,245-262"
   },
   {
@@ -126,6 +131,10 @@
    "default_by": "situational",
    "max": 50,
    "step": 1,
+   "usual": {
+    "value": 0,
+    "reason": "off: his HP above 30% moves with Furina's drain and his own Charged Attack's, and no usual value is documented; set it to yours"
+   },
    "go": "pando:Neuvillette.ts:88-89,97-101; wr:index.tsx:108-117,357-370"
   }
  ],
@@ -136,8 +145,11 @@
    "source": "a1",
    "receivers": "self",
    "stat": "base_dmg_bonus",
-   "moves": [
-    "charged"
+   "rows": [
+    {
+     "talent": "normal_attack",
+     "label": "Charged Attack: Equitable Judgment"
+    }
    ],
    "value": {
     "passive": 1,
@@ -160,8 +172,11 @@
    "source": "a1",
    "receivers": "self",
    "stat": "base_dmg_bonus",
-   "moves": [
-    "charged"
+   "rows": [
+    {
+     "talent": "normal_attack",
+     "label": "Charged Attack: Equitable Judgment"
+    }
    ],
    "value": {
     "passive": 1,
@@ -184,8 +199,11 @@
    "source": "a1",
    "receivers": "self",
    "stat": "base_dmg_bonus",
-   "moves": [
-    "charged"
+   "rows": [
+    {
+     "talent": "normal_attack",
+     "label": "Charged Attack: Equitable Judgment"
+    }
    ],
    "value": {
     "passive": 1,
@@ -225,12 +243,15 @@
   },
   {
    "key": "c2_crit",
-   "label": "C2 Juridical Exhortation: CRIT DMG per A1 stack; GO and gcsim apply it to Charged Attack: Equitable Judgment, and it reaches every Charged Attack row here",
+   "label": "C2 Juridical Exhortation: Equitable Judgment CRIT DMG per A1 stack",
    "source": "c2",
    "receivers": "self",
    "stat": "crit_dmg",
-   "moves": [
-    "charged"
+   "rows": [
+    {
+     "talent": "normal_attack",
+     "label": "Charged Attack: Equitable Judgment"
+    }
    ],
    "value": {
     "constellation": 2,
@@ -242,11 +263,6 @@
   }
  ],
  "unmodelled": [
-  {
-   "source": "a1",
-   "what": "Keeping Heir to the Ancient Sea's Authority and C2 off the ordinary Charged Attack",
-   "reason": "GO and gcsim give them to Equitable Judgment only; the estimate scopes a buff by move, so an ordinary Charged Attack row receives them too"
-  },
   {
    "source": "talent",
    "what": "As Water Seeks Equilibrium: Equitable Judgment's HP drain and droplet healing",
@@ -266,6 +282,16 @@
    "source": "c6",
    "what": "Wrathful Recompense: extra currents during Equitable Judgment",
    "reason": "a damage instance, not a buff: not offered as a target row yet"
+  }
+ ],
+ "row_moves": [
+  {
+   "talent": "normal_attack",
+   "labels": [
+    "Charged Attack: Equitable Judgment"
+   ],
+   "move": "charged",
+   "go": "pando:Neuvillette.ts:122-130,143-154"
   }
  ]
 }

@@ -115,6 +115,11 @@
    "default_by": "giver_is_subject",
    "max": 14,
    "step": 1,
+   "usual": {
+    "value": 7,
+    "reason": "the middle of its ramp: 1%, then 3.5% more a second up to 50% at 14 s, so a hit lands near 7 s on average",
+    "cite": "KQM Yelan quick guide, keqingmains.com/q/yelan-quickguide/: 'This increases by a further 3.5% DMG every second. The maximum increase to DMG dealt is 50%.'"
+   },
    "go": "pando:Yelan.ts:65-69,96-101,114-125,141; wr:index.tsx:101-120,195,365-382"
   },
   {
@@ -124,6 +129,10 @@
    "default_by": "situational",
    "max": 4,
    "step": 1,
+   "usual": {
+    "value": 1,
+    "reason": "the estimate scores one target; more opponents in range raise it, so set it to how many you fight"
+   },
    "go": "pando:Yelan.ts:78-83,102-107,126-130,142; wr:index.tsx:122-138,310-325"
   }
  ],

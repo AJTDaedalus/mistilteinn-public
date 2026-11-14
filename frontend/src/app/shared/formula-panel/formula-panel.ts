@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 
 import type { ConditionGroup } from '../../sim/formula-calibration';
 import {
-  suggestMove, type ConditionValue, type FormulaCondition,
+  defaultWhy, hitMove, type ConditionValue, type FormulaCondition,
 } from '../../sim/formula-recipe';
 import type { FormulaMove } from '../../sim/recipe';
 import {
@@ -105,7 +105,7 @@ export class FormulaPanel {
     // first made for a 1-Hit DMG and switched to a burst's slash stayed a normal attack, so a
     // burst-scoped kit buff (Skirk's Serpent's Subtlety) silently missed it — found driving it.
     this.service.updateRow(row.id, {
-      hit: fresh, label: hit.label, move: suggestMove(hit.talent, hit.label),
+      hit: fresh, label: hit.label, move: hitMove(hit),
     });
   }
 
@@ -155,8 +155,7 @@ export class FormulaPanel {
       : condition.default === '' ? 'none' : String(condition.default);
     // A kit's own condition is triggered by the character, not by whoever wears a set.
     const who = group?.kind === 'kit' ? 'the character triggers it' : 'the wearer triggers it';
-    const why = condition.default_reason === 'self' ? who : 'depends on the situation';
-    return `Default ${shown} — ${why}`;
+    return `Default ${shown} — ${defaultWhy(condition, who)}`;
   }
 
   protected stackChoices(condition: FormulaCondition): number[] {

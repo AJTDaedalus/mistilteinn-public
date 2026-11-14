@@ -266,15 +266,18 @@
    "source": "c2",
    "receivers": "self",
    "stat": "crit_rate",
-   "moves": [
-    "skill"
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Rosula Shardshot Base DMG"
+    }
    ],
    "value": {
     "constellation": 2,
     "param": 0
    },
    "per": "shrapnel",
-   "go": "pando:Navia.ts:77-79,134-142,190",
+   "go": "pando:Navia.ts:77-79,134-142,190; pando:Navia.ts:183-192 (the shardshot alone)",
    "gcsim": "skill.go:246"
   },
   {
@@ -283,15 +286,18 @@
    "source": "c6",
    "receivers": "self",
    "stat": "crit_dmg",
-   "moves": [
-    "skill"
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Rosula Shardshot Base DMG"
+    }
    ],
    "value": {
     "constellation": 6,
     "param": 0
    },
    "per": "extra",
-   "go": "pando:Navia.ts:84-86,147-155,191",
+   "go": "pando:Navia.ts:84-86,147-155,191; pando:Navia.ts:183-192 (the shardshot alone)",
    "gcsim": "skill.go:249"
   },
   {
@@ -324,11 +330,6 @@
    "source": "talent",
    "what": "Ceremonial Crystalshot: the multiplier for how many shards hit",
    "reason": "GO's table for it is hard-coded and marked `TODO: Verify this` (pando:Navia.ts:100-110); the estimate reads the shardshot's base row as written"
-  },
-  {
-   "source": "c2",
-   "what": "The President's Pursuit of Victory and C6: scoped to the shardshot",
-   "reason": "GO gives them to Rosula Shardshot only; the estimate scopes by move, so her Surging Blade (a skill row) receives them too"
   },
   {
    "source": "a1",

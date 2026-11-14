@@ -240,11 +240,6 @@
  ],
  "unmodelled": [
   {
-   "source": "talent",
-   "what": "Sacred Rite: Wolf's Swiftness: his Pactsworn Normal Attacks are burst-talent rows",
-   "reason": "GO counts them as Normal Attacks; a teammate's Normal Attack buff reaches them only once the row's move is set to normal (as Skirk's); their Electro infusion is the row's element (G4). A4 names the rows, so it reaches them either way"
-  },
-  {
    "source": "a1",
    "what": "Featherfall Judgment: Duststalker Bolts",
    "reason": "a damage instance, not a talent row: not offered as a target row yet (A4's share of EM on them with it)"
@@ -268,6 +263,37 @@
    "source": "c6",
    "what": "Raiment: Just Scales: extra Duststalker Bolts",
    "reason": "a damage instance, not a buff"
+  }
+ ],
+ "row_moves": [
+  {
+   "talent": "elemental_burst",
+   "labels": [
+    "1-Hit DMG",
+    "2-Hit DMG",
+    "3-Hit DMG",
+    "4-Hit DMG",
+    "5-Hit DMG"
+   ],
+   "move": "normal",
+   "go": "pando:Cyno.ts:178-200,235-240"
+  },
+  {
+   "talent": "elemental_burst",
+   "labels": [
+    "Charged Attack DMG"
+   ],
+   "move": "charged",
+   "go": "pando:Cyno.ts:178-200,235-240"
+  },
+  {
+   "talent": "elemental_burst",
+   "labels": [
+    "Plunge DMG",
+    "Low/High Plunge DMG"
+   ],
+   "move": "plunge",
+   "go": "pando:Cyno.ts:178-200,235-240"
   }
  ]
 }

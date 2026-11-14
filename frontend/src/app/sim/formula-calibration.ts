@@ -187,6 +187,18 @@ export interface ConditionGroup {
   verified?: boolean;
 }
 
+/** Each part named once: the panel tracks a part by its `what`, and repeating it said nothing. */
+function distinctParts(
+  parts: readonly { what: string; reason: string }[],
+): { what: string; reason: string }[] {
+  const seen = new Set<string>();
+  return parts.filter((p) => {
+    if (seen.has(p.what)) return false;
+    seen.add(p.what);
+    return true;
+  });
+}
+
 /**
  * Every source a team and a set scope bring into the estimate: each active resonance and each
  * usable conditional tier of the sets named — **including the ones with nothing to set**, so
@@ -222,7 +234,7 @@ export function conditionGroups(
       label: kit.label,
       citation: kit.citation,
       conditions: kit.bonus.conditions,
-      unmodelled: kit.bonus.unmodelled,
+      unmodelled: distinctParts(kit.bonus.unmodelled),
       kind: 'kit',
       verified: kit.verified,
     });

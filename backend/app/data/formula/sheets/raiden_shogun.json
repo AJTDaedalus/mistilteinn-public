@@ -78,6 +78,10 @@
    "default_by": "situational",
    "max": 90,
    "step": 10,
+   "usual": {
+    "value": 0,
+    "reason": "the optimized character's burst Energy Cost: set it to theirs (the estimate does not read it)"
+   },
    "go": "pando:RaidenShogun.ts:89,101,114-122,193; wr:index.tsx:125-147,279"
   },
   {
@@ -87,6 +91,11 @@
    "default_by": "situational",
    "max": 60,
    "step": 10,
+   "usual": {
+    "value": 60,
+    "reason": "the maximum, which her teams reach",
+    "cite": "KQM Raiden quick guide, keqingmains.com/q/raiden-quickguide/: 'It is quite common to reach maximum Resolve stacks with a second Electro character'"
+   },
    "go": "pando:RaidenShogun.ts:90,102,123-130; wr:index.tsx:149-158"
   },
   {
@@ -101,6 +110,10 @@
    "label": "After Musou Isshin ends (C4 Pledge of Propriety)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "her teammates deal their damage after her burst ends, in her teams' rotation"
+   },
    "go": "pando:RaidenShogun.ts:100,104,162-165,197; wr:index.tsx:210-219,278"
   }
  ],

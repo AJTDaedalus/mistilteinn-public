@@ -153,6 +153,10 @@
    "label": "Paramita Papilio has just ended (A1, to her teammates)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: it reaches her teammates only in the moments after her skill ends, while she holds the field"
+   },
    "go": "pando:HuTao.ts:94-101,113-115"
   },
   {
@@ -160,6 +164,10 @@
    "label": "Hu Tao's HP is at or below 50% (A4)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: it depends on her HP; turn it on if you keep her below half"
+   },
    "go": "pando:HuTao.ts:94-101,116-118"
   },
   {
@@ -167,6 +175,10 @@
    "label": "An opponent marked by her Blood Blossom was just defeated nearby (C4, to her teammates)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: it needs an opponent marked by Blood Blossom to be defeated"
+   },
    "go": "pando:HuTao.ts:94-101,127-129"
   },
   {
@@ -174,6 +186,10 @@
    "label": "Her HP fell below 25% and C6 triggered",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: it needs her HP to fall below 25%"
+   },
    "go": "pando:HuTao.ts:94-101,130-132"
   }
  ],

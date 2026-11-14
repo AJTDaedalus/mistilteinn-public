@@ -194,8 +194,10 @@ async def test_teammates_buffs_come_from_their_own_builds(
     assert bennett["build_id"] == team["bennett"]
     assert bennett["verified"] is True
     [field] = bennett["bonus"]["conditions"]
+    # DECISIONS §40 (ii): a teammate's field is on by default at its usual value, said.
     assert (field["key"], field["default"], field["default_reason"]) == (
-        "in_field", 0, "situational")
+        "in_field", 1, "usual")
+    assert field["default_note"]
 
     kazuha_base = await _base(authed_client, team["kazuha"], "Slashing DMG")
     kazuha_em = kazuha_base.get("elemental_mastery", 0.0) + 200
@@ -220,13 +222,13 @@ async def test_the_subject_receives_their_own_kit_as_themselves(
     authed_client: AsyncClient, db_session: AsyncSession, team: dict[str, str],
 ):
     """Kazuha optimized: his A4 moves with his own EM, so it is a coefficient, not a number;
-    Bennett's field is still off by default, since Kazuha standing in it is situational."""
+    Bennett's field is on by default, as his teams play it (DECISIONS §40 (ii))."""
     db_session.expire_all()
     kit = await _kit(authed_client, team, "kazuha")
     by_id = {s["id"]: s for s in kit["sources"]}
     assert {(e["stat"], e["value"]) for e in by_id["kit:kaedehara_kazuha"]["bonus"]["effects"]} \
         == {("dmg_bonus_from_em", 0.0004)}
-    assert by_id["kit:bennett"]["bonus"]["conditions"][0]["default"] == 0
+    assert by_id["kit:bennett"]["bonus"]["conditions"][0]["default"] == 1
 
 
 async def test_the_subject_must_be_a_member_and_builds_must_be_the_callers(

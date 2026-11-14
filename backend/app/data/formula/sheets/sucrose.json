@@ -113,6 +113,13 @@
    "label": "Sucrose triggered a Swirl with Pyro (A1)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "she swirls the element of the carry she buffs",
+    "receiver_elements": [
+     "pyro"
+    ]
+   },
    "go": "pando:Sucrose.ts:58-59,86-95,98-103,143-150; wr:index.tsx:72,95-112,222"
   },
   {
@@ -120,6 +127,13 @@
    "label": "Sucrose triggered a Swirl with Hydro (A1)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "she swirls the element of the carry she buffs",
+    "receiver_elements": [
+     "hydro"
+    ]
+   },
    "go": "pando:Sucrose.ts:58-59,86-95,98-103,143-150; wr:index.tsx:72,95-112,222"
   },
   {
@@ -127,6 +141,13 @@
    "label": "Sucrose triggered a Swirl with Electro (A1)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "she swirls the element of the carry she buffs",
+    "receiver_elements": [
+     "electro"
+    ]
+   },
    "go": "pando:Sucrose.ts:58-59,86-95,98-103,143-150; wr:index.tsx:72,95-112,222"
   },
   {
@@ -134,6 +155,13 @@
    "label": "Sucrose triggered a Swirl with Cryo (A1)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "she swirls the element of the carry she buffs",
+    "receiver_elements": [
+     "cryo"
+    ]
+   },
    "go": "pando:Sucrose.ts:58-59,86-95,98-103,143-150; wr:index.tsx:72,95-112,222"
   },
   {
@@ -141,6 +169,10 @@
    "label": "Sucrose's Elemental Skill or Burst hit an opponent (A4)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "her skill and burst hit opponents in ordinary play"
+   },
    "go": "pando:Sucrose.ts:86-95,125-131,152; wr:index.tsx:101,113-122,217"
   },
   {
@@ -154,6 +186,10 @@
     "electro",
     "cryo"
    ],
+   "usual": {
+    "value": "receiver_element",
+    "reason": "her burst absorbs the element of the carry she buffs"
+   },
    "go": "pando:Sucrose.ts:75-76,96,116-124,156-170; wr:index.tsx:89,94,124-132"
   }
  ],

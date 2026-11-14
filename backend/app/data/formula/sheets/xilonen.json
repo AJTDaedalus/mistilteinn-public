@@ -157,6 +157,10 @@
    "label": "After a Nightsoul Burst (A4 Portable Armored Sheath)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "her own Natlan hits trigger Nightsoul Burst"
+   },
    "go": "pando:Xilonen.ts:106-108,126-128,199; wr:index.tsx:141-146,283"
   },
   {

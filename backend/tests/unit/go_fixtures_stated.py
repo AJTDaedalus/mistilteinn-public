@@ -1,0 +1,110 @@
+"""Every GO fixture's conditions, stated: the values each was worked at.
+
+Owner ruling 2026-11-14 (`DECISIONS.md` §40 (ii)) changed the formula estimate's **defaults**:
+teammates' buffs and the usual situational self-buffs now default on, at their usual values. A
+fixture that left a condition to its default would have changed its inputs silently when the
+rule changed, and its figure with them. So no fixture may rely on a default:
+`test_go_formula_fixtures.build` merges these under each fixture's own `conditionals` and then
+refuses any fixture that still leaves a condition unstated (`_states_every_condition`).
+
+These are the values the fixtures were worked at by hand against GO, which were the §39 (i)
+defaults at the time (self-triggered on at the maximum, situational and teammate-given off).
+Written once, from the committed `go_fixtures.json` before the rule changed; a new fixture
+states its conditions in its own definition instead.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+#: `{fixture name: {"<source id>/<condition key>": value}}`.
+STATED: dict[str, dict[str, Any]] = {'xiangling_multi_target': {'set:15006:4/stacks': 3},
+ 'bennett_burst_on_himself': {'kit:bennett/in_field': 1},
+ 'kazuha_a4_pyro_on_xiangling': {'kit:kaedehara_kazuha/swirl_hydro': 0,
+                                 'kit:kaedehara_kazuha/swirl_electro': 0,
+                                 'kit:kaedehara_kazuha/swirl_cryo': 0},
+ 'kazuha_a4_on_his_own_burst': {'kit:kaedehara_kazuha/swirl_hydro': 0,
+                                'kit:kaedehara_kazuha/swirl_electro': 0,
+                                'kit:kaedehara_kazuha/swirl_cryo': 0},
+ 'kachina_a4_on_her_own_skill': {'kit:kachina/a1_nightsoul_burst': 1},
+ 'nefer_veils_on_her_own_burst': {'kit:nefer/veils_consumed': 3, 'kit:nefer/veil_stacks': 3},
+ 'linnea_c4_on_her_own_pummeler': {'kit:linnea/lumi_present': 1,
+                                   'kit:linnea/moonsign_gleam': 0,
+                                   'kit:linnea/c2_moondrift': 1,
+                                   'kit:linnea/c4_moondrift': 1},
+ 'mitya_beacons_on_his_own_burst': {'kit:mitya/a1_beacons': 4, 'kit:mitya/a4_stacks': 4},
+ 'valeriy_offensive_on_his_own_burst': {'kit:valeriy/charged_offensive': 1,
+                                        'kit:valeriy/stellar_radiance': 0,
+                                        'kit:valeriy/momentum': 100},
+ 'vodyanitsa_res_on_her_own_skill': {'kit:vodyanitsa/skill_hit': 1,
+                                     'kit:vodyanitsa/a1_vortex': 1},
+ 'vesna_a4_c4_on_her_own_skill': {'kit:vesna/a1_stacks': 6},
+ 'furina_fanfare_c2_on_her_own_burst': {'kit:furina/fanfare': 400,
+                                        'kit:furina/c2_overstack': 400},
+ 'xingqiu_c2_on_his_own_burst': {'kit:xingqiu/rain_swords': 1},
+ 'xiangling_c1_c6_on_bennett': {'kit:xiangling/after_chili': 0},
+ 'citlali_c2_on_xiangling': {'kit:citlali/c2_shield': 0},
+ 'yelan_a1_a4_on_her_own_skill': {'kit:yelan/a4_stacks': 14},
+ 'escoffier_a4_c1_on_her_own_skill': {'kit:escoffier/a4_hit': 1, 'kit:escoffier/c1_after': 1},
+ 'jean_c1_c4_on_her_own_skill': {'kit:jean/c1_hold': 1, 'kit:jean/c4_field': 1},
+ 'zhongli_shield_and_a4_on_his_own_burst': {'kit:zhongli/shielded': 1},
+ 'faruzan_burst_a4_on_her_own_burst': {'kit:faruzan/burst_benefit': 1,
+                                       'kit:faruzan/burst_hit': 1,
+                                       'kit:faruzan/a4_active': 1},
+ 'ayaka_a1_a4_on_her_own_charged': {'kit:kamisato_ayaka/after_skill': 1,
+                                    'kit:kamisato_ayaka/after_sprint_hit': 1},
+ 'noelle_burst_on_her_own_normal': {'kit:noelle/sweeping_time': 1},
+ 'mavuika_c2_on_her_own_burst': {'kit:mavuika/fighting_spirit': 200,
+                                 'kit:mavuika/a1_nightsoul_burst': 1,
+                                 'kit:mavuika/a4_after_burst': 1,
+                                 'kit:mavuika/c1_gain_spirit': 1,
+                                 'kit:mavuika/c2_form': 1,
+                                 'kit:mavuika/c2_flamestrider': 1},
+ 'skirk_serpent_on_her_own_burst': {'kit:skirk/serpent_over': 12,
+                                    'kit:skirk/void_rifts': '',
+                                    'kit:skirk/a4_stacks': 0},
+ 'nahida_burst_c4_on_her_own_tri_karma': {'kit:nahida/shrine': 1, 'kit:nahida/c2_quicken': 0},
+ 'kujou_sara_ambush_c6_on_her_own_burst': {'kit:kujou_sara/ambush': 1, 'kit:kujou_sara/c6': 1},
+ 'shenhe_quill_burst_a1_a4_c2_on_ayaka': {'kit:shenhe/a4_hold': 0},
+ 'gorou_banner_a1_a4_c6_on_his_own_burst': {'kit:gorou/banner': 1,
+                                            'kit:gorou/after_burst': 1,
+                                            'kit:gorou/after_skill_burst': 1},
+ 'xilonen_geo_sample_on_herself': {'kit:xilonen/source_active': 1,
+                                   'kit:xilonen/ns_blessing': 1,
+                                   'kit:xilonen/ns_burst': 0},
+ 'xianyun_a1_c6_on_her_own_wave': {'kit:xianyun/a1_stacks': 4,
+                                   'kit:xianyun/a4_stacks': 1,
+                                   'kit:xianyun/c2_after_skill': 1,
+                                   'kit:xianyun/c6_uses': 3},
+ 'raiden_shogun_eye_resolve_c2_on_her_own_burst': {'kit:raiden_shogun/eye': 1,
+                                                   'kit:raiden_shogun/in_burst': 1},
+ 'nefer_c2_five_veils_on_her_own_burst': {'kit:nefer/veils_consumed': 5,
+                                          'kit:nefer/veil_stacks': 5},
+ 'clorinde_a4_c4_on_her_own_burst': {'kit:clorinde/a1_stacks': 0,
+                                     'kit:clorinde/bond_changes': 2},
+ 'navia_a4_shrapnel_on_her_own_shardshot': {'kit:navia/after_skill': 1, 'kit:navia/extra': 3},
+ 'wriothesley_fist_a4_on_his_own_normal': {'kit:wriothesley/chilling': 1,
+                                           'kit:wriothesley/rebuke': 1,
+                                           'kit:wriothesley/edicts': 5},
+ 'lyney_a1_a4_on_his_own_pyrotechnic': {'kit:lyney/props': 5,
+                                        'kit:lyney/hat': 1,
+                                        'kit:lyney/pyro_mark': 1},
+ 'yoimiya_niwabi_a1_on_her_own_normal': {'kit:yoimiya/niwabi': 1, 'kit:yoimiya/tricks': 10},
+ 'yoimiya_a4_on_xiangling': {'kit:yoimiya/tricks': 10},
+ 'ganyu_a1_a4_on_her_own_bloom': {'kit:ganyu/a1_fired': 1, 'kit:ganyu/in_field': 1},
+ 'eula_lightfall_on_her_own_sword': {'kit:eula/lightfall': 30, 'kit:eula/consumed': 1},
+ 'itto_burst_a4_on_his_own_kesagiri': {'kit:arataki_itto/descent': 1},
+ 'cyno_burst_a4_on_his_own_pactsworn_normal': {'kit:cyno/pactsworn': 1,
+                                               'kit:cyno/judication': 1},
+ 'hu_tao_paramita_below_cap_on_her_own_blossom': {'kit:hu_tao/paramita': 1,
+                                                  'kit:hu_tao/low_hp': 0},
+ 'hu_tao_paramita_past_cap_on_her_own_blossom': {'kit:hu_tao/paramita': 1,
+                                                 'kit:hu_tao/low_hp': 0},
+ 'clorinde_a1_below_cap_on_her_own_burst': {'kit:clorinde/bond_changes': 2},
+ 'clorinde_c2_a1_past_cap_on_her_own_burst': {'kit:clorinde/bond_changes': 2},
+ 'alhaitham_a4_c2_below_cap_on_his_own_projection': {'kit:alhaitham/debate': 4},
+ 'alhaitham_a4_past_cap_c6_on_his_own_burst': {'kit:alhaitham/debate': 4,
+                                               'kit:alhaitham/mirrors_consumed': 0,
+                                               'kit:alhaitham/excess_mirror': 1},
+ 'tighnari_a1_a4_below_cap_on_his_own_wreath': {'kit:tighnari/wreath': 1},
+ 'tighnari_a4_past_cap_c2_on_his_own_wreath': {'kit:tighnari/wreath': 1}}

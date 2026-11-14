@@ -105,6 +105,10 @@
    "label": "After Yun Jin triggers Crystallize (C4 Flower and a Fighter)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: it needs her to trigger Crystallize, which depends on the party"
+   },
    "go": "pando:YunJin.ts:85,104-106,122; wr:index.tsx:117-122,158"
   }
  ],

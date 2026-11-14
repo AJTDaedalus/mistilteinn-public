@@ -143,6 +143,11 @@
    "default_by": "situational",
    "max": 3,
    "step": 1,
+   "usual": {
+    "value": 3,
+    "reason": "her teammates' Electro reactions fill all three stacks",
+    "cite": "KQM Clorinde quick guide, keqingmains.com/q/clorinde-quickguide/: 'making it very easy to reach max stacks'"
+   },
    "go": "pando:Clorinde.ts:62-67,107-113"
   },
   {
@@ -351,11 +356,6 @@
  "unmodelled": [
   {
    "source": "talent",
-   "what": "Hunter's Vigil: Swift Hunt and Impale the Night are Normal Attacks",
-   "reason": "they are skill-talent rows that GO counts as Normal Attacks (as Skirk's): a teammate's Normal Attack buff reaches them only once the row's move is set to normal; their Electro infusion is the row's element (G4)"
-  },
-  {
-   "source": "talent",
    "what": "Hunter's Vigil: healing and Bond of Life",
    "reason": "no damage effect: healing"
   },
@@ -368,6 +368,17 @@
    "source": "c6",
    "what": "\"And So Shall I Never Despair\": Glimbright Shade attacks and damage reduction",
    "reason": "a damage instance, not a buff; damage reduction has no damage effect"
+  }
+ ],
+ "row_moves": [
+  {
+   "talent": "elemental_skill",
+   "labels": [
+    "Swift Hunt DMG",
+    "Impale the Night DMG"
+   ],
+   "move": "normal",
+   "go": "pando:Clorinde.ts:164-174,198-202"
   }
  ]
 }

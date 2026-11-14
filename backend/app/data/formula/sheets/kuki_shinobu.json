@@ -83,6 +83,10 @@
    "label": "Kuki Shinobu's HP fell below 25% (C6)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: it needs her HP to fall below 25%"
+   },
    "go": "pando:KukiShinobu.ts:93-94,107; wr:index.tsx:116-121,395-410"
   }
  ],

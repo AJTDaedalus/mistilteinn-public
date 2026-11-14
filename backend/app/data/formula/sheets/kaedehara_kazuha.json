@@ -70,6 +70,13 @@
    "label": "Kazuha swirled Pyro",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "he swirls the element of the carry he buffs",
+    "receiver_elements": [
+     "pyro"
+    ]
+   },
    "go": "pando:KaedeharaKazuha.ts:84-87,94-97,102-107; wr:index.tsx:101-106"
   },
   {
@@ -77,6 +84,13 @@
    "label": "Kazuha swirled Hydro",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "he swirls the element of the carry he buffs",
+    "receiver_elements": [
+     "hydro"
+    ]
+   },
    "go": "pando:KaedeharaKazuha.ts:84-87,94-97,102-107; wr:index.tsx:101-106"
   },
   {
@@ -84,6 +98,13 @@
    "label": "Kazuha swirled Electro",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "he swirls the element of the carry he buffs",
+    "receiver_elements": [
+     "electro"
+    ]
+   },
    "go": "pando:KaedeharaKazuha.ts:84-87,94-97,102-107; wr:index.tsx:101-106"
   },
   {
@@ -91,6 +112,13 @@
    "label": "Kazuha swirled Cryo",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "he swirls the element of the carry he buffs",
+    "receiver_elements": [
+     "cryo"
+    ]
+   },
    "go": "pando:KaedeharaKazuha.ts:84-87,94-97,102-107; wr:index.tsx:101-106"
   }
  ],

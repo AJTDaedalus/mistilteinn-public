@@ -117,6 +117,10 @@
    "label": "Party members' reactions on an opponent affected by Omen (C1 Prophecy of Submersion)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: it depends on the party's reactions on an Omen-affected opponent"
+   },
    "go": "pando:Mona.ts:118-120,140-145,251-258; wr:index.tsx:136-155,392-396"
   },
   {

@@ -76,13 +76,14 @@ def test_c1_raises_the_fanfare_limit_and_the_subjects_default_follows():
     assert fanfare1.default == 300 + raise_by  # type: ignore[attr-defined]
 
 
-def test_fanfare_is_off_for_a_teammate_and_its_value_is_the_burst_rows_ratio():
-    """`giver_is_subject`: Furina's own doing when she is optimized, the fight's for a teammate
-    (DECISIONS §39); the value is per point, multiplied by the condition in the browser."""
+def test_fanfare_is_at_the_cap_for_a_teammate_and_its_value_is_the_burst_rows_ratio():
+    """A teammate's buff at its usual value (DECISIONS §40 (ii)): no typical stack is documented,
+    so the cap (raised by C1), said; the value is per point, multiplied in the browser."""
     furina = _sheet("furina")
     kit = sheets.resolve(furina, _furina(constellation=1), giver_is_subject=False)
     fanfare = _condition(kit, "fanfare")
-    assert (fanfare.default, fanfare.default_reason) == (0, "situational")  # type: ignore[attr-defined]
+    assert (fanfare.default, fanfare.default_reason) == (400, "usual")  # type: ignore[attr-defined]
+    assert "at the cap" in fanfare.default_note  # type: ignore[attr-defined]
     [burst] = [e for e in kit.bonus.effects if e.per == "fanfare"]
     assert (burst.stat, burst.value, burst.elements) == ("dmg_bonus", pytest.approx(0.0025), None)
 
@@ -232,16 +233,20 @@ def test_a_self_flat_damage_from_em_is_a_conversion_too():
 # ── scoping a teammate buff away from the giver's own hits ───────────────────────────────
 
 
-def test_xianglings_c6_reaches_teammates_whole_and_her_own_pyronado_not_at_all():
-    """GO's `antiC6` removes C6 from her own Pyronado and first two swings (cast before it)."""
+def test_xianglings_c6_reaches_teammates_whole_and_of_her_burst_only_the_third_swing():
+    """GO's `antiC6` removes C6 from her own Pyronado and first two swings (cast before it);
+    the third swing keeps it, scoped by row (DECISIONS §40 (iv))."""
     xiangling = _sheet("xiangling")
     team = sheets.resolve(xiangling, _giver(xiangling, constellation=6), giver_is_subject=False)
     own = sheets.resolve(xiangling, _giver(xiangling, constellation=6), giver_is_subject=True)
     [mate] = [e for e in team.bonus.effects if e.stat == "dmg_bonus"]
-    [self_] = [e for e in own.bonus.effects if e.stat == "dmg_bonus"]
+    self_, swing = [e for e in own.bonus.effects if e.stat == "dmg_bonus"]
     assert mate.moves is None
     assert self_.moves is not None
     assert "burst" not in self_.moves
+    assert (swing.moves, [(r.talent, r.label) for r in swing.rows or ()]) == (
+        None, [("elemental_burst", "3-Hit Swing DMG")])
+    assert swing.value == self_.value
 
 
 def test_every_buffer_sheet_is_verified_and_names_what_it_does_not_model():

@@ -69,6 +69,10 @@
    "label": "Opponent near a character shielded by Jade Shield",
    "kind": "toggle",
    "default_by": "giver_is_subject",
+   "usual": {
+    "value": 1,
+    "reason": "his teams keep the Jade Shield up, so its RES shred reaches the opponents near the shielded character"
+   },
    "go": "pando:Zhongli.ts:87,90,120-123; wr:index.tsx:89-94"
   }
  ],

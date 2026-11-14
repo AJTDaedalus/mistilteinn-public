@@ -1488,7 +1488,8 @@ fifth batch) and on §39's open question.
   values.** This amends §39 (i)'s "situational off" for those cases: a formula estimate with every
   teammate's buff off by default answers a question nobody asks. **Being built on a later
   branch**; until it lands §39 (i) stands as written, and this branch follows it (Clorinde's A1
-  stacks, which the party's reactions build, default to 0).
+  stacks, which the party's reactions build, default to 0). *Built on
+  `feat/formula-defaults-rowscope`; the rule as implemented is §41.*
 - **(iii) Cited constants are accepted where the seeded data is zero or wrong.** Confirms what the
   sheets already do: Xingqiu's A4 and C2, Zhongli's Jade Shield RES shred, Mavuika's A4 (0.002
   per Fighting Spirit where the seeded list says 0.0001). Each stays a `constant` value citing
@@ -1497,7 +1498,8 @@ fifth batch) and on §39's open question.
   estimate scopes a buff by move today and by talent row only where a sheet names rows; the
   per-hit `attack[]` import (task 4) is to supply each row's real attack type and scope, ending
   the "skill-talent rows that are Normal Attacks" caveats (Skirk, Mavuika, Clorinde, Cyno) and
-  the move-over-row over-reach. **Later branch.**
+  the move-over-row over-reach. **Later branch.** *Built (§41): the move comes from GO's
+  per-row declaration in each sheet, because `attack[]` carries no move and no row link.*
 - **(v) Stored talent levels are capped at 10, with the boosted level shown.** GOOD's levels
   exclude constellation boosts (§2.6 rule 6, task 9b); storage keeps that number, at most 10, and
   the UI shows the effective level beside it. **Parallel branch** (`feat/talent-level-cap`).
@@ -1505,3 +1507,62 @@ fifth batch) and on §39's open question.
   40,000, capped) needs a threshold on a value; the threshold this branch adds to the sheet format
   (`ValueRef.threshold`) is the mechanism, but her term is flat damage from HP *above a
   threshold* on top of a cap, and is **built on a later branch** with its own fixture.
+  *Built (§41), with three GO fixtures.*
+
+## 41. The kit-condition default rule as built, row scope, and Vodyanitsa's A4 (2026-11-14)
+
+Built on `feat/formula-defaults-rowscope`: §40 (ii), (iv) and (vi). This entry records what was
+implemented, so §39 (i) and §40 (ii) are read together with it.
+
+**The default rule (§40 (ii)), in one place: `sheets.SheetCondition.resolve`.**
+
+1. A condition with a curated **`usual`** (value, one-line reason, citation where one exists)
+   defaults to it: the value its character's ordinary play holds it at. `default_reason` is
+   `usual`, or `situational` where the usual value is off, and the reason is shown beside the
+   control as `default_note`.
+2. Otherwise `default_by` decides: **`self`** (the character's own kit) is on at its maximum;
+   **`giver_is_subject`** is the same for the optimized character, and for a teammate it is the
+   teammate's buff, **on at its maximum** (`teammate`), with a note saying no usual value was
+   curated.
+3. A **`situational`** condition **must** carry a `usual`: its normal-play value, or 0 with the
+   reason it stays off. The schema refuses one without. So nothing is off without a reason, and
+   every condition remains a visible toggle.
+
+Usual values are never invented: they come from a KQM quick guide's sentence (Arlecchino's 130%
+Bond, Neuvillette's two A1 stacks in his Furina teams, Clorinde's three A1 stacks, Raiden's 60
+Resolve, Alhaitham's burst at 0 Mirrors, Mavuika's 200 Fighting Spirit), from the estimate's own
+model (one target: opponent counts default to 1), or, where nothing documents a usual value, the
+maximum with the reason saying exactly that (Furina's Fanfare, Skirk's Void Rifts, Shenhe's C4).
+Two follow the receiver: Kazuha's and Sucrose's swirl toggles are on for the optimized
+character's element (`Usual.receiver_elements`), Sucrose's C6 absorbs it.
+
+61 of the 167 conditions carry a `usual`; **91 change default** for a Pyro receiver (27 on the
+giver themselves, 91 when a teammate gives them; 97 counting the six swirl toggles that follow
+another receiver's element), e.g. Bennett's field, Kazuha's matching swirl,
+Zhongli's shield RES, Furina's Fanfare (300, 400 from C1), Skirk's A4 (3), Neuvillette's A1 (2),
+Arlecchino's Bond (200 → 130). Kept off, each with its reason: HP thresholds (Hu Tao, Kuki,
+Bennett below 70%), kills (Hu Tao C4, Yoimiya C1), party compositions the estimate does not
+check (Moonsign, Stellar Radiance), Neuvillette's A4 HP (no usual value documented), Raiden's Eye
+(the active character's Energy Cost, which the estimate does not read). **Set conditionals and
+resonance are unchanged**, as §40 (ii) names only kits.
+
+**No GO fixture relies on a default any more.** Each states every condition it reads (the
+earlier ones through `tests/unit/go_fixtures_stated.py`, the values they were worked at), and
+`build()` refuses one that leaves any to its default, so this change of rule moved no fixture's
+inputs or figure.
+
+**Row scope and attack types (§40 (iv)).** The per-hit `attack[]` import cannot give a row's
+move: its `attack_type` is the strike geometry (`Melee`, `Range`, `Default`) and nothing links an
+entry to a talent row (its `damage_param` is an internal name no label carries). So a sheet's
+`row_moves` transcribe GO's own per-row move declaration, cited, and `/hits` reports each row's
+`move`; the label guess remains for rows no sheet names. Effects GO adds inside one row's formula
+use the existing `rows` scope instead of `moves`. Fixed: Neuvillette A1/C2, Skirk A4/C2 (the
+Void Rift bonus stays by move, as GO adds it to every Normal Attack), Ganyu A1, Navia C2/C6,
+Lohen C6; newly applied: Mavuika's Flamestrider bonuses and C2's, Linnea's Million Ton Crush C2,
+Valeriy's C6 Thunderburst Shell, Xiangling's C6 on her third swing. Wriothesley's Gracious Rebuke
+stays move-scoped: GO makes it a row the catalogue does not have.
+
+**Vodyanitsa's A4 (§40 (vi))** needed nothing new: `ValueRef.threshold`, `cap` and `stat_unit`
+already carried it. Lead Vocal is flat Hydro/Cryo damage from her Max HP above 40,000 at 140 per
+1,000, capped at 3,500: a number for a teammate, and a per-build conversion on herself. Chorus
+(off-field members) is named as not applied.

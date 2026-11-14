@@ -156,6 +156,10 @@
     "steady",
     "overloaded"
    ],
+   "usual": {
+    "value": "",
+    "reason": "none: the Detection Core's state is the player's choice; pick the one you play"
+   },
    "go": "wr:index.tsx:182-200"
   }
  ],
