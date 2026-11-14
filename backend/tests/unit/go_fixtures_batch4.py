@@ -409,6 +409,95 @@ def _mona_on_xiangling(coefficient: float) -> float:
                  reaction_bonus=mona.pins.constellations[1][1]))
 
 
+# Raiden Shogun: C2 on her own Musou no Hitotachi; C4 as Xiangling's teammate. Seeded rows at 10.
+RAIDEN_SKILL_10 = (["Skill DMG|{param1:F1P}", "Coordinated ATK DMG|{param2:F1P}",
+                    "Duration|{param3:F1}s", "Elemental Burst DMG Bonus|{param4:F2P} Per Energy"],
+                   [2.1096, 0.756, 25.0, 0.003])
+RAIDEN_BURST_10_LABELS = [
+    "Musou no Hitotachi Base DMG|{param1:P}",
+    "Resolve Bonus|{param2:F2P} Initial/{param3:F2P} ATK DMG Per Stack",
+    "Resolve Stacks Gained|{param4:F2} Per Energy Consumed", "Energy Cost|{param20:I}"]
+RAIDEN_BURST_10_PARAMS = [7.2144, 0.069984, 0.013071, 0.2, 0.798157, 0.784215, 0.960228,
+                          0.55107, 0.55264, 1.319224, 1.099, 1.32665, 20.0, 1.26378, 2.527025,
+                          3.15639, 2.5, 7.0, 18.0, 90.0]
+RAIDEN_INITIAL = ("Musou no Hitotachi Base DMG|{param1:P}", RAIDEN_BURST_10_PARAMS)
+RAIDEN_BASE = base._base_stats(base_atk=945.0, base_hp=12907.0, base_def=789.0)
+RAIDEN_ARTIFACTS = {"atk_pct": 0.466, "flat_atk": 311.0, "electro_dmg_bonus": 0.466,
+                    "crit_rate": 0.3, "crit_dmg": 0.8}
+
+
+def _raiden_on_herself(_: float) -> float:
+    """GO: `musou('burst', dm.burst.dmg, true)` = `(row + resolveBonus1 × stacks) × final.atk`
+    as burst DMG (`pando RaidenShogun.ts:131-134,167-182,209`; WR `burstResolve`,
+    `index.tsx:160-192,235`); the Eye on herself `prod(skillEyeOn, enerCost, ratio)` into
+    `burst_dmg_` (`:103-113,190`; WR `:101-112,272`); C2 `enemyDefIgn_` 60% (`:159-161,195`; WR
+    `:113-118,274`). Sixty Resolve stacks. Ascension 3, so her A4 (not modelled: a second
+    Energy Recharge conversion) is locked in GO's figure too."""
+    rd = sheets.sheet_for("10000052")
+    assert rd is not None
+    stats = base._stats(RAIDEN_BASE, RAIDEN_ARTIFACTS)
+    mv = RAIDEN_BURST_10_PARAMS[0] + 60 * RAIDEN_BURST_10_PARAMS[1]
+    return _go_hit(base_damage=mv * base._total(stats, "atk"),
+                   dmg_bonus=stats["electro_dmg_bonus"] + RAIDEN_SKILL_10[1][3] * 90.0,
+                   crit_rate=stats["crit_rate"], crit_dmg=stats["crit_dmg"],
+                   def_ignore=rd.pins.constellations[2][0])
+
+
+def _raiden_on_xiangling(_: float) -> float:
+    """GO: the Eye to a teammate, `prod(energy, ratio)` into `burst_dmg_` for the 80-Energy
+    Pyronado (`pando RaidenShogun.ts:105-108,114-122,193`; WR `index.tsx:125-147,279`); C4 ATK%
+    to the others (`:162-165,197`; WR `:210-219,278`)."""
+    rd = sheets.sheet_for("10000052")
+    assert rd is not None
+    stats = base._stats(base.XIANGLING_BASE, base.XIANGLING_ARTIFACTS)
+    atk = base._total(stats, "atk", extra_pct=rd.pins.constellations[4][0])
+    return _go_hit(base_damage=base._multiplier(base.PYRONADO) * atk,
+                   dmg_bonus=stats["pyro_dmg_bonus"] + RAIDEN_SKILL_10[1][3] * 80.0,
+                   crit_rate=stats["crit_rate"], crit_dmg=stats["crit_dmg"])
+
+
+def _raiden_fixtures() -> list[dict[str, Any]]:
+    team = ["electro", "pyro", "hydro", "anemo"]
+    rows = {("elemental_skill", 10): RAIDEN_SKILL_10,
+            ("elemental_burst", 10): (RAIDEN_BURST_10_LABELS, RAIDEN_BURST_10_PARAMS)}
+    own = _giver("Raiden Shogun", "10000052", constellation=2, rows=rows, stats=RAIDEN_BASE)
+    own = dataclasses.replace(own, ascension_phase=3)
+    return [
+        _fixture(
+            "raiden_shogun_eye_resolve_c2_on_her_own_burst",
+            "a self DMG buff from one talent row times another, Resolve as flat damage from her "
+            "own ATK per stack on one row (a row's second parameter), and DEF ignore",
+            [FORMULA, f"{PANDO}RaidenShogun.ts:50,55-56,73,81,98-113,123-138,159-182,190-195"],
+            {"name": "Raiden Shogun", "constellation": 2, "ascension_phase": 3,
+             "talent_levels": {"elemental_skill": 10, "elemental_burst": 10},
+             "stats": "the optimized character: her ATK is the candidate's"},
+            {"element": "electro", "weapon_type": "WEAPON_POLE", "member_elements": team},
+            RAIDEN_BASE, RAIDEN_ARTIFACTS, "electro",
+            _with_hit(base._row("initial", "Musou no Hitotachi Base DMG", "burst", 1,
+                                RAIDEN_INITIAL, None),
+                      "elemental_burst", "Musou no Hitotachi Base DMG"),
+            _kit("10000052", own, subject=True, receiver_element="electro", team_elements=team),
+            {"kit:raiden_shogun/resolve": 60}, _raiden_on_herself),
+        _fixture(
+            "raiden_shogun_eye_c4_on_a_teammate",
+            "a teammate's burst DMG per Energy of their own cost (a number the user states), "
+            "and ATK% to the others",
+            [FORMULA, f"{PANDO}RaidenShogun.ts:50,84,100-122,162-165,193,197"],
+            {"name": "Raiden Shogun", "constellation": 4, "ascension_phase": 6,
+             "talent_levels": {"elemental_skill": 10}, "stats": {}},
+            {"element": "pyro", "weapon_type": "WEAPON_POLE",
+             "member_elements": ["pyro", "electro", "hydro", "anemo"]},
+            base.XIANGLING_BASE, base.XIANGLING_ARTIFACTS, "pyro",
+            base._row("nado", "Pyronado DMG", "burst", 1, base.PYRONADO, None),
+            _kit("10000052", _giver("Raiden Shogun", "10000052", constellation=4,
+                                    rows={("elemental_skill", 10): RAIDEN_SKILL_10}),
+                 subject=False, receiver_element="pyro",
+                 team_elements=["pyro", "electro", "hydro", "anemo"]),
+            {"kit:raiden_shogun/eye_energy": 80, "kit:raiden_shogun/c4_after_burst": 1},
+            _raiden_on_xiangling),
+    ]
+
+
 def _buffers() -> list[dict[str, Any]]:
     xiangling = {"element": "pyro", "weapon_type": "WEAPON_POLE"}
     nado = base._row("nado", "Pyronado DMG", "burst", 1, base.PYRONADO, None)
@@ -575,4 +664,5 @@ def _buffers() -> list[dict[str, Any]]:
              subject=False, receiver_element="pyro", team_elements=team),
         {"kit:mona/omen": 1, "kit:mona/c1_omen": 1}, _mona_on_xiangling,
         "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9"))
+    out.extend(_raiden_fixtures())
     return out

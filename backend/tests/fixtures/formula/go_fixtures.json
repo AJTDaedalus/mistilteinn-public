@@ -7537,6 +7537,462 @@
       "go_value": 9046.369661037807,
       "divergence": "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9",
       "relative_divergence_from_go": 0.00016995306977724906
+    },
+    {
+      "name": "raiden_shogun_eye_resolve_c2_on_her_own_burst",
+      "covers": "a self DMG buff from one talent row times another, Resolve as flat damage from her own ATK per stack on one row (a row's second parameter), and DEF ignore",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,490-514",
+        "libs/gi/formula/src/data/char/RaidenShogun.ts:50,55-56,73,81,98-113,123-138,159-182,190-195"
+      ],
+      "givers": [
+        {
+          "name": "Raiden Shogun",
+          "constellation": 2,
+          "ascension_phase": 3,
+          "talent_levels": {
+            "elemental_skill": 10,
+            "elemental_burst": 10
+          },
+          "stats": "the optimized character: her ATK is the candidate's"
+        }
+      ],
+      "team": {
+        "element": "electro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "electro",
+          "pyro",
+          "hydro",
+          "anemo"
+        ]
+      },
+      "base": {
+        "base_atk": 945.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12907.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 789.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "electro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.8
+      },
+      "set_pools": [],
+      "channel": "electro",
+      "rows": [
+        {
+          "id": "initial",
+          "label": "Musou no Hitotachi Base DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Musou no Hitotachi Base DMG|{param1:P}",
+            "params": [
+              7.2144,
+              0.069984,
+              0.013071,
+              0.2,
+              0.798157,
+              0.784215,
+              0.960228,
+              0.55107,
+              0.55264,
+              1.319224,
+              1.099,
+              1.32665,
+              20.0,
+              1.26378,
+              2.527025,
+              3.15639,
+              2.5,
+              7.0,
+              18.0,
+              90.0
+            ]
+          },
+          "multiplier": 7.2144,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "hit": {
+            "talent": "elemental_burst",
+            "label": "Musou no Hitotachi Base DMG"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:raiden_shogun",
+          "label": "Raiden Shogun (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/RaidenShogun.ts (pando), libs/gi/sheets/src/Characters/RaidenShogun/index.tsx (wr) @ 2c13fc40 \u2014 eye_self pando:RaidenShogun.ts:50,73,103-113,190; wr:index.tsx:101-112,272; resolve_initial pando:RaidenShogun.ts:55-56,102,123-138,167-182,209-220; wr:index.tsx:67,149-192,235-246; resolve_infused pando:RaidenShogun.ts:55-56,102,123-138,167-182,209-220; wr:index.tsx:68,149-192,235-246; c2_def_ignore pando:RaidenShogun.ts:81,159-161,195; wr:index.tsx:113-118,274; gcsim internal/characters/raiden/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "eye",
+                "label": "Eye of Stormy Judgment is active, on Raiden herself (Transcendence: Baleful Omen)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "resolve",
+                "label": "Chakra Desiderata: Resolve stacks consumed (Secret Art: Musou Shinsetsu)",
+                "kind": "number",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": 60.0,
+                "step": 10.0,
+                "options": null
+              },
+              {
+                "key": "in_burst",
+                "label": "Musou Isshin is active (C2 Steelbreaker)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.27,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "eye",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.069984,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_burst",
+                    "label": "Musou no Hitotachi Base DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": "resolve",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.013071,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_burst",
+                    "label": "1-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_burst",
+                    "label": "2-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_burst",
+                    "label": "3-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_burst",
+                    "label": "4-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_burst",
+                    "label": "5-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_burst",
+                    "label": "Charged Attack DMG"
+                  },
+                  {
+                    "talent": "elemental_burst",
+                    "label": "Plunge DMG"
+                  },
+                  {
+                    "talent": "elemental_burst",
+                    "label": "Low/High Plunge DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": "resolve",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "def_ignore",
+                "value": 0.6,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "in_burst",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A1: Wishes Unnumbered: Resolve from Elemental Orbs",
+                "reason": "no damage effect: the Resolve count is the user's condition"
+              },
+              {
+                "what": "C1: Ominous Inscription: Resolve gained faster",
+                "reason": "no damage effect: the Resolve count is the user's condition"
+              },
+              {
+                "what": "TALENT: Musou Isshin: the Electro infusion of her attacks",
+                "reason": "the hit's element is the row's channel, which the user chooses"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:raiden_shogun/resolve": 60
+      },
+      "expected": 30972.923789329274,
+      "go_value": 30972.923789329274,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "raiden_shogun_eye_c4_on_a_teammate",
+      "covers": "a teammate's burst DMG per Energy of their own cost (a number the user states), and ATK% to the others",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,490-514",
+        "libs/gi/formula/src/data/char/RaidenShogun.ts:50,84,100-122,162-165,193,197"
+      ],
+      "givers": [
+        {
+          "name": "Raiden Shogun",
+          "constellation": 4,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_skill": 10
+          },
+          "stats": {}
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "electro",
+          "hydro",
+          "anemo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado",
+          "label": "Pyronado DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:raiden_shogun",
+          "label": "Raiden Shogun (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/RaidenShogun.ts (pando), libs/gi/sheets/src/Characters/RaidenShogun/index.tsx (wr) @ 2c13fc40 \u2014 eye_team pando:RaidenShogun.ts:50,105-108,114-122,193; wr:index.tsx:125-147,279; c4_atk pando:RaidenShogun.ts:84,162-165,197; wr:index.tsx:210-219,278; gcsim internal/characters/raiden/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "eye_energy",
+                "label": "Eye of Stormy Judgment: the active character's Elemental Burst Energy Cost",
+                "kind": "number",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": 90.0,
+                "step": 10.0,
+                "options": null
+              },
+              {
+                "key": "c4_after_burst",
+                "label": "After Musou Isshin ends (C4 Pledge of Propriety)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.003,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "eye_energy",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "atk_pct",
+                "value": 0.3,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c4_after_burst",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A4: Enlightened One: Electro DMG Bonus from her Energy Recharge above 100%",
+                "reason": "an Energy Recharge conversion of the optimized character's own stat: the recipe carries one per hit (Emblem of Severed Fate's, which she most often wears), so a second is not offered yet"
+              },
+              {
+                "what": "A4: Enlightened One: Energy restored by Musou Isshin",
+                "reason": "no damage effect: energy"
+              },
+              {
+                "what": "A1: Wishes Unnumbered: Resolve from Elemental Orbs",
+                "reason": "no damage effect: the Resolve count is the user's condition"
+              },
+              {
+                "what": "C1: Ominous Inscription: Resolve gained faster",
+                "reason": "no damage effect: the Resolve count is the user's condition"
+              },
+              {
+                "what": "TALENT: Musou Isshin: the Electro infusion of her attacks",
+                "reason": "the hit's element is the row's channel, which the user chooses"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:raiden_shogun/eye_energy": 80,
+        "kit:raiden_shogun/c4_after_burst": 1
+      },
+      "expected": 3498.9799554166157,
+      "go_value": 3498.9799554166157,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
     }
   ]
 }

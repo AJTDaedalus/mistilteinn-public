@@ -149,16 +149,28 @@ class _Strict(BaseModel):
 
 class ParamRef(_Strict):
     """Another seeded parameter a value reads: a factor (Vesna's C4 multiplying her A4), a cap
-    (Chevreuse's A4 at 40%), or a raise to a condition's maximum (Furina's C1)."""
+    (Chevreuse's A4 at 40%), or a raise to a condition's maximum (Furina's C1). A factor may
+    also be a talent row of the giver's, at their effective level (Raiden's Eye on herself is
+    the skill's per-Energy ratio times her burst's own "Energy Cost" row, GO `dm.burst.enerCost`).
+    """
 
     constellation: int | None = None
     passive: int | None = None
-    param: int
+    param: int | None = None
+    talent: str | None = None
+    row: str | None = None
 
     @model_validator(mode="after")
     def _one_list(self) -> ParamRef:
-        if (self.constellation is None) == (self.passive is None):
-            raise ValueError("a parameter reference names a constellation or a passive")
+        named = [x for x in (self.constellation, self.passive, self.talent) if x is not None]
+        if len(named) != 1:
+            raise ValueError("a parameter reference names a constellation, a passive or a "
+                             "talent row")
+        if self.talent is not None:
+            if self.talent not in TALENTS or not self.row or self.param is not None:
+                raise ValueError("a talent parameter names a talent and a row, not a param")
+        elif self.param is None:
+            raise ValueError("a constellation or passive parameter names its index")
         return self
 
 
@@ -297,6 +309,10 @@ class ValueRef(_Strict):
     #: The seeded list publishes a reduction as a positive number (Vodyanitsa's "Hydro/Cryo
     #: RES Reduction" 0.3); GO writes it negated into `enemyRes_` (`.map((v) => -v)`).
     negate: bool = False
+    #: A talent row with several parameters: which one, 0 for the first `{paramN}` its format
+    #: string names. Raiden's "Resolve Bonus|{param2} Initial/{param3} ATK DMG Per Stack" is
+    #: GO's `resolveBonus1` (part 0) and `resolveBonus2` (part 1).
+    part: int = 0
     #: Multiplied by a second seeded parameter: GO `prod(percent(a4), c4)`.
     times_param: ParamRef | None = None
     #: With `times_stat`: the stat is counted per this many points (GO `prod(percent(x), hp,
@@ -589,6 +605,9 @@ class Sheet(_Strict):
     def _pinned(self, ref: ParamRef) -> bool:
         if ref.constellation is not None:
             return ref.constellation in self.pins.constellations
+        if ref.talent is not None:
+            return any(label.split("|", 1)[0] == ref.row
+                       for label in self.pins.talent_rows.get(ref.talent, ()))
         return ref.passive in self.pins.passives
 
 
@@ -699,37 +718,49 @@ def _number(sheet: Sheet, giver: Giver, ref: ValueRef, *, shift: int = 0) -> flo
 def _extra(sheet: Sheet, giver: Giver, extra: ParamRef) -> float:
     return _parameter(sheet, giver, ValueRef(
         constellation=extra.constellation, passive=extra.passive, param=extra.param,
+        talent=extra.talent, row=extra.row,
     ))
+
+
+def _talent_parameter(sheet: Sheet, giver: Giver, ref: ValueRef, *, shift: int) -> float:
+    """A talent row's parameter at the giver's effective level: the row by its pinned label
+    (or the team-chosen one), the parameter its format string names (`part`)."""
+    talent = ref.talent or ""
+    level = effective_level(sheet, giver, talent)
+    row = giver.talent_rows.get((talent, level))
+    if row is None:
+        raise _Withheld(f"{talent} has no published row at level {level}")
+    if ref.rows_by_team is not None:
+        # The rows share their text before `|`, so the full label is the key; the pins hold
+        # each one, and a seeded row without that exact label is withheld.
+        want = ref.rows_by_team.labels[shift]
+        if want not in row.labels:
+            raise _Withheld(f"{talent} row {want!r} is not in the seeded row any more")
+        label = want
+    else:
+        pinned = {lab.split("|", 1)[0]: lab for lab in sheet.pins.talent_rows[talent]}
+        found_label = next((lab for lab in row.labels if lab.split("|", 1)[0] == ref.row),
+                           None)
+        if found_label is None or found_label != pinned[ref.row or ""]:
+            raise _Withheld(
+                f"{talent} row {ref.row!r} changed since curation: pinned "
+                f"{pinned[ref.row or '']!r}, seeded {found_label!r}",
+            )
+        label = found_label
+    found = _PARAM.findall(label.split("|", 1)[1])
+    if len(found) <= ref.part:
+        raise _Withheld(f"{talent} row {label!r} names no parameter {ref.part}")
+    index = int(found[ref.part]) - 1
+    if index >= len(row.params):
+        raise _Withheld(f"{talent} row {label!r} has no param{index + 1} at this level")
+    return float(row.params[index])
 
 
 def _parameter(sheet: Sheet, giver: Giver, ref: ValueRef, *, shift: int = 0) -> float:
     if ref.constant is not None:
         return ref.constant
     if ref.talent is not None:
-        level = effective_level(sheet, giver, ref.talent)
-        row = giver.talent_rows.get((ref.talent, level))
-        if row is None:
-            raise _Withheld(f"{ref.talent} has no published row at level {level}")
-        if ref.rows_by_team is not None:
-            # The rows share their text before `|`, so the full label is the key; the pins
-            # hold each one, and a seeded row without that exact label is withheld.
-            want = ref.rows_by_team.labels[shift]
-            label = want if want in row.labels else None
-            if label is None:
-                raise _Withheld(f"{ref.talent} row {want!r} is not in the seeded row any more")
-        else:
-            pinned = {label.split("|", 1)[0]: label
-                      for label in sheet.pins.talent_rows[ref.talent]}
-            label = next((lab for lab in row.labels if lab.split("|", 1)[0] == ref.row), None)
-            if label is None or label != pinned[ref.row or ""]:
-                raise _Withheld(
-                    f"{ref.talent} row {ref.row!r} changed since curation: pinned "
-                    f"{pinned[ref.row or '']!r}, seeded {label!r}",
-                )
-        found = _PARAM.search(label.split("|", 1)[1])
-        if found is None:
-            raise _Withheld(f"{ref.talent} row {label!r} names no parameter")
-        return float(row.params[int(found.group(1)) - 1])
+        return _talent_parameter(sheet, giver, ref, shift=shift)
     if ref.constellation is not None:
         live, pin, name = (giver.constellation_params.get(ref.constellation),
                            sheet.pins.constellations[ref.constellation], f"C{ref.constellation}")

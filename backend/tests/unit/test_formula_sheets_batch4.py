@@ -330,6 +330,70 @@ def test_monas_c4_is_her_lists_magnitude_and_her_a4_on_herself_is_withheld():
                for u in kit.bonus.unmodelled)
 
 
+# ── Raiden: a row's second parameter, and one talent row times another ───────────────────
+
+RAIDEN_ROWS = {
+    ("elemental_skill", 10): sheets.TalentRow(
+        ["Elemental Burst DMG Bonus|{param4:F2P} Per Energy"], [2.1096, 0.756, 25.0, 0.003]),
+    ("elemental_burst", 10): sheets.TalentRow(
+        ["Resolve Bonus|{param2:F2P} Initial/{param3:F2P} ATK DMG Per Stack",
+         "Energy Cost|{param20:I}"],
+        [7.2144, 0.069984, 0.013071, *([0.0] * 16), 90.0]),
+}
+
+
+def _raiden(constellation: int = 0) -> sheets.Giver:
+    return _giver(_sheet("raiden_shogun"), constellation=constellation,
+                  talent_levels={"elemental_skill": 10, "elemental_burst": 10},
+                  talent_rows=RAIDEN_ROWS)
+
+
+def test_raidens_eye_on_herself_is_the_ratio_times_her_own_bursts_cost():
+    kit = sheets.resolve(_sheet("raiden_shogun"), _raiden(), giver_is_subject=True,
+                         receiver_element="electro", team_elements=["electro"])
+    [eye] = [e for e in _effects(kit, "dmg_bonus") if e.per is None]
+    assert eye.value == pytest.approx(0.003 * 90.0)
+    assert eye.moves == ("burst",)
+
+
+def test_resolve_reads_each_part_of_its_row_per_stack_on_her_own_rows():
+    kit = sheets.resolve(_sheet("raiden_shogun"), _raiden(), giver_is_subject=True,
+                         receiver_element="electro", team_elements=["electro"])
+    initial, infused = _effects(kit, "flat_damage_from_atk")
+    assert (initial.value, infused.value) == (pytest.approx(0.069984), pytest.approx(0.013071))
+    assert initial.per == infused.per == "resolve"
+    assert [r.label for r in initial.rows or ()] == ["Musou no Hitotachi Base DMG"]
+    assert "Musou no Hitotachi Base DMG" not in [r.label for r in infused.rows or ()]
+    assert any(u.what.startswith("A4: Enlightened One: Electro DMG")
+               for u in kit.bonus.unmodelled)
+
+
+def test_the_eye_for_a_teammate_is_per_energy_they_state_and_c2_is_hers_alone():
+    kit = sheets.resolve(_sheet("raiden_shogun"), _raiden(2), giver_is_subject=False,
+                         receiver_element="pyro", team_elements=["electro", "pyro"])
+    [eye] = _effects(kit, "dmg_bonus")
+    assert (eye.value, eye.per) == (pytest.approx(0.003), "eye_energy")
+    assert _effects(kit, "def_ignore") == []
+    own = sheets.resolve(_sheet("raiden_shogun"), _raiden(2), giver_is_subject=True,
+                         receiver_element="electro", team_elements=["electro"])
+    assert [e.value for e in _effects(own, "def_ignore")] == [pytest.approx(0.6)]
+
+
+def test_a_part_past_the_rows_parameters_is_withheld():
+    rows = dict(RAIDEN_ROWS)
+    rows[("elemental_burst", 10)] = sheets.TalentRow(
+        ["Resolve Bonus|{param2:F2P} Initial/{param3:F2P} ATK DMG Per Stack",
+         "Energy Cost|{param20:I}"], [7.2144, 0.069984])
+    giver = _giver(_sheet("raiden_shogun"), talent_levels={"elemental_skill": 10,
+                                                          "elemental_burst": 10},
+                   talent_rows=rows)
+    kit = sheets.resolve(_sheet("raiden_shogun"), giver, giver_is_subject=True,
+                         receiver_element="electro", team_elements=["electro"])
+    assert len(_effects(kit, "flat_damage_from_atk")) == 1
+    with pytest.raises(ValidationError, match="talent and a row, not a param"):
+        sheets.ParamRef(talent="elemental_burst", row="Energy Cost", param=0)
+
+
 # ── the fixtures: only the EM coefficient may divide them from GO ─────────────────────────
 
 
