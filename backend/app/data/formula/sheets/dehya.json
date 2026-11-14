@@ -1,0 +1,213 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Dehya",
+ "nanoka_id": "10000079",
+ "slug": "dehya",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Dehya.ts",
+  "wr": "libs/gi/sheets/src/Characters/Dehya/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/dehya/",
+ "verified_by": [
+  "dehya_c1_c6_on_her_own_fist"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:Dehya.ts:125-126",
+   "gcsim": "dehya.go:37"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:Dehya.ts:125,127",
+   "gcsim": "dehya.go:38"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "1": [
+    0.2,
+    0.036,
+    0.06,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "2": [
+    6.0,
+    0.5,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    0.1,
+    0.15,
+    0.5,
+    4.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "c2_field",
+   "label": "Her field after a Ranging Flame (C2)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Dehya.ts:98,112-114"
+  },
+  {
+   "key": "c6_stacks",
+   "label": "Burst hits that crit, stacking CRIT DMG (C6)",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 4,
+   "step": 1,
+   "go": "pando:Dehya.ts:99,116-120"
+  }
+ ],
+ "effects": [
+  {
+   "key": "c1_hp",
+   "label": "C1 The Flame Incandescent: Max HP",
+   "source": "c1",
+   "receivers": "self",
+   "stat": "hp_pct",
+   "value": {
+    "constellation": 1,
+    "param": 0
+   },
+   "go": "pando:Dehya.ts:70-74,101,129"
+  },
+  {
+   "key": "c1_skill",
+   "label": "C1 The Flame Incandescent: skill DMG + a share of her Max HP",
+   "source": "c1",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "skill"
+   ],
+   "value": {
+    "constellation": 1,
+    "param": 1,
+    "times_stat": "hp"
+   },
+   "go": "pando:Dehya.ts:70-74,102-106,130"
+  },
+  {
+   "key": "c1_burst",
+   "label": "C1 The Flame Incandescent: burst DMG + a share of her Max HP",
+   "source": "c1",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "constellation": 1,
+    "param": 2,
+    "times_stat": "hp"
+   },
+   "go": "pando:Dehya.ts:70-74,107-111,131"
+  },
+  {
+   "key": "c2_field_dmg",
+   "label": "C2 The Sand-Blades Glittering: Field DMG",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Field DMG"
+    }
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "c2_field",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Dehya.ts:75-78,112-114,145-153"
+  },
+  {
+   "key": "c6_rate",
+   "label": "C6 The Burning Claws Cleaving: burst CRIT Rate",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 0
+   },
+   "go": "pando:Dehya.ts:84-90,115,132"
+  },
+  {
+   "key": "c6_dmg",
+   "label": "C6 The Burning Claws Cleaving: burst CRIT DMG per stack",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 1
+   },
+   "per": "c6_stacks",
+   "go": "pando:Dehya.ts:84-90,116-120,133"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Molten Inferno: damage mitigation and interruption resistance",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a1",
+   "what": "Unstinting Succor: interruption resistance and damage reduction",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a4",
+   "what": "Stalwart and True: healing",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c4",
+   "what": "An Oath Abiding: Energy and healing",
+   "reason": "no damage effect"
+  }
+ ]
+}

@@ -206,6 +206,15 @@ class Cited(_Strict):
     cite: str
 
 
+class CountBonus(_Strict):
+    """A constellation that counts as one more member of the elements a row is chosen by:
+    Nahida's C1 (GO `sum(count.pyro, cmpGE(constellation, 1, 1))`). The 1 is GO's literal (her
+    C1 `param_list` is all zeros), so it is a cited constant."""
+
+    constellation: int
+    add: Cited
+
+
 class TeamIndex(_Strict):
     """A value read from a seeded **table** indexed by a team count (GO `subscript(count,
     table)`): Escoffier's A4 by Hydro/Cryo members, Yelan's A1 by distinct elements. The value
@@ -214,18 +223,23 @@ class TeamIndex(_Strict):
 
     #: `elements`: members whose element is one of `elements` (the receiver included, GO
     #: `team.common.count`); `distinct`: how many different elements the team has (GO
-    #: `own.common.eleCount`).
+    #: `own.common.eleCount`), or, with `elements`, how many of those are present (GO
+    #: `sum(cmpGE(count.pyro, 1, 1), …)`: Chasca's A1 counts the absorbable elements present).
     count: Literal["elements", "distinct"]
     elements: tuple[str, ...] | None = None
     size: int
     #: A count past `size` reads the table's last entry instead of being withheld: GO writes
-    #: the last entry again (Gorou's C6, `[c6[0], c6[1], c6[2], c6[2]]` by the Geo count).
+    #: the last entry again (Gorou's C6, `[c6[0], c6[1], c6[2], c6[2]]` by the Geo count), or
+    #: caps the count (Chasca's `min(…, 3)`).
     clamp: bool = False
+    #: A constellation that counts as one more (Chasca's C2, GO `cmpGE(constellation, 2, 1)`
+    #: inside her count): a cited constant, as `TeamRows.count_bonus`.
+    count_bonus: CountBonus | None = None
 
     @model_validator(mode="after")
     def _named(self) -> TeamIndex:
-        if (self.count == "elements") != (self.elements is not None):
-            raise ValueError("an `elements` count names its elements, a `distinct` one none")
+        if self.count == "elements" and self.elements is None:
+            raise ValueError("an `elements` count names its elements")
         for element in self.elements or ():
             if element not in VISIONS:
                 raise ValueError(f"{element!r} is not one of {VISIONS}")
@@ -289,15 +303,6 @@ class TeamGate(_Strict):
                 and all(c.holds(present) for c in self.counts))
 
 
-class CountBonus(_Strict):
-    """A constellation that counts as one more member of the elements a row is chosen by:
-    Nahida's C1 (GO `sum(count.pyro, cmpGE(constellation, 1, 1))`). The 1 is GO's literal (her
-    C1 `param_list` is all zeros), so it is a cited constant."""
-
-    constellation: int
-    add: Cited
-
-
 class TeamRows(_Strict):
     """A talent value whose **row** is chosen by a team count (GO `cmpGE(level, 1, cmpEq(level,
     1, row_1, row_2))`): Nahida's burst bonus reads its one-Pyro row or its two-Pyro row. Count
@@ -344,6 +349,9 @@ class ValueRef(_Strict):
     part: int = 0
     #: Multiplied by a second seeded parameter: GO `prod(percent(a4), c4)`.
     times_param: ParamRef | None = None
+    #: Multiplied by a number no seeded list carries, cited: Kokomi's A4 is 15% of her
+    #: Healing Bonus, whose innate 25% is GO's literal `dm.p.heal_` (her seeded list is zeros).
+    times_constant: Cited | None = None
     #: With `times_stat`: the stat is counted per this many points (GO `prod(percent(x), hp,
     #: 1 / 1000)`, "per 1,000 Max HP"). Without one, on an effect with `per`: the condition is
     #: counted per this many (GO `hydro_dmg_: passive2[2][0] / 100`, Neuvillette's A4 per
@@ -919,6 +927,8 @@ def _number(sheet: Sheet, giver: Giver, ref: ValueRef, *, shift: int = 0) -> flo
     number = _parameter(sheet, giver, ref, shift=shift)
     if ref.times_param is not None:
         number *= _extra(sheet, giver, ref.times_param)
+    if ref.times_constant is not None:
+        number *= ref.times_constant.constant
     number = -number if ref.negate else number
     return number if ref.offset is None else number + ref.offset.constant
 
@@ -1164,9 +1174,12 @@ def _team_shift(
         return None if count == 0 else min(count, len(rows.labels)) - 1
     assert index is not None
     if index.count == "distinct":
-        count = len(set(present))
+        count = len({e for e in present if index.elements is None or e in index.elements})
     else:
         count = sum(1 for e in present if e in (index.elements or ()))
+    bonus = index.count_bonus
+    if bonus is not None and giver.constellation >= bonus.constellation:
+        count += int(bonus.add.constant)
     if count > index.size:
         if not index.clamp:
             raise _Withheld(f"its table has {index.size} entries and the team counts {count}")

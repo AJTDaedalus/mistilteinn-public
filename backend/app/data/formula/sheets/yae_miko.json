@@ -1,0 +1,194 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Yae Miko",
+ "nanoka_id": "10000058",
+ "slug": "yae_miko",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/YaeMiko.ts",
+  "wr": "libs/gi/sheets/src/Characters/YaeMiko/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/yaemiko/",
+ "verified_by": [
+  "yae_miko_a4_c6_on_her_own_sakura",
+  "yae_miko_c4_on_raiden"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:YaeMiko.ts:167-168",
+   "gcsim": "yaemiko.go:31"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:YaeMiko.ts:167,169",
+   "gcsim": "yaemiko.go:30"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "4": [
+    0.2,
+    5.0,
+    8.0,
+    5.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    0.6,
+    2.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "4": [
+    0.0015,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "c4_hit",
+   "label": "After her Sesshou Sakura's lightning hits (C4)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:YaeMiko.ts:108-111,130-134"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a4_skill",
+   "label": "A4 Enlightened Blessing: Sesshou Sakura DMG per point of her EM",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "skill"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "elemental_mastery"
+   },
+   "go": "pando:YaeMiko.ts:64-66,142-146,171",
+   "gcsim": "asc.go:58-70"
+  },
+  {
+   "key": "c4_electro",
+   "label": "C4 Sakura Channeling: party Electro DMG",
+   "source": "c4",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "elements": [
+    "electro"
+   ],
+   "value": {
+    "constellation": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "c4_hit",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:YaeMiko.ts:89-95,130-134,174",
+   "gcsim": "cons.go:151"
+  },
+  {
+   "key": "c6_ignore",
+   "label": "C6 Forbidden Art: Daisesshou: Sesshou Sakura ignores DEF (Level 2 and up)",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "def_ignore",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Sesshou Sakura DMG: Level 2"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Sesshou Sakura DMG: Level 3"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Sesshou Sakura DMG: Level 4"
+    }
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 0
+   },
+   "go": "pando:YaeMiko.ts:96-99,138,188-214",
+   "gcsim": "cons.go:239"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "kit",
+   "what": "Hexerei: Edict of Cleansing and the parts that need it (C1 Stellarconduct, C2 EM, C4 burst DMG, C6 Stellarconduct CRIT DMG)",
+   "reason": "the Hexerei party mechanic is not modelled (as for Sucrose and Mona)"
+  },
+  {
+   "source": "a1",
+   "what": "The Shrine's Sacred Shade: Sesshou Sakura re-created by her burst",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c1",
+   "what": "Yakan Offering: Energy",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c2",
+   "what": "Fox's Mooncall: Sakura start at Level 2 and reach Level 4",
+   "reason": "pick the Level row the Sakura deal at; the estimate does not choose it"
+  }
+ ]
+}

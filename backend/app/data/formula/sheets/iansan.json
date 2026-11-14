@@ -1,0 +1,237 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Iansan",
+ "nanoka_id": "10000110",
+ "slug": "iansan",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Iansan.ts",
+  "wr": "libs/gi/sheets/src/Characters/Iansan/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/iansan/",
+ "verified_by": [
+  "iansan_burst_c2_c6_on_raiden"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Iansan.ts:130-131",
+   "gcsim": "iansan.go:38"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Iansan.ts:130,132",
+   "gcsim": "iansan.go:39"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_burst": [
+    "High Nightsoul Points ATK Conversion Rate|{param2:P} ATK",
+    "Max ATK Bonus|{param4:F1}"
+   ]
+  },
+  "constellations": {
+   "2": [
+    0.3,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    3.0,
+    3.0,
+    0.25,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    0.2,
+    1.0,
+    15.0,
+    3.0,
+    2.8,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "high_points",
+   "label": "Her burst with 42 Nightsoul points or more",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Iansan.ts:97-115"
+  },
+  {
+   "key": "precise",
+   "label": "Precise Movement, after her Charged Attack hits (A1)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Iansan.ts:95-96,117-122"
+  },
+  {
+   "key": "c6_extreme",
+   "label": "Extreme Force, after Nightsoul points overflow (C6)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Iansan.ts:95-96,123-125"
+  }
+ ],
+ "effects": [
+  {
+   "key": "burst_atk",
+   "label": "The Three Principles of Power: the active character's ATK, a share of hers, capped",
+   "source": "talent",
+   "receivers": "active",
+   "stat": "flat_atk",
+   "value": {
+    "talent": "elemental_burst",
+    "row": "High Nightsoul Points ATK Conversion Rate",
+    "times_stat": "atk",
+    "cap": {
+     "talent": "elemental_burst",
+     "row": "Max ATK Bonus"
+    }
+   },
+   "when": [
+    {
+     "condition": "high_points",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Iansan.ts:48-57,97-115,135"
+  },
+  {
+   "key": "a1_atk",
+   "label": "A1 Enhanced Resistance Training: ATK after Precise Movement",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "passive": 1,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "precise",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Iansan.ts:58-64,117-119,134"
+  },
+  {
+   "key": "c2_atk",
+   "label": "C2 Laziness is the Enemy!: the active character's ATK while she is off the field",
+   "source": "c2",
+   "receivers": "others",
+   "stat": "atk_pct",
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "min_ascension": 1,
+   "when": [
+    {
+     "condition": "precise",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Iansan.ts:75-78,120-122,136"
+  },
+  {
+   "key": "c6_dmg",
+   "label": "C6 Teachings of the Collective of Plenty: the active character's DMG",
+   "source": "c6",
+   "receivers": "active",
+   "stat": "dmg_bonus",
+   "value": {
+    "constellation": 6,
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "c6_extreme",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Iansan.ts:83-87,123-125,137"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "The Three Principles of Power: below 42 Nightsoul points, a share of her ATK per point",
+   "reason": "the per-point ramp is capped after it is multiplied, which a per-stack value cannot carry; the toggle prices the 42-point case"
+  },
+  {
+   "source": "talent",
+   "what": "The Three Principles of Power: the ATK bonus on herself",
+   "reason": "it reads her own ATK, which moves with every candidate, and the recipe carries no flat ATK from ATK per candidate",
+   "receiver": "subject"
+  },
+  {
+   "source": "a4",
+   "what": "Kinetic Energy Gradient Test: healing and Nightsoul points",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c1",
+   "what": "Starting's Never Easy: Energy",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c4",
+   "what": "Slow and Steady Wins the Race: Nightsoul points",
+   "reason": "no damage effect"
+  }
+ ]
+}

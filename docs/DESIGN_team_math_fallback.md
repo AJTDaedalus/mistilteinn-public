@@ -458,6 +458,47 @@ Nine GO fixtures, each naming its row (`hit`), so `formula:verify` also checks t
 misses with the row unnamed; Vodyanitsa's have one build below the cap and one past it, and a
 teammate's figure. All agree with GO exactly (relative ≤ 3e-8, the f32 floor).
 
+**Sixth batch (task 11, 2026-11-14; `feat/math-fallback-p2-sheets-batch6`;
+`test_formula_sheets_batch6.py`, `go_fixtures_batch6.py`).** The fifth batch's leftovers, then the
+supports and buffers next by use: Chasca, Kinich, Wanderer, Keqing, Sangonomiya Kokomi, Yae Miko,
+Kamisato Ayato, Baizhu, Dehya, Layla, Kirara, Lynette, Thoma, Beidou, Ororon, Iansan, Lan Yan.
+Two additions, each small and tested (and mutation-checked: dropping either fails a test and a
+fixture):
+
+| addition | where | why |
+|---|---|---|
+| `distinct` with `elements`, and `count_bonus`, on a team table | `TeamIndex`, `sheets._team_shift` | how many of some elements are present (GO `sum(cmpGE(count.pyro, 1, 1), …)`), a constellation counting one more (GO `cmpGE(constellation, 2, 1)` inside the count; a cited constant, as `TeamRows.count_bonus`), `clamp` capping it: Chasca's A1 by the absorbable elements present, her C2 adding one, `min(…, 3)` |
+| `times_constant` on a value | `ValueRef`, `sheets._number` | a value times a number no seeded list carries, cited: Kokomi's A4 is 15% of her Healing Bonus, whose innate 25% is GO's and gcsim's literal (her Flawless Strategy list is zeros) |
+
+No frontend change: every effect these sheets write was already carried by the recipe (Kokomi's
+CRIT Rate −100% is a `crit_rate` effect, clamped at 0 by `damage.ts` as GO's `avgHit` clamps it).
+
+| sheet | main effects | row scope / row moves | named, not applied |
+|---|---|---|---|
+| Chasca | A1 Shining Shell DMG by absorbable elements (+1 at C2), C6 CRIT DMG | both by row; Multitarget Fire Tap → normal, Shadowhunt Shells → charged | A4/C2/C4 extra shells; the shell's element is the row's channel |
+| Kinich | A4 cannon flat damage from ATK per stack, C1 cannon CRIT DMG, C2 Dendro RES and first-cannon DMG, C4 burst DMG | cannon effects by row | C6 second cannon |
+| Wanderer | Windfavored Normal/Charged multipliers (skill rows as base multipliers less 1), A1 ATK/CRIT Rate from Pyro/Cryo, C2 burst DMG per point | — | A1 needs the element in the party (a team gate GO leaves to the user); A4, C1, C6 hits |
+| Keqing | A4 CRIT Rate and ER, C4 ATK after a reaction, C6 Electro DMG per stack | — | A1 infusion, C1 hit |
+| Sangonomiya Kokomi | innate CRIT Rate −100% (cited constant), burst flat damage from HP on Normal/Charged/Bake-Kurage, A4 on her innate Healing Bonus, C6 Hydro DMG | — | A4's share of artifact Healing Bonus (no such stat), C1 hit |
+| Yae Miko | A4 skill DMG from EM, C4 party Electro DMG, C6 DEF ignore | C6 on Sakura Levels 2-4 | the Hexerei parts (C1 Stellarconduct, C2 EM, C4 burst, C6 CRIT DMG), A1 |
+| Kamisato Ayato | Namisen flat damage from HP per stack (max 5 from C2, `max_raise`), burst Normal Attack DMG to the active character, C1, C2 HP at ≥3 stacks | Namisen and C1 on the Shunsuiken rows; Shunsuiken → normal | C6 strikes |
+| Baizhu | A1 Dendro DMG, C4 party EM, C6 Spiritvein flat damage from HP | — | A4's reaction DMG (P3) |
+| Dehya | C1 HP and skill/burst flat damage from HP, C2 Field DMG, C6 burst CRIT | C2 on Field DMG | — |
+| Layla | A4 Shooting Star flat damage from HP, C4 party Normal/Charged flat damage from her HP, C6 | A4/C6 by row | shields |
+| Kirara | A4 skill/burst DMG per 1,000 HP (cited unit), C6 party DMG | — | C1, C4 hits |
+| Lynette | A1 party ATK by distinct elements, A4 burst DMG, C6 Anemo DMG | — | C6 infusion, C2 shot |
+| Thoma | A4 Fiery Collapse flat damage from HP, C6 party Normal/Charged/Plunging DMG | A4 by row | shields |
+| Beidou | A4 Normal/Charged DMG, C6 Electro RES | — | the Hexerei parts of C6, C4 hit |
+| Ororon | C2 Electro DMG and its per-opponent table (`by_stack`), C6 ATK per stack to the active character | — | Hypersense hits |
+| Iansan | burst flat ATK to the active character from her ATK, capped by a burst row at her boosted level; A1, C2, C6 | — | below 42 Nightsoul points (a cap after a per-point multiply); the burst on herself (no flat-ATK-from-ATK conversion) |
+| Lan Yan | A4 skill/burst flat damage from EM, C4 party EM | — | C6 ring |
+
+Eighteen fixtures, one per sheet on its main damage effect and Yae's C4 on a teammate; all agree
+with GO exactly (relative ≤ 3.6e-8, the f32 floor). **Tartaglia was not written**: his one damage
+effect is a team Normal Attack talent level (+1, GO `teamBuff.char.auto`), which this section names
+as not modelled (talent boosts from a passive), so a sheet would ship verified on nothing but its
+row moves.
+
 **Pinned, as `set_effects.json` is.** A constellation or passive list that differs from its pin,
 or a talent row whose label changed or which has no row at the effective level, **withholds
 that effect** and lists it as unmodelled with the reason. It is never read by a stale index.

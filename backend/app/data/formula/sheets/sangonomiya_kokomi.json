@@ -1,0 +1,305 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Sangonomiya Kokomi",
+ "nanoka_id": "10000054",
+ "slug": "sangonomiya_kokomi",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/SangonomiyaKokomi.ts",
+  "wr": "libs/gi/sheets/src/Characters/SangonomiyaKokomi/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/kokomi/",
+ "verified_by": [
+  "kokomi_burst_a4_on_her_own_normal"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:SangonomiyaKokomi.ts:137-138",
+   "gcsim": "kokomi.go:23"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:SangonomiyaKokomi.ts:137,139",
+   "gcsim": "kokomi.go:24"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_burst": [
+    "Normal Attack DMG Bonus|{param4:F1P} Max HP",
+    "Charged Attack DMG Bonus|{param5:F1P} Max HP",
+    "Bake-Kurage DMG Bonus|{param9:F1P} Max HP"
+   ]
+  },
+  "constellations": {
+   "6": [
+    0.8,
+    0.4,
+    4.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "4": [
+    0.15,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "ascension",
+   "label": "Nereid's Ascension, her burst",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:SangonomiyaKokomi.ts:89-90,103-121"
+  },
+  {
+   "key": "c6_heal",
+   "label": "Her Normal or Charged Attack healed a character at 80% HP or more (C6)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "her attacks heal the party, which usually sits above 80% HP"
+   },
+   "go": "pando:SangonomiyaKokomi.ts:89-90,132"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a0_crit",
+   "label": "Flawless Strategy: CRIT Rate -100%",
+   "source": "a0",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "value": {
+    "constant": -1,
+    "cite": "GO pando:SangonomiyaKokomi.ts:59-62,94,142 `critRate_: -1`; gcsim kokomi/asc.go:13-16 `m[attributes.CR] = -1`; her seeded Flawless Strategy list is zeros"
+   },
+   "go": "pando:SangonomiyaKokomi.ts:59-62,92-94,142",
+   "gcsim": "asc.go:13-16"
+  },
+  {
+   "key": "burst_normal",
+   "label": "Nereid's Ascension: Normal Attack DMG + a share of her Max HP",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "talent": "elemental_burst",
+    "row": "Normal Attack DMG Bonus",
+    "times_stat": "hp"
+   },
+   "when": [
+    {
+     "condition": "ascension",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:SangonomiyaKokomi.ts:103-108,146",
+   "gcsim": "burst.go:60"
+  },
+  {
+   "key": "burst_charged",
+   "label": "Nereid's Ascension: Charged Attack DMG + a share of her Max HP",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "charged"
+   ],
+   "value": {
+    "talent": "elemental_burst",
+    "row": "Charged Attack DMG Bonus",
+    "times_stat": "hp"
+   },
+   "when": [
+    {
+     "condition": "ascension",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:SangonomiyaKokomi.ts:109-114,147"
+  },
+  {
+   "key": "burst_skill",
+   "label": "Nereid's Ascension: Bake-Kurage DMG + a share of her Max HP",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "skill"
+   ],
+   "value": {
+    "talent": "elemental_burst",
+    "row": "Bake-Kurage DMG Bonus",
+    "times_stat": "hp"
+   },
+   "when": [
+    {
+     "condition": "ascension",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:SangonomiyaKokomi.ts:115-121,148",
+   "gcsim": "skill.go:95-97"
+  },
+  {
+   "key": "a4_normal",
+   "label": "A4 Song of Pearls: Normal Attack DMG + 15% of her innate Healing Bonus, of her Max HP",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_constant": {
+     "constant": 0.25,
+     "cite": "her innate Healing Bonus: GO pando:SangonomiyaKokomi.ts:59-62,93,141 `heal_: 0.25`, read by A4 as `own.premod.heal_` (:98-102); gcsim kokomi/asc.go:13-15 `m[attributes.Heal] = .25`, read by asc.go:55; her seeded Flawless Strategy list is zeros"
+    },
+    "times_stat": "hp"
+   },
+   "when": [
+    {
+     "condition": "ascension",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:SangonomiyaKokomi.ts:63-65,96-108,146",
+   "gcsim": "asc.go:39-56"
+  },
+  {
+   "key": "a4_charged",
+   "label": "A4 Song of Pearls: Charged Attack DMG + 15% of her innate Healing Bonus, of her Max HP",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "charged"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_constant": {
+     "constant": 0.25,
+     "cite": "her innate Healing Bonus: GO pando:SangonomiyaKokomi.ts:59-62,93,141 `heal_: 0.25`, read by A4 as `own.premod.heal_` (:98-102); gcsim kokomi/asc.go:13-15 `m[attributes.Heal] = .25`, read by asc.go:55; her seeded Flawless Strategy list is zeros"
+    },
+    "times_stat": "hp"
+   },
+   "when": [
+    {
+     "condition": "ascension",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:SangonomiyaKokomi.ts:63-65,96-102,109-114,147",
+   "gcsim": "asc.go:39-56"
+  },
+  {
+   "key": "c6_hydro",
+   "label": "C6 Sango Isshin: Hydro DMG",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "hydro"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "c6_heal",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:SangonomiyaKokomi.ts:77-81,132,144",
+   "gcsim": "cons.go:70-72"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "a4",
+   "what": "Song of Pearls: the part of her Healing Bonus beyond her innate 25%",
+   "reason": "the estimate carries no Healing Bonus stat, so an artifact's (a Healing Bonus circlet, Ocean-Hued Clam) share of A4 is not counted: her A4 reads low with one"
+  },
+  {
+   "source": "kit",
+   "what": "Flawless Strategy: Healing Bonus",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c1",
+   "what": "At Water's Edge: an extra Hydro hit",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c2",
+   "what": "The Clouds Like Waves Rippling: healing",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c4",
+   "what": "The Moon Overlooks the Waters: ATK SPD and Energy",
+   "reason": "attack speed has no closed-form damage effect"
+  }
+ ]
+}
