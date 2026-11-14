@@ -129,7 +129,7 @@ function resolvedTerm(
 ): number {
   const conversion = hit.conversions[term];
   if (conversion === undefined) return frozen;
-  return conversion.perUnit * rawTotal(hit, stats, conversion.from);
+  return conversion.perUnit * rawTotal(hit, stats, conversion.from) + (conversion.offset ?? 0);
 }
 
 /**

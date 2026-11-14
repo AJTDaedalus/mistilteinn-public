@@ -90,6 +90,13 @@ export type StaleTerm = ConversionTerm | PercentTerm;
 export interface ResolvedConversion {
   from: ConversionSource;
   perUnit: number;
+  /**
+   * A constant part of the same term, kept beside the converted one. Absent is 0, which is
+   * every probe-resolved conversion: the probe attributes the whole term to its source. A
+   * formula recipe sets it when a kit converts into a term that also carries constants —
+   * Noelle's ATK from DEF lands in flat ATK, where Bennett's burst already sits (P2, task 11).
+   */
+  offset?: number;
 }
 
 /** One damage instance, decomposed. */
