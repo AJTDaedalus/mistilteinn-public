@@ -41,8 +41,8 @@
  *
  * `meta.formula` marks the recipe as a formula estimate, not gcsim-calibrated, and lists every
  * assumption: each condition's value and why, every unmodelled part of a bonus, every row whose
- * move is unknown. No kit buffs (talents, passives, constellations, teammates' sheets) and no
- * weapon passives are modelled in P1, and the recipe says so.
+ * move is unknown. Kit sheets (P2) and weapon passives (P3, task 12) arrive as sources like any
+ * other, and the recipe names whose are modelled and whose are not.
  */
 
 import {
@@ -184,6 +184,11 @@ export interface FormulaKit {
   citation: string;
   /** The giver's pass-1 value of each stat an effect read. */
   giver_stats: Record<string, number>;
+  /**
+   * `kit` for a member's sheet, `weapon` for a member's weapon passive (`weapon:<slug>`,
+   * math-fallback P3, task 12): the same vocabulary, applied alike. Absent is `kit`.
+   */
+  kind?: 'kit' | 'weapon';
 }
 
 /**
@@ -215,6 +220,11 @@ export interface KitCoverage {
   modelled: { name: string; verified: boolean }[];
   /** Members with no sheet: base stats, sets and resonance only. */
   missing: string[];
+  /**
+   * Weapon passives (task 12): the ones applied (`<weapon> R<r> (<wielder>)`), and the members'
+   * weapons with no passive data. Absent: the estimate says no weapon passive is modelled.
+   */
+  weapons?: { modelled: { name: string; verified: boolean }[]; missing: string[] };
 }
 
 /** `{ "<source id>/<condition key>": value }`. */
@@ -431,7 +441,7 @@ interface Buffs {
    * HP (Hu Tao's Guide to Afterlife, capped at 400% of her base ATK). One source per hit: the
    * recipe resolves one conversion into flat ATK.
    */
-  atkFrom: ({ from: 'def' | 'hp'; perUnit: number } & Limits) | null;
+  atkFrom: ({ from: 'def' | 'hp'; perUnit: number; extra?: AtkPart[] } & Limits) | null;
   /** Capped self-conversions into DMG% or CRIT Rate (Nahida's, Furina's, Alhaitham's A4). */
   statConversions: StatConversion[];
   /** Base ATK, before the percentage (Mavuika's C2). */
@@ -450,6 +460,9 @@ interface Limits {
   threshold?: number;
   cap?: number;
 }
+
+/** A further conversion into flat ATK, priced on its own (`ResolvedConversion.extra`). */
+type AtkPart = { from: 'def' | 'hp'; perUnit: number } & Limits;
 
 function noBuffs(): Buffs {
   return {
@@ -486,18 +499,31 @@ function addFlatFrom(
   buffs.flatFrom[from] += amount;
 }
 
-/** Flat ATK from the hit owner's own DEF or HP: one per hit. */
+/**
+ * Flat ATK from the hit owner's own DEF or HP. Two uncapped ones from the same stat sum; any
+ * other pair is kept apart and each priced alone (`ResolvedConversion.extra`), so a kit's capped
+ * ATK from HP and a weapon's uncapped one (Hu Tao's Paramita beside Staff of Homa, task 12) are
+ * never summed before the cap binds.
+ */
 function addAtkFrom(
-  buffs: Buffs, from: 'def' | 'hp', amount: number, limits: Limits, source: string,
+  buffs: Buffs, from: 'def' | 'hp', amount: number, limits: Limits, _source: string,
 ): void {
-  if (buffs.atkFrom !== null) {
-    if (buffs.atkFrom.from !== from || isLimited(limits) || isLimited(buffs.atkFrom)) {
-      throw new Error(`${source}: two conversions into flat ATK on one hit`);
-    }
+  if (buffs.atkFrom === null) {
+    buffs.atkFrom = { from, perUnit: amount, ...limits };
+    return;
+  }
+  if (buffs.atkFrom.from === from && !isLimited(limits) && !isLimited(buffs.atkFrom)) {
     buffs.atkFrom.perUnit += amount;
     return;
   }
-  buffs.atkFrom = { from, perUnit: amount, ...limits };
+  const same = (buffs.atkFrom.extra ?? []).find(
+    (p) => p.from === from && !isLimited(p) && !isLimited(limits),
+  );
+  if (same) {
+    same.perUnit += amount;
+    return;
+  }
+  buffs.atkFrom.extra = [...(buffs.atkFrom.extra ?? []), { from, perUnit: amount, ...limits }];
 }
 
 /** A conversion into DMG% or CRIT Rate, priced alone (`StatConversion`). */
@@ -746,6 +772,8 @@ export function rowHits(
       : calibratedBase[scaling] * (1 + calibratedPercent[scaling]) + calibratedFlat[scaling]
         + (scaling === 'atk' && atkFrom
           ? cappedAmount(atkFrom.perUnit, zeroTotal(atkFrom.from), atkFrom.threshold, atkFrom.cap)
+            + (atkFrom.extra ?? []).reduce((sum, p) => sum
+              + cappedAmount(p.perUnit, zeroTotal(p.from), p.threshold, p.cap), 0)
           : 0);
     const flatDamage = i === 0 ? (hit.flatDamage + buffs.flatDamage) * row.count : 0;
     const out: RecipeHit = {
@@ -1003,6 +1031,25 @@ export function kitAssumptions(coverage: KitCoverage | undefined): string[] {
   return out;
 }
 
+/**
+ * The assumption sentences about weapon passives (task 12): whose are applied, whether each is
+ * verified, and which members' weapons have no passive data — those contribute their base ATK
+ * and substat only.
+ */
+export function weaponAssumptions(coverage: KitCoverage | undefined): string[] {
+  const weapons = coverage?.weapons;
+  if (weapons === undefined) return ['No weapon passives modelled.'];
+  const out: string[] = [];
+  for (const w of weapons.modelled) {
+    out.push(`Weapon passive ${w.name}: ${w.verified
+      ? 'verified against Genshin Optimizer' : 'unverified (cited to Genshin Optimizer)'}.`);
+  }
+  for (const name of weapons.missing) {
+    out.push(`No weapon passive modelled for ${name}: base ATK and substat only.`);
+  }
+  return out;
+}
+
 // ── A kit's talent-level raise (owner approval 2026-11-14, `DECISIONS.md` §42) ─────────────
 
 const TALENT_NAME: Record<string, string> = {
@@ -1108,7 +1155,7 @@ export function synthesizeRecipe(
   const assumptions = new Set<string>([
     'Formula estimate: no simulation. Not calibrated by gcsim.',
     ...kitAssumptions(kits),
-    'No weapon passives modelled.',
+    ...weaponAssumptions(kits),
     ...reactionAssumptions(rows, characters[0] ?? ''),
   ]);
   for (const row of rows) {

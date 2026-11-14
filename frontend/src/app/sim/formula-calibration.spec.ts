@@ -273,6 +273,76 @@ describe('formulaCalibration with kits (P2)', () => {
   });
 });
 
+/** A teammate's Thrilling Tales R5, as `/formula/kit-buffs` sends a weapon passive (task 12). */
+const THRILLING: FormulaKit = {
+  id: 'weapon:thrilling_tales_of_dragon_slayers',
+  label: 'Thrilling Tales of Dragon Slayers R5 (Xingqiu)',
+  giver: 'Xingqiu',
+  build_id: 'b-xingqiu',
+  status: 'modelled',
+  verified: true,
+  citation: 'GO libs/gi/sheets/src/Weapons/Catalyst/ThrillingTalesOfDragonSlayers/index.tsx',
+  giver_stats: {},
+  kind: 'weapon',
+  bonus: {
+    conditions: [{ key: 'heritage', label: 'The wielder switched out', kind: 'toggle',
+      default: 1, default_reason: 'teammate' }],
+    effects: [{ stat: 'atk_pct', value: 0.48, when: [{ condition: 'heritage', values: [1] }] }],
+    unmodelled: [],
+  },
+};
+
+describe('formulaCalibration with weapon passives (P3, task 12)', () => {
+  const kits = {
+    sources: [BENNETT, THRILLING], missing: ['Xingqiu'],
+    missingWeapons: ['The Flute R1 (Bennett)'],
+  };
+
+  it('applies a teammate\'s weapon passive like a kit, team-level in every state', () => {
+    const pools = PIECES.map((p) => p.stats as Record<string, number>);
+    const stats = candidateStatsFrom(pools);
+    const bare = evaluateRecipe(formulaCalibration(INPUT).noFourPiece, stats);
+    const made = formulaCalibration({ ...INPUT, kits });
+    expect(made.noFourPiece.hits[0].calibratedPercent.atk).toBeCloseTo(
+      formulaCalibration(INPUT).noFourPiece.hits[0].calibratedPercent.atk + 0.48, 9);
+    expect(evaluateRecipe(made.noFourPiece, stats)).toBeGreaterThan(bare);
+    expect(made.byFourPieceSet.get(15006)!.hits[0].calibratedPercent.atk).toBeCloseTo(
+      made.noFourPiece.hits[0].calibratedPercent.atk, 9);
+    const off = formulaCalibration({
+      ...INPUT, kits, conditionals: { 'weapon:thrilling_tales_of_dragon_slayers/heritage': 0 },
+    });
+    expect(off.noFourPiece.hits[0].calibratedPercent.atk).toBeCloseTo(
+      formulaCalibration(INPUT).noFourPiece.hits[0].calibratedPercent.atk, 9);
+  });
+
+  it('names each weapon passive applied, and each weapon with none modelled', () => {
+    const said = formulaCalibration({ ...INPUT, kits }).assumptions.join('\n');
+    expect(said).toMatch(/Weapon passive Thrilling Tales of Dragon Slayers R5 \(Xingqiu\): verified/);
+    expect(said).toMatch(/No weapon passive modelled for The Flute R1 \(Bennett\)/);
+    expect(said).not.toMatch(/No weapon passives modelled\./);
+    // A weapon is not a kit giver: Xingqiu's kit is still the one with no sheet.
+    expect(said).not.toMatch(/Kit buffs from Xingqiu/);
+  });
+
+  it('without weapon coverage it still says none is modelled', () => {
+    expect(formulaCalibration({ ...INPUT, kits: { sources: [BENNETT], missing: [] } })
+      .assumptions.join('\n')).toMatch(/No weapon passives modelled\./);
+  });
+
+  it('the panel lists each weapon passive with its verification and each weapon without one', () => {
+    const groups = conditionGroups([FERVENT], [], new Set(), kits);
+    expect(groups.map((g) => [g.sourceId, g.kind])).toEqual([
+      ['resonance:fervent_flames', undefined],
+      ['kit:bennett', 'kit'],
+      ['weapon:thrilling_tales_of_dragon_slayers', 'weapon'],
+      ['no-kit:Xingqiu', 'no-kit'],
+      ['no-weapon:The Flute R1 (Bennett)', 'no-weapon'],
+    ]);
+    expect(groups[2].conditions[0].default_reason).toBe('teammate');
+    expect(groups[4].unmodelled[0].reason).toMatch(/no weapon passive modelled/);
+  });
+});
+
 describe('gcsimRefusal', () => {
   it('reads the member out of the calibrate 422', () => {
     const message = "gcsim has no character key for 'Lohen' (normalised 'lohen') at pin b107b5dc5cb8. "

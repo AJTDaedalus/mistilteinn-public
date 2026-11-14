@@ -218,7 +218,8 @@ export class FormulaPanel {
       ? (condition.default ? 'on' : 'off')
       : condition.default === '' ? 'none' : String(condition.default);
     // A kit's own condition is triggered by the character, not by whoever wears a set.
-    const who = group?.kind === 'kit' ? 'the character triggers it' : 'the wearer triggers it';
+    const who = group?.kind === 'kit' ? 'the character triggers it'
+      : group?.kind === 'weapon' ? 'the wielder triggers it' : 'the wearer triggers it';
     return `Default ${shown} — ${defaultWhy(condition, who)}`;
   }
 

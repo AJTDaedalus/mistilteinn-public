@@ -1,0 +1,83 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Skyward Harp",
+ "nanoka_id": "15501",
+ "slug": "skyward_harp",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Bow/SkywardHarp/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/bow/skyward/skyward.go",
+ "verified_by": [
+  "skyward_harp_r1_on_amber"
+ ],
+ "pins": {
+  "1": [
+   0.2,
+   0.6,
+   1.25,
+   4.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.25,
+   0.7,
+   1.25,
+   3.5,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.3,
+   0.8,
+   1.25,
+   3.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.35,
+   0.9,
+   1.25,
+   2.5,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.4,
+   1.0,
+   1.25,
+   2.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "effects": [
+  {
+   "key": "cd",
+   "label": "CRIT DMG",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "value": {
+    "param": 0
+   },
+   "go": "19,21,33-36"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "the 125% ATK Physical AoE proc",
+   "reason": "a damage instance of the weapon's own: the target has no weapon-hit row kind yet"
+  }
+ ]
+}

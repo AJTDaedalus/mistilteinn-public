@@ -108,6 +108,12 @@ export interface ResolvedConversion {
    */
   threshold?: number;
   cap?: number;
+  /**
+   * Further converted parts of the same term, each `cappedAmount` on its own and summed
+   * (formula recipes only): Hu Tao's capped ATK from HP beside Staff of Homa's uncapped one
+   * (math-fallback P3, task 12). Each is non-decreasing in its source, so the sum is too.
+   */
+  extra?: { from: ConversionSource; perUnit: number; threshold?: number; cap?: number }[];
 }
 
 /**

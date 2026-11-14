@@ -1,0 +1,121 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Staff of Homa",
+ "nanoka_id": "13501",
+ "slug": "staff_of_homa",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Polearm/StaffOfHoma/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/spear/homa/homa.go",
+ "verified_by": [
+  "staff_of_homa_r1_on_xiangling",
+  "staff_of_homa_r5_on_xiangling"
+ ],
+ "pins": {
+  "1": [
+   0.2,
+   0.008,
+   0.01,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.25,
+   0.01,
+   0.012,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.3,
+   0.012,
+   0.014,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.35,
+   0.014,
+   0.016,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.4,
+   0.016,
+   0.018,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "low_hp",
+   "label": "Wielder below 50% HP",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "Off: the wielder's HP threshold is not their usual state; gcsim's default too"
+   },
+   "go": "21,26-38"
+  }
+ ],
+ "effects": [
+  {
+   "key": "hp",
+   "label": "HP%",
+   "receivers": "self",
+   "stat": "hp_pct",
+   "value": {
+    "param": 0
+   },
+   "go": "17,20,42-44"
+  },
+  {
+   "key": "atk_from_hp",
+   "label": "ATK from the wielder's Max HP",
+   "receivers": "self",
+   "stat": "flat_atk",
+   "value": {
+    "param": 1,
+    "times_stat": "hp"
+   },
+   "go": "18,22-25,45-46"
+  },
+  {
+   "key": "atk_from_hp_low",
+   "label": "Further ATK from Max HP below 50% HP",
+   "receivers": "self",
+   "stat": "flat_atk",
+   "value": {
+    "param": 2,
+    "times_stat": "hp"
+   },
+   "when": [
+    {
+     "condition": "low_hp",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "19,21,26-38,46"
+  }
+ ]
+}

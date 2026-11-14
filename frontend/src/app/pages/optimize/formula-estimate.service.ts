@@ -69,6 +69,11 @@ export interface TeamKits {
   missing: string[];
   /** The subject's rows at the levels a kit's talent-level raise reaches (`DECISIONS.md` §42). */
   raisedTalents?: FormulaRaisedTalent[];
+  /**
+   * Members' weapons with no passive data (task 12), `<weapon> (<wielder>)`: "no weapon passive
+   * modelled". A weapon with data is one of `sources`, `kind: 'weapon'`.
+   */
+  missingWeapons?: string[];
 }
 
 /** A calibration and the formula's own reporting, side by side. */
@@ -251,6 +256,9 @@ export class FormulaEstimateService {
         sources: data.sources as FormulaKit[],
         missing: data.members.filter((m) => m.status === 'no_sheet').map((m) => m.name),
         raisedTalents: (data.raised_talents ?? []) as FormulaRaisedTalent[],
+        missingWeapons: (data.weapons ?? [])
+          .filter((w) => w.status === 'no_passive_data' && w.weapon)
+          .map((w) => `${w.weapon} R${w.refinement} (${w.wielder})`),
       };
     })();
     this.kitCache = { key, value };

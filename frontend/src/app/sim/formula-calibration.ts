@@ -75,6 +75,12 @@ export interface FormulaCalibrationInput {
     missing: readonly string[];
     /** The subject's rows at the levels the kits' talent-level raises reach (§42). */
     raisedTalents?: readonly FormulaRaisedTalent[];
+    /**
+     * Members' weapons with no passive data (task 12), named `<weapon> (<wielder>)`. A weapon
+     * with data travels in `sources` with `kind: 'weapon'`. Absent: weapon coverage unknown,
+     * and the estimate says no weapon passive is modelled.
+     */
+    missingWeapons?: readonly string[];
   };
 }
 
@@ -122,9 +128,18 @@ export function formulaCalibration(input: FormulaCalibrationInput): FormulaCalib
     ...input.resonances.map(resonanceSource),
     ...(input.kits?.sources ?? []).map(kitSource),
   ];
+  const isWeapon = (k: FormulaKit): boolean => k.kind === 'weapon';
   const coverage = input.kits === undefined ? undefined : {
-    modelled: input.kits.sources.map((k) => ({ name: k.giver, verified: k.verified })),
+    modelled: input.kits.sources.filter((k) => !isWeapon(k))
+      .map((k) => ({ name: k.giver, verified: k.verified })),
     missing: [...input.kits.missing],
+    ...(input.kits.missingWeapons === undefined ? {} : {
+      weapons: {
+        modelled: input.kits.sources.filter(isWeapon)
+          .map((k) => ({ name: k.label, verified: k.verified })),
+        missing: [...input.kits.missingWeapons],
+      },
+    }),
   };
   // A teammate's talent-level raise (Tartaglia's +1 Normal Attack): rows read one level up.
   const raised = input.kits?.raisedTalents ?? [];
@@ -187,10 +202,12 @@ export interface ConditionGroup {
   conditions: FormulaCondition[];
   unmodelled: { what: string; reason: string }[];
   /**
-   * `kit` for a member's sheet, `no-kit` for a member with none (nothing applied, said), and
-   * absent for a resonance or a set — which is how the panel words "the wearer triggers it".
+   * `kit` for a member's sheet, `no-kit` for a member with none (nothing applied, said),
+   * `weapon` for a member's weapon passive and `no-weapon` for a weapon with no passive data
+   * (task 12), and absent for a resonance or a set — which is how the panel words "the wearer
+   * triggers it".
    */
-  kind?: 'kit' | 'no-kit';
+  kind?: 'kit' | 'no-kit' | 'weapon' | 'no-weapon';
   /** A kit sheet's verification: a GO-cited fixture checks it, or it is unverified. */
   verified?: boolean;
 }
@@ -218,9 +235,10 @@ export function conditionGroups(
   resonances: readonly FormulaResonance[],
   setTiers: readonly FormulaSetTier[],
   setIds: ReadonlySet<number>,
-  kits: { sources: readonly FormulaKit[]; missing: readonly string[] } = {
-    sources: [], missing: [],
-  },
+  kits: {
+    sources: readonly FormulaKit[]; missing: readonly string[];
+    missingWeapons?: readonly string[];
+  } = { sources: [], missing: [] },
 ): ConditionGroup[] {
   const sources = [
     ...resonances.map(resonanceSource),
@@ -243,7 +261,7 @@ export function conditionGroups(
       citation: kit.citation,
       conditions: kit.bonus.conditions,
       unmodelled: distinctParts(kit.bonus.unmodelled),
-      kind: 'kit',
+      kind: kit.kind === 'weapon' ? 'weapon' : 'kit',
       verified: kit.verified,
     });
   }
@@ -258,6 +276,19 @@ export function conditionGroups(
         reason: 'no kit sheet yet: base stats, sets and resonance only',
       }],
       kind: 'no-kit',
+    });
+  }
+  for (const name of kits.missingWeapons ?? []) {
+    groups.push({
+      sourceId: `no-weapon:${name}`,
+      label: name,
+      citation: '',
+      conditions: [],
+      unmodelled: [{
+        what: 'weapon passive',
+        reason: 'no weapon passive modelled: base ATK and substat only',
+      }],
+      kind: 'no-weapon',
     });
   }
   return groups;

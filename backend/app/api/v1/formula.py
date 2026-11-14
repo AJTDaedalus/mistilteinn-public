@@ -29,6 +29,7 @@ from app.schemas.formula import (
     FormulaSetTierRead,
     FormulaTeamKitRead,
     FormulaTeamResonanceRead,
+    FormulaWeaponMemberRead,
 )
 from app.services import kit_buffs
 from app.services.build_assembler import BuildAssemblyError
@@ -146,6 +147,7 @@ async def kit_buffs_route(
                 status=s.status,  # type: ignore[arg-type]
                 verified=s.verified, bonus=FormulaBonusRead.of(s.bonus), citation=s.citation,
                 giver_stats=team.giver_stats[s.source_id],
+                kind="weapon" if s.source_id.startswith("weapon:") else "kit",
             )
             for s in team.sources
         ],
@@ -158,4 +160,13 @@ async def kit_buffs_route(
             for m in team.members
         ],
         raised_talents=[FormulaRaisedTalentRead.of(t) for t in team.raised_talents],
+        weapons=[
+            FormulaWeaponMemberRead(
+                build_id=w.build_id, wielder=w.wielder, weapon=w.weapon,
+                refinement=w.refinement,
+                status=w.status,  # type: ignore[arg-type]
+                verified=w.verified, is_subject=w.is_subject, source_id=w.source_id,
+            )
+            for w in team.weapons
+        ],
     )

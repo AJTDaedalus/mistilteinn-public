@@ -1,0 +1,124 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Kagura's Verity",
+ "nanoka_id": "14509",
+ "slug": "kaguras_verity",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Catalyst/KagurasVerity/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/catalyst/kagura/kagura.go",
+ "verified_by": [
+  "kaguras_verity_r1_on_lisa"
+ ],
+ "pins": {
+  "1": [
+   0.12,
+   24.0,
+   0.12,
+   0.12,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.15,
+   24.0,
+   0.15,
+   0.15,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.18,
+   24.0,
+   0.18,
+   0.18,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.21,
+   24.0,
+   0.21,
+   0.21,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.24,
+   24.0,
+   0.24,
+   0.24,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "dance",
+   "label": "Kagura Dance stacks",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 3,
+   "go": "12-13"
+  }
+ ],
+ "effects": [
+  {
+   "key": "skill",
+   "label": "Kagura Dance: Elemental Skill DMG per stack",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 0
+   },
+   "moves": [
+    "skill"
+   ],
+   "per": "dance",
+   "go": "14-25,44-46"
+  },
+  {
+   "key": "ele",
+   "label": "Kagura Dance at 3 stacks: Elemental DMG, every element",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 3
+   },
+   "elements": [
+    "pyro",
+    "hydro",
+    "electro",
+    "cryo",
+    "anemo",
+    "geo",
+    "dendro"
+   ],
+   "when": [
+    {
+     "condition": "dance",
+     "values": [
+      3
+     ]
+    }
+   ],
+   "go": "14,37-42,48-50"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "Kagura Dance's Stellar-Conduct DMG",
+   "reason": "Stellar-Conduct is refused by name (`reactions.REFUSED`): a kit's direct hit on Polestar stacks"
+  }
+ ]
+}
