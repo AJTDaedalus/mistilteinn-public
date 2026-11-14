@@ -1,0 +1,243 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Arataki Itto",
+ "nanoka_id": "10000057",
+ "slug": "arataki_itto",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/AratakiItto.ts",
+  "wr": "libs/gi/sheets/src/Characters/AratakiItto/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/itto/",
+ "verified_by": [
+  "itto_burst_a4_on_his_own_kesagiri"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:AratakiItto.ts:136-137",
+   "gcsim": "itto.go:41"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:AratakiItto.ts:136,138",
+   "gcsim": "itto.go:42"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_burst": [
+    "ATK Bonus|{param2:F1P} DEF"
+   ]
+  },
+  "constellations": {
+   "4": [
+    0.2,
+    0.2,
+    10.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    0.7,
+    0.5,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "4": [
+    0.35,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "descent",
+   "label": "During Royal Descent, after his burst",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:AratakiItto.ts:91-92,100-106"
+  },
+  {
+   "key": "after",
+   "label": "After Royal Descent ends (C4)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:AratakiItto.ts:91-92,121-126"
+  }
+ ],
+ "effects": [
+  {
+   "key": "burst_atk",
+   "label": "Royal Descent: ATK + a share of Itto's DEF",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "flat_atk",
+   "value": {
+    "talent": "elemental_burst",
+    "row": "ATK Bonus",
+    "times_stat": "def"
+   },
+   "when": [
+    {
+     "condition": "descent",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:AratakiItto.ts:53-56,100-106,140",
+   "gcsim": "burst.go:51-57"
+  },
+  {
+   "key": "a4_kesagiri",
+   "label": "A4 Bloodline of the Crimson Oni: Arataki Kesagiri DMG + a share of his DEF",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "rows": [
+    {
+     "talent": "normal_attack",
+     "label": "Arataki Kesagiri Combo Slash DMG"
+    },
+    {
+     "talent": "normal_attack",
+     "label": "Arataki Kesagiri Final Slash DMG"
+    }
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "def"
+   },
+   "go": "pando:AratakiItto.ts:65-67,115-120,156-173",
+   "gcsim": "asc.go:67"
+  },
+  {
+   "key": "c4_atk",
+   "label": "C4 Jailhouse Bread and Butter: ATK to the party",
+   "source": "c4",
+   "receivers": "team",
+   "stat": "atk_pct",
+   "value": {
+    "constellation": 4,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "after",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:AratakiItto.ts:76-80,121-123,148"
+  },
+  {
+   "key": "c4_def",
+   "label": "C4 Jailhouse Bread and Butter: DEF to the party",
+   "source": "c4",
+   "receivers": "team",
+   "stat": "def_pct",
+   "value": {
+    "constellation": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "after",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:AratakiItto.ts:76-80,124-126,149"
+  },
+  {
+   "key": "c6_charged",
+   "label": "C6 Arataki Itto, Present!: Charged Attack CRIT DMG",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "moves": [
+    "charged"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 0
+   },
+   "go": "pando:AratakiItto.ts:81-83,127-131,143"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Royal Descent: Behold, Itto the Evil!: Geo infusion, ATK SPD and lowered RES",
+   "reason": "an infusion changes a hit's element, which the estimate does not model (G4); attack speed and his own RES have no closed-form damage effect"
+  },
+  {
+   "source": "a1",
+   "what": "Arataki Ichiban: ATK SPD per Kesagiri slash",
+   "reason": "no closed-form damage effect: attack speed"
+  },
+  {
+   "source": "talent",
+   "what": "Masatsu Zetsugi: Akaushi Burst!: Ushi's HP",
+   "reason": "no damage effect: HP"
+  },
+  {
+   "source": "c1",
+   "what": "Stay a While and Listen Up: Superlative Superstrength stacks",
+   "reason": "no damage effect beyond the rows the user counts"
+  },
+  {
+   "source": "c2",
+   "what": "Gather 'Round, It's a Brawl!: burst cooldown and Energy by Geo members",
+   "reason": "no damage effect: cooldown and energy"
+  }
+ ]
+}

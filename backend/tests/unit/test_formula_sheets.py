@@ -93,7 +93,7 @@ DPS = {"skirk", "neuvillette", "kamisato_ayaka", "noelle", "mavuika", "kuki_shin
 
 #: Task 11, fifth batch: the next popular DPS characters without a sheet, in the owner's order.
 DPS2 = {"hu_tao", "arlecchino", "clorinde", "navia", "wriothesley", "lyney", "yoimiya", "ganyu",
-        "eula"}
+        "eula", "arataki_itto", "cyno"}
 
 
 def test_every_sheet_loads_and_is_named_after_its_slug():

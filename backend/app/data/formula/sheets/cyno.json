@@ -1,0 +1,273 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Cyno",
+ "nanoka_id": "10000071",
+ "slug": "cyno",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Cyno.ts",
+  "wr": "libs/gi/sheets/src/Characters/Cyno/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/cyno/",
+ "verified_by": [
+  "cyno_burst_a4_on_his_own_pactsworn_normal"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:Cyno.ts:197-198",
+   "gcsim": "cyno.go:34"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:Cyno.ts:197,199",
+   "gcsim": "cyno.go:35"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_burst": [
+    "Elemental Mastery Bonus|{param12:I}"
+   ]
+  },
+  "constellations": {
+   "2": [
+    0.1,
+    4.0,
+    5.0,
+    0.1,
+    0.16,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    0.35,
+    1.0,
+    2.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    1.5,
+    2.5,
+    6.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "pactsworn",
+   "label": "Pactsworn Pathclearer, after his burst",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Cyno.ts:113-119,130"
+  },
+  {
+   "key": "judication",
+   "label": "Judication: his skill in Endseer stance (A1)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Cyno.ts:113-119,131-133"
+  },
+  {
+   "key": "c2_stacks",
+   "label": "Normal Attack hits in Pactsworn Pathclearer (C2 stacks)",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 5,
+   "step": 1,
+   "go": "pando:Cyno.ts:93-97,120-125"
+  }
+ ],
+ "effects": [
+  {
+   "key": "burst_em",
+   "label": "Pactsworn Pathclearer: Elemental Mastery",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "talent": "elemental_burst",
+    "row": "Elemental Mastery Bonus"
+   },
+   "when": [
+    {
+     "condition": "pactsworn",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Cyno.ts:73,130,201",
+   "gcsim": "burst.go:73"
+  },
+  {
+   "key": "a1_skill",
+   "label": "A1 Featherfall Judgment: Secret Rite: Chasmic Soulfarer DMG in Judication",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "skill"
+   ],
+   "value": {
+    "passive": 1,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "judication",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Cyno.ts:78-82,131-133,216-233",
+   "gcsim": "asc.go:55"
+  },
+  {
+   "key": "a4_normal",
+   "label": "A4 Authority Over the Nine Bows: Pactsworn Pathclearer Normal Attack DMG + a share of his Elemental Mastery",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "rows": [
+    {
+     "talent": "elemental_burst",
+     "label": "1-Hit DMG"
+    },
+    {
+     "talent": "elemental_burst",
+     "label": "2-Hit DMG"
+    },
+    {
+     "talent": "elemental_burst",
+     "label": "3-Hit DMG"
+    },
+    {
+     "talent": "elemental_burst",
+     "label": "4-Hit DMG"
+    },
+    {
+     "talent": "elemental_burst",
+     "label": "5-Hit DMG"
+    }
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "elemental_mastery"
+   },
+   "go": "pando:Cyno.ts:83-87,134-141,177-190,234-236",
+   "gcsim": "asc.go:95"
+  },
+  {
+   "key": "c2_electro",
+   "label": "C2 Ceremony: Homecoming of Spirits: Electro DMG per stack",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "electro"
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "per": "c2_stacks",
+   "go": "pando:Cyno.ts:93-99,160-164,202"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Sacred Rite: Wolf's Swiftness: his Pactsworn Normal Attacks are burst-talent rows",
+   "reason": "GO counts them as Normal Attacks; a teammate's Normal Attack buff reaches them only once the row's move is set to normal (as Skirk's); their Electro infusion is the row's element (G4). A4 names the rows, so it reaches them either way"
+  },
+  {
+   "source": "a1",
+   "what": "Featherfall Judgment: Duststalker Bolts",
+   "reason": "a damage instance, not a talent row: not offered as a target row yet (A4's share of EM on them with it)"
+  },
+  {
+   "source": "kit",
+   "what": "The Hexerei passive and its Stellarconduct parts (A1, A4, C1, C2)",
+   "reason": "the Hexerei party mechanic is not modelled (as for Sucrose and Mona)"
+  },
+  {
+   "source": "c1",
+   "what": "Ordinance: Unceasing Vigil: Normal Attack SPD",
+   "reason": "no damage effect: attack speed"
+  },
+  {
+   "source": "c4",
+   "what": "Austerity: Forbidding Guard: Energy to the party",
+   "reason": "no damage effect: energy"
+  },
+  {
+   "source": "c6",
+   "what": "Raiment: Just Scales: extra Duststalker Bolts",
+   "reason": "a damage instance, not a buff"
+  }
+ ]
+}

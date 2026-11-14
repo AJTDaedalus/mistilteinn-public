@@ -310,6 +310,66 @@ def _eula(_: float) -> float:
                 res=0.1 - EULA_SKILL_10[3])
 
 
+# ── Arataki Itto ────────────────────────────────────────────────────────────────────────────
+
+ITTO_NORMAL_10 = [1.56621, 1.5096, 1.81152, 2.317236, 1.7884, 1.802, 3.774, 20.0, 1.617638,
+                  3.234591, 4.040179, 60.0]
+ITTO_FINAL = ("Arataki Kesagiri Final Slash DMG|{param7:F1P}", ITTO_NORMAL_10)
+ITTO_BURST_LABELS = ["ATK Bonus|{param2:F1P} DEF", "ATK SPD Bonus|{param1:P}",
+                     "Duration|{param4:F1}s", "CD|{param5:F1}s", "Energy Cost|{param6:I}"]
+ITTO_BURST_10 = [0.1, 1.0368, 0.2, 11.0, 18.0, 70.0]
+ITTO_BASE = base._base_stats(base_atk=885.0, base_hp=12858.0, base_def=959.0, crit_rate=0.242)
+ITTO_ARTIFACTS = {"def_pct": 1.166, "flat_def": 39.0, "flat_atk": 311.0, "geo_dmg_bonus": 0.466,
+                  "crit_rate": 0.3, "crit_dmg": 0.8}
+
+
+def _itto(_: float) -> float:
+    """**Arataki Itto, C0, on his own Arataki Kesagiri Final Slash in Royal Descent** (his own
+    doing): ATK + 103.68% of his DEF (burst 10), and A4's 35% of his DEF into the slash's base,
+    both moving with every candidate's DEF.
+
+    GO: `dmg('charged_akFinal', …, ownBuff.formula.base.add(a4KesagiriDmgInc))` with
+    `a4KesagiriDmgInc = prod(percent(passive2.def_), own.premod.def)` (`pando AratakiItto.ts:
+    65-67,115-120,165-173`); `ownBuff.premod.atk` = `burstCond.ifOn(prod(own.premod.def,
+    talentSubscript(burst, defConv)))` (`:53-56,100-106,140`)."""
+    stats = base._stats(ITTO_BASE, ITTO_ARTIFACTS)
+    defense = base._total(stats, "def")
+    atk = base._total(stats, "atk") + ITTO_BURST_10[1] * defense
+    return _hit(stats, base_damage=ITTO_NORMAL_10[6] * atk, flat=0.35 * defense, channel="geo")
+
+
+# ── Cyno ────────────────────────────────────────────────────────────────────────────────────
+
+CYNO_BURST_LABELS = [
+    "1-Hit DMG|{param1:F1P}", "2-Hit DMG|{param2:F1P}", "3-Hit DMG|{param3:F1P}",
+    "4-Hit DMG|{param4:F1P}+{param5:F1P}", "5-Hit DMG|{param6:F1P}",
+    "Charged Attack DMG|{param7:F1P}", "Charged Attack Stamina Cost|{param8:F1}",
+    "Plunge DMG|{param9:F1P}", "Low/High Plunge DMG|{param10:P}/{param11:P}",
+    "Elemental Mastery Bonus|{param12:I}", "Basic Duration|{param13:F1}s", "CD|{param14:F1}s",
+    "Energy Cost|{param15:I}"]
+CYNO_BURST_10 = [1.547459, 1.630198, 2.068339, 1.021861, 1.021861, 2.586465, 1.9975, 25.0,
+                 1.26378, 2.527025, 3.15639, 100.0, 10.0, 20.0, 80.0]
+CYNO_NA_1 = ("1-Hit DMG|{param1:F1P}", CYNO_BURST_10)
+CYNO_BASE = base._base_stats(base_atk=926.0, base_hp=12491.0, base_def=859.0, crit_dmg=0.884)
+CYNO_ARTIFACTS = {"elemental_mastery": 280.0, "atk_pct": 0.466, "flat_atk": 311.0,
+                  "electro_dmg_bonus": 0.466, "crit_rate": 0.3, "crit_dmg": 0.6}
+
+
+def _cyno(_: float) -> float:
+    """**Cyno, C0, on his own Pactsworn 1-Hit DMG** (a burst-talent row), in Pactsworn
+    Pathclearer (his own doing): +100 Elemental Mastery (the burst row), and A4's 150% of his
+    Elemental Mastery — the burst's 100 included — into the hit's base, per candidate.
+
+    GO: `burstHit('burst_normal_0', …, 'normal', true)` adding `ownBuff.formula.base` =
+    `prod(percent(passive2.burst_normal_dmgInc_), own.premod.eleMas)` (`pando Cyno.ts:83-87,
+    134-141,177-190,234-236`); `ownBuff.premod.eleMas` = `afterBurst.ifOn(burst.eleMas)`
+    (`:73,130,201`)."""
+    stats = base._stats(CYNO_BASE, CYNO_ARTIFACTS)
+    em = stats["elemental_mastery"] + CYNO_BURST_10[11]
+    return _hit(stats, base_damage=CYNO_BURST_10[0] * base._total(stats, "atk"), flat=1.5 * em,
+                channel="electro")
+
+
 def batch5_fixtures() -> list[dict[str, Any]]:
     """Task 11, fifth batch: one fixture per sheet on its main self buff, and Yoimiya's team
     buff."""
@@ -450,4 +510,34 @@ def batch5_fixtures() -> list[dict[str, Any]]:
             ("elemental_burst", 10): (EULA_BURST_LABELS, EULA_BURST_10),
             ("elemental_skill", 10): (EULA_SKILL_LABELS, EULA_SKILL_10)}), subject=True),
         {}, _eula))
+
+    out.append(fx(
+        "itto_burst_a4_on_his_own_kesagiri",
+        "self ATK from his own DEF (a talent row) and self flat damage from his own DEF scoped to "
+        "one of his rows (A4), both per candidate, on one hit",
+        [FORMULA, f"{PANDO}AratakiItto.ts:53-56,65-67,100-106,115-120,140,165-173"],
+        _subject("Arataki Itto", 0, {"elemental_burst": 10}),
+        {"element": "geo", "weapon_type": "WEAPON_CLAYMORE", "member_elements": ["geo", "geo"]},
+        ITTO_BASE, ITTO_ARTIFACTS, "geo",
+        b4._with_hit(base._row("final", "Arataki Kesagiri Final Slash DMG", "charged", 1,
+                               ITTO_FINAL, None),
+                     "normal_attack", "Arataki Kesagiri Final Slash DMG"),
+        b4._kit("10000057", _own("Arataki Itto", "10000057", 0, ITTO_BASE, {
+            ("elemental_burst", 10): (ITTO_BURST_LABELS, ITTO_BURST_10)}), subject=True),
+        {}, _itto))
+
+    out.append(fx(
+        "cyno_burst_a4_on_his_own_pactsworn_normal",
+        "a self EM buff from a talent row, read by self flat damage from his own EM scoped to his "
+        "burst-talent Normal Attack rows (A4), per candidate",
+        [FORMULA, f"{PANDO}Cyno.ts:73,83-87,130,134-141,177-190,201,234-236"],
+        _subject("Cyno", 0, {"elemental_burst": 10}),
+        {"element": "electro", "weapon_type": "WEAPON_POLE",
+         "member_elements": ["electro", "dendro"]},
+        CYNO_BASE, CYNO_ARTIFACTS, "electro",
+        b4._with_hit(base._row("na1", "1-Hit DMG", "normal", 1, CYNO_NA_1, None),
+                     "elemental_burst", "1-Hit DMG"),
+        b4._kit("10000071", _own("Cyno", "10000071", 0, CYNO_BASE, {
+            ("elemental_burst", 10): (CYNO_BURST_LABELS, CYNO_BURST_10)}), subject=True),
+        {}, _cyno))
     return out

@@ -11431,6 +11431,406 @@
       "go_value": 128300.59963387295,
       "divergence": "none: no reaction",
       "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "itto_burst_a4_on_his_own_kesagiri",
+      "covers": "self ATK from his own DEF (a talent row) and self flat damage from his own DEF scoped to one of his rows (A4), both per candidate, on one hit",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/AratakiItto.ts:53-56,65-67,100-106,115-120,140,165-173"
+      ],
+      "givers": [
+        {
+          "name": "Arataki Itto",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_burst": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "geo",
+        "weapon_type": "WEAPON_CLAYMORE",
+        "member_elements": [
+          "geo",
+          "geo"
+        ]
+      },
+      "base": {
+        "base_atk": 885.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12858.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 959.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.242,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "def_pct": 1.166,
+        "flat_def": 39.0,
+        "flat_atk": 311.0,
+        "geo_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.8
+      },
+      "set_pools": [],
+      "channel": "geo",
+      "rows": [
+        {
+          "id": "final",
+          "label": "Arataki Kesagiri Final Slash DMG",
+          "move": "charged",
+          "count": 1,
+          "talent_row": {
+            "label": "Arataki Kesagiri Final Slash DMG|{param7:F1P}",
+            "params": [
+              1.56621,
+              1.5096,
+              1.81152,
+              2.317236,
+              1.7884,
+              1.802,
+              3.774,
+              20.0,
+              1.617638,
+              3.234591,
+              4.040179,
+              60.0
+            ]
+          },
+          "multiplier": 3.774,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "hit": {
+            "talent": "normal_attack",
+            "label": "Arataki Kesagiri Final Slash DMG"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:arataki_itto",
+          "label": "Arataki Itto (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/AratakiItto.ts (pando), libs/gi/sheets/src/Characters/AratakiItto/index.tsx (wr) @ 2c13fc40 \u2014 burst_atk pando:AratakiItto.ts:53-56,100-106,140; a4_kesagiri pando:AratakiItto.ts:65-67,115-120,156-173; gcsim internal/characters/itto/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "descent",
+                "label": "During Royal Descent, after his burst",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "flat_atk_from_def",
+                "value": 1.0368,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "descent",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_def",
+                "value": 0.35,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "normal_attack",
+                    "label": "Arataki Kesagiri Combo Slash DMG"
+                  },
+                  {
+                    "talent": "normal_attack",
+                    "label": "Arataki Kesagiri Final Slash DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Royal Descent: Behold, Itto the Evil!: Geo infusion, ATK SPD and lowered RES",
+                "reason": "an infusion changes a hit's element, which the estimate does not model (G4); attack speed and his own RES have no closed-form damage effect"
+              },
+              {
+                "what": "A1: Arataki Ichiban: ATK SPD per Kesagiri slash",
+                "reason": "no closed-form damage effect: attack speed"
+              },
+              {
+                "what": "TALENT: Masatsu Zetsugi: Akaushi Burst!: Ushi's HP",
+                "reason": "no damage effect: HP"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 14829.944953213402,
+      "go_value": 14829.944953213402,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "cyno_burst_a4_on_his_own_pactsworn_normal",
+      "covers": "a self EM buff from a talent row, read by self flat damage from his own EM scoped to his burst-talent Normal Attack rows (A4), per candidate",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Cyno.ts:73,83-87,130,134-141,177-190,201,234-236"
+      ],
+      "givers": [
+        {
+          "name": "Cyno",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_burst": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "electro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "electro",
+          "dendro"
+        ]
+      },
+      "base": {
+        "base_atk": 926.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12491.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 859.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "elemental_mastery": 280.0,
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "electro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "electro",
+      "rows": [
+        {
+          "id": "na1",
+          "label": "1-Hit DMG",
+          "move": "normal",
+          "count": 1,
+          "talent_row": {
+            "label": "1-Hit DMG|{param1:F1P}",
+            "params": [
+              1.547459,
+              1.630198,
+              2.068339,
+              1.021861,
+              1.021861,
+              2.586465,
+              1.9975,
+              25.0,
+              1.26378,
+              2.527025,
+              3.15639,
+              100.0,
+              10.0,
+              20.0,
+              80.0
+            ]
+          },
+          "multiplier": 1.547459,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "hit": {
+            "talent": "elemental_burst",
+            "label": "1-Hit DMG"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:cyno",
+          "label": "Cyno (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Cyno.ts (pando), libs/gi/sheets/src/Characters/Cyno/index.tsx (wr) @ 2c13fc40 \u2014 burst_em pando:Cyno.ts:73,130,201; a1_skill pando:Cyno.ts:78-82,131-133,216-233; a4_normal pando:Cyno.ts:83-87,134-141,177-190,234-236; gcsim internal/characters/cyno/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "pactsworn",
+                "label": "Pactsworn Pathclearer, after his burst",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "judication",
+                "label": "Judication: his skill in Endseer stance (A1)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "elemental_mastery",
+                "value": 100.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "pactsworn",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.35,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "skill"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "judication",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_em",
+                "value": 1.5,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_burst",
+                    "label": "1-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_burst",
+                    "label": "2-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_burst",
+                    "label": "3-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_burst",
+                    "label": "4-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_burst",
+                    "label": "5-Hit DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Sacred Rite: Wolf's Swiftness: his Pactsworn Normal Attacks are burst-talent rows",
+                "reason": "GO counts them as Normal Attacks; a teammate's Normal Attack buff reaches them only once the row's move is set to normal (as Skirk's); their Electro infusion is the row's element (G4). A4 names the rows, so it reaches them either way"
+              },
+              {
+                "what": "A1: Featherfall Judgment: Duststalker Bolts",
+                "reason": "a damage instance, not a talent row: not offered as a target row yet (A4's share of EM on them with it)"
+              },
+              {
+                "what": "KIT: The Hexerei passive and its Stellarconduct parts (A1, A4, C1, C2)",
+                "reason": "the Hexerei party mechanic is not modelled (as for Sucrose and Mona)"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 3078.352202038892,
+      "go_value": 3078.352202038892,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
     }
   ]
 }

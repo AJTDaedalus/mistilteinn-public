@@ -38,6 +38,11 @@ EULA_SKILL_LABELS = ["Physical RES Decrease|{param4:P}", "Cryo RES Decrease|{par
 EULA_SKILL_10 = [2.6352, 4.4208, 1.728, 0.25, 0.25, 7.0]
 LYNEY_SKILL_LABELS = ["Skill DMG|{param1:F1P}", "Skill DMG Bonus|{param2:F1P} ATK/Stack"]
 LYNEY_SKILL_10 = [3.0096, 0.9576, 0.2]
+ITTO_BURST_LABELS = ["ATK Bonus|{param2:F1P} DEF"]
+ITTO_BURST_10 = [0.1, 1.0368, 0.2, 11.0, 18.0, 70.0]
+CYNO_BURST_LABELS = ["1-Hit DMG|{param1:F1P}", "Elemental Mastery Bonus|{param12:I}"]
+CYNO_BURST_10 = [1.547459, 1.630198, 2.068339, 1.021861, 1.021861, 2.586465, 1.9975, 25.0,
+                 1.26378, 2.527025, 3.15639, 100.0, 10.0, 20.0, 80.0]
 
 
 def _sheet(slug: str) -> sheets.Sheet:
@@ -280,6 +285,40 @@ def test_eulas_stacks_reach_her_lightfall_sword_and_her_skill_shreds():
     assert c4.value == eula.pins.constellations[4][0]
 
 
+# ── Itto: ATK from DEF and the Kesagiri's flat damage, both his own; C4 to the party ─────
+
+
+def test_ittos_burst_and_a4_move_with_his_def_and_c4_reaches_the_party():
+    itto = _sheet("arataki_itto")
+    rows = {("elemental_burst", 10): (ITTO_BURST_LABELS, ITTO_BURST_10)}
+    own = sheets.resolve(itto, _giver(itto, rows=rows), giver_is_subject=True)
+    assert {e.stat: e.value for e in own.bonus.effects} == {
+        "flat_atk_from_def": ITTO_BURST_10[1], "flat_damage_from_def": itto.pins.passives[4][0]}
+    [a4] = [e for e in own.bonus.effects if e.stat == "flat_damage_from_def"]
+    assert {r.label for r in a4.rows or ()} == {"Arataki Kesagiri Combo Slash DMG",
+                                                 "Arataki Kesagiri Final Slash DMG"}
+    mate = sheets.resolve(itto, _giver(itto, constellation=4, rows=rows), giver_is_subject=False)
+    assert {e.stat: e.value for e in mate.bonus.effects} == {
+        "atk_pct": itto.pins.constellations[4][1], "def_pct": itto.pins.constellations[4][0]}
+    assert {c.key: c.default for c in mate.bonus.conditions} == {"after": 0}
+
+
+# ── Cyno: the burst's EM, read by A4 on his Pactsworn rows ───────────────────────────────
+
+
+def test_cynos_a4_names_his_burst_normal_rows_and_his_burst_em_is_a_row():
+    cyno = _sheet("cyno")
+    rows = {("elemental_burst", 10): (CYNO_BURST_LABELS, CYNO_BURST_10)}
+    kit = sheets.resolve(cyno, _giver(cyno, constellation=2, rows=rows), giver_is_subject=True)
+    by_stat = {e.stat: e for e in kit.bonus.effects}
+    assert by_stat["elemental_mastery"].value == CYNO_BURST_10[11]
+    a4 = by_stat["flat_damage_from_em"]
+    assert a4.value == cyno.pins.passives[4][0]
+    assert [r.label for r in a4.rows or ()] == [f"{n}-Hit DMG" for n in range(1, 6)]
+    assert [(e.per, e.value) for e in kit.bonus.effects if e.per] == [
+        ("c2_stacks", cyno.pins.constellations[2][0])]
+
+
 def test_every_fifth_batch_fixture_agrees_with_go_exactly():
     """No amplifying reaction in any of them, so not even the 2.78 vs 25/9 gap applies."""
     from tests.unit.go_fixtures_batch5 import batch5_fixtures
@@ -292,7 +331,7 @@ def test_every_fifth_batch_fixture_agrees_with_go_exactly():
 
 def test_every_new_sheet_names_what_it_leaves_out():
     for slug in ("hu_tao", "arlecchino", "clorinde", "navia", "wriothesley", "lyney", "yoimiya",
-                 "ganyu", "eula"):
+                 "ganyu", "eula", "arataki_itto", "cyno"):
         sheet = _sheet(slug)
         assert sheet.unmodelled, slug
         assert sheet.verified_by, slug
