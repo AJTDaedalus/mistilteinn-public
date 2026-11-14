@@ -1,6 +1,6 @@
 # DESIGN: a formula fallback, so every team can be optimized
 
-**Status: P0 merged; P1 complete and merged (#367–#371). P2 foundation built on `feat/math-fallback-p2-sheets` (2026-11-13): the sheet schema, the two-pass team evaluation, GO fixtures, and sheets for Bennett and Kazuha (§2.6). Plunges no longer make a character `partial` (owner, 2026-11-13). Owner rulings in `DECISIONS.md` §38: the estimate is opt-in for every team (D-F3), and Genshin Optimizer, not gcsim, is the accuracy comparator for the fallback (D-F4).** §2.4 below predates D-F4. Read "gcsim" there as "GO" for sheet verification; gcsim remains the oracle for the damage chain itself. The owner asked for two things:
+**Status: P0 merged; P1 complete and merged (#367–#371). P3's reactions built on `feat/formula-reactions` (2026-11-14, §2.7; owner go-ahead `DECISIONS.md` §42). P2 foundation built on `feat/math-fallback-p2-sheets` (2026-11-13): the sheet schema, the two-pass team evaluation, GO fixtures, and sheets for Bennett and Kazuha (§2.6). Plunges no longer make a character `partial` (owner, 2026-11-13). Owner rulings in `DECISIONS.md` §38: the estimate is opt-in for every team (D-F3), and Genshin Optimizer, not gcsim, is the accuracy comparator for the fallback (D-F4).** §2.4 below predates D-F4. Read "gcsim" there as "GO" for sheet verification; gcsim remains the oracle for the damage chain itself. The owner asked for two things:
 - an evaluation of carrying each character's gcsim status in its catalogue entry;
 - a plan for a Genshin Optimizer-style fallback that uses closed-form math instead of
   simulation, so every team can be optimized whatever its gcsim status.
@@ -688,6 +688,88 @@ generated at their pins. Who reads which level:
 Not modelled: talent-level boosts a passive gives the **team** (Tartaglia's +1 normal attack,
 gcsim `ChildePassive`; Skirk's and Lohen's skill boosts, GO `teamBuff.premod.skillBoost`).
 They are not constellations and not this table's question.
+
+### 2.7 Reactions (P3, task 13; built 2026-11-14)
+
+**Owner, 2026-11-14: "Start P3: reactions."** Branch `feat/formula-reactions`; rulings and choices
+in `DECISIONS.md` §42. Weapon passives (task 12) and ER from particles (task 14) are not started.
+
+**Where it lives.** `backend/app/formula/genshin/reactions.py` (the chain),
+`app/data/yuanshen/snapshot/reaction_level_multipliers.json` (the level table), `damage.ts`
+(the browser mirror), `formula-recipe.ts:reactionRowHits` and `additiveOf` (kept apart from
+`rowHits` for the merge with the concurrent sheets branch), `recipe-eval.ts:evaluateReaction`,
+the panel's *Add reaction* and per-ability *Reaction* select.
+
+#### The formulas, each cited
+
+| family | damage | gcsim (`b107b5dc`) | GO (`2c13fc40`) |
+|---|---|---|---|
+| transformative | `k × lvl × (1 + 16·EM/(2000+EM) + bonus) × RES × (1 + CR_r × CD_r)`; no DMG%, DEF ignored | `combat/reaction.go:33-39`, each reaction's `FlatDmg = k * …`, `IgnoreDefPercent: 1`; `enemy/damage.go:22-43` skips DMG% | `reaction/trans.ts:36-108`, `multi.ts:26-31` |
+| additive | flat `k × lvl × (1 + 5·EM/(1200+EM) + bonus)` inside the hit's base, under its DMG%, DEF, RES, crit | `combat/reaction.go:41-43`, `reactable/catalyze.go:24,43` | `formula.ts:263,405-431` |
+| Lunar | `k × lvl × (1 + 6·EM/(2000+EM) + bonus) × (1 + base_bonus) × RES × (1 + CR × CD)` with the character's CRIT | `combat/reaction.go:20-31`, `reactable/lunarcharged.go:140-150` | `reaction/special.ts:26-122`, `lunar.ts:27-40` |
+
+Multipliers: overloaded 2.75, electro-charged 2, superconduct 1.5, swirl 0.6 (the swirled
+element's RES), shattered 3 (Physical), burning 0.25, bloom 2, hyperbloom and burgeon 3 (Dendro),
+spread 1.25, aggravate 1.15, Lunar-Charged 3 (Electro), Lunar-Crystallize 1.6 (Geo); both oracles
+agree on each (`reactions.py` cites both per reaction). Reaction CRIT only where GO's `canCrit`
+allows (burning, bloom, hyperbloom, burgeon, swirl) and only from reaction-specific stats.
+
+**The level table is the game's.** `ElementCoeffExcelConfigData.playerElementLevelCo` at the
+YuanShenResources pin, committed by `scripts.yuanshen.build_snapshot`. gcsim's `reactionLvlBase`
+(generated) and GO's `transformativeReactionLevelMultipliers` (commented as this column) agree with
+it to 4.6e-8, float32 against 7-digit decimals; `test_reaction_damage.py` holds anchors of both.
+The server sends the value at the build's level (`/search-context`'s `reaction_level_multiplier`),
+so the browser has no copy.
+
+**Refused by name** (`reactions.REFUSED`): Lunar-Bloom (no reaction-triggered instance in either
+oracle: gcsim's `LunarBloom()` only signals the party, GO's multiplier is 0 — its damage is kits'
+direct hits), Stellar-Conduct (a kit's direct hit on Polestar stacks), Stellar Swirl (outside the
+owner's P3 list).
+
+#### Crossval and parity
+
+- **gcsim**: three committed runs at the pin, `tests/crossval/test_reaction_crossval.py`:
+  overloaded by Pyro Aether (75 EM through the story buffs), a Pyro swirl by Venti (+100 EM
+  stated), superconduct by Ayaka (0 EM). Each trigger's EM is checked against gcsim's snapshot
+  from the seeded rows, then the damage within 1e-7 (measured 1.1e-8, the float32 level base).
+  Additive and Lunar have no gcsim run: none of the committed nanoka payloads is a Dendro, Electro
+  or Lunar trigger; GO fixtures cover them.
+- **Python ↔ TypeScript**: 900 generated cases (`reaction_cases.json`, 300 per family, additive
+  through the whole talent chain), `kernel:verify`, worst 2.6e-7 at the f32 tolerance 1e-6, with a
+  planted additive-outside-the-DMG-bonus that must fail.
+- **GO**: nine fixtures (`go_fixtures_reactions.py`), one per family and part, `formula:verify`
+  140/140 (worst 8.5e-8). The only divergence is GO's `enemy.transDef`
+  (`99999999 / (99999999 + 5·lvl + 500)`, about 1 − 1e-5) against gcsim's ignored DEF, recorded per
+  fixture; additive fixtures agree exactly.
+
+#### In the estimate
+
+| thing | rule |
+|---|---|
+| reaction row | `count` instances triggered by **the optimized character**: their EM (calibrated + candidate) and level apply. A teammate's reactions are constants to every candidate and are not rows, as a teammate's hits are not |
+| what reaches it | EM, a `reaction_bonus` naming the reaction, an `enemy_res` on its element, `reaction_crit_rate`/`_dmg` (transformative, crittable only), the character's CRIT and `lunar_base_dmg_bonus` (Lunar). ATK%, DMG% and move/row-scoped effects are computed and ignored, silently (a reaction row is not a move) |
+| additive | a talent row's `additive` (spread for a Dendro hit, aggravate for an Electro one; a mismatch and an amplified hit are refused); the flat term rides on the first scaling term, × count |
+| Lunar weight | GO's whole contribution by default (1); `weight` in (0, 1] states gcsim's ranked share. The panel does not offer it yet |
+| bound | a reaction row makes EM live and nothing else; every reaction term is monotone in EM (and CRIT), so the optimistic completion still dominates |
+| assumptions | each reaction row's count and trigger, and the two divergences, in the estimate's list |
+
+**Wired since** (each with a GO fixture): VV swirl +60%; Thundering Fury overloaded/EC/
+superconduct/hyperbloom +40%, aggravate and Lunar-Charged +20%; Crimson Witch overloaded/burning/
+burgeon +40% (now `modelled`); Flower of Paradise Lost +40% and +10% per stack; Disenchantment
+superconduct +80%; Night of the Sky's Unveiling and Silken Moon's Serenade Lunar +10% under their
+Gleaming Moon choice; Aubade's Lunar +20%/+40% (two new situational conditions); Nahida C2's
+bloom-family CRIT 20%/100% (new `c2_bloom` condition); Mona C1's EC/Lunar-Charged/swirl/
+Lunar-Crystallize +15%; Baizhu A4's reaction bonus from his Max HP to 50,000 (a teammate's
+number; withheld by name when he is the subject).
+
+**Not wired, named:** every kit's direct Lunar or Stellar hit and Lunar base-damage bonus from a
+giver's stat (Flins, Linnea, Nefer, Ineffa…: GO's `lunarDmgNode(… base: stat …)` — a hit of its
+own, which the target has no row kind for yet), Nilou's Bountiful Cores (her sheet is on the
+concurrent branch), swirl's amplified/aggravated variants, burning's tick count, the Stellar
+reactions, and contributors other than the subject.
+
+**Found driving it:** none in the chain. The panel's two actions ran together ("ADD ABILITYADD
+REACTION"); `.formula__actions` now spaces them.
 
 ## 3. Phases
 

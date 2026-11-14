@@ -60,6 +60,26 @@ this note claimed two fields were enough; six more were still in the file.)
 
 ## The cases
 
+### `overloaded_traveler_1`, `swirl_venti_1`, `superconduct_ayaka_1` — one reaction each (P3)
+
+Recorded 2026-11-14 at `b107b5dc`, the same recipe (`./gcsim -c <case>.txt -nb -out <case>.json`,
+per-run noise stripped). Each run produces exactly **one** transformative reaction, and its damage
+is the reaction's `source_dps` × the run's duration ÷ its instance count (gcsim publishes per-source
+DPS, not damage). A reaction snapshot carries EM and level only, so the figure is exact.
+
+* `overloaded_traveler_1` — Lisa's Normal Attack applies Electro, Pyro Aether's skill overloads:
+  the trigger's **75 EM** is the story buffs, read through the real assembler. 5,651.88.
+* `swirl_venti_1` — Pyro Aether's skill applies Pyro, Venti's skill swirls it, at a stated
+  `venti add stats em=100` (Venti's own EM is 0). The AoE half of a swirl hits nothing with one
+  target. 1,376.58.
+* `superconduct_ayaka_1` — Lisa applies Electro, Ayaka's skill superconducts at **0 EM**: the
+  bracket at exactly 1. 1,953.25.
+
+Only the trigger matters to the damage (`combat.CalcReactionDmg` reads its EM and level), so Venti
+is the one payload this added to the crossval seed. No additive or Lunar case: no committed
+payload is a Dendro, Electro or Lunar trigger; GO fixtures cover those (`go_fixtures_reactions.py`).
+
+
 ### `traveler_normal_1` — the same shape, for the story buffs
 
 Pyro Aether 90/6, **Dull Blade** 70/4, no artifacts, one normal attack: deliberately the
